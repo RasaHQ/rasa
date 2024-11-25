@@ -23,6 +23,7 @@ from rasa.e2e_test.constants import (
     KEY_USER_INPUT,
 )
 from rasa.e2e_test.stub_custom_action import StubCustomAction
+from rasa.shared.constants import DOCS_BASE_URL
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.exceptions import RasaException
 
@@ -409,9 +410,16 @@ class TestCase:
             fixture_names=input_test_case.get(KEY_FIXTURES),
             metadata_name=input_test_case.get(KEY_METADATA),
         )
-        if test_case.uses_assertions():
-            test_case.validate_duplicate_user_messages_metadata()
+        test_case.validate()
         return test_case
+
+    def validate(self) -> None:
+        """Validates the test case.
+
+        This method calls all validation methods required for the test case.
+        """
+        if self.uses_assertions():
+            self.validate_duplicate_user_messages_metadata()
 
     def validate_duplicate_user_messages_metadata(self) -> None:
         """Validates that duplicate user messages use metadata correctly.
@@ -421,8 +429,7 @@ class TestCase:
         Raises warnings if any issues are found.
         """
         docs_link = (
-            "https://rasa.com/docs/rasa-pro/testing/"
-            "e2e-testing-assertions/assertions-how-to-guide/"
+            f"{DOCS_BASE_URL}/testing/e2e-testing-assertions/assertions-how-to-guide/"
             "#how-to-handle-duplicate-user-text-messages-in-the-same-test-case"
         )
         no_metadata_event_info = (
@@ -439,6 +446,8 @@ class TestCase:
             f"user messages. Please refer to the documentation: {docs_link}"
         )
 
+        # Use dict[str, list] structure to group steps by user message text to easily
+        # identify and validate instances with duplicate messages and their metadata.
         message_steps = defaultdict(list)
 
         # Collect user steps by text

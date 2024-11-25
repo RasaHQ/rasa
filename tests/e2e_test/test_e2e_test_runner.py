@@ -204,6 +204,96 @@ def assertions_e2e_test_runner(
     return test_runner
 
 
+@pytest.fixture
+def test_case_with_duplicate_messages() -> TestCase:
+    return TestCase(
+        name="test_case_transfer_money",
+        steps=[
+            TestStep.from_dict(
+                {
+                    "user": "send money",
+                    "assertions": [
+                        {
+                            "bot_uttered": {
+                                "text_matches": "How much would you like to transfer?"
+                            }
+                        }
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "100 dollars",
+                    "assertions": [
+                        {"slot_was_set": [{"name": "amount", "value": 100}]}
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "Jane Doe",
+                    "assertions": [
+                        {
+                            "slot_was_set": [
+                                {"name": "recipient", "value": "Jane Doe"}
+                            ],
+                            "bot_uttered": {
+                                "text_matches": "Please confirm if you'd like to "
+                                "proceed with the transfer?"
+                            },
+                        }
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "Yes",
+                    "assertions": [
+                        {
+                            "bot_uttered": {
+                                "text_matches": "Transfer completed, "
+                                "anything else I can help you with?"
+                            }
+                        }
+                    ],
+                    "metadata": "turn_1",
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "Please make the same transfer to John Doe",
+                    "assertions": [
+                        {
+                            "slot_was_set": [
+                                {"name": "recipient", "value": "John Doe"},
+                                {"name": "amount", "value": 100},
+                            ],
+                            "bot_uttered": {
+                                "text_matches": "Please confirm if you'd like to "
+                                "proceed with the transfer?"
+                            },
+                        }
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "Yes",
+                    "assertions": [
+                        {
+                            "flow_completed": {
+                                "flow_id": "transfer_money",
+                                "flow_step_id": "action_transfer_money",
+                            }
+                        }
+                    ],
+                    "metadata": "turn_2",
+                }
+            ),
+        ],
+    )
+
+
 def test_generate_test_result_successful() -> None:
     test_turns: TEST_TURNS_TYPE = {
         -1: ActualStepOutput.from_test_step(
@@ -2009,6 +2099,7 @@ async def test_run_assertions_with_duplicate_user_messages(
     default_agent: Agent,
     monkeypatch: MonkeyPatch,
     assertions_tracker_with_duplicate_user_msg: DialogueStateTracker,
+    test_case_with_duplicate_messages: TestCase,
 ) -> None:
     def mock_init(self, *args, **kwargs) -> None:
         self.agent = default_agent
@@ -2025,92 +2116,7 @@ async def test_run_assertions_with_duplicate_user_messages(
 
     monkeypatch.setattr(test_runner.agent.processor, "get_tracker", mock_get_tracker)
 
-    test_case = TestCase(
-        name="test_case_transfer_money",
-        steps=[
-            TestStep.from_dict(
-                {
-                    "user": "send money",
-                    "assertions": [
-                        {
-                            "bot_uttered": {
-                                "text_matches": "How much would you like to transfer?"
-                            }
-                        }
-                    ],
-                }
-            ),
-            TestStep.from_dict(
-                {
-                    "user": "100 dollars",
-                    "assertions": [
-                        {"slot_was_set": [{"name": "amount", "value": 100}]}
-                    ],
-                }
-            ),
-            TestStep.from_dict(
-                {
-                    "user": "Jane Doe",
-                    "assertions": [
-                        {
-                            "slot_was_set": [
-                                {"name": "recipient", "value": "Jane Doe"}
-                            ],
-                            "bot_uttered": {
-                                "text_matches": "Please confirm if you'd like to "
-                                "proceed with the transfer?"
-                            },
-                        }
-                    ],
-                }
-            ),
-            TestStep.from_dict(
-                {
-                    "user": "Yes",
-                    "assertions": [
-                        {
-                            "bot_uttered": {
-                                "text_matches": "Transfer completed, "
-                                "anything else I can help you with?"
-                            }
-                        }
-                    ],
-                    "metadata": "turn_1",
-                }
-            ),
-            TestStep.from_dict(
-                {
-                    "user": "Please make the same transfer to John Doe",
-                    "assertions": [
-                        {
-                            "slot_was_set": [
-                                {"name": "recipient", "value": "John Doe"},
-                                {"name": "amount", "value": 100},
-                            ],
-                            "bot_uttered": {
-                                "text_matches": "Please confirm if you'd like to "
-                                "proceed with the transfer?"
-                            },
-                        }
-                    ],
-                }
-            ),
-            TestStep.from_dict(
-                {
-                    "user": "Yes",
-                    "assertions": [
-                        {
-                            "flow_completed": {
-                                "flow_id": "transfer_money",
-                                "flow_step_id": "action_transfer_money",
-                            }
-                        }
-                    ],
-                    "metadata": "turn_2",
-                }
-            ),
-        ],
-    )
+    test_case = test_case_with_duplicate_messages
 
     input_metadata = [
         Metadata(name="turn_1", metadata={"turn_idx": 1}),
@@ -2582,3 +2588,108 @@ async def test_error_logging_with_partial_custom_action_stubbing(
             input_metadata=[],
         )
         assert expected_error in logs
+
+
+async def test_run_assertions_with_duplicate_user_messages_reusing_metadata(
+    default_agent: Agent,
+    monkeypatch: MonkeyPatch,
+    assertions_tracker_with_duplicate_user_msg: DialogueStateTracker,
+    test_case_with_duplicate_messages: TestCase,
+) -> None:
+    """
+    Test that the E2E test runner correctly handles duplicate user messages
+    that reuse metadata and verifies the assertions without errors.
+    """
+
+    def mock_init(self, *args, **kwargs) -> None:
+        self.agent = default_agent
+        self.llm_judge_config = MagicMock()
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    test_runner = E2ETestRunner()
+
+    async def mock_get_tracker(self, *args, **kwargs) -> DialogueStateTracker:
+        tracker = assertions_tracker_with_duplicate_user_msg
+        events = []
+
+        # Simulate two turns where the user makes the same
+        # transfer again and confirms with "Sure"
+        for turn_idx in [1, 2]:
+            events.extend(
+                [
+                    # User requests to make the same transfer again
+                    UserUttered("Please make the same transfer again."),
+                    SlotSet("recipient", "John Doe"),
+                    SlotSet("amount", 100),
+                    # Bot asks for confirmation
+                    BotUttered(
+                        "Please confirm if you'd like to proceed with the transfer?"
+                    ),
+                    # User confirms with "Sure", including metadata for the turn index
+                    UserUttered("Sure", metadata={"turn_idx": turn_idx}),
+                    FlowCompleted("transfer_money", step_id="action_transfer_money"),
+                ]
+            )
+
+        tracker.update_with_events(events)
+        return tracker
+
+    monkeypatch.setattr(test_runner.agent.processor, "get_tracker", mock_get_tracker)
+
+    # Use the test case with duplicate messages
+    test_case = test_case_with_duplicate_messages
+
+    # Add test steps for the additional "Sure" confirmations corresponding to the new events
+    for turn_idx in [1, 2]:
+        test_case.steps.extend(
+            [
+                # Step where the user requests to make the same transfer again
+                TestStep.from_dict(
+                    {
+                        "user": "Please make the same transfer again.",
+                        "assertions": [
+                            {
+                                "slot_was_set": [
+                                    {"name": "recipient", "value": "John Doe"},
+                                    {"name": "amount", "value": 100},
+                                ],
+                                "bot_uttered": {
+                                    "text_matches": "Please confirm if you'd like to proceed with the transfer?"
+                                },
+                            }
+                        ],
+                    }
+                ),
+                # Step where the user confirms with "Sure"
+                TestStep.from_dict(
+                    {
+                        "user": "Sure",
+                        "assertions": [
+                            {
+                                "flow_completed": {
+                                    "flow_id": "transfer_money",
+                                    "flow_step_id": "action_transfer_money",
+                                }
+                            }
+                        ],
+                        "metadata": f"turn_{turn_idx}",
+                    }
+                ),
+            ]
+        )
+
+    input_metadata = [
+        Metadata(name="turn_1", metadata={"turn_idx": 1}),
+        Metadata(name="turn_2", metadata={"turn_idx": 2}),
+    ]
+
+    result = await test_runner.run_assertions(
+        "test_assertions_tracker_duplicate_user_msg", test_case, input_metadata
+    )
+
+    assert isinstance(result, TestResult)
+    assert result.pass_status is True
+    assert result.assertion_failure is None
