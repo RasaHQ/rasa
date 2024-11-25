@@ -2659,7 +2659,7 @@ async def test_run_assertions_with_duplicate_user_messages_reusing_metadata(
                                 ],
                                 "bot_uttered": {
                                     "text_matches": "Please confirm if you'd like "
-                                                    "to proceed with the transfer?"
+                                    "to proceed with the transfer?"
                                 },
                             }
                         ],
