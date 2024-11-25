@@ -106,6 +106,7 @@ stories:
    - action: action_check_profile
    - slot_was_set:
      - premium_account: true
+     - account_data: '{"id":"zpNi3JA2", "fullName":"Ada Lovelace", "accountRenewalDate":"October 3, 2021"}'
    - action: utter_welcome_premium
 
 - story: Welcome message, basic user
@@ -114,6 +115,7 @@ stories:
    - action: action_check_profile
    - slot_was_set:
      - premium_account: false
+     - account_data: '{"id":"3JcoaEa4", "fullName":"Jack Harkness"}'
    - action: utter_welcome_basic
    - action: utter_ask_upgrade
 ```
