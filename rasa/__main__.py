@@ -100,6 +100,8 @@ def main() -> None:
     cmdline_arguments = arg_parser.parse_args()
 
     log_level = getattr(cmdline_arguments, "loglevel", None)
+    rasa.utils.io.configure_colored_logging(log_level)
+    
     logging_config_file = getattr(cmdline_arguments, "logging_config_file", None)
     configure_logging_and_warnings(
         log_level, logging_config_file, warn_only_once=True, filter_repeated_logs=True
@@ -113,7 +115,6 @@ def main() -> None:
 
     try:
         if hasattr(cmdline_arguments, "func"):
-            rasa.utils.io.configure_colored_logging(log_level)
 
             result = plugin_manager().hook.configure_commandline(
                 cmdline_arguments=cmdline_arguments
