@@ -32,7 +32,13 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ENABLED,
     CONFIG_TELEMETRY_ID,
 )
-from rasa.shared.constants import PROMPT_CONFIG_KEY, PROMPT_TEMPLATE_CONFIG_KEY
+from rasa.shared.constants import (
+    PROMPT_CONFIG_KEY,
+    PROMPT_TEMPLATE_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
+    LLM_API_HEALTH_CHECK_ENV_VAR,
+    LLM_API_HEALTH_CHECK_DEFAULT_VALUE,
+)
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import DOCS_URL_TELEMETRY, UTTER_ASK_PREFIX
 from rasa.shared.core.flows import Flow
@@ -157,6 +163,7 @@ NUM_LINK_STEPS = "num_link_steps"
 NUM_CALL_STEPS = "num_call_steps"
 NUM_SHARED_SLOTS_BETWEEN_FLOWS = "num_shared_slots_between_flows"
 LLM_COMMAND_GENERATOR_MODEL_NAME = "llm_command_generator_model_name"
+LLM_COMMAND_GENERATOR_MODEL_GROUP_ID = "llm_command_generator_model_group_id"
 LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED = "llm_command_generator_custom_prompt_used"
 MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED = (
     "multi_step_llm_command_generator_custom_handle_flows_prompt_used"
@@ -166,6 +173,7 @@ MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED = (
 )
 FLOW_RETRIEVAL_ENABLED = "flow_retrieval_enabled"
 FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME = "flow_retrieval_embedding_model_name"
+FLOW_RETRIEVAL_EMBEDDING_MODEL_GROUP_ID = "flow_retrieval_embedding_model_group_id"
 TRACING_BACKEND = "tracing_backend"
 METRICS_BACKEND = "metrics_backend"
 VERSION = "version"
@@ -960,6 +968,13 @@ def track_model_training(
         "policies": config.get("policies"),
         "train_schema": config.get("train_schema"),
         "predict_schema": config.get("predict_schema"),
+        "model_groups": rasa.core.utils.AvailableEndpoints.get_instance().model_groups,
+        "api_health_check_enabled": (
+            os.getenv(
+                LLM_API_HEALTH_CHECK_ENV_VAR, LLM_API_HEALTH_CHECK_DEFAULT_VALUE
+            ).lower()
+            == "true"
+        ),
         "num_intent_examples": len(nlu_data.intent_examples),
         "num_entity_examples": len(nlu_data.entity_examples),
         "num_actions": len(domain.action_names_or_texts),
@@ -1114,46 +1129,76 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
                 return component
         return None
 
-    def extract_settings(component: Dict) -> Dict:
-        """Extracts the settings from the command generator component."""
+    def extract_llm_command_generator_llm_client_settings(component: Dict) -> Dict:
+        """Extracts settings related to LLM command generator."""
         llm_config = component.get(LLM_CONFIG_KEY, {})
-        llm_model_name = (
-            llm_config.get(MODEL_CONFIG_KEY)
-            or llm_config.get(MODEL_NAME_CONFIG_KEY)
-            or DEFAULT_LLM_CONFIG[MODEL_CONFIG_KEY]
+        llm_model_group_id = llm_config.get(MODEL_GROUP_CONFIG_KEY)
+        llm_model_name = llm_config.get(MODEL_CONFIG_KEY) or llm_config.get(
+            MODEL_NAME_CONFIG_KEY
         )
+        if llm_model_group_id is None and llm_model_name is None:
+            llm_model_name = DEFAULT_LLM_CONFIG[MODEL_CONFIG_KEY]
+
+        custom_prompt_used = (
+            PROMPT_CONFIG_KEY in component or PROMPT_TEMPLATE_CONFIG_KEY in component
+        )
+        return {
+            LLM_COMMAND_GENERATOR_MODEL_NAME: llm_model_name,
+            LLM_COMMAND_GENERATOR_MODEL_GROUP_ID: llm_model_group_id,
+            LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: custom_prompt_used,
+        }
+
+    def extract_multistep_command_generator_prompt_settings(component: Dict) -> Dict:
+        """Extracts settings related to multistep command generator."""
+        prompt_templates = component.get("prompt_templates", {})
+        handle_flows_prompt_used = HANDLE_FLOWS_KEY in prompt_templates
+        fill_slots_prompt_used = FILL_SLOTS_KEY in prompt_templates
+        return {
+            MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED: handle_flows_prompt_used,  # noqa: E501
+            MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED: fill_slots_prompt_used,  # noqa: E501
+        }
+
+    def extract_flow_retrieval_settings(component: Dict) -> Dict:
+        """Extracts settings related to flow retrieval."""
         flow_retrieval_config = component.get(FLOW_RETRIEVAL_KEY, {})
         flow_retrieval_enabled = flow_retrieval_config.get("active", True)
-        flow_retrieval_embeddings_config = flow_retrieval_config.get(
+        embeddings_config = flow_retrieval_config.get(
             EMBEDDINGS_CONFIG_KEY, DEFAULT_EMBEDDINGS_CONFIG
         )
         flow_retrieval_embedding_model_name = (
             (
-                flow_retrieval_embeddings_config.get(MODEL_NAME_CONFIG_KEY)
-                or flow_retrieval_embeddings_config.get(MODEL_CONFIG_KEY)
+                embeddings_config.get(MODEL_NAME_CONFIG_KEY)
+                or embeddings_config.get(MODEL_CONFIG_KEY)
             )
             if flow_retrieval_enabled
             else None
         )
+        flow_retrieval_embedding_model_group_id = embeddings_config.get(
+            MODEL_GROUP_CONFIG_KEY
+        )
         return {
-            LLM_COMMAND_GENERATOR_MODEL_NAME: llm_model_name,
-            LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: PROMPT_CONFIG_KEY in component
-            or PROMPT_TEMPLATE_CONFIG_KEY in component,
-            MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED: HANDLE_FLOWS_KEY
-            in component.get("prompt_templates", {}),
-            MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED: FILL_SLOTS_KEY
-            in component.get("prompt_templates", {}),
             FLOW_RETRIEVAL_ENABLED: flow_retrieval_enabled,
             FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: flow_retrieval_embedding_model_name,
+            FLOW_RETRIEVAL_EMBEDDING_MODEL_GROUP_ID: flow_retrieval_embedding_model_group_id,  # noqa: E501
         }
+
+    def extract_settings(component: Dict) -> Dict:
+        """Extracts the settings from the command generator component."""
+        settings = {}
+        settings.update(extract_llm_command_generator_llm_client_settings(component))
+        settings.update(extract_multistep_command_generator_prompt_settings(component))
+        settings.update(extract_flow_retrieval_settings(component))
+        return settings
 
     command_generator_config = {
         LLM_COMMAND_GENERATOR_MODEL_NAME: None,
+        LLM_COMMAND_GENERATOR_MODEL_GROUP_ID: None,
         LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: None,
         MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED: None,
         MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED: None,
         FLOW_RETRIEVAL_ENABLED: None,
         FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: None,
+        FLOW_RETRIEVAL_EMBEDDING_MODEL_GROUP_ID: None,
     }
 
     pipeline = config.get("pipeline", [])
@@ -1553,6 +1598,7 @@ def track_response_rephrase(
     custom_prompt_template: Optional[str],
     llm_type: Optional[str],
     llm_model: Optional[str],
+    llm_model_group_id: Optional[str],
 ) -> None:
     """Track when a user rephrases a response."""
     _track(
@@ -1562,6 +1608,7 @@ def track_response_rephrase(
             "custom_prompt_template": custom_prompt_template,
             "llm_type": llm_type,
             "llm_model": llm_model,
+            "llm_model_group_id": llm_model_group_id,
         },
     )
 
@@ -1576,8 +1623,10 @@ def track_intentless_policy_train() -> None:
 def track_intentless_policy_train_completed(
     embeddings_type: Optional[str],
     embeddings_model: Optional[str],
+    embeddings_model_group_id: Optional[str],
     llm_type: Optional[str],
     llm_model: Optional[str],
+    llm_model_group_id: Optional[str],
 ) -> None:
     """Track when a user trains a policy."""
     _track(
@@ -1585,8 +1634,10 @@ def track_intentless_policy_train_completed(
         {
             "embeddings_type": embeddings_type,
             "embeddings_model": embeddings_model,
+            "embeddings_model_group_id": embeddings_model_group_id,
             "llm_type": llm_type,
             "llm_model": llm_model,
+            "llm_model_group_id": llm_model_group_id,
         },
     )
 
@@ -1595,8 +1646,10 @@ def track_intentless_policy_train_completed(
 def track_intentless_policy_predict(
     embeddings_type: Optional[str],
     embeddings_model: Optional[str],
+    embeddings_model_group_id: Optional[str],
     llm_type: Optional[str],
     llm_model: Optional[str],
+    llm_model_group_id: Optional[str],
     score: float,
 ) -> None:
     """Track when a user trains a policy."""
@@ -1605,8 +1658,10 @@ def track_intentless_policy_predict(
         {
             "embeddings_type": embeddings_type,
             "embeddings_model": embeddings_model,
+            "embeddings_model_group_id": embeddings_model_group_id,
             "llm_type": llm_type,
             "llm_model": llm_model,
+            "llm_model_group_id": llm_model_group_id,
             "score": score,
         },
     )
@@ -1696,8 +1751,10 @@ def track_enterprise_search_policy_train_completed(
     vector_store_type: Optional[str],
     embeddings_type: Optional[str],
     embeddings_model: Optional[str],
+    embeddings_model_group_id: Optional[str],
     llm_type: Optional[str],
     llm_model: Optional[str],
+    llm_model_group_id: Optional[str],
     citation_enabled: Optional[bool],
 ) -> None:
     """Track when a user completes training Enterprise Search policy."""
@@ -1707,8 +1764,10 @@ def track_enterprise_search_policy_train_completed(
             "vector_store_type": vector_store_type,
             "embeddings_type": embeddings_type,
             "embeddings_model": embeddings_model,
+            "embeddings_model_group_id": embeddings_model_group_id,
             "llm_type": llm_type,
             "llm_model": llm_model,
+            "llm_model_group_id": llm_model_group_id,
             "citation_enabled": citation_enabled,
         },
     )
@@ -1719,8 +1778,10 @@ def track_enterprise_search_policy_predict(
     vector_store_type: Optional[str],
     embeddings_type: Optional[str],
     embeddings_model: Optional[str],
+    embeddings_model_group_id: Optional[str],
     llm_type: Optional[str],
     llm_model: Optional[str],
+    llm_model_group_id: Optional[str],
     citation_enabled: Optional[bool],
 ) -> None:
     """Track when a user predicts the next action using Enterprise Search policy."""
@@ -1730,8 +1791,10 @@ def track_enterprise_search_policy_predict(
             "vector_store_type": vector_store_type,
             "embeddings_type": embeddings_type,
             "embeddings_model": embeddings_model,
+            "embeddings_model_group_id": embeddings_model_group_id,
             "llm_type": llm_type,
             "llm_model": llm_model,
+            "llm_model_group_id": llm_model_group_id,
             "citation_enabled": citation_enabled,
         },
     )

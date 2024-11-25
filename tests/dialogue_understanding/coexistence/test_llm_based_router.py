@@ -1,13 +1,14 @@
 import uuid
-from typing import List, Optional
+from pathlib import Path
+from typing import List, Optional, Dict, Any
 from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
 from pytest import MonkeyPatch
-from rasa.shared.providers.llm.llm_response import LLMResponse
 from structlog.testing import capture_logs
 
+import rasa.shared.utils.io
 from rasa.dialogue_understanding.coexistence.constants import (
     CALM_ENTRY,
     STICKY,
@@ -15,18 +16,25 @@ from rasa.dialogue_understanding.coexistence.constants import (
 from rasa.dialogue_understanding.coexistence.llm_based_router import (
     LLMBasedRouter,
     DEFAULT_LLM_CONFIG,
+    LLM_BASED_ROUTER_CONFIG_FILE_NAME,
 )
 from rasa.dialogue_understanding.commands import Command, SetSlotCommand
 from rasa.dialogue_understanding.commands.noop_command import NoopCommand
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import (
+    OPENAI_API_KEY_ENV_VAR,
+    ROUTE_TO_CALM_SLOT,
+    LLM_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
+)
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.providers.llm.llm_response import LLMResponse
 
 EXPECTED_PROMPT_PATH = "./tests/dialogue_understanding/coexistence/rendered_prompt.txt"
 
@@ -227,3 +235,282 @@ class TestLLMBasedRouter:
             rendered_template.splitlines(True), expected_template
         ):
             assert rendered_line.strip() == expected_line.strip()
+
+    @pytest.mark.parametrize(
+        "config, expected_llm_config",
+        [
+            (
+                {
+                    LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                },
+                {"provider": "openai", "model": "gpt-4"},
+            ),
+            (
+                {
+                    "user_input": {"max_characters": -1},
+                },
+                None,
+            ),
+            (
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+                },
+                {
+                    "id": "openai_gpt-4",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+            ),
+        ],
+    )
+    def test_llm_based_router_init_with_different_llm_configs(
+        self,
+        config: Optional[Dict[str, Any]],
+        expected_llm_config: Optional[Dict[str, Any]],
+        model_storage: ModelStorage,
+        resource: Resource,
+        monkeypatch,
+    ) -> None:
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = [
+                    {
+                        "id": "openai_gpt-4",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                    {
+                        "id": "openai_embedding",
+                        "models": [
+                            {"provider": "openai", "model": "text-embedding-ada-002"}
+                        ],
+                    },
+                ]
+
+        mock_endpoints = MockAvailableEndpoints()
+        monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+        config[CALM_ENTRY] = {STICKY: "handles transactions"}
+
+        generator = LLMBasedRouter(
+            config,
+            model_storage,
+            resource,
+        )
+        assert generator.config[LLM_CONFIG_KEY] == expected_llm_config
+
+    def test_llm_based_router_persist_config(
+        self,
+        model_storage: LocalModelStorage,
+        resource: Resource,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = [
+                    {
+                        "id": "model_group_id",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    }
+                ]
+
+        mock_endpoints = MockAvailableEndpoints()
+        monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+        config = {
+            LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
+            CALM_ENTRY: {STICKY: "handles transactions"},
+        }
+        router = LLMBasedRouter(config, model_storage, resource)
+
+        # Ensure the config is resolved
+        assert router.config[LLM_CONFIG_KEY] == {
+            "id": "model_group_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        }
+
+        # Persist the generator
+        router.persist()
+
+        # Check that the persisted config is equal to our config
+        with model_storage.read_from(resource) as path:
+            persisted_config = rasa.shared.utils.io.read_json_file(
+                path / LLM_BASED_ROUTER_CONFIG_FILE_NAME
+            )
+        assert persisted_config[LLM_CONFIG_KEY] == {
+            "id": "model_group_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        }
+
+    @pytest.mark.parametrize(
+        "config_1, model_groups_1, config_2, model_groups_2, fingerprint_differs",
+        [
+            (
+                {CALM_ENTRY: {STICKY: "handles transactions"}},
+                [],
+                {CALM_ENTRY: {STICKY: "handles transactions"}},
+                [],
+                False,
+            ),
+            (
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt"},
+                    CALM_ENTRY: {STICKY: "handles transactions"},
+                },
+                [
+                    {
+                        "id": "openai_gpt",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                ],
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt"},
+                    CALM_ENTRY: {STICKY: "handles transactions"},
+                },
+                [
+                    {
+                        "id": "openai_gpt",
+                        "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                    },
+                ],
+                True,
+            ),
+            (
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-1"},
+                    CALM_ENTRY: {STICKY: "handles transactions"},
+                },
+                [
+                    {
+                        "id": "openai_gpt-1",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                ],
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-2"},
+                    CALM_ENTRY: {STICKY: "handles transactions"},
+                },
+                [
+                    {
+                        "id": "openai_gpt-2",
+                        "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                    },
+                ],
+                True,
+            ),
+        ],
+    )
+    async def test_llm_based_router_fingerprint_addon_with_different_model_configs(
+        self,
+        config_1: Dict[str, Any],
+        model_groups_1: List[Dict[str, Any]],
+        config_2: Dict[str, Any],
+        model_groups_2: List[Dict[str, Any]],
+        fingerprint_differs: bool,
+        model_storage: ModelStorage,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        generator = LLMBasedRouter(
+            {CALM_ENTRY: {STICKY: "handles transactions"}},
+            model_storage,
+            Resource("llmcmdgen"),
+        )
+
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = model_groups_1
+
+        mock_endpoints_1 = MockAvailableEndpoints()
+        monkeypatch.setattr(
+            "rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints_1
+        )
+
+        fingerprint_1 = generator.fingerprint_addon(config_1)
+
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = model_groups_2
+
+        mock_endpoints_2 = MockAvailableEndpoints()
+        monkeypatch.setattr(
+            "rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints_2
+        )
+
+        fingerprint_2 = generator.fingerprint_addon(config_2)
+
+        assert fingerprint_1 is not None
+        assert fingerprint_2 is not None
+        if fingerprint_differs:
+            assert fingerprint_1 != fingerprint_2
+        else:
+            assert fingerprint_1 == fingerprint_2
+
+    async def test_llm_based_router_fingerprint_addon_diff_in_prompt_template(
+        self,
+        model_storage: ModelStorage,
+        tmp_path: Path,
+    ) -> None:
+        prompt_dir = Path(tmp_path) / "prompt"
+        prompt_dir.mkdir(parents=True, exist_ok=True)
+        prompt_file = prompt_dir / "llm_based_router_prompt.jinja2"
+        prompt_file.write_text("This is a test prompt")
+
+        config = {
+            "prompt": str(prompt_file),
+            CALM_ENTRY: {STICKY: "handles transactions"},
+        }
+        generator = LLMBasedRouter(config, model_storage, Resource("llmcmdgen"))
+        fingerprint_1 = generator.fingerprint_addon(config)
+
+        prompt_file.write_text("This is a test prompt. It has been changed.")
+        fingerprint_2 = generator.fingerprint_addon(config)
+        assert fingerprint_1 != fingerprint_2
+
+    async def test_llm_based_router_fingerprint_addon_no_diff_in_prompt_template(
+        self,
+        model_storage: ModelStorage,
+        tmp_path: Path,
+    ) -> None:
+        prompt_dir = Path(tmp_path) / "prompt"
+        prompt_dir.mkdir(parents=True, exist_ok=True)
+        prompt_file = prompt_dir / "llm_command_generator_prompt.jinja2"
+        prompt_file.write_text("This is a test prompt")
+
+        config = {
+            "prompt": str(prompt_file),
+            CALM_ENTRY: {STICKY: "handles transactions"},
+        }
+        generator = LLMBasedRouter(config, model_storage, Resource("llmcmdgen"))
+
+        fingerprint_1 = generator.fingerprint_addon(config)
+        fingerprint_2 = generator.fingerprint_addon(config)
+        assert fingerprint_1 is not None
+        assert fingerprint_1 == fingerprint_2
+
+    async def test_llm_based_router_fingerprint_addon_default_values(
+        self,
+        model_storage: ModelStorage,
+    ) -> None:
+        generator = LLMBasedRouter(
+            {CALM_ENTRY: {STICKY: "handles transactions"}},
+            model_storage,
+            Resource("llmcmdgen"),
+        )
+        fingerprint_1 = generator.fingerprint_addon({})
+        fingerprint_2 = generator.fingerprint_addon({})
+        assert fingerprint_1 is not None
+        assert fingerprint_1 == fingerprint_2

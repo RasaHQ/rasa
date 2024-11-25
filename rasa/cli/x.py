@@ -1,25 +1,25 @@
 import argparse
 import asyncio
 import logging
-from pathlib import Path
 import signal
+from pathlib import Path
 from typing import Iterable, List, Optional, Text, Tuple, Union
 
 import aiohttp
 import ruamel.yaml as yaml
 
-from rasa.cli import SubParsersAction
-from rasa.cli.arguments import x as arguments
 import rasa.cli.utils
-from rasa.shared.constants import (
-    DEFAULT_CREDENTIALS_PATH,
-    DEFAULT_ENDPOINTS_PATH,
-)
-from rasa.core.utils import AvailableEndpoints
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.utils.common
 import rasa.utils.io
+from rasa.cli import SubParsersAction
+from rasa.cli.arguments import x as arguments
+from rasa.core.utils import AvailableEndpoints
+from rasa.shared.constants import (
+    DEFAULT_CREDENTIALS_PATH,
+    DEFAULT_ENDPOINTS_PATH,
+)
 from rasa.shared.utils.yaml import read_config_file
 
 logger = logging.getLogger(__name__)
@@ -179,7 +179,7 @@ def run_in_enterprise_connection_mode(args: argparse.Namespace) -> None:
     print_success("Starting a Rasa server in Rasa Enterprise connection mode... 🚀")
 
     credentials_path, endpoints_path = _get_credentials_and_endpoints_paths(args)
-    endpoints = AvailableEndpoints.read_endpoints(endpoints_path)
+    endpoints = AvailableEndpoints.get_instance(endpoints_path)
 
     _rasa_service(args, endpoints, None, credentials_path)
 

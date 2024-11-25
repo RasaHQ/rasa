@@ -1,5 +1,6 @@
+import json
 import logging
-from typing import Any, Dict, Sequence, Text
+from typing import Any, Dict, Sequence
 
 import pytest
 from pytest import LogCaptureFixture
@@ -14,13 +15,16 @@ from rasa.shared.core.trackers import DialogueStateTracker
 
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.conftest import TRACING_TESTS_FIXTURES_DIRECTORY
-from tests.tracing.instrumentation.conftest import MockMultiStepLLMCommandGenerator
+from tests.tracing.instrumentation.conftest import (
+    MockMultiStepLLMCommandGenerator,
+    MockAvailableEndpoints,
+)
 
 TEST_PROMPT_DIRECTORY = str(TRACING_TESTS_FIXTURES_DIRECTORY / "test_prompt.jinja2")
 
 
 @pytest.mark.parametrize(
-    "config, model",
+    "config, expected",
     [
         (
             {
@@ -31,7 +35,9 @@ TEST_PROMPT_DIRECTORY = str(TRACING_TESTS_FIXTURES_DIRECTORY / "test_prompt.jinj
                     "temperature": 0.0,
                 },
             },
-            "gpt-4",
+            {
+                "llm_model": "gpt-4",
+            },
         ),
         (
             {
@@ -40,9 +46,11 @@ TEST_PROMPT_DIRECTORY = str(TRACING_TESTS_FIXTURES_DIRECTORY / "test_prompt.jinj
                     "model": "gpt-3.5-turbo",
                 },
             },
-            "gpt-3.5-turbo",
+            {
+                "llm_model": "gpt-3.5-turbo",
+            },
         ),
-        ({"prompt": TEST_PROMPT_DIRECTORY}, "gpt-4"),
+        ({"prompt": TEST_PROMPT_DIRECTORY}, {"llm_model": "gpt-4"}),
         (
             {
                 "prompt": TEST_PROMPT_DIRECTORY,
@@ -51,7 +59,36 @@ TEST_PROMPT_DIRECTORY = str(TRACING_TESTS_FIXTURES_DIRECTORY / "test_prompt.jinj
                     "temperature": 0.0,
                 },
             },
-            "gpt-4",
+            {
+                "llm_model": "gpt-4",
+            },
+        ),
+        (
+            {
+                "llm": {
+                    "model_group": "llm-model-group",
+                },
+                "flow_retrieval": {
+                    "embeddings": {"model_group": "embedding-model-group"},
+                },
+            },
+            {
+                # llm attributes
+                "llm_type": "None",
+                "llm_model": "None",
+                "llm_model_group_id": "llm-model-group",
+                "llm_temperature": "None",
+                "llm_request_timeout": "None",
+                # embeddings attributes
+                "embeddings_model": "None",
+                "embeddings_type": "None",
+                "embeddings_model_group_id": "embedding-model-group",
+                # deprecated
+                "request_timeout": "None",
+                "embeddings": json.dumps(
+                    MockAvailableEndpoints().model_groups[1], sort_keys=True
+                ),
+            },
         ),
     ],
 )
@@ -61,7 +98,8 @@ async def test_tracing_multi_step_llm_command_generator_default_attrs(
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
     config: Dict[str, Any],
-    model: Text,
+    expected: Dict[str, Any],
+    mock_available_endpoints: MockAvailableEndpoints,
 ) -> None:
     component_class = MockMultiStepLLMCommandGenerator
 
@@ -87,12 +125,29 @@ async def test_tracing_multi_step_llm_command_generator_default_attrs(
 
     expected_attributes = {
         "class_name": component_class.__name__,
-        "llm_model": model,
+        # llm attributes
         "llm_type": "openai",
+        "llm_model_group_id": "None",
         "llm_temperature": "0.0",
+        "llm_request_timeout": "7",
+        # embeddings attributes
+        "embeddings_model": "text-embedding-ada-002",
+        "embeddings_type": "openai",
+        "embeddings_model_group_id": "None",
+        # deprecated
         "request_timeout": "7",
-        "embeddings": "{}",
+        "embeddings": json.dumps(
+            {
+                "provider": "openai",
+                "model": "text-embedding-ada-002",
+                "api_base": None,
+                "api_version": None,
+                "api_type": "openai",
+            },
+            sort_keys=True,
+        ),
     }
+    expected_attributes.update(expected)
     assert captured_span.attributes == expected_attributes
 
 
@@ -118,7 +173,7 @@ async def test_tracing_multi_step_llm_command_generator_azure_attrs(
             "temperature": 0.3,
             "engine": "azure-test",
         },
-        "embeddings": {"deployment": "test"},
+        "flow_retrieval": {"embeddings": {"deployment": "test"}},
     }
 
     mock_multi_step_llm_command_generator = component_class(
@@ -138,21 +193,113 @@ async def test_tracing_multi_step_llm_command_generator_azure_attrs(
 
     expected_attributes = {
         "class_name": component_class.__name__,
-        "llm_model": model,
+        # llm attributes
         "llm_type": "azure",
-        "llm_temperature": "0.3",
-        "request_timeout": "15",
+        "llm_model": model,
         "llm_engine": "azure-test",
-        "embeddings": '{"deployment": "test"}',
+        "llm_model_group_id": "None",
+        "llm_temperature": "0.3",
+        "llm_request_timeout": "15",
+        # embeddings attributes
+        "embeddings_model": "None",
+        "embeddings_type": "azure",
+        "embeddings_model_group_id": "None",
+        # deprecated
+        "request_timeout": "15",
+        "embeddings": json.dumps(
+            {
+                "provider": "azure",
+                "deployment": "test",
+                "model": None,
+                "api_base": None,
+                "api_version": None,
+                "api_type": "azure",
+            },
+            sort_keys=True,
+        ),
     }
     assert captured_span.attributes == expected_attributes
 
 
+@pytest.mark.parametrize(
+    "config, expected",
+    [
+        (
+            {
+                "prompt": TEST_PROMPT_DIRECTORY,
+                "llm": {
+                    "provider": "cohere",
+                    "model": "command",
+                    "request_timeout": 10,
+                    "temperature": 0.7,
+                },
+                "flow_retrieval": {
+                    "embeddings": {"model": "text-embedding-ada-002"},
+                },
+            },
+            {
+                # llm attributes
+                "llm_type": "cohere",
+                "llm_model": "command",
+                "llm_model_group_id": "None",
+                "llm_temperature": "0.7",
+                "llm_request_timeout": "10",
+                # embeddings attributes
+                "embeddings_model": "text-embedding-ada-002",
+                "embeddings_type": "openai",
+                "embeddings_model_group_id": "None",
+                # deprecated
+                "request_timeout": "10",
+                "embeddings": json.dumps(
+                    {
+                        "provider": "openai",
+                        "model": "text-embedding-ada-002",
+                        "api_base": None,
+                        "api_version": None,
+                        "api_type": "openai",
+                    },
+                    sort_keys=True,
+                ),
+            },
+        ),
+        (
+            {
+                "prompt": TEST_PROMPT_DIRECTORY,
+                "llm": {
+                    "model_group": "llm-model-group",
+                },
+                "flow_retrieval": {
+                    "embeddings": {"model_group": "embedding-model-group"},
+                },
+            },
+            {
+                # llm attributes
+                "llm_type": "None",
+                "llm_model": "None",
+                "llm_model_group_id": "llm-model-group",
+                "llm_temperature": "None",
+                "llm_request_timeout": "None",
+                # embeddings attributes
+                "embeddings_model": "None",
+                "embeddings_type": "None",
+                "embeddings_model_group_id": "embedding-model-group",
+                # deprecated
+                "request_timeout": "None",
+                "embeddings": json.dumps(
+                    MockAvailableEndpoints().model_groups[1], sort_keys=True
+                ),
+            },
+        ),
+    ],
+)
 async def test_tracing_multi_step_llm_command_generator_non_default_llm_attrs(
     default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
+    config: Dict[str, Any],
+    expected: Dict[str, Any],
+    mock_available_endpoints: MockAvailableEndpoints,
 ) -> None:
     component_class = MockMultiStepLLMCommandGenerator
 
@@ -161,18 +308,6 @@ async def test_tracing_multi_step_llm_command_generator_non_default_llm_attrs(
         multi_step_llm_command_generator_class=component_class,
     )
 
-    model = "command"
-    config = {
-        "prompt": TEST_PROMPT_DIRECTORY,
-        "llm": {
-            "provider": "cohere",
-            "model": model,
-            "request_timeout": 10,
-            "temperature": 0.7,
-        },
-        "embeddings": {"model": "text-embedding-ada-002"},
-    }
-
     mock_multi_step_llm_command_generator = component_class(
         config=config,
         model_storage=default_model_storage,
@@ -190,12 +325,8 @@ async def test_tracing_multi_step_llm_command_generator_non_default_llm_attrs(
 
     expected_attributes = {
         "class_name": component_class.__name__,
-        "llm_model": model,
-        "llm_type": "cohere",
-        "llm_temperature": "0.7",
-        "request_timeout": "10",
-        "embeddings": '{"model": "text-embedding-ada-002"}',
     }
+    expected_attributes.update(expected)
     assert captured_span.attributes == expected_attributes
 
 
@@ -310,12 +441,29 @@ async def test_tracing_multi_step_llm_command_generator_prompt_tokens(
 
     expected_attributes = {
         "class_name": component_class.__name__,
-        "llm_model": "gpt-4",
-        "llm_type": "openai",
-        "llm_temperature": "0.0",
-        "request_timeout": "7",
-        "embeddings": "{}",
         "len_prompt_tokens": "6",
+        # llm attributes
+        "llm_type": "openai",
+        "llm_model": "gpt-4",
+        "llm_model_group_id": "None",
+        "llm_temperature": "0.0",
+        "llm_request_timeout": "7",
+        # embeddings attributes
+        "embeddings_model": "text-embedding-ada-002",
+        "embeddings_type": "openai",
+        "embeddings_model_group_id": "None",
+        # deprecated
+        "request_timeout": "7",
+        "embeddings": json.dumps(
+            {
+                "provider": "openai",
+                "model": "text-embedding-ada-002",
+                "api_base": None,
+                "api_version": None,
+                "api_type": "openai",
+            },
+            sort_keys=True,
+        ),
     }
     assert captured_span.attributes == expected_attributes
 

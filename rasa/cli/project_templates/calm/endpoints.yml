@@ -48,3 +48,11 @@ action_endpoint:
 # To enable the rephraser, remove the comment symbols in the lines below.
 #nlg:
 #   type: rephrase
+
+model_groups:
+  - id: openai-gpt-4
+    models:
+      - provider: openai
+        model: openai/gpt-4
+        request_timeout: 7
+        max_tokens: 256

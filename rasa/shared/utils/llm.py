@@ -1,3 +1,5 @@
+import json
+from copy import deepcopy
 from functools import wraps
 from typing import (
     Any,
@@ -11,15 +13,19 @@ from typing import (
     Union,
     cast,
 )
-import json
 
 import structlog
 
 import rasa.shared.utils.io
+from rasa.core.utils import AvailableEndpoints
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
     PROVIDER_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
+    MODELS_CONFIG_KEY,
+    ROUTER_CONFIG_KEY,
 )
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.slots import Slot, BooleanSlot, CategoricalSlot
@@ -29,7 +35,7 @@ from rasa.shared.engine.caching import (
 from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
-    ProviderClientValidationError,
+    InvalidConfigException,
 )
 from rasa.shared.providers._configs.azure_openai_client_config import (
     is_azure_openai_config,
@@ -52,10 +58,10 @@ from rasa.shared.providers.mappings import (
     HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
     get_client_config_class_from_provider,
 )
-from rasa.shared.utils.cli import print_error_and_exit
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
+
 
 structlogger = structlog.get_logger()
 
@@ -247,7 +253,75 @@ def sanitize_message_for_prompt(text: Optional[str]) -> str:
 def combine_custom_and_default_config(
     custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
 ) -> Dict[Text, Any]:
-    """Merges the given llm config with the default config.
+    """Merges the given model configuration with the default configuration.
+
+    This method supports both single model configurations and model group configurations
+    (configs that have the `models` key).
+
+    If `custom_config` is a single model configuration, it merges `custom_config` with
+    `default_config`, which is also a single model configuration.
+
+    If `custom_config` is a model group configuration (contains the `models` key), it
+    applies the merging process to each model configuration within the group
+    individually, merging each with the `default_config`.
+
+    Note that `default_config` is always a single model configuration.
+
+    The method ensures that the provider is set and all deprecated keys are resolved,
+    resulting in a valid client configuration.
+
+    Args:
+        custom_config: The custom configuration containing values to overwrite defaults.
+            Can be a single model configuration or a model group configuration with a
+            `models` key.
+        default_config: The default configuration, which is a single model
+            configuration.
+
+    Returns:
+        The merged configuration, either a single model configuration or a model group
+        configuration with merged models.
+    """
+    if custom_config and MODELS_CONFIG_KEY in custom_config:
+        return _combine_model_groups_configs_with_default_config(
+            custom_config, default_config
+        )
+    else:
+        return _combine_single_model_configs(custom_config, default_config)
+
+
+def _combine_model_groups_configs_with_default_config(
+    model_group_config: Dict[str, Any], default_config: Dict[str, Any]
+) -> Dict[Text, Any]:
+    """Merges each model configuration within a model group with the default
+    configuration.
+
+    This method processes model group configurations by applying the merging process to
+    each model configuration within the group individually.
+
+    Args:
+        model_group_config: The model group configuration containing a list of model
+            configurations under the `models` key.
+        default_config: The default configuration for a single model.
+
+    Returns:
+        The merged model group configuration with each model configuration merged
+        with the default configuration.
+    """
+    model_group_config = deepcopy(model_group_config)
+    model_group_config_combined_with_defaults = [
+        _combine_single_model_configs(model_config, default_config)
+        for model_config in model_group_config[MODELS_CONFIG_KEY]
+    ]
+    # Update the custom models config with the combined config.
+    model_group_config[MODELS_CONFIG_KEY] = model_group_config_combined_with_defaults
+    return model_group_config
+
+
+@_cache_combine_custom_and_default_configs
+def _combine_single_model_configs(
+    custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
+) -> Dict[Text, Any]:
+    """Merges the given model config with the default config.
 
     This method guarantees that the provider is set and all the deprecated keys are
     resolved. Hence, produces only a valid client config.
@@ -332,6 +406,105 @@ def llm_factory(
 ) -> LLMClient:
     """Creates an LLM from the given config.
 
+    If the config is using the old syntax, e.g. defining the llm client directly in
+    config.yaml, then standalone client is initialised (no routing).
+
+    If the config uses the using the new, model group syntax, defined in the
+    endpoints.yml, then router client is initialised if there are more than one model
+    within the group.
+
+    Examples:
+    The config below will result in a standalone client:
+    ```
+    {
+       "provider": "openai",
+       "model": "gpt-4",
+       "timeout": 10,
+       "num_retries": 3,
+    }
+    ```
+
+    The config below will also result in a standalone client:
+    ```
+    {
+        "id": "model-group-id",
+        "models": [
+            {"provider": "openai", "model": "gpt-4", "api_key": "test"},
+        ],
+    }
+    ```
+
+    The config below will result in a router client:
+    ```
+    {
+        "id": "test-model-group-id",
+        "models": [
+            {"provider": "openai", "model": "gpt-4", "api_key": "test"},
+            {
+                "provider": "azure",
+                "deployment": "test-deployment",
+                "api_key": "test",
+                "api_base": "test-api-base",
+            },
+        ],
+        "router": {"routing_strategy": "test"},
+    }
+    ```
+
+    Args:
+        custom_config: The custom config  containing values to overwrite defaults.
+        default_config: The default config.
+
+    Returns:
+        Instantiated client based on the configuration.
+    """
+    if custom_config:
+        if ROUTER_CONFIG_KEY in custom_config:
+            return llm_router_factory(custom_config, default_config)
+        if MODELS_CONFIG_KEY in custom_config:
+            return llm_client_factory(
+                custom_config[MODELS_CONFIG_KEY][0], default_config
+            )
+    return llm_client_factory(custom_config, default_config)
+
+
+def llm_router_factory(
+    router_config: Dict[str, Any], default_model_config: Dict[str, Any], **kwargs: Any
+) -> LLMClient:
+    """Creates an LLM Router using the provided configurations.
+
+    This function initializes an LLM Router based on the given router configuration,
+    which includes multiple model configurations. For each model specified in the router
+    configuration, any missing parameters are supplemented using the default model
+    configuration.
+
+    Args:
+        router_config: The full router configuration containing multiple model
+            configurations. Each model's configuration can override parameters from the
+            default model configuration.
+        default_model_config: The default configuration parameters for a single model.
+            These defaults are used to fill in any missing parameters in each model's
+            configuration within the router.
+
+    Returns:
+        An instance that conforms to both `LLMClient` and `RouterClient` protocols
+        representing the configured LLM Router.
+    """
+    from rasa.shared.providers.llm.litellm_router_llm_client import (
+        LiteLLMRouterLLMClient,
+    )
+
+    combined_config = _combine_model_groups_configs_with_default_config(
+        router_config, default_model_config
+    )
+    return LiteLLMRouterLLMClient.from_config(combined_config)
+
+
+def llm_client_factory(
+    custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
+) -> LLMClient:
+    """Creates an LLM from the given config.
+
     Args:
         custom_config: The custom config  containing values to overwrite defaults
         default_config: The default config.
@@ -352,6 +525,110 @@ def llm_factory(
 
 @_cache_factory
 def embedder_factory(
+    custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
+) -> EmbeddingClient:
+    """Creates an embedding client from the given config.
+
+    If the config is using the old syntax, e.g. defining the llm client directly in
+    config.yaml, then standalone client is initialised (no routing).
+
+    If the config uses the using the new, model group syntax, defined in the
+    endpoints.yml, then router client is initialised if there are more than one model
+    within the group and the router is defined.
+
+    Examples:
+    The config below will result in a standalone client:
+    ```
+    {
+       "provider": "openai",
+       "model": "text-embedding-3-small",
+       "timeout": 10,
+       "num_retries": 3,
+    }
+    ```
+
+    The config below will also result in a standalone client:
+    ```
+    {
+        "id": "model-group-id",
+        "models": [
+            {
+                "provider": "openai",
+                "model": "test-embedding-3-small",
+                "api_key": "test"
+            },
+        ],
+    }
+    ```
+
+    The config below will result in a router client:
+    ```
+    {
+        "id": "test-model-group-id",
+        "models": [
+            {"provider": "openai", "model": "gpt-4", "api_key": "test"},
+            {
+                "provider": "azure",
+                "deployment": "test-deployment",
+                "api_key": "test",
+                "api_base": "test-api-base",
+            },
+        ],
+        "router": {"routing_strategy": "test"},
+    }
+    ```
+
+    Args:
+        custom_config: The custom config  containing values to overwrite defaults.
+        default_config: The default config.
+
+    Returns:
+        Instantiated client based on the configuration.
+    """
+    if custom_config:
+        if ROUTER_CONFIG_KEY in custom_config:
+            return embedder_router_factory(custom_config, default_config)
+        if MODELS_CONFIG_KEY in custom_config:
+            return embedder_client_factory(
+                custom_config[MODELS_CONFIG_KEY][0], default_config
+            )
+    return embedder_client_factory(custom_config, default_config)
+
+
+def embedder_router_factory(
+    router_config: Dict[str, Any], default_model_config: Dict[str, Any], **kwargs: Any
+) -> EmbeddingClient:
+    """Creates an Embedder Router using the provided configurations.
+
+    This function initializes an Embedder Router based on the given router
+    configuration, which includes multiple model configurations. For each model
+    specified in the router configuration, any missing parameters are supplemented using
+    the default model configuration.
+
+    Args:
+        router_config: The full router configuration containing multiple model
+            configurations. Each model's configuration can override parameters from the
+            default model configuration.
+        default_model_config: The default configuration parameters for a single model.
+            These defaults are used to fill in any missing parameters in each model's
+            configuration within the router.
+
+    Returns:
+        An instance that conforms to both `EmbeddingClient` and `RouterClient` protocols
+        representing the configured Embedding Router.
+    """
+    from rasa.shared.providers.embedding.litellm_router_embedding_client import (
+        LiteLLMRouterEmbeddingClient,
+    )
+
+    combined_config = _combine_model_groups_configs_with_default_config(
+        router_config, default_model_config
+    )
+
+    return LiteLLMRouterEmbeddingClient.from_config(combined_config)
+
+
+def embedder_client_factory(
     custom_config: Optional[Dict[str, Any]], default_config: Dict[str, Any]
 ) -> EmbeddingClient:
     """Creates an Embedder from the given config.
@@ -408,50 +685,73 @@ def allowed_values_for_slot(slot: Slot) -> Union[str, None]:
         return None
 
 
-def try_instantiate_llm_client(
-    custom_llm_config: Optional[Dict],
-    default_llm_config: Optional[Dict],
-    log_source_function: str,
-    log_source_component: str,
-) -> LLMClient:
-    """Validate llm configuration."""
-    try:
-        return llm_factory(custom_llm_config, default_llm_config)
-    except (ProviderClientValidationError, ValueError) as e:
-        structlogger.error(
-            f"{log_source_function}.llm_instantiation_failed",
-            message="Unable to instantiate LLM client.",
-            error=e,
-        )
-        print_error_and_exit(
-            f"Unable to create the LLM client for component - {log_source_component}. "
-            f"Please make sure you specified the required environment variables "
-            f"and configuration keys. "
-            f"Error: {e}"
+def resolve_model_client_config(
+    model_config: Optional[Dict[str, Any]], component_name: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """Resolve the model group in the model config.
+
+    If the config is pointing to a model group, the corresponding model group
+    of the endpoints.yml is returned.
+    If the config is using the old syntax, e.g. defining the llm
+    directly in config.yml, the config is returned as is.
+
+    Args:
+        model_config: The model config to be resolved.
+        component_name: The name of the component.
+
+    Returns:
+        The resolved llm config.
+    """
+
+    def _raise_invalid_config_exception(reason: str) -> None:
+        """Helper function to raise InvalidConfigException with a formatted message."""
+        if component_name:
+            message = (
+                f"Could not resolve model group '{model_group_id}'"
+                f" for component '{component_name}'."
+            )
+        else:
+            message = f"Could not resolve model group '{model_group_id}'."
+        message += f" {reason}"
+        raise InvalidConfigException(message)
+
+    if model_config is None:
+        return None
+
+    if MODEL_GROUP_CONFIG_KEY not in model_config:
+        return model_config
+
+    model_group_id = model_config.get(MODEL_GROUP_CONFIG_KEY)
+
+    endpoints = AvailableEndpoints.get_instance()
+    if endpoints.model_groups is None:
+        _raise_invalid_config_exception(
+            reason=(
+                "No model group with that id found in endpoints.yml. "
+                "Please make sure to define the model group."
+            )
         )
 
+    copy_model_groups = deepcopy(endpoints.model_groups)
+    model_group = [
+        model_group
+        for model_group in copy_model_groups  # type: ignore[union-attr]
+        if model_group.get(MODEL_GROUP_ID_CONFIG_KEY) == model_group_id
+    ]
 
-def llm_api_health_check(
-    llm_client: LLMClient, log_source_function: str, log_source_component: str
-) -> None:
-    """Perform a health check on the LLM API."""
-    structlogger.info(
-        f"{log_source_function}.llm_api_call",
-        event_info=(
-            f"Performing a health check on the LLM API for the component - "
-            f"{log_source_component}."
-        ),
-        config=llm_client.config,
-    )
-    try:
-        llm_client.completion("hello")
-    except Exception as e:
-        structlogger.error(
-            f"{log_source_function}.llm_api_call_failed",
-            event_info="call to the LLM API failed.",
-            error=e,
+    if len(model_group) == 0:
+        _raise_invalid_config_exception(
+            reason=(
+                "No model group with that id found in endpoints.yml. "
+                "Please make sure to define the model group."
+            )
         )
-        print_error_and_exit(
-            f"Call to the LLM API failed for component - {log_source_component}. "
-            f"Error: {e}"
+    if len(model_group) > 1:
+        _raise_invalid_config_exception(
+            reason=(
+                "Multiple model groups with that id found in endpoints.yml. "
+                "Please make sure to define the model group just once."
+            )
         )
+
+    return model_group[0]
