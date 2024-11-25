@@ -2642,7 +2642,8 @@ async def test_run_assertions_with_duplicate_user_messages_reusing_metadata(
     # Use the test case with duplicate messages
     test_case = test_case_with_duplicate_messages
 
-    # Add test steps for the additional "Sure" confirmations corresponding to the new events
+    # Add test steps for the additional "Sure" confirmations
+    # corresponding to the new events
     for turn_idx in [1, 2]:
         test_case.steps.extend(
             [
@@ -2657,7 +2658,8 @@ async def test_run_assertions_with_duplicate_user_messages_reusing_metadata(
                                     {"name": "amount", "value": 100},
                                 ],
                                 "bot_uttered": {
-                                    "text_matches": "Please confirm if you'd like to proceed with the transfer?"
+                                    "text_matches": "Please confirm if you'd like "
+                                                    "to proceed with the transfer?"
                                 },
                             }
                         ],
