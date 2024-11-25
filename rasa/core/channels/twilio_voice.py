@@ -13,8 +13,9 @@ from rasa.core.channels.channel import (
     CollectingOutputChannel,
     UserMessage,
 )
-
-
+from requests.auth import HTTPBasicAuth
+import asyncio
+call_sids=set()
 class TwilioVoiceInput(InputChannel):
     """Input channel for Twilio Voice."""
 
@@ -114,6 +115,9 @@ class TwilioVoiceInput(InputChannel):
             credentials.get("speech_timeout", "5"),
             credentials.get("speech_model", "default"),
             credentials.get("enhanced", "false"),
+            credentials.get("record", "false"),
+            credentials.get("account_sid", ""),
+            credentials.get("auth_token", ""),
         )
 
     def __init__(
@@ -121,6 +125,9 @@ class TwilioVoiceInput(InputChannel):
         initial_prompt: Optional[Text],
         reprompt_fallback_phrase: Optional[Text],
         assistant_voice: Optional[Text],
+        record: Optional[Text],
+        account_sid: Optional[Text],
+        auth_token: Optional[Text],        
         speech_timeout: Text = "5",
         speech_model: Text = "default",
         enhanced: Text = "false",
@@ -141,7 +148,9 @@ class TwilioVoiceInput(InputChannel):
         self.speech_timeout = speech_timeout
         self.speech_model = speech_model
         self.enhanced = enhanced
-
+        self.record = record
+        self.account_sid = account_sid
+        self.auth_token = auth_token
         self._validate_configuration()
 
     def _validate_configuration(self) -> None:
@@ -169,6 +178,8 @@ class TwilioVoiceInput(InputChannel):
             and self.speech_model.lower() != "phone_call"
         ):
             self._raise_invalid_enhanced_speech_model_exception()
+        if(self.record.lower=="true" and len(self.account_sid)<1 or len(self.auth_token)<1):
+            self._raise_invalid_record_exception()
 
         if (
             self.speech_model.lower() != "numbers_and_commands"
@@ -222,6 +233,12 @@ class TwilioVoiceInput(InputChannel):
             f"If you set enhanced to 'true' then speech_model must be 'phone_call'. "
             f"Current speech_model is: {self.speech_model}."
         )
+    def _raise_invalid_record_exception(self) -> None:
+        """Raises error if record is used without an account_sid and auth_token."""
+        raise InvalidConfigException(
+            f"If you set record to 'true' then you must configure an account_sid and auth_token."
+            f"Current record is: {self.record}."
+        )
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
@@ -233,13 +250,21 @@ class TwilioVoiceInput(InputChannel):
         async def health(request: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
+        @twilio_voice_webhook.route("/recording", methods=["GET","POST"])
+        async def health(request: Request) -> HTTPResponse:
+            return response.json({"status": "ok","recording":"ok"})
+
         @twilio_voice_webhook.route("/webhook", methods=["POST"])
         async def receive(request: Request) -> HTTPResponse:
             sender_id = request.form.get("From")
             text = request.form.get("SpeechResult")
             input_channel = self.name()
             call_status = request.form.get("CallStatus")
-
+            call_sid=request.form.get('CallSid')
+            if call_sid not in call_sids:
+                call_sids.add(call_sid)
+                loop = asyncio.get_event_loop()
+                t1 = loop.create_task(self._twilio_record(call_sid))
             collector = TwilioVoiceCollectingOutputChannel()
 
             # Provide an initial greeting to answer the user's call.
@@ -307,6 +332,15 @@ class TwilioVoiceInput(InputChannel):
                 voice_response.pause(length=1)
 
         return voice_response
+    
+    async def _twilio_record(self,call_sid):
+        if not self.record:
+            return
+        url= f"https://api.twilio.com/2010-04-01/Accounts/{self.account_sid}/Calls/{call_sid}/Recordings.json"
+        obj={}
+        await asyncio.sleep(1)
+        response=requests.post(url, json = obj,auth=HTTPBasicAuth(self.account_sid,self.auth_token))
+    
 
 
 class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
