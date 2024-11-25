@@ -1,4 +1,3 @@
-import os
 from typing import Any, Dict, Optional, Text
 
 import structlog
@@ -8,7 +7,6 @@ from rasa import telemetry
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.core.nlg.summarize import summarize_conversation
 from rasa.shared.constants import (
-    LLM_API_HEALTH_CHECK_ENV_VAR,
     LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
@@ -26,11 +24,10 @@ from rasa.shared.utils.llm import (
     USER,
     combine_custom_and_default_config,
     get_prompt_template,
-    llm_api_health_check,
     llm_factory,
-    try_instantiate_llm_client,
     resolve_model_client_config,
 )
+from rasa.shared.utils.health_check import perform_training_time_llm_health_check
 from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
 )
@@ -110,18 +107,12 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
             ContextualResponseRephraser.__name__,
         )
 
-        llm_client = try_instantiate_llm_client(
+        perform_training_time_llm_health_check(
             self.llm_config,
             DEFAULT_LLM_CONFIG,
             "contextual_response_rephraser.init",
             ContextualResponseRephraser.__name__,
         )
-        if os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, "true").lower() == "true":
-            llm_api_health_check(
-                llm_client,
-                "contextual_response_rephraser.init",
-                ContextualResponseRephraser.__name__,
-            )
 
     def _last_message_if_human(self, tracker: DialogueStateTracker) -> Optional[str]:
         """Returns the latest message from the tracker.

@@ -22,6 +22,8 @@ from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
     USER_INPUT_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
+    DEFAULT_LLM_CONFIG,
+    TRAINED_MODEL_NAME_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
@@ -52,6 +54,7 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     resolve_model_client_config,
 )
+from rasa.shared.utils.health_check import perform_inference_time_llm_health_check
 from rasa.utils.beta import ensure_beta_feature_is_enabled, BetaNotEnabledException
 from rasa.utils.log_utils import log_llm
 
@@ -138,8 +141,6 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         prompt_template = cls.load_prompt_template_from_model_storage(
             model_storage, resource, COMMAND_PROMPT_FILE_NAME
         )
-        # TODO: needed for health check
-        cls.load_config_from_model_storage(model_storage, resource)
 
         # init base command generator
         command_generator = cls(config, model_storage, resource, prompt_template)
@@ -148,6 +149,21 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
             command_generator.flow_retrieval = cls.load_flow_retrival(
                 command_generator.config, model_storage, resource
             )
+
+        persisted_config = cls.load_config_from_model_storage(model_storage, resource)
+        train_model_name = (
+            persisted_config.get(TRAINED_MODEL_NAME_CONFIG_KEY, None)
+            if persisted_config
+            else None
+        )
+        perform_inference_time_llm_health_check(
+            command_generator.config.get(LLM_CONFIG_KEY),
+            DEFAULT_LLM_CONFIG,
+            train_model_name,
+            "single_step_llm_command_generator.load",
+            SingleStepLLMCommandGenerator.__name__,
+        )
+
         return command_generator
 
     def persist(self) -> None:

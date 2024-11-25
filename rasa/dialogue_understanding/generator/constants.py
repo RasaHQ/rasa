@@ -18,6 +18,8 @@ DEFAULT_LLM_CONFIG = {
 }
 
 LLM_CONFIG_KEY = "llm"
+TRAINED_MODEL_NAME_CONFIG_KEY = "trained_llm_model_name"
+TRAINED_EMBEDDINGS_CONFIG_KEY = "trained_embeddings_model_name"
 USER_INPUT_CONFIG_KEY = "user_input"
 
 FLOW_RETRIEVAL_KEY = "flow_retrieval"

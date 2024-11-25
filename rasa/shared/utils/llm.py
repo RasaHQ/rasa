@@ -35,7 +35,6 @@ from rasa.shared.engine.caching import (
 from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
-    ProviderClientValidationError,
     InvalidConfigException,
 )
 from rasa.shared.providers._configs.azure_openai_client_config import (
@@ -59,10 +58,10 @@ from rasa.shared.providers.mappings import (
     HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
     get_client_config_class_from_provider,
 )
-from rasa.shared.utils.cli import print_error_and_exit
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
+
 
 structlogger = structlog.get_logger()
 
@@ -347,7 +346,6 @@ def llm_factory(
     within the group.
 
     Examples:
-
     The config below will result in a standalone client:
     ```
     {
@@ -479,7 +477,6 @@ def embedder_factory(
     within the group and the router is defined.
 
     Examples:
-
     The config below will result in a standalone client:
     ```
     {
@@ -633,55 +630,6 @@ def allowed_values_for_slot(slot: Slot) -> Union[str, None]:
         return str([v for v in slot.values if v != "__other__"])
     else:
         return None
-
-
-def try_instantiate_llm_client(
-    custom_llm_config: Optional[Dict],
-    default_llm_config: Optional[Dict],
-    log_source_function: str,
-    log_source_component: str,
-) -> LLMClient:
-    """Validate llm configuration."""
-    try:
-        return llm_factory(custom_llm_config, default_llm_config)
-    except (ProviderClientValidationError, ValueError) as e:
-        structlogger.error(
-            f"{log_source_function}.llm_instantiation_failed",
-            message="Unable to instantiate LLM client.",
-            error=e,
-        )
-        print_error_and_exit(
-            f"Unable to create the LLM client for component - {log_source_component}. "
-            f"Please make sure you specified the required environment variables "
-            f"and configuration keys. "
-            f"Error: {e}"
-        )
-
-
-def llm_api_health_check(
-    llm_client: LLMClient, log_source_function: str, log_source_component: str
-) -> None:
-    """Perform a health check on the LLM API."""
-    structlogger.info(
-        f"{log_source_function}.llm_api_call",
-        event_info=(
-            f"Performing a health check on the LLM API for the component - "
-            f"{log_source_component}."
-        ),
-        config=llm_client.config,
-    )
-    try:
-        llm_client.completion("hello")
-    except Exception as e:
-        structlogger.error(
-            f"{log_source_function}.llm_api_call_failed",
-            event_info="call to the LLM API failed.",
-            error=e,
-        )
-        print_error_and_exit(
-            f"Call to the LLM API failed for component - {log_source_component}. "
-            f"Error: {e}"
-        )
 
 
 def resolve_model_client_config(

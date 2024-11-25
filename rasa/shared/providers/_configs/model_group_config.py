@@ -16,7 +16,6 @@ from rasa.shared.constants import (
     EXTRA_PARAMETERS_KEY,
 )
 from rasa.shared.providers.mappings import get_client_config_class_from_provider
-from rasa.shared.utils.llm import get_provider_from_config
 
 structlogger = structlog.get_logger()
 
@@ -55,6 +54,7 @@ class ModelConfig:
         Returns:
             ModelConfig
         """
+        from rasa.shared.utils.llm import get_provider_from_config
 
         # Get the provider from config, this also inferring the provider from
         # deprecated configurations
@@ -142,7 +142,6 @@ class ModelGroupConfig:
         Returns:
             ModelGroupConfig
         """
-
         if MODELS_CONFIG_KEY not in config:
             raise ValueError(
                 f"Missing required key '{MODELS_CONFIG_KEY}' in "

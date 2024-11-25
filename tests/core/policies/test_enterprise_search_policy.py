@@ -1,12 +1,13 @@
 import textwrap
 from pathlib import Path
 from typing import List, Optional, Any, Dict
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, patch, ANY
+from _pytest.capture import CaptureFixture
+from pytest import MonkeyPatch
 
 import pytest
 from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.llms.fake import FakeListLLM
-from pytest import MonkeyPatch
 
 import rasa.shared.utils.io
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
@@ -23,8 +24,13 @@ from rasa.core.policies.enterprise_search_policy import (
     EnterpriseSearchPolicy,
     VectorStoreConfigurationError,
     ENTERPRISE_SEARCH_CONFIG_FILE_NAME,
+    ENTERPRISE_SEARCH_PROMPT_FILE_NAME,
 )
 from rasa.core.policies.policy import PolicyPrediction
+from rasa.dialogue_understanding.generator.constants import (
+    TRAINED_MODEL_NAME_CONFIG_KEY,
+    TRAINED_EMBEDDINGS_CONFIG_KEY,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     ChitChatStackFrame,
@@ -41,6 +47,7 @@ from rasa.shared.constants import (
     ROUTE_TO_CALM_SLOT,
     EMBEDDINGS_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
+    MODEL_GROUP_ID_KEY,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, BotUttered
@@ -1332,6 +1339,551 @@ def test_enterprise_search_policy_persist_config(
         "id": "model_group_id",
         "models": [{"provider": "openai", "model": "gpt-4"}],
     }
+
+
+def test_perform_training_time_llm_health_check_and_persist_model_name(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    monkeypatch.setenv("LLM_API_HEALTH_CHECK", "true")
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+    }
+    enterprise_search_policy = EnterpriseSearchPolicy(
+        config, default_model_storage, resource, default_execution_context
+    )
+
+    mock_send_test_llm_api_request = Mock(return_value="abc-123")
+    mock_send_embeddings_llm_api_request = Mock(return_value="embeddings-123")
+    with (
+        patch(
+            "rasa.shared.utils.health_check.try_instantiate_llm_client",
+            Mock(),
+        ),
+        patch(
+            "rasa.shared.utils.health_check.try_instantiate_embedder",
+            Mock(),
+        ),
+        patch(
+            "rasa.core.policies.enterprise_search_policy.EnterpriseSearchPolicy._create_plain_embedder",
+            Mock(return_value=FakeEmbeddings(size=100)),
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            mock_send_test_llm_api_request,
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            mock_send_embeddings_llm_api_request,
+        ),
+        patch(
+            "rasa.core.policies.enterprise_search_policy.FAISS_Store",
+            MagicMock(),
+        ),
+    ):
+        enterprise_search_policy.train([], Domain.empty(), None, None, None)
+
+    assert enterprise_search_policy.config[TRAINED_MODEL_NAME_CONFIG_KEY] == "abc-123"
+    assert (
+        enterprise_search_policy.config[TRAINED_EMBEDDINGS_CONFIG_KEY]
+        == "embeddings-123"
+    )
+    mock_send_test_llm_api_request.assert_called_once_with(
+        ANY,
+        "enterprise_search_policy.train",
+        enterprise_search_policy.__class__.__name__,
+    )
+    mock_send_embeddings_llm_api_request.assert_called_once_with(
+        ANY,
+        "enterprise_search_policy.train",
+        enterprise_search_policy.__class__.__name__,
+    )
+
+    # Check that the persisted config is equal to our config
+    with default_model_storage.read_from(resource) as path:
+        persisted_config = rasa.shared.utils.io.read_json_file(
+            path / ENTERPRISE_SEARCH_CONFIG_FILE_NAME
+        )
+
+    assert persisted_config[TRAINED_MODEL_NAME_CONFIG_KEY] == "abc-123"
+    assert persisted_config[TRAINED_EMBEDDINGS_CONFIG_KEY] == "embeddings-123"
+
+
+def test_show_warning_llm_health_check_disabled_train(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    monkeypatch.setenv("LLM_API_HEALTH_CHECK", "false")
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+    }
+    enterprise_search_policy = EnterpriseSearchPolicy(
+        config, default_model_storage, resource, default_execution_context
+    )
+
+    mock_send_test_llm_api_request = Mock()
+    mock_send_test_embeddings_api_request = Mock()
+    with (
+        patch(
+            "rasa.shared.utils.health_check.try_instantiate_llm_client",
+            Mock(),
+        ),
+        patch(
+            "rasa.core.policies.enterprise_search_policy.EnterpriseSearchPolicy._create_plain_embedder",
+            Mock(return_value=FakeEmbeddings(size=100)),
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            mock_send_test_llm_api_request,
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            mock_send_test_embeddings_api_request,
+        ),
+        patch(
+            "rasa.core.policies.enterprise_search_policy.FAISS_Store",
+            MagicMock(),
+        ),
+    ):
+        enterprise_search_policy.train([], Domain.empty(), None, None, None)
+
+    mock_send_test_llm_api_request.assert_not_called()
+    mock_send_test_embeddings_api_request.assert_not_called()
+
+    captured = capsys.readouterr()
+    expected_warning = (
+        "The LLM_API_HEALTH_CHECK environment variable is set "
+        "to false, which will disable model consistency check. "
+        "It is recommended to set this variable to true in production "
+        "environments."
+    )
+    assert expected_warning in captured.out
+
+
+def test_perform_inference_time_llm_health_check(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        "vector_store": {"type": "faiss"},
+    }
+
+    with default_model_storage.write_to(resource) as path:
+        rasa.shared.utils.io.write_text_file(
+            "This is a test prompt", path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
+        )
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            path / ENTERPRISE_SEARCH_CONFIG_FILE_NAME,
+            {
+                TRAINED_MODEL_NAME_CONFIG_KEY: "abc-123",
+                TRAINED_EMBEDDINGS_CONFIG_KEY: "embeddings-123",
+            },
+        )
+    monkeypatch.setenv("LLM_API_HEALTH_CHECK", "true")
+
+    mock_send_test_llm_api_request = Mock(return_value="abc-123")
+    mock_send_test_embeddings_api_request = Mock(return_value="embeddings-123")
+    with (
+        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
+        patch(
+            "rasa.shared.utils.health_check.try_instantiate_embedder",
+            Mock(),
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            mock_send_test_llm_api_request,
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            mock_send_test_embeddings_api_request,
+        ),
+        patch(
+            "rasa.core.policies.enterprise_search_policy.EnterpriseSearchPolicy._create_plain_embedder",
+            Mock(return_value=FakeEmbeddings(size=100)),
+        ),
+        patch(
+            "rasa.core.policies.enterprise_search_policy.FAISS_Store",
+            MagicMock(),
+        ),
+    ):
+        EnterpriseSearchPolicy.load(
+            config, default_model_storage, resource, default_execution_context
+        )
+
+    mock_send_test_llm_api_request.assert_called_once_with(
+        ANY,
+        "enterprise_search_policy.load",
+        EnterpriseSearchPolicy.__name__,
+    )
+    mock_send_test_embeddings_api_request.assert_called_once_with(
+        ANY,
+        "enterprise_search_policy.load",
+        EnterpriseSearchPolicy.__name__,
+    )
+
+    captured = capsys.readouterr()
+    assert "is not the same as the LLM used for inference" not in captured.out
+
+
+def test_report_error_on_train_inference_model_mismatch(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        "vector_store": {"type": "faiss"},
+    }
+
+    with default_model_storage.write_to(resource) as path:
+        rasa.shared.utils.io.write_text_file(
+            "This is a test prompt", path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
+        )
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            path / ENTERPRISE_SEARCH_CONFIG_FILE_NAME,
+            {TRAINED_MODEL_NAME_CONFIG_KEY: "abc-123"},
+        )
+    monkeypatch.setenv("LLM_API_HEALTH_CHECK", "true")
+
+    mock_send_test_llm_api_request = Mock(return_value="def-567")
+    with (
+        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
+        patch(
+            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            mock_send_test_llm_api_request,
+        ),
+        patch(
+            "rasa.core.policies.enterprise_search_policy.EnterpriseSearchPolicy._create_plain_embedder",
+            Mock(return_value=FakeEmbeddings(size=100)),
+        ),
+        patch(
+            "rasa.core.policies.enterprise_search_policy.FAISS_Store",
+            MagicMock(),
+        ),
+    ):
+        with pytest.raises(SystemExit):
+            EnterpriseSearchPolicy.load(
+                config, default_model_storage, resource, default_execution_context
+            )
+
+        expected_error = (
+            "The LLM used to train the EnterpriseSearchPolicy (abc-123) is "
+            "not the same as the LLM used for inference (def-567). "
+            "Please verify your configuration."
+        )
+        captured = capsys.readouterr()
+        assert expected_error in captured.out
+
+
+def test_report_error_on_train_inference_embedings_mismatch(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        "vector_store": {"type": "faiss"},
+    }
+
+    with default_model_storage.write_to(resource) as path:
+        rasa.shared.utils.io.write_text_file(
+            "This is a test prompt", path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
+        )
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            path / ENTERPRISE_SEARCH_CONFIG_FILE_NAME,
+            {
+                TRAINED_MODEL_NAME_CONFIG_KEY: "abc-123",
+                TRAINED_EMBEDDINGS_CONFIG_KEY: "embeddings-123",
+            },
+        )
+    monkeypatch.setenv("LLM_API_HEALTH_CHECK", "true")
+
+    mock_send_test_llm_api_request = Mock(return_value="abc-123")
+    mock_send_test_embeddings_api_request = Mock(return_value="def-567")
+    with (
+        patch("rasa.shared.utils.health_check.try_instantiate_embedder", Mock()),
+        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
+        patch(
+            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            mock_send_test_llm_api_request,
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            mock_send_test_embeddings_api_request,
+        ),
+        patch(
+            "rasa.core.policies.enterprise_search_policy.EnterpriseSearchPolicy._create_plain_embedder",
+            Mock(return_value=FakeEmbeddings(size=100)),
+        ),
+        patch(
+            "rasa.core.policies.enterprise_search_policy.FAISS_Store",
+            MagicMock(),
+        ),
+    ):
+        with pytest.raises(SystemExit):
+            EnterpriseSearchPolicy.load(
+                config, default_model_storage, resource, default_execution_context
+            )
+
+        expected_error = (
+            "The Embeddings model used to train the EnterpriseSearchPolicy "
+            "(embeddings-123) is not the same as the model used for inference "
+            "(def-567). Please verify your configuration."
+        )
+        captured = capsys.readouterr()
+        assert expected_error in captured.out
+
+
+def test_show_warning_llm_health_check_disabled_inference(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        "vector_store": {"type": "faiss"},
+    }
+
+    with default_model_storage.write_to(resource) as path:
+        rasa.shared.utils.io.write_text_file(
+            "This is a test prompt", path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
+        )
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            path / ENTERPRISE_SEARCH_CONFIG_FILE_NAME,
+            {TRAINED_MODEL_NAME_CONFIG_KEY: "abc-123"},
+        )
+    monkeypatch.setenv("LLM_API_HEALTH_CHECK", "false")
+
+    mock_send_test_llm_api_request = Mock(return_value="def-567")
+    mock_send_test_embeddings_api_request = Mock(return_value="def-567")
+    with (
+        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
+        patch(
+            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            mock_send_test_llm_api_request,
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            mock_send_test_embeddings_api_request,
+        ),
+        patch(
+            "rasa.core.policies.enterprise_search_policy.EnterpriseSearchPolicy._create_plain_embedder",
+            Mock(return_value=FakeEmbeddings(size=100)),
+        ),
+        patch(
+            "rasa.core.policies.enterprise_search_policy.FAISS_Store",
+            MagicMock(),
+        ),
+    ):
+        EnterpriseSearchPolicy.load(
+            config, default_model_storage, resource, default_execution_context
+        )
+
+    mock_send_test_llm_api_request.assert_not_called()
+    mock_send_test_embeddings_api_request.assert_not_called()
+
+    captured = capsys.readouterr()
+    expected_warning = (
+        "The LLM_API_HEALTH_CHECK environment variable is set "
+        "to false, which will disable model consistency check. "
+        "It is recommended to set this variable to true in production "
+        "environments."
+    )
+    assert expected_warning in captured.out
+
+
+def test_show_trained_with_health_check_disabled(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        "vector_store": {"type": "faiss"},
+    }
+
+    with default_model_storage.write_to(resource) as path:
+        rasa.shared.utils.io.write_text_file(
+            "This is a test prompt", path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
+        )
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            path / ENTERPRISE_SEARCH_CONFIG_FILE_NAME, {}
+        )
+    monkeypatch.setenv("LLM_API_HEALTH_CHECK", "true")
+
+    mock_send_test_llm_api_request = Mock(return_value="def-567")
+    with (
+        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
+        patch(
+            "rasa.shared.utils.health_check.try_instantiate_embedder",
+            Mock(),
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            mock_send_test_llm_api_request,
+        ),
+        patch(
+            "rasa.core.policies.enterprise_search_policy.EnterpriseSearchPolicy._create_plain_embedder",
+            Mock(return_value=FakeEmbeddings(size=100)),
+        ),
+        patch(
+            "rasa.core.policies.enterprise_search_policy.FAISS_Store",
+            MagicMock(),
+        ),
+    ):
+        EnterpriseSearchPolicy.load(
+            config, default_model_storage, resource, default_execution_context
+        )
+
+    mock_send_test_llm_api_request.assert_called_once_with(
+        ANY,
+        "enterprise_search_policy.load",
+        EnterpriseSearchPolicy.__name__,
+    )
+
+    captured = capsys.readouterr()
+    expected_warning = (
+        "The model was trained with LLM_API_HEALTH_CHECK "
+        "environment variable set to false, so the model "
+        "consistency check is not available."
+    )
+    assert expected_warning in captured.out
 
 
 @pytest.mark.parametrize(

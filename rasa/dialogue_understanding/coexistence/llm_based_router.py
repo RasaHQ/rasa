@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import importlib
-import os
 from typing import Any, Dict, List, Optional
 
 import structlog
@@ -16,13 +15,15 @@ from rasa.dialogue_understanding.coexistence.constants import (
 )
 from rasa.dialogue_understanding.commands import Command, SetSlotCommand
 from rasa.dialogue_understanding.commands.noop_command import NoopCommand
-from rasa.dialogue_understanding.generator.constants import LLM_CONFIG_KEY
+from rasa.dialogue_understanding.generator.constants import (
+    LLM_CONFIG_KEY,
+    TRAINED_MODEL_NAME_CONFIG_KEY,
+)
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
-    LLM_API_HEALTH_CHECK_ENV_VAR,
     ROUTE_TO_CALM_SLOT,
     PROMPT_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
@@ -39,10 +40,12 @@ from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
     get_prompt_template,
-    llm_api_health_check,
     llm_factory,
-    try_instantiate_llm_client,
     resolve_model_client_config,
+)
+from rasa.shared.utils.health_check import (
+    perform_training_time_llm_health_check,
+    perform_inference_time_llm_health_check,
 )
 from rasa.utils.log_utils import log_llm
 
@@ -142,17 +145,14 @@ class LLMBasedRouter(GraphComponent):
 
     def train(self, training_data: TrainingData) -> Resource:
         """Train the intent classifier on a data set."""
-        # Validate llm configuration
-        llm_client = try_instantiate_llm_client(
-            self.config.get(LLM_CONFIG_KEY),
-            DEFAULT_LLM_CONFIG,
-            "llm_based_router.train",
-            LLMBasedRouter.__name__,
-        )
-        if os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, "true").lower() == "true":
-            llm_api_health_check(
-                llm_client, "llm_based_router.train", LLMBasedRouter.__name__
+        self.config[TRAINED_MODEL_NAME_CONFIG_KEY] = (
+            perform_training_time_llm_health_check(
+                self.config.get(LLM_CONFIG_KEY),
+                DEFAULT_LLM_CONFIG,
+                "llm_based_router.train",
+                LLMBasedRouter.__name__,
             )
+        )
 
         self.persist()
         return self._resource
@@ -168,13 +168,13 @@ class LLMBasedRouter(GraphComponent):
     ) -> "LLMBasedRouter":
         """Loads trained component (see parent class for full docstring)."""
         prompt_template = None
+        persisted_config = None
         try:
             with model_storage.read_from(resource) as path:
                 prompt_template = rasa.shared.utils.io.read_file(
                     path / LLM_BASED_ROUTER_PROMPT_FILE_NAME
                 )
-                # TODO: needed for health check
-                rasa.shared.utils.io.read_json_file(
+                persisted_config = rasa.shared.utils.io.read_json_file(
                     path / LLM_BASED_ROUTER_CONFIG_FILE_NAME
                 )
         except (FileNotFoundError, FileIOException) as e:
@@ -182,7 +182,22 @@ class LLMBasedRouter(GraphComponent):
                 "llm_based_router.load.failed", error=e, resource=resource.name
             )
 
-        return cls(config, model_storage, resource, prompt_template=prompt_template)
+        router = cls(config, model_storage, resource, prompt_template=prompt_template)
+
+        train_model_name = (
+            persisted_config.get(TRAINED_MODEL_NAME_CONFIG_KEY, None)
+            if persisted_config
+            else None
+        )
+        perform_inference_time_llm_health_check(
+            router.config.get(LLM_CONFIG_KEY),
+            DEFAULT_LLM_CONFIG,
+            train_model_name,
+            "llm_based_router.load",
+            LLMBasedRouter.__name__,
+        )
+
+        return router
 
     @classmethod
     def create(
