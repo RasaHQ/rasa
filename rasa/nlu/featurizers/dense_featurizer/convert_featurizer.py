@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 import os
 from typing import Any, Dict, List, Optional, Text, Tuple, Type
+from pathlib import Path
 
 import tensorflow as tf
 from tensorflow.python.eager.wrap_function import WrappedFunction
@@ -32,9 +33,7 @@ logger = logging.getLogger(__name__)
 
 # URL to the old remote location of the model which
 # users might use. The model is no longer hosted here.
-ORIGINAL_TF_HUB_MODULE_URL = (
-    "https://github.com/PolyAI-LDN/polyai-models/releases/download/v1.0/model.tar.gz"
-)
+ORIGINAL_TF_HUB_MODULE_URL = "https://github.com/davidalami/ConveRT/releases/download/1.0/nocontext_tf_model.tar.gz"
 
 # Warning: This URL is only intended for running pytests on ConveRT
 # related components. This URL should not be allowed to be used by the user.
@@ -50,7 +49,7 @@ RESTRICTED_ACCESS_URL = (
 class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
     """Featurizer using ConveRT model.
 
-    Loads the ConveRT(https://github.com/PolyAI-LDN/polyai-models#convert)
+    Loads the ConveRT("https://github.com/davidalami/ConveRT/releases/download/1.0/nocontext_tf_model.tar.gz")
     model from TFHub and computes sentence and sequence level feature representations
     for dense featurizable attributes of each message object.
     """
@@ -89,8 +88,11 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        cache_dir: str = None,
     ) -> ConveRTFeaturizer:
         """Creates a new component (see parent class for full docstring)."""
+        if cache_dir:
+            os.environ["TFHUB_CACHE_DIR"] = cache_dir
         return cls(name=execution_context.node_name, config=config)
 
     def __init__(self, name: Text, config: Dict[Text, Any]) -> None:
