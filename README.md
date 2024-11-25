@@ -57,6 +57,8 @@ There's a lot more background information in this
 
 - 😁 [Install Rasa](https://rasa.com/docs/rasa/installation/environment-set-up)
 
+- 🖊️ [Rasa Interactive Learning](https://rasa.com/docs/rasa/writing-stories#using-interactive-learning)
+
 - 🚀 [Dive deeper in the learning center](https://learning.rasa.com/)
 
 - 🤗 [Contribute](#how-to-contribute)
@@ -315,6 +317,14 @@ The static site that gets built is pushed to the `documentation` branch of this 
 
 We host the site on netlify. On `main` branch builds (see `.github/workflows/documentation.yml`), we push the built docs to
 the `documentation` branch. Netlify automatically re-deploys the docs pages whenever there is a change to that branch.
+
+## Interactive Learning
+
+Rasa has a Interactive Learning module that provides a way to train a model by correcting and validating the assistant's predictions at every conversation phase. The Interactive Learning uses NLG (Natural Language Generation) and NLU (Natural Language Understanding) to develop the Rasa assistant.
+
+There is a ready example that can be used with Interactive Learning, and it can be found in `example\concertbot`. The [example readme](https://github.com/RasaHQ/rasa/blob/main/examples/concertbot/README.md) shows the step by step to run it as a IL model and start to train it. Futhermore, it uses Rasa Visualization to assist the training.
+
+There is more documentation about Rasa Interactive Leaning at the [oficial Rasa Docs](https://rasa.com/docs/rasa/writing-stories#using-interactive-learning)
 
 ## Releases
 Rasa has implemented robust policies governing version naming, as well as release pace for major, minor, and patch releases.
