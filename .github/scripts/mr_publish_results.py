@@ -5,6 +5,7 @@ import copy
 import datetime
 import json
 import os
+import re
 from typing import Any, Dict, List, Text, Tuple
 
 from datadog_api_client.v1 import ApiClient, Configuration
@@ -94,27 +95,21 @@ def transform_to_seconds(duration: Text) -> float:
         duration: Examples: '1m27s', '1m27.3s', '27s', '1h27s', '1h1m27s'
 
     Raises:
-        Exception: If the input is not supported.
+        Exception: If the value are not matched.
 
     Returns:
         Duration converted in seconds.
     """
-    h_split = duration.split("h")
-    if len(h_split) == 1:
-        rest = h_split[0]
-        hours = 0
-    else:
-        hours = int(h_split[0])
-        rest = h_split[1]
-    m_split = rest.split("m")
-    if len(m_split) == 2:
-        minutes = int(m_split[0])
-        seconds = float(m_split[1].rstrip("s"))
-    elif len(m_split) == 1:
-        minutes = 0
-        seconds = float(m_split[0].rstrip("s"))
-    else:
-        raise Exception(f"Unsupported duration: {duration}")
+    time_pattern = r'(?:(?P<hours>\d+)h)?(?:(?P<minutes>\d+)m)?(?:(?P<seconds>\d+(?:\.\d+)?)s)?'
+    match = re.match(time_pattern, duration)
+
+    if not match:
+        raise ValueError(f"Invalid duration format: {duration}")
+    
+    hours = float(match.group("hours") or 0)
+    minutes = float(match.group("minuts") or 0)
+    seconds = float(match.group("seconds") or 0)
+
     overall_seconds = hours * 60 * 60 + minutes * 60 + seconds
     return overall_seconds
 
@@ -277,7 +272,7 @@ def generate_json(file: Text, task: Text, data: dict) -> dict:
 
 def create_report_file() -> None:
     data = {}
-    for dirpath, dirnames, files in os.walk(os.environ["RESULT_DIR"]):
+    for dirpath, _, files in os.walk(os.environ["RESULT_DIR"]):
         for f in files:
             if f not in TASK_MAPPING.keys():
                 continue
