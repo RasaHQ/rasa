@@ -183,26 +183,12 @@ jobs:
            RASA_DEPS_IMAGE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:rasa-deps-${RASA_DEPS_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
            echo "rasa_deps_exists=${RASA_DEPS_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
 
-      - name: Build Docker base image 🛠
+      - name: Build Docker base images 🛠
         if: steps.check_image.outputs.base_exists == 'false'
         run: |
-           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
-           export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
-           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base --push
-
-      - name: Build Docker builder base image 🛠
-        if: steps.check_image.outputs.base_builder_exists == 'false' || steps.check_image.outputs.base_exists == 'false'
-        run: |
-           export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
-           export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
-           docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl base-builder --push
-
-      - name: Build Docker Rasa dependencies image 🛠
-        if: steps.check_image.outputs.rasa_deps_exists == 'false' || steps.check_image.outputs.base_builder_exists == 'false'
-        run: |
-          export IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }}
-          export TARGET_IMAGE_REGISTRY=${{ env.TARGET_IMAGE_REGISTRY }}
-          docker buildx bake --set *.platform=linux/amd64,linux/arm64 -f docker/docker-bake.hcl rasa-deps --push
+          RASA_BASE_REPOSITORY=${{ env.TARGET_IMAGE_REGISTRY }}/rasa \
+          RASA_BASE_IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }} \
+          make build-multi-platform-base-docker
 
       - name: Copy Segment write key to the package
         env:
@@ -212,25 +198,16 @@ jobs:
            ./scripts/write_keys_file.sh
 
       - name: Build and push rasa-pro docker image to GCP and Docker Hub
-        run: |
-          # Set up the Docker Hub and GCP image tags
-          GCP_IMAGE_TAG=${{ env.TARGET_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG_VERSION}
-          GCP_LATEST_IMAGE_TAG=${{ env.TARGET_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG_VERSION}-latest
-          DOCKER_HUB_IMAGE_TAG=docker.io/rasa/${{ env.IMAGE_NAME }}:${TAG_VERSION}
-      
-          # Build and push the image to both GCP and Docker Hub using multiple tags
-          docker buildx bake \
-            --set *.platform=linux/amd64,linux/arm64 \
-            --set default.tags="${GCP_IMAGE_TAG}" \
-            --set default.tags="${GCP_LATEST_IMAGE_TAG}" \
-            --set default.tags="${DOCKER_HUB_IMAGE_TAG}" \
-            -f docker/docker-bake.hcl \
-            default \
-            --push
+        run: |     
+          # Build the multi-platform docker image and push to GCP and Docker Hub
+          RASA_TAGS="-t ${{ env.GCP_IMAGE_TAG }} -t ${{ env.GCP_LATEST_IMAGE_TAG }} -t ${{ env.DOCKER_HUB_IMAGE_TAG }}"
+          RASA_BASE_REPOSITORY=${{ env.TARGET_IMAGE_REGISTRY }}/rasa \
+          RASA_BASE_IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }} \
+          make build-multi-platform-docker
         env:
-          BASE_IMAGE_HASH: ${{ steps.check_image.outputs.base_image_hash }}
-          RASA_DEPS_IMAGE_HASH: ${{ steps.check_image.outputs.rasa_deps_image_hash }}
-          IMAGE_NAME: rasa-pro
+          DOCKER_HUB_IMAGE_TAG: docker.io/rasa/rasa-pro:${{ env.TAG_VERSION }}
+          GCP_LATEST_IMAGE_TAG: ${{ env.TARGET_IMAGE_REGISTRY }}/rasa-pro:${{ env.TAG_VERSION }}-latest
+          GCP_IMAGE_TAG: ${{ env.TARGET_IMAGE_REGISTRY }}/rasa-pro:${{ env.TAG_VERSION }}
 
   release-artifacts-pypi:
     name: Release Artifacts PyPI

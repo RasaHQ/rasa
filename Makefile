@@ -23,8 +23,12 @@ RASA_DEPS_IMAGE_HASH ?= localdev
 POETRY_VERSION ?= 1.8.2
 BOT_PATH ?=
 MODEL_NAME ?= model
-RASA_REPOSITORY ?= rasa-private
+RASA_BASE_REPOSITORY ?= rasa-pro
+RASA_REPOSITORY ?= rasa-pro
 RASA_IMAGE_TAG ?= latest
+RASA_BASE_IMAGE_TAG ?= latest
+
+
 
 # find user's id
 USER_ID := $(shell id -u)
@@ -231,43 +235,62 @@ test-marker: clean ## Run marker tests
 release:  ## Prepare a release.
 	poetry run python scripts/release.py prepare --interactive
 
+DOCKER_BUILD_COMMAND = build
+
+BASE_DOCKER_IMAGE_TAG =base-$(RASA_BASE_IMAGE_TAG)
+BASE_BUILDER_DOCKER_IMAGE_TAG =base-builder-$(RASA_BASE_IMAGE_TAG)
+BASE_RASA_DEPS_DOCKER_IMAGE_TAG =rasa-deps-$(RASA_BASE_IMAGE_TAG)
+
 build-docker-base: ## Build base Docker image which contains dependencies necessary to create builder and Rasa images.
-	docker build . \
-		-t $(RASA_REPOSITORY)\:$(RASA_IMAGE_TAG)-base \
+	docker $(DOCKER_BUILD_COMMAND) . \
+		-t $(RASA_BASE_REPOSITORY)\:$(BASE_DOCKER_IMAGE_TAG) \
 		-f docker/Dockerfile.base \
 		--progress=plain \
 		--platform=$(PLATFORM)
 
 build-docker-builder:  ## Build Docker image which contains dependencies necessary to install Rasa's dependencies. Make sure to run build-docker-base before running this target.
-	docker build . \
-		-t $(RASA_REPOSITORY)\:$(RASA_IMAGE_TAG)-base-builder \
+	docker $(DOCKER_BUILD_COMMAND) . \
+		-t $(RASA_BASE_REPOSITORY)\:$(BASE_BUILDER_DOCKER_IMAGE_TAG) \
 		-f docker/Dockerfile.base-builder \
-		--build-arg IMAGE_BASE_NAME=$(RASA_REPOSITORY) \
-		--build-arg BASE_IMAGE_HASH=$(RASA_IMAGE_TAG)-base \
+		--build-arg IMAGE_BASE_NAME=$(RASA_BASE_REPOSITORY) \
+		--build-arg BASE_IMAGE_HASH=$(BASE_DOCKER_IMAGE_TAG) \
 		--progress=plain \
 		--platform=$(PLATFORM)
 
 build-docker-rasa-deps:  ## Build Docker image which contains Rasa dependencies. Make sure to run build-docker-builder before running this target.
-	docker build . \
-		-t $(RASA_REPOSITORY)\:$(RASA_IMAGE_TAG)-rasa-deps-localdev \
+	docker $(DOCKER_BUILD_COMMAND) . \
+		-t $(RASA_BASE_REPOSITORY)\:$(BASE_RASA_DEPS_DOCKER_IMAGE_TAG) \
 		-f docker/Dockerfile.rasa-deps \
-		--build-arg IMAGE_BASE_NAME=$(RASA_REPOSITORY) \
-		--build-arg BASE_BUILDER_IMAGE_HASH=$(RASA_IMAGE_TAG)-base-builder \
+		--build-arg IMAGE_BASE_NAME=$(RASA_BASE_REPOSITORY) \
+		--build-arg BASE_BUILDER_IMAGE_HASH=$(BASE_BUILDER_DOCKER_IMAGE_TAG) \
 		--build-arg POETRY_VERSION=$(POETRY_VERSION) \
 		--progress=plain \
 		--platform=$(PLATFORM)
 
+## RASA_IMAGE_TAGS is a list of tags that will be applied to the Rasa Pro Docker image.
+## It enables us to tag the image with multiple tags without having to rebuild the image.
+## This is mainly used in release pipelines to tag the image for different registries.
+RASA_IMAGE_TAGS ?= -t $(RASA_REPOSITORY)\:$(RASA_IMAGE_TAG)
+
 build-docker-rasa-image:  ## Build Rasa Pro Docker image. Make sure to run build-docker-base, build-docker-builder and build-docker-rasa-deps before running this target.
-	docker build . \
-		-t $(RASA_REPOSITORY)\:$(RASA_IMAGE_TAG) \
+	docker $(DOCKER_BUILD_COMMAND) . \
+		$(RASA_IMAGE_TAGS) \
 		-f Dockerfile \
-		--build-arg IMAGE_BASE_NAME=$(RASA_REPOSITORY) \
-		--build-arg BASE_IMAGE_HASH=$(RASA_IMAGE_TAG)-base \
-		--build-arg RASA_DEPS_IMAGE_HASH=$(RASA_IMAGE_TAG)-rasa-deps-localdev \
+		--build-arg IMAGE_BASE_NAME=$(RASA_BASE_REPOSITORY) \
+		--build-arg BASE_IMAGE_HASH=$(BASE_DOCKER_IMAGE_TAG) \
+		--build-arg RASA_DEPS_IMAGE_HASH=$(BASE_RASA_DEPS_DOCKER_IMAGE_TAG) \
 		--progress=plain \
 		--platform=$(PLATFORM)
 
 build-docker: build-docker-base build-docker-builder build-docker-rasa-deps build-docker-rasa-image  ## Build Rasa Pro Docker image.
+
+build-multi-platform-base-docker: PLATFORM = "linux/amd64,linux/arm64"
+build-multi-platform-base-docker: DOCKER_BUILD_COMMAND = buildx build --push
+build-multi-platform-base-docker: build-docker-base build-docker-builder build-docker-rasa-deps # Build base Docker image for multiple platforms.
+
+build-multi-platform-docker: PLATFORM = "linux/amd64,linux/arm64"
+build-multi-platform-docker: DOCKER_BUILD_COMMAND = buildx build --push
+build-multi-platform-docker: build-docker-rasa-image  ## Build Rasa Pro Docker image for multiple platforms.
 
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
 	cd $(INTEGRATION_TEST_DEPLOYMENT_PATH) && \
