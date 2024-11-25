@@ -149,6 +149,8 @@ class TelegramOutput(Bot, OutputChannel):
 class TelegramInput(InputChannel):
     """Telegram input channel."""
 
+    out_channel: TelegramOutput = None
+
     @classmethod
     def name(cls) -> Text:
         return "telegram"
@@ -196,7 +198,7 @@ class TelegramInput(InputChannel):
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
         telegram_webhook = Blueprint("telegram_webhook", __name__)
-        out_channel = self.get_output_channel()
+        TelegramInput.out_channel = self.get_output_channel()
 
         @telegram_webhook.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:
@@ -204,7 +206,7 @@ class TelegramInput(InputChannel):
 
         @telegram_webhook.route("/set_webhook", methods=["GET", "POST"])
         async def set_webhook(_: Request) -> HTTPResponse:
-            s = await out_channel.set_webhook(self.webhook_url)
+            s = await TelegramInput.out_channel.set_webhook(self.webhook_url)
             if s:
                 logger.info("Webhook Setup Successful")
                 return response.text("Webhook setup successful")
@@ -220,7 +222,7 @@ class TelegramInput(InputChannel):
                 if isinstance(request_dict, Text):
                     request_dict = json.loads(request_dict)
                 update = Update(**request_dict)
-                credentials = await out_channel.get_me()
+                credentials = await TelegramInput.out_channel.get_me()
                 if not credentials.username == self.verify:
                     logger.debug("Invalid access token, check it matches Telegram")
                     return response.text("failed")
@@ -248,7 +250,7 @@ class TelegramInput(InputChannel):
                         await on_new_message(
                             UserMessage(
                                 text,
-                                out_channel,
+                                TelegramInput.out_channel,
                                 sender_id,
                                 input_channel=self.name(),
                                 metadata=metadata,
@@ -257,7 +259,7 @@ class TelegramInput(InputChannel):
                         await on_new_message(
                             UserMessage(
                                 "/start",
-                                out_channel,
+                                TelegramInput.out_channel,
                                 sender_id,
                                 input_channel=self.name(),
                                 metadata=metadata,
@@ -267,7 +269,7 @@ class TelegramInput(InputChannel):
                         await on_new_message(
                             UserMessage(
                                 text,
-                                out_channel,
+                                TelegramInput.out_channel,
                                 sender_id,
                                 input_channel=self.name(),
                                 metadata=metadata,
@@ -286,6 +288,9 @@ class TelegramInput(InputChannel):
 
     def get_output_channel(self) -> TelegramOutput:
         """Loads the telegram channel."""
+        if TelegramInput.out_channel:
+            return TelegramInput.out_channel
+
         channel = TelegramOutput(self.access_token)
 
         try:
