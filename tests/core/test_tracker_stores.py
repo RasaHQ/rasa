@@ -60,7 +60,7 @@ from rasa.core.tracker_store import (
 from rasa.shared.core.trackers import DialogueStateTracker, TrackerEventDiffEngine
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-from tests.conftest import AsyncMock
+from unittest.mock import AsyncMock
 from tests.core.conftest import MockedMongoTrackerStore
 
 test_domain = Domain.load("data/test_domains/default.yml")

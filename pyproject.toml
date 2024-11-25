@@ -234,7 +234,7 @@ mlflow = [ "mlflow",]
 rasa = "rasa.__main__:main"
 
 [tool.ruff.lint]
-# The following checks are disabled because they are not relevant for Rasa
+# The following checks are disabled because they are not relevant for Rasa:
 # - RUF001: Checks for ambiguous Unicode characters in strings. https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-string/
 # - RUF002: Checks for ambiguous Unicode characters in docstrings. https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-docstring/
 # - RUF003: Checks for ambiguous Unicode characters in comments. https://docs.astral.sh/ruff/rules/ambiguous-unicode-character-comment/

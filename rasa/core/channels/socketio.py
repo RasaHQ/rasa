@@ -37,7 +37,11 @@ class SocketBlueprint(Blueprint):
         :param options: Options to be used while registering the
             blueprint into the app.
         """
-        self.ctx.sio.attach(app, self.ctx.socketio_path)
+        if self.ctx.socketio_path:
+            path = self.ctx.socketio_path
+        else:
+            path = options.get("url_prefix", "/socket.io")
+        self.ctx.sio.attach(app, path)
         super().register(app, options)
 
 

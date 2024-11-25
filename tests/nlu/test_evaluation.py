@@ -17,7 +17,7 @@ from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.shared.core.trackers import DialogueStateTracker
-from tests.conftest import AsyncMock
+from unittest.mock import AsyncMock
 
 import rasa.nlu.test
 import rasa.shared.nlu.training_data.loading

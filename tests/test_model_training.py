@@ -33,7 +33,7 @@ from rasa.model_training import (
     CODE_FORCED_TRAINING,
     CODE_NEEDS_TO_BE_RETRAINED,
     CODE_NO_NEED_TO_TRAIN,
-    _determine_model_name,
+    determine_model_name,
     _dry_run_result,
 )
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
@@ -1104,4 +1104,4 @@ def test_model_training_determine_model_name(model_name, expected):
         patch("randomname.get_name", return_value="expected_name"),
         patch("time.strftime", return_value="20220101-120000"),
     ):
-        assert _determine_model_name(model_name, TrainingType.BOTH) == expected
+        assert determine_model_name(model_name, TrainingType.BOTH) == expected

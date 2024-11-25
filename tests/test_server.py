@@ -14,7 +14,7 @@ from multiprocessing import Manager
 from multiprocessing.managers import DictProxy
 from pathlib import Path
 from typing import Any, List, Text, Tuple, Type, Generator, NoReturn, Dict, Optional
-from unittest.mock import Mock, ANY
+from unittest.mock import Mock, ANY, AsyncMock
 
 from _pytest.tmpdir import TempPathFactory
 import pytest
@@ -78,7 +78,6 @@ from rasa.model_training import TrainingResult
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import (
-    AsyncMock,
     with_assistant_id,
     with_assistant_ids,
     with_model_id,

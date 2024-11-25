@@ -31,7 +31,7 @@ from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.common import EXPECTED_WARNINGS
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from tests.cli.conftest import RASA_EXE
-from tests.conftest import AsyncMock
+from unittest.mock import AsyncMock
 from tests.utilities import filter_logs
 
 

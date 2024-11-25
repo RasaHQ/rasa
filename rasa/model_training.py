@@ -157,6 +157,7 @@ async def train(
     finetuning_epoch_fraction: float = 1.0,
     remote_storage: Optional[StorageType] = None,
     file_importer: Optional[TrainingDataImporter] = None,
+    keep_local_model_copy: bool = False,
 ) -> TrainingResult:
     """Trains a Rasa model (Core and NLU).
 
@@ -182,6 +183,8 @@ async def train(
             use for storing the model.
         file_importer: Instance of `TrainingDataImporter` to use for training.
             If it is not provided, a new instance will be created.
+        keep_local_model_copy: If `True` the model will be stored locally even if
+            remote storage is configured.
 
     Returns:
         An instance of `TrainingResult`.
@@ -263,6 +266,7 @@ async def train(
             finetuning_epoch_fraction=finetuning_epoch_fraction,
             dry_run=dry_run,
             remote_storage=remote_storage,
+            keep_local_model_copy=keep_local_model_copy,
             **(core_additional_arguments or {}),
             **(nlu_additional_arguments or {}),
         )
@@ -277,6 +281,7 @@ async def _train_graph(
     force_full_training: bool = False,
     dry_run: bool = False,
     remote_storage: Optional[StorageType] = None,
+    keep_local_model_copy: bool = False,
     **kwargs: Any,
 ) -> TrainingResult:
     if model_to_finetune:
@@ -341,7 +346,7 @@ async def _train_graph(
             )
             return _dry_run_result(fingerprint_status, force_full_training)
 
-        model_name = _determine_model_name(fixed_model_name, training_type)
+        model_name = determine_model_name(fixed_model_name, training_type)
         full_model_path = Path(output_path, model_name)
 
         with telemetry.track_model_training(
@@ -356,7 +361,8 @@ async def _train_graph(
             )
             if remote_storage:
                 push_model_to_remote_storage(full_model_path, remote_storage)
-                full_model_path.unlink()
+                if not keep_local_model_copy:
+                    full_model_path.unlink()
                 structlogger.info(
                     "model_training.train.finished_training",
                     event_info=(
@@ -388,9 +394,14 @@ def _create_model_storage(
     return model_storage
 
 
-def _determine_model_name(
+def generate_random_model_name() -> str:
+    time_format = "%Y%m%d-%H%M%S"
+    return f"{time.strftime(time_format)}-{randomname.get_name()}"
+
+
+def determine_model_name(
     fixed_model_name: Optional[Text], training_type: TrainingType
-) -> Text:
+) -> str:
     if fixed_model_name:
         if not fixed_model_name.endswith(".tar.gz"):
             return f"{fixed_model_name}.tar.gz"
@@ -400,8 +411,7 @@ def _determine_model_name(
     if training_type in [TrainingType.CORE, TrainingType.NLU]:
         prefix = f"{training_type.model_type}-"
 
-    time_format = "%Y%m%d-%H%M%S"
-    return f"{prefix}{time.strftime(time_format)}-{randomname.get_name()}.tar.gz"
+    return f"{prefix}{generate_random_model_name()}.tar.gz"
 
 
 async def train_core(
@@ -413,6 +423,7 @@ async def train_core(
     additional_arguments: Optional[Dict] = None,
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
+    keep_local_model_copy: bool = False,
 ) -> Optional[Text]:
     """Trains a Core model.
 
@@ -427,6 +438,8 @@ async def train_core(
             a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
             in the model configuration which should be used for finetuning.
+        keep_local_model_copy: If `True` the model will be stored locally even if
+            remote storage is configured.
 
     Returns:
         Path to the model archive.
@@ -482,6 +495,7 @@ async def train_core(
             model_to_finetune=model_to_finetune,
             fixed_model_name=fixed_model_name,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
+            keep_local_model_copy=keep_local_model_copy,
             **(additional_arguments or {}),
         )
     ).model
@@ -497,6 +511,7 @@ async def train_nlu(
     domain: Optional[Union[Domain, Text]] = None,
     model_to_finetune: Optional[Text] = None,
     finetuning_epoch_fraction: float = 1.0,
+    keep_local_model_copy: bool = False,
 ) -> Optional[Text]:
     """Trains an NLU model.
 
@@ -514,6 +529,8 @@ async def train_nlu(
             a directory in case the latest trained model should be used.
         finetuning_epoch_fraction: The fraction currently specified training epochs
             in the model configuration which should be used for finetuning.
+        keep_local_model_copy: If `True` the model will be stored locally even if
+            remote storage is configured.
 
     Returns:
         Path to the model archive.
@@ -555,13 +572,14 @@ async def train_nlu(
             fixed_model_name=fixed_model_name,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
             persist_nlu_training_data=persist_nlu_training_data,
+            keep_local_model_copy=keep_local_model_copy,
             **(additional_arguments or {}),
         )
     ).model
 
 
 def push_model_to_remote_storage(model_path: Path, remote_storage: StorageType) -> None:
-    """Push model to remote storage"""
+    """Push model to remote storage."""
     from rasa.core.persistor import get_persistor
 
     persistor = get_persistor(remote_storage)
