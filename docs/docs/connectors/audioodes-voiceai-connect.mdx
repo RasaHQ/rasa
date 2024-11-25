@@ -100,7 +100,7 @@ You can send events from Rasa to VoiceAI Connect to make changes to the current 
 For example, you might want to receive a notification when the user stays silent for more than 5 seconds, or you might need to customize how DTMF digits are sent by VoiceAI Connect.
 
 Call configuration events are sent with custom messages and are specific to the current conversation (sometimes to a message).
-Which means they must be part of your stories or rules so the same behaviour is applied to all conversations.
+Which means they must be part of your stories or rules, so the same behavior is applied to all conversations.
 
 Those Rasa responses don't utter anything, they just configure the voice gateway. It is a good practice naming them differently, for example prefixing them with `utter_config_<what_it_does>`
 
