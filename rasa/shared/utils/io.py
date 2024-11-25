@@ -13,6 +13,7 @@ from typing import Any, cast, Callable, Dict, List, Optional, Text, Type, TypeVa
 import warnings
 import random
 import string
+
 import portalocker
 
 from rasa.shared.constants import (
