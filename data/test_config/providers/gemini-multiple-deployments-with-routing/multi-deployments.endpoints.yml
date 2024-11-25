@@ -1,0 +1,30 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ rephrase_all: True
+ llm:
+    model_group: gemini_llm
+model_groups:
+  - id: gemini_llm
+    models:
+    # Same LLM models across multiple GCP projects
+      - provider: gemini
+        model: gemini-pro
+        api_key: ${GEMINI_API_KEY}
+        timeout: 7
+        num_retries: 5
+      - provider: gemini
+        model: gemini-pro
+        api_key: ${GEMINI_ALTERNATE_API_KEY}
+        timeout: 7
+        num_retries: 5
+    router:
+      # routing_strategy: usage-based-routing
+      routing_strategy: least-busy
+      num_retries: 2
+      timeout: 30 
+      # redis_host: ${REDIS_HOST} # TODO: Fix Redis cache test errors
+      # redis_port: ${REDIS_PORT} # TODO: Fix Redis cache test errors
+      cache_responses: True
