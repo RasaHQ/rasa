@@ -185,6 +185,20 @@ USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY = "use_chat_completions_endpoint"
 
 ROUTER_CONFIG_KEY = "router"
 ROUTER_STRATEGY_CONFIG_KEY = "router_strategy"
+REDIS_HOST_CONFIG_KEY = "redis_host"
+ROUTER_STRATEGIES_REQUIRING_REDIS_CACHE = [
+    "cost-based-routing",
+    "usage-based-routing",
+]
+ROUTER_STRATEGIES_NOT_REQUIRING_CACHE = [
+    "latency-based-routing",
+    "least-busy",
+    "simple-shuffle",
+]
+VALID_ROUTER_STRATEGIES = (
+    ROUTER_STRATEGIES_REQUIRING_REDIS_CACHE + ROUTER_STRATEGIES_NOT_REQUIRING_CACHE
+)
+
 MODELS_CONFIG_KEY = "models"
 MODEL_GROUPS_CONFIG_KEY = "model_groups"
 MODEL_GROUP_CONFIG_KEY = "model_group"

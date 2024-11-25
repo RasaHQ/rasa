@@ -2160,6 +2160,19 @@ def test_validate_llm_configuration_setup(
             ],
             False,
         ),
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {"provider": "openai", "model": "gpt-4"},
+                        {"provider": "openai", "model": "gpt-3.5-turbo"},
+                    ],
+                    "router": {"routing_strategy": "simple-shuffle"},
+                }
+            ],
+            False,
+        ),
         # same model group id
         (
             [
@@ -2184,6 +2197,24 @@ def test_validate_llm_configuration_setup(
                         {"provider": "openai", "model": "gpt-3.5-turbo"},
                     ],
                 }
+            ],
+            True,
+        ),
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {"provider": "openai", "model": "gpt-4"},
+                        {"provider": "openai", "model": "gpt-3.5-turbo"},
+                    ],
+                },
+                {
+                    "id": "another_group",
+                    "models": [
+                        {"provider": "openai", "model": "gpt-4"},
+                    ],
+                },
             ],
             True,
         ),
@@ -2214,6 +2245,20 @@ def test_validate_llm_configuration_setup(
                             "timeout": 14,
                         },
                     ],
+                }
+            ],
+            True,
+        ),
+        # incorrect router setting
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {"provider": "openai", "model": "gpt-4"},
+                        {"provider": "openai", "model": "gpt-3.5-turbo"},
+                    ],
+                    "router": {"router_strategy": "non-existing-key"},
                 }
             ],
             True,
