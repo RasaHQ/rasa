@@ -1,23 +1,22 @@
 import argparse
 import os
+import shutil
 import sys
 from pathlib import Path
 from typing import Callable, List, Union
-from unittest.mock import MagicMock
+from unittest.mock import patch, MagicMock
 
 import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.pytester import RunResult
 from _pytest.tmpdir import TempPathFactory
-from pytest import MonkeyPatch
+from pytest import MonkeyPatch, Testdir
+from structlog.testing import capture_logs
 
 import rasa.shared.utils.io
+import rasa.utils.common
 import rasa.utils.io
-from rasa.cli.train import (
-    _check_nlg_endpoint_validity,
-    retrieve_and_unpack_bot_config_from_remote_storage,
-    run_training,
-)
+from rasa.cli.train import _check_nlg_endpoint_validity, run_training
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE
 from rasa.core.policies.policy import Policy
 from rasa.engine.storage.local_model_storage import LocalModelStorage
@@ -32,122 +31,12 @@ from rasa.shared.constants import (
     OPENAI_API_KEY_ENV_VAR,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.training_data import (
     DEFAULT_TRAINING_DATA_OUTPUT_PATH,
 )
 from rasa.shared.utils.yaml import read_yaml_file
 from tests.cli.conftest import RASA_EXE
-
-
-@pytest.fixture
-def fake_domain_path() -> Path:
-    return Path("fake_domain.yml")
-
-
-@pytest.fixture
-def fake_config_path() -> Path:
-    return Path("fake_config.yml")
-
-
-@pytest.fixture
-def fake_training_file() -> Path:
-    return Path("fake_training_file.yml")
-
-
-@pytest.fixture
-def mock_get_validated_path(
-    fake_domain_path: Path, fake_training_file: Path, monkeypatch: MonkeyPatch
-) -> MagicMock:
-    get_validated_path_mock = MagicMock()
-    get_validated_path_mock.side_effect = [fake_domain_path, fake_training_file]
-    monkeypatch.setattr("rasa.cli.utils.get_validated_path", get_validated_path_mock)
-    return get_validated_path_mock
-
-
-@pytest.fixture
-def mock_get_validated_config(
-    fake_config_path: Path, monkeypatch: MonkeyPatch
-) -> MagicMock:
-    get_validated_config_mock = MagicMock()
-    get_validated_config_mock.return_value = fake_config_path
-    monkeypatch.setattr(
-        "rasa.cli.utils.get_validated_config", get_validated_config_mock
-    )
-    return get_validated_config_mock
-
-
-@pytest.fixture
-def mock_check_nlg_endpoint_validity(monkeypatch: MonkeyPatch) -> MagicMock:
-    check_nlg_endpoint_validity_mock = MagicMock()
-    monkeypatch.setattr(
-        "rasa.cli.train._check_nlg_endpoint_validity",
-        check_nlg_endpoint_validity_mock,
-    )
-    return check_nlg_endpoint_validity_mock
-
-
-@pytest.fixture
-def train_all_result() -> TrainingResult:
-    return TrainingResult(model="model.tar.gz")
-
-
-@pytest.fixture
-def mock_train_all(
-    train_all_result: TrainingResult, monkeypatch: MonkeyPatch
-) -> MagicMock:
-    train_all_mock = MagicMock()
-    train_all_mock.return_value = train_all_result
-    monkeypatch.setattr("rasa.cli.train.train_all", train_all_mock)
-    return train_all_mock
-
-
-@pytest.fixture
-def mock_persistor(monkeypatch: MonkeyPatch) -> MagicMock:
-    return MagicMock()
-
-
-@pytest.fixture
-def mock_get_persistor(
-    mock_persistor: MagicMock, monkeypatch: MonkeyPatch
-) -> MagicMock:
-    get_persistor_mock = MagicMock()
-    get_persistor_mock.return_value = mock_persistor
-    monkeypatch.setattr("rasa.cli.train.get_persistor", get_persistor_mock)
-    return get_persistor_mock
-
-
-@pytest.fixture
-def fake_cwd() -> str:
-    return "cwd"
-
-
-@pytest.fixture
-def mock_os_get_cwd(fake_cwd: Path, monkeypatch: MonkeyPatch) -> MagicMock:
-    os_get_cwd_mock = MagicMock()
-    os_get_cwd_mock.return_value = fake_cwd
-    monkeypatch.setattr("os.getcwd", os_get_cwd_mock)
-    return os_get_cwd_mock
-
-
-@pytest.fixture
-def mock_os_remove(monkeypatch: MonkeyPatch) -> MagicMock:
-    os_remove_mock = MagicMock()
-    monkeypatch.setattr("os.remove", os_remove_mock)
-    return os_remove_mock
-
-
-@pytest.fixture
-def fake_tar() -> MagicMock:
-    return MagicMock()
-
-
-@pytest.fixture
-def mock_tar_safe(fake_tar: MagicMock, monkeypatch: MonkeyPatch) -> MagicMock:
-    tar_safe_mock = MagicMock()
-    tar_safe_mock.open.return_value.__enter__.return_value = fake_tar
-    monkeypatch.setattr("rasa.cli.train.TarSafe", tar_safe_mock)
-    return tar_safe_mock
+from tests.utilities import clear_available_endpoints_class_instance
 
 
 @pytest.mark.parametrize(
@@ -752,11 +641,7 @@ def test_train_validation_max_history_2(
     assert result.ret == 0
 
 
-def test_train_validate_nlg_config_valid(
-    mock_train_all: MagicMock,
-    train_all_result: TrainingResult,
-    monkeypatch: MonkeyPatch,
-) -> None:
+def test_train_validate_nlg_config_valid(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     args = argparse.Namespace(
         domain="data/test_domains/default.yml",
@@ -774,23 +659,12 @@ def test_train_validate_nlg_config_valid(
         remote_storage=None,
     )
 
-    model_name = run_training(args)
-    assert model_name == train_all_result.model
-    mock_train_all.assert_called_once_with(
-        domain="data/test_domains/default.yml",
-        config="data/test_config/config_defaults.yml",
-        training_files=["data/test_moodbot/data"],
-        output="models",
-        dry_run=False,
-        force_training=False,
-        fixed_model_name=None,
-        persist_nlu_training_data=False,
-        core_additional_arguments={},
-        nlu_additional_arguments={},
-        model_to_finetune=None,
-        finetuning_epoch_fraction=1.0,
-        remote_storage=None,
-    )
+    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
+    # endpoints from the test file.
+    clear_available_endpoints_class_instance()
+
+    with patch("rasa.api.train", return_value=TrainingResult(0)):
+        run_training(args)
 
 
 def test_train_validate_nlg_config_invalid() -> None:
@@ -801,6 +675,10 @@ def test_train_validate_nlg_config_invalid() -> None:
         endpoints="data/test_nlg/endpoint_with_invalid_nlg.yml",
         remote_storage=None,
     )
+
+    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
+    # endpoints from the test file.
+    clear_available_endpoints_class_instance()
 
     with pytest.raises(SystemExit):
         run_training(args)
@@ -817,6 +695,11 @@ def test_train_check_nlg_endpoint_validity(
     endpoint_path: Union[Path, str], expected_error: bool, monkeypatch: MonkeyPatch
 ) -> None:
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_rasa_train")
+
+    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
+    # endpoints from the test file.
+    clear_available_endpoints_class_instance()
+
     if expected_error:
         with pytest.raises(SystemExit):
             _check_nlg_endpoint_validity(endpoint=endpoint_path)
@@ -824,23 +707,36 @@ def test_train_check_nlg_endpoint_validity(
         _check_nlg_endpoint_validity(endpoint=endpoint_path)
 
 
-@pytest.mark.usefixtures(
-    "mock_get_validated_path",
-    "mock_get_validated_config",
-    "mock_check_nlg_endpoint_validity",
-)
-def test_train_call(
-    fake_domain_path: Path,
-    fake_config_path: Path,
-    fake_training_file: Path,
-    mock_train_all: MagicMock,
-    train_all_result: TrainingResult,
+def test_training_logs_domain_correctly_when_using_domain_dir(
+    monkeypatch: MonkeyPatch, testdir: Testdir
 ) -> None:
+    """
+    Verify that when the domain is provided via the "domain" directory instead of
+    the "domain.yml" file, the assistant does not raise any warning logs. Instead,
+    it should emit a debug log notifying the user about the default domain source
+    that was used.
+    """
+    # Compute the absolute path to the default template project
+    parent_path = Path(__file__).parent
+    default_template_path = parent_path / "../../rasa/cli/project_templates/default"
+
+    # Create 'domain' directory inside the test directory
+    domain_dir_path = os.path.join(testdir.tmpdir, "domain")
+    os.makedirs(domain_dir_path, exist_ok=True)
+
+    # Move 'domain.yml' file into 'domain' directory
+    src_path = default_template_path / "domain.yml"
+    dst_path = domain_dir_path + "domain.yml"
+    shutil.copy(src_path, dst_path)
+
+    monkeypatch.setattr(rasa.cli.train, "_check_nlg_endpoint_validity", MagicMock())
+
+    # Run the training with "domain=None" to simulate the "rasa train" command
     args = argparse.Namespace(
-        domain="data/test_domains/default.yml",
-        config="data/test_config/config_defaults.yml",
-        data=["data/test_moodbot/data"],
-        endpoints="data/test_nlg/endpoint_with_valid_nlg.yml",
+        domain=None,
+        config=default_template_path / "config.yml",
+        data=[default_template_path / "data"],
+        endpoints=default_template_path / "endpoints.yml",
         skip_validation=True,
         out="models",
         force=False,
@@ -852,125 +748,22 @@ def test_train_call(
         remote_storage=None,
     )
 
-    result = run_training(args)
+    expected_debug_log = {
+        "event": "cli.get_validated_path.parameter_not_set",
+        "parameter": "domain",
+        "event_info": "Parameter 'domain' was not set. "
+        "Using default location 'domain' instead.",
+        "log_level": "debug",
+    }
+    unexpected_warning_log = {
+        "event": "cli.get_validated_path.path_does_not_exists",
+        "path": "domain.yml",
+        "event_info": "The path 'domain.yml' does not seem to exist. "
+        "Using default location 'domain' instead.",
+        "log_level": "warning",
+    }
 
-    assert result == train_all_result.model
-    mock_train_all.assert_called_once_with(
-        domain=fake_domain_path,
-        config=fake_config_path,
-        training_files=[fake_training_file],
-        output="models",
-        dry_run=False,
-        force_training=False,
-        fixed_model_name=None,
-        persist_nlu_training_data=False,
-        core_additional_arguments={},
-        nlu_additional_arguments={},
-        model_to_finetune=None,
-        finetuning_epoch_fraction=1.0,
-        remote_storage=None,
-    )
-
-
-@pytest.mark.usefixtures(
-    "mock_get_validated_path",
-    "mock_get_validated_config",
-    "mock_check_nlg_endpoint_validity",
-)
-def test_train_with_remote_bot_config(
-    fake_domain_path: Path,
-    fake_config_path: Path,
-    fake_training_file: Path,
-    mock_train_all: MagicMock,
-    train_all_result: TrainingResult,
-    monkeypatch: MonkeyPatch,
-) -> None:
-    mock_retrieve_and_unpack_bot_config_from_remote_storage = MagicMock()
-    monkeypatch.setattr(
-        "rasa.cli.train.retrieve_and_unpack_bot_config_from_remote_storage",
-        mock_retrieve_and_unpack_bot_config_from_remote_storage,
-    )
-
-    args = argparse.Namespace(
-        domain="data/test_domains/default.yml",
-        config="data/test_config/config_defaults.yml",
-        data=["data/test_moodbot/data"],
-        endpoints="data/test_nlg/endpoint_with_valid_nlg.yml",
-        skip_validation=True,
-        out="models",
-        force=False,
-        fixed_model_name=None,
-        persist_nlu_data=False,
-        epoch_fraction=1.0,
-        dry_run=False,
-        finetune=None,
-        remote_storage="remote_storage",
-        remote_bot_config_path="remote_bot_config_path",
-    )
-
-    result = run_training(args)
-
-    mock_retrieve_and_unpack_bot_config_from_remote_storage.assert_called_once_with(
-        args
-    )
-    assert result == train_all_result.model
-    mock_train_all.assert_called_once_with(
-        domain=fake_domain_path,
-        config=fake_config_path,
-        training_files=[fake_training_file],
-        output="models",
-        dry_run=False,
-        force_training=False,
-        fixed_model_name=None,
-        persist_nlu_training_data=False,
-        core_additional_arguments={},
-        nlu_additional_arguments={},
-        model_to_finetune=None,
-        finetuning_epoch_fraction=1.0,
-        remote_storage="remote_storage",
-    )
-
-
-def test_retrieve_and_unpack_bot_config_from_remote_storage_no_remote_storage(
-    mock_get_persistor: MagicMock,
-) -> None:
-    """Test that an exception is raised if no remote storage is provided in args."""
-    mock_get_persistor.return_value = None
-    args = argparse.Namespace(
-        remote_bot_config_path="remote_bot_config_path",
-        remote_storage=None,
-    )
-    with pytest.raises(RasaException):
-        retrieve_and_unpack_bot_config_from_remote_storage(args)
-
-
-@pytest.mark.usefixtures("mock_os_get_cwd")
-def test_retrieve_and_unpack_bot_config_from_remote_storage(
-    mock_get_persistor: MagicMock,
-    mock_persistor: MagicMock,
-    fake_cwd: str,
-    mock_tar_safe: MagicMock,
-    fake_tar: MagicMock,
-    mock_os_remove: MagicMock,
-    monkeypatch: MonkeyPatch,
-) -> None:
-    """Test that the bot config is retrieved and unpacked from remote storage."""
-    remote_bot_config_path = "remote_bot_config_path"
-
-    args = argparse.Namespace(
-        remote_bot_config_path=remote_bot_config_path,
-        remote_storage="remote_storage",
-    )
-    retrieve_and_unpack_bot_config_from_remote_storage(args)
-
-    mock_get_persistor.assert_called_once_with(args.remote_storage)
-    mock_persistor.retrieve.assert_called_once_with(
-        args.remote_bot_config_path, fake_cwd
-    )
-
-    mock_tar_safe.open.assert_called_once_with(remote_bot_config_path, "r:gz")
-    fake_tar.extractall.assert_called_once_with(path=fake_cwd)
-
-    mock_os_remove.assert_called_once_with(
-        Path(fake_cwd).joinpath(remote_bot_config_path)
-    )
+    with capture_logs() as logs:
+        run_training(args)
+        assert expected_debug_log in logs
+        assert unexpected_warning_log not in logs

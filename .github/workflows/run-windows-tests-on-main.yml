@@ -32,14 +32,14 @@ jobs:
           - test-full-model-training
           - test-other-unit-tests
           - test-performance
-        python-version: [ 3.9, "3.10" ]
+        python-version: [ 3.9, "3.10", "3.11"]
 
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -59,7 +59,7 @@ jobs:
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a #v4.1.2
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -122,6 +122,19 @@ jobs:
           DD_ENV: ${{ matrix.test }}
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
+          CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
+          CHAMPION_SERVER_INTERNAL_LICENSE: ${{ secrets.CHAMPION_SERVER_INTERNAL_LICENSE }}
+          CHAMPION_SERVER_LIMITED_LICENSE: ${{ secrets.CHAMPION_SERVER_LIMITED_LICENSE }}
+          EXPIRED_LICENSE: ${{ secrets.EXPIRED_LICENSE }}
+          IMMATURE_LICENSE: ${{ secrets.IMMATURE_LICENSE }}
+          INVALID_SCHEMA_LICENSE: ${{ secrets.INVALID_SCHEMA_LICENSE }}
+          INVALID_SIGNATURE_LICENSE: ${{ secrets.INVALID_SIGNATURE_LICENSE }}
+          NON_JWT_LICENSE: ${{ secrets.NON_JWT_LICENSE }}
+          UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
+          VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
+          API_DOCS_FORMAT: yaml
         run: |
           make ${{ matrix.test }}
         shell: bash # bash shell is a way to make code run for both Linux and Windows
@@ -134,14 +147,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ 3.9, "3.10" ]
+        python-version: [ 3.9, "3.10", "3.11"]
 
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -161,7 +174,7 @@ jobs:
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a #v4.1.2
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
@@ -238,14 +251,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9, "3.10"]
+        python-version: [3.9, "3.10", "3.11"]
 
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Set up Python ${{ matrix.python-version }} 🐍
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -265,7 +278,7 @@ jobs:
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a #v4.1.2
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}

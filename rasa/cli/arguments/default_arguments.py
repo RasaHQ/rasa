@@ -1,12 +1,12 @@
 import argparse
 import logging
-from typing import Optional, Text, Union
+from enum import Enum
+from typing import List, Optional, Text, Union
 
-from rasa.nlu.persistor import RemoteStorageType, StorageType, parse_remote_storage
+from rasa.core.persistor import RemoteStorageType, StorageType, parse_remote_storage
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
-    DEFAULT_DOMAIN_PATH,
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
 )
@@ -52,7 +52,7 @@ def add_nlu_data_param(
 
 def add_domain_param(
     parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
-    default: Optional[Text] = DEFAULT_DOMAIN_PATH,
+    default: Optional[Text] = None,
 ) -> None:
     parser.add_argument(
         "-d",
@@ -185,3 +185,23 @@ def parse_remote_storage_arg(value: str) -> StorageType:
         return parse_remote_storage(value)
     except ValueError as e:
         raise argparse.ArgumentTypeError(str(e))
+
+
+class SkipYamlValidation(Enum):
+    DOMAIN = "domain"
+
+    @classmethod
+    def list(cls) -> List[str]:
+        return [e.value for e in SkipYamlValidation]
+
+
+def add_skip_validation_flag(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+) -> None:
+    parser.add_argument(
+        "--skip-yaml-validation",
+        default=[],
+        choices=SkipYamlValidation.list(),
+        action="append",
+        help="Skip YAML validation for selected parts of the training data.",
+    )

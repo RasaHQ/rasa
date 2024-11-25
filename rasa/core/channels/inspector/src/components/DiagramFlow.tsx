@@ -10,17 +10,14 @@ interface Props {
   stackFrame?: Stack;
   flows: Flow[];
   slots: Slot[];
+  stepTrail?: string[];
 }
 
-export const DiagramFlow = (props: Props) => {
+export const DiagramFlow = ({ stackFrame, stepTrail, flows, slots }: Props) => {
   const { rasaSpace } = useOurTheme();
   const mermaidRef = useRef<HTMLPreElement>(null);
   const [text, setText] = useState<string>("");
-  const { stackFrame, flows, slots } = props;
-
-  const activeFlowId = stackFrame?.flow_id;
-  const activeStepId = stackFrame?.step_id;
-  const flow = flows.find(({ id }) => id === activeFlowId);
+  const flow = flows.find(({ id }) => id === stackFrame?.flow_id)
 
   const config = {
     startOnLoad: true,
@@ -28,7 +25,7 @@ export const DiagramFlow = (props: Props) => {
     flowchart: {
       useMaxWidth: false,
     },
-  }
+  };
 
   useEffect(() => {
     mermaid.mermaidAPI.initialize(config);
@@ -50,10 +47,14 @@ export const DiagramFlow = (props: Props) => {
   }, [text]);
 
   useEffect(() => {
-    setText(formatFlow(slots, stackFrame, flow, activeStepId));
-  }, [text, flow, slots, stackFrame, activeStepId]);
+    setText(formatFlow(slots, stackFrame, flow, stepTrail));
+  }, [text, flow, slots, stackFrame]);
 
   const handleRestartConversation = () => {
+    // unset the sender id from the query parameters
+    const url = new URL(window.location.href);
+    url.searchParams.delete("sender");
+    window.history.pushState(null, "", url.toString());
     location.reload();
   };
 
@@ -99,7 +100,7 @@ export const DiagramFlow = (props: Props) => {
       </Box>
       <Flex justifyContent="space-between" alignItems="flex-end">
         <Button variant="outline" size="sm" onClick={handleRestartConversation}>
-          Restart conversation
+          New conversation
         </Button>
       </Flex>
     </Flex>

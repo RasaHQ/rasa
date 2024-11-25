@@ -210,5 +210,6 @@ excluded_words:
   - whitespaced
   - winpty
   - wsgi
+  - mongosh
 
 spellcheck_filenames: false

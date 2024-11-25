@@ -1,60 +1,62 @@
 import uuid
 from pathlib import Path
-from typing import Optional, List, Text
-from unittest.mock import Mock, patch, AsyncMock
+from typing import List, Optional, Text
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
 from pytest import MonkeyPatch
 
 from rasa.dialogue_understanding.commands import (
-    Command,
-    SetSlotCommand,
     CancelFlowCommand,
-    StartFlowCommand,
-    HumanHandoffCommand,
-    ChitChatAnswerCommand,
-    SkipQuestionCommand,
-    KnowledgeAnswerCommand,
-    ClarifyCommand,
-    ChangeFlowCommand,
     CannotHandleCommand,
+    ChangeFlowCommand,
+    ChitChatAnswerCommand,
+    ClarifyCommand,
+    Command,
     ErrorCommand,
+    HumanHandoffCommand,
+    KnowledgeAnswerCommand,
+    SetSlotCommand,
+    SkipQuestionCommand,
+    StartFlowCommand,
 )
 from rasa.dialogue_understanding.generator.constants import (
-    FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
+    FLOW_RETRIEVAL_KEY,
 )
 from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
     MultiStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.patterns.cancel import (
-    CancelPatternFlowStackFrame,
     FLOW_PATTERN_CANCEL,
+    CancelPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
-    UserFlowStackFrame,
     DialogueStackFrame,
+    UserFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
+    OPENAI_API_KEY_ENV_VAR,
     RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED,
     ROUTE_TO_CALM_SLOT,
-    OPENAI_API_KEY_ENV_VAR,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str_including_defaults
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.training_data.message import Message
-from tests.utilities import flows_from_str
+from tests.utilities import (
+    flows_from_str,
+    flows_from_str_including_defaults,
+)
 
 
 class TestMultiStepLLMCommandGenerator:

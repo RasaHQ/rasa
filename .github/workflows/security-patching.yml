@@ -29,10 +29,10 @@ jobs:
         with:
             fetch-depth: 0
 
-      - name: Set up Python
+      - name: Set up Python 3.11
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
-          python-version: '3.9'
+          python-version: '3.11'
 
       - name: Run action to get records
         uses: RasaHQ/get-release-records-from-datocms-gha@69bf862bbbca46174cd9c8747a61a1d6c7e20cb9
@@ -142,58 +142,58 @@ jobs:
         if: steps.build.outcome == 'failure'
         run: exit 1
 
-      - name: Vulnerablity Scanning
-        id: trivy
-        uses: aquasecurity/trivy-action@d63413b0a4a4482237085319f7f4a1ce99a8f2ac
-        continue-on-error: true
-        with:
-          exit-code: '1'
-          format: 'table'
-          output: 'trivy-results.txt'
-          severity: 'HIGH,CRITICAL'
-          ignore-unfixed: true
-          security-checks: 'vuln'
-          image-ref: '${{env.RELEASE_REGISTRY}}:${{ matrix.supported_tag }}-latest'
-          vuln-type: 'os'
+      # - name: Vulnerablity Scanning
+      #   id: trivy
+      #   uses: aquasecurity/trivy-action@d63413b0a4a4482237085319f7f4a1ce99a8f2ac
+      #   continue-on-error: true
+      #   with:
+      #     exit-code: '1'
+      #     format: 'table'
+      #     output: 'trivy-results.txt'
+      #     severity: 'HIGH,CRITICAL'
+      #     ignore-unfixed: true
+      #     security-checks: 'vuln'
+      #     image-ref: '${{env.RELEASE_REGISTRY}}:${{ matrix.supported_tag }}-latest'
+      #     vuln-type: 'os'
 
-      - id: auth-security-reports
-        name: Authenticate with gcloud for saving report 🎫
-        uses: 'google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c' # v2.1.2
-        with:
-          token_format: 'access_token'
-          credentials_json: '${{ secrets.GCP_WRITE_PUBLIC_SECURITY_REPORTS_KEY }}'
+      # - id: auth-security-reports
+      #   name: Authenticate with gcloud for saving report 🎫
+      #   uses: 'google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c' # v2.1.2
+      #   with:
+      #     token_format: 'access_token'
+      #     credentials_json: '${{ secrets.GCP_WRITE_PUBLIC_SECURITY_REPORTS_KEY }}'
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+      # - name: Set up Cloud SDK
+      #   uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
 
-      - name: Upload scan report to GCS
-        run: |
-          gsutil -h "Content-Type:text/plain; charset=utf-8" -h "Cache-Control:public, max-age=0, no-transform" cp trivy-results.txt gs://${{ env.REPORT_BUCKET }}/rasa-private-report-${{ matrix.supported_tag }}-${{ steps.date.outputs.date }}.txt
+      # - name: Upload scan report to GCS
+      #   run: |
+      #     gsutil -h "Content-Type:text/plain; charset=utf-8" -h "Cache-Control:public, max-age=0, no-transform" cp trivy-results.txt gs://${{ env.REPORT_BUCKET }}/rasa-private-report-${{ matrix.supported_tag }}-${{ steps.date.outputs.date }}.txt
 
-      - name: Alert Slack on findings
-        if: steps.trivy.outcome == 'failure'
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
-        with:
-          payload: |
-            {
-              "text": "Critical or High vulnerabilities have been found in the Docker image for Rasa Private ${{ matrix.supported_tag }} that could impact customer deployments. Please schedule these for resolution in the next sprint. <https://storage.googleapis.com/${{ env.REPORT_BUCKET }}/rasa-private-report-${{ matrix.supported_tag }}-${{ steps.date.outputs.date }}.txt|View Scan Report>",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Critical or High vulnerabilities have been found in the Docker image for Rasa Private ${{ matrix.supported_tag }} that could impact customer deployments. Please schedule these for resolution in the next sprint."
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "<https://storage.googleapis.com/${{ env.REPORT_BUCKET }}/rasa-private-report-${{ matrix.supported_tag }}-${{ steps.date.outputs.date }}.txt|View Scan Report>"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      # - name: Alert Slack on findings
+      #   if: steps.trivy.outcome == 'failure'
+      #   uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
+      #   with:
+      #     payload: |
+      #       {
+      #         "text": "Critical or High vulnerabilities have been found in the Docker image for Rasa Private ${{ matrix.supported_tag }} that could impact customer deployments. Please schedule these for resolution in the next sprint. <https://storage.googleapis.com/${{ env.REPORT_BUCKET }}/rasa-private-report-${{ matrix.supported_tag }}-${{ steps.date.outputs.date }}.txt|View Scan Report>",
+      #         "blocks": [
+      #           {
+      #             "type": "section",
+      #             "text": {
+      #               "type": "mrkdwn",
+      #               "text": "Critical or High vulnerabilities have been found in the Docker image for Rasa Private ${{ matrix.supported_tag }} that could impact customer deployments. Please schedule these for resolution in the next sprint."
+      #             }
+      #           },
+      #           {
+      #             "type": "section",
+      #             "text": {
+      #               "type": "mrkdwn",
+      #               "text": "<https://storage.googleapis.com/${{ env.REPORT_BUCKET }}/rasa-private-report-${{ matrix.supported_tag }}-${{ steps.date.outputs.date }}.txt|View Scan Report>"
+      #             }
+      #           }
+      #         ]
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
+      #     SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

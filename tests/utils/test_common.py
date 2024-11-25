@@ -1,15 +1,15 @@
+import asyncio
 import json
 import logging
 import logging.config
 import os
-import sys
 from pathlib import Path
 from typing import Any, Text, Type
 from unittest import mock
+from unittest.mock import Mock
 
 import pytest
-from pytest import LogCaptureFixture
-from pytest import MonkeyPatch
+from pytest import LogCaptureFixture, MonkeyPatch
 
 import rasa.utils.common
 import tests.conftest
@@ -18,11 +18,11 @@ from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.shared.exceptions import RasaException
 from rasa.utils.common import (
     RepeatedLogFilter,
-    find_unavailable_packages,
+    configure_library_logging,
     configure_logging_and_warnings,
     configure_logging_from_file,
+    find_unavailable_packages,
     get_bool_env_variable,
-    configure_library_logging,
 )
 
 FAKER_LOGGER = logging.getLogger("faker")
@@ -111,6 +111,89 @@ def test_dir_size_with_sub_directory(tmp_path: Path):
     tests.conftest.create_test_file_with_size(subdir, 3)
 
     assert rasa.utils.common.directory_size_in_mb(tmp_path) == pytest.approx(5)
+
+
+async def test_cached_method_with_sync_method():
+    expected = 5
+    mock = Mock(return_value=expected)
+
+    class Test:
+        @rasa.shared.utils.common.cached_method
+        def f(self):
+            return mock()
+
+    test_instance = Test()
+    assert test_instance.f() == expected
+    assert test_instance.f() == expected
+
+    mock.assert_called_once()
+
+
+async def test_cached_method_with_async_method():
+    expected = 5
+    mock = Mock(return_value=expected)
+
+    class Test:
+        @rasa.shared.utils.common.cached_method
+        async def f(self):
+            await asyncio.sleep(0)
+            return mock()
+
+    test_instance = Test()
+    assert await test_instance.f() == expected
+    assert await test_instance.f() == expected
+
+    mock.assert_called_once()
+
+
+async def test_cached_method_with_different_arguments():
+    expected = 5
+    mock = Mock(return_value=expected)
+
+    class Test:
+        @rasa.shared.utils.common.cached_method
+        async def f(self, _: bool, arg2: bool):
+            return mock()
+
+    test_instance = Test()
+
+    # Caching works
+    assert await test_instance.f(True, arg2=True) == expected
+    assert await test_instance.f(True, arg2=True) == expected
+
+    assert mock.call_count == 1
+
+    # Different arg results in cache miss
+    assert await test_instance.f(False, arg2=True) == expected
+    assert await test_instance.f(False, arg2=True) == expected
+
+    assert mock.call_count == 2
+
+    # Different kwarg results in cache miss
+    assert await test_instance.f(True, arg2=False) == expected
+    assert await test_instance.f(True, arg2=False) == expected
+
+    assert mock.call_count == 3
+
+
+def test_cached_method_with_function():
+    with pytest.raises(AssertionError):
+
+        @rasa.shared.utils.common.cached_method
+        def my_function():
+            pass
+
+        my_function()
+
+
+async def test_cached_method_with_async_function():
+    with pytest.raises(AssertionError):
+
+        @rasa.shared.utils.common.cached_method
+        async def my_function():
+            await asyncio.sleep(0)
+
+        await my_function()
 
 
 @pytest.mark.parametrize("create_destination", [True, False])
@@ -271,30 +354,9 @@ def test_cli_invalid_logging_configuration(
     )
 
 
-@pytest.mark.skipif(
-    sys.version_info.minor == 7, reason="no error is raised with python 3.7"
-)
 def test_cli_invalid_format_value_in_config(caplog: LogCaptureFixture) -> None:
     logging_config_file = (
         "data/test_logging_config_files/test_invalid_format_value_in_config.yml"
-    )
-
-    with caplog.at_level(logging.DEBUG):
-        configure_logging_from_file(logging_config_file=logging_config_file)
-
-    assert (
-        f"The logging config file {logging_config_file} could not be applied "
-        f"because it failed validation against the built-in Python "
-        f"logging schema." in caplog.text
-    )
-
-
-@pytest.mark.skipif(
-    sys.version_info.minor in [9, 10], reason="no error is raised with python 3.9"
-)
-def test_cli_non_existent_handler_id_in_config(caplog: LogCaptureFixture) -> None:
-    logging_config_file = (
-        "data/test_logging_config_files/test_non_existent_handler_id.yml"
     )
 
     with caplog.at_level(logging.DEBUG):

@@ -1,12 +1,13 @@
 import dataclasses
 import io
+import textwrap
 from typing import Dict, List, Optional, Text
 
 from yarl import URL
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.flows.yaml_flows_io import flows_from_str
+from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 from rasa.shared.importers.importer import FlowSyncImporter
 
 
@@ -28,6 +29,25 @@ def flows_default_domain() -> Domain:
     return FlowSyncImporter.load_default_pattern_flows_domain()
 
 
+def flows_from_str_including_defaults(yaml_str: str) -> FlowsList:
+    """Reads flows from a YAML string and combine them with default flows."""
+    flows = YAMLFlowsReader.read_from_string(
+        textwrap.dedent(yaml_str), add_line_numbers=False
+    )
+    all_flows = FlowSyncImporter.merge_with_default_flows(flows)
+    all_flows.validate()
+    return all_flows
+
+
+def flows_from_str(yaml_str: str) -> FlowsList:
+    """Reads flows from a YAML string."""
+    flows = YAMLFlowsReader.read_from_string(
+        textwrap.dedent(yaml_str), add_line_numbers=False
+    )
+    flows.validate()
+    return flows
+
+
 def filter_logs(
     caplog: List[Dict],
     event: Optional[Text] = None,
@@ -35,7 +55,7 @@ def filter_logs(
     log_message_parts: Optional[List[Text]] = None,
     log_contains_all_message_parts: bool = True,
 ) -> List[Dict]:
-    """Filters structlog logs based on specified criteria:
+    """Filters structlog logs based on specified criteria.
 
     Args:
         caplog:
@@ -107,3 +127,10 @@ def create_tar_archive_in_bytes(input_file_entries: List[TarFileEntry]) -> bytes
             tar.addfile(info, io.BytesIO(item.data))
 
     return file_like_object.getvalue()
+
+
+def clear_available_endpoints_class_instance() -> None:
+    """Clears the available endpoints class instance."""
+    from rasa.core.utils import AvailableEndpoints
+
+    AvailableEndpoints._instance = None

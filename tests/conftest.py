@@ -13,7 +13,17 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, Iterator, List, Optional, Text
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Dict,
+    Generator,
+    Iterator,
+    List,
+    Optional,
+    Text,
+)
 from unittest.mock import Mock
 
 import jwt
@@ -57,7 +67,11 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.model_training import train, train_nlu
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
-from rasa.shared.constants import ASSISTANT_ID_KEY, LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    LLM_API_HEALTH_CHECK_ENV_VAR,
+)
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
@@ -96,6 +110,7 @@ from tests.license_env import (
     UNSCOPED_LICENSE_ENV,
     VALID_LICENSE_ENV,
 )
+from swagger_coverage_py.reporter import CoverageReporter
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separately installable pytest-cli plugin.
@@ -131,6 +146,9 @@ PATH_PYTEST_MARKER_MAPPINGS = {
         Path("tests", "core", "test_examples.py").absolute(),
     ],
     "category_performance": [Path("tests", "test_memory_leak.py").absolute()],
+    "category_audio_manual": [
+        Path("tests", "core", "channels", "voice_stream").absolute()
+    ],
 }
 
 
@@ -276,6 +294,11 @@ def endpoints_path() -> Text:
     return "data/test_endpoints/example_endpoints.yml"
 
 
+@pytest.fixture(scope="session")
+def audio_data_path() -> str:
+    return "data/test_audio"
+
+
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
@@ -299,12 +322,39 @@ def loop(
     yield event_loop
 
 
+TrainedAsync = Callable[..., Coroutine[Any, Any, Optional[str]]]
+
+
+@pytest.fixture(scope="session")
+def trained_async(
+    tmp_path_factory: TempPathFactory,
+) -> TrainedAsync:
+    async def _train(
+        *args: Any,
+        output_path: Optional[Text] = None,
+        cache_dir: Optional[Path] = None,
+        **kwargs: Any,
+    ) -> Optional[Text]:
+        if not cache_dir:
+            cache_dir = tmp_path_factory.mktemp("cache")
+
+        if output_path is None:
+            output_path = str(tmp_path_factory.mktemp("models"))
+
+        with enable_cache(cache_dir):
+            result = await train(*args, output=output_path, **kwargs)
+
+        return result.model
+
+    return _train
+
+
 @pytest.fixture(scope="session")
 async def trained_default_agent_model(
     stories_path: Text,
     domain_path: Text,
     nlu_data_path: Text,
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     simple_config_path: Text,
 ) -> Text:
     model_path = await trained_async(
@@ -334,7 +384,7 @@ def default_agent(trained_default_agent_model: Text) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_path(trained_async: Callable) -> Text:
+async def trained_moodbot_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
@@ -343,7 +393,7 @@ async def trained_moodbot_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_core_path(trained_async: Callable) -> Text:
+async def trained_moodbot_core_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
@@ -352,7 +402,7 @@ async def trained_moodbot_core_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_moodbot_nlu_path(trained_async: Callable) -> Text:
+async def trained_moodbot_nlu_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
@@ -361,7 +411,7 @@ async def trained_moodbot_nlu_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_unexpected_intent_policy_path(trained_async: Callable) -> Text:
+async def trained_unexpected_intent_policy_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/unexpected_intent_policy_config.yml",
@@ -379,7 +429,7 @@ async def trained_nlu_moodbot_path(trained_nlu: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_spacybot_path(trained_async: Callable) -> Text:
+async def trained_spacybot_path(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="data/test_spacybot/domain.yml",
         config="data/test_spacybot/config.yml",
@@ -400,6 +450,11 @@ async def core_agent(trained_core_model: Text) -> Agent:
 @pytest.fixture(scope="session")
 async def nlu_agent(trained_nlu_model: Text) -> Agent:
     return await load_agent(model_path=trained_nlu_model)
+
+
+@pytest.fixture(scope="session")
+async def agent_with_flows(trained_rasa_model_with_flows: Text) -> Agent:
+    return await load_agent(model_path=trained_rasa_model_with_flows)
 
 
 @pytest.fixture(scope="module")
@@ -425,28 +480,6 @@ def domain(_domain: Domain) -> Domain:
 
 
 @pytest.fixture(scope="session")
-def trained_async(tmp_path_factory: TempPathFactory) -> Callable:
-    async def _train(
-        *args: Any,
-        output_path: Optional[Text] = None,
-        cache_dir: Optional[Path] = None,
-        **kwargs: Any,
-    ) -> Optional[Text]:
-        if not cache_dir:
-            cache_dir = tmp_path_factory.mktemp("cache")
-
-        if output_path is None:
-            output_path = str(tmp_path_factory.mktemp("models"))
-
-        with enable_cache(cache_dir):
-            result = await train(*args, output=output_path, **kwargs)
-
-        return result.model
-
-    return _train
-
-
-@pytest.fixture(scope="session")
 def trained_nlu(tmp_path_factory: TempPathFactory) -> Callable:
     async def _train_nlu(
         *args: Any, output_path: Optional[Text] = None, **kwargs: Any
@@ -461,7 +494,7 @@ def trained_nlu(tmp_path_factory: TempPathFactory) -> Callable:
 
 @pytest.fixture(scope="session")
 async def trained_rasa_model(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     domain_path: Text,
     nlu_data_path: Text,
     stories_path: Text,
@@ -477,18 +510,16 @@ async def trained_rasa_model(
 
 
 @pytest.fixture(scope="session")
-async def trained_rasa_model_windows(
+async def trained_rasa_model_with_flows(
     trained_async: Callable,
     domain_path: Text,
     basic_flows_path: Text,
     stack_config_path: Text,
-    windows_output_path,
 ) -> Text:
     trained_stack_model_path = await trained_async(
         domain=domain_path,
         config=stack_config_path,
         training_files=[basic_flows_path],
-        output_path=windows_output_path,
     )
 
     return trained_stack_model_path
@@ -496,7 +527,7 @@ async def trained_rasa_model_windows(
 
 @pytest.fixture(scope="session")
 async def trained_core_model(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     domain_path: Text,
     stack_config_path: Text,
     stories_path: Text,
@@ -510,7 +541,7 @@ async def trained_core_model(
 
 @pytest.fixture(scope="session")
 async def trained_nlu_model(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     domain_path: Text,
     nlu_data_path: Text,
     stack_config_path: Text,
@@ -542,7 +573,7 @@ def trained_e2e_model_cache(
 
 @pytest.fixture(scope="session")
 async def trained_e2e_model(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     moodbot_domain_path: Text,
     e2e_bot_config_file: Path,
     nlu_data_path: Text,
@@ -604,6 +635,12 @@ def rasa_nlu_server(nlu_agent: Agent) -> Sanic:
 def rasa_server_secured(default_agent: Agent) -> Sanic:
     app = server.create_app(agent=default_agent, auth_token="rasa", jwt_secret="core")
     channel.register([RestInput()], app, "/webhooks/")
+    return app
+
+
+@pytest.fixture
+def rasa_server_with_flows(agent_with_flows: Agent) -> Sanic:
+    app = server.create_app(agent=agent_with_flows, auth_token="rasa")
     return app
 
 
@@ -729,7 +766,7 @@ async def response_selector_test_stories() -> Path:
 
 
 @pytest.fixture(scope="session")
-async def trained_response_selector_bot(trained_async: Callable) -> Path:
+async def trained_response_selector_bot(trained_async: TrainedAsync) -> Path:
     zipped_model = await trained_async(
         domain="data/test_response_selector_bot/domain.yml",
         config="data/test_response_selector_bot/config.yml",
@@ -771,7 +808,7 @@ def e2e_bot_test_stories_with_unknown_bot_utterances() -> Path:
 # FIXME: This fixture is very slow, do not use it without fixing that first
 @pytest.fixture(scope="session")
 async def e2e_bot(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
     e2e_bot_domain_file: Path,
     e2e_bot_config_file: Path,
     e2e_bot_training_files: List[Path],
@@ -1063,7 +1100,15 @@ def wait(
         raise TimeoutError(timeout_msg)
 
 
-def create_simple_project(path: Path):
+def create_simple_project(path: Path) -> Path:
+    """Create a simple project structure in the given path.
+
+    Args:
+        path: Path to the project directory.
+
+    Returns:
+        Path to the project directory
+    """
     scaffold.create_initial_project(str(path))
 
     # create a config file
@@ -1175,7 +1220,7 @@ def fake_embedding_client() -> EmbeddingClient:
 
 @pytest.fixture(scope="session")
 async def trained_custom_actions_model(
-    trained_async: Callable,
+    trained_async: TrainedAsync,
 ) -> Text:
     parent_folder = "data/test_custom_action_triggers_action_extract_slots"
     domain_path = f"{parent_folder}/domain.yml"
@@ -1213,7 +1258,7 @@ def action_name_test_case() -> str:
 @pytest.fixture
 def stub_data() -> Dict[str, Any]:
     return {
-        "events": [{"event": "sample_event"}],
+        "events": [{"event": "slot", "name": "sample_slot_name", "value": None}],
         "responses": [{"response": "sample_response"}],
     }
 
@@ -1418,3 +1463,21 @@ def valid_license(load_env_vars) -> str:
         f" by setting the environment variable {VALID_LICENSE_ENV}"
     )
     return value
+
+
+@pytest.fixture
+def setup_swagger_coverage():
+    reporter = CoverageReporter(
+        api_name="rasa-pro", host="https://rasa.com/docs/rasa-pro/spec"
+    )
+    reporter.cleanup_input_files()
+    reporter.setup("/rasa.yml")
+
+    yield
+    reporter.generate_report()
+
+
+@pytest.fixture(autouse=True)
+def set_llm_api_health_check_env_var(monkeypatch) -> None:
+    # Set environment variables for all tests
+    monkeypatch.setenv(LLM_API_HEALTH_CHECK_ENV_VAR, "false")

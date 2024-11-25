@@ -220,7 +220,7 @@ async def execute_dask_graph(dsk: Dict[str, Any], result: List[str]) -> Any:
     # if start_state_from_dask fails, we will have something
     # to pass to the final block.
     state = {}
-    keyorder = dask.local.order(dsk)  # type:ignore[no-untyped-call]
+    keyorder = dask.local.order(dsk)
 
     state = dask.local.start_state_from_dask(dsk, cache=cache, sortkey=keyorder.get)  # type:ignore[no-untyped-call]
 
@@ -235,7 +235,7 @@ async def execute_dask_graph(dsk: Dict[str, Any], result: List[str]) -> Any:
         # Notify task is running
         state["running"].add(key)
 
-        dependencies = dask.local.get_dependencies(dsk, key)  # type:ignore[no-untyped-call]
+        dependencies = dask.local.get_dependencies(dsk, key)
         # Prep args to send
         data = {dep: state["cache"][dep] for dep in dependencies}
 

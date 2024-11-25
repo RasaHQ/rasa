@@ -19,6 +19,7 @@ from typing import (
 
 from sanic import Sanic
 from sanic.worker.loader import AppLoader
+from rasa.core.channels.development_inspector import DevelopmentInspectProxy
 
 import rasa.core.utils
 import rasa.shared.utils.common
@@ -32,8 +33,8 @@ from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
+from rasa.core.persistor import StorageType
 from rasa.core.utils import AvailableEndpoints
-from rasa.nlu.persistor import StorageType
 from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import read_config_file
@@ -50,7 +51,6 @@ def create_http_input_channels(
         all_credentials = read_config_file(credentials_file)
     else:
         all_credentials = {}
-
     if channel:
         if len(all_credentials) > 1:
             logger.info(
@@ -224,12 +224,21 @@ def serve_application(
     syslog_protocol: Optional[Text] = None,
     request_timeout: Optional[int] = None,
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
+    inspect: Optional[bool] = False,
+    voice: Optional[bool] = False,
 ) -> None:
     """Run the API entrypoint."""
     if not channel and not credentials:
         channel = "cmdline"
 
     input_channels = create_http_input_channels(channel, credentials)
+
+    if inspect:
+        logger.info("Starting development inspector.")
+        input_channels = [DevelopmentInspectProxy(ic, voice) for ic in input_channels]
+
+        # the inspector needs the api to retrieve slots and flows
+        enable_api = True
 
     app = configure_app(
         input_channels,
@@ -311,6 +320,7 @@ async def load_agent_on_start(
         endpoints=endpoints,
         loop=loop,
     )
+
     logger.info("Rasa server is up and running.")
     return app.ctx.agent
 

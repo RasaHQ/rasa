@@ -217,6 +217,11 @@ flows:
               - action: utter_internal_error_rasa
                 next: END
 
+  pattern_repeat_bot_messages:
+    description: Voice conversation repair pattern to repeat bot messages
+    name: pattern repeat bot messages
+    steps:
+      - action: action_repeat_bot_messages
 
   pattern_restart:
     description: Flow for restarting the conversation

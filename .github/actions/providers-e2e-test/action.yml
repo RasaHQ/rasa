@@ -51,10 +51,6 @@ inputs:
     description: 'Token to enable sending Slack notifications'
     required: true
 
-  huggingface-api-key:
-    description: 'Hugging Face API key'
-    required: true
-
 runs:
   using: composite
   steps:
@@ -76,7 +72,7 @@ runs:
       shell: bash
 
     - name: Setup Python Environment
-      uses: RasaHQ/rasa-private/.github/actions/setup-python-env@3.10.x
+      uses: RasaHQ/rasa-private/.github/actions/setup-python-env@main
       with:
         PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -132,17 +128,13 @@ runs:
     # so need to wake it up before usage
     - name: Wake up Hugging Face inference endpoint
       if: ${{ inputs.provider == 'huggingface' }}
+      working-directory: data/test_config/providers/huggingface
+      env:
+        ENDPOINT_NAME: cmd-gen-codellama-13b-calm-d-bfz
+        ENDPOINT_NAMESPACE: rasa
       run: |
         : Wake up Hugging Face inference endpoint
-        curl --fail-with-body --retry 10 --retry-max-time 300 --retry-all-errors -vvv 'https://z35w5f1azkh4s9id.us-east-1.aws.endpoints.huggingface.cloud' \
-        --header 'Content-Type: application/json' \
-        --header "Authorization: Bearer ${{ inputs.huggingface-api-key }}" \
-        --data '{
-            "inputs": "Can you please let us know more details about your ",
-            "parameters": {
-                "max_new_tokens": 150
-            }
-        }'
+        pip install huggingface_hub && ./wake-up-inference-endpoint.py
       shell: bash
 
     - name: Run duckling server
@@ -174,7 +166,16 @@ runs:
           --endpoints data/test_config/providers/${{ inputs.provider }}/endpoints.yml \
           --domain rasa-calm-demo/domain \
           --data rasa-calm-demo/data \
-          --fixed-model-name ${{ inputs.train-and-test }}-${{ inputs.provider }}-model
+          --fixed-model-name ${{ inputs.train-and-test }}-${{ inputs.provider }}-model \
+          2>&1 \
+          | tee model-training-log \
+          && grep -i 'Performing a health check on the LLM API for the component - ContextualResponseRephraser' model-training-log \
+          && grep -i 'Performing a health check on the LLM API for the component - LLMBasedRouter.' model-training-log \
+          && grep -i 'Performing a health check on the LLM API for the component - EnterpriseSearchPolicy' model-training-log \
+          && grep -i 'Performing a health check on the LLM API for the component - IntentlessPolicy' model-training-log \
+          && grep -i 'Performing a health check on the LLM API for the component - LLMBasedCommandGenerator' model-training-log \
+          && grep -i 'Your Rasa model is trained and saved' model-training-log \
+          && echo 'LLM API health checks passed for all components during training'
       shell: bash
 
     - name: Run e2e test (Single Step Command Generator)
@@ -210,7 +211,7 @@ runs:
 
     - name: Save test results
       if: failure()
-      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
       with:
         name: ${{ inputs.provider }}-E2E-test-${{ inputs.train-and-test }}-results
         path: tests/e2e_results_failed.yml
@@ -243,6 +244,7 @@ runs:
       with:
         # Send notification to #dev-tribe-alerts slack channel
         channel-id: C070ELPSLBB 
+
         # Alert Engine-squad
         slack-message: '<!subteam^S0322UJCPU1> :broken_heart: *Rasa-Pro* (version `${{ env.RASA_VERSION
           }}`, `rasa-private` sha `${{ env.SHORT_SHA }}`) CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) failed against provider: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model!

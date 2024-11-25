@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 import uuid
@@ -685,8 +684,8 @@ async def test_initial_plotting_call(
 
     monkeypatch.setattr(interactive.utils, "is_limit_reached", lambda _, __: True)
 
-    plot_trackers = Mock()
-    monkeypatch.setattr(interactive, "_plot_trackers", asyncio.coroutine(plot_trackers))
+    plot_trackers = AsyncMock()
+    monkeypatch.setattr(interactive, "_plot_trackers", plot_trackers)
 
     url = f"{mock_endpoint.url}/domain"
     with aioresponses() as mocked:

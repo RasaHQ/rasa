@@ -95,12 +95,12 @@ jobs:
             echo "Version match: Input version of rasa-sdk ($input_rasa_sdk_version) matches rasa-sdk ($rasa_sdk) version in pyproject.toml."
             echo "update_required=false" >> $GITHUB_ENV
           fi
-      
+
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env
         with:
             PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-      
+
       - name: Update Rasa SDK Version
         if: env.update_required == 'true'
         run: |
@@ -124,7 +124,9 @@ jobs:
         run:  |
           git config user.name "rasabot"
           git config user.email "rasabot@rasa.com"
-          poetry run python scripts/release.py prepare --next_version ${{ github.event.inputs.version }}
+          poetry run python scripts/release.py prepare --next_version $INPUT_VERSION
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
 
       - name: Create pull request
         uses: devops-infra/action-pull-request@e66e2ba93519dc63b9884a26e620e2fd0cffab2c
@@ -134,7 +136,7 @@ jobs:
           target_branch: ${{ env.base_branch }}
           body: "**Automated pull request for Rasa Pro release.**"
           title: Release ${{ github.event.inputs.version }}
-  
+
   if_merged_tag_release:
     if: startsWith(github.head_ref, 'prepare-release-') && github.event.pull_request.merged == true
     runs-on: ubuntu-22.04
@@ -151,7 +153,7 @@ jobs:
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 #v4.0.0
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a #v4.1.2
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}

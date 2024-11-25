@@ -66,6 +66,8 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
         Raises:
             RasaException: If an error occurs while making the HTTP request.
         """
+        from rasa.core.actions.action import RemoteActionJSONValidator
+
         try:
             logger.debug(
                 "Calling action endpoint to run action '{}'.".format(self.action_name)
@@ -79,6 +81,8 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
 
             if response is None:
                 response = {}
+
+            RemoteActionJSONValidator.validate(response)
 
             return response
 

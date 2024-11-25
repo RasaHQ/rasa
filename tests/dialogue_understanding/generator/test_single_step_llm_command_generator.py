@@ -3,6 +3,7 @@ import uuid
 from pathlib import Path
 from typing import Optional, Dict, Text, Any, Set, List
 from unittest.mock import Mock, patch, AsyncMock
+import structlog
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
@@ -24,6 +25,7 @@ from rasa.dialogue_understanding.commands import (
 from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
+    FLOW_RETRIEVAL_FLOW_THRESHOLD,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
@@ -53,7 +55,7 @@ from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.llm import (
     DEFAULT_MAX_USER_INPUT_CHARACTERS,
 )
-from tests.utilities import flows_from_str
+from tests.utilities import flows_from_str, filter_logs
 
 EXPECTED_PROMPT_PATH = "./tests/dialogue_understanding/generator/rendered_prompt.txt"
 EXPECTED_RENDERED_FLOW_DESCRIPTION_PATH = (
@@ -832,7 +834,6 @@ class TestSingleStepLLMCommandGenerator:
         model_storage: ModelStorage,
         flows: FlowsList,
         resource: Resource,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # Given
         generator = SingleStepLLMCommandGenerator(
@@ -841,9 +842,47 @@ class TestSingleStepLLMCommandGenerator:
             resource,
         )
         # When
-        generator.train(TrainingData(), flows, Mock())
+        with structlog.testing.capture_logs() as caplog:
+            generator.train(TrainingData(), flows, Mock())
         # Then
+        expected_event = "llm_based_command_generator.flow_retrieval.disabled"
+        expected_log_level = "warning"
+        logs = filter_logs(caplog, expected_event, expected_log_level, [])
         assert generator.flow_retrieval is None
+        assert len(logs) == 0
+
+        new_flows = """
+        flows:
+        """
+        for i in range(1, FLOW_RETRIEVAL_FLOW_THRESHOLD + 2):
+            new_flows += f"""
+              test_flow_{i}:
+                name: a test flow
+                description: some test flow
+                steps:
+                - id: first_step
+                  action: action_listen
+            """
+        generator = SingleStepLLMCommandGenerator(
+            {FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False}},
+            model_storage,
+            resource,
+        )
+        # When
+        with structlog.testing.capture_logs() as caplog:
+            generator.train(TrainingData(), flows_from_str(new_flows), Mock())
+        # Then
+        expected_event = "llm_based_command_generator.flow_retrieval.disabled"
+        expected_log_level = "warning"
+        logs = filter_logs(caplog, expected_event, expected_log_level, [])
+        assert generator.flow_retrieval is None
+        assert len(logs) == 1
+        assert (
+            "It is recommended to enable flow retrieval if the total "
+            "number of user flows exceed "
+            + str(FLOW_RETRIEVAL_FLOW_THRESHOLD)
+            in logs[0].get("event_info")
+        )
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
@@ -854,7 +893,6 @@ class TestSingleStepLLMCommandGenerator:
         model_storage: ModelStorage,
         flows: FlowsList,
         resource: Resource,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # Given
         generator = SingleStepLLMCommandGenerator(
@@ -864,9 +902,14 @@ class TestSingleStepLLMCommandGenerator:
         )
         domain = Mock()
         # When
-        generator.train(TrainingData(), flows, domain)
+        with structlog.testing.capture_logs() as caplog:
+            generator.train(TrainingData(), flows, domain)
         # Then
         mock_flow_search_populate.assert_called_once_with(flows, domain)
+        expected_event = "llm_based_command_generator.flow_retrieval.disabled"
+        expected_log_level = "warning"
+        logs = filter_logs(caplog, expected_event, expected_log_level, [])
+        assert len(logs) == 0
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"

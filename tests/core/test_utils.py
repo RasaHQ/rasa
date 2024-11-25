@@ -16,6 +16,7 @@ from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import write_endpoint_config_to_yaml
+from tests.utilities import clear_available_endpoints_class_instance
 
 
 class CustomRedisLockStore(RedisLockStore):
@@ -157,14 +158,36 @@ def test_lock_store_is_multi_worker_compatible(
 def test_read_endpoints_from_path(tmp_path: Path):
     # write valid config to file
     endpoints_path = write_endpoint_config_to_yaml(
-        tmp_path, {"event_broker": {"type": "pika"}, "tracker_store": {"type": "sql"}}
+        tmp_path,
+        {
+            "event_broker": {"type": "pika"},
+            "tracker_store": {"type": "sql"},
+            "model_groups": [
+                {
+                    "id": "def_llm",
+                    "models": [{"provider": "openai"}],
+                    "router": {"router_strategy": "round_robin"},
+                }
+            ],
+        },
     )
+
+    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
+    # endpoints from the test file.
+    clear_available_endpoints_class_instance()
 
     # noinspection PyProtectedMember
     available_endpoints = utils.read_endpoints_from_path(endpoints_path)
 
     # assert event broker and tracker store are valid, others are not
     assert available_endpoints.tracker_store and available_endpoints.event_broker
+    assert available_endpoints.model_groups == [
+        {
+            "id": "def_llm",
+            "models": [{"provider": "openai"}],
+            "router": {"router_strategy": "round_robin"},
+        }
+    ]
     assert not all(
         (
             available_endpoints.lock_store,
@@ -177,6 +200,10 @@ def test_read_endpoints_from_path(tmp_path: Path):
 
 
 def test_read_endpoints_from_wrong_path():
+    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
+    # endpoints from the test file.
+    clear_available_endpoints_class_instance()
+
     # noinspection PyProtectedMember
     available_endpoints = utils.read_endpoints_from_path("/some/wrong/path")
 
@@ -190,6 +217,7 @@ def test_read_endpoints_from_wrong_path():
             available_endpoints.action,
             available_endpoints.model,
             available_endpoints.nlu,
+            available_endpoints.model_groups,
         )
     )
 

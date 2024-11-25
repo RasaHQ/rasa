@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import typing
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import Optional, Set, Text, List
 
 from rasa.shared.constants import (
@@ -26,6 +27,12 @@ from rasa.shared.core.flows.steps.call import CallFlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.flows.steps.constants import CONTINUE_STEP_PREFIX, DEFAULT_STEPS
 from rasa.shared.core.flows.steps.link import LinkFlowStep
+from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
+from rasa.shared.core.flows.utils import (
+    warn_deprecated_collect_step_config,
+    get_duplicate_slot_persistence_config_error_message,
+    get_invalid_slot_persistence_config_error_message,
+)
 from rasa.shared.exceptions import RasaException
 
 if typing.TYPE_CHECKING:
@@ -98,6 +105,31 @@ class DuplicatedStepIdException(RasaException):
             f"Step '{self.step_id}' in flow '{self.flow_id}' is using the same id as "
             f"another step. Step ids must be unique across all steps of a flow. "
             f"Please use a different id for your step."
+        )
+
+
+class DuplicatedFlowIdException(RasaException):
+    """Raised when a flow is using the same id as another flow."""
+
+    def __init__(
+        self, flow_id: str, first_file_path: str, second_file_path: str
+    ) -> None:
+        """Initializes the exception."""
+        self.flow_id = flow_id
+        self.first_file_path = first_file_path
+        self.second_file_path = second_file_path
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        if self.first_file_path == self.second_file_path:
+            return (
+                f"Flow '{self.flow_id}' is used twice in `{self.first_file_path}`. "
+                f"Please make sure flow IDs are unique across all files."
+            )
+        return (
+            f"Flow '{self.flow_id}' is used in both "
+            f"`{self.first_file_path}` and `{self.second_file_path}`. "
+            f"Please make sure flow IDs are unique across all files."
         )
 
 
@@ -354,6 +386,42 @@ class FlowIdNamingException(RasaException):
         )
 
 
+class DuplicateSlotPersistConfigException(RasaException):
+    """Raised when a slot persist configuration is duplicated."""
+
+    def __init__(self, flow_id: str, collect_step: str) -> None:
+        """Initializes the exception."""
+        self.flow_id = flow_id
+        self.collect_step = collect_step
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return get_duplicate_slot_persistence_config_error_message(
+            self.flow_id, self.collect_step
+        )
+
+
+class InvalidPersistSlotsException(RasaException):
+    """Raised when a slot persist configuration is duplicated."""
+
+    def __init__(self, flow_id: str, invalid_slots: Set[str]) -> None:
+        """Initializes the exception."""
+        self.flow_id = flow_id
+        self.invalid_slots = invalid_slots
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return get_invalid_slot_persistence_config_error_message(
+            self.flow_id, self.invalid_slots
+        )
+
+
+@dataclass
+class ValidationResult:
+    is_valid: bool
+    invalid_slots: Set[str]
+
+
 def validate_flow(flow: Flow) -> None:
     """Validates the flow configuration.
 
@@ -362,6 +430,8 @@ def validate_flow(flow: Flow) -> None:
         - whether all next links point to existing steps
         - whether all steps can be reached from the start step
     """
+    from rasa.cli.utils import is_skip_validation_flag_set
+
     validate_flow_not_empty(flow)
     validate_no_empty_step_sequences(flow)
     validate_all_steps_next_property(flow)
@@ -371,6 +441,12 @@ def validate_flow(flow: Flow) -> None:
     validate_not_using_builtin_ids(flow)
     validate_slot_names_to_be_collected(flow)
     validate_flow_id(flow)
+
+    if is_skip_validation_flag_set():
+        # we only want to run this validation if the --skip-validation flag is used
+        # during training because Flow Validation exceptions are raised one by one
+        # as opposed to all at once with the Validator class
+        validate_slot_persistence_configuration(flow)
 
 
 def validate_flow_not_empty(flow: Flow) -> None:
@@ -612,3 +688,48 @@ def validate_flow_id(flow: Flow) -> None:
     flow_re = re.compile(FLOW_ID_REGEX)
     if not flow_re.search(flow.id):
         raise FlowIdNamingException(flow.id)
+
+
+def validate_slot_persistence_configuration(flow: Flow) -> None:
+    """Validates that slot persistence configuration is valid.
+
+    Only slots used in either a collect step or a set_slot step can be persisted
+    and the configuration can either be set at the flow level or the collect step level,
+    but not both.
+
+    Args:
+        flow: The flow to validate.
+
+    Raises:
+        DuplicateSlotPersistConfigException: If slot persist config is duplicated.
+    """
+
+    def _is_persist_slots_valid(
+        persist_slots: List[str], flow_slots: Set[str]
+    ) -> ValidationResult:
+        """Validates that the slots that should be persisted are used in the flow."""
+        invalid_slots = set(persist_slots) - flow_slots
+        is_valid = False if invalid_slots else True
+
+        return ValidationResult(is_valid, invalid_slots)
+
+    flow_id = flow.id
+    persist_slots = flow.persisted_slots
+    has_flow_level_persistence = True if persist_slots else False
+    flow_slots = set()
+
+    for step in flow.steps_with_calls_resolved:
+        if isinstance(step, SetSlotsFlowStep):
+            flow_slots.update([slot["key"] for slot in step.slots])
+        elif isinstance(step, CollectInformationFlowStep):
+            flow_slots.add(step.collect)
+            if not step.reset_after_flow_ends:
+                collect_step = step.collect
+                warn_deprecated_collect_step_config(flow_id, collect_step)
+                if has_flow_level_persistence:
+                    raise DuplicateSlotPersistConfigException(flow_id, collect_step)
+
+    if has_flow_level_persistence:
+        result = _is_persist_slots_valid(persist_slots, flow_slots)
+        if not result.is_valid:
+            raise InvalidPersistSlotsException(flow_id, result.invalid_slots)

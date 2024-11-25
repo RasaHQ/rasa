@@ -634,4 +634,3 @@ class GraphModelConfiguration:
     language: Optional[Text]
     core_target: Optional[Text]
     nlu_target: Optional[Text]
-    spaces: Optional[Dict[Text, Text]] = None

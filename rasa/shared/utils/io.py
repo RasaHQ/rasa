@@ -1,18 +1,19 @@
-from collections import OrderedDict
-from functools import wraps
-from hashlib import md5
 import asyncio
 import errno
 import glob
 import json
 import logging
 import os
-import sys
-from pathlib import Path
-from typing import Any, cast, Callable, Dict, List, Optional, Text, Type, TypeVar, Union
-import warnings
 import random
 import string
+import sys
+import warnings
+from collections import OrderedDict
+from functools import wraps
+from hashlib import md5
+from pathlib import Path
+from typing import Any, cast, Callable, Dict, List, Optional, Text, Type, TypeVar, Union
+
 import portalocker
 
 from rasa.shared.constants import (
@@ -475,3 +476,24 @@ def suppress_logs(log_level: int = logging.WARNING) -> Callable[[F], F]:
             return cast(F, sync_wrapper)
 
     return decorator
+
+
+def resolve_environment_variables(
+    value: Union[str, List[Any], Dict[str, Any]],
+) -> Union[str, List[Any], Dict[str, Any]]:
+    """Resolve environment variables in a string, list, or dictionary.
+
+    Args:
+        value: The value to resolve environment variables in.
+
+    Returns:
+        The value with environment variables resolved.
+    """
+    if isinstance(value, str):
+        return os.path.expandvars(value)
+    elif isinstance(value, list):
+        return [resolve_environment_variables(item) for item in value]
+    elif isinstance(value, dict):
+        return {key: resolve_environment_variables(val) for key, val in value.items()}
+    else:
+        return value

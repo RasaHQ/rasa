@@ -39,15 +39,19 @@ class MockHttpxClient(httpx.AsyncClient):
 
 @pytest.fixture
 def reset_litellm_sessions():
-    # Setup: Reset the global settings before each test
+    # Setup: Reset the global settings before each test to their defaults
     litellm.aclient_session = None
     litellm.client_session = None
+    litellm.ssl_verify = True
+    litellm.ssl_certificate = None
 
     yield
 
-    # Teardown: Reset the global settings after each test
+    # Teardown: Reset the global settings after each test to their defaults
     litellm.aclient_session = None
     litellm.client_session = None
+    litellm.ssl_verify = True
+    litellm.ssl_certificate = None
 
 
 @pytest.mark.parametrize(

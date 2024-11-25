@@ -93,6 +93,7 @@ def test_license_scope_missing_voice_scope(
 
 def wait_for_rasa_server_to_start(url: str, token: str, retry_count: int = 120) -> None:
     """Wait for the Rasa server to start.
+
     Args:
         url: URL of the Rasa server.
         token: Token to use to authenticate with the server.

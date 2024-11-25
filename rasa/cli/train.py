@@ -148,16 +148,20 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         for f in args.data
     ]
 
+    training_data_importer = TrainingDataImporter.load_from_config(
+        domain_path=domain, training_data_paths=args.data, config_path=config
+    )
+
     if not args.skip_validation:
         structlogger.info(
             "cli.train.run_training",
             event_info="Started validating domain and training data...",
         )
-        importer = TrainingDataImporter.load_from_config(
-            domain_path=domain, training_data_paths=args.data, config_path=config
-        )
+
         rasa.cli.utils.validate_files(
-            args.fail_on_validation_warnings, args.validation_max_history, importer
+            args.fail_on_validation_warnings,
+            args.validation_max_history,
+            training_data_importer,
         )
 
     training_result = train_all(
@@ -176,6 +180,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         model_to_finetune=_model_for_finetuning(args),
         finetuning_epoch_fraction=args.epoch_fraction,
         remote_storage=args.remote_storage,
+        file_importer=training_data_importer,
     )
     if training_result.code != 0 and can_exit:
         sys.exit(training_result.code)

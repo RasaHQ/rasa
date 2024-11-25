@@ -23,7 +23,7 @@ env:
   RASA_PRO_DEV_REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-private-dev
   RASA_SDK_DEV_REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-sdk-dev
   DEFAULT_PYTHON_VERSION: "3.10"
-  NODE_VERSION_INSPECTOR_BUILD: 16
+  NODE_VERSION_INSPECTOR_BUILD: 20
 
 permissions:
   checks: write
@@ -167,7 +167,7 @@ jobs:
         node-version: ${{ env.NODE_VERSION_INSPECTOR_BUILD }}
 
     - name: Cache node modules
-      uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 #v4.0.2
+      uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a #v4.1.2
       id: yarn-cache
       with:
         path: "**/inspector/node_modules"
@@ -183,7 +183,7 @@ jobs:
         yarn build
 
     - name: Store build output
-      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
       with:
         name: inspector-build
         path: rasa/core/channels/inspector/dist
@@ -218,11 +218,6 @@ jobs:
         with:
             PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
-
-      - name: Install Dependencies (Linux) 📦
-        shell: bash
-        run: |
-          make install
 
       - name: Pull rasa-private dev image
         uses: ./.github/actions/pull-from-ecr
@@ -269,7 +264,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Tracing Integration Test Results
           path: integration-results-tracing.xml
@@ -296,11 +291,6 @@ jobs:
         with:
             PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
-
-      - name: Install Dependencies (Linux) 📦
-        shell: bash
-        run: |
-          make install
 
       - name: Pull rasa-private dev image
         uses: ./.github/actions/pull-from-ecr
@@ -340,7 +330,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Metric Integration Test Results
           path: integration-results-metric.xml
@@ -372,13 +362,8 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-            DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+            PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
-
-      - name: Install Dependencies (Linux) 📦
-        run: |
-          make install
-        shell: bash
 
       - name: Docker version
         run: docker --version && docker compose version
@@ -427,7 +412,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Custom Action Integration Test Results For NLU bot
           path: integration-results-custom-actions-with-nlu-bot-results.xml
@@ -456,11 +441,6 @@ jobs:
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
-
-      - name: Install Dependencies (Linux) 📦
-        run: |
-          make install
-        shell: bash
 
       - name: Docker version
         run: docker --version && docker compose version
@@ -510,7 +490,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Custom Action Integration Test Results For CALM Bot
           path: integration-results-custom-actions-with-calm-bot-results.xml
@@ -536,7 +516,7 @@ jobs:
 
       - name: Set up Python ${{ inputs.PYTHON_VERSION }} 🐍
         id: setup-python
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: ${{ inputs.PYTHON_VERSION }}
 
@@ -555,9 +535,11 @@ jobs:
           installer-parallel: true
 
       - name: Install Dependencies (Linux) 📦
+        # without this step the additional dependency installations with pip install
+        # in the `Install additional dependencies for Docs ingestion` step fails
+        shell: bash
         run: |
           make install
-        shell: bash
 
       - name: Pull rasa-private dev image
         uses: ./.github/actions/pull-from-ecr
@@ -655,7 +637,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Enterprise Search Integration Test Results
           path: integration-results-enterprise-search.xml
@@ -701,7 +683,7 @@ jobs:
             make install
           shell: bash
 
-        # these integration tests need to be ran in a sequential fashion,
+        # these integration tests need to be run in a sequential fashion,
         # due to environment constraints, so we're running them in a single process.
         - name: Test Code with Services 🩺 (sequential)
           env:
@@ -717,7 +699,7 @@ jobs:
 
         - name: Save Test Results
           if: always()
-          uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+          uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
           with:
             name: Sequential Integration Test Results
             path: integration-results-sequential.xml
@@ -764,16 +746,6 @@ jobs:
           # mapping container ports to the host
           - 5432:5432
 
-      mongodb:
-        image: mongodb/mongodb-community-server:6.0.4-ubuntu2204
-        options: >-
-          --health-cmd "echo 'db.runCommand("ping").ok' | mongosh --quiet"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 27017:27017
-
     steps:
       - name: Check out code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -798,6 +770,7 @@ jobs:
           INTEGRATION_TESTS_PRO_LICENSE: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE }}
           INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           make prepare-tests-ubuntu
           make prepare-spacy
@@ -809,10 +782,72 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Non-Sequential Integration Test Results
           path: integration-results-non-sequential.xml
+
+  tracker-store-integration-test:
+    name: Run Tracker Store Integration Tests
+    runs-on: ubuntu-22.04-8core
+    timeout-minutes: 60
+    env:
+      DB_PORT: 27017
+      DB_ROOT_USER: root
+      DB_ROOT_PASSWORD: rootpass
+      DB_USER: user
+      DB_PASSWORD: userpass
+      DB_NAME: rasa
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash
+
+      - name: Run containers for tracker store integration testing
+        run: |
+          make run-mongodb-container
+
+      - name: Test Code with Services 🩺
+        env:
+          JOBS: 6
+          PYTHONIOENCODING: "utf-8"
+          INTEGRATION_TESTS_STUDIO_LICENSE: ${{ secrets.INTEGRATION_TESTS_STUDIO_LICENSE }}
+          INTEGRATION_TESTS_PRO_LICENSE: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE }}
+          INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          make prepare-tests-ubuntu
+          make test-mongodb-tracker-store
+
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-tracker-store-tests
+        with:
+          MONGODB_COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracker_stores/mongo_db_tracker_store/docker-compose.mongodb.yml
+
+      - name: Stop containers for tracker store integration testing
+        if: always()
+        run: |
+          make stop-mongodb-container
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        with:
+          name: Tracker Store Integration Test Results
+          path: integration-results-mongo-tracker-store.xml
 
   concurrent-lockstore-integration-test:
     name: Run Concurrent LockStore Integration Tests
@@ -866,7 +901,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Concurrent LockStore Integration Test Results
           path: integration-results-concurrent-lockstore.xml
@@ -930,7 +965,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
             name: Broker Integration Test Results
             path: integration-results-broker-integration.xml
@@ -956,7 +991,7 @@ jobs:
           - test-other-unit-tests
           - test-performance
           - test-flaky
-        python-version: [3.9, "3.10"]
+        python-version: [3.9, "3.10", "3.11"]
 
     steps:
       - name: Check out code
@@ -988,6 +1023,10 @@ jobs:
       - name: Install ddtrace on Linux
         run: poetry run pip install -U 'ddtrace==2.10.5'
 
+      - name: Make direcory for Swagger/OpenAPI coverage results
+        if: matrix.test == 'test-other-unit-tests'
+        run: mkdir -p 'swagger-coverage-output/localhost:5005'
+
       - name: Test Code 🔍 (multi-process)
         env:
           JOBS: 6
@@ -1007,6 +1046,7 @@ jobs:
           NON_JWT_LICENSE: ${{ secrets.NON_JWT_LICENSE }}
           UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
           VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
+          API_DOCS_FORMAT: yaml
         run: |
           make ${{ matrix.test }}
         shell: bash # bash shell is a way to make code run for both Linux and Windows
@@ -1015,13 +1055,28 @@ jobs:
         if: always()
         run: mv unit-tests-results.xml ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
 
+      - name: Generate Rasa server OpenAPI test coverage report
+        if: always() && matrix.test == 'test-other-unit-tests'
+        run: |
+          .venv/lib/python${{ matrix.python-version }}/site-packages/swagger_coverage_py/swagger-coverage-commandline/bin/swagger-coverage-commandline \
+          -c swagger-coverage-config-rasa-pro.json \
+          -i swagger-coverage-output/localhost:5005 \
+          -s swagger-doc-rasa-pro.yaml
+
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}
           path: |
             ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
+
+      - name: Save Rasa server OpenAPI tests coverage report
+        if: always() && matrix.test == 'test-other-unit-tests'
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        with:
+          name: Rasa Server OpenAPI tests coverage report on python-${{ matrix.python-version }}
+          path: swagger-coverage-report-rasa-pro.html
 
   test-anonymization:
     name: Run Anonymization Unit Tests
@@ -1030,7 +1085,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9, "3.10"]
+        python-version: [3.9, "3.10", "3.11"]
 
     steps:
       - name: Check out code
@@ -1055,14 +1110,6 @@ jobs:
         run: |
           poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.7.1/en_core_web_lg-3.7.1-py3-none-any.whl
 
-      - name: Add github workflow problem matchers
-        if: matrix.python-version == 3.7
-        # only annotate based on test runs on ubuntu: otherwise
-        # all errors will be duplicated for each python / os combination
-        # therefore, we only enable for the one where most tests are run
-        # (tests will still run in other envs, they will just not create annotations)
-        run: pip install pytest-github-actions-annotate-failures
-
       - name: Install ddtrace on Linux
         run: poetry run pip install -U 'ddtrace==2.10.5'
 
@@ -1082,7 +1129,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
             name: unit-tests-results-test-anonymization-python-${{ matrix.python-version }}
             path: |

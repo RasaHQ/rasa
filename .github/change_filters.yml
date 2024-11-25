@@ -9,9 +9,15 @@ backend:
   - '.github/workflows/continous-integration.yml'
   - '.github/workflows/security-scans.yml'
 
+providers:
+  - 'rasa/shared/providers/**'
+
 docker:
   - 'pyproject.toml'
   - 'poetry.lock'
   - 'rasa/**/*'
   - 'docker/**/*'
   - 'Makefile'
+
+lock_file:
+  - 'poetry.lock'

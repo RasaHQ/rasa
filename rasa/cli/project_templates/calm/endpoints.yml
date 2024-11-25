@@ -41,5 +41,10 @@ action_endpoint:
 #  password: password
 #  queue: queue
 
-nlg:
-  type: rephrase
+# The lines below activate contextual rephrasing, using the default OpenAI language model.
+# Ensure the OPENAI_API_KEY is set to prevent any missing API key errors.
+# For more details, refer to the documentation:
+# https://rasa.com/docs/rasa-pro/concepts/contextual-response-rephraser
+# To enable the rephraser, remove the comment symbols in the lines below.
+#nlg:
+#   type: rephrase

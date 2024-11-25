@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from functools import lru_cache
 from typing import Dict, Any, List, Optional, Tuple, Union, Text
 
+import os
 import structlog
 from jinja2 import Template
 
@@ -16,12 +17,14 @@ from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
+    FLOW_RETRIEVAL_FLOW_THRESHOLD,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowStep, Flow, FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
@@ -33,6 +36,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.llm import (
     allowed_values_for_slot,
+    llm_api_health_check,
     llm_factory,
     try_instantiate_llm_client,
 )
@@ -72,15 +76,6 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
             structlogger.info("llm_based_command_generator.flow_retrieval.enabled")
         else:
             self.flow_retrieval = None
-            structlogger.warn(
-                "llm_based_command_generator.flow_retrieval.disabled",
-                event_info=(
-                    "Disabling flow retrieval can cause issues when there are a "
-                    "large number of flows to be included in the prompt. For more"
-                    "information see:\n"
-                    "https://rasa.com/docs/rasa-pro/concepts/dialogue-understanding#how-the-llmcommandgenerator-works"
-                ),
-            )
 
     ### Abstract methods
     @staticmethod
@@ -169,12 +164,39 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         store.
         """
         # Validate llm configuration
-        try_instantiate_llm_client(
+        llm_client = try_instantiate_llm_client(
             self.config.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             "llm_based_command_generator.train",
-            "LLMBasedCommandGenerator",
+            LLMBasedCommandGenerator.__name__,
         )
+        if os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, "true").lower() == "true":
+            llm_api_health_check(
+                llm_client,
+                "llm_based_command_generator.train",
+                LLMBasedCommandGenerator.__name__,
+            )
+
+        if (
+            self.flow_retrieval is None
+            and len(flows.user_flows) > FLOW_RETRIEVAL_FLOW_THRESHOLD
+        ):
+            structlogger.warn(
+                "llm_based_command_generator.flow_retrieval.disabled",
+                event_info=(
+                    f"You have {len(flows.user_flows)} user flows but flow "
+                    f"retrieval is disabled. "
+                    f"It is recommended to enable flow retrieval if the "
+                    f"total number of user flows exceed "
+                    f"{FLOW_RETRIEVAL_FLOW_THRESHOLD}. "
+                    f"Keeping it disabled can result in deterioration of "
+                    f"command generator's functional "
+                    f"performance and higher costs because of increased "
+                    f"number of tokens in the prompt. For more"
+                    "information see:\n"
+                    "https://rasa.com/docs/rasa-pro/concepts/dialogue-understanding#how-the-llmcommandgenerator-works"
+                ),
+            )
 
         # flow retrieval is populated with only user-defined flows
         try:
@@ -183,7 +205,7 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         except Exception as e:
             structlogger.error(
                 "llm_based_command_generator.train.failed",
-                event_info=("Flow retrieval store isinaccessible."),
+                event_info="Flow retrieval store isinaccessible.",
                 error=e,
             )
             raise

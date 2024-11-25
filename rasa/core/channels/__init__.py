@@ -21,13 +21,16 @@ from rasa.core.channels.rocketchat import RocketChatInput
 from rasa.core.channels.slack import SlackInput
 from rasa.core.channels.telegram import TelegramInput
 from rasa.core.channels.twilio import TwilioInput
-from rasa.core.channels.twilio_voice import TwilioVoiceInput
-from rasa.core.channels.voice_aware.jambonz import JambonzVoiceAwareInput
+from rasa.core.channels.voice_ready.twilio_voice import TwilioVoiceInput
+from rasa.core.channels.voice_ready.jambonz import JambonzVoiceReadyInput
+from rasa.core.channels.voice_ready.audiocodes import AudiocodesInput
+from rasa.core.channels.voice_stream.browser_audio import BrowserAudioInputChannel
 from rasa.core.channels.webexteams import WebexTeamsInput
 from rasa.core.channels.hangouts import HangoutsInput
-from rasa.core.channels.audiocodes import AudiocodesInput
-from rasa.core.channels.development_inspector import DevelopmentInspectInput
 from rasa.core.channels.vier_cvg import CVGInput
+from rasa.core.channels.voice_stream.twilio_media_streams import (
+    TwilioMediaStreamsInputChannel,
+)
 
 input_channel_classes: List[Type[InputChannel]] = [
     CmdlineInput,
@@ -46,9 +49,10 @@ input_channel_classes: List[Type[InputChannel]] = [
     WebexTeamsInput,
     HangoutsInput,
     AudiocodesInput,
-    DevelopmentInspectInput,
     CVGInput,
-    JambonzVoiceAwareInput,
+    JambonzVoiceReadyInput,
+    TwilioMediaStreamsInputChannel,
+    BrowserAudioInputChannel,
 ]
 
 # Mapping from an input channel name to its class to allow name based lookup.

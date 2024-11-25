@@ -13,6 +13,8 @@ from typing import (
     cast,
 )
 
+from jsonschema import Draft202012Validator
+
 import rasa.core
 import rasa.shared.utils.io
 from rasa.core.actions.custom_action_executor import (
@@ -101,7 +103,6 @@ if TYPE_CHECKING:
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.shared.core.events import IntentPrediction
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -112,6 +113,8 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
     from rasa.core.actions.action_trigger_chitchat import ActionTriggerChitchat
     from rasa.core.actions.action_trigger_search import ActionTriggerSearch
     from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
+    from rasa.core.actions.action_hangup import ActionHangup
+    from rasa.core.actions.action_repeat_bot_messages import ActionRepeatBotMessages
     from rasa.dialogue_understanding.patterns.cancel import ActionCancelFlow
     from rasa.dialogue_understanding.patterns.clarify import ActionClarifyFlows
     from rasa.dialogue_understanding.patterns.correction import ActionCorrectFlowSlot
@@ -138,6 +141,8 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionTriggerSearch(),
         ActionTriggerChitchat(),
         ActionResetRouting(),
+        ActionHangup(),
+        ActionRepeatBotMessages(),
     ]
 
 
@@ -721,6 +726,77 @@ class ActionDeactivateLoop(Action):
         return [ActiveLoop(None), SlotSet(REQUESTED_SLOT, None)]
 
 
+class RemoteActionJSONValidator:
+    """
+    A validator class for ensuring that the JSON response from a custom action executor
+    adheres to the expected schema.
+    """
+
+    @staticmethod
+    def action_response_format_spec() -> Dict[Text, Any]:
+        """Expected response schema for an Action endpoint.
+
+        Used for validation of the response returned from the
+        Action endpoint.
+
+        Returns:
+            Dict[Text, Any]: A dictionary representing the JSON schema for validation.
+        """
+        schema = {
+            "type": "object",
+            "properties": {
+                "events": EVENTS_SCHEMA,
+                "responses": {"type": "array", "items": {"type": "object"}},
+            },
+        }
+        return schema
+
+    @classmethod
+    def validate(cls, result: Dict[Text, Any]) -> bool:
+        """
+        Validate the given JSON result against the expected Action response schema.
+
+        This method uses a cached JSON schema validator to check if the provided result
+        conforms to the predefined schema.
+
+        Args:
+            result (Dict[Text, Any]): The JSON response to validate.
+
+        Returns:
+            bool: True if validation is successful.
+
+        Raises:
+            ValidationError: If the JSON response does not conform to the schema.
+        """
+        from jsonschema import ValidationError
+
+        try:
+            validator = cls.get_action_response_validator()
+            validator.validate(
+                result, RemoteActionJSONValidator.action_response_format_spec()
+            )
+            return True
+        except ValidationError as e:
+            e.message += (
+                f". Failed to validate Action server response from API, "
+                f"make sure your response from the Action endpoint is valid. "
+                f"For more information about the format visit "
+                f"{DOCS_BASE_URL}/custom-actions"
+            )
+            raise e
+
+    @classmethod
+    @lru_cache(maxsize=1)
+    def get_action_response_validator(cls) -> Draft202012Validator:
+        """
+        Retrieve a cached JSON schema validator for the Action response schema.
+
+        Returns:
+            Draft202012Validator: An instance of the JSON schema validator.
+        """
+        return Draft202012Validator(cls.action_response_format_spec())
+
+
 class RemoteAction(Action):
     def __init__(
         self,
@@ -780,37 +856,6 @@ class RemoteAction(Action):
         )
 
     @staticmethod
-    def action_response_format_spec() -> Dict[Text, Any]:
-        """Expected response schema for an Action endpoint.
-
-        Used for validation of the response returned from the
-        Action endpoint.
-        """
-        schema = {
-            "type": "object",
-            "properties": {
-                "events": EVENTS_SCHEMA,
-                "responses": {"type": "array", "items": {"type": "object"}},
-            },
-        }
-        return schema
-
-    def _validate_action_result(self, result: Dict[Text, Any]) -> bool:
-        from jsonschema import ValidationError, validate
-
-        try:
-            validate(result, self.action_response_format_spec())
-            return True
-        except ValidationError as e:
-            e.message += (
-                f". Failed to validate Action server response from API, "
-                f"make sure your response from the Action endpoint is valid. "
-                f"For more information about the format visit "
-                f"{DOCS_BASE_URL}/custom-actions"
-            )
-            raise e
-
-    @staticmethod
     async def _utter_responses(
         responses: List[Dict[Text, Any]],
         output_channel: "OutputChannel",
@@ -861,7 +906,6 @@ class RemoteAction(Action):
             domain=domain,
             tracker=tracker,
         )
-        self._validate_action_result(response)
 
         events_json = response.get("events", [])
         responses = response.get("responses", [])

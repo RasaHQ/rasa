@@ -6,7 +6,7 @@ nlg:
  rephrase_all: True
  llm:
     provider: huggingface
-    model: meta-llama/Llama-3.2-3B
-    api_base: "https://z35w5f1azkh4s9id.us-east-1.aws.endpoints.huggingface.cloud"
+    model: rasa/cmd_gen_codellama_13b_calm_demo
+    api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
     timeout: 30
     num_retries: 10

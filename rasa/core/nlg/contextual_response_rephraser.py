@@ -1,11 +1,13 @@
 from typing import Any, Dict, Optional, Text
 
+import os
 import structlog
 from jinja2 import Template
 
 from rasa import telemetry
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.constants import (
+    LLM_API_HEALTH_CHECK_ENV_VAR,
     LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
@@ -23,10 +25,14 @@ from rasa.shared.utils.llm import (
     USER,
     combine_custom_and_default_config,
     get_prompt_template,
+    llm_api_health_check,
     llm_factory,
     try_instantiate_llm_client,
 )
 from rasa.utils.endpoints import EndpointConfig
+from rasa.shared.utils.llm import (
+    tracker_as_readable_transcript,
+)
 
 from rasa.core.nlg.summarize import summarize_conversation
 
@@ -37,6 +43,8 @@ structlogger = structlog.get_logger()
 RESPONSE_REPHRASING_KEY = "rephrase"
 
 RESPONSE_REPHRASING_TEMPLATE_KEY = "rephrase_prompt"
+
+RESPONSE_SUMMARISE_CONVERSATION_KEY = "summarize_conversation"
 
 DEFAULT_REPHRASE_ALL = False
 
@@ -97,12 +105,18 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         self.trace_prompt_tokens = self.nlg_endpoint.kwargs.get(
             "trace_prompt_tokens", False
         )
-        try_instantiate_llm_client(
+        llm_client = try_instantiate_llm_client(
             self.nlg_endpoint.kwargs.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             "contextual_response_rephraser.init",
-            "ContextualResponseRephraser",
+            ContextualResponseRephraser.__name__,
         )
+        if os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, "true").lower() == "true":
+            llm_api_health_check(
+                llm_client,
+                "contextual_response_rephraser.init",
+                ContextualResponseRephraser.__name__,
+            )
 
     def _last_message_if_human(self, tracker: DialogueStateTracker) -> Optional[str]:
         """Returns the latest message from the tracker.
@@ -203,13 +217,25 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         if not (response_text := response.get(KEY_RESPONSES_TEXT)):
             return response
 
+        prompt_template_text = self._template_for_response_rephrasing(response)
+
+        # Retrieve inputs for the dynamic prompt
+        transcript = tracker_as_readable_transcript(tracker, max_turns=5)
         latest_message = self._last_message_if_human(tracker)
         current_input = f"{USER}: {latest_message}" if latest_message else ""
 
-        prompt_template_text = self._template_for_response_rephrasing(response)
+        # Only summarise conversation history if flagged
+        summarize_conversation_flag = response.get("metadata", {}).get(
+            RESPONSE_SUMMARISE_CONVERSATION_KEY, False
+        )
+        if summarize_conversation_flag:
+            history = await self._create_history(tracker)
+        else:
+            history = transcript
+            current_input = ""
 
         prompt = Template(prompt_template_text).render(
-            history=await self._create_history(tracker),
+            history=history,
             suggested_response=response_text,
             current_input=current_input,
             slots=tracker.current_slot_values(),

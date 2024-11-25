@@ -279,6 +279,9 @@
                 },
                 "steps": {
                     "$ref": "#/$defs/steps"
+                },
+                "persisted_slots": {
+                    "$ref": "#/$defs/persisted_slots"
                 }
             }
         },
@@ -287,6 +290,13 @@
             "schema_name": "list of slot sets",
             "items": {
                 "type": "object"
+            }
+        },
+        "persisted_slots": {
+            "type": "array",
+            "schema_name": "list of slots",
+            "items": {
+                "type": "string"
             }
         }
     }

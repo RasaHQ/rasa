@@ -77,6 +77,8 @@ DEFAULT_OPENAI_MAX_GENERATED_TOKENS = 256
 
 DEFAULT_MAX_USER_INPUT_CHARACTERS = 420
 
+DEPLOYMENT_CENTRIC_PROVIDERS = [AZURE_OPENAI_PROVIDER]
+
 # Placeholder messages used in the transcript for
 # instances where user input results in an error
 ERROR_PLACEHOLDER = {
@@ -411,10 +413,10 @@ def try_instantiate_llm_client(
     default_llm_config: Optional[Dict],
     log_source_function: str,
     log_source_component: str,
-) -> None:
+) -> LLMClient:
     """Validate llm configuration."""
     try:
-        llm_factory(custom_llm_config, default_llm_config)
+        return llm_factory(custom_llm_config, default_llm_config)
     except (ProviderClientValidationError, ValueError) as e:
         structlogger.error(
             f"{log_source_function}.llm_instantiation_failed",
@@ -425,5 +427,31 @@ def try_instantiate_llm_client(
             f"Unable to create the LLM client for component - {log_source_component}. "
             f"Please make sure you specified the required environment variables "
             f"and configuration keys. "
+            f"Error: {e}"
+        )
+
+
+def llm_api_health_check(
+    llm_client: LLMClient, log_source_function: str, log_source_component: str
+) -> None:
+    """Perform a health check on the LLM API."""
+    structlogger.info(
+        f"{log_source_function}.llm_api_call",
+        event_info=(
+            f"Performing a health check on the LLM API for the component - "
+            f"{log_source_component}."
+        ),
+        config=llm_client.config,
+    )
+    try:
+        llm_client.completion("hello")
+    except Exception as e:
+        structlogger.error(
+            f"{log_source_function}.llm_api_call_failed",
+            event_info="call to the LLM API failed.",
+            error=e,
+        )
+        print_error_and_exit(
+            f"Call to the LLM API failed for component - {log_source_component}. "
             f"Error: {e}"
         )

@@ -1,15 +1,14 @@
 import uuid
-from typing import Callable
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from pytest import MonkeyPatch, CaptureFixture
+from pytest import CaptureFixture, MonkeyPatch
 
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.dialogue_understanding.commands import (
-    CorrectSlotsCommand,
     CorrectedSlot,
+    CorrectSlotsCommand,
     SetSlotCommand,
     StartFlowCommand,
 )
@@ -18,6 +17,7 @@ from rasa.dialogue_understanding.processor.command_processor import CANNOT_HANDL
 from rasa.shared.core.events import BotUttered, SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.utils.endpoints import EndpointConfig
+from tests.conftest import TrainedAsync
 
 
 @pytest.fixture(scope="session")
@@ -38,7 +38,7 @@ async def trained_calm_slot_mappings_bot(
     mock_save_local: Mock,
     mock_from_documents: Mock,
     mock_flow_search_create_embedder: Mock,
-    trained_async: Callable,
+    trained_async: TrainedAsync,
 ) -> str:
     mock_try_instantiate_llm_command_generator_client.return_value = Mock()
     mock_try_instantiate_llm_based_router_client.return_value = Mock()

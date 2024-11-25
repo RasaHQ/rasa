@@ -63,14 +63,14 @@ from rasa.shared.core.flows.steps.collect import (
     CollectInformationFlowStep,
     SlotRejection,
 )
-from rasa.shared.core.flows.yaml_flows_io import (
-    flows_from_str,
-    flows_from_str_including_defaults,
-)
 from rasa.shared.core.slots import FloatSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
 from tests.utilities import filter_logs
+from tests.utilities import (
+    flows_from_str,
+    flows_from_str_including_defaults,
+)
 
 
 def test_render_template_variables():
@@ -836,6 +836,44 @@ def test_reset_scoped_slots_does_not_reset_set_slots_if_collect_forbids_it():
         tracker.stack.top(), current_flow, tracker
     )
     assert events == []
+
+
+def test_reset_scoped_slots_with_persisted_slots_set():
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            description: flow foo
+            name: foo flow
+            persisted_slots:
+            - foo
+            - bar
+            steps:
+            - id: "1"
+              collect: foo
+            - id: "2"
+              collect: bar
+            - id: "3"
+              collect: baz
+            - id: "4"
+              set_slots:
+              - foo: foo2
+        """
+    )
+    current_flow = flows.flow_by_id("foo_flow")
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        [
+            SlotSet("foo", "foo"),
+            SlotSet("bar", "bar"),
+            SlotSet("baz", "baz"),
+        ],
+    )
+    update_tracker_with_path_through_flow(tracker, "foo_flow", ["1", "2", "3", "4"])
+    events = flow_executor.reset_scoped_slots(
+        tracker.stack.top(), current_flow, tracker
+    )
+    assert events == [SlotSet("baz", None)]
 
 
 def test_run_step_collect():

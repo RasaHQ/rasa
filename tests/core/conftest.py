@@ -1,28 +1,30 @@
 import asyncio
 import uuid
 from datetime import datetime
-from typing import Generator, Callable, Dict, Text
-from unittest.mock import patch, Mock
+from typing import Dict, Generator, Text
+from unittest.mock import Mock, patch
 
 import pytest
+from sanic.request import Request
+from scipy import sparse
+
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
-from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
+from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import MongoTrackerStore
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ReminderScheduled, UserUttered, ActionExecuted
+from rasa.shared.core.events import ActionExecuted, ReminderScheduled, UserUttered
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
-    INTENT,
     ACTION_NAME,
     FEATURE_TYPE_SENTENCE,
+    INTENT,
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.utils.endpoints import EndpointConfig
-from sanic.request import Request
-from scipy import sparse
+from tests.conftest import TrainedAsync
 from tests.core.utilities import tracker_from_dialogue
 from tests.dialogues import TEST_MOODBOT_DIALOGUE
 
@@ -134,7 +136,7 @@ def default_tracker(domain: Domain) -> DialogueStateTracker:
 
 
 @pytest.fixture(scope="session")
-async def trained_formbot(trained_async: Callable) -> Text:
+async def trained_formbot(trained_async: TrainedAsync) -> Text:
     return await trained_async(
         domain="examples/nlu_based/formbot/domain.yml",
         config="examples/nlu_based/formbot/config.yml",
@@ -201,7 +203,7 @@ async def trained_flow_policy_bot(
     mock_try_instantiate_llm_client: Mock,
     mock_flow_search_create_embedder: Mock,
     mock_from_documents: Mock,
-    trained_async: Callable,
+    trained_async: TrainedAsync,
 ) -> Text:
     mock_try_instantiate_llm_client.return_value = Mock()
     mock_flow_search_create_embedder.return_value = Mock()
@@ -227,7 +229,7 @@ async def trained_nlu_trigger_flow_policy_bot(
     mock_try_instantiate_llm_client: Mock,
     mock_flow_search_create_embedder: Mock,
     mock_from_documents: Mock,
-    trained_async: Callable,
+    trained_async: TrainedAsync,
 ) -> Text:
     mock_try_instantiate_llm_client.return_value = Mock()
     mock_flow_search_create_embedder.return_value = Mock()

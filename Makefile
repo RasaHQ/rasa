@@ -16,6 +16,7 @@ CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/actions/c
 NLU_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH)/test_custom_actions_with_nlu.py
 CALM_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH)/test_custom_actions_with_calm.py
 ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/enterprise_search
+TRACKER_STORE_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/tracker_stores
 INTEGRATION_TEST_DEPLOYMENT_PATH = $(PWD)/tests_deployment
 BASE_IMAGE_HASH ?= localdev
 BASE_BUILDER_IMAGE_HASH ?= localdev
@@ -131,7 +132,7 @@ test: clean  ## Run Rasa unit tests using pytest.
 			--cov rasa \
 			--ignore $(INTEGRATION_TEST_FOLDER)/
 
-test-integration:  ## Run general integration tests using pytest. It will run all integration tests except ones for metrics, tracing and custom actions.
+test-integration:  ## Run general integration tests using pytest. It will run all integration tests except ones for metrics, tracing, custom actions and enterprise search.
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
 ifeq (,$(wildcard $(INTEGRATION_TEST_DEPLOYMENT_PATH)/.env))
@@ -145,6 +146,7 @@ ifeq (,$(wildcard $(INTEGRATION_TEST_DEPLOYMENT_PATH)/.env))
 			--ignore $(TRACING_INTEGRATION_TEST_FOLDER) \
 			--ignore $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
 			--ignore $(ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH) \
+			--ignore $(TRACKER_STORE_INTEGRATION_TEST_PATH) \
 			--junitxml=report_integration.xml
 else
 	set -o allexport; \
@@ -159,6 +161,7 @@ else
 			--ignore $(TRACING_INTEGRATION_TEST_FOLDER) \
 			--ignore $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
 			--ignore $(ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH) \
+			--ignore $(TRACKER_STORE_INTEGRATION_TEST_PATH) \
 			--junitxml=report_integration.xml && \
 	set +o allexport
 endif
@@ -207,6 +210,10 @@ test-flaky: prepare-spacy prepare-mitie test-marker  ## Run flaky tests
 test-acceptance: PYTEST_MARKER=acceptance and (not flaky) and (not category_anonymization)
 test-acceptance: DD_ARGS := $(or $(DD_ARGS),)
 test-acceptance: prepare-spacy prepare-mitie test-marker ## Run acceptance tests
+
+test-audio-manual: PYTEST_MARKER=category_audio_manual and (not flaky) and (not category_anonymization)
+test-audio-manual: DD_ARGS := $(or $(DD_ARGS),)
+test-audio-manual: test-marker
 
 test-gh-actions:  ## Run all tests for GitHub Actions
 	OMP_NUM_THREADS=1 \
@@ -507,3 +514,25 @@ test-enterprise-search-integration-with-calm-bot:  ## Run the enterprise search 
 stop-rasa-calm-demo-bot-test-containers: DOCKER_COMPOSE_FILE = ${DOCKER_COMPOSE}
 stop-rasa-calm-demo-bot-test-containers: ## Stop the metrics integration test containers.
 	$(STOP_RASA_CALM_DEMO_CONTAINERS)
+
+MONGODB_DOCKER_COMPOSE_FILE_PATH = $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_tracker_stores/mongo_db_tracker_store/docker-compose.mongodb.yml
+
+RUN_MONGODB_CONTAINER_COMMAND = docker compose \
+		-f $(MONGODB_DOCKER_COMPOSE_FILE_PATH) \
+		up --wait
+
+STOP_MONGODB_CONTAINER_COMMAND = docker compose \
+		-f $(MONGODB_DOCKER_COMPOSE_FILE_PATH) \
+		down
+
+run-mongodb-container: ## Run the MongoDB container.
+	$(RUN_MONGODB_CONTAINER_COMMAND)
+
+stop-mongodb-container: ## Stop the MongoDB container.
+	$(STOP_MONGODB_CONTAINER_COMMAND)
+
+test-mongodb-tracker-store:  ## Run the MongoDB tracker store integration tests. Make sure to run run-mongodb-container before running this target.
+	poetry run \
+		pytest $(TRACKER_STORE_INTEGRATION_TEST_PATH)/test_mongo_tracker_store.py \
+			-n $(JOBS) \
+			--junitxml=integration-results-mongo-tracker-store.xml

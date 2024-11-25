@@ -3,7 +3,7 @@ from typing import Type
 import pytest
 from jsonschema import ValidationError, validate
 
-from rasa.core.actions.action import RemoteAction
+from rasa.core.actions.action import RemoteActionJSONValidator
 from rasa.shared.core.events import Event
 from rasa.shared.utils.schemas.events import EVENT_SCHEMA
 import rasa.shared.utils.common
@@ -99,7 +99,7 @@ def test_remote_action_validate_all_event_subclasses(event_class: Type[Event]):
         "wrong_action",
         "warning_predicted",
     ]:
-        validate(response, RemoteAction.action_response_format_spec())
+        validate(response, RemoteActionJSONValidator.action_response_format_spec())
 
 
 def test_validate_single_event():

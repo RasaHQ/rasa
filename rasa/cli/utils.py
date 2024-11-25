@@ -472,10 +472,15 @@ def get_e2e_results_file_name(
 ) -> str:
     """Returns the name of the e2e results file."""
     if results_output_path.is_dir():
-        file_name = str(results_output_path) + f"/e2e_results_{result_type}.yml"
+        file_name = results_output_path / f"e2e_results_{result_type}.yml"
     else:
         parent = results_output_path.parent
         stem = results_output_path.stem
-        file_name = str(parent) + f"/{stem}_{result_type}.yml"
+        file_name = parent / f"{stem}_{result_type}.yml"
 
-    return file_name
+    return str(file_name)
+
+
+def is_skip_validation_flag_set() -> bool:
+    """Checks if the skip validation flag is set."""
+    return "--skip-validation" in sys.argv

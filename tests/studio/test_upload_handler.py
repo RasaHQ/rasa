@@ -218,6 +218,7 @@ def test_handle_upload_no_domain_path_specified(
     # we need to monkeypatch the DEFAULT_DOMAIN_PATHS to be able to use temporary paths
     monkeypatch.setattr(rasa.studio.upload, "DEFAULT_DOMAIN_PATHS", domain_paths)
     monkeypatch.setattr(rasa.studio.upload, "DEFAULT_CONFIG_PATH", str(config_path))
+    monkeypatch.setattr(rasa.studio.upload, "requests", MagicMock())
 
     mock_config = MagicMock()
     mock_config.read_config.return_value = StudioConfig(
@@ -231,6 +232,7 @@ def test_handle_upload_no_domain_path_specified(
         "StudioConfig",
         mock_config,
     )
+    monkeypatch.setattr(rasa.studio.upload, "KeycloakTokenReader", MagicMock())
 
     mock = MagicMock()
     monkeypatch.setattr(rasa.studio.upload, mock_fn_name, mock)

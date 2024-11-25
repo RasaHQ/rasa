@@ -7,7 +7,6 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.utils.mitie_utils import MitieNLP
-import mitie
 
 from rasa.shared.exceptions import RasaException
 
@@ -15,6 +14,8 @@ from rasa.shared.exceptions import RasaException
 def test_provide(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
+    import mitie
+
     component = MitieNLP.create(
         MitieNLP.get_default_config(),
         default_model_storage,
@@ -36,6 +37,8 @@ def test_provide_different_path(
     default_execution_context: ExecutionContext,
     tmp_path: Path,
 ):
+    import mitie
+
     new_path = shutil.copy(Path("data", "total_word_feature_extractor.dat"), tmp_path)
 
     component = MitieNLP.create(

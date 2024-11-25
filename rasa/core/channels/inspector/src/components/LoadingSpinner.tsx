@@ -1,9 +1,11 @@
-import { Center, Spinner, Text, useColorModeValue } from "@chakra-ui/react";
+import { Center, Spinner, Text, Button, useColorModeValue } from "@chakra-ui/react";
 import { useOurTheme } from "../theme";
+import {createAudioConnection} from "../helpers/audiostream.ts";
 
 export const LoadingSpinner = () => {
   const { rasaSpace } = useOurTheme();
-
+  const isVoice = window.location.href.includes("browser_audio");
+  const text = isVoice ? "Start a new conversation" : "Waiting for a new conversation"
   return (
     <Center height={"100vh"} flexDirection="column">
       <Spinner
@@ -13,7 +15,8 @@ export const LoadingSpinner = () => {
         size="lg"
         mb={rasaSpace[1]}
       />
-      <Text>Loading</Text>
+      <Text fontSize="lg">{text}</Text>
+        {isVoice ? <Button onClick={createAudioConnection}>Go</Button> : null}
     </Center>
   );
 };
