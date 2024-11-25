@@ -1,4 +1,5 @@
 import logging
+from docker.models.containers import Container
 from typing import List
 from unittest.mock import Mock
 
@@ -22,6 +23,7 @@ from .conftest import (
     POSTGRES_TRACKER_STORE_DB,
     POSTGRES_USER,
     POSTGRES_PASSWORD,
+    REDIS_PASSWORD,
 )
 
 # NOTE about the timeouts in this file. We want to fail fast
@@ -213,11 +215,12 @@ async def test_postgres_tracker_store_retrieve(
     tracker_store.engine.dispose()
 
 
+@pytest.mark.usefixtures("docker_redis_with_password")
 async def test_redis_tracker_store_retrieve_full_tracker(
     domain: Domain,
     tracker_with_restarted_event: DialogueStateTracker,
 ) -> None:
-    tracker_store = RedisTrackerStore(domain)
+    tracker_store = RedisTrackerStore(domain, password=REDIS_PASSWORD)
     sender_id = tracker_with_restarted_event.sender_id
 
     await tracker_store.save(tracker_with_restarted_event)
