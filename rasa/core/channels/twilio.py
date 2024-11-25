@@ -28,7 +28,7 @@ class TwilioOutput(Client, OutputChannel):
         auth_token: Optional[Text],
         twilio_number: Optional[Text],
     ) -> None:
-        super().__init__(account_sid, auth_token)
+        Client.__init__(self, account_sid, auth_token)
         self.twilio_number = twilio_number
         self.send_retry = 0
         self.max_retry = 5

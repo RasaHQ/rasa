@@ -28,6 +28,7 @@ from rasa.shared.core.constants import (
     DEFAULT_SLOT_NAMES,
     ENTITY_LABEL_SEPARATOR,
     KNOWLEDGE_BASE_SLOT_NAMES,
+    SILENCE_SLOTS,
     SLOT_LAST_OBJECT,
     SLOT_LAST_OBJECT_TYPE,
     SLOT_LISTED_ITEMS,
@@ -859,6 +860,7 @@ def test_domain_from_multiple_files():
         "self_selection",
         "session_end",
         "session_start",
+        "silence_timeout",
         "thanks",
         "unsure_selection_scaffold",
         "view_offers",
@@ -922,32 +924,36 @@ def test_domain_from_multiple_files():
         "utter_default": [{"text": "default message"}],
         "utter_amazement": [{"text": "awesomness!"}],
     }
-    expected_slots = list(DEFAULT_SLOT_NAMES) + [
-        "activate_double_simulation",
-        "activate_simulation",
-        "display_cure_method",
-        "display_drum_cure_horns",
-        "display_method_artwork",
-        "drumAllClocks",
-        "drumAllLampshades",
-        "drumAllSoups",
-        "drumChocolateWallets",
-        "drumClockAdapters",
-        "drumClockCovers",
-        "drumClocksChocolate",
-        "drumClocksStrawberry",
-        "drumMindspace",
-        "drumOtherWallets",
-        "drumSnareWallets",
-        "drumSoupChocolate",
-        "drumSoupStrawberry",
-        "drumStrawberryWallets",
-        "greenOrGrey",
-        "humbleSelection",
-        "humbleSelectionManagement",
-        "humbleSelectionStatus",
-        "offers",
-    ]
+    expected_slots = (
+        list(DEFAULT_SLOT_NAMES)
+        + SILENCE_SLOTS
+        + [
+            "activate_double_simulation",
+            "activate_simulation",
+            "display_cure_method",
+            "display_drum_cure_horns",
+            "display_method_artwork",
+            "drumAllClocks",
+            "drumAllLampshades",
+            "drumAllSoups",
+            "drumChocolateWallets",
+            "drumClockAdapters",
+            "drumClockCovers",
+            "drumClocksChocolate",
+            "drumClocksStrawberry",
+            "drumMindspace",
+            "drumOtherWallets",
+            "drumSnareWallets",
+            "drumSoupChocolate",
+            "drumSoupStrawberry",
+            "drumStrawberryWallets",
+            "greenOrGrey",
+            "humbleSelection",
+            "humbleSelectionManagement",
+            "humbleSelectionStatus",
+            "offers",
+        ]
+    )
 
     domain_slots = []
 

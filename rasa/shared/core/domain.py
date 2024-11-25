@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections
 import copy
 import json
+import math
 import os
 from dataclasses import dataclass
 from functools import cached_property
@@ -57,6 +58,7 @@ from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import (
     AnySlot,
     CategoricalSlot,
+    FloatSlot,
     ListSlot,
     Slot,
     TextSlot,
@@ -1082,6 +1084,7 @@ class Domain:
         self._add_knowledge_base_slots()
         self._add_categorical_slot_default_value()
         self._add_session_metadata_slot()
+        self._add_audio_slots()
 
     def _add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
@@ -1135,6 +1138,29 @@ class Domain:
                     is_builtin=True,
                 )
             )
+
+    def _add_audio_slots(self) -> None:
+        """Add slots relevant for audio channels."""
+        self.slots.append(
+            FloatSlot(
+                rasa.shared.core.constants.SLOT_SILENCE_TIMEOUT,
+                mappings=[],
+                influence_conversation=False,
+                is_builtin=True,
+                initial_value=rasa.shared.core.constants.SILENCE_TIMEOUT_DEFAULT_VALUE,
+                max_value=math.inf,
+            )
+        )
+        self.slots.append(
+            FloatSlot(
+                rasa.shared.core.constants.SLOT_CONSECUTIVE_SILENCE_TIMEOUTS,
+                mappings=[],
+                influence_conversation=False,
+                is_builtin=True,
+                initial_value=0.0,
+                max_value=math.inf,
+            )
+        )
 
     def _add_knowledge_base_slots(self) -> None:
         """Add slots for the knowledge base action to slots.

@@ -51,6 +51,7 @@ class SocketIOOutput(OutputChannel):
         return "socketio"
 
     def __init__(self, sio: AsyncServer, bot_message_evt: Text) -> None:
+        super().__init__()
         self.sio = sio
         self.bot_message_evt = bot_message_evt
         self.last_event_timestamp = (
@@ -59,7 +60,7 @@ class SocketIOOutput(OutputChannel):
 
     def _get_new_events(self) -> List[Dict[Text, Any]]:
         """Get events that are newer than the last sent event."""
-        events = self.tracker_state.get("events", [])
+        events = self.tracker_state.get("events", []) if self.tracker_state else []
         new_events = [
             event for event in events if event["timestamp"] > self.last_event_timestamp
         ]

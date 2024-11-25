@@ -4,6 +4,11 @@ responses:
   utter_ask_rephrase:
     - text: I’m sorry I am unable to understand you, could you please rephrase?
 
+  utter_ask_still_there:
+    - text: "Hello, are you still there?"
+      metadata:
+        rephrase: True
+
   utter_boolean_slot_rejection:
     - text: "Sorry, the value you provided, `{{value}}`, is not valid. Please respond with a valid value."
       metadata:
@@ -72,6 +77,11 @@ responses:
 
   utter_inform_code_change:
     - text: There has been an update to my code. I need to wrap up our running dialogue and start from scratch.
+      metadata:
+        rephrase: True
+
+  utter_inform_hangup:
+    - text: It seems you are not there anymore. I will hang up shortly.
       metadata:
         rephrase: True
 
@@ -251,3 +261,32 @@ flows:
     name: pattern skip question
     steps:
       - action: utter_skip_question_answer
+
+  pattern_user_silence:
+    description: Reacting to user silence in voice bots
+    name: pattern react to silence
+    nlu_trigger:
+      - intent: silence_timeout
+    persisted_slots:
+      - consecutive_silence_timeouts
+    steps:
+      - noop: true
+        next:
+          - if: "slots.consecutive_silence_timeouts = 0.0"
+            then:
+              - set_slots:
+                  - consecutive_silence_timeouts: 1.0
+              - action: action_repeat_bot_messages
+                next: END
+          - if: "slots.consecutive_silence_timeouts = 1.0"
+            then:
+              - set_slots:
+                  - consecutive_silence_timeouts: 2.0
+              - action: utter_ask_still_there
+                next: END
+          - if: "slots.consecutive_silence_timeouts > 1.0"
+            then:
+              - action: utter_inform_hangup
+              - action: action_hangup
+                next: END
+          - else: END

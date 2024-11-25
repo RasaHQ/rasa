@@ -5,3 +5,4 @@ from typing import NewType
 # and tts engines
 # currently corresponds to raw wave, 8khz, 8bit, mono channel, mulaw encoding
 RasaAudioBytes = NewType("RasaAudioBytes", bytes)
+HERTZ = 8000

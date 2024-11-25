@@ -46,12 +46,15 @@ from rasa.engine.runner.interface import GraphRunner
 from rasa.exceptions import ActionLimitReached, ModelNotFound
 from rasa.shared.core.constants import (
     ACTION_CORRECT_FLOW_SLOT,
+    SLOT_CONSECUTIVE_SILENCE_TIMEOUTS,
+    SLOT_SILENCE_TIMEOUT,
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
     FOLLOWUP_ACTION,
     SESSION_START_METADATA_SLOT,
     ACTION_EXTRACT_SLOTS,
+    USER_INTENT_SILENCE_TIMEOUT,
 )
 from rasa.shared.core.events import (
     ActionExecutionRejected,
@@ -789,6 +792,28 @@ class MessageProcessor:
         )
 
         self._check_for_unseen_features(parse_data)
+        # resetting timeouts variables whenever something that is not a timeout occurs
+        if (
+            parse_data.get(INTENT, {}).get(INTENT_NAME_KEY)
+            != USER_INTENT_SILENCE_TIMEOUT
+            and tracker
+        ):
+            if (
+                SLOT_CONSECUTIVE_SILENCE_TIMEOUTS in tracker.slots
+                and tracker.slots[SLOT_CONSECUTIVE_SILENCE_TIMEOUTS].value != 0.0
+            ):
+                tracker.update(SlotSet(SLOT_CONSECUTIVE_SILENCE_TIMEOUTS, 0.0))
+            if (
+                SLOT_SILENCE_TIMEOUT in tracker.slots
+                and tracker.slots[SLOT_SILENCE_TIMEOUT].value
+                != tracker.slots[SLOT_SILENCE_TIMEOUT].initial_value
+            ):
+                tracker.update(
+                    SlotSet(
+                        SLOT_SILENCE_TIMEOUT,
+                        tracker.slots[SLOT_SILENCE_TIMEOUT].initial_value,
+                    )
+                )
 
         return parse_data
 

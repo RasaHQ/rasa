@@ -61,6 +61,9 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     RULE_SNIPPET_ACTION_NAME,
     SESSION_START_METADATA_SLOT,
+    SILENCE_TIMEOUT_DEFAULT_VALUE,
+    SLOT_CONSECUTIVE_SILENCE_TIMEOUTS,
+    SLOT_SILENCE_TIMEOUT,
     USER_INTENT_SESSION_START,
 )
 from rasa.shared.core.domain import (
@@ -239,10 +242,12 @@ async def test_remote_action_runs(
                 "latest_event_time": None,
                 FOLLOWUP_ACTION: "action_listen",
                 "slots": {
+                    SLOT_CONSECUTIVE_SILENCE_TIMEOUTS: 0.0,
                     "name": None,
                     REQUESTED_SLOT: None,
                     FLOW_HASHES_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
+                    SLOT_SILENCE_TIMEOUT: SILENCE_TIMEOUT_DEFAULT_VALUE,
                 },
                 "events": [],
                 "latest_input_channel": None,
@@ -306,10 +311,12 @@ async def test_remote_action_logs_events(
                 FOLLOWUP_ACTION: ACTION_LISTEN_NAME,
                 "latest_event_time": None,
                 "slots": {
+                    SLOT_CONSECUTIVE_SILENCE_TIMEOUTS: 0.0,
                     "name": None,
                     REQUESTED_SLOT: None,
                     FLOW_HASHES_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
+                    SLOT_SILENCE_TIMEOUT: SILENCE_TIMEOUT_DEFAULT_VALUE,
                 },
                 "events": [],
                 "latest_input_channel": None,
