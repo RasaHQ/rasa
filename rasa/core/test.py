@@ -406,7 +406,10 @@ class WronglyClassifiedUserUtterance(UserUttered):
         predicted: Dict[Text, Any], entity: Dict[Text, Any]
     ) -> Optional[Text]:
         """Returns the predicted entity which is then printed as a comment."""
-        if predicted["entity"] != entity["entity"]:
+        if (
+            predicted["entity"] != entity["entity"]
+            or predicted["value"] != entity["value"]
+        ):
             return "predicted: " + predicted["entity"] + ": " + predicted["value"]
         else:
             return None
