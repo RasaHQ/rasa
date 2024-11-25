@@ -207,6 +207,9 @@ async def test_nlu(
 
     rasa.shared.utils.io.create_directory(output_directory)
 
+    if not additional_arguments:
+        additional_arguments = {}
+
     try:
         model = rasa.model.get_local_model(model)
     except ModelNotFound:

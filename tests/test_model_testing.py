@@ -32,6 +32,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_TEXT,
 )
+from rasa.model_testing import test_nlu
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 
@@ -639,3 +640,13 @@ def test_differently_ordered_entity_predictions_tolerated():
         entity_predictions=[entity1, entity2], entity_targets=[entity2, entity1]
     )
     assert not evaluation.check_prediction_target_mismatch()
+
+
+def test_nlu_can_handle_missing_additional_arguments():
+    """This is a regression test for issue-10587
+
+    Calling this function with no parameters should not cause it
+    to throw an error
+
+    """
+    test_nlu(model=None, nlu_data=None, additional_arguments=None)
