@@ -157,37 +157,10 @@ jobs:
         run: |
            gcloud auth configure-docker europe-west3-docker.pkg.dev
 
-      - name: Check if base images exists
-        id: check_image
-        env:
-           DOCKER_CLI_EXPERIMENTAL: enabled
-        run: |
-           # Base image
-           BASE_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base') }}
-           echo "base_image_hash=${BASE_IMAGE_HASH}" >> $GITHUB_OUTPUT
-
-           BASE_IMAGE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-${BASE_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
-           echo "base_exists=${BASE_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
-
-           # Base builder image
-           BASE_BUILDER_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}
-           echo "base_builder_image_hash=${BASE_BUILDER_IMAGE_HASH}" >> $GITHUB_OUTPUT
-
-           BASE_BUILDER_IMAGE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:base-builder-${BASE_BUILDER_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
-           echo "base_builder_exists=${BASE_BUILDER_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
-
-           # Rasa deps image
-           RASA_DEPS_IMAGE_HASH=${{ hashFiles('docker/Dockerfile.rasa-deps') }}
-           echo "rasa_deps_image_hash=${RASA_DEPS_IMAGE_HASH}" >> $GITHUB_OUTPUT
-
-           RASA_DEPS_IMAGE_EXISTS=$((docker manifest inspect ${{ env.TARGET_IMAGE_REGISTRY }}/rasa:rasa-deps-${RASA_DEPS_IMAGE_HASH} &> /dev/null && echo true || echo false) || true)
-           echo "rasa_deps_exists=${RASA_DEPS_IMAGE_EXISTS}" >> $GITHUB_OUTPUT
-
       - name: Build Docker base images 🛠
-        if: steps.check_image.outputs.base_exists == 'false'
         run: |
           RASA_BASE_REPOSITORY=${{ env.TARGET_IMAGE_REGISTRY }}/rasa \
-          RASA_BASE_IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }} \
+          RASA_BASE_IMAGE_TAG=${{ env.TAG_VERSION }} \
           make build-multi-platform-base-docker
 
       - name: Copy Segment write key to the package
@@ -200,9 +173,9 @@ jobs:
       - name: Build and push rasa-pro docker image to GCP and Docker Hub
         run: |     
           # Build the multi-platform docker image and push to GCP and Docker Hub
-          RASA_TAGS="-t ${{ env.GCP_IMAGE_TAG }} -t ${{ env.GCP_LATEST_IMAGE_TAG }} -t ${{ env.DOCKER_HUB_IMAGE_TAG }}"
+          RASA_IMAGE_TAGS="-t ${{ env.GCP_IMAGE_TAG }} -t ${{ env.GCP_LATEST_IMAGE_TAG }} -t ${{ env.DOCKER_HUB_IMAGE_TAG }}" \
           RASA_BASE_REPOSITORY=${{ env.TARGET_IMAGE_REGISTRY }}/rasa \
-          RASA_BASE_IMAGE_TAG=${{ steps.check_image.outputs.base_image_hash }} \
+          RASA_BASE_IMAGE_TAG=${{ env.TAG_VERSION }} \
           make build-multi-platform-docker
         env:
           DOCKER_HUB_IMAGE_TAG: docker.io/rasa/rasa-pro:${{ env.TAG_VERSION }}
