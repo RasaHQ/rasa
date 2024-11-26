@@ -146,14 +146,18 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
                 raise_deprecation_warning(message=message)
 
     def _resolve_api_key_env_var(self) -> str:
-        """Resolves the environment variable to use for the API key."""
+        """Resolves the environment variable to use for the API key.
+
+        Returns:
+            str: The env variable in dollar syntax format to use for the API key.
+        """
         if API_KEY in self._extra_parameters:
             # API key is set to an env var in the config itself
             # in case the model is defined in the endpoints.yml
             return self._extra_parameters[API_KEY]
 
         if os.getenv(AZURE_API_KEY_ENV_VAR) is not None:
-            return AZURE_API_KEY_ENV_VAR
+            return "${AZURE_API_KEY}"
 
         if os.getenv(OPENAI_API_KEY_ENV_VAR) is not None:
             # API key can be set through OPENAI_API_KEY too,
@@ -167,7 +171,7 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
                     "environment variable."
                 )
             )
-            return OPENAI_API_KEY_ENV_VAR
+            return "${OPENAI_API_KEY}"
 
         structlogger.error(
             "azure_openai_llm_client.api_key_not_set",

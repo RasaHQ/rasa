@@ -88,7 +88,7 @@ class TestAzureOpenAIEmbeddingClient:
             "api_version": "v1",
             "model": "azure/some_azure_deployment",
             # API key is added through environment variable
-            "api_key": AZURE_API_KEY_ENV_VAR,
+            "api_key": "${AZURE_API_KEY}",
         }
 
     def test_validate_documents_pass(self, client: AzureOpenAIEmbeddingClient) -> None:
@@ -480,7 +480,7 @@ class TestAzureOpenAIEmbeddingClient:
             api_type="azure",
         )
         client._extra_parameters = {}
-        assert client._resolve_api_key_env_var() == AZURE_API_KEY_ENV_VAR
+        assert client._resolve_api_key_env_var() == "${AZURE_API_KEY}"
 
     @patch.dict(os.environ, {OPENAI_API_KEY_ENV_VAR: "openai_api_key"})
     def test_resolve_api_key_env_var_from_openai_env_var(self):
@@ -492,7 +492,7 @@ class TestAzureOpenAIEmbeddingClient:
         )
         client._extra_parameters = {}
         with pytest.warns(FutureWarning):
-            assert client._resolve_api_key_env_var() == OPENAI_API_KEY_ENV_VAR
+            assert client._resolve_api_key_env_var() == "${OPENAI_API_KEY}"
 
     def test_resolve_api_key_env_var_not_set(
         self,

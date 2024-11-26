@@ -55,7 +55,7 @@ class TestAzureOpenAILLMClient:
         assert client.model is None
         assert client.api_base == "https://my.api.base.com/my_model"
         assert client.api_version == "2023-01-01"
-        assert client._api_key_env_var == AZURE_API_KEY_ENV_VAR
+        assert client._api_key_env_var == "${AZURE_API_KEY}"
         assert client.api_type == "test api type"
 
         # Clean up
@@ -83,7 +83,7 @@ class TestAzureOpenAILLMClient:
         assert client.model is None
         assert client.api_base == "https://my.api.base.com/my_model"
         assert client.api_version == "2023-01-01"
-        assert client._api_key_env_var == OPENAI_API_KEY_ENV_VAR
+        assert client._api_key_env_var == "${OPENAI_API_KEY}"
         assert client.api_type == "test api type"
 
         # Clean up
@@ -408,7 +408,7 @@ class TestAzureOpenAILLMClient:
             api_type="azure",
         )
         client._extra_parameters = {}
-        assert client._resolve_api_key_env_var() == AZURE_API_KEY_ENV_VAR
+        assert client._resolve_api_key_env_var() == "${AZURE_API_KEY}"
 
     @patch.dict(os.environ, {OPENAI_API_KEY_ENV_VAR: "openai_api_key"})
     def test_resolve_api_key_env_var_from_openai_env_var(self):
@@ -420,7 +420,7 @@ class TestAzureOpenAILLMClient:
         )
         client._extra_parameters = {}
         with pytest.warns(FutureWarning):
-            assert client._resolve_api_key_env_var() == OPENAI_API_KEY_ENV_VAR
+            assert client._resolve_api_key_env_var() == "${OPENAI_API_KEY}"
 
     def test_resolve_api_key_env_var_not_set(
         self,
