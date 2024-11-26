@@ -10,6 +10,31 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.10.12] - 2024-11-25
+                         
+Rasa Pro 3.10.12 (2024-11-25)                              
+### Bugfixes
+- [#1424](https://github.com/rasahq/rasa-private/issues/1424): Replace `pickle` and `joblib` with safer alternatives, e.g. `json`, `safetensors`, and `skops`, for
+  serializing components.
+
+  **Note**: This is a model breaking change. Please retrain your model.
+
+  If you have a custom component that inherits from one of the components listed below and modified the `persist` or
+  `load` method, make sure to update your code. Please contact us in case you encounter any problems.
+
+  Affected components:
+
+  - `CountVectorFeaturizer`
+  - `LexicalSyntacticFeaturizer`
+  - `LogisticRegressionClassifier`
+  - `SklearnIntentClassifier`
+  - `DIETClassifier`
+  - `CRFEntityExtractor`
+  - `TrackerFeaturizer`
+  - `TEDPolicy`
+  - `UnexpectedIntentTEDPolicy`
+
+
 ## [3.10.11] - 2024-11-20
                          
 Rasa Pro 3.10.11 (2024-11-20)                              
