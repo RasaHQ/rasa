@@ -81,6 +81,7 @@ env:
 permissions:
   id-token: write # This is required for requesting the JWT
   contents: read # This is required for actions/checkout
+  pull-requests: read # This is required, if workflow `./.github/workflows/providers-e2e-tests.yml` is called
 
 jobs:
   run-e2e-test-on-providers:
