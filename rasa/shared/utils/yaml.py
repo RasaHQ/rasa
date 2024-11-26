@@ -17,8 +17,8 @@ from pykwalify.core import Core
 from pykwalify.errors import SchemaError
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
-from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
+from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
 from ruamel.yaml.loader import SafeLoader
 
 from rasa.shared.constants import (
@@ -31,6 +31,7 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     SCHEMA_EXTENSIONS_FILE,
     RESPONSES_SCHEMA_FILE,
+    API_KEY,
 )
 from rasa.shared.exceptions import (
     YamlException,
@@ -58,6 +59,7 @@ YAML_VERSION = (1, 2)
 READ_YAML_FILE_CACHE_MAXSIZE = os.environ.get(
     READ_YAML_FILE_CACHE_MAXSIZE_ENV_VAR, DEFAULT_READ_YAML_FILE_CACHE_MAXSIZE
 )
+SENSITIVE_DATA = [API_KEY]
 
 
 @dataclass
@@ -87,6 +89,12 @@ def replace_environment_variables() -> None:
     def env_var_constructor(loader: BaseConstructor, node: ScalarNode) -> str:
         """Process environment variables found in the YAML."""
         value = loader.construct_scalar(node)
+
+        # get key of current node
+        key_node = list(loader.constructed_objects)[-1]
+        if isinstance(key_node, ScalarNode) and key_node.value in SENSITIVE_DATA:
+            return value
+
         expanded_vars = os.path.expandvars(value)
         not_expanded = [
             w for w in expanded_vars.split() if w.startswith("$") and w in value
@@ -416,45 +424,36 @@ def validate_raw_yaml_using_schema_file_with_responses(
     )
 
 
-def process_content(content: str) -> str:
-    """
-    Process the content to handle both Windows paths and emojis.
-    Windows paths are processed by escaping backslashes but emojis are left untouched.
+def escape_windows_paths(content: str) -> str:
+    """Process YAML content to properly escape Windows file paths.
 
     Args:
-        content: yaml content to be processed
+        content: YAML content to be processed
+
+    Returns:
+        Content with Windows paths properly escaped, all other characters preserved
     """
-    # Detect common Windows path patterns: e.g., C:\ or \\
-    UNESCAPED_WINDOWS_PATH_PATTERN = re.compile(
-        r"(?<!\w)[a-zA-Z]:(\\[a-zA-Z0-9_ -]+)*(\\)?(?!\\n)"
-    )
-    ESCAPED_WINDOWS_PATH_PATTERN = re.compile(
-        r"(?<!\w)[a-zA-Z]:(\\\\[a-zA-Z0-9_ -]+)+\\\\?(?!\\n)"
-    )
 
-    # Function to escape backslashes in Windows paths but leave other content as is
-    def escape_windows_paths(match: re.Match) -> str:
-        path = str(match.group(0))
-        return path.replace("\\", "\\\\")  # Escape backslashes only in Windows paths
+    def contains_windows_path(text: str) -> bool:
+        """Check if text contains what appears to be a Windows path."""
+        return bool(re.search(r"[A-Za-z]:\\", text))
 
-    def unescape_windows_paths(match: re.Match) -> str:
-        path = str(match.group(0))
-        return path.replace("\\\\", "\\")
+    if not contains_windows_path(content):
+        return content
 
-    # First, process Windows paths by escaping backslashes
-    content = re.sub(UNESCAPED_WINDOWS_PATH_PATTERN, escape_windows_paths, content)
+    def escape_windows_path(match: re.Match) -> str:
+        """Escape backslashes in Windows paths."""
+        path = match.group(0)
+        return path.replace("\\", "\\\\")
 
-    # Ensure proper handling of emojis by decoding Unicode sequences
-    content = (
-        content.encode("utf-8")
-        .decode("raw_unicode_escape")
-        .encode("utf-16", "surrogatepass")
-        .decode("utf-16")
-    )
+    # Match Windows paths that may contain:
+    # - Drive letter (e.g. C:)
+    # - Backslash separated path components
+    # - Optional trailing backslash
+    # - Unicode characters
+    windows_path_pattern = r"[A-Za-z]:\\(?:[^\\]+\\)*[^\\]*"
 
-    content = re.sub(ESCAPED_WINDOWS_PATH_PATTERN, unescape_windows_paths, content)
-
-    return content
+    return re.sub(windows_path_pattern, escape_windows_path, content)
 
 
 def read_yaml(
@@ -473,7 +472,7 @@ def read_yaml(
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
     """
     if _is_ascii(content):
-        content = process_content(content)
+        content = escape_windows_paths(content)
 
     custom_constructor = kwargs.get("custom_constructor", None)
 
