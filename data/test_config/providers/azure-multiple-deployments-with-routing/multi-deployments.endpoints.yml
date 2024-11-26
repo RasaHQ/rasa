@@ -6,6 +6,7 @@ nlg:
  rephrase_all: True
  llm:
     model_group: azure_llm
+
 model_groups:
   - id: azure_llm
     models:
@@ -25,12 +26,11 @@ model_groups:
         timeout: 7
         num_retries: 5
     router:
-      # routing_strategy: usage-based-routing # TODO: Fix Redis cache test errors
-      routing_strategy: least-busy
-      num_retries: 2
+      routing_strategy: usage-based-routing
+      num_retries: 5
       timeout: 30 
-      # redis_host: ${REDIS_HOST} # TODO: Fix Redis cache test errors
-      # redis_port: ${REDIS_PORT} # TODO: Fix Redis cache test errors
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
       cache_responses: True
 
   - id: azure_embeddings

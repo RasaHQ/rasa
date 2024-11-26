@@ -192,6 +192,14 @@ runs:
         echo "ENDPOINTS_FILE_NAME=multi-deployments.endpoints" >> $GITHUB_ENV
       shell: bash
 
+    # Known-issue: Truncated/different model-name is returned for 
+    # `text-embedding-ada-002` model in same regions' deployments, 
+    # causing health-check to fail
+    - name: Disable inference health-check for Azure
+      if: ${{ inputs.provider == 'azure-multiple-deployments-with-routing' }}
+      run: echo "LLM_API_HEALTH_CHECK=False" >> $GITHUB_ENV
+      shell: bash
+
     - name: Run e2e test (Single Step Command Generator)
       if: ${{ inputs.train-and-test == 'singlestep' }}
       id: e2e-test-on-singlestep-trained-model
@@ -228,6 +236,7 @@ runs:
       shell: bash
 
     - name: Verify LLM and Embeddings API health checks during inference
+      if: ${{ inputs.provider != 'azure-multiple-deployments-with-routing' }}
       run: |
         grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' e2e-tests-log \
           && grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' e2e-tests-log \
@@ -252,7 +261,7 @@ runs:
       env:
         RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
       run: |
-        echo "RASA_VERSION=$(rasa --version | grep 'Rasa Version' | tr -d ' ' | awk -F ':' '{print $2}')" >> $GITHUB_ENV
+        echo "RASA_VERSION=$(rasa --version | grep 'Rasa Pro Version' | tr -d ' ' | awk -F ':' '{print $2}')" >> $GITHUB_ENV
         echo "SHORT_SHA=`git rev-parse --short HEAD`" >> $GITHUB_ENV
       shell: bash
 
