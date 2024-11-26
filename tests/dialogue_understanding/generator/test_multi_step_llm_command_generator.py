@@ -1267,3 +1267,30 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         assert len(predicted_commands) == 2
         assert ErrorCommand() in predicted_commands
         assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
+
+    async def test_prediction_doesnt_fail_on_change_flow_command(
+        self,
+        multi_step_llm_command_generator: MultiStepLLMCommandGenerator,
+        test_flows_with_defaults: FlowsList,
+        mock_filter_flows: AsyncMock,
+        mock_predict_commands_for_active_flow: AsyncMock,
+        mock_predict_commands_for_handling_flows: AsyncMock,
+        mock_predict_commands_for_newly_started_flows: AsyncMock,
+    ):
+        # Given
+        filtered_flows = test_flows_with_defaults.user_flows.exclude_link_only_flows()
+        mock_message = Mock(spec=Message)
+        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True)
+        mock_domain = Mock(spec=Domain)
+
+        mock_predict_commands_for_newly_started_flows.return_value = [
+            ChangeFlowCommand()
+        ]
+
+        # When
+        try:
+            await multi_step_llm_command_generator.predict_commands(
+                mock_message, filtered_flows, mock_tracker, domain=mock_domain
+            )
+        except TypeError:
+            pytest.fail("Unexpected TypeError")
