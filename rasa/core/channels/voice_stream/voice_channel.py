@@ -2,7 +2,13 @@ import asyncio
 import structlog
 import copy
 from dataclasses import asdict, dataclass
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict, Optional, Tuple
+
+from rasa.core.channels.voice_stream.util import generate_silence
+from rasa.shared.core.constants import (
+    SILENCE_TIMEOUT_DEFAULT_VALUE,
+    SLOT_SILENCE_TIMEOUT,
+)
 from rasa.shared.utils.common import (
     class_from_module_path,
     mark_as_beta_feature,
@@ -15,12 +21,21 @@ from rasa.core.channels import InputChannel, OutputChannel, UserMessage
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_ready.utils import validate_voice_license_scope
 from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine
-from rasa.core.channels.voice_stream.asr.asr_event import ASREvent, NewTranscript
+from rasa.core.channels.voice_stream.asr.asr_event import (
+    ASREvent,
+    NewTranscript,
+    UserStartedSpeaking,
+)
 from sanic import Websocket  # type: ignore
 
 from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
 from rasa.core.channels.voice_stream.asr.azure import AzureASR
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
+from rasa.core.channels.voice_stream.call_state import (
+    CallState,
+    _call_state,
+    call_state,
+)
 from rasa.core.channels.voice_stream.tts.azure import AzureTTS
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
 from rasa.core.channels.voice_stream.tts.cartesia import CartesiaTTS
@@ -108,59 +123,101 @@ class VoiceOutputChannel(OutputChannel):
         tts_engine: TTSEngine,
         tts_cache: TTSCache,
     ):
+        super().__init__()
         self.voice_websocket = voice_websocket
         self.tts_engine = tts_engine
         self.tts_cache = tts_cache
 
-        self.should_hangup = False
         self.latest_message_id: Optional[str] = None
 
     def rasa_audio_bytes_to_channel_bytes(
         self, rasa_audio_bytes: RasaAudioBytes
     ) -> bytes:
+        """Turn rasa's audio byte format into the format for the channel."""
         raise NotImplementedError
 
-    def channel_bytes_to_messages(
-        self, recipient_id: str, channel_bytes: bytes
-    ) -> List[Any]:
+    def channel_bytes_to_message(self, recipient_id: str, channel_bytes: bytes) -> str:
+        """Wrap the bytes for the channel in the proper format."""
         raise NotImplementedError
+
+    def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
+        """Create a marker message for a specific channel."""
+        raise NotImplementedError
+
+    async def send_marker_message(self, recipient_id: str) -> None:
+        """Send a message that marks positions in the audio stream."""
+        marker_message, mark_id = self.create_marker_message(recipient_id)
+        await self.voice_websocket.send(marker_message)
+        self.latest_message_id = mark_id
+
+    def update_silence_timeout(self) -> None:
+        """Updates the silence timeout for the session."""
+        if self.tracker_state:
+            call_state.silence_timeout = (  # type: ignore[attr-defined]
+                self.tracker_state["slots"][SLOT_SILENCE_TIMEOUT]
+            )
 
     async def send_text_message(
         self, recipient_id: str, text: str, **kwargs: Any
     ) -> None:
+        self.update_silence_timeout()
         cached_audio_bytes = self.tts_cache.get(text)
-
-        if cached_audio_bytes:
-            await self.send_audio_bytes(recipient_id, cached_audio_bytes)
-            return
         collected_audio_bytes = RasaAudioBytes(b"")
-        # Todo: make kwargs compatible with engine config
-        synth_config = self.tts_engine.config.__class__.from_dict({})
-        try:
-            audio_stream = self.tts_engine.synthesize(text, synth_config)
-        except TTSError:
-            # TODO: add message that works without tts, e.g. loading from disc
-            pass
+        seconds_marker = -1
+        if cached_audio_bytes:
+            audio_stream = self.chunk_audio(cached_audio_bytes)
+        else:
+            # Todo: make kwargs compatible with engine config
+            synth_config = self.tts_engine.config.__class__.from_dict({})
+            try:
+                audio_stream = self.tts_engine.synthesize(text, synth_config)
+            except TTSError:
+                # TODO: add message that works without tts, e.g. loading from disc
+                audio_stream = self.chunk_audio(generate_silence())
+
         async for audio_bytes in audio_stream:
             try:
                 await self.send_audio_bytes(recipient_id, audio_bytes)
+                full_seconds_of_audio = len(collected_audio_bytes) // HERTZ
+                if full_seconds_of_audio > seconds_marker:
+                    await self.send_marker_message(recipient_id)
+                    seconds_marker = full_seconds_of_audio
+
             except (WebsocketClosed, ServerError):
                 # ignore sending error, and keep collecting and caching audio bytes
-                self.should_hangup = True
-
+                call_state.connection_failed = True  # type: ignore[attr-defined]
             collected_audio_bytes = RasaAudioBytes(collected_audio_bytes + audio_bytes)
+        try:
+            await self.send_marker_message(recipient_id)
+        except (WebsocketClosed, ServerError):
+            # ignore sending error
+            pass
+        call_state.latest_bot_audio_id = self.latest_message_id  # type: ignore[attr-defined]
 
-        self.tts_cache.put(text, collected_audio_bytes)
+        if not cached_audio_bytes:
+            self.tts_cache.put(text, collected_audio_bytes)
 
     async def send_audio_bytes(
         self, recipient_id: str, audio_bytes: RasaAudioBytes
     ) -> None:
         channel_bytes = self.rasa_audio_bytes_to_channel_bytes(audio_bytes)
-        for message in self.channel_bytes_to_messages(recipient_id, channel_bytes):
-            await self.voice_websocket.send(message)
+        message = self.channel_bytes_to_message(recipient_id, channel_bytes)
+        await self.voice_websocket.send(message)
+
+    async def chunk_audio(
+        self, audio_bytes: RasaAudioBytes, chunk_size: int = 2048
+    ) -> AsyncIterator[RasaAudioBytes]:
+        """Generate chunks from cached audio bytes."""
+        offset = 0
+        while offset < len(audio_bytes):
+            chunk = audio_bytes[offset : offset + chunk_size]
+            if len(chunk):
+                yield RasaAudioBytes(chunk)
+            offset += chunk_size
+        return
 
     async def hangup(self, recipient_id: str, **kwargs: Any) -> None:
-        self.should_hangup = True
+        call_state.should_hangup = True  # type: ignore[attr-defined]
 
 
 class VoiceInputChannel(InputChannel):
@@ -171,8 +228,26 @@ class VoiceInputChannel(InputChannel):
         self.tts_config = tts_config
         self.tts_cache = TTSCache(tts_config.get("cache_size", 1000))
 
-        # if set to a value, call will be hungup after marker is reached
-        self.hangup_after: Optional[str] = None
+    async def handle_silence_timeout(
+        self,
+        voice_websocket: Websocket,
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        tts_engine: TTSEngine,
+        call_parameters: CallParameters,
+    ) -> None:
+        timeout = call_state.silence_timeout or SILENCE_TIMEOUT_DEFAULT_VALUE
+        logger.info("voice_channel.silence_timeout_watch_started", timeout=timeout)
+        await asyncio.sleep(timeout)
+        logger.info("voice_channel.silence_timeout_tripped")
+        output_channel = self.create_output_channel(voice_websocket, tts_engine)
+        message = UserMessage(
+            "/silence_timeout",
+            output_channel,
+            call_parameters.stream_id,
+            input_channel=self.name(),
+            metadata=asdict(call_parameters),
+        )
+        await on_new_message(message)
 
     @classmethod
     def from_credentials(cls, credentials: Optional[Dict[str, Any]]) -> InputChannel:
@@ -217,6 +292,7 @@ class VoiceInputChannel(InputChannel):
         channel_websocket: Websocket,
     ) -> None:
         """Pipe input audio to ASR and consume ASR events simultaneously."""
+        _call_state.set(CallState())
         asr_engine = asr_engine_from_config(self.asr_config)
         tts_engine = tts_engine_from_config(self.tts_config)
         await asr_engine.connect()
@@ -230,7 +306,26 @@ class VoiceInputChannel(InputChannel):
 
         async def consume_audio_bytes() -> None:
             async for message in channel_websocket:
+                is_bot_speaking_before = call_state.is_bot_speaking
                 channel_action = self.map_input_message(message)
+                is_bot_speaking_after = call_state.is_bot_speaking
+
+                if not is_bot_speaking_before and is_bot_speaking_after:
+                    logger.info("voice_channel.bot_started_speaking")
+
+                # we just stopped speaking, starting a watcher for silence timeout
+                if is_bot_speaking_before and not is_bot_speaking_after:
+                    logger.info("voice_channel.bot_stopped_speaking")
+                    call_state.silence_timeout_watcher = (  # type: ignore[attr-defined]
+                        asyncio.create_task(
+                            self.handle_silence_timeout(
+                                channel_websocket,
+                                on_new_message,
+                                tts_engine,
+                                call_parameters,
+                            )
+                        )
+                    )
                 if isinstance(channel_action, NewAudioAction):
                     await asr_engine.send_audio_chunks(channel_action.audio_bytes)
                 elif isinstance(channel_action, EndConversationAction):
@@ -273,6 +368,7 @@ class VoiceInputChannel(InputChannel):
             logger.info(
                 "VoiceInputChannel.handle_asr_event.new_transcript", transcript=e.text
             )
+            call_state.is_user_speaking = False  # type: ignore[attr-defined]
             output_channel = self.create_output_channel(voice_websocket, tts_engine)
             message = UserMessage(
                 e.text,
@@ -282,6 +378,8 @@ class VoiceInputChannel(InputChannel):
                 metadata=asdict(call_parameters),
             )
             await on_new_message(message)
-
-            if output_channel.should_hangup:
-                self.hangup_after = output_channel.latest_message_id
+        elif isinstance(e, UserStartedSpeaking):
+            if call_state.silence_timeout_watcher:
+                call_state.silence_timeout_watcher.cancel()
+                call_state.silence_timeout_watcher = None  # type: ignore[attr-defined]
+            call_state.is_user_speaking = True  # type: ignore[attr-defined]

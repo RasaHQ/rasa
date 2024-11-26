@@ -11,6 +11,7 @@ USER_INTENT_BACK = "back"
 USER_INTENT_OUT_OF_SCOPE = "out_of_scope"
 USER_INTENT_SESSION_START = "session_start"
 USER_INTENT_SESSION_END = "session_end"
+USER_INTENT_SILENCE_TIMEOUT = "silence_timeout"
 SESSION_START_METADATA_SLOT = "session_started_metadata"
 
 DEFAULT_INTENTS = [
@@ -19,6 +20,7 @@ DEFAULT_INTENTS = [
     USER_INTENT_OUT_OF_SCOPE,
     USER_INTENT_SESSION_START,
     USER_INTENT_SESSION_END,
+    USER_INTENT_SILENCE_TIMEOUT,
     constants.DEFAULT_NLU_FALLBACK_INTENT_NAME,
 ]
 
@@ -106,6 +108,11 @@ FLOW_HASHES_SLOT = "flow_hashes"
 
 FLOW_SLOT_NAMES = [FLOW_HASHES_SLOT]
 
+# slots for audio timeout
+SLOT_SILENCE_TIMEOUT = "silence_timeout"
+SILENCE_TIMEOUT_DEFAULT_VALUE = 6.0
+SLOT_CONSECUTIVE_SILENCE_TIMEOUTS = "consecutive_silence_timeouts"
+SILENCE_SLOTS = [SLOT_SILENCE_TIMEOUT, SLOT_CONSECUTIVE_SILENCE_TIMEOUTS]
 # slots for knowledge base
 SLOT_LISTED_ITEMS = "knowledge_base_listed_objects"
 SLOT_LAST_OBJECT = "knowledge_base_last_object"

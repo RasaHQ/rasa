@@ -196,9 +196,7 @@ def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
-@patch(
-    "rasa.dialogue_understanding.generator.llm_based_command_generator.try_instantiate_llm_client"
-)
+@patch("rasa.shared.utils.health_check.try_instantiate_llm_client")
 async def trained_flow_policy_bot(
     mock_try_instantiate_llm_client: Mock,
     mock_flow_search_create_embedder: Mock,
@@ -222,9 +220,7 @@ async def trained_flow_policy_bot(
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
-@patch(
-    "rasa.dialogue_understanding.generator.llm_based_command_generator.try_instantiate_llm_client"
-)
+@patch("rasa.shared.utils.health_check.try_instantiate_llm_client")
 async def trained_nlu_trigger_flow_policy_bot(
     mock_try_instantiate_llm_client: Mock,
     mock_flow_search_create_embedder: Mock,

@@ -46,6 +46,8 @@ from rasa.telemetry import (
     TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE,
     TRACING_BACKEND,
     _get_llm_command_generator_config,
+    LLM_COMMAND_GENERATOR_MODEL_GROUP_ID,
+    FLOW_RETRIEVAL_EMBEDDING_MODEL_GROUP_ID,
 )
 from rasa.utils import licensing
 from rasa.utils.licensing import LICENSE_ENV_VAR
@@ -56,8 +58,10 @@ ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA = {
     "vector_store_type": "qdrant",
     "embeddings_type": DEFAULT_EMBEDDINGS_CONFIG["provider"],
     "embeddings_model": DEFAULT_EMBEDDINGS_CONFIG["model"],
+    "embeddings_model_group_id": None,
     "llm_type": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["provider"],
     "llm_model": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
+    "llm_model_group_id": None,
     "citation_enabled": True,
 }
 
@@ -1354,10 +1358,12 @@ def test_get_llm_command_generator_config_no_command_generator_component():
     assert result == {
         LLM_COMMAND_GENERATOR_MODEL_NAME: None,
         LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED: None,
+        LLM_COMMAND_GENERATOR_MODEL_GROUP_ID: None,
         MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED: None,
         MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED: None,
         FLOW_RETRIEVAL_ENABLED: None,
         FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: None,
+        FLOW_RETRIEVAL_EMBEDDING_MODEL_GROUP_ID: None,
     }
 
 
@@ -1385,11 +1391,12 @@ def test_track_enterprise_search_policy_train_completed(
         "qdrant",
         DEFAULT_EMBEDDINGS_CONFIG["provider"],
         DEFAULT_EMBEDDINGS_CONFIG["model"],
+        None,  # model group id for router
         LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["provider"],
         LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
+        None,  # model group id for router
         True,
     )
-
     mock_track.assert_called_once_with(
         TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
         ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA,
@@ -1407,8 +1414,10 @@ def test_track_enterprise_search_policy_predict(
         "qdrant",
         DEFAULT_EMBEDDINGS_CONFIG["provider"],
         DEFAULT_EMBEDDINGS_CONFIG["model"],
+        None,
         LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["provider"],
         LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
+        None,
         True,
     )
 

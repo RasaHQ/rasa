@@ -1,5 +1,5 @@
 import argparse
-import logging
+import structlog
 import os
 import platform
 import sys
@@ -35,10 +35,9 @@ from rasa.cli.utils import (
 )
 from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
-from rasa.shared.utils.cli import print_error
 from rasa.utils.common import configure_logging_and_warnings
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -89,7 +88,7 @@ def print_version() -> None:
     """Prints version information of rasa tooling and python."""
     from rasa.utils.licensing import get_license_expiration_date
 
-    print(f"Rasa Version      :         {version.__version__}")
+    print(f"Rasa Pro Version  :         {version.__version__}")
     print(f"Minimum Compatible Version: {MINIMUM_COMPATIBLE_VERSION}")
     print(f"Rasa SDK Version  :         {rasa_sdk_version}")
     print(f"Python Version    :         {platform.python_version()}")
@@ -110,6 +109,10 @@ def main() -> None:
     configure_logging_and_warnings(
         log_level, logging_config_file, warn_only_once=True, filter_repeated_logs=True
     )
+    # TODO: we shouldn't configure colored logging, since we are using structlog
+    # for logging - should be removed as part of logs cleanup
+    rasa.utils.io.configure_colored_logging(log_level)
+    configure_structlog(log_level)
 
     tf_env.setup_tf_environment()
     tf_env.check_deterministic_ops()
@@ -119,8 +122,6 @@ def main() -> None:
 
     try:
         if hasattr(cmdline_arguments, "func"):
-            rasa.utils.io.configure_colored_logging(log_level)
-
             is_studio_command = check_if_studio_command()
 
             if not is_studio_command:
@@ -137,23 +138,32 @@ def main() -> None:
                 plugin_manager().hook.init_anonymization_pipeline(
                     endpoints_file=endpoints_file
                 )
-            # configure structlog
-            configure_structlog(log_level)
 
             cmdline_arguments.func(cmdline_arguments)
         elif hasattr(cmdline_arguments, "version"):
             print_version()
         else:
             # user has not provided a subcommand, let's print the help
-            logger.error("No command specified.")
+            structlogger.error("cli.no_command", event_info="No command specified.")
             arg_parser.print_help()
             sys.exit(1)
-    except RasaException as e:
+    except RasaException as exc:
         # these are exceptions we expect to happen (e.g. invalid training data format)
         # it doesn't make sense to print a stacktrace for these if we are not in
         # debug mode
-        logger.debug("Failed to run CLI command due to an exception.", exc_info=e)
-        print_error(f"{e.__class__.__name__}: {e}")
+        structlogger.debug(
+            "cli.exception.details",
+            event_info="Failed to run CLI command due to an exception.",
+            exc_info=exc,
+        )
+        structlogger.error("cli.exception.rasa_exception", event_info=f"{exc}")
+        sys.exit(1)
+    except Exception as exc:
+        structlogger.error(
+            "cli.exception.general_exception",
+            event_info=f"{exc.__class__.__name__}: {exc}",
+            exc_info=exc,
+        )
         sys.exit(1)
 
 

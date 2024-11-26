@@ -1,3 +1,6 @@
+import os
+from unittest.mock import patch
+
 import pytest
 import structlog
 from pytest import MonkeyPatch
@@ -33,6 +36,8 @@ class TestAzureOpenAILLMClient:
         )
         assert isinstance(client, LLMClient)
 
+        monkeypatch.delenv(AZURE_API_KEY_ENV_VAR, False)
+
     def test_init_fetches_from_environment_variables(self, monkeypatch: MonkeyPatch):
         # Given
 
@@ -50,8 +55,14 @@ class TestAzureOpenAILLMClient:
         assert client.model is None
         assert client.api_base == "https://my.api.base.com/my_model"
         assert client.api_version == "2023-01-01"
-        assert client._api_key == "my key"
+        assert client._api_key_env_var == AZURE_API_KEY_ENV_VAR
         assert client.api_type == "test api type"
+
+        # Clean up
+        monkeypatch.delenv(OPENAI_API_KEY_ENV_VAR, False)
+        monkeypatch.delenv(OPENAI_API_BASE_ENV_VAR, False)
+        monkeypatch.delenv(OPENAI_API_VERSION_ENV_VAR, False)
+        monkeypatch.delenv(OPENAI_API_TYPE_ENV_VAR, False)
 
     def test_init_fetches_from_deprecated_environment_variables(
         self, monkeypatch: MonkeyPatch
@@ -72,10 +83,22 @@ class TestAzureOpenAILLMClient:
         assert client.model is None
         assert client.api_base == "https://my.api.base.com/my_model"
         assert client.api_version == "2023-01-01"
-        assert client._api_key == "my key"
+        assert client._api_key_env_var == OPENAI_API_KEY_ENV_VAR
         assert client.api_type == "test api type"
 
+        # Clean up
+        monkeypatch.delenv(OPENAI_API_KEY_ENV_VAR, False)
+        monkeypatch.delenv(OPENAI_API_BASE_ENV_VAR, False)
+        monkeypatch.delenv(OPENAI_API_VERSION_ENV_VAR, False)
+        monkeypatch.delenv(OPENAI_API_TYPE_ENV_VAR, False)
+
     def test_validate_client_setup(self, monkeypatch: MonkeyPatch):
+        monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "my key")
+        monkeypatch.delenv(AZURE_API_BASE_ENV_VAR, False)
+        monkeypatch.delenv(AZURE_API_VERSION_ENV_VAR, False)
+        monkeypatch.delenv(OPENAI_API_BASE_ENV_VAR, False)
+        monkeypatch.delenv(OPENAI_API_VERSION_ENV_VAR, False)
+
         # Given
         expected_event = "azure_openai_llm_client.not_configured"
         expected_log_level = "error"
@@ -86,8 +109,6 @@ class TestAzureOpenAILLMClient:
             "Set API Version",
             AZURE_API_VERSION_ENV_VAR,
             API_VERSION_CONFIG_KEY,
-            "Set API Key",
-            AZURE_API_KEY_ENV_VAR,
         ]
 
         with structlog.testing.capture_logs() as caplog:
@@ -100,6 +121,9 @@ class TestAzureOpenAILLMClient:
             )
 
             assert len(logs) == 1
+
+        # Clean up
+        monkeypatch.delenv(AZURE_API_KEY_ENV_VAR, False)
 
     @pytest.mark.parametrize(
         "config,"
@@ -188,6 +212,9 @@ class TestAzureOpenAILLMClient:
             assert parameter_key in client._extra_parameters
             assert client._extra_parameters[parameter_key] == parameter_value
 
+        # Clean up
+        monkeypatch.delenv(AZURE_API_KEY_ENV_VAR, False)
+
     @pytest.mark.parametrize(
         "invalid_config",
         [
@@ -213,6 +240,9 @@ class TestAzureOpenAILLMClient:
         with pytest.raises(ValueError):
             AzureOpenAILLMClient.from_config(invalid_config)
 
+        # Clean up
+        monkeypatch.delenv(AZURE_API_KEY_ENV_VAR, False)
+
     def test_completion(self, monkeypatch: MonkeyPatch):
         # Given
         monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "my key")
@@ -236,6 +266,9 @@ class TestAzureOpenAILLMClient:
         assert response.usage.completion_tokens > 0
         assert response.usage.total_tokens > 0
 
+        # Clean up
+        monkeypatch.delenv(AZURE_API_KEY_ENV_VAR, False)
+
     async def test_acompletion(self, monkeypatch: MonkeyPatch):
         # Given
         monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "my key")
@@ -258,6 +291,9 @@ class TestAzureOpenAILLMClient:
         assert response.usage.prompt_tokens > 0
         assert response.usage.completion_tokens > 0
         assert response.usage.total_tokens > 0
+
+        # Clean up
+        monkeypatch.delenv(AZURE_API_KEY_ENV_VAR, False)
 
     @pytest.mark.parametrize(
         "config",
@@ -348,3 +384,59 @@ class TestAzureOpenAILLMClient:
 
         assert "timeout" in client._extra_parameters
         assert client._extra_parameters["timeout"] == 7
+
+        # Clean up
+        monkeypatch.delenv(AZURE_API_KEY_ENV_VAR, False)
+
+    def test_resolve_api_key_env_var_from_extra_parameters(self):
+        client = AzureOpenAILLMClient(
+            deployment="test_deployment",
+            api_base="https://my.api.base.com/my_model",
+            api_version="2023-01-01",
+            api_type="azure",
+            api_key="${API_KEY}",
+        )
+
+        assert client._resolve_api_key_env_var() == "${API_KEY}"
+
+    @patch.dict(os.environ, {AZURE_API_KEY_ENV_VAR: "azure_api_key"})
+    def test_resolve_api_key_env_var_from_azure_env_var(self):
+        client = AzureOpenAILLMClient(
+            deployment="test_deployment",
+            api_base="https://my.api.base.com/my_model",
+            api_version="2023-01-01",
+            api_type="azure",
+        )
+        client._extra_parameters = {}
+        assert client._resolve_api_key_env_var() == AZURE_API_KEY_ENV_VAR
+
+    @patch.dict(os.environ, {OPENAI_API_KEY_ENV_VAR: "openai_api_key"})
+    def test_resolve_api_key_env_var_from_openai_env_var(self):
+        client = AzureOpenAILLMClient(
+            deployment="test_deployment",
+            api_base="https://my.api.base.com/my_model",
+            api_version="2023-01-01",
+            api_type="azure",
+        )
+        client._extra_parameters = {}
+        with pytest.warns(FutureWarning):
+            assert client._resolve_api_key_env_var() == OPENAI_API_KEY_ENV_VAR
+
+    def test_resolve_api_key_env_var_not_set(
+        self,
+        monkeypatch: MonkeyPatch,
+    ):
+        monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "my key")
+
+        client = AzureOpenAILLMClient(
+            deployment="test_deployment",
+            api_base="https://my.api.base.com/my_model",
+            api_version="2023-01-01",
+            api_type="azure",
+        )
+
+        monkeypatch.delenv(AZURE_API_KEY_ENV_VAR, False)
+        monkeypatch.delenv(OPENAI_API_KEY_ENV_VAR, False)
+
+        with pytest.raises(ProviderClientValidationError):
+            client._resolve_api_key_env_var()

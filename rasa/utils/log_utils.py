@@ -78,6 +78,7 @@ def _anonymizer(
 
 def configure_structlog(
     log_level: Optional[int] = None,
+    include_time: bool = False,
 ) -> None:
     """Configure logging of the server."""
     if log_level is None:  # Log level NOTSET is 0 so we use `is None` here
@@ -114,6 +115,9 @@ def configure_structlog(
         SentryProcessor(event_level=logging.FATAL),
     ]
 
+    if include_time:
+        shared_processors.append(structlog.processors.TimeStamper(fmt="iso"))
+
     if not FORCE_JSON_LOGGING and sys.stderr.isatty():
         # Pretty printing when we run in a terminal session.
         # Automatically prints pretty tracebacks when "rich" is installed
@@ -143,11 +147,14 @@ def configure_structlog(
         # logger.
         cache_logger_on_first_use=True,
     )
+    # doing logger creation inline, to prevent usage of unconfigured logger
+    structlog.get_logger().debug("structlog.configured")
 
 
 def log_llm(logger: Any, log_module: str, log_event: str, **kwargs: Any) -> None:
-    """Logs LLM-specific events depending on a flag passed through an environment
-    variable. If the module's flag is set to INFO (e.g.
+    """Logs LLM-specific events depending on a flag passed through an env var.
+
+    If the module's flag is set to INFO (e.g.
     LOG_PROMPT_LLM_COMMAND_GENERATOR=INFO), its prompt is logged at INFO level,
     overriding the general log level setting.
 

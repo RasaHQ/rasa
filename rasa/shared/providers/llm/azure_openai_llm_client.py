@@ -17,6 +17,7 @@ from rasa.shared.constants import (
     OPENAI_API_KEY_ENV_VAR,
     AZURE_API_TYPE_ENV_VAR,
     AZURE_OPENAI_PROVIDER,
+    API_KEY,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers._configs.azure_openai_client_config import (
@@ -29,8 +30,7 @@ structlogger = structlog.get_logger()
 
 
 class AzureOpenAILLMClient(_BaseLiteLLMClient):
-    """
-    A client for interfacing with Azure's OpenAI LLM deployments.
+    """A client for interfacing with Azure's OpenAI LLM deployments.
 
     Parameters:
         deployment (str): The deployment name.
@@ -80,11 +80,7 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
             or os.getenv(OPENAI_API_VERSION_ENV_VAR)
         )
 
-        # API key can be set through OPENAI_API_KEY too,
-        # because of the backward compatibility
-        self._api_key = os.getenv(AZURE_API_KEY_ENV_VAR) or os.getenv(
-            OPENAI_API_KEY_ENV_VAR
-        )
+        self._api_key_env_var = self._resolve_api_key_env_var()
 
         # Not used by LiteLLM, here for backward compatibility
         self._api_type = (
@@ -116,11 +112,6 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
                 "current_value": self.api_version,
                 "env_var": AZURE_API_VERSION_ENV_VAR,
                 "deprecated_var": OPENAI_API_VERSION_ENV_VAR,
-            },
-            "API Key": {
-                "current_value": self._api_key,
-                "env_var": AZURE_API_KEY_ENV_VAR,
-                "deprecated_var": OPENAI_API_KEY_ENV_VAR,
             },
         }
 
@@ -154,10 +145,47 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
                     )
                 raise_deprecation_warning(message=message)
 
+    def _resolve_api_key_env_var(self) -> str:
+        """Resolves the environment variable to use for the API key."""
+        if API_KEY in self._extra_parameters:
+            # API key is set to an env var in the config itself
+            # in case the model is defined in the endpoints.yml
+            return self._extra_parameters[API_KEY]
+
+        if os.getenv(AZURE_API_KEY_ENV_VAR) is not None:
+            return AZURE_API_KEY_ENV_VAR
+
+        if os.getenv(OPENAI_API_KEY_ENV_VAR) is not None:
+            # API key can be set through OPENAI_API_KEY too,
+            # because of the backward compatibility
+            raise_deprecation_warning(
+                message=(
+                    f"Usage of '{OPENAI_API_KEY_ENV_VAR}' environment variable "
+                    "for setting the API key for Azure OpenAI "
+                    "client is deprecated and will be removed "
+                    f"in 4.0.0. Please use '{AZURE_API_KEY_ENV_VAR}' "
+                    "environment variable."
+                )
+            )
+            return OPENAI_API_KEY_ENV_VAR
+
+        structlogger.error(
+            "azure_openai_llm_client.api_key_not_set",
+            event_info=(
+                "API key not set, it is required for API calls. "
+                f"Set it either via the environment variable"
+                f"'{AZURE_API_KEY_ENV_VAR}' or directly"
+                f"via the config key '{API_KEY}'."
+            ),
+        )
+        raise ProviderClientValidationError(
+            f"Missing required environment variable/config key '{API_KEY}' for "
+            f"API calls."
+        )
+
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "AzureOpenAILLMClient":
-        """
-        Initializes the client from given configuration.
+        """Initializes the client from given configuration.
 
         Args:
             config (Dict[str, Any]): Configuration.
@@ -212,23 +240,17 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
 
     @property
     def model(self) -> Optional[str]:
-        """
-        Returns the name of the model deployed on Azure.
-        """
+        """Returns the name of the model deployed on Azure."""
         return self._model
 
     @property
     def api_base(self) -> Optional[str]:
-        """
-        Returns the API base URL for the Azure OpenAI llm client.
-        """
+        """Returns the API base URL for the Azure OpenAI llm client."""
         return self._api_base
 
     @property
     def api_version(self) -> Optional[str]:
-        """
-        Returns the API version for the Azure OpenAI llm client.
-        """
+        """Returns the API version for the Azure OpenAI llm client."""
         return self._api_version
 
     @property
@@ -261,7 +283,7 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
             {
                 "api_base": self.api_base,
                 "api_version": self.api_version,
-                "api_key": self._api_key,
+                "api_key": self._api_key_env_var,
             }
         )
         return fn_args
@@ -304,11 +326,6 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
                 "current_value": self.deployment,
                 "env_var": None,
                 "config_key": DEPLOYMENT_CONFIG_KEY,
-            },
-            "API Key": {
-                "current_value": self._api_key,
-                "env_var": AZURE_API_KEY_ENV_VAR,
-                "config_key": None,
             },
         }
 

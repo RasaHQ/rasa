@@ -763,3 +763,75 @@ class MockHTTPCustomActionExecutor(HTTPCustomActionExecutor):
                 f"This likely means the method was renamed, which means the "
                 f"instrumentation needs to be adapted!"
             )
+
+
+class MockAvailableEndpoints:
+    @staticmethod
+    def get_instance():
+        return MockAvailableEndpoints()
+
+    def __init__(self):
+        self.model_groups = [
+            {
+                "id": "llm-model-group",
+                "models": [
+                    {
+                        "provider": "cohere",
+                        "model": "test-cohere",
+                        "api_key": "mock key in test_tracing_rephraser",
+                    },
+                    {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                        "api_key": "tedst",
+                    },
+                    {
+                        "provider": "azure",
+                        "deployment": "my-llm-azure-deployment",
+                        "api_key": "test",
+                        "api_base": "test-base",
+                        "api_version": "test-version",
+                        "num_retries": 100,
+                        "timeout": 100,
+                    },
+                ],
+                "router": {"routing_strategy": "test"},
+            },
+            {
+                "id": "embedding-model-group",
+                "models": [
+                    {
+                        "provider": "openai",
+                        "model": "text-embedding-3-small",
+                        "api_key": "mock key in test_tracing_rephraser",
+                        # configuration parsers will append these deprecated fields
+                        # automatically, so it's easier for testing the value of
+                        # 'embeddings' attribute to have them upfront.
+                        "api_base": None,
+                        "api_version": None,
+                        "api_type": "openai",
+                    },
+                    {
+                        "provider": "azure",
+                        "deployment": "my-azure-embedding-deployment",
+                        "api_key": "test",
+                        "api_base": "test-base",
+                        "api_version": "test-version",
+                        "num_retries": 100,
+                        "timeout": 100,
+                        # again, configuration parsers will append these fields
+                        # automatically
+                        "api_type": "azure",
+                        "model": None,
+                    },
+                ],
+                "router": {"routing_strategy": "test"},
+            },
+        ]
+
+
+@pytest.fixture
+def mock_available_endpoints(monkeypatch):
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+    return mock_endpoints

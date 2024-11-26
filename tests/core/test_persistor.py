@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Any, Dict, Text
 from unittest.mock import MagicMock, Mock, patch
 
@@ -39,7 +40,7 @@ def bucket_name() -> Text:
 @pytest.fixture
 def model() -> Text:
     """Name of the model to use for testing."""
-    return "/my/project/model.tar.gz"
+    return "model.tar.gz"
 
 
 @pytest.fixture
@@ -58,7 +59,7 @@ def mock_s3_connection() -> Any:
 # noinspection PyPep8Naming
 def test_retrieve_tar_archive_with_s3_namespace(
     bucket_name: Text, model: Text, destination: Text, mock_s3_connection: Any
-):
+) -> None:
     mock_s3_connection.create_bucket(Bucket=bucket_name)
 
     with patch.object(persistor.AWSPersistor, "_copy") as copy:
@@ -73,7 +74,7 @@ def test_retrieve_tar_archive_with_s3_namespace(
 # noinspection PyPep8Naming
 def test_retrieve_tar_archive_with_s3_bucket_not_found(
     bucket_name: Text, model: Text, destination: Text
-):
+) -> None:
     with mock_aws():
         with patch.object(persistor.AWSPersistor, "_copy"):
             log = (
@@ -89,8 +90,8 @@ def test_retrieve_tar_archive_with_s3_bucket_not_found(
 
 @patch("boto3.resource")
 def test_retrieve_tar_archive_with_s3_bucket_forbidden(
-    mock_resource: Mock, bucket_name: Text, monkeypatch
-):
+    mock_resource: Mock, bucket_name: Text, monkeypatch: MonkeyPatch
+) -> None:
     import botocore
 
     aws_persistor = persistor.AWSPersistor(bucket_name)
@@ -114,35 +115,38 @@ def test_retrieve_tar_archive_with_s3_bucket_forbidden(
 
 # noinspection PyPep8Naming
 def test_s3_private_retrieve_tar(
-    bucket_name: Text, model: Text, mock_s3_connection: Any
-):
+    bucket_name: Text, model: Text, mock_s3_connection: Any, tmp_path: Path
+) -> None:
     mock_s3_connection.create_bucket(Bucket=bucket_name)
     # Ensure the S3 persistor writes to a filename `model.tar.gz`, whilst
     # passing the fully namespaced path to boto3
     awsPersistor = persistor.AWSPersistor(bucket_name, region_name="foo")
+    model_path = tmp_path / model
+    model_path.touch()
+    awsPersistor.persist(str(model_path))
 
     with patch.object(awsPersistor.bucket, "download_fileobj") as download_fileobj:
         # noinspection PyProtectedMember
         awsPersistor._retrieve_tar(model)
     retrieveArgs = download_fileobj.call_args[0]
-    assert retrieveArgs[0] == model
+    assert retrieveArgs[0] == str(model_path)
     assert retrieveArgs[1].name == "model.tar.gz"
 
 
 class TestPersistor(Persistor):
-    def _retrieve_tar(self, filename: Text) -> Text:
+    def _retrieve_tar(self, filename: Text) -> None:
         pass
 
     def _persist_tar(self, filekey: Text, tarname: Text) -> None:
         pass
 
 
-def test_get_external_persistor():
+def test_get_external_persistor() -> None:
     p = persistor.get_persistor("tests.core.test_persistor.TestPersistor")
     assert isinstance(p, TestPersistor)
 
 
-def test_raise_exception_in_get_external_persistor():
+def test_raise_exception_in_get_external_persistor() -> None:
     with pytest.raises(ImportError):
         _ = persistor.get_persistor("unknown.persistor")
 
@@ -151,7 +155,7 @@ def test_raise_exception_in_get_external_persistor():
 @pytest.mark.parametrize(
     "model, archive", [("model.tar.gz", "model.tar.gz"), ("model", "model.tar.gz")]
 )
-def test_retrieve_tar_archive(model: Text, archive: Text):
+def test_retrieve_tar_archive(model: Text, archive: Text) -> None:
     with patch.object(TestPersistor, "_copy") as f:
         with patch.object(TestPersistor, "_retrieve_tar") as f:
             TestPersistor().retrieve(model, "dst")
@@ -167,7 +171,7 @@ def test_retrieve_tar_archive(model: Text, archive: Text):
 )
 def test_create_file_key_with_remote_path(
     model_name: Text, expected_file_key: Text, remote_storage_path: Text
-):
+) -> None:
     # Simulate the environment where BUCKET_OBJECT_PATH is set
     with patch.dict(os.environ, {"REMOTE_STORAGE_PATH": remote_storage_path}):
         result = TestPersistor()._create_file_key(model_name)
@@ -177,7 +181,7 @@ def test_create_file_key_with_remote_path(
 @patch("google.cloud.storage.Client")
 def test_retrieve_tar_archive_with_gcs_namespace(
     mock_client: Mock, bucket_name: Text, model: Text, destination: Text
-):
+) -> None:
     with patch.object(persistor.GCSPersistor, "_copy") as copy:
         with patch.object(persistor.GCSPersistor, "_retrieve_tar") as retrieve:
             persistor.GCSPersistor(bucket_name).retrieve(model, destination)
@@ -190,15 +194,16 @@ def test_retrieve_tar_archive_with_gcs_namespace(
 def test_retrieve_tar_archive_with_gcs_bucket_not_found(
     mock_client: Mock,
     bucket_name: Text,
-):
+) -> None:
     from google.cloud import exceptions
 
     gcs_persistor = persistor.GCSPersistor(bucket_name)
     gcs_persistor.storage_client.get_bucket = Mock(side_effect=exceptions.NotFound(""))
 
     log = (
-        f"The specified bucket '{bucket_name}' does not exist. "
-        "Please make sure to create the bucket first."
+        "The specified Google Cloud Storage bucket 'rasa-test' does not exist. "
+        "Please make sure to create the bucket first or provide an alternative "
+        "valid bucket name."
     )
 
     with pytest.raises(RasaException, match=log):
@@ -210,16 +215,16 @@ def test_retrieve_tar_archive_with_gcs_bucket_not_found(
 def test_retrieve_tar_archive_with_gcs_bucket_forbidden(
     mock_client: Mock,
     bucket_name: Text,
-):
+) -> None:
     from google.cloud import exceptions
 
     gcs_persistor = persistor.GCSPersistor(bucket_name)
     gcs_persistor.storage_client.get_bucket = Mock(side_effect=exceptions.Forbidden(""))
 
     log = (
-        f"Access to the specified bucket '{bucket_name}' is forbidden. "
-        "Please make sure you have the necessary "
-        "permission to access the bucket. "
+        f"Access to the specified Google Cloud storage bucket '{bucket_name}' "
+        f"is forbidden. Please make sure you have the necessary permissions to "
+        "access the bucket. "
     )
 
     with pytest.raises(RasaException, match=log):
@@ -230,7 +235,7 @@ def test_retrieve_tar_archive_with_gcs_bucket_forbidden(
 @patch("azure.storage.blob.BlobServiceClient")
 def test_retrieve_tar_archive_with_azure_namespace(
     mock_client: Mock, model: Text, destination: Text
-):
+) -> None:
     azure_persistor = persistor.AzurePersistor("foo", "bar", "3333")
 
     with patch.object(persistor.AzurePersistor, "_copy") as copy:
@@ -243,8 +248,8 @@ def test_retrieve_tar_archive_with_azure_namespace(
 
 @patch("azure.storage.blob.BlobServiceClient")
 def test_retrieve_tar_archive_with_azure_bucket_not_found(
-    mock_client: Mock, monkeypatch
-):
+    mock_client: Mock, monkeypatch: MonkeyPatch
+) -> None:
     azure_persistor = persistor.AzurePersistor("foo", "bar", "foobar")
     azure_persistor.container_name = bucket_name
     container_client = azure_persistor._container_client()
@@ -252,7 +257,8 @@ def test_retrieve_tar_archive_with_azure_bucket_not_found(
 
     log = (
         f"The specified container '{bucket_name}' does not exist."
-        "Please make sure to create the container first."
+        f"Please make sure to create the bucket first or "
+        f"provide an alternative valid bucket name."
     )
     with pytest.raises(RasaException, match=log):
         azure_persistor._ensure_container_exists()

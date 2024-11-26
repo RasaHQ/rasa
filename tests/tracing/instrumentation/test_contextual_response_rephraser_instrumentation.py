@@ -13,8 +13,10 @@ from rasa.shared.utils.llm import DEFAULT_OPENAI_GENERATE_MODEL_NAME
 from rasa.utils.endpoints import EndpointConfig
 
 from rasa.tracing.instrumentation import instrumentation
-from tests.tracing.instrumentation.conftest import MockContextualResponseRephraser
-
+from tests.tracing.instrumentation.conftest import (
+    MockContextualResponseRephraser,
+    MockAvailableEndpoints,
+)
 
 """@pytest.fixture(autouse=True)
 def set_mock_openai_api_key(monkeypatch: MonkeyPatch):
@@ -87,6 +89,7 @@ def greet_tracker() -> DialogueStateTracker:
             {
                 "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
                 "llm_type": "openai",
+                "llm_model_group_id": "None",
             },
         ),
         (
@@ -100,7 +103,9 @@ def greet_tracker() -> DialogueStateTracker:
             {
                 "llm_type": "cohere",
                 "llm_model": "cohere/gptd-instruct-tft",
+                "llm_model_group_id": "None",
                 "llm_temperature": "0.7",
+                "llm_request_timeout": "10",
                 "request_timeout": "10",
             },
         ),
@@ -110,6 +115,7 @@ def greet_tracker() -> DialogueStateTracker:
             {
                 "llm_model": "gpt-3.5-turbo",
                 "llm_type": "openai",
+                "llm_model_group_id": "None",
             },
         ),
         (
@@ -118,6 +124,19 @@ def greet_tracker() -> DialogueStateTracker:
             {
                 "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
                 "llm_type": "openai",
+                "llm_model_group_id": "None",
+            },
+        ),
+        (
+            {"model_group": "llm-model-group"},
+            None,
+            {
+                "llm_model": "None",
+                "llm_type": "None",
+                "llm_model_group_id": "llm-model-group",
+                "llm_temperature": "None",
+                "llm_request_timeout": "None",
+                "request_timeout": "None",
             },
         ),
     ],
@@ -131,8 +150,11 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response(
     expected: Dict[str, Any],
     mock_env_key: str,
     monkeypatch: MonkeyPatch,
+    mock_available_endpoints: MockAvailableEndpoints,
 ) -> None:
-    monkeypatch.setenv(mock_env_key, "mock key in test_tracing_rephraser")
+    if mock_env_key is not None:
+        monkeypatch.setenv(mock_env_key, "mock key in test_tracing_rephraser")
+
     component_class = MockContextualResponseRephraser
 
     instrumentation.instrument(
@@ -160,9 +182,16 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response(
 
     expected_attributes = {
         "class_name": component_class.__name__,
-        "embeddings": "{}",
+        # llm attributes
         "llm_temperature": "0.3",
+        "llm_request_timeout": "5",
+        # embeddings attributes
+        "embeddings_model": "None",
+        "embeddings_type": "None",
+        "embeddings_model_group_id": "None",
+        # deprecated
         "request_timeout": "5",
+        "embeddings": "{}",
     }
     expected_attributes.update(expected)
     assert captured_span.attributes == expected_attributes
@@ -245,15 +274,22 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
     assert (
         captured_span.name == "MockContextualResponseRephraser._generate_llm_response"
     )
-
     expected_attributes = {
         "class_name": component_class.__name__,
-        "embeddings": "{}",
-        "llm_temperature": "0.3",
-        "request_timeout": "5",
         "len_prompt_tokens": "6",
-        "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
+        # llm attributes
         "llm_type": "openai",
+        "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
+        "llm_model_group_id": "None",
+        "llm_temperature": "0.3",
+        "llm_request_timeout": "5",
+        # embeddings attributes
+        "embeddings_model": "None",
+        "embeddings_type": "None",
+        "embeddings_model_group_id": "None",
+        # deprecated
+        "request_timeout": "5",
+        "embeddings": "{}",
     }
     assert captured_span.attributes == expected_attributes
 
@@ -315,6 +351,7 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
             {
                 "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
                 "llm_type": "openai",
+                "llm_model_group_id": "None",
             },
         ),
         (
@@ -328,7 +365,9 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
             {
                 "llm_type": "cohere",
                 "llm_model": "cohere/gptd-instruct-tft",
+                "llm_model_group_id": "None",
                 "llm_temperature": "0.7",
+                "llm_request_timeout": "10",
                 "request_timeout": "10",
             },
         ),
@@ -338,6 +377,7 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
             {
                 "llm_model": "gpt-3.5-turbo",
                 "llm_type": "openai",
+                "llm_model_group_id": "None",
             },
         ),
         (
@@ -346,6 +386,19 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
             {
                 "llm_model": DEFAULT_OPENAI_GENERATE_MODEL_NAME,
                 "llm_type": "openai",
+                "llm_model_group_id": "None",
+            },
+        ),
+        (
+            {"model_group": "llm-model-group"},
+            None,
+            {
+                "llm_model": "None",
+                "llm_type": "None",
+                "llm_model_group_id": "llm-model-group",
+                "llm_temperature": "None",
+                "llm_request_timeout": "None",
+                "request_timeout": "None",
             },
         ),
     ],
@@ -360,8 +413,10 @@ async def test_tracing_contextual_response_rephraser_create_history(
     expected: Dict[str, Any],
     mock_env_key: str,
     monkeypatch: MonkeyPatch,
+    mock_available_endpoints: MockAvailableEndpoints,
 ) -> None:
-    monkeypatch.setenv(mock_env_key, "mock key in test_tracing_rephraser")
+    if mock_env_key is not None:
+        monkeypatch.setenv(mock_env_key, "mock key in test_tracing_rephraser")
 
     component_class = MockContextualResponseRephraser
 
@@ -385,12 +440,19 @@ async def test_tracing_contextual_response_rephraser_create_history(
     captured_span = captured_spans[-1]
 
     assert captured_span.name == "MockContextualResponseRephraser._create_history"
-
     expected_attributes = {
         "class_name": component_class.__name__,
-        "embeddings": "{}",
+        # llm attributes
+        "llm_type": "openai",
         "llm_temperature": "0.3",
+        "llm_request_timeout": "5",
+        # embeddings attributes
+        "embeddings_model": "None",
+        "embeddings_type": "None",
+        "embeddings_model_group_id": "None",
+        # deprecated
         "request_timeout": "5",
+        "embeddings": "{}",
     }
     expected_attributes.update(expected)
     assert captured_span.attributes == expected_attributes

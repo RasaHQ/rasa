@@ -11,8 +11,10 @@ from rasa.shared.core.flows.steps.constants import (
 )
 from rasa.shared.core.flows.validation import (
     DuplicatedStepIdException,
+    DuplicateSlotPersistConfigException,
     EmptyFlowException,
     EmptyStepSequenceException,
+    InvalidPersistSlotsException,
     MissingElseBranchException,
     NoLinkAllowedInCalledFlowException,
     PatternReferencedFlowException,
@@ -27,8 +29,10 @@ from rasa.shared.core.flows.validation import (
     SlotNamingException,
     FlowIdNamingException,
     validate_patterns_are_not_calling_or_linking_other_flows,
+    validate_slot_persistence_configuration,
     PatternReferencedPatternException,
 )
+from rasa.shared.core.flows import Flow
 from rasa.shared.core.flows.yaml_flows_io import (
     YAMLFlowsReader,
 )
@@ -619,3 +623,63 @@ def test_validation_pattern_linking_to_a_pattern_human_handoff():
     flows = flows_from_str_including_defaults(flow_config)
     assert isinstance(flows.underlying_flows[0].steps[1], LinkFlowStep)
     assert flows.underlying_flows[0].steps[1].link == RASA_PATTERN_HUMAN_HANDOFF
+
+
+def test_validate_slot_persistence_configuration_duplicate():
+    flow = Flow.from_json(
+        "flow_a",
+        {
+            "persisted_slots": ["slot_a"],
+            "steps": [{"collect": "slot_a", "reset_after_flow_ends": False}],
+        },
+    )
+
+    with pytest.raises(DuplicateSlotPersistConfigException):
+        validate_slot_persistence_configuration(flow)
+
+
+def test_validate_slot_persistence_configuration_not_duplicate():
+    flow = Flow.from_json(
+        "flow_a",
+        {
+            "persisted_slots": ["slot_a"],
+            "steps": [{"collect": "slot_a", "reset_after_flow_ends": True}],
+        },
+    )
+
+    assert validate_slot_persistence_configuration(flow) is None
+
+
+def test_validate_slot_persistence_configuration_invalid_slots():
+    flow = Flow.from_json(
+        "flow_a",
+        {
+            "persisted_slots": ["slot_a", "slot_b"],
+            "steps": [{"collect": "slot_a"}],
+        },
+    )
+
+    with pytest.raises(InvalidPersistSlotsException):
+        validate_slot_persistence_configuration(flow)
+
+
+def test_validate_slot_persistence_configuration_raise_deprecation_warning():
+    flow = Flow.from_json(
+        "flow_a",
+        {
+            "steps": [{"collect": "slot_a", "reset_after_flow_ends": False}],
+        },
+    )
+
+    deprecation_message = (
+        "Configuring 'reset_after_flow_ends' in collect step 'slot_a' is deprecated "
+        "and will be removed in Rasa Pro 4.0.0. In flow id 'flow_a', please use "
+        "the 'persisted_slots' property at the flow level instead."
+    )
+
+    with pytest.warns(FutureWarning) as record:
+        validate_slot_persistence_configuration(flow)
+
+    assert len(record) == 1
+    assert record[0].message.args[0] == deprecation_message
+    assert isinstance(record[0].message, FutureWarning)

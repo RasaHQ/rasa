@@ -1,13 +1,12 @@
 from typing import Any, Dict, Optional, Text
 
-import os
 import structlog
 from jinja2 import Template
 
 from rasa import telemetry
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
+from rasa.core.nlg.summarize import summarize_conversation
 from rasa.shared.constants import (
-    LLM_API_HEALTH_CHECK_ENV_VAR,
     LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
@@ -15,6 +14,7 @@ from rasa.shared.constants import (
     PROVIDER_CONFIG_KEY,
     OPENAI_PROVIDER,
     TIMEOUT_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
 )
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import BotUttered, UserUttered
@@ -25,17 +25,14 @@ from rasa.shared.utils.llm import (
     USER,
     combine_custom_and_default_config,
     get_prompt_template,
-    llm_api_health_check,
     llm_factory,
-    try_instantiate_llm_client,
+    resolve_model_client_config,
 )
-from rasa.utils.endpoints import EndpointConfig
+from rasa.shared.utils.health_check import perform_training_time_llm_health_check
 from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
 )
-
-from rasa.core.nlg.summarize import summarize_conversation
-
+from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.log_utils import log_llm
 
 structlogger = structlog.get_logger()
@@ -105,18 +102,18 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         self.trace_prompt_tokens = self.nlg_endpoint.kwargs.get(
             "trace_prompt_tokens", False
         )
-        llm_client = try_instantiate_llm_client(
+
+        self.llm_config = resolve_model_client_config(
             self.nlg_endpoint.kwargs.get(LLM_CONFIG_KEY),
+            ContextualResponseRephraser.__name__,
+        )
+
+        perform_training_time_llm_health_check(
+            self.llm_config,
             DEFAULT_LLM_CONFIG,
             "contextual_response_rephraser.init",
             ContextualResponseRephraser.__name__,
         )
-        if os.getenv(LLM_API_HEALTH_CHECK_ENV_VAR, "true").lower() == "true":
-            llm_api_health_check(
-                llm_client,
-                "contextual_response_rephraser.init",
-                ContextualResponseRephraser.__name__,
-            )
 
     def _last_message_if_human(self, tracker: DialogueStateTracker) -> Optional[str]:
         """Returns the latest message from the tracker.
@@ -145,9 +142,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         Returns:
             generated text
         """
-        llm = llm_factory(
-            self.nlg_endpoint.kwargs.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG
-        )
+        llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
 
         try:
             llm_response = await llm.acompletion(prompt)
@@ -161,7 +156,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
     def llm_property(self, prop: str) -> Optional[str]:
         """Returns a property of the LLM provider."""
         return combine_custom_and_default_config(
-            self.nlg_endpoint.kwargs.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG
+            self.llm_config, DEFAULT_LLM_CONFIG
         ).get(prop)
 
     def custom_prompt_template(self, prompt_template: str) -> Optional[str]:
@@ -194,9 +189,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         Returns:
         The history for the prompt.
         """
-        llm = llm_factory(
-            self.nlg_endpoint.kwargs.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG
-        )
+        llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
         return await summarize_conversation(tracker, llm, max_turns=5)
 
     async def rephrase(
@@ -252,6 +245,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
             llm_type=self.llm_property(PROVIDER_CONFIG_KEY),
             llm_model=self.llm_property(MODEL_CONFIG_KEY)
             or self.llm_property(MODEL_NAME_CONFIG_KEY),
+            llm_model_group_id=self.llm_property(MODEL_GROUP_CONFIG_KEY),
         )
         if not (updated_text := await self._generate_llm_response(prompt)):
             # If the LLM fails to generate a response, we

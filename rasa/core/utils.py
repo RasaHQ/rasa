@@ -1,3 +1,4 @@
+import structlog
 import logging
 import os
 from pathlib import Path
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.shared.core.domain import Domain
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 def configure_file_logging(
@@ -128,15 +129,17 @@ def list_routes(app: Sanic) -> Dict[Text, Text]:
         for arg in route._params:
             options[arg] = f"[{arg}]"
 
-        handlers = [(next(iter(route.methods)), route.name.replace("rasa_server.", ""))]
+        name = route.name.replace("rasa_server.", "")
+        methods = ",".join(route.methods)
 
-        for method, name in handlers:
-            full_endpoint = "/" + "/".join(endpoint)
-            line = unquote(f"{full_endpoint:50s} {method:30s} {name}")
-            output[name] = line
+        full_endpoint = "/" + "/".join(endpoint)
+        line = unquote(f"{full_endpoint:50s} {methods:30s} {name}")
+        output[name] = line
 
     url_table = "\n".join(output[url] for url in sorted(output))
-    logger.debug(f"Available web server routes: \n{url_table}")
+    structlogger.debug(
+        "server.routes", event_info=f"Available web server routes: \n{url_table}"
+    )
 
     return output
 
@@ -283,17 +286,22 @@ def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) 
     """
 
     def _log_and_get_default_number_of_workers() -> int:
-        logger.debug(
-            f"Using the default number of Sanic workers ({DEFAULT_SANIC_WORKERS})."
+        structlogger.debug(
+            "server.worker.set_count",
+            number_of_workers=DEFAULT_SANIC_WORKERS,
+            event_info=f"Using the default number of Sanic workers "
+            f"({DEFAULT_SANIC_WORKERS}).",
         )
         return DEFAULT_SANIC_WORKERS
 
     try:
         env_value = int(os.environ.get(ENV_SANIC_WORKERS, DEFAULT_SANIC_WORKERS))
     except ValueError:
-        logger.error(
-            f"Cannot convert environment variable `{ENV_SANIC_WORKERS}` "
-            f"to int ('{os.environ[ENV_SANIC_WORKERS]}')."
+        structlogger.error(
+            "server.worker.set_count.error",
+            number_of_workers=os.environ[ENV_SANIC_WORKERS],
+            event_info=f"Cannot convert environment variable `{ENV_SANIC_WORKERS}` "
+            f"to int ('{os.environ[ENV_SANIC_WORKERS]}').",
         )
         return _log_and_get_default_number_of_workers()
 
@@ -301,20 +309,28 @@ def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) 
         return _log_and_get_default_number_of_workers()
 
     if env_value < 1:
-        logger.debug(
-            f"Cannot set number of Sanic workers to the desired value "
-            f"({env_value}). The number of workers must be at least 1."
+        structlogger.warning(
+            "server.worker.set_count.error_less_than_one",
+            number_of_workers=env_value,
+            event_info=f"Cannot set number of Sanic workers to the desired value "
+            f"({env_value}). The number of workers must be at least 1.",
         )
         return _log_and_get_default_number_of_workers()
 
     if _lock_store_is_multi_worker_compatible(lock_store):
-        logger.debug(f"Using {env_value} Sanic workers.")
+        structlogger.debug(
+            "server.worker.set_count.success",
+            event_info=f"Using {env_value} Sanic workers.",
+            num_workers=env_value,
+        )
         return env_value
 
-    logger.debug(
-        f"Unable to assign desired number of Sanic workers ({env_value}) as "
+    structlogger.warning(
+        "server.worker.set_count.error_no_lock_store",
+        event_info=f"Unable to assign desired number of Sanic workers ({env_value}) as "
         f"no `RedisLockStore` or custom `LockStore` endpoint "
-        f"configuration has been found."
+        f"configuration has been found.",
+        num_workers=env_value,
     )
     return _log_and_get_default_number_of_workers()
 

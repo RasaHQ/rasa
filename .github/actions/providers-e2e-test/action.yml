@@ -163,19 +163,33 @@ runs:
         rm -rf .rasa models \
           && rasa train \
           --config data/test_config/providers/${{ inputs.provider }}/${{ inputs.train-and-test }}-config.yml \
-          --endpoints data/test_config/providers/${{ inputs.provider }}/endpoints.yml \
+          --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
           --domain rasa-calm-demo/domain \
           --data rasa-calm-demo/data \
           --fixed-model-name ${{ inputs.train-and-test }}-${{ inputs.provider }}-model \
           2>&1 \
-          | tee model-training-log \
-          && grep -i 'Performing a health check on the LLM API for the component - ContextualResponseRephraser' model-training-log \
-          && grep -i 'Performing a health check on the LLM API for the component - LLMBasedRouter.' model-training-log \
-          && grep -i 'Performing a health check on the LLM API for the component - EnterpriseSearchPolicy' model-training-log \
-          && grep -i 'Performing a health check on the LLM API for the component - IntentlessPolicy' model-training-log \
-          && grep -i 'Performing a health check on the LLM API for the component - LLMBasedCommandGenerator' model-training-log \
+          | tee model-training-log
+      shell: bash
+
+    - name: Verify LLM and Embeddings API health checks during training
+      run: |
+        grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' model-training-log \
+          && grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' model-training-log \
+          && grep -i 'Sending a test LLM API request for the component - EnterpriseSearchPolicy' model-training-log \
+          && grep -i 'Sending a test LLM API request for the component - IntentlessPolicy' model-training-log \
+          && grep -i 'Sending a test LLM API request for the component - LLMBasedCommandGenerator' model-training-log \
+          && grep -i 'Sending a test Embeddings API request for the component - FlowRetrieval' model-training-log \
+          && grep -i 'Sending a test Embeddings API request for the component - EnterpriseSearchPolicy' model-training-log \
+          && grep -i 'Sending a test Embeddings API request for the component - IntentlessPolicy' model-training-log \
           && grep -i 'Your Rasa model is trained and saved' model-training-log \
-          && echo 'LLM API health checks passed for all components during training'
+          && echo 'LLM and Embeddings API health checks passed for all components during training'
+      shell: bash
+    
+    - name: Get multi-deployments endpoints file
+      if: ${{ contains(inputs.provider, '-multiple-deployments-with-routing') }}
+      run: |
+        : Get endpoints file
+        echo "ENDPOINTS_FILE_NAME=multi-deployments.endpoints" >> $GITHUB_ENV
       shell: bash
 
     - name: Run e2e test (Single Step Command Generator)
@@ -190,8 +204,10 @@ runs:
         rasa test e2e rasa-calm-demo/${{ inputs.single-step-e2e-test-with-assertions }} \
           --e2e-results \
           --debug \
-          --endpoints data/test_config/providers/${{ inputs.provider }}/endpoints.yml \
-          --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz
+          --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+          --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
+          2>&1 \
+          | tee e2e-tests-log
       shell: bash
 
     - name: Run e2e test (Multi-Step Command Generator)
@@ -205,13 +221,28 @@ runs:
         rasa test e2e rasa-calm-demo/${{ inputs.multi-step-e2e-test-with-assertions }} \
           --e2e-results \
           --debug \
-          --endpoints data/test_config/providers/${{ inputs.provider }}/endpoints.yml \
-          --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz
+          --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+          --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
+          2>&1 \
+          | tee e2e-tests-log
+      shell: bash
+
+    - name: Verify LLM and Embeddings API health checks during inference
+      run: |
+        grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' e2e-tests-log \
+          && grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' e2e-tests-log \
+          && grep -i 'Sending a test LLM API request for the component - EnterpriseSearchPolicy' e2e-tests-log \
+          && grep -i 'Sending a test LLM API request for the component - IntentlessPolicy' e2e-tests-log \
+          && (grep -i 'Sending a test LLM API request for the component - MultiStepLLMCommandGenerator' e2e-tests-log || grep -i 'Sending a test LLM API request for the component - SingleStepLLMCommandGenerator' e2e-tests-log) \
+          && grep -i 'Sending a test Embeddings API request for the component - FlowRetrieval' e2e-tests-log \
+          && grep -i 'Sending a test Embeddings API request for the component - EnterpriseSearchPolicy' e2e-tests-log \
+          && grep -i 'Sending a test Embeddings API request for the component - IntentlessPolicy' e2e-tests-log \
+          && echo 'LLM and Embeddings API health checks passed for all components during inference'
       shell: bash
 
     - name: Save test results
       if: failure()
-      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
       with:
         name: ${{ inputs.provider }}-E2E-test-${{ inputs.train-and-test }}-results
         path: tests/e2e_results_failed.yml
@@ -232,7 +263,7 @@ runs:
         # Send notification to #dev-tribe-alerts slack channel
         channel-id: C070ELPSLBB 
         slack-message: ':rocket: *Rasa-Pro* (version `${{ env.RASA_VERSION }}`, `rasa-private` sha `${{ env.SHORT_SHA }}`)
-          CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) passed against provider: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model. More
+          CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) passed against: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model. More
           information can be found <https://github.com/${{ github.repository
           }}/actions/runs/${{ github.run_id }}|here>.'
       env:
@@ -247,7 +278,7 @@ runs:
 
         # Alert Engine-squad
         slack-message: '<!subteam^S0322UJCPU1> :broken_heart: *Rasa-Pro* (version `${{ env.RASA_VERSION
-          }}`, `rasa-private` sha `${{ env.SHORT_SHA }}`) CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) failed against provider: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model!
+          }}`, `rasa-private` sha `${{ env.SHORT_SHA }}`) CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) failed against: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model!
           More information can be found <https://github.com/${{
           github.repository }}/actions/runs/${{ github.run_id }}|here>.'
       env:

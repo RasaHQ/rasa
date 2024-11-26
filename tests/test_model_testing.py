@@ -6,7 +6,6 @@ from typing import List, Text
 import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
-from tests.conftest import AsyncMock
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -354,7 +353,9 @@ async def test_e2e_warning_if_no_nlu_model(
 
     # Patching is bit more complicated as we have a module `train` and function
     # with the same name 😬
-    async_test = AsyncMock(return_value=True)
+    async def async_test(*args, **kwargs):
+        return True
+
     monkeypatch.setattr(sys.modules["rasa.core.test"], "test", async_test)
 
     await test_core(trained_core_model, use_conversation_test_files=True)

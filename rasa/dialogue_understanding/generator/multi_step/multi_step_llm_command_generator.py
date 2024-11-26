@@ -24,6 +24,8 @@ from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
     USER_INPUT_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
+    TRAINED_MODEL_NAME_CONFIG_KEY,
+    DEFAULT_LLM_CONFIG,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.dialogue_understanding.generator.llm_based_command_generator import (
@@ -39,7 +41,10 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED
+from rasa.shared.constants import (
+    RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED,
+    EMBEDDINGS_CONFIG_KEY,
+)
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.flows import FlowStep, Flow, FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
@@ -53,7 +58,9 @@ from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
     sanitize_message_for_prompt,
     allowed_values_for_slot,
+    resolve_model_client_config,
 )
+from rasa.shared.utils.health_check import perform_inference_time_llm_health_check
 
 # multistep template keys
 HANDLE_FLOWS_KEY = "handle_flows"
@@ -139,6 +146,14 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
     ) -> "MultiStepLLMCommandGenerator":
         """Loads trained component (see parent class for full docstring)."""
         prompts = cls._load_prompt_templates(model_storage, resource)
+
+        persisted_config = cls.load_config_from_model_storage(model_storage, resource)
+        train_model_name = (
+            persisted_config.get(TRAINED_MODEL_NAME_CONFIG_KEY, None)
+            if persisted_config
+            else None
+        )
+
         # init base command generator
         command_generator = cls(config, model_storage, resource, prompts)
         # load flow retrieval if enabled
@@ -146,10 +161,21 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             command_generator.flow_retrieval = cls.load_flow_retrival(
                 command_generator.config, model_storage, resource
             )
+
+        perform_inference_time_llm_health_check(
+            command_generator.config.get(LLM_CONFIG_KEY),
+            DEFAULT_LLM_CONFIG,
+            train_model_name,
+            "multi_step_llm_command_generator.load",
+            MultiStepLLMCommandGenerator.__name__,
+        )
+
         return command_generator
 
     def persist(self) -> None:
         """Persist this component to disk for future loading."""
+        super().persist()
+
         # persist prompt template
         self._persist_prompt_templates()
         # persist flow retrieval
@@ -778,11 +804,17 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             .get(FILE_PATH_KEY),
             DEFAULT_FILL_SLOTS_TEMPLATE,
         )
+
+        llm_config = resolve_model_client_config(
+            config.get(LLM_CONFIG_KEY), MultiStepLLMCommandGenerator.__name__
+        )
+        embedding_config = resolve_model_client_config(
+            config.get(FLOW_RETRIEVAL_KEY, {}).get(EMBEDDINGS_CONFIG_KEY),
+            FlowRetrieval.__name__,
+        )
+
         return deep_container_fingerprint(
-            [
-                handle_flows_template,
-                fill_slots_template,
-            ]
+            [handle_flows_template, fill_slots_template, llm_config, embedding_config]
         )
 
     @staticmethod

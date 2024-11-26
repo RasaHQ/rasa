@@ -60,6 +60,8 @@ class Flow:
     """
     file_path: Optional[str] = None
     """The path to the file where the flow is stored."""
+    persisted_slots: List[str] = field(default_factory=list)
+    """The list of slots that should be persisted after the flow ends."""
 
     @staticmethod
     def from_json(
@@ -95,6 +97,7 @@ class Flow:
             # If we are reading the flows in after training the file_path is part of
             # data. When the model is trained, take the provided file_path.
             file_path=data.get("file_path") if "file_path" in data else file_path,
+            persisted_slots=data.get("persisted_slots", []),
         )
 
     def get_full_name(self) -> str:
@@ -167,6 +170,8 @@ class Flow:
             data["nlu_trigger"] = self.nlu_triggers.as_json()
         if self.file_path:
             data["file_path"] = self.file_path
+        if self.persisted_slots:
+            data["persisted_slots"] = self.persisted_slots
 
         return data
 

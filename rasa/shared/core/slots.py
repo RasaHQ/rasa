@@ -193,6 +193,11 @@ class Slot(ABC):
         data.update(self.persistence_info())
         return rasa.shared.utils.io.get_dictionary_fingerprint(data)
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Slot):
+            return False
+        return self.name == other.name and self.value == other.value
+
 
 class FloatSlot(Slot):
     """A slot storing a float value."""

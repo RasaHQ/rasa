@@ -227,6 +227,9 @@ class OutputChannel:
     for text only output channels.
     """
 
+    def __init__(self) -> None:
+        self.tracker_state: Optional[Dict[str, Any]] = None
+
     @classmethod
     def name(cls) -> Text:
         """Every output channel needs a name to identify it."""

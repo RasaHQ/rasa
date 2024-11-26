@@ -1,7 +1,10 @@
 import audioop
+import base64
+import json
+
 import structlog
 import uuid
-from typing import Any, Awaitable, Callable, List, Optional
+from typing import Any, Awaitable, Callable, Optional, Tuple
 
 from sanic import Blueprint, HTTPResponse, Request, response
 from sanic import Websocket  # type: ignore
@@ -9,16 +12,19 @@ from sanic import Websocket  # type: ignore
 
 from rasa.core.channels import UserMessage
 from rasa.core.channels.voice_ready.utils import CallParameters
+from rasa.core.channels.voice_stream.call_state import call_state
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.voice_channel import (
+    ContinueConversationAction,
+    EndConversationAction,
     NewAudioAction,
     VoiceChannelAction,
     VoiceInputChannel,
     VoiceOutputChannel,
 )
 
-structlogger = structlog.get_logger()
+logger = structlog.get_logger()
 
 
 class BrowserAudioOutputChannel(VoiceOutputChannel):
@@ -31,10 +37,12 @@ class BrowserAudioOutputChannel(VoiceOutputChannel):
     ) -> bytes:
         return audioop.ulaw2lin(rasa_audio_bytes, 4)
 
-    def channel_bytes_to_messages(
-        self, recipient_id: str, channel_bytes: bytes
-    ) -> List[Any]:
-        return [channel_bytes]
+    def channel_bytes_to_message(self, recipient_id: str, channel_bytes: bytes) -> str:
+        return json.dumps({"audio": base64.b64encode(channel_bytes).decode("utf-8")})
+
+    def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
+        message_id = uuid.uuid4().hex
+        return json.dumps({"marker": message_id}), message_id
 
 
 class BrowserAudioInputChannel(VoiceInputChannel):
@@ -55,8 +63,23 @@ class BrowserAudioInputChannel(VoiceInputChannel):
         self,
         message: Any,
     ) -> VoiceChannelAction:
-        audio_bytes = self.channel_bytes_to_rasa_audio_bytes(message)
-        return NewAudioAction(audio_bytes)
+        data = json.loads(message)
+        if "audio" in data:
+            channel_bytes = base64.b64decode(data["audio"])
+            audio_bytes = self.channel_bytes_to_rasa_audio_bytes(channel_bytes)
+            return NewAudioAction(audio_bytes)
+        elif "marker" in data:
+            if data["marker"] == call_state.latest_bot_audio_id:
+                # Just finished streaming last audio bytes
+                call_state.is_bot_speaking = False  # type: ignore[attr-defined]
+                if call_state.should_hangup:
+                    logger.debug(
+                        "browser_audio.hangup", marker=call_state.latest_bot_audio_id
+                    )
+                    return EndConversationAction()
+            else:
+                call_state.is_bot_speaking = True  # type: ignore[attr-defined]
+        return ContinueConversationAction()
 
     def create_output_channel(
         self, voice_websocket: Websocket, tts_engine: TTSEngine

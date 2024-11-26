@@ -31,7 +31,7 @@ from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.common import EXPECTED_WARNINGS
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from tests.cli.conftest import RASA_EXE
-from tests.conftest import AsyncMock
+from unittest.mock import AsyncMock
 from tests.utilities import filter_logs
 
 
@@ -743,3 +743,17 @@ def test_get_e2e_results_file_name_path_is_file(
     assert results_file == str(
         results_path.parent / f"e2e_test_results_{results_type}.yml"
     )
+
+
+@pytest.mark.parametrize(
+    "argv, expected",
+    [
+        ([RASA_EXE, "train"], False),
+        ([RASA_EXE, "train", "--skip-validation"], True),
+    ],
+)
+def test_is_skip_validation_flag_set(argv, expected):
+    sys.argv = argv.copy()
+    result = rasa.cli.utils.is_skip_validation_flag_set()
+
+    assert result == expected

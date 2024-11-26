@@ -1,17 +1,20 @@
 import argparse
 import os
+import shutil
 import sys
 from pathlib import Path
 from typing import Callable, List, Union
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.pytester import RunResult
 from _pytest.tmpdir import TempPathFactory
-from pytest import MonkeyPatch
+from pytest import MonkeyPatch, Testdir
+from structlog.testing import capture_logs
 
 import rasa.shared.utils.io
+import rasa.utils.common
 import rasa.utils.io
 from rasa.cli.train import _check_nlg_endpoint_validity, run_training
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE
@@ -443,7 +446,7 @@ def test_train_help(run: Callable[..., RunResult]):
                   [--augmentation AUGMENTATION] [--debug-plots]
                   [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
-                  [--force] [--finetune [FINETUNE]]
+                  [--keep-local-model-copy] [--force] [--finetune [FINETUNE]]
                   [--epoch-fraction EPOCH_FRACTION] [--endpoints ENDPOINTS]
                   {{core,nlu}} ..."""
 
@@ -654,6 +657,7 @@ def test_train_validate_nlg_config_valid(monkeypatch: MonkeyPatch) -> None:
         dry_run=False,
         finetune=None,
         remote_storage=None,
+        keep_local_model_copy=False,
     )
 
     # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
@@ -702,3 +706,66 @@ def test_train_check_nlg_endpoint_validity(
             _check_nlg_endpoint_validity(endpoint=endpoint_path)
     else:
         _check_nlg_endpoint_validity(endpoint=endpoint_path)
+
+
+def test_training_logs_domain_correctly_when_using_domain_dir(
+    monkeypatch: MonkeyPatch, testdir: Testdir
+) -> None:
+    """
+    Verify that when the domain is provided via the "domain" directory instead of
+    the "domain.yml" file, the assistant does not raise any warning logs. Instead,
+    it should emit a debug log notifying the user about the default domain source
+    that was used.
+    """
+    # Compute the absolute path to the default template project
+    parent_path = Path(__file__).parent
+    default_template_path = parent_path / "../../rasa/cli/project_templates/default"
+
+    # Create 'domain' directory inside the test directory
+    domain_dir_path = os.path.join(testdir.tmpdir, "domain")
+    os.makedirs(domain_dir_path, exist_ok=True)
+
+    # Move 'domain.yml' file into 'domain' directory
+    src_path = default_template_path / "domain.yml"
+    dst_path = domain_dir_path + "domain.yml"
+    shutil.copy(src_path, dst_path)
+
+    monkeypatch.setattr(rasa.cli.train, "_check_nlg_endpoint_validity", MagicMock())
+
+    # Run the training with "domain=None" to simulate the "rasa train" command
+    args = argparse.Namespace(
+        domain=None,
+        config=default_template_path / "config.yml",
+        data=[default_template_path / "data"],
+        endpoints=default_template_path / "endpoints.yml",
+        skip_validation=True,
+        out="models",
+        force=False,
+        fixed_model_name=None,
+        persist_nlu_data=False,
+        epoch_fraction=1.0,
+        dry_run=False,
+        finetune=None,
+        remote_storage=None,
+        keep_local_model_copy=False,
+    )
+
+    expected_debug_log = {
+        "event": "cli.get_validated_path.parameter_not_set",
+        "parameter": "domain",
+        "event_info": "Parameter 'domain' was not set. "
+        "Using default location 'domain' instead.",
+        "log_level": "debug",
+    }
+    unexpected_warning_log = {
+        "event": "cli.get_validated_path.path_does_not_exists",
+        "path": "domain.yml",
+        "event_info": "The path 'domain.yml' does not seem to exist. "
+        "Using default location 'domain' instead.",
+        "log_level": "warning",
+    }
+
+    with capture_logs() as logs:
+        run_training(args)
+        assert expected_debug_log in logs
+        assert unexpected_warning_log not in logs

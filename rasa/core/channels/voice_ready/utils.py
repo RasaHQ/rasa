@@ -2,16 +2,17 @@ import structlog
 from dataclasses import dataclass
 from typing import Optional
 
-from rasa.utils.licensing import (
-    PRODUCT_AREA,
-    VOICE_SCOPE,
-    validate_license_from_env,
-)
 
 structlogger = structlog.get_logger()
 
 
 def validate_voice_license_scope() -> None:
+    from rasa.utils.licensing import (
+        PRODUCT_AREA,
+        VOICE_SCOPE,
+        validate_license_from_env,
+    )
+
     """Validate that the correct license scope is present."""
     structlogger.info(
         f"Validating current Rasa Pro license scope which must include "

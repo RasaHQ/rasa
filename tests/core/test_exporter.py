@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, Optional, Text, List
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
 
 import pytest
 
@@ -19,7 +19,7 @@ from rasa.exceptions import (
     NoEventsToMigrateError,
     PublishingError,
 )
-from tests.conftest import MockExporter, random_user_uttered_event, AsyncMock
+from tests.conftest import MockExporter, random_user_uttered_event
 
 
 @pytest.mark.parametrize(

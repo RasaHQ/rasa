@@ -3,31 +3,43 @@ import difflib
 
 import pytest
 
-from rasa.core.channels.voice_stream.asr.asr_event import NewTranscript
+from rasa.core.channels.voice_stream.asr.asr_event import (
+    NewTranscript,
+    UserStartedSpeaking,
+)
 from rasa.core.channels.voice_stream.asr.azure import AzureASR
-from rasa.core.channels.voice_stream.util import read_wav_to_rasa_audio_bytes
+from rasa.core.channels.voice_stream.audio_bytes import HERTZ
+from rasa.core.channels.voice_stream.util import (
+    generate_silence,
+    read_wav_to_rasa_audio_bytes,
+)
 
 
 async def test_transcription(audio_data_path: str):
     rasa_audio_bytes = read_wav_to_rasa_audio_bytes(audio_data_path + "/01.wav")
+    rasa_audio_bytes += generate_silence(2)
+    step_size = 1024
     transcript = open(audio_data_path + "/01.txt").read()
     asr_engine = AzureASR()
 
     await asr_engine.connect()
     offset = 0
     while offset < len(rasa_audio_bytes):
-        await asr_engine.send_audio_chunks(rasa_audio_bytes[offset : offset + 1024])
-        offset += 1024
-        await asyncio.sleep(1024 / 8000)
+        await asr_engine.send_audio_chunks(
+            rasa_audio_bytes[offset : offset + step_size]
+        )
+        offset += step_size
+        await asyncio.sleep(step_size / HERTZ)
     await asr_engine.signal_audio_done()
     events = []
     async for event in asr_engine.stream_asr_events():
         events.append(event)
 
-    assert len(events) == 1
-    event = events[0]
-    assert isinstance(event, NewTranscript)
-    match = difflib.SequenceMatcher(None, event.text, transcript)
+    assert len(events) == 2
+    assert isinstance(events[0], UserStartedSpeaking)
+
+    assert isinstance(events[1], NewTranscript)
+    match = difflib.SequenceMatcher(None, events[1].text, transcript)
     assert match.ratio() > 0.75
 
 

@@ -5,7 +5,7 @@ from typing import Optional, Type, TypeVar
 
 import structlog
 
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
 from rasa.shared.exceptions import RasaException
 
 structlogger = structlog.get_logger()
@@ -23,16 +23,16 @@ def read_wav_to_rasa_audio_bytes(file_name: str) -> Optional[RasaAudioBytes]:
         wave_data = audioop.lin2lin(wave_data, wave_object.getsampwidth(), 1)
         # 8 bit is unsigned
         # wave_data = audioop.bias(wave_data, 1, 128)
-    if wave_object.getframerate() != 8000:
+    if wave_object.getframerate() != HERTZ:
         wave_data, _ = audioop.ratecv(
-            wave_data, 1, 1, wave_object.getframerate(), 8000, None
+            wave_data, 1, 1, wave_object.getframerate(), HERTZ, None
         )
     wave_data = audioop.lin2ulaw(wave_data, 1)
     return RasaAudioBytes(wave_data)
 
 
 def generate_silence(length_in_seconds: float = 1.0) -> RasaAudioBytes:
-    return RasaAudioBytes(b"\00" * int(length_in_seconds * 8000))
+    return RasaAudioBytes(b"\00" * int(length_in_seconds * HERTZ))
 
 
 T = TypeVar("T", bound="MergeableConfig")

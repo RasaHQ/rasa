@@ -42,7 +42,7 @@ def run(
     from rasa.shared.constants import DOCS_BASE_URL
     from rasa.shared.utils.cli import print_warning
 
-    _endpoints = AvailableEndpoints.read_endpoints(endpoints)
+    _endpoints = AvailableEndpoints.get_instance(endpoints)
 
     if not connector and not credentials:
         connector = "rest"
@@ -80,6 +80,7 @@ def train(
     finetuning_epoch_fraction: float = 1.0,
     remote_storage: Optional[StorageType] = None,
     file_importer: Optional["TrainingDataImporter"] = None,
+    keep_local_model_copy: bool = False,
 ) -> "TrainingResult":
     """Runs Rasa Core and NLU training in `async` loop.
 
@@ -105,6 +106,8 @@ def train(
             use for storing the model.
         file_importer: Instance of `TrainingDataImporter` to use for training.
             If it is not provided, a new instance will be created.
+        keep_local_model_copy: If `True` the model will be stored locally even if
+            remote storage is configured.
 
     Returns:
         An instance of `TrainingResult`.
@@ -127,6 +130,7 @@ def train(
             finetuning_epoch_fraction=finetuning_epoch_fraction,
             remote_storage=remote_storage,
             file_importer=file_importer,
+            keep_local_model_copy=keep_local_model_copy,
         )
     )
 

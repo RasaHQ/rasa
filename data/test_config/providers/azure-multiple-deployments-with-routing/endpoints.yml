@@ -1,0 +1,29 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ rephrase_all: True
+ llm:
+    model_group: azure_llm
+
+model_groups:
+  - id: azure_llm
+    models:
+      - provider: azure
+        deployment: ${AZURE_DEPLOYMENT_GPT3_5_TURBO}
+        api_base: ${AZURE_API_BASE_GPT3_5_TURBO}
+        api_key: ${AZURE_API_KEY_TRAINING}
+        api_version: ${AZURE_API_VERSION_GPT3_5_TURBO}
+        timeout: 7
+        num_retries: 5
+
+  - id: azure_embeddings
+    models:
+      - provider: azure
+        deployment: ${AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA}
+        api_base: ${AZURE_API_BASE_TXT_EMBEDDING_ADA}
+        api_key: ${AZURE_API_KEY_TRAINING}
+        api_version: ${AZURE_API_VERSION_TXT_EMBEDDING_ADA}
+        timeout: 7
+        num_retries: 5

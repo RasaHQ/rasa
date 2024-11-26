@@ -11,3 +11,8 @@ class ASREvent:
 @dataclass
 class NewTranscript(ASREvent):
     text: str
+
+
+@dataclass
+class UserStartedSpeaking(ASREvent):
+    pass

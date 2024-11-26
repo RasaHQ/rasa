@@ -8,12 +8,14 @@ from typing import TYPE_CHECKING, List, Optional, Text, Tuple, Union
 
 import structlog
 
+from rasa.exceptions import ModelNotFound
 import rasa.shared.utils.common
 import rasa.utils.common
 from rasa.constants import (
     HTTP_STATUS_FORBIDDEN,
     HTTP_STATUS_NOT_FOUND,
     MODEL_ARCHIVE_EXTENSION,
+    DEFAULT_BUCKET_NAME,
 )
 from rasa.env import (
     AWS_ENDPOINT_URL_ENV,
@@ -28,6 +30,7 @@ from rasa.shared.utils.io import raise_warning
 
 if TYPE_CHECKING:
     from azure.storage.blob import ContainerClient
+    from botocore.exceptions import ClientError
 
 structlogger = structlog.get_logger()
 
@@ -86,14 +89,15 @@ def get_persistor(storage: StorageType) -> Optional[Persistor]:
 
     if storage == RemoteStorageType.AWS.value:
         return AWSPersistor(
-            os.environ.get(BUCKET_NAME_ENV), os.environ.get(AWS_ENDPOINT_URL_ENV)
+            os.environ.get(BUCKET_NAME_ENV, DEFAULT_BUCKET_NAME),
+            os.environ.get(AWS_ENDPOINT_URL_ENV),
         )
     if storage == RemoteStorageType.GCS.value:
-        return GCSPersistor(os.environ.get(BUCKET_NAME_ENV))
+        return GCSPersistor(os.environ.get(BUCKET_NAME_ENV, DEFAULT_BUCKET_NAME))
 
     if storage == RemoteStorageType.AZURE.value:
         return AzurePersistor(
-            os.environ.get(AZURE_CONTAINER_ENV),
+            os.environ.get(AZURE_CONTAINER_ENV, DEFAULT_BUCKET_NAME),
             os.environ.get(AZURE_ACCOUNT_NAME_ENV),
             os.environ.get(AZURE_ACCOUNT_KEY_ENV),
         )
@@ -181,7 +185,7 @@ class Persistor(abc.ABC):
 
     @staticmethod
     def _create_file_key(model_path: str) -> Text:
-        """Appends remote storage folders when provided to upload or retrieve file"""
+        """Appends remote storage folders when provided to upload or retrieve file."""
         bucket_object_path = os.environ.get(REMOTE_STORAGE_PATH_ENV)
 
         # To keep the backward compatibility, if REMOTE_STORAGE_PATH is not provided,
@@ -229,14 +233,13 @@ class AWSPersistor(Persistor):
     def _ensure_bucket_exists(
         self, bucket_name: Text, region_name: Optional[Text] = None
     ) -> None:
-        import botocore
+        from botocore import exceptions
 
         # noinspection PyUnresolvedReferences
         try:
             self.s3.meta.client.head_bucket(Bucket=bucket_name)
-        except botocore.exceptions.ClientError as e:
-            error_code = int(e.response["Error"]["Code"])
-            if error_code == HTTP_STATUS_FORBIDDEN:
+        except exceptions.ClientError as exc:
+            if self._error_code(exc) == HTTP_STATUS_FORBIDDEN:
                 log = (
                     f"Access to the specified bucket '{bucket_name}' is forbidden. "
                     "Please make sure you have the necessary "
@@ -248,7 +251,7 @@ class AWSPersistor(Persistor):
                     event_info=log,
                 )
                 raise RasaException(log)
-            elif error_code == HTTP_STATUS_NOT_FOUND:
+            elif self._error_code(exc) == HTTP_STATUS_NOT_FOUND:
                 log = (
                     f"The specified bucket '{bucket_name}' does not exist. "
                     "Please make sure to create the bucket first."
@@ -260,6 +263,10 @@ class AWSPersistor(Persistor):
                 )
                 raise RasaException(log)
 
+    @staticmethod
+    def _error_code(e: "ClientError") -> int:
+        return int(e.response["Error"]["Code"])
+
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:
         """Uploads a model persisted in the `target_dir` to s3."""
         with open(tar_path, "rb") as f:
@@ -267,9 +274,48 @@ class AWSPersistor(Persistor):
 
     def _retrieve_tar(self, model_path: Text) -> None:
         """Downloads a model that has previously been persisted to s3."""
-        tar_name = os.path.basename(model_path)
-        with open(tar_name, "wb") as f:
-            self.bucket.download_fileobj(model_path, f)
+        from botocore import exceptions
+
+        target_filename = os.path.basename(model_path)
+        bucket_objects = list(self.bucket.objects.all())
+
+        model_found = False
+
+        log = (
+            f"Model '{target_filename}' not found in the specified bucket "
+            f"'{self.bucket_name}'. Please make sure the model exists "
+            f"in the bucket."
+        )
+
+        for obj in bucket_objects:
+            if model_path not in obj.key:
+                continue
+            structlogger.debug(
+                "aws_persistor.retrieve_tar.object_found", object_key=obj.key
+            )
+
+            try:
+                with open(target_filename, "wb") as f:
+                    self.bucket.download_fileobj(obj.key, f)
+                    model_found = True
+                    break
+            except exceptions.ClientError as exc:
+                if self._error_code(exc) == HTTP_STATUS_NOT_FOUND:
+                    structlogger.error(
+                        "aws_persistor.retrieve_tar.model_not_found",
+                        bucket_name=self.bucket_name,
+                        target_filename=target_filename,
+                        event_info=log,
+                    )
+                    raise ModelNotFound() from exc
+        if not model_found:
+            structlogger.error(
+                "aws_persistor.retrieve_tar.model_not_found",
+                bucket_name=self.bucket_name,
+                target_filename=target_filename,
+                event_info=log,
+            )
+            raise ModelNotFound()
 
 
 class GCSPersistor(Persistor):
@@ -294,32 +340,57 @@ class GCSPersistor(Persistor):
 
     def _ensure_bucket_exists(self, bucket_name: Text) -> None:
         from google.cloud import exceptions
+        from google.auth import exceptions as auth_exceptions
 
         try:
             self.storage_client.get_bucket(bucket_name)
-        except exceptions.NotFound:
+        except auth_exceptions.GoogleAuthError as exc:
             log = (
-                f"The specified bucket '{bucket_name}' does not exist. "
-                "Please make sure to create the bucket first."
+                f"An error occurred while authenticating with Google Cloud "
+                f"Storage. Please make sure you have the necessary credentials "
+                f"to access the bucket '{bucket_name}'."
+            )
+            structlogger.error(
+                "gcp_persistor.ensure_bucket_exists.authentication_error",
+                bucket_name=bucket_name,
+                event_info=log,
+            )
+            raise RasaException(log) from exc
+        except exceptions.NotFound as exc:
+            log = (
+                f"The specified Google Cloud Storage bucket '{bucket_name}' "
+                f"does not exist. Please make sure to create the bucket first or "
+                f"provide an alternative valid bucket name."
             )
             structlogger.error(
                 "gcp_persistor.ensure_bucket_exists.bucket_not_found",
                 bucket_name=bucket_name,
                 event_info=log,
             )
-            raise RasaException(log)
-        except exceptions.Forbidden:
+            raise RasaException(log) from exc
+        except exceptions.Forbidden as exc:
             log = (
-                f"Access to the specified bucket '{bucket_name}' is forbidden. "
-                "Please make sure you have the necessary "
-                "permission to access the bucket. "
+                f"Access to the specified Google Cloud storage bucket '{bucket_name}' "
+                f"is forbidden. Please make sure you have the necessary "
+                f"permissions to access the bucket. "
             )
             structlogger.error(
                 "gcp_persistor.ensure_bucket_exists.bucket_access_forbidden",
                 bucket_name=bucket_name,
                 event_info=log,
             )
-            raise RasaException(log)
+            raise RasaException(log) from exc
+        except ValueError as exc:
+            # bucket_name is None
+            log = (
+                "The specified Google Cloud Storage bucket name is None. Please "
+                "make sure to provide a valid bucket name."
+            )
+            structlogger.error(
+                "gcp_persistor.ensure_bucket_exists.bucket_name_none",
+                event_info=log,
+            )
+            raise RasaException(log) from exc
 
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:
         """Uploads a model persisted in the `target_dir` to GCS."""
@@ -328,8 +399,24 @@ class GCSPersistor(Persistor):
 
     def _retrieve_tar(self, target_filename: Text) -> None:
         """Downloads a model that has previously been persisted to GCS."""
+        from google.api_core import exceptions
+
         blob = self.bucket.blob(target_filename)
-        blob.download_to_filename(target_filename)
+        try:
+            blob.download_to_filename(target_filename)
+        except exceptions.NotFound as exc:
+            log = (
+                f"Model '{target_filename}' not found in the specified bucket "
+                f"'{self.bucket_name}'. Please make sure the model exists "
+                f"in the bucket."
+            )
+            structlogger.error(
+                "gcp_persistor.retrieve_tar.model_not_found",
+                bucket_name=self.bucket_name,
+                target_filename=target_filename,
+                event_info=log,
+            )
+            raise ModelNotFound() from exc
 
 
 class AzurePersistor(Persistor):
@@ -355,7 +442,8 @@ class AzurePersistor(Persistor):
         else:
             log = (
                 f"The specified container '{self.container_name}' does not exist."
-                "Please make sure to create the container first."
+                "Please make sure to create the bucket first or "
+                f"provide an alternative valid bucket name."
             )
             structlogger.error(
                 "azure_persistor.ensure_container_exists.container_not_found",
@@ -374,8 +462,33 @@ class AzurePersistor(Persistor):
 
     def _retrieve_tar(self, target_filename: Text) -> None:
         """Downloads a model that has previously been persisted to Azure."""
-        blob_client = self._container_client().get_blob_client(target_filename)
+        try:
+            blob_list = self._container_client().list_blobs()
 
-        with open(target_filename, "wb") as blob:
-            download_stream = blob_client.download_blob()
-            blob.write(download_stream.readall())
+            for blob in blob_list:
+                if target_filename not in blob.name:
+                    continue
+
+                structlogger.debug(
+                    "azure_persistor.retrieve_tar.blob_found", blob_name=blob.name
+                )
+
+                with open(target_filename, "wb") as model_file:
+                    blob_client = self._container_client().get_blob_client(blob.name)
+                    download_stream = blob_client.download_blob()
+                    model_file.write(download_stream.readall())
+        except Exception as exc:
+            log = (
+                f"An exception occurred while trying to download "
+                f"the model '{target_filename}' in the specified container "
+                f"'{self.container_name}'. Please make sure the model exists "
+                f"in the container."
+            )
+            structlogger.error(
+                "azure_persistor.retrieve_tar.model_download_error",
+                container_name=self.container_name,
+                target_filename=target_filename,
+                event_info=log,
+                exception=exc,
+            )
+            raise ModelNotFound() from exc

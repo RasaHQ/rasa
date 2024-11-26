@@ -24,7 +24,7 @@ from rasa.core.brokers.sql import SQLEventBroker
 from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-from tests.conftest import AsyncMock
+from unittest.mock import AsyncMock
 
 TEST_EVENTS = [
     UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),

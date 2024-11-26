@@ -1,0 +1,16 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ rephrase_all: True
+ llm:
+    model_group: gemini_llm
+model_groups:
+  - id: gemini_llm
+    models:
+      - provider: gemini
+        model: gemini-pro
+        api_key: ${GEMINI_API_KEY}
+        timeout: 7
+        num_retries: 5
