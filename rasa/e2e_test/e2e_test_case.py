@@ -1,4 +1,3 @@
-import logging
 from collections import OrderedDict
 from collections import defaultdict
 from dataclasses import dataclass
@@ -27,7 +26,6 @@ from rasa.shared.constants import DOCS_BASE_URL
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.exceptions import RasaException
 
-logger = logging.getLogger(__name__)
 structlogger = structlog.getLogger(__name__)
 
 
@@ -348,9 +346,10 @@ class ActualStepOutput:
             try:
                 return self.user_uttered_events[0]
             except IndexError:
-                logger.debug(
-                    f"Could not find `UserUttered` event in the ActualStepOutput: "
-                    f"{self}"
+                structlogger.debug(
+                    "e2e_test_case.get_user_uttered_event.no_user_uttered_event",
+                    event_info=f"Could not find `UserUttered` event in the "
+                    f"ActualStepOutput: {self}",
                 )
                 return None
         return None

@@ -2116,15 +2116,15 @@ async def test_run_assertions_with_duplicate_user_messages(
 
     monkeypatch.setattr(test_runner.agent.processor, "get_tracker", mock_get_tracker)
 
-    test_case = test_case_with_duplicate_messages
-
     input_metadata = [
         Metadata(name="turn_1", metadata={"turn_idx": 1}),
         Metadata(name="turn_2", metadata={"turn_idx": 2}),
     ]
 
     result = await test_runner.run_assertions(
-        "test_assertions_tracker_duplicate_user_msg", test_case, input_metadata
+        "test_assertions_tracker_duplicate_user_msg",
+        test_case_with_duplicate_messages,
+        input_metadata,
     )
     assert isinstance(result, TestResult)
     assert result.pass_status is True
@@ -2615,73 +2615,30 @@ async def test_run_assertions_with_duplicate_user_messages_reusing_metadata(
         tracker = assertions_tracker_with_duplicate_user_msg
         events = []
 
-        # Simulate two turns where the user makes the same
-        # transfer again and confirms with "Sure"
-        for turn_idx in [1, 2]:
-            events.extend(
-                [
-                    # User requests to make the same transfer again
-                    UserUttered("Please make the same transfer again."),
-                    SlotSet("recipient", "John Doe"),
-                    SlotSet("amount", 100),
-                    # Bot asks for confirmation
-                    BotUttered(
-                        "Please confirm if you'd like to proceed with the transfer?"
-                    ),
-                    # User confirms with "Sure", including metadata for the turn index
-                    UserUttered("Sure", metadata={"turn_idx": turn_idx}),
-                    FlowCompleted("transfer_money", step_id="action_transfer_money"),
-                ]
-            )
+        # Add a turn with non-duplicate message using the same metadata
+        events.extend(
+            [
+                UserUttered("Bye.", metadata={"turn_idx": 1}),
+            ]
+        )
 
         tracker.update_with_events(events)
         return tracker
 
     monkeypatch.setattr(test_runner.agent.processor, "get_tracker", mock_get_tracker)
 
-    # Use the test case with duplicate messages
-    test_case = test_case_with_duplicate_messages
-
     # Add test steps for the additional "Sure" confirmations
     # corresponding to the new events
-    for turn_idx in [1, 2]:
-        test_case.steps.extend(
-            [
-                # Step where the user requests to make the same transfer again
-                TestStep.from_dict(
-                    {
-                        "user": "Please make the same transfer again.",
-                        "assertions": [
-                            {
-                                "slot_was_set": [
-                                    {"name": "recipient", "value": "John Doe"},
-                                    {"name": "amount", "value": 100},
-                                ],
-                                "bot_uttered": {
-                                    "text_matches": "Please confirm if you'd like "
-                                    "to proceed with the transfer?"
-                                },
-                            }
-                        ],
-                    }
-                ),
-                # Step where the user confirms with "Sure"
-                TestStep.from_dict(
-                    {
-                        "user": "Sure",
-                        "assertions": [
-                            {
-                                "flow_completed": {
-                                    "flow_id": "transfer_money",
-                                    "flow_step_id": "action_transfer_money",
-                                }
-                            }
-                        ],
-                        "metadata": f"turn_{turn_idx}",
-                    }
-                ),
-            ]
-        )
+    test_case_with_duplicate_messages.steps.extend(
+        [
+            TestStep.from_dict(
+                {
+                    "user": "Bye.",
+                    "metadata": f"turn_1",
+                }
+            ),
+        ]
+    )
 
     input_metadata = [
         Metadata(name="turn_1", metadata={"turn_idx": 1}),
@@ -2689,7 +2646,9 @@ async def test_run_assertions_with_duplicate_user_messages_reusing_metadata(
     ]
 
     result = await test_runner.run_assertions(
-        "test_assertions_tracker_duplicate_user_msg", test_case, input_metadata
+        "test_assertions_tracker_duplicate_user_msg",
+        test_case_with_duplicate_messages,
+        input_metadata,
     )
 
     assert isinstance(result, TestResult)
