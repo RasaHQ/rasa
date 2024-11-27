@@ -2634,7 +2634,7 @@ async def test_run_assertions_with_duplicate_user_messages_reusing_metadata(
             TestStep.from_dict(
                 {
                     "user": "Bye.",
-                    "metadata": f"turn_1",
+                    "metadata": "turn_1",
                 }
             ),
         ]
