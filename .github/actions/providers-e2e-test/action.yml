@@ -128,13 +128,29 @@ runs:
     # so need to wake it up before usage
     - name: Wake up Hugging Face inference endpoint
       if: ${{ inputs.provider == 'huggingface' }}
-      working-directory: data/test_config/providers/huggingface
+      working-directory: data/test_config/providers
       env:
         ENDPOINT_NAME: cmd-gen-codellama-13b-calm-d-bfz
         ENDPOINT_NAMESPACE: rasa
       run: |
         : Wake up Hugging Face inference endpoint
         pip install huggingface_hub && ./wake-up-inference-endpoint.py
+      shell: bash
+
+    # As endpoint are scaled-to-zero upon inactivity for cost minimisation,
+    # so need to wake them up before usage
+    - name: Wake up multiple Hugging Face inference endpoints
+      if: ${{ inputs.provider == 'huggingface-multiple-deployments-with-routing' }}
+      working-directory: data/test_config/providers
+      env:
+        ENDPOINT_NAME: cmd-gen-codellama-13b-calm-d-bfz
+        ENDPOINT_NAMESPACE: rasa
+      run: |
+        : Wake up multiple Hugging Face inference endpoint
+        pip install huggingface_hub
+        export ENDPOINT_NAME=cmd-gen-codellama-13b-calm-d-rbo && ./wake-up-inference-endpoint.py & pid1=$!
+        export ENDPOINT_NAME=cmd-gen-codellama-13b-calm-d-kuz && ./wake-up-inference-endpoint.py & pid2=$!
+        wait $pid1 && wait $pid2
       shell: bash
 
     - name: Run duckling server

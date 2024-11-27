@@ -36,6 +36,7 @@ on:
           # - self-hosted
           - azure-multiple-deployments-with-routing
           - gemini-multiple-deployments-with-routing
+          - huggingface-multiple-deployments-with-routing
 
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`"
@@ -274,7 +275,8 @@ jobs:
             ollama,
             # self-hosted,
             azure-multiple-deployments-with-routing,
-            gemini-multiple-deployments-with-routing
+            gemini-multiple-deployments-with-routing,
+            huggingface-multiple-deployments-with-routing
           ] # TODO: Enable testing all the providers
         train-and-test: ${{ fromJson(needs.job_setup.outputs.COMMAND_GENERATOR_MATRIX)[needs.job_setup.outputs.COMMAND_GENERATOR] }}
     steps:

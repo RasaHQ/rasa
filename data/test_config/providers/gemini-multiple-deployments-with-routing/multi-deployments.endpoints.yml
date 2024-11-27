@@ -6,6 +6,7 @@ nlg:
  rephrase_all: True
  llm:
     model_group: gemini_llm
+    
 model_groups:
   - id: gemini_llm
     models:
