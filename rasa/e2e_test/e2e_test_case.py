@@ -474,7 +474,7 @@ class TestCase:
                     break
                 elif step.metadata_name in metadata_names_used:
                     structlogger.warning(
-                        "TestCase.validate_duplicate_user_messages_metadata.non_unique_metadata",
+                        "e2e_test_case.validate_duplicate_user_messages_metadata.non_unique_metadata",
                         event_info=non_unique_metadata_event_info.format(
                             name=self.name,
                             text=text,
