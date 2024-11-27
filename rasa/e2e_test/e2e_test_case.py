@@ -464,7 +464,7 @@ class TestCase:
             for step in steps:
                 if not step.metadata_name:
                     structlogger.warning(
-                        "TestCase.validate_duplicate_user_messages_metadata.no_metadata",
+                        "e2e_test_case.validate_duplicate_user_messages_metadata.no_metadata",
                         event_info=no_metadata_event_info.format(
                             name=self.name,
                             text=text,
