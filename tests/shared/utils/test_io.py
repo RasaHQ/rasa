@@ -288,6 +288,25 @@ def test_emojis_in_yaml():
     assert content["data"][1] == "two £ (?u)\\b\\w+\\b für"
 
 
+def test_windows_path_in_flows_yaml():
+    content = read_yaml_file("data/flows/flows-ATO-3124.yml")
+    # Windows path with a u isn't mistaken for \u escape sequence
+    assert content["flows"]["unsend_money"]["file_path"] == r"data\unsend.yml"
+
+    # Emojis are correctly read
+    assert (
+        content["flows"]["transfer_money"]["description"]
+        == "💰 This flow lets users send money to friends and family."
+    )
+
+    # A longer Windows path is correctly read
+    expected_path = (
+        r"C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages"
+        r"\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml"
+    )
+    assert content["flows"]["pattern_cancel_flow"]["file_path"] == expected_path
+
+
 def test_emojis_in_tmp_file():
     test_data = """
         data:

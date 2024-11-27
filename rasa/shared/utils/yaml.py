@@ -424,38 +424,6 @@ def validate_raw_yaml_using_schema_file_with_responses(
     )
 
 
-def escape_windows_paths(content: str) -> str:
-    """Process YAML content to properly escape Windows file paths.
-
-    Args:
-        content: YAML content to be processed
-
-    Returns:
-        Content with Windows paths properly escaped, all other characters preserved
-    """
-
-    def contains_windows_path(text: str) -> bool:
-        """Check if text contains what appears to be a Windows path."""
-        return bool(re.search(r"[A-Za-z]:\\", text))
-
-    if not contains_windows_path(content):
-        return content
-
-    def escape_windows_path(match: re.Match) -> str:
-        """Escape backslashes in Windows paths."""
-        path = match.group(0)
-        return path.replace("\\", "\\\\")
-
-    # Match Windows paths that may contain:
-    # - Drive letter (e.g. C:)
-    # - Backslash separated path components
-    # - Optional trailing backslash
-    # - Unicode characters
-    windows_path_pattern = r"[A-Za-z]:\\(?:[^\\]+\\)*[^\\]*"
-
-    return re.sub(windows_path_pattern, escape_windows_path, content)
-
-
 def read_yaml(
     content: str,
     reader_type: Union[str, List[str]] = "safe",
@@ -471,9 +439,6 @@ def read_yaml(
     Raises:
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
     """
-    if _is_ascii(content):
-        content = escape_windows_paths(content)
-
     custom_constructor = kwargs.get("custom_constructor", None)
 
     # Create YAML parser with custom constructor
