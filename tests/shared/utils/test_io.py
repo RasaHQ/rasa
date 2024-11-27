@@ -319,6 +319,7 @@ def test_emojis_in_tmp_file():
     assert content["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
     assert content["data"][1] == "two £ (?u)\\b\\w+\\b für"
 
+
 def test_bool_str():
     test_data = """
     one: "yes"
