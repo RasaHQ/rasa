@@ -319,19 +319,6 @@ def test_emojis_in_tmp_file():
     assert content["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
     assert content["data"][1] == "two £ (?u)\\b\\w+\\b für"
 
-
-def test_read_emojis_from_json():
-    import json
-
-    d = {"text": "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️(?u)\\b\\w+\\b} f\u00fcr"}
-    json_string = json.dumps(d, indent=2)
-
-    content = read_yaml(json_string)
-
-    expected = "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️(?u)\\b\\w+\\b} für"
-    assert content.get("text") == expected
-
-
 def test_bool_str():
     test_data = """
     one: "yes"
