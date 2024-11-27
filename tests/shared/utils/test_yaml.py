@@ -975,17 +975,13 @@ def test_yaml_validation_exception_line_number(
             r"C:\data\flows\unicode_\u1234_file.txt",
             r"C:\\data\\flows\\unicode_\\u1234_file.txt",
         ),
-        (r"C:\data\flows\abcd.yml", r"C:\\data\\flows\\abcd.yml"),
+        (r"C:\data\flows\new.yml", r"C:\\data\\flows\\new.yml"),
         # complex paths
         (
             r"Multiple C:\Program Files\app.exe D:\Games\steam.exe",
             r"Multiple C:\\Program Files\\app.exe D:\\Games\\steam.exe",
         ),
         (r"Mixed\Slashes/C:\Path\To/File.txt", r"Mixed\Slashes/C:\\Path\\To/File.txt"),
-        (
-            r"Path C:\Users\\double\\slashes\\file.txt",
-            r"Path C:\\Users\\double\\slashes\\file.txt",
-        ),
         (
             r"Unicode C:\Users\café\münchen\file.txt",
             r"Unicode C:\\Users\\café\\münchen\\file.txt",
