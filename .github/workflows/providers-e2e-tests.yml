@@ -126,6 +126,8 @@ env:
   ENDPOINTS_FILE_NAME: endpoints
   REDIS_HOST: localhost
   REDIS_PORT: 6379
+  RASA_TELEMETRY_DEBUG: true
+  DD_API_KEY: ${{ secrets.DD_API_KEY }} # Required for sending OTEL Metrics and Traces to Datadog
 
   # Providers' required environment variables (API key values also stored in 1Password):
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

@@ -6,3 +6,17 @@ nlg:
  rephrase_all: True
  llm:
     model: gpt-4-0613
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-openai
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-openai

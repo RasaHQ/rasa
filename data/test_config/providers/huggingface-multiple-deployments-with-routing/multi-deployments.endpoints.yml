@@ -6,6 +6,20 @@ nlg:
  rephrase_all: True
  llm:
     model_group: huggingface_llm
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-huggingface-multi-deployments
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-huggingface-multi-deployments
     
 model_groups:
   - id: huggingface_llm

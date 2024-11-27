@@ -1,0 +1,30 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "*"
+
+connectors:
+  datadog/connector:
+
+exporters:
+  debug:
+    verbosity: detailed
+  datadog/exporter:
+    api:
+      site: datadoghq.eu
+      key: ${env:DD_API_KEY}
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp, datadog/connector]
+      exporters: [debug, datadog/exporter]
+    traces:
+      receivers: [otlp]
+      exporters: [debug, datadog/connector, datadog/exporter]

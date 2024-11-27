@@ -1,0 +1,13 @@
+services:
+
+  otel-collector:
+    container_name: otel-collector
+    image: otel/opentelemetry-collector-contrib:0.114.0
+    restart: always
+    command: ["--config=/etc/otel-collector-config.yaml", ""]
+    volumes:
+      - ./otel-collector-config.yml:/etc/otel-collector-config.yaml
+    ports:
+      - 4317:4317
+    environment:
+      - DD_API_KEY=${DD_API_KEY?"Datadog API Key not provided"}

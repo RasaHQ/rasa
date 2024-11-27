@@ -27,3 +27,17 @@ model_groups:
         api_version: ${AZURE_API_VERSION_TXT_EMBEDDING_ADA}
         timeout: 7
         num_retries: 5
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-azure
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-azure

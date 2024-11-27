@@ -8,3 +8,17 @@ nlg:
    provider: cohere
    model: command-r-plus-08-2024
    timeout: 7
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-cohere
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-cohere

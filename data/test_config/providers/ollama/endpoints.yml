@@ -9,3 +9,17 @@ nlg:
    model: llama3.2
    api_base: "http://localhost:11434"
    timeout: 7
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-ollama
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-ollama

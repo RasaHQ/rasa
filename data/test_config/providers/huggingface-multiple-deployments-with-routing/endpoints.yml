@@ -16,3 +16,17 @@ model_groups:
         api_key: ${HUGGINGFACE_API_KEY}
         timeout: 7
         num_retries: 5
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-huggingface
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-huggingface

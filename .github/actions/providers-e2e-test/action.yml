@@ -71,6 +71,11 @@ runs:
                 model: ${{ inputs.llm-as-judge-model }}" > conftest.yml
       shell: bash
 
+    - name: Run OTEL collector for Tracing and Metrics collection
+      working-directory: data/test_config/providers
+      run: docker compose -f otel-docker-compose.yml up -d
+      shell: bash
+
     - name: Setup Python Environment
       uses: RasaHQ/rasa-private/.github/actions/setup-python-env@main
       with:
@@ -271,6 +276,14 @@ runs:
       with:
         name: ${{ inputs.provider }}-E2E-test-${{ inputs.train-and-test }}-results
         path: tests/e2e_results_failed.yml
+
+    - name: Print OTEL traces and metrics
+      if: always()
+      working-directory: data/test_config/providers
+      run: |
+        : Print OTEL traces and metrics
+        docker compose -f otel-docker-compose.yml logs
+      shell: bash
 
     - name: Get Rasa-pro version and short-SHA, and set as environment variables
       if: always()
