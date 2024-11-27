@@ -17,8 +17,8 @@ from pykwalify.core import Core
 from pykwalify.errors import SchemaError
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
-from ruamel.yaml.comments import CommentedSeq, CommentedMap
 from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
+from ruamel.yaml.comments import CommentedSeq, CommentedMap
 from ruamel.yaml.loader import SafeLoader
 
 from rasa.shared.constants import (
@@ -31,7 +31,6 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     SCHEMA_EXTENSIONS_FILE,
     RESPONSES_SCHEMA_FILE,
-    API_KEY,
 )
 from rasa.shared.exceptions import (
     YamlException,
@@ -59,7 +58,6 @@ YAML_VERSION = (1, 2)
 READ_YAML_FILE_CACHE_MAXSIZE = os.environ.get(
     READ_YAML_FILE_CACHE_MAXSIZE_ENV_VAR, DEFAULT_READ_YAML_FILE_CACHE_MAXSIZE
 )
-SENSITIVE_DATA = [API_KEY]
 
 
 @dataclass
@@ -89,12 +87,6 @@ def replace_environment_variables() -> None:
     def env_var_constructor(loader: BaseConstructor, node: ScalarNode) -> str:
         """Process environment variables found in the YAML."""
         value = loader.construct_scalar(node)
-
-        # get key of current node
-        key_node = list(loader.constructed_objects)[-1]
-        if isinstance(key_node, ScalarNode) and key_node.value in SENSITIVE_DATA:
-            return value
-
         expanded_vars = os.path.expandvars(value)
         not_expanded = [
             w for w in expanded_vars.split() if w.startswith("$") and w in value
