@@ -25,7 +25,7 @@ from rasa.shared.exceptions import YamlException, SchemaValidationError
 from rasa.shared.nlu.training_data.formats.rasa_yaml import NLU_SCHEMA_FILE
 from rasa.shared.utils.yaml import (
     KEY_TRAINING_DATA_FORMAT_VERSION,
-    process_content,
+    escape_windows_paths,
     read_yaml_file,
     read_schema_file,
     validate_yaml_with_jsonschema,
@@ -1026,9 +1026,9 @@ def test_yaml_validation_exception_line_number(
         ("No escape characters here", "No escape characters here"),
     ],
 )
-def test_process_content(content, expected):
+def test_escape_windows_paths(content, expected):
     # When
-    processed_content = process_content(content)
+    processed_content = escape_windows_paths(content)
 
     # Then
     assert processed_content == expected
