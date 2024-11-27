@@ -25,7 +25,6 @@ from rasa.shared.exceptions import YamlException, SchemaValidationError
 from rasa.shared.nlu.training_data.formats.rasa_yaml import NLU_SCHEMA_FILE
 from rasa.shared.utils.yaml import (
     KEY_TRAINING_DATA_FORMAT_VERSION,
-    escape_windows_paths,
     read_yaml_file,
     read_schema_file,
     validate_yaml_with_jsonschema,
@@ -963,68 +962,3 @@ def test_yaml_validation_exception_line_number(
         )
 
     assert f"in Line {expected_error_line}" in str(e.value)
-
-
-@pytest.mark.parametrize(
-    "content, expected",
-    [
-        # windows paths
-        (r"C:\Users\file.txt", r"C:\\Users\\file.txt"),
-        (r"C:\data\flows\unique_file.txt", r"C:\\data\\flows\\unique_file.txt"),
-        (
-            r"C:\data\flows\unicode_\u1234_file.txt",
-            r"C:\\data\\flows\\unicode_\\u1234_file.txt",
-        ),
-        (r"C:\data\flows\new.yml", r"C:\\data\\flows\\new.yml"),
-        # complex paths
-        (
-            r"Multiple C:\Program Files\app.exe D:\Games\steam.exe",
-            r"Multiple C:\\Program Files\\app.exe D:\\Games\\steam.exe",
-        ),
-        (r"Mixed\Slashes/C:\Path\To/File.txt", r"Mixed\Slashes/C:\\Path\\To/File.txt"),
-        (
-            r"Unicode C:\Users\café\münchen\file.txt",
-            r"Unicode C:\\Users\\café\\münchen\\file.txt",
-        ),
-        (r"Special C:\Path\#$@&-_+=\file.txt", r"Special C:\\Path\\#$@&-_+=\\file.txt"),
-        # paths with emojis
-        (r"C:\Users\😊\Documents\file.txt", r"C:\\Users\\😊\\Documents\\file.txt"),
-        (
-            r"C:\User Files\📁 Documents\test.txt",
-            r"C:\\User Files\\📁 Documents\\test.txt",
-        ),
-        ("/home/user/📂 Projects/🚀 code.py", "/home/user/📂 Projects/🚀 code.py"),
-        (r"C:\Users\café\📝notes\résumé.doc", r"C:\\Users\\café\\📝notes\\résumé.doc"),
-        (
-            r"Mixed C:\Path\📊\Data D:\📸\Photos",
-            r"Mixed C:\\Path\\📊\\Data D:\\📸\\Photos",
-        ),
-        # unix paths
-        ("/usr/local/bin/python", "/usr/local/bin/python"),
-        ("~/Documents/project.txt", "~/Documents/project.txt"),
-        ("/etc/conf.d/app.conf", "/etc/conf.d/app.conf"),
-        ("../relative/path.txt", "../relative/path.txt"),
-        ("./current/file.txt", "./current/file.txt"),
-        ("/path with spaces/file.txt", "/path with spaces/file.txt"),
-        ("/usr/bin/app-v1.2.3", "/usr/bin/app-v1.2.3"),
-        # regular strings some with escape characters
-        ("Hello, world! 😊", "Hello, world! 😊"),
-        ("Line1\nLine2", "Line1\nLine2"),
-        ("Carriage\rReturn", "Carriage\rReturn"),
-        ("Tab\tCharacter", "Tab\tCharacter"),
-        ("Backspace\bCharacter", "Backspace\bCharacter"),
-        ("FormFeed\fCharacter", "FormFeed\fCharacter"),
-        ("Vertical\vTab", "Vertical\vTab"),
-        ("Bell\aSound", "Bell\aSound"),
-        ("Null\0Character", "Null\0Character"),
-        ("Hex\x41Character", "Hex\x41Character"),
-        ("Octal\101Character", "Octal\101Character"),
-        ("No escape characters here", "No escape characters here"),
-    ],
-)
-def test_escape_windows_paths(content, expected):
-    # When
-    processed_content = escape_windows_paths(content)
-
-    # Then
-    assert processed_content == expected
