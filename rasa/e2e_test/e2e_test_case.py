@@ -26,7 +26,7 @@ from rasa.shared.constants import DOCS_BASE_URL
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.exceptions import RasaException
 
-structlogger = structlog.getLogger(__name__)
+structlogger = structlog.get_logger(__name__)
 
 
 @dataclass(frozen=True)
