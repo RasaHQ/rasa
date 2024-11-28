@@ -37,6 +37,7 @@ on:
           - azure-multiple-deployments-with-routing
           - gemini-multiple-deployments-with-routing
           - huggingface-multiple-deployments-with-routing
+          - bedrock-multiple-deployments-with-routing
 
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`"
@@ -196,6 +197,10 @@ env:
   AZURE_API_VERSION_TXT_EMBEDDING_ADA_FR: "2023-05-15"
   AZURE_API_KEY_FR: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING }}
 
+  # AWS Bedrock regions, for multi-LLM-routing testing
+  AWS_REGION_NAME_1: us-east-1
+  AWS_REGION_NAME_2: eu-central-1
+
 permissions:
   id-token: write
   contents: read
@@ -278,7 +283,8 @@ jobs:
             # self-hosted,
             azure-multiple-deployments-with-routing,
             gemini-multiple-deployments-with-routing,
-            huggingface-multiple-deployments-with-routing
+            huggingface-multiple-deployments-with-routing,
+            bedrock-multiple-deployments-with-routing
           ] # TODO: Enable testing all the providers
         train-and-test: ${{ fromJson(needs.job_setup.outputs.COMMAND_GENERATOR_MATRIX)[needs.job_setup.outputs.COMMAND_GENERATOR] }}
     steps:
