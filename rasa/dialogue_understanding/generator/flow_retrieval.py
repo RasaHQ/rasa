@@ -1,5 +1,4 @@
-"""
-The module is primarily centered around the `FlowRetrieval` class which handles the
+"""The module is primarily centered around the `FlowRetrieval` class which handles the
 initialization, configuration validation, vector store management, and flow retrieval
 logic. It integrates components for managing embeddings, vector stores, and
 flow-specific templates, facilitating semantic search functionalities.
@@ -27,8 +26,13 @@ from langchain.docstore.document import Document
 from langchain.schema.embeddings import Embeddings
 from langchain_community.vectorstores.faiss import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
+
+from rasa.dialogue_understanding.generator.constants import (
+    TRAINED_EMBEDDINGS_CONFIG_KEY,
+)
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+
 from rasa.shared.constants import (
     EMBEDDINGS_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
@@ -37,9 +41,9 @@ from rasa.shared.constants import (
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import ProviderClientAPIException, FileIOException
 from rasa.shared.nlu.constants import TEXT, FLOWS_FROM_SEMANTIC_SEARCH
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
     _LangchainEmbeddingClientAdapter,
 )
@@ -50,11 +54,19 @@ from rasa.shared.utils.llm import (
     USER,
     get_prompt_template,
     allowed_values_for_slot,
+    resolve_model_client_config,
 )
+from rasa.shared.utils.health_check import (
+    perform_training_time_embeddings_health_check,
+    perform_inference_time_embeddings_health_check,
+)
+from rasa.shared.utils.io import dump_obj_as_json_to_file, read_json_file
 
 DEFAULT_FLOW_DOCUMENT_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.generator", "flow_document_template.jinja2"
 )
+
+FLOW_RETRIEVAL_CONFIG_FILE_NAME = "flow_retrieval_config.json"
 
 DEFAULT_EMBEDDINGS_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
@@ -82,6 +94,7 @@ class FlowRetrieval:
             MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY: DEFAULT_MAX_FLOWS_FROM_SEMANTIC_SEARCH,
             TURNS_TO_EMBED_KEY: DEFAULT_TURNS_TO_EMBED,
             SHOULD_EMBED_SLOTS_KEY: DEFAULT_SHOULD_EMBED_SLOTS,
+            TRAINED_EMBEDDINGS_CONFIG_KEY: None,
         }
 
     def __init__(
@@ -92,6 +105,9 @@ class FlowRetrieval:
     ):
         config = {**self.get_default_config(), **config}
         self.config = self.validate_config(config)
+        self.config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
+            self.config.get(EMBEDDINGS_CONFIG_KEY), FlowRetrieval.__name__
+        )
         self.vector_store: Optional[FAISS] = None
         self.flow_document_template = get_prompt_template(
             None, DEFAULT_FLOW_DOCUMENT_TEMPLATE
@@ -131,6 +147,16 @@ class FlowRetrieval:
 
         return config
 
+    def train(self) -> None:
+        self.config[TRAINED_EMBEDDINGS_CONFIG_KEY] = (
+            perform_training_time_embeddings_health_check(
+                self.config.get(EMBEDDINGS_CONFIG_KEY),
+                DEFAULT_EMBEDDINGS_CONFIG,
+                "flow_retrieval.train",
+                FlowRetrieval.__name__,
+            )
+        )
+
     @classmethod
     def load(
         cls,
@@ -147,6 +173,31 @@ class FlowRetrieval:
             flow_retrieval.config, model_storage, resource
         )
         flow_retrieval.vector_store = vector_store
+
+        persisted_config = None
+        try:
+            with model_storage.read_from(resource) as path:
+                persisted_config = read_json_file(
+                    path / FLOW_RETRIEVAL_CONFIG_FILE_NAME
+                )
+        except (FileNotFoundError, FileIOException) as e:
+            structlogger.warning(
+                "flow_retrieval.load.failed", error=e, resource=resource.name
+            )
+
+        train_embeddings_name = (
+            persisted_config.get(TRAINED_EMBEDDINGS_CONFIG_KEY, None)
+            if persisted_config
+            else None
+        )
+        perform_inference_time_embeddings_health_check(
+            flow_retrieval.config.get(EMBEDDINGS_CONFIG_KEY),
+            DEFAULT_EMBEDDINGS_CONFIG,
+            train_embeddings_name,
+            "flow_retrieval.load",
+            FlowRetrieval.__name__,
+        )
+
         return flow_retrieval
 
     @classmethod
@@ -178,13 +229,24 @@ class FlowRetrieval:
         Returns:
             The embedder.
         """
+        # Copy the config so original config is not modified
+        config = config.copy()
+        # Resolve config and instantiate the embedding client
+        config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
+            config.get(EMBEDDINGS_CONFIG_KEY), FlowRetrieval.__name__
+        )
         client = embedder_factory(
             config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
         )
+        # Wrap the embedding client in the adapter
         return _LangchainEmbeddingClientAdapter(client)
 
     def persist(self) -> None:
         self._persist_vector_store()
+        with self._model_storage.write_to(self._resource) as path:
+            dump_obj_as_json_to_file(
+                path / FLOW_RETRIEVAL_CONFIG_FILE_NAME, self.config
+            )
 
     def _persist_vector_store(self) -> None:
         """Persists the FAISS vector store."""

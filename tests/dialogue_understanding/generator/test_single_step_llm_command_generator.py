@@ -3,9 +3,8 @@ import uuid
 from pathlib import Path
 from typing import Optional, Dict, Text, Any, Set, List
 from unittest.mock import Mock, patch, AsyncMock
-import structlog
-
 import pytest
+import structlog
 from _pytest.tmpdir import TempPathFactory
 from pytest import MonkeyPatch
 
@@ -26,6 +25,7 @@ from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
     FLOW_RETRIEVAL_FLOW_THRESHOLD,
+    LLM_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
@@ -39,7 +39,12 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.llm_fine_tuning.annotation_module import set_preparing_fine_tuning_data
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import (
+    OPENAI_API_KEY_ENV_VAR,
+    ROUTE_TO_CALM_SLOT,
+    EMBEDDINGS_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
+)
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import (
@@ -829,6 +834,144 @@ class TestSingleStepLLMCommandGenerator:
         assert fingerprint_1 is not None
         assert fingerprint_1 == fingerprint_2
 
+    @pytest.mark.parametrize(
+        "config_1, model_groups_1, config_2, model_groups_2, fingerprint_differs",
+        [
+            (
+                {"user_input": {"max_characters": 100}},
+                [],
+                {"user_input": {"max_characters": 200}},
+                [],
+                False,
+            ),
+            (
+                {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt"}},
+                [
+                    {
+                        "id": "openai_gpt",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                ],
+                {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt"}},
+                [
+                    {
+                        "id": "openai_gpt",
+                        "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                    },
+                ],
+                True,
+            ),
+            (
+                {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-1"}},
+                [
+                    {
+                        "id": "openai_gpt-1",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                ],
+                {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-2"}},
+                [
+                    {
+                        "id": "openai_gpt-2",
+                        "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                    },
+                ],
+                True,
+            ),
+            (
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+                    FLOW_RETRIEVAL_KEY: {
+                        EMBEDDINGS_CONFIG_KEY: {
+                            MODEL_GROUP_CONFIG_KEY: "openai_embedding"
+                        }
+                    },
+                },
+                [
+                    {
+                        "id": "openai_gpt-4",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                    {
+                        "id": "openai_embedding",
+                        "models": [{"provider": "openai", "model": "embedding-model"}],
+                    },
+                ],
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+                    FLOW_RETRIEVAL_KEY: {
+                        EMBEDDINGS_CONFIG_KEY: {
+                            MODEL_GROUP_CONFIG_KEY: "openai_embedding_2"
+                        }
+                    },
+                },
+                [
+                    {
+                        "id": "openai_gpt-4",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                    {
+                        "id": "openai_embedding_2",
+                        "models": [
+                            {"provider": "openai", "model": "different-embedding-model"}
+                        ],
+                    },
+                ],
+                True,
+            ),
+        ],
+    )
+    async def test_fingerprint_addon_with_different_model_configs(
+        self,
+        config_1: Dict[str, Any],
+        model_groups_1: List[Dict[str, Any]],
+        config_2: Dict[str, Any],
+        model_groups_2: List[Dict[str, Any]],
+        fingerprint_differs: bool,
+        model_storage: ModelStorage,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        generator = SingleStepLLMCommandGenerator(
+            {}, model_storage, Resource("llmcmdgen")
+        )
+
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = model_groups_1
+
+        mock_endpoints_1 = MockAvailableEndpoints()
+        monkeypatch.setattr(
+            "rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints_1
+        )
+
+        fingerprint_1 = generator.fingerprint_addon(config_1)
+
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = model_groups_2
+
+        mock_endpoints_2 = MockAvailableEndpoints()
+        monkeypatch.setattr(
+            "rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints_2
+        )
+
+        fingerprint_2 = generator.fingerprint_addon(config_2)
+
+        assert fingerprint_1 is not None
+        assert fingerprint_2 is not None
+        if fingerprint_differs:
+            assert fingerprint_1 != fingerprint_2
+        else:
+            assert fingerprint_1 == fingerprint_2
+
     def test_train_with_flow_retrieval_disabled(
         self,
         model_storage: ModelStorage,
@@ -893,6 +1036,7 @@ class TestSingleStepLLMCommandGenerator:
         model_storage: ModelStorage,
         flows: FlowsList,
         resource: Resource,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # Given
         generator = SingleStepLLMCommandGenerator(
@@ -1092,9 +1236,156 @@ class TestSingleStepLLMCommandGenerator:
         model_storage: ModelStorage,
     ):
         # Given
+        mock_flow_retrieval.__name__ = "FlowRetrieval"
         resource = Resource("llmcmdgen")
         generator = SingleStepLLMCommandGenerator({}, model_storage, resource)
         # When
         generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
         # Then
         assert mock_flow_retrieval.populate.call_count == 0
+
+    @pytest.mark.parametrize(
+        "config, expected_llm_config, expected_flow_retrieval_embedding_config",
+        [
+            (
+                {
+                    LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                    FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False},
+                },
+                {"provider": "openai", "model": "gpt-4"},
+                None,
+            ),
+            (
+                {
+                    "user_input": {"max_characters": -1},
+                    FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False},
+                },
+                None,
+                None,
+            ),
+            (
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+                    FLOW_RETRIEVAL_KEY: {
+                        EMBEDDINGS_CONFIG_KEY: {
+                            MODEL_GROUP_CONFIG_KEY: "openai_embedding"
+                        }
+                    },
+                },
+                {
+                    "id": "openai_gpt-4",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+                {
+                    "id": "openai_embedding",
+                    "models": [
+                        {"model": "text-embedding-ada-002", "provider": "openai"}
+                    ],
+                },
+            ),
+            (
+                {
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+                    FLOW_RETRIEVAL_KEY: {
+                        EMBEDDINGS_CONFIG_KEY: {
+                            "provider": "openai",
+                            "model": "text-embedding-ada-002",
+                        }
+                    },
+                },
+                {
+                    "id": "openai_gpt-4",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+                {"provider": "openai", "model": "text-embedding-ada-002"},
+            ),
+        ],
+    )
+    def test_single_step_llm_command_generator_init_with_different_llm_configs(
+        self,
+        config: Optional[Dict[str, Any]],
+        expected_llm_config: Optional[Dict[str, Any]],
+        expected_flow_retrieval_embedding_config: Optional[Dict[str, Any]],
+        model_storage: ModelStorage,
+        resource: Resource,
+        monkeypatch,
+    ) -> None:
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = [
+                    {
+                        "id": "openai_gpt-4",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    },
+                    {
+                        "id": "openai_embedding",
+                        "models": [
+                            {"provider": "openai", "model": "text-embedding-ada-002"}
+                        ],
+                    },
+                ]
+
+        mock_endpoints = MockAvailableEndpoints()
+        monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+        generator = SingleStepLLMCommandGenerator(
+            config,
+            model_storage,
+            resource,
+        )
+        assert generator.config[LLM_CONFIG_KEY] == expected_llm_config
+
+        if expected_flow_retrieval_embedding_config is None:
+            assert EMBEDDINGS_CONFIG_KEY not in generator.config[FLOW_RETRIEVAL_KEY]
+        else:
+            assert (
+                generator.config[FLOW_RETRIEVAL_KEY][EMBEDDINGS_CONFIG_KEY]
+                == expected_flow_retrieval_embedding_config
+            )
+
+    def test_multi_step_llm_command_generator_persist_config(
+        self,
+        model_storage: LocalModelStorage,
+        resource: Resource,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = [
+                    {
+                        "id": "model_group_id",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    }
+                ]
+
+        mock_endpoints = MockAvailableEndpoints()
+        monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+        config = {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"}}
+        generator = SingleStepLLMCommandGenerator(config, model_storage, resource)
+
+        # Ensure the config is resolved
+        assert generator.config[LLM_CONFIG_KEY] == {
+            "id": "model_group_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        }
+
+        # Persist the generator
+        generator.persist()
+
+        # Check that the persisted config is equal to our config
+        persisted_config = SingleStepLLMCommandGenerator.load_config_from_model_storage(
+            model_storage, resource
+        )
+        assert persisted_config[LLM_CONFIG_KEY] == {
+            "id": "model_group_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        }

@@ -34,10 +34,12 @@
   "followup_action": null,
   "stack": [],
   "slots": {
+    "consecutive_silence_timeouts": 0.0,
     "flow_hashes": null,
     "name": null,
     "requested_slot": null,
-    "session_started_metadata": null
+    "session_started_metadata": null,
+    "silence_timeout": 6.0
   },
   "latest_input_channel": null,
   "events": [

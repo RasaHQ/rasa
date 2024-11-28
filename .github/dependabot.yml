@@ -68,6 +68,7 @@ updates:
           - "aioresponses"
           - "datadog"
           - "gitpython"
+          - "types-werkzeug"
         update-types:
           - "minor"
           - "patch"
@@ -80,6 +81,7 @@ updates:
           - "numpy"
           - "scipy"
           - "tensorflow*"
+          - "safetensors"
           - "litellm"
           - "openai"
           - "langchain"
@@ -93,6 +95,7 @@ updates:
           - "python-socketio"
           - "python-engineio"
           - "sklearn*"
+          - "skops"
           - "scikit-learn"
           - "setuptools"
           - "confluent-kafka"

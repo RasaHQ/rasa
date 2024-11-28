@@ -2,15 +2,19 @@ from typing import Any, Optional, Dict
 
 import pytest
 from pytest import MonkeyPatch
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.nlg.contextual_response_rephraser import (
     ContextualResponseRephraser,
 )
+from rasa.shared.constants import (
+    OPENAI_API_KEY_ENV_VAR,
+    LLM_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
+)
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.utils.endpoints import EndpointConfig
 
 
 @pytest.fixture
@@ -319,3 +323,56 @@ async def test_contextual_response_rephraser_prompt_init_default(
         EndpointConfig.from_dict({}), domain_with_responses
     )
     assert rephraser.prompt_template.startswith("The following is a conversation")
+
+
+@pytest.mark.parametrize(
+    "config, expected_llm_config",
+    [
+        (
+            {
+                LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+            },
+            {"provider": "openai", "model": "gpt-4"},
+        ),
+        (
+            {
+                LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+            },
+            {
+                "id": "openai_gpt-4",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+        ),
+        (
+            {},
+            None,
+        ),
+    ],
+)
+def test_contextual_response_rephraser_init_with_different_llm_configs(
+    config: Dict[str, Any],
+    expected_llm_config: Optional[Dict[str, Any]],
+    monkeypatch,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "openai_gpt-4",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    rephraser = ContextualResponseRephraser(
+        EndpointConfig.from_dict(config),
+        Domain.empty(),
+    )
+
+    assert rephraser.llm_config == expected_llm_config

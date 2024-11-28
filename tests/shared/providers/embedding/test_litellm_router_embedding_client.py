@@ -160,8 +160,8 @@ class TestLiteLLMRouterEmbeddingClient:
     def test_router_client(self, client: LiteLLMRouterEmbeddingClient) -> None:
         assert isinstance(client.router_client, Router)
 
-    def test_completion_fn_args(self, client: LiteLLMRouterEmbeddingClient) -> None:
-        assert client._completion_fn_args == {"model": "test-model-group-id"}
+    def test_embedding_fn_args(self, client: LiteLLMRouterEmbeddingClient) -> None:
+        assert client._embedding_fn_args == {"model": "test-model-group-id"}
 
     def test_conforms_to_protocol(self, client: LiteLLMRouterEmbeddingClient) -> None:
         assert isinstance(client, EmbeddingClient)

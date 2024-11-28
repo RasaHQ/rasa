@@ -34,6 +34,7 @@ def set_train_arguments(parser: argparse.ArgumentParser) -> None:
 
     _add_model_name_param(parser)
     add_persist_nlu_data_param(parser)
+    add_keep_local_model_copy_param(parser)
     add_force_param(parser)
     add_finetune_params(parser)
     add_endpoint_param(
@@ -238,6 +239,19 @@ def add_persist_nlu_data_param(
         "--persist-nlu-data",
         action="store_true",
         help="Persist the NLU training data in the saved model.",
+    )
+
+
+def add_keep_local_model_copy_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+) -> None:
+    """Adds parameters for keeping a local copy of the model."""
+    parser.add_argument(
+        "--keep-local-model-copy",
+        action="store_true",
+        help="Keep a copy of the model in the model directory if remote "
+        "model upload is configured. Defaults to `false`, which "
+        "deletes the local copy of the model after upload.",
     )
 
 

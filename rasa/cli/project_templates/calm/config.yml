@@ -1,12 +1,10 @@
 recipe: default.v1
 language: en
 pipeline:
-- name: SingleStepLLMCommandGenerator
-  llm:
-    model_name: gpt-4
-    request_timeout: 7
-    max_tokens: 256
+  - name: SingleStepLLMCommandGenerator
+    llm:
+      model_group: openai-gpt-4
 
 policies:
-- name: FlowPolicy
-- name: IntentlessPolicy
+  - name: FlowPolicy
+  - name: IntentlessPolicy

@@ -12,6 +12,7 @@ from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers._configs.litellm_router_client_config import (
     LiteLLMRouterClientConfig,
 )
+from rasa.shared.utils.io import resolve_environment_variables
 
 structlogger = structlog.get_logger()
 
@@ -48,8 +49,11 @@ class _BaseLiteLLMRouterClient:
         self._router_settings = router_settings
         self._extra_parameters = kwargs or {}
         try:
+            resolved_model_configurations = (
+                self._resolve_env_vars_in_model_configurations()
+            )
             self._router_client = Router(
-                model_list=model_configurations, **router_settings
+                model_list=resolved_model_configurations, **router_settings
             )
         except Exception as e:
             event_info = "Cannot instantiate a router client."
@@ -135,12 +139,11 @@ class _BaseLiteLLMRouterClient:
             **self._litellm_extra_parameters,
         }
 
-    @property
-    def _completion_fn_args(self) -> Dict[str, Any]:
-        """Returns the completion arguments for invoking a call through
-        LiteLLM's completion functions.
-        """
-        return {
-            **self._litellm_extra_parameters,
-            "model": self.model_group_id,
-        }
+    def _resolve_env_vars_in_model_configurations(self) -> List:
+        model_configuration_with_resolved_keys = []
+        for model_configuration in self.model_configurations:
+            resolved_model_configuration = resolve_environment_variables(
+                model_configuration
+            )
+            model_configuration_with_resolved_keys.append(resolved_model_configuration)
+        return model_configuration_with_resolved_keys

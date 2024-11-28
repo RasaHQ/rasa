@@ -113,7 +113,7 @@ def run(args: argparse.Namespace) -> None:
         return
 
     # start server if model server is configured
-    endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
+    endpoints = AvailableEndpoints.get_instance(args.endpoints)
     model_server = endpoints.model if endpoints and endpoints.model else None
     if model_server is not None:
         rasa_run(**vars(args))

@@ -4,8 +4,12 @@ from typing import Any, Dict, Optional, AsyncIterator
 import asyncio
 
 from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine, ASREngineConfig
-from rasa.core.channels.voice_stream.asr.asr_event import ASREvent, NewTranscript
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
+from rasa.core.channels.voice_stream.asr.asr_event import (
+    ASREvent,
+    NewTranscript,
+    UserStartedSpeaking,
+)
+from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
 from rasa.shared.exceptions import ConnectionException
 
 
@@ -27,7 +31,12 @@ class AzureASR(ASREngine[AzureASRConfig]):
             asyncio.Queue()
         )
 
+    def signal_user_started_speaking(self, event: Any) -> None:
+        """Replace the unspecific azure event with a specific start event."""
+        self.fill_queue(UserStartedSpeaking())
+
     def fill_queue(self, event: Any) -> None:
+        """Either puts the event or a dedicated ASR Event into the queue."""
         self.queue.put_nowait(event)
 
     async def connect(self) -> None:
@@ -38,7 +47,7 @@ class AzureASR(ASREngine[AzureASRConfig]):
             region=self.config.speech_region,
         )
         audio_format = speechsdk.audio.AudioStreamFormat(
-            samples_per_second=8000,
+            samples_per_second=HERTZ,
             bits_per_sample=8,
             channels=1,
             wave_stream_format=speechsdk.AudioStreamWaveFormat.MULAW,
@@ -51,6 +60,9 @@ class AzureASR(ASREngine[AzureASRConfig]):
             audio_config=audio_config,
         )
         self.speech_recognizer.recognized.connect(self.fill_queue)
+        self.speech_recognizer.speech_start_detected.connect(
+            self.signal_user_started_speaking
+        )
         self.speech_recognizer.start_continuous_recognition_async()
         self.is_recognizing = True
 
@@ -95,6 +107,10 @@ class AzureASR(ASREngine[AzureASRConfig]):
             e.result, speechsdk.SpeechRecognitionResult
         ):
             return NewTranscript(e.result.text)
+        if isinstance(e, ASREvent):
+            # transformation happened before
+            return e
+
         return None
 
     @staticmethod

@@ -1,7 +1,7 @@
 import dataclasses
 import inspect
-import re
 import logging
+import re
 import sys
 import typing
 from typing import (
@@ -31,8 +31,16 @@ from rasa.dialogue_understanding.coexistence.constants import (
     STICKY,
     NON_STICKY,
 )
+from rasa.dialogue_understanding.coexistence.intent_based_router import (
+    IntentBasedRouter,
+)
+from rasa.dialogue_understanding.coexistence.llm_based_router import LLMBasedRouter
 from rasa.dialogue_understanding.generator import (
     LLMBasedCommandGenerator,
+)
+from rasa.dialogue_understanding.generator.constants import (
+    LLM_CONFIG_KEY,
+    FLOW_RETRIEVAL_KEY,
 )
 from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
 from rasa.engine.constants import RESERVED_PLACEHOLDERS
@@ -47,18 +55,31 @@ from rasa.engine.graph import (
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.fingerprinting import Fingerprintable
-from rasa.shared.constants import DOCS_URL_GRAPH_COMPONENTS, ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import (
+    DOCS_URL_GRAPH_COMPONENTS,
+    ROUTE_TO_CALM_SLOT,
+    EMBEDDINGS_CONFIG_KEY,
+    API_BASE_CONFIG_KEY,
+    DEPLOYMENT_CONFIG_KEY,
+    API_VERSION_CONFIG_KEY,
+    API_KEY,
+    AWS_REGION_NAME_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
+    ROUTER_CONFIG_KEY,
+    MODELS_CONFIG_KEY,
+    ROUTER_STRATEGY_CONFIG_KEY,
+    VALID_ROUTER_STRATEGIES,
+    ROUTER_STRATEGIES_REQUIRING_REDIS_CACHE,
+    ROUTER_STRATEGIES_NOT_REQUIRING_CACHE,
+    REDIS_HOST_CONFIG_KEY,
+)
 from rasa.shared.core.constants import ACTION_RESET_ROUTING, ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList, Flow
 from rasa.shared.core.slots import Slot
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
-
-from rasa.dialogue_understanding.coexistence.intent_based_router import (
-    IntentBasedRouter,
-)
-from rasa.dialogue_understanding.coexistence.llm_based_router import LLMBasedRouter
+from rasa.shared.utils.cli import print_error_and_exit
 
 TypeAnnotation = Union[TypeVar, Text, Type, Optional[AvailableEndpoints]]
 
@@ -843,6 +864,275 @@ def validate_coexistance_routing_setup(
     validate_that_router_or_router_slot_are_defined_if_action_reset_routing_is_used(
         schema, flows, routing_slots
     )
+
+
+def _validate_component_model_client_config(
+    component_config: Dict[str, Any],
+    key: str,
+    model_group_syntax_used: List[bool],
+    model_group_ids: List[str],
+    component_name: Optional[str] = None,
+) -> None:
+    """Validate the LLM configuration of a component.
+
+    Checks if the llm is defined using the new syntax or the old syntax.
+    If the new syntax is used, it checks that no other parameters are present.
+
+    Args:
+        component_config: The config of the component
+        key: either 'llm' or 'embeddings'
+        model_group_syntax_used:
+            list of booleans indicating whether the new syntax is used
+        model_group_ids: list of model group ids
+        component_name: the name of the component
+    """
+    if key not in component_config:
+        # no llm configuration present
+        return
+
+    if MODELS_CONFIG_KEY in component_config[key]:
+        model_group_syntax_used.append(True)
+        model_group_ids.append(component_config[key][MODELS_CONFIG_KEY])
+
+        if len(component_config[key]) > 1:
+            print_error_and_exit(
+                f"You specified a '{MODELS_CONFIG_KEY}' for the '{key}' "
+                f"config key for the component "
+                f"'{component_name or component_config['name']}'. "
+                "No other parameters are allowed under the "
+                f"'{key}' key in that case. Please update your config."
+            )
+    else:
+        model_group_syntax_used.append(False)
+
+        # check that api_key is not set in config
+        if API_KEY in component_config[key]:
+            print_error_and_exit(
+                f"You specified '{API_KEY}' in the config for"
+                f"{component_name or component_config['name']}, which "
+                "is not allowed. Set API keys through "
+                "environment variables."
+            )
+
+
+def validate_model_client_configuration_setup(config: Dict[str, Any]) -> None:
+    """Validates the model client configuration setup.
+
+    Checks the model configuration of the components in the pipeline.
+    Validation fails, if
+    - the LLM/embeddings is/are defined using the old and the new syntax at
+      the same time (either at component level itself or across different components)
+    - the LLM/embeddings is/are defined using the new syntax, but no model
+      group is defined or the referenced model group does not exist
+
+    Args:
+        config: The config dictionary
+    """
+
+    def is_uniform_bool_list(bool_list: List[bool]) -> bool:
+        # check if list contains only True or False
+        return all(bool_list) or not any(bool_list)
+
+    model_group_syntax_used: List[bool] = []
+    model_group_ids: List[str] = []
+
+    if "pipeline" not in config:
+        return
+
+    for component in config["pipeline"]:
+        for key in [LLM_CONFIG_KEY, EMBEDDINGS_CONFIG_KEY]:
+            _validate_component_model_client_config(
+                component, key, model_group_syntax_used, model_group_ids
+            )
+
+        # as flow retrieval is not a component itself, we need to
+        # check it separately
+        if FLOW_RETRIEVAL_KEY in component:
+            if EMBEDDINGS_CONFIG_KEY in component[FLOW_RETRIEVAL_KEY]:
+                _validate_component_model_client_config(
+                    component[FLOW_RETRIEVAL_KEY],
+                    EMBEDDINGS_CONFIG_KEY,
+                    model_group_syntax_used,
+                    model_group_ids,
+                    component["name"] + "." + FLOW_RETRIEVAL_KEY,
+                )
+
+    if not is_uniform_bool_list(model_group_syntax_used):
+        print_error_and_exit(
+            "Some of your components refer to an LLM using the "
+            f"'{MODELS_CONFIG_KEY}' parameter, other components directly"
+            f"define the LLM under the '{LLM_CONFIG_KEY}' or the "
+            f"'{EMBEDDINGS_CONFIG_KEY}' key. You cannot use"
+            "a both types of definition. Please chose one syntax "
+            "and update your config."
+        )
+
+    # Print a deprecation warning in case the old syntax is used.
+    if len(model_group_syntax_used) > 0 and model_group_syntax_used[0] is False:
+        structlogger.warning(
+            "validate_llm_configuration_setup",
+            event_info=(
+                "Defining the LLM configuration in the config.yml file itself is"
+                " deprecated and will be removed in Rasa 4.0.0. "
+                "Please use the new syntax and define your LLM configuration"
+                "in the endpoints.yml file."
+            ),
+        )
+
+    endpoints = AvailableEndpoints.get_instance()
+    if len(model_group_ids) > 0 and endpoints.model_groups is None:
+        print_error_and_exit(
+            "You are referring to (a) model group(s) in your "
+            "config.yml file, but no model group was defined in "
+            "the endpoints.yml file. Please define the model "
+            "group(s)."
+        )
+
+    if endpoints.model_groups is None:
+        return
+
+    existing_model_group_ids = [
+        model_group[MODEL_GROUP_ID_CONFIG_KEY] for model_group in endpoints.model_groups
+    ]
+
+    for model_group_id in model_group_ids:
+        if model_group_id not in existing_model_group_ids:
+            print_error_and_exit(
+                "One of your components is referring to the model group "
+                f"'{model_group_id}', but this model group does not exist in the "
+                f"endpoints.yml file. Please chose one of the existing "
+                f"model groups ({existing_model_group_ids}) or define "
+                f"the a model group for '{model_group_id}'."
+            )
+
+
+def _validate_unique_model_group_ids(model_groups: List[Dict[str, Any]]) -> None:
+    # Each model id must be unique within the model_groups
+    model_ids = [model_group[MODEL_GROUP_ID_CONFIG_KEY] for model_group in model_groups]
+    if len(model_ids) != len(set(model_ids)):
+        print_error_and_exit(
+            "Each model group id must be unique. Please make sure that "
+            "the model group ids are unique in your endpoints.yml file."
+        )
+
+
+def _validate_model_group_with_multiple_models(
+    model_groups: List[Dict[str, Any]],
+) -> None:
+    # You cannot define multiple models within a model group, when no router is defined.
+    for model_group in model_groups:
+        if (
+            len(model_group[MODELS_CONFIG_KEY]) > 1
+            and ROUTER_CONFIG_KEY not in model_group
+        ):
+            print_error_and_exit(
+                f"You defined multiple models for the model group "
+                f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}', but no router. "
+                f"If a model group contains "
+                f"multiple models, a router must be defined. Please define a router "
+                f"for the model group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}'."
+            )
+
+
+def _validate_model_group_router_setting(
+    model_groups: List[Dict[str, Any]],
+) -> None:
+    # You cannot define multiple models within a model group, when no router is defined.
+    for model_group in model_groups:
+        if ROUTER_CONFIG_KEY not in model_group:
+            continue
+
+        router_config = model_group[ROUTER_CONFIG_KEY]
+        if ROUTER_STRATEGY_CONFIG_KEY in router_config:
+            router_strategy = router_config.get(ROUTER_STRATEGY_CONFIG_KEY)
+            if router_strategy and router_strategy not in VALID_ROUTER_STRATEGIES:
+                print_error_and_exit(
+                    f"The router strategy you defined for the model group "
+                    f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' is not valid. "
+                    f"Valid router strategies are categorized as follows:\n"
+                    f"- Strategies requiring Redis caching: "
+                    f"{', '.join(ROUTER_STRATEGIES_REQUIRING_REDIS_CACHE)}\n"
+                    f"- Strategies not requiring caching: "
+                    f"{', '.join(ROUTER_STRATEGIES_NOT_REQUIRING_CACHE)}"
+                )
+            if (
+                router_strategy in ROUTER_STRATEGIES_REQUIRING_REDIS_CACHE
+                and REDIS_HOST_CONFIG_KEY not in router_config
+            ):
+                structlogger.warning(
+                    "validation.router_strategy.redis_host_not_defined",
+                    event_info=(
+                        f"The router strategy '{router_strategy}' requires a Redis host"
+                        f" to be defined. Without a Redis host, the system defaults to "
+                        f"'in-memory' caching. Please add the '{REDIS_HOST_CONFIG_KEY}'"
+                        f" to the router configuration for the model group "
+                        f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}'."
+                    ),
+                )
+
+
+def _validate_usage_of_environment_variables_in_model_group_config(
+    model_groups: List[Dict[str, Any]],
+) -> None:
+    # Limit the use of ${env_var} in the model_groups config to the following variables:
+    # deployment, api_base, api_key, api_version, aws_region_name
+    allowed_env_vars = {
+        DEPLOYMENT_CONFIG_KEY,
+        API_BASE_CONFIG_KEY,
+        API_KEY,
+        API_VERSION_CONFIG_KEY,
+        AWS_REGION_NAME_CONFIG_KEY,
+    }
+
+    for model_group in model_groups:
+        for model_config in model_group[MODELS_CONFIG_KEY]:
+            for key, value in model_config.items():
+                if isinstance(value, str):
+                    if re.match(r"\${(\w+)}", value) and key not in allowed_env_vars:
+                        print_error_and_exit(
+                            f"You defined '{key}' as environment variable in model "
+                            f"group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}', "
+                            f"which is not allowed. "
+                            f"You can only use environment variables for the following "
+                            f"keys: {', '.join(allowed_env_vars)}. "
+                            f"Please update your config."
+                        )
+
+
+def _validate_api_key_is_an_environment_variable(
+    model_groups: List[Dict[str, Any]],
+) -> None:
+    # the api key can only be set as an environment variable
+    for model_group in model_groups:
+        for model_config in model_group[MODELS_CONFIG_KEY]:
+            for key, value in model_config.items():
+                if (
+                    key == API_KEY
+                    and isinstance(value, str)
+                    and not re.match(r"\${(\w+)}", value)
+                ):
+                    print_error_and_exit(
+                        f"You defined the '{API_KEY}' in model group "
+                        f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' as a string. "
+                        f"The '{API_KEY}' must be set as an environment variable. "
+                        f"Please update your config."
+                    )
+
+
+def validate_model_group_configuration_setup() -> None:
+    """Validates the model group configuration setup in endpoints.yml."""
+    endpoints = AvailableEndpoints.get_instance()
+
+    if endpoints.model_groups is None:
+        return
+
+    _validate_unique_model_group_ids(endpoints.model_groups)
+    _validate_model_group_with_multiple_models(endpoints.model_groups)
+    _validate_usage_of_environment_variables_in_model_group_config(
+        endpoints.model_groups
+    )
+    _validate_api_key_is_an_environment_variable(endpoints.model_groups)
+    _validate_model_group_router_setting(endpoints.model_groups)
 
 
 def validate_command_generator_exclusivity(schema: GraphSchema) -> None:

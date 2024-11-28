@@ -126,7 +126,6 @@ def create_twilio_media_streams_input_stream(audio_data_path: str) -> AsyncMock:
 
 def test_channel_creation(input_channel: TwilioMediaStreamsInputChannel):
     assert input_channel.tts_cache is not None
-    assert input_channel.hangup_after is None
 
 
 def test_fitting_output_channel_creation(input_channel: TwilioMediaStreamsInputChannel):

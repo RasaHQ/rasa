@@ -7,8 +7,12 @@ import websockets
 from websockets.legacy.client import WebSocketClientProtocol
 
 from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine, ASREngineConfig
-from rasa.core.channels.voice_stream.asr.asr_event import ASREvent, NewTranscript
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
+from rasa.core.channels.voice_stream.asr.asr_event import (
+    ASREvent,
+    NewTranscript,
+    UserStartedSpeaking,
+)
+from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
 
 DEEPGRAM_API_KEY = "DEEPGRAM_API_KEY"
 
@@ -30,7 +34,7 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
 
     async def open_websocket_connection(self) -> WebSocketClientProtocol:
         """Connect to the ASR system."""
-        deepgram_api_key = os.environ.get(DEEPGRAM_API_KEY)
+        deepgram_api_key = os.environ[DEEPGRAM_API_KEY]
         extra_headers = {"Authorization": f"Token {deepgram_api_key}"}
         api_url = self._get_api_url()
         query_params = self._get_query_params()
@@ -44,7 +48,7 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
 
     def _get_query_params(self) -> str:
         return (
-            f"encoding=mulaw&sample_rate=8000&endpointing={self.config.endpointing}"
+            f"encoding=mulaw&sample_rate={HERTZ}&endpointing={self.config.endpointing}"
             f"&vad_events=true&language={self.config.language}"
             f"&model={self.config.model}&smart_format={str(self.config.smart_format).lower()}"
         )
@@ -70,6 +74,8 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
                 return NewTranscript(full_transcript)
             else:
                 self.accumulated_transcript += transcript
+        elif data.get("type") == "SpeechStarted":
+            return UserStartedSpeaking()
         return None
 
     @staticmethod

@@ -143,6 +143,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         finetuning_epoch_fraction=args.epoch_fraction,
         remote_storage=args.remote_storage,
         file_importer=training_data_importer,
+        keep_local_model_copy=args.keep_local_model_copy,
     )
     if training_result.code != 0 and can_exit:
         sys.exit(training_result.code)
@@ -201,6 +202,7 @@ def run_core_training(args: argparse.Namespace) -> Optional[Text]:
                 additional_arguments=additional_arguments,
                 model_to_finetune=_model_for_finetuning(args),
                 finetuning_epoch_fraction=args.epoch_fraction,
+                keep_local_model_copy=args.keep_local_model_copy,
             )
         )
     else:
@@ -242,6 +244,7 @@ def run_nlu_training(args: argparse.Namespace) -> Optional[Text]:
             domain=args.domain,
             model_to_finetune=_model_for_finetuning(args),
             finetuning_epoch_fraction=args.epoch_fraction,
+            keep_local_model_copy=args.keep_local_model_copy,
         )
     )
 

@@ -71,6 +71,11 @@ runs:
                 model: ${{ inputs.llm-as-judge-model }}" > conftest.yml
       shell: bash
 
+    - name: Run OTEL collector for Tracing and Metrics collection
+      working-directory: data/test_config/providers
+      run: docker compose -f otel-docker-compose.yml up -d
+      shell: bash
+
     - name: Setup Python Environment
       uses: RasaHQ/rasa-private/.github/actions/setup-python-env@main
       with:
@@ -128,13 +133,29 @@ runs:
     # so need to wake it up before usage
     - name: Wake up Hugging Face inference endpoint
       if: ${{ inputs.provider == 'huggingface' }}
-      working-directory: data/test_config/providers/huggingface
+      working-directory: data/test_config/providers
       env:
         ENDPOINT_NAME: cmd-gen-codellama-13b-calm-d-bfz
         ENDPOINT_NAMESPACE: rasa
       run: |
         : Wake up Hugging Face inference endpoint
         pip install huggingface_hub && ./wake-up-inference-endpoint.py
+      shell: bash
+
+    # As endpoint are scaled-to-zero upon inactivity for cost minimisation,
+    # so need to wake them up before usage
+    - name: Wake up multiple Hugging Face inference endpoints
+      if: ${{ inputs.provider == 'huggingface-multiple-deployments-with-routing' }}
+      working-directory: data/test_config/providers
+      env:
+        ENDPOINT_NAME: cmd-gen-codellama-13b-calm-d-bfz
+        ENDPOINT_NAMESPACE: rasa
+      run: |
+        : Wake up multiple Hugging Face inference endpoint
+        pip install huggingface_hub
+        export ENDPOINT_NAME=cmd-gen-codellama-13b-calm-d-rbo && ./wake-up-inference-endpoint.py & pid1=$!
+        export ENDPOINT_NAME=cmd-gen-codellama-13b-calm-d-kuz && ./wake-up-inference-endpoint.py & pid2=$!
+        wait $pid1 && wait $pid2
       shell: bash
 
     - name: Run duckling server
@@ -163,19 +184,41 @@ runs:
         rm -rf .rasa models \
           && rasa train \
           --config data/test_config/providers/${{ inputs.provider }}/${{ inputs.train-and-test }}-config.yml \
-          --endpoints data/test_config/providers/${{ inputs.provider }}/endpoints.yml \
+          --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
           --domain rasa-calm-demo/domain \
           --data rasa-calm-demo/data \
           --fixed-model-name ${{ inputs.train-and-test }}-${{ inputs.provider }}-model \
           2>&1 \
-          | tee model-training-log \
-          && grep -i 'Performing a health check on the LLM API for the component - ContextualResponseRephraser' model-training-log \
-          && grep -i 'Performing a health check on the LLM API for the component - LLMBasedRouter.' model-training-log \
-          && grep -i 'Performing a health check on the LLM API for the component - EnterpriseSearchPolicy' model-training-log \
-          && grep -i 'Performing a health check on the LLM API for the component - IntentlessPolicy' model-training-log \
-          && grep -i 'Performing a health check on the LLM API for the component - LLMBasedCommandGenerator' model-training-log \
+          | tee model-training-log
+      shell: bash
+
+    - name: Verify LLM and Embeddings API health checks during training
+      run: |
+        grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' model-training-log \
+          && grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' model-training-log \
+          && grep -i 'Sending a test LLM API request for the component - EnterpriseSearchPolicy' model-training-log \
+          && grep -i 'Sending a test LLM API request for the component - IntentlessPolicy' model-training-log \
+          && grep -i 'Sending a test LLM API request for the component - LLMBasedCommandGenerator' model-training-log \
+          && grep -i 'Sending a test Embeddings API request for the component - FlowRetrieval' model-training-log \
+          && grep -i 'Sending a test Embeddings API request for the component - EnterpriseSearchPolicy' model-training-log \
+          && grep -i 'Sending a test Embeddings API request for the component - IntentlessPolicy' model-training-log \
           && grep -i 'Your Rasa model is trained and saved' model-training-log \
-          && echo 'LLM API health checks passed for all components during training'
+          && echo 'LLM and Embeddings API health checks passed for all components during training'
+      shell: bash
+    
+    - name: Get multi-deployments endpoints file
+      if: ${{ contains(inputs.provider, '-multiple-deployments-with-routing') }}
+      run: |
+        : Get endpoints file
+        echo "ENDPOINTS_FILE_NAME=multi-deployments.endpoints" >> $GITHUB_ENV
+      shell: bash
+
+    # Known-issue: Truncated/different model-name is returned for 
+    # `text-embedding-ada-002` model in same regions' deployments, 
+    # causing health-check to fail
+    - name: Disable inference health-check for Azure
+      if: ${{ inputs.provider == 'azure-multiple-deployments-with-routing' }}
+      run: echo "LLM_API_HEALTH_CHECK=False" >> $GITHUB_ENV
       shell: bash
 
     - name: Run e2e test (Single Step Command Generator)
@@ -190,8 +233,10 @@ runs:
         rasa test e2e rasa-calm-demo/${{ inputs.single-step-e2e-test-with-assertions }} \
           --e2e-results \
           --debug \
-          --endpoints data/test_config/providers/${{ inputs.provider }}/endpoints.yml \
-          --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz
+          --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+          --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
+          2>&1 \
+          | tee e2e-tests-log
       shell: bash
 
     - name: Run e2e test (Multi-Step Command Generator)
@@ -205,8 +250,24 @@ runs:
         rasa test e2e rasa-calm-demo/${{ inputs.multi-step-e2e-test-with-assertions }} \
           --e2e-results \
           --debug \
-          --endpoints data/test_config/providers/${{ inputs.provider }}/endpoints.yml \
-          --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz
+          --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+          --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
+          2>&1 \
+          | tee e2e-tests-log
+      shell: bash
+
+    - name: Verify LLM and Embeddings API health checks during inference
+      if: ${{ inputs.provider != 'azure-multiple-deployments-with-routing' }}
+      run: |
+        grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' e2e-tests-log \
+          && grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' e2e-tests-log \
+          && grep -i 'Sending a test LLM API request for the component - EnterpriseSearchPolicy' e2e-tests-log \
+          && grep -i 'Sending a test LLM API request for the component - IntentlessPolicy' e2e-tests-log \
+          && (grep -i 'Sending a test LLM API request for the component - MultiStepLLMCommandGenerator' e2e-tests-log || grep -i 'Sending a test LLM API request for the component - SingleStepLLMCommandGenerator' e2e-tests-log) \
+          && grep -i 'Sending a test Embeddings API request for the component - FlowRetrieval' e2e-tests-log \
+          && grep -i 'Sending a test Embeddings API request for the component - EnterpriseSearchPolicy' e2e-tests-log \
+          && grep -i 'Sending a test Embeddings API request for the component - IntentlessPolicy' e2e-tests-log \
+          && echo 'LLM and Embeddings API health checks passed for all components during inference'
       shell: bash
 
     - name: Save test results
@@ -216,12 +277,20 @@ runs:
         name: ${{ inputs.provider }}-E2E-test-${{ inputs.train-and-test }}-results
         path: tests/e2e_results_failed.yml
 
+    - name: Print OTEL traces and metrics
+      if: always()
+      working-directory: data/test_config/providers
+      run: |
+        : Print OTEL traces and metrics
+        docker compose -f otel-docker-compose.yml logs
+      shell: bash
+
     - name: Get Rasa-pro version and short-SHA, and set as environment variables
       if: always()
       env:
         RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
       run: |
-        echo "RASA_VERSION=$(rasa --version | grep 'Rasa Version' | tr -d ' ' | awk -F ':' '{print $2}')" >> $GITHUB_ENV
+        echo "RASA_VERSION=$(rasa --version | grep 'Rasa Pro Version' | tr -d ' ' | awk -F ':' '{print $2}')" >> $GITHUB_ENV
         echo "SHORT_SHA=`git rev-parse --short HEAD`" >> $GITHUB_ENV
       shell: bash
 
@@ -232,7 +301,7 @@ runs:
         # Send notification to #dev-tribe-alerts slack channel
         channel-id: C070ELPSLBB 
         slack-message: ':rocket: *Rasa-Pro* (version `${{ env.RASA_VERSION }}`, `rasa-private` sha `${{ env.SHORT_SHA }}`)
-          CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) passed against provider: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model. More
+          CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) passed against: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model. More
           information can be found <https://github.com/${{ github.repository
           }}/actions/runs/${{ github.run_id }}|here>.'
       env:
@@ -247,7 +316,7 @@ runs:
 
         # Alert Engine-squad
         slack-message: '<!subteam^S0322UJCPU1> :broken_heart: *Rasa-Pro* (version `${{ env.RASA_VERSION
-          }}`, `rasa-private` sha `${{ env.SHORT_SHA }}`) CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) failed against provider: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model!
+          }}`, `rasa-private` sha `${{ env.SHORT_SHA }}`) CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) failed against: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model!
           More information can be found <https://github.com/${{
           github.repository }}/actions/runs/${{ github.run_id }}|here>.'
       env:

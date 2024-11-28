@@ -8,3 +8,17 @@ nlg:
    provider: bedrock
    model: anthropic.claude-3-5-sonnet-20240620-v1:0
    timeout: 7
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-bedrock
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-bedrock

@@ -98,7 +98,6 @@ class _BaseLiteLLMClient:
             ProviderClientValidationError if validation fails.
         """
         self._validate_environment_variables()
-        self._validate_api_key_not_in_config()
 
     def _validate_environment_variables(self) -> None:
         """Validate that the required environment variables are set."""
@@ -114,18 +113,6 @@ class _BaseLiteLLMClient:
                 "base_litellm_client.validate_environment_variables",
                 event_info=event_info,
                 missing_environment_variables=missing_environment_variables,
-            )
-            raise ProviderClientValidationError(event_info)
-
-    def _validate_api_key_not_in_config(self) -> None:
-        if "api_key" in self._litellm_extra_parameters:
-            event_info = (
-                "API Key is set through `api_key` extra parameter."
-                "Set API keys through environment variables."
-            )
-            structlogger.error(
-                "base_litellm_client.validate_api_key_not_in_config",
-                event_info=event_info,
             )
             raise ProviderClientValidationError(event_info)
 

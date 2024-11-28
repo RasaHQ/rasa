@@ -1,6 +1,6 @@
 flows:
   transfer_money:
-    description: This flow lets users send money to friends and family.
+    description: Help users send money to friends and family.
     steps:
       - collect: recipient
       - collect: amount

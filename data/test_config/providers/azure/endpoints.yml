@@ -11,3 +11,17 @@ nlg:
     api_base: https://devtribe-testing-canada-east.openai.azure.com/
     api_version: 2024-02-01
     timeout: 7
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-azure
+ 
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-azure

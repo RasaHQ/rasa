@@ -115,3 +115,13 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
             return self._format_response(response)
         except Exception as e:
             raise ProviderClientAPIException(e)
+
+    @property
+    def _completion_fn_args(self) -> Dict[str, Any]:
+        """Returns the completion arguments for invoking a call through
+        LiteLLM's completion functions.
+        """
+        return {
+            **self._litellm_extra_parameters,
+            "model": self.model_group_id,
+        }

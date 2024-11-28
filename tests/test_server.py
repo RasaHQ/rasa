@@ -14,7 +14,7 @@ from multiprocessing import Manager
 from multiprocessing.managers import DictProxy
 from pathlib import Path
 from typing import Any, List, Text, Tuple, Type, Generator, NoReturn, Dict, Optional
-from unittest.mock import Mock, ANY
+from unittest.mock import Mock, ANY, AsyncMock
 
 from _pytest.tmpdir import TempPathFactory
 import pytest
@@ -55,6 +55,8 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     DEFAULT_SLOT_NAMES,
     REQUESTED_SLOT,
+    SLOT_CONSECUTIVE_SILENCE_TIMEOUTS,
+    SLOT_SILENCE_TIMEOUT,
 )
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
@@ -78,7 +80,6 @@ from rasa.model_training import TrainingResult
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import (
-    AsyncMock,
     with_assistant_id,
     with_assistant_ids,
     with_model_id,
@@ -1118,6 +1119,8 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
     assert content["slots"] == {
         "name": None,
         **{slot: None for slot in DEFAULT_SLOT_NAMES},
+        SLOT_CONSECUTIVE_SILENCE_TIMEOUTS: 0.0,
+        SLOT_SILENCE_TIMEOUT: 6.0,
     }
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [

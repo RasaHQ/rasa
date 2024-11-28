@@ -36,3 +36,9 @@ class ChangeFlowCommand(Command):
         # the change flow command is not actually pushing anything to the tracker,
         # but it is predicted by the MultiStepLLMCommandGenerator and used internally
         return []
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, ChangeFlowCommand)
+
+    def __hash__(self) -> int:
+        return hash(self.command())

@@ -129,10 +129,10 @@ class TestLiteLLMRouterClientConfig:
                     "provider": "azure",
                     "deployment": "test-deployment",
                     "api_base": "test-api-base",
+                    "api_type": "azure",
                     "api_version": "test-api-version",
                     "timeout": 10,
                     # legacy, this is going to be automatically added in parsing.
-                    "api_type": "azure",
                     "provider_prefixed_model": "azure/test-deployment",
                 },
             ],

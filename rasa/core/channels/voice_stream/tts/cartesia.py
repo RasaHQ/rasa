@@ -9,7 +9,7 @@ from rasa.core.channels.voice_stream.tts.tts_engine import (
     TTSEngineConfig,
 )
 
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
 from rasa.shared.exceptions import ConnectionException
 
@@ -56,7 +56,7 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
             "output_format": {
                 "container": "raw",
                 "encoding": "pcm_mulaw",
-                "sample_rate": 8000,
+                "sample_rate": HERTZ,
             },
         }
 

@@ -446,7 +446,7 @@ def test_train_help(run: Callable[..., RunResult]):
                   [--augmentation AUGMENTATION] [--debug-plots]
                   [--num-threads NUM_THREADS]
                   [--fixed-model-name FIXED_MODEL_NAME] [--persist-nlu-data]
-                  [--force] [--finetune [FINETUNE]]
+                  [--keep-local-model-copy] [--force] [--finetune [FINETUNE]]
                   [--epoch-fraction EPOCH_FRACTION] [--endpoints ENDPOINTS]
                   {{core,nlu}} ..."""
 
@@ -657,6 +657,7 @@ def test_train_validate_nlg_config_valid(monkeypatch: MonkeyPatch) -> None:
         dry_run=False,
         finetune=None,
         remote_storage=None,
+        keep_local_model_copy=False,
     )
 
     # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
@@ -746,6 +747,7 @@ def test_training_logs_domain_correctly_when_using_domain_dir(
         dry_run=False,
         finetune=None,
         remote_storage=None,
+        keep_local_model_copy=False,
     )
 
     expected_debug_log = {

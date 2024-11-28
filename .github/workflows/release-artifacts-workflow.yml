@@ -36,6 +36,9 @@ on:
 #          - voyage TODO: Enable after ENG-1415 is unblocked
           - ollama
 #          - self-hosted
+          - azure-multiple-deployments-with-routing
+          - gemini-multiple-deployments-with-routing
+          - huggingface-multiple-deployments-with-routing
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`. Ignored unless `run_e2e_test_on_providers==true`"
         type: string
@@ -79,6 +82,7 @@ env:
 permissions:
   id-token: write # This is required for requesting the JWT
   contents: read # This is required for actions/checkout
+  pull-requests: read # This is required, if workflow `./.github/workflows/providers-e2e-tests.yml` is called
 
 jobs:
   run-e2e-test-on-providers:

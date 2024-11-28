@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Text, Tuple
 
 from rasa.shared.utils.yaml import read_config_file
-from tests.conftest import AsyncMock
+from unittest.mock import AsyncMock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch

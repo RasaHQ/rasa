@@ -1,5 +1,6 @@
-from typing import Any, Dict, List, Optional
 import os
+from typing import Any, Dict, List, Optional
+
 import structlog
 
 from rasa.shared.constants import (
@@ -42,6 +43,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
             If not provided, it will be set via environment variable.
         kwargs (Optional[Dict[str, Any]]): Optional configuration parameters specific
             to the embedding model deployment.
+
     Raises:
         ProviderClientValidationError: If validation of the client setup fails.
         DeprecationWarning: If deprecated environment variables are used for
@@ -60,6 +62,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         super().__init__()  # type: ignore
         self._deployment = deployment
         self._model = model
+        self._extra_parameters = kwargs or {}
 
         # Set api_base with the following priority:
         # parameter -> Azure Env Var -> (deprecated) OpenAI Env Var
@@ -81,17 +84,55 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         # Litellm does not support use of OPENAI_API_KEY, so we need to map it
         # because of backward compatibility. However, we're first looking at
         # AZURE_API_KEY.
-        self._api_key = os.environ.get(AZURE_API_KEY_ENV_VAR) or os.environ.get(
-            OPENAI_API_KEY_ENV_VAR
-        )
+        self._api_key_env_var = self._resolve_api_key_env_var()
 
-        self._extra_parameters = kwargs or {}
         self.validate_client_setup()
+
+    def _resolve_api_key_env_var(self) -> str:
+        """Resolves the environment variable to use for the API key.
+
+        Returns:
+            str: The env variable in dollar syntax format to use for the API key.
+        """
+        if API_KEY in self._extra_parameters:
+            # API key is set to an env var in the config itself
+            # in case the model is defined in the endpoints.yml
+            return self._extra_parameters[API_KEY]
+
+        if os.getenv(AZURE_API_KEY_ENV_VAR) is not None:
+            return "${AZURE_API_KEY}"
+
+        if os.getenv(OPENAI_API_KEY_ENV_VAR) is not None:
+            # API key can be set through OPENAI_API_KEY too,
+            # because of the backward compatibility
+            raise_deprecation_warning(
+                message=(
+                    f"Usage of '{OPENAI_API_KEY_ENV_VAR}' environment variable "
+                    "for setting the API key of "
+                    "Azure OpenAI client is deprecated and will "
+                    "be removed in 4.0.0. Please "
+                    f"use '{AZURE_API_KEY_ENV_VAR}' instead."
+                )
+            )
+            return "${OPENAI_API_KEY}"
+
+        structlogger.error(
+            "azure_openai_embedding_client.api_key_not_set",
+            event_info=(
+                "API key not set, it is required for API calls. "
+                f"Set it either via the environment variable "
+                f"'{AZURE_API_KEY_ENV_VAR}' or directly"
+                f"via the config key '{API_KEY}'."
+            ),
+        )
+        raise ProviderClientValidationError(
+            f"Missing required environment variable/config key '{API_KEY}' for "
+            f"API calls."
+        )
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "AzureOpenAIEmbeddingClient":
-        """
-        Initializes the client from given configuration.
+        """Initializes the client from given configuration.
 
         Args:
             config (Dict[str, Any]): Configuration.
@@ -142,8 +183,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
 
     @property
     def model(self) -> Optional[str]:
-        """
-        Returns the name of the model deployed on Azure. If model name is not
+        """Returns the name of the model deployed on Azure. If model name is not
         provided, returns "N/A".
         """
         return self._model
@@ -170,8 +210,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
 
     @property
     def _litellm_extra_parameters(self) -> Dict[str, Any]:
-        """
-        Returns the model parameters for the azure openai embedding client.
+        """Returns the model parameters for the azure openai embedding client.
 
         Returns:
             Dictionary containing the model parameters.
@@ -186,7 +225,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
             "api_base": self.api_base,
             "api_type": self.api_type,
             "api_version": self.api_version,
-            "api_key": self._api_key,
+            "api_key": self._api_key_env_var,
         }
 
     @property
@@ -197,8 +236,9 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         return self.deployment
 
     def validate_client_setup(self) -> None:
-        """Perform client validation. By default only environment variables
-        are validated.
+        """Perform client validation.
+
+        By default, only environment variables are validated.
 
         Raises:
             ProviderClientValidationError if validation fails.
@@ -213,13 +253,6 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
                 "deprecated_env_key": OPENAI_API_BASE_ENV_VAR,
                 "current_value": self.api_base,
                 "new_env_key": AZURE_API_BASE_ENV_VAR,
-            },
-            {
-                "param_name": "API key",
-                "config_key": API_KEY,
-                "deprecated_env_key": OPENAI_API_KEY_ENV_VAR,
-                "current_value": self._api_key,
-                "new_env_key": AZURE_API_KEY_ENV_VAR,
             },
             {
                 "param_name": "API version",

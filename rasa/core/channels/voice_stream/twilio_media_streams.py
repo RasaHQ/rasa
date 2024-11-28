@@ -1,8 +1,9 @@
 import base64
 import json
-import structlog
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
 import uuid
+
+import structlog
+from typing import Any, Awaitable, Callable, Dict, Optional, Text, Tuple
 
 from sanic import Blueprint, HTTPResponse, Request, response
 from sanic import Websocket  # type: ignore
@@ -10,6 +11,7 @@ from sanic import Websocket  # type: ignore
 
 from rasa.core.channels import UserMessage
 from rasa.core.channels.voice_ready.utils import CallParameters
+from rasa.core.channels.voice_stream.call_state import call_state
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.voice_channel import (
@@ -21,7 +23,7 @@ from rasa.core.channels.voice_stream.voice_channel import (
     VoiceOutputChannel,
 )
 
-structlogger = structlog.get_logger()
+logger = structlog.get_logger(__name__)
 
 
 def map_call_params(data: Dict[Text, Any]) -> CallParameters:
@@ -47,10 +49,18 @@ class TwilioMediaStreamsOutputChannel(VoiceOutputChannel):
     ) -> bytes:
         return base64.b64encode(rasa_audio_bytes)
 
-    def channel_bytes_to_messages(
-        self, recipient_id: str, channel_bytes: bytes
-    ) -> List[Any]:
+    def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
         message_id = uuid.uuid4().hex
+        mark_message = json.dumps(
+            {
+                "event": "mark",
+                "streamSid": recipient_id,
+                "mark": {"name": message_id},
+            }
+        )
+        return mark_message, message_id
+
+    def channel_bytes_to_message(self, recipient_id: str, channel_bytes: bytes) -> str:
         media_message = json.dumps(
             {
                 "event": "media",
@@ -60,15 +70,7 @@ class TwilioMediaStreamsOutputChannel(VoiceOutputChannel):
                 },
             }
         )
-        mark_message = json.dumps(
-            {
-                "event": "mark",
-                "streamSid": recipient_id,
-                "mark": {"name": message_id},
-            }
-        )
-        self.latest_message_id = message_id
-        return [media_message, mark_message]
+        return media_message
 
 
 class TwilioMediaStreamsInputChannel(VoiceInputChannel):
@@ -103,9 +105,16 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
         elif data["event"] == "stop":
             return EndConversationAction()
         elif data["event"] == "mark":
-            if data["mark"]["name"] == self.hangup_after:
-                structlogger.debug("twilio_streams.hangup", marker=self.hangup_after)
-                return EndConversationAction()
+            if data["mark"]["name"] == call_state.latest_bot_audio_id:
+                # Just finished streaming last audio bytes
+                call_state.is_bot_speaking = False  # type: ignore[attr-defined]
+                if call_state.should_hangup:
+                    logger.debug(
+                        "twilio_streams.hangup", marker=call_state.latest_bot_audio_id
+                    )
+                    return EndConversationAction()
+            else:
+                call_state.is_bot_speaking = True  # type: ignore[attr-defined]
         return ContinueConversationAction()
 
     def create_output_channel(

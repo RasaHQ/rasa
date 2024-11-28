@@ -34,7 +34,7 @@ class TelegramOutput(Bot, OutputChannel):
         return "telegram"
 
     def __init__(self, access_token: Optional[Text]) -> None:
-        super().__init__(access_token)
+        Bot.__init__(self, access_token)
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any

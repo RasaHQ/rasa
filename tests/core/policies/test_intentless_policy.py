@@ -1,14 +1,36 @@
 import os
+import uuid
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch, AsyncMock, ANY, MagicMock
 
 import pytest
-from pytest import MonkeyPatch
 from langchain.docstore.document import Document
+from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.vectorstores import FAISS
+from pytest import MonkeyPatch
+from _pytest.capture import CaptureFixture
 
+import rasa.shared.utils.io
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
+from rasa.core.policies.intentless_policy import (
+    Conversation,
+    IntentlessPolicy,
+    Interaction,
+    action_from_response,
+    conversation_as_prompt,
+    conversation_samples_from_trackers,
+    filter_responses,
+    truncate_documents,
+    INTENTLESS_CONFIG_FILE_NAME,
+    DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+    NLU_ABSTENTION_THRESHOLD,
+    INTENTLESS_PROMPT_TEMPLATE_FILE_NAME,
+)
+from rasa.dialogue_understanding.generator.constants import (
+    TRAINED_MODEL_NAME_CONFIG_KEY,
+    TRAINED_EMBEDDINGS_CONFIG_KEY,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import ChitChatStackFrame
 from rasa.engine.graph import ExecutionContext
@@ -20,6 +42,10 @@ from rasa.shared.constants import (
     OPENAI_API_KEY_ENV_VAR,
     ROUTE_TO_CALM_SLOT,
     PROMPT_CONFIG_KEY,
+    LLM_CONFIG_KEY,
+    EMBEDDINGS_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
+    MODEL_GROUP_ID_KEY,
 )
 from rasa.shared.core.domain import ActionNotFoundException, Domain
 from rasa.shared.core.events import ActiveLoop, BotUttered, UserUttered
@@ -32,17 +58,6 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.llm import tracker_as_readable_transcript
-from rasa.core.policies.intentless_policy import (
-    Conversation,
-    IntentlessPolicy,
-    Interaction,
-    action_from_response,
-    conversation_as_prompt,
-    conversation_samples_from_trackers,
-    filter_responses,
-    truncate_documents,
-)
-
 from tests.utilities import flows_from_str
 
 UTTER_GREET_ACTION = "utter_greet"
@@ -99,6 +114,11 @@ def trackers_for_training() -> List[TrackerWithCachedStates]:
             [UserUttered("goodybe"), BotUttered("Bye!")],
         ),
     ]
+
+
+@pytest.fixture(scope="session")
+def resource() -> Resource:
+    return Resource(uuid.uuid4().hex)
 
 
 @pytest.fixture(autouse=True)
@@ -930,3 +950,822 @@ def test_should_abstain_in_coexistence(
     )
 
     assert result == intentless_policy.should_abstain_in_coexistence(tracker, True)
+
+
+@pytest.mark.parametrize(
+    "config, expected_llm_config, expected_embedding_config",
+    [
+        (
+            {
+                LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+            },
+            {"provider": "openai", "model": "gpt-4"},
+            {"provider": "openai", "model": "gpt-4"},
+        ),
+        (
+            {
+                "user_input": {"max_characters": -1},
+            },
+            None,
+            None,
+        ),
+        (
+            {
+                LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+            },
+            {
+                "id": "openai_gpt-4",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+            {
+                "id": "openai_gpt-4",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+        ),
+        (
+            {
+                LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+            },
+            {"provider": "openai", "model": "gpt-4"},
+            {
+                "id": "openai_gpt-4",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+        ),
+        (
+            {
+                LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+            },
+            {
+                "id": "openai_gpt-4",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+            {"provider": "openai", "model": "gpt-4"},
+        ),
+    ],
+)
+def test_intentless_policy_init_with_different_llm_configs(
+    config: Optional[Dict[str, Any]],
+    expected_llm_config: Optional[Dict[str, Any]],
+    expected_embedding_config: Optional[Dict[str, Any]],
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "openai_gpt-4",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+                {
+                    "id": "openai_embedding",
+                    "models": [
+                        {"provider": "openai", "model": "text-embedding-ada-002"}
+                    ],
+                },
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config["nlu_abstention_threshold"] = 0.5
+    config[PROMPT_CONFIG_KEY] = DEFAULT_INTENTLESS_PROMPT_TEMPLATE
+
+    generator = IntentlessPolicy(
+        config, default_model_storage, resource, default_execution_context
+    )
+    assert generator.config[LLM_CONFIG_KEY] == expected_llm_config
+    assert generator.config[EMBEDDINGS_CONFIG_KEY] == expected_embedding_config
+
+
+def test_intentless_policy_persist_config(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
+        "nlu_abstention_threshold": 0.5,
+        PROMPT_CONFIG_KEY: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+    }
+    router = IntentlessPolicy(
+        config, default_model_storage, resource, default_execution_context
+    )
+
+    # Ensure the config is resolved
+    assert router.config[LLM_CONFIG_KEY] == {
+        "id": "model_group_id",
+        "models": [{"provider": "openai", "model": "gpt-4"}],
+    }
+    assert router.config[EMBEDDINGS_CONFIG_KEY] == {
+        "id": "model_group_id",
+        "models": [{"provider": "openai", "model": "gpt-4"}],
+    }
+
+    # Persist the generator
+    router.persist()
+
+    # Check that the persisted config is equal to our config
+    with default_model_storage.read_from(resource) as path:
+        persisted_config = rasa.shared.utils.io.read_json_file(
+            path / INTENTLESS_CONFIG_FILE_NAME
+        )
+
+    assert persisted_config[LLM_CONFIG_KEY] == {
+        "id": "model_group_id",
+        "models": [{"provider": "openai", "model": "gpt-4"}],
+    }
+    assert persisted_config[EMBEDDINGS_CONFIG_KEY] == {
+        "id": "model_group_id",
+        "models": [{"provider": "openai", "model": "gpt-4"}],
+    }
+
+
+def test_perform_training_time_llm_health_check_and_persist_model_name(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    monkeypatch.setenv("LLM_API_HEALTH_CHECK", "true")
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        NLU_ABSTENTION_THRESHOLD: 0.5,
+    }
+    intentless_policy = IntentlessPolicy(
+        config,
+        default_model_storage,
+        resource,
+        default_execution_context,
+        prompt_template="This is a test prompt",
+    )
+    domain = Domain.from_yaml(TEST_DOMAIN)
+    responses = Responses(data=domain.responses)
+    forms = Forms(data=domain.forms)
+
+    mock_send_test_llm_api_request = Mock(return_value="abc-123")
+    mock_send_test_llm_embeddings_request = Mock(return_value="embeddings-123")
+
+    with (
+        patch(
+            "rasa.core.policies.intentless_policy.IntentlessPolicy._create_plain_embedder",
+            Mock(return_value=FakeEmbeddings(size=100)),
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            mock_send_test_llm_api_request,
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            mock_send_test_llm_embeddings_request,
+        ),
+        patch(
+            "rasa.core.policies.intentless_policy.FAISS",
+            MagicMock(),
+        ),
+    ):
+        intentless_policy.train(
+            [], domain, responses, forms, TrainingData(), FlowsList([])
+        )
+
+    assert intentless_policy.config[TRAINED_MODEL_NAME_CONFIG_KEY] == "abc-123"
+    assert intentless_policy.config[TRAINED_EMBEDDINGS_CONFIG_KEY] == "embeddings-123"
+    mock_send_test_llm_api_request.assert_called_once_with(
+        ANY,
+        "intentless_policy.train",
+        intentless_policy.__class__.__name__,
+    )
+    mock_send_test_llm_embeddings_request.assert_called_once_with(
+        ANY,
+        "intentless_policy.train",
+        intentless_policy.__class__.__name__,
+    )
+
+    # Check that the persisted config is equal to our config
+    with default_model_storage.read_from(resource) as path:
+        persisted_config = rasa.shared.utils.io.read_json_file(
+            path / INTENTLESS_CONFIG_FILE_NAME
+        )
+
+    assert persisted_config[TRAINED_MODEL_NAME_CONFIG_KEY] == "abc-123"
+    assert persisted_config[TRAINED_EMBEDDINGS_CONFIG_KEY] == "embeddings-123"
+
+
+def test_show_warning_llm_health_check_disabled_train(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    monkeypatch.setenv("LLM_API_HEALTH_CHECK", "false")
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        NLU_ABSTENTION_THRESHOLD: 0.5,
+    }
+    intentless_policy = IntentlessPolicy(
+        config,
+        default_model_storage,
+        resource,
+        default_execution_context,
+        prompt_template="This is a test prompt",
+    )
+    domain = Domain.from_yaml(TEST_DOMAIN)
+    responses = Responses(data=domain.responses)
+    forms = Forms(data=domain.forms)
+
+    mock_send_test_llm_api_request = Mock()
+    mock_send_test_embeddings_api_request = Mock()
+    with (
+        patch(
+            "rasa.shared.utils.health_check.try_instantiate_llm_client",
+            Mock(),
+        ),
+        patch(
+            "rasa.core.policies.intentless_policy.IntentlessPolicy._create_plain_embedder",
+            Mock(return_value=FakeEmbeddings(size=100)),
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            mock_send_test_llm_api_request,
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            mock_send_test_embeddings_api_request,
+        ),
+        patch(
+            "rasa.core.policies.intentless_policy.FAISS",
+            MagicMock(),
+        ),
+    ):
+        intentless_policy.train(
+            [], domain, responses, forms, TrainingData(), FlowsList([])
+        )
+
+    mock_send_test_llm_api_request.assert_not_called()
+    mock_send_test_embeddings_api_request.assert_not_called()
+
+    captured = capsys.readouterr()
+    expected_warning = (
+        "The LLM_API_HEALTH_CHECK environment variable is set "
+        "to false, which will disable model consistency check. "
+        "It is recommended to set this variable to true in production "
+        "environments."
+    )
+    assert expected_warning in captured.out
+
+
+def test_perform_inference_time_llm_health_check(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        NLU_ABSTENTION_THRESHOLD: 0.5,
+    }
+
+    with default_model_storage.write_to(resource) as path:
+        rasa.shared.utils.io.write_text_file(
+            "This is a test prompt", path / INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
+        )
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            path / INTENTLESS_CONFIG_FILE_NAME,
+            {TRAINED_MODEL_NAME_CONFIG_KEY: "abc-123"},
+        )
+    monkeypatch.setenv("LLM_API_HEALTH_CHECK", "true")
+
+    mock_send_test_llm_api_request = Mock(return_value="abc-123")
+    mock_send_test_embeddings_api_request = Mock(return_value="embeddings-123")
+    with (
+        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
+        patch(
+            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            mock_send_test_llm_api_request,
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            mock_send_test_embeddings_api_request,
+        ),
+        patch(
+            "rasa.core.policies.intentless_policy.load_faiss_vector_store",
+            MagicMock(),
+        ),
+    ):
+        IntentlessPolicy.load(
+            config, default_model_storage, resource, default_execution_context
+        )
+
+    mock_send_test_llm_api_request.assert_called_once_with(
+        ANY,
+        "intentless_policy.load",
+        IntentlessPolicy.__name__,
+    )
+    mock_send_test_embeddings_api_request.assert_called_once_with(
+        ANY,
+        "intentless_policy.load",
+        IntentlessPolicy.__name__,
+    )
+
+    captured = capsys.readouterr()
+    assert "is not the same as the LLM used for inference" not in captured.out
+
+
+def test_report_error_on_train_inference_model_mismatch(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        NLU_ABSTENTION_THRESHOLD: 0.5,
+    }
+
+    with default_model_storage.write_to(resource) as path:
+        rasa.shared.utils.io.write_text_file(
+            "This is a test prompt", path / INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
+        )
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            path / INTENTLESS_CONFIG_FILE_NAME,
+            {TRAINED_MODEL_NAME_CONFIG_KEY: "abc-123"},
+        )
+    monkeypatch.setenv("LLM_API_HEALTH_CHECK", "true")
+    mock_send_test_llm_api_request = Mock(return_value="def-567")
+    with (
+        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
+        patch(
+            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            mock_send_test_llm_api_request,
+        ),
+        patch(
+            "rasa.core.policies.intentless_policy.load_faiss_vector_store",
+            MagicMock(),
+        ),
+    ):
+        with pytest.raises(SystemExit):
+            IntentlessPolicy.load(
+                config, default_model_storage, resource, default_execution_context
+            )
+
+        expected_error = (
+            "The LLM used to train the IntentlessPolicy (abc-123) is "
+            "not the same as the LLM used for inference (def-567). "
+            "Please verify your configuration."
+        )
+        captured = capsys.readouterr()
+        assert expected_error in captured.out
+
+
+def test_report_error_on_train_inference_embeddings_mismatch(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        NLU_ABSTENTION_THRESHOLD: 0.5,
+    }
+
+    with default_model_storage.write_to(resource) as path:
+        rasa.shared.utils.io.write_text_file(
+            "This is a test prompt", path / INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
+        )
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            path / INTENTLESS_CONFIG_FILE_NAME,
+            {
+                TRAINED_MODEL_NAME_CONFIG_KEY: "abc-123",
+                TRAINED_EMBEDDINGS_CONFIG_KEY: "embeddings-123",
+            },
+        )
+    monkeypatch.setenv("LLM_API_HEALTH_CHECK", "true")
+
+    mock_send_test_llm_api_request = Mock(return_value="abc-123")
+    mock_send_test_embeddings_api_request = Mock(return_value="def-567")
+    with (
+        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
+        patch(
+            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            mock_send_test_llm_api_request,
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            mock_send_test_embeddings_api_request,
+        ),
+        patch(
+            "rasa.core.policies.intentless_policy.load_faiss_vector_store",
+            MagicMock(),
+        ),
+    ):
+        with pytest.raises(SystemExit):
+            IntentlessPolicy.load(
+                config, default_model_storage, resource, default_execution_context
+            )
+
+        expected_error = (
+            "The Embeddings model used to train the IntentlessPolicy "
+            "(embeddings-123) is not the same as the model used for inference "
+            "(def-567). Please verify your configuration."
+        )
+        captured = capsys.readouterr()
+        assert expected_error in captured.out
+
+
+def test_show_warning_llm_health_check_disabled_inference(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        NLU_ABSTENTION_THRESHOLD: 0.5,
+    }
+
+    with default_model_storage.write_to(resource) as path:
+        rasa.shared.utils.io.write_text_file(
+            "This is a test prompt", path / INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
+        )
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            path / INTENTLESS_CONFIG_FILE_NAME,
+            {TRAINED_MODEL_NAME_CONFIG_KEY: "abc-123"},
+        )
+    monkeypatch.setenv("LLM_API_HEALTH_CHECK", "false")
+
+    mock_send_test_llm_api_request = Mock(return_value="def-567")
+    mock_send_test_embeddings_api_request = Mock(return_value="def-567")
+    with (
+        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
+        patch(
+            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            mock_send_test_llm_api_request,
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            mock_send_test_embeddings_api_request,
+        ),
+        patch(
+            "rasa.core.policies.intentless_policy.load_faiss_vector_store",
+            Mock(return_value=None),
+        ),
+    ):
+        IntentlessPolicy.load(
+            config, default_model_storage, resource, default_execution_context
+        )
+
+    mock_send_test_llm_api_request.assert_not_called()
+    mock_send_test_embeddings_api_request.assert_not_called()
+
+    captured = capsys.readouterr()
+    expected_warning = (
+        "The LLM_API_HEALTH_CHECK environment variable is set "
+        "to false, which will disable model consistency check. "
+        "It is recommended to set this variable to true in production "
+        "environments."
+    )
+    assert expected_warning in captured.out
+
+
+def test_show_trained_with_health_check_disabled(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    resource: Resource,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = [
+                {
+                    "id": "model_group_id",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                }
+            ]
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    config = {
+        LLM_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_ID_KEY: "model_group_id"},
+        NLU_ABSTENTION_THRESHOLD: 0.5,
+    }
+
+    with default_model_storage.write_to(resource) as path:
+        rasa.shared.utils.io.write_text_file(
+            "This is a test prompt", path / INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
+        )
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            path / INTENTLESS_CONFIG_FILE_NAME, {}
+        )
+    monkeypatch.setenv("LLM_API_HEALTH_CHECK", "true")
+
+    mock_send_test_llm_api_request = Mock(return_value="def-567")
+    mock_send_test_embeddings_api_request = Mock(return_value="embeddings-567")
+    with (
+        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
+        patch(
+            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            mock_send_test_llm_api_request,
+        ),
+        patch(
+            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            mock_send_test_embeddings_api_request,
+        ),
+        patch(
+            "rasa.core.policies.intentless_policy.load_faiss_vector_store",
+            Mock(return_value=None),
+        ),
+    ):
+        IntentlessPolicy.load(
+            config, default_model_storage, resource, default_execution_context
+        )
+
+    mock_send_test_llm_api_request.assert_called_once_with(
+        ANY,
+        "intentless_policy.load",
+        IntentlessPolicy.__name__,
+    )
+
+    captured = capsys.readouterr()
+    expected_warning = (
+        "The model was trained with LLM_API_HEALTH_CHECK "
+        "environment variable set to false, so the model "
+        "consistency check is not available."
+    )
+    assert expected_warning in captured.out
+
+
+@pytest.mark.parametrize(
+    "config_1, model_groups_1, config_2, model_groups_2, fingerprint_differs",
+    [
+        (
+            {},
+            [],
+            {},
+            [],
+            False,
+        ),
+        (
+            {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt"}},
+            [
+                {
+                    "id": "openai_gpt",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+            ],
+            {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt"}},
+            [
+                {
+                    "id": "openai_gpt",
+                    "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                },
+            ],
+            True,
+        ),
+        (
+            {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-1"}},
+            [
+                {
+                    "id": "openai_gpt-1",
+                    "models": [{"provider": "openai", "model": "gpt-4"}],
+                },
+            ],
+            {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-2"}},
+            [
+                {
+                    "id": "openai_gpt-2",
+                    "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                },
+            ],
+            True,
+        ),
+        (
+            {EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_embeddings"}},
+            [
+                {
+                    "id": "openai_embeddings",
+                    "models": [{"provider": "openai", "model": "embedding-model-1"}],
+                },
+            ],
+            {EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_embeddings"}},
+            [
+                {
+                    "id": "openai_embeddings",
+                    "models": [{"provider": "openai", "model": "embedding-model-2"}],
+                },
+            ],
+            True,
+        ),
+        (
+            {EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_embeddings-1"}},
+            [
+                {
+                    "id": "openai_embeddings-1",
+                    "models": [{"provider": "openai", "model": "embedding-model"}],
+                },
+            ],
+            {EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_embeddings-2"}},
+            [
+                {
+                    "id": "openai_embeddings-2",
+                    "models": [{"provider": "openai", "model": "embedding-model"}],
+                },
+            ],
+            True,
+        ),
+    ],
+)
+async def test_intentless_policy_fingerprint_addon_with_different_model_configs(
+    config_1: Dict[str, Any],
+    model_groups_1: List[Dict[str, Any]],
+    config_2: Dict[str, Any],
+    model_groups_2: List[Dict[str, Any]],
+    fingerprint_differs: bool,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    generator = IntentlessPolicy(
+        {
+            "nlu_abstention_threshold": 0.5,
+            PROMPT_CONFIG_KEY: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+        },
+        default_model_storage,
+        Resource("intentlesspolicy"),
+        default_execution_context,
+    )
+
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = model_groups_1
+
+    mock_endpoints_1 = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints_1)
+
+    fingerprint_1 = generator.fingerprint_addon(config_1)
+
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.model_groups = model_groups_2
+
+    mock_endpoints_2 = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints_2)
+
+    fingerprint_2 = generator.fingerprint_addon(config_2)
+
+    assert fingerprint_1 is not None
+    assert fingerprint_2 is not None
+    if fingerprint_differs:
+        assert fingerprint_1 != fingerprint_2
+    else:
+        assert fingerprint_1 == fingerprint_2

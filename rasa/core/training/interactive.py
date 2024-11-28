@@ -20,25 +20,41 @@ from typing import (
     cast,
 )
 
+import numpy as np
+import questionary
+import terminaltables.width_and_alignment
+from aiohttp import ClientError
+from colorclass import Color
+from questionary import Choice, Form, Question
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from terminaltables import AsciiTable, SingleTable
-import terminaltables.width_and_alignment
-import numpy as np
-from aiohttp import ClientError
-from colorclass import Color
-import questionary
-from questionary import Choice, Form, Question
 
-from rasa import telemetry
+import rasa.cli.utils
+import rasa.core.train
+import rasa.shared.core.events
+import rasa.shared.data
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
-import rasa.cli.utils
-import rasa.shared.data
-from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
-from rasa.shared.nlu.training_data.loading import RASA, RASA_YAML
+
+# WARNING: This command line UI is using an external library
+# communicating with the shell - these functions are hard to test
+# automatically. If you change anything in here, please make sure to
+# run the interactive learning and check if your part of the "ui"
+# still works.
+import rasa.utils.io as io_utils
+from rasa import telemetry
+from rasa.core import run, utils
+from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
+from rasa.core.utils import AvailableEndpoints
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    DEFAULT_SENDER_ID,
+    UTTER_PREFIX,
+    DOCS_URL_NLU_BASED_POLICIES,
+)
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
@@ -49,9 +65,6 @@ from rasa.shared.core.constants import (
     LOOP_INTERRUPTED,
     ACTION_UNLIKELY_INTENT_NAME,
 )
-from rasa.core import run, utils
-import rasa.core.train
-from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
 from rasa.shared.core.domain import (
     Domain,
     KEY_INTENTS,
@@ -60,7 +73,6 @@ from rasa.shared.core.domain import (
     KEY_ACTIONS,
     KEY_RESPONSES_TEXT,
 )
-import rasa.shared.core.events
 from rasa.shared.core.events import (
     ActionExecuted,
     ActionReverted,
@@ -70,36 +82,23 @@ from rasa.shared.core.events import (
     UserUttered,
     UserUtteranceReverted,
 )
-from rasa.shared.constants import (
-    INTENT_MESSAGE_PREFIX,
-    DEFAULT_SENDER_ID,
-    UTTER_PREFIX,
-    DOCS_URL_NLU_BASED_POLICIES,
-)
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.shared.core.training_data import visualization
 from rasa.shared.core.training_data.visualization import (
     VISUALIZATION_TEMPLATE_PATH,
     visualize_neighborhood,
 )
-from rasa.core.utils import AvailableEndpoints
-from rasa.shared.importers.rasa import TrainingDataImporter
-from rasa.utils.common import update_sanic_log_level
-from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.importers.rasa import TrainingDataImporter
+from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
 
 # noinspection PyProtectedMember
 from rasa.shared.nlu.training_data import loading
+from rasa.shared.nlu.training_data.loading import RASA, RASA_YAML
 from rasa.shared.nlu.training_data.message import Message
-
-# WARNING: This command line UI is using an external library
-# communicating with the shell - these functions are hard to test
-# automatically. If you change anything in here, please make sure to
-# run the interactive learning and check if your part of the "ui"
-# still works.
-import rasa.utils.io as io_utils
-
-from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.utils.common import update_sanic_log_level
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -1688,7 +1687,7 @@ def run_interactive_learning(
         p = None
 
     app = run.configure_app(port=port, conversation_id="default", enable_api=True)
-    endpoints = AvailableEndpoints.read_endpoints(server_args.get("endpoints"))
+    endpoints = AvailableEndpoints.get_instance(server_args.get("endpoints"))
 
     # before_server_start handlers make sure the agent is loaded before the
     # interactive learning IO starts

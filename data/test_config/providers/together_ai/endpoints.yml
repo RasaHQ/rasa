@@ -8,3 +8,17 @@ nlg:
    provider: together_ai
    model: meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo
    timeout: 7
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-together-ai
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-together-ai

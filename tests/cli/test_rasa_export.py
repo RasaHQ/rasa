@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 from typing import Callable, Optional, Text, List, Tuple
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -18,7 +18,6 @@ from tests.conftest import (
     MockExporter,
     random_user_uttered_event,
     write_endpoint_config_to_yaml,
-    AsyncMock,
 )
 from tests.utilities import clear_available_endpoints_class_instance
 from tests.cli.conftest import RASA_EXE

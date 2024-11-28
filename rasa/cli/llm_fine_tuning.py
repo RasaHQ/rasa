@@ -352,7 +352,7 @@ def get_valid_endpoints(endpoints_file: str) -> AvailableEndpoints:
     validated_endpoints_file = rasa.cli.utils.get_validated_path(
         endpoints_file, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
-    endpoints = AvailableEndpoints.read_endpoints(validated_endpoints_file)
+    endpoints = AvailableEndpoints.get_instance(validated_endpoints_file)
 
     # Ignore all endpoints apart from action server, model, nlu and nlg
     # to ensure InMemoryTrackerStore is being used instead of production

@@ -164,7 +164,7 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
     args.endpoints = rasa.cli.utils.get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
-    endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
+    endpoints = AvailableEndpoints.get_instance(args.endpoints)
 
     # Ignore all endpoints apart from action server, model, nlu and nlg
     # to ensure InMemoryTrackerStore is being used instead of production

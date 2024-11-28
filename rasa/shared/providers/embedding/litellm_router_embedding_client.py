@@ -125,3 +125,11 @@ class LiteLLMRouterEmbeddingClient(
             raise ProviderClientAPIException(
                 message="Failed to embed documents", original_exception=e
             )
+
+    @property
+    def _embedding_fn_args(self) -> Dict[str, Any]:
+        """Returns the arguments to be passed to the embedding function."""
+        return {
+            **self._litellm_extra_parameters,
+            "model": self._model_group_id,
+        }

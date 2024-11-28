@@ -4,3 +4,17 @@ action_endpoint:
 nlg:
  type: rephrase
  rephrase_all: True
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-huggingface-local
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-huggingface-local
