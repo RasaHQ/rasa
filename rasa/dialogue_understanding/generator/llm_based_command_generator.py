@@ -33,12 +33,12 @@ from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import FLOWS_IN_PROMPT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.llm import (
     allowed_values_for_slot,
     llm_factory,
     resolve_model_client_config,
 )
-from rasa.shared.utils.health_check import perform_training_time_llm_health_check
 from rasa.utils.log_utils import log_llm
 
 structlogger = structlog.get_logger()
@@ -53,7 +53,9 @@ LLM_BASED_COMMAND_GENERATOR_CONFIG_FILE = "config.json"
     ],
     is_trainable=True,
 )
-class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
+class LLMBasedCommandGenerator(
+    LLMHealthCheckMixin, GraphComponent, CommandGenerator, ABC
+):
     """An abstract class defining interface and common functionality
     of an LLM-based command generators.
     """
@@ -174,7 +176,7 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         store.
         """
         self.config[TRAINED_MODEL_NAME_CONFIG_KEY] = (
-            perform_training_time_llm_health_check(
+            self.perform_training_time_llm_health_check(
                 self.config.get(LLM_CONFIG_KEY),
                 DEFAULT_LLM_CONFIG,
                 "llm_based_command_generator.train",

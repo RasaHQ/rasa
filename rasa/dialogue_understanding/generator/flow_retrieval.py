@@ -47,6 +47,9 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
     _LangchainEmbeddingClientAdapter,
 )
+from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
+    EmbeddingsHealthCheckMixin,
+)
 from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
     embedder_factory,
@@ -55,10 +58,6 @@ from rasa.shared.utils.llm import (
     get_prompt_template,
     allowed_values_for_slot,
     resolve_model_client_config,
-)
-from rasa.shared.utils.health_check import (
-    perform_training_time_embeddings_health_check,
-    perform_inference_time_embeddings_health_check,
 )
 from rasa.shared.utils.io import dump_obj_as_json_to_file, read_json_file
 
@@ -85,7 +84,7 @@ DEFAULT_SHOULD_EMBED_SLOTS = True
 structlogger = structlog.get_logger()
 
 
-class FlowRetrieval:
+class FlowRetrieval(EmbeddingsHealthCheckMixin):
     @classmethod
     def get_default_config(cls) -> Dict[str, Any]:
         """The default config for the flow retrieval."""
@@ -149,7 +148,7 @@ class FlowRetrieval:
 
     def train(self) -> None:
         self.config[TRAINED_EMBEDDINGS_CONFIG_KEY] = (
-            perform_training_time_embeddings_health_check(
+            self.perform_training_time_embeddings_health_check(
                 self.config.get(EMBEDDINGS_CONFIG_KEY),
                 DEFAULT_EMBEDDINGS_CONFIG,
                 "flow_retrieval.train",
@@ -190,7 +189,7 @@ class FlowRetrieval:
             if persisted_config
             else None
         )
-        perform_inference_time_embeddings_health_check(
+        flow_retrieval.perform_inference_time_embeddings_health_check(
             flow_retrieval.config.get(EMBEDDINGS_CONFIG_KEY),
             DEFAULT_EMBEDDINGS_CONFIG,
             train_embeddings_name,

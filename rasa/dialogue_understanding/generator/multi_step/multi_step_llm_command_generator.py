@@ -60,7 +60,6 @@ from rasa.shared.utils.llm import (
     allowed_values_for_slot,
     resolve_model_client_config,
 )
-from rasa.shared.utils.health_check import perform_inference_time_llm_health_check
 
 # multistep template keys
 HANDLE_FLOWS_KEY = "handle_flows"
@@ -162,7 +161,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
                 command_generator.config, model_storage, resource
             )
 
-        perform_inference_time_llm_health_check(
+        cls.perform_inference_time_llm_health_check(
             command_generator.config.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             train_model_name,

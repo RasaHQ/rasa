@@ -80,12 +80,7 @@ def perform_training_time_llm_health_check(
         custom_config, default_config, log_source_function, log_source_component
     )
 
-    if (
-        os.getenv(
-            LLM_API_HEALTH_CHECK_ENV_VAR, LLM_API_HEALTH_CHECK_DEFAULT_VALUE
-        ).lower()
-        == "true"
-    ):
+    if is_api_health_check_enabled():
         train_model_name: Optional[str] = None
         if (
             custom_config
@@ -509,7 +504,7 @@ def perform_embeddings_model_group_consistency_check(
         return None
 
     model_names = set()
-    for model_config in custom_config[MODELS_CONFIG_KEY]:
+    for _ in custom_config[MODELS_CONFIG_KEY]:
         embedder = try_instantiate_embedder(
             custom_config, default_config, log_source_function, log_source_component
         )
@@ -531,3 +526,18 @@ def perform_embeddings_model_group_consistency_check(
         print_error_and_exit(error_message)
 
     return model_names.pop() if len(model_names) > 0 else None
+
+
+def is_api_health_check_enabled() -> bool:
+    """
+    Determines whether the API health check is enabled based on an environment variable.
+
+    Returns:
+        bool: True if the API health check is enabled, False otherwise.
+    """
+    return (
+        os.getenv(
+            LLM_API_HEALTH_CHECK_ENV_VAR, LLM_API_HEALTH_CHECK_DEFAULT_VALUE
+        ).lower()
+        == "true"
+    )

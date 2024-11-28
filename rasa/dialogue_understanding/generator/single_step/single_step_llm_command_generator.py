@@ -54,7 +54,6 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     resolve_model_client_config,
 )
-from rasa.shared.utils.health_check import perform_inference_time_llm_health_check
 from rasa.utils.beta import ensure_beta_feature_is_enabled, BetaNotEnabledException
 from rasa.utils.log_utils import log_llm
 
@@ -156,7 +155,8 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
             if persisted_config
             else None
         )
-        perform_inference_time_llm_health_check(
+
+        cls.perform_inference_time_llm_health_check(
             command_generator.config.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             train_model_name,

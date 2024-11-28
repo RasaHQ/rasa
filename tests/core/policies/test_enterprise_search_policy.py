@@ -1376,11 +1376,11 @@ def test_perform_training_time_llm_health_check_and_persist_model_name(
     mock_send_embeddings_llm_api_request = Mock(return_value="embeddings-123")
     with (
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_llm_client",
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client",
             Mock(),
         ),
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_embedder",
+            "rasa.shared.utils.health_check.health_check.try_instantiate_embedder",
             Mock(),
         ),
         patch(
@@ -1388,11 +1388,11 @@ def test_perform_training_time_llm_health_check_and_persist_model_name(
             Mock(return_value=FakeEmbeddings(size=100)),
         ),
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request",
             mock_send_test_llm_api_request,
         ),
         patch(
-            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            "rasa.shared.utils.health_check.health_check.send_test_embeddings_api_request",
             mock_send_embeddings_llm_api_request,
         ),
         patch(
@@ -1464,7 +1464,7 @@ def test_show_warning_llm_health_check_disabled_train(
     mock_send_test_embeddings_api_request = Mock()
     with (
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_llm_client",
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client",
             Mock(),
         ),
         patch(
@@ -1472,11 +1472,11 @@ def test_show_warning_llm_health_check_disabled_train(
             Mock(return_value=FakeEmbeddings(size=100)),
         ),
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request",
             mock_send_test_llm_api_request,
         ),
         patch(
-            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            "rasa.shared.utils.health_check.health_check.send_test_embeddings_api_request",
             mock_send_test_embeddings_api_request,
         ),
         patch(
@@ -1544,17 +1544,20 @@ def test_perform_inference_time_llm_health_check(
     mock_send_test_llm_api_request = Mock(return_value="abc-123")
     mock_send_test_embeddings_api_request = Mock(return_value="embeddings-123")
     with (
-        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_embedder",
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client",
             Mock(),
         ),
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            "rasa.shared.utils.health_check.health_check.try_instantiate_embedder",
+            Mock(),
+        ),
+        patch(
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request",
             mock_send_test_llm_api_request,
         ),
         patch(
-            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            "rasa.shared.utils.health_check.health_check.send_test_embeddings_api_request",
             mock_send_test_embeddings_api_request,
         ),
         patch(
@@ -1626,9 +1629,12 @@ def test_report_error_on_train_inference_model_mismatch(
 
     mock_send_test_llm_api_request = Mock(return_value="def-567")
     with (
-        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client",
+            Mock(),
+        ),
+        patch(
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request",
             mock_send_test_llm_api_request,
         ),
         patch(
@@ -1699,14 +1705,20 @@ def test_report_error_on_train_inference_embedings_mismatch(
     mock_send_test_llm_api_request = Mock(return_value="abc-123")
     mock_send_test_embeddings_api_request = Mock(return_value="def-567")
     with (
-        patch("rasa.shared.utils.health_check.try_instantiate_embedder", Mock()),
-        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            "rasa.shared.utils.health_check.health_check.try_instantiate_embedder",
+            Mock(),
+        ),
+        patch(
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client",
+            Mock(),
+        ),
+        patch(
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request",
             mock_send_test_llm_api_request,
         ),
         patch(
-            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            "rasa.shared.utils.health_check.health_check.send_test_embeddings_api_request",
             mock_send_test_embeddings_api_request,
         ),
         patch(
@@ -1774,13 +1786,16 @@ def test_show_warning_llm_health_check_disabled_inference(
     mock_send_test_llm_api_request = Mock(return_value="def-567")
     mock_send_test_embeddings_api_request = Mock(return_value="def-567")
     with (
-        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client",
+            Mock(),
+        ),
+        patch(
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request",
             mock_send_test_llm_api_request,
         ),
         patch(
-            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            "rasa.shared.utils.health_check.health_check.send_test_embeddings_api_request",
             mock_send_test_embeddings_api_request,
         ),
         patch(
@@ -1849,13 +1864,16 @@ def test_show_trained_with_health_check_disabled(
 
     mock_send_test_llm_api_request = Mock(return_value="def-567")
     with (
-        patch("rasa.shared.utils.health_check.try_instantiate_llm_client", Mock()),
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_embedder",
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client",
             Mock(),
         ),
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            "rasa.shared.utils.health_check.health_check.try_instantiate_embedder",
+            Mock(),
+        ),
+        patch(
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request",
             mock_send_test_llm_api_request,
         ),
         patch(

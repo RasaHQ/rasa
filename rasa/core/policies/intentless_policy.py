@@ -64,6 +64,10 @@ from rasa.shared.providers.embedding._langchain_embedding_client_adapter import 
     _LangchainEmbeddingClientAdapter,
 )
 from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
+    EmbeddingsHealthCheckMixin,
+)
+from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     AI,
@@ -78,12 +82,6 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
     resolve_model_client_config,
-)
-from rasa.shared.utils.health_check import (
-    perform_training_time_llm_health_check,
-    perform_training_time_embeddings_health_check,
-    perform_inference_time_llm_health_check,
-    perform_inference_time_embeddings_health_check,
 )
 from rasa.utils.log_utils import log_llm
 from rasa.utils.ml_utils import (
@@ -383,7 +381,7 @@ def conversation_as_prompt(conversation: Conversation) -> str:
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
 )
-class IntentlessPolicy(Policy):
+class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
     """Policy which uses a language model to generate the next action.
 
     The policy uses the OpenAI API to generate the next action based on the
@@ -991,7 +989,7 @@ class IntentlessPolicy(Policy):
             prompt_template=prompt_template,
         )
 
-        cls._perform_inference_time_health_checks(
+        policy._perform_inference_time_health_checks(
             persisted_config,
             policy.config.get(LLM_CONFIG_KEY),
             policy.config.get(EMBEDDINGS_CONFIG_KEY),
@@ -1021,13 +1019,13 @@ class IntentlessPolicy(Policy):
     def _perform_training_time_health_checks(
         self,
     ) -> Tuple[Optional[str], Optional[str]]:
-        train_model_name = perform_training_time_llm_health_check(
+        train_model_name = self.perform_training_time_llm_health_check(
             self.config.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             "intentless_policy.train",
             IntentlessPolicy.__name__,
         )
-        train_embedding_name = perform_training_time_embeddings_health_check(
+        train_embedding_name = self.perform_training_time_embeddings_health_check(
             self.config.get(EMBEDDINGS_CONFIG_KEY),
             DEFAULT_EMBEDDINGS_CONFIG,
             "intentless_policy.train",
@@ -1035,9 +1033,8 @@ class IntentlessPolicy(Policy):
         )
         return train_model_name, train_embedding_name
 
-    @classmethod
     def _perform_inference_time_health_checks(
-        cls,
+        self,
         persisted_config: Optional[Dict[str, Any]],
         resolved_llm_config: Optional[Dict[str, Any]],
         resolved_embeddings_config: Optional[Dict[str, Any]],
@@ -1047,7 +1044,7 @@ class IntentlessPolicy(Policy):
             if persisted_config
             else None
         )
-        perform_inference_time_llm_health_check(
+        self.perform_inference_time_llm_health_check(
             resolved_llm_config,
             DEFAULT_LLM_CONFIG,
             train_model_name,
@@ -1060,7 +1057,7 @@ class IntentlessPolicy(Policy):
             if persisted_config
             else None
         )
-        perform_inference_time_embeddings_health_check(
+        self.perform_inference_time_embeddings_health_check(
             resolved_embeddings_config,
             DEFAULT_EMBEDDINGS_CONFIG,
             train_embeddings_name,

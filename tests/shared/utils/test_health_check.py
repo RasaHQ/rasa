@@ -4,17 +4,19 @@ import pytest
 from unittest.mock import patch, Mock
 from _pytest.capture import CaptureFixture
 
-from rasa.shared.utils.health_check import (
+from rasa.shared.utils.health_check.health_check import (
     perform_embeddings_model_group_consistency_check,
     perform_llm_model_group_consistency_check,
     perform_training_time_embeddings_health_check,
     perform_inference_time_llm_health_check,
 )
-from rasa.shared.utils.health_check import (
+from rasa.shared.utils.health_check.health_check import (
     perform_inference_time_embeddings_health_check,
 )
 import os
-from rasa.shared.utils.health_check import perform_training_time_llm_health_check
+from rasa.shared.utils.health_check.health_check import (
+    perform_training_time_llm_health_check,
+)
 
 
 def test_perform_embeddings_model_group_consistency_check_success() -> None:
@@ -34,11 +36,11 @@ def test_perform_embeddings_model_group_consistency_check_success() -> None:
 
     with (
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_embedder",
+            "rasa.shared.utils.health_check.health_check.try_instantiate_embedder",
             mock_try_instantiate_embedder,
         ),
         patch(
-            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            "rasa.shared.utils.health_check.health_check.send_test_embeddings_api_request",
             mock_send_test_embeddings_api_request,
         ),
     ):
@@ -70,11 +72,11 @@ def test_perform_embeddings_model_group_consistency_check_inconsistent_models(
     mock_send_test_embeddings_api_request.side_effect = ["model_1", "model_2"]
     with (
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_embedder",
+            "rasa.shared.utils.health_check.health_check.try_instantiate_embedder",
             mock_try_instantiate_embedder,
         ),
         patch(
-            "rasa.shared.utils.health_check.send_test_embeddings_api_request",
+            "rasa.shared.utils.health_check.health_check.send_test_embeddings_api_request",
             mock_send_test_embeddings_api_request,
         ),
     ):
@@ -112,11 +114,11 @@ def test_perform_llm_model_group_consistency_check_success() -> None:
     mock_send_test_llm_api_request = Mock(return_value="consistent_model")
     with (
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_llm_client",
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client",
             mock_try_instantiate_llm_client,
         ),
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request",
             mock_send_test_llm_api_request,
         ),
     ):
@@ -151,11 +153,11 @@ def test_perform_llm_model_group_consistency_check_inconsistent_models(
     mock_send_test_llm_api_request.side_effect = ["model_1", "model_2"]
     with (
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_llm_client",
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client",
             mock_try_instantiate_llm_client,
         ),
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request",
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request",
             mock_send_test_llm_api_request,
         ),
     ):
@@ -189,10 +191,10 @@ def test_perform_training_time_llm_health_check_env_var_not_set():
     with (
         patch.dict(os.environ, {"LLM_API_HEALTH_CHECK": "false"}),
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_llm_client"
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client"
         ) as mock_try_instantiate_llm_client,
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request"
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request"
         ) as mock_send_test_llm_api_request,
     ):
         model_name = perform_training_time_llm_health_check(
@@ -219,10 +221,10 @@ def test_perform_training_time_llm_health_check_success():
     with (
         patch.dict(os.environ, {"LLM_API_HEALTH_CHECK": "true"}),
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_llm_client"
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client"
         ) as mock_try_instantiate_llm_client,
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request"
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request"
         ) as mock_send_test_llm_api_request,
     ):
         mock_try_instantiate_llm_client.return_value = Mock()
@@ -257,10 +259,10 @@ def test_perform_training_time_llm_health_check_inconsistent_models(
     with (
         patch.dict(os.environ, {"LLM_API_HEALTH_CHECK": "true"}),
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_llm_client"
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client"
         ) as mock_try_instantiate_llm_client,
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request"
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request"
         ) as mock_send_test_llm_api_request,
     ):
         mock_try_instantiate_llm_client.return_value = Mock()
@@ -297,7 +299,7 @@ def test_perform_training_time_embeddings_health_check_env_var_not_set():
     with (
         patch.dict(os.environ, {"LLM_API_HEALTH_CHECK": "false"}),
         patch(
-            "rasa.shared.utils.health_check.send_test_embeddings_api_request"
+            "rasa.shared.utils.health_check.health_check.send_test_embeddings_api_request"
         ) as mock_send_test_embeddings_api_request,
     ):
         model_name = perform_training_time_embeddings_health_check(
@@ -323,10 +325,10 @@ def test_perform_training_time_embeddings_health_check_success():
     with (
         patch.dict(os.environ, {"LLM_API_HEALTH_CHECK": "true"}),
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_embedder"
+            "rasa.shared.utils.health_check.health_check.try_instantiate_embedder"
         ) as mock_try_instantiate_embedder,
         patch(
-            "rasa.shared.utils.health_check.send_test_embeddings_api_request"
+            "rasa.shared.utils.health_check.health_check.send_test_embeddings_api_request"
         ) as mock_send_test_embeddings_api_request,
     ):
         mock_try_instantiate_embedder.return_value = Mock()
@@ -361,10 +363,10 @@ def test_perform_training_time_embeddings_health_check_inconsistent_models(
     with (
         patch.dict(os.environ, {"LLM_API_HEALTH_CHECK": "true"}),
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_embedder"
+            "rasa.shared.utils.health_check.health_check.try_instantiate_embedder"
         ) as mock_try_instantiate_embedder,
         patch(
-            "rasa.shared.utils.health_check.send_test_embeddings_api_request"
+            "rasa.shared.utils.health_check.health_check.send_test_embeddings_api_request"
         ) as mock_send_test_embeddings_api_request,
     ):
         mock_try_instantiate_embedder.return_value = Mock()
@@ -404,10 +406,10 @@ def test_perform_inference_time_llm_health_check_env_var_not_set(
 
     with (
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_llm_client"
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client"
         ) as mock_try_instantiate_llm_client,
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request"
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request"
         ) as mock_send_test_llm_api_request,
     ):
         perform_inference_time_llm_health_check(
@@ -441,10 +443,10 @@ def test_perform_inference_time_llm_health_check_success(
 
     with (
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_llm_client"
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client"
         ) as mock_try_instantiate_llm_client,
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request"
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request"
         ) as mock_send_test_llm_api_request,
     ):
         mock_try_instantiate_llm_client.return_value = Mock()
@@ -482,10 +484,10 @@ def test_perform_inference_time_llm_health_check_inconsistent_models(
 
     with (
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_llm_client"
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client"
         ) as mock_try_instantiate_llm_client,
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request"
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request"
         ) as mock_send_test_llm_api_request,
     ):
         mock_try_instantiate_llm_client.return_value = Mock()
@@ -529,10 +531,10 @@ def test_perform_inference_time_llm_health_check_no_train_model_name(
 
     with (
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_llm_client"
+            "rasa.shared.utils.health_check.health_check.try_instantiate_llm_client"
         ) as mock_try_instantiate_llm_client,
         patch(
-            "rasa.shared.utils.health_check.send_test_llm_api_request"
+            "rasa.shared.utils.health_check.health_check.send_test_llm_api_request"
         ) as mock_send_test_llm_api_request,
     ):
         mock_try_instantiate_llm_client.return_value = Mock()
@@ -569,10 +571,10 @@ def test_perform_inference_time_embeddings_health_check_env_var_not_set(
 
     with (
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_embedder"
+            "rasa.shared.utils.health_check.health_check.try_instantiate_embedder"
         ) as mock_try_instantiate_embedder,
         patch(
-            "rasa.shared.utils.health_check.send_test_embeddings_api_request"
+            "rasa.shared.utils.health_check.health_check.send_test_embeddings_api_request"
         ) as mock_send_test_embeddings_api_request,
     ):
         perform_inference_time_embeddings_health_check(
@@ -606,10 +608,10 @@ def test_perform_inference_time_embeddings_health_check_success(
 
     with (
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_embedder"
+            "rasa.shared.utils.health_check.health_check.try_instantiate_embedder"
         ) as mock_try_instantiate_embedder,
         patch(
-            "rasa.shared.utils.health_check.send_test_embeddings_api_request"
+            "rasa.shared.utils.health_check.health_check.send_test_embeddings_api_request"
         ) as mock_send_test_embeddings_api_request,
     ):
         mock_try_instantiate_embedder.return_value = Mock()
@@ -646,10 +648,10 @@ def test_perform_inference_time_embeddings_health_check_inconsistent_models(
     monkeypatch.setenv("LLM_API_HEALTH_CHECK", "true")
     with (
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_embedder"
+            "rasa.shared.utils.health_check.health_check.try_instantiate_embedder"
         ) as mock_try_instantiate_embedder,
         patch(
-            "rasa.shared.utils.health_check.send_test_embeddings_api_request"
+            "rasa.shared.utils.health_check.health_check.send_test_embeddings_api_request"
         ) as mock_send_test_embeddings_api_request,
     ):
         mock_try_instantiate_embedder.return_value = Mock()
@@ -693,10 +695,10 @@ def test_perform_inference_time_embeddings_health_check_no_train_model_name(
 
     with (
         patch(
-            "rasa.shared.utils.health_check.try_instantiate_embedder"
+            "rasa.shared.utils.health_check.health_check.try_instantiate_embedder"
         ) as mock_try_instantiate_embedder,
         patch(
-            "rasa.shared.utils.health_check.send_test_embeddings_api_request"
+            "rasa.shared.utils.health_check.health_check.send_test_embeddings_api_request"
         ) as mock_send_test_embeddings_api_request,
     ):
         mock_try_instantiate_embedder.return_value = Mock()

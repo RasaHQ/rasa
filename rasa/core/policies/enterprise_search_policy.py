@@ -71,6 +71,10 @@ from rasa.shared.providers.embedding._langchain_embedding_client_adapter import 
 )
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.cli import print_error_and_exit
+from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
+    EmbeddingsHealthCheckMixin,
+)
+from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
@@ -81,12 +85,6 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
     resolve_model_client_config,
-)
-from rasa.shared.utils.health_check import (
-    perform_training_time_llm_health_check,
-    perform_training_time_embeddings_health_check,
-    perform_inference_time_llm_health_check,
-    perform_inference_time_embeddings_health_check,
 )
 from rasa.telemetry import (
     track_enterprise_search_policy_predict,
@@ -161,7 +159,7 @@ class VectorStoreConfigurationError(RasaException):
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
 )
-class EnterpriseSearchPolicy(Policy):
+class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
     """Policy which uses a vector store and LLMs to respond to user messages.
 
     The policy uses a vector store and LLMs to respond to user messages. The
@@ -746,7 +744,7 @@ class EnterpriseSearchPolicy(Policy):
             prompt_template=prompt_template,
         )
 
-        cls._perform_inference_time_health_checks(
+        policy._perform_inference_time_health_checks(
             persisted_config,
             policy.config.get(LLM_CONFIG_KEY),
             policy.config.get(EMBEDDINGS_CONFIG_KEY),
@@ -897,13 +895,13 @@ class EnterpriseSearchPolicy(Policy):
     def _perform_training_time_health_checks(
         self,
     ) -> Tuple[Optional[str], Optional[str]]:
-        train_model_name = perform_training_time_llm_health_check(
+        train_model_name = self.perform_training_time_llm_health_check(
             self.config.get(LLM_CONFIG_KEY),
             DEFAULT_LLM_CONFIG,
             "enterprise_search_policy.train",
             EnterpriseSearchPolicy.__name__,
         )
-        train_embedding_name = perform_training_time_embeddings_health_check(
+        train_embedding_name = self.perform_training_time_embeddings_health_check(
             self.config.get(EMBEDDINGS_CONFIG_KEY),
             DEFAULT_EMBEDDINGS_CONFIG,
             "enterprise_search_policy.train",
@@ -911,9 +909,8 @@ class EnterpriseSearchPolicy(Policy):
         )
         return train_model_name, train_embedding_name
 
-    @classmethod
     def _perform_inference_time_health_checks(
-        cls,
+        self,
         persisted_config: Optional[Dict[str, Any]],
         resolved_llm_config: Optional[Dict[str, Any]],
         resolved_embeddings_config: Optional[Dict[str, Any]],
@@ -923,7 +920,7 @@ class EnterpriseSearchPolicy(Policy):
             if persisted_config
             else None
         )
-        perform_inference_time_llm_health_check(
+        self.perform_inference_time_llm_health_check(
             resolved_llm_config,
             DEFAULT_LLM_CONFIG,
             train_model_name,
@@ -936,7 +933,7 @@ class EnterpriseSearchPolicy(Policy):
             if persisted_config
             else None
         )
-        perform_inference_time_embeddings_health_check(
+        self.perform_inference_time_embeddings_health_check(
             resolved_embeddings_config,
             DEFAULT_EMBEDDINGS_CONFIG,
             train_embeddings_name,

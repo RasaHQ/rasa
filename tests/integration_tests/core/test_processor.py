@@ -26,7 +26,7 @@ from tests.conftest import TrainedAsync
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
-@patch("rasa.shared.utils.health_check.try_instantiate_llm_client")
+@patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
 async def trained_calm_slot_mappings_bot(
     mock_try_instantiate_llm_client: Mock,
     mock_save_local: Mock,
@@ -53,7 +53,7 @@ async def trained_calm_slot_mappings_bot(
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
-@patch("rasa.shared.utils.health_check.try_instantiate_llm_client")
+@patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
 async def calm_slot_mappings_agent(
     mock_try_instantiate_llm_client: Mock,
     mock_flow_search_create_embedder: Mock,
