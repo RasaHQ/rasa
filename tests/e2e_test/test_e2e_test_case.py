@@ -1,21 +1,22 @@
-from typing import Any, Dict, List, Union
 from collections import OrderedDict
+from typing import Any, Dict, List, Union
 
 import pytest
+from structlog.testing import capture_logs
 
 from rasa.e2e_test.constants import KEY_SLOT_NOT_SET, KEY_SLOT_SET
-from rasa.shared.core.events import (
-    BotUttered,
-    Event,
-    SlotSet,
-    UserUttered,
-)
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
     Fixture,
     Metadata,
     TestCase,
     TestStep,
+)
+from rasa.shared.core.events import (
+    BotUttered,
+    Event,
+    SlotSet,
+    UserUttered,
 )
 from rasa.shared.exceptions import RasaException
 
@@ -481,3 +482,167 @@ def test_test_step_as_dict_in_yaml_format(
     test_step: TestStep, expected_dict: Dict[str, Any]
 ):
     assert expected_dict == test_step.as_dict_yaml_format()
+
+
+@pytest.mark.parametrize(
+    "test_case_dict",
+    [
+        {
+            "test_case": "no_metadata",
+            "steps": [
+                {
+                    "user": "book flight",
+                    "assertions": [{"flow_started": "book_flight"}],
+                    # Missing metadata here
+                },
+                {
+                    "user": "book flight",
+                    # Missing metadata here
+                },
+            ],
+        },
+        {
+            "test_case": "partial_metadata",
+            "steps": [
+                {
+                    "user": "book flight",
+                    "assertions": [{"flow_started": "book_flight"}],
+                    "metadata": "duplicate_message_1",
+                },
+                {
+                    "user": "book flight",
+                    "metadata": "duplicate_message_2",
+                },
+                {
+                    "user": "book flight",
+                    # Missing metadata here
+                },
+            ],
+        },
+    ],
+)
+def test_duplicate_messages_no_metadata_warning(test_case_dict: Dict[str, Any]):
+    with capture_logs() as logs:
+        TestCase.from_dict(test_case_dict)
+        assert any("lacks metadata" in log["event_info"] for log in logs)
+
+
+@pytest.mark.parametrize(
+    "test_case_dict",
+    [
+        {
+            "test_case": "non_unique_metadata",
+            "steps": [
+                {
+                    "user": "book flight",
+                    "assertions": [{"flow_started": "book_flight"}],
+                    "metadata": "duplicate_message_1",
+                },
+                {
+                    "user": "book flight",
+                    "metadata": "duplicate_message_1",
+                },
+            ],
+        },
+        {
+            "test_case": "multiple_non_unique_metadata",
+            "steps": [
+                {
+                    "user": "book flight",
+                    "assertions": [{"flow_started": "book_flight"}],
+                    "metadata": "duplicate_message_1",
+                },
+                {
+                    "user": "book flight",
+                    "metadata": "duplicate_message_1",
+                },
+                {
+                    "user": "book flight",
+                    "metadata": "duplicate_message_1",
+                },
+            ],
+        },
+    ],
+)
+def test_duplicate_messages_non_unique_metadata_warning(test_case_dict: Dict[str, Any]):
+    with capture_logs() as logs:
+        TestCase.from_dict(test_case_dict)
+        assert any("has duplicate metadata" in log["event_info"] for log in logs)
+
+
+@pytest.mark.parametrize(
+    "test_case_dict",
+    [
+        {
+            "test_case": "unique_metadata",
+            "steps": [
+                {
+                    "user": "book flight",
+                    "assertions": [{"flow_started": "book_flight"}],
+                    "metadata": "duplicate_message_1",
+                },
+                {
+                    "user": "book flight",
+                    "metadata": "duplicate_message_2",
+                },
+                {
+                    "user": "book flight",
+                    "metadata": "duplicate_message_3",
+                },
+            ],
+        },
+        {
+            "test_case": "reuse_metadata_different_messages",
+            "steps": [
+                {
+                    "user": "book flight",
+                    "assertions": [{"flow_started": "book_flight"}],
+                    "metadata": "duplicate_message_1",
+                },
+                {
+                    "user": "cancel",
+                    "assertions": [{"flow_started": "book_flight"}],
+                    "metadata": "duplicate_message_1",
+                },
+                {
+                    "user": "book flight",
+                    "metadata": "duplicate_message_2",
+                },
+                {
+                    "user": "cancel",
+                    "metadata": "duplicate_message_2",
+                },
+            ],
+        },
+        {
+            "test_case": "unique_messages",
+            "steps": [
+                {
+                    "user": "hello",
+                    "assertions": [{"bot_uttered": {"text_matches": "Hi."}}],
+                },
+                {
+                    "user": "hi",
+                },
+                {
+                    "user": "hey",
+                },
+            ],
+        },
+        {
+            "test_case": "no_assertions",
+            "steps": [
+                {
+                    "user": "hi",
+                },
+                {
+                    "user": "hi",
+                },
+            ],
+        },
+    ],
+)
+def test_duplicate_messages_no_warnings(test_case_dict: Dict[str, Any]):
+    with capture_logs() as logs:
+        TestCase.from_dict(test_case_dict)
+        assert logs == []
