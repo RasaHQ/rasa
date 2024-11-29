@@ -3,17 +3,16 @@ import random
 import textwrap
 from pathlib import Path
 from threading import Thread
-from typing import Text, Dict, Any
+from typing import Text, Dict, Any, Union
 from unittest.mock import MagicMock, patch
 
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
-from pep440_version_utils import Version
-from pykwalify.errors import SchemaError
-
 import rasa.shared.nlu.training_data.schemas.data_schema as schema
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
+from _pytest.monkeypatch import MonkeyPatch
+from pep440_version_utils import Version
+from pykwalify.errors import SchemaError
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
     DOMAIN_SCHEMA_FILE,
@@ -33,8 +32,11 @@ from rasa.shared.utils.yaml import (
     validate_raw_yaml_using_schema_file_with_responses,
     validate_training_data,
     validate_training_data_format_version,
+    read_yaml_file,
+    validate_yaml_data_using_schema_with_assertions,
+    parse_raw_yaml,
 )
-from rasa.shared.utils.yaml import read_yaml_file
+from tests.e2e_test.conftest import e2e_schema
 
 python_module_path = "rasa.shared.utils.yaml"
 
@@ -962,3 +964,228 @@ def test_yaml_validation_exception_line_number(
         )
 
     assert f"in Line {expected_error_line}" in str(e.value)
+
+
+def help_test_yaml_validation_error_message(
+    faulty_yaml: str,
+    expected_error_line: int,
+    expected_error_message: str,
+    e2e_schema: Union[list[Any], dict[str, Any]],
+):
+    """
+    Helper function used to split specific YAML validation cases.
+    """
+    with pytest.raises(YamlValidationException) as e:
+        yaml_data = parse_raw_yaml(faulty_yaml)
+        validate_yaml_data_using_schema_with_assertions(
+            yaml_data=yaml_data,
+            schema_content=e2e_schema,
+        )
+    error_message = str(e.value)
+    assert f"in Line {expected_error_line}" in error_message
+    assert expected_error_message in error_message
+
+
+@pytest.mark.parametrize(
+    "faulty_yaml, expected_error_line, expected_error_message",
+    [
+        # Missing 'test_case' key
+        (
+            """test_cases:
+  - steps:
+      - user: "Hi"
+        assertions:
+          - slot_was_set:
+              - name: test_name
+                value: test_value""",
+            2,
+            """
+    1 | test_cases:
+>>> 2 |   - steps:
+    3 |       - user: "Hi"
+    4 |         assertions:
+Cannot find required key 'test_case'. Path: '/test_cases/0'
+""",
+        ),
+        # Missing 'name' key
+        (
+            """test_cases:
+  - test_case: missing_name_key
+    steps:
+    - user: "Hi"
+      assertions:
+        - slot_was_set:
+            - value: test_value
+        """,
+            7,
+            """
+    5 |         assertions:
+    6 |           - slot_was_set:
+>>> 7 |               - value: test_value
+Cannot find required key 'name'. Path: '/test_cases/0/steps/0/assertions/0/slot_was_set/0'
+""",
+        ),
+        # No 'threshold' key in 'generative_response_is_relevant' assertion
+        (
+            """test_cases:
+  - test_case: "missing_threshold_in_assertion"
+    steps:
+      - user: "Hello."
+        assertions:
+          - generative_response_is_relevant:
+              utter_name: 'utter_greet'
+              """,
+            7,
+            """
+    5 |         assertions:
+    6 |           - generative_response_is_relevant:
+>>> 7 |               utter_name: 'utter_greet'
+Cannot find required key 'threshold'. Path: '/test_cases/0/steps/0/assertions/0/generative_response_is_relevant'
+""",
+        ),
+    ],
+)
+def test_yaml_validation_missing_keys(
+    faulty_yaml: str,
+    expected_error_line: int,
+    expected_error_message: str,
+    e2e_schema: Union[list[Any], dict[str, Any]],
+):
+    help_test_yaml_validation_error_message(
+        faulty_yaml, expected_error_line, expected_error_message, e2e_schema
+    )
+
+
+@pytest.mark.parametrize(
+    "faulty_yaml, expected_error_line, expected_error_message",
+    [
+        # Invalid key 'nameeee' instead of 'name'
+        (
+            """test_cases:
+  - test_case: invalid_slot_name
+    steps:
+      - user: "Hi"
+        assertions:
+          - slot_was_set:
+              - nameeee: test_name
+                value: test_value
+""",
+            7,
+            """
+    5 |         assertions:
+    6 |           - slot_was_set:
+>>> 7 |               - nameeee: test_name
+    8 |                 value: test_value
+Cannot find required key 'name'. Path: '/test_cases/0/steps/0/assertions/0/slot_was_set/0'
+""",
+        ),
+        # Unknown assertion 'unknown_assertion'
+        (
+            """test_cases:
+  - test_case: invalid_assertion
+    steps:
+      - user: "Hi"
+        assertions:
+          - unknown_assertion:
+              - name: test_name
+                value: test_value
+""",
+            6,
+            """
+    4 |       - user: "Hi"
+    5 |         assertions:
+>>> 6 |           - unknown_assertion:
+    7 |               - name: test_name
+    8 |                 value: test_value
+Key 'unknown_assertion' was not defined. Path: '/test_cases/0/steps/0/assertions/0'
+""",
+        ),
+        # Invalid key 'test_casee' instead of 'test_case'
+        (
+            """test_cases:
+  - test_casee: typo_in_test_case_key
+    steps:
+      - user: "Hi"
+""",
+            2,
+            """
+    1 | test_cases:
+>>> 2 |   - test_casee: typo_in_test_case_key
+    3 |     steps:
+    4 |       - user: "Hi"
+Cannot find required key 'test_case'. Path: '/test_cases/0'
+""",
+        ),
+    ],
+)
+def test_yaml_validation_invalid_keys(
+    faulty_yaml: str,
+    expected_error_line: int,
+    expected_error_message: str,
+    e2e_schema: Union[list[Any], dict[str, Any]],
+):
+    help_test_yaml_validation_error_message(
+        faulty_yaml, expected_error_line, expected_error_message, e2e_schema
+    )
+
+
+@pytest.mark.parametrize(
+    "faulty_yaml, expected_error_line, expected_error_message",
+    [
+        # String instead of list for 'steps'
+        (
+            """test_cases:
+  - test_case: steps_as_string
+    steps: "This should be a list."
+""",
+            3,
+            """
+    1 | test_cases:
+    2 |   - test_case: steps_as_string
+>>> 3 |     steps: "This should be a list."
+Value 'b'This should be a list.'' is not a list. Value path: '/test_cases/0/steps'
+""",
+        ),
+        # List instead of dict in 'assertions'
+        (
+            """test_cases:
+  - test_case: assertions_as_list
+    steps:
+      - user: "Hi"
+        assertions:
+          - ["This should be a dict."]
+""",
+            6,
+            """
+    4 |       - user: "Hi"
+    5 |         assertions:
+>>> 6 |           - ["This should be a dict."]
+Value '['This should be a dict.']' is not a dict. Value path: '/test_cases/0/steps/0/assertions/0'
+""",
+        ),
+        # Integer instead of string for 'user'
+        (
+            """test_cases:
+  - test_case: user_as_integer
+    steps:
+      - user: 12345
+""",
+            4,
+            """
+    2 |   - test_case: user_as_integer
+    3 |     steps:
+>>> 4 |       - user: 12345
+Value '12345' is not of type 'str'. Path: '/test_cases/0/steps/0/user'
+""",
+        ),
+    ],
+)
+def test_yaml_validation_invalid_data_structures(
+    faulty_yaml: str,
+    expected_error_line: int,
+    expected_error_message: str,
+    e2e_schema: Union[list[Any], dict[str, Any]],
+):
+    help_test_yaml_validation_error_message(
+        faulty_yaml, expected_error_line, expected_error_message, e2e_schema
+    )
