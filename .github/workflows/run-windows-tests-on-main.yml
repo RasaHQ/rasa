@@ -125,6 +125,20 @@ jobs:
           DD_ENV: ${{ matrix.test }}
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all
+          DD_ARGS: --ddtrace --ddtrace-patch-all
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
+          CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
+          CHAMPION_SERVER_INTERNAL_LICENSE: ${{ secrets.CHAMPION_SERVER_INTERNAL_LICENSE }}
+          CHAMPION_SERVER_LIMITED_LICENSE: ${{ secrets.CHAMPION_SERVER_LIMITED_LICENSE }}
+          EXPIRED_LICENSE: ${{ secrets.EXPIRED_LICENSE }}
+          IMMATURE_LICENSE: ${{ secrets.IMMATURE_LICENSE }}
+          INVALID_SCHEMA_LICENSE: ${{ secrets.INVALID_SCHEMA_LICENSE }}
+          INVALID_SIGNATURE_LICENSE: ${{ secrets.INVALID_SIGNATURE_LICENSE }}
+          NON_JWT_LICENSE: ${{ secrets.NON_JWT_LICENSE }}
+          UNSCOPED_LICENSE: ${{ secrets.UNSCOPED_LICENSE }}
+          VALID_LICENSE: ${{ secrets.VALID_LICENSE }}
+          API_DOCS_FORMAT: yaml
         run: |
           make ${{ matrix.test }}
         shell: bash # bash shell is a way to make code run for both Linux and Windows
