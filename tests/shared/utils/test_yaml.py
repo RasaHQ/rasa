@@ -1003,7 +1003,7 @@ def help_test_yaml_validation_error_message(
 >>> 2 |   - steps:
     3 |       - user: "Hi"
     4 |         assertions:
-Cannot find required key 'test_case'. Path: '/test_cases/0'
+Cannot find required key 'test_case'. Path: '/test_cases/1'
 """,
         ),
         # Missing 'name' key
@@ -1094,7 +1094,7 @@ Cannot find required key 'name'.""",
 >>> 6 |           - unknown_assertion:
     7 |               - name: test_name
     8 |                 value: test_value
-Key 'unknown_assertion' was not defined. Path: '/test_cases/0/steps/0/assertions/0'
+Key 'unknown_assertion' was not defined. Path: '/test_cases/1/steps/1/assertions/1'
 """,
         ),
         # Invalid key 'test_casee' instead of 'test_case'
@@ -1110,7 +1110,7 @@ Key 'unknown_assertion' was not defined. Path: '/test_cases/0/steps/0/assertions
 >>> 2 |   - test_casee: typo_in_test_case_key
     3 |     steps:
     4 |       - user: "Hi"
-Cannot find required key 'test_case'. Path: '/test_cases/0'
+Cannot find required key 'test_case'. Path: '/test_cases/1'
 """,
         ),
     ],
@@ -1139,7 +1139,7 @@ def test_yaml_validation_invalid_keys(
     1 | test_cases:
     2 |   - test_case: steps_as_string
 >>> 3 |     steps: "This should be a list."
-Value 'b'This should be a list.'' is not a list. Value path: '/test_cases/0/steps'
+Value 'b'This should be a list.'' is not a list. Value path: '/test_cases/1/steps'
 """,
         ),
         # List instead of dict in 'assertions'
@@ -1170,7 +1170,7 @@ Value '['This should be a dict.']' is not a dict.""",
     2 |   - test_case: user_as_integer
     3 |     steps:
 >>> 4 |       - user: 12345
-Value '12345' is not of type 'str'. Path: '/test_cases/0/steps/0/user'
+Value '12345' is not of type 'str'. Path: '/test_cases/1/steps/1/user'
 """,
         ),
     ],

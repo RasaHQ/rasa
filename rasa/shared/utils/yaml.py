@@ -64,6 +64,14 @@ SENSITIVE_DATA = [API_KEY]
 
 @dataclass
 class PathWithError:
+    """Represents a validation error at a specific location in the YAML content.
+
+    Attributes:
+        message (str): A description of the validation error.
+        path (List[str]): Path to the node where the error occurred.
+        key (Optional[str]): The specific key associated with the error, if any.
+    """
+
     message: str
     path: List[str] = field(default_factory=list)
     key: Optional[str] = None
@@ -173,9 +181,9 @@ class YamlValidationException(YamlException, ValueError):
         """Extract code snippet from the YAML lines around the error.
 
         Args:
-            yaml_lines: List of YAML lines from the serialized content.
             error_line: Line number where the error occurred (1-based).
-            context_lines: Number of lines of context to include before and after.
+            context_lines: Number of context lines before and after the error line.
+                Default is 2, balancing context and readability. Adjust as needed.
 
         Returns:
             A string containing the code snippet with the error highlighted.
@@ -391,20 +399,27 @@ def validate_yaml_content_using_schema(
     try:
         core.validate(raise_exception=True)
     except SchemaError:
-        # Fetch the first validation error from PyKwalify.
-        # PyKwalify propagates validation errors to parent nodes, printing an error for
-        # each key up the hierarchy. This results in multiple redundant errors for a
-        # single issue. To provide a clear and concise error message about the root
-        # cause, we display only the first error.
+        # PyKwalify propagates each validation error up the data hierarchy, resulting
+        # in multiple redundant errors for a single issue. To present a clear message
+        # about the root cause, we use only the first error.
         error = core.errors[0]
-        path = error.path.removeprefix("/")
-        key = getattr(error, "key", None)
+
+        # Increment numeric indices by 1 to convert from 0-based to 1-based indexing
+        error_message = re.sub(
+            r"(/)(\d+)", lambda m: f"/{int(m.group(2)) + 1}", str(error)
+        )
 
         raise YamlValidationException(
             "Please make sure the file is correct and all "
             "mandatory parameters are specified. Here are the errors "
             "found during validation",
-            [PathWithError(message=str(error), path=path.split("/"), key=key)],
+            [
+                PathWithError(
+                    message=error_message,
+                    path=error.path.removeprefix("/").split("/"),
+                    key=getattr(error, "key", None),
+                )
+            ],
             content=yaml_content,
         )
 
