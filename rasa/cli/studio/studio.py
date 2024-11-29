@@ -1,5 +1,5 @@
 import argparse
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from urllib.parse import ParseResult, urlparse
 
 import questionary
@@ -149,7 +149,7 @@ def _configure_studio_url() -> Optional[str]:
     return studio_url
 
 
-def _get_advanced_config(studio_url: str) -> tuple:
+def _get_advanced_config(studio_url: str) -> Tuple:
     """Get the advanced configuration values for Rasa Studio."""
     keycloak_url = questionary.text(
         "Please provide your Rasa Studio Keycloak URL",
@@ -167,7 +167,7 @@ def _get_advanced_config(studio_url: str) -> tuple:
     return keycloak_url, realm_name, client_id
 
 
-def _get_default_config(studio_url: str) -> tuple:
+def _get_default_config(studio_url: str) -> Tuple:
     """Get the default configuration values for Rasa Studio."""
     keycloak_url = studio_url + "auth/"
     realm_name = DEFAULT_REALM_NAME
@@ -178,6 +178,7 @@ def _get_default_config(studio_url: str) -> tuple:
         f"Keycloak URL: {keycloak_url}, "
         f"Realm Name: '{realm_name}', "
         f"Client ID: '{client_id}'. "
+        f"SSL verification is enabled."
         f"You can use '--advanced' to configure these settings."
     )
 
@@ -185,7 +186,11 @@ def _get_default_config(studio_url: str) -> tuple:
 
 
 def _create_studio_config(
-    studio_url: str, keycloak_url: str, realm_name: str, client_id: str
+    studio_url: str,
+    keycloak_url: str,
+    realm_name: str,
+    client_id: str,
+    disable_verify: bool = False,
 ) -> StudioConfig:
     """Create a StudioConfig object with the provided parameters."""
     return StudioConfig(
@@ -193,6 +198,7 @@ def _create_studio_config(
         studio_url=studio_url + "api/graphql/",
         client_id=client_id,
         realm_name=realm_name,
+        disable_verify=disable_verify,
     )
 
 
@@ -227,19 +233,23 @@ def _configure_studio_config(args: argparse.Namespace) -> StudioConfig:
 
     # create a configuration and auth object to try to reach the studio
     studio_config = _create_studio_config(
-        studio_url, keycloak_url, realm_name, client_id
+        studio_url,
+        keycloak_url,
+        realm_name,
+        client_id,
+        disable_verify=args.disable_verify,
     )
 
-    if args.disable_verify:
+    if studio_config.disable_verify:
         rasa.shared.utils.cli.print_info(
             "Disabling SSL verification for the Rasa Studio authentication server."
         )
-        studio_auth = StudioAuth(studio_config, verify=False)
     else:
         rasa.shared.utils.cli.print_info(
             "Enabling SSL verification for the Rasa Studio authentication server."
         )
-        studio_auth = StudioAuth(studio_config, verify=True)
+
+    studio_auth = StudioAuth(studio_config)
 
     if _check_studio_auth(studio_auth):
         return studio_config

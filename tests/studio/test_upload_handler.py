@@ -178,13 +178,16 @@ def test_handle_upload(
     assert mock.post.called
     assert mock.post.call_args[0][0] == endpoint
     assert mock.post.call_args[1]["json"] == expected
+    assert mock.post.call_args[1]["verify"] is True
 
 
 @pytest.mark.parametrize(
-    "is_calm_bot, mock_fn_name",
+    "is_calm_bot, mock_fn_name, disable_verify",
     [
-        (True, "upload_calm_assistant"),
-        (False, "upload_nlu_assistant"),
+        (True, "upload_calm_assistant", True),
+        (True, "upload_calm_assistant", False),
+        (False, "upload_nlu_assistant", True),
+        (False, "upload_nlu_assistant", False),
     ],
 )
 def test_handle_upload_no_domain_path_specified(
@@ -192,6 +195,7 @@ def test_handle_upload_no_domain_path_specified(
     tmp_path: Path,
     is_calm_bot: bool,
     mock_fn_name: str,
+    disable_verify: bool,
 ) -> None:
     """Test the handle_upload function when no domain path is specified in the CLI."""
     # setup test
@@ -226,6 +230,7 @@ def test_handle_upload_no_domain_path_specified(
         studio_url=endpoint,
         realm_name="rasa-test",
         client_id="rasa-cli",
+        disable_verify=disable_verify,
     )
     monkeypatch.setattr(
         rasa.studio.upload,
@@ -246,7 +251,7 @@ def test_handle_upload_no_domain_path_specified(
         calm=is_calm_bot,
     )
 
-    mock.assert_called_once_with(expected_args, endpoint)
+    mock.assert_called_once_with(expected_args, endpoint, verify=not disable_verify)
 
 
 @pytest.mark.parametrize(
@@ -468,6 +473,7 @@ def test_make_request(
             "Authorization": "Bearer mock_token",
             "Content-Type": "application/json",
         },
+        verify=True,
     )
     mock_keycloak_token.get_token.assert_called_once()
 

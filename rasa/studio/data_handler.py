@@ -76,7 +76,9 @@ class StudioDataHandler:
 
         return request
 
-    def _make_request(self, GQL_req: Dict[Any, Any]) -> Dict[Any, Any]:
+    def _make_request(
+        self, GQL_req: Dict[Any, Any], verify: bool = True
+    ) -> Dict[Any, Any]:
         token = KeycloakTokenReader().get_token()
         if token.is_expired():
             token = self.refresh_token(token)
@@ -93,6 +95,7 @@ class StudioDataHandler:
                 "Authorization": f"{token.token_type} {token.access_token}",
                 "Content-Type": "application/json",
             },
+            verify=verify,
         )
 
         if res.status_code != 200:
@@ -128,7 +131,9 @@ class StudioDataHandler:
             The data from Rasa Studio.
         """
         GQL_req = self._build_request()
-        response = self._make_request(GQL_req)
+        verify = not self.studio_config.disable_verify
+
+        response = self._make_request(GQL_req, verify=verify)
         self._extract_data(response)
 
     def request_data(
@@ -145,7 +150,9 @@ class StudioDataHandler:
             The data from Rasa Studio.
         """
         GQL_req = self._build_request(intent_names, entity_names)
-        response = self._make_request(GQL_req)
+        verify = not self.studio_config.disable_verify
+
+        response = self._make_request(GQL_req, verify=verify)
         self._extract_data(response)
 
     def get_config(self) -> Optional[str]:

@@ -1,14 +1,23 @@
 import argparse
 import sys
 from typing import Callable, Generator, TYPE_CHECKING
+from unittest.mock import Mock
 
-from pytest import RunResult, CaptureFixture
+from keycloak import KeycloakOpenID
+from pytest import RunResult, CaptureFixture, MonkeyPatch
 import pytest
 from prompt_toolkit.application import create_app_session
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
 
-from rasa.cli.studio.studio import _configure_studio_config
+from rasa.cli.studio.studio import _configure_studio_config, _studio_login
+from rasa.studio.constants import (
+    RASA_STUDIO_AUTH_SERVER_URL_ENV,
+    RASA_STUDIO_CLI_CLIENT_ID_KEY_ENV,
+    RASA_STUDIO_CLI_DISABLE_VERIFY_KEY_ENV,
+    RASA_STUDIO_CLI_REALM_NAME_KEY_ENV,
+    RASA_STUDIO_CLI_STUDIO_URL_ENV,
+)
 
 if TYPE_CHECKING:
     from prompt_toolkit.input.base import PipeInput
@@ -89,18 +98,29 @@ def test_non_advanced_only_asks_for_url(mock_cli: "PipeInput") -> None:
     reason=" '\n' key that accepts the input is not working on Windows.",
 )
 def test_non_advanced_only_asks_for_url_disable_verify(
-    mock_cli: "PipeInput", capsys: CaptureFixture
+    mock_cli: "PipeInput", capsys: CaptureFixture, monkeypatch: MonkeyPatch
 ):
+    mock_keycloak = Mock(wraps=KeycloakOpenID)
+    monkeypatch.setattr("rasa.studio.auth.KeycloakOpenID", mock_keycloak)
+
     mock_cli.send_text("url\n\n")
     # if the advanced flag is not set, the function should only ask for the studio url
     args: argparse.Namespace = argparse.Namespace(advanced=False, disable_verify=True)
 
-    _configure_studio_config(args)
+    studio_config = _configure_studio_config(args)
+    assert studio_config.disable_verify is True
 
     captured = capsys.readouterr()
     assert (
         "Disabling SSL verification for the Rasa Studio authentication server."
         in captured.out
+    )
+
+    mock_keycloak.assert_called_once_with(
+        server_url=studio_config.authentication_server_url,
+        client_id=studio_config.client_id,
+        realm_name=studio_config.realm_name,
+        verify=not studio_config.disable_verify,
     )
 
 
@@ -115,3 +135,28 @@ def test_studio_download_does_not_throw_endpoints_file_not_found_error(
     printed_output = {line.strip() for line in output.outlines}
 
     assert all([error_message not in line for line in printed_output])
+
+
+@pytest.mark.parametrize("disable_verify", ["true", "false"])
+def test_studio_login_reuses_disable_verify_from_studio_config(
+    monkeypatch: MonkeyPatch, disable_verify: str
+):
+    """Assert that the disable_verify flag is reused from the studio config."""
+    monkeypatch.setenv(RASA_STUDIO_CLI_STUDIO_URL_ENV, "url")
+    monkeypatch.setenv(RASA_STUDIO_CLI_CLIENT_ID_KEY_ENV, "keycloak")
+    monkeypatch.setenv(RASA_STUDIO_CLI_REALM_NAME_KEY_ENV, "2")
+    monkeypatch.setenv(RASA_STUDIO_CLI_DISABLE_VERIFY_KEY_ENV, disable_verify)
+    monkeypatch.setenv(RASA_STUDIO_AUTH_SERVER_URL_ENV, "url/auth/keycloak")
+
+    mock_keycloak = Mock(wraps=KeycloakOpenID)
+    monkeypatch.setattr("rasa.studio.auth.KeycloakOpenID", mock_keycloak)
+
+    args: argparse.Namespace = argparse.Namespace(username="user", password="pass")
+    _studio_login(args)
+
+    mock_keycloak.assert_called_once_with(
+        server_url="url/auth/keycloak",
+        client_id="keycloak",
+        realm_name="2",
+        verify=not bool(disable_verify),
+    )

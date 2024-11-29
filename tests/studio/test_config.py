@@ -49,6 +49,23 @@ def mock_os_makedirs(monkeypatch: MonkeyPatch) -> MagicMock:
                 "authentication_server_url": "http://localhost:8080",
                 "studio_url": "http://localhost:8080/graphql",
                 "client_id": "client_id",
+                "disable_verify": False,
+                "realm_name": "realm_name",
+            },
+        ),
+        (
+            StudioConfig(
+                authentication_server_url="http://localhost:8080",
+                studio_url="http://localhost:8080/graphql",
+                client_id="client_id",
+                realm_name="realm_name",
+                disable_verify=True,
+            ),
+            {
+                "authentication_server_url": "http://localhost:8080",
+                "studio_url": "http://localhost:8080/graphql",
+                "client_id": "client_id",
+                "disable_verify": True,
                 "realm_name": "realm_name",
             },
         ),

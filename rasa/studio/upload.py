@@ -56,14 +56,17 @@ def _get_selected_entities_and_intents(
 
 def handle_upload(args: argparse.Namespace) -> None:
     """Uploads primitives to rasa studio."""
-    endpoint = StudioConfig.read_config().studio_url
+    studio_config = StudioConfig.read_config()
+    endpoint = studio_config.studio_url
+    verify = not studio_config.disable_verify
+
     if not endpoint:
         rasa.shared.utils.cli.print_error_and_exit(
             "No GraphQL endpoint found in config. Please run `rasa studio config`."
         )
         return
 
-    if not is_auth_working(endpoint):
+    if not is_auth_working(endpoint, verify):
         rasa.shared.utils.cli.print_error_and_exit(
             "Authentication is invalid or expired. Please run `rasa studio login`."
         )
@@ -81,9 +84,9 @@ def handle_upload(args: argparse.Namespace) -> None:
 
     # check safely if args.calm is set and not fail if not
     if hasattr(args, "calm") and args.calm:
-        upload_calm_assistant(args, endpoint)
+        upload_calm_assistant(args, endpoint, verify=verify)
     else:
-        upload_nlu_assistant(args, endpoint)
+        upload_nlu_assistant(args, endpoint, verify=verify)
 
 
 config_keys = [
@@ -135,7 +138,9 @@ def _get_assistant_name(config: Dict[Text, Any]) -> str:
 
 
 @with_studio_error_handler
-def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> StudioResult:
+def upload_calm_assistant(
+    args: argparse.Namespace, endpoint: str, verify: bool = True
+) -> StudioResult:
     """Uploads the CALM assistant data to Rasa Studio.
 
     Args:
@@ -227,11 +232,13 @@ def upload_calm_assistant(args: argparse.Namespace, endpoint: str) -> StudioResu
     structlogger.info(
         "rasa.studio.upload.calm", event_info="Uploading to Rasa Studio..."
     )
-    return make_request(endpoint, graphql_req)
+    return make_request(endpoint, graphql_req, verify)
 
 
 @with_studio_error_handler
-def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> StudioResult:
+def upload_nlu_assistant(
+    args: argparse.Namespace, endpoint: str, verify: bool = True
+) -> StudioResult:
     """Uploads the classic (dm1) assistant data to Rasa Studio.
 
     Args:
@@ -241,6 +248,7 @@ def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> StudioResul
             - intents: The intents to upload
             - entities: The entities to upload
         endpoint: The studio endpoint
+        verify: Whether to verify SSL
     Returns:
         None
     """
@@ -286,10 +294,10 @@ def upload_nlu_assistant(args: argparse.Namespace, endpoint: str) -> StudioResul
     structlogger.info(
         "rasa.studio.upload.nlu", event_info="Uploading to Rasa Studio..."
     )
-    return make_request(endpoint, graphql_req)
+    return make_request(endpoint, graphql_req, verify)
 
 
-def is_auth_working(endpoint: str) -> bool:
+def is_auth_working(endpoint: str, verify: bool = True) -> bool:
     """Send a test request to Studio to check if auth is working."""
     result = make_request(
         endpoint,
@@ -306,16 +314,18 @@ def is_auth_working(endpoint: str) -> bool:
             ),
             "variables": {},
         },
+        verify,
     )
     return result.was_successful
 
 
-def make_request(endpoint: str, graphql_req: Dict) -> StudioResult:
+def make_request(endpoint: str, graphql_req: Dict, verify: bool = True) -> StudioResult:
     """Makes a request to the studio endpoint to upload data.
 
     Args:
         endpoint: The studio endpoint
         graphql_req: The graphql request
+        verify: Whether to verify SSL
     """
     token = KeycloakTokenReader().get_token()
     res = requests.post(
@@ -325,6 +335,7 @@ def make_request(endpoint: str, graphql_req: Dict) -> StudioResult:
             "Authorization": f"{token.token_type} {token.access_token}",
             "Content-Type": "application/json",
         },
+        verify=verify,
     )
 
     if results_logger.response_has_errors(res.json()):
