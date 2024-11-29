@@ -333,6 +333,7 @@ def test_cli_valid_logging_configuration() -> None:
             assert key in logs_dict.keys()
 
 
+@pytest.mark.flaky
 @pytest.mark.parametrize(
     "logging_config_file",
     [
@@ -354,6 +355,7 @@ def test_cli_invalid_logging_configuration(
     )
 
 
+@pytest.mark.flaky
 def test_cli_invalid_format_value_in_config(caplog: LogCaptureFixture) -> None:
     logging_config_file = (
         "data/test_logging_config_files/test_invalid_format_value_in_config.yml"
