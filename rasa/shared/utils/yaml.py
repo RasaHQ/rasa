@@ -207,7 +207,7 @@ class YamlValidationException(YamlException, ValueError):
             yaml_lines = serialized_yaml.splitlines()
             return yaml_lines
         except Exception as exc:
-            logger.debug(f"Error serializing YAML content: {e}")
+            logger.debug(f"Error serializing YAML content: {exc}")
 
         return yaml_lines
 
@@ -302,9 +302,7 @@ class YamlValidationException(YamlException, ValueError):
         if not path:
             if key and hasattr(current, "lc"):
                 if hasattr(current.lc, "data") and key in current.lc.data:
-                    key_line_no = (
-                        current.lc.data[key][0] + 1
-                    )
+                    key_line_no = current.lc.data[key][0] + 1
                     return key_line_no
             return this_line
 

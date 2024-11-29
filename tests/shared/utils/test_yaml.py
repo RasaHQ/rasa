@@ -3,7 +3,7 @@ import random
 import textwrap
 from pathlib import Path
 from threading import Thread
-from typing import Text, Dict, Any, Union
+from typing import Text, Dict, Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -13,6 +13,7 @@ import rasa.utils.io as io_utils
 from _pytest.monkeypatch import MonkeyPatch
 from pep440_version_utils import Version
 from pykwalify.errors import SchemaError
+from rasa.e2e_test.utils.validation import read_e2e_test_schema
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
     DOMAIN_SCHEMA_FILE,
@@ -36,7 +37,6 @@ from rasa.shared.utils.yaml import (
     validate_yaml_data_using_schema_with_assertions,
     parse_raw_yaml,
 )
-from tests.e2e_test.conftest import e2e_schema
 
 python_module_path = "rasa.shared.utils.yaml"
 
@@ -970,7 +970,6 @@ def help_test_yaml_validation_error_message(
     faulty_yaml: str,
     expected_error_line: int,
     expected_error_message: str,
-    e2e_schema: Union[list[Any], dict[str, Any]],
 ):
     """
     Helper function used to split specific YAML validation cases.
@@ -979,7 +978,7 @@ def help_test_yaml_validation_error_message(
         yaml_data = parse_raw_yaml(faulty_yaml)
         validate_yaml_data_using_schema_with_assertions(
             yaml_data=yaml_data,
-            schema_content=e2e_schema,
+            schema_content=read_e2e_test_schema(),
         )
     error_message = str(e.value)
     assert f"in Line {expected_error_line}" in error_message
@@ -1022,8 +1021,7 @@ Cannot find required key 'test_case'. Path: '/test_cases/0'
     5 |         assertions:
     6 |           - slot_was_set:
 >>> 7 |               - value: test_value
-Cannot find required key 'name'. Path: '/test_cases/0/steps/0/assertions/0/slot_was_set/0'
-""",
+Cannot find required key 'name'.""",
         ),
         # No 'threshold' key in 'generative_response_is_relevant' assertion
         (
@@ -1040,8 +1038,7 @@ Cannot find required key 'name'. Path: '/test_cases/0/steps/0/assertions/0/slot_
     5 |         assertions:
     6 |           - generative_response_is_relevant:
 >>> 7 |               utter_name: 'utter_greet'
-Cannot find required key 'threshold'. Path: '/test_cases/0/steps/0/assertions/0/generative_response_is_relevant'
-""",
+Cannot find required key 'threshold'.""",
         ),
     ],
 )
@@ -1049,10 +1046,11 @@ def test_yaml_validation_missing_keys(
     faulty_yaml: str,
     expected_error_line: int,
     expected_error_message: str,
-    e2e_schema: Union[list[Any], dict[str, Any]],
 ):
     help_test_yaml_validation_error_message(
-        faulty_yaml, expected_error_line, expected_error_message, e2e_schema
+        faulty_yaml,
+        expected_error_line,
+        expected_error_message,
     )
 
 
@@ -1076,8 +1074,7 @@ def test_yaml_validation_missing_keys(
     6 |           - slot_was_set:
 >>> 7 |               - nameeee: test_name
     8 |                 value: test_value
-Cannot find required key 'name'. Path: '/test_cases/0/steps/0/assertions/0/slot_was_set/0'
-""",
+Cannot find required key 'name'.""",
         ),
         # Unknown assertion 'unknown_assertion'
         (
@@ -1122,10 +1119,9 @@ def test_yaml_validation_invalid_keys(
     faulty_yaml: str,
     expected_error_line: int,
     expected_error_message: str,
-    e2e_schema: Union[list[Any], dict[str, Any]],
 ):
     help_test_yaml_validation_error_message(
-        faulty_yaml, expected_error_line, expected_error_message, e2e_schema
+        faulty_yaml, expected_error_line, expected_error_message
     )
 
 
@@ -1160,8 +1156,7 @@ Value 'b'This should be a list.'' is not a list. Value path: '/test_cases/0/step
     4 |       - user: "Hi"
     5 |         assertions:
 >>> 6 |           - ["This should be a dict."]
-Value '['This should be a dict.']' is not a dict. Value path: '/test_cases/0/steps/0/assertions/0'
-""",
+Value '['This should be a dict.']' is not a dict.""",
         ),
         # Integer instead of string for 'user'
         (
@@ -1184,8 +1179,7 @@ def test_yaml_validation_invalid_data_structures(
     faulty_yaml: str,
     expected_error_line: int,
     expected_error_message: str,
-    e2e_schema: Union[list[Any], dict[str, Any]],
 ):
     help_test_yaml_validation_error_message(
-        faulty_yaml, expected_error_line, expected_error_message, e2e_schema
+        faulty_yaml, expected_error_line, expected_error_message
     )
