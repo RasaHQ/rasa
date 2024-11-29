@@ -5,6 +5,9 @@ on:
     # Runs at the end of every day
     - cron: 0 0 * * *
   workflow_dispatch:
+  push:
+    branches:
+      - ATO-3124-windows-yaml-310x
 
 env:
   # needed to fix issues with boto during testing:
