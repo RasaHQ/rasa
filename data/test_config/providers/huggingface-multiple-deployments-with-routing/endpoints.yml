@@ -5,11 +5,17 @@ nlg:
  type: rephrase
  rephrase_all: True
  llm:
-    provider: huggingface
-    model: rasa/cmd_gen_codellama_13b_calm_demo
-    api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
-    timeout: 30
-    num_retries: 10
+    model_group: huggingface_llm
+    
+model_groups:
+  - id: huggingface_llm
+    models:
+      - provider: huggingface
+        model: rasa/cmd_gen_codellama_13b_calm_demo
+        api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+        api_key: ${HUGGINGFACE_API_KEY}
+        timeout: 7
+        num_retries: 5
 
 tracing:
  type: otlp

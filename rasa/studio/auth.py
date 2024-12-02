@@ -23,12 +23,10 @@ from rasa.studio.results_logger import with_studio_error_handler, StudioResult
 class StudioAuth:
     """Handles the authentication with the Rasa Studio authentication server."""
 
-    def __init__(
-        self,
-        studio_config: StudioConfig,
-        verify: bool = True,
-    ) -> None:
+    def __init__(self, studio_config: StudioConfig) -> None:
         self.config = studio_config
+        verify = not studio_config.disable_verify
+
         self.keycloak_openid = KeycloakOpenID(
             server_url=studio_config.authentication_server_url,
             client_id=studio_config.client_id,

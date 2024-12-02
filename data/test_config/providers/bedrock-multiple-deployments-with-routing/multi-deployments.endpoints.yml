@@ -1,0 +1,61 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ rephrase_all: True
+ llm:
+    model_group: bedrock_llm
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-bedrock-multi-deployments
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-bedrock-multi-deployments
+
+model_groups:
+  - id: bedrock_llm
+    models:
+    # Same LLM models across multiple regions
+      - provider: bedrock
+        model: anthropic.claude-3-5-sonnet-20240620-v1:0
+        aws_region_name: ${AWS_REGION_NAME_1}
+        timeout: 7
+        num_retries: 5
+      - provider: bedrock
+        model: anthropic.claude-3-5-sonnet-20240620-v1:0
+        aws_region_name: ${AWS_REGION_NAME_2}
+        timeout: 7
+        num_retries: 5
+    router:
+      routing_strategy: usage-based-routing
+      num_retries: 5
+      timeout: 30 
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
+      cache_responses: True
+
+  - id: bedrock_embeddings
+    models:
+      # Same Embedding models across multiple regions
+      - provider: bedrock
+        model: amazon.titan-embed-text-v1
+        aws_region_name: ${AWS_REGION_NAME_1}
+        timeout: 7
+        num_retries: 5
+      - provider: bedrock
+        model: amazon.titan-embed-text-v1
+        aws_region_name: ${AWS_REGION_NAME_2}
+        timeout: 7
+        num_retries: 5
+    router:
+      routing_strategy: least-busy
+      cache_responses: True

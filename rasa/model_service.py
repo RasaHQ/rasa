@@ -14,6 +14,7 @@ import rasa.utils.licensing
 from urllib.parse import urlparse
 
 from rasa.utils.log_utils import configure_structlog
+from rasa.utils.sanic_error_handler import register_custom_sanic_error_handler
 
 structlogger = structlog.get_logger()
 
@@ -103,6 +104,8 @@ def main() -> None:
 
     # list all routes
     list_routes(app)
+
+    register_custom_sanic_error_handler(app)
 
     app.run(host="0.0.0.0", port=MODEL_SERVICE_PORT, legacy=True, motd=False)
 

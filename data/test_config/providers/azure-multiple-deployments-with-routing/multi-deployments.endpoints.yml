@@ -7,6 +7,20 @@ nlg:
  llm:
     model_group: azure_llm
 
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-azure-multi-deployments
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-azure-multi-deployments
+
 model_groups:
   - id: azure_llm
     models:

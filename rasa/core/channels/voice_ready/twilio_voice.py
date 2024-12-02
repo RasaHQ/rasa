@@ -358,38 +358,23 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
         """Name of the output channel."""
         return "twilio_voice"
 
-    @staticmethod
-    def _emoji_warning(text: Text) -> None:
-        """Raises a warning if text contains an emoji."""
-        emoji_regex = rasa.utils.io.get_emoji_regex()
-        if emoji_regex.findall(text):
-            rasa.shared.utils.io.raise_warning(
-                "Text contains an emoji in a voice response. "
-                "Review responses to provide a voice-friendly alternative."
-            )
-
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         """Sends the text message after removing emojis."""
-        self._emoji_warning(text)
+        text = rasa.utils.io.remove_emojis(text)
         for message_part in text.strip().split("\n\n"):
             await self._persist_message(self._message(recipient_id, text=message_part))
 
     async def send_text_with_buttons(
         self,
-        recipient_id: Text,
-        text: Text,
-        buttons: List[Dict[Text, Any]],
+        recipient_id: str,
+        text: str,
+        buttons: List[Dict[str, Any]],
         **kwargs: Any,
     ) -> None:
-        """Convert buttons into a voice representation."""
-        self._emoji_warning(text)
-        await self._persist_message(self._message(recipient_id, text=text))
-
-        for b in buttons:
-            self._emoji_warning(b["title"])
-            await self._persist_message(self._message(recipient_id, text=b["title"]))
+        """Uses the concise button output format for voice channels."""
+        await self.send_text_with_buttons_concise(recipient_id, text, buttons, **kwargs)
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any

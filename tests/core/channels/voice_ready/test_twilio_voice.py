@@ -63,19 +63,18 @@ async def test_twilio_voice_twiml_response_buttons():
             {"title": "No", "payload": "/deny"},
         ],
     )
-    assert len(output_channel.messages) == 3
+    assert len(output_channel.messages) == 1
     message_str = " ".join([m["text"] for m in output_channel.messages])
-    assert message_str == "Buttons: Yes No"
+    assert message_str == "Buttons: Yes, No"
 
     twiml = tv._build_twilio_voice_response(output_channel.messages)
     assert (
         str(twiml) == '<?xml version="1.0" encoding="UTF-8"?><Response>'
-        '<Say voice="woman">Buttons:</Say><Pause length="1" />'
-        '<Say voice="woman">Yes</Say><Pause length="1" />'
         '<Gather action="/webhooks/twilio_voice/webhook" '
         'actionOnEmptyResult="true" enhanced="false" input="speech" '
         'speechModel="default" speechTimeout="5">'
-        '<Say voice="woman">No</Say></Gather></Response>'
+        '<Say voice="woman">Buttons: Yes, No</Say>'
+        "</Gather></Response>"
     )
 
 
@@ -166,14 +165,6 @@ async def test_twilio_voice_keep_image_text():
     )
     assert len(output_channel.messages) == 1
     assert output_channel.messages[0]["text"] == "Some text."
-
-
-async def test_twilio_emoji_warning():
-    with pytest.warns(UserWarning):
-        output_channel = TwilioVoiceCollectingOutputChannel()
-        await output_channel.send_response(
-            recipient_id="User", message={"text": "Howdy 😀"}
-        )
 
 
 async def test_twilio_voice_multiple_responses():

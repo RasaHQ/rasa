@@ -9,3 +9,17 @@ nlg:
    model: Snowflake/snowflake-arctic-base
    api_base: "http://localhost:8000/v1"
    timeout: 7
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-self-hosted
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-self-hosted

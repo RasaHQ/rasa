@@ -6,6 +6,21 @@ nlg:
  rephrase_all: True
  llm:
     model_group: gemini_llm
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-gemini-multi-deployments
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-gemini-multi-deployments
+
 model_groups:
   - id: gemini_llm
     models:

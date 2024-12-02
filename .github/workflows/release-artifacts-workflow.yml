@@ -38,6 +38,8 @@ on:
 #          - self-hosted
           - azure-multiple-deployments-with-routing
           - gemini-multiple-deployments-with-routing
+          - huggingface-multiple-deployments-with-routing
+          - bedrock-multiple-deployments-with-routing
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`. Ignored unless `run_e2e_test_on_providers==true`"
         type: string

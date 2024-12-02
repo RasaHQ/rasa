@@ -71,6 +71,11 @@ runs:
                 model: ${{ inputs.llm-as-judge-model }}" > conftest.yml
       shell: bash
 
+    - name: Run OTEL collector for Tracing and Metrics collection
+      working-directory: data/test_config/providers
+      run: docker compose -f otel-docker-compose.yml up -d
+      shell: bash
+
     - name: Setup Python Environment
       uses: RasaHQ/rasa-private/.github/actions/setup-python-env@main
       with:
@@ -97,7 +102,7 @@ runs:
       shell: bash
 
     - name: Configure AWS credentials
-      if: ${{ inputs.provider == 'bedrock' }}
+      if: ${{ contains(inputs.provider, 'bedrock') }}
       uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 #v3.0.1
       with:
         role-to-assume: arn:aws:iam::329710836760:role/GitHubAction-BedrockFullAccess
@@ -128,13 +133,29 @@ runs:
     # so need to wake it up before usage
     - name: Wake up Hugging Face inference endpoint
       if: ${{ inputs.provider == 'huggingface' }}
-      working-directory: data/test_config/providers/huggingface
+      working-directory: data/test_config/providers
       env:
         ENDPOINT_NAME: cmd-gen-codellama-13b-calm-d-bfz
         ENDPOINT_NAMESPACE: rasa
       run: |
         : Wake up Hugging Face inference endpoint
         pip install huggingface_hub && ./wake-up-inference-endpoint.py
+      shell: bash
+
+    # As endpoint are scaled-to-zero upon inactivity for cost minimisation,
+    # so need to wake them up before usage
+    - name: Wake up multiple Hugging Face inference endpoints
+      if: ${{ inputs.provider == 'huggingface-multiple-deployments-with-routing' }}
+      working-directory: data/test_config/providers
+      env:
+        ENDPOINT_NAME: cmd-gen-codellama-13b-calm-d-bfz
+        ENDPOINT_NAMESPACE: rasa
+      run: |
+        : Wake up multiple Hugging Face inference endpoint
+        pip install huggingface_hub
+        export ENDPOINT_NAME=cmd-gen-codellama-13b-calm-d-rbo && ./wake-up-inference-endpoint.py & pid1=$!
+        export ENDPOINT_NAME=cmd-gen-codellama-13b-calm-d-kuz && ./wake-up-inference-endpoint.py & pid2=$!
+        wait $pid1 && wait $pid2
       shell: bash
 
     - name: Run duckling server
@@ -255,6 +276,14 @@ runs:
       with:
         name: ${{ inputs.provider }}-E2E-test-${{ inputs.train-and-test }}-results
         path: tests/e2e_results_failed.yml
+
+    - name: Print OTEL traces and metrics
+      if: always()
+      working-directory: data/test_config/providers
+      run: |
+        : Print OTEL traces and metrics
+        docker compose -f otel-docker-compose.yml logs
+      shell: bash
 
     - name: Get Rasa-pro version and short-SHA, and set as environment variables
       if: always()

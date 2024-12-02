@@ -192,6 +192,7 @@ dask = "~2024.7.0" # later versions drop python 3.9 support
 numpy = "~1.26.4"
 scipy = "~1.13.1"
 scikit-learn = "~1.5.1"
+demoji = "^1.1.0"
 
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31" # newer versions don't provide wheels for Windows

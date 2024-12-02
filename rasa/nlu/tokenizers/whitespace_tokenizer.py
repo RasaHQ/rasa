@@ -43,8 +43,6 @@ class WhitespaceTokenizer(Tokenizer):
     def __init__(self, config: Dict[Text, Any]) -> None:
         """Initialize the tokenizer."""
         super().__init__(config)
-        self.emoji_pattern = rasa.utils.io.get_emoji_regex()
-
         if "case_sensitive" in self._config:
             rasa.shared.utils.io.raise_warning(
                 "The option 'case_sensitive' was moved from the tokenizers to the "
@@ -64,18 +62,9 @@ class WhitespaceTokenizer(Tokenizer):
         # Path to the dictionaries on the local filesystem.
         return cls(config)
 
-    def remove_emoji(self, text: Text) -> Text:
-        """Remove emoji if the full text, aka token, matches the emoji regex."""
-        match = self.emoji_pattern.fullmatch(text)
-
-        if match is not None:
-            return ""
-
-        return text
-
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
-        text = message.get(attribute)
-
+        original_text = message.get(attribute)
+        text = rasa.utils.io.remove_emojis(original_text)
         # we need to use regex instead of re, because of
         # https://stackoverflow.com/questions/12746458/python-unicode-regular-expression-matching-failing-with-some-unicode-characters
 
@@ -94,11 +83,11 @@ class WhitespaceTokenizer(Tokenizer):
             text,
         ).split()
 
-        words = [self.remove_emoji(w) for w in words]
         words = [w for w in words if w]
 
         # if we removed everything like smiles `:)`, use the whole text as 1 token
         if not words:
+            text = original_text
             words = [text]
 
         tokens = self._convert_words_to_tokens(words, text)

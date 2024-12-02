@@ -2,7 +2,7 @@ import asyncio
 import structlog
 import copy
 from dataclasses import asdict, dataclass
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict, Optional, Tuple
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from rasa.core.channels.voice_stream.util import generate_silence
 from rasa.shared.core.constants import (
@@ -40,6 +40,7 @@ from rasa.core.channels.voice_stream.tts.azure import AzureTTS
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
 from rasa.core.channels.voice_stream.tts.cartesia import CartesiaTTS
 from rasa.core.channels.voice_stream.tts.tts_cache import TTSCache
+from rasa.utils.io import remove_emojis
 
 logger = structlog.get_logger(__name__)
 
@@ -157,9 +158,20 @@ class VoiceOutputChannel(OutputChannel):
                 self.tracker_state["slots"][SLOT_SILENCE_TIMEOUT]
             )
 
+    async def send_text_with_buttons(
+        self,
+        recipient_id: str,
+        text: str,
+        buttons: List[Dict[str, Any]],
+        **kwargs: Any,
+    ) -> None:
+        """Uses the concise button output format for voice channels."""
+        await self.send_text_with_buttons_concise(recipient_id, text, buttons, **kwargs)
+
     async def send_text_message(
         self, recipient_id: str, text: str, **kwargs: Any
     ) -> None:
+        text = remove_emojis(text)
         self.update_silence_timeout()
         cached_audio_bytes = self.tts_cache.get(text)
         collected_audio_bytes = RasaAudioBytes(b"")
