@@ -208,6 +208,8 @@ class YamlValidationException(YamlException, ValueError):
         try:
             yaml = YAML()
             yaml.default_flow_style = False
+            # Width is set to 1000 so we don't break the lines of the original YAML file
+            yaml.width = 1000
             yaml.indent(mapping=2, sequence=4, offset=2)
             stream = io.StringIO()
             yaml.dump(self.content, stream)
