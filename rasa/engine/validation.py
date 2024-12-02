@@ -18,11 +18,10 @@ from typing import (
     List,
 )
 
+import rasa.utils.common
 import structlog
 import typing_utils
-
-import rasa.utils.common
-from rasa.core import IntentlessPolicy
+from rasa.core import IntentlessPolicy, ContextualResponseRephraser
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.coexistence.constants import (
@@ -67,6 +66,7 @@ from rasa.shared.constants import (
     MODEL_GROUP_ID_CONFIG_KEY,
     ROUTER_CONFIG_KEY,
     MODELS_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
     ROUTER_STRATEGY_CONFIG_KEY,
     VALID_ROUTER_STRATEGIES,
     ROUTER_STRATEGIES_REQUIRING_REDIS_CACHE,
@@ -890,13 +890,13 @@ def _validate_component_model_client_config(
         # no llm configuration present
         return
 
-    if MODELS_CONFIG_KEY in component_config[key]:
+    if MODEL_GROUP_CONFIG_KEY in component_config[key]:
         model_group_syntax_used.append(True)
-        model_group_ids.append(component_config[key][MODELS_CONFIG_KEY])
+        model_group_ids.append(component_config[key][MODEL_GROUP_CONFIG_KEY])
 
         if len(component_config[key]) > 1:
             print_error_and_exit(
-                f"You specified a '{MODELS_CONFIG_KEY}' for the '{key}' "
+                f"You specified a '{MODEL_GROUP_CONFIG_KEY}' for the '{key}' "
                 f"config key for the component "
                 f"'{component_name or component_config['name']}'. "
                 "No other parameters are allowed under the "
@@ -936,34 +936,46 @@ def validate_model_client_configuration_setup(config: Dict[str, Any]) -> None:
     model_group_syntax_used: List[bool] = []
     model_group_ids: List[str] = []
 
-    if "pipeline" not in config:
-        return
+    for outer_key in ["pipeline", "policies"]:
+        if outer_key not in config or config[outer_key] is None:
+            continue
 
-    for component in config["pipeline"]:
-        for key in [LLM_CONFIG_KEY, EMBEDDINGS_CONFIG_KEY]:
-            _validate_component_model_client_config(
-                component, key, model_group_syntax_used, model_group_ids
-            )
-
-        # as flow retrieval is not a component itself, we need to
-        # check it separately
-        if FLOW_RETRIEVAL_KEY in component:
-            if EMBEDDINGS_CONFIG_KEY in component[FLOW_RETRIEVAL_KEY]:
+        for component in config[outer_key]:
+            for key in [LLM_CONFIG_KEY, EMBEDDINGS_CONFIG_KEY]:
                 _validate_component_model_client_config(
-                    component[FLOW_RETRIEVAL_KEY],
-                    EMBEDDINGS_CONFIG_KEY,
-                    model_group_syntax_used,
-                    model_group_ids,
-                    component["name"] + "." + FLOW_RETRIEVAL_KEY,
+                    component, key, model_group_syntax_used, model_group_ids
                 )
+
+            # as flow retrieval is not a component itself, we need to
+            # check it separately
+            if FLOW_RETRIEVAL_KEY in component:
+                if EMBEDDINGS_CONFIG_KEY in component[FLOW_RETRIEVAL_KEY]:
+                    _validate_component_model_client_config(
+                        component[FLOW_RETRIEVAL_KEY],
+                        EMBEDDINGS_CONFIG_KEY,
+                        model_group_syntax_used,
+                        model_group_ids,
+                        component["name"] + "." + FLOW_RETRIEVAL_KEY,
+                    )
+
+    # also include the ContextualResponseRephraser component
+    endpoints = AvailableEndpoints.get_instance()
+    if endpoints.nlg is not None:
+        _validate_component_model_client_config(
+            endpoints.nlg.kwargs,
+            LLM_CONFIG_KEY,
+            model_group_syntax_used,
+            model_group_ids,
+            ContextualResponseRephraser.__name__,
+        )
 
     if not is_uniform_bool_list(model_group_syntax_used):
         print_error_and_exit(
             "Some of your components refer to an LLM using the "
-            f"'{MODELS_CONFIG_KEY}' parameter, other components directly"
-            f"define the LLM under the '{LLM_CONFIG_KEY}' or the "
+            f"'{MODEL_GROUP_CONFIG_KEY}' parameter, other components directly"
+            f" define the LLM under the '{LLM_CONFIG_KEY}' or the "
             f"'{EMBEDDINGS_CONFIG_KEY}' key. You cannot use"
-            "a both types of definition. Please chose one syntax "
+            " both types of definitions. Please chose one syntax "
             "and update your config."
         )
 
