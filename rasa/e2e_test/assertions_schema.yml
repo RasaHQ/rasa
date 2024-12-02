@@ -83,29 +83,6 @@ schema;assertions:
            text_matches:
              type: str
              nullable: false
-       bot_did_not_utter:
-         type: map
-         nullable: false
-         mapping:
-           utter_name:
-             type: str
-             nullable: false
-           buttons:
-             type: seq
-             nullable: false
-             matching: "all"
-             sequence:
-               - type: map
-                 mapping:
-                   title:
-                     type: str
-                     nullable: false
-                   payload:
-                     type: str
-                     nullable: false
-           text_matches:
-             type: str
-             nullable: false
        generative_response_is_relevant:
          type: map
          mapping:
