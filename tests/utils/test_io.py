@@ -143,3 +143,18 @@ def test_write_yaml(tmp_path: Path) -> None:
     test_data = [{"a": 1}, {"b": 2}]
     rasa.utils.io.write_yaml(test_data, test_file)
     assert test_file.read_text() == textwrap.dedent("- a: 1\n" "- b: 2\n")
+
+
+@pytest.mark.parametrize(
+    "s,expected",
+    [
+        ("no emoji", "no emoji"),
+        ("🤣haha", "haha"),
+        ("☠️😎😜", ""),
+        ("🇩🇪🇬🇧🇺🇸🇷🇸", ""),
+        ("emoji 🥪 sandwich", "emoji sandwich"),
+        ("emoji ending 🎬", "emoji ending"),
+    ],
+)
+def test_remove_emojis(s: str, expected: str) -> None:
+    assert rasa.utils.io.remove_emojis(s) == expected

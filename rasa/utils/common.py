@@ -90,6 +90,11 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # Ignore Keras DeprecationWarning since it requires that we
     # upgrade tensorflow-macos to 2.13.0 version.
     (DeprecationWarning, "invalid escape sequence*"),
+    # Ignore importlib open_text and read_text warnings for now
+    (
+        DeprecationWarning,
+        "https://importlib-resources.readthedocs.io/en/latest/using.html#migrating-from-legacy",
+    ),
 ]
 
 PYTHON_LOGGING_SCHEMA_DOCS = (

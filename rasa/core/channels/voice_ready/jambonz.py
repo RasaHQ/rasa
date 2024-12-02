@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, Callable, Dict, Optional, Text
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
 
 import structlog
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
@@ -14,7 +14,7 @@ from sanic.request import Request
 from sanic.response import HTTPResponse
 
 from rasa.shared.utils.common import mark_as_beta_feature
-
+from rasa.utils.io import remove_emojis
 
 structlogger = structlog.get_logger()
 
@@ -87,6 +87,7 @@ class JambonzWebsocketOutput(OutputChannel):
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         """Send a text message."""
+        text = remove_emojis(text)
         await self.add_message({"type": "message", "text": text})
 
     async def send_image_url(
@@ -108,3 +109,13 @@ class JambonzWebsocketOutput(OutputChannel):
     async def hangup(self, recipient_id: Text, **kwargs: Any) -> None:
         """Indicate that the conversation should be ended."""
         await send_ws_hangup_message(DEFAULT_HANGUP_DELAY_SECONDS, self.ws)
+
+    async def send_text_with_buttons(
+        self,
+        recipient_id: str,
+        text: str,
+        buttons: List[Dict[str, Any]],
+        **kwargs: Any,
+    ) -> None:
+        """Uses the concise button output format for voice channels."""
+        await self.send_text_with_buttons_concise(recipient_id, text, buttons, **kwargs)

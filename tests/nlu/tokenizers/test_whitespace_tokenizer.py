@@ -69,7 +69,7 @@ def create_whitespace_tokenizer(config: Optional[Dict] = None) -> WhitespaceToke
             [(0, 82), (83, 165)],
         ),
         (
-            "Joselico gracias Dois 🙏🇺🇸🏦🛠🔥⭐️🦅👑💪",
+            "Joselico gracias Dois 🙏🇺🇸🏦🛠🔥⭐🦅👑💪",
             ["Joselico", "gracias", "Dois"],
             [(0, 8), (9, 16), (17, 21)],
         ),
