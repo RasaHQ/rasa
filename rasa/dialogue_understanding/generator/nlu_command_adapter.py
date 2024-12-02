@@ -19,6 +19,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows.flows_list import FlowsList
+from rasa.shared.core.flows.steps import CollectInformationFlowStep
 from rasa.shared.core.slot_mappings import (
     SlotFillingManager,
     extract_slot_value,
@@ -217,7 +218,24 @@ def _issue_set_slot_commands(
     commands: List[Command] = []
     domain = domain if domain else Domain.empty()
     slot_filling_manager = SlotFillingManager(domain, tracker, message)
-    available_slot_names = flows.available_slot_names()
+
+    # only use slots that don't have ask_before_filling set to True
+    available_slot_names = flows.available_slot_names(ask_before_filling=False)
+
+    # check if the current step is a CollectInformationFlowStep
+    # in case it has ask_before_filling set to True, we need to add the
+    # slot to the available_slot_names
+    if tracker.active_flow:
+        flow = flows.flow_by_id(tracker.active_flow)
+        step_id = tracker.current_step_id
+        if flow is not None:
+            current_step = flow.step_by_id(step_id)
+            if (
+                current_step
+                and isinstance(current_step, CollectInformationFlowStep)
+                and current_step.ask_before_filling
+            ):
+                available_slot_names.add(current_step.collect)
 
     for _, slot in tracker.slots.items():
         # if a slot is not collected in available flows,

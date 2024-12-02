@@ -234,12 +234,16 @@ class FlowsList:
             [f for f in self.underlying_flows if not f.is_startable_only_via_link()]
         )
 
-    def available_slot_names(self) -> Set[str]:
+    def available_slot_names(
+        self, ask_before_filling: Optional[bool] = None
+    ) -> Set[str]:
         """Get all slot names collected by flows."""
         return {
             step.collect
             for flow in self.underlying_flows
             for step in flow.get_collect_steps()
+            if ask_before_filling is None
+            or step.ask_before_filling == ask_before_filling
         }
 
     def available_custom_actions(self) -> Set[str]:
