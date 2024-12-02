@@ -78,6 +78,7 @@ from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.shared.utils.yaml import validate_training_data
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.sanic_error_handler import register_custom_sanic_error_handler
 
 if TYPE_CHECKING:
     from ssl import SSLContext
@@ -687,6 +688,7 @@ def create_app(
     app = Sanic("rasa_server")
     app.config.RESPONSE_TIMEOUT = response_timeout
     configure_cors(app, cors_origins)
+    register_custom_sanic_error_handler(app)
 
     # Reset Sanic warnings filter that allows the triggering of Sanic warnings
     warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"sanic.*")
