@@ -875,19 +875,21 @@ class BotDidNotUtterAssertion(Assertion):
                             error_message, prior_events, turn_events, self.line
                         )
                 # Check if the bot response contains the forbidden buttons
-                if self.buttons is not None:
-                    if self._buttons_match(event):
-                        error_message = (
-                            "Bot uttered a forbidden response with specified buttons."
-                        )
-                        error_message += assertion_order_error_message
-                        return self._generate_assertion_failure(
-                            error_message, prior_events, turn_events, self.line
-                        )
+                if self._buttons_match(event):
+                    error_message = (
+                        "Bot uttered a forbidden response with specified buttons."
+                    )
+                    error_message += assertion_order_error_message
+                    return self._generate_assertion_failure(
+                        error_message, prior_events, turn_events, self.line
+                    )
         return None, None
 
     def _buttons_match(self, event: BotUttered) -> bool:
         """Check if the bot response contains any of the forbidden buttons."""
+        if self.buttons is None:
+            return False
+
         actual_buttons = event.data.get("buttons", [])
         if not actual_buttons:
             return False
