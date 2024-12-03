@@ -7,12 +7,13 @@ from typing import Text, Dict, Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-import rasa.shared.nlu.training_data.schemas.data_schema as schema
-import rasa.shared.utils.io
-import rasa.utils.io as io_utils
 from _pytest.monkeypatch import MonkeyPatch
 from pep440_version_utils import Version
 from pykwalify.errors import SchemaError
+
+import rasa.shared.nlu.training_data.schemas.data_schema as schema
+import rasa.shared.utils.io
+import rasa.utils.io as io_utils
 from rasa.e2e_test.utils.validation import read_e2e_test_schema
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
@@ -25,7 +26,6 @@ from rasa.shared.exceptions import YamlException, SchemaValidationError
 from rasa.shared.nlu.training_data.formats.rasa_yaml import NLU_SCHEMA_FILE
 from rasa.shared.utils.yaml import (
     KEY_TRAINING_DATA_FORMAT_VERSION,
-    read_yaml_file,
     read_schema_file,
     validate_yaml_with_jsonschema,
     validate_yaml_content_using_schema,
