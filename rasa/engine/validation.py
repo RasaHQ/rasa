@@ -908,10 +908,9 @@ def _validate_component_model_client_config(
         # check that api_key is not set in config
         if API_KEY in component_config[key]:
             print_error_and_exit(
-                f"You specified '{API_KEY}' in the config for"
-                f"{component_name or component_config['name']}, which "
-                "is not allowed. Set API keys through "
-                "environment variables."
+                f"You specified '{API_KEY}' in the config for "
+                f"'{component_name or component_config['name']}', which is not allowed."
+                " Set API keys through environment variables."
             )
 
 
