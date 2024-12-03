@@ -25,7 +25,7 @@ from rasa.shared.exceptions import YamlException, SchemaValidationError
 from rasa.shared.nlu.training_data.formats.rasa_yaml import NLU_SCHEMA_FILE
 from rasa.shared.utils.yaml import (
     KEY_TRAINING_DATA_FORMAT_VERSION,
-    YamlValidationException,
+    read_yaml_file,
     read_schema_file,
     validate_yaml_with_jsonschema,
     validate_yaml_content_using_schema,
@@ -36,6 +36,7 @@ from rasa.shared.utils.yaml import (
     read_yaml_file,
     validate_yaml_data_using_schema_with_assertions,
     parse_raw_yaml,
+    YamlValidationException,
 )
 
 python_module_path = "rasa.shared.utils.yaml"

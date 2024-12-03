@@ -908,10 +908,9 @@ def _validate_component_model_client_config(
         # check that api_key is not set in config
         if API_KEY in component_config[key]:
             print_error_and_exit(
-                f"You specified '{API_KEY}' in the config for"
-                f"{component_name or component_config['name']}, which "
-                "is not allowed. Set API keys through "
-                "environment variables."
+                f"You specified '{API_KEY}' in the config for "
+                f"'{component_name or component_config['name']}', which is not allowed."
+                " Set API keys through environment variables."
             )
 
 
@@ -1118,17 +1117,22 @@ def _validate_api_key_is_an_environment_variable(
     for model_group in model_groups:
         for model_config in model_group[MODELS_CONFIG_KEY]:
             for key, value in model_config.items():
-                if (
-                    key == API_KEY
-                    and isinstance(value, str)
-                    and not re.match(r"\${(\w+)}", value)
-                ):
-                    print_error_and_exit(
-                        f"You defined the '{API_KEY}' in model group "
-                        f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' as a string. "
-                        f"The '{API_KEY}' must be set as an environment variable. "
-                        f"Please update your config."
-                    )
+                if key == API_KEY:
+                    if isinstance(value, str):
+                        if not re.match(r"\${(\w+)}", value):
+                            print_error_and_exit(
+                                f"You defined the '{API_KEY}' in model group "
+                                f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' as a "
+                                f"string. The '{API_KEY}' must be set as an environment"
+                                f" variable. Please update your config."
+                            )
+                    else:
+                        print_error_and_exit(
+                            f"You should define the '{API_KEY}' in model group "
+                            f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' using the "
+                            f"environment variable syntax - ${{ENV_VARIABLE_NAME}}. "
+                            f"Please update your config."
+                        )
 
 
 def validate_model_group_configuration_setup() -> None:

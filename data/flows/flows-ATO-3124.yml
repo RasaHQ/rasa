@@ -1,0 +1,301 @@
+flows:
+  transfer_money:
+    steps:
+    - id: 0_collect_recipient
+      next: 1_collect_amount
+      metadata:
+        line_numbers: 5-5
+      collect: recipient
+      utter: utter_ask_recipient
+      ask_before_filling: false
+      reset_after_flow_ends: true
+      rejections: []
+    - id: 1_collect_amount
+      next: 2_utter_transfer_complete
+      description: the number of US dollars to send
+      metadata:
+        line_numbers: 6-7
+      collect: amount
+      utter: utter_ask_amount
+      ask_before_filling: false
+      reset_after_flow_ends: true
+      rejections: []
+    - id: 2_utter_transfer_complete
+      next: END
+      metadata:
+        line_numbers: 8-8
+      action: utter_transfer_complete
+    description: 💰 This flow lets users send money to friends and family.
+    file_path: data\flows.yml
+  pattern_chitchat:
+    steps:
+    - id: 0_utter_free_chitchat_response
+      next: END
+      metadata:
+        line_numbers: 6-6
+      action: utter_free_chitchat_response
+    name: pattern chitchat
+    description: Conversation repair flow for off-topic interactions that won't disrupt the main conversation. should not respond to greetings or anything else for which there is a flow defined
+    file_path: data\patterns.yml
+  unsend_money:
+    steps:
+    - id: 0_collect_recipient
+      next: 1_collect_amount
+      metadata:
+        line_numbers: 5-5
+      collect: recipient
+      utter: utter_ask_recipient
+      ask_before_filling: false
+      reset_after_flow_ends: true
+      rejections: []
+    - id: 1_collect_amount
+      next: 2_utter_transfer_complete
+      description: the number of US dollars to send
+      metadata:
+        line_numbers: 6-7
+      collect: amount
+      utter: utter_ask_amount
+      ask_before_filling: false
+      reset_after_flow_ends: true
+      rejections: []
+    - id: 2_utter_transfer_complete
+      next: END
+      metadata:
+        line_numbers: 8-8
+      action: utter_transfer_complete
+    description: unsend flow lets users send money to friends and family.
+    file_path: data\unsend.yml
+  pattern_cancel_flow:
+    steps:
+    - id: 0_action_cancel_flow
+      next: 1_utter_flow_cancelled_rasa
+      metadata:
+        line_numbers: 110-110
+      action: action_cancel_flow
+    - id: 1_utter_flow_cancelled_rasa
+      next: END
+      metadata:
+        line_numbers: 111-112
+      action: utter_flow_cancelled_rasa
+    name: pattern_cancel_flow
+    description: Conversation repair flow that starts when a flow is cancelled
+    file_path: C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml
+  pattern_cannot_handle:
+    steps:
+    - id: 0_noop
+      next:
+      - if: "'{{context.reason}}' = 'cannot_handle_chitchat'"
+        then:
+        - id: 1_utter_cannot_handle
+          next: END
+          metadata:
+            line_numbers: 123-125
+          action: utter_cannot_handle
+      - if: "'{{context.reason}}' = 'cannot_handle_not_supported'"
+        then:
+        - id: 2_utter_cannot_handle
+          next: END
+          metadata:
+            line_numbers: 128-130
+          action: utter_cannot_handle
+      - else:
+        - id: 3_utter_ask_rephrase
+          next: END
+          metadata:
+            line_numbers: 132-134
+          action: utter_ask_rephrase
+      metadata:
+        line_numbers: 118-134
+      noop: true
+    name: pattern cannot handle
+    description: "Conversation repair flow for addressing failed command generation scenarios\n"
+    file_path: C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml
+  pattern_clarification:
+    steps:
+    - id: 0_action_clarify_flows
+      next: 1_utter_clarification_options_rasa
+      metadata:
+        line_numbers: 145-145
+      action: action_clarify_flows
+    - id: 1_utter_clarification_options_rasa
+      next: END
+      metadata:
+        line_numbers: 146-147
+      action: utter_clarification_options_rasa
+    name: pattern clarification
+    description: Conversation repair flow for handling ambiguous requests that could match multiple flows
+    file_path: C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml
+  pattern_code_change:
+    steps:
+    - id: 0_utter_inform_code_change
+      next: 1_action_clean_stack
+      metadata:
+        line_numbers: 152-152
+      action: utter_inform_code_change
+    - id: 1_action_clean_stack
+      next: END
+      metadata:
+        line_numbers: 153-154
+      action: action_clean_stack
+    name: pattern code change
+    description: Conversation repair flow for cleaning the stack after an assistant update
+    file_path: C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml
+  pattern_collect_information:
+    steps:
+    - id: start
+      next: 1_validate_{{context.collect}}
+      metadata:
+        line_numbers: 159-160
+      action: action_run_slot_rejections
+    - id: 1_validate_{{context.collect}}
+      next:
+      - if: slots.{{context.collect}} is not null
+        then: END
+      - else: ask_collect
+      metadata:
+        line_numbers: 161-165
+      action: validate_{{context.collect}}
+    - id: ask_collect
+      next: 3_{{context.collect_action}}
+      metadata:
+        line_numbers: 166-167
+      action: '{{context.utter}}'
+    - id: 3_{{context.collect_action}}
+      next: 4_action_listen
+      metadata:
+        line_numbers: 168-168
+      action: '{{context.collect_action}}'
+    - id: 4_action_listen
+      next: start
+      metadata:
+        line_numbers: 169-171
+      action: action_listen
+    name: pattern collect information
+    description: Flow for collecting information from users
+    file_path: C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml
+  pattern_completed:
+    steps:
+    - id: 0_utter_can_do_something_else
+      next: END
+      metadata:
+        line_numbers: 176-177
+      action: utter_can_do_something_else
+    name: pattern completed
+    description: Flow that asks if the user needs more help after completing their initiated use cases
+    file_path: C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml
+  pattern_continue_interrupted:
+    steps:
+    - id: 0_utter_flow_continue_interrupted
+      next: END
+      metadata:
+        line_numbers: 182-183
+      action: utter_flow_continue_interrupted
+    name: pattern continue interrupted
+    description: Conversation repair flow for managing when users switch between different flows
+    file_path: C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml
+  pattern_correction:
+    steps:
+    - id: 0_action_correct_flow_slot
+      next:
+      - if: not context.is_reset_only
+        then:
+        - id: 1_utter_corrected_previous_input
+          next: END
+          metadata:
+            line_numbers: 192-193
+          action: utter_corrected_previous_input
+      - else: END
+      metadata:
+        line_numbers: 188-195
+      action: action_correct_flow_slot
+    name: pattern correction
+    description: Conversation repair flow for managing user input changes or error corrections
+    file_path: C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml
+  pattern_human_handoff:
+    steps:
+    - id: 0_utter_human_handoff_not_available
+      next: END
+      metadata:
+        line_numbers: 200-201
+      action: utter_human_handoff_not_available
+    name: pattern human handoff
+    description: Conversation repair flow for switching users to a human agent if their request can't be handled
+    file_path: C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml
+  pattern_internal_error:
+    steps:
+    - id: 0_noop
+      next:
+      - if: "'{{context.error_type}}' = 'rasa_internal_error_user_input_too_long'"
+        then:
+        - id: 1_utter_user_input_too_long_error_rasa
+          next: END
+          metadata:
+            line_numbers: 210-211
+          action: utter_user_input_too_long_error_rasa
+      - if: "'{{context.error_type}}' = 'rasa_internal_error_user_input_empty'"
+        then:
+        - id: 2_utter_user_input_empty_error_rasa
+          next: END
+          metadata:
+            line_numbers: 214-215
+          action: utter_user_input_empty_error_rasa
+      - else:
+        - id: 3_utter_internal_error_rasa
+          next: END
+          metadata:
+            line_numbers: 217-220
+          action: utter_internal_error_rasa
+      metadata:
+        line_numbers: 206-220
+      noop: true
+    name: pattern internal error
+    description: Conversation repair flow for informing users about internal errors
+    file_path: C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml
+  pattern_restart:
+    steps:
+    - id: 0_action_restart
+      next: END
+      metadata:
+        line_numbers: 227-228
+      action: action_restart
+    name: pattern restart
+    description: Flow for restarting the conversation
+    nlu_trigger:
+    - intent:
+        name: restart
+        confidence_threshold: 0.0
+    file_path: C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml
+  pattern_search:
+    steps:
+    - id: 0_utter_no_knowledge_base
+      next: END
+      metadata:
+        line_numbers: 233-235
+      action: utter_no_knowledge_base
+    name: pattern search
+    description: Flow for handling knowledge-based questions
+    file_path: C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml
+  pattern_session_start:
+    steps:
+    - id: 0_action_session_start
+      next: END
+      metadata:
+        line_numbers: 242-243
+      action: action_session_start
+    name: pattern session start
+    description: Flow for starting the conversation
+    nlu_trigger:
+    - intent:
+        name: session_start
+        confidence_threshold: 0.0
+    file_path: C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml
+  pattern_skip_question:
+    steps:
+    - id: 0_utter_skip_question_answer
+      next: END
+      metadata:
+        line_numbers: 248-248
+      action: utter_skip_question_answer
+    name: pattern skip question
+    description: Conversation repair flow for managing user intents to skip questions (steps)
+    file_path: C:\Users\cc9206\Documents\shai\rasa\.venv\lib\site-packages\rasa\dialogue_understanding\patterns\default_flows_for_patterns.yml
