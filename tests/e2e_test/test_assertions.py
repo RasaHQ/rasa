@@ -25,6 +25,7 @@ from rasa.e2e_test.assertions import (
     PatternClarificationContainsAssertion,
     SlotWasNotSetAssertion,
     SlotWasSetAssertion,
+    BotDidNotUtterAssertion,
 )
 from rasa.e2e_test.e2e_config import LLMJudgeConfig
 from rasa.shared.core.events import (
@@ -112,6 +113,24 @@ from rasa.shared.exceptions import RasaException
                     AssertedButton(title="Transfer Money", payload="/transfer_money")
                 ],
                 text_matches="You can transfer money or check your balance.",
+            ),
+        ),
+        (
+            {
+                "bot_did_not_utter": {
+                    "utter_name": "utter_options",
+                    "text_matches": "You can transfer money or check your balance.",
+                    "buttons": [
+                        {"title": "Transfer Money", "payload": "/transfer_money"}
+                    ],
+                }
+            },
+            BotDidNotUtterAssertion(
+                utter_name="utter_options",
+                text_matches="You can transfer money or check your balance.",
+                buttons=[
+                    AssertedButton(title="Transfer Money", payload="/transfer_money")
+                ],
             ),
         ),
     ],
@@ -208,23 +227,26 @@ def test_pattern_clarification_contains_assertion_test():
 
 
 @pytest.mark.parametrize(
-    "assertion, turn_events",
+    "assertion, turn_events, is_matching_event_empty",
     [
         (
             FlowStartedAssertion(flow_id="transfer_money"),
             [FlowStarted(flow_id="transfer_money")],
+            False,
         ),
         (
             FlowCompletedAssertion(
                 flow_id="transfer_money", flow_step_id="utter_confirm_transfer"
             ),
             [FlowCompleted(flow_id="transfer_money", step_id="utter_confirm_transfer")],
+            False,
         ),
         (
             FlowCancelledAssertion(
                 flow_id="transfer_money", flow_step_id="utter_ask_confirmation"
             ),
             [FlowCancelled(flow_id="transfer_money", step_id="utter_ask_confirmation")],
+            False,
         ),
         (
             PatternClarificationContainsAssertion(
@@ -238,32 +260,38 @@ def test_pattern_clarification_contains_assertion_test():
                     },
                 )
             ],
+            False,
         ),
         (
             ActionExecutedAssertion(action_name="action_session_start"),
             [ActionExecuted(action_name="action_session_start")],
+            False,
         ),
         (
             SlotWasSetAssertion(slots=[AssertedSlot(name="name", value="John")]),
             [SlotSet(key="name", value="John")],
+            False,
         ),
         (
             SlotWasSetAssertion(
                 slots=[AssertedSlot(name="name", value="value key is undefined")]
             ),
             [SlotSet(key="name", value="John")],
+            False,
         ),
         (
             BotUtteredAssertion(
                 text_matches="You can transfer money or check your balance."
             ),
             [BotUttered(text="You can transfer money or check your balance.")],
+            False,
         ),
         (
             BotUtteredAssertion(
                 utter_name="utter_options",
             ),
             [BotUttered(metadata={"utter_action": "utter_options"})],
+            False,
         ),
         (
             BotUtteredAssertion(
@@ -280,15 +308,50 @@ def test_pattern_clarification_contains_assertion_test():
                     }
                 )
             ],
+            False,
+        ),
+        (
+            BotDidNotUtterAssertion(
+                text_matches="You can transfer money or check your balance."
+            ),
+            [BotUttered(text="Something else.")],
+            True,
+        ),
+        (
+            BotDidNotUtterAssertion(
+                utter_name="utter_options",
+            ),
+            [BotUttered(metadata={"utter_action": "utter_something_else"})],
+            True,
+        ),
+        (
+            BotDidNotUtterAssertion(
+                buttons=[
+                    AssertedButton(title="Transfer Money", payload="/transfer_money")
+                ]
+            ),
+            [
+                BotUttered(
+                    data={
+                        "buttons": [
+                            {"title": "Check Balance", "payload": "/check_balance"}
+                        ]
+                    }
+                )
+            ],
+            True,
         ),
     ],
 )
 def test_assertion_run_returns_no_assertion_failure(
-    assertion: Assertion, turn_events: List[Event]
+    assertion: Assertion, turn_events: List[Event], is_matching_event_empty: bool
 ) -> None:
     assertion_failure, matching_event = assertion.run(turn_events, [])
     assert assertion_failure is None
-    assert matching_event == turn_events[0]
+    if is_matching_event_empty:
+        assert matching_event is None
+    else:
+        assert matching_event == turn_events[0]
 
 
 def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
@@ -302,9 +365,10 @@ def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
 
 
 @pytest.mark.parametrize(
-    "assertion, expected_assertion_failure",
+    "turn_events, assertion, expected_assertion_failure",
     [
         (
+            [],
             FlowStartedAssertion(flow_id="transfer_money"),
             AssertionFailure(
                 assertion=FlowStartedAssertion(flow_id="transfer_money", line=None),
@@ -314,6 +378,7 @@ def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
             ),
         ),
         (
+            [],
             FlowCompletedAssertion(
                 flow_id="transfer_money", flow_step_id="utter_confirm_transfer"
             ),
@@ -329,6 +394,7 @@ def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
             ),
         ),
         (
+            [],
             FlowCancelledAssertion(
                 flow_id="transfer_money", flow_step_id="utter_ask_confirmation"
             ),
@@ -344,6 +410,7 @@ def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
             ),
         ),
         (
+            [],
             PatternClarificationContainsAssertion(
                 flow_names={"list_contacts", "add_contacts", "remove_contacts"}
             ),
@@ -358,6 +425,7 @@ def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
             ),
         ),
         (
+            [],
             ActionExecutedAssertion(action_name="action_session_start"),
             AssertionFailure(
                 assertion=ActionExecutedAssertion(
@@ -369,6 +437,7 @@ def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
             ),
         ),
         (
+            [],
             SlotWasSetAssertion(slots=[AssertedSlot(name="name", value="John")]),
             AssertionFailure(
                 assertion=SlotWasSetAssertion(
@@ -380,6 +449,7 @@ def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
             ),
         ),
         (
+            [],
             BotUtteredAssertion(
                 text_matches="You can transfer money or check your balance."
             ),
@@ -398,6 +468,7 @@ def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
             ),
         ),
         (
+            [],
             BotUtteredAssertion(
                 utter_name="utter_options",
             ),
@@ -414,6 +485,7 @@ def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
             ),
         ),
         (
+            [],
             BotUtteredAssertion(
                 buttons=[
                     AssertedButton(title="Transfer Money", payload="/transfer_money")
@@ -436,12 +508,98 @@ def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
                 error_line=None,
             ),
         ),
+        (
+            [
+                BotUttered(
+                    text="You can transfer money or check your balance.",
+                )
+            ],
+            BotDidNotUtterAssertion(
+                text_matches="You can transfer money or check your balance."
+            ),
+            AssertionFailure(
+                assertion=BotDidNotUtterAssertion(
+                    text_matches="You can transfer money or check your balance.",
+                    line=None,
+                ),
+                error_message=(
+                    "Bot uttered a forbidden message matching the pattern "
+                    "'You can transfer money or check your balance.'."
+                ),
+                actual_events_transcript=[
+                    "BotUttered('You can transfer money or check your balance.', "
+                    "{}, {}, None)"
+                ],
+                error_line=None,
+            ),
+        ),
+        (
+            [BotUttered(metadata={"utter_action": "utter_options"})],
+            BotDidNotUtterAssertion(
+                utter_name="utter_options",
+            ),
+            AssertionFailure(
+                assertion=BotDidNotUtterAssertion(
+                    utter_name="utter_options",
+                    text_matches=None,
+                    buttons=None,
+                    line=None,
+                ),
+                error_message="Bot uttered a forbidden utterance 'utter_options'.",
+                actual_events_transcript=[
+                    'BotUttered(\'None\', {}, {"utter_action": "utter_options"}, None)'
+                ],
+                error_line=None,
+            ),
+        ),
+        (
+            [
+                BotUttered(
+                    data={
+                        "buttons": [
+                            {"title": "Transfer Money", "payload": "/transfer_money"}
+                        ]
+                    }
+                )
+            ],
+            BotDidNotUtterAssertion(
+                buttons=[
+                    AssertedButton(title="Transfer Money", payload="/transfer_money")
+                ]
+            ),
+            AssertionFailure(
+                assertion=BotDidNotUtterAssertion(
+                    utter_name=None,
+                    text_matches=None,
+                    buttons=[
+                        AssertedButton(
+                            title="Transfer Money", payload="/transfer_money"
+                        )
+                    ],
+                    line=None,
+                ),
+                error_message=(
+                    "Bot uttered a forbidden response with specified buttons."
+                ),
+                actual_events_transcript=[
+                    'BotUttered(\'None\', {"buttons": [{"title": "Transfer Money", '
+                    '"payload": "/transfer_money"}]}, {}, None)'
+                ],
+                error_line=None,
+            ),
+        ),
     ],
 )
 def test_assertion_run_returns_assertion_failure(
-    assertion: Assertion, expected_assertion_failure: AssertionFailure
+    turn_events: List[Event],
+    assertion: Assertion,
+    expected_assertion_failure: AssertionFailure,
 ) -> None:
-    assertion_failure, matching_event = assertion.run([], [])
+    # Remove timestamps from events to make the test deterministic
+    if turn_events:
+        turn_events[0].timestamp = None
+
+    assertion_failure, matching_event = assertion.run(turn_events, [])
     assert assertion_failure == expected_assertion_failure
     assert matching_event is None
 
@@ -598,6 +756,22 @@ def test_slot_was_not_set_assertions_returns_assertion_failure(
                 "utter_name": "utter_fee",
                 "ground_truth": "The fee for transferring money is $5.",
                 "type": "generative_response_is_grounded",
+                "line": None,
+            },
+        ),
+        (
+            BotDidNotUtterAssertion(
+                utter_name="utter_options",
+                buttons=[
+                    AssertedButton(title="Transfer Money", payload="/transfer_money")
+                ],
+                text_matches="You can transfer money or check your balance.",
+            ),
+            {
+                "utter_name": "utter_options",
+                "text_matches": "You can transfer money or check your balance.",
+                "buttons": [{"title": "Transfer Money", "payload": "/transfer_money"}],
+                "type": "bot_did_not_utter",
                 "line": None,
             },
         ),
