@@ -1,4 +1,5 @@
 import datetime
+import io
 import logging
 import os
 import re
@@ -8,19 +9,13 @@ from dataclasses import field
 from functools import lru_cache
 from io import StringIO
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable, Tuple, Union
+from typing import Any, List, Optional, Tuple, Dict, Callable, Union
 
 import jsonschema
 from importlib_resources import files
 from packaging import version
 from pykwalify.core import Core
 from pykwalify.errors import SchemaError
-from ruamel import yaml as yaml
-from ruamel.yaml import RoundTripRepresenter, YAMLError
-from ruamel.yaml.comments import CommentedSeq, CommentedMap
-from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
-from ruamel.yaml.loader import SafeLoader
-
 from rasa.shared.constants import (
     ASSERTIONS_SCHEMA_EXTENSIONS_FILE,
     ASSERTIONS_SCHEMA_FILE,
@@ -51,6 +46,11 @@ from rasa.shared.utils.io import (
     raise_warning,
     read_json_file,
 )
+from ruamel import yaml as yaml
+from ruamel.yaml import YAML, RoundTripRepresenter, YAMLError
+from ruamel.yaml.comments import CommentedSeq, CommentedMap
+from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
+from ruamel.yaml.loader import SafeLoader
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +64,17 @@ SENSITIVE_DATA = [API_KEY]
 
 @dataclass
 class PathWithError:
+    """Represents a validation error at a specific location in the YAML content.
+
+    Attributes:
+        message (str): A description of the validation error.
+        path (List[str]): Path to the node where the error occurred.
+        key (Optional[str]): The specific key associated with the error, if any.
+    """
+
     message: str
     path: List[str] = field(default_factory=list)
+    key: Optional[str] = None
 
 
 def fix_yaml_loader() -> None:
@@ -146,20 +155,71 @@ class YamlValidationException(YamlException, ValueError):
         if self.validation_errors:
             unique_errors = {}
             for error in self.validation_errors:
-                line_number = self._line_number_for_path(self.content, error.path)
+                line_number = self._line_number_for_path(
+                    self.content, error.path, error.key
+                )
 
                 if line_number and self.filename:
-                    error_representation = f"  in {self.filename}:{line_number}:\n"
+                    error_location = f"  in {self.filename}:{line_number}:\n"
                 elif line_number:
-                    error_representation = f"  in Line {line_number}:\n"
+                    error_location = f"  in Line {line_number}:\n"
                 else:
-                    error_representation = ""
+                    error_location = ""
 
-                error_representation += f"      {error.message}"
-                unique_errors[error.message] = error_representation
+                code_snippet = self._get_code_snippet(line_number)
+                error_message = f"{error_location}\n{code_snippet}{error.message}\n"
+                unique_errors[error.message] = error_message
             error_msg = "\n".join(unique_errors.values())
             msg += f":\n{error_msg}"
         return msg
+
+    def _get_code_snippet(
+        self,
+        error_line: Optional[int],
+        context_lines: int = 2,
+    ) -> str:
+        """Extract code snippet from the YAML lines around the error.
+
+        Args:
+            error_line: Line number where the error occurred (1-based).
+            context_lines: Number of context lines before and after the error line.
+                Default is 2, balancing context and readability. Adjust as needed.
+
+        Returns:
+            A string containing the code snippet with the error highlighted.
+        """
+        yaml_lines = self._get_serialized_yaml_lines()
+        if not yaml_lines or error_line is None:
+            return ""
+
+        start = max(error_line - context_lines - 1, 0)
+        end = min(error_line + context_lines, len(yaml_lines))
+        snippet_lines = yaml_lines[start:end]
+        snippet = ""
+        for idx, line_content in enumerate(snippet_lines, start=start + 1):
+            prefix = ">>> " if idx == error_line else "    "
+            line_number_str = str(idx)
+            snippet += f"{prefix}{line_number_str} | {line_content}\n"
+        return snippet
+
+    def _get_serialized_yaml_lines(self) -> List[str]:
+        """Serialize the content back to YAML and return the lines."""
+        yaml_lines = []
+        try:
+            yaml = YAML()
+            yaml.default_flow_style = False
+            # Set width to 1000, so we don't break the lines of the original YAML file
+            yaml.width = 1000  # type: ignore[assignment]
+            yaml.indent(mapping=2, sequence=4, offset=2)
+            stream = io.StringIO()
+            yaml.dump(self.content, stream)
+            serialized_yaml = stream.getvalue()
+            yaml_lines = serialized_yaml.splitlines()
+            return yaml_lines
+        except Exception as exc:
+            logger.debug(f"Error serializing YAML content: {exc}")
+
+        return yaml_lines
 
     def _calculate_number_of_lines(
         self,
@@ -228,7 +288,9 @@ class YamlValidationException(YamlException, ValueError):
         # Return the calculated child offset and True indicating a line number was found
         return child_offset, True
 
-    def _line_number_for_path(self, current: Any, path: List[str]) -> Optional[int]:
+    def _line_number_for_path(
+        self, current: Any, path: List[str], key: Optional[str] = None
+    ) -> Optional[int]:
         """Get line number for a yaml path in the current content.
 
         Implemented using recursion: algorithm goes down the path navigating to the
@@ -237,6 +299,7 @@ class YamlValidationException(YamlException, ValueError):
         Args:
             current: current content
             path: path to traverse within the content
+            key: the key associated with the error, if any
 
         Returns:
             the line number of the path in the content.
@@ -247,6 +310,10 @@ class YamlValidationException(YamlException, ValueError):
         this_line = current.lc.line + 1 if hasattr(current, "lc") else None
 
         if not path:
+            if key and hasattr(current, "lc"):
+                if hasattr(current.lc, "data") and key in current.lc.data:
+                    key_line_no = current.lc.data[key][0] + 1
+                    return key_line_no
             return this_line
 
         head, tail = path[0], path[1:]
@@ -256,7 +323,7 @@ class YamlValidationException(YamlException, ValueError):
 
         if head:
             if isinstance(current, dict) and head in current:
-                line = self._line_number_for_path(current[head], tail)
+                line = self._line_number_for_path(current[head], tail, key)
                 if line is None:
                     line_offset, found_lc = self._calculate_number_of_lines(
                         current, head
@@ -266,10 +333,13 @@ class YamlValidationException(YamlException, ValueError):
                     return this_line + line_offset
                 return line
             elif isinstance(current, list) and head.isdigit():
-                return self._line_number_for_path(current[int(head)], tail) or this_line
+                return (
+                    self._line_number_for_path(current[int(head)], tail, key)
+                    or this_line
+                )
             else:
                 return this_line
-        return self._line_number_for_path(current, tail) or this_line
+        return self._line_number_for_path(current, tail, key) or this_line
 
 
 def read_schema_file(
@@ -331,13 +401,26 @@ def validate_yaml_content_using_schema(
     try:
         core.validate(raise_exception=True)
     except SchemaError:
+        # PyKwalify propagates each validation error up the data hierarchy, resulting
+        # in multiple redundant errors for a single issue. To present a clear message
+        # about the root cause, we use only the first error.
+        error = core.errors[0]
+
+        # Increment numeric indices by 1 to convert from 0-based to 1-based indexing
+        error_message = re.sub(
+            r"(/)(\d+)", lambda m: f"/{int(m.group(2)) + 1}", str(error)
+        )
+
         raise YamlValidationException(
             "Please make sure the file is correct and all "
             "mandatory parameters are specified. Here are the errors "
             "found during validation",
             [
-                PathWithError(message=str(e), path=e.path.split("/"))
-                for e in core.errors
+                PathWithError(
+                    message=error_message,
+                    path=error.path.removeprefix("/").split("/"),
+                    key=getattr(error, "key", None),
+                )
             ],
             content=yaml_content,
         )
