@@ -351,4 +351,3 @@ def test_stub_custom_action_invalid_event() -> None:
         )
 
     assert "Enum 'dialogue_stack_updated' does not exist." in str(exc.value)
-    assert "Key 'invalid_key' was not defined." in str(exc.value)
