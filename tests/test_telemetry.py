@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+import argparse
 import os
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Text
@@ -15,6 +16,7 @@ import rasa.api
 import rasa.constants
 import rasa.utils.licensing
 from rasa import telemetry
+from rasa.cli.inspect import inspect
 from rasa.anonymization.anonymisation_rule_yaml_reader import KEY_ANONYMIZATION_RULES
 from rasa.dialogue_understanding.generator.constants import (
     DEFAULT_LLM_CONFIG as LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG,
@@ -48,6 +50,7 @@ from rasa.telemetry import (
     _get_llm_command_generator_config,
     LLM_COMMAND_GENERATOR_MODEL_GROUP_ID,
     FLOW_RETRIEVAL_EMBEDDING_MODEL_GROUP_ID,
+    TELEMETRY_INSPECT_STARTED_EVENT,
 )
 from rasa.utils import licensing
 from rasa.utils.licensing import LICENSE_ENV_VAR
@@ -1473,3 +1476,33 @@ def test_track_rasa_train_telemetry_disabled(
 
     # telemetry should not be tracked
     mock_track.assert_not_called()
+
+
+@patch("rasa.cli.run.run")
+@patch("rasa.telemetry._track")
+def test_track_rasa_inspect_telemetry(
+    mock_track: MagicMock,
+    mock_run: MagicMock,
+    monkeypatch: MonkeyPatch,
+    inspect_parser: argparse.ArgumentParser,
+    endpoints_path: Text,
+    trained_default_agent_model: Text,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    # when rasa inspect is called
+    args = inspect_parser.parse_args(
+        [
+            "inspect",
+            "--endpoints",
+            endpoints_path,
+            "--model",
+            trained_default_agent_model,
+        ]
+    )
+    inspect(args)
+    mock_track.assert_called_once_with(
+        TELEMETRY_INSPECT_STARTED_EVENT,
+        {"type": "rasa.core.channels.socketio.SocketIOInput"},
+    )
+    mock_run.assert_called_once()

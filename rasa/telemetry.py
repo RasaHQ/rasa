@@ -112,6 +112,7 @@ TELEMETRY_INTERACTIVE_LEARNING_STARTED_EVENT = "Interactive Learning Started"
 TELEMETRY_SERVER_STARTED_EVENT = "Server Started"
 TELEMETRY_PROJECT_CREATED_EVENT = "Project Created"
 TELEMETRY_SHELL_STARTED_EVENT = "Shell Started"
+TELEMETRY_INSPECT_STARTED_EVENT = "Inspect Started"
 TELEMETRY_VISUALIZATION_STARTED_EVENT = "Story Visualization Started"
 TELEMETRY_TEST_CORE_EVENT = "Model Core Tested"
 TELEMETRY_TEST_NLU_EVENT = "Model NLU Tested"
@@ -1376,6 +1377,17 @@ def track_shell_started(model_type: Text) -> None:
         model_type: Type of the model, core / nlu or rasa.
     """
     _track(TELEMETRY_SHELL_STARTED_EVENT, {"type": model_type})
+
+
+@ensure_telemetry_enabled
+def track_inspect_started(model_type: Text) -> None:
+    """Track when a user starts a bot using rasa inspect.
+
+    Args:
+        channel: Channel name `socketio` (used for chat assistants)
+         or `browser_audio` (used for voice).
+    """
+    _track(TELEMETRY_INSPECT_STARTED_EVENT, {"type": model_type})
 
 
 @ensure_telemetry_enabled
