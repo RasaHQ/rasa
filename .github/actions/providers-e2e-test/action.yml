@@ -207,7 +207,7 @@ runs:
       shell: bash
     
     - name: Get multi-deployments endpoints file
-      if: ${{ contains(inputs.provider, '-multiple-deployments-with-routing') }}
+      if: ${{ contains(inputs.provider, '-multiple-deployments-with-') }}
       run: |
         : Get endpoints file
         echo "ENDPOINTS_FILE_NAME=multi-deployments.endpoints" >> $GITHUB_ENV
@@ -217,7 +217,7 @@ runs:
     # `text-embedding-ada-002` model in same regions' deployments, 
     # causing health-check to fail
     - name: Disable inference health-check for Azure
-      if: ${{ inputs.provider == 'azure-multiple-deployments-with-routing' }}
+      if: ${{ contains(inputs.provider, 'azure-multiple-deployments-with-') }}
       run: echo "LLM_API_HEALTH_CHECK=False" >> $GITHUB_ENV
       shell: bash
 
@@ -257,7 +257,7 @@ runs:
       shell: bash
 
     - name: Verify LLM and Embeddings API health checks during inference
-      if: ${{ inputs.provider != 'azure-multiple-deployments-with-routing' }}
+      if: ${{ !contains(inputs.provider, 'azure-multiple-deployments-with-') }}
       run: |
         grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' e2e-tests-log \
           && grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' e2e-tests-log \
