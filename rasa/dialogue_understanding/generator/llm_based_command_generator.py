@@ -210,7 +210,7 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         except Exception as e:
             structlogger.error(
                 "llm_based_command_generator.train.failed",
-                event_info="Flow retrieval store isinaccessible.",
+                event_info="Flow retrieval store is inaccessible.",
                 error=e,
             )
             raise

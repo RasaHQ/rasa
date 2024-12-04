@@ -310,3 +310,67 @@ class TestOpenAIEmbeddingClient:
 
         assert "timeout" in client._extra_parameters
         assert client._extra_parameters["timeout"] == 7
+
+    @pytest.mark.parametrize(
+        "config, expected_model, api_key_env_var, expected_failure",
+        [
+            (
+                {
+                    "provider": "openai",
+                    "model": "test_model",
+                    "temperature": 0.2,
+                    "api_key": "openai llm embedding validation key",
+                },
+                "test_model",
+                None,
+                False,
+            ),
+            # api key is set in environment variable
+            (
+                {
+                    "provider": "openai",
+                    "model": "test_model",
+                    "temperature": 0.2,
+                },
+                "test_model",
+                OPENAI_API_KEY_ENV_VAR,
+                False,
+            ),
+            # api key is not set
+            (
+                {
+                    "provider": "openai",
+                    "model": "test_model",
+                    "temperature": 0.2,
+                },
+                "test_model",
+                None,
+                True,
+            ),
+        ],
+    )
+    def test_client_validation(
+        self,
+        config: dict,
+        expected_model: str,
+        api_key_env_var: str,
+        expected_failure: bool,
+        monkeypatch: MonkeyPatch,
+    ) -> None:
+        # Given
+        if api_key_env_var:
+            monkeypatch.setenv(api_key_env_var, "openai embedding client validation")
+
+        # When
+        if expected_failure:
+            with pytest.raises(ProviderClientValidationError):
+                OpenAIEmbeddingClient.from_config(config)
+        else:
+            client = OpenAIEmbeddingClient.from_config(config)
+
+            # Then
+            assert client.model == expected_model
+
+        # Cleanup
+        if api_key_env_var:
+            monkeypatch.delenv(api_key_env_var, raising=False)
