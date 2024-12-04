@@ -133,40 +133,22 @@ env:
   REDIS_PORT: 6379
   RASA_TELEMETRY_DEBUG: true
   DD_API_KEY: ${{ secrets.DD_API_KEY }} # Required for sending OTEL Metrics and Traces to Datadog
+  API_KEY_NAMES: '{"azure": "AZURE_API_KEY", "gemini": "GEMINI_API_KEY", "huggingface": "HUGGINGFACE_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "together_ai": "TOGETHERAI_API_KEY", "groq": "GROQ_API_KEY", "openai": "OPENAI_API_KEY", "mistral": "MISTRAL_API_KEY", "cohere": "COHERE_API_KEY", "voyage": "VOYAGE_API_KEY"}'
 
   # Providers' required environment variables (API key values also stored in 1Password):
+
+  # OpenAI
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
-  # Azure OpenAI
-  AZURE_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING_CANADA_EAST }}
+   # Hugging Face
+  HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
 
   # AWS Bedrock
   AWS_REGION_NAME: us-east-1
 
   # Gemini - Google AI Studio
-  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-  GEMINI_ALTERNATE_API_KEY: ${{ secrets.GEMINI_ALTERNATE_API_KEY }} # API key for different deployment, to test multi-LLM-routing
-
-  # Anthropic
-  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-
-  # Hugging Face
-  HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
-
-  # Mistral
-  MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-
-  # Together AI
-  TOGETHERAI_API_KEY: ${{ secrets.TOGETHERAI_API_KEY }}
-
-  # Groq
-  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-
-  # Cohere
-  COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
-
-  # Voyage AI
-  VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+  GEMINI_API_KEY_1: ${{ secrets.GEMINI_API_KEY }}
+  GEMINI_API_KEY_2: ${{ secrets.GEMINI_ALTERNATE_API_KEY }} # API key for different deployment, to test multi-LLM-routing
 
   # Ollama
   OLLAMA_API_BASE: http://localhost:11434
@@ -299,6 +281,12 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
+      - name: Set provider API key
+        continue-on-error: true
+        run: |
+          : Set provider API key
+          echo "${{ fromJson(env.API_KEY_NAMES)[matrix.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[matrix.provider]] }}" >> $GITHUB_ENV
+
       - name: E2E test
         uses: ./.github/actions/providers-e2e-test
         with:
@@ -337,6 +325,13 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Set provider API key
+        continue-on-error: true
+        run: |
+          : Set provider API key
+          echo "${{ fromJson(env.API_KEY_NAMES)[inputs.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[inputs.provider]] }}" >> $GITHUB_ENV
+
 
       - name: E2E test on single provider
         uses: ./.github/actions/providers-e2e-test

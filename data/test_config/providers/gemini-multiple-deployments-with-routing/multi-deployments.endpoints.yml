@@ -27,12 +27,12 @@ model_groups:
     # Same LLM models across multiple GCP projects
       - provider: gemini
         model: gemini-pro
-        api_key: ${GEMINI_API_KEY}
+        api_key: ${GEMINI_API_KEY_1}
         timeout: 7
         num_retries: 5
       - provider: gemini
         model: gemini-pro
-        api_key: ${GEMINI_ALTERNATE_API_KEY}
+        api_key: ${GEMINI_API_KEY_2}
         timeout: 7
         num_retries: 5
     router:
