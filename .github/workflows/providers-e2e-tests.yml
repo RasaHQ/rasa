@@ -34,9 +34,14 @@ on:
           # - voyage TODO: Enable after ENG-1415 is unblocked
           - ollama
           # - self-hosted
-          - azure-multiple-deployments-with-routing
+          - azure-multiple-deployments-with-simple-shuffle-routing
+          - azure-multiple-deployments-with-least-busy-routing
+          - azure-multiple-deployments-with-usage-based-routing
+          - azure-multiple-deployments-with-latency-based-routing
+          - azure-multiple-deployments-with-cost-based-routing
           - gemini-multiple-deployments-with-routing
           - huggingface-multiple-deployments-with-routing
+          - bedrock-multiple-deployments-with-routing
 
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`"
@@ -128,40 +133,22 @@ env:
   REDIS_PORT: 6379
   RASA_TELEMETRY_DEBUG: true
   DD_API_KEY: ${{ secrets.DD_API_KEY }} # Required for sending OTEL Metrics and Traces to Datadog
+  API_KEY_NAMES: '{"azure": "AZURE_API_KEY", "gemini": "GEMINI_API_KEY", "huggingface": "HUGGINGFACE_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "together_ai": "TOGETHERAI_API_KEY", "groq": "GROQ_API_KEY", "openai": "OPENAI_API_KEY", "mistral": "MISTRAL_API_KEY", "cohere": "COHERE_API_KEY", "voyage": "VOYAGE_API_KEY"}'
 
   # Providers' required environment variables (API key values also stored in 1Password):
+
+  # OpenAI
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
-  # Azure OpenAI
-  AZURE_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING_CANADA_EAST }}
+   # Hugging Face
+  HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
 
   # AWS Bedrock
   AWS_REGION_NAME: us-east-1
 
   # Gemini - Google AI Studio
-  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-  GEMINI_ALTERNATE_API_KEY: ${{ secrets.GEMINI_ALTERNATE_API_KEY }} # API key for different deployment, to test multi-LLM-routing
-
-  # Anthropic
-  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-
-  # Hugging Face
-  HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
-
-  # Mistral
-  MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-
-  # Together AI
-  TOGETHERAI_API_KEY: ${{ secrets.TOGETHERAI_API_KEY }}
-
-  # Groq
-  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-
-  # Cohere
-  COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
-
-  # Voyage AI
-  VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+  GEMINI_API_KEY_1: ${{ secrets.GEMINI_API_KEY }}
+  GEMINI_API_KEY_2: ${{ secrets.GEMINI_ALTERNATE_API_KEY }} # API key for different deployment, to test multi-LLM-routing
 
   # Ollama
   OLLAMA_API_BASE: http://localhost:11434
@@ -195,6 +182,10 @@ env:
   AZURE_API_BASE_TXT_EMBEDDING_ADA_FR: "https://devtribe-testing.openai.azure.com/"
   AZURE_API_VERSION_TXT_EMBEDDING_ADA_FR: "2023-05-15"
   AZURE_API_KEY_FR: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING }}
+
+  # AWS Bedrock regions, for multi-LLM-routing testing
+  AWS_REGION_NAME_1: us-east-1
+  AWS_REGION_NAME_2: eu-central-1
 
 permissions:
   id-token: write
@@ -276,14 +267,25 @@ jobs:
             # voyage, TODO: Enable after ENG-1415 is unblocked
             ollama,
             # self-hosted,
-            azure-multiple-deployments-with-routing,
+            azure-multiple-deployments-with-simple-shuffle-routing,
+            azure-multiple-deployments-with-least-busy-routing,
+            azure-multiple-deployments-with-usage-based-routing,
+            azure-multiple-deployments-with-latency-based-routing,
+            azure-multiple-deployments-with-cost-based-routing,
             gemini-multiple-deployments-with-routing,
-            huggingface-multiple-deployments-with-routing
+            huggingface-multiple-deployments-with-routing,
+            bedrock-multiple-deployments-with-routing
           ] # TODO: Enable testing all the providers
         train-and-test: ${{ fromJson(needs.job_setup.outputs.COMMAND_GENERATOR_MATRIX)[needs.job_setup.outputs.COMMAND_GENERATOR] }}
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Set provider API key
+        continue-on-error: true
+        run: |
+          : Set provider API key
+          echo "${{ fromJson(env.API_KEY_NAMES)[matrix.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[matrix.provider]] }}" >> $GITHUB_ENV
 
       - name: E2E test
         uses: ./.github/actions/providers-e2e-test
@@ -323,6 +325,13 @@ jobs:
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Set provider API key
+        continue-on-error: true
+        run: |
+          : Set provider API key
+          echo "${{ fromJson(env.API_KEY_NAMES)[inputs.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[inputs.provider]] }}" >> $GITHUB_ENV
+
 
       - name: E2E test on single provider
         uses: ./.github/actions/providers-e2e-test

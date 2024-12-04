@@ -8,6 +8,7 @@ from rasa.dialogue_understanding.commands import (
     Command,
     CorrectSlotsCommand,
     CorrectedSlot,
+    RepeatBotMessagesCommand,
     SetSlotCommand,
     StartFlowCommand,
     FreeFormAnswerCommand,
@@ -422,12 +423,31 @@ def clean_up_commands(
     elif not tracker.has_coexistence_routing_slot and len(clean_commands) > 1:
         clean_commands = filter_cannot_handle_command_for_skipped_slots(clean_commands)
 
+    clean_commands = ensure_max_number_of_command_type(
+        clean_commands, RepeatBotMessagesCommand, 1
+    )
     structlogger.debug(
         "command_processor.clean_up_commands.final_commands",
         command=clean_commands,
     )
 
     return clean_commands
+
+
+def ensure_max_number_of_command_type(
+    commands: List[Command], command_type: Type[Command], n: int
+) -> List[Command]:
+    """Ensures that for a given command type only the first n stay in the list."""
+    filtered: List[Command] = []
+    count = 0
+    for c in commands:
+        if isinstance(c, command_type):
+            if count >= n:
+                continue
+            else:
+                count += 1
+        filtered.append(c)
+    return filtered
 
 
 def clean_up_clarify_command(
@@ -452,7 +472,7 @@ def clean_up_clarify_command(
         if not (isinstance(c, SetSlotCommand) and c.name == ROUTE_TO_CALM_SLOT)
     ]
 
-    # if there are multiple clarify commands, do add the first one
+    # if all commands are clarify commands, add the first one only, otherwise add none
     if all(
         isinstance(c, ClarifyCommand) for c in commands_without_route_to_calm_set_slot
     ):

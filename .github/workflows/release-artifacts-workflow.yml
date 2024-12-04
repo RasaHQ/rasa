@@ -36,9 +36,14 @@ on:
 #          - voyage TODO: Enable after ENG-1415 is unblocked
           - ollama
 #          - self-hosted
-          - azure-multiple-deployments-with-routing
+          - azure-multiple-deployments-with-simple-shuffle-routing
+          - azure-multiple-deployments-with-least-busy-routing
+          - azure-multiple-deployments-with-usage-based-routing
+          - azure-multiple-deployments-with-latency-based-routing
+          - azure-multiple-deployments-with-cost-based-routing
           - gemini-multiple-deployments-with-routing
           - huggingface-multiple-deployments-with-routing
+          - bedrock-multiple-deployments-with-routing
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`. Ignored unless `run_e2e_test_on_providers==true`"
         type: string

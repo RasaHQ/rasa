@@ -1,5 +1,5 @@
 import os
-from typing import Tuple, List, Optional, Text, Union, Dict
+from typing import Tuple, List, Optional, Text, Union, Dict, Set
 
 import pytest
 
@@ -992,3 +992,41 @@ def test_get_full_name(file_path: str, expected_name: str):
     flow = Flow("flow_1", "test flow", file_path=file_path)
 
     assert flow.get_full_name() == expected_name
+
+
+@pytest.mark.parametrize(
+    "ask_before_filling, expected_slot_names",
+    [
+        (None, {"slot_a", "slot_b", "slot_c", "slot_d", "slot_e", "slot_f"}),
+        (True, {"slot_b", "slot_e", "slot_f"}),
+        (False, {"slot_a", "slot_c", "slot_d"}),
+    ],
+)
+def test_available_slot_names(
+    ask_before_filling: Optional[bool], expected_slot_names: Set[str]
+):
+    flows = flows_from_str(
+        """
+        flows:
+          foo:
+            description: a test flow
+            steps:
+              - collect: slot_a
+              - collect: slot_b
+                ask_before_filling: true
+              - collect: slot_c
+          bar:
+            description: another test flow
+            steps:
+              - collect: slot_d
+              - collect: slot_e
+                ask_before_filling: true
+              - collect: slot_f
+                ask_before_filling: true
+        """
+    )
+
+    assert (
+        flows.available_slot_names(ask_before_filling=ask_before_filling)
+        == expected_slot_names
+    )

@@ -6,6 +6,7 @@ import litellm
 import structlog
 from litellm import aembedding, embedding, validate_environment
 
+from rasa.shared.constants import API_BASE_CONFIG_KEY, API_KEY
 from rasa.shared.exceptions import (
     ProviderClientAPIException,
     ProviderClientValidationError,
@@ -84,7 +85,11 @@ class _BaseLiteLLMEmbeddingClient:
 
     def _validate_environment_variables(self) -> None:
         """Validate that the required environment variables are set."""
-        validation_info = validate_environment(self._litellm_model_name)
+        validation_info = validate_environment(
+            self._litellm_model_name,
+            api_key=self._litellm_extra_parameters.get(API_KEY),
+            api_base=self._litellm_extra_parameters.get(API_BASE_CONFIG_KEY),
+        )
         if missing_environment_variables := validation_info.get(
             _VALIDATE_ENVIRONMENT_MISSING_KEYS_KEY
         ):

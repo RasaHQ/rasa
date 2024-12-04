@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Dict, Optional, Text
+from typing import Any, Dict, Optional, Text
 
 from rasa.utils.common import read_global_config_value, write_global_config_value
 
 from rasa.studio.constants import (
     RASA_STUDIO_AUTH_SERVER_URL_ENV,
     RASA_STUDIO_CLI_CLIENT_ID_KEY_ENV,
+    RASA_STUDIO_CLI_DISABLE_VERIFY_KEY_ENV,
     RASA_STUDIO_CLI_REALM_NAME_KEY_ENV,
     RASA_STUDIO_CLI_STUDIO_URL_ENV,
     STUDIO_CONFIG_KEY,
@@ -19,6 +20,7 @@ STUDIO_URL_KEY = "studio_url"
 CLIENT_ID_KEY = "client_id"
 REALM_NAME_KEY = "realm_name"
 CLIENT_SECRET_KEY = "client_secret"
+DISABLE_VERIFY = "disable_verify"
 
 
 @dataclass
@@ -27,13 +29,15 @@ class StudioConfig:
     studio_url: Optional[Text]
     client_id: Optional[Text]
     realm_name: Optional[Text]
+    disable_verify: bool = False
 
-    def to_dict(self) -> Dict[Text, Optional[Text]]:
+    def to_dict(self) -> Dict[Text, Optional[Any]]:
         return {
             AUTH_SERVER_URL_KEY: self.authentication_server_url,
             STUDIO_URL_KEY: self.studio_url,
             CLIENT_ID_KEY: self.client_id,
             REALM_NAME_KEY: self.realm_name,
+            DISABLE_VERIFY: self.disable_verify,
         }
 
     @classmethod
@@ -43,6 +47,7 @@ class StudioConfig:
             studio_url=data[STUDIO_URL_KEY],
             client_id=data[CLIENT_ID_KEY],
             realm_name=data[REALM_NAME_KEY],
+            disable_verify=data.get(DISABLE_VERIFY, False),
         )
 
     def write_config(self) -> None:
@@ -73,7 +78,7 @@ class StudioConfig:
         config = read_global_config_value(STUDIO_CONFIG_KEY, unavailable_ok=True)
 
         if config is None:
-            return StudioConfig(None, None, None, None)
+            return StudioConfig(None, None, None, None, False)
 
         if not isinstance(config, dict):
             raise ValueError(
@@ -83,7 +88,7 @@ class StudioConfig:
             )
 
         for key in config:
-            if not isinstance(config[key], str):
+            if not isinstance(config[key], str) and key != DISABLE_VERIFY:
                 raise ValueError(
                     "Invalid config file format. "
                     f"Key '{key}' is not a text value."
@@ -102,6 +107,9 @@ class StudioConfig:
             studio_url=StudioConfig._read_env_value(RASA_STUDIO_CLI_STUDIO_URL_ENV),
             client_id=StudioConfig._read_env_value(RASA_STUDIO_CLI_CLIENT_ID_KEY_ENV),
             realm_name=StudioConfig._read_env_value(RASA_STUDIO_CLI_REALM_NAME_KEY_ENV),
+            disable_verify=bool(
+                os.getenv(RASA_STUDIO_CLI_DISABLE_VERIFY_KEY_ENV, False)
+            ),
         )
 
     @staticmethod
@@ -124,4 +132,5 @@ class StudioConfig:
             studio_url=self.studio_url or other.studio_url,
             client_id=self.client_id or other.client_id,
             realm_name=self.realm_name or other.realm_name,
+            disable_verify=self.disable_verify or other.disable_verify,
         )

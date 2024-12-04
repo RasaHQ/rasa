@@ -1388,6 +1388,20 @@ tests = ["aiosonic (==0.15.1)", "glom", "jinja2", "mypy", "pytest (<8.0.0)", "py
 zstandard = ["zstandard"]
 
 [[package]]
+name = "demoji"
+version = "1.1.0"
+description = "Accurately remove and replace emojis in text strings"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "demoji-1.1.0-py3-none-any.whl", hash = "sha256:6d3256c909aea299e97fe984f827a2a060c2a8f8bfcbafa7ec9659967c5df50f"},
+    {file = "demoji-1.1.0.tar.gz", hash = "sha256:072efaeca725e6f63ab59d83abeb55b178842538ed9256455a82ebbd055ff216"},
+]
+
+[package.extras]
+ujson = ["ujson"]
+
+[[package]]
 name = "deprecated"
 version = "1.2.14"
 description = "Python @deprecated decorator to deprecate old python classes, functions or methods."
@@ -4079,13 +4093,13 @@ signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
 name = "openai"
-version = "1.54.4"
+version = "1.55.3"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "openai-1.54.4-py3-none-any.whl", hash = "sha256:0d95cef99346bf9b6d7fbf57faf61a673924c3e34fa8af84c9ffe04660673a7e"},
-    {file = "openai-1.54.4.tar.gz", hash = "sha256:50f3656e45401c54e973fa05dc29f3f0b0d19348d685b2f7ddb4d92bf7b1b6bf"},
+    {file = "openai-1.55.3-py3-none-any.whl", hash = "sha256:2a235d0e1e312cd982f561b18c27692e253852f4e5fb6ccf08cb13540a9bdaa1"},
+    {file = "openai-1.55.3.tar.gz", hash = "sha256:547e85b94535469f137a779d8770c8c5adebd507c2cc6340ca401a7c4d5d16f0"},
 ]
 
 [package.dependencies]
@@ -8763,4 +8777,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
-content-hash = "0fc1216ab74ed3d2ba1a202b595265f0611062ce21ad47e3ab83c05387eb8fc2"
+content-hash = "9f94a828c70994d4e9fab6f2a94017795906483d3e9c5a65b2509570f0e5db0c"

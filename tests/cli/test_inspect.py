@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 from pytest import RunResult
 
-from rasa.cli.inspect import add_subparser, inspect
+from rasa.cli.inspect import inspect
 from rasa.core.persistor import RemoteStorageType
 from rasa.shared.core.domain import Domain
 
@@ -20,15 +20,6 @@ def mock_rasa_run(monkeypatch: pytest.MonkeyPatch) -> Callable:
 
     monkeypatch.setattr(f"{run_module_path}.rasa_run", _mock_rasa_run)
     return _mock_rasa_run
-
-
-@pytest.fixture
-def inspect_parser() -> argparse.ArgumentParser:
-    """Fixture for the `rasa inspect` parser."""
-    parser = argparse.ArgumentParser(prog="rasa")
-    subparsers = parser.add_subparsers(help="Rasa commands")
-    add_subparser(subparsers, [])
-    return parser
 
 
 def test_rasa_inspect_help(run: Callable[..., RunResult]) -> None:

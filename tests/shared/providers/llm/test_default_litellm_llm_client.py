@@ -2,6 +2,7 @@ import pytest
 import structlog
 from pytest import MonkeyPatch
 
+from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers.llm.default_litellm_llm_client import DefaultLiteLLMClient
 from rasa.shared.providers.llm.llm_client import LLMClient
 
@@ -123,3 +124,89 @@ class TestDefaultLiteLLMEmbeddingClient:
         assert client.model == expected_model
         assert client._litellm_model_name == expected_litellm_model_name
         assert client.provider == "cohere"
+
+    @pytest.mark.parametrize(
+        "config, expected_model, api_key_env_var, api_base_env_var, expected_failure",
+        [
+            (
+                {
+                    "provider": "ollama",
+                    "model": "test_model",
+                    "temperature": 0.2,
+                    "api_key": "ollama llm embedding validation key",
+                    "api_base": "https://ollama.com",
+                },
+                "test_model",
+                None,
+                None,
+                False,
+            ),
+            # api key and api_base are set in environment variable
+            (
+                {
+                    "provider": "ollama",
+                    "model": "test_model",
+                    "temperature": 0.2,
+                },
+                "test_model",
+                "OLLAMA_API_KEY",
+                "OLLAMA_API_BASE",
+                False,
+            ),
+            # api base is not set
+            (
+                {
+                    "provider": "ollama",
+                    "model": "test_model",
+                    "temperature": 0.2,
+                    "api_key": "ollama llm embedding validation key",
+                },
+                "test_model",
+                None,
+                None,
+                True,
+            ),
+            # api key is not set
+            (
+                {
+                    "provider": "cohere",
+                    "model": "test_model",
+                    "temperature": 0.2,
+                },
+                "test_model",
+                None,
+                None,
+                True,
+            ),
+        ],
+    )
+    def test_client_validation(
+        self,
+        config: dict,
+        expected_model: str,
+        api_key_env_var: str,
+        api_base_env_var: str,
+        expected_failure: bool,
+        monkeypatch: MonkeyPatch,
+    ) -> None:
+        # Given
+        if api_key_env_var:
+            monkeypatch.setenv(api_key_env_var, "default llm client validation")
+        if api_base_env_var:
+            monkeypatch.setenv(api_base_env_var, "https://some.com")
+
+        # When
+        if expected_failure:
+            with pytest.raises(ProviderClientValidationError):
+                DefaultLiteLLMClient.from_config(config)
+        else:
+            client = DefaultLiteLLMClient.from_config(config)
+
+            # Then
+            assert client.model == expected_model
+
+        # Cleanup
+        if api_key_env_var:
+            monkeypatch.delenv(api_key_env_var, raising=False)
+        if api_base_env_var:
+            monkeypatch.delenv(api_base_env_var, raising=False)

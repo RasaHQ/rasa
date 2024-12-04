@@ -313,6 +313,23 @@ class OutputChannel:
             button_msg = cli_utils.button_to_string(button, idx)
             await self.send_text_message(recipient_id, button_msg)
 
+    async def send_text_with_buttons_concise(
+        self,
+        recipient_id: str,
+        text: str,
+        buttons: List[Dict[str, Any]],
+        **kwargs: Any,
+    ) -> None:
+        """Sends buttons in a concise format, useful for voice channels."""
+        if text.strip()[-1] not in {".", "!", "?", ":"}:
+            text += "."
+        text += " "
+        for idx, button in enumerate(buttons):
+            text += button["title"]
+            if idx != len(buttons) - 1:
+                text += ", "
+        await self.send_text_message(recipient_id, text)
+
     async def send_quick_replies(
         self,
         recipient_id: Text,

@@ -102,7 +102,7 @@ runs:
       shell: bash
 
     - name: Configure AWS credentials
-      if: ${{ inputs.provider == 'bedrock' }}
+      if: ${{ contains(inputs.provider, 'bedrock') }}
       uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 #v3.0.1
       with:
         role-to-assume: arn:aws:iam::329710836760:role/GitHubAction-BedrockFullAccess
@@ -207,7 +207,7 @@ runs:
       shell: bash
     
     - name: Get multi-deployments endpoints file
-      if: ${{ contains(inputs.provider, '-multiple-deployments-with-routing') }}
+      if: ${{ contains(inputs.provider, '-multiple-deployments-with-') }}
       run: |
         : Get endpoints file
         echo "ENDPOINTS_FILE_NAME=multi-deployments.endpoints" >> $GITHUB_ENV
@@ -217,7 +217,7 @@ runs:
     # `text-embedding-ada-002` model in same regions' deployments, 
     # causing health-check to fail
     - name: Disable inference health-check for Azure
-      if: ${{ inputs.provider == 'azure-multiple-deployments-with-routing' }}
+      if: ${{ contains(inputs.provider, 'azure-multiple-deployments-with-') }}
       run: echo "LLM_API_HEALTH_CHECK=False" >> $GITHUB_ENV
       shell: bash
 
@@ -257,7 +257,7 @@ runs:
       shell: bash
 
     - name: Verify LLM and Embeddings API health checks during inference
-      if: ${{ inputs.provider != 'azure-multiple-deployments-with-routing' }}
+      if: ${{ !contains(inputs.provider, 'azure-multiple-deployments-with-') }}
       run: |
         grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' e2e-tests-log \
           && grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' e2e-tests-log \

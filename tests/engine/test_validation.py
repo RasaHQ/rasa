@@ -7,7 +7,6 @@ from unittest.mock import Mock, patch
 
 import pytest
 import structlog
-
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.dialogue_understanding.coexistence.intent_based_router import (
     IntentBasedRouter,
@@ -44,7 +43,7 @@ from rasa.shared.constants import (
     LLM_CONFIG_KEY,
     EMBEDDINGS_CONFIG_KEY,
     API_KEY,
-    MODELS_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
 )
 from rasa.shared.core.constants import ACTION_RESET_ROUTING
 from rasa.shared.core.domain import Domain
@@ -54,6 +53,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import filter_logs, flows_from_str
 
 
@@ -1812,6 +1812,7 @@ class MockAvailableEndpointsForTestValidation:
         return MockAvailableEndpointsForTestValidation()
 
     def __init__(self):
+        self.nlg = EndpointConfig(LLM_CONFIG_KEY={"model_group": "model_group_id"})
         self.model_groups = [
             {
                 "id": "model_group_id",
@@ -1840,13 +1841,13 @@ class MockAvailableEndpointsForTestValidation:
             [
                 {
                     "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "model_group_id"},
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
                 },
                 {
                     "name": "IntentlessPolicy",
-                    LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "model_group_id"},
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
                     EMBEDDINGS_CONFIG_KEY: {
-                        MODELS_CONFIG_KEY: "another_model_group_id"
+                        MODEL_GROUP_CONFIG_KEY: "another_model_group_id"
                     },
                 },
             ],
@@ -1889,9 +1890,9 @@ class MockAvailableEndpointsForTestValidation:
                 },
                 {
                     "name": "IntentlessPolicy",
-                    LLM_CONFIG_KEY: {MODELS_CONFIG_KEY: "model_group_id"},
+                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
                     EMBEDDINGS_CONFIG_KEY: {
-                        MODELS_CONFIG_KEY: "another_model_group_id"
+                        MODEL_GROUP_CONFIG_KEY: "another_model_group_id"
                     },
                 },
             ],
@@ -1905,7 +1906,7 @@ class MockAvailableEndpointsForTestValidation:
                     LLM_CONFIG_KEY: {
                         "provider": "openai",
                         "model": "gpt-4",
-                        MODELS_CONFIG_KEY: "model_group_id",
+                        MODEL_GROUP_CONFIG_KEY: "model_group_id",
                     },
                 }
             ],
@@ -1917,7 +1918,7 @@ class MockAvailableEndpointsForTestValidation:
                 {
                     "name": "SingleStepLLMCommandGenerator",
                     LLM_CONFIG_KEY: {
-                        MODELS_CONFIG_KEY: "non-existing-model-group",
+                        MODEL_GROUP_CONFIG_KEY: "non-existing-model-group",
                     },
                 }
             ],
@@ -1953,7 +1954,7 @@ class MockAvailableEndpointsForTestValidation:
                         "model": "gpt-4",
                     },
                     EMBEDDINGS_CONFIG_KEY: {
-                        MODELS_CONFIG_KEY: "model_group_id",
+                        MODEL_GROUP_CONFIG_KEY: "model_group_id",
                     },
                 },
                 {
@@ -1976,7 +1977,7 @@ class MockAvailableEndpointsForTestValidation:
                         "model": "gpt-4",
                     },
                     EMBEDDINGS_CONFIG_KEY: {
-                        MODELS_CONFIG_KEY: "model_group_id",
+                        MODEL_GROUP_CONFIG_KEY: "model_group_id",
                     },
                 }
             ],
@@ -1988,11 +1989,11 @@ class MockAvailableEndpointsForTestValidation:
                 {
                     "name": "SingleStepLLMCommandGenerator",
                     LLM_CONFIG_KEY: {
-                        MODELS_CONFIG_KEY: "model_group_id",
+                        MODEL_GROUP_CONFIG_KEY: "model_group_id",
                     },
                     FLOW_RETRIEVAL_KEY: {
                         EMBEDDINGS_CONFIG_KEY: {
-                            MODELS_CONFIG_KEY: "model_group_id",
+                            MODEL_GROUP_CONFIG_KEY: "model_group_id",
                         }
                     },
                 }
@@ -2029,7 +2030,7 @@ class MockAvailableEndpointsForTestValidation:
                     },
                     FLOW_RETRIEVAL_KEY: {
                         EMBEDDINGS_CONFIG_KEY: {
-                            MODELS_CONFIG_KEY: "model_group_id",
+                            MODEL_GROUP_CONFIG_KEY: "model_group_id",
                         }
                     },
                 }
@@ -2065,6 +2066,48 @@ class MockAvailableEndpointsForTestValidation:
                         "provider": "openai",
                         "model": "gpt-4",
                         API_KEY: "1234",
+                    },
+                }
+            ],
+            True,
+            True,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                        API_KEY: {"OPENAI_API_KEY": None},
+                    },
+                }
+            ],
+            True,
+            True,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                        API_KEY: {"OPENAI_API_KEY"},
+                    },
+                }
+            ],
+            True,
+            True,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                        API_KEY: "{OPENAI_API_KEY}",
                     },
                 }
             ],
