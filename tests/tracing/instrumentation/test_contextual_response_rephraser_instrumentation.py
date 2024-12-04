@@ -1,11 +1,12 @@
 import logging
 from typing import Any, Dict, Sequence
+from unittest.mock import Mock
 
 import pytest
 from pytest import LogCaptureFixture, MonkeyPatch
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, LLM_API_HEALTH_CHECK_ENV_VAR
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -16,6 +17,7 @@ from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import (
     MockContextualResponseRephraser,
     MockAvailableEndpoints,
+    TestSpanExporter,
 )
 
 """@pytest.fixture(autouse=True)
@@ -144,7 +146,6 @@ def greet_tracker() -> DialogueStateTracker:
 async def test_tracing_contextual_response_rephraser_generate_llm_response(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
-    previous_num_captured_spans: int,
     domain_with_responses: Domain,
     llm_config: Dict[str, Any],
     expected: Dict[str, Any],
@@ -155,11 +156,15 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response(
     if mock_env_key is not None:
         monkeypatch.setenv(mock_env_key, "mock key in test_tracing_rephraser")
 
+    test_span_exported = TestSpanExporter(span_exporter)
+    ignore_substrings = ["health_check"]
     component_class = MockContextualResponseRephraser
-
     instrumentation.instrument(
         tracer_provider,
         contextual_response_rephraser_class=component_class,
+    )
+    previous_num_captured_spans = test_span_exported.get_previous_num_captured_spans(
+        ignore_substrings
     )
 
     endpoint_config = EndpointConfig.from_dict({"llm": llm_config})
@@ -169,7 +174,9 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response(
 
     await mock_rephraser._generate_llm_response("some text")
 
-    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans(
+        ignore_substrings
+    )  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -200,18 +207,20 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response(
 async def test_tracing_contextual_response_rephraser_rephrase(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
-    previous_num_captured_spans: int,
     domain_with_responses: Domain,
     greet_tracker: DialogueStateTracker,
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_tracing_rephraser")
-
+    test_span_exported = TestSpanExporter(span_exporter)
+    ignore_substrings = ["health_check"]
     component_class = MockContextualResponseRephraser
-
     instrumentation.instrument(
         tracer_provider,
         contextual_response_rephraser_class=component_class,
+    )
+    previous_num_captured_spans = test_span_exported.get_previous_num_captured_spans(
+        ignore_substrings
     )
 
     endpoint_config = EndpointConfig.from_dict({})
@@ -225,7 +234,9 @@ async def test_tracing_contextual_response_rephraser_rephrase(
         output_channel="callback",
     )
 
-    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans(
+        ignore_substrings
+    )  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -244,17 +255,19 @@ async def test_tracing_contextual_response_rephraser_rephrase(
 async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
-    previous_num_captured_spans: int,
     domain_with_responses: Domain,
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_tracing_rephraser")
-
+    test_span_exported = TestSpanExporter(span_exporter)
+    ignore_substrings = ["health_check"]
     component_class = MockContextualResponseRephraser
-
     instrumentation.instrument(
         tracer_provider,
         contextual_response_rephraser_class=component_class,
+    )
+    previous_num_captured_spans = test_span_exported.get_previous_num_captured_spans(
+        ignore_substrings
     )
 
     endpoint_config = EndpointConfig.from_dict({"trace_prompt_tokens": True})
@@ -264,7 +277,9 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
 
     await mock_rephraser._generate_llm_response("This is a test prompt.")
 
-    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans(
+        ignore_substrings
+    )  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -297,20 +312,21 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
 async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_openai(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
-    previous_num_captured_spans: int,
     domain_with_responses: Domain,
     caplog: LogCaptureFixture,
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("COHERE_API_KEY", "mock key in test_tracing_rephraser")
-
+    test_span_exported = TestSpanExporter(span_exporter)
+    ignore_substrings = ["health_check"]
     component_class = MockContextualResponseRephraser
-
     instrumentation.instrument(
         tracer_provider,
         contextual_response_rephraser_class=component_class,
     )
-
+    previous_num_captured_spans = test_span_exported.get_previous_num_captured_spans(
+        ignore_substrings
+    )
     endpoint_config = EndpointConfig.from_dict(
         {"trace_prompt_tokens": True, "llm": {"provider": "cohere", "model": "command"}}
     )
@@ -325,7 +341,9 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
             in caplog.text
         )
 
-    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans(
+        ignore_substrings
+    )  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -406,7 +424,6 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
 async def test_tracing_contextual_response_rephraser_create_history(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
-    previous_num_captured_spans: int,
     domain_with_responses: Domain,
     greet_tracker: DialogueStateTracker,
     llm_config: Dict[str, Any],
@@ -417,14 +434,16 @@ async def test_tracing_contextual_response_rephraser_create_history(
 ) -> None:
     if mock_env_key is not None:
         monkeypatch.setenv(mock_env_key, "mock key in test_tracing_rephraser")
-
+    test_span_exported = TestSpanExporter(span_exporter)
+    ignore_substrings = ["health_check"]
     component_class = MockContextualResponseRephraser
-
     instrumentation.instrument(
         tracer_provider,
         contextual_response_rephraser_class=component_class,
     )
-
+    previous_num_captured_spans = test_span_exported.get_previous_num_captured_spans(
+        ignore_substrings
+    )
     endpoint_config = EndpointConfig.from_dict({"llm": llm_config})
     mock_rephraser = component_class(
         endpoint_config=endpoint_config, domain=domain_with_responses
@@ -432,7 +451,9 @@ async def test_tracing_contextual_response_rephraser_create_history(
 
     await mock_rephraser._create_history(greet_tracker)
 
-    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
+    captured_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans(
+        ignore_substrings
+    )  # type: ignore
 
     num_captured_spans = len(captured_spans) - previous_num_captured_spans
     assert num_captured_spans == 1
@@ -456,3 +477,91 @@ async def test_tracing_contextual_response_rephraser_create_history(
     }
     expected_attributes.update(expected)
     assert captured_span.attributes == expected_attributes
+
+
+@pytest.mark.parametrize(
+    "mock_perform_health_check,"
+    "expected_attributes,"
+    "confing_present_in_expected_attributes,"
+    "llm_api_health_check_env_var_value",
+    [
+        (
+            Mock(return_value="returned-model-health-check-success"),
+            {
+                "api_health_check_enabled": True,
+                "health_check_trigger_component": "ContextualResponseRephraser",
+                "health_check_trigger_method": "contextual_response_rephraser.init",
+            },
+            True,
+            "true",
+        ),
+        (
+            Mock(return_value=None),
+            {
+                "api_health_check_enabled": True,
+                "health_check_trigger_component": "ContextualResponseRephraser",
+                "health_check_trigger_method": "contextual_response_rephraser.init",
+            },
+            True,
+            "true",
+        ),
+        (
+            Mock(),
+            {
+                "api_health_check_enabled": False,
+                "health_check_trigger_component": "ContextualResponseRephraser",
+                "health_check_trigger_method": "contextual_response_rephraser.init",
+            },
+            False,
+            "false",
+        ),
+    ],
+)
+async def test_tracing_contextual_response_rephraser_health_check_success(
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    previous_num_captured_spans: int,
+    domain_with_responses: Domain,
+    greet_tracker: DialogueStateTracker,
+    monkeypatch: MonkeyPatch,
+    mock_perform_health_check: Mock,
+    expected_attributes: Dict[str, Any],
+    confing_present_in_expected_attributes: bool,
+    llm_api_health_check_env_var_value: str,
+    mock_perform_llm_health_check: Mock,
+) -> None:
+    # Given
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_tracing_rephraser")
+    monkeypatch.setenv(LLM_API_HEALTH_CHECK_ENV_VAR, llm_api_health_check_env_var_value)
+
+    test_span_exported = TestSpanExporter(span_exporter)
+    component_class = MockContextualResponseRephraser
+    instrumentation.instrument(
+        tracer_provider,
+        contextual_response_rephraser_class=component_class,
+    )
+    previous_num_captured_spans = test_span_exported.get_previous_num_captured_spans()
+    endpoint_config = EndpointConfig.from_dict({})
+
+    # When: Health check is happening in __init__ in the ContextualResponseRephraser
+    component_class(endpoint_config=endpoint_config, domain=domain_with_responses)
+
+    captured_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans()
+    num_captured_spans = len(captured_spans) - previous_num_captured_spans
+
+    captured_span = captured_spans[-1]
+
+    # Then
+    assert num_captured_spans == 1
+    assert captured_span.name == (
+        "MockContextualResponseRephraser.perform_llm_health_check"
+    )
+
+    if confing_present_in_expected_attributes:
+        assert captured_span.attributes["config"] is not None
+        assert bool(captured_span.attributes["config"])
+    else:
+        assert "config" not in captured_span.attributes
+
+    for key, value in expected_attributes.items():
+        assert captured_span.attributes[key] == value
