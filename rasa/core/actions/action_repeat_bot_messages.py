@@ -3,6 +3,15 @@ from typing import Optional, Dict, Any, List
 from rasa.core.actions.action import Action
 from rasa.core.channels import OutputChannel
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.dialogue_understanding.patterns.collect_information import (
+    CollectInformationPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.patterns.repeat import (
+    RepeatBotMessagesPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.patterns.user_silence import (
+    UserSilencePatternFlowStackFrame,
+)
 from rasa.shared.core.constants import ACTION_REPEAT_BOT_MESSAGES
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event, BotUttered, UserUttered
@@ -39,6 +48,14 @@ class ActionRepeatBotMessages(Action):
             The elif condition doesn't break when it sees User3 event.
             But it does at User2 event.
         """
+        # Skip action if we are in a collect information step whose
+        # default behavior is to repeat anyways
+        top_frame = tracker.stack.top(
+            lambda frame: isinstance(frame, RepeatBotMessagesPatternFlowStackFrame)
+            or isinstance(frame, UserSilencePatternFlowStackFrame)
+        )
+        if isinstance(top_frame, CollectInformationPatternFlowStackFrame):
+            return []
         # filter user and bot events
         filtered = [
             e for e in tracker.events if isinstance(e, (BotUttered, UserUttered))

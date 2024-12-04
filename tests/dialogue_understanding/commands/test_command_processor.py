@@ -1,9 +1,10 @@
-from typing import List
+from typing import List, Type
 from unittest.mock import Mock
 
 import pytest
 
 from rasa.dialogue_understanding.commands import (
+    RepeatBotMessagesCommand,
     SetSlotCommand,
     StartFlowCommand,
     CorrectSlotsCommand,
@@ -12,6 +13,7 @@ from rasa.dialogue_understanding.commands import (
 from rasa.dialogue_understanding.patterns.code_change import FLOW_PATTERN_CODE_CHANGE_ID
 from rasa.dialogue_understanding.processor.command_processor import (
     execute_commands,
+    ensure_max_number_of_command_type,
     filter_start_flow_commands,
     find_updated_flows,
 )
@@ -168,3 +170,78 @@ def test_filter_start_flow_commands(
     commands: List[Command], expected_output: List[str]
 ) -> None:
     assert filter_start_flow_commands(commands) == expected_output
+
+
+@pytest.mark.parametrize(
+    "commands,t,n,expected_commands",
+    [
+        ([], StartFlowCommand, 1, []),
+        ([StartFlowCommand("abc")], StartFlowCommand, 10, [StartFlowCommand("abc")]),
+        (
+            [RepeatBotMessagesCommand(), RepeatBotMessagesCommand()],
+            RepeatBotMessagesCommand,
+            1,
+            [RepeatBotMessagesCommand()],
+        ),
+        (
+            [RepeatBotMessagesCommand(), RepeatBotMessagesCommand()],
+            RepeatBotMessagesCommand,
+            0,
+            [],
+        ),
+        (
+            [RepeatBotMessagesCommand(), RepeatBotMessagesCommand()],
+            RepeatBotMessagesCommand,
+            -1,
+            [],
+        ),
+        (
+            [
+                RepeatBotMessagesCommand(),
+                RepeatBotMessagesCommand(),
+                StartFlowCommand("abc"),
+            ],
+            RepeatBotMessagesCommand,
+            0,
+            [StartFlowCommand("abc")],
+        ),
+        (
+            [
+                RepeatBotMessagesCommand(),
+                RepeatBotMessagesCommand(),
+                StartFlowCommand("abc"),
+            ],
+            RepeatBotMessagesCommand,
+            -1,
+            [StartFlowCommand("abc")],
+        ),
+        (
+            [
+                RepeatBotMessagesCommand(),
+                RepeatBotMessagesCommand(),
+                StartFlowCommand("abc"),
+            ],
+            RepeatBotMessagesCommand,
+            1,
+            [RepeatBotMessagesCommand(), StartFlowCommand("abc")],
+        ),
+        (
+            [
+                RepeatBotMessagesCommand(),
+                RepeatBotMessagesCommand(),
+                StartFlowCommand("abc"),
+            ],
+            RepeatBotMessagesCommand,
+            2,
+            [
+                RepeatBotMessagesCommand(),
+                RepeatBotMessagesCommand(),
+                StartFlowCommand("abc"),
+            ],
+        ),
+    ],
+)
+def test_ensure_max_number_of_command_type(
+    commands: List[Command], t: Type[Command], n: int, expected_commands: List[Command]
+) -> None:
+    assert ensure_max_number_of_command_type(commands, t, n) == expected_commands
