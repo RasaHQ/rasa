@@ -852,29 +852,23 @@ class BotDidNotUtterAssertion(Assertion):
         """Checks that the bot did not utter the specified messages or buttons."""
         for event in turn_events:
             if isinstance(event, BotUttered):
-                # Check if the utter action name matches the forbidden utter name
-                if self.utter_name is not None:
-                    if event.metadata.get("utter_action") == self.utter_name:
-                        error_message = (
-                            f"Bot uttered a forbidden utterance '{self.utter_name}'."
-                        )
-                        error_message += assertion_order_error_message
-                        return self._generate_assertion_failure(
-                            error_message, prior_events, turn_events, self.line
-                        )
-                # Check if the bot message text matches the forbidden pattern
-                if self.text_matches is not None:
-                    pattern = re.compile(self.text_matches)
-                    if pattern.search(event.text):
-                        error_message = (
-                            f"Bot uttered a forbidden message matching "
-                            f"the pattern '{self.text_matches}'."
-                        )
-                        error_message += assertion_order_error_message
-                        return self._generate_assertion_failure(
-                            error_message, prior_events, turn_events, self.line
-                        )
-                # Check if the bot response contains the forbidden buttons
+                if self._utter_name_matches(event):
+                    error_message = (
+                        f"Bot uttered a forbidden utterance '{self.utter_name}'."
+                    )
+                    error_message += assertion_order_error_message
+                    return self._generate_assertion_failure(
+                        error_message, prior_events, turn_events, self.line
+                    )
+                if self._text_matches(event):
+                    error_message = (
+                        f"Bot uttered a forbidden message matching "
+                        f"the pattern '{self.text_matches}'."
+                    )
+                    error_message += assertion_order_error_message
+                    return self._generate_assertion_failure(
+                        error_message, prior_events, turn_events, self.line
+                    )
                 if self._buttons_match(event):
                     error_message = (
                         "Bot uttered a forbidden response with specified buttons."
@@ -884,6 +878,19 @@ class BotDidNotUtterAssertion(Assertion):
                         error_message, prior_events, turn_events, self.line
                     )
         return None, None
+
+    def _utter_name_matches(self, event: BotUttered) -> bool:
+        if self.utter_name is not None:
+            if event.metadata.get("utter_action") == self.utter_name:
+                return True
+        return False
+
+    def _text_matches(self, event: BotUttered) -> bool:
+        if self.text_matches is not None:
+            pattern = re.compile(self.text_matches)
+            if pattern.search(event.text):
+                return True
+        return False
 
     def _buttons_match(self, event: BotUttered) -> bool:
         """Check if the bot response contains any of the forbidden buttons."""
@@ -895,13 +902,25 @@ class BotDidNotUtterAssertion(Assertion):
             return False
 
         for actual_button in actual_buttons:
-            actual_title = actual_button.get("title")
-            actual_payload = actual_button.get("payload")
-            for forbidden_button in self.buttons:
-                title_matches = forbidden_button.title == actual_title
-                payload_matches = forbidden_button.payload == actual_payload
-                if title_matches and payload_matches:
-                    return True
+            if any(
+                self._is_forbidden_button(actual_button, forbidden_button)
+                for forbidden_button in self.buttons
+            ):
+                return True
+        return False
+
+    @staticmethod
+    def _is_forbidden_button(
+        actual_button: Dict[str, Any], forbidden_button: AssertedButton
+    ) -> bool:
+        """Check if the button matches any of the forbidden buttons."""
+        actual_title = actual_button.get("title")
+        actual_payload = actual_button.get("payload")
+
+        title_matches = forbidden_button.title == actual_title
+        payload_matches = forbidden_button.payload == actual_payload
+        if title_matches and payload_matches:
+            return True
         return False
 
     def __hash__(self) -> int:
