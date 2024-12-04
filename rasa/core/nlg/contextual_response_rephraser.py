@@ -110,7 +110,7 @@ class ContextualResponseRephraser(
             ContextualResponseRephraser.__name__,
         )
 
-        self.perform_training_time_llm_health_check(
+        self.perform_llm_health_check(
             self.llm_config,
             DEFAULT_LLM_CONFIG,
             "contextual_response_rephraser.init",

@@ -18,10 +18,6 @@ from rasa.core.constants import (
     UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.policies.policy import Policy, PolicyPrediction, SupportedData
-from rasa.dialogue_understanding.generator.constants import (
-    TRAINED_MODEL_NAME_CONFIG_KEY,
-    TRAINED_EMBEDDINGS_CONFIG_KEY,
-)
 from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
 from rasa.dialogue_understanding.stack.frames import (
     ChitChatStackFrame,
@@ -514,10 +510,8 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
             A policy must return its resource locator so that potential children nodes
             can load the policy from the resource.
         """
-        (
-            self.config[TRAINED_MODEL_NAME_CONFIG_KEY],
-            self.config[TRAINED_EMBEDDINGS_CONFIG_KEY],
-        ) = self._perform_training_time_health_checks()
+        # Perform health checks of both LLM and embeddings client configs
+        self._perform_health_checks(self.config, "intentless_policy.train")
 
         responses = filter_responses(responses, forms, flows or FlowsList([]))
         telemetry.track_intentless_policy_train()
@@ -950,10 +944,13 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
         **kwargs: Any,
     ) -> "IntentlessPolicy":
         """Loads a trained policy (see parent class for full docstring)."""
+
+        # Perform health checks of both LLM and embeddings client configs
+        cls._perform_health_checks(config, "intentless_policy.load")
+
         responses_docsearch = None
         samples_docsearch = None
         prompt_template = None
-        persisted_config = None
         try:
             with model_storage.read_from(resource) as path:
                 responses_docsearch = load_faiss_vector_store(
@@ -971,15 +968,12 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
                 prompt_template = rasa.shared.utils.io.read_file(
                     path / INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
                 )
-                persisted_config = rasa.shared.utils.io.read_json_file(
-                    path / INTENTLESS_CONFIG_FILE_NAME
-                )
         except (ValueError, FileNotFoundError, FileIOException) as e:
             structlogger.warning(
                 "intentless_policy.load.failed", error=e, resource_name=resource.name
             )
 
-        policy = cls(
+        return cls(
             config,
             model_storage,
             resource,
@@ -988,14 +982,6 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
             samples_docsearch=samples_docsearch,
             prompt_template=prompt_template,
         )
-
-        policy._perform_inference_time_health_checks(
-            persisted_config,
-            policy.config.get(LLM_CONFIG_KEY),
-            policy.config.get(EMBEDDINGS_CONFIG_KEY),
-        )
-
-        return policy
 
     @classmethod
     def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
@@ -1016,51 +1002,26 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
             [prompt_template, llm_config, embedding_config]
         )
 
-    def _perform_training_time_health_checks(
-        self,
-    ) -> Tuple[Optional[str], Optional[str]]:
-        train_model_name = self.perform_training_time_llm_health_check(
-            self.config.get(LLM_CONFIG_KEY),
-            DEFAULT_LLM_CONFIG,
-            "intentless_policy.train",
-            IntentlessPolicy.__name__,
-        )
-        train_embedding_name = self.perform_training_time_embeddings_health_check(
-            self.config.get(EMBEDDINGS_CONFIG_KEY),
-            DEFAULT_EMBEDDINGS_CONFIG,
-            "intentless_policy.train",
-            IntentlessPolicy.__name__,
-        )
-        return train_model_name, train_embedding_name
-
-    def _perform_inference_time_health_checks(
-        self,
-        persisted_config: Optional[Dict[str, Any]],
-        resolved_llm_config: Optional[Dict[str, Any]],
-        resolved_embeddings_config: Optional[Dict[str, Any]],
+    @classmethod
+    def _perform_health_checks(
+        cls, config: Dict[Text, Any], log_source_method: str
     ) -> None:
-        train_model_name = (
-            persisted_config.get(TRAINED_MODEL_NAME_CONFIG_KEY, None)
-            if persisted_config
-            else None
-        )
-        self.perform_inference_time_llm_health_check(
-            resolved_llm_config,
+        # Perform health check of the LLM client config
+        llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY, {}))
+        cls.perform_llm_health_check(
+            llm_config,
             DEFAULT_LLM_CONFIG,
-            train_model_name,
-            "intentless_policy.load",
+            log_source_method,
             IntentlessPolicy.__name__,
         )
 
-        train_embeddings_name = (
-            persisted_config.get(TRAINED_EMBEDDINGS_CONFIG_KEY, None)
-            if persisted_config
-            else None
+        # Perform health check of the embeddings client config
+        embeddings_config = resolve_model_client_config(
+            config.get(EMBEDDINGS_CONFIG_KEY, {})
         )
-        self.perform_inference_time_embeddings_health_check(
-            resolved_embeddings_config,
+        cls.perform_embeddings_health_check(
+            embeddings_config,
             DEFAULT_EMBEDDINGS_CONFIG,
-            train_embeddings_name,
-            "intentless_policy.load",
+            log_source_method,
             IntentlessPolicy.__name__,
         )

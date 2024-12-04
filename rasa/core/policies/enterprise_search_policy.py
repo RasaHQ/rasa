@@ -1,7 +1,7 @@
 import importlib.resources
 import json
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text
 import dotenv
 import structlog
 from jinja2 import Template
@@ -25,8 +25,6 @@ from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
-    TRAINED_MODEL_NAME_CONFIG_KEY,
-    TRAINED_EMBEDDINGS_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.patterns.cannot_handle import (
     CannotHandlePatternFlowStackFrame,
@@ -298,6 +296,9 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             A policy must return its resource locator so that potential children nodes
             can load the policy from the resource.
         """
+        # Perform health checks for both LLM and embeddings client configs
+        self._perform_health_checks(self.config, "enterprise_search_policy.train")
+
         store_type = self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY)
 
         # telemetry call to track training start
@@ -316,11 +317,6 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                 "Unable to create embedder. Please make sure you specified the "
                 f"required environment variables. Error: {e}"
             )
-
-        (
-            self.config[TRAINED_MODEL_NAME_CONFIG_KEY],
-            self.config[TRAINED_EMBEDDINGS_CONFIG_KEY],
-        ) = self._perform_training_time_health_checks()
 
         if store_type == DEFAULT_VECTOR_STORE_TYPE:
             logger.info("enterprise_search_policy.train.faiss")
@@ -696,15 +692,15 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         **kwargs: Any,
     ) -> "EnterpriseSearchPolicy":
         """Loads a trained policy (see parent class for full docstring)."""
+
+        # Perform health checks for both LLM and embeddings client configs
+        cls._perform_health_checks(config, "enterprise_search_policy.load")
+
         prompt_template = None
-        persisted_config = None
         try:
             with model_storage.read_from(resource) as path:
                 prompt_template = rasa.shared.utils.io.read_file(
                     path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
-                )
-                persisted_config = rasa.shared.utils.io.read_json_file(
-                    path / ENTERPRISE_SEARCH_CONFIG_FILE_NAME
                 )
         except (FileNotFoundError, FileIOException) as e:
             logger.warning(
@@ -735,7 +731,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                 embeddings=embeddings,
             )  # type: ignore
 
-        policy = cls(
+        return cls(
             config,
             model_storage,
             resource,
@@ -743,14 +739,6 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             vector_store=vector_store,
             prompt_template=prompt_template,
         )
-
-        policy._perform_inference_time_health_checks(
-            persisted_config,
-            policy.config.get(LLM_CONFIG_KEY),
-            policy.config.get(EMBEDDINGS_CONFIG_KEY),
-        )
-
-        return policy
 
     @classmethod
     def _get_local_knowledge_data(cls, config: Dict[str, Any]) -> Optional[List[str]]:
@@ -892,51 +880,26 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
 
         return joined_answer + joined_sources
 
-    def _perform_training_time_health_checks(
-        self,
-    ) -> Tuple[Optional[str], Optional[str]]:
-        train_model_name = self.perform_training_time_llm_health_check(
-            self.config.get(LLM_CONFIG_KEY),
-            DEFAULT_LLM_CONFIG,
-            "enterprise_search_policy.train",
-            EnterpriseSearchPolicy.__name__,
-        )
-        train_embedding_name = self.perform_training_time_embeddings_health_check(
-            self.config.get(EMBEDDINGS_CONFIG_KEY),
-            DEFAULT_EMBEDDINGS_CONFIG,
-            "enterprise_search_policy.train",
-            EnterpriseSearchPolicy.__name__,
-        )
-        return train_model_name, train_embedding_name
-
-    def _perform_inference_time_health_checks(
-        self,
-        persisted_config: Optional[Dict[str, Any]],
-        resolved_llm_config: Optional[Dict[str, Any]],
-        resolved_embeddings_config: Optional[Dict[str, Any]],
+    @classmethod
+    def _perform_health_checks(
+        cls, config: Dict[Text, Any], log_source_method: str
     ) -> None:
-        train_model_name = (
-            persisted_config.get(TRAINED_MODEL_NAME_CONFIG_KEY, None)
-            if persisted_config
-            else None
-        )
-        self.perform_inference_time_llm_health_check(
-            resolved_llm_config,
+        # Perform health check of the LLM client config
+        llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY, {}))
+        cls.perform_llm_health_check(
+            llm_config,
             DEFAULT_LLM_CONFIG,
-            train_model_name,
-            "enterprise_search_policy.load",
+            log_source_method,
             EnterpriseSearchPolicy.__name__,
         )
 
-        train_embeddings_name = (
-            persisted_config.get(TRAINED_EMBEDDINGS_CONFIG_KEY, None)
-            if persisted_config
-            else None
+        # Perform health check of the embeddings client config
+        embeddings_config = resolve_model_client_config(
+            config.get(EMBEDDINGS_CONFIG_KEY, {})
         )
-        self.perform_inference_time_embeddings_health_check(
-            resolved_embeddings_config,
+        cls.perform_embeddings_health_check(
+            embeddings_config,
             DEFAULT_EMBEDDINGS_CONFIG,
-            train_embeddings_name,
-            "enterprise_search_policy.load",
+            log_source_method,
             EnterpriseSearchPolicy.__name__,
         )

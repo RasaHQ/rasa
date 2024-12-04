@@ -8,6 +8,7 @@ import structlog
 from _pytest.tmpdir import TempPathFactory
 from pytest import MonkeyPatch
 
+import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
@@ -33,6 +34,7 @@ from rasa.dialogue_understanding.generator.flow_retrieval import (
 from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator import (  # noqa: E501
     SingleStepLLMCommandGenerator,
     DEFAULT_COMMAND_PROMPT_TEMPLATE,
+    SINGLE_STEP_LLM_COMMAND_GENERATOR_CONFIG_FILE,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.storage.local_model_storage import LocalModelStorage
@@ -1347,7 +1349,7 @@ class TestSingleStepLLMCommandGenerator:
                 == expected_flow_retrieval_embedding_config
             )
 
-    def test_multi_step_llm_command_generator_persist_config(
+    def test_single_step_llm_command_generator_persist_config(
         self,
         model_storage: LocalModelStorage,
         resource: Resource,
@@ -1382,9 +1384,11 @@ class TestSingleStepLLMCommandGenerator:
         generator.persist()
 
         # Check that the persisted config is equal to our config
-        persisted_config = SingleStepLLMCommandGenerator.load_config_from_model_storage(
-            model_storage, resource
-        )
+        with model_storage.read_from(resource) as path:
+            persisted_config = rasa.shared.utils.io.read_json_file(
+                path / SINGLE_STEP_LLM_COMMAND_GENERATOR_CONFIG_FILE
+            )
+
         assert persisted_config[LLM_CONFIG_KEY] == {
             "id": "model_group_id",
             "models": [{"provider": "openai", "model": "gpt-4"}],

@@ -27,12 +27,9 @@ from langchain.schema.embeddings import Embeddings
 from langchain_community.vectorstores.faiss import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
 
-from rasa.dialogue_understanding.generator.constants import (
-    TRAINED_EMBEDDINGS_CONFIG_KEY,
-)
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-
+import rasa.shared.utils.io
 from rasa.shared.constants import (
     EMBEDDINGS_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
@@ -41,7 +38,7 @@ from rasa.shared.constants import (
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.exceptions import ProviderClientAPIException, FileIOException
+from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import TEXT, FLOWS_FROM_SEMANTIC_SEARCH
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
@@ -59,7 +56,6 @@ from rasa.shared.utils.llm import (
     allowed_values_for_slot,
     resolve_model_client_config,
 )
-from rasa.shared.utils.io import dump_obj_as_json_to_file, read_json_file
 
 DEFAULT_FLOW_DOCUMENT_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.generator", "flow_document_template.jinja2"
@@ -93,7 +89,6 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
             MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY: DEFAULT_MAX_FLOWS_FROM_SEMANTIC_SEARCH,
             TURNS_TO_EMBED_KEY: DEFAULT_TURNS_TO_EMBED,
             SHOULD_EMBED_SLOTS_KEY: DEFAULT_SHOULD_EMBED_SLOTS,
-            TRAINED_EMBEDDINGS_CONFIG_KEY: None,
         }
 
     def __init__(
@@ -146,16 +141,6 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
 
         return config
 
-    def train(self) -> None:
-        self.config[TRAINED_EMBEDDINGS_CONFIG_KEY] = (
-            self.perform_training_time_embeddings_health_check(
-                self.config.get(EMBEDDINGS_CONFIG_KEY),
-                DEFAULT_EMBEDDINGS_CONFIG,
-                "flow_retrieval.train",
-                FlowRetrieval.__name__,
-            )
-        )
-
     @classmethod
     def load(
         cls,
@@ -165,6 +150,18 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
         **kwargs: Any,
     ) -> "FlowRetrieval":
         """Load flow retrieval with previously populated FAISS vector store."""
+
+        # Perform health check on resolved embedding client config
+        embeddings_config = resolve_model_client_config(
+            config.get(EMBEDDINGS_CONFIG_KEY, {})
+        )
+        cls.perform_embeddings_health_check(
+            embeddings_config,
+            DEFAULT_EMBEDDINGS_CONFIG,
+            "flow_retrieval.load",
+            FlowRetrieval.__name__,
+        )
+
         # initialize base flow retrieval
         flow_retrieval = FlowRetrieval(config, model_storage, resource)
         # load vector store
@@ -172,30 +169,6 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
             flow_retrieval.config, model_storage, resource
         )
         flow_retrieval.vector_store = vector_store
-
-        persisted_config = None
-        try:
-            with model_storage.read_from(resource) as path:
-                persisted_config = read_json_file(
-                    path / FLOW_RETRIEVAL_CONFIG_FILE_NAME
-                )
-        except (FileNotFoundError, FileIOException) as e:
-            structlogger.warning(
-                "flow_retrieval.load.failed", error=e, resource=resource.name
-            )
-
-        train_embeddings_name = (
-            persisted_config.get(TRAINED_EMBEDDINGS_CONFIG_KEY, None)
-            if persisted_config
-            else None
-        )
-        flow_retrieval.perform_inference_time_embeddings_health_check(
-            flow_retrieval.config.get(EMBEDDINGS_CONFIG_KEY),
-            DEFAULT_EMBEDDINGS_CONFIG,
-            train_embeddings_name,
-            "flow_retrieval.load",
-            FlowRetrieval.__name__,
-        )
 
         return flow_retrieval
 
@@ -242,10 +215,7 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
 
     def persist(self) -> None:
         self._persist_vector_store()
-        with self._model_storage.write_to(self._resource) as path:
-            dump_obj_as_json_to_file(
-                path / FLOW_RETRIEVAL_CONFIG_FILE_NAME, self.config
-            )
+        self._persist_config()
 
     def _persist_vector_store(self) -> None:
         """Persists the FAISS vector store."""
@@ -258,6 +228,12 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
                 event_info="Vector store is None, not persisted.",
             )
 
+    def _persist_config(self) -> None:
+        with self._model_storage.write_to(self._resource) as path:
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                path / FLOW_RETRIEVAL_CONFIG_FILE_NAME, self.config
+            )
+
     def populate(self, flows: FlowsList, domain: Domain) -> None:
         """Populates the vector store with embeddings generated from
         documents based on the flow descriptions, and flow slots
@@ -267,6 +243,14 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
             flows: List of flows to populate the vector store with.
             domain: The domain containing relevant slot information.
         """
+        # Perform health check before populating the vector store with flows
+        self.perform_embeddings_health_check(
+            self.config.get(EMBEDDINGS_CONFIG_KEY),
+            DEFAULT_EMBEDDINGS_CONFIG,
+            "flow_retrieval.train",
+            FlowRetrieval.__name__,
+        )
+
         flows_to_embedd = flows.exclude_link_only_flows()
         embeddings = self._create_embedder(self.config)
         documents = self._generate_flow_documents(flows_to_embedd, domain)
