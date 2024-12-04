@@ -14,6 +14,7 @@ from pykwalify.errors import SchemaError
 import rasa.shared.nlu.training_data.schemas.data_schema as schema
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
+from rasa.e2e_test.utils.validation import read_e2e_test_schema
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
     DOMAIN_SCHEMA_FILE,
@@ -25,7 +26,6 @@ from rasa.shared.exceptions import YamlException, SchemaValidationError
 from rasa.shared.nlu.training_data.formats.rasa_yaml import NLU_SCHEMA_FILE
 from rasa.shared.utils.yaml import (
     KEY_TRAINING_DATA_FORMAT_VERSION,
-    YamlValidationException,
     read_schema_file,
     validate_yaml_with_jsonschema,
     validate_yaml_content_using_schema,
@@ -33,8 +33,11 @@ from rasa.shared.utils.yaml import (
     validate_raw_yaml_using_schema_file_with_responses,
     validate_training_data,
     validate_training_data_format_version,
+    read_yaml_file,
+    validate_yaml_data_using_schema_with_assertions,
+    parse_raw_yaml,
+    YamlValidationException,
 )
-from rasa.shared.utils.yaml import read_yaml_file
 
 python_module_path = "rasa.shared.utils.yaml"
 
@@ -962,3 +965,507 @@ def test_yaml_validation_exception_line_number(
         )
 
     assert f"in Line {expected_error_line}" in str(e.value)
+
+
+def help_test_yaml_validation_error_message(
+    faulty_yaml: str,
+    expected_error_line: int,
+    expected_error_message: str,
+):
+    """
+    Helper function used to split specific YAML validation cases.
+    """
+    with pytest.raises(YamlValidationException) as e:
+        yaml_data = parse_raw_yaml(faulty_yaml)
+        validate_yaml_data_using_schema_with_assertions(
+            yaml_data=yaml_data,
+            schema_content=read_e2e_test_schema(),
+        )
+    error_message = str(e.value)
+    assert f"in Line {expected_error_line}" in error_message
+    assert expected_error_message in error_message
+
+
+@pytest.mark.parametrize(
+    "faulty_yaml, expected_error_line, expected_error_message",
+    [
+        # Missing 'test_case' key
+        (
+            """test_cases:
+  - steps:
+      - user: "Hi"
+        assertions:
+          - slot_was_set:
+              - name: test_name
+                value: test_value""",
+            2,
+            """
+    1 | test_cases:
+>>> 2 |   - steps:
+    3 |       - user: "Hi"
+    4 |         assertions:
+Cannot find required key 'test_case'. Path: '/test_cases/1'
+""",
+        ),
+        # Missing 'name' key
+        (
+            """test_cases:
+  - test_case: missing_name_key
+    steps:
+    - user: "Hi"
+      assertions:
+        - slot_was_set:
+            - value: test_value
+        """,
+            7,
+            """
+    5 |         assertions:
+    6 |           - slot_was_set:
+>>> 7 |               - value: test_value
+Cannot find required key 'name'.""",
+        ),
+        # No 'threshold' key in 'generative_response_is_relevant' assertion
+        (
+            """test_cases:
+  - test_case: "missing_threshold_in_assertion"
+    steps:
+      - user: "Hello."
+        assertions:
+          - generative_response_is_relevant:
+              utter_name: 'utter_greet'
+              """,
+            7,
+            """
+    5 |         assertions:
+    6 |           - generative_response_is_relevant:
+>>> 7 |               utter_name: 'utter_greet'
+Cannot find required key 'threshold'.""",
+        ),
+    ],
+)
+def test_yaml_validation_missing_keys(
+    faulty_yaml: str,
+    expected_error_line: int,
+    expected_error_message: str,
+):
+    help_test_yaml_validation_error_message(
+        faulty_yaml,
+        expected_error_line,
+        expected_error_message,
+    )
+
+
+@pytest.mark.parametrize(
+    "faulty_yaml, expected_error_line, expected_error_message",
+    [
+        # Invalid key 'nameeee' instead of 'name'
+        (
+            """test_cases:
+  - test_case: invalid_slot_name
+    steps:
+      - user: "Hi"
+        assertions:
+          - slot_was_set:
+              - nameeee: test_name
+                value: test_value
+""",
+            7,
+            """
+    5 |         assertions:
+    6 |           - slot_was_set:
+>>> 7 |               - nameeee: test_name
+    8 |                 value: test_value
+Cannot find required key 'name'.""",
+        ),
+        # Unknown assertion 'unknown_assertion'
+        (
+            """test_cases:
+  - test_case: invalid_assertion
+    steps:
+      - user: "Hi"
+        assertions:
+          - unknown_assertion:
+              - name: test_name
+                value: test_value
+""",
+            6,
+            """
+    4 |       - user: "Hi"
+    5 |         assertions:
+>>> 6 |           - unknown_assertion:
+    7 |               - name: test_name
+    8 |                 value: test_value
+Key 'unknown_assertion' was not defined. Path: '/test_cases/1/steps/1/assertions/1'
+""",
+        ),
+        # Invalid key 'test_casee' instead of 'test_case'
+        (
+            """test_cases:
+  - test_casee: typo_in_test_case_key
+    steps:
+      - user: "Hi"
+""",
+            2,
+            """
+    1 | test_cases:
+>>> 2 |   - test_casee: typo_in_test_case_key
+    3 |     steps:
+    4 |       - user: "Hi"
+Cannot find required key 'test_case'. Path: '/test_cases/1'
+""",
+        ),
+    ],
+)
+def test_yaml_validation_invalid_keys(
+    faulty_yaml: str,
+    expected_error_line: int,
+    expected_error_message: str,
+):
+    help_test_yaml_validation_error_message(
+        faulty_yaml, expected_error_line, expected_error_message
+    )
+
+
+@pytest.mark.parametrize(
+    "faulty_yaml, expected_error_line, expected_error_message",
+    [
+        # String instead of list for 'steps'
+        (
+            """test_cases:
+  - test_case: steps_as_string
+    steps: "This should be a list."
+""",
+            3,
+            """
+    1 | test_cases:
+    2 |   - test_case: steps_as_string
+>>> 3 |     steps: "This should be a list."
+Value 'b'This should be a list.'' is not a list. Value path: '/test_cases/1/steps'
+""",
+        ),
+        # List instead of dict in 'assertions'
+        (
+            """test_cases:
+  - test_case: assertions_as_list
+    steps:
+      - user: "Hi"
+        assertions:
+          - ["This should be a dict."]
+""",
+            6,
+            """
+    4 |       - user: "Hi"
+    5 |         assertions:
+>>> 6 |           - ["This should be a dict."]
+Value '['This should be a dict.']' is not a dict.""",
+        ),
+        # Integer instead of string for 'user'
+        (
+            """test_cases:
+  - test_case: user_as_integer
+    steps:
+      - user: 12345
+""",
+            4,
+            """
+    2 |   - test_case: user_as_integer
+    3 |     steps:
+>>> 4 |       - user: 12345
+Value '12345' is not of type 'str'. Path: '/test_cases/1/steps/1/user'
+""",
+        ),
+    ],
+)
+def test_yaml_validation_invalid_data_structures(
+    faulty_yaml: str,
+    expected_error_line: int,
+    expected_error_message: str,
+):
+    help_test_yaml_validation_error_message(
+        faulty_yaml, expected_error_line, expected_error_message
+    )
+
+
+@pytest.mark.parametrize(
+    "faulty_yaml, expected_error_line, expected_error_message",
+    [
+        # Missing 'name' key in 'slot_was_set'
+        (
+            """test_cases:
+  - test_case: user_corrects_a_branching_slot
+    steps:
+      - user: I want to verify my account
+        assertions:
+          - slot_was_set:
+              - name: route_session_to_calm
+                value: True
+          - bot_uttered:
+              utter_name: utter_ask_verify_account_email
+      - user: It's birdie@example.com
+        assertions:
+          - bot_uttered:
+              utter_name: utter_ask_based_in_california
+      - user: "yes"
+        metadata: duplicate_msg_correction_1
+        assertions:
+          - bot_uttered:
+              utter_name: utter_ask_verify_account_sufficient_california_income
+      - user: sorry, I need to correct the previous input
+        assertions:
+          - flow_started: pattern_correction
+          - bot_uttered:
+              utter_name: utter_ask_confirm_slot_correction
+      - user: /SetSlots(confirm_slot_correction=true)
+        assertions:
+          - bot_uttered:
+              utter_name: utter_corrected_previous_input
+          - slot_was_set:
+              - value: based_in_california
+          - bot_uttered:
+              utter_name: utter_ask_based_in_california
+      - user: "no"
+        assertions:
+          - bot_uttered:
+              utter_name: utter_ask_verify_account_confirmation
+      - user: "yes"
+        metadata: duplicate_msg_correction_2
+        assertions:
+          - bot_uttered:
+              utter_name: utter_verify_account_success
+          - bot_uttered:
+              utter_name: utter_can_do_something_else
+""",
+            30,
+            """
+    28 |               utter_name: utter_corrected_previous_input
+    29 |           - slot_was_set:
+>>> 30 |               - value: based_in_california
+    31 |           - bot_uttered:
+    32 |               utter_name: utter_ask_based_in_california
+Cannot find required key 'name'.""",
+        ),
+        # Misspelled 'bot_uttered' key
+        (
+            """fixtures:
+  - route_to_calm:
+      - route_session_to_calm: True
+
+metadata:
+  - duplicate_message_1:
+      turn_idx: 1
+  - duplicate_message_2:
+      turn_idx: 2
+  - duplicate_message_3:
+      turn_idx: 3
+
+test_cases:
+  - test_case: user_is_referred_to_human_after_3_portfolio_check_auth_fails
+    fixtures:
+      - route_to_calm
+    steps:
+      - user: I want to check my portfolio
+        assertions:
+          - bot_uttered:
+              utter_name: utter_ask_user_name
+      - user: John
+        metadata: duplicate_message_1
+        assertions:
+          - bot_uttered:
+              utter_name: utter_ask_user_password
+      - user: "1234"
+        metadata: duplicate_message_1
+        assertions:
+          - bot_uttered:
+              utter_name: utter_authentication_failed
+          - slot_was_set:
+            - name: login_failed_attempts
+              value: 1
+          - bot_uttered:
+              utter_name: utter_ask_user_name
+      - user: John
+        metadata: duplicate_message_2
+        assertions:
+          - bot_uttered:
+              utter_name: utter_ask_user_password
+      - user: "1234"
+        metadata: duplicate_message_2
+        assertions:
+          - bot_uttered:
+              utter_name: utter_authentication_failed
+          - slot_was_set:
+            - name: login_failed_attempts
+              value: 2
+          - bot_uttered:
+              utter_name: utter_ask_user_name
+      - user: John
+        metadata: duplicate_message_3
+        assertions:
+          - bot_utered:
+              utter_name: utter_ask_user_password
+      - user: "1234"
+        metadata: duplicate_message_3
+        assertions:
+          - slot_was_set:
+            - name: login_failed_attempts
+              value: 3
+          - flow_started: pattern_human_handoff
+""",
+            55,
+            """
+    53 |         metadata: duplicate_message_3
+    54 |         assertions:
+>>> 55 |           - bot_utered:
+    56 |               utter_name: utter_ask_user_password
+    57 |       - user: "1234"
+Key 'bot_utered' was not defined. Path: '/test_cases/1/steps/6/assertions/1'""",
+        ),
+        # Incorrect data type for 'flow_completed'
+        (
+            """test_cases:
+  - test_case: user_orders_pizza_stating_which_type_and_pays_with_points
+    steps:
+      - user: I would like to order a diavola pizza.
+        assertions:
+          - slot_was_set:
+              - name: pizza
+                value: diavola
+          - bot_uttered:
+              utter_name: utter_ask_num_pizza
+      - user: 1 please
+        assertions:
+            - slot_was_set:
+                - name: num_pizza
+                  value: 1
+            - bot_uttered:
+                utter_name: utter_ask_address
+      - user: 40 Elm Street
+        assertions:
+            - slot_was_set:
+                - name: address
+                  value: 40 Elm Street
+            - bot_uttered:
+                utter_name: utter_confirm
+                buttons:
+                  - title: Yes
+                    payload: /SetSlots(confirmation_order=True)
+                  - title: No
+                    payload: /SetSlots(confirmation_order=False)
+      - user: /SetSlots(confirmation_order=True)
+        assertions:
+            - slot_was_set:
+                - name: confirmation_order
+                  value: True
+            - bot_uttered:
+                utter_name: utter_ask_payment_option
+      - user: loyalty points
+        assertions:
+            - slot_was_set:
+                - name: payment_option
+                  value: membership_points
+            - flow_started: authenticate_user
+            - bot_uttered:
+                utter_name: utter_ask_user_name
+      - user: janedoe
+        assertions:
+            - slot_was_set:
+                - name: user_name
+                  value: janedoe
+            - bot_uttered:
+                utter_name: utter_ask_user_password
+      - user: r@nd0m
+        assertions:
+            - slot_was_set:
+                - name: user_password
+                  value: r@nd0m
+            - bot_uttered:
+                utter_name: utter_authentication_successful
+            - flow_completed:
+                 flow_id: authenticate_user
+            - action_executed: action_check_points
+            - bot_uttered:
+                 text_matches: You have 150 points in your membership account.
+            - flow_completed:
+               flow_id: use_membership_points
+            - bot_uttered:
+                utter_name: utter_execute_payment
+            - flow_completed:
+                flow_id: order_pizza
+            - flow_completed: 123
+""",
+            70,
+            """
+    68 |           - flow_completed:
+    69 |               flow_id: order_pizza
+>>> 70 |           - flow_completed: 123
+Value '123' is not a dict.""",
+        ),
+        # Missing 'name' key in slot_was_set assertion
+        (
+            """stub_custom_actions:
+  action_authenticate_user:
+    events:
+      - event: slot
+        name: is_user_logged_in
+        value: true
+    responses: []
+  action_check_portfolio_exists:
+    events:
+      - event: slot
+        name: portfolio_exists
+        value: true
+    responses: []
+  action_show_portfolio:
+    events:
+      - event: slot
+        name: portfolio_options
+        value: 'mutual_funds'
+    responses: []
+
+test_cases:
+  - test_case: user_checks_portfolio
+    steps:
+      - user: I want to check my portfolio
+        assertions:
+          - bot_uttered:
+              utter_name: utter_ask_user_name
+      - user: Max
+        assertions:
+          - bot_uttered:
+              utter_name: utter_ask_user_password
+      - user: "1234"
+        assertions:
+          - bot_uttered:
+              utter_name: utter_authentication_successful
+          - bot_uttered:
+              utter_name: utter_ask_portfolio_type
+      - user: /SetSlots(portfolio_type=mutual_funds)
+        assertions:
+          - slot_was_set:
+              - value: portfolio_type
+              - name: portfolio_exists
+                value: True
+              - name: portfolio_options
+          - bot_uttered:
+              utter_name: utter_portfolio_options_found
+""",
+            41,
+            """
+    39 |         assertions:
+    40 |           - slot_was_set:
+>>> 41 |               - value: portfolio_type
+    42 |               - name: portfolio_exists
+    43 |                 value: true
+Cannot find required key 'name'.""",
+        ),
+    ],
+)
+def test_yaml_validation_longer_yaml_cases(
+    faulty_yaml: str,
+    expected_error_line: int,
+    expected_error_message: str,
+):
+    help_test_yaml_validation_error_message(
+        faulty_yaml,
+        expected_error_line,
+        expected_error_message,
+    )

@@ -18,7 +18,12 @@ from rasa.dialogue_understanding.commands import (
     RestartCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
-from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
+from rasa.dialogue_understanding.generator.nlu_command_adapter import (
+    NLUCommandAdapter,
+    _issue_set_slot_commands,
+)
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.domain import Domain, KEY_INTENTS
 from rasa.shared.core.flows import FlowsList
@@ -74,6 +79,10 @@ class TestNLUCommandAdapter:
                 - type: from_entity
                   entity: bar2
                   intent: foo
+            another_slot:
+              type: text
+              mappings:
+                - type: from_text
             qux:
               type: text
               mappings:
@@ -107,6 +116,8 @@ class TestNLUCommandAdapter:
                 - id: first_step
                   collect: baz2
                 - collect: baz
+                - collect: another_slot
+                  ask_before_filling: true
                 - action: action_listen
             """
         )
@@ -590,3 +601,40 @@ class TestNLUCommandAdapter:
 
         assert len(predicted_commands) == 1
         assert isinstance(predicted_commands[0], expected_command_class)
+
+    def test_issue_set_slot_commands_considers_slot_of_current_collect_step(
+        self,
+        command_generator: NLUCommandAdapter,
+        flows: FlowsList,
+        domain: Domain,
+    ):
+        sender_id = uuid.uuid4().hex
+        tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+
+        tracker.update_stack(
+            DialogueStack(
+                [
+                    UserFlowStackFrame(
+                        flow_id="test_flow",
+                        step_id="2_collect_another_slot",
+                        frame_id="some-frame-id",
+                    ),
+                ]
+            )
+        )
+
+        set_slot_commands = _issue_set_slot_commands(
+            Message(
+                data={
+                    TEXT: "some message",
+                }
+            ),
+            flows=flows,
+            tracker=tracker,
+            domain=domain,
+        )
+
+        assert len(set_slot_commands) == 1
+        assert set_slot_commands[0] == SetSlotCommand(
+            "another_slot", "some message", SetSlotExtractor.NLU.value
+        )

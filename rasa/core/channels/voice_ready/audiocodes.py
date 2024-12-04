@@ -21,6 +21,7 @@ from sanic.exceptions import NotFound, SanicException, ServerError
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
+from rasa.utils.io import remove_emojis
 
 structlogger = structlog.get_logger()
 
@@ -449,6 +450,7 @@ class AudiocodesOutput(OutputChannel):
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         """Send a text message."""
+        text = remove_emojis(text)
         await self.add_message({"type": "message", "text": text})
 
     async def send_image_url(
@@ -470,6 +472,16 @@ class AudiocodesOutput(OutputChannel):
     async def hangup(self, recipient_id: Text, **kwargs: Any) -> None:
         """Indicate that the conversation should be ended."""
         await self.add_message({"type": "event", "name": "hangup"})
+
+    async def send_text_with_buttons(
+        self,
+        recipient_id: str,
+        text: str,
+        buttons: List[Dict[str, Any]],
+        **kwargs: Any,
+    ) -> None:
+        """Uses the concise button output format for voice channels."""
+        await self.send_text_with_buttons_concise(recipient_id, text, buttons, **kwargs)
 
 
 class WebsocketOutput(AudiocodesOutput):

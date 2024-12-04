@@ -5,6 +5,7 @@ from typing import List, Text
 
 from sanic import Sanic
 
+from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
 from rasa.core import constants
@@ -70,4 +71,5 @@ def inspect(args: argparse.Namespace) -> None:
     args.credentials = None
     args.server_listeners = [(after_start_hook_open_inspector, "after_server_start")]
 
+    telemetry.track_inspect_started(args.connector)
     rasa.cli.run.run(args)

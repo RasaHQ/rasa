@@ -1,0 +1,69 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ rephrase_all: True
+ llm:
+    model_group: azure_llm
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-azure-multi-deployments-with-cost-based-routing
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: rasa-providers-e2e-tests-azure-multi-deployments-with-cost-based-routing
+
+model_groups:
+  - id: azure_llm
+    models:
+    # Same LLM models across multiple deployments
+      - provider: azure
+        deployment: ${AZURE_DEPLOYMENT_GPT3_5_TURBO_CA}
+        api_base: ${AZURE_API_BASE_GPT3_5_TURBO_CA}
+        api_key: ${AZURE_API_KEY_CA}
+        api_version: ${AZURE_API_VERSION_GPT3_5_TURBO_CA}
+        timeout: 7
+        num_retries: 5
+      - provider: azure
+        deployment: ${AZURE_DEPLOYMENT_GPT3_5_TURBO_FR}
+        api_base: ${AZURE_API_BASE_GPT3_5_TURBO_FR}
+        api_key: ${AZURE_API_KEY_FR}
+        api_version: ${AZURE_API_VERSION_GPT3_5_TURBO_FR}
+        timeout: 7
+        num_retries: 5
+    router:
+      routing_strategy: cost-based-routing
+      num_retries: 5
+      timeout: 30 
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
+      cache_responses: True
+
+  - id: azure_embeddings
+    models:
+      # Same Embedding models across multiple deployments
+      - provider: azure
+        deployment: ${AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_CA}
+        api_base: ${AZURE_API_BASE_TXT_EMBEDDING_ADA_CA}
+        api_key: ${AZURE_API_KEY_CA}
+        api_version: ${AZURE_API_VERSION_TXT_EMBEDDING_ADA_CA}
+        timeout: 7
+        num_retries: 5
+      - provider: azure
+        deployment: ${AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_FR}
+        api_base: ${AZURE_API_BASE_TXT_EMBEDDING_ADA_FR}
+        api_key: ${AZURE_API_KEY_FR}
+        api_version: ${AZURE_API_VERSION_TXT_EMBEDDING_ADA_FR}
+        timeout: 7
+        num_retries: 5
+    router:
+      routing_strategy: least-busy
+      cache_responses: True

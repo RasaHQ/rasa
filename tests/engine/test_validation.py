@@ -2072,6 +2072,48 @@ class MockAvailableEndpointsForTestValidation:
             True,
             True,
         ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                        API_KEY: {"OPENAI_API_KEY": None},
+                    },
+                }
+            ],
+            True,
+            True,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                        API_KEY: {"OPENAI_API_KEY"},
+                    },
+                }
+            ],
+            True,
+            True,
+        ),
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                        API_KEY: "{OPENAI_API_KEY}",
+                    },
+                }
+            ],
+            True,
+            True,
+        ),
     ],
 )
 def test_validate_llm_configuration_setup(

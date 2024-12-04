@@ -439,7 +439,7 @@ class TestShapeValuesTrainAndProcess:
                 "好的😃",
                 # include a emoji which is common in Chinese text-based chat
             ],
-            [[3], [4], [4], [3]],
+            [[3], [3], [4], [2]],
         ),
         (
             "gpt",

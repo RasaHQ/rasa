@@ -2,7 +2,6 @@ from typing import Any, Dict, Optional, Text
 
 import structlog
 from jinja2 import Template
-
 from rasa import telemetry
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.core.nlg.summarize import summarize_conversation
@@ -19,6 +18,7 @@ from rasa.shared.constants import (
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.utils.health_check import perform_training_time_llm_health_check
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_GENERATE_MODEL_NAME,
     DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
@@ -28,7 +28,6 @@ from rasa.shared.utils.llm import (
     llm_factory,
     resolve_model_client_config,
 )
-from rasa.shared.utils.health_check import perform_training_time_llm_health_check
 from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
 )
@@ -44,6 +43,8 @@ RESPONSE_REPHRASING_TEMPLATE_KEY = "rephrase_prompt"
 RESPONSE_SUMMARISE_CONVERSATION_KEY = "summarize_conversation"
 
 DEFAULT_REPHRASE_ALL = False
+DEFAULT_SUMMARIZE_HISTORY = True
+DEFAULT_MAX_HISTORICAL_TURNS = 5
 
 DEFAULT_LLM_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
@@ -101,6 +102,12 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         )
         self.trace_prompt_tokens = self.nlg_endpoint.kwargs.get(
             "trace_prompt_tokens", False
+        )
+        self.summarize_history = self.nlg_endpoint.kwargs.get(
+            "summarize_history", DEFAULT_SUMMARIZE_HISTORY
+        )
+        self.max_historical_turns = self.nlg_endpoint.kwargs.get(
+            "max_historical_turns", DEFAULT_MAX_HISTORICAL_TURNS
         )
 
         self.llm_config = resolve_model_client_config(
@@ -213,18 +220,17 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
         prompt_template_text = self._template_for_response_rephrasing(response)
 
         # Retrieve inputs for the dynamic prompt
-        transcript = tracker_as_readable_transcript(tracker, max_turns=5)
         latest_message = self._last_message_if_human(tracker)
         current_input = f"{USER}: {latest_message}" if latest_message else ""
 
         # Only summarise conversation history if flagged
-        summarize_conversation_flag = response.get("metadata", {}).get(
-            RESPONSE_SUMMARISE_CONVERSATION_KEY, False
-        )
-        if summarize_conversation_flag:
+        if self.summarize_history:
             history = await self._create_history(tracker)
         else:
-            history = transcript
+            # make sure the transcript/history contains the last user utterance
+            max_turns = max(self.max_historical_turns, 1)
+            history = tracker_as_readable_transcript(tracker, max_turns=max_turns)
+            # the history already contains the current input
             current_input = ""
 
         prompt = Template(prompt_template_text).render(

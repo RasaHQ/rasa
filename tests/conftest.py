@@ -13,6 +13,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
+import argparse
 from typing import (
     Any,
     Callable,
@@ -52,6 +53,7 @@ from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import RestInput, channel
 from rasa.core.exporter import Exporter
+from rasa.cli.inspect import add_subparser
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.e2e_test.constants import (
     KEY_STUB_CUSTOM_ACTIONS,
@@ -1474,3 +1476,12 @@ def setup_swagger_coverage():
 def set_llm_api_health_check_env_var(monkeypatch) -> None:
     # Set environment variables for all tests
     monkeypatch.setenv(LLM_API_HEALTH_CHECK_ENV_VAR, "false")
+
+
+@pytest.fixture
+def inspect_parser() -> argparse.ArgumentParser:
+    """Fixture for the `rasa inspect` parser."""
+    parser = argparse.ArgumentParser(prog="rasa")
+    subparsers = parser.add_subparsers(help="Rasa commands")
+    add_subparser(subparsers, [])
+    return parser
