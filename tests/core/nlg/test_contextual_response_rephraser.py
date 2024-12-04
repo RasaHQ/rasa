@@ -2,7 +2,6 @@ from typing import Any, Optional, Dict
 
 import pytest
 from pytest import MonkeyPatch
-
 from rasa.core.nlg.contextual_response_rephraser import (
     ContextualResponseRephraser,
 )
@@ -12,7 +11,7 @@ from rasa.shared.constants import (
     MODEL_GROUP_CONFIG_KEY,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered
+from rasa.shared.core.events import UserUttered, BotUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
@@ -68,6 +67,8 @@ def greet_tracker() -> DialogueStateTracker:
     return DialogueStateTracker.from_events(
         "test",
         evts=[
+            BotUttered("I'm a Rasa bot!"),
+            BotUttered("How can I help you today?"),
             UserUttered("Hello", {"name": "greet", "confidence": 1.0}),
         ],
     )
@@ -216,7 +217,8 @@ async def test_rephraser_default_template(
                 "to the original message and retaining\n"
                 "its meaning. Use simple english.\n\n"
                 "Context / previous conversation with the user:\n"
-                "USER: Hello\n\n\n\n"
+                "User said hello\n\n"
+                "USER: Hello\n\n"
                 "Suggested "
                 "AI Response: Hey there! How can I help you?\n\n"
                 "Rephrased AI Response:"
@@ -237,25 +239,11 @@ async def test_rephraser_default_template(
 
 
 @pytest.mark.parametrize(
-    "utterance, expected_prompt, expected_output",
+    "endpoint_config, expected_prompt",
     [
         (
-            "utter_allows_rephrasing_no_summary",
-            "The following is a conversation with\n"
-            "an AI assistant. The assistant is helpful, creative, "
-            "clever, and very friendly.\n"
-            "Rephrase the suggested AI response staying close "
-            "to the original message and retaining\n"
-            "its meaning. Use simple english.\n\n"
-            "Context / previous conversation with the user:\n"
-            "USER: Hello\n\n\n\n"
-            "Suggested "
-            "AI Response: Hey there! How can I help you?\n\n"
-            "Rephrased AI Response:",
-            {"text": "hello foobar", "metadata": {"rephrase": True}},
-        ),
-        (
-            "utter_allows_rephrasing_with_summary",
+            # default - summarize history
+            {},
             "The following is a conversation with\n"
             "an AI assistant. The assistant is helpful, creative, "
             "clever, and very friendly.\n"
@@ -268,10 +256,81 @@ async def test_rephraser_default_template(
             "Suggested "
             "AI Response: Hey there! How can I help you?\n\n"
             "Rephrased AI Response:",
+        ),
+        (
+            # explicity set summarize_history to true
             {
-                "text": "hello foobar",
-                "metadata": {"rephrase": True, "summarize_conversation": True},
+                "summarize_history": True,
             },
+            "The following is a conversation with\n"
+            "an AI assistant. The assistant is helpful, creative, "
+            "clever, and very friendly.\n"
+            "Rephrase the suggested AI response staying close "
+            "to the original message and retaining\n"
+            "its meaning. Use simple english.\n\n"
+            "Context / previous conversation with the user:\n"
+            "User said hello\n\n"
+            "USER: Hello\n\n"
+            "Suggested "
+            "AI Response: Hey there! How can I help you?\n\n"
+            "Rephrased AI Response:",
+        ),
+        (
+            # set summairze history to false and max turns to 0
+            {
+                "summarize_history": False,
+                "max_historical_turns": 0,
+            },
+            "The following is a conversation with\n"
+            "an AI assistant. The assistant is helpful, creative, "
+            "clever, and very friendly.\n"
+            "Rephrase the suggested AI response staying close "
+            "to the original message and retaining\n"
+            "its meaning. Use simple english.\n\n"
+            "Context / previous conversation with the user:\n"
+            "USER: Hello\n\n\n\n"
+            "Suggested "
+            "AI Response: Hey there! How can I help you?\n\n"
+            "Rephrased AI Response:",
+        ),
+        (
+            # set summairze history to false and max turns to 20
+            {
+                "summarize_history": False,
+                "max_historical_turns": 20,
+            },
+            "The following is a conversation with\n"
+            "an AI assistant. The assistant is helpful, creative, "
+            "clever, and very friendly.\n"
+            "Rephrase the suggested AI response staying close "
+            "to the original message and retaining\n"
+            "its meaning. Use simple english.\n\n"
+            "Context / previous conversation with the user:\n"
+            "AI: I'm a Rasa bot!\n"
+            "AI: How can I help you today?\n"
+            "USER: Hello\n\n\n\n"
+            "Suggested "
+            "AI Response: Hey there! How can I help you?\n\n"
+            "Rephrased AI Response:",
+        ),
+        (
+            # set summairze history to false and max turns to 2
+            {
+                "summarize_history": False,
+                "max_historical_turns": 2,
+            },
+            "The following is a conversation with\n"
+            "an AI assistant. The assistant is helpful, creative, "
+            "clever, and very friendly.\n"
+            "Rephrase the suggested AI response staying close "
+            "to the original message and retaining\n"
+            "its meaning. Use simple english.\n\n"
+            "Context / previous conversation with the user:\n"
+            "AI: How can I help you today?\n"
+            "USER: Hello\n\n\n\n"
+            "Suggested "
+            "AI Response: Hey there! How can I help you?\n\n"
+            "Rephrased AI Response:",
         ),
     ],
 )
@@ -279,9 +338,8 @@ async def test_rephraser_template_summarisation(
     monkeypatch: MonkeyPatch,
     greet_tracker: DialogueStateTracker,
     domain_with_responses: Domain,
-    utterance: str,
+    endpoint_config: Dict[str, Any],
     expected_prompt: str,
-    expected_output: Dict[str, Any],
 ) -> None:
     class MockedTemplatedResponseRephraser(ContextualResponseRephraser):
         async def _create_history(self, tracker: DialogueStateTracker) -> str:
@@ -291,17 +349,17 @@ async def test_rephraser_template_summarisation(
             assert prompt == expected_prompt
             return "hello foobar"
 
-    endpoint_config = EndpointConfig.from_dict({})
+    endpoint_config = EndpointConfig.from_dict(endpoint_config)
     rephraser = MockedTemplatedResponseRephraser(
         endpoint_config=endpoint_config, domain=domain_with_responses
     )
 
     generated = await rephraser.generate(
-        utterance,
+        "utter_allows_rephrasing",
         greet_tracker,
         output_channel="callback",
     )
-    assert generated == expected_output
+    assert generated == {"metadata": {"rephrase": True}, "text": "hello foobar"}
 
 
 async def test_contextual_response_rephraser_prompt_init_custom(
