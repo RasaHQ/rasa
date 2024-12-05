@@ -193,7 +193,7 @@ def mark_as_experimental_feature(feature_name: Text) -> None:
 def mark_as_beta_feature(feature_name: Text) -> None:
     """Warns users that they are using a beta feature."""
     logger.warning(
-        f"🔬 Beta Feature: {feature_name} is in beta. It may have unexpected"
+        f"🔬 Beta Feature: {feature_name} is in beta. It may have unexpected "
         "behaviour and might be changed in the future."
     )
 

@@ -113,6 +113,7 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         )
 
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
+        self.repeat_command_enabled = self.is_repeat_command_enabled()
 
     ### Implementations of LLMBasedCommandGenerator parent
     @staticmethod
@@ -458,7 +459,7 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
             "current_slot": current_slot,
             "current_slot_description": current_slot_description,
             "user_message": latest_user_message,
-            "is_repeat_command_enabled": self.is_repeat_command_enabled(),
+            "is_repeat_command_enabled": self.repeat_command_enabled,
         }
 
         return self.compile_template(self.prompt_template).render(**inputs)

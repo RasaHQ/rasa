@@ -74,7 +74,7 @@ class Conversation:
     @staticmethod
     def get_metadata(activity: Dict[Text, Any]) -> Optional[Dict[Text, Any]]:
         """Get metadata from the activity."""
-        return activity.get("parameters")
+        return asdict(map_call_params(activity["parameters"]))
 
     @staticmethod
     def _handle_event(event: Dict[Text, Any]) -> Text:
@@ -88,17 +88,16 @@ class Conversation:
 
         if event["name"] == EVENT_START:
             text = f"{INTENT_MESSAGE_PREFIX}{USER_INTENT_SESSION_START}"
-            event_params = asdict(map_call_params(event["parameters"]))
         elif event["name"] == EVENT_DTMF:
             text = f"{INTENT_MESSAGE_PREFIX}vaig_event_DTMF"
             event_params = {"value": event["value"]}
+            text += json.dumps(event_params)
         else:
             structlogger.warning(
                 "audiocodes.handle.event.unknown_event", event_payload=event
             )
             return ""
 
-        text += json.dumps(event_params)
         return text
 
     def is_active_conversation(self, now: datetime, delta: timedelta) -> bool:
@@ -384,7 +383,7 @@ class AudiocodesInput(InputChannel):
             {"conversation": <conversation_id>, "reason": Optional[Text]}.
             """
             self._get_conversation(request.token, conversation_id)
-            reason = json.dumps({"reason": request.json.get("reason")})
+            reason = {"reason": request.json.get("reason")}
             await on_new_message(
                 UserMessage(
                     text=f"{INTENT_MESSAGE_PREFIX}session_end",

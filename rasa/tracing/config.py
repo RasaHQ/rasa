@@ -131,7 +131,7 @@ def get_tracer_provider(endpoints_file: Text) -> Optional[TracerProvider]:
 
     if not cfg:
         logger.info(
-            f"No endpoint for tracing type available in {endpoints_file},"
+            f"No endpoint for tracing type available in {endpoints_file}, "
             f"tracing will not be configured."
         )
         return None
