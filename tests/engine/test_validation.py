@@ -2159,6 +2159,7 @@ def test_validate_llm_configuration_setup(
             ],
             False,
         ),
+        # 'least_busy' instead of valid 'least-busy'
         (
             [
                 {
@@ -2168,6 +2169,19 @@ def test_validate_llm_configuration_setup(
                         {"provider": "openai", "model": "gpt-3.5-turbo"},
                     ],
                     "router": {"routing_strategy": "least_busy"},
+                }
+            ],
+            True,
+        ),
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {"provider": "openai", "model": "gpt-4"},
+                        {"provider": "openai", "model": "gpt-3.5-turbo"},
+                    ],
+                    "router": {"routing_strategy": "least-busy"},
                 }
             ],
             False,
@@ -2301,7 +2315,7 @@ def test_validate_llm_configuration_setup(
                         {"provider": "openai", "model": "gpt-4"},
                         {"provider": "openai", "model": "gpt-3.5-turbo"},
                     ],
-                    "router": {"router_strategy": "non-existing-key"},
+                    "router": {"routing_strategy": "non-existing-key"},
                 }
             ],
             True,
