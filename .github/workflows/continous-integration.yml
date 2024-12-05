@@ -925,18 +925,6 @@ jobs:
     name: Run Broker Integration Tests
     runs-on: ubuntu-22.04
     timeout-minutes: 60
-    env:
-      RABBITMQ_HOST: localhost
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: guest
-      RABBITMQ_PASSWORD: guest
-
-    services:
-      rabbitmq:
-        # see https://github.com/docker-library/healthcheck/blob/master/rabbitmq/docker-healthcheck
-        image: healthcheck/rabbitmq
-        ports:
-          - 5672:5672
 
     steps:
       - name: Check out code
@@ -956,9 +944,9 @@ jobs:
           make prepare-tests-ubuntu
           make prepare-spacy
 
-      - name: Run kafka and zookeeper containers for integration testing
+      - name: Run rabbitmq, kafka and zookeeper containers for integration testing
         run: |
-          docker compose -f tests_deployment/docker-compose.kafka.yml up -d
+          docker compose -f tests_deployment/docker-compose.broker.yml up -d
 
       - name: Test Code with Services 🩺(broker_integration_test)
         env:
@@ -972,7 +960,7 @@ jobs:
         if: always()
         uses: ./.github/actions/debug-broker-tests
         with:
-          COMPOSE_FILE_PATH: tests_deployment/docker-compose.kafka.yml
+          COMPOSE_FILE_PATH: tests_deployment/docker-compose.broker.yml
 
       - name: Prepare test results
         if: always()
@@ -985,9 +973,9 @@ jobs:
             name: Broker Integration Test Results
             path: integration-results-broker-integration.xml
 
-      - name: Stop kafka and zookeeper containers for integration testing
+      - name: Stop rabbitmq, kafka and zookeeper containers for integration testing
         run: |
-          docker compose -f tests_deployment/docker-compose.kafka.yml down
+          docker compose -f tests_deployment/docker-compose.broker.yml down
 
   unit-test:
     name: Run Unit Tests
