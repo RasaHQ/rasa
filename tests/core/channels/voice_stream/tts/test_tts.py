@@ -3,7 +3,7 @@ import difflib
 from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine
 from rasa.core.channels.voice_stream.asr.asr_event import (
     NewTranscript,
-    UserStartedSpeaking,
+    UserIsSpeaking,
 )
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
 from rasa.core.channels.voice_stream.util import generate_silence
@@ -28,7 +28,7 @@ async def run_single_utterance_through_tts_and_asr(
         events.append(event)
 
     assert len(events) == 2
-    assert isinstance(events[0], UserStartedSpeaking)
+    assert isinstance(events[0], UserIsSpeaking)
     assert isinstance(events[1], NewTranscript)
     match = difflib.SequenceMatcher(None, events[1].text, text)
     assert match.ratio() > 0.75

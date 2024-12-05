@@ -187,5 +187,8 @@ class TrackerStream:
         if not self._connected_clients:
             return
         await asyncio.wait(
-            [self._send(websocket, message) for websocket in self._connected_clients]
+            [
+                asyncio.create_task(self._send(websocket, message))
+                for websocket in self._connected_clients
+            ]
         )

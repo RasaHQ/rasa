@@ -10,7 +10,7 @@ from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine, ASREngineC
 from rasa.core.channels.voice_stream.asr.asr_event import (
     ASREvent,
     NewTranscript,
-    UserStartedSpeaking,
+    UserIsSpeaking,
 )
 from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
 
@@ -49,7 +49,7 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
     def _get_query_params(self) -> str:
         return (
             f"encoding=mulaw&sample_rate={HERTZ}&endpointing={self.config.endpointing}"
-            f"&vad_events=true&language={self.config.language}"
+            f"&vad_events=true&language={self.config.language}&interim_results=true"
             f"&model={self.config.model}&smart_format={str(self.config.smart_format).lower()}"
         )
 
@@ -66,16 +66,18 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
     def engine_event_to_asr_event(self, e: Any) -> Optional[ASREvent]:
         """Translate an engine event to a common ASREvent."""
         data = json.loads(e)
-        if data.get("is_final"):
+        if "is_final" in data:
             transcript = data["channel"]["alternatives"][0]["transcript"]
-            if data.get("speech_final"):
-                full_transcript = self.accumulated_transcript + transcript
-                self.accumulated_transcript = ""
-                return NewTranscript(full_transcript)
-            else:
-                self.accumulated_transcript += transcript
-        elif data.get("type") == "SpeechStarted":
-            return UserStartedSpeaking()
+            if data["is_final"]:
+                if data.get("speech_final"):
+                    full_transcript = self.accumulated_transcript + transcript
+                    self.accumulated_transcript = ""
+                    if full_transcript:
+                        return NewTranscript(full_transcript)
+                else:
+                    self.accumulated_transcript += transcript
+            elif transcript:
+                return UserIsSpeaking()
         return None
 
     @staticmethod

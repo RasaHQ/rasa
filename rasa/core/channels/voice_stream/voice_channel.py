@@ -24,7 +24,7 @@ from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine
 from rasa.core.channels.voice_stream.asr.asr_event import (
     ASREvent,
     NewTranscript,
-    UserStartedSpeaking,
+    UserIsSpeaking,
 )
 from sanic import Websocket  # type: ignore
 
@@ -261,6 +261,14 @@ class VoiceInputChannel(InputChannel):
         )
         await on_new_message(message)
 
+    @staticmethod
+    def _cancel_silence_timeout_watcher() -> None:
+        """Cancels the silent timeout task if it exists."""
+        if call_state.silence_timeout_watcher:
+            logger.debug("voice_channel.cancelling_current_timeout_watcher_task")
+            call_state.silence_timeout_watcher.cancel()
+            call_state.silence_timeout_watcher = None  # type: ignore[attr-defined]
+
     @classmethod
     def from_credentials(cls, credentials: Optional[Dict[str, Any]]) -> InputChannel:
         credentials = credentials or {}
@@ -324,10 +332,13 @@ class VoiceInputChannel(InputChannel):
 
                 if not is_bot_speaking_before and is_bot_speaking_after:
                     logger.info("voice_channel.bot_started_speaking")
+                    # relevant when the bot speaks multiple messages in one turn
+                    self._cancel_silence_timeout_watcher()
 
                 # we just stopped speaking, starting a watcher for silence timeout
                 if is_bot_speaking_before and not is_bot_speaking_after:
                     logger.info("voice_channel.bot_stopped_speaking")
+                    self._cancel_silence_timeout_watcher()
                     call_state.silence_timeout_watcher = (  # type: ignore[attr-defined]
                         asyncio.create_task(
                             self.handle_silence_timeout(
@@ -354,12 +365,20 @@ class VoiceInputChannel(InputChannel):
                     call_parameters,
                 )
 
+        audio_forwarding_task = asyncio.create_task(consume_audio_bytes())
+        asr_event_task = asyncio.create_task(consume_asr_events())
         await asyncio.wait(
-            [consume_audio_bytes(), consume_asr_events()],
+            [audio_forwarding_task, asr_event_task],
             return_when=asyncio.FIRST_COMPLETED,
         )
+        if not audio_forwarding_task.done():
+            audio_forwarding_task.cancel()
+        if not asr_event_task.done():
+            asr_event_task.cancel()
         await tts_engine.close_connection()
         await asr_engine.close_connection()
+        await channel_websocket.close()
+        self._cancel_silence_timeout_watcher()
 
     def create_output_channel(
         self, voice_websocket: Websocket, tts_engine: TTSEngine
@@ -390,8 +409,6 @@ class VoiceInputChannel(InputChannel):
                 metadata=asdict(call_parameters),
             )
             await on_new_message(message)
-        elif isinstance(e, UserStartedSpeaking):
-            if call_state.silence_timeout_watcher:
-                call_state.silence_timeout_watcher.cancel()
-                call_state.silence_timeout_watcher = None  # type: ignore[attr-defined]
+        elif isinstance(e, UserIsSpeaking):
+            self._cancel_silence_timeout_watcher()
             call_state.is_user_speaking = True  # type: ignore[attr-defined]

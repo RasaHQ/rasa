@@ -7,7 +7,7 @@ from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine, ASREngineC
 from rasa.core.channels.voice_stream.asr.asr_event import (
     ASREvent,
     NewTranscript,
-    UserStartedSpeaking,
+    UserIsSpeaking,
 )
 from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
 from rasa.shared.exceptions import ConnectionException
@@ -31,9 +31,9 @@ class AzureASR(ASREngine[AzureASRConfig]):
             asyncio.Queue()
         )
 
-    def signal_user_started_speaking(self, event: Any) -> None:
-        """Replace the unspecific azure event with a specific start event."""
-        self.fill_queue(UserStartedSpeaking())
+    def signal_user_is_speaking(self, event: Any) -> None:
+        """Replace the azure event with a generic is speaking event."""
+        self.fill_queue(UserIsSpeaking())
 
     def fill_queue(self, event: Any) -> None:
         """Either puts the event or a dedicated ASR Event into the queue."""
@@ -60,9 +60,7 @@ class AzureASR(ASREngine[AzureASRConfig]):
             audio_config=audio_config,
         )
         self.speech_recognizer.recognized.connect(self.fill_queue)
-        self.speech_recognizer.speech_start_detected.connect(
-            self.signal_user_started_speaking
-        )
+        self.speech_recognizer.recognizing.connect(self.signal_user_is_speaking)
         self.speech_recognizer.start_continuous_recognition_async()
         self.is_recognizing = True
 
