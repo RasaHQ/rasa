@@ -723,6 +723,7 @@ class BotUtteredAssertion(Assertion):
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the bot_uttered assertion on the given events for that user turn."""
         matching_event = None
+        error_messages = []
 
         if self.utter_name is not None:
             try:
@@ -733,11 +734,8 @@ class BotUtteredAssertion(Assertion):
                     and event.metadata.get("utter_action") == self.utter_name
                 )
             except StopIteration:
-                error_message = f"Bot did not utter '{self.utter_name}' response."
-                error_message += assertion_order_error_message
-
-                return self._generate_assertion_failure(
-                    error_message, prior_events, turn_events, self.line
+                error_messages.append(
+                    f"Bot did not utter '{self.utter_name}' response."
                 )
 
         if self.text_matches is not None:
@@ -749,15 +747,10 @@ class BotUtteredAssertion(Assertion):
                     if isinstance(event, BotUttered) and pattern.search(event.text)
                 )
             except StopIteration:
-                error_message = (
+                error_messages.append(
                     f"Bot did not utter any response which "
                     f"matches the provided text pattern "
                     f"'{self.text_matches}'."
-                )
-                error_message += assertion_order_error_message
-
-                return self._generate_assertion_failure(
-                    error_message, prior_events, turn_events, self.line
                 )
 
         if self.buttons:
@@ -768,13 +761,16 @@ class BotUtteredAssertion(Assertion):
                     if isinstance(event, BotUttered) and self._buttons_match(event)
                 )
             except StopIteration:
-                error_message = (
+                error_messages.append(
                     "Bot did not utter any response with the expected buttons."
                 )
-                error_message += assertion_order_error_message
-                return self._generate_assertion_failure(
-                    error_message, prior_events, turn_events, self.line
-                )
+
+        if error_messages:
+            error_message = " ".join(error_messages)
+            error_message += assertion_order_error_message
+            return self._generate_assertion_failure(
+                error_message, prior_events, turn_events, self.line
+            )
 
         return None, matching_event
 
@@ -852,27 +848,23 @@ class BotDidNotUtterAssertion(Assertion):
         """Checks that the bot did not utter the specified messages or buttons."""
         for event in turn_events:
             if isinstance(event, BotUttered):
+                error_messages = []
                 if self._utter_name_matches(event):
-                    error_message = (
+                    error_messages.append(
                         f"Bot uttered a forbidden utterance '{self.utter_name}'."
                     )
-                    error_message += assertion_order_error_message
-                    return self._generate_assertion_failure(
-                        error_message, prior_events, turn_events, self.line
-                    )
                 if self._text_matches(event):
-                    error_message = (
+                    error_messages.append(
                         f"Bot uttered a forbidden message matching "
                         f"the pattern '{self.text_matches}'."
                     )
-                    error_message += assertion_order_error_message
-                    return self._generate_assertion_failure(
-                        error_message, prior_events, turn_events, self.line
-                    )
                 if self._buttons_match(event):
-                    error_message = (
+                    error_messages.append(
                         "Bot uttered a forbidden response with specified buttons."
                     )
+
+                if error_messages:
+                    error_message = " ".join(error_messages)
                     error_message += assertion_order_error_message
                     return self._generate_assertion_failure(
                         error_message, prior_events, turn_events, self.line

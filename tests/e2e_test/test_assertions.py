@@ -1307,3 +1307,70 @@ def test_slot_assertions_with_null_value(
     assert isinstance(assertion, expected_assertion_type)
     assert hasattr(assertion, "slots")
     assert assertion.slots[0].value is None
+
+
+@pytest.mark.parametrize(
+    "assertion_type, turn_events, expected_error_messages",
+    [
+        (
+            AssertionType.BOT_DID_NOT_UTTER.value,
+            [
+                BotUttered(
+                    metadata={"utter_action": "utter_need_help"},
+                    text="Do you need help with anything else?",
+                    data={
+                        "buttons": [
+                            {"title": "Yes", "payload": "/yes"},
+                            {"title": "no", "payload": "/no"},
+                        ]
+                    },
+                )
+            ],
+            [
+                "Bot uttered a forbidden utterance 'utter_need_help'.",
+                (
+                    "Bot uttered a forbidden message matching the pattern "
+                    "'Do you need help with anything else?'."
+                ),
+                "Bot uttered a forbidden response with specified buttons.",
+            ],
+        ),
+        (
+            AssertionType.BOT_UTTERED.value,
+            [
+                BotUttered(
+                    metadata={"utter_action": "utter_something_else"},
+                    text="Something else.",
+                    data={"buttons": []},
+                )
+            ],
+            [
+                "Bot did not utter 'utter_need_help' response.",
+                (
+                    "Bot did not utter any response which matches the provided "
+                    "text pattern 'Do you need help with anything else?'."
+                ),
+                "Bot did not utter any response with the expected buttons.",
+            ],
+        ),
+    ],
+)
+def test_bot_utterance_multiple_errors(
+    assertion_type, turn_events, expected_error_messages
+) -> None:
+    assertion = Assertion.create_typed_assertion(
+        {
+            assertion_type: {
+                "utter_name": "utter_need_help",
+                "text_matches": "Do you need help with anything else?",
+                "buttons": [
+                    {"title": "Yes", "payload": "/yes"},
+                    {"title": "no", "payload": "/no"},
+                ],
+            }
+        }
+    )
+    failure, _ = assertion.run(turn_events, [])
+    error_message = " ".join(expected_error_messages)
+    assert failure is not None
+    assert error_message == failure.error_message
