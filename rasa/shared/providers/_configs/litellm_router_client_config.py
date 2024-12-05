@@ -14,6 +14,7 @@ from rasa.shared.constants import (
     API_TYPE_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_LIST_KEY,
+    USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY,
 )
 from rasa.shared.providers._configs.model_group_config import (
     ModelGroupConfig,
@@ -29,6 +30,7 @@ _LITELLM_UNSUPPORTED_KEYS = [
     PROVIDER_CONFIG_KEY,
     DEPLOYMENT_CONFIG_KEY,
     API_TYPE_CONFIG_KEY,
+    USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY,
 ]
 
 
@@ -84,6 +86,7 @@ class LiteLLMRouterClientConfig:
 
     _model_group_config: ModelGroupConfig
     router: Dict[str, Any]
+    _use_chat_completions_endpoint: bool = True
     extra_parameters: dict = field(default_factory=dict)
 
     @property
@@ -97,6 +100,14 @@ class LiteLLMRouterClientConfig:
     @property
     def litellm_model_list(self) -> List[Dict[str, Any]]:
         return self._convert_models_to_litellm_model_list()
+
+    @property
+    def litellm_router_settings(self) -> Dict[str, Any]:
+        return self._convert_router_to_litellm_router_settings()
+
+    @property
+    def use_chat_completions_endpoint(self) -> bool:
+        return self._use_chat_completions_endpoint
 
     def __post_init__(self) -> None:
         if not self.router:
@@ -121,7 +132,6 @@ class LiteLLMRouterClientConfig:
         Returns:
             LiteLLMRouterClientConfig
         """
-
         model_group_config = ModelGroupConfig.from_dict(config)
 
         # Copy config to avoid mutating the original
@@ -130,13 +140,18 @@ class LiteLLMRouterClientConfig:
         config_copy.pop(MODEL_GROUP_ID_CONFIG_KEY, None)
         config_copy.pop(MODELS_CONFIG_KEY, None)
         # Get the router settings
-        router_settings = config_copy.pop(ROUTER_CONFIG_KEY, None)
+        router_settings = config_copy.pop(ROUTER_CONFIG_KEY, {})
+        # Get the use_chat_completions_endpoint setting
+        use_chat_completions_endpoint = router_settings.get(
+            USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY, True
+        )
         # The rest is considered as extra parameters
         extra_parameters = config_copy
 
         this = LiteLLMRouterClientConfig(
             _model_group_config=model_group_config,
             router=router_settings,
+            _use_chat_completions_endpoint=use_chat_completions_endpoint,
             extra_parameters=extra_parameters,
         )
         return this
@@ -150,14 +165,17 @@ class LiteLLMRouterClientConfig:
         return d
 
     def to_litellm_dict(self) -> dict:
-        litellm_model_list = self._convert_models_to_litellm_model_list()
-        d = {
+        return {
             **self.extra_parameters,
             MODEL_GROUP_ID_CONFIG_KEY: self.model_group_id,
-            MODEL_LIST_KEY: litellm_model_list,
-            ROUTER_CONFIG_KEY: self.router,
+            MODEL_LIST_KEY: self._convert_models_to_litellm_model_list(),
+            ROUTER_CONFIG_KEY: self._convert_router_to_litellm_router_settings(),
         }
-        return d
+
+    def _convert_router_to_litellm_router_settings(self) -> Dict[str, Any]:
+        _router_settings_copy = copy.deepcopy(self.router)
+        _router_settings_copy.pop(USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY, None)
+        return _router_settings_copy
 
     def _convert_models_to_litellm_model_list(self) -> List[Dict[str, Any]]:
         litellm_model_list = []
@@ -172,7 +190,7 @@ class LiteLLMRouterClientConfig:
             prefix = get_prefix_from_provider(provider)
 
             # Determine whether to use model or deployment key based on the provider.
-            litellm_model_name_without_prefix = (
+            litellm_model_name = (
                 litellm_model_config[DEPLOYMENT_CONFIG_KEY]
                 if provider in DEPLOYMENT_CENTRIC_PROVIDERS
                 else litellm_model_config[MODEL_CONFIG_KEY]
@@ -180,7 +198,9 @@ class LiteLLMRouterClientConfig:
 
             # Set 'model' to a provider prefixed model name e.g. openai/gpt-4
             litellm_model_config[MODEL_CONFIG_KEY] = (
-                f"{prefix}/{litellm_model_name_without_prefix}"
+                litellm_model_name
+                if f"{prefix}/" in litellm_model_name
+                else f"{prefix}/{litellm_model_name}"
             )
 
             # Remove parameters that are None and not supported by LiteLLM.

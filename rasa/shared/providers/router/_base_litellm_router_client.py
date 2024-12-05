@@ -1,4 +1,5 @@
 from typing import Any, Dict, List
+import os
 import structlog
 
 from litellm import Router
@@ -7,6 +8,12 @@ from rasa.shared.constants import (
     MODEL_LIST_KEY,
     MODEL_GROUP_ID_CONFIG_KEY,
     ROUTER_CONFIG_KEY,
+    SELF_HOSTED_VLLM_PREFIX,
+    SELF_HOSTED_VLLM_API_KEY_ENV_VAR,
+    LITELLM_PARAMS_KEY,
+    API_KEY,
+    MODEL_CONFIG_KEY,
+    USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers._configs.litellm_router_client_config import (
@@ -42,12 +49,15 @@ class _BaseLiteLLMRouterClient:
         model_group_id: str,
         model_configurations: List[Dict[str, Any]],
         router_settings: Dict[str, Any],
+        use_chat_completions_endpoint: bool = True,
         **kwargs: Any,
     ):
         self._model_group_id = model_group_id
         self._model_configurations = model_configurations
         self._router_settings = router_settings
+        self._use_chat_completions_endpoint = use_chat_completions_endpoint
         self._extra_parameters = kwargs or {}
+        self.additional_client_setup()
         try:
             resolved_model_configurations = (
                 self._resolve_env_vars_in_model_configurations()
@@ -66,6 +76,21 @@ class _BaseLiteLLMRouterClient:
                 original_error=e,
             )
             raise ProviderClientValidationError(f"{event_info} Original error: {e}")
+
+    def additional_client_setup(self) -> None:
+        """Additional setup for the LiteLLM Router client."""
+        # If the model configuration is self-hosted VLLM, set a dummy API key if not
+        # provided. A bug in the LiteLLM library requires an API key to be set even if
+        # it is not required.
+        for model_configuration in self.model_configurations:
+            if (
+                f"{SELF_HOSTED_VLLM_PREFIX}/"
+                in model_configuration[LITELLM_PARAMS_KEY][MODEL_CONFIG_KEY]
+                and API_KEY not in model_configuration[LITELLM_PARAMS_KEY]
+                and not os.getenv(SELF_HOSTED_VLLM_API_KEY_ENV_VAR)
+            ):
+                os.environ[SELF_HOSTED_VLLM_API_KEY_ENV_VAR] = "dummy api key"
+                return
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "_BaseLiteLLMRouterClient":
@@ -95,7 +120,8 @@ class _BaseLiteLLMRouterClient:
         return cls(
             model_group_id=client_config.model_group_id,
             model_configurations=client_config.litellm_model_list,
-            router_settings=client_config.router,
+            router_settings=client_config.litellm_router_settings,
+            use_chat_completions_endpoint=client_config.use_chat_completions_endpoint,
             **client_config.extra_parameters,
         )
 
@@ -120,6 +146,11 @@ class _BaseLiteLLMRouterClient:
         return self._router_client
 
     @property
+    def use_chat_completions_endpoint(self) -> bool:
+        """Returns whether to use the chat completions endpoint."""
+        return self._use_chat_completions_endpoint
+
+    @property
     def _litellm_extra_parameters(self) -> Dict[str, Any]:
         """
         Returns the extra parameters for the LiteLLM Router client.
@@ -136,6 +167,9 @@ class _BaseLiteLLMRouterClient:
             MODEL_GROUP_ID_CONFIG_KEY: self.model_group_id,
             MODEL_LIST_KEY: self.model_configurations,
             ROUTER_CONFIG_KEY: self.router_settings,
+            USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY: (
+                self.use_chat_completions_endpoint
+            ),
             **self._litellm_extra_parameters,
         }
 

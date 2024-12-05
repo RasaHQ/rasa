@@ -352,10 +352,12 @@ class TestLLMFactory:
                     "api_base": "test-api-base",
                     "api_key": "test",
                     "api_version": "test-api-version",
-                    "use_chat_completions_endpoint": True,
                 },
             ],
-            "router": {"routing_strategy": "test"},
+            "router": {
+                "routing_strategy": "test",
+                "use_chat_completions_endpoint": True,
+            },
         }
         client = llm_factory(router_config, default_model_configuration)
         assert isinstance(client, LLMClient)
@@ -767,7 +769,6 @@ class TestLLMRouterFactory:
                     "api_base": "test-api-base",
                     "api_key": "test",
                     "api_version": "test-api-version",
-                    "use_chat_completions_endpoint": True,
                 },
             ],
             "router": {"routing_strategy": "test"},

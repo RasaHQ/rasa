@@ -379,3 +379,12 @@ class TestSelfHostedLLMClient:
         assert response.usage.prompt_tokens > 0
         assert response.usage.completion_tokens > 0
         assert response.usage.total_tokens > 0
+
+    def test_passing_use_chat_completions_endpoint_in_model_config(self) -> None:
+        config = {
+            "provider": "self-hosted",
+            "model": "test-model",
+            "api_base": "https://my.api.base.com/my_model",
+            "use_chat_completions_endpoint": True,
+        }
+        SelfHostedLLMClient.from_config(config)

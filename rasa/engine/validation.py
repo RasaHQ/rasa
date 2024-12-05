@@ -72,6 +72,7 @@ from rasa.shared.constants import (
     ROUTING_STRATEGIES_REQUIRING_REDIS_CACHE,
     ROUTING_STRATEGIES_NOT_REQUIRING_CACHE,
     REDIS_HOST_CONFIG_KEY,
+    USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import ACTION_RESET_ROUTING, ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain
@@ -1052,6 +1053,17 @@ def _validate_model_group_router_setting(
     for model_group in model_groups:
         if ROUTER_CONFIG_KEY not in model_group:
             continue
+
+        for model_config in model_group.get(MODELS_CONFIG_KEY, []):
+            if USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY in model_config:
+                print_error_and_exit(
+                    f"You defined the '{USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY}' in "
+                    f"the model group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}'. This "
+                    f"key is not allowed in the model configuration as the router is "
+                    f"defined. Please remove this key from your model configuration "
+                    f"and update it in the '{ROUTER_CONFIG_KEY} configuration, as it "
+                    f"is a router level setting."
+                )
 
         router_config = model_group[ROUTER_CONFIG_KEY]
         if ROUTING_STRATEGY_CONFIG_KEY in router_config:

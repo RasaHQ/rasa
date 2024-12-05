@@ -221,6 +221,32 @@ class _BaseLiteLLMClient:
         )
         return formatted_response
 
+    def _format_text_completion_response(self, response: Any) -> LLMResponse:
+        """Parses the LiteLLM text completion response to Rasa format."""
+        formatted_response = LLMResponse(
+            id=response.id,
+            created=response.created,
+            choices=[choice.text for choice in response.choices],
+            model=response.model,
+        )
+        if (usage := response.usage) is not None:
+            prompt_tokens = (
+                num_tokens
+                if isinstance(num_tokens := usage.prompt_tokens, (int, float))
+                else 0
+            )
+            completion_tokens = (
+                num_tokens
+                if isinstance(num_tokens := usage.completion_tokens, (int, float))
+                else 0
+            )
+            formatted_response.usage = LLMUsage(prompt_tokens, completion_tokens)
+        structlogger.debug(
+            "base_litellm_client.formatted_response",
+            formatted_response=formatted_response.to_dict(),
+        )
+        return formatted_response
+
     @staticmethod
     def _ensure_certificates() -> None:
         """Configures SSL certificates for LiteLLM. This method is invoked during
