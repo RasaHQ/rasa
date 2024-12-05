@@ -23,7 +23,6 @@ from rasa.dialogue_understanding.generator.constants import (
     USER_INPUT_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
     DEFAULT_LLM_CONFIG,
-    TRAINED_MODEL_NAME_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
@@ -54,7 +53,6 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     resolve_model_client_config,
 )
-from rasa.shared.utils.health_check import perform_inference_time_llm_health_check
 from rasa.utils.beta import ensure_beta_feature_is_enabled, BetaNotEnabledException
 from rasa.utils.log_utils import log_llm
 
@@ -64,6 +62,7 @@ DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.generator.single_step",
     "command_prompt_template.jinja2",
 )
+SINGLE_STEP_LLM_COMMAND_GENERATOR_CONFIG_FILE = "config.json"
 
 structlogger = structlog.get_logger()
 
@@ -137,6 +136,16 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         **kwargs: Any,
     ) -> "SingleStepLLMCommandGenerator":
         """Loads trained component (see parent class for full docstring)."""
+
+        # Perform health check of the LLM API endpoint
+        llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY, {}))
+        cls.perform_llm_health_check(
+            llm_config,
+            DEFAULT_LLM_CONFIG,
+            "single_step_llm_command_generator.load",
+            SingleStepLLMCommandGenerator.__name__,
+        )
+
         # load prompt template from the model storage.
         prompt_template = cls.load_prompt_template_from_model_storage(
             model_storage, resource, COMMAND_PROMPT_FILE_NAME
@@ -150,34 +159,28 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
                 command_generator.config, model_storage, resource
             )
 
-        persisted_config = cls.load_config_from_model_storage(model_storage, resource)
-        train_model_name = (
-            persisted_config.get(TRAINED_MODEL_NAME_CONFIG_KEY, None)
-            if persisted_config
-            else None
-        )
-        perform_inference_time_llm_health_check(
-            command_generator.config.get(LLM_CONFIG_KEY),
-            DEFAULT_LLM_CONFIG,
-            train_model_name,
-            "single_step_llm_command_generator.load",
-            SingleStepLLMCommandGenerator.__name__,
-        )
-
         return command_generator
 
     def persist(self) -> None:
         """Persist this component to disk for future loading."""
-        # persist prompt template
-        super().persist()
+        self._persist_prompt_template()
+        self._persist_config()
+        if self.flow_retrieval is not None:
+            self.flow_retrieval.persist()
 
+    def _persist_prompt_template(self) -> None:
+        """Persist prompt template for future loading."""
         with self._model_storage.write_to(self._resource) as path:
             rasa.shared.utils.io.write_text_file(
                 self.prompt_template, path / COMMAND_PROMPT_FILE_NAME
             )
-        # persist flow retrieval
-        if self.flow_retrieval is not None:
-            self.flow_retrieval.persist()
+
+    def _persist_config(self) -> None:
+        """Persist config as a source of truth for resolved clients."""
+        with self._model_storage.write_to(self._resource) as path:
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                path / SINGLE_STEP_LLM_COMMAND_GENERATOR_CONFIG_FILE, self.config
+            )
 
     async def predict_commands(
         self,

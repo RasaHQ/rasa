@@ -217,9 +217,11 @@ def test_all_components_are_in_at_least_one_test_pipeline():
 @patch(
     "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
 )
-@patch("rasa.shared.utils.health_check.try_instantiate_llm_client")
+@patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
+@patch("rasa.shared.utils.health_check.health_check.try_instantiate_embedder")
 async def test_train_persist_load_parse(
     mock_try_instantiate_llm_client: Mock,
+    mock_try_instantiate_embedder: Mock,
     mock_flow_search_create_embedder: Mock,
     mock_load_local: Mock,
     mock_from_documents: Mock,

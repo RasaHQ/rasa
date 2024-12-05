@@ -18,7 +18,7 @@ from rasa.shared.constants import (
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.utils.health_check import perform_training_time_llm_health_check
+from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_GENERATE_MODEL_NAME,
     DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
@@ -69,7 +69,9 @@ Suggested AI Response: {{suggested_response}}
 Rephrased AI Response:"""
 
 
-class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
+class ContextualResponseRephraser(
+    LLMHealthCheckMixin, TemplatedNaturalLanguageGenerator
+):
     """Generates responses based on modified templates.
 
     The templates are filled with the entities and slots that are available in the
@@ -115,7 +117,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
             ContextualResponseRephraser.__name__,
         )
 
-        perform_training_time_llm_health_check(
+        self.perform_llm_health_check(
             self.llm_config,
             DEFAULT_LLM_CONFIG,
             "contextual_response_rephraser.init",

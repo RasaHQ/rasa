@@ -33,6 +33,7 @@ from rasa.dialogue_understanding.generator import (
     SingleStepLLMCommandGenerator,
     MultiStepLLMCommandGenerator,
 )
+from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
@@ -111,6 +112,7 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         single_step_llm_command_generator_class=SingleStepLLMCommandGenerator,
         multi_step_llm_command_generator_class=MultiStepLLMCommandGenerator,
         custom_action_executor_subclasses=custom_action_executor_subclasses,
+        flow_retrieval_class=FlowRetrieval,
     )
 
 

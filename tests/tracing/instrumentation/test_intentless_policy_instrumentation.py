@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict, Generator, Optional, Sequence
+from typing import Any, Dict, Generator, Optional, Sequence, List
 from unittest.mock import Mock, patch
 
 import pytest
@@ -8,45 +8,75 @@ from pytest import MonkeyPatch
 from pytest import LogCaptureFixture
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-
-from rasa.core.policies.intentless_policy import (
-    IntentlessPolicy,
-)
+from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
+from rasa.graph_components.providers.forms_provider import Forms
+from rasa.graph_components.providers.responses_provider import Responses
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, LLM_API_HEALTH_CHECK_ENV_VAR
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import DialogueStackUpdated
+from rasa.shared.core.events import DialogueStackUpdated, UserUttered, BotUttered
+from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.tracing.instrumentation import instrumentation
+from tests.core.policies.test_intentless_policy import TEST_DOMAIN
+
+
+@pytest.fixture
+def mock_llm_factory(fake_llm_client: LLMClient) -> Mock:
+    with patch("rasa.core.policies.intentless_policy.llm_factory") as mock_function:
+        mock_function.return_value = fake_llm_client
+        yield mock_function
+
+
+@pytest.fixture
+def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
+    with patch(
+        "rasa.core.policies.intentless_policy.embedder_factory",
+        Mock(return_value=fake_embedding_client),
+    ) as mock_function:
+        mock_function.return_value = fake_embedding_client
+        yield mock_function
+
+
+@pytest.fixture
+def trackers_for_training() -> List[TrackerWithCachedStates]:
+    return [
+        TrackerWithCachedStates.from_events(
+            "test",
+            [UserUttered("hello"), BotUttered("Hi there!")],
+        ),
+        TrackerWithCachedStates.from_events(
+            "test2",
+            [UserUttered("hi"), BotUttered("Hi there!")],
+        ),
+        TrackerWithCachedStates.from_events(
+            "test3",
+            [UserUttered("goodybe"), BotUttered("Bye!")],
+        ),
+    ]
 
 
 @pytest.fixture
 def intentless_policy_generator(
-    fake_llm_client: LLMClient,
-    fake_embedding_client: EmbeddingClient,
+    mock_llm_factory: Mock,
+    mock_embedder_factory: Mock,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[IntentlessPolicy, None, None]:
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
-    with patch(
-        "rasa.core.policies.intentless_policy.llm_factory",
-        Mock(return_value=fake_llm_client),
-    ):
-        with patch(
-            "rasa.core.policies.intentless_policy.embedder_factory",
-            Mock(return_value=fake_embedding_client),
-        ):
-            yield IntentlessPolicy.create(
-                IntentlessPolicy.get_default_config(),
-                default_model_storage,
-                Resource("intentless_policy"),
-                default_execution_context,
-            )
+    yield IntentlessPolicy.create(
+        IntentlessPolicy.get_default_config(),
+        default_model_storage,
+        Resource("intentless_policy"),
+        default_execution_context,
+    )
 
 
 async def test_tracing_intentless_policy_generate_answer(
@@ -392,3 +422,97 @@ async def test_intentless_policy_generate_llm_answer_len_prompt_tokens_non_opena
     assert captured_span.name == "IntentlessPolicy._generate_llm_answer"
 
     assert captured_span.attributes["len_prompt_tokens"] == "None"
+
+
+@pytest.mark.parametrize(
+    "llm_api_health_check_env_var_value",
+    ["true", "false"],
+)
+async def test_tracing_intentless_policy_training_and_inference_health_check(
+    intentless_policy_generator: IntentlessPolicy,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    previous_num_captured_spans: int,
+    monkeypatch: MonkeyPatch,
+    trackers_for_training: List[TrackerWithCachedStates],
+    llm_api_health_check_env_var_value: str,
+    mock_perform_llm_health_check: Mock,
+    mock_perform_embeddings_health_check: Mock,
+) -> None:
+    monkeypatch.setenv(LLM_API_HEALTH_CHECK_ENV_VAR, llm_api_health_check_env_var_value)
+    domain = Domain.from_yaml(TEST_DOMAIN)
+    responses = Responses(data=domain.responses)
+    forms = Forms(data=domain.forms)
+
+    component_class = IntentlessPolicy
+    instrumentation.instrument(
+        tracer_provider,
+        policy_subclasses=[component_class],
+    )
+
+    resource = intentless_policy_generator.train(
+        trackers_for_training,
+        domain,
+        responses,
+        forms,
+        TrainingData(),
+        FlowsList([]),
+    )
+    IntentlessPolicy.load(
+        IntentlessPolicy.get_default_config(),
+        default_model_storage,
+        resource,
+        default_execution_context,
+    )
+
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
+    num_captured_spans = len(captured_spans) - previous_num_captured_spans
+    assert num_captured_spans == 4  # Two from training and two from inference
+    captured_spans = captured_spans[-4:]
+
+    expected_train_attributes = {
+        "api_health_check_enabled": llm_api_health_check_env_var_value == "true",
+        "health_check_trigger_component": "IntentlessPolicy",
+    }
+
+    span_training_llm_health_check = next(
+        span
+        for span in captured_spans
+        if span.name == "IntentlessPolicy.perform_llm_health_check"
+        and span.attributes.get("health_check_trigger_method")
+        == "intentless_policy.train"
+    )
+    span_training_embeddings_health_check = next(
+        span
+        for span in captured_spans
+        if span.name == "IntentlessPolicy.perform_embeddings_health_check"
+        and span.attributes.get("health_check_trigger_method")
+        == "intentless_policy.train"
+    )
+    span_inference_llm_health_check = next(
+        span
+        for span in captured_spans
+        if span.name == "IntentlessPolicy.perform_llm_health_check"
+        and span.attributes.get("health_check_trigger_method")
+        == "intentless_policy.load"
+    )
+    span_inference_embeddings_health_check = next(
+        span
+        for span in captured_spans
+        if span.name == "IntentlessPolicy.perform_embeddings_health_check"
+        and span.attributes.get("health_check_trigger_method")
+        == "intentless_policy.load"
+    )
+
+    assert span_training_llm_health_check is not None
+    assert span_training_embeddings_health_check is not None
+    assert span_inference_llm_health_check is not None
+    assert span_inference_embeddings_health_check is not None
+
+    for key, value in expected_train_attributes.items():
+        assert span_training_llm_health_check.attributes[key] == value
+        assert span_training_embeddings_health_check.attributes[key] == value
+        assert span_inference_llm_health_check.attributes[key] == value
+        assert span_inference_embeddings_health_check.attributes[key] == value

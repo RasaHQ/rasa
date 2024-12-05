@@ -1,7 +1,7 @@
 import importlib.resources
 import json
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text
 import dotenv
 import structlog
 from jinja2 import Template
@@ -25,8 +25,6 @@ from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
-    TRAINED_MODEL_NAME_CONFIG_KEY,
-    TRAINED_EMBEDDINGS_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.patterns.cannot_handle import (
     CannotHandlePatternFlowStackFrame,
@@ -71,6 +69,10 @@ from rasa.shared.providers.embedding._langchain_embedding_client_adapter import 
 )
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.cli import print_error_and_exit
+from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
+    EmbeddingsHealthCheckMixin,
+)
+from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
@@ -81,12 +83,6 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
     resolve_model_client_config,
-)
-from rasa.shared.utils.health_check import (
-    perform_training_time_llm_health_check,
-    perform_training_time_embeddings_health_check,
-    perform_inference_time_llm_health_check,
-    perform_inference_time_embeddings_health_check,
 )
 from rasa.telemetry import (
     track_enterprise_search_policy_predict,
@@ -161,7 +157,7 @@ class VectorStoreConfigurationError(RasaException):
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
 )
-class EnterpriseSearchPolicy(Policy):
+class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
     """Policy which uses a vector store and LLMs to respond to user messages.
 
     The policy uses a vector store and LLMs to respond to user messages. The
@@ -300,6 +296,9 @@ class EnterpriseSearchPolicy(Policy):
             A policy must return its resource locator so that potential children nodes
             can load the policy from the resource.
         """
+        # Perform health checks for both LLM and embeddings client configs
+        self._perform_health_checks(self.config, "enterprise_search_policy.train")
+
         store_type = self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY)
 
         # telemetry call to track training start
@@ -318,11 +317,6 @@ class EnterpriseSearchPolicy(Policy):
                 "Unable to create embedder. Please make sure you specified the "
                 f"required environment variables. Error: {e}"
             )
-
-        (
-            self.config[TRAINED_MODEL_NAME_CONFIG_KEY],
-            self.config[TRAINED_EMBEDDINGS_CONFIG_KEY],
-        ) = self._perform_training_time_health_checks()
 
         if store_type == DEFAULT_VECTOR_STORE_TYPE:
             logger.info("enterprise_search_policy.train.faiss")
@@ -698,15 +692,15 @@ class EnterpriseSearchPolicy(Policy):
         **kwargs: Any,
     ) -> "EnterpriseSearchPolicy":
         """Loads a trained policy (see parent class for full docstring)."""
+
+        # Perform health checks for both LLM and embeddings client configs
+        cls._perform_health_checks(config, "enterprise_search_policy.load")
+
         prompt_template = None
-        persisted_config = None
         try:
             with model_storage.read_from(resource) as path:
                 prompt_template = rasa.shared.utils.io.read_file(
                     path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
-                )
-                persisted_config = rasa.shared.utils.io.read_json_file(
-                    path / ENTERPRISE_SEARCH_CONFIG_FILE_NAME
                 )
         except (FileNotFoundError, FileIOException) as e:
             logger.warning(
@@ -737,7 +731,7 @@ class EnterpriseSearchPolicy(Policy):
                 embeddings=embeddings,
             )  # type: ignore
 
-        policy = cls(
+        return cls(
             config,
             model_storage,
             resource,
@@ -745,14 +739,6 @@ class EnterpriseSearchPolicy(Policy):
             vector_store=vector_store,
             prompt_template=prompt_template,
         )
-
-        cls._perform_inference_time_health_checks(
-            persisted_config,
-            policy.config.get(LLM_CONFIG_KEY),
-            policy.config.get(EMBEDDINGS_CONFIG_KEY),
-        )
-
-        return policy
 
     @classmethod
     def _get_local_knowledge_data(cls, config: Dict[str, Any]) -> Optional[List[str]]:
@@ -894,52 +880,26 @@ class EnterpriseSearchPolicy(Policy):
 
         return joined_answer + joined_sources
 
-    def _perform_training_time_health_checks(
-        self,
-    ) -> Tuple[Optional[str], Optional[str]]:
-        train_model_name = perform_training_time_llm_health_check(
-            self.config.get(LLM_CONFIG_KEY),
-            DEFAULT_LLM_CONFIG,
-            "enterprise_search_policy.train",
-            EnterpriseSearchPolicy.__name__,
-        )
-        train_embedding_name = perform_training_time_embeddings_health_check(
-            self.config.get(EMBEDDINGS_CONFIG_KEY),
-            DEFAULT_EMBEDDINGS_CONFIG,
-            "enterprise_search_policy.train",
-            EnterpriseSearchPolicy.__name__,
-        )
-        return train_model_name, train_embedding_name
-
     @classmethod
-    def _perform_inference_time_health_checks(
-        cls,
-        persisted_config: Optional[Dict[str, Any]],
-        resolved_llm_config: Optional[Dict[str, Any]],
-        resolved_embeddings_config: Optional[Dict[str, Any]],
+    def _perform_health_checks(
+        cls, config: Dict[Text, Any], log_source_method: str
     ) -> None:
-        train_model_name = (
-            persisted_config.get(TRAINED_MODEL_NAME_CONFIG_KEY, None)
-            if persisted_config
-            else None
-        )
-        perform_inference_time_llm_health_check(
-            resolved_llm_config,
+        # Perform health check of the LLM client config
+        llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY, {}))
+        cls.perform_llm_health_check(
+            llm_config,
             DEFAULT_LLM_CONFIG,
-            train_model_name,
-            "enterprise_search_policy.load",
+            log_source_method,
             EnterpriseSearchPolicy.__name__,
         )
 
-        train_embeddings_name = (
-            persisted_config.get(TRAINED_EMBEDDINGS_CONFIG_KEY, None)
-            if persisted_config
-            else None
+        # Perform health check of the embeddings client config
+        embeddings_config = resolve_model_client_config(
+            config.get(EMBEDDINGS_CONFIG_KEY, {})
         )
-        perform_inference_time_embeddings_health_check(
-            resolved_embeddings_config,
+        cls.perform_embeddings_health_check(
+            embeddings_config,
             DEFAULT_EMBEDDINGS_CONFIG,
-            train_embeddings_name,
-            "enterprise_search_policy.load",
+            log_source_method,
             EnterpriseSearchPolicy.__name__,
         )

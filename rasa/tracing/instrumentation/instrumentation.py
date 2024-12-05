@@ -45,6 +45,7 @@ from rasa.dialogue_understanding.generator import (
     MultiStepLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
 )
+from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
@@ -283,6 +284,7 @@ SingleStepLLMCommandGeneratorType = TypeVar(
 MultiStepLLMCommandGeneratorType = TypeVar(
     "MultiStepLLMCommandGeneratorType", bound=MultiStepLLMCommandGenerator
 )
+FlowRetrievalType = TypeVar("FlowRetrievalType", bound=FlowRetrieval)
 CommandType = TypeVar("CommandType", bound=Command)
 PolicyType = TypeVar("PolicyType", bound=Policy)
 InformationRetrievalType = TypeVar(
@@ -317,6 +319,7 @@ def instrument(
     custom_action_executor_subclasses: Optional[
         List[Type[CustomActionExecutor]]
     ] = None,
+    flow_retrieval_class: Optional[Type[FlowRetrievalType]] = None,
 ) -> None:
     """Substitute methods to be traced by their traced counterparts.
 
@@ -445,6 +448,12 @@ def instrument(
             "_check_commands_against_startable_flows",
             attribute_extractors.extract_attrs_for_check_commands_against_startable_flows,
         )
+        _instrument_perform_health_check_method_for_component(
+            tracer_provider.get_tracer(llm_command_generator_class.__module__),
+            llm_command_generator_class,
+            "perform_llm_health_check",
+            attribute_extractors.extract_attrs_for_performing_health_check,
+        )
         mark_class_as_instrumented(llm_command_generator_class)
 
     if (
@@ -468,6 +477,14 @@ def instrument(
             "_check_commands_against_startable_flows",
             attribute_extractors.extract_attrs_for_check_commands_against_startable_flows,
         )
+        _instrument_perform_health_check_method_for_component(
+            tracer_provider.get_tracer(
+                single_step_llm_command_generator_class.__module__
+            ),
+            single_step_llm_command_generator_class,
+            "perform_llm_health_check",
+            attribute_extractors.extract_attrs_for_performing_health_check,
+        )
         mark_class_as_instrumented(single_step_llm_command_generator_class)
 
     if multi_step_llm_command_generator_class is not None and not class_is_instrumented(
@@ -488,7 +505,35 @@ def instrument(
             ),
             multi_step_llm_command_generator_class,
         )
+        _instrument_perform_health_check_method_for_component(
+            tracer_provider.get_tracer(
+                multi_step_llm_command_generator_class.__module__
+            ),
+            multi_step_llm_command_generator_class,
+            "perform_llm_health_check",
+            attribute_extractors.extract_attrs_for_performing_health_check,
+        )
         mark_class_as_instrumented(multi_step_llm_command_generator_class)
+
+    if (
+        any(
+            llm_based_command_generator_class is not None
+            for llm_based_command_generator_class in (
+                llm_command_generator_class,
+                single_step_llm_command_generator_class,
+                multi_step_llm_command_generator_class,
+            )
+        )
+        and flow_retrieval_class is not None
+        and not class_is_instrumented(flow_retrieval_class)
+    ):
+        _instrument_perform_health_check_method_for_component(
+            tracer_provider.get_tracer(flow_retrieval_class.__module__),
+            flow_retrieval_class,
+            "perform_embeddings_health_check",
+            attribute_extractors.extract_attrs_for_performing_health_check,
+        )
+        mark_class_as_instrumented(flow_retrieval_class)
 
     if command_subclasses:
         for command_subclass in command_subclasses:
@@ -523,6 +568,12 @@ def instrument(
             contextual_response_rephraser_class,
             "generate",
             attribute_extractors.extract_attrs_for_generate,
+        )
+        _instrument_perform_health_check_method_for_component(
+            tracer_provider.get_tracer(contextual_response_rephraser_class.__module__),
+            contextual_response_rephraser_class,
+            "perform_llm_health_check",
+            attribute_extractors.extract_attrs_for_performing_health_check,
         )
         mark_class_as_instrumented(contextual_response_rephraser_class)
 
@@ -755,6 +806,18 @@ def _instrument_enterprise_search_policy(
         "_generate_llm_answer",
         attribute_extractors.extract_attrs_for_enterprise_search_generate_llm_answer,
     )
+    _instrument_perform_health_check_method_for_component(
+        tracer_provider.get_tracer(policy_class.__module__),
+        policy_class,
+        "perform_embeddings_health_check",
+        attribute_extractors.extract_attrs_for_performing_health_check,
+    )
+    _instrument_perform_health_check_method_for_component(
+        tracer_provider.get_tracer(policy_class.__module__),
+        policy_class,
+        "perform_llm_health_check",
+        attribute_extractors.extract_attrs_for_performing_health_check,
+    )
 
 
 def _instrument_intentless_policy(
@@ -786,6 +849,18 @@ def _instrument_intentless_policy(
         policy_class,
         "_generate_llm_answer",
         attribute_extractors.extract_attrs_for_intentless_policy_generate_llm_answer,
+    )
+    _instrument_perform_health_check_method_for_component(
+        tracer_provider.get_tracer(policy_class.__module__),
+        policy_class,
+        "perform_embeddings_health_check",
+        attribute_extractors.extract_attrs_for_performing_health_check,
+    )
+    _instrument_perform_health_check_method_for_component(
+        tracer_provider.get_tracer(policy_class.__module__),
+        policy_class,
+        "perform_llm_health_check",
+        attribute_extractors.extract_attrs_for_performing_health_check,
     )
 
 
@@ -1137,6 +1212,52 @@ def _instrument_grpc_custom_action_executor(
     )
 
     logger.debug(f"Instrumented '{grpc_custom_action_executor_class.__name__}.run.")
+
+
+def _instrument_perform_health_check_method_for_component(
+    tracer: Tracer,
+    instrumented_class: Type,
+    method_name: Text,
+    attr_extractor: Optional[Callable] = None,
+    return_value_attr_extractor: Optional[Callable] = None,
+) -> None:
+    def tracing_perform_health_check_for_component(
+        fn: Callable[..., S],
+    ) -> Callable[..., S]:
+        @functools.wraps(fn)
+        def wrapper(*args: Any, **kwargs: Any) -> S:
+            # Check the first argument to adjust for self/cls depending on how
+            # the static method from LLMHealthCheckMixin / EmbeddingsLLMHealthCheckMixin
+            # is called.
+            if args and isinstance(
+                args[0], (instrumented_class, type(instrumented_class))
+            ):
+                # The first argument is self/cls; align args to match the signature
+                args = args[1:]
+
+            span_name = f"{instrumented_class.__name__}.{fn.__name__}"
+            extracted_attrs = attr_extractor(*args, **kwargs) if attr_extractor else {}
+
+            with tracer.start_as_current_span(span_name) as span:
+                result = fn(*args, **kwargs)
+
+                # Extract attributes from the return value, if an extractor is provided
+                return_value_attributes = (
+                    return_value_attr_extractor(result, *args, **kwargs)
+                    if return_value_attr_extractor
+                    else {}
+                )
+
+                span.set_attributes({**extracted_attrs, **return_value_attributes})
+                return result
+
+        return wrapper
+
+    method_to_trace = getattr(instrumented_class, method_name)
+    traced_method = tracing_perform_health_check_for_component(method_to_trace)
+    setattr(instrumented_class, method_name, traced_method)
+
+    logger.debug(f"Instrumented '{instrumented_class.__name__}.{method_name}'.")
 
 
 def _mangled_instrumented_boolean_attribute_name(instrumented_class: Type) -> Text:

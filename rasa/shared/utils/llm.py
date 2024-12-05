@@ -690,14 +690,16 @@ def resolve_model_client_config(
 ) -> Optional[Dict[str, Any]]:
     """Resolve the model group in the model config.
 
-    If the config is pointing to a model group, the corresponding model group
+    1. If the config is pointing to a model group, the corresponding model group
     of the endpoints.yml is returned.
-    If the config is using the old syntax, e.g. defining the llm
+    2. If the config is using the old syntax, e.g. defining the llm
     directly in config.yml, the config is returned as is.
+    3. If the config is already resolved, return it as is.
 
     Args:
         model_config: The model config to be resolved.
         component_name: The name of the component.
+        component_name: The method of the component.
 
     Returns:
         The resolved llm config.
@@ -718,6 +720,7 @@ def resolve_model_client_config(
     if model_config is None:
         return None
 
+    # Config is already resolved or defines a client without model groups
     if MODEL_GROUP_CONFIG_KEY not in model_config:
         return model_config
 

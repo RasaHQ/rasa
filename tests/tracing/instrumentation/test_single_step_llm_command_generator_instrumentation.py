@@ -1,6 +1,7 @@
 import json
 import logging
 from typing import Any, Dict, Sequence
+from unittest.mock import Mock, patch
 
 import pytest
 from pytest import LogCaptureFixture
@@ -11,9 +12,14 @@ from rasa.dialogue_understanding.commands import (
     SetSlotCommand,
     StartFlowCommand,
 )
+from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR, OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.flows import Flow, FlowsList
+from rasa.shared.core.slots import TextSlot
+from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
+from rasa.shared.providers.llm.llm_client import LLMClient
 
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.conftest import TRACING_TESTS_FIXTURES_DIRECTORY
@@ -21,8 +27,26 @@ from tests.tracing.instrumentation.conftest import (
     MockSingleStepLLMCommandGenerator,
     MockAvailableEndpoints,
 )
+from tests.utilities import flows_from_str
 
 TEST_PROMPT_DIRECTORY = str(TRACING_TESTS_FIXTURES_DIRECTORY / "test_prompt.jinja2")
+
+
+@pytest.fixture
+def mock_llm_factory(fake_llm_client: LLMClient) -> Mock:
+    with patch("rasa.shared.utils.llm.llm_factory") as mock_function:
+        mock_function.return_value = fake_llm_client
+        yield mock_function
+
+
+@pytest.fixture
+def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
+    with patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.embedder_factory",
+        Mock(return_value=fake_embedding_client),
+    ) as mock_function:
+        mock_function.return_value = fake_embedding_client
+        yield mock_function
 
 
 @pytest.mark.parametrize(
@@ -477,3 +501,138 @@ async def test_tracing_single_step_llm_command_generator_prompt_tokens_non_opena
     assert captured_span.name == "MockSingleStepLLMCommandGenerator.invoke_llm"
 
     assert captured_span.attributes["len_prompt_tokens"] == "None"
+
+
+@pytest.mark.parametrize(
+    "llm_api_health_check_env_var_value",
+    ["true", "false"],
+)
+async def test_tracing_single_step_llm_command_generator_training_and_inference_health_checks(  # noqa: E501
+    default_model_storage: ModelStorage,
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    previous_num_captured_spans: int,
+    mock_llm_factory: Mock,
+    mock_embedder_factory: Mock,
+    mock_perform_llm_health_check: Mock,
+    mock_perform_embeddings_health_check: Mock,
+    llm_api_health_check_env_var_value: str,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv(LLM_API_HEALTH_CHECK_ENV_VAR, llm_api_health_check_env_var_value)
+    monkeypatch.setenv(
+        OPENAI_API_KEY_ENV_VAR, "api-key-in-test-llm-command-generator-instrumentation"
+    )
+
+    flows = flows_from_str(
+        """
+        flows:
+          test_flow_a:
+            description: This is a test flow.
+            steps:
+              - id: collect_foo
+                collect: foo
+                next: collect_bar
+              - id: collect_bar
+                collect: bar
+          test_flow_b:
+            description: This is a test flow.
+            steps:
+              - id: collect_fizz
+                collect: fizz
+                next: collect_buzz
+              - id: collect_buzz
+                collect: buzz
+        """
+    )
+    domain = Mock()
+    domain.slots = [
+        TextSlot(
+            name=slot_name,
+            mappings=[{}],
+            initial_value=None,
+            influence_conversation=False,
+        )
+        for slot_name in ["foo", "bar", "fizz", "buzz"]
+    ]
+
+    config = {
+        "llm": {"provider": "openai", "model": "test-gpt"},
+        "flow_retrieval": {
+            "embeddings": {"provider": "openai", "model": "test-embeddings"},
+        },
+    }
+    component_class = MockSingleStepLLMCommandGenerator
+    flow_retrieval_class = FlowRetrieval
+    instrumentation.instrument(
+        tracer_provider,
+        single_step_llm_command_generator_class=component_class,
+        flow_retrieval_class=flow_retrieval_class,
+    )
+
+    single_step_llm_command_generator = component_class(
+        config=config,
+        model_storage=default_model_storage,
+        resource=Resource("llm-command-generator"),
+    )
+    resource = single_step_llm_command_generator.train(
+        training_data=Mock(),
+        flows=flows,
+        domain=domain,
+    )
+    component_class.load(config, default_model_storage, resource, Mock())
+
+    captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
+    num_captured_spans = len(captured_spans) - previous_num_captured_spans
+    # Two (training + inference) for LLM API health check, and other two
+    # (also training + inference) for Embeddings API health check
+    assert num_captured_spans == 4
+    captured_spans = captured_spans[-4:]
+
+    expected_attributes = {
+        "api_health_check_enabled": llm_api_health_check_env_var_value == "true",
+    }
+
+    span_training_llm_health_check = next(
+        span
+        for span in captured_spans
+        if span.name == "MockSingleStepLLMCommandGenerator.perform_llm_health_check"
+        and span.attributes.get("health_check_trigger_method")
+        == "llm_based_command_generator.train"
+        and span.attributes.get("health_check_trigger_component")
+        == "LLMBasedCommandGenerator"
+    )
+    span_training_embeddings_health_check = next(
+        span
+        for span in captured_spans
+        if span.name == "FlowRetrieval.perform_embeddings_health_check"
+        and span.attributes.get("health_check_trigger_method") == "flow_retrieval.train"
+        and span.attributes.get("health_check_trigger_component") == "FlowRetrieval"
+    )
+    span_inference_llm_health_check = next(
+        span
+        for span in captured_spans
+        if span.name == "MockSingleStepLLMCommandGenerator.perform_llm_health_check"
+        and span.attributes.get("health_check_trigger_method")
+        == "single_step_llm_command_generator.load"
+        and span.attributes.get("health_check_trigger_component")
+        == "SingleStepLLMCommandGenerator"
+    )
+    span_inference_embeddings_health_check = next(
+        span
+        for span in captured_spans
+        if span.name == "FlowRetrieval.perform_embeddings_health_check"
+        and span.attributes.get("health_check_trigger_method") == "flow_retrieval.load"
+        and span.attributes.get("health_check_trigger_component") == "FlowRetrieval"
+    )
+
+    assert span_training_llm_health_check is not None
+    assert span_training_embeddings_health_check is not None
+    assert span_inference_llm_health_check is not None
+    assert span_inference_embeddings_health_check is not None
+
+    for key, value in expected_attributes.items():
+        assert span_training_llm_health_check.attributes[key] == value
+        assert span_inference_llm_health_check.attributes[key] == value
+        assert span_training_embeddings_health_check.attributes[key] == value
+        assert span_inference_embeddings_health_check.attributes[key] == value

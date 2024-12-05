@@ -17,7 +17,6 @@ from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
     FLOW_RETRIEVAL_FLOW_THRESHOLD,
-    TRAINED_MODEL_NAME_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.engine.graph import GraphComponent, ExecutionContext
@@ -33,18 +32,15 @@ from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import FLOWS_IN_PROMPT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.llm import (
     allowed_values_for_slot,
     llm_factory,
     resolve_model_client_config,
 )
-from rasa.shared.utils.health_check import perform_training_time_llm_health_check
 from rasa.utils.log_utils import log_llm
 
 structlogger = structlog.get_logger()
-
-
-LLM_BASED_COMMAND_GENERATOR_CONFIG_FILE = "config.json"
 
 
 @DefaultV1Recipe.register(
@@ -53,7 +49,9 @@ LLM_BASED_COMMAND_GENERATOR_CONFIG_FILE = "config.json"
     ],
     is_trainable=True,
 )
-class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
+class LLMBasedCommandGenerator(
+    LLMHealthCheckMixin, GraphComponent, CommandGenerator, ABC
+):
     """An abstract class defining interface and common functionality
     of an LLM-based command generators.
     """
@@ -106,11 +104,7 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
     @abstractmethod
     def persist(self) -> None:
         """Persist the component to disk for future loading."""
-        # persist the config to store the resolved llm and embedding config
-        with self._model_storage.write_to(self._resource) as path:
-            rasa.shared.utils.io.dump_obj_as_json_to_file(
-                path / LLM_BASED_COMMAND_GENERATOR_CONFIG_FILE, self.config
-            )
+        pass
 
     @abstractmethod
     async def predict_commands(
@@ -173,13 +167,11 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         """Train the llm based command generator. Stores all flows into a vector
         store.
         """
-        self.config[TRAINED_MODEL_NAME_CONFIG_KEY] = (
-            perform_training_time_llm_health_check(
-                self.config.get(LLM_CONFIG_KEY),
-                DEFAULT_LLM_CONFIG,
-                "llm_based_command_generator.train",
-                LLMBasedCommandGenerator.__name__,
-            )
+        self.perform_llm_health_check(
+            self.config.get(LLM_CONFIG_KEY),
+            DEFAULT_LLM_CONFIG,
+            "llm_based_command_generator.train",
+            LLMBasedCommandGenerator.__name__,
         )
 
         if (
@@ -214,8 +206,7 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
                 error=e,
             )
             raise
-        if self.flow_retrieval is not None:
-            self.flow_retrieval.train()
+
         self.persist()
         return self._resource
 
@@ -246,25 +237,6 @@ class LLMBasedCommandGenerator(GraphComponent, CommandGenerator, ABC):
         except (FileNotFoundError, FileIOException) as e:
             structlogger.warning(
                 "llm_based_command_generator.load_prompt_template.failed",
-                error=e,
-                resource=resource.name,
-            )
-        return None
-
-    @classmethod
-    def load_config_from_model_storage(
-        cls,
-        model_storage: ModelStorage,
-        resource: Resource,
-    ) -> Optional[Text]:
-        try:
-            with model_storage.read_from(resource) as path:
-                return rasa.shared.utils.io.read_json_file(
-                    path / LLM_BASED_COMMAND_GENERATOR_CONFIG_FILE
-                )
-        except (FileNotFoundError, FileIOException) as e:
-            structlogger.warning(
-                "llm_based_command_generator.load_config.failed",
                 error=e,
                 resource=resource.name,
             )
