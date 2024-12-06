@@ -13,7 +13,7 @@ from rasa.shared.constants import (
     PROVIDER_CONFIG_KEY,
     OPENAI_PROVIDER,
     TIMEOUT_CONFIG_KEY,
-    MODEL_GROUP_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
 )
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import BotUttered, UserUttered
@@ -253,7 +253,7 @@ class ContextualResponseRephraser(
             llm_type=self.llm_property(PROVIDER_CONFIG_KEY),
             llm_model=self.llm_property(MODEL_CONFIG_KEY)
             or self.llm_property(MODEL_NAME_CONFIG_KEY),
-            llm_model_group_id=self.llm_property(MODEL_GROUP_CONFIG_KEY),
+            llm_model_group_id=self.llm_property(MODEL_GROUP_ID_CONFIG_KEY),
         )
         if not (updated_text := await self._generate_llm_response(prompt)):
             # If the LLM fails to generate a response, we

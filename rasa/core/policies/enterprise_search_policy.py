@@ -51,7 +51,7 @@ from rasa.shared.constants import (
     OPENAI_PROVIDER,
     TIMEOUT_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
-    MODEL_GROUP_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
 )
 from rasa.shared.core.constants import (
     ACTION_CANCEL_FLOW,
@@ -337,12 +337,12 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
             or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
             embeddings_model_group_id=self.embeddings_config.get(
-                MODEL_GROUP_CONFIG_KEY
+                MODEL_GROUP_ID_CONFIG_KEY
             ),
             llm_type=self.llm_config.get(PROVIDER_CONFIG_KEY),
             llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
             or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
-            llm_model_group_id=self.llm_config.get(MODEL_GROUP_CONFIG_KEY),
+            llm_model_group_id=self.llm_config.get(MODEL_GROUP_ID_CONFIG_KEY),
             citation_enabled=self.citation_enabled,
         )
         self.persist()
@@ -538,12 +538,12 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
             or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
             embeddings_model_group_id=self.embeddings_config.get(
-                MODEL_GROUP_CONFIG_KEY
+                MODEL_GROUP_ID_CONFIG_KEY
             ),
             llm_type=self.llm_config.get(PROVIDER_CONFIG_KEY),
             llm_model=self.llm_config.get(MODEL_CONFIG_KEY)
             or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
-            llm_model_group_id=self.llm_config.get(MODEL_GROUP_CONFIG_KEY),
+            llm_model_group_id=self.llm_config.get(MODEL_GROUP_ID_CONFIG_KEY),
             citation_enabled=self.citation_enabled,
         )
         return self._create_prediction(

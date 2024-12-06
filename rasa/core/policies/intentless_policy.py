@@ -39,7 +39,7 @@ from rasa.shared.constants import (
     PROVIDER_CONFIG_KEY,
     OPENAI_PROVIDER,
     TIMEOUT_CONFIG_KEY,
-    MODEL_GROUP_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
 )
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
@@ -558,11 +558,13 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
             embeddings_type=self.embeddings_property(PROVIDER_CONFIG_KEY),
             embeddings_model=self.embeddings_property(MODEL_CONFIG_KEY)
             or self.embeddings_property(MODEL_NAME_CONFIG_KEY),
-            embeddings_model_group_id=self.embeddings_property(MODEL_GROUP_CONFIG_KEY),
+            embeddings_model_group_id=self.embeddings_property(
+                MODEL_GROUP_ID_CONFIG_KEY
+            ),
             llm_type=self.llm_property(PROVIDER_CONFIG_KEY),
             llm_model=self.llm_property(MODEL_CONFIG_KEY)
             or self.llm_property(MODEL_NAME_CONFIG_KEY),
-            llm_model_group_id=self.llm_property(MODEL_GROUP_CONFIG_KEY),
+            llm_model_group_id=self.llm_property(MODEL_GROUP_ID_CONFIG_KEY),
         )
 
         self.persist()
@@ -642,11 +644,13 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
             embeddings_type=self.embeddings_property(PROVIDER_CONFIG_KEY),
             embeddings_model=self.embeddings_property(MODEL_CONFIG_KEY)
             or self.embeddings_property(MODEL_NAME_CONFIG_KEY),
-            embeddings_model_group_id=self.embeddings_property(MODEL_GROUP_CONFIG_KEY),
+            embeddings_model_group_id=self.embeddings_property(
+                MODEL_GROUP_ID_CONFIG_KEY
+            ),
             llm_type=self.llm_property(PROVIDER_CONFIG_KEY),
             llm_model=self.llm_property(MODEL_CONFIG_KEY)
             or self.llm_property(MODEL_NAME_CONFIG_KEY),
-            llm_model_group_id=self.llm_property(MODEL_GROUP_CONFIG_KEY),
+            llm_model_group_id=self.llm_property(MODEL_GROUP_ID_CONFIG_KEY),
             score=score,
         )
 

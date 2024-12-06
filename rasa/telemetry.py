@@ -35,9 +35,9 @@ from rasa.constants import (
 from rasa.shared.constants import (
     PROMPT_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
-    MODEL_GROUP_CONFIG_KEY,
     LLM_API_HEALTH_CHECK_ENV_VAR,
     LLM_API_HEALTH_CHECK_DEFAULT_VALUE,
+    MODEL_GROUP_CONFIG_KEY,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import DOCS_URL_TELEMETRY, UTTER_ASK_PREFIX
@@ -1133,6 +1133,7 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
     def extract_llm_command_generator_llm_client_settings(component: Dict) -> Dict:
         """Extracts settings related to LLM command generator."""
         llm_config = component.get(LLM_CONFIG_KEY, {})
+        # Config at this stage is not yet resolved, so read from `model_group`
         llm_model_group_id = llm_config.get(MODEL_GROUP_CONFIG_KEY)
         llm_model_name = llm_config.get(MODEL_CONFIG_KEY) or llm_config.get(
             MODEL_NAME_CONFIG_KEY
@@ -1174,6 +1175,7 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
             if flow_retrieval_enabled
             else None
         )
+        # Config at this stage is not yet resolved, so read from `model_group`
         flow_retrieval_embedding_model_group_id = embeddings_config.get(
             MODEL_GROUP_CONFIG_KEY
         )
