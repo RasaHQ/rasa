@@ -1,7 +1,8 @@
 import asyncio
+from functools import wraps
 import os
 from http import HTTPStatus
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 import dotenv
 from sanic import Blueprint, Sanic, response
 from sanic.response import json
@@ -125,60 +126,101 @@ def internal_blueprint() -> Blueprint:
         cleanup_training_processes()
         cleanup_bot_processes()
 
-    @bp.on_request  # type: ignore[misc]
-    async def limit_parallel_training_requests(request: Request) -> Any:
+    def limit_parallel_training_requests() -> Callable[[Callable], Callable[..., Any]]:
         """Limit the number of parallel training requests."""
-        from rasa.model_manager.config import MAX_PARALLEL_TRAININGS
 
-        if not request.url.endswith("/training"):
-            return None
+        def decorator(f: Callable) -> Callable:
+            @wraps(f)
+            def decorated(*args: Any, **kwargs: Any) -> Any:
+                running_requests = len(
+                    [
+                        training
+                        for training in trainings.values()
+                        if training.status == TrainingSessionStatus.RUNNING
+                        and training.process.poll() is None
+                    ]
+                )
 
-        running_requests = len(
-            [
-                training
-                for training in trainings.values()
-                if training.status == TrainingSessionStatus.RUNNING
-                and training.process.poll() is None
-            ]
-        )
+                if running_requests >= int(config.MAX_PARALLEL_TRAININGS):
+                    return response.json(
+                        {
+                            "message": f"Too many parallel training requests, above "
+                            f"the limit of {config.MAX_PARALLEL_TRAININGS}. "
+                            f"Retry later or increase your server's "
+                            f"memory and CPU resources."
+                        },
+                        status=HTTPStatus.TOO_MANY_REQUESTS,
+                    )
+                return f(*args, **kwargs)
 
-        if running_requests >= int(MAX_PARALLEL_TRAININGS):
-            return response.json(
-                {
-                    "message": f"Too many parallel training requests, above "
-                    f"the limit of {MAX_PARALLEL_TRAININGS}. "
-                    f"Retry later or increase your server's "
-                    f"memory and CPU resources."
-                },
-                status=HTTPStatus.TOO_MANY_REQUESTS,
-            )
+            return decorated
 
-    @bp.on_request  # type: ignore[misc]
-    async def limit_parallel_bot_runs(request: Request) -> Any:
-        """Limit the number of parallel bot runs."""
-        from rasa.model_manager.config import MAX_PARALLEL_BOT_RUNS
+        return decorator
 
-        if not request.url.endswith("/bot"):
-            return None
+    def limit_parallel_bot_runs() -> Callable[[Callable], Callable[..., Any]]:
+        """Limit the number of parallel training requests."""
 
-        running_requests = len(
-            [
-                bot
-                for bot in running_bots.values()
-                if bot.status in {BotSessionStatus.RUNNING, BotSessionStatus.QUEUED}
-            ]
-        )
+        def decorator(f: Callable) -> Callable:
+            @wraps(f)
+            def decorated(*args: Any, **kwargs: Any) -> Any:
+                running_requests = len(
+                    [
+                        bot
+                        for bot in running_bots.values()
+                        if bot.status
+                        in {BotSessionStatus.RUNNING, BotSessionStatus.QUEUED}
+                    ]
+                )
 
-        if running_requests >= int(MAX_PARALLEL_BOT_RUNS):
-            return response.json(
-                {
-                    "message": f"Too many parallel bot runs, above "
-                    f"the limit of {MAX_PARALLEL_BOT_RUNS}. "
-                    f"Retry later or increase your server's "
-                    f"memory and CPU resources."
-                },
-                status=HTTPStatus.TOO_MANY_REQUESTS,
-            )
+                if running_requests >= int(config.MAX_PARALLEL_BOT_RUNS):
+                    return response.json(
+                        {
+                            "message": f"Too many parallel bot runs, above "
+                            f"the limit of {config.MAX_PARALLEL_BOT_RUNS}. "
+                            f"Retry later or increase your server's "
+                            f"memory and CPU resources."
+                        },
+                        status=HTTPStatus.TOO_MANY_REQUESTS,
+                    )
+
+                return f(*args, **kwargs)
+
+            return decorated
+
+        return decorator
+
+    def ensure_minimum_disk_space() -> Callable[[Callable], Callable[..., Any]]:
+        """Ensure that there is enough disk space before starting a new process."""
+        min_required_disk_space = 1024 * 1024 * config.MIN_REQUIRED_DISCSPACE_MB
+
+        def decorator(f: Callable) -> Callable:
+            @wraps(f)
+            def decorated(*args: Any, **kwargs: Any) -> Any:
+                if os.path.exists(config.SERVER_BASE_WORKING_DIRECTORY):
+                    disk_usage = os.statvfs(config.SERVER_BASE_WORKING_DIRECTORY)
+                    free_space_bytes = disk_usage.f_bsize * disk_usage.f_bavail
+                    structlogger.debug(
+                        "model_api.storage.available_disk_space",
+                        available_space_mb=free_space_bytes / 1024 / 1024,
+                    )
+
+                    if free_space_bytes < min_required_disk_space:
+                        return response.json(
+                            {
+                                "message": (
+                                    f"Less than {config.MIN_REQUIRED_DISCSPACE_MB} MB "
+                                    f"of free disk space available. "
+                                    f"Please free up some space on the model service."
+                                )
+                            },
+                            status=HTTPStatus.INSUFFICIENT_STORAGE,
+                        )
+
+                return f(*args, **kwargs)
+
+            return decorated
+
+        return decorator
 
     @bp.get("/")
     async def health(request: Request) -> response.HTTPResponse:
@@ -227,6 +269,8 @@ def internal_blueprint() -> Blueprint:
         return json({"training_sessions": sessions, "total_number": len(sessions)})
 
     @bp.post("/training")
+    @limit_parallel_training_requests()
+    @ensure_minimum_disk_space()
     async def start_training(request: Request) -> response.HTTPResponse:
         """Start a new training session."""
         data = request.json
@@ -295,6 +339,8 @@ def internal_blueprint() -> Blueprint:
         return json({"training_id": training_id})
 
     @bp.post("/bot")
+    @limit_parallel_bot_runs()
+    @ensure_minimum_disk_space()
     async def start_bot(request: Request) -> response.HTTPResponse:
         data = request.json
         deployment_id: Optional[str] = data.get("deployment_id")
