@@ -263,12 +263,10 @@ def expected_tracker_state_call():
         {
             "sender_id": "my-sender",
             "slots": {
-                "consecutive_silence_timeouts": 0.0,
                 "name": None,
                 "requested_slot": None,
                 "flow_hashes": None,
                 "session_started_metadata": None,
-                "silence_timeout": 6.0,
             },
             "latest_message": {
                 "intent": {},
