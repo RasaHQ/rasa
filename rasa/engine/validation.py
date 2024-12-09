@@ -72,6 +72,10 @@ from rasa.shared.constants import (
     ROUTING_STRATEGIES_REQUIRING_REDIS_CACHE,
     ROUTING_STRATEGIES_NOT_REQUIRING_CACHE,
     REDIS_HOST_CONFIG_KEY,
+    AWS_ACCESS_KEY_ID_CONFIG_KEY,
+    AWS_SECRET_ACCESS_KEY_CONFIG_KEY,
+    AWS_SESSION_TOKEN_CONFIG_KEY,
+    SENSITIVE_DATA,
     USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import ACTION_RESET_ROUTING, ACTION_TRIGGER_CHITCHAT
@@ -1098,13 +1102,18 @@ def _validate_usage_of_environment_variables_in_model_group_config(
     model_groups: List[Dict[str, Any]],
 ) -> None:
     # Limit the use of ${env_var} in the model_groups config to the following variables:
-    # deployment, api_base, api_key, api_version, aws_region_name
+    # - deployment,
+    # - api_base, api_version and api_key,
+    # - aws_region_name, aws_access_key_id, aws_secret_access_key, and aws_session_token
     allowed_env_vars = {
         DEPLOYMENT_CONFIG_KEY,
         API_BASE_CONFIG_KEY,
         API_KEY,
         API_VERSION_CONFIG_KEY,
         AWS_REGION_NAME_CONFIG_KEY,
+        AWS_ACCESS_KEY_ID_CONFIG_KEY,
+        AWS_SECRET_ACCESS_KEY_CONFIG_KEY,
+        AWS_SESSION_TOKEN_CONFIG_KEY,
     }
 
     for model_group in model_groups:
@@ -1122,25 +1131,25 @@ def _validate_usage_of_environment_variables_in_model_group_config(
                         )
 
 
-def _validate_api_key_is_an_environment_variable(
+def _validate_sensitive_keys_are_an_environment_variables(
     model_groups: List[Dict[str, Any]],
 ) -> None:
     # the api key can only be set as an environment variable
     for model_group in model_groups:
         for model_config in model_group[MODELS_CONFIG_KEY]:
             for key, value in model_config.items():
-                if key == API_KEY:
+                if key in SENSITIVE_DATA:
                     if isinstance(value, str):
                         if not re.match(r"\${(\w+)}", value):
                             print_error_and_exit(
-                                f"You defined the '{API_KEY}' in model group "
+                                f"You defined the '{key}' in model group "
                                 f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' as a "
-                                f"string. The '{API_KEY}' must be set as an environment"
+                                f"string. The '{key}' must be set as an environment"
                                 f" variable. Please update your config."
                             )
                     else:
                         print_error_and_exit(
-                            f"You should define the '{API_KEY}' in model group "
+                            f"You should define the '{key}' in model group "
                             f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' using the "
                             f"environment variable syntax - ${{ENV_VARIABLE_NAME}}. "
                             f"Please update your config."
@@ -1159,7 +1168,7 @@ def validate_model_group_configuration_setup() -> None:
     _validate_usage_of_environment_variables_in_model_group_config(
         endpoints.model_groups
     )
-    _validate_api_key_is_an_environment_variable(endpoints.model_groups)
+    _validate_sensitive_keys_are_an_environment_variables(endpoints.model_groups)
     _validate_model_group_router_setting(endpoints.model_groups)
 
 
