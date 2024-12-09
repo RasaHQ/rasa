@@ -39,7 +39,7 @@ class DirectCustomActionExecutor(CustomActionExecutor):
 
     @staticmethod
     @lru_cache(maxsize=1)
-    def _create_action_executor():
+    def _create_action_executor() -> ActionExecutor:
         """Creates and returns a cached ActionExecutor instance.
 
         Returns:
