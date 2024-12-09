@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -178,3 +179,59 @@ async def test_executor_runs_action_invalid_actions_module(
         "Please check the logs of your action server for more information."
     )
     assert message in caplog.messages
+
+
+def test_action_executor_is_being_cached(mock_endpoint: EndpointConfig):
+    executor_1 = DirectCustomActionExecutor(
+        action_name=DUMMY_ACTION_NAME, action_endpoint=mock_endpoint
+    )
+    executor_2 = DirectCustomActionExecutor(
+        action_name=DUMMY_ACTION_NAME, action_endpoint=mock_endpoint
+    )
+    assert executor_1.action_executor == executor_2.action_executor
+
+
+@pytest.mark.asyncio
+async def test_custom_actions_hot_reloading():
+    def create_action_code(value: str) -> str:
+        return f"""from typing import Any, Dict
+from rasa_sdk.interfaces import Action
+from rasa_sdk import Tracker
+from rasa_sdk.executor import CollectingDispatcher
+
+
+class CustomAction(Action):
+    def name(self) -> str:
+        return "custom_action"
+
+    async def run(
+        self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[str, Any]
+    ) -> Any:
+        return [{{"event": "slot", "name": "test_slot", "value": "{value}"}}]
+"""
+
+    # Create a custom action file with initial value
+    action_module = Path(DUMMY_ACTIONS_MODULE_PATH.replace(".", "/"))
+    action_file = action_module / "custom_action.py"
+    initial_value = "initial_value"
+    action_file.write_text(create_action_code(initial_value))
+
+    # Create an endpoint and executor with the initial custom action
+    endpoint = EndpointConfig(actions_module=DUMMY_ACTIONS_MODULE_PATH)
+    executor = DirectCustomActionExecutor("custom_action", endpoint)
+
+    # Run the custom action with the initial value
+    tracker = DialogueStateTracker("default", [])
+    domain = Domain.empty()
+    result_initial = await executor.run(tracker, domain)
+    assert result_initial["events"][0]["value"] == initial_value
+
+    # Modify the custom action file with a new value
+    modified_value = "modified_value"
+    action_file.write_text(create_action_code(modified_value))
+
+    # Run the custom action with the modified value
+    executor = DirectCustomActionExecutor("custom_action", endpoint)
+    result_modified = await executor.run(tracker, domain)
+    assert result_modified["events"][0]["value"] == modified_value
+    action_file.unlink()
