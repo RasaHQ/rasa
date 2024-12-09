@@ -2,7 +2,6 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from pytest import LogCaptureFixture
 from pytest import MonkeyPatch
 
 from rasa.core.actions.action import RemoteAction, RemoteActionJSONValidator
