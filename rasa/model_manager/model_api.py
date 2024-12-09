@@ -232,6 +232,7 @@ def internal_blueprint() -> Blueprint:
                         "deployment_id": bot.deployment_id,
                         "status": bot.status,
                         "internal_url": bot.internal_url,
+                        "returncode": bot.returncode,
                         "url": bot.url,
                     }
                     for bot in running_bots.values()
@@ -405,6 +406,7 @@ def internal_blueprint() -> Blueprint:
             {
                 "deployment_id": deployment_id,
                 "status": bot.status,
+                "returncode": bot.returncode,
                 "url": bot.url,
                 "logs": get_logs_content(deployment_id),
             }
@@ -416,6 +418,7 @@ def internal_blueprint() -> Blueprint:
             {
                 "deployment_id": bot.deployment_id,
                 "status": bot.status,
+                "returncode": bot.returncode,
                 "url": bot.url,
             }
             for bot in running_bots.values()
