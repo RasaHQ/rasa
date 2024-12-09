@@ -218,6 +218,7 @@ async def test_update_bot_status_queued_to_running(
         mocked.get("http://localhost:5005/license", status=200)
         await update_bot_status(mock_bot_session)
         assert mock_bot_session.status == "running"
+        assert mock_bot_session.returncode is None
 
 
 async def test_update_bot_status_running_to_stopped(
@@ -232,6 +233,7 @@ async def test_update_bot_status_running_to_stopped(
 
     await update_bot_status(mock_bot_session)
     assert mock_bot_session.status == "stopped"
+    assert mock_bot_session.returncode == 1
 
 
 def test_terminate_bot(mock_bot_session: BotSession) -> None:
@@ -240,4 +242,5 @@ def test_terminate_bot(mock_bot_session: BotSession) -> None:
 
     terminate_bot(mock_bot_session)
     assert mock_bot_session.status == "stopped"
+    assert mock_bot_session.returncode == 1
     mock_bot_session.process.terminate.assert_called_once()  # type: ignore[attr-defined]
