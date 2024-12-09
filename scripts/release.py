@@ -162,7 +162,7 @@ def ask_version() -> Text:
     def is_valid_version_number(v: Text) -> bool:
         return v in {
             "major",
-            "minor",
+            "minor", 
             "micro",
             "alpha",
             "beta",
@@ -205,6 +205,10 @@ def ask_version() -> Text:
         version = questionary.select(
             f"Which {version} do you want to release?", choices=choices
         ).ask()
+
+    # Convert shortcut commands to actual version numbers
+    if version in {"major", "minor", "micro", "alpha", "beta", "rc"}:
+        version = str(parse_next_version(version))
 
     if version:
         return version
@@ -328,10 +332,12 @@ def next_version(args: argparse.Namespace) -> Version:
 
 def generate_changelog(version: Version) -> None:
     """Call tonwcrier and create a changelog from all available changelog entries."""
-    check_call(
-        ["towncrier", "build", "--yes", "--version", str(version)],
-        cwd=str(project_root()),
-    )
+    changelog_path = project_root() / "changelog"
+    if changelog_path.exists():
+        check_call(
+            ["towncrier", "build", "--yes", "--version", str(version)],
+            cwd=str(project_root()),
+        )
 
 
 def print_done_message(branch: Text, base: Text, version: Version) -> None:
