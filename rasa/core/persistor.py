@@ -4,6 +4,7 @@ import abc
 import os
 import shutil
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Text, Tuple, Union
 
 import structlog
@@ -122,7 +123,8 @@ class Persistor(abc.ABC):
 
     def persist(self, trained_model: str) -> None:
         """Uploads a trained model persisted in the `target_dir` to cloud storage."""
-        file_key = self._create_file_key(trained_model)
+        absolute_file_key = self._create_file_key(trained_model)
+        file_key = Path(absolute_file_key).name
         self._persist_tar(file_key, trained_model)
 
     def retrieve(self, model_name: Text, target_path: Text) -> Text:
@@ -141,7 +143,8 @@ class Persistor(abc.ABC):
             # ensure backward compatibility
             tar_name = self._tar_name(model_name)
         tar_name = self._create_file_key(tar_name)
-        self._retrieve_tar(tar_name)
+        target_filename = os.path.basename(tar_name)
+        self._retrieve_tar(target_filename)
         self._copy(os.path.basename(tar_name), target_path)
 
         if os.path.isdir(target_path):
@@ -197,10 +200,7 @@ class Persistor(abc.ABC):
                 f"{REMOTE_STORAGE_PATH_ENV} is deprecated and will be "
                 "removed in future versions. "
                 "Please use the -m path/to/model.tar.gz option to "
-                "specify the model path when loading a model."
-                "Or use --output and --fixed-model-name to specify the "
-                "output directory and the model name when saving a "
-                "trained model to remote storage.",
+                "specify the model path when loading a model.",
             )
 
         file_key = os.path.basename(model_path)
@@ -272,14 +272,9 @@ class AWSPersistor(Persistor):
         with open(tar_path, "rb") as f:
             self.s3.Object(self.bucket_name, file_key).put(Body=f)
 
-    def _retrieve_tar(self, model_path: Text) -> None:
+    def _retrieve_tar(self, target_filename: str) -> None:
         """Downloads a model that has previously been persisted to s3."""
         from botocore import exceptions
-
-        target_filename = os.path.basename(model_path)
-        bucket_objects = list(self.bucket.objects.all())
-
-        model_found = False
 
         log = (
             f"Model '{target_filename}' not found in the specified bucket "
@@ -287,35 +282,30 @@ class AWSPersistor(Persistor):
             f"in the bucket."
         )
 
-        for obj in bucket_objects:
-            if model_path not in obj.key:
-                continue
-            structlogger.debug(
-                "aws_persistor.retrieve_tar.object_found", object_key=obj.key
-            )
+        try:
+            with open(target_filename, "wb") as f:
+                self.bucket.download_fileobj(target_filename, f)
 
-            try:
-                with open(target_filename, "wb") as f:
-                    self.bucket.download_fileobj(obj.key, f)
-                    model_found = True
-                    break
-            except exceptions.ClientError as exc:
-                if self._error_code(exc) == HTTP_STATUS_NOT_FOUND:
-                    structlogger.error(
-                        "aws_persistor.retrieve_tar.model_not_found",
-                        bucket_name=self.bucket_name,
-                        target_filename=target_filename,
-                        event_info=log,
-                    )
-                    raise ModelNotFound() from exc
-        if not model_found:
+            structlogger.debug(
+                "aws_persistor.retrieve_tar.object_found", object_key=target_filename
+            )
+        except exceptions.ClientError as exc:
+            if self._error_code(exc) == HTTP_STATUS_NOT_FOUND:
+                structlogger.error(
+                    "aws_persistor.retrieve_tar.model_not_found",
+                    bucket_name=self.bucket_name,
+                    target_filename=target_filename,
+                    event_info=log,
+                )
+                raise ModelNotFound() from exc
+        except exceptions.BotoCoreError as exc:
             structlogger.error(
-                "aws_persistor.retrieve_tar.model_not_found",
+                "aws_persistor.retrieve_tar.model_download_error",
                 bucket_name=self.bucket_name,
                 target_filename=target_filename,
                 event_info=log,
             )
-            raise ModelNotFound()
+            raise ModelNotFound() from exc
 
 
 class GCSPersistor(Persistor):
@@ -404,6 +394,10 @@ class GCSPersistor(Persistor):
         blob = self.bucket.blob(target_filename)
         try:
             blob.download_to_filename(target_filename)
+
+            structlogger.debug(
+                "gcs_persistor.retrieve_tar.object_found", object_key=target_filename
+            )
         except exceptions.NotFound as exc:
             log = (
                 f"Model '{target_filename}' not found in the specified bucket "
@@ -462,22 +456,17 @@ class AzurePersistor(Persistor):
 
     def _retrieve_tar(self, target_filename: Text) -> None:
         """Downloads a model that has previously been persisted to Azure."""
+        from azure.core.exceptions import AzureError
+
         try:
-            blob_list = self._container_client().list_blobs()
-
-            for blob in blob_list:
-                if target_filename not in blob.name:
-                    continue
-
-                structlogger.debug(
-                    "azure_persistor.retrieve_tar.blob_found", blob_name=blob.name
-                )
-
-                with open(target_filename, "wb") as model_file:
-                    blob_client = self._container_client().get_blob_client(blob.name)
-                    download_stream = blob_client.download_blob()
-                    model_file.write(download_stream.readall())
-        except Exception as exc:
+            with open(target_filename, "wb") as model_file:
+                blob_client = self._container_client().get_blob_client(target_filename)
+                download_stream = blob_client.download_blob()
+                model_file.write(download_stream.readall())
+            structlogger.debug(
+                "azure_persistor.retrieve_tar.blob_found", blob_name=target_filename
+            )
+        except AzureError as exc:
             log = (
                 f"An exception occurred while trying to download "
                 f"the model '{target_filename}' in the specified container "

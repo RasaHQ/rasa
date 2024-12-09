@@ -166,7 +166,7 @@ def test_read_endpoints_from_path(tmp_path: Path):
                 {
                     "id": "def_llm",
                     "models": [{"provider": "openai"}],
-                    "router": {"router_strategy": "round_robin"},
+                    "router": {"routing_strategy": "round_robin"},
                 }
             ],
         },
@@ -185,7 +185,7 @@ def test_read_endpoints_from_path(tmp_path: Path):
         {
             "id": "def_llm",
             "models": [{"provider": "openai"}],
-            "router": {"router_strategy": "round_robin"},
+            "router": {"routing_strategy": "round_robin"},
         }
     ]
     assert not all(

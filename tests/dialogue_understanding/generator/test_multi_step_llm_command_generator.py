@@ -7,6 +7,7 @@ import pytest
 from _pytest.tmpdir import TempPathFactory
 from pytest import MonkeyPatch
 
+import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     CannotHandleCommand,
@@ -27,6 +28,7 @@ from rasa.dialogue_understanding.generator.constants import (
 )
 from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
     MultiStepLLMCommandGenerator,
+    MULTI_STEP_LLM_COMMAND_GENERATOR_CONFIG_FILE,
 )
 from rasa.dialogue_understanding.patterns.cancel import (
     FLOW_PATTERN_CANCEL,
@@ -1036,6 +1038,51 @@ class TestMultiStepLLMCommandGenerator:
         # Then
         assert mock_flow_retrieval.populate.call_count == 0
 
+    def test_multi_step_llm_command_generator_persist_config(
+        self,
+        model_storage: LocalModelStorage,
+        resource: Resource,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = [
+                    {
+                        "id": "model_group_id",
+                        "models": [{"provider": "openai", "model": "gpt-4"}],
+                    }
+                ]
+
+        mock_endpoints = MockAvailableEndpoints()
+        monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+        config = {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"}}
+        generator = MultiStepLLMCommandGenerator(config, model_storage, resource)
+
+        # Ensure the config is resolved
+        assert generator.config[LLM_CONFIG_KEY] == {
+            "id": "model_group_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        }
+
+        # Persist the generator
+        generator.persist()
+
+        # Check that the persisted config is equal to our config
+        with model_storage.read_from(resource) as path:
+            persisted_config = rasa.shared.utils.io.read_json_file(
+                path / MULTI_STEP_LLM_COMMAND_GENERATOR_CONFIG_FILE
+            )
+
+        assert persisted_config[LLM_CONFIG_KEY] == {
+            "id": "model_group_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        }
+
     @pytest.mark.parametrize(
         "config, expected_llm_config, expected_flow_retrieval_embedding_config",
         [
@@ -1138,49 +1185,6 @@ class TestMultiStepLLMCommandGenerator:
                 generator.config[FLOW_RETRIEVAL_KEY][EMBEDDINGS_CONFIG_KEY]
                 == expected_flow_retrieval_embedding_config
             )
-
-    def test_multi_step_llm_command_generator_persist_config(
-        self,
-        model_storage: LocalModelStorage,
-        resource: Resource,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        class MockAvailableEndpoints:
-            @staticmethod
-            def get_instance():
-                return MockAvailableEndpoints()
-
-            def __init__(self):
-                self.model_groups = [
-                    {
-                        "id": "model_group_id",
-                        "models": [{"provider": "openai", "model": "gpt-4"}],
-                    }
-                ]
-
-        mock_endpoints = MockAvailableEndpoints()
-        monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
-
-        config = {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"}}
-        generator = MultiStepLLMCommandGenerator(config, model_storage, resource)
-
-        # Ensure the config is resolved
-        assert generator.config[LLM_CONFIG_KEY] == {
-            "id": "model_group_id",
-            "models": [{"provider": "openai", "model": "gpt-4"}],
-        }
-
-        # Persist the generator
-        generator.persist()
-
-        # Check that the persisted config is equal to our config
-        persisted_config = MultiStepLLMCommandGenerator.load_config_from_model_storage(
-            model_storage, resource
-        )
-        assert persisted_config[LLM_CONFIG_KEY] == {
-            "id": "model_group_id",
-            "models": [{"provider": "openai", "model": "gpt-4"}],
-        }
 
     @pytest.mark.parametrize(
         "config_1, model_groups_1, config_2, model_groups_2, fingerprint_differs",

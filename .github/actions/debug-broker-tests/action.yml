@@ -18,3 +18,8 @@ runs:
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs kafka
     shell: bash
+
+  - name: Check rabbitmq container logs
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rabbitmq
+    shell: bash

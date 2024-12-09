@@ -10,13 +10,14 @@ import structlog
 from rasa.shared.constants import (
     SELF_HOSTED_VLLM_PREFIX,
     SELF_HOSTED_VLLM_API_KEY_ENV_VAR,
+    API_KEY,
 )
 from rasa.shared.providers._configs.self_hosted_llm_client_config import (
     SelfHostedLLMClientConfig,
 )
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
-from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.io import suppress_logs
 
 structlogger = structlog.get_logger()
@@ -61,7 +62,8 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         self._api_version = api_version
         self._use_chat_completions_endpoint = use_chat_completions_endpoint
         self._extra_parameters = kwargs or {}
-        self._apply_dummy_api_key_if_missing()
+        if self._extra_parameters.get(API_KEY) is None:
+            self._apply_dummy_api_key_if_missing()
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "SelfHostedLLMClient":
@@ -258,32 +260,6 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         if self._use_chat_completions_endpoint:
             return super().completion(messages)
         return self._text_completion(messages)
-
-    def _format_text_completion_response(self, response: Any) -> LLMResponse:
-        """Parses the LiteLLM text completion response to Rasa format."""
-        formatted_response = LLMResponse(
-            id=response.id,
-            created=response.created,
-            choices=[choice.text for choice in response.choices],
-            model=response.model,
-        )
-        if (usage := response.usage) is not None:
-            prompt_tokens = (
-                num_tokens
-                if isinstance(num_tokens := usage.prompt_tokens, (int, float))
-                else 0
-            )
-            completion_tokens = (
-                num_tokens
-                if isinstance(num_tokens := usage.completion_tokens, (int, float))
-                else 0
-            )
-            formatted_response.usage = LLMUsage(prompt_tokens, completion_tokens)
-        structlogger.debug(
-            "base_litellm_client.formatted_response",
-            formatted_response=formatted_response.to_dict(),
-        )
-        return formatted_response
 
     @staticmethod
     def _apply_dummy_api_key_if_missing() -> None:

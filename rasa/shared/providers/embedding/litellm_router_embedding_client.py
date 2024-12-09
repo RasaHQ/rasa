@@ -72,7 +72,7 @@ class LiteLLMRouterEmbeddingClient(
         return cls(
             model_group_id=client_config.model_group_id,
             model_configurations=client_config.litellm_model_list,
-            router_settings=client_config.router,
+            router_settings=client_config.litellm_router_settings,
             **client_config.extra_parameters,
         )
 

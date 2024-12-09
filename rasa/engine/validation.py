@@ -67,11 +67,12 @@ from rasa.shared.constants import (
     ROUTER_CONFIG_KEY,
     MODELS_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
-    ROUTER_STRATEGY_CONFIG_KEY,
-    VALID_ROUTER_STRATEGIES,
-    ROUTER_STRATEGIES_REQUIRING_REDIS_CACHE,
-    ROUTER_STRATEGIES_NOT_REQUIRING_CACHE,
+    ROUTING_STRATEGY_CONFIG_KEY,
+    VALID_ROUTING_STRATEGIES,
+    ROUTING_STRATEGIES_REQUIRING_REDIS_CACHE,
+    ROUTING_STRATEGIES_NOT_REQUIRING_CACHE,
     REDIS_HOST_CONFIG_KEY,
+    USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import ACTION_RESET_ROUTING, ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain
@@ -1053,31 +1054,42 @@ def _validate_model_group_router_setting(
         if ROUTER_CONFIG_KEY not in model_group:
             continue
 
-        router_config = model_group[ROUTER_CONFIG_KEY]
-        if ROUTER_STRATEGY_CONFIG_KEY in router_config:
-            router_strategy = router_config.get(ROUTER_STRATEGY_CONFIG_KEY)
-            if router_strategy and router_strategy not in VALID_ROUTER_STRATEGIES:
+        for model_config in model_group.get(MODELS_CONFIG_KEY, []):
+            if USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY in model_config:
                 print_error_and_exit(
-                    f"The router strategy you defined for the model group "
-                    f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' is not valid. "
-                    f"Valid router strategies are categorized as follows:\n"
+                    f"You defined the '{USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY}' in "
+                    f"the model group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}'. This "
+                    f"key is not allowed in the model configuration as the router is "
+                    f"defined. Please remove this key from your model configuration "
+                    f"and update it in the '{ROUTER_CONFIG_KEY} configuration, as it "
+                    f"is a router level setting."
+                )
+
+        router_config = model_group[ROUTER_CONFIG_KEY]
+        if ROUTING_STRATEGY_CONFIG_KEY in router_config:
+            routing_strategy = router_config.get(ROUTING_STRATEGY_CONFIG_KEY)
+            if routing_strategy and routing_strategy not in VALID_ROUTING_STRATEGIES:
+                print_error_and_exit(
+                    f"The routing strategy '{routing_strategy}' you defined for the "
+                    f"model group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' is not "
+                    f"valid. Valid routing strategies are categorized as follows:\n"
                     f"- Strategies requiring Redis caching: "
-                    f"{', '.join(ROUTER_STRATEGIES_REQUIRING_REDIS_CACHE)}\n"
+                    f"{', '.join(ROUTING_STRATEGIES_REQUIRING_REDIS_CACHE)}\n"
                     f"- Strategies not requiring caching: "
-                    f"{', '.join(ROUTER_STRATEGIES_NOT_REQUIRING_CACHE)}"
+                    f"{', '.join(ROUTING_STRATEGIES_NOT_REQUIRING_CACHE)}"
                 )
             if (
-                router_strategy in ROUTER_STRATEGIES_REQUIRING_REDIS_CACHE
+                routing_strategy in ROUTING_STRATEGIES_REQUIRING_REDIS_CACHE
                 and REDIS_HOST_CONFIG_KEY not in router_config
             ):
                 structlogger.warning(
-                    "validation.router_strategy.redis_host_not_defined",
+                    "validation.routing_strategy.redis_host_not_defined",
                     event_info=(
-                        f"The router strategy '{router_strategy}' requires a Redis host"
-                        f" to be defined. Without a Redis host, the system defaults to "
-                        f"'in-memory' caching. Please add the '{REDIS_HOST_CONFIG_KEY}'"
-                        f" to the router configuration for the model group "
-                        f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}'."
+                        f"The routing strategy '{routing_strategy}' requires a Redis "
+                        f"host to be defined. Without a Redis host, the system "
+                        f"defaults to 'in-memory' caching. Please add the "
+                        f"'{REDIS_HOST_CONFIG_KEY}' to the router configuration for "
+                        f"the model group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}'."
                     ),
                 )
 

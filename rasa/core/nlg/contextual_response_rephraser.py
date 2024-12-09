@@ -13,12 +13,12 @@ from rasa.shared.constants import (
     PROVIDER_CONFIG_KEY,
     OPENAI_PROVIDER,
     TIMEOUT_CONFIG_KEY,
-    MODEL_GROUP_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
 )
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.utils.health_check import perform_training_time_llm_health_check
+from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_GENERATE_MODEL_NAME,
     DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
@@ -69,7 +69,9 @@ Suggested AI Response: {{suggested_response}}
 Rephrased AI Response:"""
 
 
-class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
+class ContextualResponseRephraser(
+    LLMHealthCheckMixin, TemplatedNaturalLanguageGenerator
+):
     """Generates responses based on modified templates.
 
     The templates are filled with the entities and slots that are available in the
@@ -115,7 +117,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
             ContextualResponseRephraser.__name__,
         )
 
-        perform_training_time_llm_health_check(
+        self.perform_llm_health_check(
             self.llm_config,
             DEFAULT_LLM_CONFIG,
             "contextual_response_rephraser.init",
@@ -251,7 +253,7 @@ class ContextualResponseRephraser(TemplatedNaturalLanguageGenerator):
             llm_type=self.llm_property(PROVIDER_CONFIG_KEY),
             llm_model=self.llm_property(MODEL_CONFIG_KEY)
             or self.llm_property(MODEL_NAME_CONFIG_KEY),
-            llm_model_group_id=self.llm_property(MODEL_GROUP_CONFIG_KEY),
+            llm_model_group_id=self.llm_property(MODEL_GROUP_ID_CONFIG_KEY),
         )
         if not (updated_text := await self._generate_llm_response(prompt)):
             # If the LLM fails to generate a response, we

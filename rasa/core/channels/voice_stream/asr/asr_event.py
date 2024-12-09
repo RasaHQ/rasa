@@ -14,5 +14,5 @@ class NewTranscript(ASREvent):
 
 
 @dataclass
-class UserStartedSpeaking(ASREvent):
+class UserIsSpeaking(ASREvent):
     pass

@@ -1,10 +1,13 @@
+from pytest import MonkeyPatch
 from typing import Any, Dict
 from unittest.mock import patch
+import os
 import pytest
 import structlog
 
 from litellm import Router
 
+from rasa.shared.constants import SELF_HOSTED_VLLM_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers.llm.litellm_router_llm_client import LiteLLMRouterLLMClient
 from rasa.shared.providers.llm.llm_client import LLMClient
@@ -42,7 +45,6 @@ class TestLiteLLMRouterLLMClient:
                     "api_base": "test-api-base",
                     "api_key": "test",
                     "api_version": "test-api-version",
-                    "use_chat_completions_endpoint": True,
                 },
             ],
             "router": {"routing_strategy": "test"},
@@ -89,11 +91,11 @@ class TestLiteLLMRouterLLMClient:
                         "api_key": "test",
                         "api_base": "test-api-base",
                         "api_version": "test-api-version",
-                        "use_chat_completions_endpoint": True,
                     },
                 },
             ],
             "router": {"routing_strategy": "test"},
+            "use_chat_completions_endpoint": True,
         }
 
     def test_model_group_id(self, client: LiteLLMRouterLLMClient) -> None:
@@ -134,7 +136,6 @@ class TestLiteLLMRouterLLMClient:
                     "api_key": "test",
                     "api_base": "test-api-base",
                     "api_version": "test-api-version",
-                    "use_chat_completions_endpoint": True,
                 },
             },
         ]
@@ -392,3 +393,136 @@ def test_passing_unsupported_model_config_parameter_does_not_raise_error() -> No
         "router": {"routing_strategy": "test"},
     }
     LiteLLMRouterLLMClient.from_config(config)
+
+
+def test_passing_use_chat_completions_endpoint_in_router_config() -> None:
+    # Given
+    config = {
+        "id": "test-model-group-id",
+        "models": [
+            {
+                "provider": "self-hosted",
+                "model": "some_model",
+                "api_base": "https://example.com",
+                "api_key": "test",
+            },
+        ],
+        "router": {
+            "routing_strategy": "test",
+            "use_chat_completions_endpoint": False,
+        },
+    }
+
+    # When
+    router_client = LiteLLMRouterLLMClient.from_config(config)
+
+    # Then
+    assert router_client.use_chat_completions_endpoint is False
+    assert router_client.router_settings == {"routing_strategy": "test"}
+    assert router_client.model_configurations == [
+        {
+            "model_name": "test-model-group-id",
+            "litellm_params": {
+                "model": "hosted_vllm/some_model",
+                "api_base": "https://example.com",
+                "api_key": "test",
+            },
+        },
+    ]
+    assert router_client.config == {
+        "id": "test-model-group-id",
+        "model_list": [
+            {
+                "model_name": "test-model-group-id",
+                "litellm_params": {
+                    "model": "hosted_vllm/some_model",
+                    "api_base": "https://example.com",
+                    "api_key": "test",
+                },
+            },
+        ],
+        "router": {"routing_strategy": "test"},
+        "use_chat_completions_endpoint": False,
+    }
+
+
+def test_api_key_automatically_set_in_env_if_missing_for_self_hosted_models(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    # Given
+    monkeypatch.delenv(SELF_HOSTED_VLLM_API_KEY_ENV_VAR, raising=False)
+    config = {
+        "id": "test-model-group-id",
+        "models": [
+            {
+                "provider": "self-hosted",
+                "model": "some_model",
+                "api_base": "https://example.com",
+            }
+        ],
+        "router": {"routing_strategy": "test"},
+    }
+
+    # When
+    LiteLLMRouterLLMClient.from_config(config)
+
+    # Then
+    assert os.environ.get(SELF_HOSTED_VLLM_API_KEY_ENV_VAR) == "dummy api key"
+
+    # Clean up
+    monkeypatch.delenv(SELF_HOSTED_VLLM_API_KEY_ENV_VAR, raising=False)
+
+
+def test_api_key_not_set_in_env_when_api_key_set_in_config_for_self_hosted(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    # Given
+    monkeypatch.delenv(SELF_HOSTED_VLLM_API_KEY_ENV_VAR, raising=False)
+    config = {
+        "id": "test-model-group-id",
+        "models": [
+            {
+                "provider": "self-hosted",
+                "model": "hosted_vllm/some_model",
+                "api_base": "https://example2.com",
+                "api_key": "test",
+            }
+        ],
+        "router": {"routing_strategy": "test"},
+    }
+
+    # When
+    LiteLLMRouterLLMClient.from_config(config)
+
+    # Then
+    assert os.environ.get(SELF_HOSTED_VLLM_API_KEY_ENV_VAR) is None
+
+    # Clean up
+    monkeypatch.delenv(SELF_HOSTED_VLLM_API_KEY_ENV_VAR, raising=False)
+
+
+def test_api_key_not_set_in_env_when_api_key_set_in_env_for_self_hosted(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    # Given
+    monkeypatch.setenv(SELF_HOSTED_VLLM_API_KEY_ENV_VAR, "test_litellm_router")
+    config = {
+        "id": "test-model-group-id",
+        "models": [
+            {
+                "provider": "self-hosted",
+                "model": "hosted_vllm/some_model",
+                "api_base": "https://example2.com",
+            }
+        ],
+        "router": {"routing_strategy": "test"},
+    }
+
+    # When
+    LiteLLMRouterLLMClient.from_config(config)
+
+    # Then
+    assert os.environ.get(SELF_HOSTED_VLLM_API_KEY_ENV_VAR) == "test_litellm_router"
+
+    # Clean up
+    monkeypatch.delenv(SELF_HOSTED_VLLM_API_KEY_ENV_VAR, raising=False)

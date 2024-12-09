@@ -4,12 +4,14 @@ import pytest
 from rasa.core import run, utils
 from rasa.shared.exceptions import RasaException
 from _pytest.capture import CaptureFixture
+from unittest.mock import AsyncMock
 
 from rasa.core.channels.voice_ready.audiocodes import (
     AudiocodesInput,
     AudiocodesOutput,
     Conversation,
 )
+from rasa.core.channels.channel import UserMessage
 
 
 @pytest.mark.parametrize(
@@ -114,30 +116,6 @@ async def test_send_custom_json_message() -> None:
     assert "key" in message and message.get("key") == "val"
 
 
-async def test_conversation_handle_event_start() -> None:
-    conversation = Conversation(conversation_id="123")
-    start_event = {
-        "id": "0ec183eb-adac-4f42-9867-4f3e49327c5f",
-        "timestamp": "2024-08-06T14:36:33.468Z",
-        "language": "en-US",
-        "type": "event",
-        "name": "start",
-        "parameters": {
-            "callee": "+493040739365",
-            "calleeHost": "20.113.51.15",
-            "caller": "+491604697810",
-            "callerHost": "sip.telnyx.eu",
-            "callerDisplayName": "+491604697810",
-            "vaigConversationId": "f1bc9d81-7d2d-40c3-a538-0672c7b80339",
-        },
-    }
-    text = conversation._handle_event(start_event)
-    assert (
-        text
-        == '/session_start{"call_id": "f1bc9d81-7d2d-40c3-a538-0672c7b80339", "user_phone": "+493040739365", "bot_phone": "+491604697810", "user_name": "+491604697810", "user_host": "sip.telnyx.eu", "bot_host": "20.113.51.15", "direction": null, "stream_id": null}'  # noqa: E501
-    )
-
-
 async def test_conversation_handle_event_invalid_payload(
     capsys: CaptureFixture,
 ) -> None:
@@ -162,3 +140,51 @@ async def test_conversation_handle_event_invalid_name(capsys: CaptureFixture) ->
     assert text == ""
     captured = capsys.readouterr()
     assert "audiocodes.handle.event.unknown_event" in captured.out
+
+
+async def test_handle_startup() -> None:
+    """Audiocodes sends this message at the beginning of conversation"""
+    # Setup
+    conversation = Conversation("test_id")
+    on_new_message = AsyncMock()
+    output_channel = AudiocodesOutput()
+
+    activities = {
+        "conversation": "f010e998-4499-4ddb-80d4-fea137fd7b4d",
+        "activities": [
+            {
+                "id": "e54d4dfe-e1ff-4272-8c3d-4ec4f4294681",
+                "timestamp": "2024-12-04T15:07:55.145Z",
+                "language": "en-US",
+                "type": "event",
+                "name": "start",
+                "parameters": {
+                    "callee": "+493040739365",
+                    "calleeHost": "20.113.51.15",
+                    "caller": "+491604697810",
+                    "callerHost": "sip.telnyx.eu",
+                    "callerDisplayName": "+491604697810",
+                    "vaigConversationId": "f010e998-4499-4ddb-80d4-fea137fd7b4d",
+                },
+            }
+        ],
+    }
+
+    # Execute
+    await conversation.handle_activities(activities, output_channel, on_new_message)
+
+    on_new_message.assert_called_once()
+    user_msg = on_new_message.call_args[0][0]
+    assert isinstance(user_msg, UserMessage)
+    assert user_msg.text == "/session_start"
+    assert user_msg.sender_id == "test_id"
+    assert user_msg.metadata == {
+        "bot_host": "20.113.51.15",
+        "bot_phone": "+491604697810",
+        "call_id": "f010e998-4499-4ddb-80d4-fea137fd7b4d",
+        "direction": None,
+        "stream_id": None,
+        "user_host": "sip.telnyx.eu",
+        "user_name": "+491604697810",
+        "user_phone": "+493040739365",
+    }

@@ -13,8 +13,9 @@ from typing import (
     TYPE_CHECKING,
     Text,
     Type,
+    Tuple,
 )
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 from opentelemetry.sdk.trace import TracerProvider
@@ -101,6 +102,43 @@ def previous_num_captured_spans(span_exporter: InMemorySpanExporter) -> int:
 @pytest.fixture()
 def default_model_storage(tmp_path: Path) -> ModelStorage:
     return LocalModelStorage.create(tmp_path)
+
+
+class TestSpanExporter:
+    def __init__(self, original_exporter: InMemorySpanExporter):
+        self._original_exporter = original_exporter
+
+    def get_previous_num_captured_spans(
+        self, span_name_substrings_to_ignore: Optional[List[str]] = None
+    ) -> int:
+        captured_spans = self.get_finished_spans(span_name_substrings_to_ignore)
+        return len(captured_spans)
+
+    def get_finished_spans(
+        self, span_name_substrings_to_ignore: Optional[List[str]] = None
+    ) -> Type[Any, ...]:
+        captured_spans = self._original_exporter.get_finished_spans()  # type: ignore
+        if span_name_substrings_to_ignore:
+            captured_spans = self._filter_out_spans(
+                captured_spans, span_name_substrings_to_ignore
+            )
+        return captured_spans
+
+    def _filter_out_spans(
+        self,
+        captured_spans: Tuple[Any, ...],
+        span_name_substrings_to_ignore: List[str],
+    ) -> Tuple[Any, ...]:
+        if span_name_substrings_to_ignore:
+            captured_spans = [
+                span
+                for span in captured_spans
+                if not any(
+                    substring in span.name
+                    for substring in span_name_substrings_to_ignore
+                )
+            ]
+        return captured_spans
 
 
 class TrackerMock(DialogueStateTracker):
@@ -346,9 +384,11 @@ class MockSingleStepLLMCommandGenerator(SingleStepLLMCommandGenerator):
         config: Dict[str, Any],
         model_storage: ModelStorage,
         resource: Resource,
+        prompt_template: Optional[Text] = None,
+        **kwargs: Any,
     ) -> None:
         self.fail_if_undefined("invoke_llm")
-        super().__init__(config, model_storage, resource)
+        super().__init__(config, model_storage, resource, prompt_template)
 
     def fail_if_undefined(self, method_name: Text) -> None:
         if not (
@@ -371,9 +411,10 @@ class MockMultiStepLLMCommandGenerator(MultiStepLLMCommandGenerator):
         config: Dict[str, Any],
         model_storage: ModelStorage,
         resource: Resource,
+        prompt_templates: Optional[Dict[Text, Optional[Text]]] = None,
     ) -> None:
         self.fail_if_undefined("invoke_llm")
-        super().__init__(config, model_storage, resource)
+        super().__init__(config, model_storage, resource, prompt_templates)
 
     def fail_if_undefined(self, method_name: Text) -> None:
         if not (
@@ -835,3 +876,21 @@ def mock_available_endpoints(monkeypatch):
     mock_endpoints = MockAvailableEndpoints()
     monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
     return mock_endpoints
+
+
+@pytest.fixture
+def mock_perform_llm_health_check() -> Mock:
+    with patch(
+        "rasa.shared.utils.health_check.health_check" ".perform_llm_health_check"
+    ) as mock_function:
+        mock_function.return_value = None
+        yield mock_function
+
+
+@pytest.fixture
+def mock_perform_embeddings_health_check() -> Mock:
+    with patch(
+        "rasa.shared.utils.health_check.health_check" ".perform_embeddings_health_check"
+    ) as mock_function:
+        mock_function.return_value = None
+        yield mock_function

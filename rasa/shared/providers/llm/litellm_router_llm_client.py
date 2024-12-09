@@ -68,14 +68,60 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
         return cls(
             model_group_id=client_config.model_group_id,
             model_configurations=client_config.litellm_model_list,
-            router_settings=client_config.router,
+            router_settings=client_config.litellm_router_settings,
+            use_chat_completions_endpoint=client_config.use_chat_completions_endpoint,
             **client_config.extra_parameters,
         )
+
+    @suppress_logs(log_level=logging.WARNING)
+    def _text_completion(self, prompt: Union[List[str], str]) -> LLMResponse:
+        """
+        Synchronously generate completions for given prompt.
+
+        Args:
+            prompt: Prompt to generate the completion for.
+        Returns:
+            List of message completions.
+        Raises:
+            ProviderClientAPIException: If the API request fails.
+        """
+        try:
+            response = self.router_client.text_completion(
+                prompt=prompt, **self._completion_fn_args
+            )
+            return self._format_text_completion_response(response)
+        except Exception as e:
+            raise ProviderClientAPIException(e)
+
+    @suppress_logs(log_level=logging.WARNING)
+    async def _atext_completion(self, prompt: Union[List[str], str]) -> LLMResponse:
+        """
+        Asynchronously generate completions for given prompt.
+
+        Args:
+            prompt: Prompt to generate the completion for.
+        Returns:
+            List of message completions.
+        Raises:
+            ProviderClientAPIException: If the API request fails.
+        """
+        try:
+            response = await self.router_client.atext_completion(
+                prompt=prompt, **self._completion_fn_args
+            )
+            return self._format_text_completion_response(response)
+        except Exception as e:
+            raise ProviderClientAPIException(e)
 
     @suppress_logs(log_level=logging.WARNING)
     def completion(self, messages: Union[List[str], str]) -> LLMResponse:
         """
         Synchronously generate completions for given list of messages.
+
+        Method overrides the base class method to call the appropriate
+        completion method based on the configuration. If the chat completions
+        endpoint is enabled, the completion method is called. Otherwise, the
+        text_completion method is called.
 
         Args:
             messages: List of messages or a single message to generate the
@@ -85,6 +131,8 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
         Raises:
             ProviderClientAPIException: If the API request fails.
         """
+        if not self._use_chat_completions_endpoint:
+            return self._text_completion(messages)
         try:
             formatted_messages = self._format_messages(messages)
             response = self.router_client.completion(
@@ -99,6 +147,11 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
         """
         Asynchronously generate completions for given list of messages.
 
+        Method overrides the base class method to call the appropriate
+        completion method based on the configuration. If the chat completions
+        endpoint is enabled, the completion method is called. Otherwise, the
+        text_completion method is called.
+
         Args:
             messages: List of messages or a single message to generate the
                 completion for.
@@ -107,6 +160,8 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
         Raises:
             ProviderClientAPIException: If the API request fails.
         """
+        if not self._use_chat_completions_endpoint:
+            return await self._atext_completion(messages)
         try:
             formatted_messages = self._format_messages(messages)
             response = await self.router_client.acompletion(

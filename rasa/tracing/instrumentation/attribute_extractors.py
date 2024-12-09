@@ -414,6 +414,26 @@ def extract_attrs_for_generate(
     }
 
 
+def extract_attrs_for_performing_health_check(
+    custom_config: Optional[Dict[str, Any]],
+    default_config: Dict[str, Any],
+    log_source_method: str,
+    log_source_component: str,
+) -> Dict[str, Any]:
+    from rasa.shared.utils.health_check.health_check import is_api_health_check_enabled
+
+    attrs = {
+        "api_health_check_enabled": is_api_health_check_enabled(),
+        "health_check_trigger_component": log_source_component,
+        "health_check_trigger_method": log_source_method,
+    }
+    if is_api_health_check_enabled():
+        attrs["config"] = json.dumps(
+            combine_custom_and_default_config(custom_config, default_config)
+        )
+    return attrs
+
+
 def extract_attrs_for_execute_commands(
     tracker: DialogueStateTracker,
     all_flows: FlowsList,

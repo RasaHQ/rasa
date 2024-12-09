@@ -5,7 +5,7 @@ import pytest
 
 from rasa.core.channels.voice_stream.asr.asr_event import (
     NewTranscript,
-    UserStartedSpeaking,
+    UserIsSpeaking,
 )
 from rasa.core.channels.voice_stream.asr.azure import AzureASR
 from rasa.core.channels.voice_stream.audio_bytes import HERTZ
@@ -35,11 +35,11 @@ async def test_transcription(audio_data_path: str):
     async for event in asr_engine.stream_asr_events():
         events.append(event)
 
-    assert len(events) == 2
-    assert isinstance(events[0], UserStartedSpeaking)
+    assert len(events) > 2
+    assert all([isinstance(event, UserIsSpeaking) for event in events[:-1]])
 
-    assert isinstance(events[1], NewTranscript)
-    match = difflib.SequenceMatcher(None, events[1].text, transcript)
+    assert isinstance(events[-1], NewTranscript)
+    match = difflib.SequenceMatcher(None, events[-1].text, transcript)
     assert match.ratio() > 0.75
 
 

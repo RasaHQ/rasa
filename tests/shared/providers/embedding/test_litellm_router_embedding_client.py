@@ -44,7 +44,6 @@ class TestLiteLLMRouterEmbeddingClient:
                     "api_base": "test-api-base",
                     "api_key": "test",
                     "api_version": "test-api-version",
-                    "use_chat_completions_endpoint": True,
                 },
             ],
             "router": {"routing_strategy": "test"},
@@ -104,11 +103,11 @@ class TestLiteLLMRouterEmbeddingClient:
                         "api_key": "test",
                         "api_base": "test-api-base",
                         "api_version": "test-api-version",
-                        "use_chat_completions_endpoint": True,
                     },
                 },
             ],
             "router": {"routing_strategy": "test"},
+            "use_chat_completions_endpoint": True,
         }
 
     def test_model_group_id(self, client: LiteLLMRouterEmbeddingClient) -> None:
@@ -149,7 +148,6 @@ class TestLiteLLMRouterEmbeddingClient:
                     "api_key": "test",
                     "api_base": "test-api-base",
                     "api_version": "test-api-version",
-                    "use_chat_completions_endpoint": True,
                 },
             },
         ]

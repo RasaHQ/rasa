@@ -2144,8 +2144,11 @@ def test_validate_llm_configuration_setup(
 @pytest.mark.parametrize(
     "model_groups, should_exit",
     (
+        # 0
         ([], False),
+        # 1
         (None, False),
+        # 2
         (
             [
                 {
@@ -2159,6 +2162,7 @@ def test_validate_llm_configuration_setup(
             ],
             False,
         ),
+        # 'least_busy' instead of valid 'least-busy' # 3
         (
             [
                 {
@@ -2170,8 +2174,22 @@ def test_validate_llm_configuration_setup(
                     "router": {"routing_strategy": "least_busy"},
                 }
             ],
+            True,
+        ),
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {"provider": "openai", "model": "gpt-4"},
+                        {"provider": "openai", "model": "gpt-3.5-turbo"},
+                    ],
+                    "router": {"routing_strategy": "least-busy"},
+                }
+            ],
             False,
         ),
+        # 4
         (
             [
                 {
@@ -2189,6 +2207,7 @@ def test_validate_llm_configuration_setup(
             ],
             False,
         ),
+        # 5
         (
             [
                 {
@@ -2203,6 +2222,7 @@ def test_validate_llm_configuration_setup(
             ],
             False,
         ),
+        # 6
         (
             [
                 {
@@ -2216,7 +2236,7 @@ def test_validate_llm_configuration_setup(
             ],
             False,
         ),
-        # same model group id
+        # same model group id #7
         (
             [
                 {
@@ -2230,7 +2250,7 @@ def test_validate_llm_configuration_setup(
             ],
             True,
         ),
-        # multiple models, but no router
+        # multiple models, but no router #8
         (
             [
                 {
@@ -2243,6 +2263,7 @@ def test_validate_llm_configuration_setup(
             ],
             True,
         ),
+        # 9
         (
             [
                 {
@@ -2261,7 +2282,7 @@ def test_validate_llm_configuration_setup(
             ],
             True,
         ),
-        # incorrect usage of env_vars
+        # incorrect usage of env_vars #10
         (
             [
                 {
@@ -2273,7 +2294,7 @@ def test_validate_llm_configuration_setup(
             ],
             True,
         ),
-        # api_key is a string
+        # api_key is a string #11
         (
             [
                 {
@@ -2292,7 +2313,7 @@ def test_validate_llm_configuration_setup(
             ],
             True,
         ),
-        # incorrect router setting
+        # incorrect router setting #12
         (
             [
                 {
@@ -2301,10 +2322,65 @@ def test_validate_llm_configuration_setup(
                         {"provider": "openai", "model": "gpt-4"},
                         {"provider": "openai", "model": "gpt-3.5-turbo"},
                     ],
-                    "router": {"router_strategy": "non-existing-key"},
+                    "router": {"routing_strategy": "non-existing-key"},
                 }
             ],
             True,
+        ),
+        # incorrect use of use_chat_completions_endpoint #13
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {
+                            "provider": "self-hosted",
+                            "model": "some_model",
+                            "api_base": "http://localhost:8000",
+                            "use_chat_completions_endpoint": False,
+                        },
+                    ],
+                    "router": {"routing_strategy": "least-busy"},
+                }
+            ],
+            True,
+        ),
+        # Correct use of use_chat_completions_endpoint #14
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {
+                            "provider": "self-hosted",
+                            "model": "some_model",
+                            "api_base": "http://localhost:8000",
+                        },
+                    ],
+                    "router": {
+                        "routing_strategy": "least-busy",
+                        "use_chat_completions_endpoint": False,
+                    },
+                }
+            ],
+            False,
+        ),
+        # Correct use of use_chat_completions_endpoint in model group #15
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {
+                            "provider": "self-hosted",
+                            "model": "some_model",
+                            "api_base": "http://localhost:8000",
+                            "use_chat_completions_endpoint": False,
+                        },
+                    ],
+                }
+            ],
+            False,
         ),
     ),
 )

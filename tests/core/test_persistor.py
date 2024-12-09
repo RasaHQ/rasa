@@ -129,7 +129,7 @@ def test_s3_private_retrieve_tar(
         # noinspection PyProtectedMember
         awsPersistor._retrieve_tar(model)
     retrieveArgs = download_fileobj.call_args[0]
-    assert retrieveArgs[0] == str(model_path)
+    assert retrieveArgs[0] == model
     assert retrieveArgs[1].name == "model.tar.gz"
 
 
@@ -316,9 +316,6 @@ def test_create_file_key_remote_storage_path_deprecation_logging(
         "removed in future versions. "
         "Please use the -m path/to/model.tar.gz option to "
         "specify the model path when loading a model."
-        "Or use --output and --fixed-model-name to specify the "
-        "output directory and the model name when saving a "
-        "trained model to remote storage."
     )
     mock_raise_warning.assert_called_once_with(warning_text)
 

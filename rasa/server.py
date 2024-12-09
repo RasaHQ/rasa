@@ -529,7 +529,7 @@ def add_root_route(app: Sanic) -> None:
                 <p>Hello from Rasa: {rasa.__version__}</p>
                 <a href="./webhooks/inspector/inspect.html">Go to the inspector</a>
                 <script>
-                    window.location.replace("./webhooks/inspector/inspect.html");
+                    window.location.replace("./webhooks/socketio/inspect.html");
                 </script>
             </body>
         </html>

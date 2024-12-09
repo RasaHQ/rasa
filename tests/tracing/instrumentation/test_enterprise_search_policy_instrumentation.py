@@ -1,24 +1,52 @@
 import json
 import logging
+import os
 import tempfile
 import uuid
 from typing import Sequence, Dict, Any
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 import pytest
 from pytest import LogCaptureFixture, MonkeyPatch
-
 from rasa.core import EnterpriseSearchPolicy
 from rasa.core.policies.enterprise_search_policy import DEFAULT_EMBEDDINGS_CONFIG
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import (
     MockInformationRetrieval,
     MockAvailableEndpoints,
+    TestSpanExporter,
 )
+
+
+@pytest.fixture
+def mock_create_plain_embedder() -> Mock:
+    with patch(
+        "rasa.core.policies.enterprise_search_policy.EnterpriseSearchPolicy"
+        "._create_plain_embedder"
+    ) as mock_function:
+        yield mock_function
+
+
+@pytest.fixture
+def mock_faiss_store() -> Mock:
+    with patch(
+        "rasa.core.policies.enterprise_search_policy.FAISS_Store",
+    ) as mock_function:
+        yield mock_function
+
+
+@pytest.fixture
+def mock_create_from_endpoint_config() -> Mock:
+    with patch(
+        "rasa.core.policies.enterprise_search_policy.create_from_endpoint_config",
+    ) as mock_function:
+        mock_function.return_value = MockInformationRetrieval()
+        yield mock_function
 
 
 async def test_tracing_enterprise_search_policy_generate_llm_answer_default_config(
@@ -302,3 +330,155 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
         assert captured_span.name == "EnterpriseSearchPolicy._generate_llm_answer"
 
         assert captured_span.attributes["len_prompt_tokens"] == "None"
+
+
+async def test_tracing_enterprise_search_policy_training_health_check(
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    monkeypatch: MonkeyPatch,
+    mock_create_plain_embedder: Mock,
+    mock_faiss_store: Mock,
+    mock_perform_llm_health_check: Mock,
+    mock_perform_embeddings_health_check: Mock,
+) -> None:
+    # In order to avoid race conditions when tests are run on the same
+    # Windows GitHub runner using multiple workers
+    # (usually for different Python versions), we need to create a
+    # unique temporary directory for the cache
+    # and set the environment variable to point to it.
+    with tempfile.TemporaryDirectory(suffix=uuid.uuid4().__str__()):
+        monkeypatch.setenv(LLM_API_HEALTH_CHECK_ENV_VAR, "true")
+        component_class = EnterpriseSearchPolicy
+        vector_store = MockInformationRetrieval()
+
+        instrumentation.instrument(
+            tracer_provider,
+            policy_subclasses=[component_class],
+        )
+        test_span_exported = TestSpanExporter(span_exporter)
+        previous_num_captured_spans = (
+            test_span_exported.get_previous_num_captured_spans()
+        )
+
+        policy = component_class(
+            config={
+                "trace_prompt_tokens": True,
+                "llm": {"provider": "cohere", "model": "command"},
+            },
+            model_storage=default_model_storage,
+            resource=Resource("enterprisesearchpolicy"),
+            execution_context=default_execution_context,
+            vector_store=vector_store,
+        )
+
+        policy.train(Mock(), Mock(), Mock(), Mock(), Mock())
+
+        captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
+
+        num_captured_spans = len(captured_spans) - previous_num_captured_spans
+        assert num_captured_spans == 2
+
+        captured_spans = captured_spans[-2:]
+
+        expected_attributes = {
+            "api_health_check_enabled": True,
+            "health_check_trigger_component": "EnterpriseSearchPolicy",
+            "health_check_trigger_method": "enterprise_search_policy.train",
+        }
+        span_training_llm_health_check = next(
+            span
+            for span in captured_spans
+            if span.name == "EnterpriseSearchPolicy.perform_llm_health_check"
+        )
+        span_training_embeddings_health_check = next(
+            span
+            for span in captured_spans
+            if span.name == "EnterpriseSearchPolicy.perform_embeddings_health_check"  # noqa: 501
+        )
+
+        assert span_training_llm_health_check is not None
+        assert span_training_embeddings_health_check is not None
+
+        for key, value in expected_attributes.items():
+            assert span_training_llm_health_check.attributes[key] == value
+            assert span_training_embeddings_health_check.attributes[key] == value
+
+
+@patch(
+    "rasa.core.policies.enterprise_search_policy.create_from_endpoint_config",
+    Mock(return_value=MockInformationRetrieval()),
+)
+async def test_tracing_enterprise_search_policy_inference_health_check(
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    monkeypatch: MonkeyPatch,
+    mock_create_plain_embedder: Mock,
+    mock_faiss_store: Mock,
+    mock_create_from_endpoint_config: Mock,
+    mock_perform_llm_health_check: Mock,
+    mock_perform_embeddings_health_check: Mock,
+) -> None:
+    # In order to avoid race conditions when tests are run on the same
+    # Windows GitHub runner using multiple workers
+    # (usually for different Python versions), we need to create a
+    # unique temporary directory for the cache
+    # and set the environment variable to point to it.
+    with tempfile.TemporaryDirectory(suffix=uuid.uuid4().__str__()) as temp_dir:
+        monkeypatch.setenv(LLM_API_HEALTH_CHECK_ENV_VAR, "true")
+        resource_dir = os.path.join(temp_dir, "enterprisesearchpolicy")
+        os.mkdir(resource_dir)
+
+        component_class = EnterpriseSearchPolicy
+
+        instrumentation.instrument(
+            tracer_provider,
+            policy_subclasses=[component_class],
+        )
+        test_span_exported = TestSpanExporter(span_exporter)
+        previous_num_captured_spans = (
+            test_span_exported.get_previous_num_captured_spans()
+        )
+        component_class.load(
+            config={
+                "trace_prompt_tokens": True,
+                "llm": {"provider": "cohere", "model": "command"},
+            },
+            model_storage=default_model_storage,
+            resource=Resource(resource_dir),
+            execution_context=default_execution_context,
+        )
+
+        captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
+
+        num_captured_spans = len(captured_spans) - previous_num_captured_spans
+        assert num_captured_spans == 2
+
+        captured_spans = captured_spans[-2:]
+
+        expected_attributes = {
+            "api_health_check_enabled": True,
+            "health_check_trigger_component": "EnterpriseSearchPolicy",
+            "health_check_trigger_method": "enterprise_search_policy.load",
+        }
+        span_training_llm_health_check = next(
+            span
+            for span in captured_spans
+            if span.name == "EnterpriseSearchPolicy.perform_llm_health_check"
+        )
+        span_training_embeddings_health_check = next(
+            span
+            for span in captured_spans
+            if span.name == "EnterpriseSearchPolicy.perform_embeddings_health_check"
+            # noqa: 501
+        )
+
+        assert span_training_llm_health_check is not None
+        assert span_training_embeddings_health_check is not None
+
+        for key, value in expected_attributes.items():
+            assert span_training_llm_health_check.attributes[key] == value
+            assert span_training_embeddings_health_check.attributes[key] == value

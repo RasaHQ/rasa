@@ -24,7 +24,6 @@ from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
     USER_INPUT_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
-    TRAINED_MODEL_NAME_CONFIG_KEY,
     DEFAULT_LLM_CONFIG,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
@@ -60,7 +59,6 @@ from rasa.shared.utils.llm import (
     allowed_values_for_slot,
     resolve_model_client_config,
 )
-from rasa.shared.utils.health_check import perform_inference_time_llm_health_check
 
 # multistep template keys
 HANDLE_FLOWS_KEY = "handle_flows"
@@ -77,6 +75,7 @@ DEFAULT_HANDLE_FLOWS_TEMPLATE = importlib.resources.read_text(
 DEFAULT_FILL_SLOTS_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.generator.multi_step", "fill_slots_prompt.jinja2"
 ).strip()
+MULTI_STEP_LLM_COMMAND_GENERATOR_CONFIG_FILE = "config.json"
 
 # dictionary of template names and associated file names and default values
 PROMPT_TEMPLATES = {
@@ -145,14 +144,17 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         **kwargs: Any,
     ) -> "MultiStepLLMCommandGenerator":
         """Loads trained component (see parent class for full docstring)."""
-        prompts = cls._load_prompt_templates(model_storage, resource)
 
-        persisted_config = cls.load_config_from_model_storage(model_storage, resource)
-        train_model_name = (
-            persisted_config.get(TRAINED_MODEL_NAME_CONFIG_KEY, None)
-            if persisted_config
-            else None
+        # Perform health check of the LLM client config
+        llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY, {}))
+        cls.perform_llm_health_check(
+            llm_config,
+            DEFAULT_LLM_CONFIG,
+            "multi_step_llm_command_generator.load",
+            MultiStepLLMCommandGenerator.__name__,
         )
+
+        prompts = cls._load_prompt_templates(model_storage, resource)
 
         # init base command generator
         command_generator = cls(config, model_storage, resource, prompts)
@@ -162,23 +164,12 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
                 command_generator.config, model_storage, resource
             )
 
-        perform_inference_time_llm_health_check(
-            command_generator.config.get(LLM_CONFIG_KEY),
-            DEFAULT_LLM_CONFIG,
-            train_model_name,
-            "multi_step_llm_command_generator.load",
-            MultiStepLLMCommandGenerator.__name__,
-        )
-
         return command_generator
 
     def persist(self) -> None:
         """Persist this component to disk for future loading."""
-        super().persist()
-
-        # persist prompt template
         self._persist_prompt_templates()
-        # persist flow retrieval
+        self._persist_config()
         if self.flow_retrieval is not None:
             self.flow_retrieval.persist()
 
@@ -410,6 +401,13 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
                 file_name, _ = PROMPT_TEMPLATES[key]
                 file_path = path / file_name
                 rasa.shared.utils.io.write_text_file(template, file_path)
+
+    def _persist_config(self) -> None:
+        """Persist config as a source of truth for resolved clients."""
+        with self._model_storage.write_to(self._resource) as path:
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                path / MULTI_STEP_LLM_COMMAND_GENERATOR_CONFIG_FILE, self.config
+            )
 
     async def _predict_commands_with_multi_step(
         self,

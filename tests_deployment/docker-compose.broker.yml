@@ -48,3 +48,17 @@ services:
       retries: 10
       start_period: 15s
       timeout: 10s
+
+  rabbitmq:
+    image: healthcheck/rabbitmq
+    ports:
+      - "5672:5672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s

@@ -12,7 +12,7 @@ model_groups:
     models:
       - provider: gemini
         model: gemini-pro
-        api_key: ${GEMINI_API_KEY}
+        api_key: ${GEMINI_API_KEY_1}
         timeout: 7
         num_retries: 5
 
