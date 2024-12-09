@@ -1,4 +1,3 @@
-import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -22,6 +21,11 @@ DUMMY_ACTION_NAME = "my_action"
 DUMMY_DOMAIN_PATH = "data/test_domains/default.yml"
 
 ENDPOINTS_FILE_PATH = "data/test_endpoints/endpoints_actions_module.yml"
+
+
+@pytest.fixture(autouse=True)
+def setup():
+    DirectCustomActionExecutor._actions_module_registered = False
 
 
 @pytest.fixture
@@ -158,7 +162,7 @@ async def test_executor_runs_action_without_response_validation(
 
 
 async def test_executor_runs_action_invalid_actions_module(
-    trained_async: TrainedAsync, caplog: LogCaptureFixture, custom_actions_agent: Agent
+    trained_async: TrainedAsync, custom_actions_agent: Agent
 ):
     """
     Ensure that the inappropriately configured actions_module doesn't
@@ -172,14 +176,14 @@ async def test_executor_runs_action_invalid_actions_module(
 
     # Trigger the custom action execution and ensure the exception log is raised
     message = UserMessage(text="Activate custom action.")
-    await processor.handle_message(message)
-
-    message = (
-        "Encountered an exception while running action 'action_force_next_utter'."
-        "Bot will continue, but the actions events are lost. "
-        "Please check the logs of your action server for more information."
+    error_message = (
+         "You've provided the custom actions module "
+         f"'{DUMMY_INVALID_ACTIONS_MODULE_PATH}' to run directly by the rasa server, "
+         "however this module does not exist. "
+         "Please check for typos in your `endpoints.yml` file."
     )
-    assert message in caplog.messages
+    with pytest.raises(RasaException, match=error_message):
+        await processor.handle_message(message)
 
 
 def test_action_executor_is_being_cached(mock_endpoint: EndpointConfig):
@@ -194,9 +198,6 @@ def test_action_executor_is_being_cached(mock_endpoint: EndpointConfig):
 
 @pytest.mark.asyncio
 async def test_custom_actions_hot_reloading():
-    # Ensure the project root directory is in sys.path
-    sys.path.insert(0, str(Path().resolve()))
-
     def create_action_code(value: str) -> str:
         return f"""from typing import Any, Dict
 from rasa_sdk.interfaces import Action
