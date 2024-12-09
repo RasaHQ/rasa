@@ -27,7 +27,6 @@ from rasa.model_manager.runner_service import (
     update_bot_status,
     terminate_bot,
 )
-from rasa.env import REMOTE_STORAGE_PATH_ENV
 
 
 @pytest.fixture
@@ -112,17 +111,12 @@ def test_prepare_remote_bot_directory(
 ) -> None:
     monkeypatch.setattr(config, "SERVER_BASE_WORKING_DIRECTORY", str(tmp_path))
     monkeypatch.setattr(config, "SERVER_MODEL_REMOTE_STORAGE", "aws")
-    monkeypatch.setenv(REMOTE_STORAGE_PATH_ENV, "models")
 
     bot_base_path = tmp_path / "test_bot"
 
     # create models base path
     os.makedirs(models_base_path(), exist_ok=True)
     model_name = os.path.basename(trained_rasa_model_with_flows).split(".")[0]
-
-    remote_model_path = os.path.join(
-        "models", os.path.basename(trained_rasa_model_with_flows)
-    )
 
     # --- test setup
     region_name = "us-east-1"
@@ -133,7 +127,9 @@ def test_prepare_remote_bot_directory(
     conn.create_bucket(Bucket=bucket_name)
     # upload model file to bucket
     with open(trained_rasa_model_with_flows, "rb") as f:
-        conn.meta.client.upload_fileobj(f, bucket_name, remote_model_path)
+        conn.meta.client.upload_fileobj(
+            f, bucket_name, os.path.basename(trained_rasa_model_with_flows)
+        )
 
     def mock_aws_persistor(name: str) -> AWSPersistor:
         aws_persistor = AWSPersistor(bucket_name, region_name=region_name)

@@ -2382,6 +2382,86 @@ def test_validate_llm_configuration_setup(
             ],
             False,
         ),
+        # AWS secret 'aws_access_key_id' is a string #16
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {
+                            "provider": "bedrock",
+                            "model": "anthropic.test-sonnet",
+                            "aws_access_key_id": "1234-secret",
+                            "aws_secret_access_key": "${AWS_SECRET_ACCESS_KEY_TEST}",
+                            "aws_session_token": "${AWS_SESSION_TOKEN_TEST}",
+                            "aws_region_name": "us-east-1",
+                            "timeout": 14,
+                        },
+                    ],
+                }
+            ],
+            True,
+        ),
+        # AWS secret 'aws_secret_access_key' is a string #17
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {
+                            "provider": "bedrock",
+                            "model": "anthropic.test-sonnet",
+                            "aws_access_key_id": "${AWS_ACCESS_KEY_TEST}",
+                            "aws_secret_access_key": "1234-secret",
+                            "aws_session_token": "${AWS_SESSION_TOKEN_TEST}",
+                            "aws_region_name": "us-east-1",
+                            "timeout": 14,
+                        },
+                    ],
+                }
+            ],
+            True,
+        ),
+        # AWS secret 'aws_session_token' is a string #18
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {
+                            "provider": "bedrock",
+                            "model": "anthropic.test-sonnet",
+                            "aws_access_key_id": "${AWS_ACCESS_KEY_TEST}",
+                            "aws_secret_access_key": "${AWS_SECRET_ACCESS_KEY_TEST}",
+                            "aws_session_token": "1234-secret",
+                            "aws_region_name": "us-east-1",
+                            "timeout": 14,
+                        },
+                    ],
+                }
+            ],
+            True,
+        ),
+        # AWS secrets are correctly set #19
+        (
+            [
+                {
+                    "id": "model_group_id",
+                    "models": [
+                        {
+                            "provider": "bedrock",
+                            "model": "anthropic.test-sonnet",
+                            "aws_access_key_id": "${AWS_ACCESS_KEY_TEST}",
+                            "aws_secret_access_key": "${AWS_SECRET_ACCESS_KEY_TEST}",
+                            "aws_session_token": "${AWS_SESSION_TOKEN_TEST}",
+                            "aws_region_name": "us-east-1",
+                            "timeout": 14,
+                        },
+                    ],
+                }
+            ],
+            False,
+        ),
     ),
 )
 def test_validate_model_group_configuration_setup(

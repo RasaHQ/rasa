@@ -111,6 +111,15 @@ slots:
     type: bool
     mappings:
       - type: from_llm
+  silence_timeout:
+    type: float
+    initial_value: 6.0
+    max_value: 1000000
+  consecutive_silence_timeouts:
+    type: float
+    initial_value: 0.0
+    max_value: 1000000
+
 
 flows:
   pattern_cancel_flow:

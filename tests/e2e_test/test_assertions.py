@@ -25,6 +25,7 @@ from rasa.e2e_test.assertions import (
     PatternClarificationContainsAssertion,
     SlotWasNotSetAssertion,
     SlotWasSetAssertion,
+    BotDidNotUtterAssertion,
 )
 from rasa.e2e_test.e2e_config import LLMJudgeConfig
 from rasa.shared.core.events import (
@@ -112,6 +113,24 @@ from rasa.shared.exceptions import RasaException
                     AssertedButton(title="Transfer Money", payload="/transfer_money")
                 ],
                 text_matches="You can transfer money or check your balance.",
+            ),
+        ),
+        (
+            {
+                "bot_did_not_utter": {
+                    "utter_name": "utter_options",
+                    "text_matches": "You can transfer money or check your balance.",
+                    "buttons": [
+                        {"title": "Transfer Money", "payload": "/transfer_money"}
+                    ],
+                }
+            },
+            BotDidNotUtterAssertion(
+                utter_name="utter_options",
+                text_matches="You can transfer money or check your balance.",
+                buttons=[
+                    AssertedButton(title="Transfer Money", payload="/transfer_money")
+                ],
             ),
         ),
     ],
@@ -291,6 +310,47 @@ def test_assertion_run_returns_no_assertion_failure(
     assert matching_event == turn_events[0]
 
 
+@pytest.mark.parametrize(
+    "assertion, turn_events",
+    [
+        (
+            BotDidNotUtterAssertion(
+                text_matches="You can transfer money or check your balance."
+            ),
+            [BotUttered(text="Something else.")],
+        ),
+        (
+            BotDidNotUtterAssertion(
+                utter_name="utter_options",
+            ),
+            [BotUttered(metadata={"utter_action": "utter_something_else"})],
+        ),
+        (
+            BotDidNotUtterAssertion(
+                buttons=[
+                    AssertedButton(title="Transfer Money", payload="/transfer_money")
+                ]
+            ),
+            [
+                BotUttered(
+                    data={
+                        "buttons": [
+                            {"title": "Check Balance", "payload": "/check_balance"}
+                        ]
+                    }
+                )
+            ],
+        ),
+    ],
+)
+def test_assertion_run_returns_no_assertion_failure_for_bot_did_not_utter_assertion(
+    assertion: Assertion, turn_events: List[Event]
+) -> None:
+    assertion_failure, matching_event = assertion.run(turn_events, [])
+    assert assertion_failure is None
+    assert matching_event is None
+
+
 def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
     assertion = SlotWasNotSetAssertion(
         slots=[AssertedSlot(name="name", value="value key is undefined")]
@@ -439,9 +499,107 @@ def test_slot_was_not_set_assertion_returns_no_assertion_failure() -> None:
     ],
 )
 def test_assertion_run_returns_assertion_failure(
-    assertion: Assertion, expected_assertion_failure: AssertionFailure
+    assertion: Assertion,
+    expected_assertion_failure: AssertionFailure,
 ) -> None:
     assertion_failure, matching_event = assertion.run([], [])
+    assert assertion_failure == expected_assertion_failure
+    assert matching_event is None
+
+
+@pytest.mark.parametrize(
+    "turn_events, assertion, expected_assertion_failure",
+    [
+        (
+            [
+                BotUttered(
+                    text="You can transfer money or check your balance.",
+                )
+            ],
+            BotDidNotUtterAssertion(
+                text_matches="You can transfer money or check your balance."
+            ),
+            AssertionFailure(
+                assertion=BotDidNotUtterAssertion(
+                    text_matches="You can transfer money or check your balance.",
+                    line=None,
+                ),
+                error_message=(
+                    "Bot uttered a forbidden message matching the pattern "
+                    "'You can transfer money or check your balance.'."
+                ),
+                actual_events_transcript=[
+                    "BotUttered('You can transfer money or check your balance.', "
+                    "{}, {}, None)"
+                ],
+                error_line=None,
+            ),
+        ),
+        (
+            [BotUttered(metadata={"utter_action": "utter_options"})],
+            BotDidNotUtterAssertion(
+                utter_name="utter_options",
+            ),
+            AssertionFailure(
+                assertion=BotDidNotUtterAssertion(
+                    utter_name="utter_options",
+                    text_matches=None,
+                    buttons=None,
+                    line=None,
+                ),
+                error_message="Bot uttered a forbidden utterance 'utter_options'.",
+                actual_events_transcript=[
+                    'BotUttered(\'None\', {}, {"utter_action": "utter_options"}, None)'
+                ],
+                error_line=None,
+            ),
+        ),
+        (
+            [
+                BotUttered(
+                    data={
+                        "buttons": [
+                            {"title": "Transfer Money", "payload": "/transfer_money"}
+                        ]
+                    }
+                )
+            ],
+            BotDidNotUtterAssertion(
+                buttons=[
+                    AssertedButton(title="Transfer Money", payload="/transfer_money")
+                ]
+            ),
+            AssertionFailure(
+                assertion=BotDidNotUtterAssertion(
+                    utter_name=None,
+                    text_matches=None,
+                    buttons=[
+                        AssertedButton(
+                            title="Transfer Money", payload="/transfer_money"
+                        )
+                    ],
+                    line=None,
+                ),
+                error_message=(
+                    "Bot uttered a forbidden response with specified buttons."
+                ),
+                actual_events_transcript=[
+                    'BotUttered(\'None\', {"buttons": [{"title": "Transfer Money", '
+                    '"payload": "/transfer_money"}]}, {}, None)'
+                ],
+                error_line=None,
+            ),
+        ),
+    ],
+)
+def test_assertion_run_returns_assertion_failure_for_bot_did_not_utter_assertion(
+    turn_events: List[Event],
+    assertion: Assertion,
+    expected_assertion_failure: AssertionFailure,
+) -> None:
+    # Remove timestamps from events to make the test deterministic
+    turn_events[0].timestamp = None
+    assertion_failure, matching_event = assertion.run(turn_events, [])
     assert assertion_failure == expected_assertion_failure
     assert matching_event is None
 
@@ -598,6 +756,22 @@ def test_slot_was_not_set_assertions_returns_assertion_failure(
                 "utter_name": "utter_fee",
                 "ground_truth": "The fee for transferring money is $5.",
                 "type": "generative_response_is_grounded",
+                "line": None,
+            },
+        ),
+        (
+            BotDidNotUtterAssertion(
+                utter_name="utter_options",
+                buttons=[
+                    AssertedButton(title="Transfer Money", payload="/transfer_money")
+                ],
+                text_matches="You can transfer money or check your balance.",
+            ),
+            {
+                "utter_name": "utter_options",
+                "text_matches": "You can transfer money or check your balance.",
+                "buttons": [{"title": "Transfer Money", "payload": "/transfer_money"}],
+                "type": "bot_did_not_utter",
                 "line": None,
             },
         ),
@@ -1133,3 +1307,70 @@ def test_slot_assertions_with_null_value(
     assert isinstance(assertion, expected_assertion_type)
     assert hasattr(assertion, "slots")
     assert assertion.slots[0].value is None
+
+
+@pytest.mark.parametrize(
+    "assertion_type, turn_events, expected_error_messages",
+    [
+        (
+            AssertionType.BOT_DID_NOT_UTTER.value,
+            [
+                BotUttered(
+                    metadata={"utter_action": "utter_need_help"},
+                    text="Do you need help with anything else?",
+                    data={
+                        "buttons": [
+                            {"title": "Yes", "payload": "/yes"},
+                            {"title": "no", "payload": "/no"},
+                        ]
+                    },
+                )
+            ],
+            [
+                "Bot uttered a forbidden utterance 'utter_need_help'.",
+                (
+                    "Bot uttered a forbidden message matching the pattern "
+                    "'Do you need help with anything else?'."
+                ),
+                "Bot uttered a forbidden response with specified buttons.",
+            ],
+        ),
+        (
+            AssertionType.BOT_UTTERED.value,
+            [
+                BotUttered(
+                    metadata={"utter_action": "utter_something_else"},
+                    text="Something else.",
+                    data={"buttons": []},
+                )
+            ],
+            [
+                "Bot did not utter 'utter_need_help' response.",
+                (
+                    "Bot did not utter any response which matches the provided "
+                    "text pattern 'Do you need help with anything else?'."
+                ),
+                "Bot did not utter any response with the expected buttons.",
+            ],
+        ),
+    ],
+)
+def test_bot_utterance_multiple_errors(
+    assertion_type, turn_events, expected_error_messages
+) -> None:
+    assertion = Assertion.create_typed_assertion(
+        {
+            assertion_type: {
+                "utter_name": "utter_need_help",
+                "text_matches": "Do you need help with anything else?",
+                "buttons": [
+                    {"title": "Yes", "payload": "/yes"},
+                    {"title": "no", "payload": "/no"},
+                ],
+            }
+        }
+    )
+    failure, _ = assertion.run(turn_events, [])
+    error_message = " ".join(expected_error_messages)
+    assert failure is not None
+    assert error_message == failure.error_message
