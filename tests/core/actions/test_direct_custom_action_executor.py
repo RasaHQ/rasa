@@ -176,10 +176,10 @@ async def test_executor_runs_action_invalid_actions_module(
     # Trigger the custom action execution and ensure the exception log is raised
     message = UserMessage(text="Activate custom action.")
     error_message = (
-         "You've provided the custom actions module "
-         f"'{DUMMY_INVALID_ACTIONS_MODULE_PATH}' to run directly by the rasa server, "
-         "however this module does not exist. "
-         "Please check for typos in your `endpoints.yml` file."
+        "You've provided the custom actions module "
+        f"'{DUMMY_INVALID_ACTIONS_MODULE_PATH}' to run directly by the rasa server, "
+        "however this module does not exist. "
+        "Please check for typos in your `endpoints.yml` file."
     )
     with pytest.raises(RasaException, match=error_message):
         await processor.handle_message(message)
