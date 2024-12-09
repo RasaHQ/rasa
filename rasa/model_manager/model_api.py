@@ -4,6 +4,7 @@ import os
 from http import HTTPStatus
 from typing import Any, Callable, Dict, Optional
 import dotenv
+import psutil
 from sanic import Blueprint, Sanic, response
 from sanic.response import json
 from sanic.exceptions import NotFound
@@ -197,8 +198,9 @@ def internal_blueprint() -> Blueprint:
             @wraps(f)
             def decorated(*args: Any, **kwargs: Any) -> Any:
                 if os.path.exists(config.SERVER_BASE_WORKING_DIRECTORY):
-                    disk_usage = os.statvfs(config.SERVER_BASE_WORKING_DIRECTORY)
-                    free_space_bytes = disk_usage.f_bsize * disk_usage.f_bavail
+                    free_space_bytes = psutil.disk_usage(
+                        config.SERVER_BASE_WORKING_DIRECTORY
+                    ).free
                     structlogger.debug(
                         "model_api.storage.available_disk_space",
                         available_space_mb=free_space_bytes / 1024 / 1024,
