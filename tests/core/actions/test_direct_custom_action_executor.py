@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -68,9 +69,6 @@ async def test_executor_initialized_with_invalid_actions_module(
     domain: Domain,
 ):
     endpoint = EndpointConfig(actions_module=DUMMY_INVALID_ACTIONS_MODULE_PATH)
-    executor = DirectCustomActionExecutor(
-        action_name="some_action", action_endpoint=endpoint
-    )
 
     message = (
         f"You've provided the custom actions module "
@@ -79,6 +77,9 @@ async def test_executor_initialized_with_invalid_actions_module(
         f"Please check for typos in your `endpoints.yml` file."
     )
     with pytest.raises(RasaException, match=message):
+        executor = DirectCustomActionExecutor(
+            action_name="some_action", action_endpoint=endpoint
+        )
         await executor.run(tracker, domain)
 
 
@@ -193,12 +194,14 @@ def test_action_executor_is_being_cached(mock_endpoint: EndpointConfig):
 
 @pytest.mark.asyncio
 async def test_custom_actions_hot_reloading():
+    # Ensure the project root directory is in sys.path
+    sys.path.insert(0, str(Path().resolve()))
+
     def create_action_code(value: str) -> str:
         return f"""from typing import Any, Dict
 from rasa_sdk.interfaces import Action
 from rasa_sdk import Tracker
 from rasa_sdk.executor import CollectingDispatcher
-
 
 class CustomAction(Action):
     def name(self) -> str:
