@@ -1,4 +1,6 @@
 import argparse
+import shlex
+from typing import Optional
 import structlog
 import os
 import platform
@@ -97,12 +99,14 @@ def print_version() -> None:
     print(f"License Expires   :         {get_license_expiration_date()}")
 
 
-def main() -> None:
+def main(arguments_string: Optional[str] = None) -> None:
     """Run as standalone python application."""
     warn_if_rasa_plus_package_installed()
     parse_last_positional_argument_as_model_path()
     arg_parser = create_argument_parser()
-    cmdline_arguments = arg_parser.parse_args()
+    cmdline_arguments = arg_parser.parse_args(
+        shlex.split(arguments_string) if arguments_string else None
+    )
 
     log_level = getattr(cmdline_arguments, "loglevel", None)
     logging_config_file = getattr(cmdline_arguments, "logging_config_file", None)

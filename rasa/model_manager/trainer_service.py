@@ -13,6 +13,10 @@ from pydantic import BaseModel, ConfigDict
 from enum import Enum
 
 from rasa.model_manager import config
+from rasa.model_manager.warm_rasa_process import (
+    get_warm_rasa_process,
+    pass_arguments_to_process,
+)
 from rasa.model_training import generate_random_model_name
 from rasa.model_manager.utils import ensure_base_directory_exists, logs_path
 
@@ -40,6 +44,7 @@ class TrainingSession(BaseModel):
     model_name: str
     status: TrainingSessionStatus
     process: subprocess.Popen
+    log_id: str
 
     def is_status_indicating_alive(self) -> bool:
         """Check if the training is running."""
@@ -244,19 +249,12 @@ def start_training_process(
     client_id: str,
     training_base_path: str,
 ) -> TrainingSession:
-    log_path = logs_path(training_id)
-
-    ensure_base_directory_exists(log_path)
-
     model_name = generate_random_model_name()
     # Start the training in a subprocess
     # set the working directory to the training directory
     # run the rasa train command as a subprocess, activating poetry before running
     # pipe the stdout and stderr to the same file
-    full_command = [
-        config.RASA_PYTHON_PATH,
-        "-m",
-        "rasa.__main__",
+    arguments = [
         "train",
         "--debug",
         "--data",
@@ -274,7 +272,7 @@ def start_training_process(
     ]
 
     if config.SERVER_MODEL_REMOTE_STORAGE:
-        full_command.extend(
+        arguments.extend(
             [
                 "--keep-local-model-copy",
                 "--remote-storage",
@@ -282,18 +280,13 @@ def start_training_process(
             ]
         )
 
-    structlogger.debug("model_trainer.training_command", command=" ".join(full_command))
-
-    envs = os.environ.copy()
-    envs["RASA_TELEMETRY_ENABLED"] = "false"
-
-    process = subprocess.Popen(
-        full_command,
-        cwd=training_base_path,
-        stdout=open(log_path, "w"),
-        stderr=subprocess.STDOUT,
-        env=envs,
+    structlogger.debug(
+        "model_trainer.training_arguments", arguments=" ".join(arguments)
     )
+
+    warm_process = get_warm_rasa_process()
+
+    pass_arguments_to_process(warm_process.process, training_base_path, arguments)
 
     structlogger.info(
         "model_trainer.training_started",
@@ -301,8 +294,8 @@ def start_training_process(
         assistant_id=assistant_id,
         model_name=model_name,
         client_id=client_id,
-        log=log_path,
-        pid=process.pid,
+        log=logs_path(warm_process.log_id),
+        pid=warm_process.process.pid,
     )
 
     return TrainingSession(
@@ -312,7 +305,8 @@ def start_training_process(
         model_name=model_name,
         progress=0,
         status=TrainingSessionStatus.RUNNING,
-        process=process,  # Store the process handle
+        process=warm_process.process,  # Store the process handle
+        log_id=warm_process.log_id,
     )
 
 
