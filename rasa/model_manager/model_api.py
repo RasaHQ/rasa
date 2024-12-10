@@ -129,7 +129,9 @@ def internal_blueprint() -> Blueprint:
         cleanup_bot_processes()
 
     @bp.after_server_start
-    async def create_warm_rasa_processes(app: Sanic, loop: asyncio.AbstractEventLoop):
+    async def create_warm_rasa_processes(
+        app: Sanic, loop: asyncio.AbstractEventLoop
+    ) -> None:
         """Create warm Rasa processes to speed up future training and bot runs."""
         structlogger.debug("model_api.create_warm_rasa_processes.started")
         initialize_warm_rasa_process()

@@ -127,7 +127,7 @@ def _pass_arguments_to_process(
     process.stdin.write("\n".encode())  # type: ignore[union-attr]
     process.stdin.write(arguments_string.encode())  # type: ignore[union-attr]
     process.stdin.write("\n".encode())  # type: ignore[union-attr]
-    process.stdin.flush()
+    process.stdin.flush()  # type: ignore[union-attr]
 
 
 def warmup() -> None:
