@@ -55,6 +55,7 @@ def training_session(training_id: str) -> MagicMock:
         process=MagicMock(spec=subprocess.Popen, returncode=0),
         model_name=None,
         logs=None,
+        log_id="test_42",
     )
     return training_session
 
@@ -344,6 +345,7 @@ async def test_stop_bot(client: SanicASGITestClient) -> None:
         internal_url="http://localhost:8000",
         port=8000,
         process=MagicMock(spec=subprocess.Popen, returncode=0),
+        log_id="test_42",
     )
     _, response = await client.delete("/bot/deployment_1")
     assert response.status == 200
@@ -364,7 +366,8 @@ async def test_get_training_with_logs(
     client: SanicASGITestClient, tmp_path: Path
 ) -> None:
     action_id = uuid.uuid4().hex
-    setup_logs_path(tmp_path, action_id)
+    log_id = "test_42"
+    setup_logs_path(tmp_path, log_id)
 
     trainings[action_id] = MagicMock(
         training_id=action_id,
@@ -372,6 +375,7 @@ async def test_get_training_with_logs(
         client_id="client_1",
         progress=50,
         status="running",
+        log_id=log_id,
     )
     _, response = await client.get(f"/training/{action_id}")
     assert response.status == 200
@@ -382,7 +386,7 @@ async def test_get_training_with_logs(
         "progress": 50,
         "status": "running",
         "model_name": None,
-        "logs": f"test logs for {action_id}",
+        "logs": f"test logs for {log_id}",
     }
 
 
@@ -391,10 +395,14 @@ async def test_get_bot_with_logs(
     tmp_path: Path,
 ) -> None:
     action_id = uuid.uuid4().hex
-    setup_logs_path(tmp_path, action_id)
+    log_id = "test_42"
+    setup_logs_path(tmp_path, log_id)
 
     running_bots[action_id] = MagicMock(
-        deployment_id=action_id, status="running", url="http://localhost:8000"
+        deployment_id=action_id,
+        status="running",
+        url="http://localhost:8000",
+        log_id=log_id,
     )
     _, response = await client.get(f"/bot/{action_id}")
     assert response.status == 200
@@ -403,7 +411,7 @@ async def test_get_bot_with_logs(
         "status": "running",
         "url": "http://localhost:8000",
         "returncode": None,
-        "logs": f"test logs for {action_id}",
+        "logs": f"test logs for {log_id}",
     }
 
 

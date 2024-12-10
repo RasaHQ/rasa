@@ -37,6 +37,7 @@ def training_session() -> TrainingSession:
         status="running",
         process=process,
         model_name="test_model_name",
+        log_id="test_42",
     )
 
 
@@ -75,6 +76,7 @@ def test_terminate_on_stopped_training() -> None:
         status="stopped",
         process=mock.Mock(spec=subprocess.Popen),
         model_name="test_model_name",
+        log_id="test_42",
     )
     terminate_training(training_session)
     # check that the process was not terminated again

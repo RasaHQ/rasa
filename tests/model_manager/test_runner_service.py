@@ -38,6 +38,7 @@ def mock_bot_session() -> BotSession:
         url="http://example.com",
         internal_url="http://localhost:5005",
         port=5005,
+        log_id="test_42",
     )
 
 
