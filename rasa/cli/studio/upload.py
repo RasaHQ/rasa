@@ -32,25 +32,10 @@ def add_subparser(
     set_upload_arguments(upload_parser)
 
 
-def add_flows_param(
-    parser: argparse.ArgumentParser,
-    help_text: str = "Name of flows file to upload to Rasa Studio. Works with --calm",
-    default_path: str = "flows.yml",
-) -> None:
-    parser.add_argument(
-        "--flows",
-        default=default_path,
-        nargs="+",
-        type=str,
-        help=help_text,
-    )
-
-
 def set_upload_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for running `rasa upload`."""
     add_data_param(parser, data_type="training")
     add_domain_param(parser)
-    add_flows_param(parser)
     add_config_param(parser)
     add_endpoint_param(parser, help_text="Path to the endpoints file.")
 

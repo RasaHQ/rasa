@@ -305,7 +305,7 @@ def _validate_domain(validator: "Validator") -> bool:
     valid_forms_in_stories_rules = validator.verify_forms_in_stories_rules()
     valid_form_slots = validator.verify_form_slots()
     valid_slot_mappings = validator.verify_slot_mappings()
-    valid_responses = validator.check_for_no_empty_paranthesis_in_responses()
+    valid_responses = validator.check_for_no_empty_parenthesis_in_responses()
     valid_buttons = validator.validate_button_payloads()
     return (
         valid_domain_validity
