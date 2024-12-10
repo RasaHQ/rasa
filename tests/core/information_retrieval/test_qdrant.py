@@ -40,6 +40,24 @@ def test_qdrant_store_connect(embeddings: Embeddings) -> None:
     assert client.client.metadata_payload_key == "extra"
 
 
+def test_qdrant_store_vector_name(embeddings: Embeddings) -> None:
+    client = Qdrant_Store(embeddings)
+    client.connect(
+        EndpointConfig(
+            location=":memory:",
+            collection_name="test",
+            content_payload_key="content",
+            metadata_payload_key="extra",
+            vector_name="vector",
+        )
+    )
+    assert client.client is not None
+    assert isinstance(client.client, Qdrant)
+    assert client.client.content_payload_key == "content"
+    assert client.client.metadata_payload_key == "extra"
+    assert client.client.vector_name == "vector"
+
+
 async def test_qdrant_search_raises_PayloadNotFoundException(
     monkeypatch: MonkeyPatch,
     embeddings: Embeddings,
