@@ -617,7 +617,7 @@ def test_dump_and_restore_as_json(
         assert restored_tracker == tracker
 
 
-def test_read_json_dump(default_agent: Agent):
+def test_read_json_dump(default_agent: Agent) -> object:
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
 

@@ -12,12 +12,12 @@ import rasa.studio.data_handler
 import rasa.studio.download
 from rasa.studio.config import StudioConfig
 from tests.studio.conftest import (
-    CALM_CONFIG_YAML,
     CALM_CUSTOMIZED_PATTERNS_YAML,
-    CALM_DOMAIN_YAML,
     CALM_ENDPOINTS_YAML,
-    CALM_FLOWS_YAML,
     encode_yaml,
+    get_calm_config_yaml,
+    get_calm_domain_yaml,
+    get_flows_yaml,
     mock_questionary_text,
 )
 
@@ -25,8 +25,8 @@ from tests.studio.conftest import (
 @pytest.mark.parametrize(
     "overwrite, flow_yaml",
     [
-        (True, CALM_FLOWS_YAML),
-        (False, CALM_FLOWS_YAML),
+        (True, get_flows_yaml("data/upload/calm/data/flows.yml")),
+        (False, get_flows_yaml("data/upload/calm/data/flows.yml")),
         (True, CALM_CUSTOMIZED_PATTERNS_YAML),
         (False, CALM_CUSTOMIZED_PATTERNS_YAML),
     ],
@@ -82,12 +82,15 @@ def test_handle_download(
         rasa.studio.download.questionary, "confirm", mock_questionary_text
     )
 
+    calm_domain_yaml = get_calm_domain_yaml("data/upload/calm/domain/")
+    calm_config_yaml = get_calm_config_yaml("data/upload/calm/config.yml")
+
     data = {
         "data": {
             "exportAsEncodedYaml": {
-                "domain": encode_yaml(CALM_DOMAIN_YAML),
+                "domain": encode_yaml(calm_domain_yaml),
                 "flows": encode_yaml(flow_yaml),
-                "config": encode_yaml(CALM_CONFIG_YAML),
+                "config": encode_yaml(calm_config_yaml),
                 "endpoints": encode_yaml(CALM_ENDPOINTS_YAML),
             }
         },
@@ -104,6 +107,6 @@ def test_handle_download(
     rasa.studio.download.handle_download(args)
 
     assert data_path.read_text() == flow_yaml
-    assert domain_path.read_text() == CALM_DOMAIN_YAML
-    assert config_path.read_text() == CALM_CONFIG_YAML
+    assert domain_path.read_text() == calm_domain_yaml
+    assert config_path.read_text() == calm_config_yaml
     assert endpoints_path.read_text() == CALM_ENDPOINTS_YAML

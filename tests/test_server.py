@@ -55,8 +55,6 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     DEFAULT_SLOT_NAMES,
     REQUESTED_SLOT,
-    SLOT_CONSECUTIVE_SILENCE_TIMEOUTS,
-    SLOT_SILENCE_TIMEOUT,
 )
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
@@ -1119,8 +1117,6 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
     assert content["slots"] == {
         "name": None,
         **{slot: None for slot in DEFAULT_SLOT_NAMES},
-        SLOT_CONSECUTIVE_SILENCE_TIMEOUTS: 0.0,
-        SLOT_SILENCE_TIMEOUT: 6.0,
     }
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [

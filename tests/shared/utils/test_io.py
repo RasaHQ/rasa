@@ -257,10 +257,23 @@ def test_environment_variable_with_dollar_char_in_the_middle():
     assert content["model"]["test1"] == "test$123"
 
 
-def test_does_not_resolve_sensitive_environment_variable():
-    os.environ["AZURE_API_KEY_FR"] = "1234"
-    os.environ["AZURE_API_BASE_GPT3_5_TURBO_FR"] = "gpt-3.5-turbo"
-    os.environ["AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE"] = "deployment"
+def test_does_not_resolve_sensitive_environment_variable(monkeypatch):
+    monkeypatch.setenv("AZURE_API_KEY_FR", "1234")
+    monkeypatch.setenv("AZURE_API_BASE_GPT3_5_TURBO_FR", "gpt-3.5-turbo")
+    monkeypatch.setenv("AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE", "deployment")
+
+    monkeypatch.setenv(
+        "AWS_ACCESS_KEY_ID_TEST",
+        "access_key_id_in_test_does_not_resolve_sensitive_environment_variable",
+    )
+    monkeypatch.setenv(
+        "AWS_SECRET_ACCESS_KEY_TEST",
+        "secret_access_key_in_test_does_not_resolve_sensitive_environment_variable",
+    )
+    monkeypatch.setenv(
+        "AWS_SESSION_TOKEN_TEST",
+        "session_token_in_test_does_not_resolve_sensitive_environment_variable",
+    )
 
     content = """
     model_groups:
@@ -271,6 +284,12 @@ def test_does_not_resolve_sensitive_environment_variable():
             api_base: ${AZURE_API_BASE_GPT3_5_TURBO_FR}
             api_key: ${AZURE_API_KEY_FR}
             timeout: 14
+          - provider: bedrock
+            model: anthropic.claude-3-5-sonnet-test
+            aws_access_key_id: ${AWS_ACCESS_KEY_ID_TEST}
+            aws_secret_access_key: ${AWS_SECRET_ACCESS_KEY_TEST}
+            aws_region_name: us-east-1
+            aws_session_token: ${AWS_SESSION_TOKEN_TEST}
     """
 
     content = read_yaml(content)
@@ -278,6 +297,19 @@ def test_does_not_resolve_sensitive_environment_variable():
     assert content["model_groups"][0]["models"][0]["api_key"] == "${AZURE_API_KEY_FR}"
     assert content["model_groups"][0]["models"][0]["deployment"] == "deployment"
     assert content["model_groups"][0]["models"][0]["api_base"] == "gpt-3.5-turbo"
+
+    assert (
+        content["model_groups"][0]["models"][1]["aws_access_key_id"]
+        == "${AWS_ACCESS_KEY_ID_TEST}"
+    )
+    assert (
+        content["model_groups"][0]["models"][1]["aws_secret_access_key"]
+        == "${AWS_SECRET_ACCESS_KEY_TEST}"
+    )
+    assert (
+        content["model_groups"][0]["models"][1]["aws_session_token"]
+        == "${AWS_SESSION_TOKEN_TEST}"
+    )
 
 
 def test_read_yaml_datatime_as_string():

@@ -128,9 +128,12 @@ class DevelopmentInspectProxy(InputChannel):
 
             inspect_path = app.url_for(f"{app.name}.{underlying_webhook.name}.inspect")
 
+            # replace 0.0.0.0 with localhost
+            serve_location = app.serve_location.replace("0.0.0.0", "localhost")
+
             print_info(
                 f"Development inspector for channel {self.name()} is running. To "
-                f"inspect conversations, visit {app.serve_location}{inspect_path}"
+                f"inspect conversations, visit {serve_location}{inspect_path}"
             )
 
         underlying_webhook.add_websocket_route(

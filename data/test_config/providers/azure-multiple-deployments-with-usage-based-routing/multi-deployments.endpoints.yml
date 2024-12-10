@@ -65,5 +65,9 @@ model_groups:
         timeout: 7
         num_retries: 5
     router:
-      routing_strategy: least-busy
+      routing_strategy: usage-based-routing
+      num_retries: 5
+      timeout: 30 
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
       cache_responses: True

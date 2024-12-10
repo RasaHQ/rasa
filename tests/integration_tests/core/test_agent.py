@@ -92,14 +92,13 @@ def test_load_model_from_aws_remote_storage_sub_path(
 ) -> None:
     """Test to load model from AWS remote storage."""
     model_name = Path(trained_rasa_model).name
-    full_model_name = os.path.join(remote_storage_path, model_name)
     conn = boto3.resource("s3", region_name=region_name)
     # We need to create the bucket in Moto's 'virtual' AWS account
     # prior to AWSPersistor instantiation
     conn.create_bucket(Bucket=bucket_name)
     # upload model file to bucket
     with open(trained_rasa_model, "rb") as f:
-        conn.meta.client.upload_fileobj(f, bucket_name, full_model_name)
+        conn.meta.client.upload_fileobj(f, bucket_name, model_name)
 
     def mock_aws_persistor(name: Text) -> AWSPersistor:
         aws_persistor = AWSPersistor(bucket_name, region_name=region_name)
