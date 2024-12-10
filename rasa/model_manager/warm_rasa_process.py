@@ -74,7 +74,19 @@ def initialize_warm_rasa_process() -> None:
         warm_rasa_processes.append(_create_warm_rasa_process())
 
 
-def get_warm_rasa_process() -> WarmRasaProcess:
+def start_rasa_process(cwd: str, arguments: List[str]) -> WarmRasaProcess:
+    """Start a Rasa process.
+
+    This will start a Rasa process with the given current working directory
+    and arguments. The process will be a warm one, meaning that it has already
+    imported all necessary modules.
+    """
+    warm_rasa_process = _get_warm_rasa_process()
+    _pass_arguments_to_process(warm_rasa_process.process, cwd, arguments)
+    return warm_rasa_process
+
+
+def _get_warm_rasa_process() -> WarmRasaProcess:
     """Get a warm Rasa process.
 
     This will return a warm Rasa process from the pool and create a
@@ -101,7 +113,7 @@ def get_warm_rasa_process() -> WarmRasaProcess:
     return previous_warm_rasa_process
 
 
-def pass_arguments_to_process(
+def _pass_arguments_to_process(
     process: subprocess.Popen, cwd: str, arguments: List[str]
 ) -> None:
     """Pass arguments to a warm Rasa process.

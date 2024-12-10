@@ -8,7 +8,6 @@ from pydantic import BaseModel, ConfigDict
 from enum import Enum
 
 from rasa.exceptions import ModelNotFound
-from rasa.model_manager.trainer_service import pass_arguments_to_process
 from rasa.model_manager.utils import (
     models_base_path,
     subpath,
@@ -18,7 +17,7 @@ from rasa.constants import MODEL_ARCHIVE_EXTENSION
 
 from rasa.model_manager import config
 from rasa.model_manager.utils import logs_path
-from rasa.model_manager.warm_rasa_process import get_warm_rasa_process
+from rasa.model_manager.warm_rasa_process import start_rasa_process
 
 structlogger = structlog.get_logger()
 
@@ -206,9 +205,7 @@ def start_bot_process(
         arguments=" ".join(arguments),
     )
 
-    warm_process = get_warm_rasa_process()
-
-    pass_arguments_to_process(warm_process.process, bot_base_path, arguments)
+    warm_process = start_rasa_process(cwd=bot_base_path, arguments=arguments)
 
     internal_bot_url = f"http://localhost:{port}"
 

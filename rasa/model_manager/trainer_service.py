@@ -14,8 +14,7 @@ from enum import Enum
 
 from rasa.model_manager import config
 from rasa.model_manager.warm_rasa_process import (
-    get_warm_rasa_process,
-    pass_arguments_to_process,
+    start_rasa_process,
 )
 from rasa.model_training import generate_random_model_name
 from rasa.model_manager.utils import ensure_base_directory_exists, logs_path
@@ -284,9 +283,7 @@ def start_training_process(
         "model_trainer.training_arguments", arguments=" ".join(arguments)
     )
 
-    warm_process = get_warm_rasa_process()
-
-    pass_arguments_to_process(warm_process.process, training_base_path, arguments)
+    warm_process = start_rasa_process(cwd=training_base_path, arguments=arguments)
 
     structlogger.info(
         "model_trainer.training_started",
