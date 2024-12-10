@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 import structlog
+from _pytest.logging import LogCaptureFixture
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.dialogue_understanding.coexistence.intent_based_router import (
     IntentBasedRouter,
@@ -34,8 +35,9 @@ from rasa.engine.validation import (
     validate_coexistance_routing_setup,
     validate_intent_based_router_position,
     validate_command_generator_exclusivity,
-    validate_model_client_configuration_setup,
+    validate_model_client_configuration_setup_during_training_time,
     validate_model_group_configuration_setup,
+    validate_model_client_configuration_setup_during_inference_time,
 )
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
@@ -2128,7 +2130,7 @@ def test_validate_llm_configuration_setup(
     monkeypatch.setattr("rasa.engine.validation.AvailableEndpoints", mock_endpoints)
 
     config = {"pipeline": pipeline_config}
-    validate_model_client_configuration_setup(config)
+    validate_model_client_configuration_setup_during_training_time(config)
 
     if should_exit:
         patch_print_error_and_exit.assert_called_once()
@@ -2139,6 +2141,188 @@ def test_validate_llm_configuration_setup(
         patch_warning.assert_called_once()
     else:
         patch_warning.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "component_node_config, set_model_groups_in_endpoints, should_raise_error",
+    [
+        # Model groups exist in endpoints
+        (
+            {
+                "llm": {"model_group": "test-gpt"},
+                "embeddings": {"model_group": "test-embeddings"},
+            },
+            True,
+            False,
+        ),
+        # LLM model group does not exist in endpoints
+        (
+            {
+                "llm": {"model_group": "test-gpt-undefined-in-model-groups"},
+                "embeddings": {"model_group": "test-embeddings"},
+            },
+            True,
+            True,
+        ),
+        # Embeddings model group does not exist in endpoints
+        (
+            {
+                "llm": {"model_group": "test-gpt"},
+                "embeddings": {
+                    "model_group": "test-embeddings-undefined-in-model-groups"
+                },
+            },
+            True,
+            True,
+        ),
+        # Endpoints have no model groups defined
+        (
+            {
+                "llm": {"model_group": "test-gpt"},
+                "embeddings": {"model_group": "test-embeddings"},
+            },
+            False,
+            True,
+        ),
+        # No model groups are used with defined endpoints
+        (
+            {
+                "llm": {"provider": "openai", "model": "test-gpt"},
+                "embeddings": {"provider": "openai", "model": "test-gpt"},
+            },
+            True,
+            False,
+        ),
+        # No model groups are used with undefined endpoints
+        (
+            {
+                "llm": {"provider": "openai", "model": "test-gpt"},
+                "embeddings": {"provider": "openai", "model": "test-gpt"},
+            },
+            False,
+            False,
+        ),
+        # Config with flow retrieval uses model groups correctly
+        (
+            {
+                "llm": {"model_group": "test-gpt"},
+                "flow_retrieval": {"model_group": "test-embeddings"},
+            },
+            True,
+            False,
+        ),
+        # Config with flow retrieval uses model group that does not exist in endpoints
+        (
+            {
+                "llm": {"model_group": "test-gpt"},
+                "flow_retrieval": {
+                    "model_group": "test-embeddings-undefined-in-model-groups"
+                },
+            },
+            True,
+            False,
+        ),
+        # No model groups are used
+        (
+            {
+                "llm": {"provider": "openai", "model": "test-gpt"},
+                "embeddings": {"provider": "openai", "model": "test-gpt"},
+            },
+            True,
+            False,
+        ),
+        # Empty config 1
+        ({}, True, False),
+        # Empty config 2
+        ({}, False, False),
+    ],
+)
+def test_validate_model_client_configuration_setup_during_inference_time(
+    component_node_config: Dict,
+    set_model_groups_in_endpoints: bool,
+    should_raise_error: bool,
+    caplog: LogCaptureFixture,
+    monkeypatch: Any,
+):
+    class MockAvailableEndpoints:
+        @staticmethod
+        def get_instance():
+            return MockAvailableEndpoints()
+
+        def __init__(self):
+            self.nlg = None
+            if not set_model_groups_in_endpoints:
+                self.model_groups = None
+            else:
+                self.model_groups = [
+                    {
+                        "id": "test-gpt",
+                        "models": [
+                            {
+                                "provider": "openai",
+                                "model": "gpt-4",
+                                "api_key": "tedst",
+                            },
+                            {
+                                "provider": "azure",
+                                "deployment": "my-llm-azure-deployment",
+                                "api_key": "test",
+                                "api_base": "test-base",
+                                "api_version": "test-version",
+                                "num_retries": 100,
+                                "timeout": 100,
+                            },
+                        ],
+                        "router": {"routing_strategy": "test"},
+                    },
+                    {
+                        "id": "test-embeddings",
+                        "models": [
+                            {
+                                "provider": "openai",
+                                "model": "text-embedding-3-small",
+                                "api_key": "mock key in test_tracing_rephraser",
+                            },
+                            {
+                                "provider": "azure",
+                                "deployment": "my-azure-embedding-deployment",
+                                "api_key": "test",
+                                "api_base": "test-base",
+                                "api_version": "test-version",
+                                "num_retries": 100,
+                                "timeout": 100,
+                            },
+                        ],
+                        "router": {"routing_strategy": "test"},
+                    },
+                ]
+
+    # Given
+    model_metadata = Mock()
+    model_metadata.predict_schema = GraphSchema(
+        {
+            "test_component": SchemaNode(
+                needs={},
+                uses=Mock,
+                fn="run_inference",
+                constructor_name="load",
+                config=component_node_config,
+                is_target=True,
+                resource=Mock(),
+            )
+        }
+    )
+
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.engine.validation.AvailableEndpoints", mock_endpoints)
+
+    if should_raise_error:
+        with pytest.raises(SystemExit):
+            validate_model_client_configuration_setup_during_inference_time(
+                model_metadata
+            )
+    else:
+        validate_model_client_configuration_setup_during_inference_time(model_metadata)
 
 
 @pytest.mark.parametrize(

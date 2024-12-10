@@ -52,7 +52,7 @@ from rasa.engine.graph import (
     GraphModelConfiguration,
 )
 from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.storage import ModelStorage, ModelMetadata
 from rasa.engine.training.fingerprinting import Fingerprintable
 from rasa.shared.constants import (
     DOCS_URL_GRAPH_COMPONENTS,
@@ -919,7 +919,9 @@ def _validate_component_model_client_config(
             )
 
 
-def validate_model_client_configuration_setup(config: Dict[str, Any]) -> None:
+def validate_model_client_configuration_setup_during_training_time(
+    config: Dict[str, Any],
+) -> None:
     """Validates the model client configuration setup.
 
     Checks the model configuration of the components in the pipeline.
@@ -1020,6 +1022,102 @@ def validate_model_client_configuration_setup(config: Dict[str, Any]) -> None:
                 f"model groups ({existing_model_group_ids}) or define "
                 f"the a model group for '{model_group_id}'."
             )
+
+
+def _validate_component_model_client_config_has_references_to_endpoints(
+    component_config: Dict[Text, Any],
+    key: str,
+    component_name: Optional[Text] = None,
+) -> None:
+    """Validates that the specified client configuration references a valid model group
+    defined in the `endpoints.yml` file.
+
+    This function ensures that when the client configuration for a component uses the
+    `model_group` key, the referenced model group exists in the `endpoints.yml` file.
+    If the referenced model group is missing or invalid, an error is raised.
+
+    Args:
+        component_config: The configuration dictionary for the component being
+            validated.
+        key: 'llm' or 'embeddings'
+        component_name: Optional; the name of the component being validated, used for
+            error messages.
+
+    Raises:
+        SystemExit: If the referenced model group is missing or invalid.
+    """
+    if key not in component_config:
+        # no llm/embeddings configuration present
+        return
+
+    endpoints = AvailableEndpoints.get_instance()
+
+    if MODEL_GROUP_CONFIG_KEY in component_config[key]:
+        referencing_model_group_id = component_config[key][MODEL_GROUP_CONFIG_KEY]
+
+        if endpoints.model_groups is None:
+            print_error_and_exit(
+                f"Your {component_name or component_config.get('name') or ''} "
+                f"component's '{key}' configuration of the trained model references "
+                f"the model group '{referencing_model_group_id}', "
+                f"but NO MODEL GROUPS ARE DEFINED in the endpoints.yml file. "
+                f"Please add a definition for the required model group in the "
+                f"endpoints.yml file."
+            )
+
+        existing_model_group_ids = [
+            model_group[MODEL_GROUP_ID_CONFIG_KEY]
+            for model_group in endpoints.model_groups
+        ]
+
+        if referencing_model_group_id not in existing_model_group_ids:
+            print_error_and_exit(
+                f"Your {component_name or component_config.get('name') or ''} "
+                f"component's '{key}' configuration of the trained model references "
+                f"the model group '{referencing_model_group_id}', "
+                f"but this model group DOES NOT EXIST in the endpoints.yml file. "
+                f"The endpoints.yml defines the following model groups: "
+                f"{existing_model_group_ids}. "
+                f"Please add a definition for the required model group in the "
+                f"endpoints.yml file."
+            )
+
+
+def validate_model_client_configuration_setup_during_inference_time(
+    model_metadata: ModelMetadata,
+) -> None:
+    for (
+        component_node_name,
+        component_node,
+    ) in model_metadata.predict_schema.nodes.items():
+        for client_config_key in [EMBEDDINGS_CONFIG_KEY, LLM_CONFIG_KEY]:
+            if client_config_key not in component_node.config:
+                continue
+
+            _validate_component_model_client_config_has_references_to_endpoints(
+                component_config=component_node.config,
+                key=client_config_key,
+                component_name=component_node_name,
+            )
+
+            # as flow retrieval is not a component itself, we need to
+            # check it separately
+            if FLOW_RETRIEVAL_KEY in component_node.config:
+                if EMBEDDINGS_CONFIG_KEY in component_node.config[FLOW_RETRIEVAL_KEY]:
+                    _validate_component_model_client_config_has_references_to_endpoints(
+                        component_config=component_node.config[FLOW_RETRIEVAL_KEY],
+                        key=EMBEDDINGS_CONFIG_KEY,
+                        component_name=component_node_name + "." + FLOW_RETRIEVAL_KEY,
+                    )
+
+    # also include the ContextualResponseRephraser component
+    endpoints = AvailableEndpoints.get_instance()
+    if endpoints.nlg is not None:
+        _validate_component_model_client_config_has_references_to_endpoints(
+            component_config=endpoints.nlg.kwargs,
+            key=LLM_CONFIG_KEY,
+            component_name=ContextualResponseRephraser.__name__,
+        )
 
 
 def _validate_unique_model_group_ids(model_groups: List[Dict[str, Any]]) -> None:
