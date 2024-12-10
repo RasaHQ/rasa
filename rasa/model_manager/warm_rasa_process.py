@@ -91,6 +91,10 @@ def get_warm_rasa_process() -> WarmRasaProcess:
         # process has finished (for some reason...)
         # back up plan is to create a new one on the spot.
         # this should not happen, but let's be safe
+        structlogger.warning(
+            "model_trainer.warm_rasa_process_finished_unexpectedly",
+            pid=previous_warm_rasa_process.process.pid,
+        )
         previous_warm_rasa_process = _create_warm_rasa_process()
 
     warm_rasa_processes.append(_create_warm_rasa_process())
