@@ -39,7 +39,10 @@ from rasa.model_manager.utils import (
     models_base_path,
     subpath,
 )
-from rasa.model_manager.warm_rasa_process import initialize_warm_rasa_process
+from rasa.model_manager.warm_rasa_process import (
+    initialize_warm_rasa_process,
+    shutdown_warm_rasa_processes,
+)
 
 dotenv.load_dotenv()
 
@@ -127,6 +130,7 @@ def internal_blueprint() -> Blueprint:
         structlogger.debug("model_api.cleanup_processes.started")
         cleanup_training_processes()
         cleanup_bot_processes()
+        shutdown_warm_rasa_processes()
 
     @bp.after_server_start
     async def create_warm_rasa_processes(

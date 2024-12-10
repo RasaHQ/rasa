@@ -74,6 +74,14 @@ def initialize_warm_rasa_process() -> None:
         warm_rasa_processes.append(_create_warm_rasa_process())
 
 
+def shutdown_warm_rasa_processes() -> None:
+    """Shutdown all warm Rasa processes."""
+    global warm_rasa_processes
+    for warm_rasa_process in warm_rasa_processes:
+        warm_rasa_process.process.terminate()
+    warm_rasa_processes = []
+
+
 def start_rasa_process(cwd: str, arguments: List[str]) -> WarmRasaProcess:
     """Start a Rasa process.
 
