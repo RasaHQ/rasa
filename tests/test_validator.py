@@ -1949,7 +1949,7 @@ def test_validator_check_for_empty_paranthesis_in_text_response() -> None:
         """
     )
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
-    assert validator.check_for_no_empty_paranthesis_in_responses() is False
+    assert validator.check_for_no_empty_parenthesis_in_responses() is False
 
 
 def test_validator_check_for_empty_paranthesis_in_image_response() -> None:
@@ -1964,7 +1964,7 @@ def test_validator_check_for_empty_paranthesis_in_image_response() -> None:
     )
 
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
-    assert validator.check_for_no_empty_paranthesis_in_responses() is False
+    assert validator.check_for_no_empty_parenthesis_in_responses() is False
 
 
 def test_validator_check_for_empty_paranthesis_in_button_response() -> None:
@@ -1983,7 +1983,7 @@ def test_validator_check_for_empty_paranthesis_in_button_response() -> None:
     )
 
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
-    assert validator.check_for_no_empty_paranthesis_in_responses() is False
+    assert validator.check_for_no_empty_parenthesis_in_responses() is False
 
 
 def test_validator_check_for_empty_paranthesis_in_text_button_response() -> None:
@@ -2002,7 +2002,7 @@ def test_validator_check_for_empty_paranthesis_in_text_button_response() -> None
     )
 
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
-    assert validator.check_for_no_empty_paranthesis_in_responses() is False
+    assert validator.check_for_no_empty_parenthesis_in_responses() is False
 
 
 def test_validator_check_for_empty_paranthesis_in_custom_response() -> None:
@@ -2020,7 +2020,7 @@ def test_validator_check_for_empty_paranthesis_in_custom_response() -> None:
     )
 
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
-    assert validator.check_for_no_empty_paranthesis_in_responses() is False
+    assert validator.check_for_no_empty_parenthesis_in_responses() is False
 
 
 def test_validator_check_for_empty_paranthesis_multiple_errors() -> None:
@@ -2052,7 +2052,7 @@ def test_validator_check_for_empty_paranthesis_multiple_errors() -> None:
     )
 
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
-    assert validator.check_for_no_empty_paranthesis_in_responses() is False
+    assert validator.check_for_no_empty_parenthesis_in_responses() is False
 
 
 def test_validator_check_for_empty_paranthesis_all_good() -> None:
@@ -2084,7 +2084,7 @@ def test_validator_check_for_empty_paranthesis_all_good() -> None:
     )
 
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
-    assert validator.check_for_no_empty_paranthesis_in_responses() is True
+    assert validator.check_for_no_empty_parenthesis_in_responses() is True
 
 
 def test_validator_fail_as_both_utterance_and_action_defined_for_collect() -> None:

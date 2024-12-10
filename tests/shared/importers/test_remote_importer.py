@@ -20,11 +20,8 @@ from rasa.shared.core.constants import (
     DEFAULT_INTENTS,
     DEFAULT_SLOT_NAMES,
     REQUESTED_SLOT,
-    SILENCE_TIMEOUT_DEFAULT_VALUE,
-    SLOT_CONSECUTIVE_SILENCE_TIMEOUTS,
-    SLOT_SILENCE_TIMEOUT,
 )
-from rasa.shared.core.slots import AnySlot, FloatSlot
+from rasa.shared.core.slots import AnySlot
 from rasa.shared.importers.remote_importer import RemoteTrainingDataImporter
 from tests.utilities import TarFileEntry, create_tar_archive_in_bytes
 
@@ -213,16 +210,6 @@ def test_remote_file_importer(
         for slot_name in DEFAULT_SLOT_NAMES
         if slot_name != REQUESTED_SLOT
     ]
-    default_slots.append(
-        FloatSlot(
-            SLOT_SILENCE_TIMEOUT,
-            mappings={},
-            initial_value=SILENCE_TIMEOUT_DEFAULT_VALUE,
-        )
-    )
-    default_slots.append(
-        FloatSlot(SLOT_CONSECUTIVE_SILENCE_TIMEOUTS, mappings={}, initial_value=0.0)
-    )
     assert sorted(domain.slots, key=lambda s: s.name) == sorted(
         default_slots, key=lambda s: s.name
     )

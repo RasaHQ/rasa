@@ -71,6 +71,7 @@ class AssertionType(Enum):
     SLOT_WAS_SET = "slot_was_set"
     SLOT_WAS_NOT_SET = "slot_was_not_set"
     BOT_UTTERED = "bot_uttered"
+    BOT_DID_NOT_UTTER = "bot_did_not_utter"
     GENERATIVE_RESPONSE_IS_RELEVANT = "generative_response_is_relevant"
     GENERATIVE_RESPONSE_IS_GROUNDED = "generative_response_is_grounded"
 
@@ -722,6 +723,7 @@ class BotUtteredAssertion(Assertion):
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the bot_uttered assertion on the given events for that user turn."""
         matching_event = None
+        error_messages = []
 
         if self.utter_name is not None:
             try:
@@ -732,11 +734,8 @@ class BotUtteredAssertion(Assertion):
                     and event.metadata.get("utter_action") == self.utter_name
                 )
             except StopIteration:
-                error_message = f"Bot did not utter '{self.utter_name}' response."
-                error_message += assertion_order_error_message
-
-                return self._generate_assertion_failure(
-                    error_message, prior_events, turn_events, self.line
+                error_messages.append(
+                    f"Bot did not utter '{self.utter_name}' response."
                 )
 
         if self.text_matches is not None:
@@ -748,15 +747,10 @@ class BotUtteredAssertion(Assertion):
                     if isinstance(event, BotUttered) and pattern.search(event.text)
                 )
             except StopIteration:
-                error_message = (
+                error_messages.append(
                     f"Bot did not utter any response which "
                     f"matches the provided text pattern "
                     f"'{self.text_matches}'."
-                )
-                error_message += assertion_order_error_message
-
-                return self._generate_assertion_failure(
-                    error_message, prior_events, turn_events, self.line
                 )
 
         if self.buttons:
@@ -767,13 +761,16 @@ class BotUtteredAssertion(Assertion):
                     if isinstance(event, BotUttered) and self._buttons_match(event)
                 )
             except StopIteration:
-                error_message = (
+                error_messages.append(
                     "Bot did not utter any response with the expected buttons."
                 )
-                error_message += assertion_order_error_message
-                return self._generate_assertion_failure(
-                    error_message, prior_events, turn_events, self.line
-                )
+
+        if error_messages:
+            error_message = " ".join(error_messages)
+            error_message += assertion_order_error_message
+            return self._generate_assertion_failure(
+                error_message, prior_events, turn_events, self.line
+            )
 
         return None, matching_event
 
@@ -800,6 +797,126 @@ class BotUtteredAssertion(Assertion):
         )
 
     def __hash__(self) -> int:
+        return hash(json.dumps(self.as_dict()))
+
+
+@dataclass
+class BotDidNotUtterAssertion(Assertion):
+    """Class for the 'bot_did_not_utter' assertion."""
+
+    utter_name: Optional[str] = None
+    text_matches: Optional[str] = None
+    buttons: Optional[List[AssertedButton]] = None
+    line: Optional[int] = None
+
+    @classmethod
+    def type(cls) -> str:
+        return AssertionType.BOT_DID_NOT_UTTER.value
+
+    @staticmethod
+    def from_dict(assertion_dict: Dict[Text, Any]) -> BotDidNotUtterAssertion:
+        """Creates a BotDidNotUtterAssertion from a dictionary."""
+        assertion_dict = assertion_dict.get(AssertionType.BOT_DID_NOT_UTTER.value, {})
+        utter_name = assertion_dict.get("utter_name")
+        text_matches = assertion_dict.get("text_matches")
+        buttons = [
+            AssertedButton.from_dict(button)
+            for button in assertion_dict.get("buttons", [])
+        ]
+
+        if not utter_name and not text_matches and not buttons:
+            raise RasaException(
+                "A 'bot_did_not_utter' assertion is empty. "
+                "It should contain at least one of the allowed properties: "
+                "'utter_name', 'text_matches', or 'buttons'."
+            )
+
+        return BotDidNotUtterAssertion(
+            utter_name=utter_name,
+            text_matches=text_matches,
+            buttons=buttons,
+            line=assertion_dict.lc.line + 1 if hasattr(assertion_dict, "lc") else None,
+        )
+
+    def run(
+        self,
+        turn_events: List[Event],
+        prior_events: List[Event],
+        assertion_order_error_message: str = "",
+        **kwargs: Any,
+    ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
+        """Checks that the bot did not utter the specified messages or buttons."""
+        for event in turn_events:
+            if isinstance(event, BotUttered):
+                error_messages = []
+                if self._utter_name_matches(event):
+                    error_messages.append(
+                        f"Bot uttered a forbidden utterance '{self.utter_name}'."
+                    )
+                if self._text_matches(event):
+                    error_messages.append(
+                        f"Bot uttered a forbidden message matching "
+                        f"the pattern '{self.text_matches}'."
+                    )
+                if self._buttons_match(event):
+                    error_messages.append(
+                        "Bot uttered a forbidden response with specified buttons."
+                    )
+
+                if error_messages:
+                    error_message = " ".join(error_messages)
+                    error_message += assertion_order_error_message
+                    return self._generate_assertion_failure(
+                        error_message, prior_events, turn_events, self.line
+                    )
+        return None, None
+
+    def _utter_name_matches(self, event: BotUttered) -> bool:
+        if self.utter_name is not None:
+            if event.metadata.get("utter_action") == self.utter_name:
+                return True
+        return False
+
+    def _text_matches(self, event: BotUttered) -> bool:
+        if self.text_matches is not None:
+            pattern = re.compile(self.text_matches)
+            if pattern.search(event.text):
+                return True
+        return False
+
+    def _buttons_match(self, event: BotUttered) -> bool:
+        """Check if the bot response contains any of the forbidden buttons."""
+        if self.buttons is None:
+            return False
+
+        actual_buttons = event.data.get("buttons", [])
+        if not actual_buttons:
+            return False
+
+        for actual_button in actual_buttons:
+            if any(
+                self._is_forbidden_button(actual_button, forbidden_button)
+                for forbidden_button in self.buttons
+            ):
+                return True
+        return False
+
+    @staticmethod
+    def _is_forbidden_button(
+        actual_button: Dict[str, Any], forbidden_button: AssertedButton
+    ) -> bool:
+        """Check if the button matches any of the forbidden buttons."""
+        actual_title = actual_button.get("title")
+        actual_payload = actual_button.get("payload")
+
+        title_matches = forbidden_button.title == actual_title
+        payload_matches = forbidden_button.payload == actual_payload
+        if title_matches and payload_matches:
+            return True
+        return False
+
+    def __hash__(self) -> int:
+        """Hash method to ensure the assertion is hashable."""
         return hash(json.dumps(self.as_dict()))
 
 

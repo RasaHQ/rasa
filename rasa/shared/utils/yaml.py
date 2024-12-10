@@ -26,7 +26,7 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     SCHEMA_EXTENSIONS_FILE,
     RESPONSES_SCHEMA_FILE,
-    API_KEY,
+    SENSITIVE_DATA,
 )
 from rasa.shared.exceptions import (
     YamlException,
@@ -59,7 +59,6 @@ YAML_VERSION = (1, 2)
 READ_YAML_FILE_CACHE_MAXSIZE = os.environ.get(
     READ_YAML_FILE_CACHE_MAXSIZE_ENV_VAR, DEFAULT_READ_YAML_FILE_CACHE_MAXSIZE
 )
-SENSITIVE_DATA = [API_KEY]
 
 
 @dataclass

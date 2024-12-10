@@ -15,13 +15,12 @@ from rasa.studio.config import StudioConfig
 from rasa.studio.results_logger import with_studio_error_handler, StudioResult
 from rasa.studio.upload import make_request
 from tests.studio.conftest import (
-    CALM_CONFIG_YAML,
-    CALM_CUSTOMIZED_PATTERNS_YAML,
-    CALM_DOMAIN_YAML,
     CALM_ENDPOINTS_YAML,
-    CALM_FLOWS_YAML,
     CALM_NLU_YAML,
     encode_yaml,
+    get_calm_config_yaml,
+    get_calm_domain_yaml,
+    get_flows_yaml,
     mock_questionary_text,
 )
 
@@ -31,7 +30,7 @@ from tests.studio.conftest import (
     [
         (
             argparse.Namespace(
-                domain="data/upload",
+                domain="data/upload/domain.yml",
                 data="data/upload/data",
                 entities=["name"],
                 intents=["greet", "inform"],
@@ -75,10 +74,9 @@ from tests.studio.conftest import (
             argparse.Namespace(
                 assistant_name=["test"],
                 calm=True,
-                domain="data/upload/calm/domain/domain.yml",
-                data=["data/upload/calm/"],
+                domain="data/upload/calm/domain/",
+                data=["data/upload/calm/data/"],
                 config="data/upload/calm/config.yml",
-                flows="data/upload/flows.yml",
                 endpoints="data/upload/calm/endpoints.yml",
             ),
             "http://studio.amazonaws.com/api/graphql",
@@ -91,17 +89,13 @@ from tests.studio.conftest import (
                 "variables": {
                     "input": {
                         "assistantName": "test",
-                        "domain": encode_yaml(CALM_DOMAIN_YAML),
-                        "flows": encode_yaml(CALM_FLOWS_YAML),
+                        "domain": encode_yaml(
+                            get_calm_domain_yaml("data/upload/calm/domain/")
+                        ),
+                        "flows": encode_yaml(get_flows_yaml("data/upload/calm/data/")),
                         "nlu": encode_yaml(CALM_NLU_YAML),
-                        "config": (
-                            "cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgp"
-                            "waXBlbGluZToKLSBuYW1lOiBTaW5nbGVTdGVwTExNQ2"
-                            "9tbWFuZEdlbmVyYXRvcgogIGxsbToKICAgIG1vZGVsX"
-                            "25hbWU6IGdwdC00CnBvbGljaWVzOgotIG5hbWU6IHJh"
-                            "c2EuY29yZS5wb2xpY2llcy5mbG93X3BvbGljeS5GbG9"
-                            "3UG9saWN5CmFzc2lzdGFudElkOiBhNWI1ZDNjNS04OG"
-                            "NmLTRmZTUtODM1Mi1jNDJlN2NmYWE3YjYK"
+                        "config": encode_yaml(
+                            get_calm_config_yaml("data/upload/calm/config.yml")
                         ),
                         "endpoints": "bmxnOgogIHR5cGU6IHJlcGhyYXNlCg==",
                     }
@@ -114,9 +108,10 @@ from tests.studio.conftest import (
                 assistant_name=["test"],
                 calm=True,
                 domain="data/upload/calm/domain/domain.yml",
-                data=["data/upload/customized_default_flows.yml"],
+                data=[
+                    "data/upload/customized_default_flows.yml",
+                ],
                 config="data/upload/calm/config.yml",
-                flows="data/upload/flows.yml",
                 endpoints="data/upload/calm/endpoints.yml",
             ),
             "http://studio.amazonaws.com/api/graphql",
@@ -129,17 +124,15 @@ from tests.studio.conftest import (
                 "variables": {
                     "input": {
                         "assistantName": "test",
-                        "domain": encode_yaml(CALM_DOMAIN_YAML),
-                        "flows": encode_yaml(CALM_CUSTOMIZED_PATTERNS_YAML),
+                        "domain": encode_yaml(
+                            get_calm_domain_yaml("data/upload/calm/domain/domain.yml")
+                        ),
+                        "flows": encode_yaml(
+                            get_flows_yaml("data/upload/customized_default_flows.yml")
+                        ),
                         "nlu": encode_yaml(""),
-                        "config": (
-                            "cmVjaXBlOiBkZWZhdWx0LnYxCmxhbmd1YWdlOiBlbgp"
-                            "waXBlbGluZToKLSBuYW1lOiBTaW5nbGVTdGVwTExNQ2"
-                            "9tbWFuZEdlbmVyYXRvcgogIGxsbToKICAgIG1vZGVsX"
-                            "25hbWU6IGdwdC00CnBvbGljaWVzOgotIG5hbWU6IHJh"
-                            "c2EuY29yZS5wb2xpY2llcy5mbG93X3BvbGljeS5GbG9"
-                            "3UG9saWN5CmFzc2lzdGFudElkOiBhNWI1ZDNjNS04OG"
-                            "NmLTRmZTUtODM1Mi1jNDJlN2NmYWE3YjYK"
+                        "config": encode_yaml(
+                            get_calm_config_yaml("data/upload/calm/config.yml")
                         ),
                         "endpoints": "bmxnOgogIHR5cGU6IHJlcGhyYXNlCg==",
                     }
@@ -325,17 +318,21 @@ def test_build_import_request(assistant_name: str) -> None:
     :param assistant_name: The name of the assistant
     :return: None
     """
-    base64_flows = encode_yaml(CALM_FLOWS_YAML)
-    base64_domain = encode_yaml(CALM_DOMAIN_YAML)
-    base64_config = encode_yaml(CALM_CONFIG_YAML)
+    calm_flows_yaml = get_flows_yaml("data/upload/calm/data/flows.yml")
+    calm_domain_yaml = get_calm_domain_yaml("data/upload/calm/domain/")
+    calm_config_yaml = get_calm_config_yaml("data/upload/calm/config.yml")
+
+    base64_flows = encode_yaml(calm_flows_yaml)
+    base64_domain = encode_yaml(calm_domain_yaml)
+    base64_config = encode_yaml(calm_config_yaml)
     base64_endpoints = encode_yaml(CALM_ENDPOINTS_YAML)
     base64_nlu = encode_yaml(CALM_NLU_YAML)
 
     graphql_req = rasa.studio.upload.build_import_request(
         assistant_name=assistant_name,
-        flows_yaml=CALM_FLOWS_YAML,
-        domain_yaml=CALM_DOMAIN_YAML,
-        config_yaml=CALM_CONFIG_YAML,
+        flows_yaml=calm_flows_yaml,
+        domain_yaml=calm_domain_yaml,
+        config_yaml=calm_config_yaml,
         endpoints=CALM_ENDPOINTS_YAML,
         nlu_yaml=CALM_NLU_YAML,
     )
@@ -356,15 +353,18 @@ def test_build_import_request_no_nlu() -> None:
     assistant_name = "test"
     empty_string = ""
 
-    base64_flows = encode_yaml(CALM_FLOWS_YAML)
-    base64_domain = encode_yaml(CALM_DOMAIN_YAML)
+    calm_flows_yaml = get_flows_yaml("data/upload/calm/data/flows.yml")
+    calm_domain_yaml = get_calm_domain_yaml("data/upload/calm/domain/")
+
+    base64_flows = encode_yaml(calm_flows_yaml)
+    base64_domain = encode_yaml(calm_domain_yaml)
     base64_config = encode_yaml(empty_string)
     base64_endpoints = encode_yaml(empty_string)
 
     graphql_req = rasa.studio.upload.build_import_request(
         assistant_name,
-        flows_yaml=CALM_FLOWS_YAML,
-        domain_yaml=CALM_DOMAIN_YAML,
+        flows_yaml=calm_flows_yaml,
+        domain_yaml=calm_domain_yaml,
         config_yaml=empty_string,
         endpoints=empty_string,
     )
