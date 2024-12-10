@@ -1,0 +1,6 @@
+flows:
+  greeting:
+    description: "Greet the user"
+    name: "greeting"
+    steps:
+        - action: utter_greet

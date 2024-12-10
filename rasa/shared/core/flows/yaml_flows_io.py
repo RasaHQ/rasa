@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Text, Union
+from typing import Any, ClassVar, Dict, List, Optional, Text, Union
 
 import jsonschema
 import ruamel.yaml.nodes as yaml_nodes
@@ -24,6 +24,8 @@ KEY_FLOWS = "flows"
 
 class YAMLFlowsReader:
     """Class that reads flows information in YAML format."""
+
+    expand_env_vars: ClassVar[bool] = True
 
     @classmethod
     def read_from_file(
@@ -217,14 +219,21 @@ class YAMLFlowsReader:
             `Flow`s read from `string`.
         """
         validate_yaml_with_jsonschema(
-            string, FLOWS_SCHEMA_FILE, humanize_error=cls.humanize_flow_error
+            string,
+            FLOWS_SCHEMA_FILE,
+            humanize_error=cls.humanize_flow_error,
+            expand_env_vars=cls.expand_env_vars,
         )
         if add_line_numbers:
-            yaml_content = read_yaml(string, custom_constructor=line_number_constructor)
+            yaml_content = read_yaml(
+                string,
+                custom_constructor=line_number_constructor,
+                expand_env_vars=cls.expand_env_vars,
+            )
             yaml_content = process_yaml_content(yaml_content)
 
         else:
-            yaml_content = read_yaml(string)
+            yaml_content = read_yaml(string, expand_env_vars=cls.expand_env_vars)
 
         return FlowsList.from_json(yaml_content.get(KEY_FLOWS, {}), file_path=file_path)
 

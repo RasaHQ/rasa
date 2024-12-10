@@ -68,7 +68,7 @@ def test_read_schema_file(
 
     # Then
     mock_importlib_resources_files.assert_called_with(PACKAGE_NAME)
-    mock_read_yaml_file.assert_called_with(full_path)
+    mock_read_yaml_file.assert_called_with(full_path, expand_env_vars=True)
 
 
 @pytest.fixture

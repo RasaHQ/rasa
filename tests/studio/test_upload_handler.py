@@ -11,6 +11,7 @@ from pytest import MonkeyPatch
 
 from rasa.shared.exceptions import RasaException
 import rasa.studio.upload
+import rasa.shared.utils.yaml
 from rasa.studio.config import StudioConfig
 from rasa.studio.results_logger import with_studio_error_handler, StudioResult
 from rasa.studio.upload import make_request
@@ -139,6 +140,78 @@ from tests.studio.conftest import (
                 },
             },
         ),
+        # test when endpoints.yml contain an environment variable
+        (
+            argparse.Namespace(
+                assistant_name=["test"],
+                calm=True,
+                domain="data/upload/calm/domain/",
+                data=["data/upload/calm/data/"],
+                config="data/upload/calm/config.yml",
+                endpoints="data/upload/endpoints_with_env_var.yml",
+            ),
+            "http://studio.amazonaws.com/api/graphql",
+            {
+                "query": (
+                    "mutation UploadModernAssistant"
+                    "($input: UploadModernAssistantInput!)"
+                    "{\n  uploadModernAssistant(input: $input)\n}"
+                ),
+                "variables": {
+                    "input": {
+                        "assistantName": "test",
+                        "domain": encode_yaml(
+                            get_calm_domain_yaml("data/upload/calm/domain/")
+                        ),
+                        "flows": encode_yaml(get_flows_yaml("data/upload/calm")),
+                        "nlu": encode_yaml(CALM_NLU_YAML),
+                        "config": encode_yaml(
+                            get_calm_config_yaml("data/upload/calm/config.yml")
+                        ),
+                        "endpoints": "bmxnOgogIHVybDogJHtOTEdfVVJMfQo=",
+                    }
+                },
+            },
+        ),
+        # test with domain as directory
+        (
+            argparse.Namespace(
+                assistant_name=["test"],
+                calm=True,
+                domain="data/upload/simple_bot_with_domain_directory/domain",
+                data=["data/upload/simple_bot_with_domain_directory/data/"],
+                config="data/upload/calm/config.yml",
+                endpoints="data/upload/endpoints_with_env_var.yml",
+            ),
+            "http://studio.amazonaws.com/api/graphql",
+            {
+                "query": (
+                    "mutation UploadModernAssistant"
+                    "($input: UploadModernAssistantInput!)"
+                    "{\n  uploadModernAssistant(input: $input)\n}"
+                ),
+                "variables": {
+                    "input": {
+                        "assistantName": "test",
+                        "domain": encode_yaml(
+                            get_calm_domain_yaml(
+                                "data/upload/simple_bot_with_domain_directory/domain"
+                            )
+                        ),
+                        "flows": encode_yaml(
+                            get_flows_yaml(
+                                "data/upload/simple_bot_with_domain_directory/data/"
+                            )
+                        ),
+                        "nlu": encode_yaml(""),
+                        "config": encode_yaml(
+                            get_calm_config_yaml("data/upload/calm/config.yml")
+                        ),
+                        "endpoints": "bmxnOgogIHVybDogJHtOTEdfVVJMfQo=",
+                    }
+                },
+            },
+        ),
     ],
 )
 def test_handle_upload(
@@ -146,6 +219,7 @@ def test_handle_upload(
     args: argparse.Namespace,
     endpoint: str,
     expected: Dict[str, Any],
+    mock_replace_environment_variables: MagicMock,
 ) -> None:
     mock = MagicMock()
     mock_token = MagicMock()
@@ -168,10 +242,21 @@ def test_handle_upload(
 
     rasa.studio.upload.handle_upload(args)
 
+    mock_replace_environment_variables.assert_not_called()
+
     assert mock.post.called
     assert mock.post.call_args[0][0] == endpoint
-    assert mock.post.call_args[1]["json"] == expected
     assert mock.post.call_args[1]["verify"] is True
+    actual_input = mock.post.call_args[1]["json"]["variables"]["input"]
+    expected = expected["variables"]["input"]
+    assert actual_input["assistantName"] == expected["assistantName"]
+    assert actual_input["domain"] == expected["domain"]
+    assert actual_input["nlu"] == expected["nlu"]
+    assert actual_input.get("flows") == expected.get("flows")
+    assert actual_input.get("config") == expected.get("config")
+    assert base64.b64decode(actual_input.get("endpoints", "")).decode("utf-8").replace(
+        "'", ""
+    ) == base64.b64decode(expected.get("endpoints", "")).decode("utf-8")
 
 
 @pytest.mark.parametrize(

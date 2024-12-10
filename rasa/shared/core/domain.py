@@ -196,6 +196,7 @@ class Domain:
     """
 
     validate_yaml: ClassVar[bool] = True
+    expand_env_vars: ClassVar[bool] = True
 
     @classmethod
     def empty(cls) -> Domain:
@@ -1955,8 +1956,8 @@ class Domain:
         """Check whether the domain is empty."""
         return self.as_dict() == Domain.empty().as_dict()
 
-    @staticmethod
-    def is_domain_file(filename: Union[Text, Path]) -> bool:
+    @classmethod
+    def is_domain_file(cls, filename: Union[Text, Path]) -> bool:
         """Checks whether the given file path is a Rasa domain file.
 
         Args:
@@ -1975,7 +1976,7 @@ class Domain:
             return False
 
         try:
-            content = read_yaml_file(filename)
+            content = read_yaml_file(filename, expand_env_vars=cls.expand_env_vars)
         except (RasaException, YamlSyntaxException):
             structlogger.warning(
                 "domain.cannot_load_domain_file",
@@ -2104,10 +2105,12 @@ class Domain:
                 "domain.from_yaml.validating",
             )
             validate_raw_yaml_using_schema_file_with_responses(
-                raw_yaml_content, DOMAIN_SCHEMA_FILE
+                raw_yaml_content,
+                DOMAIN_SCHEMA_FILE,
+                expand_env_vars=cls.expand_env_vars,
             )
 
-        return read_yaml(raw_yaml_content)
+        return read_yaml(raw_yaml_content, expand_env_vars=cls.expand_env_vars)
 
 
 def warn_about_duplicates_found_during_domain_merging(
