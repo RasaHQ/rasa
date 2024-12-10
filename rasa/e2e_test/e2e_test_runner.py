@@ -136,7 +136,7 @@ class E2ETestRunner:
             return turns
 
         tracker = await self.agent.processor.fetch_tracker_with_initial_session(
-            sender_id
+            sender_id, output_channel=collector
         )
         # turn -1 i used to contain events that happen during
         # the start of the session and before the first user message
@@ -826,7 +826,7 @@ class E2ETestRunner:
             return
 
         tracker = await self.agent.processor.fetch_tracker_with_initial_session(
-            sender_id
+            sender_id, output_channel=CollectingOutputChannel()
         )
 
         for fixture in fixtures:

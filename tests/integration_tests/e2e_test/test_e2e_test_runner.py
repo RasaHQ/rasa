@@ -2,16 +2,20 @@ import json
 import os
 import tarfile
 from pathlib import Path
-from typing import Any, Optional, Text, Union
+from typing import Any, Dict, List, Optional, Text, Union
+from unittest.mock import MagicMock, Mock, patch
 
 import boto3
 import pytest
 from moto import mock_aws
-from pytest import MonkeyPatch
+from pytest import MonkeyPatch, CaptureFixture
 
-from rasa.core.agent import Agent
 from rasa.core.persistor import AWSPersistor, RemoteStorageType
+from rasa.core.agent import Agent, load_agent
+from rasa.core.utils import AvailableEndpoints
+from rasa.e2e_test.e2e_test_case import Fixture, TestCase, TestStep
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
+from tests.conftest import TrainedAsync
 
 
 @pytest.fixture
@@ -135,3 +139,110 @@ def test_e2e_test_runner_load_agent_from_remote_storage(
 
     assert test_runner.agent.processor is not None
     assert test_runner.agent.model_name is not None
+
+
+@pytest.fixture(scope="session")
+@patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
+@patch(
+    "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
+)
+@patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
+@patch("rasa.shared.utils.health_check.health_check.try_instantiate_embedder")
+async def trained_custom_action_session_start_calm_bot(
+    mock_try_instantiate_llm_client: Mock,
+    mock_try_instantiate_embedder: Mock,
+    mock_flow_search_create_embedder: Mock,
+    mock_from_documents: Mock,
+    trained_async: TrainedAsync,
+) -> Text:
+    parent_folder = "data/test_e2e_test_runner_with_customised_action_session_start"
+    domain_path = f"{parent_folder}/domain.yml"
+    config_path = f"{parent_folder}/config.yml"
+    data_path = f"{parent_folder}/data"
+
+    mock_try_instantiate_llm_client.return_value = Mock()
+    mock_flow_search_create_embedder.return_value = Mock()
+    mock_from_documents.return_value = Mock()
+    mock_try_instantiate_embedder.return_value = Mock()
+    return await trained_async(
+        domain=domain_path,
+        config=config_path,
+        training_files=[
+            data_path,
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "dispatched_response, fixture_names",
+    [
+        ({"response": "utter_greet"}, ["test_fixture"]),
+        ({"text": "Hello World!"}, ["test_fixture"]),
+        ({"response": "utter_greet"}, []),
+        ({"text": "Hello World!"}, []),
+    ],
+)
+@patch("langchain_community.vectorstores.faiss.FAISS.load_local")
+@patch(
+    "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
+)
+async def test_e2e_test_runner_with_customized_action_session_start(
+    mock_flow_search_create_embedder: Mock,
+    mock_load_local: Mock,
+    monkeypatch: MonkeyPatch,
+    capsys: CaptureFixture,
+    dispatched_response: Dict[str, str],
+    fixture_names: List[str],
+    trained_custom_action_session_start_calm_bot: str,
+) -> None:
+    mock_flow_search_create_embedder.return_value = Mock()
+    mock_load_local.return_value = Mock()
+
+    endpoints_path = (
+        "data/test_e2e_test_runner_with_customised_action_session_start/endpoints.yml"
+    )
+    endpoints = AvailableEndpoints.read_endpoints(endpoints_path)
+    test_agent = await load_agent(
+        model_path=trained_custom_action_session_start_calm_bot, endpoints=endpoints
+    )
+
+    def mock_init(self, *args, **kwargs) -> None:
+        self.agent = test_agent
+        self.llm_judge_config = MagicMock()
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    async def mock_run(self, *args, **kwargs) -> Dict[str, Any]:
+        return {"responses": [dispatched_response]}
+
+    monkeypatch.setattr(
+        "rasa.core.actions.http_custom_action_executor.HTTPCustomActionExecutor.run",
+        mock_run,
+    )
+
+    test_runner = E2ETestRunner()
+    result = await test_runner.run_tests(
+        input_test_cases=[
+            TestCase(
+                steps=[
+                    TestStep.from_dict({"user": "Hi!"}),
+                ],
+                name="test_e2e_test_runner_with_customized_action_session_start",
+                file="data/test_e2e_test_runner_with_customised_action_session_start/e2e_test.yml",
+                fixture_names=fixture_names,
+            )
+        ],
+        input_fixtures=[
+            Fixture.from_dict({"test_fixture": [{"add_contact_handle": "test"}]})
+        ],
+        input_metadata=[],
+    )
+
+    assert result[0].pass_status
+    captured = capsys.readouterr()
+    assert (
+        "Encountered an exception while running action 'action_session_start'"
+        not in captured.out
+    )

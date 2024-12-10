@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock
 
 import pytest
-from pytest import LogCaptureFixture
-from pytest import MonkeyPatch
+
+from pytest import CaptureFixture, MonkeyPatch
 
 from rasa.core.actions.action import RemoteAction, RemoteActionJSONValidator
 from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
@@ -156,7 +156,7 @@ async def test_executor_runs_action_without_response_validation(
 
 
 async def test_executor_runs_action_invalid_actions_module(
-    trained_async: TrainedAsync, caplog: LogCaptureFixture, custom_actions_agent: Agent
+    trained_async: TrainedAsync, capsys: CaptureFixture, custom_actions_agent: Agent
 ):
     """
     Ensure that the inappropriately configured actions_module doesn't
@@ -177,4 +177,5 @@ async def test_executor_runs_action_invalid_actions_module(
         "Bot will continue, but the actions events are lost. "
         "Please check the logs of your action server for more information."
     )
-    assert message in caplog.messages
+    captured = capsys.readouterr()
+    assert message in captured.out
