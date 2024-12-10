@@ -84,7 +84,6 @@ from rasa.shared.core.flows import FlowsList, Flow
 from rasa.shared.core.slots import Slot
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.utils.cli import print_error_and_exit
 
 TypeAnnotation = Union[TypeVar, Text, Type, Optional[AvailableEndpoints]]
 
@@ -900,23 +899,40 @@ def _validate_component_model_client_config(
         model_group_ids.append(component_config[key][MODEL_GROUP_CONFIG_KEY])
 
         if len(component_config[key]) > 1:
-            print_error_and_exit(
-                f"You specified a '{MODEL_GROUP_CONFIG_KEY}' for the '{key}' "
-                f"config key for the component "
-                f"'{component_name or component_config['name']}'. "
-                "No other parameters are allowed under the "
-                f"'{key}' key in that case. Please update your config."
+            structlogger.error(
+                "validation.validate_model_client_configuration_setup"
+                ".only_model_group_reference_key_is_allowed",
+                event_info=(
+                    f"You specified a '{MODEL_GROUP_CONFIG_KEY}' for the '{key}' "
+                    f"config key for the component "
+                    f"'{component_name or component_config['name']}'. "
+                    "No other parameters are allowed under the "
+                    f"'{key}' key in that case. Please update your config."
+                ),
+                component_name=component_name or component_config["name"],
+                component_client_config_key=key,
             )
+            sys.exit(1)
     else:
         model_group_syntax_used.append(False)
 
-        # check that api_key is not set in config
-        if API_KEY in component_config[key]:
-            print_error_and_exit(
-                f"You specified '{API_KEY}' in the config for "
-                f"'{component_name or component_config['name']}', which is not allowed."
-                " Set API keys through environment variables."
-            )
+        # check that any of the sensitive data keys is not set in config
+        for secret_key in SENSITIVE_DATA:
+            if secret_key in component_config[key]:
+                structlogger.error(
+                    "validation.validate_model_client_configuration_setup"
+                    ".secret_key_not_allowed_in_the_config",
+                    event_info=(
+                        f"You specified '{secret_key}' in the config for "
+                        f"'{component_name or component_config['name']}', "
+                        f"which is not allowed. "
+                        "Set secret keys through environment variables."
+                    ),
+                    component_name=component_name or component_config["name"],
+                    component_client_config_key=key,
+                    secret_key=secret_key,
+                )
+                sys.exit(1)
 
 
 def validate_model_client_configuration_setup_during_training_time(
@@ -976,14 +992,19 @@ def validate_model_client_configuration_setup_during_training_time(
         )
 
     if not is_uniform_bool_list(model_group_syntax_used):
-        print_error_and_exit(
-            "Some of your components refer to an LLM using the "
-            f"'{MODEL_GROUP_CONFIG_KEY}' parameter, other components directly"
-            f" define the LLM under the '{LLM_CONFIG_KEY}' or the "
-            f"'{EMBEDDINGS_CONFIG_KEY}' key. You cannot use"
-            " both types of definitions. Please chose one syntax "
-            "and update your config."
+        structlogger.error(
+            "validation.validate_model_client_configuration_setup"
+            ".inconsistent_use_of_model_group_syntax",
+            event_info=(
+                "Some of your components refer to an LLM using the "
+                f"'{MODEL_GROUP_CONFIG_KEY}' parameter, other components directly"
+                f" define the LLM under the '{LLM_CONFIG_KEY}' or the "
+                f"'{EMBEDDINGS_CONFIG_KEY}' key. You cannot use"
+                " both types of definitions. Please chose one syntax "
+                "and update your config."
+            ),
         )
+        sys.exit(1)
 
     # Print a deprecation warning in case the old syntax is used.
     if len(model_group_syntax_used) > 0 and model_group_syntax_used[0] is False:
@@ -999,12 +1020,17 @@ def validate_model_client_configuration_setup_during_training_time(
 
     endpoints = AvailableEndpoints.get_instance()
     if len(model_group_ids) > 0 and endpoints.model_groups is None:
-        print_error_and_exit(
-            "You are referring to (a) model group(s) in your "
-            "config.yml file, but no model group was defined in "
-            "the endpoints.yml file. Please define the model "
-            "group(s)."
+        structlogger.error(
+            "validation.validate_model_client_configuration_setup"
+            ".referencing_model_group_but_none_are_defined",
+            event_info=(
+                "You are referring to (a) model group(s) in your "
+                "config.yml file, but no model group was defined in "
+                "the endpoints.yml file. Please define the model "
+                "group(s)."
+            ),
         )
+        sys.exit(1)
 
     if endpoints.model_groups is None:
         return
@@ -1015,13 +1041,20 @@ def validate_model_client_configuration_setup_during_training_time(
 
     for model_group_id in model_group_ids:
         if model_group_id not in existing_model_group_ids:
-            print_error_and_exit(
-                "One of your components is referring to the model group "
-                f"'{model_group_id}', but this model group does not exist in the "
-                f"endpoints.yml file. Please chose one of the existing "
-                f"model groups ({existing_model_group_ids}) or define "
-                f"the a model group for '{model_group_id}'."
+            structlogger.error(
+                "validation.validate_model_client_configuration_setup"
+                ".referencing_undefined_model_group",
+                event_info=(
+                    "One of your components is referring to the model group "
+                    f"'{model_group_id}', but this model group does not exist in the "
+                    f"endpoints.yml file. Please chose one of the existing "
+                    f"model groups ({existing_model_group_ids}) or define "
+                    f"the model group for '{model_group_id}'."
+                ),
+                referencing_model_group_id=model_group_id,
+                existing_model_group_ids=existing_model_group_ids,
             )
+            sys.exit(1)
 
 
 def _validate_component_model_client_config_has_references_to_endpoints(
@@ -1056,14 +1089,22 @@ def _validate_component_model_client_config_has_references_to_endpoints(
         referencing_model_group_id = component_config[key][MODEL_GROUP_CONFIG_KEY]
 
         if endpoints.model_groups is None:
-            print_error_and_exit(
-                f"Your {component_name or component_config.get('name') or ''} "
-                f"component's '{key}' configuration of the trained model references "
-                f"the model group '{referencing_model_group_id}', "
-                f"but NO MODEL GROUPS ARE DEFINED in the endpoints.yml file. "
-                f"Please add a definition for the required model group in the "
-                f"endpoints.yml file."
+            structlogger.error(
+                "validation.validate_model_client_config_correctly_references_endpoints"
+                ".no_model_groups_defined",
+                event_info=(
+                    f"Your {component_name or component_config.get('name') or ''} "
+                    f"component's '{key}' configuration of the trained model "
+                    f"references the model group '{referencing_model_group_id}', "
+                    f"but NO MODEL GROUPS ARE DEFINED in the endpoints.yml file. "
+                    f"Please add a definition for the required model group in the "
+                    f"endpoints.yml file."
+                ),
+                component_name=component_name or component_config.get("name"),
+                model_group_id=referencing_model_group_id,
+                component_client_config_key=key,
             )
+            sys.exit(1)
 
         existing_model_group_ids = [
             model_group[MODEL_GROUP_ID_CONFIG_KEY]
@@ -1071,16 +1112,24 @@ def _validate_component_model_client_config_has_references_to_endpoints(
         ]
 
         if referencing_model_group_id not in existing_model_group_ids:
-            print_error_and_exit(
-                f"Your {component_name or component_config.get('name') or ''} "
-                f"component's '{key}' configuration of the trained model references "
-                f"the model group '{referencing_model_group_id}', "
-                f"but this model group DOES NOT EXIST in the endpoints.yml file. "
-                f"The endpoints.yml defines the following model groups: "
-                f"{existing_model_group_ids}. "
-                f"Please add a definition for the required model group in the "
-                f"endpoints.yml file."
+            structlogger.error(
+                "validation.validate_model_client_config_correctly_references_endpoints"
+                ".referenced_model_group_does_not_exist",
+                event_info=(
+                    f"Your {component_name or component_config.get('name') or ''} "
+                    f"component's '{key}' configuration of the trained model "
+                    f"references the model group '{referencing_model_group_id}', "
+                    f"but this model group DOES NOT EXIST in the endpoints.yml file. "
+                    f"The endpoints.yml defines the following model groups: "
+                    f"{existing_model_group_ids}. "
+                    f"Please add a definition for the required model group in the "
+                    f"endpoints.yml file."
+                ),
+                model_group_id=referencing_model_group_id,
+                existing_model_group_ids=existing_model_group_ids,
+                component_client_config_key=key,
             )
+            sys.exit(1)
 
 
 def validate_model_client_configuration_setup_during_inference_time(
@@ -1124,10 +1173,14 @@ def _validate_unique_model_group_ids(model_groups: List[Dict[str, Any]]) -> None
     # Each model id must be unique within the model_groups
     model_ids = [model_group[MODEL_GROUP_ID_CONFIG_KEY] for model_group in model_groups]
     if len(model_ids) != len(set(model_ids)):
-        print_error_and_exit(
-            "Each model group id must be unique. Please make sure that "
-            "the model group ids are unique in your endpoints.yml file."
+        structlogger.error(
+            "validate_model_group_configuration_setup.non_unique_model_group_ids",
+            event_info=(
+                "Each model group id must be unique. Please make sure that "
+                "the model group ids are unique in your endpoints.yml file."
+            ),
         )
+        sys.exit(1)
 
 
 def _validate_model_group_with_multiple_models(
@@ -1139,13 +1192,18 @@ def _validate_model_group_with_multiple_models(
             len(model_group[MODELS_CONFIG_KEY]) > 1
             and ROUTER_CONFIG_KEY not in model_group
         ):
-            print_error_and_exit(
-                f"You defined multiple models for the model group "
-                f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}', but no router. "
-                f"If a model group contains "
-                f"multiple models, a router must be defined. Please define a router "
-                f"for the model group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}'."
+            structlogger.error(
+                "validate_model_group_configuration_setup.router_not_present",
+                event_info=(
+                    f"You defined multiple models for the model group "
+                    f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}', but no router. "
+                    "If a model group contains multiple models, a router must be "
+                    "defined. Please define a router for the model group "
+                    f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}'."
+                ),
+                model_group_id=model_group[MODEL_GROUP_ID_CONFIG_KEY],
             )
+            sys.exit(1)
 
 
 def _validate_model_group_router_setting(
@@ -1158,28 +1216,49 @@ def _validate_model_group_router_setting(
 
         for model_config in model_group.get(MODELS_CONFIG_KEY, []):
             if USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY in model_config:
-                print_error_and_exit(
-                    f"You defined the '{USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY}' in "
-                    f"the model group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}'. This "
-                    f"key is not allowed in the model configuration as the router is "
-                    f"defined. Please remove this key from your model configuration "
-                    f"and update it in the '{ROUTER_CONFIG_KEY} configuration, as it "
-                    f"is a router level setting."
+                structlogger.error(
+                    "validation.validate_model_group_configuration_setup"
+                    f".{USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY}_set_incorrectly",
+                    event_info=(
+                        f"You defined the '{USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY}' "
+                        f"in the model group "
+                        f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}'. This key is not "
+                        f"allowed in the model configuration as the router is defined. "
+                        f"Please remove this key from your model configuration and "
+                        f"update it in the '{ROUTER_CONFIG_KEY} configuration, as it "
+                        f"is a router level setting."
+                    ),
+                    model_group_id=model_group[MODEL_GROUP_ID_CONFIG_KEY],
                 )
+                sys.exit(1)
 
         router_config = model_group[ROUTER_CONFIG_KEY]
         if ROUTING_STRATEGY_CONFIG_KEY in router_config:
             routing_strategy = router_config.get(ROUTING_STRATEGY_CONFIG_KEY)
             if routing_strategy and routing_strategy not in VALID_ROUTING_STRATEGIES:
-                print_error_and_exit(
-                    f"The routing strategy '{routing_strategy}' you defined for the "
-                    f"model group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' is not "
-                    f"valid. Valid routing strategies are categorized as follows:\n"
-                    f"- Strategies requiring Redis caching: "
-                    f"{', '.join(ROUTING_STRATEGIES_REQUIRING_REDIS_CACHE)}\n"
-                    f"- Strategies not requiring caching: "
-                    f"{', '.join(ROUTING_STRATEGIES_NOT_REQUIRING_CACHE)}"
+                structlogger.error(
+                    "validation.validate_model_group_configuration_setup"
+                    ".invalid_routing_strategy",
+                    event_info=(
+                        f"The routing strategy '{routing_strategy}' you defined for "
+                        f"the model group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' "
+                        f"is not valid. Valid routing strategies are categorized as "
+                        f"follows:\n"
+                        f"- Strategies requiring Redis caching: "
+                        f"{', '.join(ROUTING_STRATEGIES_REQUIRING_REDIS_CACHE)}\n"
+                        f"- Strategies not requiring caching: "
+                        f"{', '.join(ROUTING_STRATEGIES_NOT_REQUIRING_CACHE)}"
+                    ),
+                    model_group_id=model_group[MODEL_GROUP_ID_CONFIG_KEY],
+                    invalid_routing_strategy=routing_strategy,
+                    supported_routing_strategies_requiring_redis_cache=(
+                        ROUTING_STRATEGIES_REQUIRING_REDIS_CACHE
+                    ),
+                    supported_routing_strategies_not_requiring_redis_cache=(
+                        ROUTING_STRATEGIES_NOT_REQUIRING_CACHE
+                    ),
                 )
+                sys.exit(1)
             if (
                 routing_strategy in ROUTING_STRATEGIES_REQUIRING_REDIS_CACHE
                 and REDIS_HOST_CONFIG_KEY not in router_config
@@ -1193,6 +1272,7 @@ def _validate_model_group_router_setting(
                         f"'{REDIS_HOST_CONFIG_KEY}' to the router configuration for "
                         f"the model group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}'."
                     ),
+                    model_group_id=model_group[MODEL_GROUP_ID_CONFIG_KEY],
                 )
 
 
@@ -1219,17 +1299,25 @@ def _validate_usage_of_environment_variables_in_model_group_config(
             for key, value in model_config.items():
                 if isinstance(value, str):
                     if re.match(r"\${(\w+)}", value) and key not in allowed_env_vars:
-                        print_error_and_exit(
-                            f"You defined '{key}' as environment variable in model "
-                            f"group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}', "
-                            f"which is not allowed. "
-                            f"You can only use environment variables for the following "
-                            f"keys: {', '.join(allowed_env_vars)}. "
-                            f"Please update your config."
+                        structlogger.error(
+                            "validation.validate_model_group_configuration_setup"
+                            ".invalid_use_of_environment_variables",
+                            event_info=(
+                                f"You defined '{key}' as environment variable in model "
+                                f"group '{model_group[MODEL_GROUP_ID_CONFIG_KEY]}', "
+                                f"which is not allowed. "
+                                f"You can only use environment variables for the "
+                                f"following keys: {', '.join(allowed_env_vars)}. "
+                                f"Please update your config."
+                            ),
+                            model_group_id=model_group[MODEL_GROUP_ID_CONFIG_KEY],
+                            key=key,
+                            allowed_keys_for_env_vars=allowed_env_vars,
                         )
+                        sys.exit(1)
 
 
-def _validate_sensitive_keys_are_an_environment_variables(
+def _validate_sensitive_keys_are_an_environment_variables_for_model_groups(
     model_groups: List[Dict[str, Any]],
 ) -> None:
     # the api key can only be set as an environment variable
@@ -1239,19 +1327,34 @@ def _validate_sensitive_keys_are_an_environment_variables(
                 if key in SENSITIVE_DATA:
                     if isinstance(value, str):
                         if not re.match(r"\${(\w+)}", value):
-                            print_error_and_exit(
-                                f"You defined the '{key}' in model group "
-                                f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' as a "
-                                f"string. The '{key}' must be set as an environment"
-                                f" variable. Please update your config."
+                            structlogger.error(
+                                "validation.validate_model_group_configuration_setup"
+                                ".sensitive_key_string_value_must_be_set_as_env_var",
+                                event_info=(
+                                    f"You defined the '{key}' in model group "
+                                    f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' as a "
+                                    f"string. The '{key}' must be set as an "
+                                    f"environment variable. Please update your config."
+                                ),
+                                key=key,
+                                model_group_id=model_group[MODEL_GROUP_ID_CONFIG_KEY],
                             )
+                            sys.exit(1)
                     else:
-                        print_error_and_exit(
-                            f"You should define the '{key}' in model group "
-                            f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' using the "
-                            f"environment variable syntax - ${{ENV_VARIABLE_NAME}}. "
-                            f"Please update your config."
+                        structlogger.error(
+                            "validation.validate_model_group_configuration_setup"
+                            ".sensitive_key_must_be_set_as_env_var",
+                            event_info=(
+                                f"You should define the '{key}' in model group "
+                                f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}' using the "
+                                f"environment variable syntax - "
+                                f"${{ENV_VARIABLE_NAME}}. "
+                                f"Please update your config."
+                            ),
+                            key=key,
+                            model_group_id=model_group[MODEL_GROUP_ID_CONFIG_KEY],
                         )
+                        sys.exit(1)
 
 
 def validate_model_group_configuration_setup() -> None:
@@ -1266,7 +1369,9 @@ def validate_model_group_configuration_setup() -> None:
     _validate_usage_of_environment_variables_in_model_group_config(
         endpoints.model_groups
     )
-    _validate_sensitive_keys_are_an_environment_variables(endpoints.model_groups)
+    _validate_sensitive_keys_are_an_environment_variables_for_model_groups(
+        endpoints.model_groups
+    )
     _validate_model_group_router_setting(endpoints.model_groups)
 
 

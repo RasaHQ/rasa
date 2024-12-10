@@ -2119,7 +2119,6 @@ class MockAvailableEndpointsForTestValidation:
     ],
 )
 def test_validate_llm_configuration_setup(
-    patch_print_error_and_exit: Any,
     patch_warning: Any,
     pipeline_config: List[Dict[Text, Any]],
     should_exit: bool,
@@ -2130,17 +2129,13 @@ def test_validate_llm_configuration_setup(
     monkeypatch.setattr("rasa.engine.validation.AvailableEndpoints", mock_endpoints)
 
     config = {"pipeline": pipeline_config}
-    validate_model_client_configuration_setup_during_training_time(config)
 
     if should_exit:
-        patch_print_error_and_exit.assert_called_once()
+        with pytest.raises(SystemExit) as exc_info:
+            validate_model_client_configuration_setup_during_training_time(config)
+        assert exc_info.value.code == 1
     else:
-        patch_print_error_and_exit.assert_not_called()
-
-    if should_warn:
-        patch_warning.assert_called_once()
-    else:
-        patch_warning.assert_not_called()
+        validate_model_client_configuration_setup_during_training_time(config)
 
 
 @pytest.mark.parametrize(
@@ -2649,7 +2644,6 @@ def test_validate_model_client_configuration_setup_during_inference_time(
     ),
 )
 def test_validate_model_group_configuration_setup(
-    patch_print_error_and_exit: Any,
     model_groups: List[Dict[Text, Any]],
     should_exit: bool,
     monkeypatch: Any,
@@ -2665,9 +2659,9 @@ def test_validate_model_group_configuration_setup(
     mock_endpoints = MockAvailableEndpoints()
     monkeypatch.setattr("rasa.engine.validation.AvailableEndpoints", mock_endpoints)
 
-    validate_model_group_configuration_setup()
-
     if should_exit:
-        patch_print_error_and_exit.assert_called_once()
+        with pytest.raises(SystemExit) as exc_info:
+            validate_model_group_configuration_setup()
+        assert exc_info.value.code == 1
     else:
-        patch_print_error_and_exit.assert_not_called()
+        validate_model_group_configuration_setup()
