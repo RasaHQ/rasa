@@ -16,7 +16,8 @@ from rasa.model_manager.utils import (
 from rasa.constants import MODEL_ARCHIVE_EXTENSION
 
 from rasa.model_manager import config
-from rasa.model_manager.utils import logs_path, ensure_base_directory_exists
+from rasa.model_manager.utils import logs_path
+from rasa.model_manager.warm_rasa_process import start_rasa_process
 
 structlogger = structlog.get_logger()
 
@@ -40,6 +41,7 @@ class BotSession(BaseModel):
     url: str
     internal_url: str
     port: int
+    log_id: str
     returncode: Optional[int] = None
 
     def is_alive(self) -> bool:
@@ -82,9 +84,6 @@ async def is_bot_startup_finished(bot: BotSession) -> bool:
             async with session.get(f"{bot.internal_url}/license") as resp:
                 return resp.status == 200
     except aiohttp.client_exceptions.ClientConnectorError:
-        structlogger.debug(
-            "model_runner.bot.not_running_yet", deployment_id=bot.deployment_id
-        )
         return False
 
 
@@ -187,14 +186,8 @@ def start_bot_process(
     deployment_id: str, bot_base_path: str, base_url_path: str
 ) -> BotSession:
     port = get_open_port()
-    log_path = logs_path(deployment_id)
 
-    ensure_base_directory_exists(log_path)
-
-    full_command = [
-        config.RASA_PYTHON_PATH,
-        "-m",
-        "rasa.__main__",
+    arguments = [
         "run",
         "--endpoints",
         f"{bot_base_path}/endpoints.yml",
@@ -209,35 +202,30 @@ def start_bot_process(
     structlogger.debug(
         "model_runner.bot.starting_command",
         deployment_id=deployment_id,
-        command=" ".join(full_command),
+        arguments=" ".join(arguments),
     )
 
-    process = subprocess.Popen(
-        full_command,
-        cwd=bot_base_path,
-        stdout=open(log_path, "w"),
-        stderr=subprocess.STDOUT,
-        env=os.environ.copy(),
-    )
+    warm_process = start_rasa_process(cwd=bot_base_path, arguments=arguments)
 
     internal_bot_url = f"http://localhost:{port}"
 
     structlogger.info(
         "model_runner.bot.starting",
         deployment_id=deployment_id,
-        log=log_path,
+        log=logs_path(warm_process.log_id),
         url=internal_bot_url,
         port=port,
-        pid=process.pid,
+        pid=warm_process.process.pid,
     )
 
     return BotSession(
         deployment_id=deployment_id,
         status=BotSessionStatus.QUEUED,
-        process=process,
+        process=warm_process.process,
         url=f"{base_url_path}?deployment_id={deployment_id}",
         internal_url=internal_bot_url,
         port=port,
+        log_id=warm_process.log_id,
     )
 
 

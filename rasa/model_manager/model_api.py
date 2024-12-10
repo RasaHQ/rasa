@@ -39,6 +39,10 @@ from rasa.model_manager.utils import (
     models_base_path,
     subpath,
 )
+from rasa.model_manager.warm_rasa_process import (
+    initialize_warm_rasa_process,
+    shutdown_warm_rasa_processes,
+)
 
 dotenv.load_dotenv()
 
@@ -113,7 +117,7 @@ async def continuously_update_process_status() -> None:
         except Exception as e:
             structlogger.error("model_api.update_process_status.error", error=str(e))
         finally:
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.1)
 
 
 def internal_blueprint() -> Blueprint:
@@ -126,6 +130,15 @@ def internal_blueprint() -> Blueprint:
         structlogger.debug("model_api.cleanup_processes.started")
         cleanup_training_processes()
         cleanup_bot_processes()
+        shutdown_warm_rasa_processes()
+
+    @bp.after_server_start
+    async def create_warm_rasa_processes(
+        app: Sanic, loop: asyncio.AbstractEventLoop
+    ) -> None:
+        """Create warm Rasa processes to speed up future training and bot runs."""
+        structlogger.debug("model_api.create_warm_rasa_processes.started")
+        initialize_warm_rasa_process()
 
     def limit_parallel_training_requests() -> Callable[[Callable], Callable[..., Any]]:
         """Limit the number of parallel training requests."""
@@ -324,7 +337,7 @@ def internal_blueprint() -> Blueprint:
                     "progress": training.progress,
                     "model_name": training.model_name,
                     "status": training.status,
-                    "logs": get_logs_content(training_id),
+                    "logs": get_logs_content(training.log_id),
                 }
             )
         else:
@@ -410,7 +423,7 @@ def internal_blueprint() -> Blueprint:
                 "status": bot.status,
                 "returncode": bot.returncode,
                 "url": bot.url,
-                "logs": get_logs_content(deployment_id),
+                "logs": get_logs_content(bot.log_id),
             }
         )
 
