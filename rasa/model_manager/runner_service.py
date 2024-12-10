@@ -1,6 +1,6 @@
 import os
 import shutil
-from typing import Dict
+from typing import Dict, Optional
 import aiohttp
 import structlog
 import subprocess
@@ -40,6 +40,7 @@ class BotSession(BaseModel):
     url: str
     internal_url: str
     port: int
+    returncode: Optional[int] = None
 
     def is_alive(self) -> bool:
         """Check if the bot is alive."""
@@ -95,6 +96,7 @@ def set_bot_status_to_stopped(bot: BotSession) -> None:
         status=bot.process.returncode,
     )
     bot.status = BotSessionStatus.STOPPED
+    bot.returncode = bot.process.returncode
 
 
 def set_bot_status_to_running(bot: BotSession) -> None:
@@ -274,6 +276,7 @@ def terminate_bot(bot: BotSession) -> None:
             status=bot.process.returncode,
         )
         bot.status = BotSessionStatus.STOPPED
+        bot.returncode = bot.process.returncode
     except ProcessLookupError:
         structlogger.debug(
             "model_runner.stop_bot.process_not_found",

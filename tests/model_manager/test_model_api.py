@@ -154,6 +154,27 @@ async def test_start_training_parallel_requests(
     assert responses[3][1].status == HTTPStatus.TOO_MANY_REQUESTS
 
 
+async def test_start_training_but_not_enough_diskspace(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(config, "SERVER_BASE_WORKING_DIRECTORY", str(tmp_path))
+    monkeypatch.setattr(config, "MIN_REQUIRED_DISCSPACE_MB", 1000000000000)
+    app = Sanic("test_discspace")
+    bp = internal_blueprint()
+    app.blueprint(bp)
+    client = app.asgi_client
+
+    data = {
+        "id": uuid.uuid4().hex,
+        "assistant_id": "test_assistant_1",
+        "model_name": "test_model_name_1",
+        "client_id": "test_client",
+    }
+    _, response = await client.post("/training", json=data)
+    assert response.status == HTTPStatus.INSUFFICIENT_STORAGE
+    assert "Please free up some space" in response.json.get("message", "")
+
+
 async def test_get_training(
     client: SanicASGITestClient, training_id: str, training_session: MagicMock
 ) -> None:
@@ -268,6 +289,32 @@ async def test_start_bot_parallel_requests(
     assert responses[2][1].status == HTTPStatus.TOO_MANY_REQUESTS
 
 
+async def test_start_bot_but_not_enough_diskspace(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(config, "SERVER_BASE_WORKING_DIRECTORY", str(tmp_path))
+    monkeypatch.setattr(config, "MIN_REQUIRED_DISCSPACE_MB", 1000000000000)
+    app = Sanic("test_discspace")
+    bp = internal_blueprint()
+    app.blueprint(bp)
+    client = app.asgi_client
+
+    _, response = await client.post(
+        "/bot",
+        json={
+            "deployment_id": "deployment_test_no_space",
+            "model_name": "test_no_storage",
+            "encoded_configs": {
+                "credentials": "",
+                "endpoints": "",
+            },
+        },
+    )
+    assert response.status == HTTPStatus.INSUFFICIENT_STORAGE
+    assert "Please free up some space" in response.json.get("message", "")
+
+
 async def test_get_bot(client: SanicASGITestClient) -> None:
     running_bots["deployment_1"] = MagicMock(
         deployment_id="deployment_1", status="running", url="http://localhost:8000"
@@ -278,6 +325,7 @@ async def test_get_bot(client: SanicASGITestClient) -> None:
         "deployment_id": "deployment_1",
         "status": "running",
         "url": "http://localhost:8000",
+        "returncode": None,
         "logs": None,
     }
 
@@ -354,6 +402,7 @@ async def test_get_bot_with_logs(
         "deployment_id": action_id,
         "status": "running",
         "url": "http://localhost:8000",
+        "returncode": None,
         "logs": f"test logs for {action_id}",
     }
 
