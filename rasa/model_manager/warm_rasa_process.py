@@ -86,6 +86,13 @@ def get_warm_rasa_process() -> WarmRasaProcess:
         warm_rasa_processes = [_create_warm_rasa_process()]
 
     previous_warm_rasa_process = warm_rasa_processes.pop(0)
+
+    if previous_warm_rasa_process.process.poll() is not None:
+        # process has finished (for some reason...)
+        # back up plan is to create a new one on the spot.
+        # this should not happen, but let's be safe
+        previous_warm_rasa_process = _create_warm_rasa_process()
+
     warm_rasa_processes.append(_create_warm_rasa_process())
     return previous_warm_rasa_process
 
