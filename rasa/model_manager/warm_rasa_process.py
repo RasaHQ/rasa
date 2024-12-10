@@ -1,5 +1,4 @@
 import subprocess
-import sys
 from rasa.__main__ import main
 import os
 from typing import List
@@ -77,10 +76,10 @@ def pass_arguments_to_process(
 ) -> None:
     arguments_string = " ".join(arguments)
     # send arguments to stdin
-    process.stdin.write(cwd.encode())
-    process.stdin.write("\n".encode())
-    process.stdin.write(arguments_string.encode())
-    process.stdin.write("\n".encode())
+    process.stdin.write(cwd.encode())  # type: ignore[union-attr]
+    process.stdin.write("\n".encode())  # type: ignore[union-attr]
+    process.stdin.write(arguments_string.encode())  # type: ignore[union-attr]
+    process.stdin.write("\n".encode())  # type: ignore[union-attr]
     process.stdin.flush()
 
 
@@ -94,26 +93,9 @@ def warmup() -> None:
         import pandas  # noqa: F401
         import numpy  # noqa: F401
         import spacy  # noqa: F401
+        import rasa.validator  # noqa: F401
     except ImportError:
         pass
-
-    # programmatically import rasa and all its submodules automatically
-    packages_to_import = ["rasa"]
-    while packages_to_import:
-        package = packages_to_import.pop(0)
-        try:
-            __import__(package)
-            module = sys.modules[package]
-            if hasattr(module, "__all__"):
-                for submodule in module.__all__:
-                    packages_to_import.append(f"{package}.{submodule}")
-        except Exception as e:
-            structlogger.error(
-                "model_trainer.warmup.failed_importing_package",
-                package=package,
-                error=str(e),
-            )
-            continue
 
 
 def warm_rasa_main() -> None:
