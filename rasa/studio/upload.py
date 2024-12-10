@@ -27,6 +27,27 @@ from rasa.studio.results_logger import StudioResult, with_studio_error_handler
 
 structlogger = structlog.get_logger()
 
+CONFIG_KEYS = [
+    "recipe",
+    "language",
+    "pipeline",
+    "llm",
+    "policies",
+    "model_name",
+    "assistant_id",
+]
+
+DOMAIN_KEYS = [
+    "version",
+    "actions",
+    "responses",
+    "slots",
+    "intents",
+    "entities",
+    "forms",
+    "session_config",
+]
+
 
 def _get_selected_entities_and_intents(
     args: argparse.Namespace,
@@ -52,6 +73,43 @@ def _get_selected_entities_and_intents(
         )
 
     return list(entities), list(intents)
+
+
+def run_validation(args: argparse.Namespace) -> None:
+    """Run the validation before uploading to Studio.
+
+    This is to avoid uploading invalid assistant data
+    that would raise errors during Rasa Pro training in Studio.
+
+    The validation checks that were selected to be run before uploading
+    maintain parity with the features that are supported in Studio.
+    """
+    from rasa.validator import Validator
+
+    training_data_importer = TrainingDataImporter.load_from_dict(
+        domain_path=args.domain,
+        training_data_paths=args.data,
+        config_path=args.config,
+    )
+
+    structlogger.info(
+        "rasa.studio.upload.validating_data",
+        event_info="Validating domain and training data...",
+    )
+
+    validator = Validator.from_importer(training_data_importer)
+
+    if not validator.verify_studio_supported_validations():
+        structlogger.error(
+            "rasa.studio.upload.validate_files.project_validation_error",
+            event_info="Project validation completed with errors.",
+        )
+        sys.exit(1)
+
+    structlogger.info(
+        "rasa.studio.upload.validate_files.success",
+        event_info="Project validation completed successfully.",
+    )
 
 
 def handle_upload(args: argparse.Namespace) -> None:
@@ -87,17 +145,6 @@ def handle_upload(args: argparse.Namespace) -> None:
         upload_calm_assistant(args, endpoint, verify=verify)
     else:
         upload_nlu_assistant(args, endpoint, verify=verify)
-
-
-config_keys = [
-    "recipe",
-    "language",
-    "pipeline",
-    "llm",
-    "policies",
-    "model_name",
-    "assistant_id",
-]
 
 
 def extract_values(data: Dict, keys: List[Text]) -> Dict:
@@ -141,7 +188,7 @@ def _get_assistant_name(config: Dict[Text, Any]) -> str:
 def upload_calm_assistant(
     args: argparse.Namespace, endpoint: str, verify: bool = True
 ) -> StudioResult:
-    """Uploads the CALM assistant data to Rasa Studio.
+    """Validates and uploads the CALM assistant data to Rasa Studio.
 
     Args:
         args: The command line arguments
@@ -154,6 +201,8 @@ def upload_calm_assistant(
     Returns:
         None
     """
+    run_validation(args)
+
     structlogger.info(
         "rasa.studio.upload.loading_data", event_info="Parsing CALM assistant data..."
     )
@@ -170,38 +219,10 @@ def upload_calm_assistant(
     config_from_files = read_yaml_file(args.config)
 
     # Extract domain and config values
-    domain_keys = [
-        "version",
-        "actions",
-        "responses",
-        "slots",
-        "intents",
-        "entities",
-        "forms",
-        "session_config",
-    ]
-
-    domain = extract_values(domain_from_files, domain_keys)
-
-    assistant_name = _get_assistant_name(config)
-
-    training_data_paths = args.data
-
-    if isinstance(training_data_paths, list):
-        training_data_paths.append(args.flows)
-    elif isinstance(training_data_paths, str):
-        if isinstance(args.flows, list):
-            training_data_paths = [training_data_paths] + args.flows
-        elif isinstance(args.flows, str):
-            training_data_paths = [training_data_paths, args.flows]
-        else:
-            raise RasaException("Invalid flows path")
+    domain = extract_values(domain_from_files, DOMAIN_KEYS)
 
     # Prepare flows
-    flow_importer = FlowSyncImporter.load_from_dict(
-        training_data_paths=training_data_paths
-    )
-
+    flow_importer = FlowSyncImporter.load_from_dict(training_data_paths=args.data)
     flows = list(flow_importer.get_user_flows())
 
     # We instantiate the TrainingDataImporter again on purpose to avoid
@@ -210,14 +231,12 @@ def upload_calm_assistant(
         domain_path=args.domain, training_data_paths=args.data
     )
     nlu_data = nlu_importer.get_nlu_data()
-
-    intents_from_files = nlu_data.intents
-
     nlu_examples = nlu_data.filter_training_examples(
-        lambda ex: ex.get("intent") in intents_from_files
+        lambda ex: ex.get("intent") in nlu_data.intents
     )
-
     nlu_examples_yaml = RasaYAMLWriter().dumps(nlu_examples)
+
+    assistant_name = _get_assistant_name(config)
 
     # Build GraphQL request
     graphql_req = build_import_request(
@@ -268,7 +287,7 @@ def upload_nlu_assistant(
     )
 
     config_from_files = importer.get_config()
-    config = extract_values(config_from_files, config_keys)
+    config = extract_values(config_from_files, CONFIG_KEYS)
 
     assistant_name = _get_assistant_name(config)
 

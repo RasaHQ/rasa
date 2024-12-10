@@ -94,79 +94,43 @@ responses:
 slots:
   add_contact_confirmation:
     type: bool
-    mappings:
-      - type: custom
   add_contact_handle:
     type: text
-    mappings:
-      - type: custom
   add_contact_name:
     type: text
-    mappings:
-      - type: custom
   based_in_california:
     type: bool
-    mappings:
-      - type: custom
   current_balance:
     type: float
-    mappings:
-      - type: custom
   hotel_average_rating:
     type: float
-    mappings:
-      - type: custom
   hotel_name:
     type: text
-    mappings:
-      - type: custom
   remove_contact_confirmation:
     type: bool
-    mappings:
-      - type: custom
   remove_contact_handle:
     type: text
-    mappings:
-      - type: custom
   remove_contact_name:
     type: text
-    mappings:
-      - type: custom
   return_value:
     type: text
-    mappings:
-      - type: custom
   transactions_list:
     type: text
-    mappings:
-      - type: custom
   set_slots_test_text:
     type: text
-    mappings:
-      - type: custom
   set_slots_test_categorical:
     type: categorical
-    mappings:
-      - type: custom
     values:
       - value_1
       - value_2
   verify_account_confirmation:
     type: bool
-    mappings:
-      - type: custom
   verify_account_confirmation_california:
     type: bool
-    mappings:
-      - type: custom
   verify_account_email:
     type: text
-    mappings:
-      - type: custom
   verify_account_sufficient_california_income:
     type: bool
-    mappings:
-      - type: custom
 
 entities:
   - name

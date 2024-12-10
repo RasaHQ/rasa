@@ -26,4 +26,4 @@ policies:
   max_history: 5
   epochs: 10
   constrain_similarities: true
-assistant_id: 20230405-110644-sensitive-jig
+assistant_id: test
