@@ -1,6 +1,5 @@
 import base64
 from textwrap import dedent
-from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -82,10 +81,17 @@ CALM_NLU_YAML = dedent(
     """  # noqa: E501
 )
 
+CALM_DOMAIN_DIRECTORY_YAML = dedent(
+    "version: '3.1'\nresponses:\n  utter_goodbye:\n  - text: Goodbye!\n  utter_greet:\n  - text: Hello {name}!\nslots:\n  name:\n    type: text\nsession_config:\n  session_expiration_time: 60\n  carry_over_slots_to_new_session: true\n"  # noqa: E501
+)
+DOMAIN_DIRECTORY_FLOWS_YAML = dedent(
+    "flows:\n  greeting:\n    steps:\n    - id: 0_utter_greet\n      next: END\n      metadata:\n        line_numbers: 6-6\n      action: utter_greet\n    name: greeting\n    description: Greet the user\n    file_path: data/upload/simple_bot_with_domain_directory/data/flows.yml\n"  # noqa: E501
+)
+
 CALM_ENDPOINTS_YAML = "nlg: \ntype: rephrase\n"
 
 
-def encode_yaml(yaml: Any) -> str:
+def encode_yaml(yaml: str):
     return base64.b64encode(yaml.encode("utf-8")).decode("utf-8")
 
 

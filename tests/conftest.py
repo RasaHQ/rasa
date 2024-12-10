@@ -25,7 +25,7 @@ from typing import (
     Optional,
     Text,
 )
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import jwt
 import pytest
@@ -38,6 +38,7 @@ from pytest import (
     TempdirFactory,
     TempPathFactory,
     WarningsRecorder,
+    FixtureRequest,
 )
 from sanic import Sanic
 from sanic.request import Request
@@ -1485,3 +1486,19 @@ def inspect_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(help="Rasa commands")
     add_subparser(subparsers, [])
     return parser
+
+
+@pytest.fixture(autouse=True)
+def mock_replace_environment_variables(
+    monkeypatch: MonkeyPatch, request: FixtureRequest
+):
+    if "dont_replace_environment_variables_in_yaml" in request.keywords:
+        return
+
+    mock_replace_env_vars = MagicMock()
+
+    monkeypatch.setattr(
+        "rasa.shared.utils.yaml.replace_environment_variables", mock_replace_env_vars
+    )
+
+    return mock_replace_env_vars

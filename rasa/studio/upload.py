@@ -15,11 +15,18 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATHS,
     DEFAULT_CONFIG_PATH,
 )
-from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader, YamlFlowsWriter
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter, FlowSyncImporter
-from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
-from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string, read_yaml_file
+from rasa.shared.nlu.training_data.formats.rasa_yaml import (
+    RasaYAMLReader,
+    RasaYAMLWriter,
+)
+from rasa.shared.utils.yaml import (
+    dump_obj_as_yaml_to_string,
+    read_yaml_file,
+)
 from rasa.studio import results_logger
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
@@ -90,6 +97,7 @@ def run_validation(args: argparse.Namespace) -> None:
         domain_path=args.domain,
         training_data_paths=args.data,
         config_path=args.config,
+        expand_env_vars=False,
     )
 
     structlogger.info(
@@ -139,6 +147,10 @@ def handle_upload(args: argparse.Namespace) -> None:
     args.config = rasa.cli.utils.get_validated_path(
         args.config, "config", DEFAULT_CONFIG_PATH
     )
+
+    Domain.expand_env_vars = False
+    RasaYAMLReader.expand_env_vars = False
+    YAMLFlowsReader.expand_env_vars = False
 
     # check safely if args.calm is set and not fail if not
     if hasattr(args, "calm") and args.calm:
@@ -210,25 +222,28 @@ def upload_calm_assistant(
     importer = TrainingDataImporter.load_from_dict(
         domain_path=args.domain,
         config_path=args.config,
+        expand_env_vars=False,
     )
 
     # Prepare config and domain
     config = importer.get_config()
     domain_from_files = importer.get_user_domain().as_dict()
-    endpoints_from_files = read_yaml_file(args.endpoints)
-    config_from_files = read_yaml_file(args.config)
+    endpoints_from_files = read_yaml_file(args.endpoints, expand_env_vars=False)
+    config_from_files = read_yaml_file(args.config, expand_env_vars=False)
 
     # Extract domain and config values
     domain = extract_values(domain_from_files, DOMAIN_KEYS)
 
     # Prepare flows
-    flow_importer = FlowSyncImporter.load_from_dict(training_data_paths=args.data)
+    flow_importer = FlowSyncImporter.load_from_dict(
+        training_data_paths=args.data, expand_env_vars=False
+    )
     flows = list(flow_importer.get_user_flows())
 
     # We instantiate the TrainingDataImporter again on purpose to avoid
     # adding patterns to domain's actions. More info https://t.ly/W8uuc
     nlu_importer = TrainingDataImporter.load_from_dict(
-        domain_path=args.domain, training_data_paths=args.data
+        training_data_paths=args.data, expand_env_vars=False
     )
     nlu_data = nlu_importer.get_nlu_data()
     nlu_examples = nlu_data.filter_training_examples(
@@ -276,12 +291,16 @@ def upload_nlu_assistant(
         event_info="Found DM1 assistant data, parsing...",
     )
     importer = TrainingDataImporter.load_from_dict(
-        domain_path=args.domain, training_data_paths=args.data, config_path=args.config
+        domain_path=args.domain,
+        training_data_paths=args.data,
+        config_path=args.config,
+        expand_env_vars=False,
     )
 
     intents_from_files = importer.get_nlu_data().intents
-    entities_from_files = importer.get_domain().entities
 
+    domain_from_files = importer.get_domain()
+    entities_from_files = domain_from_files.entities
     entities, intents = _get_selected_entities_and_intents(
         args, intents_from_files, entities_from_files
     )
@@ -305,7 +324,7 @@ def upload_nlu_assistant(
     all_entities = _add_missing_entities(nlu_examples.entities, entities)
     nlu_examples_yaml = RasaYAMLWriter().dumps(nlu_examples)
 
-    domain = _filter_domain(all_entities, intents, importer.get_domain().as_dict())
+    domain = _filter_domain(all_entities, intents, domain_from_files.as_dict())
     domain_yaml = dump_obj_as_yaml_to_string(domain)
 
     graphql_req = build_request(assistant_name, nlu_examples_yaml, domain_yaml)
@@ -443,7 +462,9 @@ def build_request(
 
 
 def _filter_domain(
-    entities: List[Union[str, Dict]], intents: List[str], domain_from_files: Dict
+    entities: List[Union[str, Dict]],
+    intents: List[str],
+    domain_from_files: Dict[str, Any],
 ) -> Dict:
     """Filters the domain to only include the selected entities and intents."""
     selected_entities = _remove_not_selected_entities(

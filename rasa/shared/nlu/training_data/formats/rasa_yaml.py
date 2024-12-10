@@ -1,7 +1,18 @@
 import logging
 from collections import OrderedDict
 from pathlib import Path
-from typing import Text, Any, List, Dict, Tuple, Union, Iterator, Optional, Callable
+from typing import (
+    ClassVar,
+    Text,
+    Any,
+    List,
+    Dict,
+    Tuple,
+    Union,
+    Iterator,
+    Optional,
+    Callable,
+)
 
 import rasa.shared.data
 from rasa.shared.core.domain import Domain
@@ -55,6 +66,8 @@ STRIP_SYMBOLS = "\n\r "
 class RasaYAMLReader(TrainingDataReader):
     """Reads YAML training data and creates a TrainingData object."""
 
+    expand_env_vars: ClassVar[bool] = True
+
     def __init__(self) -> None:
         super().__init__()
         self.training_examples: List[Message] = []
@@ -69,7 +82,9 @@ class RasaYAMLReader(TrainingDataReader):
         If the string is not in the right format, an exception will be raised.
         """
         try:
-            validate_raw_yaml_using_schema_file_with_responses(string, NLU_SCHEMA_FILE)
+            validate_raw_yaml_using_schema_file_with_responses(
+                string, NLU_SCHEMA_FILE, expand_env_vars=self.expand_env_vars
+            )
         except YamlException as e:
             e.filename = self.filename
             raise e
@@ -88,7 +103,7 @@ class RasaYAMLReader(TrainingDataReader):
         """
         self.validate(string)
 
-        yaml_content = read_yaml(string)
+        yaml_content = read_yaml(string, expand_env_vars=self.expand_env_vars)
 
         if not validate_training_data_format_version(yaml_content, self.filename):
             return TrainingData()

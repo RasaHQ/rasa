@@ -29,7 +29,9 @@ class RasaFileImporter(TrainingDataImporter):
         config_file: Optional[Text] = None,
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[Union[List[Text], Text]] = None,
+        expand_env_vars: bool = True,
     ):
+        self.expand_env_vars = expand_env_vars
         self._domain_path = domain_path
 
         self._nlu_files = rasa.shared.data.get_data_files(
@@ -54,7 +56,9 @@ class RasaFileImporter(TrainingDataImporter):
             logger.debug("No configuration file was provided to the RasaFileImporter.")
             return {}
 
-        config = read_model_configuration(self.config_file)
+        config = read_model_configuration(
+            self.config_file, expand_env_vars=self.expand_env_vars
+        )
         return config
 
     def get_config_file_for_auto_config(self) -> Optional[Text]:

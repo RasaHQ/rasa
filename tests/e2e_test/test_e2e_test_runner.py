@@ -13,7 +13,7 @@ from structlog.testing import capture_logs
 
 import rasa.cli.e2e_test
 from rasa.core.agent import Agent
-from rasa.core.channels import CollectingOutputChannel
+from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
@@ -71,36 +71,49 @@ def test_case_metadata() -> Metadata:
 
 
 @pytest.fixture
-def mock_e2e_test_runner(monkeypatch: MonkeyPatch) -> E2ETestRunner:
-    def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
-        domain = Domain.from_dict(
-            {
-                "entities": ["city"],
-                "slots": {
-                    "city": {
-                        "type": "text",
-                        "mappings": [{"type": "from_entity", "entity": "city"}],
-                    }
-                },
-                "actions": [
-                    "custom_action_1",
-                    "custom_action_2",
-                    "custom_action_3",
-                ],
-            }
-        )
-        self.agent = Agent(
-            domain=domain, tracker_store=InMemoryTrackerStore(domain=domain)
-        )
-        processor = AsyncMock()
-        # using the actual tracker store instead of a mocked one
-        processor.fetch_tracker_with_initial_session = (
-            self.agent.tracker_store.get_or_create_tracker
-        )
-        self.agent.processor = processor
+def mock_domain() -> Domain:
+    domain = Domain.from_dict(
+        {
+            "entities": ["city"],
+            "slots": {
+                "city": {
+                    "type": "text",
+                    "mappings": [{"type": "from_entity", "entity": "city"}],
+                }
+            },
+            "actions": [
+                "custom_action_1",
+                "custom_action_2",
+                "custom_action_3",
+            ],
+        }
+    )
+    return domain
 
+
+def mock_e2e_test_runner_init(self: Any, *args: Any, **kwargs: Any) -> None:
+    self.agent = Agent()
+    self.llm_judge_config = MagicMock()
+
+    processor = AsyncMock()
+
+    # using the actual tracker store instead of a mocked one
+    async def mock_fetch_tracker(
+        sender_id: str,
+        output_channel: Optional[OutputChannel] = None,
+        metadata: Optional[Dict] = None,
+    ) -> Any:
+        return await self.agent.tracker_store.get_or_create_tracker(sender_id)
+
+    processor.fetch_tracker_with_initial_session = mock_fetch_tracker
+    self.agent.processor = processor
+
+
+@pytest.fixture
+def mock_e2e_test_runner(monkeypatch: MonkeyPatch) -> E2ETestRunner:
     monkeypatch.setattr(
-        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__",
+        mock_e2e_test_runner_init,
     )
 
     async def mock_handle_message(self: Any, message: Any) -> None:
@@ -114,7 +127,7 @@ def mock_e2e_test_runner(monkeypatch: MonkeyPatch) -> E2ETestRunner:
 
 
 @pytest.fixture
-def assertions_tracker(default_agent: Agent) -> DialogueStateTracker:
+def assertions_tracker() -> DialogueStateTracker:
     tracker = DialogueStateTracker.from_events(
         "test_assertions_tracker",
         [
@@ -143,9 +156,7 @@ def assertions_tracker(default_agent: Agent) -> DialogueStateTracker:
 
 
 @pytest.fixture
-def assertions_tracker_with_duplicate_user_msg(
-    default_agent: Agent,
-) -> DialogueStateTracker:
+def assertions_tracker_with_duplicate_user_msg() -> DialogueStateTracker:
     tracker = DialogueStateTracker(
         "test_assertions_tracker_duplicate_user_msg",
         [],
@@ -964,40 +975,24 @@ async def test_set_up_fixtures(
     test_case_name: Text,
     slot_name: Text,
     expected_slot_value: Text,
+    mock_e2e_test_runner: E2ETestRunner,
 ) -> None:
-    def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
-        domain = Domain.from_dict(
-            {
-                "entities": ["membership_type"],
-                "slots": {
-                    "membership_type": {
-                        "type": "text",
-                        "mappings": [
-                            {"type": "from_entity", "entity": "membership_type"}
-                        ],
-                    }
-                },
-            }
-        )
-        self.agent = Agent(
-            domain=domain,
-            tracker_store=InMemoryTrackerStore(domain=domain),
-        )
-        processor = AsyncMock()
-        # using the actual tracker store instead of a mocked one
-        processor.fetch_tracker_with_initial_session = (
-            self.agent.tracker_store.get_or_create_tracker
-        )
-        self.agent.processor = processor
-
-    monkeypatch.setattr(
-        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    domain = Domain.from_dict(
+        {
+            "entities": ["membership_type"],
+            "slots": {
+                "membership_type": {
+                    "type": "text",
+                    "mappings": [{"type": "from_entity", "entity": "membership_type"}],
+                }
+            },
+        }
     )
+    mock_e2e_test_runner.agent.domain = domain
+    mock_e2e_test_runner.agent.tracker_store = InMemoryTrackerStore(domain=domain)
 
-    runner = E2ETestRunner()
-
-    assert runner.agent is not None
-    assert runner.agent.tracker_store is not None
+    assert mock_e2e_test_runner.agent is not None
+    assert mock_e2e_test_runner.agent.tracker_store is not None
 
     fixture_path = (
         Path(__file__).parent.parent.parent / "data" / "end_to_end_testing_input_files"
@@ -1007,12 +1002,16 @@ async def test_set_up_fixtures(
     test_case = next(
         iter(filter(lambda x: x.name == test_case_name, test_suite.test_cases))
     )
-    test_fixtures = runner.filter_fixtures_for_test_case(test_case, test_suite.fixtures)
+    test_fixtures = mock_e2e_test_runner.filter_fixtures_for_test_case(
+        test_case, test_suite.fixtures
+    )
     sender_id = f"{test_case.name}_{datetime.datetime.now()}"
 
-    await runner.set_up_fixtures(test_fixtures, sender_id=sender_id)
+    await mock_e2e_test_runner.set_up_fixtures(test_fixtures, sender_id=sender_id)
 
-    tracker = await runner.agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await mock_e2e_test_runner.agent.tracker_store.get_or_create_tracker(
+        sender_id
+    )
     assert tracker.sender_id == sender_id
     assert tracker.get_slot(slot_name) == expected_slot_value
 
@@ -1111,8 +1110,13 @@ async def test_run_prediction_loop(
     test_suite_metadata: List[Metadata],
     test_case_metadata: Metadata,
     mock_e2e_test_runner: E2ETestRunner,
+    mock_domain: Domain,
 ) -> None:
     assert mock_e2e_test_runner.agent is not None
+
+    mock_e2e_test_runner.agent.domain = mock_domain
+    mock_e2e_test_runner.agent.tracker_store = InMemoryTrackerStore(domain=mock_domain)
+
     assert mock_e2e_test_runner.agent.tracker_store is not None
 
     collector = CollectingOutputChannel()
@@ -1163,6 +1167,7 @@ async def test_run_tests_with_fail_fast(
     fail_fast: bool,
     expected_len: int,
     test_suite_metadata: List[Metadata],
+    mock_e2e_test_runner: E2ETestRunner,
 ) -> None:
     test_cases = [
         TestCase(
@@ -1185,23 +1190,13 @@ async def test_run_tests_with_fail_fast(
     ]
     test_fixtures = [Fixture(name="premium", slots_set={"premium": True})]
 
-    def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
-        domain = Domain.empty()
-        self.agent = Agent(
-            domain=domain, tracker_store=InMemoryTrackerStore(domain=domain)
-        )
-        processor = AsyncMock()
-        # using the actual tracker store instead of a mocked one
-        processor.fetch_tracker_with_initial_session = (
-            self.agent.tracker_store.get_or_create_tracker
-        )
-        self.agent.processor = processor
+    empty_domain = Domain.empty()
+    mock_e2e_test_runner.agent.domain = empty_domain
+    mock_e2e_test_runner.agent.tracker_store = InMemoryTrackerStore(domain=empty_domain)
 
     monkeypatch.setattr(
-        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
-    )
-    monkeypatch.setattr(
-        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.run_prediction_loop",
+        mock_e2e_test_runner,
+        "run_prediction_loop",
         AsyncMock(),
     )
 
@@ -1215,9 +1210,7 @@ async def test_run_tests_with_fail_fast(
         generate_test_result_mock,
     )
 
-    runner = E2ETestRunner()
-
-    results = await runner.run_tests(
+    results = await mock_e2e_test_runner.run_tests(
         test_cases,
         test_fixtures,
         fail_fast=fail_fast,
@@ -1230,7 +1223,7 @@ async def test_run_tests_with_fail_fast(
     )
 
 
-async def test_run_tests_for_fine_tuning(monkeypatch: MonkeyPatch):
+async def test_run_tests_for_fine_tuning(monkeypatch: MonkeyPatch) -> None:
     test_cases = [
         TestCase(
             steps=[
@@ -2504,7 +2497,10 @@ def test_get_tested_flow_paths_and_commands(
     expected_flow_paths: List[FlowPath],
     expected_tested_commands: Dict[str, Dict[str, int]],
     mock_e2e_test_runner: E2ETestRunner,
+    mock_domain,
 ):
+    mock_e2e_test_runner.agent.domain = mock_domain
+    mock_e2e_test_runner.agent.tracker_store = InMemoryTrackerStore(domain=mock_domain)
     test_result = TestResult(TestCase("test_case", []), pass_status=True, difference=[])
 
     actual_flow_paths, actual_tested_commands = (
@@ -2551,9 +2547,14 @@ async def test_error_logging_with_partial_custom_action_stubbing(
         )
 
         # Use the actual tracker store instead of a mocked one.
-        processor.fetch_tracker_with_initial_session = (
-            self.agent.tracker_store.get_or_create_tracker
-        )
+        async def mock_fetch_tracker(
+            sender_id: str,
+            output_channel: Optional[OutputChannel] = None,
+            metadata: Optional[Dict] = None,
+        ) -> Any:
+            return await self.agent.tracker_store.get_or_create_tracker(sender_id)
+
+        processor.fetch_tracker_with_initial_session = mock_fetch_tracker
         self.agent.processor = processor
 
     monkeypatch.setattr(

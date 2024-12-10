@@ -2456,7 +2456,7 @@ def mock_validate_raw_yaml_using_schema_file_with_responses(
 ) -> MagicMock:
     _mock = MagicMock()
     monkeypatch.setattr(
-        "rasa.shared.core.domain." "validate_raw_yaml_using_schema_file_with_responses",
+        "rasa.shared.core.domain.validate_raw_yaml_using_schema_file_with_responses",
         _mock,
     )
 
@@ -2480,10 +2480,11 @@ def test_dict_from_raw_yaml_content_validation_enabled(
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(Domain, "validate_yaml", True)
+    monkeypatch.setattr(Domain, "expand_env_vars", True)
     Domain.from_yaml(small_domain)
 
     mock_validate_raw_yaml_using_schema_file_with_responses.assert_called_once_with(
-        small_domain, DOMAIN_SCHEMA_FILE
+        small_domain, DOMAIN_SCHEMA_FILE, expand_env_vars=True
     )
 
 
