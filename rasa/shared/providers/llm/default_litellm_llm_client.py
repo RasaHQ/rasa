@@ -1,8 +1,13 @@
 from typing import Dict, Any
 
+from rasa.shared.constants import (
+    AWS_BEDROCK_PROVIDER,
+    AWS_SAGEMAKER_PROVIDER,
+)
 from rasa.shared.providers._configs.default_litellm_client_config import (
     DefaultLiteLLMClientConfig,
 )
+from rasa.shared.providers._utils import validate_aws_setup_for_litellm_clients
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 
 
@@ -82,3 +87,22 @@ class DefaultLiteLLMClient(_BaseLiteLLMClient):
         to the client provider and deployed model.
         """
         return self._extra_parameters
+
+    def validate_client_setup(self) -> None:
+        # TODO: Temporarily change the environment variable validation for AWS setup
+        #       (Bedrock and SageMaker) until resolved by either:
+        #       1. An update from the LiteLLM package addressing the issue.
+        #       2. The implementation of a Bedrock client on our end.
+        #       ---
+        #       This fix ensures a consistent user experience for Bedrock (and
+        #       SageMaker) in Rasa by allowing AWS secrets to be provided as extra
+        #       parameters without triggering validation errors due to missing AWS
+        #       environment variables.
+        if self.provider.lower() in [AWS_BEDROCK_PROVIDER, AWS_SAGEMAKER_PROVIDER]:
+            validate_aws_setup_for_litellm_clients(
+                self._litellm_model_name,
+                self._litellm_extra_parameters,
+                "default_litellm_llm_client",
+            )
+        else:
+            super().validate_client_setup()
