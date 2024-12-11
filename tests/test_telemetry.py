@@ -25,6 +25,12 @@ from rasa.dialogue_understanding.generator.flow_retrieval import (
     DEFAULT_EMBEDDINGS_CONFIG,
 )
 from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase, TestSuite
+from rasa.shared.constants import (
+    CONFIG_LANGUAGE_KEY,
+    CONFIG_PIPELINE_KEY,
+    CONFIG_POLICIES_KEY,
+    CONFIG_RECIPE_KEY,
+)
 from rasa.telemetry import (
     E2E_TEST_CONVERSION_FILE_TYPE,
     E2E_TEST_CONVERSION_TEST_CASE_COUNT,
@@ -1203,25 +1209,25 @@ def test_get_llm_command_generator_config(
     expected_flow_retrieval_embedding_model_name: bool,
 ):
     # Given
-    config = """
-        recipe: default.v1
-        language: en
-        pipeline:
+    config = f"""
+        {CONFIG_RECIPE_KEY}: default.v1
+        {CONFIG_LANGUAGE_KEY}: en
+        {CONFIG_PIPELINE_KEY}:
         - name: KeywordIntentClassifier
         - name: NLUCommandAdapter
         - name: LLMCommandGenerator
-        policies:
+        {CONFIG_POLICIES_KEY}:
         - name: FlowPolicy
         - name: EnterpriseSearchPolicy
         - name: IntentlessPolicy
     """
     config = yaml.load(config, Loader=yaml.FullLoader)
     if llm_config is not None:
-        config["pipeline"][2]["llm"] = llm_config
+        config[CONFIG_PIPELINE_KEY][2]["llm"] = llm_config
     if prompt_config is not None:
-        config["pipeline"][2]["prompt"] = prompt_config
+        config[CONFIG_PIPELINE_KEY][2]["prompt"] = prompt_config
     if flow_retrieval_config is not None:
-        config["pipeline"][2]["flow_retrieval"] = flow_retrieval_config
+        config[CONFIG_PIPELINE_KEY][2]["flow_retrieval"] = flow_retrieval_config
 
     # When
     result = _get_llm_command_generator_config(config)
@@ -1320,11 +1326,11 @@ def test_get_multi_step_llm_command_generator_config(
     """
     config = yaml.load(config, Loader=yaml.FullLoader)
     if llm_config is not None:
-        config["pipeline"][2]["llm"] = llm_config
+        config[CONFIG_PIPELINE_KEY][2]["llm"] = llm_config
     if prompt_config is not None:
-        config["pipeline"][2]["prompt_templates"] = prompt_config
+        config[CONFIG_PIPELINE_KEY][2]["prompt_templates"] = prompt_config
     if flow_retrieval_config is not None:
-        config["pipeline"][2]["flow_retrieval"] = flow_retrieval_config
+        config[CONFIG_PIPELINE_KEY][2]["flow_retrieval"] = flow_retrieval_config
 
     # When
     result = _get_llm_command_generator_config(config)

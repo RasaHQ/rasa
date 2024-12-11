@@ -11,6 +11,11 @@ from pytest import TempPathFactory, Testdir
 
 from rasa.cli import inspect, scaffold
 from rasa.cli import run as cli_run
+from rasa.shared.constants import (
+    CONFIG_LANGUAGE_KEY,
+    CONFIG_PIPELINE_KEY,
+    CONFIG_POLICIES_KEY,
+)
 from rasa.shared.utils.yaml import write_yaml
 from tests.conftest import create_simple_project
 
@@ -44,9 +49,9 @@ def create_simple_project_with_missing_assistant_id(path: Path):
 
     write_yaml(
         {
-            "language": "en",
-            "pipeline": [{"name": "KeywordIntentClassifier"}],
-            "policies": [
+            CONFIG_LANGUAGE_KEY: "en",
+            CONFIG_PIPELINE_KEY: [{"name": "KeywordIntentClassifier"}],
+            CONFIG_POLICIES_KEY: [
                 {"name": "RulePolicy"},
                 {"name": "MemoizationPolicy", "max_history": 3},
             ],

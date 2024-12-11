@@ -2,21 +2,26 @@ import os
 import shutil
 from pathlib import Path
 from shutil import copyfile
+from typing import Callable
 
 import pytest
-from pytest import Testdir, Pytester, ExitCode
 from _pytest.pytester import RunResult
+from pytest import ExitCode, Pytester, Testdir
 
+from rasa.constants import RESULTS_FILE
 from rasa.core.constants import (
     CONFUSION_MATRIX_STORIES_FILE,
     STORIES_WITH_WARNINGS_FILE,
 )
-from rasa.constants import RESULTS_FILE
-from rasa.shared.constants import DEFAULT_RESULTS_PATH
+from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
+    CONFIG_LANGUAGE_KEY,
+    CONFIG_PIPELINE_KEY,
+    CONFIG_POLICIES_KEY,
+    DEFAULT_RESULTS_PATH,
+)
 from rasa.shared.utils.io import list_files, write_text_file
 from rasa.shared.utils.yaml import write_yaml
-from typing import Callable
-
 from tests.cli.conftest import RASA_EXE
 
 
@@ -36,9 +41,9 @@ def test_test_core_no_plot(run_in_simple_project: Callable[..., RunResult]):
 def test_test_core_warnings(run_in_simple_project_with_model: Callable[..., RunResult]):
     write_yaml(
         {
-            "language": "en",
-            "pipeline": [],
-            "policies": [
+            CONFIG_LANGUAGE_KEY: "en",
+            CONFIG_PIPELINE_KEY: [],
+            CONFIG_POLICIES_KEY: [
                 {"name": "MemoizationPolicy", "max_history": 3},
                 {"name": "UnexpecTEDIntentPolicy", "max_history": 5, "epochs": 1},
                 {
@@ -90,8 +95,8 @@ def test_test_core_with_no_model(run_in_simple_project: Callable[..., RunResult]
 def test_test(run_in_simple_project_with_model: Callable[..., RunResult]):
     write_yaml(
         {
-            "pipeline": "KeywordIntentClassifier",
-            "policies": [{"name": "MemoizationPolicy"}],
+            CONFIG_PIPELINE_KEY: "KeywordIntentClassifier",
+            CONFIG_POLICIES_KEY: [{"name": "MemoizationPolicy"}],
         },
         "config2.yml",
     )
@@ -107,7 +112,10 @@ def test_test_with_no_user_utterance(
     run_in_simple_project_with_model: Callable[..., RunResult],
 ):
     write_yaml(
-        {"pipeline": "KeywordIntentClassifier", "policies": [{"name": "TEDPolicy"}]},
+        {
+            CONFIG_PIPELINE_KEY: "KeywordIntentClassifier",
+            CONFIG_POLICIES_KEY: [{"name": "TEDPolicy"}],
+        },
         "config.yml",
     )
 
@@ -169,10 +177,10 @@ def test_test_nlu_cross_validation_with_autoconfig(
     shutil.copy(str(moodbot_nlu_data_path), nlu_path)
     write_yaml(
         {
-            "assistant_id": "placeholder_default",
-            "language": "en",
-            "pipeline": None,
-            "policies": None,
+            ASSISTANT_ID_KEY: "placeholder_default",
+            CONFIG_LANGUAGE_KEY: "en",
+            CONFIG_PIPELINE_KEY: None,
+            CONFIG_POLICIES_KEY: None,
         },
         config_path,
     )
@@ -198,8 +206,8 @@ def test_test_nlu_cross_validation_with_autoconfig(
 
 
 def test_test_nlu_comparison(run_in_simple_project: Callable[..., RunResult]):
-    write_yaml({"pipeline": "KeywordIntentClassifier"}, "config.yml")
-    write_yaml({"pipeline": "KeywordIntentClassifier"}, "config2.yml")
+    write_yaml({CONFIG_PIPELINE_KEY: "KeywordIntentClassifier"}, "config.yml")
+    write_yaml({CONFIG_PIPELINE_KEY: "KeywordIntentClassifier"}, "config2.yml")
 
     # TODO: Loading still needs fixing
     run_in_simple_project(

@@ -37,7 +37,11 @@ from rasa.model_training import (
     _dry_run_result,
 )
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import (
+    CONFIG_PIPELINE_KEY,
+    CONFIG_POLICIES_KEY,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, SlotSet
 from rasa.shared.core.training_data.structures import RuleStep, StoryGraph, StoryStep
@@ -531,7 +535,7 @@ async def test_model_finetuning_core(
     # from scratch.
     # Fine-tuning will use the number of epochs in the new config.
     old_config = read_yaml_file("data/test_moodbot/config.yml")
-    old_config["policies"][0]["epochs"] = 10
+    old_config[CONFIG_POLICIES_KEY][0]["epochs"] = 10
     new_config_path = tmp_path / "new_config.yml"
     write_yaml(old_config, new_config_path)
 
@@ -570,7 +574,7 @@ async def test_model_finetuning_core_with_default_epochs(
     # Providing a new config with no epochs will mean the default amount are used
     # and then scaled by `finetuning_epoch_fraction`.
     old_config = read_yaml_file("data/test_moodbot/config.yml")
-    del old_config["policies"][0]["epochs"]
+    del old_config[CONFIG_POLICIES_KEY][0]["epochs"]
     new_config_path = tmp_path / "new_config.yml"
     write_yaml(old_config, new_config_path)
 
@@ -655,7 +659,7 @@ async def test_model_finetuning_nlu(
     # from scratch.
     # Fine-tuning will use the number of epochs in the new config.
     old_config = read_yaml_file("data/test_moodbot/config.yml")
-    old_config["pipeline"][-1][EPOCHS] = 10
+    old_config[CONFIG_PIPELINE_KEY][-1][EPOCHS] = 10
     new_config_path = tmp_path / "new_config.yml"
     write_yaml(old_config, new_config_path)
 
@@ -783,7 +787,7 @@ async def test_model_finetuning_nlu_with_default_epochs(
     # Providing a new config with no epochs will mean the default amount are used
     # and then scaled by `finetuning_epoch_fraction`.
     old_config = read_yaml_file("data/test_moodbot/config.yml")
-    del old_config["pipeline"][-1][EPOCHS]
+    del old_config[CONFIG_PIPELINE_KEY][-1][EPOCHS]
     new_config_path = tmp_path / "new_config.yml"
     write_yaml(old_config, new_config_path)
 

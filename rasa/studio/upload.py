@@ -1,7 +1,7 @@
 import argparse
 import base64
 import sys
-from typing import Dict, Iterable, List, Set, Text, Tuple, Union, Any
+from typing import Any, Dict, Iterable, List, Set, Text, Tuple, Union
 
 import questionary
 import requests
@@ -12,13 +12,19 @@ import rasa.cli.utils
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 from rasa.shared.constants import (
-    DEFAULT_DOMAIN_PATHS,
+    CONFIG_LANGUAGE_KEY,
+    CONFIG_LLM_KEY,
+    CONFIG_MODEL_NAME_KEY,
+    CONFIG_PIPELINE_KEY,
+    CONFIG_POLICIES_KEY,
+    CONFIG_RECIPE_KEY,
     DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATHS,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader, YamlFlowsWriter
 from rasa.shared.exceptions import RasaException
-from rasa.shared.importers.importer import TrainingDataImporter, FlowSyncImporter
+from rasa.shared.importers.importer import FlowSyncImporter, TrainingDataImporter
 from rasa.shared.nlu.training_data.formats.rasa_yaml import (
     RasaYAMLReader,
     RasaYAMLWriter,
@@ -130,13 +136,11 @@ def handle_upload(args: argparse.Namespace) -> None:
         rasa.shared.utils.cli.print_error_and_exit(
             "No GraphQL endpoint found in config. Please run `rasa studio config`."
         )
-        return
 
     if not is_auth_working(endpoint, verify):
         rasa.shared.utils.cli.print_error_and_exit(
             "Authentication is invalid or expired. Please run `rasa studio login`."
         )
-        return
 
     structlogger.info("rasa.studio.upload.loading_data", event_info="Loading data...")
 
@@ -157,6 +161,16 @@ def handle_upload(args: argparse.Namespace) -> None:
         upload_calm_assistant(args, endpoint, verify=verify)
     else:
         upload_nlu_assistant(args, endpoint, verify=verify)
+
+
+config_keys = [
+    CONFIG_RECIPE_KEY,
+    CONFIG_POLICIES_KEY,
+    CONFIG_PIPELINE_KEY,
+    CONFIG_LANGUAGE_KEY,
+    CONFIG_LLM_KEY,
+    CONFIG_MODEL_NAME_KEY,
+]
 
 
 def extract_values(data: Dict, keys: List[Text]) -> Dict:

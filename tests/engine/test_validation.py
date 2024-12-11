@@ -2,50 +2,52 @@ import itertools
 import textwrap
 from collections import namedtuple
 from pathlib import Path
-from typing import Any, Callable, Dict, Text, Tuple, Type, Optional, List
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Type
 from unittest.mock import Mock, patch
 
 import pytest
 import structlog
 from _pytest.logging import LogCaptureFixture
+
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.dialogue_understanding.coexistence.intent_based_router import (
     IntentBasedRouter,
 )
 from rasa.dialogue_understanding.generator import (
-    SingleStepLLMCommandGenerator,
-    MultiStepLLMCommandGenerator,
     LLMCommandGenerator,
+    MultiStepLLMCommandGenerator,
+    SingleStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.constants import FLOW_RETRIEVAL_KEY
 from rasa.engine import validation
 from rasa.engine.constants import PLACEHOLDER_IMPORTER
 from rasa.engine.exceptions import GraphSchemaValidationException
 from rasa.engine.graph import (
-    GraphComponent,
     ExecutionContext,
+    GraphComponent,
+    GraphModelConfiguration,
     GraphSchema,
     SchemaNode,
-    GraphModelConfiguration,
 )
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.validation import (
     validate_coexistance_routing_setup,
-    validate_intent_based_router_position,
     validate_command_generator_exclusivity,
+    validate_intent_based_router_position,
+    validate_model_client_configuration_setup_during_inference_time,
     validate_model_client_configuration_setup_during_training_time,
     validate_model_group_configuration_setup,
-    validate_model_client_configuration_setup_during_inference_time,
 )
 from rasa.shared.constants import (
-    LATEST_TRAINING_DATA_FORMAT_VERSION,
-    ROUTE_TO_CALM_SLOT,
-    LLM_CONFIG_KEY,
-    EMBEDDINGS_CONFIG_KEY,
     API_KEY,
+    CONFIG_RECIPE_KEY,
+    EMBEDDINGS_CONFIG_KEY,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    LLM_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
+    ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.constants import ACTION_RESET_ROUTING
 from rasa.shared.core.domain import Domain
@@ -1299,7 +1301,7 @@ def test_validate_routing_setup(router_component: Text, tmp_path: Path) -> None:
         """
     )
     domain = Domain.from_yaml(domain_yaml)
-    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
     # When / Then - should not raise any errors
@@ -1338,7 +1340,7 @@ def test_validate_llm_based_router_required_routing_setup(tmp_path: Path) -> Non
         """
     )
     domain = Domain.from_yaml(domain_yaml)
-    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
     # When / Then - should not raise any errors
@@ -1374,7 +1376,7 @@ def test_validate_routing_setup_with_unrequired_calm_slot(tmp_path: Path) -> Non
         """
     )
     domain = Domain.from_yaml(domain_yaml)
-    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
     expected_event = (
@@ -1428,7 +1430,7 @@ def test_validate_routing_setup_with_router_and_no_calm_slot(
     importer = RasaFileImporter(config_file=config_file_name)
     config = importer.get_config()
     domain = importer.get_domain()
-    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
     expected_event = f"validation.coexistance" f".{ROUTE_TO_CALM_SLOT}_not_in_domain"
@@ -1471,11 +1473,10 @@ def test_validate_routing_setup_with_wrong_component_order(
                 - name: {router_component}
             """
         )
-
     importer = RasaFileImporter(config_file=config_file_name)
     config = importer.get_config()
     domain = importer.get_domain()
-    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
     # When / Then
@@ -1501,7 +1502,7 @@ def test_validate_routing_setup_with_both_coexistence_components(
     importer = RasaFileImporter(config_file=config_file_name)
     config = importer.get_config()
     domain = importer.get_domain()
-    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
     with pytest.raises(SystemExit):
@@ -1607,7 +1608,7 @@ def test_validate_coexistence_configuration(
         """
     )
     domain = Domain.from_yaml(domain_yaml)
-    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
     expected_event = "validation.coexistance.invalid_configuration"
@@ -1651,7 +1652,7 @@ def test_validate_routing_setup_with_unrequired_action_reset_routing(
     importer = RasaFileImporter(config_file=config_file_name)
     config = importer.get_config()
     domain = Domain.empty()
-    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
     model_configuration = recipe.graph_config_for_recipe(config, {})
     flows_list = flows_from_str(
         """

@@ -9,6 +9,11 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
+    CONFIG_LANGUAGE_KEY,
+    CONFIG_PIPELINE_KEY,
+)
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -18,9 +23,9 @@ from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
 @pytest.fixture()
 def pretrained_embeddings_spacy_config() -> Dict:
     return {
-        "assistant_id": "placeholder_default",
-        "language": "en",
-        "pipeline": [
+        ASSISTANT_ID_KEY: "placeholder_default",
+        CONFIG_LANGUAGE_KEY: "en",
+        CONFIG_PIPELINE_KEY: [
             {"name": "SpacyNLP", "model": "en_core_web_md"},
             {"name": "SpacyTokenizer"},
             {"name": "SpacyFeaturizer"},

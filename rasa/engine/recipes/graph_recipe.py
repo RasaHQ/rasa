@@ -1,16 +1,17 @@
 import logging
+from typing import Any, Dict, Text, Tuple
 
+from rasa.engine.graph import GraphModelConfiguration, GraphSchema
 from rasa.engine.recipes.recipe import Recipe
-from rasa.engine.graph import GraphModelConfiguration
-from rasa.shared.constants import DOCS_URL_GRAPH_RECIPE, ASSISTANT_ID_KEY
+from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
+    CONFIG_LANGUAGE_KEY,
+    DOCS_URL_GRAPH_RECIPE,
+)
 from rasa.shared.data import TrainingType
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.utils.common import mark_as_experimental_feature
 from rasa.shared.utils.io import raise_warning
-from rasa.engine.graph import GraphSchema
-
-from typing import Dict, Text, Any, Tuple
-
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,7 @@ class GraphV1Recipe(Recipe):
             predict_schema=GraphSchema.from_dict(config.get("predict_schema")),
             training_type=training_type,
             assistant_id=config.get(ASSISTANT_ID_KEY),
-            language=config.get("language"),
+            language=config.get(CONFIG_LANGUAGE_KEY),
             core_target=core_target,
             nlu_target=nlu_target,
         )

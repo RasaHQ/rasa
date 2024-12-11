@@ -1,65 +1,71 @@
 from __future__ import annotations
 
 import copy
+import dataclasses
 import enum
 import logging
 import math
 from enum import Enum
-from typing import Dict, Text, Any, Tuple, Type, Optional, List, Callable, Set, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Text, Tuple, Type, Union
 
-import dataclasses
-
+import rasa.shared.constants
 from rasa.core.featurizers.precomputation import (
-    CoreFeaturizationInputConverter,
     CoreFeaturizationCollector,
+    CoreFeaturizationInputConverter,
 )
-from rasa.graph_components.providers.flows_provider import FlowsProvider
+from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
 from rasa.dialogue_understanding.processor.command_processor_component import (
     CommandProcessorComponent,
 )
-from rasa.shared.exceptions import FileNotFoundException
-from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
-
-from rasa.engine.graph import (
-    GraphSchema,
-    GraphComponent,
-    SchemaNode,
-    GraphModelConfiguration,
-)
 from rasa.engine.constants import (
+    PLACEHOLDER_ENDPOINTS,
     PLACEHOLDER_IMPORTER,
     PLACEHOLDER_MESSAGE,
     PLACEHOLDER_TRACKER,
-    PLACEHOLDER_ENDPOINTS,
+)
+from rasa.engine.graph import (
+    GraphComponent,
+    GraphModelConfiguration,
+    GraphSchema,
+    SchemaNode,
 )
 from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.graph_components.converters.nlu_message_converter import NLUMessageConverter
-from rasa.graph_components.providers.domain_provider import DomainProvider
-from rasa.graph_components.providers.forms_provider import FormsProvider
-from rasa.graph_components.providers.responses_provider import ResponsesProvider
 from rasa.graph_components.providers.domain_for_core_training_provider import (
     DomainForCoreTrainingProvider,
 )
+from rasa.graph_components.providers.domain_provider import DomainProvider
+from rasa.graph_components.providers.flows_provider import FlowsProvider
+from rasa.graph_components.providers.forms_provider import FormsProvider
 from rasa.graph_components.providers.nlu_training_data_provider import (
     NLUTrainingDataProvider,
 )
+from rasa.graph_components.providers.responses_provider import ResponsesProvider
 from rasa.graph_components.providers.rule_only_provider import RuleOnlyDataProvider
 from rasa.graph_components.providers.story_graph_provider import StoryGraphProvider
 from rasa.graph_components.providers.training_tracker_provider import (
     TrainingTrackerProvider,
 )
-import rasa.shared.constants
-from rasa.shared.exceptions import RasaException, InvalidConfigException
-from rasa.shared.constants import ASSISTANT_ID_KEY
+from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
+    CONFIG_LANGUAGE_KEY,
+    CONFIG_NAME_KEY,
+    CONFIG_PIPELINE_KEY,
+    CONFIG_POLICIES_KEY,
+)
 from rasa.shared.data import TrainingType
-from rasa.shared.utils.yaml import read_config_file
-
-from rasa.utils.tensorflow.constants import EPOCHS
+from rasa.shared.exceptions import (
+    FileNotFoundException,
+    InvalidConfigException,
+    RasaException,
+)
 from rasa.shared.utils.common import (
     class_from_module_path,
     transform_collection_to_sentence,
 )
+from rasa.shared.utils.yaml import read_config_file
+from rasa.utils.tensorflow.constants import EPOCHS
 
 logger = logging.getLogger(__name__)
 
@@ -67,19 +73,23 @@ logger = logging.getLogger(__name__)
 DEFAULT_PREDICT_KWARGS = dict(constructor_name="load", eager=True, is_target=False)
 
 COMMENTS_FOR_KEYS = {
-    "pipeline": (
+    CONFIG_PIPELINE_KEY: (
         f"# # No configuration for the NLU pipeline was provided. The following "
         f"default pipeline was used to train your model.\n"
         f"# # If you'd like to customize it, uncomment and adjust the pipeline.\n"
         f"# # See {rasa.shared.constants.DOCS_URL_PIPELINE} for more information.\n"
     ),
-    "policies": (
+    CONFIG_POLICIES_KEY: (
         f"# # No configuration for policies was provided. The following default "
         f"policies were used to train your model.\n"
         f"# # If you'd like to customize them, uncomment and adjust the policies.\n"
         f"# # See {rasa.shared.constants.DOCS_URL_POLICIES} for more information.\n"
     ),
 }
+
+
+GRAPH_NODE_RUN_PREFIX = "run_"
+GRAPH_NODE_TRAIN_PREFIX = "train_"
 
 
 class DefaultV1RecipeRegisterException(RasaException):
@@ -194,10 +204,12 @@ class DefaultV1Recipe(Recipe):
     ) -> GraphModelConfiguration:
         """Converts the default config to graphs (see interface for full docstring)."""
         self._use_core = (
-            bool(config.get("policies")) and not training_type == TrainingType.NLU
+            bool(config.get(CONFIG_POLICIES_KEY))
+            and not training_type == TrainingType.NLU
         )
         self._use_nlu = (
-            bool(config.get("pipeline")) and not training_type == TrainingType.CORE
+            bool(config.get(CONFIG_PIPELINE_KEY))
+            and not training_type == TrainingType.CORE
         )
 
         if not self._use_nlu and training_type == TrainingType.NLU:
@@ -232,9 +244,9 @@ class DefaultV1Recipe(Recipe):
             predict_schema=GraphSchema(predict_nodes),
             training_type=training_type,
             assistant_id=config.get(ASSISTANT_ID_KEY),
-            language=config.get("language"),
+            language=config.get(CONFIG_LANGUAGE_KEY),
             core_target=core_target,
-            nlu_target=f"run_{RegexMessageHandler.__name__}",
+            nlu_target=f"{GRAPH_NODE_RUN_PREFIX}{RegexMessageHandler.__name__}",
         )
 
     def _create_train_nodes(
@@ -317,7 +329,7 @@ class DefaultV1Recipe(Recipe):
             constructor_name="create",
             fn="provide",
             config={
-                "language": train_config.get("language"),
+                "language": train_config.get(CONFIG_LANGUAGE_KEY),
                 "persist": persist_nlu_data,
             },
             is_target=persist_nlu_data,
@@ -327,8 +339,8 @@ class DefaultV1Recipe(Recipe):
         last_run_node = "nlu_training_data_provider"
         preprocessors: List[Text] = []
 
-        for idx, config in enumerate(train_config["pipeline"]):
-            component_name = config.pop("name")
+        for idx, config in enumerate(train_config[CONFIG_PIPELINE_KEY]):
+            component_name = config.pop(CONFIG_NAME_KEY)
             component = self._from_registry(component_name)
             component_name = f"{component_name}{idx}"
 
@@ -451,7 +463,7 @@ class DefaultV1Recipe(Recipe):
         needs.update(self._get_model_provider_needs(train_nodes, component))
         needs["training_data"] = last_run_node
 
-        train_node_name = f"train_{component_name}"
+        train_node_name = f"{GRAPH_NODE_TRAIN_PREFIX}{component_name}"
         train_nodes[train_node_name] = SchemaNode(
             needs=needs,
             uses=component,
@@ -469,10 +481,10 @@ class DefaultV1Recipe(Recipe):
         component_config: Dict[Text, Any],
     ) -> Dict[Text, Any]:
         from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
-        from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
         from rasa.nlu.classifiers.sklearn_intent_classifier import (
             SklearnIntentClassifier,
         )
+        from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 
         cli_args_mapping: Dict[Type[GraphComponent], List[Text]] = {
             MitieIntentClassifier: ["num_threads"],
@@ -520,7 +532,7 @@ class DefaultV1Recipe(Recipe):
 
         needs["training_data"] = last_run_node
 
-        node_name = f"run_{component_name}"
+        node_name = f"{GRAPH_NODE_RUN_PREFIX}{component_name}"
         train_nodes[node_name] = SchemaNode(
             needs=needs,
             uses=component_class,
@@ -627,8 +639,8 @@ class DefaultV1Recipe(Recipe):
         )
 
         policy_with_end_to_end_support_used = False
-        for idx, config in enumerate(train_config["policies"]):
-            component_name = config.pop("name")
+        for idx, config in enumerate(train_config[CONFIG_POLICIES_KEY]):
+            component_name = config.pop(CONFIG_NAME_KEY)
             component = self._from_registry(component_name)
 
             extra_config_from_cli = self._extra_config_from_cli(
@@ -647,7 +659,7 @@ class DefaultV1Recipe(Recipe):
                 needs["precomputations"] = "end_to_end_features_provider"
             # during core training we use a stripped down version of the domain
             needs["domain"] = "domain_for_core_training_provider"
-            train_nodes[f"train_{component_name}{idx}"] = SchemaNode(
+            train_nodes[f"{GRAPH_NODE_TRAIN_PREFIX}{component_name}{idx}"] = SchemaNode(
                 needs=needs,
                 uses=component.clazz,
                 constructor_name="load" if self._is_finetuning else "create",
@@ -722,7 +734,9 @@ class DefaultV1Recipe(Recipe):
         if self._use_core:
             domain_needs["domain"] = "domain_provider"
 
-        regex_handler_node_name = f"run_{RegexMessageHandler.__name__}"
+        regex_handler_node_name = (
+            f"{GRAPH_NODE_RUN_PREFIX}{RegexMessageHandler.__name__}"
+        )
         predict_nodes[regex_handler_node_name] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,
             needs={"messages": last_run_nlu_node, **domain_needs},
@@ -762,8 +776,8 @@ class DefaultV1Recipe(Recipe):
             resource=Resource("domain_provider"),
         )
 
-        for idx, config in enumerate(predict_config["pipeline"]):
-            component_name = config.pop("name")
+        for idx, config in enumerate(predict_config[CONFIG_PIPELINE_KEY]):
+            component_name = config.pop(CONFIG_NAME_KEY)
             component = self._from_registry(component_name)
             component_name = f"{component_name}{idx}"
             if self.ComponentType.MODEL_LOADER in component.types:
@@ -830,10 +844,10 @@ class DefaultV1Recipe(Recipe):
         item_config: Dict[Text, Any],
         from_resource: bool = False,
     ) -> Text:
-        train_node_name = f"run_{node_name}"
+        train_node_name = f"{GRAPH_NODE_RUN_PREFIX}{node_name}"
         resource = None
         if from_resource:
-            train_node_name = f"train_{node_name}"
+            train_node_name = f"{GRAPH_NODE_TRAIN_PREFIX}{node_name}"
             resource = Resource(train_node_name)
 
         return self._add_nlu_predict_node(
@@ -852,7 +866,7 @@ class DefaultV1Recipe(Recipe):
         component_name: Text,
         last_run_node: Text,
     ) -> Text:
-        node_name = f"run_{component_name}"
+        node_name = f"{GRAPH_NODE_RUN_PREFIX}{component_name}"
 
         needs = self._get_needs_from_args(node.uses, "process")
         needs.update(self._get_model_provider_needs(predict_nodes, node.uses))
@@ -919,12 +933,12 @@ class DefaultV1Recipe(Recipe):
         rule_policy_resource = None
         policies: List[Text] = []
 
-        for idx, config in enumerate(predict_config["policies"]):
-            component_name = config.pop("name")
+        for idx, config in enumerate(predict_config[CONFIG_POLICIES_KEY]):
+            component_name = config.pop(CONFIG_NAME_KEY)
             component = self._from_registry(component_name)
 
-            train_node_name = f"train_{component_name}{idx}"
-            node_name = f"run_{component_name}{idx}"
+            train_node_name = f"{GRAPH_NODE_TRAIN_PREFIX}{component_name}{idx}"
+            node_name = f"{GRAPH_NODE_RUN_PREFIX}{component_name}{idx}"
 
             from rasa.core.policies.rule_policy import RulePolicy
 

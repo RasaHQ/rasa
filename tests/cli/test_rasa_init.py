@@ -2,15 +2,21 @@ import argparse
 import os
 from pathlib import Path
 from typing import Callable
-from _pytest.pytester import RunResult
-from _pytest.monkeypatch import MonkeyPatch
+
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
+from _pytest.pytester import RunResult
 
 from rasa.cli import scaffold
+from rasa.shared.constants import (
+    CONFIG_LANGUAGE_KEY,
+    CONFIG_PIPELINE_KEY,
+    CONFIG_POLICIES_KEY,
+    CONFIG_RECIPE_KEY,
+)
+from tests.cli.conftest import RASA_EXE
 from tests.conftest import enable_cache
 from tests.core.channels.test_cmdline import mock_stdin
-
-from tests.cli.conftest import RASA_EXE
 
 
 def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
@@ -85,10 +91,10 @@ def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, tmp_path: Path):
     # Simple config which should train fast.
     def mock_get_config(*args):
         return {
-            "language": "en",
-            "pipeline": [{"name": "KeywordIntentClassifier"}],
-            "policies": [{"name": "RulePolicy"}],
-            "recipe": "default.v1",
+            CONFIG_LANGUAGE_KEY: "en",
+            CONFIG_PIPELINE_KEY: [{"name": "KeywordIntentClassifier"}],
+            CONFIG_POLICIES_KEY: [{"name": "RulePolicy"}],
+            CONFIG_RECIPE_KEY: "default.v1",
         }
 
     monkeypatch.setattr(

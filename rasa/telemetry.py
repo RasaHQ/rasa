@@ -32,34 +32,41 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ENABLED,
     CONFIG_TELEMETRY_ID,
 )
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import (
+    CONFIG_LANGUAGE_KEY,
+    CONFIG_PIPELINE_KEY,
+    CONFIG_POLICIES_KEY,
+    CONFIG_PREDICT_SCHEMA,
+    CONFIG_RECIPE_KEY,
+    CONFIG_TRAIN_SCHEMA,
+    DOCS_URL_TELEMETRY,
+    LLM_API_HEALTH_CHECK_DEFAULT_VALUE,
+    LLM_API_HEALTH_CHECK_ENV_VAR,
+    MODEL_GROUP_CONFIG_KEY,
     PROMPT_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
-    LLM_API_HEALTH_CHECK_ENV_VAR,
-    LLM_API_HEALTH_CHECK_DEFAULT_VALUE,
-    MODEL_GROUP_CONFIG_KEY,
+    UTTER_ASK_PREFIX,
 )
-from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.shared.constants import DOCS_URL_TELEMETRY, UTTER_ASK_PREFIX
 from rasa.shared.core.flows import Flow
 from rasa.shared.core.flows.steps import (
-    CollectInformationFlowStep,
-    SetSlotsFlowStep,
-    LinkFlowStep,
     CallFlowStep,
+    CollectInformationFlowStep,
+    LinkFlowStep,
+    SetSlotsFlowStep,
 )
 from rasa.shared.exceptions import RasaException
 from rasa.utils import common as rasa_utils
 
 if typing.TYPE_CHECKING:
-    from rasa.core.brokers.broker import EventBroker
-    from rasa.core.tracker_store import TrackerStore
-    from rasa.core.channels.channel import InputChannel
     from rasa.core.agent import Agent
-    from rasa.shared.nlu.training_data.training_data import TrainingData
-    from rasa.shared.importers.importer import TrainingDataImporter
+    from rasa.core.brokers.broker import EventBroker
+    from rasa.core.channels.channel import InputChannel
+    from rasa.core.tracker_store import TrackerStore
     from rasa.core.utils import AvailableEndpoints
-    from rasa.e2e_test.e2e_test_case import TestCase, Fixture, Metadata
+    from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase
+    from rasa.shared.importers.importer import TrainingDataImporter
+    from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -352,6 +359,7 @@ def _fetch_write_key(tool: Text, environment_variable: Text) -> Optional[Text]:
         write key, if a key was present.
     """
     import importlib_resources
+
     from rasa import __name__ as name
 
     if os.environ.get(environment_variable):
@@ -602,7 +610,7 @@ def _default_context_fields() -> Dict[Text, Any]:
     Return:
         A new context containing information about the runtime environment.
     """
-    from rasa.utils.licensing import property_of_active_license, get_license_hash
+    from rasa.utils.licensing import get_license_hash, property_of_active_license
 
     global TELEMETRY_CONTEXT
 
@@ -962,13 +970,13 @@ def track_model_training(
     training_id = uuid.uuid4().hex
 
     tracking_data = {
-        "language": config.get("language"),
+        "language": config.get(CONFIG_LANGUAGE_KEY),
         "training_id": training_id,
         "type": model_type,
-        "pipeline": config.get("pipeline"),
-        "policies": config.get("policies"),
-        "train_schema": config.get("train_schema"),
-        "predict_schema": config.get("predict_schema"),
+        "pipeline": config.get(CONFIG_PIPELINE_KEY),
+        "policies": config.get(CONFIG_POLICIES_KEY),
+        "train_schema": config.get(CONFIG_TRAIN_SCHEMA),
+        "predict_schema": config.get(CONFIG_PREDICT_SCHEMA),
         "model_groups": rasa.core.utils.AvailableEndpoints.get_instance().model_groups,
         "api_health_check_enabled": (
             os.getenv(
@@ -995,7 +1003,7 @@ def track_model_training(
         "num_synonyms": len(nlu_data.entity_synonyms),
         "num_regexes": len(nlu_data.regex_features),
         "is_finetuning": is_finetuning,
-        "recipe": config.get("recipe"),
+        "recipe": config.get(CONFIG_RECIPE_KEY),
     }
 
     flow_statistics = _collect_flow_statistics(flows.underlying_flows)
@@ -1096,27 +1104,27 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
     Includes the model name, whether a custom prompt is used, whether flow
     retrieval is enabled, and flow retrieval embedding model.
     """
+    from rasa.dialogue_understanding.generator import (
+        LLMCommandGenerator,
+        MultiStepLLMCommandGenerator,
+        SingleStepLLMCommandGenerator,
+    )
+    from rasa.dialogue_understanding.generator.constants import (
+        DEFAULT_LLM_CONFIG,
+        FLOW_RETRIEVAL_KEY,
+        LLM_CONFIG_KEY,
+    )
+    from rasa.dialogue_understanding.generator.flow_retrieval import (
+        DEFAULT_EMBEDDINGS_CONFIG,
+    )
+    from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
+        FILL_SLOTS_KEY,
+        HANDLE_FLOWS_KEY,
+    )
     from rasa.shared.constants import (
         EMBEDDINGS_CONFIG_KEY,
         MODEL_CONFIG_KEY,
         MODEL_NAME_CONFIG_KEY,
-    )
-    from rasa.dialogue_understanding.generator import (
-        LLMCommandGenerator,
-        SingleStepLLMCommandGenerator,
-        MultiStepLLMCommandGenerator,
-    )
-    from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
-        HANDLE_FLOWS_KEY,
-        FILL_SLOTS_KEY,
-    )
-    from rasa.dialogue_understanding.generator.constants import (
-        LLM_CONFIG_KEY,
-        DEFAULT_LLM_CONFIG,
-        FLOW_RETRIEVAL_KEY,
-    )
-    from rasa.dialogue_understanding.generator.flow_retrieval import (
-        DEFAULT_EMBEDDINGS_CONFIG,
     )
 
     def find_command_generator_component(pipeline: List) -> Optional[Dict]:
@@ -1204,7 +1212,7 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
         FLOW_RETRIEVAL_EMBEDDING_MODEL_GROUP_ID: None,
     }
 
-    pipeline = config.get("pipeline", [])
+    pipeline = config.get(CONFIG_PIPELINE_KEY, [])
     if not isinstance(pipeline, list):
         return command_generator_config
 
@@ -1386,8 +1394,7 @@ def track_inspect_started(model_type: Text) -> None:
     """Track when a user starts a bot using rasa inspect.
 
     Args:
-        channel: Channel name `socketio` (used for chat assistants)
-         or `browser_audio` (used for voice).
+        model_type: Type of the model, core / nlu or rasa.
     """
     _track(TELEMETRY_INSPECT_STARTED_EVENT, {"type": model_type})
 

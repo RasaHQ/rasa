@@ -8,7 +8,7 @@ import re
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Text, Callable
+from typing import Any, Callable, Dict, Text
 
 import pytest
 import structlog
@@ -20,16 +20,18 @@ import rasa.shared.utils.io
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
+    CONFIG_LANGUAGE_KEY,
     CONFIG_MANDATORY_KEYS,
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS_NLU,
+    CONFIG_PIPELINE_KEY,
+    CONFIG_POLICIES_KEY,
     DEFAULT_CONFIG_PATH,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
-from rasa.utils.common import EXPECTED_WARNINGS
-from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
+from rasa.utils.common import EXPECTED_WARNINGS, TempDirectoryPath, get_temp_dir_name
 from tests.cli.conftest import RASA_EXE
 from unittest.mock import AsyncMock
 from tests.utilities import filter_logs
@@ -144,30 +146,30 @@ def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.P
     [
         {
             "config_data": {
-                "assistant_id": "placeholder_default",
-                "language": "en",
-                "pipeline": "supervised",
+                ASSISTANT_ID_KEY: "placeholder_default",
+                CONFIG_LANGUAGE_KEY: "en",
+                CONFIG_PIPELINE_KEY: "supervised",
             },
             "default_config": {
-                "assistant_id": "placeholder_default",
-                "language": "en",
-                "pipeline": "supervised",
-                "policies": ["TEDPolicy", "FallbackPolicy"],
+                ASSISTANT_ID_KEY: "placeholder_default",
+                CONFIG_LANGUAGE_KEY: "en",
+                CONFIG_PIPELINE_KEY: "supervised",
+                CONFIG_POLICIES_KEY: ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
         },
         {
             "config_data": {
-                "assistant_id": "placeholder_default",
-                "language": "en",
-                "pipeline": "supervised",
-                "policies": None,
+                ASSISTANT_ID_KEY: "placeholder_default",
+                CONFIG_LANGUAGE_KEY: "en",
+                CONFIG_PIPELINE_KEY: "supervised",
+                CONFIG_POLICIES_KEY: None,
             },
             "default_config": {
-                "assistant_id": "placeholder_default",
-                "language": "en",
-                "pipeline": "supervised",
-                "policies": ["TEDPolicy", "FallbackPolicy"],
+                ASSISTANT_ID_KEY: "placeholder_default",
+                CONFIG_LANGUAGE_KEY: "en",
+                CONFIG_PIPELINE_KEY: "supervised",
+                CONFIG_POLICIES_KEY: ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
         },
@@ -195,18 +197,18 @@ def test_get_validated_config_with_valid_input(parameters: Dict[Text, Any]) -> N
     [
         {
             "default_config": {
-                "assistant_id": "placeholder_default",
-                "language": "en",
-                "pipeline": "supervised",
-                "policies": ["TEDPolicy", "FallbackPolicy"],
+                ASSISTANT_ID_KEY: "placeholder_default",
+                CONFIG_LANGUAGE_KEY: "en",
+                CONFIG_PIPELINE_KEY: "supervised",
+                CONFIG_POLICIES_KEY: ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS,
         },
         {
             "default_config": {
-                "assistant_id": "placeholder_default",
-                "language": "en",
-                "pipeline": "supervised",
+                ASSISTANT_ID_KEY: "placeholder_default",
+                CONFIG_LANGUAGE_KEY: "en",
+                CONFIG_PIPELINE_KEY: "supervised",
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_CORE,
         },
@@ -233,27 +235,27 @@ def test_get_validated_config_with_default_config(parameters: Dict[Text, Any]) -
     [
         {
             "config_data": {
-                "assistant_id": "placeholder_default",
+                ASSISTANT_ID_KEY: "placeholder_default",
             },
             "default_config": {
-                "assistant_id": "placeholder_default",
-                "language": "en",
-                "pipeline": "supervised",
-                "policies": ["TEDPolicy", "FallbackPolicy"],
+                ASSISTANT_ID_KEY: "placeholder_default",
+                CONFIG_LANGUAGE_KEY: "en",
+                CONFIG_PIPELINE_KEY: "supervised",
+                CONFIG_POLICIES_KEY: ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS,
         },
         {
             "config_data": {
-                "assistant_id": "placeholder_default",
-                "policies": ["TEDPolicy", "FallbackPolicy"],
+                ASSISTANT_ID_KEY: "placeholder_default",
+                CONFIG_POLICIES_KEY: ["TEDPolicy", "FallbackPolicy"],
                 "imports": "other-folder",
             },
             "default_config": {
-                "assistant_id": "placeholder_default",
-                "language": "en",
-                "pipeline": "supervised",
-                "policies": ["TEDPolicy", "FallbackPolicy"],
+                ASSISTANT_ID_KEY: "placeholder_default",
+                CONFIG_LANGUAGE_KEY: "en",
+                CONFIG_PIPELINE_KEY: "supervised",
+                CONFIG_POLICIES_KEY: ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
         },
@@ -278,9 +280,9 @@ def test_get_validated_config_with_invalid_input(parameters: Dict[Text, Any]) ->
         {
             "config_data": None,
             "default_config": {
-                "assistant_id": "placeholder_default",
-                "pipeline": "supervised",
-                "policies": ["TEDPolicy", "FallbackPolicy"],
+                ASSISTANT_ID_KEY: "placeholder_default",
+                CONFIG_PIPELINE_KEY: "supervised",
+                CONFIG_POLICIES_KEY: ["TEDPolicy", "FallbackPolicy"],
             },
             "mandatory_keys": CONFIG_MANDATORY_KEYS_NLU,
         },
@@ -291,9 +293,9 @@ def test_get_validated_config_with_default_and_no_config(
 ) -> None:
     config_path = None
     default_config_content = {
-        "assistant_id": "placeholder_default",
-        "pipeline": "supervised",
-        "policies": ["TEDPolicy", "FallbackPolicy"],
+        ASSISTANT_ID_KEY: "placeholder_default",
+        CONFIG_PIPELINE_KEY: "supervised",
+        CONFIG_POLICIES_KEY: ["TEDPolicy", "FallbackPolicy"],
     }
     mandatory_keys = CONFIG_MANDATORY_KEYS_NLU
 

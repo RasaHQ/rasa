@@ -1,25 +1,30 @@
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 from unittest.mock import Mock, patch
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
 
+import rasa.engine.recipes.default_components
+import rasa.model_training
+import rasa.shared.utils.io
 from rasa.core.agent import Agent
 from rasa.core.policies.policy import Policy
 from rasa.dialogue_understanding.coexistence.constants import (
     CALM_ENTRY,
     NLU_ENTRY,
-    STICKY,
     NON_STICKY,
+    STICKY,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
+    CONFIG_LANGUAGE_KEY,
+    CONFIG_PIPELINE_KEY,
+    ROUTE_TO_CALM_SLOT,
+)
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.utils.tensorflow.constants import EPOCHS, RUN_EAGERLY
-from typing import Any, Dict, List, Tuple, Text, Union, Optional
-import rasa.model_training
-import rasa.shared.utils.io
-import rasa.engine.recipes.default_components
 
 COMPONENTS_TEST_PARAMS = {
     "DIETClassifier": {EPOCHS: 1, RUN_EAGERLY: True},
@@ -240,9 +245,9 @@ async def test_train_persist_load_parse(
     rasa.shared.utils.io.dump_obj_as_json_to_file(
         config_file,
         {
-            "pipeline": pipeline,
-            "language": language,
-            "assistant_id": "placeholder_default",
+            CONFIG_PIPELINE_KEY: pipeline,
+            CONFIG_LANGUAGE_KEY: language,
+            ASSISTANT_ID_KEY: "placeholder_default",
         },
     )
 
@@ -286,9 +291,9 @@ async def test_train_persist_load_parse_coexistence(
     rasa.shared.utils.io.dump_obj_as_json_to_file(
         config_file,
         {
-            "pipeline": pipeline,
-            "language": language,
-            "assistant_id": "placeholder_default",
+            CONFIG_PIPELINE_KEY: pipeline,
+            CONFIG_LANGUAGE_KEY: language,
+            ASSISTANT_ID_KEY: "placeholder_default",
         },
     )
 
@@ -332,7 +337,7 @@ def test_train_persist_load_parse_non_windows(
 async def test_train_model_empty_pipeline(nlu_as_json_path: Text, tmp_path: Path):
     config_file = tmp_path / "config.yml"
     rasa.shared.utils.io.dump_obj_as_json_to_file(
-        config_file, {"pipeline": [], "assistant_id": "placeholder_default"}
+        config_file, {CONFIG_PIPELINE_KEY: [], ASSISTANT_ID_KEY: "placeholder_default"}
     )
 
     with pytest.raises(ValueError):
@@ -344,7 +349,7 @@ async def test_train_model_empty_pipeline(nlu_as_json_path: Text, tmp_path: Path
 async def test_handles_pipeline_with_non_existing_component(
     tmp_path: Path, pretrained_embeddings_spacy_config: Dict, nlu_as_json_path: Text
 ):
-    pretrained_embeddings_spacy_config["pipeline"].append(
+    pretrained_embeddings_spacy_config[CONFIG_PIPELINE_KEY].append(
         {"name": "my_made_up_component"}
     )
 
@@ -368,9 +373,9 @@ async def test_train_model_training_data_persisted(
     rasa.shared.utils.io.dump_obj_as_json_to_file(
         config_file,
         {
-            "pipeline": [{"name": "KeywordIntentClassifier"}],
-            "language": "en",
-            "assistant_id": "placeholder_default",
+            CONFIG_PIPELINE_KEY: [{"name": "KeywordIntentClassifier"}],
+            CONFIG_LANGUAGE_KEY: "en",
+            ASSISTANT_ID_KEY: "placeholder_default",
         },
     )
 
@@ -400,9 +405,9 @@ async def test_train_model_no_training_data_persisted(
     rasa.shared.utils.io.dump_obj_as_json_to_file(
         config_file,
         {
-            "pipeline": [{"name": "KeywordIntentClassifier"}],
-            "language": "en",
-            "assistant_id": "placeholder_default",
+            CONFIG_PIPELINE_KEY: [{"name": "KeywordIntentClassifier"}],
+            CONFIG_LANGUAGE_KEY: "en",
+            ASSISTANT_ID_KEY: "placeholder_default",
         },
     )
 

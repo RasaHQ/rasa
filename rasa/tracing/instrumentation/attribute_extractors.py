@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, Union
 
 import tiktoken
 from numpy import ndarray
-from rasa.dialogue_understanding.generator.constants import FLOW_RETRIEVAL_KEY
 from rasa_sdk.grpc_py import action_webhook_pb2
 
 from rasa.core.actions.action import DirectCustomActionExecutor
@@ -19,24 +18,27 @@ from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephra
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.generator import LLMBasedCommandGenerator
+from rasa.dialogue_understanding.generator.constants import FLOW_RETRIEVAL_KEY
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.graph import ExecutionContext, GraphModelConfiguration, GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.constants import (
+    CONFIG_RECIPE_KEY,
+    DEPLOYMENT_CONFIG_KEY,
     EMBEDDINGS_CONFIG_KEY,
+    LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
-    DEPLOYMENT_CONFIG_KEY,
-    MODEL_GROUP_ID_CONFIG_KEY,
-    LLM_CONFIG_KEY,
 )
 from rasa.shared.core.constants import REQUESTED_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated, Event
 from rasa.shared.core.flows import Flow, FlowsList, FlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, SET_SLOT_COMMAND
 from rasa.shared.utils.llm import (
@@ -46,7 +48,6 @@ from rasa.tracing.constants import (
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
     REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
 )
-from rasa.shared.core.training_data.structures import StoryGraph
 
 if TYPE_CHECKING:
     from langchain.llms.base import BaseLLM
@@ -255,7 +256,7 @@ def extract_attrs_for_graph_trainer(
     return {
         "training_type": model_configuration.training_type.model_type,
         "language": model_configuration.language,
-        "recipe_name": importer.get_config().get("recipe"),
+        "recipe_name": importer.get_config().get(CONFIG_RECIPE_KEY),
         "output_filename": output_filename.name,
         "is_finetuning": is_finetuning,
     }
@@ -644,8 +645,8 @@ def extract_attrs_for_intentless_policy_generate_llm_answer(
     self: "IntentlessPolicy", llm: "BaseLLM", prompt: str
 ) -> Dict[str, Any]:
     from rasa.core.policies.intentless_policy import (
-        DEFAULT_LLM_CONFIG,
         DEFAULT_EMBEDDINGS_CONFIG,
+        DEFAULT_LLM_CONFIG,
     )
 
     attributes = extract_llm_config(
@@ -661,8 +662,8 @@ def extract_attrs_for_enterprise_search_generate_llm_answer(
     self: "EnterpriseSearchPolicy", llm: "BaseLLM", prompt: str
 ) -> Dict[str, Any]:
     from rasa.core.policies.enterprise_search_policy import (
-        DEFAULT_LLM_CONFIG,
         DEFAULT_EMBEDDINGS_CONFIG,
+        DEFAULT_LLM_CONFIG,
     )
 
     attributes = extract_llm_config(

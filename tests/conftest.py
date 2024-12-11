@@ -43,6 +43,7 @@ from pytest import (
 from sanic import Sanic
 from sanic.request import Request
 from spacy import Language
+from swagger_coverage_py.reporter import CoverageReporter
 
 import rasa.core.run
 import rasa.shared.utils.io
@@ -72,6 +73,9 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
+    CONFIG_LANGUAGE_KEY,
+    CONFIG_PIPELINE_KEY,
+    CONFIG_POLICIES_KEY,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     LLM_API_HEALTH_CHECK_ENV_VAR,
 )
@@ -113,7 +117,6 @@ from tests.license_env import (
     UNSCOPED_LICENSE_ENV,
     VALID_LICENSE_ENV,
 )
-from swagger_coverage_py.reporter import CoverageReporter
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separately installable pytest-cli plugin.
@@ -1112,10 +1115,10 @@ def create_simple_project(path: Path) -> Path:
     # fast to train
     write_yaml(
         {
-            "assistant_id": "placeholder_default",
-            "language": "en",
-            "pipeline": [{"name": "KeywordIntentClassifier"}],
-            "policies": [
+            ASSISTANT_ID_KEY: "placeholder_default",
+            CONFIG_LANGUAGE_KEY: "en",
+            CONFIG_PIPELINE_KEY: [{"name": "KeywordIntentClassifier"}],
+            CONFIG_POLICIES_KEY: [
                 {"name": "RulePolicy"},
                 {"name": "MemoizationPolicy", "max_history": 3},
             ],

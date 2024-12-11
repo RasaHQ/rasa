@@ -1,64 +1,63 @@
+import re
 import warnings
 from pathlib import Path
-from rasa.core.policies.flow_policy import FlowPolicy
-from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
-
-import rasa.shared.utils.io
-from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
-from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-from rasa.engine.storage.storage import ModelStorage
-from rasa.engine.storage.resource import Resource
-
-from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
-from typing import Dict, List, Optional, Set, Text, Any, Tuple, Type
-import re
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Type
+from unittest.mock import Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from unittest.mock import Mock
-from rasa.engine.graph import GraphComponent, ExecutionContext, GraphSchema, SchemaNode
 
+import rasa.shared.utils.io
+import rasa.utils.common
+from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
+from rasa.core.policies.flow_policy import FlowPolicy
+from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
+from rasa.core.policies.policy import Policy
+from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
+from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.validators.default_recipe_validator import (
     POLICY_CLASSSES,
-    DefaultV1RecipeValidator,
     TRAINABLE_EXTRACTORS,
+    DefaultV1RecipeValidator,
     _types_to_str,
 )
-from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
+from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.nlu.extractors.crf_entity_extractor import (
     CRFEntityExtractor,
 )
+from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
+from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizer,
 )
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
-from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.core.policies.policy import Policy
+from rasa.shared.constants import CONFIG_POLICIES_KEY
+from rasa.shared.core.domain import KEY_FORMS, Domain, InvalidDomain
 from rasa.shared.core.training_data.structures import StoryGraph
-from rasa.shared.core.domain import InvalidDomain, KEY_FORMS, Domain
-from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.data import TrainingType
+from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import (
     ENTITIES,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_TYPE,
-    INTENT_RESPONSE_KEY,
-    TEXT,
     INTENT,
+    INTENT_RESPONSE_KEY,
     RESPONSE,
+    TEXT,
 )
-from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.yaml import YamlValidationException, read_yaml_file, write_yaml
-import rasa.utils.common
 from tests.conftest import filter_expected_warnings
 
 
@@ -1042,7 +1041,7 @@ def test_no_warnings_with_default_project(tmp_path: Path):
 
 
 def test_importer_with_invalid_model_config(tmp_path: Path):
-    invalid = {"version": "2.0", "policies": ["name"]}
+    invalid = {"version": "2.0", CONFIG_POLICIES_KEY: ["name"]}
     config_file = tmp_path / "config.yml"
     write_yaml(invalid, config_file)
 

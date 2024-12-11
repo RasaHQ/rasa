@@ -3,54 +3,60 @@ import re
 import string
 import sys
 from collections import defaultdict
-from typing import Set, Text, Optional, Dict, Any, List, Tuple
+from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
 import structlog
 from jinja2 import Template
 from pypred import Predicate
-from pypred.ast import Literal, CompareOperator, NegateOperator
+from pypred.ast import CompareOperator, Literal, NegateOperator
 
 import rasa.core.training.story_conflict
+import rasa.shared.nlu.constants
+import rasa.shared.utils.cli
+import rasa.shared.utils.io
 from rasa.core.channels import UserMessage
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
-from rasa.shared.core.command_payload_reader import (
-    CommandPayloadReader,
-    MAX_NUMBER_OF_SLOTS,
-)
-from rasa.shared.core.flows.flow_step_links import IfFlowStepLink
-from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
-from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
-from rasa.shared.core.flows.steps.action import ActionFlowStep
-from rasa.shared.core.flows.steps.link import LinkFlowStep
-from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.flows.utils import (
-    warn_deprecated_collect_step_config,
-    get_duplicate_slot_persistence_config_error_message,
-    get_invalid_slot_persistence_config_error_message,
-)
-import rasa.shared.nlu.constants
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
     CONFIG_MANDATORY_KEYS,
+    CONFIG_PIPELINE_KEY,
+    DOCS_URL_ACTIONS,
     DOCS_URL_DOMAIN,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
     DOCS_URL_RESPONSES,
-    UTTER_PREFIX,
-    DOCS_URL_ACTIONS,
     REQUIRED_SLOTS_KEY,
+    UTTER_PREFIX,
 )
 from rasa.shared.core import constants
-from rasa.shared.core.constants import MAPPING_CONDITIONS, ACTIVE_LOOP
-from rasa.shared.core.events import ActionExecuted, ActiveLoop
-from rasa.shared.core.events import UserUttered
+from rasa.shared.core.command_payload_reader import (
+    MAX_NUMBER_OF_SLOTS,
+    CommandPayloadReader,
+)
+from rasa.shared.core.constants import (
+    ACTIVE_LOOP,
+    MAPPING_CONDITIONS,
+    MAPPING_TYPE,
+    SlotMappingType,
+)
 from rasa.shared.core.domain import (
-    Domain,
     RESPONSE_KEYS_TO_INTERPOLATE,
+    Domain,
+)
+from rasa.shared.core.events import ActionExecuted, ActiveLoop, UserUttered
+from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows.flow_step_links import IfFlowStepLink
+from rasa.shared.core.flows.steps.action import ActionFlowStep
+from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
+from rasa.shared.core.flows.steps.link import LinkFlowStep
+from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
+from rasa.shared.core.flows.utils import (
+    get_duplicate_slot_persistence_config_error_message,
+    get_invalid_slot_persistence_config_error_message,
+    warn_deprecated_collect_step_config,
 )
 from rasa.shared.core.generator import TrainingDataGenerator
-from rasa.shared.core.constants import SlotMappingType, MAPPING_TYPE
 from rasa.shared.core.slots import BooleanSlot, CategoricalSlot, ListSlot, Slot
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
@@ -61,9 +67,6 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import COMMANDS
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-
-import rasa.shared.utils.cli
-import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
@@ -1502,7 +1505,7 @@ class Validator:
         contains_nlu_command_adapter = any(
             [
                 component.get("name") == "NLUCommandAdapter"
-                for component in self.config.get("pipeline", [])
+                for component in self.config.get(CONFIG_PIPELINE_KEY, [])
             ]
         )
 

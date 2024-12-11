@@ -1,17 +1,15 @@
-from typing import Text, Dict, Any, Set, List
 import shutil
+from pathlib import Path
+from typing import Any, Dict, List, Set, Text
 
 import pytest
 from _pytest.capture import CaptureFixture
-from pathlib import Path
-from rasa.engine.constants import PLACEHOLDER_TRACKER
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.training_data.message import Message
 
+import rasa.engine.validation
 import rasa.shared.utils.io
-from rasa.shared.constants import ASSISTANT_ID_KEY, CONFIG_AUTOCONFIGURABLE_KEYS
 from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.engine.graph import GraphSchema, GraphComponent, ExecutionContext
+from rasa.engine.constants import PLACEHOLDER_TRACKER
+from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema
 from rasa.engine.recipes.default_recipe import (
     DefaultV1Recipe,
     DefaultV1RecipeRegisterException,
@@ -25,15 +23,23 @@ from rasa.graph_components.validators.default_recipe_validator import (
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
-from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
+    CONFIG_AUTOCONFIGURABLE_KEYS,
+    CONFIG_LANGUAGE_KEY,
+    CONFIG_PIPELINE_KEY,
+    CONFIG_POLICIES_KEY,
+)
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.data import TrainingType
-import rasa.engine.validation
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.importers.rasa import RasaFileImporter
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.yaml import (
-    read_yaml_file,
-    read_yaml,
-    read_model_configuration,
     read_config_file,
+    read_model_configuration,
+    read_yaml,
+    read_yaml_file,
 )
 
 CONFIG_FOLDER = Path("data/test_config")
@@ -482,7 +488,7 @@ def test_retrieve_not_registered_class():
 
 def test_retrieve_via_module_path():
     model_config = DefaultV1Recipe().graph_config_for_recipe(
-        {"policies": [{"name": "rasa.core.policies.ted_policy.TEDPolicy"}]},
+        {CONFIG_POLICIES_KEY: [{"name": "rasa.core.policies.ted_policy.TEDPolicy"}]},
         {},
         TrainingType.CORE,
     )
@@ -501,21 +507,21 @@ def test_retrieve_via_invalid_module_path():
     with pytest.raises(ImportError):
         path = "rasa.core.policies.ted_policy.TEDPolicy1000"
         DefaultV1Recipe().graph_config_for_recipe(
-            {"policies": [{"name": path}]}, {}, TrainingType.CORE
+            {CONFIG_POLICIES_KEY: [{"name": path}]}, {}, TrainingType.CORE
         )
 
 
 def test_train_nlu_without_nlu_pipeline():
     with pytest.raises(InvalidConfigException):
         DefaultV1Recipe().graph_config_for_recipe(
-            {"pipeline": []}, {}, TrainingType.NLU
+            {CONFIG_PIPELINE_KEY: []}, {}, TrainingType.NLU
         )
 
 
 def test_train_core_without_nlu_pipeline():
     with pytest.raises(InvalidConfigException):
         DefaultV1Recipe().graph_config_for_recipe(
-            {"policies": []}, {}, TrainingType.CORE
+            {CONFIG_POLICIES_KEY: []}, {}, TrainingType.CORE
         )
 
 
@@ -524,12 +530,12 @@ def test_train_core_without_nlu_pipeline():
     [
         (
             Path("rasa/cli/project_templates/default/config.yml"),
-            {"pipeline", "policies"},
+            {CONFIG_PIPELINE_KEY, CONFIG_POLICIES_KEY},
         ),
-        (CONFIG_FOLDER / "config_policies_empty.yml", {"policies"}),
-        (CONFIG_FOLDER / "config_pipeline_empty.yml", {"pipeline"}),
-        (CONFIG_FOLDER / "config_policies_missing.yml", {"policies"}),
-        (CONFIG_FOLDER / "config_pipeline_missing.yml", {"pipeline"}),
+        (CONFIG_FOLDER / "config_policies_empty.yml", {CONFIG_POLICIES_KEY}),
+        (CONFIG_FOLDER / "config_pipeline_empty.yml", {CONFIG_PIPELINE_KEY}),
+        (CONFIG_FOLDER / "config_policies_missing.yml", {CONFIG_POLICIES_KEY}),
+        (CONFIG_FOLDER / "config_pipeline_missing.yml", {CONFIG_PIPELINE_KEY}),
         (SOME_CONFIG, set()),
     ],
 )
@@ -550,31 +556,36 @@ def test_get_configuration(
 @pytest.mark.parametrize(
     "language, keys_to_configure",
     [
-        ("en", {"policies"}),
-        ("en", {"pipeline"}),
-        ("fr", {"pipeline"}),
-        ("en", {"policies", "pipeline"}),
+        ("en", {CONFIG_POLICIES_KEY}),
+        ("en", {CONFIG_PIPELINE_KEY}),
+        ("fr", {CONFIG_PIPELINE_KEY}),
+        ("en", {CONFIG_POLICIES_KEY, CONFIG_PIPELINE_KEY}),
     ],
 )
 def test_auto_configure(language: Text, keys_to_configure: Set[Text]):
     expected_config = read_config_file(DEFAULT_CONFIG)
 
-    config = DefaultV1Recipe.complete_config({"language": language}, keys_to_configure)
+    config = DefaultV1Recipe.complete_config(
+        {CONFIG_LANGUAGE_KEY: language}, keys_to_configure
+    )
 
     for k in keys_to_configure:
         assert config[k] == expected_config[k]  # given keys are configured correctly
 
-    assert config.get("language") == language
-    config.pop("language")
+    assert config.get(CONFIG_LANGUAGE_KEY) == language
+    config.pop(CONFIG_LANGUAGE_KEY)
     assert len(config) == len(keys_to_configure)  # no other keys are configured
 
 
 @pytest.mark.parametrize(
     "config_path, missing_keys",
     [
-        (CONFIG_FOLDER / "config_language_only.yml", {"pipeline", "policies"}),
-        (CONFIG_FOLDER / "config_policies_missing.yml", {"policies"}),
-        (CONFIG_FOLDER / "config_pipeline_missing.yml", {"pipeline"}),
+        (
+            CONFIG_FOLDER / "config_language_only.yml",
+            {CONFIG_PIPELINE_KEY, CONFIG_POLICIES_KEY},
+        ),
+        (CONFIG_FOLDER / "config_policies_missing.yml", {CONFIG_POLICIES_KEY}),
+        (CONFIG_FOLDER / "config_pipeline_missing.yml", {CONFIG_PIPELINE_KEY}),
         (SOME_CONFIG, []),
     ],
 )
@@ -596,7 +607,7 @@ def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
 
     config = read_config_file(str(SOME_CONFIG))
 
-    DefaultV1Recipe._dump_config(config, str(config_path), set(), {"policies"})
+    DefaultV1Recipe._dump_config(config, str(config_path), set(), {CONFIG_POLICIES_KEY})
 
     assert not config_path.exists()
 
@@ -611,22 +622,22 @@ def test_dump_config_missing_file(tmp_path: Path, capsys: CaptureFixture):
         (
             "config_with_comments.yml",
             "config_with_comments_after_dumping.yml",
-            {"policies"},
+            {CONFIG_POLICIES_KEY},
         ),  # comments in various positions
         (
             "config_empty_en.yml",
             "config_empty_en_after_dumping.yml",
-            {"policies", "pipeline"},
+            {CONFIG_POLICIES_KEY, CONFIG_PIPELINE_KEY},
         ),  # no empty lines
         (
             "config_empty_fr.yml",
             "config_empty_fr_after_dumping.yml",
-            {"policies", "pipeline"},
+            {CONFIG_POLICIES_KEY, CONFIG_PIPELINE_KEY},
         ),  # no empty lines, with different language
         (
             "config_with_comments_after_dumping.yml",
             "config_with_comments_after_dumping.yml",
-            {"policies"},
+            {CONFIG_POLICIES_KEY},
         ),  # with previous auto config that needs to be overwritten
     ],
 )

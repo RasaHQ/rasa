@@ -1,15 +1,15 @@
 from pathlib import Path
-from _pytest.monkeypatch import MonkeyPatch
 from typing import Text
 
 import pytest
-
-from rasa.core import training
-from rasa.core.agent import Agent
-from rasa.shared.core.domain import Domain
+from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model_training
 import rasa.shared.utils.io
+from rasa.core import training
+from rasa.core.agent import Agent
+from rasa.shared.constants import ASSISTANT_ID_KEY, CONFIG_POLICIES_KEY
+from rasa.shared.core.domain import Domain
 from rasa.shared.utils.yaml import write_yaml
 
 
@@ -37,8 +37,11 @@ async def test_random_seed(
     tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
 ):
     policies_config = {
-        "assistant_id": "placeholder_default",
-        "policies": [{"name": "TEDPolicy", "random_seed": 42}, {"name": "RulePolicy"}],
+        ASSISTANT_ID_KEY: "placeholder_default",
+        CONFIG_POLICIES_KEY: [
+            {"name": "TEDPolicy", "random_seed": 42},
+            {"name": "RulePolicy"},
+        ],
     }
     config_file = tmp_path / "config.yml"
     write_yaml(policies_config, config_file)

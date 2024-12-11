@@ -1,11 +1,11 @@
 import abc
+import asyncio
 import json
 import subprocess
 import sys
 import time
-import asyncio
 from pathlib import Path
-from typing import Text, List, Tuple, Optional, Union
+from typing import List, Optional, Text, Tuple, Union
 
 import memory_profiler
 import psutil
@@ -13,6 +13,7 @@ import pytest
 
 import rasa
 import rasa.shared.utils.io
+from rasa.shared.constants import CONFIG_PIPELINE_KEY
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 
@@ -195,7 +196,7 @@ class TestCRFDenseFeaturesLeak(MemoryLeakTest):
         import rasa.model_training
 
         config = {
-            "pipeline": [
+            CONFIG_PIPELINE_KEY: [
                 {"name": "SpacyNLP"},
                 {"name": "SpacyTokenizer"},
                 {"name": "SpacyFeaturizer"},

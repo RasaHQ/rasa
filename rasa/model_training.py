@@ -23,6 +23,7 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import FingerprintStatus
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.shared.constants import CONFIG_RECIPE_KEY
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -304,7 +305,7 @@ async def _train_graph(
     is_finetuning = model_to_finetune is not None
 
     config = file_importer.get_config()
-    recipe = Recipe.recipe_for_name(config.get("recipe"))
+    recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
     config, _missing_keys, _configured_keys = recipe.auto_configure(
         file_importer.get_config_file_for_auto_config(),
         config,

@@ -2,84 +2,81 @@ import json
 import os
 import sys
 import textwrap
-
 from pathlib import Path
-from typing import Text, List, Dict, Any, Set, Optional
-
-from rasa.core.agent import Agent
-from rasa.core.channels import UserMessage
+from typing import Any, Dict, List, Optional, Set, Text
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from unittest.mock import Mock, MagicMock
 
-from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
-from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from rasa.shared.core.trackers import DialogueStateTracker
-from unittest.mock import AsyncMock
-
+import rasa.model
 import rasa.nlu.test
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.io
 import rasa.utils.io
-import rasa.model
-
+from rasa.core.agent import Agent
+from rasa.core.channels import UserMessage
+from rasa.model_testing import compare_nlu_models
+from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.nlu.test import (
-    is_token_within_entity,
+    NO_ENTITY,
+    EntityEvaluationResult,
+    IntentEvaluationResult,
+    ResponseSelectionEvaluationResult,
+    _get_active_entity_extractors,
+    _get_entity_confidences,
+    _remove_entities_of_extractors,
+    align_entity_predictions,
+    collect_incorrect_entity_predictions,
+    collect_successful_entity_predictions,
+    cross_validate,
+    determine_intersection,
+    determine_token_labels,
     do_entities_overlap,
+    does_token_cross_borders,
+    drop_intents_below_freq,
+    evaluate_entities,
+    evaluate_intents,
+    evaluate_response_selections,
+    get_eval_data,
+    is_token_within_entity,
+    merge_confidences,
     merge_labels,
     remove_empty_intent_examples,
     remove_empty_response_examples,
-    _get_active_entity_extractors,
-    drop_intents_below_freq,
-    cross_validate,
     run_evaluation,
     substitute_labels,
-    IntentEvaluationResult,
-    EntityEvaluationResult,
-    ResponseSelectionEvaluationResult,
-    evaluate_intents,
-    evaluate_entities,
-    evaluate_response_selections,
-    NO_ENTITY,
-    collect_successful_entity_predictions,
-    collect_incorrect_entity_predictions,
-    merge_confidences,
-    _get_entity_confidences,
-    get_eval_data,
-    does_token_cross_borders,
-    align_entity_predictions,
-    determine_intersection,
-    determine_token_labels,
-    _remove_entities_of_extractors,
 )
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
+from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
+    CONFIG_LANGUAGE_KEY,
+    CONFIG_PIPELINE_KEY,
+    DEFAULT_NLU_FALLBACK_INTENT_NAME,
+)
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import (
-    NO_ENTITY_TAG,
-    INTENT,
-    INTENT_RANKING_KEY,
-    INTENT_NAME_KEY,
-    PREDICTED_CONFIDENCE_KEY,
     ENTITIES,
-)
-from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_VALUE,
     EXTRACTOR,
+    INTENT,
+    INTENT_NAME_KEY,
+    INTENT_RANKING_KEY,
+    NO_ENTITY_TAG,
+    PREDICTED_CONFIDENCE_KEY,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.model_testing import compare_nlu_models
 from rasa.utils.tensorflow.constants import EPOCHS, RUN_EAGERLY
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
 from tests.nlu.utilities import write_file_config
-
 
 # Chinese Example
 # "对面食过敏" -> To be allergic to wheat-based food
@@ -162,9 +159,9 @@ TRAINING_DATA = rasa.shared.nlu.training_data.loading.load_data(
     "data/test/demo-rasa-more-ents-and-multiplied.yml"
 )
 NLU_CONFIG = {
-    "assistant_id": "placeholder_default",
-    "language": "en",
-    "pipeline": [
+    ASSISTANT_ID_KEY: "placeholder_default",
+    CONFIG_LANGUAGE_KEY: "en",
+    CONFIG_PIPELINE_KEY: [
         {"name": "WhitespaceTokenizer"},
         {"name": "CountVectorsFeaturizer"},
         {"name": "LogisticRegressionClassifier"},
@@ -517,9 +514,9 @@ async def test_run_cv_evaluation():
     )
 
     nlu_config = {
-        "assistant_id": "placeholder_default",
-        "language": "en",
-        "pipeline": [
+        ASSISTANT_ID_KEY: "placeholder_default",
+        CONFIG_LANGUAGE_KEY: "en",
+        CONFIG_PIPELINE_KEY: [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
             {"name": "LogisticRegressionClassifier", EPOCHS: 2},
@@ -564,9 +561,9 @@ async def test_run_cv_evaluation_no_entities():
     )
 
     nlu_config = {
-        "assistant_id": "placeholder_default",
-        "language": "en",
-        "pipeline": [
+        ASSISTANT_ID_KEY: "placeholder_default",
+        CONFIG_LANGUAGE_KEY: "en",
+        CONFIG_PIPELINE_KEY: [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
             {"name": "LogisticRegressionClassifier", EPOCHS: 25},
@@ -617,9 +614,9 @@ async def test_run_cv_evaluation_with_response_selector():
     training_data_obj = training_data_obj.merge(training_data_responses_obj)
 
     nlu_config = {
-        "assistant_id": "placeholder_default",
-        "language": "en",
-        "pipeline": [
+        ASSISTANT_ID_KEY: "placeholder_default",
+        CONFIG_LANGUAGE_KEY: "en",
+        CONFIG_PIPELINE_KEY: [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
             {"name": "LogisticRegressionClassifier", EPOCHS: 25},
@@ -696,9 +693,9 @@ async def test_run_cv_evaluation_lookup_tables():
     )
 
     nlu_config = {
-        "assistant_id": "placeholder_default",
-        "language": "en",
-        "pipeline": [
+        ASSISTANT_ID_KEY: "placeholder_default",
+        CONFIG_LANGUAGE_KEY: "en",
+        CONFIG_PIPELINE_KEY: [
             {"name": "WhitespaceTokenizer"},
             {"name": "CountVectorsFeaturizer"},
             {"name": "LogisticRegressionClassifier", EPOCHS: 1},
@@ -1101,9 +1098,9 @@ async def test_nlu_comparison(
     tmp_path: Path, monkeypatch: MonkeyPatch, nlu_as_json_path: Text
 ):
     config = {
-        "assistant_id": "placeholder_default",
-        "language": "en",
-        "pipeline": [
+        ASSISTANT_ID_KEY: "placeholder_default",
+        CONFIG_LANGUAGE_KEY: "en",
+        CONFIG_PIPELINE_KEY: [
             {"name": "WhitespaceTokenizer"},
             {"name": "KeywordIntentClassifier"},
             {"name": "RegexEntityExtractor"},
