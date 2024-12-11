@@ -7,6 +7,8 @@ SERVER_BASE_WORKING_DIRECTORY = os.environ.get(
     "RASA_MODEL_SERVER_BASE_DIRECTORY", DEFAULT_SERVER_BASE_WORKING_DIRECTORY
 )
 
+SERVER_PORT = os.environ.get("RASA_MODEL_SERVER_PORT", 8000)
+
 SERVER_BASE_URL = os.environ.get("RASA_MODEL_SERVER_BASE_URL", None)
 
 # defaults to storing on the local hard drive

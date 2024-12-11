@@ -2,7 +2,7 @@ import asyncio
 from functools import wraps
 import os
 from http import HTTPStatus
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Union
 import dotenv
 import psutil
 from sanic import Blueprint, Sanic, response
@@ -20,6 +20,7 @@ from rasa.model_manager.runner_service import (
     BotSession,
     BotSessionStatus,
     fetch_remote_model_to_dir,
+    fetch_size_of_remote_model,
     run_bot,
     terminate_bot,
     update_bot_status,
@@ -440,19 +441,39 @@ def internal_blueprint() -> Blueprint:
         ]
         return json({"deployment_sessions": bots, "total_number": len(bots)})
 
-    @bp.route("/models/<model_name>")
-    async def send_model(request: Request, model_name: str) -> response.HTTPResponse:
+    @bp.route("/models/<model_name>", methods=["GET"])
+    async def send_model(
+        request: Request, model_name: str
+    ) -> Union[response.ResponseStream, response.HTTPResponse]:
         try:
             model_path = path_to_model(model_name)
 
-            if not model_path:
-                return json({"message": "Model not found"}, status=404)
+            # get size of model file
+            model_size = os.stat(model_path)
 
-            return await response.file(model_path)
+            return await response.file_stream(
+                model_path, headers={"Content-Length": str(model_size.st_size)}
+            )
         except NotFound:
             return json({"message": "Model not found"}, status=404)
         except ModelNotFound:
             return json({"message": "Model not found"}, status=404)
+
+    @bp.route("/models/<model_name>", methods=["HEAD"])
+    async def head_model(request: Request, model_name: str) -> response.HTTPResponse:
+        try:
+            model_size = size_of_model(model_name)
+
+            structlogger.debug(
+                "model_api.internal.head_model",
+                model_name=model_name,
+                size=model_size,
+            )
+            return response.raw(
+                b"", status=200, headers={"Content-Length": str(model_size)}
+            )
+        except ModelNotFound:
+            return response.raw(b"", status=404)
 
     return bp
 
@@ -496,6 +517,26 @@ def external_blueprint() -> Blueprint:
     return bp
 
 
+def size_of_model(model_name: str) -> Optional[int]:
+    """Return the size of a model."""
+    model_file_name = f"{model_name}.{MODEL_ARCHIVE_EXTENSION}"
+    model_path = subpath(models_base_path(), model_file_name)
+
+    if os.path.exists(model_path):
+        return os.path.getsize(model_path)
+
+    if config.SERVER_MODEL_REMOTE_STORAGE:
+        structlogger.debug(
+            "model_api.storage.fetching_remote_model_size",
+            model_name=model_file_name,
+        )
+        return fetch_size_of_remote_model(
+            model_file_name,
+            config.SERVER_MODEL_REMOTE_STORAGE,
+        )
+    raise ModelNotFound("Model not found.")
+
+
 def path_to_model(model_name: str) -> Optional[str]:
     """Return the path to a local model."""
     model_file_name = f"{model_name}.{MODEL_ARCHIVE_EXTENSION}"
@@ -515,4 +556,4 @@ def path_to_model(model_name: str) -> Optional[str]:
             config.SERVER_MODEL_REMOTE_STORAGE,
         )
 
-    return None
+    raise ModelNotFound("Model not found.")

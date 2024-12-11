@@ -152,6 +152,36 @@ class Persistor(abc.ABC):
 
         return target_path
 
+    def size_of_persisted_model(self, model_name: Text) -> int:
+        """Returns the size of the model that has been persisted to cloud storage.
+
+        Args:
+            model_name: The name of the model to retrieve.
+        """
+        tar_name = model_name
+        if not model_name.endswith(MODEL_ARCHIVE_EXTENSION):
+            # ensure backward compatibility
+            tar_name = self._tar_name(model_name)
+        tar_name = self._create_file_key(tar_name)
+        target_filename = os.path.basename(tar_name)
+        return self._retrieve_tar_size(target_filename)
+
+    def _retrieve_tar_size(self, filename: Text) -> int:
+        """Returns the size of the model that has been persisted to cloud storage."""
+        structlogger.warning(
+            "persistor.retrieve_tar_size.not_implemented",
+            filename=filename,
+            event_info=(
+                "This method should be implemented in the persistor. "
+                "The default implementation will download the model "
+                "to calculate the size. Most persistors should override "
+                "this method to avoid downloading the model and get the "
+                "size directly from the cloud storage."
+            ),
+        )
+        self._retrieve_tar(filename)
+        return os.path.getsize(os.path.basename(filename))
+
     @abc.abstractmethod
     def _retrieve_tar(self, filename: Text) -> None:
         """Downloads a model previously persisted to cloud storage."""
@@ -272,6 +302,14 @@ class AWSPersistor(Persistor):
         with open(tar_path, "rb") as f:
             self.s3.Object(self.bucket_name, file_key).put(Body=f)
 
+    def _retrieve_tar_size(self, model_path: Text) -> int:
+        """Returns the size of the model that has been persisted to s3."""
+        try:
+            obj = self.s3.Object(self.bucket_name, model_path)
+            return obj.content_length
+        except Exception:
+            raise ModelNotFound()
+
     def _retrieve_tar(self, target_filename: str) -> None:
         """Downloads a model that has previously been persisted to s3."""
         from botocore import exceptions
@@ -387,6 +425,14 @@ class GCSPersistor(Persistor):
         blob = self.bucket.blob(file_key)
         blob.upload_from_filename(tar_path)
 
+    def _retrieve_tar_size(self, target_filename: Text) -> int:
+        """Returns the size of the model that has been persisted to GCS."""
+        try:
+            blob = self.bucket.blob(target_filename)
+            return blob.size
+        except Exception:
+            raise ModelNotFound()
+
     def _retrieve_tar(self, target_filename: Text) -> None:
         """Downloads a model that has previously been persisted to GCS."""
         from google.api_core import exceptions
@@ -453,6 +499,15 @@ class AzurePersistor(Persistor):
         """Uploads a model persisted in the `target_dir` to Azure."""
         with open(tar_path, "rb") as data:
             self._container_client().upload_blob(name=file_key, data=data)
+
+    def _retrieve_tar_size(self, target_filename: Text) -> int:
+        """Returns the size of the model that has been persisted to Azure."""
+        try:
+            blob_client = self._container_client().get_blob_client(target_filename)
+            properties = blob_client.get_blob_properties()
+            return properties.size
+        except Exception:
+            raise ModelNotFound()
 
     def _retrieve_tar(self, target_filename: Text) -> None:
         """Downloads a model that has previously been persisted to Azure."""

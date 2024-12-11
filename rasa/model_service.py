@@ -8,7 +8,7 @@ from rasa.core.persistor import RemoteStorageType, get_persistor
 from rasa.core.utils import list_routes
 from rasa.model_manager import model_api
 from rasa.model_manager import config
-from rasa.model_manager.config import SERVER_BASE_URL
+from rasa.model_manager.config import SERVER_BASE_URL, SERVER_PORT
 from rasa.utils.common import configure_logging_and_warnings
 import rasa.utils.licensing
 from urllib.parse import urlparse
@@ -17,8 +17,6 @@ from rasa.utils.log_utils import configure_structlog
 from rasa.utils.sanic_error_handler import register_custom_sanic_error_handler
 
 structlogger = structlog.get_logger()
-
-MODEL_SERVICE_PORT = 8000
 
 
 def url_prefix_from_base_url() -> str:
@@ -93,7 +91,7 @@ def main() -> None:
 
     validate_model_storage_type()
 
-    structlogger.debug("model_api.starting_server", port=MODEL_SERVICE_PORT)
+    structlogger.debug("model_api.starting_server", port=SERVER_PORT)
 
     url_prefix = url_prefix_from_base_url()
     # configure the sanic application
@@ -107,7 +105,7 @@ def main() -> None:
 
     register_custom_sanic_error_handler(app)
 
-    app.run(host="0.0.0.0", port=MODEL_SERVICE_PORT, legacy=True, motd=False)
+    app.run(host="0.0.0.0", port=SERVER_PORT, legacy=True, motd=False)
 
 
 if __name__ == "__main__":
