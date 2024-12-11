@@ -1,6 +1,8 @@
+from functools import lru_cache
 from importlib.util import find_spec
 from typing import (
     Any,
+    ClassVar,
     Dict,
     Text,
 )
@@ -21,6 +23,8 @@ structlogger = structlog.get_logger(__name__)
 
 
 class DirectCustomActionExecutor(CustomActionExecutor):
+    _actions_module_registered: ClassVar[bool] = False
+
     def __init__(self, action_name: str, action_endpoint: EndpointConfig):
         """Initializes the direct custom action executor.
 
@@ -30,9 +34,34 @@ class DirectCustomActionExecutor(CustomActionExecutor):
         """
         self.action_name = action_name
         self.action_endpoint = action_endpoint
-        self.action_executor = ActionExecutor()
+        self.action_executor = self._create_action_executor()
+        self.register_actions_from_a_module()
+        self.action_executor.reload()
+
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def _create_action_executor() -> ActionExecutor:
+        """Creates and returns a cached ActionExecutor instance.
+
+        Returns:
+            ActionExecutor: The cached ActionExecutor instance.
+        """
+        return ActionExecutor()
 
     def register_actions_from_a_module(self) -> None:
+        """Registers actions from the specified module if not already registered.
+
+        This method checks if the actions module has already been registered to prevent
+        duplicate registrations. If not registered, it attempts to register the actions
+        module specified in the action endpoint configuration. If the module does not
+        exist, it raises a RasaException.
+
+        Raises:
+            RasaException: If the actions module specified does not exist.
+        """
+        if DirectCustomActionExecutor._actions_module_registered:
+            return
+
         module_name = self.action_endpoint.actions_module
         if not find_spec(module_name):
             raise RasaException(
@@ -42,6 +71,7 @@ class DirectCustomActionExecutor(CustomActionExecutor):
             )
 
         self.action_executor.register_package(module_name)
+        DirectCustomActionExecutor._actions_module_registered = True
 
     async def run(
         self,
@@ -63,7 +93,6 @@ class DirectCustomActionExecutor(CustomActionExecutor):
             "action.direct_custom_action_executor.run",
             action_name=self.action_name,
         )
-        self.register_actions_from_a_module()
 
         tracker_state = tracker.current_state(EventVerbosity.ALL)
         action_call = {
