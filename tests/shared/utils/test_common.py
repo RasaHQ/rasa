@@ -1,10 +1,12 @@
-from typing import Collection, List, Optional, Text
+from typing import Collection, Dict, List, Optional, Text, Type
+from unittest import mock
 
 import pytest
 
 import rasa.shared.core.domain
 import rasa.shared.utils.common
-from rasa.shared.exceptions import RasaException
+from rasa.exceptions import MissingDependencyException
+from rasa.shared.exceptions import ProviderClientValidationError, RasaException
 
 
 def test_all_subclasses():
@@ -185,3 +187,33 @@ def test_import_package_modules():
     result = rasa.shared.utils.common.import_package_modules(package)
     for module in result:
         assert module.__name__.startswith(package)
+
+
+@pytest.mark.parametrize(
+    "given_environment, required_env_vars, required_packages, should_raise",
+    [
+        ({}, [], [], None),
+        ({"KEY": "ABC"}, ["KEY"], [], None),
+        ({}, ["KEY"], [], ProviderClientValidationError),
+        ({"KEY": ""}, ["KEY"], [], ProviderClientValidationError),
+        ({}, [], ["rasa"], None),
+        ({}, [], ["XXX-non-existent"], MissingDependencyException),
+    ],
+)
+def test_validate_environment(
+    given_environment: Dict[str, str],
+    required_env_vars: List[str],
+    required_packages: List[str],
+    should_raise: Optional[Type[RasaException]],
+) -> None:
+    component_name = "test_component"
+    with mock.patch.dict("os.environ", given_environment, clear=True):
+        if should_raise:
+            with pytest.raises(should_raise):
+                rasa.shared.utils.common.validate_environment(
+                    required_env_vars, required_packages, component_name
+                )
+        else:
+            rasa.shared.utils.common.validate_environment(
+                required_env_vars, required_packages, component_name
+            )

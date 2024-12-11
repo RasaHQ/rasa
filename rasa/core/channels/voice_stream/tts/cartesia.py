@@ -11,11 +11,10 @@ from rasa.core.channels.voice_stream.tts.tts_engine import (
 
 from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
+from rasa.shared.constants import CARTESIA_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ConnectionException
 
 structlogger = structlog.get_logger()
-
-CARTESIA_API_KEY = "CARTESIA_API_KEY"
 
 
 @dataclass
@@ -26,6 +25,7 @@ class CartesiaTTSConfig(TTSEngineConfig):
 
 class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
     session: Optional[aiohttp.ClientSession] = None
+    required_env_vars = (CARTESIA_API_KEY_ENV_VAR,)
 
     def __init__(self, config: Optional[CartesiaTTSConfig] = None):
         super().__init__(config)
@@ -62,7 +62,7 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
 
     @staticmethod
     def get_request_headers(config: CartesiaTTSConfig) -> dict[str, str]:
-        cartesia_api_key = os.environ[CARTESIA_API_KEY]
+        cartesia_api_key = os.environ[CARTESIA_API_KEY_ENV_VAR]
         return {
             "Cartesia-Version": str(config.version),
             "Content-Type": "application/json",

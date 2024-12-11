@@ -1,5 +1,6 @@
 import asyncio
 import difflib
+from unittest import mock
 
 import pytest
 
@@ -13,6 +14,26 @@ from rasa.core.channels.voice_stream.util import (
     generate_silence,
     read_wav_to_rasa_audio_bytes,
 )
+from rasa.exceptions import MissingDependencyException
+from rasa.shared.constants import AZURE_SPEECH_API_KEY_ENV_VAR
+from rasa.shared.exceptions import ProviderClientValidationError
+
+
+async def test_environment_validation():
+    # no api key set
+    with mock.patch.dict("os.environ", {}, clear=True):
+        with pytest.raises(ProviderClientValidationError) as e:
+            AzureASR()
+        assert e.match(AZURE_SPEECH_API_KEY_ENV_VAR)
+        assert e.match("ASR Engine AzureASR")
+
+    # no package installed
+    with mock.patch("importlib.import_module") as mock_call:
+        mock_call.side_effect = ImportError
+        with pytest.raises(MissingDependencyException) as e:
+            AzureASR()
+        assert e.match("ASR Engine AzureASR")
+        assert e.match(AzureASR.required_packages[0])
 
 
 async def test_transcription(audio_data_path: str):

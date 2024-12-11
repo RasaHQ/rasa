@@ -10,6 +10,7 @@ from rasa.core.channels.voice_stream.asr.asr_event import (
     UserIsSpeaking,
 )
 from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
+from rasa.shared.constants import AZURE_SPEECH_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ConnectionException
 
 
@@ -20,16 +21,24 @@ class AzureASRConfig(ASREngineConfig):
 
 
 class AzureASR(ASREngine[AzureASRConfig]):
+    required_env_vars = (AZURE_SPEECH_API_KEY_ENV_VAR,)
+    required_packages = ("azure.cognitiveservices.speech",)
+
     def __init__(self, config: Optional[AzureASRConfig] = None):
+        super().__init__(config)
+
         import azure.cognitiveservices.speech as speechsdk
 
-        super().__init__(config)
         self.speech_recognizer: Optional[speechsdk.SpeechRecognizer] = None
         self.stream: Optional[speechsdk.audio.PushAudioInputStream] = None
         self.is_recognizing = False
         self.queue: asyncio.Queue[speechsdk.SpeechRecognitionEventArgs] = (
             asyncio.Queue()
         )
+
+    @staticmethod
+    def validate_environment() -> None:
+        """Make sure all needed requirements for this component are met."""
 
     def signal_user_is_speaking(self, event: Any) -> None:
         """Replace the azure event with a generic is speaking event."""
@@ -43,7 +52,7 @@ class AzureASR(ASREngine[AzureASRConfig]):
         import azure.cognitiveservices.speech as speechsdk
 
         speech_config = speechsdk.SpeechConfig(
-            subscription=os.environ["AZURE_SPEECH_API_KEY"],
+            subscription=os.environ[AZURE_SPEECH_API_KEY_ENV_VAR],
             region=self.config.speech_region,
         )
         audio_format = speechsdk.audio.AudioStreamFormat(

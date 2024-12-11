@@ -1,9 +1,10 @@
-from typing import AsyncIterator, Dict, Generic, Optional, Type, TypeVar
+from typing import AsyncIterator, Dict, Generic, Optional, Tuple, Type, TypeVar
 from dataclasses import dataclass
 
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.util import MergeableConfig
 from rasa.shared.exceptions import RasaException
+from rasa.shared.utils.common import validate_environment
 
 
 class TTSError(RasaException):
@@ -22,8 +23,16 @@ class TTSEngineConfig(MergeableConfig):
 
 
 class TTSEngine(Generic[T]):
+    required_env_vars: Tuple[str, ...] = ()
+    required_packages: Tuple[str, ...] = ()
+
     def __init__(self, config: Optional[T] = None):
         self.config = self.get_default_config().merge(config)
+        validate_environment(
+            self.required_env_vars,
+            self.required_packages,
+            f"TTS Engine {self.__class__.__name__}",
+        )
 
     async def close_connection(self) -> None:
         """Cleanup the connection if necessary."""
