@@ -1,12 +1,24 @@
+from unittest import mock
+
 import pytest
 from pytest import MonkeyPatch
 from unittest.mock import patch, AsyncMock
 from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
 from rasa.core.channels.voice_stream.tts.azure import AzureTTS, AzureTTSConfig
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSError
+from rasa.shared.exceptions import ProviderClientValidationError
 from tests.core.channels.voice_stream.tts.test_tts import (
     run_single_utterance_through_tts_and_asr,
 )
+
+
+async def test_environment_validation():
+    # no api key set
+    with mock.patch.dict("os.environ", {}, clear=True):
+        with pytest.raises(ProviderClientValidationError) as e:
+            AzureTTS()
+        assert e.match(AzureTTS.required_env_vars[0])
+        assert e.match("TTS Engine AzureTTS")
 
 
 async def test_synthesis_with_asr():

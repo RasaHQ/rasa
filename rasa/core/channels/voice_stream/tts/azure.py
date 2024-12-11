@@ -12,6 +12,7 @@ from rasa.core.channels.voice_stream.tts.tts_engine import (
     TTSEngineConfig,
     TTSError,
 )
+from rasa.shared.constants import AZURE_SPEECH_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ConnectionException
 
 
@@ -25,6 +26,7 @@ class AzureTTSConfig(TTSEngineConfig):
 
 class AzureTTS(TTSEngine[AzureTTSConfig]):
     session: Optional[aiohttp.ClientSession] = None
+    required_env_vars = (AZURE_SPEECH_API_KEY_ENV_VAR,)
 
     def __init__(self, config: Optional[AzureTTSConfig] = None):
         super().__init__(config)
@@ -66,7 +68,7 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
 
     @staticmethod
     def get_request_headers() -> dict[str, str]:
-        azure_speech_api_key = os.environ["AZURE_SPEECH_API_KEY"]
+        azure_speech_api_key = os.environ[AZURE_SPEECH_API_KEY_ENV_VAR]
         return {
             "Ocp-Apim-Subscription-Key": azure_speech_api_key,
             "Content-Type": "application/ssml+xml",

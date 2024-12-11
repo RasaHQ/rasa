@@ -133,6 +133,25 @@ def test_s3_private_retrieve_tar(
     assert retrieveArgs[1].name == "model.tar.gz"
 
 
+# noinspection PyPep8Naming
+def test_s3_tar_size(
+    bucket_name: Text, model: Text, mock_s3_connection: Any, tmp_path: Path
+) -> None:
+    mock_s3_connection.create_bucket(Bucket=bucket_name)
+    # Ensure the S3 persistor writes to a filename `model.tar.gz`, whilst
+    # passing the fully namespaced path to boto3
+    awsPersistor = persistor.AWSPersistor(bucket_name, region_name="foo")
+    model_path = tmp_path / model
+
+    # put some data of know size into the model file
+    with model_path.open("wb") as f:
+        f.write(b"0" * 42 * 1024)  # 42kb
+    awsPersistor.persist(str(model_path))
+
+    size = awsPersistor.size_of_persisted_model(model)
+    assert size == 42 * 1024
+
+
 class TestPersistor(Persistor):
     def _retrieve_tar(self, filename: Text) -> None:
         pass

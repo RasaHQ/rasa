@@ -3,14 +3,16 @@ import functools
 import importlib
 import inspect
 import logging
+import os
 import pkgutil
 import sys
 from types import ModuleType
-from typing import Text, Dict, Optional, Any, List, Callable, Collection, Type
+from typing import Sequence, Text, Dict, Optional, Any, List, Callable, Collection, Type
 
 import rasa.shared.utils.io
+from rasa.exceptions import MissingDependencyException
 from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import ProviderClientValidationError, RasaException
 
 logger = logging.getLogger(__name__)
 
@@ -295,3 +297,28 @@ def warn_and_exit_if_module_path_contains_rasa_plus(
             docs=DOCS_URL_MIGRATION_GUIDE,
         )
         sys.exit(1)
+
+
+def validate_environment(
+    required_env_vars: Sequence[str],
+    required_packages: Sequence[str],
+    component_name: str,
+) -> None:
+    """Make sure all needed requirements for a component are met.
+    Args:
+         required_env_vars: List of environment variables that should be set
+         required_packages: List of packages that should be installed
+         component_name: component name that needs the requirements
+    """
+    for e in required_env_vars:
+        if not os.environ.get(e):
+            raise ProviderClientValidationError(
+                f"Missing environment variable for {component_name}: {e}"
+            )
+    for p in required_packages:
+        try:
+            importlib.import_module(p)
+        except ImportError:
+            raise MissingDependencyException(
+                f"Missing package for {component_name}: {p}"
+            )

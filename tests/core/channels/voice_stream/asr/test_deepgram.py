@@ -1,5 +1,6 @@
 import asyncio
 import difflib
+from unittest import mock
 
 import pytest
 
@@ -13,6 +14,16 @@ from rasa.core.channels.voice_stream.util import (
     generate_silence,
     read_wav_to_rasa_audio_bytes,
 )
+from rasa.shared.exceptions import ProviderClientValidationError
+
+
+async def test_environment_validation():
+    # no api key set
+    with mock.patch.dict("os.environ", {}, clear=True):
+        with pytest.raises(ProviderClientValidationError) as e:
+            DeepgramASR()
+        assert e.match(DeepgramASR.required_env_vars[0])
+        assert e.match("ASR Engine DeepgramASR")
 
 
 async def test_transcription(audio_data_path: str):

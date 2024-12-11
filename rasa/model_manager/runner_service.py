@@ -182,6 +182,19 @@ def fetch_remote_model_to_dir(
         raise ModelNotFound() from e
 
 
+def fetch_size_of_remote_model(model_name: str, storage_type: str) -> int:
+    """Fetch the size of the model from remote storage."""
+    from rasa.core.persistor import get_persistor
+
+    persistor = get_persistor(storage_type)
+
+    # we now there must be a persistor, because the config is set
+    # this is here to please the type checker for the call below
+    assert persistor is not None
+
+    return persistor.size_of_persisted_model(model_name=model_name)
+
+
 def start_bot_process(
     deployment_id: str, bot_base_path: str, base_url_path: str
 ) -> BotSession:
@@ -236,10 +249,11 @@ def run_bot(
     encoded_configs: Dict[str, str],
 ) -> BotSession:
     """Deploy a bot based on a given training id."""
-    bot_base_path = bot_path(deployment_id)
-    prepare_bot_directory(bot_base_path, model_name, encoded_configs)
+    with structlog.contextvars.bound_contextvars(model_name=model_name):
+        bot_base_path = bot_path(deployment_id)
+        prepare_bot_directory(bot_base_path, model_name, encoded_configs)
 
-    return start_bot_process(deployment_id, bot_base_path, base_url_path)
+        return start_bot_process(deployment_id, bot_base_path, base_url_path)
 
 
 async def update_bot_status(bot: BotSession) -> None:

@@ -13,8 +13,7 @@ from rasa.core.channels.voice_stream.asr.asr_event import (
     UserIsSpeaking,
 )
 from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
-
-DEEPGRAM_API_KEY = "DEEPGRAM_API_KEY"
+from rasa.shared.constants import DEEPGRAM_API_KEY_ENV_VAR
 
 
 @dataclass
@@ -28,13 +27,15 @@ class DeepgramASRConfig(ASREngineConfig):
 
 
 class DeepgramASR(ASREngine[DeepgramASRConfig]):
+    required_env_vars = (DEEPGRAM_API_KEY_ENV_VAR,)
+
     def __init__(self, config: Optional[DeepgramASRConfig] = None):
         super().__init__(config)
         self.accumulated_transcript = ""
 
     async def open_websocket_connection(self) -> WebSocketClientProtocol:
         """Connect to the ASR system."""
-        deepgram_api_key = os.environ[DEEPGRAM_API_KEY]
+        deepgram_api_key = os.environ[DEEPGRAM_API_KEY_ENV_VAR]
         extra_headers = {"Authorization": f"Token {deepgram_api_key}"}
         api_url = self._get_api_url()
         query_params = self._get_query_params()

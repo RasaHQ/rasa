@@ -1,5 +1,14 @@
 from dataclasses import dataclass
-from typing import Dict, AsyncIterator, Any, Generic, Optional, Type, TypeVar
+from typing import (
+    Dict,
+    AsyncIterator,
+    Any,
+    Generic,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+)
 
 from websockets.legacy.client import WebSocketClientProtocol
 
@@ -7,6 +16,7 @@ from rasa.core.channels.voice_stream.asr.asr_event import ASREvent
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.util import MergeableConfig
 from rasa.shared.exceptions import ConnectionException
+from rasa.shared.utils.common import validate_environment
 
 T = TypeVar("T", bound="ASREngineConfig")
 E = TypeVar("E", bound="ASREngine")
@@ -18,9 +28,17 @@ class ASREngineConfig(MergeableConfig):
 
 
 class ASREngine(Generic[T]):
+    required_env_vars: Tuple[str, ...] = ()
+    required_packages: Tuple[str, ...] = ()
+
     def __init__(self, config: Optional[T] = None):
         self.config = self.get_default_config().merge(config)
         self.asr_socket: Optional[WebSocketClientProtocol] = None
+        validate_environment(
+            self.required_env_vars,
+            self.required_packages,
+            f"ASR Engine {self.__class__.__name__}",
+        )
 
     async def connect(self) -> None:
         self.asr_socket = await self.open_websocket_connection()
