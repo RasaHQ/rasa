@@ -26,7 +26,7 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     SCHEMA_EXTENSIONS_FILE,
     RESPONSES_SCHEMA_FILE,
-    API_KEY,
+    SENSITIVE_DATA,
 )
 from rasa.shared.exceptions import (
     YamlException,
@@ -59,7 +59,6 @@ YAML_VERSION = (1, 2)
 READ_YAML_FILE_CACHE_MAXSIZE = os.environ.get(
     READ_YAML_FILE_CACHE_MAXSIZE_ENV_VAR, DEFAULT_READ_YAML_FILE_CACHE_MAXSIZE
 )
-SENSITIVE_DATA = [API_KEY]
 
 
 @dataclass
@@ -121,7 +120,6 @@ def replace_environment_variables() -> None:
 
 
 fix_yaml_loader()
-replace_environment_variables()
 
 
 class YamlValidationException(YamlException, ValueError):
@@ -343,7 +341,7 @@ class YamlValidationException(YamlException, ValueError):
 
 
 def read_schema_file(
-    schema_file: str, package_name: str = PACKAGE_NAME
+    schema_file: str, package_name: str = PACKAGE_NAME, expand_env_vars: bool = True
 ) -> Union[List[Any], Dict[str, Any]]:
     """Read a schema file from the package.
 
@@ -351,12 +349,13 @@ def read_schema_file(
         schema_file: The schema file to read.
         package_name: the name of the package the schema is located in. defaults
             to `rasa`.
+        expand_env_vars: Whether to expand environment variables in the file.
 
     Returns:
         The schema as a dictionary.
     """
     schema_path = str(files(package_name).joinpath(schema_file))
-    return read_yaml_file(schema_path)
+    return read_yaml_file(schema_path, expand_env_vars=expand_env_vars)
 
 
 def parse_raw_yaml(raw_yaml_content: str) -> Dict[str, Any]:
@@ -430,6 +429,7 @@ def validate_raw_yaml_using_schema(
     raw_yaml_content: str,
     schema_content: Dict[str, Any],
     schema_extensions: Optional[List[str]] = None,
+    expand_env_vars: bool = True,
 ) -> None:
     """Validate raw yaml content using a schema.
 
@@ -439,6 +439,7 @@ def validate_raw_yaml_using_schema(
         raw_yaml_content: the raw YAML content to be validated (usually a string)
         schema_content: the schema for the yaml_file_content
         schema_extensions: pykwalify schema extension files
+        expand_env_vars: Whether to expand environment variables.
     """
     try:
         # we need "rt" since
@@ -446,7 +447,11 @@ def validate_raw_yaml_using_schema(
         # will include e.g. at which line an object was parsed. this is very
         # helpful when we validate files later on and want to point the user to the
         # right line
-        yaml_data = read_yaml(raw_yaml_content, reader_type=["safe", "rt"])
+        yaml_data = read_yaml(
+            raw_yaml_content,
+            reader_type=["safe", "rt"],
+            expand_env_vars=expand_env_vars,
+        )
     except (YAMLError, DuplicateKeyError) as e:
         raise YamlSyntaxException(underlying_yaml_exception=e)
 
@@ -454,7 +459,10 @@ def validate_raw_yaml_using_schema(
 
 
 def validate_raw_yaml_using_schema_file(
-    raw_yaml_content: str, schema_path: str, package_name: str = PACKAGE_NAME
+    raw_yaml_content: str,
+    schema_path: str,
+    package_name: str = PACKAGE_NAME,
+    expand_env_vars: bool = True,
 ) -> None:
     """Validate raw yaml content using a schema from file.
 
@@ -463,15 +471,21 @@ def validate_raw_yaml_using_schema_file(
         schema_path: the schema used for validation
         package_name: the name of the package the schema is located in. defaults
             to `rasa`.
+        expand_env_vars: Whether to expand environment variables in the file.
     """
-    schema_content = read_schema_file(schema_path, package_name)
-    validate_raw_yaml_using_schema(raw_yaml_content, schema_content)
+    schema_content = read_schema_file(
+        schema_path, package_name, expand_env_vars=expand_env_vars
+    )
+    validate_raw_yaml_using_schema(
+        raw_yaml_content, schema_content, expand_env_vars=expand_env_vars
+    )
 
 
 def validate_raw_yaml_content_using_schema_with_responses(
     raw_yaml_content: str,
     schema_content: Union[List[Any], Dict[str, Any]],
     package_name: str = PACKAGE_NAME,
+    expand_env_vars: bool = True,
 ) -> None:
     """Validate raw yaml content using a schema with responses sub-schema.
 
@@ -480,18 +494,26 @@ def validate_raw_yaml_content_using_schema_with_responses(
         schema_content: the content of the YAML schema
         package_name: the name of the package the schema is located in. defaults
         to `rasa`.
+        expand_env_vars: Whether to expand environment variables in the file.
     """
     # bot responses are part of the schema extension
     # it will be included if the schema explicitly references it with include: responses
-    bot_responses_schema_content = read_schema_file(RESPONSES_SCHEMA_FILE, package_name)
+    bot_responses_schema_content = read_schema_file(
+        RESPONSES_SCHEMA_FILE, package_name, expand_env_vars=expand_env_vars
+    )
     schema_content = dict(schema_content, **bot_responses_schema_content)
     schema_extensions = [str(files(package_name).joinpath(SCHEMA_EXTENSIONS_FILE))]
 
-    validate_raw_yaml_using_schema(raw_yaml_content, schema_content, schema_extensions)
+    validate_raw_yaml_using_schema(
+        raw_yaml_content, schema_content, schema_extensions, expand_env_vars
+    )
 
 
 def validate_raw_yaml_using_schema_file_with_responses(
-    raw_yaml_content: str, schema_path: str, package_name: str = PACKAGE_NAME
+    raw_yaml_content: str,
+    schema_path: str,
+    package_name: str = PACKAGE_NAME,
+    expand_env_vars: bool = True,
 ) -> None:
     """Validate domain yaml content using a schema from file with responses sub-schema.
 
@@ -500,10 +522,11 @@ def validate_raw_yaml_using_schema_file_with_responses(
         schema_path: the schema of the yaml file
         package_name: the name of the package the schema is located in. defaults
             to `rasa`.
+        expand_env_vars: Whether to expand environment variables in the file.
     """
-    schema_content = read_schema_file(schema_path, package_name)
+    schema_content = read_schema_file(schema_path, package_name, expand_env_vars)
     validate_raw_yaml_content_using_schema_with_responses(
-        raw_yaml_content, schema_content, package_name
+        raw_yaml_content, schema_content, package_name, expand_env_vars
     )
 
 
@@ -523,11 +546,14 @@ def read_yaml(
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
     """
     custom_constructor = kwargs.get("custom_constructor", None)
+    expand_env_vars = kwargs.get("expand_env_vars", True)
 
     # Create YAML parser with custom constructor
     yaml_parser, reset_constructors = create_yaml_parser(
         reader_type, custom_constructor
     )
+    if expand_env_vars:
+        replace_environment_variables()
     yaml_content = yaml_parser.load(content) or {}
 
     # Reset to default constructors
@@ -583,6 +609,10 @@ def create_yaml_parser(
             yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG,
             original_sequence_constructor,
         )
+        # replace env var constructor with one that does not expand env vars
+        yaml_parser.constructor.add_constructor(
+            "!env_var", lambda loader, node: loader.construct_scalar(node)
+        )
 
     def custom_date_constructor(loader: SafeLoader, node: ScalarNode) -> str:
         """Custom constructor for parsing dates in the format '%Y-%m-%d'.
@@ -617,7 +647,9 @@ def _is_ascii(text: str) -> bool:
 
 @lru_cache(maxsize=READ_YAML_FILE_CACHE_MAXSIZE)
 def read_yaml_file(
-    filename: Union[str, Path], reader_type: Union[str, Tuple[str]] = "safe"
+    filename: Union[str, Path],
+    reader_type: Union[str, Tuple[str]] = "safe",
+    expand_env_vars: bool = True,
 ) -> Union[List[Any], Dict[str, Any]]:
     """Parses a yaml file.
 
@@ -626,6 +658,7 @@ def read_yaml_file(
     Args:
         filename: The path to the file which should be read.
         reader_type: Reader type to use. By default "safe" will be used.
+        expand_env_vars: Whether to expand environment variables in the file.
 
     Returns:
         Parsed content of the file.
@@ -634,7 +667,11 @@ def read_yaml_file(
         fixed_reader_type = (
             list(reader_type) if isinstance(reader_type, tuple) else reader_type
         )
-        return read_yaml(read_file(filename, DEFAULT_ENCODING), fixed_reader_type)
+        return read_yaml(
+            read_file(filename, DEFAULT_ENCODING),
+            fixed_reader_type,
+            expand_env_vars=expand_env_vars,
+        )
     except (YAMLError, DuplicateKeyError) as e:
         raise YamlSyntaxException(filename, e)
 
@@ -657,11 +694,14 @@ def read_config_file(
     return read_validated_yaml(filename, CONFIG_SCHEMA_FILE, reader_type)
 
 
-def read_model_configuration(filename: Union[Path, str]) -> Dict[str, Any]:
+def read_model_configuration(
+    filename: Union[Path, str], expand_env_vars: bool = True
+) -> Dict[str, Any]:
     """Parses a model configuration file.
 
     Args:
         filename: The path to the file which should be read.
+        expand_env_vars: Whether to expand environment variables in the file.
 
     Raises:
         YamlValidationException: In case the model configuration doesn't match the
@@ -670,7 +710,9 @@ def read_model_configuration(filename: Union[Path, str]) -> Dict[str, Any]:
     Returns:
         Parsed config file.
     """
-    return read_validated_yaml(filename, MODEL_CONFIG_SCHEMA_FILE)
+    return read_validated_yaml(
+        filename, MODEL_CONFIG_SCHEMA_FILE, expand_env_vars=expand_env_vars
+    )
 
 
 def dump_obj_as_yaml_to_string(
@@ -768,6 +810,7 @@ def read_validated_yaml(
     filename: Union[str, Path],
     schema: str,
     reader_type: Union[str, List[str]] = "safe",
+    expand_env_vars: bool = True,
 ) -> Any:
     """Validates YAML file content and returns parsed content.
 
@@ -776,6 +819,7 @@ def read_validated_yaml(
         schema: The path to the schema file which should be used for validating the
             file content.
         reader_type: Reader type to use. By default, "safe" will be used.
+        expand_env_vars: Whether to expand environment variables in the file.
 
     Returns:
         The parsed file content.
@@ -786,8 +830,10 @@ def read_validated_yaml(
     """
     content = read_file(filename)
 
-    validate_raw_yaml_using_schema_file(content, schema)
-    return read_yaml(content, reader_type)
+    validate_raw_yaml_using_schema_file(
+        content, schema, expand_env_vars=expand_env_vars
+    )
+    return read_yaml(content, reader_type, expand_env_vars=expand_env_vars)
 
 
 def validate_training_data(json_data: Dict[str, Any], schema: Dict[str, Any]) -> None:
@@ -906,6 +952,7 @@ def validate_yaml_with_jsonschema(
     humanize_error: Callable[
         [jsonschema.ValidationError], str
     ] = default_error_humanizer,
+    expand_env_vars: bool = True,
 ) -> None:
     """Validate data format.
 
@@ -916,6 +963,7 @@ def validate_yaml_with_jsonschema(
             to `rasa`.
         humanize_error: a function to convert a jsonschema.ValidationError into a
             human-readable error message. Defaults to `default_error_humanizer`.
+        expand_env_vars: Whether to expand environment variables in the file.
 
     Raises:
         YamlSyntaxException: if the yaml file is not valid.
@@ -933,7 +981,11 @@ def validate_yaml_with_jsonschema(
         # will include e.g. at which line an object was parsed. this is very
         # helpful when we validate files later on and want to point the user to the
         # right line
-        source_data = read_yaml(yaml_file_content, reader_type=["safe", "rt"])
+        source_data = read_yaml(
+            yaml_file_content,
+            reader_type=["safe", "rt"],
+            expand_env_vars=expand_env_vars,
+        )
     except (YAMLError, DuplicateKeyError) as e:
         raise YamlSyntaxException(underlying_yaml_exception=e)
 

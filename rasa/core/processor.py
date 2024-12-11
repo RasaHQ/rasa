@@ -1279,11 +1279,13 @@ class MessageProcessor:
             tracker.update(events[0])
             return self.should_predict_another_action(action.name())
         except Exception:
-            logger.exception(
-                f"Encountered an exception while running action '{action.name()}'."
-                "Bot will continue, but the actions events are lost. "
-                "Please check the logs of your action server for "
-                "more information."
+            structlogger.exception(
+                "rasa.core.processor.run_action.exception",
+                event_info=f"Encountered an exception while "
+                f"running action '{action.name()}'."
+                f"Bot will continue, but the actions events are lost. "
+                f"Please check the logs of your action server for "
+                f"more information.",
             )
             events = []
 

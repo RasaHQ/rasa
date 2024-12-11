@@ -1,6 +1,7 @@
 import logging
 import re
 import string
+import sys
 from collections import defaultdict
 from typing import Set, Text, Optional, Dict, Any, List, Tuple
 
@@ -304,7 +305,7 @@ class Validator:
             return any(cls.check_for_placeholder(i) for i in value)
         return False
 
-    def check_for_no_empty_paranthesis_in_responses(self) -> bool:
+    def check_for_no_empty_parenthesis_in_responses(self) -> bool:
         """Checks if there are no empty parenthesis in utterances."""
         everything_is_alright = True
 
@@ -315,12 +316,12 @@ class Validator:
                     for key in RESPONSE_KEYS_TO_INTERPOLATE
                 ):
                     structlogger.error(
-                        "validator.empty_paranthesis_in_utterances",
+                        "validator.empty_parenthesis_in_utterances",
                         response=response_text,
                         event_info=(
                             f"The response '{response_text}' in the domain file "
-                            f"contains empty parenthesis, which is not permitted."
-                            f" Please remove the empty parenthesis."
+                            f"contains empty parenthesis, which is not permitted. "
+                            f"Please remove the empty parenthesis."
                         ),
                     )
                     everything_is_alright = False
@@ -1603,3 +1604,38 @@ class Validator:
                 ),
             )
         return is_valid
+
+    def verify_studio_supported_validations(self) -> bool:
+        """Validates the assistant project for Rasa Studio supported features.
+
+        Ensure to add new validations here if they are required for
+        Rasa Studio Upload CLI.
+        """
+        if self.domain.is_empty():
+            structlogger.error(
+                "rasa.validator.verify_studio_supported_validations.empty_domain",
+                event_info="Encountered empty domain during validation.",
+            )
+            sys.exit(1)
+
+        self.warn_if_config_mandatory_keys_are_not_set()
+
+        valid_responses = (
+            self.check_for_no_empty_parenthesis_in_responses()
+            and self.validate_button_payloads()
+        )
+        valid_nlu = self.verify_nlu()
+        valid_flows = all(
+            [
+                self.verify_flows_steps_against_domain(),
+                self.verify_unique_flows(),
+                self.verify_predicates(),
+            ]
+        )
+        valid_calm_slot_mappings = self.validate_CALM_slot_mappings()
+
+        all_good = (
+            valid_responses and valid_nlu and valid_flows and valid_calm_slot_mappings
+        )
+
+        return all_good

@@ -113,6 +113,7 @@ def test_list_directory(
     assert set(list_function(str(subdirectory))) == expected
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_read_yaml_string():
     config_without_env_var = """
     user: user
@@ -122,6 +123,7 @@ def test_read_yaml_string():
     assert content["user"] == "user" and content["password"] == "pass"
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_read_yaml_string_with_env_var():
     config_with_env_var = """
     user: ${USER_NAME}
@@ -131,6 +133,7 @@ def test_read_yaml_string_with_env_var():
     assert content["user"] == "user" and content["password"] == "pass"
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_read_yaml_string_with_multiple_env_vars_per_line():
     config_with_env_var = """
     user: ${USER_NAME} ${PASS}
@@ -140,6 +143,7 @@ def test_read_yaml_string_with_multiple_env_vars_per_line():
     assert content["user"] == "user pass" and content["password"] == "pass"
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_read_yaml_string_with_env_var_prefix():
     config_with_env_var_prefix = """
     user: db_${USER_NAME}
@@ -149,6 +153,7 @@ def test_read_yaml_string_with_env_var_prefix():
     assert content["user"] == "db_user" and content["password"] == "db_pass"
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_read_yaml_string_with_env_var_postfix():
     config_with_env_var_postfix = """
     user: ${USER_NAME}_admin
@@ -158,6 +163,7 @@ def test_read_yaml_string_with_env_var_postfix():
     assert content["user"] == "user_admin" and content["password"] == "pass_admin"
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_read_yaml_string_with_env_var_infix():
     config_with_env_var_infix = """
     user: db_${USER_NAME}_admin
@@ -167,6 +173,7 @@ def test_read_yaml_string_with_env_var_infix():
     assert content["user"] == "db_user_admin" and content["password"] == "db_pass_admin"
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_read_yaml_string_with_env_var_not_exist():
     config_with_env_var_not_exist = """
     user: ${USER_NAME}
@@ -176,6 +183,7 @@ def test_read_yaml_string_with_env_var_not_exist():
         read_yaml(config_with_env_var_not_exist)
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_read_yaml_string_with_env_var_that_needs_to_be_resolved_later():
     config_with_env_var = """
     user: ${USER_NAME}
@@ -186,12 +194,14 @@ def test_read_yaml_string_with_env_var_that_needs_to_be_resolved_later():
     assert content["api_key"] == "${PASS}"
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_environment_variable_not_existing():
     content = "model: \n  test: ${variable}"
     with pytest.raises(RasaException):
         read_yaml(content)
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_environment_variable_dict_without_prefix_and_postfix():
     os.environ["variable"] = "test"
     content = "model: \n  test: ${variable}"
@@ -201,6 +211,7 @@ def test_environment_variable_dict_without_prefix_and_postfix():
     assert content["model"]["test"] == "test"
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_environment_variable_in_list():
     os.environ["variable"] = "test"
     content = "model: \n  - value\n  - ${variable}"
@@ -210,6 +221,7 @@ def test_environment_variable_in_list():
     assert content["model"][1] == "test"
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_environment_variable_dict_with_prefix():
     os.environ["variable"] = "test"
     content = "model: \n  test: dir/${variable}"
@@ -219,6 +231,7 @@ def test_environment_variable_dict_with_prefix():
     assert content["model"]["test"] == "dir/test"
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_environment_variable_dict_with_postfix():
     os.environ["variable"] = "test"
     content = "model: \n  test: ${variable}/dir"
@@ -228,6 +241,7 @@ def test_environment_variable_dict_with_postfix():
     assert content["model"]["test"] == "test/dir"
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_environment_variable_dict_with_prefix_and_with_postfix():
     os.environ["variable"] = "test"
     content = "model: \n  test: dir/${variable}/dir"
@@ -237,6 +251,7 @@ def test_environment_variable_dict_with_prefix_and_with_postfix():
     assert content["model"]["test"] == "dir/test/dir"
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_environment_variable_with_dollar_char():
     os.environ["variable1"] = "$test1"
     os.environ["variable2"] = "test2"
@@ -248,6 +263,7 @@ def test_environment_variable_with_dollar_char():
     assert content["model"]["test2"] == "test2"
 
 
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_environment_variable_with_dollar_char_in_the_middle():
     os.environ["variable1"] = "test$123"
     content = "model: \n  test1: ${variable1}"
@@ -257,10 +273,24 @@ def test_environment_variable_with_dollar_char_in_the_middle():
     assert content["model"]["test1"] == "test$123"
 
 
-def test_does_not_resolve_sensitive_environment_variable():
-    os.environ["AZURE_API_KEY_FR"] = "1234"
-    os.environ["AZURE_API_BASE_GPT3_5_TURBO_FR"] = "gpt-3.5-turbo"
-    os.environ["AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE"] = "deployment"
+@pytest.mark.dont_replace_environment_variables_in_yaml
+def test_does_not_resolve_sensitive_environment_variable(monkeypatch):
+    monkeypatch.setenv("AZURE_API_KEY_FR", "1234")
+    monkeypatch.setenv("AZURE_API_BASE_GPT3_5_TURBO_FR", "gpt-3.5-turbo")
+    monkeypatch.setenv("AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE", "deployment")
+
+    monkeypatch.setenv(
+        "AWS_ACCESS_KEY_ID_TEST",
+        "access_key_id_in_test_does_not_resolve_sensitive_environment_variable",
+    )
+    monkeypatch.setenv(
+        "AWS_SECRET_ACCESS_KEY_TEST",
+        "secret_access_key_in_test_does_not_resolve_sensitive_environment_variable",
+    )
+    monkeypatch.setenv(
+        "AWS_SESSION_TOKEN_TEST",
+        "session_token_in_test_does_not_resolve_sensitive_environment_variable",
+    )
 
     content = """
     model_groups:
@@ -271,6 +301,12 @@ def test_does_not_resolve_sensitive_environment_variable():
             api_base: ${AZURE_API_BASE_GPT3_5_TURBO_FR}
             api_key: ${AZURE_API_KEY_FR}
             timeout: 14
+          - provider: bedrock
+            model: anthropic.claude-3-5-sonnet-test
+            aws_access_key_id: ${AWS_ACCESS_KEY_ID_TEST}
+            aws_secret_access_key: ${AWS_SECRET_ACCESS_KEY_TEST}
+            aws_region_name: us-east-1
+            aws_session_token: ${AWS_SESSION_TOKEN_TEST}
     """
 
     content = read_yaml(content)
@@ -278,6 +314,19 @@ def test_does_not_resolve_sensitive_environment_variable():
     assert content["model_groups"][0]["models"][0]["api_key"] == "${AZURE_API_KEY_FR}"
     assert content["model_groups"][0]["models"][0]["deployment"] == "deployment"
     assert content["model_groups"][0]["models"][0]["api_base"] == "gpt-3.5-turbo"
+
+    assert (
+        content["model_groups"][0]["models"][1]["aws_access_key_id"]
+        == "${AWS_ACCESS_KEY_ID_TEST}"
+    )
+    assert (
+        content["model_groups"][0]["models"][1]["aws_secret_access_key"]
+        == "${AWS_SECRET_ACCESS_KEY_TEST}"
+    )
+    assert (
+        content["model_groups"][0]["models"][1]["aws_session_token"]
+        == "${AWS_SESSION_TOKEN_TEST}"
+    )
 
 
 def test_read_yaml_datatime_as_string():

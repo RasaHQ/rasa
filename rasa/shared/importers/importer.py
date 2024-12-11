@@ -1,7 +1,18 @@
 import logging
 from abc import ABC, abstractmethod
 from functools import reduce
-from typing import Any, Dict, List, Optional, Set, Text, Tuple, Type, Union, cast
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Set,
+    Text,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 import importlib_resources
 
@@ -167,6 +178,7 @@ class TrainingDataImporter(ABC):
         domain_path: Optional[Text] = None,
         training_data_paths: Optional[List[Text]] = None,
         args: Optional[Dict[Text, Any]] = None,
+        expand_env_vars: bool = True,
     ) -> "TrainingDataImporter":
         """Loads a `TrainingDataImporter` instance from a dictionary."""
         from rasa.shared.importers.rasa import RasaFileImporter
@@ -182,7 +194,12 @@ class TrainingDataImporter(ABC):
         importers = [importer for importer in importers if importer]
         if not importers:
             importers = [
-                RasaFileImporter(config_path, domain_path, training_data_paths)
+                RasaFileImporter(
+                    config_path,
+                    domain_path,
+                    training_data_paths,
+                    expand_env_vars=expand_env_vars,
+                )
             ]
 
         return E2EImporter(

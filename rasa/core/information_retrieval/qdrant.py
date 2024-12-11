@@ -62,6 +62,7 @@ class Qdrant_Store(InformationRetrieval):
             embeddings=self.embeddings,
             content_payload_key=params.get("content_payload_key", "text"),
             metadata_payload_key=params.get("metadata_payload_key", "metadata"),
+            vector_name=params.get("vector_name", None),
         )
 
     async def search(

@@ -360,7 +360,9 @@ def import_data_from_studio(
     studio_domain.persist(domain_file)
 
     data_from_studio = TrainingDataImporter.load_from_dict(
-        domain_path=str(domain_file), training_data_paths=data_paths
+        domain_path=str(domain_file),
+        training_data_paths=data_paths,
+        expand_env_vars=False,
     )
 
     return data_from_studio, data_original

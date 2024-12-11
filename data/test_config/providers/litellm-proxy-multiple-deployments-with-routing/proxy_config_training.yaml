@@ -1,0 +1,26 @@
+model_list:
+  - model_name: gpt-3.5-turbo
+    litellm_params: 
+      model: azure/test-gpt-35-turbo
+      api_base: "os.environ/AZURE_API_BASE_GPT3_5_TURBO"
+      api_key: "os.environ/AZURE_API_KEY_TRAINING"
+      api_version: "os.environ/AZURE_API_VERSION_GPT3_5_TURBO"
+      timeout: 7
+      num_retries: 5
+  - model_name: text-embedding-ada-002
+    litellm_params:
+      model: azure/test-text-embedding-ada-002
+      api_base: "os.environ/AZURE_API_BASE_TXT_EMBEDDING_ADA"
+      api_key: "os.environ/AZURE_API_KEY_TRAINING"
+      api_version: "os.environ/AZURE_API_VERSION_TXT_EMBEDDING_ADA"
+      timeout: 7
+      num_retries: 5
+
+litellm_settings:
+  ssl_verify: false
+  request_timeout: 600
+  # callbacks: ["datadog_llm_observability", "otel"]
+  set_verbose: true
+
+general_settings: 
+  background_health_checks: True

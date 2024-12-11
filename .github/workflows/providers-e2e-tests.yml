@@ -42,6 +42,7 @@ on:
           - gemini-multiple-deployments-with-routing
           - huggingface-multiple-deployments-with-routing
           - bedrock-multiple-deployments-with-routing
+          - litellm-proxy-multiple-deployments-with-routing
 
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`"
@@ -133,6 +134,9 @@ env:
   REDIS_PORT: 6379
   RASA_TELEMETRY_DEBUG: true
   DD_API_KEY: ${{ secrets.DD_API_KEY }} # Required for sending OTEL Metrics and Traces to Datadog
+  DD_SITE: datadoghq.eu
+  OTEL_EXPORTER: otlp_grpc
+  OTEL_ENDPOINT: http:/0.0.0.0:4317
   API_KEY_NAMES: '{"azure": "AZURE_API_KEY", "gemini": "GEMINI_API_KEY", "huggingface": "HUGGINGFACE_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "together_ai": "TOGETHERAI_API_KEY", "groq": "GROQ_API_KEY", "openai": "OPENAI_API_KEY", "mistral": "MISTRAL_API_KEY", "cohere": "COHERE_API_KEY", "voyage": "VOYAGE_API_KEY"}'
 
   # Providers' required environment variables (API key values also stored in 1Password):
@@ -274,7 +278,8 @@ jobs:
             azure-multiple-deployments-with-cost-based-routing,
             gemini-multiple-deployments-with-routing,
             huggingface-multiple-deployments-with-routing,
-            bedrock-multiple-deployments-with-routing
+            bedrock-multiple-deployments-with-routing,
+            litellm-proxy-multiple-deployments-with-routing
           ] # TODO: Enable testing all the providers
         train-and-test: ${{ fromJson(needs.job_setup.outputs.COMMAND_GENERATOR_MATRIX)[needs.job_setup.outputs.COMMAND_GENERATOR] }}
     steps:

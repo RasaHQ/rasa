@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from pytest import MonkeyPatch
+from pytest import CaptureFixture, MonkeyPatch
 
 from rasa.core.actions.action import RemoteAction, RemoteActionJSONValidator
 from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
@@ -161,7 +161,7 @@ async def test_executor_runs_action_without_response_validation(
 
 
 async def test_executor_runs_action_invalid_actions_module(
-    trained_async: TrainedAsync, custom_actions_agent: Agent
+    trained_async: TrainedAsync, capsys: CaptureFixture, custom_actions_agent: Agent
 ):
     """
     Ensure that the inappropriately configured actions_module doesn't
@@ -175,14 +175,15 @@ async def test_executor_runs_action_invalid_actions_module(
 
     # Trigger the custom action execution and ensure the exception log is raised
     message = UserMessage(text="Activate custom action.")
-    error_message = (
-        "You've provided the custom actions module "
-        f"'{DUMMY_INVALID_ACTIONS_MODULE_PATH}' to run directly by the rasa server, "
-        "however this module does not exist. "
-        "Please check for typos in your `endpoints.yml` file."
+    await processor.handle_message(message)
+
+    message = (
+        "Encountered an exception while running action 'action_force_next_utter'."
+        "Bot will continue, but the actions events are lost. "
+        "Please check the logs of your action server for more information."
     )
-    with pytest.raises(RasaException, match=error_message):
-        await processor.handle_message(message)
+    captured = capsys.readouterr()
+    assert message in captured.out
 
 
 def test_action_executor_is_being_cached(mock_endpoint: EndpointConfig):
