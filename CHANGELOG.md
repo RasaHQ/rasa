@@ -10,6 +10,261 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.11.0] - 2024-12-11
+                        
+Rasa Pro 3.11.0 (2024-12-11)                             
+### Deprecations and Removals
+- [#1310](https://github.com/rasahq/rasa-private/issues/1310): Removed `UnexpecTEDIntentPolicy` from the default config.yml. It is an experimental policy and not suitable for default configuration
+- [#1503](https://github.com/rasahq/rasa-private/issues/1503): The `reset_after_flow_ends` property of collect steps is now deprecated and will be removed in Rasa Pro 4.0.0. Please use the `persisted_slots` property at the flow level instead.
+
+### Features
+- [#1164](https://github.com/rasahq/rasa-private/issues/1164): Added Twilio Media Streams channel which can be configured to use arbitrary Text-To-Speech and Speech-To-Text services.
+  Added Voice Stream Channel Interface which makes it easier to add voice channels that directly integrate with audio streams.
+- [#1192](https://github.com/rasahq/rasa-private/issues/1192): Added default action `action_hangup` it can be used to hang up a phone call from a flow.
+  Added `SessionEnded` event and `SessionEndCommand` command
+  Updated Audiocodes, Jambonz and Twilio Voice channels to send `/session_end` if the phone call is disconnected by user.
+- [#1308](https://github.com/rasahq/rasa-private/issues/1308): Added support for Cartesia Text-To-Speech in Voice Stream Channels.
+- [#1416](https://github.com/rasahq/rasa-private/issues/1416): Implement Rasa Pro native model service that takes care of training and running an assistant model in Studio.
+  To find out more about this service, read more in the Studio [documentation](https://rasa.com/docs/studio/deployment/architecture#studio-model-service-container).
+- [#1448](https://github.com/rasahq/rasa-private/issues/1448): Added a feature to be able to use voice to interact with the bot in the inspector.
+- [#1544](https://github.com/rasahq/rasa-private/issues/1544): ### **New Features & Improvements**
+
+  1. **Decoupled LLM Configuration from Components**
+     - The previous integration of LLMs within CALM is closely tied to the components where they are used. However, this is no longer necessary, as we no longer perform training within the individual components that interact with external LLM endpoints.
+     - As a result, LLM and embedding client configurations have been moved to `endpoints.yml`. To define LLM configurations in `endpoints.yml`, use the `model_groups` as shown below:
+       ```endpoints.yml
+       model_groups:
+         - id: gpt-4-direct
+           models:
+             - provider: openai
+               model: gpt-4
+               timeout: 7
+               temperature: 0.0
+         - id: text-embedding-3-small-direct
+           models:
+             - provider: openai
+               model: text-embedding-3-small
+       ```
+     - These `model_groups` can then be referenced in `config.yml` as follows:
+       ```config.yml
+       pipeline:
+         ...
+         - name: SingleStepLLMCommandGenerator
+           llm:
+             model_group: gpt-4-direct
+           flow_retrieval:
+             embeddings:
+               model_group: text-embedding-3-smal-direct
+         ...
+       ```
+
+  2. **Support for Multiple Subscription Deployments**
+     - Allows customers to use deployments from different subscriptions for the same provider.
+     - Resolved the limitation of API key configuration being tied exclusively to a single environment variable.
+
+     Example configuration in `endpoints.yml` for Azure deployments:
+     ```endpoints.yaml
+     model_groups:
+       - id: azure-gpt-model-eu
+         models:
+            - provider: azure
+              deployment: azure-eu-deployment
+              api_base: https://api.azure-europe.example.com
+              api_version: 2024-08-01-preview
+              api_key: ${AZURE_API_KEY_EU}
+              timeout: 7
+              temperature: 0.0
+              ...
+       - id: azure-gpt-model-us
+         models:
+            - provider: azure
+              deployment: azure-us-deployment
+              api_base: https://api.azure-us.example.com
+              api_version: 2024-08-01-preview
+              api_key: ${AZURE_API_KEY_US}
+              timeout: 7
+              temperature: 0.0
+              ...
+          ...
+     ```
+
+  3. **Seamless Model Configuration Across Environments Without Retraining**
+     - Added support for using different model configurations in different environments, such as `dev`, `staging`, and `prod`, without requiring the bot to be retrained for each environment.
+     - Extended the `${...}` syntax to `deployment`, `api_base`, and `api_version` in `model_groups`, allowing these values to change dynamically based on the environment.
+   
+     ```endpoint.yml
+     model_groups:
+     - id: azure-gpt-4
+       models:
+         - provider: azure
+           deployment: ${AZURE_DEPLOYMENT_GPT4}
+           api_base: ${AZURE_API_BASE_GPT4}
+           api_key: ${AZURE_API_KEY_GPT4}
+           ...
+     - id: azure-text-embeddings-3-small
+       models:
+         - provider: azure
+           deployment: ${AZURE_DEPLOYMENT_EMBEDDINGS_3_SMALL}
+           api_base: ${AZURE_API_BASE_EMBEDDINGS_3_SMALL}
+           api_key: ${AZURE_API_EMBEDDINGS_3_SMALL}
+           ...
+     ```
+
+  4. **Supporting Multiple Deployments for Load Balancing**
+     - Enabled targeting of multiple LLM deployments for a single Rasa component.
+     - Implemented the routing feature that supports load balancing to handle rate limits and improve scalability. When multiple models are defined within a model group, you can specify the `router` key with a `routing_strategy` to control how requests are distributed among the models.
+   
+     Example configuration in `endpoints.yml` for Azure deployments with load balancing:
+     ```endpoints.yaml
+     model_groups:
+       - id: azure-gpt-models
+          models:
+            - provider: azure
+              deployment: azure-eu-deployment
+              api_base: https://api.azure-europe.example.com
+              api_version: 2024-08-01-preview
+              api_key: ${AZURE_API_KEY_EU}
+              timeout: 7
+              temperature: 0.0
+              ...
+            - provider: azure
+              deployment: azure-us-deployment
+              api_base: https://api.azure-us.example.com
+              api_version: 2024-08-01-preview
+              api_key: ${AZURE_API_KEY_US}
+              timeout: 7
+              temperature: 0.0
+              ...
+          router:
+            routing_strategy: least-busy
+          ...
+     ```
+
+     Example of usage in `config.yml`:
+     ```config.yml
+     pipeline:
+     ...
+       - name: SingleStepLLMCommandGenerator
+         llm:
+           model_group: azure-gpt-models
+           ...
+     ```
+
+  ### [Backward Compatibility]
+  Existing configurations that couple LLMs to specific Rasa components remain unaffected by this change.
+  However, this configuration method is now deprecated and scheduled for removal in version 4.0.0.
+- [#1603](https://github.com/rasahq/rasa-private/issues/1603): Added `UserSilenceCommand` and `pattern_user_silence` which is triggered by Voice Stream channels when the user is silent for more than a silence timeout. These values are configurable with the newly added slots `silence_timeout` and `consecutive_silence_timeouts`
+- [#866](https://github.com/rasahq/rasa-private/issues/866): The inspector is not its own input / output channel anymore. Rather, it can be attached to other channels. This way, it isn't limited to conversations going through the socketio channel anymore, but can be used with other text channels or voice channels.
+
+  You can attach it to any channel(s) configured in your credentials.yml by adding a flag to rasa run:
+  rasa run --inspect.
+
+  In addition to that, the conenience cli command rasa inspect is retained, which starts the inspector with the socketio channel as usual.
+
+### Improvements
+- [#1001](https://github.com/rasahq/rasa-private/issues/1001): In Audiocodes channel, `/vaig_event_start` is replaced by `/session_start`. This intent marks the beginning of conversation and it is sent when the phone call is connected.
+- [#1003](https://github.com/rasahq/rasa-private/issues/1003): Introduced the environment variable `MAX_NUMBER_OF_PREDICTIONS_CALM` to configure
+  the CALM-specific limit for the number of predictions. This variable defaults to 1000,
+  providing a higher prediction limit compared to the default value of 10 for
+  nlu-based assistants.
+- [#1124](https://github.com/rasahq/rasa-private/issues/1124): In Audiocodes and Twilio Voice channel connector, the call metadata received from the providers can be accessed in the slot `session_started_metadata`. The call metadata parameter names have been standardised with CallParameters dataclass
+  Twilio Voice Channel Connector sends `/session_start` intent at the beginning of conversation and the channel parameter `initial_prompt` has been removed
+- [#1161](https://github.com/rasahq/rasa-private/issues/1161): Enable configurability of Vault secret manager's mount point property in the endpoints yaml file or as an environment variable.
+- [#1303](https://github.com/rasahq/rasa-private/issues/1303): In Twilio Media Streams channel connector, call metadata is availble in `session_start_metadata` slot. It also supports default action `action_hangup`
+- [#1322](https://github.com/rasahq/rasa-private/issues/1322): Catch API connection errors, and validate the correctness of the values present in model configuration at model training time by making a test API request. This feature is enabled by default and can be disabled by setting the environment variable `LLM_API_HEALTH_CHECK` to `False`.
+- [#1365](https://github.com/rasahq/rasa-private/issues/1365): `Socketio` channel connector now sends the websocket messages `tracker_state` and `rasa_events` with each bot response. `tracker_state` contains the tracker store state at that point in conversation and includes slots, events, stack, latest message and latest action. `rasa_events` contains a list of new events that have happened since the last message.
+- [#1384](https://github.com/rasahq/rasa-private/issues/1384): Speech-To-Text and Text-To-Speech Services can be configured for Voice Stream Channel Connectors
+  Added tests for voice components and redefined code structure
+- [#1429](https://github.com/rasahq/rasa-private/issues/1429): Add support for Python 3.11
+- [#1478](https://github.com/rasahq/rasa-private/issues/1478): Removed JSON response validation except when HTTP protocol and E2E Stub is used for Custom Action execution.
+- [#1494](https://github.com/rasahq/rasa-private/issues/1494): Optimized JSON response validation by initializing the `Draft202012Validator` once and caching it.
+- [#1503](https://github.com/rasahq/rasa-private/issues/1503): Add an optional property `persisted_slots` at the flow level. This property configures whether slots collected or set across any of the flow steps should be persisted after the flow ends. This property expects a list of slot names.
+- [#1524](https://github.com/rasahq/rasa-private/issues/1524): Added support for custom Automatic Speech Recognition (ASR) or Text To Speech (TTS) providers to a Rasa Assistant. This allows developers to bring their own speech providers to Rasa by subclassing classes `ASREngine` and `TTSEngine`
+- [#1538](https://github.com/rasahq/rasa-private/issues/1538): If flow retrieval is disabled, a warning is raised only if the number of user flows exceed 20.
+- [#1598](https://github.com/rasahq/rasa-private/issues/1598): Added validation to the `TestCase` class to issue a warning when duplicate user messages lack metadata or have incorrect metadata. This enhancement provides clear guidance to users on the issue and how to resolve it.
+- [#1603](https://github.com/rasahq/rasa-private/issues/1603): Fixed global `should-hangup` variable in Voice Stream Channels by moving to a context variable CallState that stores the session variables
+- [#1627](https://github.com/rasahq/rasa-private/issues/1627): Run Rasa Pro data validation before uploading to Studio.
+  This is to avoid uploading invalid assistant data that would raise errors during Rasa Pro model training in Studio.
+- [#1641](https://github.com/rasahq/rasa-private/issues/1641): Added `vector_name` to Qdrant's configuration to enable customization of the vector field name for storing embeddings.
+- [#1643](https://github.com/rasahq/rasa-private/issues/1643): Enhanced `YamlValidationException` error messages to include the line number and a relevant YAML snippet showing where the validation error occurred. Line numbers start from 1 (1-based indexing).
+
+  The error-handling behavior has been modified so that only one validation error is displayed. This exception is raised when the YAML content does not comply with the defined YAML schema.
+- [#1654](https://github.com/rasahq/rasa-private/issues/1654): Added a new assertion type `bot_did_not_utter` to allow testing that the bot does not utter specific messages or include certain buttons during conversations.
+- [#1678](https://github.com/rasahq/rasa-private/issues/1678): Ensure that the model service fails properly if the minimum disk space 
+  requirement is not met.
+- [#1682](https://github.com/rasahq/rasa-private/issues/1682): Do not expand environment variables when reading yaml files during `rasa studio upload` execution.
+- [#1689](https://github.com/rasahq/rasa-private/issues/1689): Stream model files to Studio rather than providing full files.
+  Provide a HEAD endpoint for Studio to check if a model is available and what its size is.
+  Add an environment variable to set the port of the model service.
+  This makes the development with Studio easier, previously the port was hard coded making it harder to use a separately deployed model service now that Studio includes that in its development deployment.
+- [#658](https://github.com/rasahq/rasa-private/issues/658): Add flag `--skip-yaml-validation` to skip YAML validation during Rasa run.
+  User can use it to skip domain YAML validation during Rasa run.
+  Do not instantiate multiple instances of TrainingDataImporter class for validation and training.
+- [#958](https://github.com/rasahq/rasa-private/issues/958): Introduced a `summarize_history` flag for the contextual response rephraser, defaulting to `True`.
+  When set to `False`, the conversation transcript instead of the summary is included in the prompt of
+  the contextual response rephraser.
+  This saves a separate summarization call to an LLM.
+  The number of conversation turns to be used when `summarize_history` is set to `False` can be set via
+  `max_historical_turns`. By default this value is set to 5.
+
+  Example:
+
+  ```yaml
+  nlg:
+    - type: rephrase
+      summarize_history: False
+      max_historical_turns: 5
+  ```
+
+### Bugfixes
+- [#1101](https://github.com/rasahq/rasa-private/issues/1101): Fix OpenAI LLM client ignoring API base and API version arguments if set.
+- [#1212](https://github.com/rasahq/rasa-private/issues/1212): Fix `AttributeError` with the instrumentation of the `run` method of the `CustomActionExecutor` class.
+- [#1279](https://github.com/rasahq/rasa-private/issues/1279): Throw DuplicatedFlowIdException during `rasa data validate` and `rasa train` if there are duplicate flows defined.
+- [#1424](https://github.com/rasahq/rasa-private/issues/1424): Replace `pickle` and `joblib` with safer alternatives, e.g. `json`, `safetensors`, and `skops`, for
+  serializing components.
+
+  **Note**: This is a model breaking change. Please retrain your model.
+
+  If you have a custom component that inherits from one of the components listed below and modified the `persist` or
+  `load` method, make sure to update your code. Please contact us in case you encounter any problems.
+
+  Affected components:
+
+  - `CountVectorFeaturizer`
+  - `LexicalSyntacticFeaturizer`
+  - `LogisticRegressionClassifier`
+  - `SklearnIntentClassifier`
+  - `DIETClassifier`
+  - `CRFEntityExtractor`
+  - `TrackerFeaturizer`
+  - `TEDPolicy`
+  - `UnexpectedIntentTEDPolicy`
+- [#1514](https://github.com/rasahq/rasa-private/issues/1514): Avoid filling slots that have `ask_before_filling = True` and utilize a `from_text` slot mapping
+  during other steps in the flow. Ensure that the `NLUCommandAdapter` only fills these types of
+  slots when the flow reaches the designated collection step.
+- [#1529](https://github.com/rasahq/rasa-private/issues/1529): Check for the metadata's `step_id` and `active_flow` keys when adding the `ActionExecuted` event to the flows paths stack.
+- [#1651](https://github.com/rasahq/rasa-private/issues/1651): Fixed a bug on Windows where flow files with names starting with 'u' would fail to load due to improper path escaping in YAML content processing
+- [#1657](https://github.com/rasahq/rasa-private/issues/1657): Fixes OpenAIException - AsyncClient.__init__() got an unexpected keyword argument 'proxies'
+- [#1676](https://github.com/rasahq/rasa-private/issues/1676): Fix retrieval of model file stored in the cloud storage by the model service.
+  This change consisted in uploading only the model file instead of the full model path during training when `--remote-storage` CLI flag is used.
+- [#1690](https://github.com/rasahq/rasa-private/issues/1690): Fix issue in e2e testing when customising `action_session_start` would lead to AttributeError, because the `output_channel` was not set. 
+  This is now fixed by setting the `output_channel` to `CollectingOutputChannel()`.
+
+### Miscellaneous internal changes
+- [#1212](https://github.com/rasahq/rasa-private/issues/1212), [#1318](https://github.com/rasahq/rasa-private/issues/1318), [#1528](https://github.com/rasahq/rasa-private/issues/1528), [#1550](https://github.com/rasahq/rasa-private/issues/1550), [#1581](https://github.com/rasahq/rasa-private/issues/1581), [#1650](https://github.com/rasahq/rasa-private/issues/1650)
+
+
+## [3.10.14] - 2024-12-04
+                         
+Rasa Pro 3.10.14 (2024-12-04)                              
+### Bugfixes
+- [#1514](https://github.com/rasahq/rasa-private/issues/1514): Avoid filling slots that have `ask_before_filling = True` and utilize a `from_text` slot mapping
+  during other steps in the flow. Ensure that the `NLUCommandAdapter` only fills these types of
+  slots when the flow reaches the designated collection step.
+- [#1657](https://github.com/rasahq/rasa-private/issues/1657): Fixes OpenAIException - AsyncClient.__init__() got an unexpected keyword argument 'proxies'
+- [#1664](https://github.com/rasahq/rasa-private/issues/1664): Fix validation for LLM/Embedding clients when the api_base is configured in the config itself but not as an environment variable.
+
+
 ## [3.10.13] - 2024-11-29
                          
 Rasa Pro 3.10.13 (2024-11-29)                              
@@ -436,6 +691,38 @@ Rasa Pro 3.10.0 (2024-09-04)
 
 ### Miscellaneous internal changes
 - [#1038](https://github.com/rasahq/rasa-private/issues/1038), [#1040](https://github.com/rasahq/rasa-private/issues/1040), [#1053](https://github.com/rasahq/rasa-private/issues/1053), [#1068](https://github.com/rasahq/rasa-private/issues/1068), [#1123](https://github.com/rasahq/rasa-private/issues/1123), [#1318](https://github.com/rasahq/rasa-private/issues/1318), [#713](https://github.com/rasahq/rasa-private/issues/713)
+
+
+## [3.9.17] - 2024-12-05
+                        
+Rasa Pro 3.9.17 (2024-12-05)                             
+### Bugfixes
+- [#1507](https://github.com/rasahq/rasa-private/issues/1507): Implement `eq` and `hash` functions for `ChangeFlowCommand` to fix `error=unhashable type: 'ChangeFlowCommand'` error in `MultiStepCommandGenerator`.
+
+
+## [3.9.16] - 2024-11-26
+                        
+Rasa Pro 3.9.16 (2024-11-26)                             
+### Bugfixes
+- [#1424](https://github.com/rasahq/rasa-private/issues/1424): Replace `pickle` and `joblib` with safer alternatives, e.g. `json`, `safetensors`, and `skops`, for
+  serializing components.
+
+  **Note**: This is a model breaking change. Please retrain your model.
+
+  If you have a custom component that inherits from one of the components listed below and modified the `persist` or
+  `load` method, make sure to update your code. Please contact us in case you encounter any problems.
+
+  Affected components:
+
+  - `CountVectorFeaturizer`
+  - `LexicalSyntacticFeaturizer`
+  - `LogisticRegressionClassifier`
+  - `SklearnIntentClassifier`
+  - `DIETClassifier`
+  - `CRFEntityExtractor`
+  - `TrackerFeaturizer`
+  - `TEDPolicy`
+  - `UnexpectedIntentTEDPolicy`
 
 
 ## [3.9.15] - 2024-10-18
