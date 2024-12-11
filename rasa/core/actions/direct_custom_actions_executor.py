@@ -2,6 +2,7 @@ from functools import lru_cache
 from importlib.util import find_spec
 from typing import (
     Any,
+    ClassVar,
     Dict,
     Text,
 )
@@ -22,7 +23,7 @@ structlogger = structlog.get_logger(__name__)
 
 
 class DirectCustomActionExecutor(CustomActionExecutor):
-    _actions_module_registered: bool = False
+    _actions_module_registered: ClassVar[bool] = False
 
     def __init__(self, action_name: str, action_endpoint: EndpointConfig):
         """Initializes the direct custom action executor.
@@ -58,7 +59,7 @@ class DirectCustomActionExecutor(CustomActionExecutor):
         Raises:
             RasaException: If the actions module specified does not exist.
         """
-        if self.__class__._actions_module_registered:
+        if DirectCustomActionExecutor._actions_module_registered:
             return
 
         module_name = self.action_endpoint.actions_module
@@ -70,7 +71,7 @@ class DirectCustomActionExecutor(CustomActionExecutor):
             )
 
         self.action_executor.register_package(module_name)
-        self.__class__._actions_module_registered = True
+        DirectCustomActionExecutor._actions_module_registered = True
 
     async def run(
         self,
