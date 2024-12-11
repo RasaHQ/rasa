@@ -32,9 +32,10 @@ pipeline:
   - name: MultiStepLLMCommandGenerator
     llm:
       model_group: azure_llm
-    flow_retrieval:
-      embeddings:
-        model_group: azure_embeddings
+    # TODO: Enable once Bug ENG-1565 is resolved
+    # flow_retrieval:
+    #   embeddings:
+    #     model_group: azure_embeddings
 
 policies:
   - name: RulePolicy

@@ -190,8 +190,9 @@ runs:
       working-directory: data/test_config/providers/litellm-proxy-multiple-deployments-with-routing
       run: |
         : Start LiteLLM proxy for training
-        litellm --config proxy_config_training.yaml --detailed_debug & pid=$!
-        echo "HTTP_PROXY=http://0.0.0.0:4000" >> $GITHUB_ENV
+        litellm --config proxy_config_training.yaml --detailed_debug --debug & pid=$!
+        litellm --config proxy_config_training.yaml --detailed_debug --debug --health --test || (sleep 5 && litellm --config proxy_config_training.yaml --detailed_debug --debug --health --test)
+        echo "LITELLM_PROXY=http://0.0.0.0:4000" >> $GITHUB_ENV
         echo "litellm-proxy-pid=$pid" >> $GITHUB_ENV
       shell: bash
 
@@ -253,8 +254,9 @@ runs:
       working-directory: data/test_config/providers/litellm-proxy-multiple-deployments-with-routing
       run: |
         : Start LiteLLM proxy 1 for inference
-        litellm --config proxy_config_inference_ca_deployment.yaml --detailed_debug &
-        echo "HTTP_PROXY_1=http://0.0.0.0:4000" >> $GITHUB_ENV
+        litellm --config proxy_config_inference_ca_deployment.yaml --detailed_debug --debug 2>&1 > proxy-log-1 &
+        litellm --config proxy_config_inference_ca_deployment.yaml --detailed_debug --debug --health --test || (sleep 5 && litellm --config proxy_config_inference_ca_deployment.yaml --detailed_debug --debug --health --test)
+        echo "LITELLM_PROXY_1=http://0.0.0.0:4000" >> $GITHUB_ENV
       shell: bash
 
     - name: Start LiteLLM proxy 2 for inference
@@ -262,8 +264,9 @@ runs:
       working-directory: data/test_config/providers/litellm-proxy-multiple-deployments-with-routing
       run: |
         : Start LiteLLM proxy 2 for inference
-        litellm --port 4001 --config proxy_config_inference_fr_deployment.yaml --detailed_debug &
-        echo "HTTP_PROXY_2=http://0.0.0.0:4001" >> $GITHUB_ENV
+        litellm --port 4001 --config proxy_config_inference_fr_deployment.yaml --detailed_debug --debug 2>&1 > proxy-log-2 &
+        litellm --config proxy_config_inference_fa_deployment.yaml --detailed_debug --debug --health --test || (sleep 5 && litellm --config proxy_config_inference_fa_deployment.yaml --detailed_debug --debug --health --test)
+        echo "LITELLM_PROXY_2=http://0.0.0.0:4001" >> $GITHUB_ENV
       shell: bash
 
     - name: Run e2e test (Single Step Command Generator)
@@ -322,13 +325,12 @@ runs:
         name: ${{ inputs.provider }}-E2E-test-${{ inputs.train-and-test }}-results
         path: tests/e2e_results_failed.yml
 
-    - name: Print OTEL traces and metrics
-      if: always()
-      working-directory: data/test_config/providers
-      run: |
-        : Print OTEL traces and metrics
-        docker compose -f otel-docker-compose.yml logs
-      shell: bash
+    - name: Save LiteLLM-proxy logs
+      if: ${{ failure() && inputs.provider == 'litellm-proxy-multiple-deployments-with-routing' }}
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+      with:
+        name: LiteLLM-proxy-logs
+        path: data/test_config/providers/litellm-proxy-multiple-deployments-with-routing/proxy-log-*
 
     - name: Get Rasa-pro version and short-SHA, and set as environment variables
       if: always()
