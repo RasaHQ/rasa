@@ -19,7 +19,7 @@ model_list:
 litellm_settings:
   ssl_verify: false
   request_timeout: 600
-  # callbacks: ["datadog_llm_observability", "otel"]
+  callbacks: ["otel"]
   set_verbose: true
 
 general_settings: 
