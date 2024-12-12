@@ -32,7 +32,6 @@ pipeline:
     timeout: 3
   - name: NLUCommandAdapter
   - name: SingleStepLLMCommandGenerator
-    prompt_template: data/test_config/providers/command_prompt.jinja2
     llm:
       provider: together_ai
       model: meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo

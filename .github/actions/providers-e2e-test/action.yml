@@ -22,8 +22,8 @@ inputs:
   single-step-e2e-test-with-assertions:
       description: "Path to test file, on `rasa-calm-demo` repository"
       required: true
-      # Test on normal Transaction flows, as well as knowledge/enterprise-search included
-      default: "e2e_tests_with_assertions/passing/knowledge/user_starts_with_a_knowledge_question.yml"
+      # TODO: Use test that invokes enterprise-search, when flakiness is resolved
+      default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
 
   multi-step-e2e-test-with-assertions:
     description: "Path to test file, on `rasa-calm-demo` repository"

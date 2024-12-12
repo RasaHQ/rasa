@@ -64,8 +64,8 @@ on:
         description: "Path to test file, on `rasa-calm-demo` repository, to be run with single-step trained model"
         type: string
         required: true
-        # Test on normal Transaction flows, as well as knowledge/enterprise-search included
-        default: "e2e_tests_with_assertions/passing/knowledge/user_starts_with_a_knowledge_question.yml"
+        # TODO: Use test that invokes enterprise-search, when flakiness is resolved
+        default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
 
       multi-step-e2e-test-with-assertions:
         description: "Path to test file, on `rasa-calm-demo` repository, to be run with multi-step trained model"
@@ -101,13 +101,13 @@ on:
         description: "Command-generator(s) to use: single-step, multi-step or both (1 job for each)"
         type: string
         required: true
-        default: multi-step # TODO: Change to 'both', after test failures are resolved
+        default: both
       single-step-e2e-test-with-assertions:
         description: "Path to test file, on `rasa-calm-demo` repository"
         type: string
         required: true
-        # Test on normal Transaction flows, as well as knowledge/enterprise-search included
-        default: "e2e_tests_with_assertions/passing/knowledge/user_starts_with_a_knowledge_question.yml"
+        # TODO: Use test that invokes enterprise-search, when flakiness is resolved
+        default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
       multi-step-e2e-test-with-assertions:
         description: "Path to test file, on `rasa-calm-demo` repository"
         type: string
@@ -127,7 +127,7 @@ env:
   RASA_PRO_BETA_E2E_ASSERTIONS: true
   RASA_PRO_BETA_STUB_CUSTOM_ACTION: true
   LOG_LEVEL_LLM: DEBUG
-  COMMAND_GENERATOR: ${{ inputs.command-generator || 'multi-step' }} # TODO: Change to 'both', after test failures are resolved
+  COMMAND_GENERATOR: ${{ inputs.command-generator || 'both' }}
   COMMAND_GENERATOR_MATRIX: '{"single-step": ["singlestep"], "multi-step": ["multistep"], "both": ["singlestep", "multistep"]}'
   ENDPOINTS_FILE_NAME: endpoints
   REDIS_HOST: localhost
@@ -298,7 +298,7 @@ jobs:
           provider: ${{ matrix.provider }}
           train-and-test: ${{ matrix.train-and-test }}
           rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch || 'main' }}
-          single-step-e2e-test-with-assertions: ${{ inputs.single-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/knowledge/user_starts_with_a_knowledge_question.yml' }}
+          single-step-e2e-test-with-assertions: ${{ inputs.single-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }} # TODO: Use test that invokes enterprise-search, when flakiness is resolved
           multi-step-e2e-test-with-assertions: ${{ inputs.multi-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }}
           llm-as-judge-model: ${{ inputs.llm-as-judge-model || 'gpt-4o-mini' }}
           rasa-calm-demo-read-token: ${{ secrets.RASA_CALM_DEMO_READ }}

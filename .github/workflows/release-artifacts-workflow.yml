@@ -55,12 +55,13 @@ on:
         description: "Command-generator(s) to use: single-step, multi-step or both (1 job for each)"
         type: string
         required: true
-        default: multi-step # TODO: Change to 'both', after test failures are resolved
+        default: both
       single-step-e2e-test-with-assertions:
         description: "Path to test file, on `rasa-calm-demo` repository. Ignored unless `run_e2e_test_on_providers==true`"
         type: string
         required: true
-        default: "e2e_tests_with_assertions/passing/knowledge/user_starts_with_a_knowledge_question.yml"
+        # TODO: Use test that invokes enterprise-search, when flakiness is resolved
+        default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
       multi-step-e2e-test-with-assertions:
         description: "Path to test file, on `rasa-calm-demo` repository. Ignored unless `run_e2e_test_on_providers==true`"
         type: string
