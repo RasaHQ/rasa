@@ -101,7 +101,15 @@ class JiebaTokenizer(Tokenizer):
         text = message.get(attribute)
 
         tokenized = jieba.tokenize(text)
-        tokens = [Token(word, start) for (word, start, end) in tokenized]
+        tokens = []
+        current_position = 0
+        for word, start, end in tokenized:
+            if word.strip() == "":
+                continue
+            word_start = text.find(word, current_position)
+            word_end = word_start + len(word)
+            tokens.append(Token(word, word_start, word_end))
+            current_position = word_end
 
         return self._apply_token_pattern(tokens)
 
