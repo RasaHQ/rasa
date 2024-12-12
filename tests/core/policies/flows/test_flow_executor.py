@@ -1755,7 +1755,7 @@ def test_flow_executor_validate_custom_slot_mappings_valid() -> None:
     tracker.update_stack(stack)
 
     is_valid = validate_custom_slot_mappings(
-        step, stack, tracker, domain.action_names_or_texts
+        step, stack, tracker, domain.action_names_or_texts, flow_name="my flow"
     )
 
     assert is_valid
@@ -1781,7 +1781,7 @@ def test_flow_executor_validate_custom_slot_mappings_invalid() -> None:
     tracker.update_stack(stack)
 
     is_valid = validate_custom_slot_mappings(
-        step, stack, tracker, domain.action_names_or_texts
+        step, stack, tracker, domain.action_names_or_texts, flow_name="my flow"
     )
 
     assert not is_valid
@@ -1795,6 +1795,7 @@ def test_flow_executor_validate_custom_slot_mappings_invalid() -> None:
     next_frame = stack.frames[1]
     assert isinstance(next_frame, BaseFlowStackFrame)
     assert next_frame.flow_id == "pattern_cancel_flow"
+    assert next_frame.canceled_name == "my flow"
 
 
 def test_flow_executor_validate_collect_step_invalid() -> None:
@@ -1813,7 +1814,11 @@ def test_flow_executor_validate_collect_step_invalid() -> None:
     tracker.update_stack(stack)
 
     is_step_valid = validate_collect_step(
-        step, stack, test_domain.action_names_or_texts, tracker.slots
+        step,
+        stack,
+        test_domain.action_names_or_texts,
+        tracker.slots,
+        flow_name="my flow",
     )
 
     assert not is_step_valid
@@ -1827,6 +1832,7 @@ def test_flow_executor_validate_collect_step_invalid() -> None:
     next_frame = stack.frames[1]
     assert isinstance(next_frame, BaseFlowStackFrame)
     assert next_frame.flow_id == "pattern_cancel_flow"
+    assert next_frame.canceled_name == "my flow"
 
 
 def test_flow_executor_validate_collect_step_with_initial_value_defined() -> None:
@@ -1846,7 +1852,11 @@ def test_flow_executor_validate_collect_step_with_initial_value_defined() -> Non
     tracker.update_stack(stack)
 
     is_valid = validate_collect_step(
-        step, stack, test_domain.action_names_or_texts, tracker.slots
+        step,
+        stack,
+        test_domain.action_names_or_texts,
+        tracker.slots,
+        flow_name="my flow",
     )
 
     assert is_valid

@@ -316,7 +316,7 @@ async def test_policy_cancels_user_flow_and_trigger_error_pattern_invalid_custom
     assert first_frame.step_id == "0_collect_bar_slot"
     second_frame = updated_stack.frames[1]
     assert isinstance(second_frame, CancelPatternFlowStackFrame)
-    assert second_frame.canceled_name == "foo_flow"
+    assert second_frame.canceled_name == "foo flow"
     assert second_frame.canceled_frames == ["some-id"]
     # the error pattern should be the other frame
     assert isinstance(updated_stack.frames[2], InternalErrorPatternFlowStackFrame)

@@ -487,7 +487,8 @@ def validate_collect_step(
     step: CollectInformationFlowStep,
     stack: DialogueStack,
     available_actions: List[str],
-    slots: Dict[Text, Slot],
+    slots: Dict[str, Slot],
+    flow_name: str,
 ) -> bool:
     """Validate that a collect step can be executed.
 
@@ -510,12 +511,12 @@ def validate_collect_step(
         slot_name=step.collect,
     )
 
-    cancel_flow_and_push_internal_error(stack)
+    cancel_flow_and_push_internal_error(stack, flow_name)
 
     return False
 
 
-def cancel_flow_and_push_internal_error(stack: DialogueStack) -> None:
+def cancel_flow_and_push_internal_error(stack: DialogueStack, flow_name: str) -> None:
     """Cancel the top user flow and push the internal error pattern."""
     top_frame = stack.top()
 
@@ -527,7 +528,7 @@ def cancel_flow_and_push_internal_error(stack: DialogueStack) -> None:
         canceled_frames = CancelFlowCommand.select_canceled_frames(stack)
         stack.push(
             CancelPatternFlowStackFrame(
-                canceled_name=top_frame.flow_id,
+                canceled_name=flow_name,
                 canceled_frames=canceled_frames,
             )
         )
@@ -539,6 +540,7 @@ def validate_custom_slot_mappings(
     stack: DialogueStack,
     tracker: DialogueStateTracker,
     available_actions: List[str],
+    flow_name: str,
 ) -> bool:
     """Validate a slot with custom mappings.
 
@@ -559,7 +561,7 @@ def validate_custom_slot_mappings(
                     action=step.collect_action,
                     collect=step.collect,
                 )
-                cancel_flow_and_push_internal_error(stack)
+                cancel_flow_and_push_internal_error(stack, flow_name)
                 return False
 
     return True
@@ -599,7 +601,12 @@ def run_step(
 
     if isinstance(step, CollectInformationFlowStep):
         return _run_collect_information_step(
-            available_actions, initial_events, stack, step, tracker
+            available_actions,
+            initial_events,
+            stack,
+            step,
+            tracker,
+            flow.readable_name(),
         )
 
     elif isinstance(step, ActionFlowStep):
@@ -719,15 +726,18 @@ def _run_collect_information_step(
     stack: DialogueStack,
     step: CollectInformationFlowStep,
     tracker: DialogueStateTracker,
+    flow_name: str,
 ) -> FlowStepResult:
-    is_step_valid = validate_collect_step(step, stack, available_actions, tracker.slots)
+    is_step_valid = validate_collect_step(
+        step, stack, available_actions, tracker.slots, flow_name
+    )
 
     if not is_step_valid:
         # if we return any other FlowStepResult, the assistant will stay silent
         # instead of triggering the internal error pattern
         return ContinueFlowWithNextStep(events=initial_events)
     is_mapping_valid = validate_custom_slot_mappings(
-        step, stack, tracker, available_actions
+        step, stack, tracker, available_actions, flow_name
     )
 
     if not is_mapping_valid:
