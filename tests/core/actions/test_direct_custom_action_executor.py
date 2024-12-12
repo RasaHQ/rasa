@@ -25,6 +25,7 @@ ENDPOINTS_FILE_PATH = "data/test_endpoints/endpoints_actions_module.yml"
 @pytest.fixture(autouse=True)
 def setup():
     DirectCustomActionExecutor._actions_module_registered = False
+    DirectCustomActionExecutor._create_action_executor.cache_clear()
 
 
 @pytest.fixture
