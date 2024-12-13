@@ -9,6 +9,7 @@ from rasa.e2e_test.aggregate_test_stats_calculator import (
 from rasa.e2e_test.assertions import (
     _get_all_assertion_subclasses,
     PatternClarificationContainsAssertion,
+    BotUtteredAssertion,
 )
 from rasa.e2e_test.e2e_test_case import TestStep, TestCase
 from rasa.e2e_test.e2e_test_result import TestResult
@@ -153,3 +154,31 @@ def test_aggregate_stats_pattern_clarification_contains_assertion(
         calculator_with_pattern_clarification_assertion.calculate()
     except TypeError:
         pytest.fail("Unexpected TypeError")
+
+
+def test_aggregate_stats_calculator_skip_failed_before_assertions() -> None:
+    # Test case with assertions
+    test_case = TestCase(
+        name="test_case_1",
+        steps=[
+            TestStep(
+                actor="user",
+                text="Hello",
+                assertions=[
+                    BotUtteredAssertion(utter_name="utter_greet"),
+                ],
+            ),
+        ],
+    )
+    # Test case failed with no assertions failures
+    test_result = TestResult(
+        test_case=test_case,
+        pass_status=False,
+        assertion_failure=None,
+        difference=[],
+    )
+    aggregate_stats_calculator = AggregateTestStatsCalculator(
+        passed_results=[], failed_results=[test_result], test_cases=[test_case]
+    )
+    accuracy_calculations = aggregate_stats_calculator.calculate()
+    assert accuracy_calculations == []
