@@ -986,6 +986,77 @@ jobs:
         run: |
           docker compose -f tests_deployment/docker-compose.broker.yml down
 
+  channel_connector_integration_tests:
+    name: Channel Connector Integration Tests With CALM bot
+    needs: rasa-private-dev-docker-image
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      #   # Tag in format: pr_number-shortSHA or branch_name-shortSHA
+      - name: Configure image tag
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+          else
+            echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          fi
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Docker version
+        run: docker --version && docker compose version
+
+      - name: Pull rasa-private dev image
+        uses: ./.github/actions/pull-from-ecr
+        with:
+          IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+
+      - name: Channel connector Integration Tests - Run docker containers
+        run: |
+          make run-channel-connectors-integration-containers
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+
+      - name: Channel connector Integration Tests -  Test Code with Services 🩺
+        run: |
+          make test-channel-connectors-integration-with-calm-bot
+        env:
+          PYTHONIOENCODING: "utf-8"
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-rasa-pro-assistant-container-logs
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_channel_connectors/docker-compose.yml
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          BOT_PATH: "./tests_deployment/integration_tests_channel_connectors/calm-demo-bot"
+
+      - name: Channel connector Integration Tests - Stop docker containers
+        if: always()
+        run: |
+          make stop-channel-connectors-integration-containers
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        with:
+          name: Channel connector Integration Tests Test Results
+          path: integration-results-channel-connectors-with-calm-bot-results.xml
+
   unit-test:
     name: Run Unit Tests
     runs-on: ubuntu-22.04-4core
@@ -1158,6 +1229,7 @@ jobs:
              non-sequential-integration-test,
              concurrent-lockstore-integration-test,
              broker_integration_test,
+             channel_connector_integration_tests,
              unit-test, test-anonymization ]
     if: always()
     steps:

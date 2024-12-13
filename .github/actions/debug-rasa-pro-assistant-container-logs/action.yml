@@ -1,0 +1,19 @@
+name: Debug channel connector test containers
+description: Encapsulates steps for channel connector test debugging
+
+inputs:
+  COMPOSE_FILE_PATH:
+    description: 'channel connector tests docker compose path'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+  - name: List containers
+    run: sudo docker ps -a
+    shell: bash
+
+  - name: Check rasa-pro container logs
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-assistant
+    shell: bash

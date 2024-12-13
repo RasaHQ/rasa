@@ -289,6 +289,7 @@ class SocketIOInput(InputChannel):
             metadata = data.get(self.metadata_key, {})
             if isinstance(metadata, Text):
                 metadata = json.loads(metadata)
+
             message = UserMessage(
                 data.get("message", ""),
                 output_channel,

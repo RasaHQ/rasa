@@ -1,0 +1,26 @@
+x-environment: &environment
+  RASA_PRO_LICENSE: ${RASA_PRO_LICENSE}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+services:
+  rasa-pro-assistant:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./calm-demo-bot:/app"
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: rasa run --debug
+    ports:
+      - "5005:5005"
+    environment:
+      <<: *environment
+    user: ${USER_ID}
+    healthcheck:
+      test: curl localhost:5005 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+
+
+networks: { rasa-pro-network: { } }

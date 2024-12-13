@@ -16,6 +16,7 @@ CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/actions/c
 NLU_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH)/test_custom_actions_with_nlu.py
 CALM_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH)/test_custom_actions_with_calm.py
 ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/enterprise_search
+CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/channels
 TRACKER_STORE_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/tracker_stores
 INTEGRATION_TEST_DEPLOYMENT_PATH = $(PWD)/tests_deployment
 BASE_IMAGE_HASH ?= localdev
@@ -145,6 +146,7 @@ ifeq (,$(wildcard $(INTEGRATION_TEST_DEPLOYMENT_PATH)/.env))
 			--ignore $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
 			--ignore $(ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH) \
 			--ignore $(TRACKER_STORE_INTEGRATION_TEST_PATH) \
+			--ignore $(CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH) \
 			--junitxml=report_integration.xml
 else
 	set -o allexport; \
@@ -160,6 +162,7 @@ else
 			--ignore $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH) \
 			--ignore $(ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH) \
 			--ignore $(TRACKER_STORE_INTEGRATION_TEST_PATH) \
+			--ignore $(CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH) \
 			--junitxml=report_integration.xml && \
 	set +o allexport
 endif
@@ -503,6 +506,8 @@ TEST_ENTERPRISE_SEARCH_INTEGRATION_COMMAND = poetry run \
 		-n $(JOBS) \
 		--junitxml=$(RESULTS_FILE)
 
+
+
 # Run the enterprise search integration tests with CALM bot
 test-enterprise-search-integration-with-calm-bot: ENTERPRISE_SEARCH_TEST_PATH = $(ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH)/${TEST_NAME}
 test-enterprise-search-integration-with-calm-bot: RESULTS_FILE = integration-results-enterprise-search.xml
@@ -512,6 +517,38 @@ test-enterprise-search-integration-with-calm-bot:  ## Run the enterprise search 
 stop-rasa-calm-demo-bot-test-containers: DOCKER_COMPOSE_FILE = ${DOCKER_COMPOSE}
 stop-rasa-calm-demo-bot-test-containers: ## Stop the metrics integration test containers.
 	$(STOP_RASA_CALM_DEMO_CONTAINERS)
+
+TEST_CHANNEL_CONNECTOR_INTEGRATION_COMMAND = poetry run \
+        pytest $(CHANNEL_CONNECTOR_TEST_PATH) \
+        -n $(JOBS) \
+        --junitxml=$(RESULTS_FILE)
+
+RUN_CHANNEL_CONNECTOR_CONTAINER_COMMAND = USER_ID=$(USER_ID) \
+        docker compose \
+        -f $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_channel_connectors/docker-compose.yml \
+        up --wait
+STOP_CHANNEL_CONNECTOR_CONTAINER_COMMAND = docker compose \
+        -f $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_channel_connectors/docker-compose.yml \
+        down
+
+train-channel-connectors-calm-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=${RASA_PRO_LICENSE} -e OPENAI_API_KEY=${OPENAI_API_KEY}
+train-channel-connectors-calm-bot: CONTAINER_NAME = rasa-channel-connectors-calm-bot-$(RASA_IMAGE_TAG)
+train-channel-connectors-calm-bot: BOT_PATH = $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_channel_connectors/calm-demo-bot
+train-channel-connectors-calm-bot: ## Train the CALM bot for channel connectors integration tests.
+	$(TRAIN_BOT_COMMAND)
+
+
+run-channel-connectors-integration-containers: train-channel-connectors-calm-bot
+	$(RUN_CHANNEL_CONNECTOR_CONTAINER_COMMAND)
+
+# Run the channel connectors integration tests with CALM bot
+test-channel-connectors-integration-with-calm-bot: CHANNEL_CONNECTOR_TEST_PATH = $(CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH)
+test-channel-connectors-integration-with-calm-bot: RESULTS_FILE = integration-results-channel-connectors-with-calm-bot-results.xml
+test-channel-connectors-integration-with-calm-bot: ## Run the channel connectors integration tests with CALM bot.
+	$(TEST_CHANNEL_CONNECTOR_INTEGRATION_COMMAND)
+
+stop-channel-connectors-integration-containers: ## Stop the channel connectors integration test containers.
+	$(STOP_CHANNEL_CONNECTOR_CONTAINER_COMMAND)
 
 MONGODB_DOCKER_COMPOSE_FILE_PATH = $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_tracker_stores/mongo_db_tracker_store/docker-compose.mongodb.yml
 
