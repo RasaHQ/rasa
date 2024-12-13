@@ -9,5 +9,3 @@ services:
       - ./otel-collector-config.yml:/etc/otel-collector-config.yaml
     ports:
       - 4317:4317
-    environment:
-      - DD_API_KEY=${DD_API_KEY?"Datadog API Key not provided"}

@@ -163,7 +163,6 @@ runs:
       run: |
         : Install LiteLLM proxy with instrumentation
         source $VENV && pip install 'litellm[proxy]'
-        echo "DD_SOURCE=providers-e2e-test" >> $GITHUB_ENV
         echo "OTEL_TRACER_NAME=rasa-providers-e2e-tests-litellm-proxy" >> $GITHUB_ENV
         echo "OTEL_SERVICE_NAME=rasa-providers-e2e-tests-litellm-proxy" >> $GITHUB_ENV
       shell: bash
