@@ -9,22 +9,15 @@ receivers:
           allowed_origins:
             - "*"
 
-connectors:
-  datadog/connector:
-
 exporters:
   debug:
     verbosity: detailed
-  datadog/exporter:
-    api:
-      site: datadoghq.eu
-      key: ${env:DD_API_KEY}
 
 service:
   pipelines:
     metrics:
-      receivers: [otlp, datadog/connector]
-      exporters: [debug, datadog/exporter]
+      receivers: [otlp]
+      exporters: [debug]
     traces:
       receivers: [otlp]
-      exporters: [debug, datadog/connector, datadog/exporter]
+      exporters: [debug]

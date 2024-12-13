@@ -35,6 +35,7 @@ class AggregateTestStatsCalculator:
         self.test_cases = test_cases
 
         self.failed_assertion_set: Set["Assertion"] = set()
+        self.failed_test_cases_without_assertion_failure: Set[str] = set()
         self.passed_count_mapping = {
             subclass_type: 0
             for subclass_type in _get_all_assertion_subclasses().keys()
@@ -89,8 +90,14 @@ class AggregateTestStatsCalculator:
         passed_test_case_names = [
             passed.test_case.name for passed in self.passed_results
         ]
+        # We filter out test cases that failed without an assertion failure
+        filtered_test_cases = [
+            test_case
+            for test_case in self.test_cases
+            if test_case.name not in self.failed_test_cases_without_assertion_failure
+        ]
 
-        for test_case in self.test_cases:
+        for test_case in filtered_test_cases:
             if test_case.name in passed_test_case_names:
                 for step in test_case.steps:
                     if step.assertions is None:
@@ -117,6 +124,9 @@ class AggregateTestStatsCalculator:
                     "aggregate_test_stats.calculate."
                     "no_assertion_failure_in_failed_result",
                     test_case=failed.test_case.name,
+                )
+                self.failed_test_cases_without_assertion_failure.add(
+                    failed.test_case.name
                 )
                 continue
 

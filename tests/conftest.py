@@ -476,6 +476,24 @@ async def mood_agent(trained_moodbot_path: Text) -> Agent:
 
 
 @pytest.fixture(scope="session")
+async def trained_rasa_model_windows(
+    trained_async: Callable,
+    domain_path: Text,
+    basic_flows_path: Text,
+    stack_config_path: Text,
+    windows_output_path,
+) -> Text:
+    trained_stack_model_path = await trained_async(
+        domain=domain_path,
+        config=stack_config_path,
+        training_files=[basic_flows_path],
+        output_path=windows_output_path,
+    )
+
+    return trained_stack_model_path
+
+
+@pytest.fixture(scope="session")
 def _domain(domain_path: Text) -> Domain:
     return Domain.load(domain_path)
 
