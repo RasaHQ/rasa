@@ -13,7 +13,7 @@ jobs:
       - name: Backport Action
         uses: sorenlouv/backport-github-action@ad888e978060bc1b2798690dd9d03c4036560947  #v.9.5.1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
           auto_backport_label_prefix: backport-to-
 
       - name: Info log
