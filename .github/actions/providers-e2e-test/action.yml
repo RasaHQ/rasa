@@ -196,21 +196,26 @@ runs:
       shell: bash
 
     - name: Train model
+      uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
       env:
         RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
         RASA_PRO_BETA_INTENTLESS: true
-      run: |
-        : Train model
-        rm -rf .rasa models \
-          && rasa train \
-          --config data/test_config/providers/${{ inputs.provider }}/${{ inputs.train-and-test }}-config.yml \
-          --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
-          --domain rasa-calm-demo/domain \
-          --data rasa-calm-demo/data \
-          --fixed-model-name ${{ inputs.train-and-test }}-${{ inputs.provider }}-model \
-          2>&1 \
-          | tee model-training-log
-      shell: bash
+      with:
+        timeout_minutes: 15
+        max_attempts: 2
+        retry_wait_seconds: 300
+        shell: bash
+        command: |
+          : Train model
+          rm -rf .rasa models \
+            && rasa train \
+            --config data/test_config/providers/${{ inputs.provider }}/${{ inputs.train-and-test }}-config.yml \
+            --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+            --domain rasa-calm-demo/domain \
+            --data rasa-calm-demo/data \
+            --fixed-model-name ${{ inputs.train-and-test }}-${{ inputs.provider }}-model \
+            2>&1 \
+            | tee model-training-log
 
     - name: Verify LLM and Embeddings API health checks during training
       run: |
@@ -231,14 +236,6 @@ runs:
       run: |
         : Get endpoints file
         echo "ENDPOINTS_FILE_NAME=multi-deployments.endpoints" >> $GITHUB_ENV
-      shell: bash
-
-    # Known-issue: Truncated/different model-name is returned for 
-    # `text-embedding-ada-002` model in same regions' deployments, 
-    # causing health-check to fail
-    - name: Disable inference health-check for Azure
-      if: ${{ contains(inputs.provider, 'azure-multiple-deployments-with-') }}
-      run: echo "LLM_API_HEALTH_CHECK=False" >> $GITHUB_ENV
       shell: bash
 
     - name: Stop LiteLLM proxy used for training
@@ -269,39 +266,49 @@ runs:
       shell: bash
 
     - name: Run e2e test (Single Step Command Generator)
+      uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
       if: ${{ inputs.train-and-test == 'singlestep' }}
       id: e2e-test-on-singlestep-trained-model
       env:
         RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
         RASA_DUCKLING_HTTP_URL: ${{ inputs.duckling-url }}
         RASA_PRO_BETA_INTENTLESS: true
-      run: |
-        : Run e2e test on SingleStepCommandGenerator model
-        rasa test e2e rasa-calm-demo/${{ inputs.single-step-e2e-test-with-assertions }} \
-          --e2e-results \
-          --debug \
-          --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
-          --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
-          2>&1 \
-          | tee e2e-tests-log
-      shell: bash
+      with:
+        timeout_minutes: 15
+        max_attempts: 2
+        retry_wait_seconds: 300
+        shell: bash
+        command: |
+          : Run e2e test on SingleStepCommandGenerator model
+          rasa test e2e rasa-calm-demo/${{ inputs.single-step-e2e-test-with-assertions }} \
+            --e2e-results \
+            --debug \
+            --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+            --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
+            2>&1 \
+            | tee e2e-tests-log
 
     - name: Run e2e test (Multi-Step Command Generator)
+      uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
       if: ${{ inputs.train-and-test == 'multistep' }}
       env:
         RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
         RASA_DUCKLING_HTTP_URL: ${{ inputs.duckling-url }}
         RASA_PRO_BETA_INTENTLESS: true
-      run: |
-        : Run e2e test on MultiStepCommandGenerator model
-        rasa test e2e rasa-calm-demo/${{ inputs.multi-step-e2e-test-with-assertions }} \
-          --e2e-results \
-          --debug \
-          --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
-          --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
-          2>&1 \
-          | tee e2e-tests-log
-      shell: bash
+      with:
+        timeout_minutes: 15
+        max_attempts: 2
+        retry_wait_seconds: 300
+        shell: bash
+        command: |
+          : Run e2e test on MultiStepCommandGenerator model
+          rasa test e2e rasa-calm-demo/${{ inputs.multi-step-e2e-test-with-assertions }} \
+            --e2e-results \
+            --debug \
+            --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+            --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
+            2>&1 \
+            | tee e2e-tests-log
 
     - name: Verify LLM and Embeddings API health checks during inference
       if: ${{ !contains(inputs.provider, 'azure-multiple-deployments-with-') }}
