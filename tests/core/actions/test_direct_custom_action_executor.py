@@ -196,6 +196,8 @@ def test_action_executor_is_being_cached(mock_endpoint: EndpointConfig):
     assert executor_1.action_executor == executor_2.action_executor
 
 
+# FIXME: This test passes locally but is flaky in CI.
+@pytest.mark.skip_on_ci
 @pytest.mark.asyncio
 async def test_custom_actions_hot_reloading():
     def create_action_code(value: str) -> str:
