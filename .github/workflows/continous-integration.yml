@@ -5,6 +5,7 @@ on:
     branches:
       - main
   pull_request:
+  merge_group:
 
 concurrency:
   group: continous-integration-${{ github.ref }} # branch or tag name
@@ -73,12 +74,20 @@ jobs:
           sudo apt-get -y install libpq-dev
           make install-full
 
-      - name: Checkout target branch to be able to diff
+      - name: Checkout target branch to be able to diff on PR
         if: github.event_name == 'pull_request'
         run: |
           git fetch origin ${{ github.base_ref }}
           echo "DOCSTRING_DIFF_BRANCH=origin/${{ github.base_ref }}" >> $GITHUB_ENV
 
+      - name: Checkout target branch to be able to diff on merge queue
+        if: github.event_name == 'merge_group'
+        run: |
+          git fetch origin ${{ github.event.merge_group.base_sha }}
+          echo "DOCSTRING_DIFF_BRANCH=${{ github.event.merge_group.base_sha }}" >> $GITHUB_ENV
+
+      - name: Fetch current branch
+        run: |
           # Fetch entire history for current branch so that `make lint-docstrings`
           # can calculate the proper diff between the branches
           git fetch --unshallow origin "${{ github.ref }}"
@@ -98,7 +107,7 @@ jobs:
         run: make types
 
       - name: Lint Changelog Filenames 📝
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
         run: make lint-changelog
 
 
