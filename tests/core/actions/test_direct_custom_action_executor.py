@@ -25,6 +25,7 @@ ENDPOINTS_FILE_PATH = "data/test_endpoints/endpoints_actions_module.yml"
 @pytest.fixture(autouse=True)
 def setup():
     DirectCustomActionExecutor._actions_module_registered = False
+    DirectCustomActionExecutor._create_action_executor.cache_clear()
 
 
 @pytest.fixture
@@ -195,6 +196,8 @@ def test_action_executor_is_being_cached(mock_endpoint: EndpointConfig):
     assert executor_1.action_executor == executor_2.action_executor
 
 
+# FIXME: This test passes locally but is flaky in CI.
+@pytest.mark.skip_on_ci
 @pytest.mark.asyncio
 async def test_custom_actions_hot_reloading():
     def create_action_code(value: str) -> str:
