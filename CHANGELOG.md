@@ -34,6 +34,7 @@ Rasa Pro 3.11.0 (2024-12-11)
 ### Features
 - [#1164](https://github.com/rasahq/rasa-private/issues/1164): Added Twilio Media Streams channel which can be configured to use arbitrary Text-To-Speech and Speech-To-Text services.
   Added Voice Stream Channel Interface which makes it easier to add voice channels that directly integrate with audio streams.
+  Added support for Deepgram Speech-To-Text and Azure Text-To-Speech in Voice Stream Channels.
 - [#1192](https://github.com/rasahq/rasa-private/issues/1192): Added default action `action_hangup` it can be used to hang up a phone call from a flow.
   Added `SessionEnded` event and `SessionEndCommand` command
   Updated Audiocodes, Jambonz and Twilio Voice channels to send `/session_end` if the phone call is disconnected by user.
@@ -166,7 +167,8 @@ Rasa Pro 3.11.0 (2024-12-11)
   5. **Backward Compatibility**
      - Existing configurations that couple LLMs to specific Rasa components remain unaffected by this change.
      - However, this configuration method is now deprecated and scheduled for removal in version 4.0.0.
-- [#1603](https://github.com/rasahq/rasa-private/issues/1603): Added `UserSilenceCommand` and `pattern_user_silence` which is triggered by Voice Stream channels when the user is silent for more than a silence timeout. These values are configurable with the newly added slots `silence_timeout` and `consecutive_silence_timeouts`
+- [#1545](https://github.com/rasahq/rasa-private/issues/1545): Added support for Azure Speech-To-Text in Voice Stream Channels.
+- [#1603](https://github.com/rasahq/rasa-private/issues/1603): Added `UserSilenceCommand` and `pattern_user_silence` which is triggered by Voice Stream channels when the user is silent for more than a silence timeout. These values are configurable with the newly added slots `silence_timeout` and `consecutive_silence_timeouts`. Silence Monitoring is disabled by default and can be enabled using the configuration `monitor_silence: true` in the relevant Voice Stream Channel configuration.
 - [#866](https://github.com/rasahq/rasa-private/issues/866): The inspector is not its own input / output channel anymore. Rather, it can be attached to other channels. This way, it isn't limited to conversations going through the socketio channel anymore, but can be used with other text channels or voice channels.
 
   You can attach it to any channel(s) configured in your credentials.yml by adding a flag to rasa run:
