@@ -1,2 +1,6 @@
 nlg:
   url: ${NLG_URL}
+tracker_store:
+  url: ${TRACKER_STORE_URL}
+  username: ${TRACKER_STORE_USERNAME}
+  password: ${TRACKER_STORE_PASSWORD}

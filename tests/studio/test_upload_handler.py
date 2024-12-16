@@ -11,6 +11,7 @@ from pytest import MonkeyPatch
 
 from rasa.shared.exceptions import RasaException
 import rasa.studio.upload
+import rasa.shared.utils.io
 import rasa.shared.utils.yaml
 from rasa.studio.config import StudioConfig
 from rasa.studio.results_logger import with_studio_error_handler, StudioResult
@@ -168,7 +169,11 @@ from tests.studio.conftest import (
                         "config": encode_yaml(
                             get_calm_config_yaml("data/upload/calm/config.yml")
                         ),
-                        "endpoints": "bmxnOgogIHVybDogJHtOTEdfVVJMfQo=",
+                        "endpoints": encode_yaml(
+                            rasa.shared.utils.io.read_file(
+                                "data/upload/endpoints_with_env_var.yml"
+                            )
+                        ),
                     }
                 },
             },
@@ -207,7 +212,11 @@ from tests.studio.conftest import (
                         "config": encode_yaml(
                             get_calm_config_yaml("data/upload/calm/config.yml")
                         ),
-                        "endpoints": "bmxnOgogIHVybDogJHtOTEdfVVJMfQo=",
+                        "endpoints": encode_yaml(
+                            rasa.shared.utils.io.read_file(
+                                "data/upload/endpoints_with_env_var.yml"
+                            )
+                        ),
                     }
                 },
             },
@@ -247,16 +256,7 @@ def test_handle_upload(
     assert mock.post.called
     assert mock.post.call_args[0][0] == endpoint
     assert mock.post.call_args[1]["verify"] is True
-    actual_input = mock.post.call_args[1]["json"]["variables"]["input"]
-    expected = expected["variables"]["input"]
-    assert actual_input["assistantName"] == expected["assistantName"]
-    assert actual_input["domain"] == expected["domain"]
-    assert actual_input["nlu"] == expected["nlu"]
-    assert actual_input.get("flows") == expected.get("flows")
-    assert actual_input.get("config") == expected.get("config")
-    assert base64.b64decode(actual_input.get("endpoints", "")).decode("utf-8").replace(
-        "'", ""
-    ) == base64.b64decode(expected.get("endpoints", "")).decode("utf-8")
+    assert mock.post.call_args[1]["json"] == expected
 
 
 @pytest.mark.parametrize(

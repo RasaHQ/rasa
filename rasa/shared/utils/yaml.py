@@ -716,20 +716,28 @@ def read_model_configuration(
 
 
 def dump_obj_as_yaml_to_string(
-    obj: Any, should_preserve_key_order: bool = False
+    obj: Any,
+    should_preserve_key_order: bool = False,
+    transform: Optional[Callable] = None,
 ) -> str:
     """Writes data (python dict) to a yaml string.
 
     Args:
         obj: The object to dump. Has to be serializable.
         should_preserve_key_order: Whether to force preserve key order in `data`.
+        transform: A function to transform the data before writing it to the file.
 
     Returns:
         The object converted to a YAML string.
     """
     buffer = StringIO()
 
-    write_yaml(obj, buffer, should_preserve_key_order=should_preserve_key_order)
+    write_yaml(
+        obj,
+        buffer,
+        should_preserve_key_order=should_preserve_key_order,
+        transform=transform,
+    )
 
     return buffer.getvalue()
 
@@ -750,6 +758,7 @@ def write_yaml(
     data: Any,
     target: Union[str, Path, StringIO],
     should_preserve_key_order: bool = False,
+    transform: Optional[Callable[[Any], Any]] = None,
 ) -> None:
     """Writes a yaml to the file or to the stream.
 
@@ -757,6 +766,7 @@ def write_yaml(
         data: The data to write.
         target: The path to the file which should be written or a stream object
         should_preserve_key_order: Whether to force preserve key order in `data`.
+        transform: A function to transform the data before writing it to the file.
     """
     _enable_ordered_dict_yaml_dumping()
 
@@ -774,11 +784,11 @@ def write_yaml(
     )
 
     if isinstance(target, StringIO):
-        dumper.dump(data, target)
+        dumper.dump(data, target, transform=transform)
         return
 
     with Path(target).open("w", encoding=DEFAULT_ENCODING) as outfile:
-        dumper.dump(data, outfile)
+        dumper.dump(data, outfile, transform=transform)
 
 
 def is_key_in_yaml(file_path: Union[str, Path], *keys: str) -> bool:

@@ -1,5 +1,6 @@
 import argparse
 import base64
+import re
 import sys
 from typing import Any, Dict, Iterable, List, Set, Text, Tuple, Union
 
@@ -241,9 +242,9 @@ def upload_calm_assistant(
 
     # Prepare config and domain
     config = importer.get_config()
-    domain_from_files = importer.get_user_domain().as_dict()
-    endpoints_from_files = read_yaml_file(args.endpoints, expand_env_vars=False)
+    assistant_name = _get_assistant_name(config)
     config_from_files = read_yaml_file(args.config, expand_env_vars=False)
+    domain_from_files = importer.get_user_domain().as_dict()
 
     # Extract domain and config values
     domain = extract_values(domain_from_files, DOMAIN_KEYS)
@@ -265,7 +266,11 @@ def upload_calm_assistant(
     )
     nlu_examples_yaml = RasaYAMLWriter().dumps(nlu_examples)
 
-    assistant_name = _get_assistant_name(config)
+    # Prepare endpoints
+    endpoints_from_files = read_yaml_file(args.endpoints, expand_env_vars=False)
+    endpoints_str = dump_obj_as_yaml_to_string(
+        endpoints_from_files, transform=remove_quotes
+    )
 
     # Build GraphQL request
     graphql_req = build_import_request(
@@ -273,7 +278,7 @@ def upload_calm_assistant(
         flows_yaml=YamlFlowsWriter().dumps(flows),
         domain_yaml=dump_obj_as_yaml_to_string(domain),
         config_yaml=dump_obj_as_yaml_to_string(config_from_files),
-        endpoints=dump_obj_as_yaml_to_string(endpoints_from_files),
+        endpoints=endpoints_str,
         nlu_yaml=nlu_examples_yaml,
     )
 
@@ -539,3 +544,20 @@ def _remove_not_selected_entities(
         domain_entities.remove(entity)
 
     return domain_entities
+
+
+def remove_quotes(node: Any) -> Any:
+    """Transform function to remove quotes from a node if it is a string.
+
+    This is to prevent wrapping unexpanded environment variables in quotes
+    when uploading endpoints to Rasa Studio.
+    """
+    if isinstance(node, str):
+        matches = re.findall(r"'\$\{([^}]+)\}'", node)
+        for match in matches:
+            node = node.replace(f"'${{{match}}}'", f"${{{match}}}")
+        return node
+    elif isinstance(node, dict):
+        return {k: remove_quotes(v) for k, v in node.items()}
+    else:
+        return node
