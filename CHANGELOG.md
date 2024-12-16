@@ -41,8 +41,7 @@ Rasa Pro 3.11.0 (2024-12-11)
 - [#1416](https://github.com/rasahq/rasa-private/issues/1416): Implement Rasa Pro native model service that takes care of training and running an assistant model in Studio.
   To find out more about this service, read more in the Studio [documentation](https://rasa.com/docs/studio/deployment/architecture#studio-model-service-container).
 - [#1448](https://github.com/rasahq/rasa-private/issues/1448): Added a feature to be able to use voice to interact with the bot in the inspector.
-- [#1544](https://github.com/rasahq/rasa-private/issues/1544): ### **New Features & Improvements**
-
+- [#1544](https://github.com/rasahq/rasa-private/issues/1544):
   1. **Decoupled LLM Configuration from Components**
      - The previous integration of LLMs within CALM is closely tied to the components where they are used. However, this is no longer necessary, as we no longer perform training within the individual components that interact with external LLM endpoints.
      - As a result, LLM and embedding client configurations have been moved to `endpoints.yml`. To define LLM configurations in `endpoints.yml`, use the `model_groups` as shown below:
@@ -164,9 +163,9 @@ Rasa Pro 3.11.0 (2024-12-11)
            ...
      ```
 
-  ### [Backward Compatibility]
-  Existing configurations that couple LLMs to specific Rasa components remain unaffected by this change.
-  However, this configuration method is now deprecated and scheduled for removal in version 4.0.0.
+  5. **Backward Compatibility**
+     - Existing configurations that couple LLMs to specific Rasa components remain unaffected by this change.
+     - However, this configuration method is now deprecated and scheduled for removal in version 4.0.0.
 - [#1603](https://github.com/rasahq/rasa-private/issues/1603): Added `UserSilenceCommand` and `pattern_user_silence` which is triggered by Voice Stream channels when the user is silent for more than a silence timeout. These values are configurable with the newly added slots `silence_timeout` and `consecutive_silence_timeouts`
 - [#866](https://github.com/rasahq/rasa-private/issues/866): The inspector is not its own input / output channel anymore. Rather, it can be attached to other channels. This way, it isn't limited to conversations going through the socketio channel anymore, but can be used with other text channels or voice channels.
 
