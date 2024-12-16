@@ -64,7 +64,7 @@ async def test_transcription(audio_data_path: str):
     assert match.ratio() > 0.75
 
 
-def test_configurating_endpoint():
+async def test_configurating_endpoint():
     custom_region = "local_endpoint.myurl.com"
     default_config = AzureASR.get_default_config()
     config = {"speech_region": custom_region}
@@ -73,7 +73,7 @@ def test_configurating_endpoint():
     assert asr_engine.config.language == default_config.language
 
 
-def test_configurating_language():
+async def test_configurating_language():
     custom_language = "es"
     config = {"language": custom_language}
     asr_engine = AzureASR.from_config_dict(config)
@@ -83,7 +83,7 @@ def test_configurating_language():
     )
 
 
-def test_configuration_addioinal_attributes():
+async def test_configuration_addioinal_attributes():
     config = {"testingXYZ@@": "@@"}
     with pytest.raises(TypeError):
         AzureASR.from_config_dict(config)

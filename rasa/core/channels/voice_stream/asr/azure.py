@@ -35,10 +35,7 @@ class AzureASR(ASREngine[AzureASRConfig]):
         self.queue: asyncio.Queue[speechsdk.SpeechRecognitionEventArgs] = (
             asyncio.Queue()
         )
-
-    @staticmethod
-    def validate_environment() -> None:
-        """Make sure all needed requirements for this component are met."""
+        self.main_loop = asyncio.get_running_loop()
 
     def signal_user_is_speaking(self, event: Any) -> None:
         """Replace the azure event with a generic is speaking event."""
@@ -46,7 +43,11 @@ class AzureASR(ASREngine[AzureASRConfig]):
 
     def fill_queue(self, event: Any) -> None:
         """Either puts the event or a dedicated ASR Event into the queue."""
-        self.queue.put_nowait(event)
+        # This function is used by call backs of the azure speech library
+        # which seems to run separate threads/processes
+        # To properly wake up the task waiting at queue.get, we need to
+        # put to the queue in the same event loop
+        self.main_loop.call_soon_threadsafe(self.queue.put_nowait, event)
 
     async def connect(self) -> None:
         import azure.cognitiveservices.speech as speechsdk
