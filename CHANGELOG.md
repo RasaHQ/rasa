@@ -10,6 +10,20 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.11.1] - 2024-12-13
+                        
+Rasa Pro 3.11.1 (2024-12-13)                             
+### Bugfixes
+- [#1703](https://github.com/rasahq/rasa-private/issues/1703): Add the possibility to pass a `transform` callable parameter when writing yaml.
+  This allows passing a custom function to transform endpoints before uploading to Studio.
+  This was required to fix the issue where yaml wraps in quotes any string that doesn't start with an alphabetic character
+  such as unexpanded environment variables in the endpoints yml file.
+- [#1706](https://github.com/rasahq/rasa-private/issues/1706): Pass flow human-readable name instead of flow id when the cancel pattern stack frame is pushed during flow policy
+  validation checks of collect steps.
+- [#1715](https://github.com/rasahq/rasa-private/issues/1715): Fixed the accuracy calculation to prevent 100% assertion reporting when a test case fails before any assertions are reached.
+- [#1724](https://github.com/rasahq/rasa-private/issues/1724): Fixed regression on training time for projects with a lot of YAML files.
+
+
 ## [3.11.0] - 2024-12-11
                         
 Rasa Pro 3.11.0 (2024-12-11)                             
