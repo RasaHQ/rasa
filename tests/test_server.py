@@ -2422,6 +2422,7 @@ def start_server(rasa_server_with_flows, server_host, server_port):
     time.sleep(0.1)
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Does not run on windows")
 def test_retrieve_flows(
     setup_swagger_coverage,
     start_server,
@@ -2447,6 +2448,7 @@ def test_retrieve_flows(
     assert all(any(key in step_types for key in step.keys()) for step in steps)
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Does not run on windows")
 def test_retrieve_flows_with_invalid_authentication(
     setup_swagger_coverage,
     start_server,
