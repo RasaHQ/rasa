@@ -5,8 +5,14 @@ from unittest.mock import MagicMock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from pep440_version_utils import Version
+import tomlkit
 
-from scripts.release import ask_version, generate_changelog
+from scripts.release import (
+    ask_version,
+    generate_changelog,
+    write_version_to_pyproject,
+    get_rasa_sdk_version,
+)
 
 
 @pytest.mark.parametrize(
@@ -143,3 +149,82 @@ def test_generate_changelog_when_path_does_not_exist(
     generate_changelog(Version("1.0.0"))
 
     assert check_call_mock.call_count == 0
+
+
+def test_write_version_to_pyproject_happy_path(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
+    # Create test pyproject.toml
+    test_file = tmp_path / "pyproject.toml"
+    toml_content = """
+[tool.poetry]
+name = "rasa"
+version = "1.0.0" # this is a comment
+description = "Test file"
+    """
+    test_file.write_text(toml_content)
+
+    # Mock only git and file path
+    mock_check_call = MagicMock()
+    monkeypatch.setattr("scripts.release.check_call", mock_check_call)
+    monkeypatch.setattr(
+        "scripts.release.pyproject_file_path", MagicMock(return_value=test_file)
+    )
+
+    # Run function
+    version = Version("2.0.0")
+    write_version_to_pyproject(version)
+
+    # Verify file content using tomlkit
+    content = test_file.read_text()
+    parsed = tomlkit.parse(content)
+
+    # assert version is updated
+    assert parsed["tool"]["poetry"]["version"] == "2.0.0"
+
+    # assert comments are preserved
+    expected_content = """
+[tool.poetry]
+name = "rasa"
+version = "2.0.0" # this is a comment
+description = "Test file"
+    """
+    assert content == expected_content
+
+    # assert git add was called
+    mock_check_call.assert_called_once_with(["git", "add", str(test_file.absolute())])
+
+
+def test_write_version_to_pyproject_invalid_toml(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
+    # Create invalid TOML file
+    test_file = tmp_path / "pyproject.toml"
+    test_file.write_text("""
+[tool.poetry
+invalid toml content
+    """)
+
+    monkeypatch.setattr(
+        "scripts.release.pyproject_file_path", MagicMock(return_value=test_file)
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        write_version_to_pyproject(Version("2.0.0"))
+
+    assert exc_info.value.code == 1
+
+
+def test_read_rasa_sdk_version():
+    # Create test pyproject.toml
+    test_file = Path("pyproject.toml")
+    toml_content = """
+[tool.poetry.dependencies.rasa-sdk]
+version = "3.11.0"
+allow-prereleases = true
+    """
+    test_file.write_text(toml_content)
+
+    version = get_rasa_sdk_version()
+
+    assert version == "3.11.0"

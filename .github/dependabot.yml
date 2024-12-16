@@ -69,6 +69,7 @@ updates:
           - "datadog"
           - "gitpython"
           - "types-werkzeug"
+          - "tomlkit"
         update-types:
           - "minor"
           - "patch"

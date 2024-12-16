@@ -22,7 +22,8 @@ from subprocess import CalledProcessError, check_call, check_output
 from typing import Text, Set
 
 import questionary
-import toml
+import tomlkit as toml
+from tomlkit.exceptions import UnexpectedCharError
 from pep440_version_utils import Version, is_valid_version
 
 VERSION_FILE_PATH = "rasa/version.py"
@@ -106,14 +107,16 @@ def write_version_to_pyproject(version: Version) -> None:
     pyproject_file = pyproject_file_path()
 
     try:
-        data = toml.load(pyproject_file)
-        data["tool"]["poetry"]["version"] = str(version)
+        with pyproject_file.open("r", encoding="utf8") as f:
+            doc = toml.parse(f.read())  
+            doc["tool"]["poetry"]["version"] = toml.item(str(version))
+
         with pyproject_file.open("w", encoding="utf8") as f:
-            toml.dump(data, f)
+            toml.dump(doc, f)
     except (FileNotFoundError, TypeError):
         print(f"Unable to update {pyproject_file}: file not found.")
         sys.exit(1)
-    except toml.TomlDecodeError:
+    except UnexpectedCharError:
         print(f"Unable to parse {pyproject_file}: incorrect TOML file.")
         sys.exit(1)
 
@@ -162,7 +165,7 @@ def ask_version() -> Text:
     def is_valid_version_number(v: Text) -> bool:
         return v in {
             "major",
-            "minor", 
+            "minor",
             "micro",
             "alpha",
             "beta",
@@ -220,7 +223,9 @@ def ask_version() -> Text:
 def get_rasa_sdk_version() -> Text:
     """Find out what the referenced version of the Rasa SDK is."""
     dependencies_filename = "pyproject.toml"
-    toml_data = toml.load(project_root() / dependencies_filename)
+    with open(project_root() / dependencies_filename) as f:
+        toml_data = toml.load(f)
+
     try:
         sdk_version = toml_data["tool"]["poetry"]["dependencies"]["rasa-sdk"]
         if not isinstance(sdk_version, str):
@@ -342,7 +347,9 @@ def generate_changelog(version: Version) -> None:
 
 def print_done_message(branch: Text, base: Text, version: Version) -> None:
     """Print final information for the user on what to do next."""
-    pull_request_url = f"{REPO_BASE_URL}/compare/{base}...{branch}?expand=1&labels=backport-to-main"
+    pull_request_url = (
+        f"{REPO_BASE_URL}/compare/{base}...{branch}?expand=1&labels=backport-to-main"
+    )
 
     print()
     print(f"\033[94m All done - changes for version {version} are ready! \033[0m")
@@ -424,7 +431,9 @@ def prepare_release(args: argparse.Namespace) -> None:
         generate_changelog(version)
 
     # alpha or beta workflow on feature branch when a version bump is required
-    if (version.is_alpha or version.is_beta) and not git_current_branch_is_main_or_release():
+    if (
+        version.is_alpha or version.is_beta
+    ) and not git_current_branch_is_main_or_release():
         create_commit(version)
         push_changes()
         print_done_message_same_branch(version)
@@ -434,6 +443,7 @@ def prepare_release(args: argparse.Namespace) -> None:
         create_commit(version)
         push_changes()
         print_done_message(branch, base, version)
+
 
 def tag_release(args: argparse.Namespace) -> None:
     """Tag the current commit with the current version."""
