@@ -12,14 +12,14 @@ tracing:
  endpoint: localhost:4317
  insecure: true
  host: localhost
- service_name: rasa-providers-e2e-tests-azure-multi-deployments-with-latency-based-routing
+ service_name: rasa-providers-e2e-tests-azure-multi-deployments-with-usage-based-routing-v2
 
 metrics:
  type: otlp
  endpoint: localhost:4317
  insecure: true
  host: localhost
- service_name: rasa-providers-e2e-tests-azure-multi-deployments-with-latency-based-routing
+ service_name: rasa-providers-e2e-tests-azure-multi-deployments-with-usage-based-routing-v2
 
 model_groups:
   - id: azure_llm
@@ -40,7 +40,7 @@ model_groups:
         timeout: 7
         num_retries: 5
     router:
-      routing_strategy: latency-based-routing
+      routing_strategy: usage-based-routing-v2
       num_retries: 5
       timeout: 30
       allowed_fails: 3
@@ -70,12 +70,14 @@ model_groups:
         timeout: 7
         num_retries: 5
     router:
-      routing_strategy: latency-based-routing
+      routing_strategy: usage-based-routing-v2
       num_retries: 5
       timeout: 30
       allowed_fails: 3
       cooldown_time: 30
       retry_after: 5
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
       cache_responses: True
       set_verbose: True
       debug_level: DEBUG

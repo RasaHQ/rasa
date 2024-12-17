@@ -42,10 +42,15 @@ model_groups:
     router:
       routing_strategy: cost-based-routing
       num_retries: 5
-      timeout: 30 
+      timeout: 30
+      allowed_fails: 3
+      cooldown_time: 30
+      retry_after: 5
       redis_host: ${REDIS_HOST}
       redis_port: ${REDIS_PORT}
       cache_responses: True
+      set_verbose: True
+      debug_level: DEBUG
 
   - id: azure_embeddings
     models:
@@ -67,7 +72,12 @@ model_groups:
     router:
       routing_strategy: cost-based-routing
       num_retries: 5
-      timeout: 30 
+      timeout: 30
+      allowed_fails: 3
+      cooldown_time: 30
+      retry_after: 5
       redis_host: ${REDIS_HOST}
       redis_port: ${REDIS_PORT}
       cache_responses: True
+      set_verbose: True
+      debug_level: DEBUG
