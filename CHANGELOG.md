@@ -42,7 +42,7 @@ Rasa Pro 3.11.0 (2024-12-11)
 - [#1416](https://github.com/rasahq/rasa-private/issues/1416): Implement Rasa Pro native model service that takes care of training and running an assistant model in Studio.
   To find out more about this service, read more in the Studio [documentation](https://rasa.com/docs/studio/deployment/architecture#studio-model-service-container).
 - [#1448](https://github.com/rasahq/rasa-private/issues/1448): Added a feature to be able to use voice to interact with the bot in the inspector.
-- [#1544](https://github.com/rasahq/rasa-private/issues/1544):
+- [#1544](https://github.com/rasahq/rasa-private/issues/1544): Multi-LLM Routing:
   1. **Decoupled LLM Configuration from Components**
      - The previous integration of LLMs within CALM is closely tied to the components where they are used. However, this is no longer necessary, as we no longer perform training within the individual components that interact with external LLM endpoints.
      - As a result, LLM and embedding client configurations have been moved to `endpoints.yml`. To define LLM configurations in `endpoints.yml`, use the `model_groups` as shown below:
@@ -4344,7 +4344,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   [their latest format](https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse)
   and add support for regex entities.
 - [#7263](https://github.com/rasahq/rasa/issues/7263): The [Pika Event Broker](https://rasa.com/docs/rasa-pro/production/event-brokers#pika-event-broker) was reimplemented with
-  the `[aio-pika` library[(https://aio-pika.readthedocs.io/en/latest/). Messages will
+  the `[aio-pika` library[(https://docs.aio-pika.com/). Messages will
   now be published to RabbitMQ asynchronously which improves the prediction performance.
 - [#7278](https://github.com/rasahq/rasa/issues/7278): The confidence of the [`FallbackClassifier`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#fallbackclassifier)
   predictions is set to `1 - top intent confidence`.
