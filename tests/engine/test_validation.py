@@ -4,6 +4,7 @@ from collections import namedtuple
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Type
 from unittest.mock import Mock, patch
+from _pytest.capture import CaptureFixture
 
 import pytest
 import structlog
@@ -2666,3 +2667,165 @@ def test_validate_model_group_configuration_setup(
         assert exc_info.value.code == 1
     else:
         validate_model_group_configuration_setup()
+
+
+@pytest.mark.parametrize(
+    "pipeline_config, should_exit",
+    [
+        # 0 valid - azure
+        (
+            [
+                {
+                    "name": "EnterpriseSearchPolicy",
+                    LLM_CONFIG_KEY: {
+                        "api_type": "azure",
+                        "deployment": "my_model_123",
+                        "api_base: ": "https://example.com",
+                    },
+                    EMBEDDINGS_CONFIG_KEY: {
+                        "api_type": "azure",
+                        "deployment": "embeddings_123",
+                        "api_base: ": "https://example.com",
+                    },
+                }
+            ],
+            False,
+        ),
+        # 1 valid - openai
+        (
+            [
+                {
+                    "name": "EnterpriseSearchPolicy",
+                    LLM_CONFIG_KEY: {
+                        "api_type": "openai",
+                        "model": "my_model_123",
+                        "api_base: ": "https://example.com",
+                    },
+                    EMBEDDINGS_CONFIG_KEY: {
+                        "api_type": "openai",
+                        "model": "embeddings_123",
+                        "api_base: ": "https://example.com",
+                    },
+                }
+            ],
+            False,
+        ),
+        # 2 invalid - api_type used for huggingface LLM
+        (
+            [
+                {
+                    "name": "EnterpriseSearchPolicy",
+                    LLM_CONFIG_KEY: {
+                        "api_type": "huggingface",
+                        "model": "my_model_123",
+                        "api_base: ": "https://example.com",
+                    },
+                    EMBEDDINGS_CONFIG_KEY: {
+                        "provider": "huggingface",
+                        "model": "embeddings_123",
+                        "api_base: ": "https://example.com",
+                    },
+                }
+            ],
+            True,
+        ),
+        # 3 invalid - api_type used for huggingface embeddings
+        (
+            [
+                {
+                    "name": "EnterpriseSearchPolicy",
+                    LLM_CONFIG_KEY: {
+                        "provider": "huggingface",
+                        "model": "my_model_123",
+                        "api_base: ": "https://example.com",
+                    },
+                    EMBEDDINGS_CONFIG_KEY: {
+                        "api_type": "huggingface",
+                        "model": "embeddings_123",
+                        "api_base: ": "https://example.com",
+                    },
+                }
+            ],
+            True,
+        ),
+        # 4 valid - api_type used for openai flow retrieval
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "huggingface",
+                        "model": "my_model_123",
+                        "api_base: ": "https://example.com",
+                    },
+                    FLOW_RETRIEVAL_KEY: {
+                        EMBEDDINGS_CONFIG_KEY: {
+                            "api_type": "openai",
+                            "model": "embeddings_123",
+                            "api_base: ": "https://example.com",
+                        },
+                    },
+                }
+            ],
+            False,
+        ),
+        # 5 valid - api_type used for azure flow retrieval
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "huggingface",
+                        "model": "my_model_123",
+                        "api_base: ": "https://example.com",
+                    },
+                    FLOW_RETRIEVAL_KEY: {
+                        EMBEDDINGS_CONFIG_KEY: {
+                            "api_type": "azure",
+                            "deployment": "embeddings_123",
+                            "api_base: ": "https://example.com",
+                        },
+                    },
+                }
+            ],
+            False,
+        ),
+        # 6 invalid - api_type used for huggingface flow retrieval
+        (
+            [
+                {
+                    "name": "SingleStepLLMCommandGenerator",
+                    LLM_CONFIG_KEY: {
+                        "provider": "huggingface",
+                        "model_name": "my_model_123",
+                        "api_base: ": "https://example.com",
+                    },
+                    FLOW_RETRIEVAL_KEY: {
+                        EMBEDDINGS_CONFIG_KEY: {
+                            "api_type": "huggingface",
+                            "model": "embeddings_123",
+                            "api_base: ": "https://example.com",
+                        },
+                    },
+                }
+            ],
+            True,
+        ),
+    ],
+)
+def test_validate_api_type_key_used_correctly(
+    pipeline_config: List[Dict[Text, Any]],
+    should_exit: bool,
+    capsys: CaptureFixture,
+):
+    config = {"pipeline": pipeline_config}
+
+    if should_exit:
+        with pytest.raises(SystemExit) as excinfo:
+            validate_model_client_configuration_setup_during_training_time(config)
+        assert excinfo.value.code == 1
+        captured = capsys.readouterr()
+        expected_error_code = "validation.component.api_type_config_key_invalid"
+        assert expected_error_code in captured.out
+    else:
+        validate_model_client_configuration_setup_during_training_time(config)

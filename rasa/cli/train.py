@@ -11,14 +11,17 @@ import rasa.cli.utils
 import rasa.core.utils
 import rasa.utils.common
 from rasa.cli import SubParsersAction
+from rasa.core import ContextualResponseRephraser
 from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.core.train import do_compare_training
+from rasa.engine.validation import validate_api_type_config_key_usage
 from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS,
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS_NLU,
     DEFAULT_DATA_PATH,
     DEFAULT_DOMAIN_PATHS,
+    LLM_CONFIG_KEY,
 )
 from rasa.shared.importers.importer import TrainingDataImporter
 
@@ -70,6 +73,12 @@ def add_subparser(
 def _check_nlg_endpoint_validity(endpoint: Union[Path, str]) -> None:
     try:
         endpoints = rasa.core.utils.read_endpoints_from_path(endpoint)
+        if endpoints.nlg is not None:
+            validate_api_type_config_key_usage(
+                endpoints.nlg.kwargs,
+                LLM_CONFIG_KEY,
+                ContextualResponseRephraser.__name__,
+            )
         NaturalLanguageGenerator.create(endpoints.nlg)
     except Exception as e:
         structlogger.error(

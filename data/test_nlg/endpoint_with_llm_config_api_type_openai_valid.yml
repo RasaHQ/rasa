@@ -1,0 +1,5 @@
+nlg:
+  type: rephrase
+  llm:
+    api_type: openai
+    model: gpt-4

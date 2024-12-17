@@ -16,6 +16,7 @@ from typing import (
     Union,
     TypeVar,
     List,
+    Literal,
 )
 
 import rasa.utils.common
@@ -77,6 +78,9 @@ from rasa.shared.constants import (
     AWS_SESSION_TOKEN_CONFIG_KEY,
     SENSITIVE_DATA,
     USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY,
+    API_TYPE_CONFIG_KEY,
+    VALID_PROVIDERS_FOR_API_TYPE_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
 )
 from rasa.shared.core.constants import ACTION_RESET_ROUTING, ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain
@@ -946,6 +950,8 @@ def validate_model_client_configuration_setup_during_training_time(
       the same time (either at component level itself or across different components)
     - the LLM/embeddings is/are defined using the new syntax, but no model
       group is defined or the referenced model group does not exist
+    - the LLM/embeddings provider is defined using 'api_type' key for providers other
+    than 'openai' or 'azure'
 
     Args:
         config: The config dictionary
@@ -962,22 +968,28 @@ def validate_model_client_configuration_setup_during_training_time(
         if outer_key not in config or config[outer_key] is None:
             continue
 
-        for component in config[outer_key]:
+        for component_config in config[outer_key]:
             for key in [LLM_CONFIG_KEY, EMBEDDINGS_CONFIG_KEY]:
                 _validate_component_model_client_config(
-                    component, key, model_group_syntax_used, model_group_ids
+                    component_config, key, model_group_syntax_used, model_group_ids
                 )
+                validate_api_type_config_key_usage(component_config, key)
 
             # as flow retrieval is not a component itself, we need to
             # check it separately
-            if FLOW_RETRIEVAL_KEY in component:
-                if EMBEDDINGS_CONFIG_KEY in component[FLOW_RETRIEVAL_KEY]:
+            if FLOW_RETRIEVAL_KEY in component_config:
+                if EMBEDDINGS_CONFIG_KEY in component_config[FLOW_RETRIEVAL_KEY]:
                     _validate_component_model_client_config(
-                        component[FLOW_RETRIEVAL_KEY],
+                        component_config[FLOW_RETRIEVAL_KEY],
                         EMBEDDINGS_CONFIG_KEY,
                         model_group_syntax_used,
                         model_group_ids,
-                        component["name"] + "." + FLOW_RETRIEVAL_KEY,
+                        component_config["name"] + "." + FLOW_RETRIEVAL_KEY,
+                    )
+                    validate_api_type_config_key_usage(
+                        component_config[FLOW_RETRIEVAL_KEY],
+                        EMBEDDINGS_CONFIG_KEY,
+                        component_config["name"] + "." + FLOW_RETRIEVAL_KEY,
                     )
 
     # also include the ContextualResponseRephraser component
@@ -1401,3 +1413,39 @@ def validate_command_generator_setup(
 ) -> None:
     schema = model_configuration.predict_schema
     validate_command_generator_exclusivity(schema)
+
+
+def validate_api_type_config_key_usage(
+    component_config: Dict[str, Any],
+    key: Literal["llm", "embeddings"],
+    component_name: Optional[str] = None,
+) -> None:
+    """Validate the LLM/embeddings configuration of a component.
+
+    Validation fails, if
+    - the LLM/embeddings provider is defined using 'api_type' key for providers other
+    than 'openai' or 'azure'
+
+    Args:
+        component_config: The config of the component
+        key: either 'llm' or 'embeddings'
+        component_name: the name of the component
+    """
+    if component_config is None or key not in component_config:
+        return
+
+    if API_TYPE_CONFIG_KEY in component_config[key]:
+        api_type = component_config[key][API_TYPE_CONFIG_KEY]
+        if api_type not in VALID_PROVIDERS_FOR_API_TYPE_CONFIG_KEY:
+            structlogger.error(
+                "validation.component.api_type_config_key_invalid",
+                event_info=(
+                    f"You specified '{API_TYPE_CONFIG_KEY}: {api_type}' for "
+                    f"'{component_name or component_config['name']}', which is not "
+                    f"allowed. "
+                    f"The '{API_TYPE_CONFIG_KEY}' key can only be used for the "
+                    f"following providers: {VALID_PROVIDERS_FOR_API_TYPE_CONFIG_KEY}. "
+                    f"For other providers, please use the '{PROVIDER_CONFIG_KEY}' key."
+                ),
+            )
+            sys.exit(1)

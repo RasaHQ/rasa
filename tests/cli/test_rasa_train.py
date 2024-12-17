@@ -708,6 +708,44 @@ def test_train_check_nlg_endpoint_validity(
         _check_nlg_endpoint_validity(endpoint=endpoint_path)
 
 
+@pytest.mark.parametrize(
+    "endpoint_path, expected_error",
+    [
+        ("data/test_nlg/endpoint_with_llm_config_api_type_azure_valid.yml", False),
+        ("data/test_nlg/endpoint_with_llm_config_api_type_openai_valid.yml", False),
+        (
+            "data/test_nlg/endpoint_with_llm_config_api_type_selfhosted_invalid.yml",
+            True,
+        ),
+        (
+            "data/test_nlg/endpoint_with_llm_config_api_type_huggingface_invalid.yml",
+            True,
+        ),
+    ],
+)
+def test_train_check_nlg_endpoint_validity_api_type(
+    endpoint_path: Union[Path, str],
+    expected_error: bool,
+    monkeypatch: MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_rasa_train")
+
+    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
+    # endpoints from the test file.
+    clear_available_endpoints_class_instance()
+
+    if expected_error:
+        with pytest.raises(SystemExit) as excinfo:
+            _check_nlg_endpoint_validity(endpoint=endpoint_path)
+        assert excinfo.value.code == 1
+        captured = capsys.readouterr()
+        expected_error_code = "validation.component.api_type_config_key_invalid"
+        assert expected_error_code in captured.out
+    else:
+        _check_nlg_endpoint_validity(endpoint=endpoint_path)
+
+
 def test_training_logs_domain_correctly_when_using_domain_dir(
     monkeypatch: MonkeyPatch, testdir: Testdir
 ) -> None:

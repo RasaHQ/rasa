@@ -1,0 +1,7 @@
+# invalid - api_type is allowed only for 'openai' or 'azure' providers
+nlg:
+  type: rephrase
+  llm:
+    api_type: self-hosted
+    model: rasa/cmd_gen_llama_3.1_8b_calm_demo
+    api_base: https://example.com/

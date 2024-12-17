@@ -1,0 +1,7 @@
+nlg:
+  type: rephrase
+  llm:
+    api_type: azure
+    deployment: my-gpt-deployment
+    api_base: http://example.com/
+    api_version: 2024-08-01-preview
