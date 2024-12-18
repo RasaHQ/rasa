@@ -1,0 +1,15 @@
+name: Lint action
+description: Lints GitHub Action
+
+inputs:
+  workflow_path:
+    description: Name of the GitHub-Action/Workflow to be linted
+    required: true  
+
+runs:
+  using: composite
+  steps:
+    - name: actionlint
+      uses: raven-actions/actionlint@01fce4f43a270a612932cb1c64d40505a029f821 # v2.0.0
+      with:
+        files: ${{ inputs.workflow_path }}

@@ -92,33 +92,26 @@ on:
         description: "LLM chat-completion and Embeddings model provider"
         type: string
         required: true
-        default: "all" # Run e2e-test on all providers by default
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`"
         type: string
         required: true
-        default: "main"
       command-generator:
         description: "Command-generator(s) to use: single-step, multi-step or both (1 job for each)"
         type: string
         required: true
-        default: both
       single-step-e2e-test-with-assertions:
         description: "Path to test file, on `rasa-calm-demo` repository"
         type: string
         required: true
-        # TODO: Use test that invokes enterprise-search, when flakiness is resolved
-        default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
       multi-step-e2e-test-with-assertions:
         description: "Path to test file, on `rasa-calm-demo` repository"
         type: string
         required: true
-        default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
       llm-as-judge-model:
         description: "Judge model (must be from OpenAI) to be used by assertions."
         type: string
         required: true
-        default: gpt-4o-mini
   pull_request:
     branches: main
     paths: [pyproject.toml, rasa/shared/providers/**]
@@ -196,7 +189,17 @@ permissions:
   pull-requests: read
 
 jobs:
+  lint_action:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+      - uses: ./.github/actions/lint-action
+        with:
+          workflow_path: .github/workflows/providers-e2e-tests.yml
+
   job_setup:
+    needs: lint_action
     runs-on: ubuntu-22.04
     outputs:
       COMMAND_GENERATOR: ${{ env.COMMAND_GENERATOR }}
@@ -204,8 +207,8 @@ jobs:
     steps:
       - name: Set command-generator
         run: |
-          echo "COMMAND_GENERATOR=${{ env.COMMAND_GENERATOR }}" >> $GITHUB_OUTPUT
-          echo "COMMAND_GENERATOR_MATRIX=${{ env.COMMAND_GENERATOR_MATRIX }}" >> $GITHUB_OUTPUT
+          echo "COMMAND_GENERATOR=${{ env.COMMAND_GENERATOR }}" >> "$GITHUB_OUTPUT"
+          echo "COMMAND_GENERATOR_MATRIX=${{ env.COMMAND_GENERATOR_MATRIX }}" >> "$GITHUB_OUTPUT"
           echo "${{ fromJson(env.COMMAND_GENERATOR_MATRIX)[env.COMMAND_GENERATOR] }}"
 
   check_changes_impacting_providers:
@@ -290,7 +293,7 @@ jobs:
         continue-on-error: true
         run: |
           : Set provider API key
-          echo "${{ fromJson(env.API_KEY_NAMES)[matrix.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[matrix.provider]] }}" >> $GITHUB_ENV
+          echo "${{ fromJson(env.API_KEY_NAMES)[matrix.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[matrix.provider]] }}" >> "$GITHUB_ENV"
 
       - name: E2E test
         uses: ./.github/actions/providers-e2e-test
@@ -335,7 +338,7 @@ jobs:
         continue-on-error: true
         run: |
           : Set provider API key
-          echo "${{ fromJson(env.API_KEY_NAMES)[inputs.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[inputs.provider]] }}" >> $GITHUB_ENV
+          echo "${{ fromJson(env.API_KEY_NAMES)[inputs.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[inputs.provider]] }}" >> "$GITHUB_ENV"
 
 
       - name: E2E test on single provider
