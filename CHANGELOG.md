@@ -269,6 +269,25 @@ Rasa Pro 3.11.0 (2024-12-11)
 - [#1212](https://github.com/rasahq/rasa-private/issues/1212), [#1318](https://github.com/rasahq/rasa-private/issues/1318), [#1528](https://github.com/rasahq/rasa-private/issues/1528), [#1550](https://github.com/rasahq/rasa-private/issues/1550), [#1581](https://github.com/rasahq/rasa-private/issues/1581), [#1650](https://github.com/rasahq/rasa-private/issues/1650)
 
 
+## [3.10.15] - 2024-12-18
+                         
+Rasa Pro 3.10.15 (2024-12-18)                              
+### Bugfixes
+- [#1683](https://github.com/rasahq/rasa-private/issues/1683): Validate that `api_type` key is only used for supported providers (Azure and OpenAI).
+- [#1690](https://github.com/rasahq/rasa-private/issues/1690): Fix issue in e2e testing when customising `action_session_start` would lead to AttributeError, because the `output_channel` was not set. 
+  This is now fixed by setting the `output_channel` to `CollectingOutputChannel()`.
+- [#1705](https://github.com/rasahq/rasa-private/issues/1705): Fixed the accuracy calculation to prevent 100% assertion reporting when a test case fails before any assertions are reached.
+- [#1706](https://github.com/rasahq/rasa-private/issues/1706): Pass flow human-readable name instead of flow id when the cancel pattern stack frame is pushed during flow policy
+  validation checks of collect steps.
+- [#1709](https://github.com/rasahq/rasa-private/issues/1709): Try to instantiate LLM/embeddings client when loading component to validate environment variables.
+- [#1738](https://github.com/rasahq/rasa-private/issues/1738): Enable asserting events returned by `action_session_start` when running end-to-end testing with assertions format.
+  The following assertions can be used:
+  - `slot_was_set`
+  - `slot_was_not_set`
+  - `bot_uttered`
+  - `action_executed`
+
+
 ## [3.10.14] - 2024-12-04
                          
 Rasa Pro 3.10.14 (2024-12-04)                              
