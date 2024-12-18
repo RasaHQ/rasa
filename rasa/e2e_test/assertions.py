@@ -453,6 +453,11 @@ class ActionExecutedAssertion(Assertion):
         **kwargs: Any,
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the action executed assertion on the given events for that user turn."""
+        step_index = kwargs.get("step_index")
+        original_turn_events, turn_events = _get_turn_events_based_on_step_index(
+            step_index, turn_events, prior_events
+        )
+
         try:
             matching_event = next(
                 event
@@ -465,7 +470,7 @@ class ActionExecutedAssertion(Assertion):
             error_message += assertion_order_error_message
 
             return self._generate_assertion_failure(
-                error_message, prior_events, turn_events, self.line
+                error_message, prior_events, original_turn_events, self.line
             )
 
         return None, matching_event
@@ -520,6 +525,11 @@ class SlotWasSetAssertion(Assertion):
         """Run the slot_was_set assertion on the given events for that user turn."""
         matching_event = None
 
+        step_index = kwargs.get("step_index")
+        original_turn_events, turn_events = _get_turn_events_based_on_step_index(
+            step_index, turn_events, prior_events
+        )
+
         for slot in self.slots:
             matching_events = [
                 event
@@ -558,7 +568,7 @@ class SlotWasSetAssertion(Assertion):
                 error_message += assertion_order_error_message
 
                 return self._generate_assertion_failure(
-                    error_message, prior_events, turn_events, slot.line
+                    error_message, prior_events, original_turn_events, slot.line
                 )
 
         return None, matching_event
@@ -596,6 +606,11 @@ class SlotWasNotSetAssertion(Assertion):
         """Run the slot_was_not_set assertion on the given events for that user turn."""
         matching_event = None
 
+        step_index = kwargs.get("step_index")
+        original_turn_events, turn_events = _get_turn_events_based_on_step_index(
+            step_index, turn_events, prior_events
+        )
+
         for slot in self.slots:
             matching_events = [
                 event
@@ -631,7 +646,7 @@ class SlotWasNotSetAssertion(Assertion):
                 error_message += assertion_order_error_message
 
                 return self._generate_assertion_failure(
-                    error_message, prior_events, turn_events, slot.line
+                    error_message, prior_events, original_turn_events, slot.line
                 )
 
         return None, matching_event
@@ -725,6 +740,11 @@ class BotUtteredAssertion(Assertion):
         matching_event = None
         error_messages = []
 
+        step_index = kwargs.get("step_index")
+        original_turn_events, turn_events = _get_turn_events_based_on_step_index(
+            step_index, turn_events, prior_events
+        )
+
         if self.utter_name is not None:
             try:
                 matching_event = next(
@@ -769,7 +789,7 @@ class BotUtteredAssertion(Assertion):
             error_message = " ".join(error_messages)
             error_message += assertion_order_error_message
             return self._generate_assertion_failure(
-                error_message, prior_events, turn_events, self.line
+                error_message, prior_events, original_turn_events, self.line
             )
 
         return None, matching_event
@@ -846,6 +866,11 @@ class BotDidNotUtterAssertion(Assertion):
         **kwargs: Any,
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Checks that the bot did not utter the specified messages or buttons."""
+        step_index = kwargs.get("step_index")
+        original_turn_events, turn_events = _get_turn_events_based_on_step_index(
+            step_index, turn_events, prior_events
+        )
+
         for event in turn_events:
             if isinstance(event, BotUttered):
                 error_messages = []
@@ -867,7 +892,7 @@ class BotDidNotUtterAssertion(Assertion):
                     error_message = " ".join(error_messages)
                     error_message += assertion_order_error_message
                     return self._generate_assertion_failure(
-                        error_message, prior_events, turn_events, self.line
+                        error_message, prior_events, original_turn_events, self.line
                     )
         return None, None
 
@@ -1296,3 +1321,25 @@ def _find_matching_generative_events(turn_events: List[Event]) -> List[BotUttere
         and event.metadata.get(UTTER_SOURCE_METADATA_KEY)
         in ELIGIBLE_UTTER_SOURCE_METADATA
     ]
+
+
+def _get_turn_events_based_on_step_index(
+    step_index: int, turn_events: List[Event], prior_events: List[Event]
+) -> Tuple[List[Event], List[Event]]:
+    """Get the turn events based on the step index.
+
+    For the first step, we need to include the prior events as well
+    in the same user turn. For the subsequent steps, we only need the
+    events that follow the user uttered event on which the tracker
+    was originally sliced by.
+
+    Returns:
+        List[Event]: The copy of turn_events
+        List[Event]: The turn events based on the step index
+
+    """
+    original_turn_events = turn_events[:]
+    if step_index == 0:
+        return original_turn_events, prior_events + turn_events
+
+    return original_turn_events, turn_events

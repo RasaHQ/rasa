@@ -18,6 +18,11 @@ from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.utils import AvailableEndpoints
+from rasa.e2e_test.assertions import (
+    Assertion,
+    BotDidNotUtterAssertion,
+    SlotWasNotSetAssertion,
+)
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
     Fixture,
@@ -2655,3 +2660,187 @@ async def test_run_assertions_with_duplicate_user_messages_reusing_metadata(
     assert isinstance(result, TestResult)
     assert result.pass_status is True
     assert result.assertion_failure is None
+
+
+@pytest.fixture
+def assertions_tracker_with_custom_action_session_start() -> DialogueStateTracker:
+    tracker = DialogueStateTracker.from_events(
+        "test_assertions_tracker_custom_session_start",
+        [
+            ActionExecuted("action_session_start"),
+            SlotSet("authenticated", True),
+            BotUttered(
+                "Welcome! How can I help you today?",
+                metadata={"utter_action": "utter_welcome"},
+            ),
+            SessionStarted(),
+            ActionExecuted("action_listen"),
+            UserUttered("send money"),
+        ],
+    )
+
+    return tracker
+
+
+@pytest.fixture
+def mock_get_tracker(assertions_tracker_with_custom_action_session_start) -> AsyncMock:
+    return AsyncMock(return_value=assertions_tracker_with_custom_action_session_start)
+
+
+@pytest.mark.parametrize(
+    "assertion",
+    [
+        {"slot_was_set": [{"name": "authenticated", "value": True}]},
+        {
+            "bot_uttered": {
+                "utter_name": "utter_welcome",
+            }
+        },
+        {"action_executed": "action_listen"},
+        {"slot_was_not_set": [{"name": "authenticated", "value": False}]},
+        {
+            "bot_did_not_utter": {
+                "utter_name": "utter_goodbye",
+            }
+        },
+    ],
+)
+async def test_run_assertions_on_events_set_by_custom_action_session_start(
+    monkeypatch: MonkeyPatch,
+    assertion: Dict[str, Any],
+    assertions_e2e_test_runner: E2ETestRunner,
+    assertions_tracker_with_custom_action_session_start: DialogueStateTracker,
+    mock_get_tracker: AsyncMock,
+) -> None:
+    monkeypatch.setattr(
+        assertions_e2e_test_runner.agent.processor, "get_tracker", mock_get_tracker
+    )
+
+    monkeypatch.setattr(
+        assertions_e2e_test_runner.agent.tracker_store, "retrieve", mock_get_tracker
+    )
+
+    test_case = TestCase(
+        name="test_case_custom_action_session_start",
+        steps=[
+            TestStep.from_dict({"user": "send money", "assertions": [assertion]}),
+        ],
+    )
+
+    results = await assertions_e2e_test_runner.run_tests(
+        [test_case], [], input_metadata=[]
+    )
+    assert len(results) == 1
+    assert isinstance(results[0], TestResult)
+    assert results[0].pass_status is True
+    assert results[0].difference == []
+    assert results[0].assertion_failure is None
+
+
+@pytest.mark.parametrize(
+    "assertion, expected_assertion_failure_type, expected_error_message",
+    [
+        (
+            {"slot_was_not_set": [{"name": "authenticated", "value": True}]},
+            SlotWasNotSetAssertion,
+            "Slot 'authenticated' was set to 'True' but it should not have been set.",
+        ),
+        (
+            {
+                "bot_did_not_utter": {
+                    "utter_name": "utter_welcome",
+                }
+            },
+            BotDidNotUtterAssertion,
+            "Bot uttered a forbidden utterance 'utter_welcome'.",
+        ),
+    ],
+)
+async def test_run_assertion_failures_with_custom_action_session_start(
+    monkeypatch: MonkeyPatch,
+    assertion: Dict[str, Any],
+    expected_assertion_failure_type: Assertion,
+    expected_error_message: str,
+    assertions_e2e_test_runner: E2ETestRunner,
+    assertions_tracker_with_custom_action_session_start: DialogueStateTracker,
+    mock_get_tracker: AsyncMock,
+) -> None:
+    monkeypatch.setattr(
+        assertions_e2e_test_runner.agent.processor, "get_tracker", mock_get_tracker
+    )
+
+    monkeypatch.setattr(
+        assertions_e2e_test_runner.agent.tracker_store, "retrieve", mock_get_tracker
+    )
+
+    test_case = TestCase(
+        name="test_case_custom_action_session_start",
+        steps=[
+            TestStep.from_dict({"user": "send money", "assertions": [assertion]}),
+        ],
+    )
+
+    results = await assertions_e2e_test_runner.run_tests(
+        [test_case], [], input_metadata=[]
+    )
+    assert len(results) == 1
+    test_result = results[0]
+    assert isinstance(test_result, TestResult)
+    assert test_result.pass_status is False
+    assert test_result.assertion_failure is not None
+    assert isinstance(
+        test_result.assertion_failure.assertion, expected_assertion_failure_type
+    )
+    assert test_result.assertion_failure.error_message == expected_error_message
+
+
+async def test_run_assertions_on_test_case_with_multiple_sessions(
+    monkeypatch: MonkeyPatch,
+    assertions_e2e_test_runner: E2ETestRunner,
+    assertions_tracker_with_custom_action_session_start: DialogueStateTracker,
+    mock_get_tracker: AsyncMock,
+) -> None:
+    monkeypatch.setattr(
+        assertions_e2e_test_runner.agent.processor, "get_tracker", mock_get_tracker
+    )
+
+    monkeypatch.setattr(
+        assertions_e2e_test_runner.agent.tracker_store, "retrieve", mock_get_tracker
+    )
+
+    test_case = TestCase(
+        name="test_case_custom_action_session_start",
+        steps=[
+            TestStep.from_dict(
+                {
+                    "user": "send money",
+                    "assertions": [
+                        {
+                            "bot_uttered": {
+                                "utter_name": "utter_welcome",
+                            }
+                        }
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "/session_start",
+                    "assertions": [
+                        {
+                            "action_executed": "action_session_start",
+                        }
+                    ],
+                }
+            ),
+        ],
+    )
+
+    results = await assertions_e2e_test_runner.run_tests(
+        [test_case], [], input_metadata=[]
+    )
+    assert len(results) == 1
+    assert isinstance(results[0], TestResult)
+    assert results[0].pass_status is True
+    assert results[0].difference == []
+    assert results[0].assertion_failure is None

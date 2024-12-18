@@ -442,7 +442,7 @@ class E2ETestRunner:
         assertion_failure_found = False
         input_metadata = input_metadata if input_metadata else []
 
-        for step in test_case.steps:
+        for index, step in enumerate(test_case.steps):
             if not step.assertions:
                 structlogger.debug(
                     "e2e_test_runner.run_assertions.no_assertions.skipping_step",
@@ -490,6 +490,7 @@ class E2ETestRunner:
                     assertion_order_error_message=assertion_order_error_msg,
                     llm_judge_config=self.llm_judge_config,
                     step_text=step.text,
+                    step_index=index,
                 )
 
                 if assertion_failure:
