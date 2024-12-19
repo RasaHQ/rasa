@@ -67,6 +67,14 @@ class SchemaNode:
     is_input: bool = False
     resource: Optional[Resource] = None
 
+    def matches_type(self, node_type: Type, include_subtypes: bool = True) -> bool:
+        """Checks if schema node's 'uses' is of specified node type.
+        By default, it also checks for subtypes of the specified node type.
+        """
+        return (self.uses is node_type) or (
+            include_subtypes and issubclass(self.uses, node_type)
+        )
+
 
 @dataclass
 class GraphSchema:
@@ -166,9 +174,7 @@ class GraphSchema:
         By default, it also checks for subtypes of the specified node type.
         """
         for node in self.nodes.values():
-            if (node.uses is node_type) or (
-                include_subtypes and issubclass(node.uses, node_type)
-            ):
+            if node.matches_type(node_type, include_subtypes):
                 return True
         return False
 

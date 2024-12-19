@@ -1,6 +1,6 @@
 import argparse
-from typing import Callable
-from unittest.mock import patch
+from typing import Callable, Dict, Any, Optional, Text
+from unittest.mock import patch, Mock
 
 import pytest
 from pytest import RunResult
@@ -12,12 +12,76 @@ from rasa.cli.llm_fine_tuning import (
     write_params,
     write_statistics,
     create_storage_context,
+    _get_llm_command_generator_config,
 )
+from rasa.dialogue_understanding.generator import (
+    SingleStepLLMCommandGenerator,
+    MultiStepLLMCommandGenerator,
+)
+from rasa.dialogue_understanding.generator.constants import DEFAULT_LLM_CONFIG
+from rasa.engine.graph import GraphSchema, SchemaNode
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.llm_fine_tuning.storage import (
     StorageType,
     StorageContext,
     FileStorageStrategy,
 )
+from rasa.shared.utils.llm import combine_custom_and_default_config
+
+
+class MockSingleStepLLMCommandGenerator(SingleStepLLMCommandGenerator):
+    """A mock of what would a custom SSLLMCG that inherits
+    from the original look like.
+    """
+
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        prompt_template: Optional[Text] = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(config, model_storage, resource, prompt_template)
+
+    async def invoke_llm(self, prompt: str) -> Optional[str]:
+        pass
+
+
+class MockAvailableEndpoints:
+    @staticmethod
+    def get_instance():
+        return MockAvailableEndpoints()
+
+    def __init__(self):
+        self.model_groups = [
+            {
+                "id": "llm-model-group",
+                "models": [
+                    {
+                        "provider": "cohere",
+                        "model": "test-cohere",
+                        "api_key": "mock key in test_tracing_rephraser",
+                    },
+                    {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                        "api_key": "tedst",
+                    },
+                    {
+                        "provider": "azure",
+                        "deployment": "my-llm-azure-deployment",
+                        "api_key": "test",
+                        "api_base": "test-base",
+                        "api_version": "test-version",
+                        "num_retries": 100,
+                        "timeout": 100,
+                    },
+                ],
+                "router": {"routing_strategy": "test"},
+            },
+        ]
 
 
 def test_rasa_llm(run: Callable[..., RunResult]) -> None:
@@ -136,3 +200,150 @@ def test_create_storage_context():
     assert isinstance(context, StorageContext) is True
     assert isinstance(context.strategy, FileStorageStrategy) is True
     assert context.strategy.output_dir == "output"
+
+
+@pytest.mark.parametrize(
+    "single_step_llm_command_generator_node,"
+    "expected_llm_config,"
+    "should_raise_an_error",
+    [
+        # Graph schema with SingleStepLLMCommandGenerator with deprecated LLM config
+        (
+            SchemaNode(
+                needs={},
+                uses=SingleStepLLMCommandGenerator,
+                constructor_name="create",
+                fn="train",
+                config={"llm": {"provider": "openai", "model": "test-gpt"}},
+                is_target=True,
+                is_input=False,
+            ),
+            combine_custom_and_default_config(
+                {"provider": "openai", "model": "test-gpt"}, DEFAULT_LLM_CONFIG
+            ),
+            False,
+        ),
+        # Graph schema with the custom SingleStepLLMCommandGenerator with deprecated LLM
+        # config
+        (
+            SchemaNode(
+                needs={},
+                uses=MockSingleStepLLMCommandGenerator,
+                constructor_name="create",
+                fn="train",
+                config={"llm": {"provider": "openai", "model": "test-gpt"}},
+                is_target=True,
+                is_input=False,
+            ),
+            combine_custom_and_default_config(
+                {"provider": "openai", "model": "test-gpt"}, DEFAULT_LLM_CONFIG
+            ),
+            False,
+        ),
+        # Graph schema with SingleStepLLMCommandGenerator with model groups LLM config
+        (
+            SchemaNode(
+                needs={},
+                uses=SingleStepLLMCommandGenerator,
+                constructor_name="create",
+                fn="train",
+                config={"llm": {"model_group": "llm-model-group"}},
+                is_target=True,
+                is_input=False,
+            ),
+            combine_custom_and_default_config(
+                MockAvailableEndpoints.get_instance().model_groups[0],
+                DEFAULT_LLM_CONFIG,
+            ),
+            False,
+        ),
+        # Graph schema with a custom SingleStepLLMCommandGenerator with model groups LLM
+        # config
+        (
+            SchemaNode(
+                needs={},
+                uses=MockSingleStepLLMCommandGenerator,
+                constructor_name="create",
+                fn="train",
+                config={"llm": {"model_group": "llm-model-group"}},
+                is_target=True,
+                is_input=False,
+            ),
+            combine_custom_and_default_config(
+                MockAvailableEndpoints.get_instance().model_groups[0],
+                DEFAULT_LLM_CONFIG,
+            ),
+            False,
+        ),
+        # Graph schema without SingleStepLLMCommandGenerator
+        (
+            None,
+            None,
+            True,
+        ),
+        # Graph schema with MultiStepLLMCommandGenerator should fail, as it's not
+        # supported for now
+        (
+            SchemaNode(
+                needs={},
+                uses=MultiStepLLMCommandGenerator,
+                constructor_name="create",
+                fn="train",
+                config={"llm": {"provider": "openai", "model": "test-gpt"}},
+                is_target=True,
+                is_input=False,
+            ),
+            None,
+            True,
+        ),
+        (
+            SchemaNode(
+                needs={},
+                uses=MultiStepLLMCommandGenerator,
+                constructor_name="create",
+                fn="train",
+                config={"llm": {"model_group": "llm-model-group"}},
+                is_target=True,
+                is_input=False,
+            ),
+            None,
+            True,
+        ),
+    ],
+)
+def test_get_llm_command_generator_config(
+    single_step_llm_command_generator_node: SchemaNode,
+    expected_llm_config: dict,
+    should_raise_an_error: bool,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # Given
+    graph_schema_nodes = {
+        "test_node_1": SchemaNode(
+            needs={}, uses=Mock, constructor_name="create", fn="train", config={}
+        ),
+        "test_node_2": SchemaNode(
+            needs={}, uses=Mock, constructor_name="create", fn="train", config={}
+        ),
+    }
+    if single_step_llm_command_generator_node is not None:
+        graph_schema_nodes["test_SingleStepLLMCommandGenerator_3"] = (
+            single_step_llm_command_generator_node
+        )
+
+    e2e_test_runner = Mock()
+    e2e_test_runner.agent.processor.model_metadata.train_schema = GraphSchema(
+        graph_schema_nodes
+    )
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    if not should_raise_an_error:
+        # When
+        result = _get_llm_command_generator_config(e2e_test_runner)
+        # Then A
+        assert result == expected_llm_config
+    else:
+        # Then B
+        with pytest.raises(SystemExit):
+            _get_llm_command_generator_config(e2e_test_runner)

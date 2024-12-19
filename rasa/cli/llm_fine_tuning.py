@@ -22,6 +22,7 @@ from rasa.cli.e2e_test import (
 )
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
+from rasa.dialogue_understanding.generator import SingleStepLLMCommandGenerator
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from rasa.llm_fine_tuning.annotation_module import annotate_e2e_tests
 from rasa.llm_fine_tuning.llm_data_preparation_module import convert_to_fine_tuning_data
@@ -43,6 +44,10 @@ from rasa.shared.constants import (
     DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
     LLM_CONFIG_KEY,
+)
+from rasa.shared.utils.llm import (
+    combine_custom_and_default_config,
+    resolve_model_client_config,
 )
 from rasa.shared.utils.yaml import read_config_file
 from rasa.utils.beta import ensure_beta_feature_is_enabled
@@ -275,20 +280,23 @@ def _get_llm_command_generator_config(e2e_test_runner: E2ETestRunner) -> Dict[st
 
     train_schema = e2e_test_runner.agent.processor.model_metadata.train_schema  # type: ignore
 
-    for node in train_schema.nodes:
-        if "SingleStepLLMCommandGenerator" in node:
-            return {
-                **DEFAULT_LLM_CONFIG,
-                **train_schema.nodes[node].config.get(LLM_CONFIG_KEY),
-            }
+    for node_name, node in train_schema.nodes.items():
+        if node.matches_type(SingleStepLLMCommandGenerator, include_subtypes=True):
+            # Configurations can reference model groups defined in the endpoints.yml
+            resolved_config = resolve_model_client_config(
+                node.config.get(LLM_CONFIG_KEY, {}), node_name
+            )
+            return combine_custom_and_default_config(
+                resolved_config, DEFAULT_LLM_CONFIG
+            )
 
     rasa.shared.utils.cli.print_error(
-        "The provided model was not trained with the 'SingleStepLLMCommandGenerator'."
-        "Without the 'SingleStepLLMCommandGenerator' no data for fine-tuning can be "
-        "created. Please add the 'SingleStepLLMCommandGenerator' to your config and"
-        "train your model."
+        "The provided model is not trained using 'SingleStepLLMCommandGenerator' or "
+        "its subclasses. Without it, no data for fine-tuning can be generated. To "
+        "resolve this, please include 'SingleStepLLMCommandGenerator' or its subclass "
+        "in your config and train your model."
     )
-    sys.exit(0)
+    sys.exit(1)
 
 
 def log_start_of_module(module_name: str) -> None:
