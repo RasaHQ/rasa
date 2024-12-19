@@ -9,7 +9,7 @@ on:
 jobs:
   run_script_and_tag_nightly_release:
     name: Run release script and tag a new nightly release
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       tag_name: ${{ steps.set_tagname.outputs.tag_name }}
 
@@ -53,7 +53,7 @@ jobs:
 
   deploy:
     name: Deploy to PyPI
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     # deploy will only be run when there is a tag available
     needs: run_script_and_tag_nightly_release  # only run after all other stages succeeded
@@ -113,7 +113,7 @@ jobs:
 
   docker:
     name: Build Docker
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: run_script_and_tag_nightly_release
     env:
       GCLOUD_VERSION: "297.0.1"
@@ -180,7 +180,7 @@ jobs:
 
   send_slack_notification_on_failure:
     name: Notify Slack
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: always()
     needs:
       - docker
