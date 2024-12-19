@@ -156,8 +156,34 @@ const addDataToAudioQueue = (audioQueue: AudioQueue) => (message: MessageEvent<a
     }
 }
 
-export async function createAudioConnection() {
-  const websocketURL  = "ws://localhost:5005/webhooks/browser_audio/websocket"
+/**
+ * Constructs a WebSocket URL for browser audio from a base HTTP/HTTPS URL
+ * 
+ * @param baseUrl - The base URL (e.g., "https://example.com" or "http://localhost:5005")
+ * @returns WebSocket URL for browser audio endpoint
+ * 
+ * @example
+ * getWebSocketUrl("https://example.com")
+ * // Returns: "wss://example.com/webhooks/browser_audio/websocket"
+ * 
+ * getWebSocketUrl("http://localhost:5005")
+ * // Returns: "ws://localhost:5005/webhooks/browser_audio/websocket"
+ * 
+ * @throws {TypeError} If baseUrl is not a valid URL
+ */
+export function getWebSocketUrl(baseUrl: string) {
+  const url = new URL(baseUrl);
+  const wsProtocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${wsProtocol}//${url.host}/webhooks/browser_audio/websocket`;
+}
+
+/**
+ * Creates a WebSocket connection for browser audio and streams microphone input to the server
+ * 
+ * @param baseUrl - The base URL (e.g., "https://example.com" or "http://localhost:5005")
+ */
+export async function createAudioConnection(baseUrl: string) {
+  const websocketURL = getWebSocketUrl(baseUrl)
   const socket = new WebSocket(websocketURL)
   socket.onopen = async () => { await streamMicrophoneToServer(socket)}
   const audioQueue = setupAudioPlayback(socket)

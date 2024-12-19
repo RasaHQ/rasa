@@ -16,7 +16,7 @@ export const LoadingSpinner = () => {
         mb={rasaSpace[1]}
       />
       <Text fontSize="lg">{text}</Text>
-        {isVoice ? <Button onClick={createAudioConnection}>Go</Button> : null}
+        {isVoice ? <Button onClick={async () => await createAudioConnection(window.location.href)}>Go</Button> : null}
     </Center>
   );
 };
