@@ -404,7 +404,7 @@ def read_test_cases(path: str) -> TestSuite:
                 stub_data=stub_data,
             )
 
-    validate_test_case(test_case_name, input_test_cases)
+    validate_test_case(test_case_name, input_test_cases, fixtures, metadata)
     try:
         if stub_custom_actions:
             ensure_beta_feature_is_enabled(
