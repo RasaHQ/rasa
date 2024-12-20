@@ -1,3 +1,7 @@
+import os
+import sys
+import tempfile
+import time
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -196,8 +200,6 @@ def test_action_executor_is_being_cached(mock_endpoint: EndpointConfig):
     assert executor_1.action_executor == executor_2.action_executor
 
 
-# FIXME: This test passes locally but is flaky in CI.
-@pytest.mark.skip_on_ci
 @pytest.mark.asyncio
 async def test_custom_actions_hot_reloading():
     def create_action_code(value: str) -> str:
@@ -216,28 +218,43 @@ class CustomAction(Action):
         return [{{"event": "slot", "name": "test_slot", "value": "{value}"}}]
 """
 
-    # Create a custom action file with initial value
-    action_module = Path(DUMMY_ACTIONS_MODULE_PATH.replace(".", "/"))
-    action_file = action_module / "custom_action.py"
-    initial_value = "initial_value"
-    action_file.write_text(create_action_code(initial_value))
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        tmpdir_path = Path(tmpdirname)
 
-    # Create an endpoint and executor with the initial custom action
-    endpoint = EndpointConfig(actions_module=DUMMY_ACTIONS_MODULE_PATH)
-    executor = DirectCustomActionExecutor("custom_action", endpoint)
+        # Create a subdirectory for the module
+        module_name = "custom_actions_test_module"
+        action_module_path = tmpdir_path / module_name
+        action_module_path.mkdir(parents=True, exist_ok=True)
 
-    # Run the custom action with the initial value
-    tracker = DialogueStateTracker("default", [])
-    domain = Domain.empty()
-    result_initial = await executor.run(tracker, domain)
-    assert result_initial["events"][0]["value"] == initial_value
+        # Create __init__.py to make it a package
+        action_module_init = action_module_path / "__init__.py"
+        action_module_init.touch()
 
-    # Modify the custom action file with a new value
-    modified_value = "modified_value"
-    action_file.write_text(create_action_code(modified_value))
+        # Add the temporary directory to sys.path
+        sys.path.insert(0, str(tmpdir_path))
 
-    # Run the custom action with the modified value
-    executor = DirectCustomActionExecutor("custom_action", endpoint)
-    result_modified = await executor.run(tracker, domain)
-    assert result_modified["events"][0]["value"] == modified_value
-    action_file.unlink()
+        # Create the action file inside the module
+        action_file = action_module_path / "custom_action.py"
+        initial_value = "initial_value"
+        action_file.write_text(create_action_code(initial_value))
+
+        # Create an endpoint and executor to run the initial custom action
+        endpoint = EndpointConfig(actions_module=module_name)
+        executor = DirectCustomActionExecutor("custom_action", endpoint)
+        tracker = DialogueStateTracker("default", [])
+        domain = Domain.empty()
+        result_initial = await executor.run(tracker, domain)
+        assert result_initial["events"][0]["value"] == initial_value
+
+        # Modify the custom action file with a new value
+        modified_value = "modified_value"
+        action_file.write_text(create_action_code(modified_value))
+
+        # Manually update the file's modification time to ensure it's detectable
+        new_time = time.time() + 60  # Set time to 60 seconds in the future
+        os.utime(action_file, (new_time, new_time))
+
+        # Run the custom action with the modified value
+        executor = DirectCustomActionExecutor("custom_action", endpoint)
+        result_modified = await executor.run(tracker, domain)
+        assert result_modified["events"][0]["value"] == modified_value
