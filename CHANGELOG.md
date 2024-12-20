@@ -10,6 +10,27 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.11.2] - 2024-12-19
+                        
+Rasa Pro 3.11.2 (2024-12-19)                             
+### Bugfixes
+- [#1683](https://github.com/rasahq/rasa-private/issues/1683): Validate that `api_type` key is only used for supported providers (Azure and OpenAI).
+- [#1738](https://github.com/rasahq/rasa-private/issues/1738): Enable asserting events returned by `action_session_start` when running end-to-end testing with assertions format.
+  The following assertions can be used:
+  - `slot_was_set`
+  - `slot_was_not_set`
+  - `bot_uttered`
+  - `bot_did_not_utter`
+  - `action_executed`
+- [#1743](https://github.com/rasahq/rasa-private/issues/1743): Fixed voice inspector to work with any URL by dynamically constructing WebSocket URL from current domain. This enables voice testing in GitHub Codespaces and other remote environments.
+- [#1756](https://github.com/rasahq/rasa-private/issues/1756): * Fixed an error in `rasa llm finetune prepare-data` when using a subclass of `SingleStepLLMCommandGenerator`. 
+  * Resolved an issue where `rasa llm finetune prepare-data` did not support model groups.
+- [#1759](https://github.com/rasahq/rasa-private/issues/1759): Fix AvailableEndpoints to read from the default `endpoints.yaml`, if no endpoint is specified.
+
+### Miscellaneous internal changes
+- [#1760](https://github.com/rasahq/rasa-private/issues/1760)
+
+
 ## [3.11.1] - 2024-12-13
                         
 Rasa Pro 3.11.1 (2024-12-13)                             
