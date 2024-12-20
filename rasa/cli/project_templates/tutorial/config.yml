@@ -3,9 +3,7 @@ language: en
 pipeline:
 - name: SingleStepLLMCommandGenerator
   llm:
-    provider: rasa
-    model: rasa/cmd_gen_codellama_13b_calm_demo
-    api_base: "https://tutorial-llm.rasa.ai"
+    model_group: rasa_command_generation_model
   flow_retrieval:
     active: false
 
