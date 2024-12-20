@@ -233,7 +233,9 @@ class AvailableEndpoints:
         self.model_groups = model_groups
 
     @classmethod
-    def get_instance(cls, endpoint_file: Optional[Text] = None) -> "AvailableEndpoints":
+    def get_instance(
+        cls, endpoint_file: Optional[Text] = DEFAULT_ENDPOINTS_PATH
+    ) -> "AvailableEndpoints":
         """Get the singleton instance of AvailableEndpoints."""
         # Ensure that the instance is initialized only once.
         if cls._instance is None:
