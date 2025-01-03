@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Text, Union
 
 import structlog
 
+from rasa.dialogue_understanding_test.du_test_case import DialogueUnderstandingTestCase
 from rasa.e2e_test.assertions import Assertion
 from rasa.e2e_test.constants import (
     KEY_ASSERTIONS,
@@ -551,7 +552,7 @@ class Metadata:
 class TestSuite:
     """Class for representing all top level test suite keys."""
 
-    test_cases: List[TestCase]
+    test_cases: List[Union[TestCase, DialogueUnderstandingTestCase]]
     fixtures: List[Fixture]
     metadata: List[Metadata]
     stub_custom_actions: Dict[Text, StubCustomAction]
