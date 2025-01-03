@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Dict, Text
+from typing import Any, Dict, Text, Union
 from unittest.mock import MagicMock, Mock, patch
 
 import boto3
@@ -288,25 +288,29 @@ def test_retrieve_tar_archive_with_azure_bucket_not_found(
     "model_path, envs, expected_file_key",
     [
         ("model1.pkl", {}, "model1.pkl"),
-        ("path/to/file/model1.pkl", {}, "path/to/file/model1.pkl"),
+        (
+            Path("path") / "to" / "file" / "model1.pkl",
+            {},
+            Path("path") / "to" / "file" / "model1.pkl",
+        ),
         (
             "model1.pkl",
             {REMOTE_STORAGE_PATH_ENV: "test_model"},
-            "test_model/model1.pkl",
+            Path("test_model") / "model1.pkl",
         ),
         (
-            "path/to/file/model1.pkl",
+            Path("path") / "to" / "file" / "model1.pkl",
             {
                 REMOTE_STORAGE_PATH_ENV: "test_model",
             },
-            "test_model/model1.pkl",
+            Path("test_model") / "model1.pkl",
         ),
     ],
 )
 def test_create_file_key(
-    model_path: Text,
+    model_path: Union[Text, Path],
     envs: Dict[str, str],
-    expected_file_key: Text,
+    expected_file_key: Union[Text, Path],
     monkeypatch: MonkeyPatch,
 ) -> None:
     """Test file key creation.
@@ -319,7 +323,7 @@ def test_create_file_key(
         monkeypatch.setenv(key, value)
 
     file_key = Persistor._create_file_key(model_path)
-    assert file_key == expected_file_key
+    assert str(file_key) == str(expected_file_key)
 
 
 def test_create_file_key_remote_storage_path_deprecation_logging(

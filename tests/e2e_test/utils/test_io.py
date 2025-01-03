@@ -642,7 +642,7 @@ def test_print_test_result_without_aggregate_stats(
 @patch("rasa.e2e_test.utils.io.structlogger.info")
 @patch(
     "rasa.e2e_test.utils.io.pathlib.Path.joinpath",
-    side_effect=lambda *args: "/".join(args),
+    side_effect=lambda *args: os.sep.join(args),
 )
 def test_save_tested_commands_histogram(
     mock_joinpath: MagicMock,

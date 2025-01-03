@@ -318,7 +318,10 @@ async def test_start_bot_but_not_enough_diskspace(
 
 async def test_get_bot(client: SanicASGITestClient) -> None:
     running_bots["deployment_1"] = MagicMock(
-        deployment_id="deployment_1", status="running", url="http://localhost:8000"
+        deployment_id="deployment_1",
+        status="running",
+        url="http://localhost:8000",
+        log_id="test_42",
     )
     _, response = await client.get("/bot/deployment_1")
     assert response.status == 200

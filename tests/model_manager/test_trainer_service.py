@@ -43,14 +43,14 @@ def training_session() -> TrainingSession:
 
 def test_train_path() -> None:
     training_id = "test_training_id"
-    expected_path = os.path.abspath("/trainings/test_training_id")
-    assert train_path(training_id).endswith(expected_path)
+    expected_path = Path("trainings") / "test_training_id"
+    assert train_path(training_id).endswith(str(expected_path))
 
 
 def test_cache_for_assistant_path() -> None:
     assistant_id = "test_assistant_id"
-    expected_path = os.path.abspath(f"/caches/{assistant_id}")
-    assert cache_for_assistant_path(assistant_id).endswith(expected_path)
+    expected_path = Path("caches") / assistant_id
+    assert cache_for_assistant_path(assistant_id).endswith(str(expected_path))
 
 
 def test_write_encoded_data_to_file(tmp_path: Path) -> None:

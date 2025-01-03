@@ -76,10 +76,10 @@ from tests.studio.conftest import (
             argparse.Namespace(
                 assistant_name=["test"],
                 calm=True,
-                domain="data/upload/calm/domain/",
-                data=["data/upload/calm/data/"],
-                config="data/upload/calm/config.yml",
-                endpoints="data/upload/calm/endpoints.yml",
+                domain=Path("data/upload/calm/domain/"),
+                data=[Path("data/upload/calm/data/")],
+                config=Path("data/upload/calm/config.yml"),
+                endpoints=Path("data/upload/calm/endpoints.yml"),
             ),
             "http://studio.amazonaws.com/api/graphql",
             {
@@ -92,12 +92,14 @@ from tests.studio.conftest import (
                     "input": {
                         "assistantName": "test",
                         "domain": encode_yaml(
-                            get_calm_domain_yaml("data/upload/calm/domain/")
+                            get_calm_domain_yaml(Path("data/upload/calm/domain/"))
                         ),
-                        "flows": encode_yaml(get_flows_yaml("data/upload/calm/data/")),
+                        "flows": encode_yaml(
+                            get_flows_yaml(Path("data/upload/calm/data/"))
+                        ),
                         "nlu": encode_yaml(CALM_NLU_YAML),
                         "config": encode_yaml(
-                            get_calm_config_yaml("data/upload/calm/config.yml")
+                            get_calm_config_yaml(Path("data/upload/calm/config.yml"))
                         ),
                         "endpoints": "bmxnOgogIHR5cGU6IHJlcGhyYXNlCg==",
                     }
@@ -109,84 +111,12 @@ from tests.studio.conftest import (
             argparse.Namespace(
                 assistant_name=["test"],
                 calm=True,
-                domain="data/upload/calm/domain/domain.yml",
+                domain=Path("data/upload/calm/domain/domain.yml"),
                 data=[
-                    "data/upload/customized_default_flows.yml",
+                    Path("data/upload/customized_default_flows.yml"),
                 ],
-                config="data/upload/calm/config.yml",
-                endpoints="data/upload/calm/endpoints.yml",
-            ),
-            "http://studio.amazonaws.com/api/graphql",
-            {
-                "query": (
-                    "mutation UploadModernAssistant"
-                    "($input: UploadModernAssistantInput!)"
-                    "{\n  uploadModernAssistant(input: $input)\n}"
-                ),
-                "variables": {
-                    "input": {
-                        "assistantName": "test",
-                        "domain": encode_yaml(
-                            get_calm_domain_yaml("data/upload/calm/domain/domain.yml")
-                        ),
-                        "flows": encode_yaml(
-                            get_flows_yaml("data/upload/customized_default_flows.yml")
-                        ),
-                        "nlu": encode_yaml(""),
-                        "config": encode_yaml(
-                            get_calm_config_yaml("data/upload/calm/config.yml")
-                        ),
-                        "endpoints": "bmxnOgogIHR5cGU6IHJlcGhyYXNlCg==",
-                    }
-                },
-            },
-        ),
-        # test when endpoints.yml contain an environment variable
-        (
-            argparse.Namespace(
-                assistant_name=["test"],
-                calm=True,
-                domain="data/upload/calm/domain/",
-                data=["data/upload/calm/data/"],
-                config="data/upload/calm/config.yml",
-                endpoints="data/upload/endpoints_with_env_var.yml",
-            ),
-            "http://studio.amazonaws.com/api/graphql",
-            {
-                "query": (
-                    "mutation UploadModernAssistant"
-                    "($input: UploadModernAssistantInput!)"
-                    "{\n  uploadModernAssistant(input: $input)\n}"
-                ),
-                "variables": {
-                    "input": {
-                        "assistantName": "test",
-                        "domain": encode_yaml(
-                            get_calm_domain_yaml("data/upload/calm/domain/")
-                        ),
-                        "flows": encode_yaml(get_flows_yaml("data/upload/calm")),
-                        "nlu": encode_yaml(CALM_NLU_YAML),
-                        "config": encode_yaml(
-                            get_calm_config_yaml("data/upload/calm/config.yml")
-                        ),
-                        "endpoints": encode_yaml(
-                            rasa.shared.utils.io.read_file(
-                                "data/upload/endpoints_with_env_var.yml"
-                            )
-                        ),
-                    }
-                },
-            },
-        ),
-        # test with domain as directory
-        (
-            argparse.Namespace(
-                assistant_name=["test"],
-                calm=True,
-                domain="data/upload/simple_bot_with_domain_directory/domain",
-                data=["data/upload/simple_bot_with_domain_directory/data/"],
-                config="data/upload/calm/config.yml",
-                endpoints="data/upload/endpoints_with_env_var.yml",
+                config=Path("data/upload/calm/config.yml"),
+                endpoints=Path("data/upload/calm/endpoints.yml"),
             ),
             "http://studio.amazonaws.com/api/graphql",
             {
@@ -200,21 +130,101 @@ from tests.studio.conftest import (
                         "assistantName": "test",
                         "domain": encode_yaml(
                             get_calm_domain_yaml(
-                                "data/upload/simple_bot_with_domain_directory/domain"
+                                Path("data/upload/calm/domain/domain.yml")
                             )
                         ),
                         "flows": encode_yaml(
                             get_flows_yaml(
-                                "data/upload/simple_bot_with_domain_directory/data/"
+                                Path("data/upload/customized_default_flows.yml")
                             )
                         ),
                         "nlu": encode_yaml(""),
                         "config": encode_yaml(
-                            get_calm_config_yaml("data/upload/calm/config.yml")
+                            get_calm_config_yaml(Path("data/upload/calm/config.yml"))
+                        ),
+                        "endpoints": "bmxnOgogIHR5cGU6IHJlcGhyYXNlCg==",
+                    }
+                },
+            },
+        ),
+        # test when endpoints.yml contain an environment variable
+        (
+            argparse.Namespace(
+                assistant_name=["test"],
+                calm=True,
+                domain=Path("data/upload/calm/domain/"),
+                data=[Path("data/upload/calm/data/")],
+                config=Path("data/upload/calm/config.yml"),
+                endpoints=Path("data/upload/endpoints_with_env_var.yml"),
+            ),
+            "http://studio.amazonaws.com/api/graphql",
+            {
+                "query": (
+                    "mutation UploadModernAssistant"
+                    "($input: UploadModernAssistantInput!)"
+                    "{\n  uploadModernAssistant(input: $input)\n}"
+                ),
+                "variables": {
+                    "input": {
+                        "assistantName": "test",
+                        "domain": encode_yaml(
+                            get_calm_domain_yaml(Path("data/upload/calm/domain/"))
+                        ),
+                        "flows": encode_yaml(get_flows_yaml(Path("data/upload/calm"))),
+                        "nlu": encode_yaml(CALM_NLU_YAML),
+                        "config": encode_yaml(
+                            get_calm_config_yaml(Path("data/upload/calm/config.yml"))
                         ),
                         "endpoints": encode_yaml(
                             rasa.shared.utils.io.read_file(
-                                "data/upload/endpoints_with_env_var.yml"
+                                Path("data/upload/endpoints_with_env_var.yml")
+                            )
+                        ),
+                    }
+                },
+            },
+        ),
+        # test with domain as directory
+        (
+            argparse.Namespace(
+                assistant_name=["test"],
+                calm=True,
+                domain=Path("data/upload/simple_bot_with_domain_directory/domain"),
+                data=[Path("data/upload/simple_bot_with_domain_directory/data/")],
+                config=Path("data/upload/calm/config.yml"),
+                endpoints=Path("data/upload/endpoints_with_env_var.yml"),
+            ),
+            "http://studio.amazonaws.com/api/graphql",
+            {
+                "query": (
+                    "mutation UploadModernAssistant"
+                    "($input: UploadModernAssistantInput!)"
+                    "{\n  uploadModernAssistant(input: $input)\n}"
+                ),
+                "variables": {
+                    "input": {
+                        "assistantName": "test",
+                        "domain": encode_yaml(
+                            get_calm_domain_yaml(
+                                Path(
+                                    "data/upload/simple_bot_with_domain_directory/domain"
+                                )
+                            )
+                        ),
+                        "flows": encode_yaml(
+                            get_flows_yaml(
+                                Path(
+                                    "data/upload/simple_bot_with_domain_directory/data/"
+                                )
+                            )
+                        ),
+                        "nlu": encode_yaml(""),
+                        "config": encode_yaml(
+                            get_calm_config_yaml(Path("data/upload/calm/config.yml"))
+                        ),
+                        "endpoints": encode_yaml(
+                            rasa.shared.utils.io.read_file(
+                                Path("data/upload/endpoints_with_env_var.yml")
                             )
                         ),
                     }

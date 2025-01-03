@@ -162,6 +162,7 @@ def test_prepare_remote_bot_directory(
         prepare_bot_directory(str(bot_base_path), "non_existing_model", encoded_configs)
 
 
+@pytest.mark.skip_on_windows
 async def test_run_bot(
     tmp_path: Path, trained_rasa_model_with_flows: str, monkeypatch: MonkeyPatch
 ) -> None:
