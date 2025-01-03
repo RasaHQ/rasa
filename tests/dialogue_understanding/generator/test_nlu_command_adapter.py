@@ -24,6 +24,7 @@ from rasa.dialogue_understanding.generator.nlu_command_adapter import (
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
+from rasa.dialogue_understanding.utils import set_record_commands_and_prompts
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.domain import Domain, KEY_INTENTS
 from rasa.shared.core.flows import FlowsList
@@ -36,6 +37,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
     TEXT,
+    PREDICTED_COMMANDS,
 )
 from rasa.shared.nlu.training_data.message import Message
 from tests.utilities import flows_from_str
@@ -638,3 +640,46 @@ class TestNLUCommandAdapter:
         assert set_slot_commands[0] == SetSlotCommand(
             "another_slot", "some message", SetSlotExtractor.NLU.value
         )
+
+    async def test_convert_nlu_to_commands_adds_commands_to_message_object(
+        self,
+        command_generator: NLUCommandAdapter,
+        flows: FlowsList,
+        tracker: DialogueStateTracker,
+    ):
+        # Given
+        message = Message(
+            data={
+                TEXT: "some message",
+                INTENT: {INTENT_NAME_KEY: "foo", PREDICTED_CONFIDENCE_KEY: 1.0},
+            }
+        )
+
+        # When
+        with set_record_commands_and_prompts():
+            command_generator.convert_nlu_to_commands(message, tracker, flows, None)
+
+            # Then
+        assert message.get(PREDICTED_COMMANDS)[NLUCommandAdapter.__name__] == [
+            {"command": "start flow", "flow": "test_flow"}
+        ]
+
+    async def test_convert_nlu_to_commands_does_not_add_commands_by_default(
+        self,
+        command_generator: NLUCommandAdapter,
+        flows: FlowsList,
+        tracker: DialogueStateTracker,
+    ):
+        # Given
+        message = Message(
+            data={
+                TEXT: "some message",
+                INTENT: {INTENT_NAME_KEY: "foo", PREDICTED_CONFIDENCE_KEY: 1.0},
+            }
+        )
+
+        # When
+        command_generator.convert_nlu_to_commands(message, tracker, flows, None)
+
+        # Then
+        assert message.get(PREDICTED_COMMANDS) is None

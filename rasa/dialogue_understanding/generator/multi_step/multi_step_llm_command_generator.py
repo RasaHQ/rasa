@@ -144,7 +144,6 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         **kwargs: Any,
     ) -> "MultiStepLLMCommandGenerator":
         """Loads trained component (see parent class for full docstring)."""
-
         # Perform health check of the LLM client config
         llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY, {}))
         cls.perform_llm_health_check(
@@ -200,6 +199,9 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
                 message, flows, tracker
             )
             commands = self._clean_up_commands(commands)
+            self._add_commands_to_message_parse_data(
+                message, MultiStepLLMCommandGenerator.__name__, commands
+            )
         except ProviderClientAPIException:
             # if any step resulted in API exception, the command prediction cannot
             # be completed, "predict" the ErrorCommand
@@ -542,6 +544,15 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         )
 
         commands = self.parse_commands(actions, tracker, available_flows)
+
+        if commands:
+            self._add_prompt_to_message_parse_data(
+                message,
+                MultiStepLLMCommandGenerator.__name__,
+                "fill_slots_for_active_flow_prompt",
+                prompt,
+            )
+
         return commands
 
     async def _predict_commands_for_handling_flows(
@@ -584,6 +595,14 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         commands = self.parse_commands(actions, tracker, available_flows, True)
         # filter out flows that are already started and active
         commands = self._filter_redundant_start_flow_commands(tracker, commands)
+
+        if commands:
+            self._add_prompt_to_message_parse_data(
+                message,
+                MultiStepLLMCommandGenerator.__name__,
+                "handle_flows_prompt",
+                prompt,
+            )
 
         return commands
 
@@ -673,6 +692,14 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             flow=newly_started_flow.id,
             commands=commands,
         )
+
+        if commands:
+            self._add_prompt_to_message_parse_data(
+                message,
+                MultiStepLLMCommandGenerator.__name__,
+                "fill_slots_for_new_flow_prompt",
+                prompt,
+            )
 
         return commands
 

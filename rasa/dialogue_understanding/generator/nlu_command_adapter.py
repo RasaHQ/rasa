@@ -205,6 +205,9 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
             commands=commands,
         )
 
+        CommandGenerator._add_commands_to_message_parse_data(
+            message, NLUCommandAdapter.__name__, commands
+        )
         return commands
 
 

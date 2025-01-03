@@ -40,6 +40,7 @@ from rasa.dialogue_understanding.stack.frames import (
     UserFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
+from rasa.dialogue_understanding.utils import set_record_commands_and_prompts
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -57,7 +58,9 @@ from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
+from rasa.shared.nlu.constants import PROMPTS, PREDICTED_COMMANDS, KEY_USER_PROMPT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from tests.utilities import (
     flows_from_str,
     flows_from_str_including_defaults,
@@ -96,6 +99,11 @@ class TestMultiStepLLMCommandGenerator:
     @pytest.fixture(scope="session")
     def model_storage(self, tmp_path_factory: TempPathFactory) -> ModelStorage:
         return LocalModelStorage(tmp_path_factory.mktemp(uuid.uuid4().hex))
+
+    @pytest.fixture
+    def tracker(self):
+        """Create a Tracker."""
+        return DialogueStateTracker.from_events("", [])
 
     async def test_llm_command_generator_init_custom_handle_flow(
         self,
@@ -1323,6 +1331,94 @@ class TestMultiStepLLMCommandGenerator:
             assert fingerprint_1 != fingerprint_2
         else:
             assert fingerprint_1 == fingerprint_2
+
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
+    @patch(
+        "rasa.dialogue_understanding.generator"
+        ".multi_step.multi_step_llm_command_generator.MultiStepLLMCommandGenerator"
+        ".filter_flows"
+    )
+    async def test_predict_commands_adds_commands_and_prompt_to_message_object(
+        self,
+        mock_filter_flows: Mock,
+        mock_llm_factory: Mock,
+        command_generator: MultiStepLLMCommandGenerator,
+        flows: FlowsList,
+        tracker: DialogueStateTracker,
+    ):
+        """Test that predict_commands sets the routing slot to True."""
+        message = Message.build(text="start test_flow")
+
+        # Given
+        with set_record_commands_and_prompts():
+            llm_mock = AsyncMock()
+            llm_mock.acompletion.return_value = AsyncMock(
+                spec=LLMResponse, choices=["StartFlow(test_flow)"]
+            )
+            mock_llm_factory.return_value = llm_mock
+
+            mock_filter_flows.return_value = flows
+
+            # When
+            await command_generator.predict_commands(
+                message,
+                flows=flows,
+                tracker=tracker,
+            )
+
+        # Then
+        assert message.get(PROMPTS) is not None
+        assert MultiStepLLMCommandGenerator.__name__ in message.get(PROMPTS)
+        assert message.get(PROMPTS)[MultiStepLLMCommandGenerator.__name__][0][1][
+            KEY_USER_PROMPT
+        ].startswith(
+            "Your task is to analyze the current situation and to start and/or end "
+            "business processes that we call flows"
+        )
+        assert message.get(PREDICTED_COMMANDS)[
+            MultiStepLLMCommandGenerator.__name__
+        ] == [{"command": "start flow", "flow": "test_flow"}]
+
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
+    @patch(
+        "rasa.dialogue_understanding.generator"
+        ".multi_step.multi_step_llm_command_generator.MultiStepLLMCommandGenerator"
+        ".filter_flows"
+    )
+    async def test_predict_commands_does_not_add_commands_and_prompt_by_default(
+        self,
+        mock_filter_flows: Mock,
+        mock_llm_factory: Mock,
+        command_generator: MultiStepLLMCommandGenerator,
+        flows: FlowsList,
+        tracker: DialogueStateTracker,
+    ):
+        """Test that predict_commands sets the routing slot to True."""
+        message = Message.build(text="start test_flow")
+
+        # Given
+        llm_mock = AsyncMock()
+        llm_mock.acompletion.return_value = AsyncMock(
+            spec=LLMResponse, choices=["StartFlow(test_flow)"]
+        )
+        mock_llm_factory.return_value = llm_mock
+
+        mock_filter_flows.return_value = flows
+
+        # When
+        await command_generator.predict_commands(
+            message,
+            flows=flows,
+            tracker=tracker,
+        )
+
+        # Then
+        assert message.get(PROMPTS) is None
+        assert message.get(PREDICTED_COMMANDS) is None
 
 
 class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:

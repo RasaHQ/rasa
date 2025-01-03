@@ -137,7 +137,6 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         **kwargs: Any,
     ) -> "SingleStepLLMCommandGenerator":
         """Loads trained component (see parent class for full docstring)."""
-
         # Perform health check of the LLM API endpoint
         llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY, {}))
         cls.perform_llm_health_check(
@@ -282,6 +281,15 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         commands = self.parse_commands(action_list, tracker, flows)
 
         self._update_message_parse_data_for_fine_tuning(message, commands, flow_prompt)
+        self._add_commands_to_message_parse_data(
+            message, SingleStepLLMCommandGenerator.__name__, commands
+        )
+        self._add_prompt_to_message_parse_data(
+            message,
+            SingleStepLLMCommandGenerator.__name__,
+            "command_generator_prompt",
+            flow_prompt,
+        )
 
         return commands
 
