@@ -1519,7 +1519,8 @@ def mock_replace_environment_variables(
     mock_replace_env_vars = MagicMock()
 
     monkeypatch.setattr(
-        "rasa.shared.utils.yaml.replace_environment_variables", mock_replace_env_vars
+        "rasa.shared.utils.yaml._add_yaml_constructor_to_replace_environment_variables",
+        mock_replace_env_vars,
     )
 
     return mock_replace_env_vars

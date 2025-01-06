@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import datetime
 import io
 import logging
@@ -9,7 +10,7 @@ from dataclasses import field
 from functools import lru_cache
 from io import StringIO
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Dict, Callable, Union
+from typing import Any, Generator, List, Optional, Tuple, Dict, Callable, Union
 
 import jsonschema
 from importlib_resources import files
@@ -87,12 +88,18 @@ def fix_yaml_loader() -> None:
     yaml.Loader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
     yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
 
+    _add_env_var_resolver()
 
-def replace_environment_variables() -> None:
-    """Enable yaml loader to process the environment variables in the yaml."""
+
+def _add_env_var_resolver() -> None:
+    """Enable yaml loader to detect the environment variables in the yaml."""
     # eg. ${USER_NAME}, ${PASSWORD}
     env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
     yaml.Resolver.add_implicit_resolver("!env_var", env_var_pattern, None)
+
+
+def _add_yaml_constructor_to_replace_environment_variables() -> None:
+    """Enable yaml loader to replace the environment variables in the yaml."""
 
     def env_var_constructor(loader: BaseConstructor, node: ScalarNode) -> str:
         """Process environment variables found in the YAML."""
@@ -530,6 +537,24 @@ def validate_raw_yaml_using_schema_file_with_responses(
     )
 
 
+@contextmanager
+def environment_variables_replaced(
+    yaml_parser: yaml.YAML,
+) -> Generator[None, None, None]:
+    """Replace environment variables during yaml loading.
+
+    Resets the environment variable constructor after the context manager exits.
+    """
+    try:
+        _add_yaml_constructor_to_replace_environment_variables()
+        yield
+    finally:
+        # replace env var constructor with one that does not expand env vars
+        yaml_parser.constructor.add_constructor(
+            "!env_var", lambda loader, node: loader.construct_scalar(node)
+        )
+
+
 def read_yaml(
     content: str,
     reader_type: Union[str, List[str]] = "safe",
@@ -553,8 +578,10 @@ def read_yaml(
         reader_type, custom_constructor
     )
     if expand_env_vars:
-        replace_environment_variables()
-    yaml_content = yaml_parser.load(content) or {}
+        with environment_variables_replaced(yaml_parser):
+            yaml_content = yaml_parser.load(content) or {}
+    else:
+        yaml_content = yaml_parser.load(content) or {}
 
     # Reset to default constructors
     reset_constructors()
@@ -570,9 +597,9 @@ def create_yaml_parser(
 
     Args:
         reader_type (str): The type of the reader
-        (e.g., 'safe', 'rt', 'unsafe').
+            (e.g., 'safe', 'rt', 'unsafe').
         custom_constructor (Optional[Callable]):
-        A custom constructor function for YAML parsing.
+            A custom constructor function for YAML parsing.
 
     Returns:
         Tuple[yaml.YAML, Callable[[], None]]: A tuple containing
@@ -608,10 +635,6 @@ def create_yaml_parser(
         yaml_parser.constructor.add_constructor(
             yaml.resolver.BaseResolver.DEFAULT_SEQUENCE_TAG,
             original_sequence_constructor,
-        )
-        # replace env var constructor with one that does not expand env vars
-        yaml_parser.constructor.add_constructor(
-            "!env_var", lambda loader, node: loader.construct_scalar(node)
         )
 
     def custom_date_constructor(loader: SafeLoader, node: ScalarNode) -> str:
