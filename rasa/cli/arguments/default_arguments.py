@@ -13,7 +13,7 @@ from rasa.shared.constants import (
 
 
 def add_model_param(
-    parser: argparse.ArgumentParser,
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
     model_name: Text = "Rasa",
     add_positional_arg: bool = True,
     default: Optional[Text] = DEFAULT_MODELS_PATH,

@@ -13,3 +13,5 @@ KEY_COMMANDS = "commands"
 
 ACTOR_USER = "user"
 ACTOR_BOT = "bot"
+
+DEFAULT_INPUT_TESTS_PATH = "du_tests/"

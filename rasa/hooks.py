@@ -3,15 +3,13 @@ import logging
 from typing import Optional, TYPE_CHECKING, List, Text, Union
 
 import pluggy
+
 from rasa.cli import SubParsersAction
-
 from rasa.cli import x as rasa_x
-from rasa.utils.endpoints import EndpointConfig
-
 from rasa.core.auth_retry_tracker_store import AuthRetryTrackerStore
 from rasa.core.secrets_manager.factory import load_secret_manager
-
 from rasa.tracing import config
+from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -28,12 +26,13 @@ def refine_cli(
     subparsers: SubParsersAction,
     parent_parsers: List[argparse.ArgumentParser],
 ) -> None:
-    from rasa.cli import e2e_test, inspect, markers
+    from rasa.cli import e2e_test, inspect, markers, dialogue_understanding_test
     from rasa.cli.studio import studio
 
     from rasa.cli import license as license_cli
 
     e2e_test.add_subparser(subparsers, parent_parsers)
+    dialogue_understanding_test.add_subparser(subparsers, parent_parsers)
     studio.add_subparser(subparsers, parent_parsers)
     license_cli.add_subparser(subparsers, parent_parsers)
     markers.add_subparser(subparsers, parent_parsers)

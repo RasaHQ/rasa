@@ -1041,11 +1041,13 @@ class E2ETestRunner:
         return conversations
 
     @staticmethod
-    def _action_server_is_reachable(endpoints: AvailableEndpoints) -> None:
+    def _action_server_is_reachable(
+        endpoints: AvailableEndpoints, module: str = "e2e_test_runner"
+    ) -> None:
         """Calls the action server health endpoint."""
         if not endpoints.action:
             structlogger.debug(
-                "e2e_test_runner._action_server_is_reachable",
+                f"{module}._action_server_is_reachable",
                 message="No action endpoint configured. Skipping the health check "
                 "of the action server.",
             )
@@ -1053,7 +1055,7 @@ class E2ETestRunner:
 
         if endpoints.action.actions_module:
             structlogger.debug(
-                "e2e_test_runner._action_server_is_reachable",
+                f"{module}._action_server_is_reachable",
                 message="Rasa server is configured to run custom actions directly. "
                 "Skipping the health check of the action server.",
             )
@@ -1061,14 +1063,14 @@ class E2ETestRunner:
 
         if not endpoints.action.url:
             structlogger.debug(
-                "e2e_test_runner._action_server_is_reachable",
+                f"{module}._action_server_is_reachable",
                 message="Action endpoint URL is not defined in the endpoint "
                 "configuration.",
             )
             return
 
         structlogger.debug(
-            "e2e_test_runner._action_server_is_reachable",
+            f"{module}._action_server_is_reachable",
             message="Detected action URL in the endpoint configuration.\n"
             f"Action Server URL: {endpoints.action.url}\n"
             "Sending a health request to the action endpoint.",
@@ -1084,7 +1086,7 @@ class E2ETestRunner:
                 "Actions server URL is defined in your endpoint configuration as "
                 f"'{endpoints.action.url}'.\n"
                 "Please make sure your action server is running and properly "
-                "configured. Since running e2e tests without a action server may "
+                "configured. Since running tests without a action server may "
                 f"lead to unpredictable results.\n{error}"
             )
 
@@ -1096,7 +1098,7 @@ class E2ETestRunner:
             )
 
         structlogger.debug(
-            "e2e_test_runner._action_server_is_reachable",
+            f"{module}._action_server_is_reachable",
             message="Action endpoint has responded successfully.\n"
             f"Response message: {response.text}\n"
             f"Response status code: {response.status_code}.",

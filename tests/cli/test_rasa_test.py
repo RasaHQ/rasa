@@ -292,7 +292,7 @@ def test_test_help(run: Callable[..., RunResult]):
                  [-f FOLDS] [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]]
                  [--no-plot] [--successes] [--no-errors] [--no-warnings]
                  [--out OUT]
-                 {{core,nlu,e2e}} ..."""
+                 {{core,nlu,e2e,du}} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
