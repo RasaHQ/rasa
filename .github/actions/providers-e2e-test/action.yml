@@ -113,6 +113,7 @@ runs:
       run: |
         : Install and start Ollama server
         curl -fsSL https://ollama.com/install.sh | sh
+        ollama serve &
       shell: bash
 
     - name: Pull Ollama LLM model
@@ -153,9 +154,10 @@ runs:
       run: |
         : Wake up multiple Hugging Face inference endpoint
         pip install huggingface_hub
+        ./wake-up-inference-endpoint.py & pid0=$!
         export ENDPOINT_NAME=cmd-gen-codellama-13b-calm-d-rbo && ./wake-up-inference-endpoint.py & pid1=$!
         export ENDPOINT_NAME=cmd-gen-codellama-13b-calm-d-kuz && ./wake-up-inference-endpoint.py & pid2=$!
-        wait $pid1 && wait $pid2
+        wait $pid0 && wait $pid1 && wait $pid2
       shell: bash
 
     - name: Install LiteLLM proxy with instrumentation
@@ -353,7 +355,7 @@ runs:
       with:
         # Send notification to #dev-tribe-alerts slack channel
         channel-id: C070ELPSLBB 
-        slack-message: ':rocket: *Rasa-Pro* (version `${{ env.RASA_VERSION }}`, `rasa-private` sha `${{ env.SHORT_SHA }}`)
+        slack-message: ':rocket: *Rasa-Pro* (version `${{ env.RASA_VERSION }}`, `rasa-private` branch `${{ github.ref_name }}` sha `${{ env.SHORT_SHA }}`)
           CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) passed against: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model. More
           information can be found <https://github.com/${{ github.repository
           }}/actions/runs/${{ github.run_id }}|here>.'
@@ -369,7 +371,7 @@ runs:
 
         # Alert Engine-squad
         slack-message: '<!subteam^S0322UJCPU1> :broken_heart: *Rasa-Pro* (version `${{ env.RASA_VERSION
-          }}`, `rasa-private` sha `${{ env.SHORT_SHA }}`) CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) failed against: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model!
+          }}`, `rasa-private` branch `${{ github.ref_name }}` sha `${{ env.SHORT_SHA }}`) CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) failed against: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model!
           More information can be found <https://github.com/${{
           github.repository }}/actions/runs/${{ github.run_id }}|here>.'
       env:
