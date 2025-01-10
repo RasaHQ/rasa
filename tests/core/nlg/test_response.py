@@ -628,6 +628,24 @@ async def test_nlg_conditional_response_variations_condition_logging(
     )
 
 
+async def test_nlg_conditional_response_variations_invalid_type():
+    with pytest.raises(YamlValidationException):
+        Domain.from_yaml(
+            f"""
+            version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+            responses:
+                utter_action:
+                  - text: "example with channel"
+                    condition:
+                      - type: slotsss
+                        name: test
+                        value: A
+                    channel: os
+                  - text: "default"
+            """
+        )
+
+
 async def test_nlg_response_with_no_text():
     with pytest.raises(YamlValidationException):
         Domain.from_yaml(

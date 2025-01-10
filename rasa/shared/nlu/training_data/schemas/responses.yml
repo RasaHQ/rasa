@@ -64,6 +64,7 @@ schema;responses:
                 mapping:
                   type:
                     type: "str"
+                    enum: ['slot']
                   name:
                     type: "str"
                   value:
