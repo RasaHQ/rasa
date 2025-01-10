@@ -1117,6 +1117,7 @@ jobs:
           DD_ENV: ${{ matrix.test }}
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all --junitxml=unit-tests-results.xml
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
           CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
@@ -1202,6 +1203,7 @@ jobs:
           PYTHONUTF8: 1
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all --junitxml=unit-tests-results.xml
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
         run: |
           make test-anonymization
         shell: bash # bash shell is a way to make code run for both Linux and Windows
