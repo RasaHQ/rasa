@@ -14,7 +14,7 @@ from multiprocessing import Manager
 from multiprocessing.managers import DictProxy
 from pathlib import Path
 from typing import Any, List, Text, Tuple, Type, Generator, NoReturn, Dict, Optional
-from unittest.mock import Mock, ANY, AsyncMock
+from unittest.mock import Mock, ANY, AsyncMock, patch
 
 from _pytest.tmpdir import TempPathFactory
 import pytest
@@ -67,6 +67,7 @@ from rasa.shared.core.events import (
     SessionStarted,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     ENTITY_ATTRIBUTE_TYPE,
@@ -504,6 +505,205 @@ pipeline:
 
     assert response.status == HTTPStatus.OK
     assert_trained_model(response.body, tmp_path_factory)
+
+
+@patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
+@patch(
+    "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
+)
+@patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
+@patch("rasa.shared.utils.health_check.health_check.try_instantiate_embedder")
+async def test_train_CALM_bot_with_yaml_success(
+    mock_try_instantiate_llm_client: Mock,
+    mock_try_instantiate_embedder: Mock,
+    mock_flow_search_create_embedder: Mock,
+    mock_from_documents: Mock,
+    rasa_app: SanicASGITestClient,
+    tmp_path_factory: TempPathFactory,
+    monkeypatch: MonkeyPatch,
+):
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    mock_try_instantiate_llm_client.return_value = Mock()
+    mock_flow_search_create_embedder.return_value = Mock()
+    mock_from_documents.return_value = Mock()
+    mock_try_instantiate_embedder.return_value = Mock()
+
+    training_data = f"""
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+pipeline:
+  - name: SingleStepLLMCommandGenerator
+    llm:
+      model: "gpt-4"
+      provider: "openai"
+
+policies:
+    - name: "FlowPolicy"
+
+nlu: []
+
+intents: []
+
+entities: []
+
+rules: []
+
+stories: []
+
+responses:
+  utter_no_contacts:
+   - text: "You have no contacts in your list."
+
+slots:
+    contacts_list:
+      type: text
+      mappings:
+       - type: custom
+         action: list_contacts
+
+actions:
+ - list_contacts
+
+flows:
+  list_contacts:
+    name: "list your contacts"
+    description: "show your contact list"
+    steps:
+     - action: list_contacts
+     - action: utter_no_contacts
+"""
+    _, response = await rasa_app.post(
+        "/model/train",
+        data=training_data,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.OK
+    assert_trained_model(response.body, tmp_path_factory)
+
+
+async def test_train_CALM_bot_with_yaml_bad_flows_request(
+    rasa_app: SanicASGITestClient, tmp_path_factory: TempPathFactory
+):
+    training_data = f"""
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+pipeline:
+  - name: SingleStepLLMCommandGenerator
+    llm:
+        "model": "gpt-4"
+        "provider": "openai"
+
+policies:
+    - "name": "FlowPolicy"
+
+nlu: []
+
+intents: []
+
+entities: []
+
+rules: []
+
+stories: []
+
+responses:
+  utter_no_contacts:
+   - text: "You have no contacts in your list."
+
+slots:
+    contacts_list:
+      type: text
+      mappings:
+       - type: custom
+         action: list_contacts
+
+actions:
+ - list_contacts
+
+flows:
+  - list_contacts:
+    name: "list your contacts"
+    description: "show your contact list"
+    steps:
+     - action: list_contacts
+     - action: utter_no_contacts
+"""
+    _, response = await rasa_app.post(
+        "/model/train",
+        data=training_data,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.BAD_REQUEST
+    assert "Found a list but expected a dictionary of flows." in response.body.decode()
+
+
+async def test_train_CALM_bot_with_yaml_bad_request_rasa_exception(
+    rasa_app: SanicASGITestClient,
+    tmp_path_factory: TempPathFactory,
+    monkeypatch: MonkeyPatch,
+):
+    training_data = f"""
+version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+pipeline:
+  - name: SingleStepLLMCommandGenerator
+    llm:
+        "model": "gpt-4"
+        "provider": "openai"
+
+policies:
+    - "name": "FlowPolicy"
+
+nlu: []
+
+intents: []
+
+entities: []
+
+rules: []
+
+stories: []
+
+responses:
+  utter_no_contacts:
+   - text: "You have no contacts in your list."
+
+slots:
+    contacts_list:
+      type: text
+      mappings:
+       - type: custom
+         action: list_contacts
+
+actions:
+ - list_contacts
+
+flows:
+  list_contacts:
+    name: "list your contacts"
+    description: "show your contact list"
+    steps:
+     - action: list_contacts
+     - action: utter_no_contacts
+"""
+    monkeypatch.setattr(
+        rasa.shared.core.flows.yaml_flows_io.YAMLFlowsReader,
+        "read_from_string",
+        Mock(side_effect=RasaException("Failed to read YAML.")),
+    )
+    _, response = await rasa_app.post(
+        "/model/train",
+        data=training_data,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
+
+    assert response.status == HTTPStatus.BAD_REQUEST
+    assert (
+        "The request body does not contain valid YAML. Error: Failed to read YAML."
+        in response.body.decode()
+    )
 
 
 @pytest.mark.parametrize(

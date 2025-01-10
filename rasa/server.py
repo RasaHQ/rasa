@@ -62,9 +62,11 @@ from rasa.shared.constants import (
     DOCS_BASE_URL,
     DOCS_URL_TRAINING_DATA,
     TEST_STORIES_FILE_PREFIX,
+    DOCS_URL_FLOWS,
 )
 from rasa.shared.core.domain import Domain, InvalidDomain
 from rasa.shared.core.events import Event
+from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
@@ -72,6 +74,7 @@ from rasa.shared.core.trackers import (
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
+from rasa.shared.exceptions import YamlException, RasaException
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
@@ -1566,7 +1569,8 @@ def _nlu_training_payload_from_json(
     )
 
 
-def _validate_yaml_training_payload(yaml_text: Text) -> None:
+def _validate_nlu_training_data_payload(yaml_text: str) -> None:
+    """Validate the NLU training data payload of the request body."""
     try:
         RasaYAMLReader().validate(yaml_text)
     except Exception as e:
@@ -1576,6 +1580,38 @@ def _validate_yaml_training_payload(yaml_text: Text) -> None:
             f"The request body does not contain valid YAML. Error: {e}",
             help_url=DOCS_URL_TRAINING_DATA,
         )
+
+
+def _validate_flows_payload(yaml_text: str) -> None:
+    """Validate the flows payload of the request body."""
+    try:
+        YAMLFlowsReader().read_from_string(yaml_text)
+    except (YamlException, RasaException) as exc:
+        # if the payload does not contain any flows, we can ignore the error
+        if (
+            hasattr(exc, "validation_errors")
+            and exc.validation_errors is not None
+            and any(
+                [
+                    "'flows' is a required property" in error.message
+                    for error in exc.validation_errors
+                ]
+            )
+        ):
+            return None
+
+        raise ErrorResponse(
+            HTTPStatus.BAD_REQUEST,
+            "BadRequest",
+            f"The request body does not contain valid YAML. Error: {exc}",
+            help_url=DOCS_URL_FLOWS,
+        )
+
+
+def _validate_yaml_training_payload(yaml_text: str) -> None:
+    """Validate the YAML training payload of the request body."""
+    _validate_nlu_training_data_payload(yaml_text)
+    _validate_flows_payload(yaml_text)
 
 
 def _extract_core_additional_arguments(request: Request) -> Dict[Text, Any]:
