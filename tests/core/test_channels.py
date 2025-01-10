@@ -4,12 +4,11 @@ import logging
 
 import jwt
 from typing import Dict
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock
 
 import pytest
-from _pytest.logging import LogCaptureFixture
-from _pytest.monkeypatch import MonkeyPatch
-from aiogram.utils.exceptions import TelegramAPIError
+from aiogram.exceptions import TelegramAPIError
+from pytest import LogCaptureFixture, MonkeyPatch
 from aiohttp import ClientTimeout
 from aioresponses import aioresponses
 from sanic import Sanic
@@ -25,7 +24,6 @@ from rasa.core.channels.rasa_chat import (
     INTERACTIVE_LEARNING_PERMISSION,
 )
 from rasa.core.channels.telegram import TelegramOutput
-from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
 
@@ -295,16 +293,23 @@ def test_telegram_channel_raise_rasa_exception_webhook_not_set(
         webhook_url="",
     )
 
+    async def mock_set_webhook(self, *args, **kwargs):
+        raise TelegramAPIError(message="Error from Telegram.", method=Mock())
+
     monkeypatch.setattr(
         rasa.core.channels.telegram.TelegramOutput,
         "set_webhook",
-        MagicMock(side_effect=TelegramAPIError("Error from Telegram.")),
+        mock_set_webhook,
     )
 
-    with pytest.raises(RasaException) as e:
-        rasa.core.run.configure_app([input_channel], port=5004)
+    app = rasa.core.run.configure_app([input_channel], port=5004)
 
-    assert "Failed to set channel webhook:" in str(e.value)
+    _, res = app.test_client.get("/webhooks/telegram/set_webhook")
+
+    assert (
+        res.text
+        == "Failed to set channel webhook: Telegram server says - Error from Telegram."
+    )
 
 
 async def test_handling_of_integer_user_id():
