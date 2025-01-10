@@ -274,6 +274,20 @@ def test_environment_variable_with_dollar_char_in_the_middle():
 
 
 @pytest.mark.dont_replace_environment_variables_in_yaml
+def test_resolve_environment_variable_catches_not_existing_sensitive_keys():
+    content = """
+    model_groups:
+      - id: openai_llm
+        models:
+          - provider: openai
+            api_key: ${API_KEY}
+            timeout: 14
+    """
+    with pytest.raises(RasaException):
+        read_yaml(content)
+
+
+@pytest.mark.dont_replace_environment_variables_in_yaml
 def test_does_not_resolve_sensitive_environment_variable(monkeypatch):
     monkeypatch.setenv("AZURE_API_KEY_FR", "1234")
     monkeypatch.setenv("AZURE_API_BASE_GPT3_5_TURBO_FR", "gpt-3.5-turbo")

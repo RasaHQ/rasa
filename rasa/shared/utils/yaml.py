@@ -104,12 +104,6 @@ def _add_yaml_constructor_to_replace_environment_variables() -> None:
     def env_var_constructor(loader: BaseConstructor, node: ScalarNode) -> str:
         """Process environment variables found in the YAML."""
         value = loader.construct_scalar(node)
-
-        # get key of current node
-        key_node = list(loader.constructed_objects)[-1]
-        if isinstance(key_node, ScalarNode) and key_node.value in SENSITIVE_DATA:
-            return value
-
         expanded_vars = os.path.expandvars(value)
         not_expanded = [
             w for w in expanded_vars.split() if w.startswith("$") and w in value
@@ -121,6 +115,11 @@ def _add_yaml_constructor_to_replace_environment_variables() -> None:
                 f"Please make sure to also set these "
                 f"environment variables: '{not_expanded}'."
             )
+
+        # get key of current node
+        key_node = list(loader.constructed_objects)[-1]
+        if isinstance(key_node, ScalarNode) and key_node.value in SENSITIVE_DATA:
+            return value
         return expanded_vars
 
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
