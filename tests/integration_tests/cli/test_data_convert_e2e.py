@@ -78,13 +78,13 @@ def test_rasa_data_convert_e2e_feature_enabled_csv(
     input_utterance_lines = input_dict["conversation"][0]
     if input_utterance_lines.startswith("User"):
         line_text_user = input_utterance_lines.split(":")[1].strip("\nFinbo").strip(" ")
-        output_utterance_lines_user = output_dict[0]["test_cases"][0]["steps"][0][
+        output_utterance_lines_user = output_dict.get("test_cases", [])[0]["steps"][0][
             "user"
         ]
         assert line_text_user == output_utterance_lines_user
     if input_utterance_lines.find("Finbo"):
         line_text_bot = input_utterance_lines.split(":")[2].strip("\nFinbo").strip(" ")
-        output_utterance_lines_bot = output_dict[0]["test_cases"][0]["steps"][0][
+        output_utterance_lines_bot = output_dict.get("test_cases", [])[0]["steps"][0][
             "assertions"
         ][0]["bot_uttered"]["text_matches"]
         assert line_text_bot == output_utterance_lines_bot
@@ -116,13 +116,13 @@ def test_rasa_data_convert_e2e_feature_enabled_xlsx(
     input_utterance_lines = input_dict["conversation"][0]
     if input_utterance_lines.startswith("User"):
         line_text_user = input_utterance_lines.split(":")[1].strip("\nFinbo").strip(" ")
-        output_utterance_lines_user = output_dict[0]["test_cases"][0]["steps"][0][
+        output_utterance_lines_user = output_dict.get("test_cases", [])[0]["steps"][0][
             "user"
         ]
         assert line_text_user == output_utterance_lines_user
     if input_utterance_lines.find("Finbo"):
         line_text_bot = input_utterance_lines.split(":")[2].strip("\nFinbo").strip(" ")
-        output_utterance_lines_bot = output_dict[0]["test_cases"][0]["steps"][0][
+        output_utterance_lines_bot = output_dict.get("test_cases", [])[0]["steps"][0][
             "assertions"
         ][0]["bot_uttered"]["text_matches"]
         assert line_text_bot == output_utterance_lines_bot

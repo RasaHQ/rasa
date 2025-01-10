@@ -45,7 +45,7 @@ class E2ETestYAMLWriter:
 
         yaml_data = ruamel.yaml.safe_load(tests)
 
-        test_cases_yaml = [{KEY_TEST_CASES: yaml_data}]
+        test_cases_yaml = {KEY_TEST_CASES: yaml_data}
         with open(output_file, "w") as outfile:
             yaml = ruamel.yaml.YAML()
             yaml.dump(test_cases_yaml, outfile)
