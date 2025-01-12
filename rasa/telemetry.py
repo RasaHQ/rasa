@@ -19,6 +19,7 @@ from typing import Any, Callable, Dict, List, Optional, Text
 
 import importlib_resources
 import requests
+import structlog
 from terminaltables import SingleTable
 
 import rasa
@@ -144,6 +145,8 @@ TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT = (
     "Enterprise Search Policy Training Completed"
 )
 TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT = "Enterprise Search Policy Predicted"
+TELEMETRY_VALIDATION_ERROR_LOG_EVENT = "Validation Error Logged"
+TELEMETRY_UPLOAD_TO_STUDIO_FAILED_EVENT = "Upload to Studio Failed"
 
 # licensing events
 TELEMETRY_CONVERSATION_COUNT = "Conversation Count"
@@ -1873,4 +1876,32 @@ def track_e2e_test_conversion_completed(file_type: str, test_case_count: int) ->
             E2E_TEST_CONVERSION_FILE_TYPE: file_type,
             E2E_TEST_CONVERSION_TEST_CASE_COUNT: test_case_count,
         },
+    )
+
+
+def track_validation_error_log(
+    _: structlog.BoundLogger, method_name: str, event_dict: Dict
+) -> Dict:
+    """Track validation errors."""
+    if is_telemetry_enabled() and method_name == "error":
+        event_dict_copy = event_dict.copy()
+
+        _track(
+            TELEMETRY_VALIDATION_ERROR_LOG_EVENT,
+            {
+                "log_level": method_name,
+                "log_id": event_dict_copy.pop("event"),
+                "message": event_dict_copy.pop("event_info", ""),
+                **event_dict_copy,
+            },
+        )
+    return event_dict
+
+
+@ensure_telemetry_enabled
+def track_upload_to_studio_failed(response_json: Dict[str, Any]) -> None:
+    """Track when the upload to studio fails."""
+    _track(
+        TELEMETRY_UPLOAD_TO_STUDIO_FAILED_EVENT,
+        {"studio_response_json": response_json},
     )

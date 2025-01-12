@@ -699,7 +699,9 @@ def read_yaml_file(
 
 
 def read_config_file(
-    filename: Union[Path, str], reader_type: Union[str, List[str]] = "safe"
+    filename: Union[Path, str],
+    reader_type: Union[str, List[str]] = "safe",
+    expand_env_vars: bool = True,
 ) -> Dict[str, Any]:
     """Parses a yaml configuration file. Content needs to be a dictionary.
 
@@ -713,7 +715,9 @@ def read_config_file(
     Returns:
         Parsed config file.
     """
-    return read_validated_yaml(filename, CONFIG_SCHEMA_FILE, reader_type)
+    return read_validated_yaml(
+        filename, CONFIG_SCHEMA_FILE, reader_type, expand_env_vars=expand_env_vars
+    )
 
 
 def read_model_configuration(

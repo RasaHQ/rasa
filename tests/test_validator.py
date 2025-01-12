@@ -2,16 +2,21 @@ import textwrap
 import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Text, Union
+from unittest.mock import patch, MagicMock
 
 import pytest
 import structlog
-from pytest import CaptureFixture
+from pytest import CaptureFixture, MonkeyPatch
 
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.telemetry import (
+    TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE,
+    TELEMETRY_VALIDATION_ERROR_LOG_EVENT,
+)
 from rasa.validator import Validator
 from tests.utilities import filter_logs, flows_from_str
 
@@ -29,7 +34,9 @@ def validator_under_test() -> Validator:
     return validator
 
 
-def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
+def test_verify_nlu_with_e2e_story(
+    tmp_path: Path, nlu_data_path: Path, capsys: CaptureFixture
+):
     story_file_name = tmp_path / "stories.yml"
     with open(story_file_name, "w") as file:
         file.write(
@@ -75,12 +82,12 @@ def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
     # Since the nlu file actually fails validation,
     # record warnings to make sure that the only raised warning
     # is about the duplicate example 'good afternoon'
-    with structlog.testing.capture_logs() as caplog:
-        validator.verify_nlu(ignore_warnings=False)
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    validator.verify_nlu(ignore_warnings=False)
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
 def test_verify_intents_does_not_fail_on_valid_data(nlu_data_path: Text):
@@ -243,6 +250,7 @@ def test_verify_there_is_example_repetition_in_intents(nlu_data_path: Text):
 
 def test_verify_logging_message_for_intent_not_used_in_nlu(
     validator_under_test: Validator,
+    capsys: CaptureFixture,
 ):
     expected_event = "validator.verify_intents.not_in_nlu_training_data"
     expected_log_level = "warning"
@@ -251,17 +259,18 @@ def test_verify_logging_message_for_intent_not_used_in_nlu(
         "file, but is not found in the NLU training data."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        # force validator to not ignore warnings (default is True)
-        validator_under_test.verify_intents(ignore_warnings=False)
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    # force validator to not ignore warnings (default is True)
+    validator_under_test.verify_intents(ignore_warnings=False)
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
 def test_verify_logging_message_for_intent_not_used_in_story(
     validator_under_test: Validator,
+    capsys: CaptureFixture,
 ):
     expected_event = "validator.verify_intents_in_stories_or_flows.not_used"
     expected_log_level = "warning"
@@ -269,15 +278,17 @@ def test_verify_logging_message_for_intent_not_used_in_story(
         "The intent 'goodbye' is not used " "in any story, rule or flow."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        validator_under_test.verify_intents_in_stories_or_flows(ignore_warnings=False)
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    validator_under_test.verify_intents_in_stories_or_flows(ignore_warnings=False)
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
-def test_verify_logging_message_for_repetition_in_intents(nlu_data_path: Text):
+def test_verify_logging_message_for_repetition_in_intents(
+    nlu_data_path: Text, capsys: CaptureFixture
+):
     # moodbot nlu data already has duplicated example 'good afternoon'
     # for intents greet and goodbye
     importer = RasaFileImporter(
@@ -291,12 +302,12 @@ def test_verify_logging_message_for_repetition_in_intents(nlu_data_path: Text):
     expected_log_level = "warning"
     expected_log_message_part = "You should fix that conflict "
 
-    with structlog.testing.capture_logs() as caplog:
-        validator.verify_example_repetition_in_intents(ignore_warnings=False)
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message_part]
-        )
-        assert len(logs) == 1
+    validator.verify_example_repetition_in_intents(ignore_warnings=False)
+
+    result = capsys.readouterr()
+    assert expected_log_message_part in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
 def test_early_exit_on_invalid_domain():
@@ -342,7 +353,9 @@ def test_verify_there_is_not_example_repetition_in_intents():
     assert validator.verify_example_repetition_in_intents(ignore_warnings=False)
 
 
-def test_verify_actions_in_stories_not_in_domain(tmp_path: Path, domain_path: Text):
+def test_verify_actions_in_stories_not_in_domain(
+    tmp_path: Path, domain_path: Text, capsys: CaptureFixture
+):
     story_file_name = tmp_path / "stories.yml"
     story_file_name.write_text(
         f"""
@@ -368,15 +381,17 @@ def test_verify_actions_in_stories_not_in_domain(tmp_path: Path, domain_path: Te
         "not listed in the domain file."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_actions_in_stories_rules()
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert not validator.verify_actions_in_stories_rules()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
-def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text):
+def test_verify_actions_in_rules_not_in_domain(
+    tmp_path: Path, domain_path: Text, capsys: CaptureFixture
+):
     rules_file_name = tmp_path / "rules.yml"
     rules_file_name.write_text(
         f"""
@@ -401,15 +416,15 @@ def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text
         "the domain file."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_actions_in_stories_rules()
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert not validator.verify_actions_in_stories_rules()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
-def test_verify_form_slots_invalid_domain(tmp_path: Path):
+def test_verify_form_slots_invalid_domain(tmp_path: Path, capsys: CaptureFixture):
     domain = tmp_path / "domain.yml"
     domain.write_text(
         f"""
@@ -441,12 +456,12 @@ def test_verify_form_slots_invalid_domain(tmp_path: Path):
         "add the correct slot or check for typos."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_form_slots()
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert not validator.verify_form_slots()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
 def test_invalid_domain_mapping_policy():
@@ -545,7 +560,9 @@ def test_valid_form_slots_in_domain(tmp_path: Path):
     assert validator.verify_form_slots()
 
 
-def test_verify_slot_mappings_mapping_active_loop_not_in_forms(tmp_path: Path):
+def test_verify_slot_mappings_mapping_active_loop_not_in_forms(
+    tmp_path: Path, capsys: CaptureFixture
+):
     domain = tmp_path / "domain.yml"
     slot_name = "some_slot"
     domain.write_text(
@@ -579,15 +596,17 @@ def test_verify_slot_mappings_mapping_active_loop_not_in_forms(tmp_path: Path):
         "listed in domain forms."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_slot_mappings()
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert not validator.verify_slot_mappings()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
-def test_verify_slot_mappings_slot_with_mapping_conditions_not_in_form(tmp_path: Path):
+def test_verify_slot_mappings_slot_with_mapping_conditions_not_in_form(
+    tmp_path: Path, capsys: CaptureFixture
+):
     domain = tmp_path / "domain.yml"
     domain.write_text(
         f"""
@@ -630,12 +649,12 @@ def test_verify_slot_mappings_slot_with_mapping_conditions_not_in_form(tmp_path:
         "form's 'required_slots'."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_slot_mappings()
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert not validator.verify_slot_mappings()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
 def test_verify_slot_mappings_valid(tmp_path: Path):
@@ -825,15 +844,17 @@ def test_verify_from_trigger_intent_slot_mapping_not_in_forms_does_not_warn(
     ],
 )
 def test_warn_if_config_mandatory_keys_are_not_set_invalid_paths(
-    config_file: Text, event: Text, message: Text
+    config_file: Text, event: Text, message: Text, capsys: CaptureFixture
 ) -> None:
     importer = RasaFileImporter(config_file=config_file)
     validator = Validator.from_importer(importer)
 
-    with structlog.testing.capture_logs() as caplog:
-        validator.warn_if_config_mandatory_keys_are_not_set()
-        logs = filter_logs(caplog, event, "warning", [message])
-        assert len(logs) == 1
+    validator.warn_if_config_mandatory_keys_are_not_set()
+
+    result = capsys.readouterr()
+    assert message in result.out
+    assert event in result.out
+    assert "warning" in result.out
 
 
 @pytest.mark.parametrize(
@@ -875,6 +896,7 @@ def test_verify_flow_steps_against_domain_fail(
     domain_slots: Dict[Text, Any],
     event: Text,
     log_message: Text,
+    capsys: CaptureFixture,
 ) -> None:
     flows_file = tmp_path / "flows.yml"
     with open(flows_file, "w") as file:
@@ -916,16 +938,18 @@ def test_verify_flow_steps_against_domain_fail(
     )
 
     validator = Validator.from_importer(importer)
+    assert not validator.verify_flows_steps_against_domain()
 
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_flows_steps_against_domain()
-        logs = filter_logs(caplog, event, "error", [log_message])
-        assert len(logs) == 1
+    result = capsys.readouterr()
+    assert log_message in result.out
+    assert event in result.out
+    assert "error" in result.out
 
 
 def test_verify_flow_steps_against_domain_disallowed_list_slot(
     tmp_path: Path,
     nlu_data_path: Path,
+    capsys: CaptureFixture,
 ) -> None:
     flows_file = tmp_path / "flows.yml"
     with open(flows_file, "w") as file:
@@ -980,17 +1004,18 @@ def test_verify_flow_steps_against_domain_disallowed_list_slot(
         "in flows."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_flows_steps_against_domain()
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert not validator.verify_flows_steps_against_domain()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
 def test_verify_flow_steps_against_domain_interpolated_action_name(
     tmp_path: Path,
     nlu_data_path: Path,
+    capsys: CaptureFixture,
 ) -> None:
     flows_file = tmp_path / "flows.yml"
     with open(flows_file, "w") as file:
@@ -1034,17 +1059,18 @@ def test_verify_flow_steps_against_domain_interpolated_action_name(
         "this step."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        assert validator.verify_flows_steps_against_domain()
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert validator.verify_flows_steps_against_domain()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
 def test_verify_unique_flows_duplicate_names(
     tmp_path: Path,
     nlu_data_path: Path,
+    capsys: CaptureFixture,
 ) -> None:
     duplicate_flow_name = "transfer money"
     flows_file = tmp_path / "flows.yml"
@@ -1108,17 +1134,18 @@ def test_verify_unique_flows_duplicate_names(
         f"Please make sure that all flows have different names."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_unique_flows()
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert not validator.verify_unique_flows()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
 def test_verify_unique_flows_duplicate_descriptions(
     tmp_path: Path,
     nlu_data_path: Path,
+    capsys: CaptureFixture,
 ) -> None:
     duplicate_flow_description_with_punctuation = "This flow lets users send money."
     duplicate_flow_description = "This flow lets users send money"
@@ -1184,17 +1211,18 @@ def test_verify_unique_flows_duplicate_descriptions(
         "descriptions."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_unique_flows()
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert not validator.verify_unique_flows()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
 def test_verify_predicates_invalid_rejection_if(
     tmp_path: Path,
     nlu_data_path: Path,
+    capsys: CaptureFixture,
 ) -> None:
     predicate = 'slots.account_type not in {{"debit", "savings"}}'
 
@@ -1266,12 +1294,12 @@ def test_verify_predicates_invalid_rejection_if(
         f"that all conditions are valid."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_predicates()
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert not validator.verify_predicates()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
 def test_flow_predicate_validation_fails_for_faulty_flow_link_predicates():
@@ -1381,6 +1409,7 @@ def domain_file_name(tmp_path: Path) -> Path:
 @pytest.mark.parametrize("predicate", ["account_type is null", "not account_type"])
 def test_verify_predicates_namespaces_not_referenced(
     predicate: str,
+    capsys: CaptureFixture,
 ) -> None:
     flows = flows_from_str(
         f"""
@@ -1408,15 +1437,13 @@ def test_verify_predicates_namespaces_not_referenced(
         f"Please make sure that all variables reference the required "
         f"namespace."
     )
-    with structlog.testing.capture_logs() as caplog:
-        validator = Validator(
-            Domain.empty(), TrainingData(), StoryGraph([]), flows, None
-        )
-        assert not validator.verify_predicates()
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
+    assert not validator.verify_predicates()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
 @pytest.mark.parametrize(
@@ -1465,6 +1492,7 @@ def test_verify_predicates_on_flow_guards(
 )
 def test_verify_predicates_invalid_flow_guards(
     predicate: str,
+    capsys: CaptureFixture,
 ) -> None:
     """Test that verify_predicates() correctly logs invalid flow guard predicates."""
     # Given
@@ -1488,14 +1516,12 @@ def test_verify_predicates_invalid_flow_guards(
     )
     validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
 
-    with structlog.testing.capture_logs() as caplog:
-        # When
-        assert not validator.verify_predicates()
-        # Then
-        logs = filter_logs(
-            caplog, expected_log_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert not validator.verify_predicates()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_log_event in result.out
+    assert expected_log_level in result.out
 
 
 @pytest.mark.parametrize(
@@ -1507,7 +1533,10 @@ def test_verify_predicates_invalid_flow_guards(
         "not context.collect",
     ],
 )
-def test_verify_predicates_reference_namespaces(predicate: str) -> None:
+def test_verify_predicates_reference_namespaces(
+    predicate: str,
+    capsys: CaptureFixture,
+) -> None:
     flows = flows_from_str(
         f"""
         flows:
@@ -1533,10 +1562,10 @@ def test_verify_predicates_reference_namespaces(predicate: str) -> None:
     )
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
 
-    with structlog.testing.capture_logs() as caplog:
-        assert validator.verify_predicates()
-        logs = filter_logs(caplog, log_level="error")
-        assert len(logs) == 0
+    assert validator.verify_predicates()
+
+    result = capsys.readouterr()
+    assert "error" not in result.out
 
 
 @pytest.mark.parametrize(
@@ -1551,7 +1580,9 @@ def test_verify_predicates_reference_namespaces(predicate: str) -> None:
         "not context.collect",
     ],
 )
-def test_verify_categorical_predicate_valid_value(predicate: str) -> None:
+def test_verify_categorical_predicate_valid_value(
+    predicate: str, capsys: CaptureFixture
+) -> None:
     flows = flows_from_str(
         f"""
         flows:
@@ -1580,10 +1611,9 @@ def test_verify_categorical_predicate_valid_value(predicate: str) -> None:
     )
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
 
-    with structlog.testing.capture_logs() as caplog:
-        assert validator.verify_predicates()
-        logs = filter_logs(caplog, log_level="error")
-        assert len(logs) == 0
+    assert validator.verify_predicates()
+    result = capsys.readouterr()
+    assert "error" not in result.out
 
 
 @pytest.mark.parametrize(
@@ -1595,7 +1625,9 @@ def test_verify_categorical_predicate_valid_value(predicate: str) -> None:
         "{'savings' 'investment'} contains slots.account_type",
     ],
 )
-def test_verify_categorical_predicate_invalid_value(predicate: str) -> None:
+def test_verify_categorical_predicate_invalid_value(
+    predicate: str, capsys: CaptureFixture
+) -> None:
     flows = flows_from_str(
         f"""
         flows:
@@ -1630,19 +1662,17 @@ def test_verify_categorical_predicate_invalid_value(predicate: str) -> None:
         "Please make sure that all conditions are valid.",
     ]
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_predicates()
-        logs = filter_logs(
-            caplog,
-            expected_log_event,
-            expected_log_level,
-            expected_log_message_parts,
-            log_contains_all_message_parts=False,
-        )
-        assert len(logs) == 1
+    assert not validator.verify_predicates()
+
+    result = capsys.readouterr()
+    assert expected_log_message_parts[0] in result.out
+    assert expected_log_event in result.out
+    assert expected_log_level in result.out
 
 
-def test_verify_categorical_predicate_with_apostrophe_valid() -> None:
+def test_verify_categorical_predicate_with_apostrophe_valid(
+    capsys: CaptureFixture,
+) -> None:
     """checks that a categorical slot with apostrophe is valid."""
     flows = flows_from_str(
         """
@@ -1681,10 +1711,10 @@ def test_verify_categorical_predicate_with_apostrophe_valid() -> None:
     )
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
 
-    with structlog.testing.capture_logs() as caplog:
-        assert validator.verify_predicates()
-        logs = filter_logs(caplog, log_level="error")
-        assert len(logs) == 0
+    assert validator.verify_predicates()
+
+    result = capsys.readouterr()
+    assert "error" not in result.out
 
 
 def test_verify_categorical_predicate_with_double_quotes_valid() -> None:
@@ -1781,7 +1811,9 @@ def test_verify_boolean_predicate_valid_value(predicate: str) -> None:
         "slots.confirmation is not test",
     ],
 )
-def test_verify_boolean_predicate_invalid_value(predicate: str) -> None:
+def test_verify_boolean_predicate_invalid_value(
+    predicate: str, capsys: CaptureFixture
+) -> None:
     flows = flows_from_str(
         f"""
         flows:
@@ -1813,15 +1845,17 @@ def test_verify_boolean_predicate_invalid_value(predicate: str) -> None:
         "Please make sure that all conditions are valid.",
     ]
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_predicates()
-        logs = filter_logs(
-            caplog, expected_log_event, expected_log_level, expected_log_message_parts
-        )
-        assert len(logs) == 1
+    assert not validator.verify_predicates()
+
+    result = capsys.readouterr()
+    assert expected_log_message_parts[0] in result.out
+    assert expected_log_event in result.out
+    assert expected_log_level in result.out
 
 
-def test_verify_namespaces_reference_slots_not_in_the_domain() -> None:
+def test_verify_namespaces_reference_slots_not_in_the_domain(
+    capsys: CaptureFixture,
+) -> None:
     flows = flows_from_str(
         """
         flows:
@@ -1845,17 +1879,18 @@ def test_verify_namespaces_reference_slots_not_in_the_domain() -> None:
         "in the domain file."
     )
     validator = Validator(Domain.empty(), TrainingData(), StoryGraph([]), flows, None)
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_predicates()
-        logs = filter_logs(
-            caplog, expected_log_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert not validator.verify_predicates()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_log_event in result.out
+    assert expected_log_level in result.out
 
 
 def test_verify_flow_steps_against_domain_disallows_collect_step_with_action_utterance(
     tmp_path: Path,
     nlu_data_path: Path,
+    capsys: CaptureFixture,
 ) -> None:
     flows_file = tmp_path / "flows.yml"
     with open(flows_file, "w") as file:
@@ -1902,12 +1937,12 @@ def test_verify_flow_steps_against_domain_disallows_collect_step_with_action_utt
         "Please remove either the utterance or the action."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_flows_steps_against_domain()
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert not validator.verify_flows_steps_against_domain()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_event in result.out
+    assert expected_log_level in result.out
 
 
 @pytest.mark.parametrize(
@@ -2087,7 +2122,9 @@ def test_validator_check_for_empty_paranthesis_all_good() -> None:
     assert validator.check_for_no_empty_parenthesis_in_responses() is True
 
 
-def test_validator_fail_as_both_utterance_and_action_defined_for_collect() -> None:
+def test_validator_fail_as_both_utterance_and_action_defined_for_collect(
+    capsys: CaptureFixture,
+) -> None:
     test_domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -2122,15 +2159,17 @@ def test_validator_fail_as_both_utterance_and_action_defined_for_collect() -> No
         "You can just have one of them! "
         "Please remove either the utterance or the action."
     )
-    with structlog.testing.capture_logs() as caplog:
-        assert validator.verify_flows_steps_against_domain() is False
-        logs = filter_logs(
-            caplog, expected_log_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert validator.verify_flows_steps_against_domain() is False
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_log_event in result.out
+    assert expected_log_level in result.out
 
 
-def test_validator_fail_as_both_utterance_and_action_not_defined_for_collect() -> None:
+def test_validator_fail_as_both_utterance_and_action_not_defined_for_collect(
+    capsys: CaptureFixture,
+) -> None:
     test_domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -2158,12 +2197,12 @@ def test_validator_fail_as_both_utterance_and_action_not_defined_for_collect() -
         "nor an action defined, or an initial value defined in the domain."
         "You need to define either an utterance or an action."
     )
-    with structlog.testing.capture_logs() as caplog:
-        assert validator.verify_flows_steps_against_domain() is False
-        logs = filter_logs(
-            caplog, expected_log_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert validator.verify_flows_steps_against_domain() is False
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_log_event in result.out
+    assert expected_log_level in result.out
 
 
 def test_validator_pass_as_only_utterance_defined_for_collect() -> None:
@@ -2636,7 +2675,9 @@ def test_validate_custom_slot_mappings_with_action_property_success(
     assert log_level not in captured.out
 
 
-def test_verify_slot_persistence_configuration_duplicate() -> None:
+def test_verify_slot_persistence_configuration_duplicate(
+    capsys: CaptureFixture,
+) -> None:
     flows = flows_from_str(
         """
         flows:
@@ -2671,15 +2712,22 @@ def test_verify_slot_persistence_configuration_duplicate() -> None:
         "Please use only one of the two configuration methods."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_slot_persistence_configuration()
-        logs = filter_logs(
-            caplog, expected_log_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert not validator.verify_slot_persistence_configuration()
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_log_level in result.out
+    assert expected_log_event in result.out
 
 
-def test_verify_slot_persistence_configuration_invalid_slots() -> None:
+@patch("rasa.telemetry._track")
+def test_verify_slot_persistence_configuration_invalid_slots(
+    mock_track: MagicMock,
+    monkeypatch: MonkeyPatch,
+    capsys: CaptureFixture,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
     flows = flows_from_str(
         """
         flows:
@@ -2714,12 +2762,22 @@ def test_verify_slot_persistence_configuration_invalid_slots() -> None:
         "Please remove such slots from the 'persisted_slots' property."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        assert not validator.verify_slot_persistence_configuration()
-        logs = filter_logs(
-            caplog, expected_log_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    assert not validator.verify_slot_persistence_configuration()
+
+    mock_track.assert_called_once_with(
+        TELEMETRY_VALIDATION_ERROR_LOG_EVENT,
+        {
+            "flow": "flow_a",
+            "message": expected_log_message,
+            "log_id": expected_log_event,
+            "log_level": expected_log_level,
+        },
+    )
+
+    result = capsys.readouterr()
+    assert expected_log_message in result.out
+    assert expected_log_level in result.out
+    assert expected_log_event in result.out
 
 
 def test_verify_slot_persistence_configuration_raises_deprecation_warning() -> None:

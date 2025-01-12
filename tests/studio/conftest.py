@@ -1,4 +1,5 @@
 import base64
+from pathlib import Path
 from textwrap import dedent
 from unittest.mock import MagicMock
 
@@ -95,22 +96,22 @@ def encode_yaml(yaml: str):
     return base64.b64encode(yaml.encode("utf-8")).decode("utf-8")
 
 
-def get_calm_domain_yaml(domain_path: str) -> str:
+def get_calm_domain_yaml(domain_path: Path) -> str:
     importer = TrainingDataImporter.load_from_dict(
-        domain_path=domain_path,
+        domain_path=str(domain_path),
     )
     domain = importer.get_user_domain().as_dict()
     domain = extract_values(domain, DOMAIN_KEYS)
     return dump_obj_as_yaml_to_string(domain)
 
 
-def get_calm_config_yaml(config_path: str) -> str:
+def get_calm_config_yaml(config_path: Path) -> str:
     return dump_obj_as_yaml_to_string(read_yaml_file(config_path))
 
 
-def get_flows_yaml(flows_path: str) -> str:
+def get_flows_yaml(flows_path: Path) -> str:
     flow_importer = FlowSyncImporter.load_from_dict(
-        training_data_paths=[flows_path],
+        training_data_paths=[str(flows_path)],
     )
     flows = list(flow_importer.get_user_flows())
     return YamlFlowsWriter().dumps(flows)

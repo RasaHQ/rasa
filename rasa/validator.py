@@ -67,9 +67,13 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import COMMANDS
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.telemetry import track_validation_error_log
 
 logger = logging.getLogger(__name__)
-structlogger = structlog.get_logger()
+
+structlog_processors = structlog.get_config()["processors"]
+updated_processors = [track_validation_error_log] + structlog_processors
+structlogger = structlog.get_logger(processors=updated_processors)
 
 
 class Validator:

@@ -12,7 +12,7 @@ from typing import Any, Callable, Dict, Text
 
 import pytest
 import structlog
-from _pytest.pytester import RunResult
+from pytest import CaptureFixture, RunResult
 from ruamel.yaml import YAML
 
 import rasa.cli.utils
@@ -604,7 +604,7 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path):
         )
 
 
-def test_validate_files_config_default_assistant_id():
+def test_validate_files_config_default_assistant_id(capsys: CaptureFixture):
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_defaults.yml", "data/test_moodbot/domain.yml", None
     )
@@ -616,19 +616,19 @@ def test_validate_files_config_default_assistant_id():
         f"placeholder value with a unique identifier."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        rasa.cli.utils.validate_files(
-            fail_on_warnings=False,
-            max_history=None,
-            importer=importer,
-        )
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    rasa.cli.utils.validate_files(
+        fail_on_warnings=False,
+        max_history=None,
+        importer=importer,
+    )
+
+    captured = capsys.readouterr()
+    assert expected_log_message in captured.out
+    assert expected_event in captured.out
+    assert expected_log_level in captured.out
 
 
-def test_validate_files_config_missing_assistant_id():
+def test_validate_files_config_missing_assistant_id(capsys: CaptureFixture):
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_no_assistant_id.yml",
         "data/test_moodbot/domain.yml",
@@ -640,16 +640,16 @@ def test_validate_files_config_missing_assistant_id():
         f"The config file is missing the '{ASSISTANT_ID_KEY}' mandatory key."
     )
 
-    with structlog.testing.capture_logs() as caplog:
-        rasa.cli.utils.validate_files(
-            fail_on_warnings=False,
-            max_history=None,
-            importer=importer,
-        )
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    rasa.cli.utils.validate_files(
+        fail_on_warnings=False,
+        max_history=None,
+        importer=importer,
+    )
+
+    captured = capsys.readouterr()
+    assert expected_log_message in captured.out
+    assert expected_event in captured.out
+    assert expected_log_level in captured.out
 
 
 def test_validate_assistant_id_in_config_preserves_comment() -> None:

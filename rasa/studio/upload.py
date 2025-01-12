@@ -38,6 +38,7 @@ from rasa.studio import results_logger
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
 from rasa.studio.results_logger import StudioResult, with_studio_error_handler
+from rasa.telemetry import track_upload_to_studio_failed
 
 structlogger = structlog.get_logger()
 
@@ -396,6 +397,7 @@ def make_request(endpoint: str, graphql_req: Dict, verify: bool = True) -> Studi
     )
 
     if results_logger.response_has_errors(res.json()):
+        track_upload_to_studio_failed(res.json())
         return StudioResult.error(res.json())
     return StudioResult.success("Upload successful")
 

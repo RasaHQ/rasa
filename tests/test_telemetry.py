@@ -57,6 +57,7 @@ from rasa.telemetry import (
     LLM_COMMAND_GENERATOR_MODEL_GROUP_ID,
     FLOW_RETRIEVAL_EMBEDDING_MODEL_GROUP_ID,
     TELEMETRY_INSPECT_STARTED_EVENT,
+    TELEMETRY_UPLOAD_TO_STUDIO_FAILED_EVENT,
 )
 from rasa.utils import licensing
 from rasa.utils.licensing import LICENSE_ENV_VAR
@@ -1512,3 +1513,24 @@ def test_track_rasa_inspect_telemetry(
         {"type": "rasa.core.channels.socketio.SocketIOInput"},
     )
     mock_run.assert_called_once()
+
+
+@patch("rasa.telemetry._track")
+def test_track_upload_to_studio_failed(
+    mock_track: MagicMock,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    test_response_json = {"error": "some error"}
+
+    telemetry.track_upload_to_studio_failed(
+        test_response_json,
+    )
+
+    mock_track.assert_called_once_with(
+        TELEMETRY_UPLOAD_TO_STUDIO_FAILED_EVENT,
+        {
+            "studio_response_json": test_response_json,
+        },
+    )

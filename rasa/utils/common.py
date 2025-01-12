@@ -146,7 +146,9 @@ def read_global_config(path: Text) -> Dict[Text, Any]:
     """
     # noinspection PyBroadException
     try:
-        return read_config_file(path)
+        # set expand_env_vars to False because this is a global config file
+        # used for telemetry, in which case we don't need to expand env vars
+        return read_config_file(path, expand_env_vars=False)
     except Exception:
         # if things go south we pretend there is no config
         return {}
