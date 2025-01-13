@@ -123,11 +123,11 @@ class E2ETestRunner:
             collector: Output channel.
             steps: List of steps to run.
             sender_id: The test case name with added timestamp suffix.
-            test_case_metadata: Metadata of test case.
+            test_case_metadata: Metadata of the test case.
             input_metadata: List of metadata.
 
         Returns:
-            Test turns: {turn_sequence (int) : TestStep or ActualStepOutput}.
+            Test turns: {turn_sequence (int): TestStep or ActualStepOutput}.
         """
         turns: TEST_TURNS_TYPE = {}
         event_cursor = 0
@@ -151,9 +151,23 @@ class E2ETestRunner:
             event_cursor,
         )
 
+        # This variable tracks the position of the last user step.
+        # We use it to determine from which turn onward we should check
+        # for failures in case of the fail-fast logic.
+        last_user_step_position = 0
         for position, step in enumerate(steps):
             if step.actor != "user":
                 turns[position] = step
+
+                # Check for failures after each bot step
+                try:
+                    self.fail_fast_check(
+                        test_turns=turns,
+                        last_user_step_position=last_user_step_position,
+                    )
+                except RasaException:
+                    break
+
                 continue
             elif not step.text:
                 rasa.shared.utils.io.raise_warning(
@@ -163,6 +177,8 @@ class E2ETestRunner:
                     UserWarning,
                 )
                 continue
+            # Update to the current position because we have a valid user step
+            last_user_step_position = position
 
             metadata = test_case_metadata.metadata if test_case_metadata else {}
 
@@ -201,6 +217,26 @@ class E2ETestRunner:
                 tracker, step, event_cursor
             )
         return turns
+
+    def fail_fast_check(
+        self, test_turns: TEST_TURNS_TYPE, last_user_step_position: int
+    ) -> None:
+        """Checks whether there are any test failures in 'test_turns'.
+
+        Args:
+            test_turns (TEST_TURNS_TYPE): The transcript of test cases and events.
+            last_user_step_position (int): The start position in the test turns.
+
+        Raises:
+            RasaException if a failure is found.
+        """
+        failures_found = self.find_test_failures(
+            test_turns=test_turns,
+            test_case=None,
+            last_user_step_position=last_user_step_position,
+        )
+        if failures_found:
+            raise RasaException("Test failure found. Aborting early.")
 
     @staticmethod
     def merge_metadata(
@@ -754,13 +790,15 @@ class E2ETestRunner:
     def find_test_failures(
         cls,
         test_turns: TEST_TURNS_TYPE,
-        test_case: TestCase,
+        test_case: Optional[TestCase],
+        last_user_step_position: int = 0,
     ) -> List[Tuple[TestFailure, int]]:
         """Finds the test failures in the transcript.
 
         Args:
-            test_turns: The transcript of test cases and events.
-            test_case: The test case.
+            test_turns (TEST_TURNS_TYPE): The transcript of test cases and events.
+            test_case (Optional[TestCase]): The test case.
+            last_user_step_position (int): The start position in the test turns.
 
         Returns:
             The test failures or an empty list if there is no test failure.
@@ -769,9 +807,10 @@ class E2ETestRunner:
         # with a user step
         latest_response: ActualStepOutput = test_turns[-1]  # type: ignore[assignment]
         failures = []
-        position = 0
         match = None
-        for position in range(len(test_turns) - 1):
+        for position in range(last_user_step_position, len(test_turns) - 1):
+            if position not in test_turns:
+                continue
             turn_value = test_turns[position]
             if isinstance(turn_value, ActualStepOutput):
                 latest_response = turn_value

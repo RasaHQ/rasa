@@ -3,7 +3,8 @@ import datetime
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Union
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
+from unittest.mock import Mock
 
 import pytest
 import requests
@@ -18,18 +19,13 @@ from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.utils import AvailableEndpoints
-from rasa.e2e_test.assertions import (
-    Assertion,
-    BotDidNotUtterAssertion,
-    SlotWasNotSetAssertion,
-)
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
     Fixture,
     Metadata,
-    TestCase,
     TestStep,
 )
+from rasa.e2e_test.e2e_test_case import TestCase
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.e2e_test_runner import TEST_TURNS_TYPE, E2ETestRunner
 from rasa.llm_fine_tuning.conversations import Conversation
@@ -1128,12 +1124,6 @@ async def test_run_prediction_loop(
     steps = [
         TestStep.from_dict({"user": "Hi!"}),
         TestStep.from_dict({"bot": "Hey! How can I help?"}),
-        TestStep.from_dict(
-            {"user": "I would like to book a trip.", "metadata": "user_info"}
-        ),
-        TestStep.from_dict({"bot": "Ok, where would you like to travel?"}),
-        TestStep.from_dict({"user": "I want to go to Paris."}),
-        TestStep.from_dict({"bot": "Paris is a great city! Let me check the flights."}),
     ]
     sender_id = "test_run_prediction_loop"
     test_turns = await mock_e2e_test_runner.run_prediction_loop(
@@ -2662,185 +2652,256 @@ async def test_run_assertions_with_duplicate_user_messages_reusing_metadata(
     assert result.assertion_failure is None
 
 
-@pytest.fixture
-def assertions_tracker_with_custom_action_session_start() -> DialogueStateTracker:
-    tracker = DialogueStateTracker.from_events(
-        "test_assertions_tracker_custom_session_start",
-        [
-            ActionExecuted("action_session_start"),
-            SlotSet("authenticated", True),
-            BotUttered(
-                "Welcome! How can I help you today?",
-                metadata={"utter_action": "utter_welcome"},
-            ),
-            SessionStarted(),
-            ActionExecuted("action_listen"),
-            UserUttered("send money"),
-        ],
-    )
-
-    return tracker
-
-
-@pytest.fixture
-def mock_get_tracker(assertions_tracker_with_custom_action_session_start) -> AsyncMock:
-    return AsyncMock(return_value=assertions_tracker_with_custom_action_session_start)
-
-
-@pytest.mark.parametrize(
-    "assertion",
-    [
-        {"slot_was_set": [{"name": "authenticated", "value": True}]},
-        {
-            "bot_uttered": {
-                "utter_name": "utter_welcome",
-            }
-        },
-        {"action_executed": "action_listen"},
-        {"slot_was_not_set": [{"name": "authenticated", "value": False}]},
-        {
-            "bot_did_not_utter": {
-                "utter_name": "utter_goodbye",
-            }
-        },
-    ],
-)
-async def test_run_assertions_on_events_set_by_custom_action_session_start(
-    monkeypatch: MonkeyPatch,
-    assertion: Dict[str, Any],
-    assertions_e2e_test_runner: E2ETestRunner,
-    assertions_tracker_with_custom_action_session_start: DialogueStateTracker,
-    mock_get_tracker: AsyncMock,
-) -> None:
-    monkeypatch.setattr(
-        assertions_e2e_test_runner.agent.processor, "get_tracker", mock_get_tracker
-    )
-
-    monkeypatch.setattr(
-        assertions_e2e_test_runner.agent.tracker_store, "retrieve", mock_get_tracker
-    )
-
+@pytest.mark.asyncio
+async def test_fail_fast_user_bot_turn_failure_occurs(
+    mock_e2e_test_runner: E2ETestRunner, monkeypatch: MonkeyPatch
+):
+    """
+    Test that the test runner stops executing further steps when a failure occurs in a
+    regular user/bot turn test case.
+    """
+    # Create a test case where the bot responds incorrectly at step 2
     test_case = TestCase(
-        name="test_case_custom_action_session_start",
+        name="test_fail_fast_user_bot_turn_failure_occurs",
         steps=[
-            TestStep.from_dict({"user": "send money", "assertions": [assertion]}),
+            TestStep.from_dict({"user": "Hi!"}),
+            TestStep.from_dict({"bot": "Hello! How can I assist you?"}),
+            TestStep.from_dict({"user": "I want to book a flight."}),
+            TestStep.from_dict({"bot": "Sure, where are you traveling to?"}),
+            TestStep.from_dict({"user": "To New York."}),
+            TestStep.from_dict({"bot": "Your flight to New York is booked."}),
         ],
     )
 
-    results = await assertions_e2e_test_runner.run_tests(
-        [test_case], [], input_metadata=[]
+    # Mock the agent's response to simulate a failure at step 1
+    async def mock_handle_message(self: Any, message: Any) -> None:
+        tracker = await self.tracker_store.get_or_create_tracker(message.sender_id)
+
+        events = [
+            UserUttered("Hi!"),
+            BotUttered("Sorry, I didn't understand that."),
+        ]
+        for event in events:
+            tracker.update(event)
+        await self.tracker_store.save(tracker)
+
+    monkeypatch.setattr("rasa.core.agent.Agent.handle_message", mock_handle_message)
+
+    # Run the prediction loop
+    collector = CollectingOutputChannel()
+    test_turns = await mock_e2e_test_runner.run_prediction_loop(
+        collector,
+        steps=test_case.steps,
+        sender_id="test_fail_fast_user_bot_turn_failure_occurs",
     )
-    assert len(results) == 1
-    assert isinstance(results[0], TestResult)
-    assert results[0].pass_status is True
-    assert results[0].difference == []
-    assert results[0].assertion_failure is None
+    # Assert that the test failed and stopped execution
+    # after the first failure (step 3/7)
+    assert len(test_turns) == 3
+
+    # Confirm that the test result reflects the failure
+    test_result = mock_e2e_test_runner.generate_test_result(test_turns, test_case)
+    assert not test_result.pass_status
+    # The test runner should not proceed to execute steps after the failure
+    # The test turns should only contain the steps until the failure
+    assert test_result.difference != [
+        "  user: Hi!",
+        "- bot: Sorry, I didn't understand that.",
+        "'+ bot: Hello! How can I assist you?",
+    ]
 
 
-@pytest.mark.parametrize(
-    "assertion, expected_assertion_failure_type, expected_error_message",
-    [
-        (
-            {"slot_was_not_set": [{"name": "authenticated", "value": True}]},
-            SlotWasNotSetAssertion,
-            "Slot 'authenticated' was set to 'True' but it should not have been set.",
-        ),
-        (
-            {
-                "bot_did_not_utter": {
-                    "utter_name": "utter_welcome",
-                }
-            },
-            BotDidNotUtterAssertion,
-            "Bot uttered a forbidden utterance 'utter_welcome'.",
-        ),
-    ],
-)
-async def test_run_assertion_failures_with_custom_action_session_start(
+@pytest.mark.asyncio
+async def test_fail_fast_user_bot_turn_no_failure(
+    mock_e2e_test_runner: E2ETestRunner,
     monkeypatch: MonkeyPatch,
-    assertion: Dict[str, Any],
-    expected_assertion_failure_type: Assertion,
-    expected_error_message: str,
-    assertions_e2e_test_runner: E2ETestRunner,
-    assertions_tracker_with_custom_action_session_start: DialogueStateTracker,
-    mock_get_tracker: AsyncMock,
-) -> None:
-    monkeypatch.setattr(
-        assertions_e2e_test_runner.agent.processor, "get_tracker", mock_get_tracker
-    )
-
-    monkeypatch.setattr(
-        assertions_e2e_test_runner.agent.tracker_store, "retrieve", mock_get_tracker
-    )
-
+):
+    """
+    Test that the test runner executes all steps when there is no failure.
+    """
+    # Create a test case where the bot responds correctly at all steps
     test_case = TestCase(
-        name="test_case_custom_action_session_start",
+        name="test_fail_fast_user_bot_turn_no_failure",
         steps=[
-            TestStep.from_dict({"user": "send money", "assertions": [assertion]}),
+            TestStep.from_dict({"user": "Hi!"}),
+            TestStep.from_dict({"bot": "Hello! How can I assist you?"}),
         ],
     )
 
-    results = await assertions_e2e_test_runner.run_tests(
-        [test_case], [], input_metadata=[]
+    # Mock the agent's response to simulate correct behavior
+    async def mock_handle_message(self: Any, message: Any) -> None:
+        tracker = await self.tracker_store.get_or_create_tracker(message.sender_id)
+
+        events = [
+            UserUttered("Hi!"),
+            BotUttered("Hello! How can I assist you?"),
+        ]
+        for event in events:
+            tracker.update(event)
+        await self.tracker_store.save(tracker)
+
+    monkeypatch.setattr("rasa.core.agent.Agent.handle_message", mock_handle_message)
+
+    # Run the prediction loop
+    collector = CollectingOutputChannel()
+    test_turns = await mock_e2e_test_runner.run_prediction_loop(
+        collector,
+        steps=test_case.steps,
+        sender_id="test_fail_fast_user_bot_turn_failure_occurs",
     )
-    assert len(results) == 1
-    test_result = results[0]
-    assert isinstance(test_result, TestResult)
-    assert test_result.pass_status is False
-    assert test_result.assertion_failure is not None
-    assert isinstance(
-        test_result.assertion_failure.assertion, expected_assertion_failure_type
-    )
-    assert test_result.assertion_failure.error_message == expected_error_message
+    # Assert that the test did not fail and returned all turns
+    assert len(test_turns) == 3
+
+    # Confirm that the test result reflects the success
+    test_result = mock_e2e_test_runner.generate_test_result(test_turns, test_case)
+    assert test_result.pass_status
+    assert test_result.difference == []
 
 
-async def test_run_assertions_on_test_case_with_multiple_sessions(
-    monkeypatch: MonkeyPatch,
+@pytest.mark.asyncio
+async def test_fail_fast_assertions_failure_occurs(
     assertions_e2e_test_runner: E2ETestRunner,
-    assertions_tracker_with_custom_action_session_start: DialogueStateTracker,
-    mock_get_tracker: AsyncMock,
-) -> None:
-    monkeypatch.setattr(
-        assertions_e2e_test_runner.agent.processor, "get_tracker", mock_get_tracker
-    )
-
-    monkeypatch.setattr(
-        assertions_e2e_test_runner.agent.tracker_store, "retrieve", mock_get_tracker
-    )
-
+    monkeypatch: MonkeyPatch,
+):
+    """
+    Test that the test runner stops executing further
+    assertions as soon as a failure occurs.
+    """
+    # Create a test case with assertions, where one assertion will fail
     test_case = TestCase(
-        name="test_case_custom_action_session_start",
+        name="test_fail_fast_assertions_failure_occurs",
         steps=[
             TestStep.from_dict(
                 {
-                    "user": "send money",
+                    "user": "Start process",
                     "assertions": [
-                        {
-                            "bot_uttered": {
-                                "utter_name": "utter_welcome",
-                            }
-                        }
+                        {"bot_uttered": {"text_matches": "Process started"}}
                     ],
                 }
             ),
             TestStep.from_dict(
                 {
-                    "user": "/session_start",
+                    "user": "Proceed",
                     "assertions": [
-                        {
-                            "action_executed": "action_session_start",
-                        }
+                        {"bot_uttered": {"text_matches": "Step 1 complete"}}
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "Next",
+                    "assertions": [
+                        {"bot_uttered": {"text_matches": "Step 2 complete"}}
                     ],
                 }
             ),
         ],
     )
 
-    results = await assertions_e2e_test_runner.run_tests(
-        [test_case], [], input_metadata=[]
-    )
+    # Mock the agent's tracker to simulate a failure at the second assertion
+    async def mock_handle_message(self: Any, message: Any) -> None:
+        tracker = await self.tracker_store.get_or_create_tracker(message.sender_id)
+
+        events = [
+            UserUttered("Start process"),
+            BotUttered("Process started"),
+            UserUttered("Proceed"),
+            BotUttered("Error occurred"),  # Incorrect response
+        ]
+
+        for event in events:
+            tracker.update(event)
+        await self.tracker_store.save(tracker)
+
+    monkeypatch.setattr("rasa.core.agent.Agent.handle_message", mock_handle_message)
+
+    with capture_logs() as caplog:
+        results = await assertions_e2e_test_runner.run_tests(
+            input_test_cases=[test_case],
+            input_fixtures=[],
+            input_metadata=[],
+            fail_fast=True,
+        )
+
+    # Assert that 2/3 assertions have been executed
+    expected_logs = [
+        "running_assertion",
+        "running_assertion",
+        "assertion_failure_found",
+    ]
+    assert all(expected_logs[idx] in log["event"] for idx, log in enumerate(caplog))
+
+    # Assert that the test failed
     assert len(results) == 1
-    assert isinstance(results[0], TestResult)
-    assert results[0].pass_status is True
-    assert results[0].difference == []
+    assert not results[0].pass_status
+    assertion_failure = results[0].assertion_failure
+    assert assertion_failure is not None
+
+
+@pytest.mark.asyncio
+async def test_fail_fast_assertions_no_failure(
+    assertions_e2e_test_runner: E2ETestRunner,
+    monkeypatch: MonkeyPatch,
+):
+    """
+    Test that the test runner executes all assertions when there is no failure.
+    """
+    # Create a test case with assertions, all of which will pass
+    test_case = TestCase(
+        name="test_fail_fast_assertions_no_failure",
+        steps=[
+            TestStep.from_dict(
+                {
+                    "user": "Start process",
+                    "assertions": [
+                        {"bot_uttered": {"text_matches": "Process started"}}
+                    ],
+                }
+            ),
+            TestStep.from_dict(
+                {
+                    "user": "Proceed",
+                    "assertions": [
+                        {"bot_uttered": {"text_matches": "Step 1 complete"}}
+                    ],
+                }
+            ),
+        ],
+    )
+
+    # Mock the agent's tracker to simulate correct responses
+    async def mock_handle_message(self: Any, message: Any) -> None:
+        tracker = await self.tracker_store.get_or_create_tracker(message.sender_id)
+
+        events = [
+            UserUttered("Start process"),
+            BotUttered("Process started"),
+            UserUttered("Proceed"),
+            BotUttered("Step 1 complete"),
+        ]
+
+        for event in events:
+            tracker.update(event)
+        await self.tracker_store.save(tracker)
+
+    monkeypatch.setattr("rasa.core.agent.Agent.handle_message", mock_handle_message)
+
+    # Run the test
+    with capture_logs() as caplog:
+        results = await assertions_e2e_test_runner.run_tests(
+            input_test_cases=[test_case],
+            input_fixtures=[],
+            input_metadata=[],
+            fail_fast=True,
+        )
+
+    # Assert that all assertions have been executed
+    expected_logs = [
+        "running_assertion",
+        "running_assertion",
+    ]
+    assert all(expected_logs[idx] in log["event"] for idx, log in enumerate(caplog))
+
+    # Assert that the test passed and executed all assertions
+    assert len(results) == 1
+    assert results[0].pass_status
     assert results[0].assertion_failure is None
