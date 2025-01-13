@@ -231,6 +231,7 @@ test-marker: clean ## Run marker tests
 			--dist loadscope \
 			-m "$(PYTEST_MARKER)" \
 			--cov rasa \
+			--cov-report xml:unit-tests-results.xml \
 			--ignore $(INTEGRATION_TEST_FOLDER)/ $(DD_ARGS)
 
 release:  ## Prepare a release.
