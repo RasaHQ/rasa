@@ -204,6 +204,39 @@ To check the types execute
 make types
 ```
 
+### Backporting
+
+In order to port changes to `main` and across release branches, we use the `backport` workflow located at
+the `.github/workflows/backport.yml` path.
+This workflow is triggered by the `backport-to-<release-branch>` label applied to a PR, for example `backport-to-3.8.x`.
+Current available target branches are `main` and maintained release branches.
+
+When a PR gets labelled `backport-to-<release-branch>`, a PR is opened by the `backport-github-action` as soon as the
+source PR gets closed (by merging). If you want to close the PR without merging changes, make sure to remove the `backport-to-<release-branch>` label.
+
+The PR author which the action assigns to the backporting PR has to resolve any conflicts before approving and merging.
+Release PRs should also be labelled with `backport-to-main` to backport the `CHANGELOG.md` updates to `main`.
+Backporting version updates should be accepted to the `main` branch from the latest release branch only.
+
+Here are some guidelines to follow when backporting changes and resolving conflicts:
+
+a) for conflicts in `version.py`: accept only the version from the latest release branch. Do not merge version changes
+from earlier release branches into `main` because this could cause issues when trying to make the next minor release.
+
+b) for conflicts in `pyproject.toml`: if related to the `rasa-pro` version, accept only the latest release branch; 
+if related to other dependencies, accept `main` or whichever is the higher upgrade (main usually has the updated 
+dependencies because we only do housekeeping on `main`, apart from vulnerability updates). Be mindful of dependencies that
+are removed from `main` but still exist in former release branches (for example `langchain`).
+
+c) for conflicts in `poetry.lock`: accept changes which were already present on the target branch, then run
+`poetry lock --no-update` so that the lock file contains your changes from `pyproject.toml` too.
+
+d) for conflicts in `CHANGELOG.md`: Manually place the changelog in their allocated section (e.g. 3.8.10 will go under the 
+3.8 section with the other releases, rather than go at the top of the file)
+
+If the backporting workflow fails, you are encouraged to cherry-pick the commits manually and create a PR to
+the target branch. Alternatively, you can install the backporting CLI tool as described [here](https://github.com/sorenlouv/backport?tab=readme-ov-file#install).
+
 ## Releases
 Rasa has implemented robust policies governing version naming, as well as release pace for major, minor, and patch releases.
 
