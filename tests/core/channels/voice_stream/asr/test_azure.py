@@ -1,22 +1,15 @@
-import asyncio
-import difflib
+from dataclasses import asdict
 from unittest import mock
 
 import pytest
 
-from rasa.core.channels.voice_stream.asr.asr_event import (
-    NewTranscript,
-    UserIsSpeaking,
-)
 from rasa.core.channels.voice_stream.asr.azure import AzureASR
-from rasa.core.channels.voice_stream.audio_bytes import HERTZ
-from rasa.core.channels.voice_stream.util import (
-    generate_silence,
-    read_wav_to_rasa_audio_bytes,
-)
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.constants import AZURE_SPEECH_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ProviderClientValidationError
+from tests.core.channels.voice_stream.asr import (
+    run_single_utterance_transcription,
+)
 
 
 async def test_environment_validation():
@@ -37,50 +30,37 @@ async def test_environment_validation():
 
 
 async def test_transcription(audio_data_path: str):
-    rasa_audio_bytes = read_wav_to_rasa_audio_bytes(audio_data_path + "/01.wav")
-    rasa_audio_bytes += generate_silence(2)
-    step_size = 1024
+    audio_path = audio_data_path + "/01.wav"
     transcript = open(audio_data_path + "/01.txt").read()
     asr_engine = AzureASR()
 
-    await asr_engine.connect()
-    offset = 0
-    while offset < len(rasa_audio_bytes):
-        await asr_engine.send_audio_chunks(
-            rasa_audio_bytes[offset : offset + step_size]
-        )
-        offset += step_size
-        await asyncio.sleep(step_size / HERTZ)
-    await asr_engine.signal_audio_done()
-    events = []
-    async for event in asr_engine.stream_asr_events():
-        events.append(event)
+    await run_single_utterance_transcription(audio_path, transcript, asr_engine)
 
-    assert len(events) > 2
-    assert all([isinstance(event, UserIsSpeaking) for event in events[:-1]])
 
-    assert isinstance(events[-1], NewTranscript)
-    match = difflib.SequenceMatcher(None, events[-1].text, transcript)
-    assert match.ratio() > 0.75
+async def test_noisy_transcription(audio_data_path: str):
+    audio_path = audio_data_path + "/01_noisy.wav"
+    transcript = open(audio_data_path + "/01.txt").read()
+    asr_engine = AzureASR()
+
+    await run_single_utterance_transcription(audio_path, transcript, asr_engine)
 
 
 async def test_configurating_endpoint():
     custom_region = "local_endpoint.myurl.com"
-    default_config = AzureASR.get_default_config()
     config = {"speech_region": custom_region}
+    default_config = AzureASR.get_default_config()
     asr_engine = AzureASR.from_config_dict(config)
     assert asr_engine.config.speech_region == custom_region
-    assert asr_engine.config.language == default_config.language
+    assert asdict(asr_engine.config) == {**asdict(default_config), **config}
 
 
 async def test_configurating_language():
     custom_language = "es"
     config = {"language": custom_language}
+    default_config = AzureASR.get_default_config()
     asr_engine = AzureASR.from_config_dict(config)
     assert asr_engine.config.language == custom_language
-    assert (
-        asr_engine.config.speech_region == AzureASR.get_default_config().speech_region
-    )
+    assert asdict(asr_engine.config) == {**asdict(default_config), **config}
 
 
 async def test_configuration_addioinal_attributes():
