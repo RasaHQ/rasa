@@ -1,16 +1,16 @@
 import os
 import sys
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 from rasa.shared.constants import (
+    LLM_API_HEALTH_CHECK_DEFAULT_VALUE,
     LLM_API_HEALTH_CHECK_ENV_VAR,
     MODELS_CONFIG_KEY,
-    LLM_API_HEALTH_CHECK_DEFAULT_VALUE,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
-from rasa.shared.utils.llm import llm_factory, structlogger, embedder_factory
+from rasa.shared.utils.llm import embedder_factory, llm_factory, structlogger
 
 
 def try_instantiate_llm_client(

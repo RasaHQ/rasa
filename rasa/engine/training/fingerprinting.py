@@ -1,10 +1,12 @@
 import inspect
 import logging
 from typing import Any, Dict, Text, Type
-from typing_extensions import Protocol, runtime_checkable
+
 import importlib_metadata
-import rasa.utils.common
+from typing_extensions import Protocol, runtime_checkable
+
 import rasa.shared.utils.io
+import rasa.utils.common
 from rasa.engine.graph import GraphComponent
 
 logger = logging.getLogger(__name__)

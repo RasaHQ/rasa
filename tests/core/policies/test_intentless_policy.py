@@ -2,7 +2,7 @@ import os
 import uuid
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from langchain.docstore.document import Document
@@ -12,6 +12,8 @@ from pytest import MonkeyPatch
 import rasa.shared.utils.io
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.policies.intentless_policy import (
+    DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+    INTENTLESS_CONFIG_FILE_NAME,
     Conversation,
     IntentlessPolicy,
     Interaction,
@@ -20,8 +22,6 @@ from rasa.core.policies.intentless_policy import (
     conversation_samples_from_trackers,
     filter_responses,
     truncate_documents,
-    DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
-    INTENTLESS_CONFIG_FILE_NAME,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import ChitChatStackFrame
@@ -31,12 +31,12 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
 from rasa.shared.constants import (
-    OPENAI_API_KEY_ENV_VAR,
-    ROUTE_TO_CALM_SLOT,
-    PROMPT_CONFIG_KEY,
-    LLM_CONFIG_KEY,
     EMBEDDINGS_CONFIG_KEY,
+    LLM_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
+    OPENAI_API_KEY_ENV_VAR,
+    PROMPT_CONFIG_KEY,
+    ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.domain import ActionNotFoundException, Domain
 from rasa.shared.core.events import ActiveLoop, BotUttered, UserUttered

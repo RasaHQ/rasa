@@ -5,7 +5,8 @@ from typing import Any, Dict, List, Optional
 
 import structlog
 
-from rasa.dialogue_understanding.commands import Command
+import rasa.dialogue_understanding.stack.utils as utils
+from rasa.dialogue_understanding.commands.command import Command
 from rasa.dialogue_understanding.patterns.correction import (
     FLOW_PATTERN_CORRECTION_ID,
     CorrectionPatternFlowStackFrame,
@@ -15,12 +16,11 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     BaseFlowStackFrame,
 )
 from rasa.shared.core.events import Event
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.flow_step import FlowStepWithFlowReference
 from rasa.shared.core.flows.steps.constants import END_STEP
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
-from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
-import rasa.dialogue_understanding.stack.utils as utils
 
 structlogger = structlog.get_logger()
 

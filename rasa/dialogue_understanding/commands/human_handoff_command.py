@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 import structlog
-from rasa.dialogue_understanding.commands import Command
+
+from rasa.dialogue_understanding.commands.command import Command
 from rasa.dialogue_understanding.patterns.human_handoff import (
     HumanHandoffPatternFlowStackFrame,
 )

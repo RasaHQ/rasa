@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Text, List, Optional
+from typing import Any, Dict, List, Optional, Text
 
 import structlog
 from jinja2 import Template
@@ -9,15 +9,15 @@ from structlog.contextvars import (
     bound_contextvars,
 )
 
-from rasa.core.constants import STEP_ID_METADATA_KEY, ACTIVE_FLOW_METADATA_KEY
+from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.policies.flows.flow_exceptions import (
     FlowCircuitBreakerTrippedException,
     FlowException,
     NoNextStepInFlowException,
 )
 from rasa.core.policies.flows.flow_step_result import (
-    FlowActionPrediction,
     ContinueFlowWithNextStep,
+    FlowActionPrediction,
     FlowStepResult,
     PauseFlowReturnPrediction,
 )
@@ -67,19 +67,19 @@ from rasa.shared.core.flows.flow import (
     FlowStep,
 )
 from rasa.shared.core.flows.flow_step_links import (
-    StaticFlowStepLink,
-    IfFlowStepLink,
     ElseFlowStepLink,
+    IfFlowStepLink,
+    StaticFlowStepLink,
 )
 from rasa.shared.core.flows.steps import (
     ActionFlowStep,
-    SetSlotsFlowStep,
-    LinkFlowStep,
-    ContinueFlowStep,
-    EndFlowStep,
     CallFlowStep,
     CollectInformationFlowStep,
+    ContinueFlowStep,
+    EndFlowStep,
+    LinkFlowStep,
     NoOperationFlowStep,
+    SetSlotsFlowStep,
 )
 from rasa.shared.core.flows.steps.collect import SlotRejection
 from rasa.shared.core.slots import Slot

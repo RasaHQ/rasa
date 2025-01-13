@@ -3,9 +3,9 @@ from typing import List
 from unittest.mock import Mock
 
 import pytest
+import sqlalchemy as sa
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
-import sqlalchemy as sa
 
 from rasa.core.tracker_store import (
     RedisTrackerStore,
@@ -13,13 +13,14 @@ from rasa.core.tracker_store import (
 )
 from rasa.shared.core.events import Event
 from rasa.shared.core.trackers import DialogueStateTracker
+
 from .conftest import (
     POSTGRES_HOST,
-    POSTGRES_PORT,
     POSTGRES_LOGIN_DB,
+    POSTGRES_PASSWORD,
+    POSTGRES_PORT,
     POSTGRES_TRACKER_STORE_DB,
     POSTGRES_USER,
-    POSTGRES_PASSWORD,
 )
 
 # NOTE about the timeouts in this file. We want to fail fast

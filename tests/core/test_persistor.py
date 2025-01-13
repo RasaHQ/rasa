@@ -8,13 +8,6 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_aws
 
-from rasa.env import (
-    AZURE_ACCOUNT_KEY_ENV,
-    AZURE_ACCOUNT_NAME_ENV,
-    AZURE_CONTAINER_ENV,
-    BUCKET_NAME_ENV,
-    REMOTE_STORAGE_PATH_ENV,
-)
 from rasa.core import persistor
 from rasa.core.persistor import (
     AWSPersistor,
@@ -23,6 +16,13 @@ from rasa.core.persistor import (
     Persistor,
     RemoteStorageType,
     get_persistor,
+)
+from rasa.env import (
+    AZURE_ACCOUNT_KEY_ENV,
+    AZURE_ACCOUNT_NAME_ENV,
+    AZURE_CONTAINER_ENV,
+    BUCKET_NAME_ENV,
+    REMOTE_STORAGE_PATH_ENV,
 )
 from rasa.shared.exceptions import RasaException
 

@@ -1,30 +1,32 @@
-import json
 import argparse
-import structlog
 import importlib
+import json
 import os
 import sys
 import time
 from pathlib import Path
 from types import FrameType
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Union, overload
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Union, overload
+
 import randomname
+import structlog
 
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
-from rasa.shared.importers.importer import TrainingDataImporter
+from rasa import telemetry
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
     DEFAULT_CONFIG_PATH,
 )
-from rasa import telemetry
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.yaml import read_config_file
 from rasa.utils.io import write_yaml
 
 if TYPE_CHECKING:
     from questionary import Question
     from typing_extensions import Literal
+
     from rasa.validator import Validator
 
 structlogger = structlog.get_logger()

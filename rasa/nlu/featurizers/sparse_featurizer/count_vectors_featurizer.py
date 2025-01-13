@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Dict, List, Optional, Text, Tuple, Set, Type, Union
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Type, Union
 
 import numpy as np
 import scipy.sparse
@@ -10,21 +10,21 @@ from sklearn.exceptions import NotFittedError
 from sklearn.feature_extraction.text import CountVectorizer
 
 import rasa.shared.utils.io
-from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
-    MESSAGE_ATTRIBUTES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
+    MESSAGE_ATTRIBUTES,
+    TOKENS_NAMES,
 )
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.utils.spacy_utils import SpacyModel
 from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.shared.exceptions import RasaException, FileIOException
-from rasa.shared.nlu.constants import TEXT, INTENT, INTENT_RESPONSE_KEY, ACTION_NAME
+from rasa.shared.exceptions import FileIOException, RasaException
+from rasa.shared.nlu.constants import ACTION_NAME, INTENT, INTENT_RESPONSE_KEY, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 

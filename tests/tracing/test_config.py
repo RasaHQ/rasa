@@ -5,10 +5,8 @@ import threading
 from pathlib import Path
 
 import grpc
-from pytest import LogCaptureFixture
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
-from rasa.tracing.constants import ENDPOINTS_METRICS_KEY
-from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
+from pytest import LogCaptureFixture
 
 from rasa.tracing import config
 from rasa.tracing.config import (
@@ -16,6 +14,8 @@ from rasa.tracing.config import (
     OTLPMetricConfigurer,
     configure_metrics,
 )
+from rasa.tracing.constants import ENDPOINTS_METRICS_KEY
+from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.conftest import wait
 from tests.tracing import conftest
 from tests.tracing.conftest import (

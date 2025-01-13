@@ -1,14 +1,14 @@
-from typing import Text, Any, Dict
+from typing import Any, Dict, Text
 
 import structlog
 from langchain_community.vectorstores.milvus import Milvus
-from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.information_retrieval import (
-    SearchResultList,
     InformationRetrieval,
     InformationRetrievalException,
+    SearchResultList,
 )
+from rasa.utils.endpoints import EndpointConfig
 
 logger = structlog.get_logger()
 

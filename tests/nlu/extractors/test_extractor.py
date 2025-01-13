@@ -1,13 +1,13 @@
-from typing import Any, Text, Dict, List
+from typing import Any, Dict, List, Text
 
 import pytest
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
-from rasa.shared.nlu.constants import TEXT, SPLIT_ENTITIES_BY_COMMA
-from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.nlu.constants import SPLIT_ENTITIES_BY_COMMA, TEXT
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLReader
+from rasa.shared.nlu.training_data.message import Message
 
 
 @pytest.mark.parametrize(

@@ -4,29 +4,29 @@ from typing import Any, Dict, Optional
 import structlog
 
 from rasa.shared.constants import (
+    API_BASE_CONFIG_KEY,
+    API_TYPE_CONFIG_KEY,
+    API_VERSION_CONFIG_KEY,
+    LANGCHAIN_TYPE_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
-    OPENAI_API_BASE_CONFIG_KEY,
-    API_BASE_CONFIG_KEY,
-    OPENAI_API_TYPE_CONFIG_KEY,
-    API_TYPE_CONFIG_KEY,
-    OPENAI_API_VERSION_CONFIG_KEY,
-    API_VERSION_CONFIG_KEY,
-    RASA_TYPE_CONFIG_KEY,
-    LANGCHAIN_TYPE_CONFIG_KEY,
-    STREAM_CONFIG_KEY,
     N_REPHRASES_CONFIG_KEY,
-    REQUEST_TIMEOUT_CONFIG_KEY,
-    TIMEOUT_CONFIG_KEY,
-    PROVIDER_CONFIG_KEY,
+    OPENAI_API_BASE_CONFIG_KEY,
     OPENAI_API_TYPE,
+    OPENAI_API_TYPE_CONFIG_KEY,
+    OPENAI_API_VERSION_CONFIG_KEY,
     OPENAI_PROVIDER,
+    PROVIDER_CONFIG_KEY,
+    RASA_TYPE_CONFIG_KEY,
+    REQUEST_TIMEOUT_CONFIG_KEY,
+    STREAM_CONFIG_KEY,
+    TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.providers._configs.utils import (
-    resolve_aliases,
-    validate_required_keys,
     raise_deprecation_warnings,
+    resolve_aliases,
     validate_forbidden_keys,
+    validate_required_keys,
 )
 
 structlogger = structlog.get_logger()

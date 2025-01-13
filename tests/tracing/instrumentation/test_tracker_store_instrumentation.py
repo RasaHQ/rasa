@@ -3,8 +3,8 @@ from typing import Sequence
 import pytest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from rasa.shared.core.events import ActionExecuted
 
+from rasa.shared.core.events import ActionExecuted
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import (
     MockEventBroker,

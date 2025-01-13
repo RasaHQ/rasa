@@ -2,13 +2,12 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+import structlog
 
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.embedding.huggingface_local_embedding_client import (
     HuggingFaceLocalEmbeddingClient,
 )
-import structlog
-
 from tests.utilities import filter_logs
 
 

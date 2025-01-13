@@ -1,50 +1,44 @@
 import json
-import warnings
-
-import numpy as np
 import os
-import pytest
 import sys
-
+import warnings
 from collections import Counter
 from pathlib import Path
-from typing import Any, Text, List, Dict, Optional
-from _pytest.monkeypatch import MonkeyPatch
+from typing import Any, Dict, List, Optional, Text
 from unittest.mock import Mock
 
-from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.exceptions import (
-    FileNotFoundException,
-    YamlSyntaxException,
-    YamlException,
-)
-from rasa.core.actions.action import ACTION_LISTEN_NAME
-from rasa.core import training
-from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.shared.utils.yaml import read_yaml_file, read_yaml, write_yaml
-from rasa.utils.tensorflow.model_data_utils import _surface_attributes
+import numpy as np
+import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
+from rasa.core import training
+from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
 from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.training_data import loading
 from rasa.shared.core.events import (
     ActionExecuted,
-    UserUttered,
-    SlotSet,
     ActiveLoop,
     DialogueStackUpdated,
+    SlotSet,
+    UserUttered,
 )
+from rasa.shared.core.training_data import loading
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-    YAMLStoryReader,
     DEFAULT_VALUE_TEXT_SLOTS,
+    YAMLStoryReader,
 )
-from rasa.shared.core.training_data.structures import StoryStep, RuleStep
+from rasa.shared.core.training_data.structures import RuleStep, StoryStep
+from rasa.shared.exceptions import (
+    FileNotFoundException,
+    YamlException,
+    YamlSyntaxException,
+)
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
     ENTITIES,
@@ -52,14 +46,18 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_VALUE,
+    EXTRACTOR,
     FEATURE_TYPE_SENTENCE,
     INTENT,
     INTENT_NAME_KEY,
     INTENT_RANKING_KEY,
     PREDICTED_CONFIDENCE_KEY,
     TEXT,
-    EXTRACTOR,
 )
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils.yaml import read_yaml, read_yaml_file, write_yaml
+from rasa.utils.tensorflow.model_data_utils import _surface_attributes
 from tests.conftest import filter_expected_warnings
 
 

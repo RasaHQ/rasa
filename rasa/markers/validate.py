@@ -1,10 +1,9 @@
 from pathlib import Path
 
-from rasa.shared.core.domain import Domain
-from rasa.shared.utils.cli import print_error_and_exit
-
 from rasa.markers.marker import OrMarker
 from rasa.markers.marker_base import Marker
+from rasa.shared.core.domain import Domain
+from rasa.shared.utils.cli import print_error_and_exit
 
 
 def validate_marker_file(domain: Domain, markers_path: Path) -> None:

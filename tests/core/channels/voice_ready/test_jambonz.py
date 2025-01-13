@@ -1,7 +1,8 @@
 import pytest
+
 from rasa.core.channels.voice_ready.jambonz_protocol import (
-    NewSessionMessage,
     CallStatusChanged,
+    NewSessionMessage,
 )
 
 

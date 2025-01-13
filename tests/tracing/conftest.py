@@ -18,15 +18,15 @@ from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
 from opentelemetry.proto.trace.v1.trace_pb2 import ResourceSpans
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import (
-    PeriodicExportingMetricReader,
     ConsoleMetricExporter,
     MetricReader,
+    PeriodicExportingMetricReader,
 )
 from pytest import MonkeyPatch
-from rasa.engine.caching import LocalTrainingCache
 from thrift.protocol.TCompactProtocol import TCompactProtocol
 from thrift.transport.TTransport import TMemoryBuffer
 
+from rasa.engine.caching import LocalTrainingCache
 
 TRACING_TESTS_FIXTURES_DIRECTORY = pathlib.Path(__file__).parent / "fixtures"
 

@@ -2,11 +2,11 @@ import contextlib
 import json
 import logging
 from asyncio import AbstractEventLoop
-from typing import Any, Dict, Optional, Text, Generator
+from typing import Any, Dict, Generator, Optional, Text
 
-from sqlalchemy.orm import Session
 from sqlalchemy import Column, Integer, String
 from sqlalchemy import Text as SqlAlchemyText  # to avoid name clash with typing.Text
+from sqlalchemy.orm import Session
 
 from rasa.core.brokers.broker import EventBroker
 from rasa.utils.endpoints import EndpointConfig
@@ -44,8 +44,9 @@ class SQLEventBroker(EventBroker):
         password: Optional[Text] = None,
     ) -> None:
         """Initializes `SQLBrokerEvent`."""
-        from rasa.core.tracker_store import SQLTrackerStore
         import sqlalchemy.orm
+
+        from rasa.core.tracker_store import SQLTrackerStore
 
         engine_url = SQLTrackerStore.get_db_url(
             dialect, host, port, db, username, password

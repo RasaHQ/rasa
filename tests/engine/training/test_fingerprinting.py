@@ -1,8 +1,9 @@
 import inspect
 import os.path
 import tempfile
-from typing import Dict, Text, Any, Optional
+from typing import Any, Dict, Optional, Text
 from unittest.mock import Mock
+
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.shared.utils.io

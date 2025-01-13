@@ -1,35 +1,34 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Text
 
 import numpy as np
 import pytest
-from typing import Text
 
 import rasa.utils.train_utils as train_utils
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.constants import (
-    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     SPLIT_ENTITIES_BY_COMMA,
+    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
 from rasa.utils.tensorflow.constants import (
+    AUTO,
+    CHECKPOINT_MODEL,
+    COSINE,
+    CROSS_ENTROPY,
+    EPOCHS,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    INNER,
+    LOSS_TYPE,
+    MARGIN,
     MODEL_CONFIDENCE,
     RANKING_LENGTH,
     RENORMALIZE_CONFIDENCES,
     SIMILARITY_TYPE,
-    LOSS_TYPE,
-    COSINE,
     SOFTMAX,
-    INNER,
-    CROSS_ENTROPY,
-    MARGIN,
-    AUTO,
     TOLERANCE,
-    CHECKPOINT_MODEL,
-    EVAL_NUM_EPOCHS,
-    EVAL_NUM_EXAMPLES,
-    EPOCHS,
 )
-from rasa.shared.exceptions import InvalidConfigException
 
 
 def test_align_token_features():

@@ -1,32 +1,33 @@
-from pathlib import Path
-from aioresponses import aioresponses
-import pytest
+import asyncio
 import os
 import shutil
 import subprocess
+from pathlib import Path
 from unittest import mock
-from pytest import MonkeyPatch
-import asyncio
+
+import boto3
+import pytest
+from aioresponses import aioresponses
 from moto import mock_aws
-from rasa.model_manager.utils import models_base_path
+from pytest import MonkeyPatch
+
 import rasa.constants
 from rasa.core.persistor import AWSPersistor
-import boto3
-
 from rasa.exceptions import ModelNotFound
 from rasa.model_manager import config
 from rasa.model_manager.runner_service import (
     BotSession,
     bot_path,
-    is_bot_startup_finished,
-    set_bot_status_to_running,
-    set_bot_status_to_stopped,
     get_open_port,
+    is_bot_startup_finished,
     prepare_bot_directory,
     run_bot,
-    update_bot_status,
+    set_bot_status_to_running,
+    set_bot_status_to_stopped,
     terminate_bot,
+    update_bot_status,
 )
+from rasa.model_manager.utils import models_base_path
 
 
 @pytest.fixture

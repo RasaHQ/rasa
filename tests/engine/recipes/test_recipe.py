@@ -1,6 +1,7 @@
 import pytest
+
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-from rasa.engine.recipes.recipe import Recipe, InvalidRecipeException
+from rasa.engine.recipes.recipe import InvalidRecipeException, Recipe
 
 
 def test_invalid_recipe():

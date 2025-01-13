@@ -1,21 +1,22 @@
+from dataclasses import asdict
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
+
+import structlog
 from sanic import Blueprint, response
 from sanic.request import Request, RequestParameters
 from sanic.response import HTTPResponse
-from twilio.twiml.voice_response import VoiceResponse, Gather
-from typing import Text, Callable, Awaitable, List, Any, Dict, Optional
-from dataclasses import asdict
+from twilio.twiml.voice_response import Gather, VoiceResponse
 
-import structlog
-import rasa.utils.io
 import rasa.shared.utils.io
-from rasa.shared.core.events import BotUttered
-from rasa.shared.exceptions import InvalidConfigException
+import rasa.utils.io
 from rasa.core.channels.channel import (
-    InputChannel,
     CollectingOutputChannel,
+    InputChannel,
     UserMessage,
 )
 from rasa.core.channels.voice_ready.utils import CallParameters
+from rasa.shared.core.events import BotUttered
+from rasa.shared.exceptions import InvalidConfigException
 
 logger = structlog.get_logger(__name__)
 

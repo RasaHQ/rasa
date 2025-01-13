@@ -1,14 +1,14 @@
 import json
-
 import logging
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
+
 import requests
 from requests import Response
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, Dict, Any, List, Callable, Awaitable, Optional
-
-from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 from sanic.response import HTTPResponse
+
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 
 logger = logging.getLogger(__name__)
 

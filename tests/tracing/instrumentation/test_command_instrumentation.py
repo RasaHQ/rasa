@@ -3,11 +3,11 @@ from typing import Sequence
 import pytest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
-
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import MockCommand
 

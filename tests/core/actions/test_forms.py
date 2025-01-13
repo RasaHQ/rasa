@@ -1,6 +1,6 @@
 import logging
 import textwrap
-from typing import Dict, Text, List, Any, Union
+from typing import Any, Dict, List, Text, Union
 from unittest.mock import Mock
 
 import pytest
@@ -8,33 +8,33 @@ from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 
-from rasa.core.agent import Agent
-from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
-from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExtractSlots
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
+from rasa.core.actions.forms import FormAction
+from rasa.core.agent import Agent
+from rasa.core.channels import CollectingOutputChannel
+from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
+from rasa.core.nlg import TemplatedNaturalLanguageGenerator
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.constants import (
+    IGNORED_INTENTS,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     REQUIRED_SLOTS_KEY,
-    IGNORED_INTENTS,
 )
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
-from rasa.core.actions.forms import FormAction
-from rasa.core.channels import CollectingOutputChannel
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
+    ActionExecuted,
+    ActionExecutionRejected,
     ActiveLoop,
+    BotUttered,
+    DefinePrevUserUtteredFeaturization,
+    Event,
+    Restarted,
     SlotSet,
     UserUttered,
-    ActionExecuted,
-    BotUttered,
-    Restarted,
-    Event,
-    ActionExecutionRejected,
-    DefinePrevUserUtteredFeaturization,
 )
-from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 

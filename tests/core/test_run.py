@@ -1,13 +1,13 @@
 import warnings
+from asyncio import AbstractEventLoop
+from pathlib import Path
+from typing import Text
 from unittest.mock import Mock
 
 import pytest
-from typing import Text
+from sanic import Sanic
 
 import rasa.shared.core.domain
-from sanic import Sanic
-from asyncio import AbstractEventLoop
-from pathlib import Path
 from rasa.core import run
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.utils import AvailableEndpoints

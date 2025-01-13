@@ -1,30 +1,30 @@
 import json
 import logging
 import uuid
-import jwt
-from sanic import Sanic, Blueprint
-from sanic.request import Request
 from typing import (
-    Text,
-    List,
-    Dict,
     Any,
-    Optional,
-    Callable,
-    Iterable,
     Awaitable,
+    Callable,
+    Dict,
+    Iterable,
+    List,
     NoReturn,
+    Optional,
+    Text,
 )
 
+import jwt
+from sanic import Blueprint, Sanic
+from sanic.request import Request
+
 from rasa.cli import utils as cli_utils
-from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID
 from rasa.core.constants import BEARER_TOKEN_PREFIX
-from rasa.shared.exceptions import RasaException
+from rasa.shared.constants import DEFAULT_SENDER_ID, DOCS_BASE_URL
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
 )
-
+from rasa.shared.exceptions import RasaException
 
 try:
     from urlparse import urljoin

@@ -1,6 +1,7 @@
-from typing import Dict, Text, Any
+from typing import Any, Dict, Text
 
 import pytest
+
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage

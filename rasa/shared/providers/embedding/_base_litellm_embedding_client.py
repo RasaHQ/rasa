@@ -19,7 +19,7 @@ from rasa.shared.providers.embedding.embedding_response import (
     EmbeddingResponse,
     EmbeddingUsage,
 )
-from rasa.shared.utils.io import suppress_logs, resolve_environment_variables
+from rasa.shared.utils.io import resolve_environment_variables, suppress_logs
 
 structlogger = structlog.get_logger()
 

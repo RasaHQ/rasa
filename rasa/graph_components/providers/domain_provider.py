@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import Dict, Text, Any, Optional
 
-from rasa.engine.graph import GraphComponent, ExecutionContext
+from typing import Any, Dict, Optional, Text
+
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain

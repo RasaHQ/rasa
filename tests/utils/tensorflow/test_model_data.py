@@ -1,7 +1,7 @@
 import copy
 
-import pytest
 import numpy as np
+import pytest
 
 from rasa.utils.tensorflow.model_data import RasaModelData
 

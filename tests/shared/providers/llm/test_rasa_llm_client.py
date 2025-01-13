@@ -1,12 +1,13 @@
+from unittest.mock import AsyncMock, Mock
+
 import pytest
-from unittest.mock import Mock, AsyncMock
 from pytest import MonkeyPatch
 
 from rasa.shared.constants import OPENAI_PROVIDER, RASA_PROVIDER
-from rasa.shared.providers.llm.rasa_llm_client import RasaLLMClient
-from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers._configs.rasa_llm_client_config import RasaLLMClientConfig
+from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.providers.llm.rasa_llm_client import RasaLLMClient
 
 
 class TestRasaLLMClient:

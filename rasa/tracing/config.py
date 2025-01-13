@@ -30,8 +30,8 @@ from rasa.dialogue_understanding.commands import (
 )
 from rasa.dialogue_understanding.generator import (
     LLMCommandGenerator,
-    SingleStepLLMCommandGenerator,
     MultiStepLLMCommandGenerator,
+    SingleStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
@@ -40,11 +40,11 @@ from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.tracing.constants import (
     ENDPOINTS_ENDPOINT_KEY,
     ENDPOINTS_INSECURE_KEY,
+    ENDPOINTS_METRICS_KEY,
     ENDPOINTS_OTLP_BACKEND_TYPE,
+    ENDPOINTS_ROOT_CERTIFICATES_KEY,
     ENDPOINTS_TRACING_KEY,
     ENDPOINTS_TRACING_SERVICE_NAME_KEY,
-    ENDPOINTS_ROOT_CERTIFICATES_KEY,
-    ENDPOINTS_METRICS_KEY,
 )
 from rasa.tracing.instrumentation import instrumentation
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider

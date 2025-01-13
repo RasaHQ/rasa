@@ -6,7 +6,6 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 from _pytest.monkeypatch import MonkeyPatch
-from rasa.shared.core.domain import Domain
 from requests import Response
 
 from rasa.markers.upload import (
@@ -15,6 +14,7 @@ from rasa.markers.upload import (
     _convert_yaml_to_json,
     upload,
 )
+from rasa.shared.core.domain import Domain
 
 
 @pytest.fixture

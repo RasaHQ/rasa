@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Union
 
 import structlog
 from jinja2 import Template
@@ -20,8 +20,8 @@ from rasa.shared.core.slots import (
 )
 
 if TYPE_CHECKING:
-    from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
+    from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.shared.core.domain import Domain
     from rasa.shared.core.trackers import DialogueStateTracker
 

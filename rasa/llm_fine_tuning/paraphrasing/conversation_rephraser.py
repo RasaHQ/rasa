@@ -1,6 +1,6 @@
 import importlib.resources
 import re
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import structlog
 from jinja2 import Template
@@ -10,9 +10,9 @@ from rasa.llm_fine_tuning.paraphrasing.rephrased_user_message import (
     RephrasedUserMessage,
 )
 from rasa.shared.constants import (
-    MODEL_NAME_CONFIG_KEY,
-    MODEL_CONFIG_KEY,
     LLM_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    MODEL_NAME_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
@@ -20,9 +20,9 @@ from rasa.shared.constants import (
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers.mappings import OPENAI_PROVIDER
 from rasa.shared.utils.llm import (
+    USER,
     get_prompt_template,
     llm_factory,
-    USER,
 )
 
 SEPARATOR = "\n\n"

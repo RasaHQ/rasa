@@ -1,20 +1,20 @@
 from __future__ import annotations
-from typing import Optional, Text, Dict, List, Union, Iterable, Any
-from collections.abc import ValuesView, KeysView
 
-from rasa.engine.graph import GraphComponent
-from rasa.engine.storage.storage import ModelStorage
+from collections.abc import KeysView, ValuesView
+from typing import Any, Dict, Iterable, List, Optional, Text, Union
+
+import rasa.shared.utils.io
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
-from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain, SubState
-from rasa.shared.core.events import ActionExecuted, UserUttered, Event
+from rasa.shared.core.events import ActionExecuted, Event, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.constants import ACTION_NAME, ACTION_TEXT, INTENT, TEXT
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.features import Features
-import rasa.shared.utils.io
 
 # TODO: make precomputations (MessageContainerForCoreFeaturization) cacheable
 

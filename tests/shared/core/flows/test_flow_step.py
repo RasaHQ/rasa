@@ -3,13 +3,13 @@ from typing import Type
 import pytest
 
 from rasa.shared.core.flows import Flow, FlowStep
+from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps import (
     ActionFlowStep,
     CollectInformationFlowStep,
     LinkFlowStep,
     SetSlotsFlowStep,
 )
-from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps.call import CallFlowStep
 from rasa.shared.core.flows.steps.no_operation import NoOperationFlowStep
 from tests.utilities import flows_from_str

@@ -1,49 +1,48 @@
-from collections import defaultdict, namedtuple, deque
-
 import copy
 import logging
 import random
+from collections import defaultdict, deque, namedtuple
 from contextlib import contextmanager
-
-from tqdm import tqdm
 from typing import (
-    Optional,
-    List,
-    Text,
-    Set,
-    Dict,
-    Tuple,
-    Deque,
-    DefaultDict,
     Any,
-    Iterable,
+    DefaultDict,
+    Deque,
+    Dict,
     Generator,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Text,
+    Tuple,
 )
 
+from tqdm import tqdm
+
+import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_STORIES
 from rasa.shared.core.constants import SHOULD_NOT_BE_SET
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.events import (
     ActionExecuted,
-    UserUttered,
     ActionReverted,
-    UserUtteranceReverted,
-    Restarted,
-    Event,
-    SlotSet,
     ActiveLoop,
+    Event,
+    Restarted,
+    SlotSet,
+    UserUtteranceReverted,
+    UserUttered,
 )
-from rasa.shared.core.trackers import DialogueStateTracker, FrozenState
 from rasa.shared.core.slots import Slot
+from rasa.shared.core.trackers import DialogueStateTracker, FrozenState
 from rasa.shared.core.training_data.structures import (
-    StoryGraph,
-    STORY_START,
-    StoryStep,
-    RuleStep,
     GENERATED_CHECKPOINT_PREFIX,
+    STORY_START,
+    RuleStep,
+    StoryGraph,
+    StoryStep,
 )
 from rasa.shared.utils.io import is_logging_disabled
-import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 

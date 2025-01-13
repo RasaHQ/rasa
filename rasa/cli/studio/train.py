@@ -3,7 +3,6 @@ from typing import List
 
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments.train import set_train_arguments
-
 from rasa.studio.train import handle_train
 
 

@@ -1,23 +1,22 @@
+import logging
 import os
-from typing import Text, List, Dict, Tuple, Any, Callable
+from typing import Any, Callable, Dict, List, Text, Tuple
 
 import numpy as np
 import pytest
-import logging
-
-from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.engine.graph import ExecutionContext
-from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
-from rasa.nlu.constants import TOKENS_NAMES, NUMBER_OF_SUB_TOKENS
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS, TOKENS_NAMES
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
-from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.nlu.constants import INTENT, TEXT
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 @pytest.fixture

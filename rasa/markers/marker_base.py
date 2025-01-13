@@ -6,9 +6,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import (
-    ClassVar,
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Dict,
     Iterator,
     List,
@@ -30,7 +30,6 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, Event, UserUttered
 from rasa.shared.exceptions import InvalidConfigException, RasaException
 from rasa.utils.io import WriteRow
-
 from rasa.utils.yaml import (
     collect_configs_from_yaml_files,
     collect_yaml_files_from_path,

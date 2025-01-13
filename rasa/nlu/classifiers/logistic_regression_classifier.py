@@ -1,7 +1,7 @@
-from typing import Any, Text, Dict, List, Type, Tuple
+from typing import Any, Dict, List, Text, Tuple, Type
 
 import structlog
-from scipy.sparse import hstack, vstack, csr_matrix
+from scipy.sparse import csr_matrix, hstack, vstack
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LogisticRegression
 from sklearn.utils.validation import check_is_fitted
@@ -13,7 +13,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.featurizers.featurizer import Featurizer
-from rasa.shared.nlu.constants import TEXT, INTENT
+from rasa.shared.nlu.constants import INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.tensorflow.constants import RANKING_LENGTH

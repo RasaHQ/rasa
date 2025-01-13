@@ -1,11 +1,11 @@
 import logging
 from abc import abstractmethod
-from typing import Dict, List, Any, Union
+from typing import Any, Dict, List, Union
 
 import structlog
 from litellm import (
-    completion,
     acompletion,
+    completion,
     validate_environment,
 )
 
@@ -19,7 +19,7 @@ from rasa.shared.providers._ssl_verification_utils import (
     ensure_ssl_certificates_for_litellm_openai_based_clients,
 )
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
-from rasa.shared.utils.io import suppress_logs, resolve_environment_variables
+from rasa.shared.utils.io import resolve_environment_variables, suppress_logs
 
 structlogger = structlog.get_logger()
 

@@ -1,25 +1,24 @@
 import asyncio
 import json
 import logging
-from functools import cached_property
-
-import structlog
 import os
 import ssl
 from asyncio import AbstractEventLoop
 from collections import deque
-from typing import Deque, Dict, Optional, Text, Union, Any, List, Set, Tuple, cast
+from functools import cached_property
+from typing import Any, Deque, Dict, List, Optional, Set, Text, Tuple, Union, cast
 from urllib.parse import urlparse
 
 import aio_pika
+import structlog
 
-from rasa.shared.exceptions import RasaException
-from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
-from rasa.core.brokers.broker import EventBroker
-import rasa.shared.utils.io
-from rasa.utils.endpoints import EndpointConfig
-from rasa.shared.utils.io import DEFAULT_ENCODING
 import rasa.shared.utils.common
+import rasa.shared.utils.io
+from rasa.core.brokers.broker import EventBroker
+from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
+from rasa.shared.exceptions import RasaException
+from rasa.shared.utils.io import DEFAULT_ENCODING
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()

@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Dict, Text, Set, Any
+from typing import Any, Dict, List, Optional, Set, Text
 
 import numpy as np
 import scipy.sparse
@@ -8,18 +8,18 @@ from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturiz
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.utils import bilou_utils
 from rasa.nlu.utils.bilou_utils import BILOU_PREFIXES
-from rasa.shared.core.domain import SubState, State, Domain
-from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
+from rasa.shared.core.constants import ACTIVE_LOOP, PREVIOUS_ACTION, SLOTS, USER
+from rasa.shared.core.domain import Domain, State, SubState
 from rasa.shared.core.trackers import is_prev_action_listen_in_state
 from rasa.shared.nlu.constants import (
-    ENTITIES,
-    FEATURE_TYPE_SENTENCE,
-    ACTION_TEXT,
     ACTION_NAME,
-    INTENT,
-    NO_ENTITY_TAG,
+    ACTION_TEXT,
+    ENTITIES,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,
+    FEATURE_TYPE_SENTENCE,
+    INTENT,
+    NO_ENTITY_TAG,
     TEXT,
 )
 from rasa.shared.nlu.training_data.features import Features

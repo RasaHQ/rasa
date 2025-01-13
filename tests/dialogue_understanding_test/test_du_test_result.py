@@ -4,8 +4,8 @@ import pytest
 from rasa.dialogue_understanding.commands import StartFlowCommand
 from rasa.dialogue_understanding_test.du_test_case import (
     DialogueUnderstandingOutput,
-    DialogueUnderstandingTestStep,
     DialogueUnderstandingTestCase,
+    DialogueUnderstandingTestStep,
 )
 from rasa.dialogue_understanding_test.du_test_result import (
     DialogueUnderstandingTestResult,

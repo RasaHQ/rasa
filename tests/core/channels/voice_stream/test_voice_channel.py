@@ -1,11 +1,12 @@
 import pytest
-from rasa.core.channels.voice_stream.tts.azure import AzureTTS
-from rasa.core.channels.voice_stream.voice_channel import (
-    tts_engine_from_config,
-    asr_engine_from_config,
-)
+
 from data.test_voice_channel.custom_asr_engine import CustomASREngine
 from data.test_voice_channel.custom_tts_engine import CustomTTSEngine
+from rasa.core.channels.voice_stream.tts.azure import AzureTTS
+from rasa.core.channels.voice_stream.voice_channel import (
+    asr_engine_from_config,
+    tts_engine_from_config,
+)
 
 
 def test_azure_tts_engine_from_config():

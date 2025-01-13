@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import dataclasses
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Text, Type, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Type, Union
 
 import structlog
-import asyncio
 
 import rasa.shared.utils.common
 import rasa.utils.common

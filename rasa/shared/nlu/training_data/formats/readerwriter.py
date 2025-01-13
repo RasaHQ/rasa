@@ -1,25 +1,22 @@
 import abc
 import json
-from collections import OrderedDict
+import typing
+from collections import OrderedDict, defaultdict
 from pathlib import Path
+from typing import Any, Dict, List, Text, Union
 
 import rasa.shared.nlu.training_data.util
+import rasa.shared.utils.io
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-
 from rasa.shared.nlu.constants import (
-    INTENT,
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
-    ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    INTENT,
 )
-
-import rasa.shared.utils.io
-import typing
-from typing import Text, Dict, Any, Union, List
-from collections import defaultdict
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.training_data import TrainingData

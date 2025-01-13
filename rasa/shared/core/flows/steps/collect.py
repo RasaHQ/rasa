@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Any, List, Set
+from typing import Any, Dict, List, Set
 
-from rasa.shared.constants import UTTER_ASK_PREFIX, ACTION_ASK_PREFIX
+from rasa.shared.constants import ACTION_ASK_PREFIX, UTTER_ASK_PREFIX
 from rasa.shared.core.flows.flow_step import FlowStep
 
 

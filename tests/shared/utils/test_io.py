@@ -7,7 +7,7 @@ import textwrap
 import uuid
 from collections import OrderedDict
 from pathlib import Path
-from typing import Callable, Text, List, Set, Any, Dict, Union
+from typing import Any, Callable, Dict, List, Set, Text, Union
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -20,13 +20,13 @@ from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.shared.exceptions import FileIOException, FileNotFoundException, RasaException
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.utils.yaml import (
+    YamlValidationException,
+    is_key_in_yaml,
+    read_config_file,
+    read_model_configuration,
     read_yaml,
     read_yaml_file,
     write_yaml,
-    read_model_configuration,
-    YamlValidationException,
-    read_config_file,
-    is_key_in_yaml,
 )
 from rasa.utils import io as io_utils
 

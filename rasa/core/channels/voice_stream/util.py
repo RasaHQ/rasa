@@ -1,5 +1,5 @@
-import wave
 import audioop
+import wave
 from dataclasses import asdict, dataclass
 from typing import Optional, Type, TypeVar
 

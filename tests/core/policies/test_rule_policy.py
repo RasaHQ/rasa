@@ -1,12 +1,18 @@
-from pathlib import Path
-from typing import Text, Callable, Dict, Any, Optional, cast
 import dataclasses
+from pathlib import Path
+from typing import Any, Callable, Dict, Optional, Text, cast
 
 import pytest
 
+from rasa.core import training
+from rasa.core.actions.action import ActionDefaultFallback
+from rasa.core.channels import CollectingOutputChannel
+from rasa.core.nlg import TemplatedNaturalLanguageGenerator
+from rasa.core.policies.rule_policy import RULES, InvalidRule, RulePolicy
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.graph_components.providers.rule_only_provider import RuleOnlyDataProvider
 from rasa.graph_components.providers.training_tracker_provider import (
     TrainingTrackerProvider,
 )
@@ -15,49 +21,43 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     ROUTE_TO_CALM_SLOT,
 )
-from rasa.core import training
-from rasa.core.actions.action import ActionDefaultFallback
-from rasa.core.channels import CollectingOutputChannel
 from rasa.shared.core.constants import (
-    USER_INTENT_RESTART,
-    USER_INTENT_BACK,
-    USER_INTENT_SESSION_START,
+    ACTION_BACK_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_BACK_NAME,
-    RULE_SNIPPET_ACTION_NAME,
-    REQUESTED_SLOT,
-    USER,
-    PREVIOUS_ACTION,
+    ACTION_UNLIKELY_INTENT_NAME,
     ACTIVE_LOOP,
     LOOP_NAME,
-    RULE_ONLY_SLOTS,
+    PREVIOUS_ACTION,
+    REQUESTED_SLOT,
     RULE_ONLY_LOOPS,
-    ACTION_UNLIKELY_INTENT_NAME,
+    RULE_ONLY_SLOTS,
+    RULE_SNIPPET_ACTION_NAME,
+    USER,
+    USER_INTENT_BACK,
+    USER_INTENT_RESTART,
+    USER_INTENT_SESSION_START,
 )
+from rasa.shared.core.domain import Domain, InvalidDomain
+from rasa.shared.core.events import (
+    ActionExecuted,
+    ActionExecutionRejected,
+    ActiveLoop,
+    FollowupAction,
+    LoopInterrupted,
+    SlotSet,
+    UserUttered,
+)
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.slots import BooleanSlot
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
 from rasa.shared.core.training_data.structures import StoryGraph
-from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_NAME, ENTITY_ATTRIBUTE_TYPE
-from rasa.shared.core.domain import Domain, InvalidDomain
-from rasa.shared.core.events import (
-    ActionExecuted,
-    UserUttered,
-    ActiveLoop,
-    SlotSet,
-    ActionExecutionRejected,
-    LoopInterrupted,
-    FollowupAction,
-)
-from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.core.policies.rule_policy import RulePolicy, InvalidRule, RULES
-from rasa.graph_components.providers.rule_only_provider import RuleOnlyDataProvider
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.nlu.constants import ACTION_NAME, ENTITY_ATTRIBUTE_TYPE, INTENT, TEXT
 from tests.core import test_utils
 
 UTTER_GREET_ACTION = "utter_greet"

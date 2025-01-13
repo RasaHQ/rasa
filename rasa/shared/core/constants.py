@@ -1,8 +1,8 @@
 from __future__ import annotations
+
 from enum import Enum
 
 import rasa.shared.constants as constants
-
 
 DEFAULT_CATEGORICAL_SLOT_VALUE = "__other__"
 

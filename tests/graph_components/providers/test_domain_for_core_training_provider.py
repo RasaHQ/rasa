@@ -1,26 +1,25 @@
-from typing import Text, Union, Dict
+from pathlib import Path
+from typing import Dict, Text, Union
 
 import pytest
-from pathlib import Path
-
 from _pytest.tmpdir import TempPathFactory
 
 from rasa import model_training
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.domain import (
-    KEY_RESPONSES,
-    Domain,
-    SESSION_CONFIG_KEY,
-    KEY_FORMS,
-    SESSION_EXPIRATION_TIME_KEY,
-    CARRY_OVER_SLOTS_KEY,
-)
 from rasa.graph_components.providers.domain_for_core_training_provider import (
     DomainForCoreTrainingProvider,
 )
 from rasa.shared.constants import REQUIRED_SLOTS_KEY
+from rasa.shared.core.domain import (
+    CARRY_OVER_SLOTS_KEY,
+    KEY_FORMS,
+    KEY_RESPONSES,
+    SESSION_CONFIG_KEY,
+    SESSION_EXPIRATION_TIME_KEY,
+    Domain,
+)
 
 
 @pytest.mark.parametrize(

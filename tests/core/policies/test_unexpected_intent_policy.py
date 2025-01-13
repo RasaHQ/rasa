@@ -1,62 +1,64 @@
 import json
-from pathlib import Path
-from typing import Optional, List, Dict, Type
 import logging
+from pathlib import Path
+from typing import Dict, List, Optional, Type
 
-import tensorflow as tf
 import numpy as np
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
+import tensorflow as tf
 from _pytest.logging import LogCaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
 )
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import (
+    IntentMaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
+)
+from rasa.core.policies.ted_policy import PREDICTION_FEATURES
+from rasa.core.policies.unexpected_intent_policy import (
+    RankingCandidateMetadata,
+    UnexpecTEDIntentPolicy,
+)
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     ROUTE_TO_CALM_SLOT,
 )
-from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.policies.ted_policy import PREDICTION_FEATURES
-from rasa.core.policies.unexpected_intent_policy import (
-    UnexpecTEDIntentPolicy,
-    RankingCandidateMetadata,
-)
-from rasa.engine.graph import ExecutionContext
-from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME, ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
-    UserUttered,
-    EntitiesAdded,
-    SlotSet,
     ActionExecutionRejected,
     ActiveLoop,
+    EntitiesAdded,
+    Event,
+    SlotSet,
+    UserUttered,
 )
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import INTENT
+from rasa.utils.tensorflow import model_data_utils
 from rasa.utils.tensorflow.constants import (
+    IDS,
     IGNORE_INTENTS_LIST,
     LABEL,
     MASK,
-    SENTENCE,
-    IDS,
-    POSITIVE_SCORES_KEY,
     NEGATIVE_SCORES_KEY,
+    POSITIVE_SCORES_KEY,
     RANKING_KEY,
     RANKING_LENGTH,
+    SENTENCE,
 )
-from rasa.shared.nlu.constants import INTENT
-from rasa.shared.core.events import Event
-from rasa.utils.tensorflow import model_data_utils
 from rasa.utils.tensorflow.models import RasaModel
-from tests.core.test_policies import train_trackers
 from tests.core.policies.test_ted_policy import TestTEDPolicy
+from tests.core.test_policies import train_trackers
 
 
 class TestUnexpecTEDIntentPolicy(TestTEDPolicy):

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Text, Optional
+from typing import Any, Dict, List, Optional, Text
 
 from rasa.e2e_test.constants import (
     KEY_STUB_CUSTOM_ACTIONS,

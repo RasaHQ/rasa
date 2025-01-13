@@ -1,5 +1,5 @@
 import os
-from typing import Tuple, List, Optional, Text, Union, Dict, Set
+from typing import Dict, List, Optional, Set, Text, Tuple, Union
 
 import pytest
 
@@ -7,7 +7,7 @@ from rasa.dialogue_understanding.stack.utils import (
     previous_collect_steps_for_active_flow,
 )
 from rasa.shared.core.flows import Flow, FlowsList
-from rasa.shared.core.flows.flow_path import PathNode, FlowPath, FlowPathsList
+from rasa.shared.core.flows.flow_path import FlowPath, FlowPathsList, PathNode
 from rasa.shared.core.flows.flow_step_links import StaticFlowStepLink
 from rasa.shared.core.flows.steps import (
     ActionFlowStep,
@@ -24,7 +24,7 @@ from rasa.shared.core.flows.validation import DuplicatedFlowIdException
 from rasa.shared.core.flows.yaml_flows_io import (
     YAMLFlowsReader,
 )
-from rasa.shared.core.slots import TextSlot, BooleanSlot
+from rasa.shared.core.slots import BooleanSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import FlowSyncImporter
 from tests.dialogue_understanding.conftest import (

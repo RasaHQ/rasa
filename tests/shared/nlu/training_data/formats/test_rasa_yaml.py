@@ -1,18 +1,18 @@
+import pathlib
 import textwrap
 import warnings
 from typing import Text
 
 import pytest
-import pathlib
 
-from rasa.shared.exceptions import YamlException, YamlSyntaxException
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.exceptions import YamlException, YamlSyntaxException
 from rasa.shared.nlu.constants import (
     INTENT,
     METADATA,
-    METADATA_INTENT,
     METADATA_EXAMPLE,
+    METADATA_INTENT,
 )
 from rasa.shared.nlu.training_data.formats.rasa_yaml import (
     RasaYAMLReader,

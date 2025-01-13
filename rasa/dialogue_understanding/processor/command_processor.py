@@ -1,19 +1,19 @@
-from typing import List, Optional, Type, Set, Dict
+from typing import Dict, List, Optional, Set, Type
 
 import structlog
-from rasa.shared.core.training_data.structures import StoryGraph
+
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
+    CannotHandleCommand,
+    ChitChatAnswerCommand,
     ClarifyCommand,
     Command,
-    CorrectSlotsCommand,
     CorrectedSlot,
+    CorrectSlotsCommand,
+    FreeFormAnswerCommand,
     RepeatBotMessagesCommand,
     SetSlotCommand,
     StartFlowCommand,
-    FreeFormAnswerCommand,
-    ChitChatAnswerCommand,
-    CannotHandleCommand,
 )
 from rasa.dialogue_understanding.commands.handle_code_change_command import (
     HandleCodeChangeCommand,
@@ -36,16 +36,20 @@ from rasa.dialogue_understanding.stack.utils import (
 )
 from rasa.engine.graph import ExecutionContext
 from rasa.shared.constants import (
-    ROUTE_TO_CALM_SLOT,
     RASA_PATTERN_CANNOT_HANDLE_CHITCHAT,
+    ROUTE_TO_CALM_SLOT,
 )
-from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT, SlotMappingType
-from rasa.shared.core.constants import FLOW_HASHES_SLOT
+from rasa.shared.core.constants import (
+    ACTION_TRIGGER_CHITCHAT,
+    FLOW_HASHES_SLOT,
+    SlotMappingType,
+)
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.constants import COMMANDS
 
 structlogger = structlog.get_logger()

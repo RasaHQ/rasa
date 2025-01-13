@@ -4,10 +4,10 @@ from collections import namedtuple
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Type
 from unittest.mock import Mock, patch
-from _pytest.capture import CaptureFixture
 
 import pytest
 import structlog
+from _pytest.capture import CaptureFixture
 from _pytest.logging import LogCaptureFixture
 
 from rasa.core.policies.policy import PolicyPrediction

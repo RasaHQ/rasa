@@ -1,39 +1,41 @@
 from __future__ import annotations
-import copy
-import zlib
 
 import base64
+import copy
 import json
 import logging
-import structlog
-
-from tqdm import tqdm
-from typing import Optional, Any, Dict, List, Text
+import zlib
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Text
 
-import rasa.utils.io
+import structlog
+from tqdm import tqdm
+
 import rasa.shared.utils.io
+import rasa.utils.io
+from rasa.core.constants import (
+    DEFAULT_MAX_HISTORY,
+    MEMOIZATION_POLICY_PRIORITY,
+    POLICY_MAX_HISTORY,
+    POLICY_PRIORITY,
+)
+from rasa.core.featurizers.tracker_featurizers import (
+    FEATURIZER_FILE,
+    MaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
+)
+from rasa.core.policies.policy import Policy, PolicyPrediction, SupportedData
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.domain import State, Domain
-from rasa.shared.core.events import ActionExecuted
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.featurizers.tracker_featurizers import FEATURIZER_FILE
-from rasa.shared.exceptions import FileIOException
-from rasa.core.policies.policy import PolicyPrediction, Policy, SupportedData
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.shared.utils.io import is_logging_disabled
-from rasa.core.constants import (
-    MEMOIZATION_POLICY_PRIORITY,
-    DEFAULT_MAX_HISTORY,
-    POLICY_MAX_HISTORY,
-    POLICY_PRIORITY,
-)
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.domain import Domain, State
+from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import FileIOException
+from rasa.shared.utils.io import is_logging_disabled
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()

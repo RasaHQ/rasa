@@ -1,9 +1,10 @@
 from __future__ import annotations
+
 import typing
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Text
 
-from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage

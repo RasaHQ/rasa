@@ -1,5 +1,5 @@
 import asyncio
-from typing import Dict, Optional, Text, Union, List
+from typing import Dict, List, Optional, Text, Union
 
 import structlog
 
@@ -13,9 +13,9 @@ from rasa.dialogue_understanding_test.du_test_result import (
 from rasa.e2e_test.e2e_test_case import (
     KEY_STUB_CUSTOM_ACTIONS,
     ActualStepOutput,
-    TestStep,
     Fixture,
     Metadata,
+    TestStep,
 )
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from rasa.utils.endpoints import EndpointConfig

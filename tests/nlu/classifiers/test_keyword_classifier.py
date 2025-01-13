@@ -1,21 +1,20 @@
-from typing import Text, Dict, Any, Optional, Union
+import copy
+from typing import Any, Dict, Optional, Text, Union
 
 import pytest
-import copy
 
+import rasa.shared.nlu.training_data.loading
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa.shared.nlu.constants import (
-    TEXT,
     INTENT,
-    PREDICTED_CONFIDENCE_KEY,
     INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+    TEXT,
 )
-
 from rasa.shared.nlu.training_data.formats.rasa import RasaReader
-import rasa.shared.nlu.training_data.loading
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 

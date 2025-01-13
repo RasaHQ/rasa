@@ -5,14 +5,13 @@ import copy
 import logging
 from typing import Any, ClassVar, Dict, List, Optional, Text, cast
 
-from rasa.shared.exceptions import RasaException
-from rasa.utils.endpoints import EndpointConfig
-
 from rasa.core.secrets_manager.endpoints import (
     CredentialsLocation,
     EndpointReader,
     EndpointTrait,
 )
+from rasa.shared.exceptions import RasaException
+from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.singleton import Singleton
 
 logger = logging.getLogger(__name__)

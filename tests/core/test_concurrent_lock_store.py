@@ -1,15 +1,15 @@
 import logging
 from pathlib import Path
 
-import rasa.utils.endpoints
 from _pytest.logging import LogCaptureFixture
-from rasa.core.lock_store import LockStore
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
+import rasa.utils.endpoints
 from rasa.core.concurrent_lock_store import (
     DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX,
     ConcurrentRedisLockStore,
 )
+from rasa.core.lock_store import LockStore
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 
 def test_create_concurrent_redis_lock_store(tmp_path: Path) -> None:

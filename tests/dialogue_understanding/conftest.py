@@ -1,7 +1,8 @@
-from unittest.mock import Mock
 from typing import List
+from unittest.mock import Mock
 
 import pytest
+
 from rasa.dialogue_understanding.commands import StartFlowCommand
 from rasa.dialogue_understanding.processor.command_processor import execute_commands
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack

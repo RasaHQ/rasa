@@ -1,12 +1,13 @@
-from typing import Dict, Text, Any
+from typing import Any, Dict, Text
 
 import pytest
-from rasa.graph_components.providers.training_tracker_provider import (
-    TrainingTrackerProvider,
-)
+
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.graph_components.providers.training_tracker_provider import (
+    TrainingTrackerProvider,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (

@@ -3,10 +3,10 @@ from typing import Type
 import pytest
 from jsonschema import ValidationError, validate
 
+import rasa.shared.utils.common
 from rasa.core.actions.action import RemoteActionJSONValidator
 from rasa.shared.core.events import Event
 from rasa.shared.utils.schemas.events import EVENT_SCHEMA
-import rasa.shared.utils.common
 
 TEST_EVENT = {
     "sender_id": "77bd4d3841294f1f9f82ef8cfe9321a7",

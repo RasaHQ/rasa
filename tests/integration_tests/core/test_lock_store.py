@@ -8,8 +8,8 @@ from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.lock_store import LockError, RedisLockStore
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 
 
 def test_create_lock_store(redis_lock_store: RedisLockStore):

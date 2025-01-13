@@ -3,12 +3,14 @@ import logging
 import os
 import tempfile
 import uuid
-from typing import Sequence, Dict, Any
+from typing import Any, Dict, Sequence
 from unittest.mock import Mock, patch
+
+import pytest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-import pytest
 from pytest import LogCaptureFixture, MonkeyPatch
+
 from rasa.core import EnterpriseSearchPolicy
 from rasa.core.policies.enterprise_search_policy import DEFAULT_EMBEDDINGS_CONFIG
 from rasa.engine.graph import ExecutionContext
@@ -17,8 +19,8 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import (
-    MockInformationRetrieval,
     MockAvailableEndpoints,
+    MockInformationRetrieval,
     TestSpanExporter,
 )
 
@@ -395,7 +397,7 @@ async def test_tracing_enterprise_search_policy_training_health_check(
         span_training_embeddings_health_check = next(
             span
             for span in captured_spans
-            if span.name == "EnterpriseSearchPolicy.perform_embeddings_health_check"  # noqa: 501
+            if span.name == "EnterpriseSearchPolicy.perform_embeddings_health_check"
         )
 
         assert span_training_llm_health_check is not None
@@ -473,7 +475,6 @@ async def test_tracing_enterprise_search_policy_inference_health_check(
             span
             for span in captured_spans
             if span.name == "EnterpriseSearchPolicy.perform_embeddings_health_check"
-            # noqa: 501
         )
 
         assert span_training_llm_health_check is not None

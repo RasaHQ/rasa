@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
-from typing import List, Optional, Dict, Any
-from unittest.mock import Mock, patch, AsyncMock
+from typing import Any, Dict, List, Optional
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
@@ -14,9 +14,9 @@ from rasa.dialogue_understanding.coexistence.constants import (
     STICKY,
 )
 from rasa.dialogue_understanding.coexistence.llm_based_router import (
-    LLMBasedRouter,
     DEFAULT_LLM_CONFIG,
     LLM_BASED_ROUTER_CONFIG_FILE_NAME,
+    LLMBasedRouter,
 )
 from rasa.dialogue_understanding.commands import Command, SetSlotCommand
 from rasa.dialogue_understanding.commands.noop_command import NoopCommand
@@ -24,10 +24,10 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
-    OPENAI_API_KEY_ENV_VAR,
-    ROUTE_TO_CALM_SLOT,
     LLM_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
+    OPENAI_API_KEY_ENV_VAR,
+    ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker

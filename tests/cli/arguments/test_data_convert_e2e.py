@@ -1,5 +1,6 @@
 import argparse
 from typing import Callable
+
 import pytest
 from _pytest.pytester import RunResult
 

@@ -1,10 +1,11 @@
 from abc import ABC
 from typing import Text
+
 import numpy as np
 
 from rasa.nlu.featurizers.featurizer import Featurizer
-from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 from rasa.shared.exceptions import InvalidConfigException
+from rasa.utils.tensorflow.constants import MAX_POOLING, MEAN_POOLING
 
 
 class DenseFeaturizer(Featurizer[np.ndarray], ABC):

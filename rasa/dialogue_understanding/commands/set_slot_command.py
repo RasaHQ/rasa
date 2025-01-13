@@ -5,7 +5,8 @@ from enum import Enum
 from typing import Any, Dict, List
 
 import structlog
-from rasa.dialogue_understanding.commands import Command
+
+from rasa.dialogue_understanding.commands.command import Command
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
@@ -44,8 +45,8 @@ def get_flows_predicted_to_start_from_tracker(
         The flows that are predicted to start from the current state.
     """
     from rasa.dialogue_understanding.processor.command_processor import (
-        get_commands_from_tracker,
         filter_start_flow_commands,
+        get_commands_from_tracker,
     )
 
     commands = get_commands_from_tracker(tracker)

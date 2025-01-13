@@ -1,21 +1,21 @@
-from typing import Optional, List, Text, Type, Dict, Tuple
+from typing import Dict, List, Optional, Text, Tuple, Type
 from unittest.mock import Mock, patch
 
 import pytest
 
 from rasa.dialogue_understanding.commands import (
     Command,
+    ErrorCommand,
     SetSlotCommand,
     StartFlowCommand,
-    ErrorCommand,
 )
 from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
     ChitChatAnswerCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.generator import (
-    SingleStepLLMCommandGenerator,
     MultiStepLLMCommandGenerator,
+    SingleStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
@@ -23,19 +23,19 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.dialogue_understanding.utils import set_record_commands_and_prompts
 from rasa.shared.constants import (
-    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
-    TEXT,
     COMMANDS,
+    KEY_SYSTEM_PROMPT,
+    KEY_USER_PROMPT,
     PREDICTED_COMMANDS,
     PROMPTS,
-    KEY_USER_PROMPT,
-    KEY_SYSTEM_PROMPT,
+    TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from tests.utilities import flows_from_str

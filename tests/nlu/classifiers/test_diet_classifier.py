@@ -1,51 +1,17 @@
 import copy
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple
 
 import numpy as np
 import pytest
-from typing import Callable, List, Optional, Text, Dict, Any, Tuple
 
 import rasa.utils.common
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.shared.nlu.training_data.features import Features
-from rasa.nlu.constants import BILOU_ENTITIES
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
-from rasa.shared.nlu.constants import (
-    TEXT,
-    INTENT,
-    ENTITIES,
-    FEATURE_TYPE_SENTENCE,
-    FEATURE_TYPE_SEQUENCE,
-    PREDICTED_CONFIDENCE_KEY,
-    INTENT_NAME_KEY,
-)
-from rasa.utils import train_utils
-from rasa.utils.tensorflow.constants import (
-    LOSS_TYPE,
-    RANDOM_SEED,
-    RANKING_LENGTH,
-    EPOCHS,
-    MASKED_LM,
-    RENORMALIZE_CONFIDENCES,
-    TENSORBOARD_LOG_LEVEL,
-    TENSORBOARD_LOG_DIR,
-    EVAL_NUM_EPOCHS,
-    EVAL_NUM_EXAMPLES,
-    CONSTRAIN_SIMILARITIES,
-    CHECKPOINT_MODEL,
-    BILOU_FLAG,
-    ENTITY_RECOGNITION,
-    INTENT_CLASSIFICATION,
-    MODEL_CONFIDENCE,
-    HIDDEN_LAYERS_SIZES,
-    RUN_EAGERLY,
-)
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.constants import BILOU_ENTITIES
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
@@ -53,10 +19,44 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
     LexicalSyntacticFeaturizer,
 )
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.constants import DIAGNOSTIC_DATA
+from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.importers.rasa import RasaFileImporter
+from rasa.shared.nlu.constants import (
+    ENTITIES,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+    INTENT,
+    INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+    TEXT,
+)
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.loading import load_data
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.constants import DIAGNOSTIC_DATA
-from rasa.shared.nlu.training_data.loading import load_data
+from rasa.utils import train_utils
+from rasa.utils.tensorflow.constants import (
+    BILOU_FLAG,
+    CHECKPOINT_MODEL,
+    CONSTRAIN_SIMILARITIES,
+    ENTITY_RECOGNITION,
+    EPOCHS,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    HIDDEN_LAYERS_SIZES,
+    INTENT_CLASSIFICATION,
+    LOSS_TYPE,
+    MASKED_LM,
+    MODEL_CONFIDENCE,
+    RANDOM_SEED,
+    RANKING_LENGTH,
+    RENORMALIZE_CONFIDENCES,
+    RUN_EAGERLY,
+    TENSORBOARD_LOG_DIR,
+    TENSORBOARD_LOG_LEVEL,
+)
 from rasa.utils.tensorflow.model_data_utils import FeatureArray
 
 

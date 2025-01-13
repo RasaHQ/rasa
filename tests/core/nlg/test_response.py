@@ -1,13 +1,13 @@
-from typing import Dict, List, Text, Any
-
 import logging
+from typing import Any, Dict, List, Text
+
 import pytest
 from _pytest.logging import LogCaptureFixture
 
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.slots import TextSlot, AnySlot, CategoricalSlot, BooleanSlot
+from rasa.shared.core.slots import AnySlot, BooleanSlot, CategoricalSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.utils.yaml import YamlValidationException
 

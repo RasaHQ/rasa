@@ -24,7 +24,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import SpanKind, Tracer
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
-from rasa.core.actions.action import Action, RemoteAction, CustomActionExecutor
+from rasa.core.actions.action import Action, CustomActionExecutor, RemoteAction
 from rasa.core.actions.custom_action_executor import RetryCustomActionExecutor
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.agent import Agent
@@ -63,13 +63,13 @@ from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
     _instrument_select_response_examples,
 )
 from rasa.tracing.instrumentation.metrics import (
-    record_llm_command_generator_metrics,
-    record_single_step_llm_command_generator_metrics,
-    record_multi_step_llm_command_generator_metrics,
     record_callable_duration_metrics,
+    record_llm_command_generator_metrics,
+    record_multi_step_llm_command_generator_metrics,
     record_request_size_in_bytes,
+    record_single_step_llm_command_generator_metrics,
 )
-from rasa.utils.endpoints import concat_url, EndpointConfig
+from rasa.utils.endpoints import EndpointConfig, concat_url
 
 # The `TypeVar` representing the return type for a function to be wrapped.
 S = TypeVar("S")

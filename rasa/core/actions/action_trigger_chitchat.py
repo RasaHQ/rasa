@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 from rasa.core.actions.action import Action
 from rasa.core.channels import OutputChannel

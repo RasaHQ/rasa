@@ -1,14 +1,14 @@
 import uuid
-from typing import Text, Any
+from typing import Any, Text
 
 import jsonschema
 import pytest
 from sanic import Sanic, response
 
+from rasa.core.agent import Agent
 from rasa.core.nlg.callback import CallbackNaturalLanguageGenerator
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-from rasa.core.agent import Agent
 
 
 def nlg_app(base_url="/"):

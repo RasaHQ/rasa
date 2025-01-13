@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Any, Dict
 
 import pytest
 
@@ -9,8 +9,8 @@ from rasa.e2e_test.constants import (
 )
 from rasa.e2e_test.stub_custom_action import (
     StubCustomAction,
-    get_stub_custom_action_key,
     get_stub_custom_action,
+    get_stub_custom_action_key,
 )
 from rasa.e2e_test.utils.validation import read_e2e_test_schema
 from rasa.shared.utils.yaml import (

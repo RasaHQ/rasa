@@ -1,6 +1,7 @@
 import logging
 
 from pytest import LogCaptureFixture
+
 from rasa.core.nlg.callback import CallbackNaturalLanguageGenerator, nlg_request_format
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered

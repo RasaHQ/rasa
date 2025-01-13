@@ -3,13 +3,11 @@ import hashlib
 import logging
 import os
 from pathlib import Path
-from subprocess import check_output, DEVNULL, CalledProcessError
-from typing import Text, Optional, Union
-
-from rasa.shared.constants import DEFAULT_MODELS_PATH
+from subprocess import DEVNULL, CalledProcessError, check_output
+from typing import Optional, Text, Union
 
 from rasa.exceptions import ModelNotFound
-
+from rasa.shared.constants import DEFAULT_MODELS_PATH
 
 logger = logging.getLogger(__name__)
 

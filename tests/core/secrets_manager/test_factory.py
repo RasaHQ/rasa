@@ -5,8 +5,6 @@ from unittest.mock import MagicMock
 
 import pytest
 from pytest import MonkeyPatch
-from rasa.shared.exceptions import RasaException
-from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.secrets_manager.constants import (
     SECRET_MANAGER_ENV_NAME,
@@ -34,6 +32,8 @@ from rasa.core.secrets_manager.vault import (
     VaultSecretManagerConfig,
     VaultSecretManagerNonStrictConfig,
 )
+from rasa.shared.exceptions import RasaException
+from rasa.utils.endpoints import EndpointConfig
 
 
 @pytest.fixture

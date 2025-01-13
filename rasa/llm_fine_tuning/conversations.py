@@ -1,16 +1,16 @@
 from dataclasses import dataclass, field
-from typing import List, Union, Iterator, Any, Dict, Optional
+from typing import Any, Dict, Iterator, List, Optional, Union
 
 from rasa.dialogue_understanding.commands import (
-    Command,
-    StartFlowCommand,
-    SetSlotCommand,
     CancelFlowCommand,
     ChitChatAnswerCommand,
-    SkipQuestionCommand,
+    ClarifyCommand,
+    Command,
     HumanHandoffCommand,
     KnowledgeAnswerCommand,
-    ClarifyCommand,
+    SetSlotCommand,
+    SkipQuestionCommand,
+    StartFlowCommand,
 )
 from rasa.e2e_test.e2e_test_case import TestCase, TestStep
 from rasa.shared.core.constants import USER

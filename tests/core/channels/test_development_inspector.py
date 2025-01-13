@@ -1,13 +1,12 @@
 import pathlib
 
-from rasa.core.channels.rest import RestInput
 import rasa.core.run
 from rasa.core.agent import Agent
-
 from rasa.core.channels.development_inspector import (
     INSPECT_TEMPLATE_PATH,
     DevelopmentInspectProxy,
 )
+from rasa.core.channels.rest import RestInput
 
 ABSOLUTE_INSPECT_FOLDER_PATH = (
     pathlib.Path(__file__).parent.parent.parent.parent

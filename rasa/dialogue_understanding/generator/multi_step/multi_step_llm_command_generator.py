@@ -1,30 +1,30 @@
 import importlib.resources
 import re
-from typing import Dict, Any, List, Optional, Tuple, Union, Text
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import structlog
 from jinja2 import Template
 
 import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
+    CancelFlowCommand,
+    CannotHandleCommand,
+    ChitChatAnswerCommand,
+    ClarifyCommand,
     Command,
     ErrorCommand,
-    SetSlotCommand,
-    CancelFlowCommand,
-    StartFlowCommand,
     HumanHandoffCommand,
-    ChitChatAnswerCommand,
-    SkipQuestionCommand,
     KnowledgeAnswerCommand,
-    ClarifyCommand,
-    CannotHandleCommand,
+    SetSlotCommand,
+    SkipQuestionCommand,
+    StartFlowCommand,
 )
 from rasa.dialogue_understanding.commands.change_flow_command import ChangeFlowCommand
 from rasa.dialogue_understanding.generator.constants import (
+    DEFAULT_LLM_CONFIG,
+    FLOW_RETRIEVAL_KEY,
     LLM_CONFIG_KEY,
     USER_INPUT_CONFIG_KEY,
-    FLOW_RETRIEVAL_KEY,
-    DEFAULT_LLM_CONFIG,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.dialogue_understanding.generator.llm_based_command_generator import (
@@ -41,11 +41,11 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
-    RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED,
     EMBEDDINGS_CONFIG_KEY,
+    RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED,
+    ROUTE_TO_CALM_SLOT,
 )
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
-from rasa.shared.core.flows import FlowStep, Flow, FlowsList
+from rasa.shared.core.flows import Flow, FlowsList, FlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
@@ -53,11 +53,11 @@ from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
-    get_prompt_template,
-    tracker_as_readable_transcript,
-    sanitize_message_for_prompt,
     allowed_values_for_slot,
+    get_prompt_template,
     resolve_model_client_config,
+    sanitize_message_for_prompt,
+    tracker_as_readable_transcript,
 )
 
 # multistep template keys

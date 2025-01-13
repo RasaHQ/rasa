@@ -1,38 +1,38 @@
 import uuid
-from typing import Dict, Any, Optional, Text, ClassVar, List
-from unittest.mock import Mock, AsyncMock, patch
+from typing import Any, ClassVar, Dict, List, Optional, Text
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT, OPENAI_API_KEY_ENV_VAR
-from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
-from structlog.testing import capture_logs
 from pytest import MonkeyPatch
+from structlog.testing import capture_logs
+
 from rasa.dialogue_understanding.commands import (
+    ChitChatAnswerCommand,
     Command,
     ErrorCommand,
     SetSlotCommand,
-    ChitChatAnswerCommand,
 )
 from rasa.dialogue_understanding.generator import (
     LLMBasedCommandGenerator,
     LLMCommandGenerator,
-    SingleStepLLMCommandGenerator,
     MultiStepLLMCommandGenerator,
+    SingleStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.constants import (
-    FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
+    FLOW_RETRIEVAL_KEY,
 )
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, ROUTE_TO_CALM_SLOT
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps.collect import (
-    SlotRejection,
     CollectInformationFlowStep,
+    SlotRejection,
 )
 from rasa.shared.core.slots import (
     Slot,
@@ -42,6 +42,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
 from tests.utilities import flows_from_str
 
 
@@ -699,8 +700,8 @@ class TestLLMBasedCommandGenerator:
         without errors from generator module."""
         from rasa.dialogue_understanding.generator import (
             LLMCommandGenerator,
-            SingleStepLLMCommandGenerator,
             MultiStepLLMCommandGenerator,
+            SingleStepLLMCommandGenerator,
         )
 
         assert LLMCommandGenerator(

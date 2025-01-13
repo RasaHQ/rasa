@@ -1,21 +1,20 @@
 import json
 import logging
-from collections import deque, defaultdict
-
-import uuid
 import typing
+import uuid
+from collections import defaultdict, deque
 from typing import (
-    List,
-    Text,
+    Any,
     Deque,
     Dict,
+    List,
     Optional,
-    Tuple,
-    Any,
-    Set,
-    ValuesView,
-    Union,
     Sequence,
+    Set,
+    Text,
+    Tuple,
+    Union,
+    ValuesView,
 )
 
 import rasa.shared.utils.io
@@ -27,15 +26,14 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
-    UserUttered,
     ActionExecuted,
     Event,
     SessionStarted,
     SlotSet,
+    UserUttered,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaCoreException
-
 
 if typing.TYPE_CHECKING:
     import networkx as nx
@@ -740,8 +738,9 @@ class StoryGraph:
 
     def visualize(self, output_file: Optional[Text] = None) -> "nx.MultiDiGraph":
         import networkx as nx
-        from rasa.shared.core.training_data import visualization
         from colorhash import ColorHash
+
+        from rasa.shared.core.training_data import visualization
 
         graph = nx.MultiDiGraph()
         next_node_idx = [0]

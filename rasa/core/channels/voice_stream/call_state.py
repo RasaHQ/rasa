@@ -1,8 +1,9 @@
 import asyncio
 from contextvars import ContextVar
-from werkzeug.local import LocalProxy
 from dataclasses import dataclass
 from typing import Optional
+
+from werkzeug.local import LocalProxy
 
 
 # Per voice session data

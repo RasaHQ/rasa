@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Text
-import rasa.dialogue_understanding.processor.command_processor
 
+import rasa.dialogue_understanding.processor.command_processor
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage

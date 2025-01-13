@@ -1,4 +1,4 @@
-from typing import Protocol, Dict, List, runtime_checkable, Union
+from typing import Dict, List, Protocol, Union, runtime_checkable
 
 from rasa.shared.providers.llm.llm_response import LLMResponse
 

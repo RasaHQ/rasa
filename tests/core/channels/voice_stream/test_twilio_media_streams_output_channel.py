@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock
 from sanic.exceptions import WebsocketClosed
 
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
-from rasa.core.channels.voice_stream.tts.azure import AzureTTS
 from rasa.core.channels.voice_stream.call_state import CallState, _call_state
+from rasa.core.channels.voice_stream.tts.azure import AzureTTS
 from rasa.core.channels.voice_stream.tts.tts_cache import TTSCache
 from rasa.core.channels.voice_stream.twilio_media_streams import (
     TwilioMediaStreamsOutputChannel,

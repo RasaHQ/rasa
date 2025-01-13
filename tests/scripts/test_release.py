@@ -3,15 +3,15 @@ from typing import Text
 from unittest.mock import MagicMock
 
 import pytest
+import tomlkit
 from _pytest.monkeypatch import MonkeyPatch
 from pep440_version_utils import Version
-import tomlkit
 
 from scripts.release import (
     ask_version,
     generate_changelog,
-    write_version_to_pyproject,
     get_rasa_sdk_version,
+    write_version_to_pyproject,
 )
 
 

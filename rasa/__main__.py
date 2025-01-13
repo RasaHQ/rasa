@@ -1,13 +1,11 @@
 import argparse
-from typing import Optional, List
-import structlog
 import os
 import platform
 import sys
+from typing import List, Optional
 
+import structlog
 from rasa_sdk import __version__ as rasa_sdk_version
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION
-from rasa.utils.log_utils import configure_structlog
 
 import rasa.telemetry
 import rasa.utils.io
@@ -15,8 +13,10 @@ import rasa.utils.tensorflow.environment as tf_env
 from rasa import version
 from rasa.cli import (
     data,
+    evaluate,
     export,
     interactive,
+    llm_fine_tuning,
     run,
     scaffold,
     shell,
@@ -25,18 +25,18 @@ from rasa.cli import (
     train,
     visualize,
     x,
-    evaluate,
-    llm_fine_tuning,
 )
 from rasa.cli.arguments.default_arguments import add_logging_options
 from rasa.cli.utils import (
+    check_if_studio_command,
     parse_last_positional_argument_as_model_path,
     warn_if_rasa_plus_package_installed,
-    check_if_studio_command,
 )
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
 from rasa.utils.common import configure_logging_and_warnings
+from rasa.utils.log_utils import configure_structlog
 
 structlogger = structlog.get_logger()
 

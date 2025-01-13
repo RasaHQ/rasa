@@ -7,13 +7,13 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
     List,
     Optional,
     Set,
-    TYPE_CHECKING,
     Text,
     Tuple,
     Type,

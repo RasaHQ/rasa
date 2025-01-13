@@ -1,60 +1,58 @@
 import copy
 import functools
 import json
-from json import JSONDecodeError
 import logging
-import structlog
-from pathlib import Path
 import re
+from json import JSONDecodeError
+from pathlib import Path
 from re import Match, Pattern
-from typing import Dict, Text, List, Any, Optional, Union, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
-from rasa.shared.core.domain import Domain
+import structlog
+
 import rasa.shared.data
-from rasa.shared.core.slots import TextSlot, ListSlot
-from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
-from rasa.shared.core.constants import LOOP_NAME
+from rasa.shared.constants import (
+    DOCS_URL_RULES,
+    DOCS_URL_SLOTS,
+    DOCS_URL_STORIES,
+    INTENT_MESSAGE_PREFIX,
+    TEST_STORIES_FILE_PREFIX,
+)
+from rasa.shared.core.constants import LOOP_NAME, RULE_SNIPPET_ACTION_NAME
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import (
+    ActiveLoop,
+    DialogueStackUpdated,
+    SlotSet,
+    UserUttered,
+)
+from rasa.shared.core.slots import ListSlot, TextSlot
+from rasa.shared.core.training_data.story_reader.story_reader import StoryReader
+from rasa.shared.core.training_data.structures import StoryStep
+from rasa.shared.exceptions import YamlException
 from rasa.shared.nlu.constants import (
+    ACTION_TEXT,
     ENTITIES,
     ENTITY_ATTRIBUTE_END,
     ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_VALUE,
+    EXTRACTOR,
+    FULL_RETRIEVAL_INTENT_NAME_KEY,
     INTENT,
     INTENT_NAME_KEY,
     INTENT_RANKING_KEY,
     PREDICTED_CONFIDENCE_KEY,
-    FULL_RETRIEVAL_INTENT_NAME_KEY,
-    ACTION_TEXT,
     TEXT,
-    EXTRACTOR,
 )
 from rasa.shared.nlu.training_data import entities_parser
-
-from rasa.shared.constants import (
-    INTENT_MESSAGE_PREFIX,
-    DOCS_URL_STORIES,
-    TEST_STORIES_FILE_PREFIX,
-    DOCS_URL_RULES,
-    DOCS_URL_SLOTS,
-)
-
-from rasa.shared.core.constants import RULE_SNIPPET_ACTION_NAME
-from rasa.shared.core.events import (
-    UserUttered,
-    SlotSet,
-    ActiveLoop,
-    DialogueStackUpdated,
-)
-from rasa.shared.core.training_data.story_reader.story_reader import StoryReader
-from rasa.shared.core.training_data.structures import StoryStep
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.yaml import (
-    validate_raw_yaml_using_schema_file,
-    read_yaml,
-    validate_training_data_format_version,
     is_key_in_yaml,
+    read_yaml,
+    validate_raw_yaml_using_schema_file,
+    validate_training_data_format_version,
 )
 
 logger = logging.getLogger(__name__)

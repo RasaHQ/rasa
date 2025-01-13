@@ -2,25 +2,23 @@ from typing import Optional
 from unittest.mock import patch
 
 import httpx
-import pytest
 import litellm
+import pytest
+import structlog
+from pytest import MonkeyPatch
 
 from rasa.shared.constants import (
-    RASA_CA_BUNDLE_ENV_VAR,
-    REQUESTS_CA_BUNDLE_ENV_VAR,
-    RASA_SSL_CERTIFICATE_ENV_VAR,
-    LITELLM_SSL_VERIFY_ENV_VAR,
     LITELLM_SSL_CERTIFICATE_ENV_VAR,
+    LITELLM_SSL_VERIFY_ENV_VAR,
+    RASA_CA_BUNDLE_ENV_VAR,
+    RASA_SSL_CERTIFICATE_ENV_VAR,
+    REQUESTS_CA_BUNDLE_ENV_VAR,
 )
-
-import structlog
-
 from rasa.shared.providers._ssl_verification_utils import (
+    _get_ssl_verify,
     ensure_ssl_certificates_for_litellm_non_openai_based_clients,
     ensure_ssl_certificates_for_litellm_openai_based_clients,
-    _get_ssl_verify,
 )
-from pytest import MonkeyPatch
 
 structlogger = structlog.get_logger()
 

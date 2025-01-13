@@ -1,26 +1,26 @@
 import json
 import logging
 from copy import deepcopy
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
 
+from aiogram import Bot
 from aiogram.exceptions import TelegramAPIError
+from aiogram.types import (
+    InlineKeyboardButton,
+    KeyboardButton,
+    Message,
+    Update,
+)
 from aiogram.utils.keyboard import (
     InlineKeyboardBuilder,
-    ReplyKeyboardBuilder,
     KeyboardBuilder,
+    ReplyKeyboardBuilder,
 )
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
-from aiogram import Bot
-from aiogram.types import (
-    InlineKeyboardButton,
-    Update,
-    KeyboardButton,
-    Message,
-)
-from typing import Dict, Text, Any, List, Optional, Callable, Awaitable
 
-from rasa.core.channels.channel import InputChannel, UserMessage, OutputChannel
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.core.constants import USER_INTENT_RESTART
 from rasa.shared.exceptions import RasaException

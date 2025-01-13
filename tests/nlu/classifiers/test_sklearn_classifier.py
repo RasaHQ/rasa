@@ -5,17 +5,17 @@ from typing import Callable, List, Text, Tuple
 import pytest
 from _pytest.logging import LogCaptureFixture
 
-from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
 import rasa.shared.nlu.training_data.loading
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.constants import TEXT, INTENT
+from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
+from rasa.shared.nlu.constants import INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 @pytest.fixture()

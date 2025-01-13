@@ -1,25 +1,26 @@
 from __future__ import annotations
+
 import logging
 import re
 from typing import Any, Dict, List, Optional, Text
 
-from rasa.engine.graph import GraphComponent, ExecutionContext
-from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-from rasa.engine.storage.storage import ModelStorage
-from rasa.engine.storage.resource import Resource
-import rasa.shared.utils.io
 import rasa.nlu.utils.pattern_utils as pattern_utils
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
+import rasa.shared.utils.io
+from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.nlu.constants import (
     ENTITIES,
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
-    TEXT,
+    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    TEXT,
 )
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 

@@ -1,42 +1,41 @@
-from typing import Text
-import numpy as np
 import re
-import scipy.sparse
+from typing import Text
+
+import numpy as np
 import pytest
+import scipy.sparse
 
-
-from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.constants import TOKENS_NAMES
 from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.constants import (
-    ACTION_TEXT,
-    ACTION_NAME,
-    ENTITIES,
-    TEXT,
-    INTENT,
-    FEATURE_TYPE_SEQUENCE,
-    FEATURE_TYPE_SENTENCE,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_START,
-    ENTITY_ATTRIBUTE_END,
-    ENTITY_TAGS,
-)
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.slots import TextSlot
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTIVE_LOOP,
+    ENTITY_LABEL_SEPARATOR,
     PREVIOUS_ACTION,
     SLOTS,
-    ENTITY_LABEL_SEPARATOR,
     USER,
 )
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.slots import TextSlot
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    ACTION_TEXT,
+    ENTITIES,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_TAGS,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+    INTENT,
+    TEXT,
+)
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.tensorflow.constants import SENTENCE, SEQUENCE
-
 
 #
 # internals

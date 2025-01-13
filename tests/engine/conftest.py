@@ -1,8 +1,8 @@
 from pathlib import Path
-from typing import Callable, Dict, Any
+from typing import Any, Callable, Dict
 
-from _pytest.monkeypatch import MonkeyPatch
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.dialogue_understanding.coexistence.intent_based_router import (
     IntentBasedRouter,

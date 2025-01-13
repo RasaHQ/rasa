@@ -5,9 +5,9 @@ import textwrap
 import pytest
 
 from rasa.shared.core.flows.yaml_flows_io import (
-    is_flows_file,
     YAMLFlowsReader,
     YamlFlowsWriter,
+    is_flows_file,
 )
 from rasa.shared.utils.yaml import YamlValidationException
 

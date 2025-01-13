@@ -2,7 +2,7 @@ import json
 import logging
 import typing
 from asyncio import AbstractEventLoop
-from typing import Optional, Text, Dict
+from typing import Dict, Optional, Text
 
 from rasa.core.brokers.broker import EventBroker
 

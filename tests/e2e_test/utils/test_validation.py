@@ -1,7 +1,7 @@
 import platform
 import typing
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 from unittest.mock import MagicMock
 
 import pytest

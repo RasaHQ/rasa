@@ -4,28 +4,28 @@ from unittest.mock import Mock
 import pytest
 
 from rasa.dialogue_understanding.commands import (
+    Command,
+    CorrectSlotsCommand,
     RepeatBotMessagesCommand,
     SetSlotCommand,
     StartFlowCommand,
-    CorrectSlotsCommand,
-    Command,
 )
 from rasa.dialogue_understanding.patterns.code_change import FLOW_PATTERN_CODE_CHANGE_ID
 from rasa.dialogue_understanding.processor.command_processor import (
-    execute_commands,
     ensure_max_number_of_command_type,
+    execute_commands,
     filter_start_flow_commands,
     find_updated_flows,
 )
 from rasa.dialogue_understanding.stack.frames import (
-    UserFlowStackFrame,
     PatternFlowStackFrame,
+    UserFlowStackFrame,
 )
 from rasa.shared.core.constants import FLOW_HASHES_SLOT
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
-from tests.utilities import flows_from_str
 from tests.dialogue_understanding.conftest import start_bar_user_uttered
+from tests.utilities import flows_from_str
 
 
 def test_properly_prepared_tracker(tracker: DialogueStateTracker):

@@ -1,10 +1,10 @@
 import pytest
 
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import SPACY_DOCS, TOKENS_NAMES
-from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa.shared.nlu.constants import INTENT, RESPONSE, TEXT
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 @pytest.mark.parametrize(

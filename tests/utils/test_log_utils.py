@@ -1,12 +1,12 @@
-import os
 import logging
+import os
 from unittest import mock
+
 import pytest
-
-from rasa.utils.log_utils import log_llm
-
 from structlog import get_logger
 from structlog.testing import capture_logs
+
+from rasa.utils.log_utils import log_llm
 
 logging.basicConfig(level="INFO")
 

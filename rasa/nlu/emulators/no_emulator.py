@@ -1,4 +1,5 @@
 from typing import Any, Dict, Text
+
 from rasa.nlu.emulators.emulator import Emulator
 
 

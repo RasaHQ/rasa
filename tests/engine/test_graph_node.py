@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import Any, Dict, Optional, Text
 from unittest.mock import Mock
 
@@ -9,14 +10,14 @@ import rasa.shared.utils
 import rasa.shared.utils.io
 from rasa.engine.exceptions import GraphComponentException
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphNode, GraphSchema
-from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from tests.engine.graph_components_test_classes import (
     AddInputs,
     ExecutionContextAware,
+    PersistableTestComponent,
     ProvideX,
     SubtractByX,
-    PersistableTestComponent,
 )
 
 

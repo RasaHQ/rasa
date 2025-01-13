@@ -8,9 +8,10 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
-import rasa.core.lock_store
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
+
+import rasa.core.lock_store
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME

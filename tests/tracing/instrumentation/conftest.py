@@ -4,16 +4,16 @@ from asyncio import AbstractEventLoop
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncGenerator,
     Dict,
     Iterable,
     List,
     Optional,
-    TYPE_CHECKING,
     Text,
-    Type,
     Tuple,
+    Type,
 )
 from unittest.mock import Mock, patch
 
@@ -21,6 +21,7 @@ import pytest
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
 from rasa.core.actions.action import (
     Action,
     CustomActionExecutor,
@@ -33,21 +34,22 @@ from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EB, EventBroker
 from rasa.core.channels import OutputChannel, UserMessage
 from rasa.core.information_retrieval import (
+    InformationRetrieval,
     SearchResult,
     SearchResultList,
-    InformationRetrieval,
 )
 from rasa.core.lock import TicketLock
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command, StartFlowCommand
 from rasa.dialogue_understanding.generator import (
     LLMCommandGenerator,
-    SingleStepLLMCommandGenerator,
     MultiStepLLMCommandGenerator,
+    SingleStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.engine.caching import LocalTrainingCache, TrainingCache
@@ -74,8 +76,6 @@ from rasa.shared.data import TrainingType
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.yaml import read_yaml_file
 from rasa.utils.endpoints import EndpointConfig
-
-from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 
 if TYPE_CHECKING:
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer

@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 from rasa.core.actions.action import Action
 from rasa.core.channels import OutputChannel
@@ -14,7 +14,7 @@ from rasa.dialogue_understanding.patterns.user_silence import (
 )
 from rasa.shared.core.constants import ACTION_REPEAT_BOT_MESSAGES
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import Event, BotUttered, UserUttered
+from rasa.shared.core.events import BotUttered, Event, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 
 

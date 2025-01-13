@@ -1,7 +1,6 @@
 import dataclasses
-from typing import Text
 import uuid
-
+from typing import Text
 
 from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import ExecutionContext, GraphNode, GraphSchema, SchemaNode
@@ -9,9 +8,9 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training import fingerprinting
 from rasa.engine.training.components import (
-    PrecomputedValueProvider,
     FingerprintComponent,
     FingerprintStatus,
+    PrecomputedValueProvider,
 )
 from tests.engine.graph_components_test_classes import CacheableText
 

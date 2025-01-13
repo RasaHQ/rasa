@@ -1,19 +1,19 @@
-from typing import Text, List, Any, Tuple, Callable, Dict, Optional
-
 import dataclasses
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple
+
 import numpy as np
 import pytest
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.constants import SPACY_DOCS, TOKENS_NAMES
-from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
+from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.nlu.constants import INTENT, RESPONSE, TEXT
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 @pytest.fixture()

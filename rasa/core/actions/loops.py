@@ -1,13 +1,13 @@
 from abc import ABC
-from typing import Any, Dict, List, TYPE_CHECKING, Optional, Text
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text
 
 from rasa.core.actions.action import Action
-from rasa.shared.core.events import Event, ActiveLoop
+from rasa.shared.core.events import ActiveLoop, Event
 
 if TYPE_CHECKING:
     from rasa.core.channels import OutputChannel
-    from rasa.shared.core.domain import Domain
     from rasa.core.nlg import NaturalLanguageGenerator
+    from rasa.shared.core.domain import Domain
     from rasa.shared.core.trackers import DialogueStateTracker
 
 

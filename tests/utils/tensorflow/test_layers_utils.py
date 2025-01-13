@@ -1,7 +1,9 @@
+from typing import List, Optional, Union
+
+import numpy as np
 import pytest
 import tensorflow as tf
-import numpy as np
-from typing import List, Optional, Union
+
 import rasa.utils.tensorflow.layers_utils as layers_utils
 
 

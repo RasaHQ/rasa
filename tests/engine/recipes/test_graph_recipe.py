@@ -1,8 +1,9 @@
+from pathlib import Path
 from typing import Text
 
 import pytest
-from pathlib import Path
 
+import rasa.engine.validation
 import rasa.shared.utils.io
 from rasa.engine.exceptions import GraphSchemaException
 from rasa.engine.graph import GraphSchema
@@ -10,8 +11,7 @@ from rasa.engine.recipes.graph_recipe import GraphV1Recipe
 from rasa.engine.recipes.recipe import Recipe
 from rasa.shared.constants import ASSISTANT_ID_KEY
 from rasa.shared.data import TrainingType
-import rasa.engine.validation
-from rasa.shared.utils.yaml import read_yaml_file, read_yaml, read_model_configuration
+from rasa.shared.utils.yaml import read_model_configuration, read_yaml, read_yaml_file
 
 CONFIG_FOLDER = Path("data/test_config")
 # The graph config is equivalent to the default config in graph schema format.

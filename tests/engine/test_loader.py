@@ -1,13 +1,13 @@
 from datetime import datetime
 from pathlib import Path
 
-from _pytest.tmpdir import TempPathFactory
 import freezegun
+from _pytest.tmpdir import TempPathFactory
 
 import rasa
+from rasa.engine import loader
 from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import GraphModelConfiguration, GraphSchema, SchemaNode
-from rasa.engine import loader
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource

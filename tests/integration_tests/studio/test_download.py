@@ -6,10 +6,9 @@ from unittest.mock import MagicMock
 import pytest
 import questionary
 from pytest import MonkeyPatch
-from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.utils.common import get_temp_dir_name
 
 import rasa.studio.download
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.studio.config import StudioConfig
 from rasa.studio.constants import (
     STUDIO_DOMAIN_FILENAME,
@@ -17,6 +16,7 @@ from rasa.studio.constants import (
     STUDIO_NLU_FILENAME,
 )
 from rasa.studio.data_handler import StudioDataHandler
+from rasa.utils.common import get_temp_dir_name
 
 
 def mock_questionary_confirm(question):

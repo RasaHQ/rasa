@@ -1,62 +1,76 @@
-import inspect
 import copy
+import inspect
 import logging
-import structlog
 import os
 import re
-from pathlib import Path
 import tarfile
 import time
+from pathlib import Path
 from types import LambdaType
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text, Tuple, Union
-from rasa.core.actions.action_exceptions import ActionExecutionRejection
-from rasa.core.actions.forms import FormAction
-from rasa.core.http_interpreter import RasaNLUHttpInterpreter
-from rasa.dialogue_understanding.commands import (
-    Command,
-    NoopCommand,
-    SetSlotCommand,
-    CannotHandleCommand,
-)
-from rasa.engine import loader
-from rasa.engine.constants import (
-    PLACEHOLDER_MESSAGE,
-    PLACEHOLDER_TRACKER,
-    PLACEHOLDER_ENDPOINTS,
-)
-from rasa.engine.runner.dask import DaskGraphRunner
-from rasa.engine.storage.local_model_storage import LocalModelStorage
-from rasa.engine.storage.storage import ModelMetadata
-from rasa.model import get_latest_model
-from rasa.plugin import plugin_manager
-from rasa.shared.core.flows import FlowsList
-from rasa.shared.data import TrainingType, create_regex_pattern_reader
-import rasa.shared.utils.io
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, Union
+
+import structlog
+
 import rasa.core.actions.action
+import rasa.core.tracker_store
+import rasa.core.utils
+import rasa.shared.core.trackers
+import rasa.shared.utils.io
 from rasa.core import jobs
 from rasa.core.actions.action import Action
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
+from rasa.core.actions.forms import FormAction
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
     UserMessage,
 )
-import rasa.core.utils
+from rasa.core.http_interpreter import RasaNLUHttpInterpreter
+from rasa.core.lock_store import LockStore
+from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
+from rasa.dialogue_understanding.commands import (
+    CannotHandleCommand,
+    Command,
+    NoopCommand,
+    SetSlotCommand,
+)
+from rasa.engine import loader
+from rasa.engine.constants import (
+    PLACEHOLDER_ENDPOINTS,
+    PLACEHOLDER_MESSAGE,
+    PLACEHOLDER_TRACKER,
+)
+from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.runner.interface import GraphRunner
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.storage import ModelMetadata
 from rasa.exceptions import ActionLimitReached, ModelNotFound
+from rasa.model import get_latest_model
+from rasa.plugin import plugin_manager
+from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
+    DEFAULT_SENDER_ID,
+    DOCS_URL_DOMAINS,
+    DOCS_URL_NLU_BASED_POLICIES,
+    RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT,
+    ROUTE_TO_CALM_SLOT,
+    UTTER_PREFIX,
+)
 from rasa.shared.core.constants import (
     ACTION_CORRECT_FLOW_SLOT,
-    SLOT_CONSECUTIVE_SILENCE_TIMEOUTS,
-    SLOT_SILENCE_TIMEOUT,
-    USER_INTENT_RESTART,
+    ACTION_EXTRACT_SLOTS,
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
     FOLLOWUP_ACTION,
     SESSION_START_METADATA_SLOT,
-    ACTION_EXTRACT_SLOTS,
+    SLOT_CONSECUTIVE_SILENCE_TIMEOUTS,
+    SLOT_SILENCE_TIMEOUT,
+    USER_INTENT_RESTART,
     USER_INTENT_SILENCE_TIMEOUT,
 )
 from rasa.shared.core.events import (
+    ActionExecuted,
     ActionExecutionRejected,
     BotUttered,
     Event,
@@ -64,37 +78,24 @@ from rasa.shared.core.events import (
     ReminderScheduled,
     SlotSet,
     UserUttered,
-    ActionExecuted,
 )
-from rasa.shared.constants import (
-    ASSISTANT_ID_KEY,
-    DOCS_URL_DOMAINS,
-    DEFAULT_SENDER_ID,
-    ROUTE_TO_CALM_SLOT,
-    DOCS_URL_NLU_BASED_POLICIES,
-    UTTER_PREFIX,
-    RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT,
-)
-from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.lock_store import LockStore
-from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
-import rasa.core.tracker_store
-import rasa.core.actions.action
-import rasa.shared.core.trackers
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.data import TrainingType, create_regex_pattern_reader
 from rasa.shared.nlu.constants import (
     COMMANDS,
     ENTITIES,
+    FULL_RETRIEVAL_INTENT_NAME_KEY,
     INTENT,
     INTENT_NAME_KEY,
     INTENT_RESPONSE_KEY,
     PREDICTED_CONFIDENCE_KEY,
-    FULL_RETRIEVAL_INTENT_NAME_KEY,
-    RESPONSE_SELECTOR,
     RESPONSE,
+    RESPONSE_SELECTOR,
     TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:

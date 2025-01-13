@@ -1,18 +1,19 @@
 from typing import Any, List
 
 import pytest
+
 from rasa.dialogue_understanding.commands.set_slot_command import (
-    SetSlotExtractor,
-    get_flows_predicted_to_start_from_tracker,
     Command,
     SetSlotCommand,
+    SetSlotExtractor,
+    get_flows_predicted_to_start_from_tracker,
 )
+from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import TextSlot
-from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import COMMANDS
 from tests.utilities import flows_from_str

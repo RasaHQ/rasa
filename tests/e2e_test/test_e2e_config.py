@@ -7,10 +7,10 @@ from pytest import MonkeyPatch
 from rasa.e2e_test.constants import KEY_LLM_AS_JUDGE
 from rasa.e2e_test.e2e_config import (
     InvalidLLMConfiguration,
-    LLMJudgeConfig,
     LLME2ETestConverterConfig,
-    create_llm_judge_config,
+    LLMJudgeConfig,
     create_llm_e2e_test_converter_config,
+    create_llm_judge_config,
     get_conftest_path,
     read_conftest_file,
 )

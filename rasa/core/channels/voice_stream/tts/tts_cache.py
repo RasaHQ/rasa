@@ -1,6 +1,7 @@
-from typing import Optional
-from collections import OrderedDict
 import logging
+from collections import OrderedDict
+from typing import Optional
+
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 
 logger = logging.getLogger(__name__)

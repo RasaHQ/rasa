@@ -1,53 +1,52 @@
-import time
-import random
-import tensorflow as tf
-import numpy as np
 import logging
 import os
+import random
+import time
 from collections import defaultdict
-from typing import List, Text, Dict, Tuple, Union, Optional, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, Union
 
-from keras.src.utils import tf_utils
+import numpy as np
+import tensorflow as tf
 from keras import Model
+from keras.src.utils import tf_utils
 
+import rasa.utils.train_utils
 from rasa.shared.constants import DIAGNOSTIC_DATA
+from rasa.shared.exceptions import RasaException
+from rasa.shared.nlu.constants import TEXT
+from rasa.utils.tensorflow import layers, rasa_layers
 from rasa.utils.tensorflow.constants import (
-    LABEL,
+    CONNECTION_DENSITY,
+    CONSTRAIN_SIMILARITIES,
+    EMBEDDING_DIMENSION,
     IDS,
     INTENT_CLASSIFICATION,
+    LABEL,
+    LEARNING_RATE,
+    LOSS_TYPE,
+    MAX_NEG_SIM,
+    MAX_POS_SIM,
+    MODEL_CONFIDENCE,
+    NEGATIVE_MARGIN_SCALE,
+    NUM_NEG,
+    RANDOM_SEED,
+    REGULARIZATION_CONSTANT,
+    RUN_EAGERLY,
+    SCALE_LOSS,
     SENTENCE,
     SEQUENCE_LENGTH,
-    RANDOM_SEED,
-    EMBEDDING_DIMENSION,
-    REGULARIZATION_CONSTANT,
     SIMILARITY_TYPE,
-    CONNECTION_DENSITY,
-    NUM_NEG,
-    LOSS_TYPE,
-    MAX_POS_SIM,
-    MAX_NEG_SIM,
     USE_MAX_NEG_SIM,
-    NEGATIVE_MARGIN_SCALE,
-    SCALE_LOSS,
-    LEARNING_RATE,
-    CONSTRAIN_SIMILARITIES,
-    MODEL_CONFIDENCE,
-    RUN_EAGERLY,
+)
+from rasa.utils.tensorflow.data_generator import (
+    RasaBatchDataGenerator,
+    RasaDataGenerator,
 )
 from rasa.utils.tensorflow.model_data import (
-    RasaModelData,
-    FeatureSignature,
     FeatureArray,
+    FeatureSignature,
+    RasaModelData,
 )
-import rasa.utils.train_utils
-from rasa.utils.tensorflow import layers
-from rasa.utils.tensorflow import rasa_layers
-from rasa.utils.tensorflow.data_generator import (
-    RasaDataGenerator,
-    RasaBatchDataGenerator,
-)
-from rasa.shared.nlu.constants import TEXT
-from rasa.shared.exceptions import RasaException
 from rasa.utils.tensorflow.types import BatchData, MaybeNestedBatchData
 
 if TYPE_CHECKING:

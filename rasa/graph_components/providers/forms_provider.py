@@ -1,13 +1,13 @@
 from __future__ import annotations
+
 import dataclasses
+from typing import Any, Dict, Text
 
-from typing import Dict, Text, Any
-
-from rasa.engine.graph import GraphComponent, ExecutionContext
+import rasa.shared.utils.io
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
-import rasa.shared.utils.io
 
 
 @dataclasses.dataclass

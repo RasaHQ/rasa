@@ -1,21 +1,22 @@
-from typing import Any, Dict, List, Optional, Union
-from litellm import (
-    text_completion,
-    atext_completion,
-)
 import logging
 import os
+from typing import Any, Dict, List, Optional, Union
+
 import structlog
+from litellm import (
+    atext_completion,
+    text_completion,
+)
 
 from rasa.shared.constants import (
-    SELF_HOSTED_VLLM_PREFIX,
-    SELF_HOSTED_VLLM_API_KEY_ENV_VAR,
     API_KEY,
+    SELF_HOSTED_VLLM_API_KEY_ENV_VAR,
+    SELF_HOSTED_VLLM_PREFIX,
 )
+from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers._configs.self_hosted_llm_client_config import (
     SelfHostedLLMClientConfig,
 )
-from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.io import suppress_logs

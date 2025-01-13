@@ -109,12 +109,12 @@ logger = logging.getLogger(__name__)
 def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["Action"]:
     """List default actions."""
     from rasa.core.actions.action_clean_stack import ActionCleanStack
+    from rasa.core.actions.action_hangup import ActionHangup
+    from rasa.core.actions.action_repeat_bot_messages import ActionRepeatBotMessages
     from rasa.core.actions.action_run_slot_rejections import ActionRunSlotRejections
     from rasa.core.actions.action_trigger_chitchat import ActionTriggerChitchat
     from rasa.core.actions.action_trigger_search import ActionTriggerSearch
     from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
-    from rasa.core.actions.action_hangup import ActionHangup
-    from rasa.core.actions.action_repeat_bot_messages import ActionRepeatBotMessages
     from rasa.dialogue_understanding.patterns.cancel import ActionCancelFlow
     from rasa.dialogue_understanding.patterns.clarify import ActionClarifyFlows
     from rasa.dialogue_understanding.patterns.correction import ActionCorrectFlowSlot

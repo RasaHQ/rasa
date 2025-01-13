@@ -7,19 +7,19 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Type
 import numpy as np
 import scipy.sparse
 
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
+import rasa.nlu.utils.pattern_utils as pattern_utils
 import rasa.shared.utils.io
 import rasa.utils.io
-import rasa.nlu.utils.pattern_utils as pattern_utils
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.featurizers.sparse_featurizer.sparse_featurizer import SparseFeaturizer
-from rasa.shared.nlu.constants import TEXT, RESPONSE, ACTION_TEXT
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.shared.nlu.constants import ACTION_TEXT, RESPONSE, TEXT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 

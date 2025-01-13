@@ -1,5 +1,4 @@
-from collections import OrderedDict
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Text, Union
 
@@ -8,16 +7,16 @@ import structlog
 from rasa.dialogue_understanding_test.du_test_case import DialogueUnderstandingTestCase
 from rasa.e2e_test.assertions import Assertion
 from rasa.e2e_test.constants import (
-    KEY_ASSERTIONS,
     KEY_ASSERTION_ORDER_ENABLED,
+    KEY_ASSERTIONS,
     KEY_BOT_INPUT,
     KEY_BOT_UTTERED,
     KEY_FIXTURES,
     KEY_METADATA,
-    KEY_STUB_CUSTOM_ACTIONS,
     KEY_SLOT_NOT_SET,
     KEY_SLOT_SET,
     KEY_STEPS,
+    KEY_STUB_CUSTOM_ACTIONS,
     KEY_TEST_CASE,
     KEY_TEST_CASES,
     KEY_USER_INPUT,

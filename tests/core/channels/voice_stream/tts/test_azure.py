@@ -1,8 +1,9 @@
 from unittest import mock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from pytest import MonkeyPatch
-from unittest.mock import patch, AsyncMock
+
 from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
 from rasa.core.channels.voice_stream.tts.azure import AzureTTS, AzureTTSConfig
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSError

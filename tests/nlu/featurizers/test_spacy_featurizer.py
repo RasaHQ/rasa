@@ -3,13 +3,13 @@ from typing import Any, Dict, Text
 import numpy as np
 import pytest
 
-from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
-from rasa.shared.nlu.training_data import loading
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.constants import SPACY_DOCS
-from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
+from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
+from rasa.shared.nlu.constants import INTENT, RESPONSE, TEXT
+from rasa.shared.nlu.training_data import loading
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 def create_spacy_featurizer(config: Dict[Text, Any]) -> SpacyFeaturizer:

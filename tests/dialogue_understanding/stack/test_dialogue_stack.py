@@ -1,4 +1,5 @@
 import dataclasses
+
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )

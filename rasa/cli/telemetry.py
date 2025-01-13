@@ -2,11 +2,11 @@ import argparse
 import textwrap
 from typing import List
 
+import rasa.cli.utils
+import rasa.shared.utils.cli
 from rasa import telemetry
 from rasa.cli import SubParsersAction
-import rasa.cli.utils
 from rasa.shared.constants import DOCS_URL_TELEMETRY
-import rasa.shared.utils.cli
 from rasa.utils import licensing
 
 

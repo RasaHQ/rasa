@@ -4,8 +4,6 @@ import os
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Text
 
-from rasa.utils.common import read_global_config_value, write_global_config_value
-
 from rasa.studio.constants import (
     RASA_STUDIO_AUTH_SERVER_URL_ENV,
     RASA_STUDIO_CLI_CLIENT_ID_KEY_ENV,
@@ -14,6 +12,7 @@ from rasa.studio.constants import (
     RASA_STUDIO_CLI_STUDIO_URL_ENV,
     STUDIO_CONFIG_KEY,
 )
+from rasa.utils.common import read_global_config_value, write_global_config_value
 
 AUTH_SERVER_URL_KEY = "authentication_server_url"
 STUDIO_URL_KEY = "studio_url"

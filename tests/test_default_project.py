@@ -1,19 +1,17 @@
+import copy
+import re
 from typing import Any, Dict, Text
 
 import pytest
-import copy
-
-import re
-
 from pytest import Testdir
 
-from rasa.__main__ import create_argument_parser
 import rasa.cli.data
-import rasa.cli.utils
 import rasa.cli.scaffold
-import rasa.cli.train
 import rasa.cli.shell
+import rasa.cli.train
+import rasa.cli.utils
 import rasa.shared.utils.io
+from rasa.__main__ import create_argument_parser
 from rasa.shared.constants import ASSISTANT_ID_KEY
 from rasa.utils.common import EXPECTED_WARNINGS
 from rasa.utils.io import write_yaml

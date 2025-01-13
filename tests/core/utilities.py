@@ -1,11 +1,11 @@
-import itertools
 import contextlib
+import itertools
 import os
 import typing
-from typing import List, Optional, Text, Any, Dict
+from typing import Any, Dict, List, Optional, Text
 
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered, Event
+from rasa.shared.core.events import Event, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 

@@ -1,5 +1,7 @@
+from typing import Dict, Text
+
 import pytest
-from typing import Text, Dict
+
 from rasa.utils.tensorflow.environment import _parse_gpu_config
 
 

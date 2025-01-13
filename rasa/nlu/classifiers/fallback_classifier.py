@@ -1,25 +1,26 @@
 from __future__ import annotations
+
 import copy
 import logging
-from typing import Any, List, Text, Dict, Type, Union, Tuple, Optional
+from typing import Any, Dict, List, Optional, Text, Tuple, Type, Union
 
-from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.core.constants import (
+    DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+    DEFAULT_NLU_FALLBACK_THRESHOLD,
+)
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
-from rasa.core.constants import (
-    DEFAULT_NLU_FALLBACK_THRESHOLD,
-    DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
-)
 from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.shared.nlu.constants import (
     INTENT,
     INTENT_NAME_KEY,
     INTENT_RANKING_KEY,
     PREDICTED_CONFIDENCE_KEY,
 )
+from rasa.shared.nlu.training_data.message import Message
 
 THRESHOLD_KEY = "threshold"
 AMBIGUITY_THRESHOLD_KEY = "ambiguity_threshold"

@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import Any, Dict, Optional, Text, Type
+
 import dataclasses
 import uuid
+from typing import Any, Dict, Optional, Text, Type
 
 from rasa.engine.caching import Cacheable, TrainingCache
 from rasa.engine.graph import ExecutionContext, GraphComponent, SchemaNode

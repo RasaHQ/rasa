@@ -1,33 +1,33 @@
 import abc
-from typing import Any, Dict, List, NamedTuple, Text, Tuple, Optional
+from typing import Any, Dict, List, NamedTuple, Optional, Text, Tuple
 
 import rasa.shared.utils.io
-from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.tokenizers.tokenizer import Token
+import rasa.utils.train_utils
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
-    ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
-    ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
+    ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
+    ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
+    TOKENS_NAMES,
 )
+from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.shared.nlu.constants import (
-    TEXT,
-    INTENT,
     ENTITIES,
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
-    EXTRACTOR,
-    ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    EXTRACTOR,
+    INTENT,
     NO_ENTITY_TAG,
-    SPLIT_ENTITIES_BY_COMMA,
     SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET,
+    SPLIT_ENTITIES_BY_COMMA,
+    TEXT,
 )
-import rasa.utils.train_utils
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 class EntityTagSpec(NamedTuple):

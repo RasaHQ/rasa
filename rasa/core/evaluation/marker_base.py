@@ -1,42 +1,41 @@
 from __future__ import annotations
+
+import csv
+import logging
 import os
+import os.path
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
+    Any,
+    AsyncIterator,
     Dict,
     Iterator,
+    List,
     Optional,
     Set,
     Text,
-    List,
     Tuple,
     Type,
     TypeVar,
-    TYPE_CHECKING,
     Union,
-    Any,
-    AsyncIterator,
 )
-
-from pathlib import Path
-from dataclasses import dataclass
 
 import rasa.shared.core.constants
 import rasa.shared.nlu.constants
-import rasa.shared.utils.io
 import rasa.shared.utils.common
+import rasa.shared.utils.io
+from rasa import telemetry
+from rasa.shared.constants import DOCS_URL_MARKERS
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted, Event, UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.data import is_likely_yaml_file
 from rasa.shared.exceptions import InvalidConfigException, RasaException
-from rasa.shared.core.events import ActionExecuted, UserUttered, Event
-from rasa import telemetry
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.utils.yaml import read_yaml_file
 from rasa.utils.io import WriteRow
-from rasa.shared.constants import DOCS_URL_MARKERS
-
-import logging
-import csv
-import os.path
 
 if TYPE_CHECKING:
     from rasa.core.evaluation.marker import OrMarker

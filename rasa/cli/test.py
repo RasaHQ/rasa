@@ -2,31 +2,31 @@ import argparse
 import asyncio
 import logging
 import os
-from typing import List, Optional, Text, Dict, Union, Any
+from typing import Any, Dict, List, Optional, Text, Union
 
-from rasa.cli import SubParsersAction
+import rasa.cli.utils
 import rasa.shared.data
-from rasa.shared.exceptions import YamlException
-import rasa.shared.utils.io
 import rasa.shared.utils.cli
+import rasa.shared.utils.io
+import rasa.utils.common
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import test as arguments
 from rasa.core.constants import (
     FAILED_STORIES_FILE,
-    SUCCESSFUL_STORIES_FILE,
     STORIES_WITH_WARNINGS_FILE,
+    SUCCESSFUL_STORIES_FILE,
 )
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
-    DEFAULT_E2E_TESTS_PATH,
     DEFAULT_CONFIG_PATH,
-    DEFAULT_MODELS_PATH,
     DEFAULT_DATA_PATH,
+    DEFAULT_E2E_TESTS_PATH,
+    DEFAULT_MODELS_PATH,
     DEFAULT_RESULTS_PATH,
 )
-from rasa.shared.utils.yaml import validate_raw_yaml_using_schema_file
-import rasa.cli.utils
-import rasa.utils.common
+from rasa.shared.exceptions import YamlException
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.utils.yaml import validate_raw_yaml_using_schema_file
 
 logger = logging.getLogger(__name__)
 
@@ -95,9 +95,9 @@ def _print_core_test_execution_info(args: argparse.Namespace) -> None:
 async def run_core_test_async(args: argparse.Namespace) -> None:
     """Run core tests."""
     from rasa.model_testing import (
-        test_core_models_in_directory,
         test_core,
         test_core_models,
+        test_core_models_in_directory,
     )
 
     stories = rasa.cli.utils.get_validated_path(

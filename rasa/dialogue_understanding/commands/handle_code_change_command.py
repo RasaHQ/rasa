@@ -5,12 +5,12 @@ from typing import Any, Dict, List
 
 import structlog
 
-from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.commands.command import Command
 from rasa.dialogue_understanding.patterns.code_change import CodeChangeFlowStackFrame
+from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 
 structlogger = structlog.get_logger()
 

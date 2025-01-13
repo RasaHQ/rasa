@@ -2,23 +2,24 @@ import json
 import logging
 import os
 import re
-from typing import Any, Dict, Optional, Text, Match, List
+from typing import Any, Dict, List, Match, Optional, Text
 
 import scipy.sparse
+
+import rasa.shared.data
+import rasa.shared.utils.io
+from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.nlu.constants import (
     ENTITIES,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
     EXTRACTOR,
     PRETRAINED_EXTRACTORS,
-    ENTITY_ATTRIBUTE_START,
-    ENTITY_ATTRIBUTE_END,
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_GROUP,
 )
-from rasa.shared.constants import UTTER_PREFIX
-import rasa.shared.utils.io
-import rasa.shared.data
 
 logger = logging.getLogger(__name__)
 

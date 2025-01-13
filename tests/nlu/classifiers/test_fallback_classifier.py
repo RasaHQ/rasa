@@ -1,27 +1,27 @@
 import copy
-from typing import Dict, Text, Any
+from typing import Any, Dict, Text
 
 import pytest
 
+from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers import fallback_classifier
-from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
-from rasa.core.constants import DEFAULT_NLU_FALLBACK_THRESHOLD
 from rasa.nlu.classifiers.fallback_classifier import (
-    THRESHOLD_KEY,
     AMBIGUITY_THRESHOLD_KEY,
+    THRESHOLD_KEY,
     FallbackClassifier,
 )
-from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.shared.nlu.constants import (
     INTENT,
-    TEXT,
     INTENT_NAME_KEY,
     INTENT_RANKING_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    TEXT,
 )
+from rasa.shared.nlu.training_data.message import Message
 
 
 def create_fallback_classifier(

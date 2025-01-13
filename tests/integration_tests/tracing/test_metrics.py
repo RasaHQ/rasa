@@ -1,44 +1,41 @@
 import inspect
 import json
 import time
-from typing import Generator, Any, Optional, Dict, Callable, List
+from typing import Any, Callable, Dict, Generator, List, Optional
 from unittest.mock import Mock
 
 import opentelemetry
 import pytest
 import requests
 from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import MetricReader
-from opentelemetry.sdk.metrics.export import InMemoryMetricReader
-from pytest import MonkeyPatch
+from opentelemetry.sdk.metrics.export import InMemoryMetricReader, MetricReader
 from opentelemetry.sdk.trace import TracerProvider
+from pytest import MonkeyPatch
 
 from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
-from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
-
+from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.dialogue_understanding.generator import (
     LLMCommandGenerator,
     MultiStepLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
 )
-
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.domain import Domain
 from rasa.tracing.constants import (
-    LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
+    CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_METRIC_NAME,
     DURATION_UNIT_NAME,
     ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
     INTENTLESS_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
-    CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_METRIC_NAME,
-    RASA_CLIENT_REQUEST_DURATION_METRIC_NAME,
     LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
+    LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
+    RASA_CLIENT_REQUEST_DURATION_METRIC_NAME,
     SINGLE_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
 )
 from rasa.tracing.instrumentation import instrumentation

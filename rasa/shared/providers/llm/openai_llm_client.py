@@ -1,13 +1,13 @@
 import os
 import re
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 import structlog
 
 from rasa.shared.constants import (
     OPENAI_API_BASE_ENV_VAR,
-    OPENAI_API_VERSION_ENV_VAR,
     OPENAI_API_TYPE_ENV_VAR,
+    OPENAI_API_VERSION_ENV_VAR,
     OPENAI_PROVIDER,
 )
 from rasa.shared.providers._configs.openai_client_config import OpenAIClientConfig

@@ -1,5 +1,6 @@
 import os
 from typing import Text
+
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -7,11 +8,11 @@ from rasa.graph_components.providers.nlu_training_data_provider import (
     NLUTrainingDataProvider,
 )
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.loading import load_data
 from rasa.shared.nlu.training_data.training_data import (
     DEFAULT_TRAINING_DATA_OUTPUT_PATH,
     TrainingData,
 )
-from rasa.shared.nlu.training_data.loading import load_data
 
 
 def test_nlu_training_data_provider(

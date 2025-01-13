@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from aioresponses import aioresponses
+
 from rasa.core.channels import UserMessage
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.utils.endpoints import EndpointConfig

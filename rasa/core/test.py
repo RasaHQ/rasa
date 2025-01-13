@@ -1,73 +1,72 @@
 import logging
 import os
-from pathlib import Path
 import tempfile
 import warnings as pywarnings
 from collections import defaultdict, namedtuple
-from typing import Any, Dict, List, Optional, Text, Tuple, TYPE_CHECKING, cast
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, cast
 
+import rasa.shared.utils.io
 from rasa import telemetry
+from rasa.constants import PERCENTAGE_KEY, RESULTS_FILE
+from rasa.core.actions.action import ActionRetrieveResponse
+from rasa.core.channels import UserMessage
 from rasa.core.constants import (
     CONFUSION_MATRIX_STORIES_FILE,
-    REPORT_STORIES_FILE,
     FAILED_STORIES_FILE,
-    SUCCESSFUL_STORIES_FILE,
+    REPORT_STORIES_FILE,
     STORIES_WITH_WARNINGS_FILE,
+    SUCCESSFUL_STORIES_FILE,
 )
-from rasa.core.channels import UserMessage
 from rasa.core.policies.policy import PolicyPrediction
+from rasa.exceptions import ActionLimitReached
+from rasa.nlu.constants import (
+    RESPONSE_SELECTOR_DEFAULT_INTENT,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
+    TOKENS_NAMES,
+)
 from rasa.nlu.test import EntityEvaluationResult, evaluate_entities
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.constants import (
-    POLICIES_THAT_EXTRACT_ENTITIES,
     ACTION_UNLIKELY_INTENT_NAME,
+    POLICIES_THAT_EXTRACT_ENTITIES,
 )
-from rasa.shared.exceptions import RasaException
-import rasa.shared.utils.io
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted, EntitiesAdded, SlotSet, UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
 from rasa.shared.core.training_data.structures import StoryStep
-from rasa.shared.core.domain import Domain
-from rasa.nlu.constants import (
-    RESPONSE_SELECTOR_DEFAULT_INTENT,
-    RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
-    TOKENS_NAMES,
-    RESPONSE_SELECTOR_PROPERTY_NAME,
-)
+from rasa.shared.exceptions import RasaException
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import (
-    INTENT,
     ENTITIES,
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
-    EXTRACTOR,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_TEXT,
     ENTITY_ATTRIBUTE_TYPE,
-    INTENT_RESPONSE_KEY,
+    ENTITY_ATTRIBUTE_VALUE,
+    EXTRACTOR,
+    FULL_RETRIEVAL_INTENT_NAME_KEY,
+    INTENT,
     INTENT_NAME_KEY,
+    INTENT_RESPONSE_KEY,
     RESPONSE,
     RESPONSE_SELECTOR,
-    FULL_RETRIEVAL_INTENT_NAME_KEY,
     TEXT,
-    ENTITY_ATTRIBUTE_TEXT,
 )
-from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
-from rasa.shared.core.events import ActionExecuted, EntitiesAdded, UserUttered, SlotSet
-from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
-from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.io import DEFAULT_ENCODING
 from rasa.utils.tensorflow.constants import QUERY_INTENT_KEY, SEVERITY_KEY
-from rasa.exceptions import ActionLimitReached
-
-from rasa.core.actions.action import ActionRetrieveResponse
 
 if TYPE_CHECKING:
     from rasa.core.agent import Agent
     from rasa.core.processor import MessageProcessor
+    from rasa.shared.core.events import EntityPrediction, Event
     from rasa.shared.core.generator import TrainingDataGenerator
-    from rasa.shared.core.events import Event, EntityPrediction
 
 logger = logging.getLogger(__name__)
 
@@ -1226,6 +1225,7 @@ def _plot_story_evaluation(
     """Plot a confusion matrix of story evaluation."""
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
+
     from rasa.utils.plotting import plot_confusion_matrix
 
     confusion_matrix_filename = CONFUSION_MATRIX_STORIES_FILE

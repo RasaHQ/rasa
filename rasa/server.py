@@ -60,9 +60,9 @@ from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_SENDER_ID,
     DOCS_BASE_URL,
+    DOCS_URL_FLOWS,
     DOCS_URL_TRAINING_DATA,
     TEST_STORIES_FILE_PREFIX,
-    DOCS_URL_FLOWS,
 )
 from rasa.shared.core.domain import Domain, InvalidDomain
 from rasa.shared.core.events import Event
@@ -74,7 +74,7 @@ from rasa.shared.core.trackers import (
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
-from rasa.shared.exceptions import YamlException, RasaException
+from rasa.shared.exceptions import RasaException, YamlException
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA

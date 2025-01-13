@@ -1,5 +1,4 @@
 import pytest
-from rasa.core.brokers.kafka import KafkaEventBroker
 
 from rasa.anonymization.anonymization_rule_executor import (
     AnonymizationRule,
@@ -8,6 +7,7 @@ from rasa.anonymization.anonymization_rule_executor import (
 from rasa.anonymization.anonymization_rule_orchestrator import (
     AnonymizationRuleOrchestrator,
 )
+from rasa.core.brokers.kafka import KafkaEventBroker
 
 
 @pytest.fixture(scope="session")

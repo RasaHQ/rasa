@@ -1,12 +1,9 @@
-from typing import Dict, Any
-
-from unittest.mock import patch, Mock
+import os
+from typing import Any, Dict
+from unittest.mock import Mock, patch
 
 from rasa.shared.utils.health_check.health_check import (
     perform_embeddings_health_check,
-)
-import os
-from rasa.shared.utils.health_check.health_check import (
     perform_llm_health_check,
 )
 

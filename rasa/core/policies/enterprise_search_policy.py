@@ -2,6 +2,7 @@ import importlib.resources
 import json
 import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text
+
 import dotenv
 import structlog
 from jinja2 import Template
@@ -16,8 +17,8 @@ from rasa.core.constants import (
 )
 from rasa.core.information_retrieval import (
     InformationRetrieval,
-    SearchResult,
     InformationRetrievalException,
+    SearchResult,
     create_from_endpoint_config,
 )
 from rasa.core.information_retrieval.faiss import FAISS_Store
@@ -34,9 +35,9 @@ from rasa.dialogue_understanding.patterns.internal_error import (
 )
 from rasa.dialogue_understanding.stack.frames import (
     DialogueStackFrame,
+    PatternFlowStackFrame,
     SearchStackFrame,
 )
-from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -46,12 +47,12 @@ from rasa.graph_components.providers.responses_provider import Responses
 from rasa.shared.constants import (
     EMBEDDINGS_CONFIG_KEY,
     MODEL_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
+    MODEL_NAME_CONFIG_KEY,
+    OPENAI_PROVIDER,
     PROMPT_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
-    OPENAI_PROVIDER,
     TIMEOUT_CONFIG_KEY,
-    MODEL_NAME_CONFIG_KEY,
-    MODEL_GROUP_ID_CONFIG_KEY,
 )
 from rasa.shared.core.constants import (
     ACTION_CANCEL_FLOW,
@@ -59,10 +60,10 @@ from rasa.shared.core.constants import (
     DEFAULT_SLOT_NAMES,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import Event, UserUttered, BotUttered
+from rasa.shared.core.events import BotUttered, Event, UserUttered
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.shared.exceptions import RasaException, FileIOException
+from rasa.shared.exceptions import FileIOException, RasaException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
     _LangchainEmbeddingClientAdapter,
@@ -80,9 +81,9 @@ from rasa.shared.utils.llm import (
     embedder_factory,
     get_prompt_template,
     llm_factory,
+    resolve_model_client_config,
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
-    resolve_model_client_config,
 )
 from rasa.telemetry import (
     track_enterprise_search_policy_predict,
@@ -92,6 +93,7 @@ from rasa.telemetry import (
 
 if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings
+
     from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 
 from rasa.utils.log_utils import log_llm

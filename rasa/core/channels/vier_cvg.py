@@ -8,10 +8,10 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import Any, Awaitable, Callable, Dict, Optional, Text
 
-import rasa.shared.utils.io
 import structlog
-from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 
+import rasa.shared.utils.io
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.utils.beta import ensure_beta_feature_is_enabled
 
 # ignore ResourceWarning, InsecureRequestWarning

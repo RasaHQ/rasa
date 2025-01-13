@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import abc
 import logging
 import typing
@@ -6,17 +7,18 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Tuple, Union, Text, Generator, Dict, Any, Optional
+from typing import Any, Dict, Generator, Optional, Text, Tuple, Union
+
 from packaging import version
 
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
-from rasa.exceptions import UnsupportedModelVersionError
 from rasa.engine.storage.resource import Resource
+from rasa.exceptions import UnsupportedModelVersionError
 from rasa.shared.core.domain import Domain
 from rasa.shared.data import TrainingType
 
 if typing.TYPE_CHECKING:
-    from rasa.engine.graph import GraphSchema, GraphModelConfiguration
+    from rasa.engine.graph import GraphModelConfiguration, GraphSchema
 
 logger = logging.getLogger(__name__)
 

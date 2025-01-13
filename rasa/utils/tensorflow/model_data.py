@@ -1,20 +1,20 @@
 import logging
+from collections import OrderedDict, defaultdict
 from typing import (
-    Optional,
+    Any,
     DefaultDict,
     Dict,
-    Iterable,
-    Text,
-    List,
-    Tuple,
-    Any,
-    Union,
-    NamedTuple,
     ItemsView,
-    overload,
+    Iterable,
+    List,
+    NamedTuple,
+    Optional,
+    Text,
+    Tuple,
+    Union,
     cast,
+    overload,
 )
-from collections import defaultdict, OrderedDict
 
 import numpy as np
 import scipy.sparse

@@ -1,28 +1,28 @@
 import importlib.resources
 import re
-from typing import Dict, Any, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text
 
 import structlog
 
 import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
+    CancelFlowCommand,
+    CannotHandleCommand,
+    ChitChatAnswerCommand,
+    ClarifyCommand,
     Command,
     ErrorCommand,
-    SetSlotCommand,
-    CancelFlowCommand,
     HumanHandoffCommand,
-    ChitChatAnswerCommand,
-    SkipQuestionCommand,
     KnowledgeAnswerCommand,
-    ClarifyCommand,
-    CannotHandleCommand,
     RepeatBotMessagesCommand,
+    SetSlotCommand,
+    SkipQuestionCommand,
 )
 from rasa.dialogue_understanding.generator.constants import (
+    DEFAULT_LLM_CONFIG,
+    FLOW_RETRIEVAL_KEY,
     LLM_CONFIG_KEY,
     USER_INPUT_CONFIG_KEY,
-    FLOW_RETRIEVAL_KEY,
-    DEFAULT_LLM_CONFIG,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
@@ -36,24 +36,24 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
-    ROUTE_TO_CALM_SLOT,
+    EMBEDDINGS_CONFIG_KEY,
     PROMPT_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
-    EMBEDDINGS_CONFIG_KEY,
+    ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
-from rasa.shared.nlu.constants import TEXT, LLM_COMMANDS, LLM_PROMPT
+from rasa.shared.nlu.constants import LLM_COMMANDS, LLM_PROMPT, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     get_prompt_template,
-    tracker_as_readable_transcript,
-    sanitize_message_for_prompt,
     resolve_model_client_config,
+    sanitize_message_for_prompt,
+    tracker_as_readable_transcript,
 )
-from rasa.utils.beta import ensure_beta_feature_is_enabled, BetaNotEnabledException
+from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enabled
 from rasa.utils.log_utils import log_llm
 
 COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"

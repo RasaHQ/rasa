@@ -1,26 +1,28 @@
 from __future__ import annotations
-import numpy as np
+
 import logging
 import typing
-from typing import Any, List, Text, Dict, Tuple, Type
+from typing import Any, Dict, List, Text, Tuple, Type
 
-from rasa.engine.graph import GraphComponent, ExecutionContext
+import numpy as np
+
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
     TOKENS_NAMES,
 )
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
-from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 
 if typing.TYPE_CHECKING:
     import mitie

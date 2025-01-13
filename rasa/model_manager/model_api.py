@@ -1,21 +1,22 @@
 import asyncio
-from functools import wraps
 import os
+from functools import wraps
 from http import HTTPStatus
 from typing import Any, Callable, Dict, Optional, Union
+
 import dotenv
 import psutil
+import structlog
 from sanic import Blueprint, Sanic, response
-from sanic.response import json
 from sanic.exceptions import NotFound
 from sanic.request import Request
-import structlog
+from sanic.response import json
 from socketio import AsyncServer
 
+from rasa.constants import MODEL_ARCHIVE_EXTENSION
 from rasa.exceptions import ModelNotFound
 from rasa.model_manager import config
 from rasa.model_manager.config import SERVER_BASE_URL
-from rasa.constants import MODEL_ARCHIVE_EXTENSION
 from rasa.model_manager.runner_service import (
     BotSession,
     BotSessionStatus,

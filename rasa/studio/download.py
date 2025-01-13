@@ -9,9 +9,9 @@ import structlog
 import rasa.cli.utils
 import rasa.shared.utils.cli
 from rasa.shared.constants import (
+    DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_DOMAIN_PATH,
-    DEFAULT_CONFIG_PATH,
     DEFAULT_ENDPOINTS_PATH,
 )
 from rasa.shared.core.domain import Domain

@@ -7,14 +7,14 @@ from pytest import MonkeyPatch
 
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
+    CannotHandleCommand,
+    ChitChatAnswerCommand,
     ClarifyCommand,
     Command,
     CorrectSlotsCommand,
     FreeFormAnswerCommand,
     SetSlotCommand,
     StartFlowCommand,
-    ChitChatAnswerCommand,
-    CannotHandleCommand,
 )
 from rasa.dialogue_understanding.commands.correct_slots_command import CorrectedSlot
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
@@ -25,12 +25,12 @@ from rasa.dialogue_understanding.patterns.correction import (
     CorrectionPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.processor.command_processor import (
-    clean_up_slot_command,
-    get_commands_from_tracker,
     calculate_flow_fingerprints,
     clean_up_commands,
+    clean_up_slot_command,
     contains_command,
     execute_commands,
+    get_commands_from_tracker,
     get_current_collect_step,
     remove_duplicated_set_slots,
     should_slot_be_set,
@@ -43,8 +43,8 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 )
 from rasa.engine.graph import ExecutionContext
 from rasa.shared.constants import (
-    ROUTE_TO_CALM_SLOT,
     RASA_PATTERN_CANNOT_HANDLE_CHITCHAT,
+    ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain
@@ -59,10 +59,10 @@ from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps import CollectInformationFlowStep
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
 from rasa.shared.nlu.constants import COMMANDS
 from rasa.shared.utils.io import deep_container_fingerprint
 from tests.utilities import flows_from_str
-from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
 
 
 @pytest.fixture

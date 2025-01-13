@@ -1,7 +1,7 @@
 import math
 import shutil
 import sys
-from typing import Any, Text, NoReturn
+from typing import Any, NoReturn, Text
 
 import rasa.shared.utils.io
 

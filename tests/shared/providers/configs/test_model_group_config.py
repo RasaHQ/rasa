@@ -1,8 +1,8 @@
 import pytest
 
 from rasa.shared.providers._configs.model_group_config import (
-    ModelGroupConfig,
     ModelConfig,
+    ModelGroupConfig,
 )
 
 

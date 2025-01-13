@@ -1,33 +1,33 @@
 import logging
-from typing import Text, Dict, Any, List, Optional, TYPE_CHECKING, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, cast
 
-from rasa.shared.constants import DOCS_URL_NLU_BASED_SLOTS, IGNORED_INTENTS
 import rasa.shared.utils.io
-from rasa.shared.core.slots import ListSlot, Slot
-from rasa.shared.nlu.constants import (
-    ENTITIES,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_GROUP,
-    ENTITY_ATTRIBUTE_VALUE,
-    INTENT,
-    NOT_INTENT,
-    INTENT_NAME_KEY,
-    TEXT,
-)
+from rasa.shared.constants import DOCS_URL_NLU_BASED_SLOTS, IGNORED_INTENTS
 from rasa.shared.core.constants import (
     ACTIVE_FLOW,
     ACTIVE_LOOP,
+    MAPPING_CONDITIONS,
+    MAPPING_TYPE,
     REQUESTED_SLOT,
     SLOT_MAPPINGS,
-    MAPPING_TYPE,
     SlotMappingType,
-    MAPPING_CONDITIONS,
+)
+from rasa.shared.core.slots import ListSlot, Slot
+from rasa.shared.nlu.constants import (
+    ENTITIES,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    INTENT,
+    INTENT_NAME_KEY,
+    NOT_INTENT,
+    TEXT,
 )
 
 if TYPE_CHECKING:
-    from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.shared.core.domain import Domain
+    from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.shared.nlu.training_data.message import Message
     from rasa.utils.endpoints import EndpointConfig
 

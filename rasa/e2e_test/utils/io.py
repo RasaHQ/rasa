@@ -6,7 +6,7 @@ import sys
 from functools import lru_cache
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Dict, Generator, List, Optional, TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -27,7 +27,7 @@ from rasa.e2e_test.constants import (
     STATUS_PASSED,
     STUB_CUSTOM_ACTION_NAME_SEPARATOR,
 )
-from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestSuite, TestCase
+from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase, TestSuite
 from rasa.e2e_test.utils.validation import (
     read_e2e_test_schema,
     validate_path_to_test_cases,
@@ -41,8 +41,8 @@ from rasa.shared.utils.yaml import (
 from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enabled
 
 if TYPE_CHECKING:
-    from rasa.e2e_test.e2e_test_result import TestResult
     from rasa.e2e_test.aggregate_test_stats_calculator import AccuracyCalculation
+    from rasa.e2e_test.e2e_test_result import TestResult
 
 
 RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME = "RASA_PRO_BETA_E2E_ASSERTIONS"

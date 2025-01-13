@@ -1,11 +1,12 @@
 from __future__ import annotations
-import copy
 
+import copy
+import typing
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
-import structlog
-import typing
+
 import jsonpatch
+import structlog
 
 if typing.TYPE_CHECKING:
     from rasa.dialogue_understanding.stack.frames import DialogueStackFrame

@@ -1,15 +1,16 @@
-from typing import Any, Dict, Optional, Text, List
+from typing import Any, Dict, List, Optional, Text
 
 import structlog
+
+from rasa.core.actions import action
+from rasa.core.channels import OutputChannel
+from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
-from rasa.core.actions import action
-from rasa.core.channels import OutputChannel
 from rasa.shared.constants import FLOW_PREFIX
-
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActiveLoop,
@@ -17,7 +18,6 @@ from rasa.shared.core.events import (
     FlowInterrupted,
     SlotSet,
 )
-from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger(__name__)

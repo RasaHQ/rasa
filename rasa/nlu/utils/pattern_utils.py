@@ -2,8 +2,8 @@ import re
 from typing import Dict, List, Text, Union
 
 import rasa.shared.utils.io
-from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 def _convert_lookup_tables_to_regex(

@@ -3,16 +3,15 @@ from typing import Optional, Union
 
 import httpx
 import litellm
-from rasa.shared.constants import (
-    RASA_CA_BUNDLE_ENV_VAR,
-    REQUESTS_CA_BUNDLE_ENV_VAR,
-    RASA_SSL_CERTIFICATE_ENV_VAR,
-    LITELLM_SSL_VERIFY_ENV_VAR,
-    LITELLM_SSL_CERTIFICATE_ENV_VAR,
-)
-
 import structlog
 
+from rasa.shared.constants import (
+    LITELLM_SSL_CERTIFICATE_ENV_VAR,
+    LITELLM_SSL_VERIFY_ENV_VAR,
+    RASA_CA_BUNDLE_ENV_VAR,
+    RASA_SSL_CERTIFICATE_ENV_VAR,
+    REQUESTS_CA_BUNDLE_ENV_VAR,
+)
 from rasa.shared.utils.io import raise_deprecation_warning
 
 structlogger = structlog.get_logger()

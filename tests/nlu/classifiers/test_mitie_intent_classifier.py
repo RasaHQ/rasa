@@ -1,18 +1,17 @@
 import pytest
 
+import rasa.shared.nlu.training_data.loading
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
-
 from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
-import rasa.shared.nlu.training_data.loading
 from rasa.shared.nlu.constants import (
-    TEXT,
     INTENT,
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 

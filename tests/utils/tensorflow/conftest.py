@@ -1,10 +1,10 @@
+import numpy as np
 import pytest
 import scipy.sparse
-import numpy as np
 
 from rasa.utils.tensorflow.model_data import (
-    RasaModelData,
     FeatureArray,
+    RasaModelData,
     ragged_array_to_ndarray,
 )
 

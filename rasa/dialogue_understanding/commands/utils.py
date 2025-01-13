@@ -7,9 +7,9 @@ from rasa.dialogue_understanding.commands import (
     Command,
     HumanHandoffCommand,
     KnowledgeAnswerCommand,
+    RestartCommand,
     SessionStartCommand,
     SkipQuestionCommand,
-    RestartCommand,
 )
 from rasa.dialogue_understanding.commands.user_silence_command import UserSilenceCommand
 from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame

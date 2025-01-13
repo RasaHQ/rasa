@@ -1,13 +1,13 @@
 from typing import Text
 
 import pytest
-from rasa.shared.exceptions import RasaException
 
 from rasa.anonymization.anonymisation_rule_yaml_reader import (
     AnonymizationRule,
     AnonymizationRuleList,
     AnonymizationRulesYamlReader,
 )
+from rasa.shared.exceptions import RasaException
 
 RULES = [
     AnonymizationRuleList(

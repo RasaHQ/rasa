@@ -1,4 +1,4 @@
-from typing import Text, List, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional, Text, Union
 
 if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
@@ -21,8 +21,8 @@ def extract_story_graph(
     Returns:
         The loaded training data as graph.
     """
-    from rasa.shared.core.training_data.structures import StoryGraph
     import rasa.shared.core.training_data.loading as core_loading
+    from rasa.shared.core.training_data.structures import StoryGraph
 
     story_steps = core_loading.load_data_from_resource(
         resource_name, domain, exclusion_percentage=exclusion_percentage

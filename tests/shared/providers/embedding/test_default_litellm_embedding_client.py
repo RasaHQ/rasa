@@ -4,6 +4,7 @@ import litellm
 import pytest
 import structlog
 from pytest import MonkeyPatch
+
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers.embedding.default_litellm_embedding_client import (
     DefaultLiteLLMEmbeddingClient,

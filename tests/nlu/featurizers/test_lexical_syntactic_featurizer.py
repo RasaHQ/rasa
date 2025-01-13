@@ -1,26 +1,27 @@
+import re
+from typing import Any, Callable, Dict, List, Optional, Text, Union
+
 import numpy as np
 import pytest
-import re
-from typing import Text, Dict, Any, Callable, List, Optional, Union
 
 from rasa.engine.graph import ExecutionContext
-from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
     MESSAGE_ATTRIBUTES,
     TOKENS_NAMES,
 )
-from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
-    LexicalSyntacticFeaturizer,
     FEATURES,
+    LexicalSyntacticFeaturizer,
 )
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.constants import FEATURE_TYPE_SEQUENCE, TEXT
-from rasa.shared.exceptions import InvalidConfigException
+from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.nlu.constants import FEATURE_TYPE_SEQUENCE, TEXT
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 @pytest.fixture

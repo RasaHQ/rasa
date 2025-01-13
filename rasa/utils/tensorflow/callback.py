@@ -1,7 +1,7 @@
-from pathlib import Path
-from typing import Dict, Text, Any, Optional
-
 import logging
+from pathlib import Path
+from typing import Any, Dict, Optional, Text
+
 import tensorflow as tf
 from tqdm import tqdm
 

@@ -5,31 +5,32 @@ import re
 import sys
 import typing
 from typing import (
-    Optional,
-    Callable,
-    Text,
-    Tuple,
-    Dict,
-    Type,
     Any,
-    Set,
-    Union,
-    TypeVar,
+    Callable,
+    Dict,
     List,
     Literal,
+    Optional,
+    Set,
+    Text,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
 )
 
-import rasa.utils.common
 import structlog
 import typing_utils
-from rasa.core import IntentlessPolicy, ContextualResponseRephraser
+
+import rasa.utils.common
+from rasa.core import ContextualResponseRephraser, IntentlessPolicy
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.coexistence.constants import (
-    NLU_ENTRY,
     CALM_ENTRY,
-    STICKY,
+    NLU_ENTRY,
     NON_STICKY,
+    STICKY,
 )
 from rasa.dialogue_understanding.coexistence.intent_based_router import (
     IntentBasedRouter,
@@ -39,52 +40,52 @@ from rasa.dialogue_understanding.generator import (
     LLMBasedCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.constants import (
-    LLM_CONFIG_KEY,
     FLOW_RETRIEVAL_KEY,
+    LLM_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
 from rasa.engine.constants import RESERVED_PLACEHOLDERS
 from rasa.engine.exceptions import GraphSchemaValidationException
 from rasa.engine.graph import (
-    GraphSchema,
-    GraphComponent,
-    SchemaNode,
     ExecutionContext,
+    GraphComponent,
     GraphModelConfiguration,
+    GraphSchema,
+    SchemaNode,
 )
 from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage, ModelMetadata
+from rasa.engine.storage.storage import ModelMetadata, ModelStorage
 from rasa.engine.training.fingerprinting import Fingerprintable
 from rasa.shared.constants import (
-    DOCS_URL_GRAPH_COMPONENTS,
-    ROUTE_TO_CALM_SLOT,
-    EMBEDDINGS_CONFIG_KEY,
     API_BASE_CONFIG_KEY,
-    DEPLOYMENT_CONFIG_KEY,
-    API_VERSION_CONFIG_KEY,
     API_KEY,
-    AWS_REGION_NAME_CONFIG_KEY,
-    MODEL_GROUP_ID_CONFIG_KEY,
-    ROUTER_CONFIG_KEY,
-    MODELS_CONFIG_KEY,
-    MODEL_GROUP_CONFIG_KEY,
-    ROUTING_STRATEGY_CONFIG_KEY,
-    VALID_ROUTING_STRATEGIES,
-    ROUTING_STRATEGIES_REQUIRING_REDIS_CACHE,
-    ROUTING_STRATEGIES_NOT_REQUIRING_CACHE,
-    REDIS_HOST_CONFIG_KEY,
+    API_TYPE_CONFIG_KEY,
+    API_VERSION_CONFIG_KEY,
     AWS_ACCESS_KEY_ID_CONFIG_KEY,
+    AWS_REGION_NAME_CONFIG_KEY,
     AWS_SECRET_ACCESS_KEY_CONFIG_KEY,
     AWS_SESSION_TOKEN_CONFIG_KEY,
+    DEPLOYMENT_CONFIG_KEY,
+    DOCS_URL_GRAPH_COMPONENTS,
+    EMBEDDINGS_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
+    MODELS_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    REDIS_HOST_CONFIG_KEY,
+    ROUTE_TO_CALM_SLOT,
+    ROUTER_CONFIG_KEY,
+    ROUTING_STRATEGIES_NOT_REQUIRING_CACHE,
+    ROUTING_STRATEGIES_REQUIRING_REDIS_CACHE,
+    ROUTING_STRATEGY_CONFIG_KEY,
     SENSITIVE_DATA,
     USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY,
-    API_TYPE_CONFIG_KEY,
     VALID_PROVIDERS_FOR_API_TYPE_CONFIG_KEY,
-    PROVIDER_CONFIG_KEY,
+    VALID_ROUTING_STRATEGIES,
 )
 from rasa.shared.core.constants import ACTION_RESET_ROUTING, ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.flows import FlowsList, Flow
+from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.slots import Slot
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message

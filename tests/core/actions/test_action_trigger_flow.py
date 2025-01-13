@@ -1,4 +1,5 @@
 import pytest
+
 from rasa.core.actions.action_trigger_flow import ActionTriggerFlow
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator

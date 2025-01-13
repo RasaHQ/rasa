@@ -9,14 +9,14 @@ from typing import Iterator
 
 import pytest
 from _pytest.logging import LogCaptureFixture
-from rasa.core.channels import UserMessage
-from rasa.core.lock_store import LockStore
-from rasa.utils.endpoints import EndpointConfig
 
+from rasa.core.channels import UserMessage
 from rasa.core.concurrent_lock_store import (
     LAST_ISSUED_TICKET_NUMBER_SUFFIX,
     ConcurrentRedisLockStore,
 )
+from rasa.core.lock_store import LockStore
+from rasa.utils.endpoints import EndpointConfig
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)

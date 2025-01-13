@@ -4,26 +4,25 @@ from typing import Any, Dict, Sequence
 from unittest.mock import Mock, patch
 
 import pytest
-from pytest import LogCaptureFixture
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from pytest import LogCaptureFixture
 
 from rasa.dialogue_understanding.generator import MultiStepLLMCommandGenerator
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, LLM_API_HEALTH_CHECK_ENV_VAR
+from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR, OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
-
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.conftest import TRACING_TESTS_FIXTURES_DIRECTORY
 from tests.tracing.instrumentation.conftest import (
-    MockMultiStepLLMCommandGenerator,
     MockAvailableEndpoints,
+    MockMultiStepLLMCommandGenerator,
 )
 from tests.utilities import flows_from_str
 

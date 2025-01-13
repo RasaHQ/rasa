@@ -10,8 +10,8 @@ import rasa.shared.utils.io
 from rasa.dialogue_understanding.coexistence.constants import (
     CALM_ENTRY,
     NLU_ENTRY,
-    STICKY,
     NON_STICKY,
+    STICKY,
 )
 from rasa.dialogue_understanding.commands import Command, SetSlotCommand
 from rasa.dialogue_understanding.commands.noop_command import NoopCommand
@@ -23,15 +23,15 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
-    ROUTE_TO_CALM_SLOT,
-    PROMPT_CONFIG_KEY,
-    PROVIDER_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     OPENAI_PROVIDER,
+    PROMPT_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    ROUTE_TO_CALM_SLOT,
     TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.exceptions import InvalidConfigException, FileIOException
+from rasa.shared.exceptions import FileIOException, InvalidConfigException
 from rasa.shared.nlu.constants import COMMANDS, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData

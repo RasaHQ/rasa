@@ -1,17 +1,18 @@
-from typing import List, Any, Text
+from typing import Any, List, Text
 
 import pytest
+
 from rasa.core.actions.loops import LoopAction
 from rasa.core.channels import CollectingOutputChannel
+from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
-    Event,
-    ActionExecutionRejected,
     ActionExecuted,
+    ActionExecutionRejected,
     ActiveLoop,
+    Event,
     SlotSet,
 )
-from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 
 

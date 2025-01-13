@@ -1,8 +1,8 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
 from dataclasses import dataclass
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     Generator,
@@ -10,6 +10,7 @@ from typing import (
     Set,
     Text,
 )
+
 import structlog
 
 from rasa.shared.exceptions import RasaException
@@ -31,11 +32,11 @@ def step_from_json(data: Dict[Text, Any]) -> FlowStep:
     """
     from rasa.shared.core.flows.steps import (
         ActionFlowStep,
+        CallFlowStep,
         CollectInformationFlowStep,
         LinkFlowStep,
-        SetSlotsFlowStep,
         NoOperationFlowStep,
-        CallFlowStep,
+        SetSlotsFlowStep,
     )
 
     if "action" in data:

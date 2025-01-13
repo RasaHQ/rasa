@@ -1,9 +1,8 @@
 from pathlib import Path
-
-import pytest
-import jwt
 from time import time
 
+import jwt
+import pytest
 from pytest import MonkeyPatch
 
 

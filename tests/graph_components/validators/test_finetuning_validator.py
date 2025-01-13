@@ -1,28 +1,27 @@
+import copy
 import os
 from pathlib import Path
-import copy
-from typing import Callable, List, Optional, Text, Dict, Any
+from typing import Any, Callable, Dict, List, Optional, Text
 
-from _pytest.monkeypatch import MonkeyPatch
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
-
+import rasa.shared.utils.io
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.validators.finetuning_validator import FinetuningValidator
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_DOMAIN_PATH,
 )
 from rasa.shared.core.domain import KEY_RESPONSES, Domain
-from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.shared.importers.importer import NluDataImporter, TrainingDataImporter
-import rasa.shared.utils.io
 from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.importers.importer import NluDataImporter, TrainingDataImporter
+from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData

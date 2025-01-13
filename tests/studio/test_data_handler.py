@@ -2,6 +2,7 @@ from typing import Dict, List
 from unittest.mock import MagicMock
 
 import pytest
+
 from rasa.shared.core.flows import Flow
 from rasa.shared.core.flows.flow_step_links import (
     ElseFlowStepLink,
@@ -16,7 +17,6 @@ from rasa.shared.core.flows.steps import (
     LinkFlowStep,
 )
 from rasa.studio import data_handler
-
 from rasa.studio.config import StudioConfig
 from rasa.studio.data_handler import (
     StudioDataHandler,

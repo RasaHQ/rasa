@@ -1,21 +1,23 @@
 from __future__ import annotations
-from typing import Dict, Text, Any, Optional
+
 import copy
 import logging
+from typing import Any, Dict, Optional, Text
 
 from packaging import version
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION
-from rasa.engine.graph import GraphComponent, ExecutionContext
-from rasa.engine.storage.storage import ModelStorage
-from rasa.engine.storage.resource import Resource
-from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.core.domain import Domain
-from rasa.shared.importers.importer import TrainingDataImporter
+
 import rasa.shared.utils.io
-from rasa.utils.tensorflow.constants import EPOCHS
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.domain_for_core_training_provider import (
     DomainForCoreTrainingProvider,
 )
+from rasa.shared.core.domain import Domain
+from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.utils.tensorflow.constants import EPOCHS
 
 FINGERPRINT_CONFIG = "fingerprint-config"
 FINGERPRINT_CORE = "fingerprint-core"

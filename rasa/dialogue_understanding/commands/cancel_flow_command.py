@@ -5,15 +5,15 @@ from typing import Any, Dict, List
 
 import structlog
 
-from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.commands.command import Command
 from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
+from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 from rasa.shared.core.events import Event, FlowCancelled
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 
 structlogger = structlog.get_logger()
 

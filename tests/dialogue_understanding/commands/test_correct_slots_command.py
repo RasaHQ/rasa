@@ -1,8 +1,11 @@
 from typing import Any, Dict, List
+
+import jsonpatch
 import pytest
+
 from rasa.dialogue_understanding.commands.correct_slots_command import (
-    CorrectSlotsCommand,
     CorrectedSlot,
+    CorrectSlotsCommand,
 )
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
@@ -15,16 +18,14 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
 )
-from rasa.shared.core.events import Event
+from rasa.shared.core.events import DialogueStackUpdated, Event, SlotSet
+from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
 from tests.utilities import (
-    flows_from_str_with_defaults,
     flows_from_str,
     flows_from_str_including_defaults,
+    flows_from_str_with_defaults,
 )
-from rasa.shared.core.events import DialogueStackUpdated, SlotSet
-from rasa.shared.core.trackers import DialogueStateTracker
-import jsonpatch
 
 
 def test_command_name():

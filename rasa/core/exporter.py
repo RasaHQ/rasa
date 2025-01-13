@@ -1,7 +1,7 @@
+import datetime
 import logging
 import uuid
-import datetime
-from typing import AsyncIterator, Text, Optional, List, Set, Dict, Any
+from typing import Any, AsyncIterator, Dict, List, Optional, Set, Text
 
 from tqdm import tqdm
 
@@ -11,12 +11,12 @@ from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
 from rasa.core.tracker_store import TrackerStore
-from rasa.shared.core.trackers import EventVerbosity
 from rasa.exceptions import (
-    NoEventsToMigrateError,
     NoConversationsInTrackerStoreError,
+    NoEventsToMigrateError,
     PublishingError,
 )
+from rasa.shared.core.trackers import EventVerbosity
 
 logger = logging.getLogger(__name__)
 

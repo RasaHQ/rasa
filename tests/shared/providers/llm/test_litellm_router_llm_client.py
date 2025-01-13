@@ -1,11 +1,11 @@
-from pytest import MonkeyPatch
+import os
 from typing import Any, Dict
 from unittest.mock import patch
-import os
+
 import pytest
 import structlog
-
 from litellm import Router
+from pytest import MonkeyPatch
 
 from rasa.shared.constants import SELF_HOSTED_VLLM_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ProviderClientValidationError

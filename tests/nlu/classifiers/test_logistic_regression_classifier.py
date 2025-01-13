@@ -1,20 +1,21 @@
 import copy
+import pathlib
 
 import pytest
 import structlog
-import pathlib
-from rasa.shared.nlu.training_data.message import Message
-from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.local_model_storage import LocalModelStorage
+
 from rasa.engine.graph import ExecutionContext
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
-    CountVectorsFeaturizer,
-)
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.resource import Resource
 from rasa.nlu.classifiers.logistic_regression_classifier import (
     LogisticRegressionClassifier,
 )
+from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
+    CountVectorsFeaturizer,
+)
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from tests.utilities import filter_logs
 
 

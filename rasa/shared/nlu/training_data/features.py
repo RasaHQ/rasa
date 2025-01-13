@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import itertools
 from dataclasses import dataclass
-from typing import Iterable, Union, Text, Optional, List, Any, Tuple, Dict, Set
+from typing import Any, Dict, Iterable, List, Optional, Set, Text, Tuple, Union
 
 import numpy as np
 import scipy.sparse
-from safetensors.numpy import save_file, load_file
+from safetensors.numpy import load_file, save_file
 
 import rasa.shared.nlu.training_data.util
 import rasa.shared.utils.io
-from rasa.shared.nlu.constants import FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 
 
 @dataclass

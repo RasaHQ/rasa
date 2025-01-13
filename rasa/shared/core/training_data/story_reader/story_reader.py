@@ -1,14 +1,14 @@
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Text, List, Any, Union
+from typing import Any, Dict, List, Optional, Text, Union
 
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import SlotSet, ActionExecuted, Event
-from rasa.shared.exceptions import RasaCoreException
+from rasa.shared.core.events import ActionExecuted, Event, SlotSet
 from rasa.shared.core.training_data.story_reader.story_step_builder import (
     StoryStepBuilder,
 )
 from rasa.shared.core.training_data.structures import StoryStep
+from rasa.shared.exceptions import RasaCoreException
 
 logger = logging.getLogger(__name__)
 

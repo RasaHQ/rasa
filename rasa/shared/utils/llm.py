@@ -2,6 +2,7 @@ import json
 from copy import deepcopy
 from functools import wraps
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -9,7 +10,6 @@ from typing import (
     Text,
     Type,
     TypeVar,
-    TYPE_CHECKING,
     Union,
     cast,
 )
@@ -19,16 +19,16 @@ import structlog
 import rasa.shared.utils.io
 from rasa.core.utils import AvailableEndpoints
 from rasa.shared.constants import (
-    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
-    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
-    PROVIDER_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     MODEL_GROUP_ID_CONFIG_KEY,
     MODELS_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     ROUTER_CONFIG_KEY,
 )
 from rasa.shared.core.events import BotUttered, UserUttered
-from rasa.shared.core.slots import Slot, BooleanSlot, CategoricalSlot
+from rasa.shared.core.slots import BooleanSlot, CategoricalSlot, Slot
 from rasa.shared.engine.caching import (
     get_local_cache_location,
 )
@@ -50,13 +50,13 @@ from rasa.shared.providers._configs.self_hosted_llm_client_config import (
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.mappings import (
-    get_llm_client_from_provider,
     AZURE_OPENAI_PROVIDER,
+    HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
     OPENAI_PROVIDER,
     SELF_HOSTED_PROVIDER,
-    get_embedding_client_from_provider,
-    HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
     get_client_config_class_from_provider,
+    get_embedding_client_from_provider,
+    get_llm_client_from_provider,
 )
 
 if TYPE_CHECKING:

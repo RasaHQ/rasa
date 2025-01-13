@@ -1,23 +1,23 @@
 import logging
 from pathlib import Path
-from typing import Callable, Dict, Optional, Text, Type, Any
+from typing import Any, Callable, Dict, Optional, Text, Type
 from unittest.mock import Mock
 
+import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
-import pytest
 
 from rasa.engine.caching import LocalTrainingCache, TrainingCache
 from rasa.engine.exceptions import GraphComponentException
 from rasa.engine.graph import (
+    ExecutionContext,
     GraphComponent,
-    GraphSchema,
-    SchemaNode,
     GraphModelConfiguration,
     GraphNode,
-    ExecutionContext,
     GraphNodeHook,
+    GraphSchema,
+    SchemaNode,
 )
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
@@ -30,11 +30,11 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from tests.engine.graph_components_test_classes import (
     AddInputs,
     AssertComponent,
+    CacheableComponent,
     FileReader,
     PersistableTestComponent,
     ProvideX,
     SubtractByX,
-    CacheableComponent,
 )
 
 

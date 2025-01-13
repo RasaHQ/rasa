@@ -6,16 +6,16 @@ import structlog
 from pytest import MonkeyPatch
 
 from rasa.shared.constants import (
-    AZURE_API_BASE_ENV_VAR,
-    AZURE_API_VERSION_ENV_VAR,
-    AZURE_API_KEY_ENV_VAR,
     API_BASE_CONFIG_KEY,
     API_VERSION_CONFIG_KEY,
-    OPENAI_API_KEY_ENV_VAR,
+    AZURE_API_BASE_ENV_VAR,
+    AZURE_API_KEY_ENV_VAR,
     AZURE_API_TYPE_ENV_VAR,
+    AZURE_API_VERSION_ENV_VAR,
     OPENAI_API_BASE_ENV_VAR,
-    OPENAI_API_VERSION_ENV_VAR,
+    OPENAI_API_KEY_ENV_VAR,
     OPENAI_API_TYPE_ENV_VAR,
+    OPENAI_API_VERSION_ENV_VAR,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers.llm.azure_openai_llm_client import (

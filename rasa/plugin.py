@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import functools
 import sys
-from typing import Any, List, Optional, TYPE_CHECKING, Text, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Text, Union
 
 import pluggy
 

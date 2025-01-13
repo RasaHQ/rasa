@@ -2,8 +2,8 @@ import argparse
 import uuid
 
 import rasa.cli.arguments.default_arguments
-import rasa.cli.arguments.train
 import rasa.cli.arguments.run
+import rasa.cli.arguments.train
 
 
 def set_interactive_arguments(parser: argparse.ArgumentParser) -> None:

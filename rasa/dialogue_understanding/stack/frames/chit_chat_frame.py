@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict
-from rasa.dialogue_understanding.stack.frames import DialogueStackFrame
+
+from rasa.dialogue_understanding.stack.frames.dialogue_stack_frame import (
+    DialogueStackFrame,
+)
 
 
 @dataclass

@@ -1,22 +1,22 @@
-from typing import Text, List, Tuple
+from typing import List, Text, Tuple
 
 import pytest
 
-from rasa.shared.core.domain import Domain
 from rasa.core.training.story_conflict import (
     StoryConflict,
-    find_story_conflicts,
     _get_previous_event,
+    find_story_conflicts,
 )
-from rasa.shared.core.generator import TrainingDataGenerator, TrackerWithCachedStates
-from rasa.validator import Validator
-from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
     PREVIOUS_ACTION,
     USER,
-    ACTION_UNLIKELY_INTENT_NAME,
 )
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.generator import TrackerWithCachedStates, TrainingDataGenerator
+from rasa.shared.importers.rasa import RasaFileImporter
+from rasa.validator import Validator
 
 
 def _setup_trackers_for_testing(

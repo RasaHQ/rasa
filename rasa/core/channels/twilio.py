@@ -1,13 +1,13 @@
 import logging
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Optional, Text
+
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
-from typing import Dict, Text, Any, Callable, Awaitable, Optional, TYPE_CHECKING
 
-from rasa.core.channels.channel import InputChannel
-from rasa.core.channels.channel import UserMessage, OutputChannel
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 
 if TYPE_CHECKING:
     from twilio.rest.api.v2010.account.message import MessageInstance

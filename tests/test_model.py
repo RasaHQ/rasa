@@ -1,17 +1,17 @@
+import asyncio
 import os
 import sys
 import time
 from pathlib import Path
-from typing import Text, Optional
+from typing import Optional, Text
 
 import pytest
-import asyncio
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa
 import rasa.constants
-import rasa.shared.utils.io
 import rasa.model
+import rasa.shared.utils.io
 from rasa.core.agent import load_agent
 from rasa.exceptions import ModelNotFound
 

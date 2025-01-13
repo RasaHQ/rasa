@@ -1,21 +1,21 @@
-from typing import Optional, Text, List
+from typing import List, Optional, Text
 
-import pytest
 import numpy as np
+import pytest
 import scipy.sparse
 
-from rasa.shared.nlu.training_data.features import Features
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.constants import (
-    TEXT,
+    ACTION_NAME,
+    ACTION_TEXT,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
-    ACTION_TEXT,
-    ACTION_NAME,
     INTENT,
     RESPONSE,
+    TEXT,
 )
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
 @pytest.mark.parametrize(

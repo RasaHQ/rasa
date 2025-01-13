@@ -3,10 +3,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Text
 
 import requests
-from rasa.shared.core.domain import Domain
-from rasa.shared.utils.cli import print_error_and_exit
 
 from rasa.markers.validate import validate_marker_file
+from rasa.shared.core.domain import Domain
+from rasa.shared.utils.cli import print_error_and_exit
 from rasa.utils.yaml import (
     YAML_CONFIGS,
     collect_configs_from_yaml_files,

@@ -2,12 +2,12 @@ import unittest
 from unittest.mock import MagicMock
 
 from rasa.dialogue_understanding.commands import (
-    StartFlowCommand,
-    SetSlotCommand,
     ClarifyCommand,
+    SetSlotCommand,
+    StartFlowCommand,
 )
 from rasa.e2e_test.e2e_test_case import TestCase, TestStep
-from rasa.llm_fine_tuning.conversations import ConversationStep, Conversation
+from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 
 
 class TestConversationStep(unittest.TestCase):

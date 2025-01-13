@@ -5,16 +5,16 @@ import uuid
 from enum import Enum
 from pathlib import Path
 from typing import (
-    Any,
-    Protocol,
     TYPE_CHECKING,
-    Text,
-    Optional,
-    Union,
-    List,
+    Any,
     Callable,
-    Set,
     Iterable,
+    List,
+    Optional,
+    Protocol,
+    Set,
+    Text,
+    Union,
     runtime_checkable,
 )
 

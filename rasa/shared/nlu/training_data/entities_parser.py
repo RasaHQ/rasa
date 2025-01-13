@@ -1,19 +1,18 @@
+import logging
 import re
 from json import JSONDecodeError
-from typing import Text, List, Dict, Match, Optional, NamedTuple, Any
-import logging
+from typing import Any, Dict, List, Match, NamedTuple, Optional, Text
 
 import rasa.shared.nlu.training_data.util
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.shared.exceptions import InvalidEntityFormatException
 from rasa.shared.nlu.constants import (
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
 )
 from rasa.shared.nlu.training_data.message import Message
-
 
 GROUP_ENTITY_VALUE = "value"
 GROUP_ENTITY_TYPE = "entity"
@@ -167,8 +166,9 @@ def get_validated_dict(json_str: Text) -> Dict[Text, Text]:
         Deserialized and validated `json_str`.
     """
     import json
-    from rasa.shared.utils.yaml import validate_training_data
+
     import rasa.shared.nlu.training_data.schemas.data_schema as schema
+    from rasa.shared.utils.yaml import validate_training_data
 
     # add {} as they are not part of the regex
     try:

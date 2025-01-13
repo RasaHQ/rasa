@@ -3,17 +3,17 @@ from typing import Any, Dict, Text
 from rasa.nlu.emulators.emulator import Emulator
 from rasa.shared.nlu.constants import (
     ENTITIES,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
     EXTRACTOR,
-    INTENT_RANKING_KEY,
-    TEXT,
     INTENT,
     INTENT_NAME_KEY,
+    INTENT_RANKING_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    TEXT,
 )
 
 

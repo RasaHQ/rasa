@@ -1,9 +1,10 @@
 import random
-from rasa.shared.exceptions import RasaException
-from rasa.shared.core.trackers import DialogueStateTracker
-from typing import Any, Iterable, List, Text, Optional, AsyncIterator
-from rasa.core.tracker_store import TrackerStore
+from typing import Any, AsyncIterator, Iterable, List, Optional, Text
+
 import rasa.shared.utils.io
+from rasa.core.tracker_store import TrackerStore
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import RasaException
 
 STRATEGY_ALL = "all"
 STRATEGY_FIRST_N = "first_n"

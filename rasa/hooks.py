@@ -1,6 +1,6 @@
 import argparse
 import logging
-from typing import Optional, TYPE_CHECKING, List, Text, Union
+from typing import TYPE_CHECKING, List, Optional, Text, Union
 
 import pluggy
 
@@ -12,10 +12,10 @@ from rasa.tracing import config
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
+    from rasa.anonymization.anonymization_pipeline import AnonymizationPipeline
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.tracker_store import TrackerStore
     from rasa.shared.core.domain import Domain
-    from rasa.anonymization.anonymization_pipeline import AnonymizationPipeline
 
 hookimpl = pluggy.HookimplMarker("rasa")
 logger = logging.getLogger(__name__)
@@ -26,10 +26,9 @@ def refine_cli(
     subparsers: SubParsersAction,
     parent_parsers: List[argparse.ArgumentParser],
 ) -> None:
-    from rasa.cli import e2e_test, inspect, markers, dialogue_understanding_test
-    from rasa.cli.studio import studio
-
+    from rasa.cli import dialogue_understanding_test, e2e_test, inspect, markers
     from rasa.cli import license as license_cli
+    from rasa.cli.studio import studio
 
     e2e_test.add_subparser(subparsers, parent_parsers)
     dialogue_understanding_test.add_subparser(subparsers, parent_parsers)

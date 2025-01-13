@@ -3,7 +3,6 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
-
 from pytest import MonkeyPatch
 
 from rasa.core.brokers.kafka import KafkaEventBroker

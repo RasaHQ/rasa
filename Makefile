@@ -54,6 +54,7 @@ install-full: install-mitie  ## Install rasa with all extras (transformers, tens
 
 format: ## Apply ruff formatting to code.
 	poetry run ruff format rasa tests
+	poetry run ruff check rasa tests --ignore D --fix
 
 lint:  ## Lint code with ruff, and check if ruff formatter should be applied.
      # Ignore docstring errors when running on the entire project

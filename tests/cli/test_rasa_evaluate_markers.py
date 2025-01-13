@@ -1,21 +1,19 @@
-from pathlib import Path
-from typing import Callable, Text, Tuple, Dict, Any
 import csv
+from pathlib import Path
+from typing import Any, Callable, Dict, Text, Tuple
 
 import pytest
 from _pytest.pytester import RunResult
 
 import rasa.cli.evaluate
-
+from rasa.cli.evaluate import STATS_OVERALL_SUFFIX, STATS_SESSION_SUFFIX
+from rasa.core.tracker_store import SQLTrackerStore
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.constants import ACTION_SESSION_START_NAME
-from rasa.core.tracker_store import SQLTrackerStore
-from rasa.cli.evaluate import STATS_SESSION_SUFFIX, STATS_OVERALL_SUFFIX
 from rasa.shared.utils.yaml import write_yaml
-from tests.conftest import write_endpoint_config_to_yaml
-
 from tests.cli.conftest import RASA_EXE
+from tests.conftest import write_endpoint_config_to_yaml
 
 
 @pytest.fixture

@@ -1,8 +1,10 @@
+from typing import Any, Dict, List, Text
+
 import pytest
+
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from typing import Text, List, Dict, Any
 
 
 @pytest.mark.parametrize(

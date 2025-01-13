@@ -1,6 +1,6 @@
 import json
 from abc import ABC
-from typing import List, Optional, Dict, Any, Text, Union
+from typing import Any, Dict, List, Optional, Text, Union
 from unittest.mock import MagicMock
 
 import grpc
@@ -21,11 +21,11 @@ from rasa.core.actions.custom_action_executor import CustomActionRequestWriter
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.slots import (
-    FloatSlot,
+    AnySlot,
     BooleanSlot,
     CategoricalSlot,
+    FloatSlot,
     ListSlot,
-    AnySlot,
     Slot,
 )
 from rasa.shared.core.trackers import DialogueStateTracker

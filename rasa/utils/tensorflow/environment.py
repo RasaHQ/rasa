@@ -1,16 +1,16 @@
 import logging
 import os
-from typing import Text, Dict
 import typing
+from typing import Dict, Text
 
 import rasa.shared.utils.io
 from rasa.constants import (
-    ENV_GPU_CONFIG,
     ENV_CPU_INTER_OP_CONFIG,
     ENV_CPU_INTRA_OP_CONFIG,
+    ENV_GPU_CONFIG,
 )
-from rasa.utils.tensorflow.constants import TF_DETERMINISTIC_OPS
 from rasa.shared.utils import io as shared_io_utils
+from rasa.utils.tensorflow.constants import TF_DETERMINISTIC_OPS
 
 if typing.TYPE_CHECKING:
     from tensorflow import config as tf_config

@@ -3,13 +3,13 @@
 from typing import Any, Dict, List, Text, Union
 
 import pytest
-from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.secrets_manager.endpoints import (
     CredentialsLocation,
     EndpointReader,
     TrackerStoreEndpointValidator,
 )
+from rasa.utils.endpoints import EndpointConfig
 
 
 @pytest.mark.parametrize(

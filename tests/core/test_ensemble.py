@@ -1,18 +1,23 @@
-from rasa.shared.exceptions import InvalidConfigException
-import pytest
 import itertools
 from typing import List, Tuple
 
+import pytest
+
+from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
+from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.core.policies.policy import PolicyPrediction
-from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.events import ActionExecutionRejected, UserUttered
-from rasa.shared.core.events import ActionExecuted, DefinePrevUserUtteredFeaturization
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import (
+    ActionExecuted,
+    ActionExecutionRejected,
+    DefinePrevUserUtteredFeaturization,
+    UserUttered,
+)
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import InvalidConfigException
 
 
 @pytest.fixture

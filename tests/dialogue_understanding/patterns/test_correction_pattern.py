@@ -1,4 +1,5 @@
 import dataclasses
+
 from pytest import CaptureFixture
 
 from rasa.core.channels import CollectingOutputChannel

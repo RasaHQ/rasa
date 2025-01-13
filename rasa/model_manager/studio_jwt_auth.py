@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 import jwt
 import requests
 import structlog
+
 from rasa.shared.exceptions import RasaException
 
 structlogger = structlog.get_logger()

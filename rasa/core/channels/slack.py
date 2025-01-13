@@ -1,21 +1,22 @@
 import asyncio
 import hashlib
 import hmac
-from http import HTTPStatus
 import json
 import logging
 import re
 import time
+from http import HTTPStatus
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, Text
 
-from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
-from rasa.shared.constants import DOCS_URL_CONNECTORS_SLACK
-from rasa.shared.exceptions import InvalidConfigException
-import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from slack_sdk.web.async_client import AsyncWebClient
+
+import rasa.shared.utils.io
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.shared.constants import DOCS_URL_CONNECTORS_SLACK
+from rasa.shared.exceptions import InvalidConfigException
 
 logger = logging.getLogger(__name__)
 

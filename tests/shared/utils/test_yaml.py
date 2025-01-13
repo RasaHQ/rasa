@@ -3,7 +3,7 @@ import random
 import textwrap
 from pathlib import Path
 from threading import Thread
-from typing import Text, Dict, Any
+from typing import Any, Dict, Text
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -22,21 +22,21 @@ from rasa.shared.constants import (
     PACKAGE_NAME,
 )
 from rasa.shared.core.flows.yaml_flows_io import FLOWS_SCHEMA_FILE, YAMLFlowsReader
-from rasa.shared.exceptions import YamlException, SchemaValidationError
+from rasa.shared.exceptions import SchemaValidationError, YamlException
 from rasa.shared.nlu.training_data.formats.rasa_yaml import NLU_SCHEMA_FILE
 from rasa.shared.utils.yaml import (
     KEY_TRAINING_DATA_FORMAT_VERSION,
+    YamlValidationException,
+    parse_raw_yaml,
     read_schema_file,
-    validate_yaml_with_jsonschema,
-    validate_yaml_content_using_schema,
+    read_yaml_file,
     validate_raw_yaml_using_schema_file,
     validate_raw_yaml_using_schema_file_with_responses,
     validate_training_data,
     validate_training_data_format_version,
-    read_yaml_file,
+    validate_yaml_content_using_schema,
     validate_yaml_data_using_schema_with_assertions,
-    parse_raw_yaml,
-    YamlValidationException,
+    validate_yaml_with_jsonschema,
 )
 
 python_module_path = "rasa.shared.utils.yaml"

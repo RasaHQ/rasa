@@ -1,16 +1,16 @@
-from typing import Text, Any, Dict
+from typing import Any, Dict, Text
 
 import structlog
 from langchain_community.vectorstores.qdrant import Qdrant
 from pydantic import ValidationError
 from qdrant_client import QdrantClient
-from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.information_retrieval import (
-    SearchResultList,
     InformationRetrieval,
     InformationRetrievalException,
+    SearchResultList,
 )
+from rasa.utils.endpoints import EndpointConfig
 
 logger = structlog.get_logger()
 

@@ -9,6 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Any, Callable, Dict, Text
+from unittest.mock import AsyncMock
 
 import pytest
 import structlog
@@ -33,7 +34,6 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.common import EXPECTED_WARNINGS, TempDirectoryPath, get_temp_dir_name
 from tests.cli.conftest import RASA_EXE
-from unittest.mock import AsyncMock
 from tests.utilities import filter_logs
 
 

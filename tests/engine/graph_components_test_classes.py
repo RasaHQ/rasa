@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, Optional, Text, Any, List
+from typing import Any, Dict, List, Optional, Text
 
 import rasa.shared.utils.io
 from rasa.engine.graph import ExecutionContext, GraphComponent
-from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 
 
 class AddInputs(GraphComponent):

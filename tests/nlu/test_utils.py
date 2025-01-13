@@ -1,9 +1,10 @@
 import os
 import pickle
-import pytest
-import tempfile
 import shutil
+import tempfile
 from typing import Text
+
+import pytest
 
 import rasa.shared.nlu.training_data.message
 import rasa.shared.utils.io

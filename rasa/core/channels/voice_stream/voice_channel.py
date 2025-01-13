@@ -1,32 +1,25 @@
 import asyncio
-import structlog
 import copy
 from dataclasses import asdict, dataclass
 from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional, Tuple
 
-from rasa.core.channels.voice_stream.util import generate_silence
-from rasa.shared.core.constants import SLOT_SILENCE_TIMEOUT
-from rasa.shared.utils.common import (
-    class_from_module_path,
-    mark_as_beta_feature,
-)
-from rasa.shared.utils.cli import print_error_and_exit
-
+import structlog
+from sanic import Websocket  # type: ignore
 from sanic.exceptions import ServerError, WebsocketClosed
 
 from rasa.core.channels import InputChannel, OutputChannel, UserMessage
-from rasa.core.channels.voice_ready.utils import CallParameters
-from rasa.core.channels.voice_ready.utils import validate_voice_license_scope
+from rasa.core.channels.voice_ready.utils import (
+    CallParameters,
+    validate_voice_license_scope,
+)
 from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine
 from rasa.core.channels.voice_stream.asr.asr_event import (
     ASREvent,
     NewTranscript,
     UserIsSpeaking,
 )
-from sanic import Websocket  # type: ignore
-
-from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
 from rasa.core.channels.voice_stream.asr.azure import AzureASR
+from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
 from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import (
     CallState,
@@ -34,9 +27,16 @@ from rasa.core.channels.voice_stream.call_state import (
     call_state,
 )
 from rasa.core.channels.voice_stream.tts.azure import AzureTTS
-from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
 from rasa.core.channels.voice_stream.tts.cartesia import CartesiaTTS
 from rasa.core.channels.voice_stream.tts.tts_cache import TTSCache
+from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
+from rasa.core.channels.voice_stream.util import generate_silence
+from rasa.shared.core.constants import SLOT_SILENCE_TIMEOUT
+from rasa.shared.utils.cli import print_error_and_exit
+from rasa.shared.utils.common import (
+    class_from_module_path,
+    mark_as_beta_feature,
+)
 from rasa.utils.io import remove_emojis
 
 logger = structlog.get_logger(__name__)

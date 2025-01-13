@@ -1,9 +1,10 @@
-from typing import Text
-from packaging import version
 from dataclasses import dataclass
+from typing import Text
 
-from rasa.shared.exceptions import RasaException
+from packaging import version
+
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.shared.exceptions import RasaException
 
 
 @dataclass

@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import contextlib
 import copy
@@ -13,7 +14,6 @@ import threading
 import time
 import uuid
 from pathlib import Path
-import argparse
 from typing import (
     Any,
     Callable,
@@ -31,6 +31,7 @@ import jwt
 import pytest
 from dotenv import load_dotenv
 from pytest import (
+    FixtureRequest,
     Function,
     MonkeyPatch,
     Pytester,
@@ -38,7 +39,6 @@ from pytest import (
     TempdirFactory,
     TempPathFactory,
     WarningsRecorder,
-    FixtureRequest,
 )
 from sanic import Sanic
 from sanic.request import Request
@@ -51,11 +51,11 @@ import rasa.utils.common
 import rasa.utils.io
 from rasa import server
 from rasa.cli import scaffold
+from rasa.cli.inspect import add_subparser
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import RestInput, channel
 from rasa.core.exporter import Exporter
-from rasa.cli.inspect import add_subparser
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.e2e_test.constants import (
     KEY_STUB_CUSTOM_ACTIONS,

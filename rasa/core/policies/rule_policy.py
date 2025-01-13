@@ -1,60 +1,61 @@
 from __future__ import annotations
+
 import copy
 import functools
-import logging
-import structlog
-from typing import Any, List, DefaultDict, Dict, Text, Optional, Set, Tuple, cast
-
-from tqdm import tqdm
-import numpy as np
 import json
+import logging
 from collections import defaultdict
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Text, Tuple, cast
 
+import numpy as np
+import structlog
+from tqdm import tqdm
+
+import rasa.core.test
+import rasa.shared.utils.io
+from rasa.core.constants import (
+    DEFAULT_CORE_FALLBACK_THRESHOLD,
+    POLICY_MAX_HISTORY,
+    POLICY_PRIORITY,
+    RULE_POLICY_PRIORITY,
+)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.policies.policy import PolicyPrediction, SupportedData
+from rasa.core.training.training import ActionFingerprint, create_action_fingerprints
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_RULES
-from rasa.shared.exceptions import RasaException
-import rasa.shared.utils.io
-from rasa.shared.core.events import LoopInterrupted, UserUttered, ActionExecuted
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.policies.policy import SupportedData, PolicyPrediction
+from rasa.shared.core.constants import (
+    ACTION_BACK_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTIVE_LOOP,
+    LOOP_NAME,
+    PREVIOUS_ACTION,
+    RULE_ONLY_LOOPS,
+    RULE_ONLY_SLOTS,
+    RULE_SNIPPET_ACTION_NAME,
+    SHOULD_NOT_BE_SET,
+    SLOTS,
+    USER_INTENT_BACK,
+    USER_INTENT_RESTART,
+    USER_INTENT_SESSION_START,
+)
+from rasa.shared.core.domain import Domain, InvalidDomain, State
+from rasa.shared.core.events import ActionExecuted, LoopInterrupted, UserUttered
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     get_active_loop_name,
     is_prev_action_listen_in_state,
 )
-from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import (
-    DEFAULT_CORE_FALLBACK_THRESHOLD,
-    RULE_POLICY_PRIORITY,
-    POLICY_PRIORITY,
-    POLICY_MAX_HISTORY,
-)
-from rasa.shared.core.constants import (
-    USER_INTENT_RESTART,
-    USER_INTENT_BACK,
-    USER_INTENT_SESSION_START,
-    ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
-    ACTION_SESSION_START_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_BACK_NAME,
-    RULE_SNIPPET_ACTION_NAME,
-    SHOULD_NOT_BE_SET,
-    PREVIOUS_ACTION,
-    LOOP_NAME,
-    SLOTS,
-    ACTIVE_LOOP,
-    RULE_ONLY_SLOTS,
-    RULE_ONLY_LOOPS,
-)
-from rasa.shared.core.domain import InvalidDomain, State, Domain
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
-import rasa.core.test
-from rasa.core.training.training import create_action_fingerprints, ActionFingerprint
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()

@@ -3,15 +3,17 @@ from typing import Callable
 
 import pytest
 from pytest import RunResult
+
 from rasa.constants import (
     CONFIG_TELEMETRY_DATE as RASA_CONFIG_TELEMETRY_DATE,
+)
+from rasa.constants import (
     CONFIG_TELEMETRY_ENABLED as RASA_CONFIG_TELEMETRY_ENABLED,
 )
 from rasa.shared.utils.yaml import read_yaml_file
-
 from rasa.telemetry import (
-    RASA_PRO_CONFIG_FILE_TELEMETRY_KEY,
     CONFIG_TELEMETRY_ID,
+    RASA_PRO_CONFIG_FILE_TELEMETRY_KEY,
 )
 
 KEYS = [

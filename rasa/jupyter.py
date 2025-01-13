@@ -3,10 +3,10 @@ import pprint as pretty_print
 import typing
 from typing import Any, Dict, Optional, Text
 
-from rasa.shared.exceptions import RasaException
-from rasa.shared.utils.cli import print_success
 import rasa.core.agent
 import rasa.utils.common
+from rasa.shared.exceptions import RasaException
+from rasa.shared.utils.cli import print_success
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent

@@ -1,24 +1,24 @@
-from typing import Dict, Any, List, Optional
-from unittest.mock import MagicMock, patch, Mock
+from typing import Any, Dict, List, Optional
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from structlog.testing import capture_logs
 
 from rasa.dialogue_understanding.commands import StartFlowCommand
-from rasa.e2e_test.e2e_test_case import TestSuite, TestCase, TestStep, ActualStepOutput
+from rasa.e2e_test.e2e_test_case import ActualStepOutput, TestCase, TestStep, TestSuite
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from rasa.llm_fine_tuning.annotation_module import (
-    annotate_e2e_tests,
-    generate_conversation,
     _convert_to_conversation_step,
     _extract_llm_prompt_and_commands,
     _should_be_rephrased,
+    annotate_e2e_tests,
+    generate_conversation,
 )
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.storage import StorageContext
-from rasa.shared.core.events import UserUttered, BotUttered
+from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.constants import LLM_PROMPT, LLM_COMMANDS
+from rasa.shared.nlu.constants import LLM_COMMANDS, LLM_PROMPT
 
 
 @pytest.fixture

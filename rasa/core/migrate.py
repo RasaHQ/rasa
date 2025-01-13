@@ -1,28 +1,31 @@
 import copy
 import shutil
 from pathlib import Path
-from typing import List, Dict, Text, Any, Tuple, Optional, Union
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
-import rasa.shared.utils.io
 import rasa.shared.utils.cli
-from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
+import rasa.shared.utils.io
+from rasa.shared.constants import (
+    IGNORED_INTENTS,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    REQUIRED_SLOTS_KEY,
+)
 from rasa.shared.core.constants import (
     ACTIVE_LOOP,
-    REQUESTED_SLOT,
-    SlotMappingType,
     MAPPING_TYPE,
+    REQUESTED_SLOT,
     SLOT_MAPPINGS,
+    SlotMappingType,
 )
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.core.domain import KEY_ENTITIES, KEY_SLOTS, KEY_FORMS, Domain
+from rasa.shared.core.domain import KEY_ENTITIES, KEY_FORMS, KEY_SLOTS, Domain
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import (
     KEY_TRAINING_DATA_FORMAT_VERSION,
     read_yaml,
-    write_yaml,
     read_yaml_file,
+    write_yaml,
 )
 
 ORIGINAL_DOMAIN = "original_domain"  # not a default, fixed

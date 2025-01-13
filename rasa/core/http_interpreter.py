@@ -1,10 +1,9 @@
-import aiohttp
-
 import copy
 import logging
-import structlog
+from typing import Any, Dict, Optional, Text
 
-from typing import Text, Dict, Any, Optional
+import aiohttp
+import structlog
 
 from rasa.core import constants
 from rasa.core.channels import UserMessage

@@ -1,7 +1,7 @@
 import os
 import ssl
 from types import ModuleType
-from typing import Any, List, Optional, Text, Dict, Union
+from typing import Any, Dict, List, Optional, Text, Union
 
 import aiohttp
 import structlog

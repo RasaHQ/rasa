@@ -1,8 +1,9 @@
-from typing import Dict, Any, Union, List, Optional
-from unittest.mock import Mock, AsyncMock
-from litellm.utils import Usage
+from typing import Any, Dict, List, Optional, Union
+from unittest.mock import AsyncMock, Mock
+
 import pytest
 from litellm import ModelResponse
+from litellm.utils import Usage
 from pytest import MonkeyPatch
 
 from rasa.shared.exceptions import ProviderClientAPIException

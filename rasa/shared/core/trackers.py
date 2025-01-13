@@ -7,21 +7,21 @@ import time
 from collections import deque
 from enum import Enum
 from typing import (
-    Dict,
-    Text,
+    TYPE_CHECKING,
     Any,
-    Optional,
-    Iterator,
+    Deque,
+    Dict,
+    FrozenSet,
     Generator,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Text,
+    Tuple,
     Type,
     TypeVar,
-    List,
-    Deque,
-    Iterable,
     Union,
-    FrozenSet,
-    Tuple,
-    TYPE_CHECKING,
     cast,
 )
 
@@ -34,50 +34,50 @@ from rasa.shared.constants import (
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
-    LOOP_NAME,
-    SHOULD_NOT_BE_SET,
-    PREVIOUS_ACTION,
-    ACTIVE_LOOP,
     ACTION_SESSION_START_NAME,
+    ACTIVE_LOOP,
     FOLLOWUP_ACTION,
+    LOOP_NAME,
+    PREVIOUS_ACTION,
+    SHOULD_NOT_BE_SET,
 )
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.events import (
-    DialogueStackUpdated,
-    RoutingSessionEnded,
-    SlotSet,
-    UserUttered,
     ActionExecuted,
-    Event,
-    Restarted,
-    ActionReverted,
-    UserUtteranceReverted,
-    BotUttered,
-    ActiveLoop,
-    SessionStarted,
     ActionExecutionRejected,
+    ActionReverted,
+    ActiveLoop,
+    BotUttered,
     DefinePrevUserUtteredFeaturization,
+    DialogueStackUpdated,
+    Event,
     FlowStarted,
+    Restarted,
+    RoutingSessionEnded,
+    SessionStarted,
+    SlotSet,
+    UserUtteranceReverted,
+    UserUttered,
 )
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import AnySlot, Slot
 from rasa.shared.nlu.constants import (
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_TYPE,
+    ACTION_NAME,
+    ACTION_TEXT,
+    ENTITIES,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
-    ACTION_TEXT,
-    ACTION_NAME,
-    ENTITIES,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
     METADATA_MODEL_ID,
 )
 
 if TYPE_CHECKING:
-    from rasa.shared.core.events import NLUPredictionData
-    from rasa.shared.core.training_data.structures import Story
-    from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
     from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+    from rasa.shared.core.events import NLUPredictionData
+    from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
+    from rasa.shared.core.training_data.structures import Story
 
     EventTypeAlias = TypeVar("EventTypeAlias", bound=Event)
 

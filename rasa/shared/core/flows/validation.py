@@ -4,13 +4,11 @@ import re
 import typing
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Optional, Set, Text, List
+from typing import List, Optional, Set, Text
 
 from rasa.shared.constants import (
     RASA_DEFAULT_FLOW_PATTERN_PREFIX,
     RASA_PATTERN_HUMAN_HANDOFF,
-)
-from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR,
 )
 from rasa.shared.core.flows.flow import Flow
@@ -19,8 +17,8 @@ from rasa.shared.core.flows.flow_step import (
 )
 from rasa.shared.core.flows.flow_step_links import (
     BranchingFlowStepLink,
-    IfFlowStepLink,
     ElseFlowStepLink,
+    IfFlowStepLink,
 )
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 from rasa.shared.core.flows.steps.call import CallFlowStep
@@ -29,9 +27,9 @@ from rasa.shared.core.flows.steps.constants import CONTINUE_STEP_PREFIX, DEFAULT
 from rasa.shared.core.flows.steps.link import LinkFlowStep
 from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
 from rasa.shared.core.flows.utils import (
-    warn_deprecated_collect_step_config,
     get_duplicate_slot_persistence_config_error_message,
     get_invalid_slot_persistence_config_error_message,
+    warn_deprecated_collect_step_config,
 )
 from rasa.shared.exceptions import RasaException
 

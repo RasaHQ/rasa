@@ -12,7 +12,7 @@ from collections import OrderedDict
 from functools import wraps
 from hashlib import md5
 from pathlib import Path
-from typing import Any, cast, Callable, Dict, List, Optional, Text, Type, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Text, Type, TypeVar, Union, cast
 
 import portalocker
 

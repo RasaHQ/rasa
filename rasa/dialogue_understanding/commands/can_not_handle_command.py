@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Text
 
-from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.commands.command import Command
 from rasa.dialogue_understanding.patterns.cannot_handle import (
     CannotHandlePatternFlowStackFrame,
 )

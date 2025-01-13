@@ -1,69 +1,68 @@
 import copy
 import itertools
-import os
 import logging
-import structlog
-from pathlib import Path
-
-import numpy as np
+import os
 from collections import defaultdict, namedtuple
-from tqdm import tqdm
+from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
     Iterable,
     Iterator,
-    Tuple,
     List,
-    Set,
-    Optional,
-    Text,
-    Union,
-    Dict,
-    Any,
     NamedTuple,
-    TYPE_CHECKING,
+    Optional,
+    Set,
+    Text,
+    Tuple,
+    Union,
 )
 
+import numpy as np
+import structlog
+from tqdm import tqdm
+
+import rasa.nlu.classifiers.fallback_classifier
+import rasa.shared.utils.io
+import rasa.utils.io as io_utils
+import rasa.utils.plotting as plot_utils
 from rasa import telemetry
+from rasa.constants import NLG_DATA_FILE, TEST_DATA_FILE, TRAIN_DATA_FILE
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.processor import MessageProcessor
+from rasa.nlu.classifiers import fallback_classifier
+from rasa.nlu.constants import (
+    ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
+    ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
+    ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
+    RESPONSE_SELECTOR_DEFAULT_INTENT,
+    RESPONSE_SELECTOR_PREDICTION_KEY,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
+    TOKENS_NAMES,
+)
+from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.constants import (
+    ENTITIES,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_TYPE,
+    EXTRACTOR,
+    INTENT,
+    INTENT_NAME_KEY,
+    INTENT_RESPONSE_KEY,
+    NO_ENTITY_TAG,
+    PREDICTED_CONFIDENCE_KEY,
+    PRETRAINED_EXTRACTORS,
+    TEXT,
+)
+from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.yaml import write_yaml
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
-import rasa.shared.utils.io
-import rasa.utils.plotting as plot_utils
-import rasa.utils.io as io_utils
-
-from rasa.constants import TEST_DATA_FILE, TRAIN_DATA_FILE, NLG_DATA_FILE
-import rasa.nlu.classifiers.fallback_classifier
-from rasa.nlu.constants import (
-    RESPONSE_SELECTOR_DEFAULT_INTENT,
-    RESPONSE_SELECTOR_PROPERTY_NAME,
-    RESPONSE_SELECTOR_PREDICTION_KEY,
-    TOKENS_NAMES,
-    ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
-    ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
-    ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
-    RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
-)
-from rasa.shared.nlu.constants import (
-    TEXT,
-    INTENT,
-    INTENT_RESPONSE_KEY,
-    ENTITIES,
-    EXTRACTOR,
-    PRETRAINED_EXTRACTORS,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_GROUP,
-    ENTITY_ATTRIBUTE_ROLE,
-    NO_ENTITY_TAG,
-    INTENT_NAME_KEY,
-    PREDICTED_CONFIDENCE_KEY,
-)
-from rasa.nlu.classifiers import fallback_classifier
-from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 
 if TYPE_CHECKING:
     from typing_extensions import TypedDict
@@ -660,9 +659,10 @@ def _calculate_report(
     report_as_dict: Optional[bool] = None,
     exclude_label: Optional[Text] = None,
 ) -> Tuple[Union[Text, Dict], float, float, float, np.ndarray, List[Text]]:
-    from rasa.model_testing import get_evaluation_metrics
     import sklearn.metrics
     import sklearn.utils.multiclass
+
+    from rasa.model_testing import get_evaluation_metrics
 
     confusion_matrix = sklearn.metrics.confusion_matrix(targets, predictions)
     labels = sklearn.utils.multiclass.unique_labels(targets, predictions)
@@ -1104,8 +1104,8 @@ def do_any_extractors_not_support_overlap(extractors: Optional[Set[Text]]) -> bo
     if extractors is None:
         return False
 
-    from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
     from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+    from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 
     return not extractors.isdisjoint(
         {CRFEntityExtractor.__name__, DIETClassifier.__name__}

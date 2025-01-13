@@ -1,7 +1,7 @@
 from sanic import Sanic
+from sanic.exceptions import ServerError
 from sanic.handlers import ErrorHandler
 from sanic.request import Request
-from sanic.exceptions import ServerError
 
 
 # TODO: remove custom handler when upgrading to sanic >= 24

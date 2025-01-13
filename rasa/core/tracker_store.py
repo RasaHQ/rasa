@@ -1,28 +1,29 @@
 from __future__ import annotations
+
 import contextlib
 import itertools
 import json
 import logging
 import os
 from inspect import isawaitable, iscoroutinefunction
-
 from time import sleep
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
+    Generator,
+    Generic,
     Iterable,
     Iterator,
     List,
     Optional,
     Text,
-    Union,
-    TYPE_CHECKING,
-    Generator,
     TypeVar,
-    Generic,
+    Union,
 )
 
+import sqlalchemy as sa
 from boto3.dynamodb.conditions import Key
 from pymongo.collection import Collection
 
@@ -30,17 +31,17 @@ import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.json_utils
-from rasa.plugin import plugin_manager
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.constants import (
-    POSTGRESQL_SCHEMA,
     POSTGRESQL_MAX_OVERFLOW,
     POSTGRESQL_POOL_SIZE,
+    POSTGRESQL_SCHEMA,
 )
+from rasa.plugin import plugin_manager
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import SessionStarted, Event
+from rasa.shared.core.events import Event, SessionStarted
 from rasa.shared.core.trackers import (
     ActionExecuted,
     DialogueStateTracker,
@@ -50,14 +51,13 @@ from rasa.shared.core.trackers import (
 from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
-import sqlalchemy as sa
 
 if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
-    from sqlalchemy.engine.url import URL
-    from sqlalchemy.engine.base import Engine
-    from sqlalchemy.orm import Session, Query
     from sqlalchemy import Sequence
+    from sqlalchemy.engine.base import Engine
+    from sqlalchemy.engine.url import URL
+    from sqlalchemy.orm import Query, Session
 
 logger = logging.getLogger(__name__)
 
@@ -158,9 +158,9 @@ class TrackerStore:
         if isinstance(obj, TrackerStore):
             return obj
 
-        from botocore.exceptions import BotoCoreError
         import pymongo.errors
         import sqlalchemy.exc
+        from botocore.exceptions import BotoCoreError
 
         try:
             _tracker_store = plugin_manager().hook.create_tracker_store(
@@ -799,8 +799,8 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         event_broker: Optional[EventBroker] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
-        from pymongo.database import Database
         from pymongo import MongoClient
+        from pymongo.database import Database
 
         self.client: MongoClient = MongoClient(
             host,

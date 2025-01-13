@@ -4,112 +4,111 @@ import copy
 import logging
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, TypeVar, Type
+from typing import Any, Dict, List, Optional, Text, Tuple, Type, TypeVar, Union
 
 import numpy as np
 import scipy.sparse
 import tensorflow as tf
 
-from rasa.exceptions import ModelNotFound
-from rasa.nlu.featurizers.featurizer import Featurizer
+import rasa.nlu.utils.bilou_utils as bilou_utils
+import rasa.shared.utils.io
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
-from rasa.nlu.classifiers.classifier import IntentClassifier
-import rasa.shared.utils.io
-import rasa.nlu.utils.bilou_utils as bilou_utils
-from rasa.shared.constants import DIAGNOSTIC_DATA
-from rasa.nlu.extractors.extractor import EntityTagSpec
+from rasa.exceptions import ModelNotFound
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
-from rasa.utils import train_utils
-from rasa.utils.tensorflow import rasa_layers
-from rasa.utils.tensorflow.feature_array import (
-    FeatureArray,
-    serialize_nested_feature_arrays,
-    deserialize_nested_feature_arrays,
-)
-from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
-from rasa.utils.tensorflow.model_data import (
-    RasaModelData,
-    FeatureSignature,
-)
-from rasa.nlu.constants import TOKENS_NAMES, DEFAULT_TRANSFORMER_SIZE
+from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.nlu.constants import DEFAULT_TRANSFORMER_SIZE, TOKENS_NAMES
+from rasa.nlu.extractors.extractor import EntityExtractorMixin, EntityTagSpec
+from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.shared.constants import DIAGNOSTIC_DATA
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.constants import (
-    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
-    TEXT,
-    INTENT,
-    INTENT_RESPONSE_KEY,
     ENTITIES,
-    ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_TYPE,
+    INTENT,
+    INTENT_RESPONSE_KEY,
     NO_ENTITY_TAG,
     SPLIT_ENTITIES_BY_COMMA,
+    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+    TEXT,
 )
-from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.utils import train_utils
+from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.constants import (
-    DROP_SMALL_LAST_BATCH,
-    LABEL,
-    IDS,
-    HIDDEN_LAYERS_SIZES,
-    RENORMALIZE_CONFIDENCES,
-    SHARE_HIDDEN_LAYERS,
-    TRANSFORMER_SIZE,
-    NUM_TRANSFORMER_LAYERS,
-    NUM_HEADS,
-    BATCH_SIZES,
-    BATCH_STRATEGY,
-    EPOCHS,
-    RANDOM_SEED,
-    LEARNING_RATE,
-    RANKING_LENGTH,
-    LOSS_TYPE,
-    SIMILARITY_TYPE,
-    NUM_NEG,
-    SPARSE_INPUT_DROPOUT,
-    DENSE_INPUT_DROPOUT,
-    MASKED_LM,
-    ENTITY_RECOGNITION,
-    TENSORBOARD_LOG_DIR,
-    INTENT_CLASSIFICATION,
-    EVAL_NUM_EXAMPLES,
-    EVAL_NUM_EPOCHS,
-    UNIDIRECTIONAL_ENCODER,
-    DROP_RATE,
-    DROP_RATE_ATTENTION,
-    CONNECTION_DENSITY,
-    NEGATIVE_MARGIN_SCALE,
-    REGULARIZATION_CONSTANT,
-    SCALE_LOSS,
-    USE_MAX_NEG_SIM,
-    MAX_NEG_SIM,
-    MAX_POS_SIM,
-    EMBEDDING_DIMENSION,
-    BILOU_FLAG,
-    KEY_RELATIVE_ATTENTION,
-    VALUE_RELATIVE_ATTENTION,
-    MAX_RELATIVE_POSITION,
     AUTO,
     BALANCED,
-    CROSS_ENTROPY,
-    TENSORBOARD_LOG_LEVEL,
-    CONCAT_DIMENSION,
-    FEATURIZERS,
+    BATCH_SIZES,
+    BATCH_STRATEGY,
+    BILOU_FLAG,
     CHECKPOINT_MODEL,
-    SEQUENCE,
-    SENTENCE,
-    SEQUENCE_LENGTH,
-    DENSE_DIMENSION,
-    MASK,
+    CONCAT_DIMENSION,
+    CONNECTION_DENSITY,
     CONSTRAIN_SIMILARITIES,
+    CROSS_ENTROPY,
+    DENSE_DIMENSION,
+    DENSE_INPUT_DROPOUT,
+    DROP_RATE,
+    DROP_RATE_ATTENTION,
+    DROP_SMALL_LAST_BATCH,
+    EMBEDDING_DIMENSION,
+    ENTITY_RECOGNITION,
+    EPOCHS,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    FEATURIZERS,
+    HIDDEN_LAYERS_SIZES,
+    IDS,
+    INTENT_CLASSIFICATION,
+    KEY_RELATIVE_ATTENTION,
+    LABEL,
+    LEARNING_RATE,
+    LOSS_TYPE,
+    MASK,
+    MASKED_LM,
+    MAX_NEG_SIM,
+    MAX_POS_SIM,
+    MAX_RELATIVE_POSITION,
     MODEL_CONFIDENCE,
-    SOFTMAX,
+    NEGATIVE_MARGIN_SCALE,
+    NUM_HEADS,
+    NUM_NEG,
+    NUM_TRANSFORMER_LAYERS,
+    RANDOM_SEED,
+    RANKING_LENGTH,
+    REGULARIZATION_CONSTANT,
+    RENORMALIZE_CONFIDENCES,
     RUN_EAGERLY,
+    SCALE_LOSS,
+    SENTENCE,
+    SEQUENCE,
+    SEQUENCE_LENGTH,
+    SHARE_HIDDEN_LAYERS,
+    SIMILARITY_TYPE,
+    SOFTMAX,
+    SPARSE_INPUT_DROPOUT,
+    TENSORBOARD_LOG_DIR,
+    TENSORBOARD_LOG_LEVEL,
+    TRANSFORMER_SIZE,
+    UNIDIRECTIONAL_ENCODER,
+    USE_MAX_NEG_SIM,
+    VALUE_RELATIVE_ATTENTION,
 )
+from rasa.utils.tensorflow.feature_array import (
+    FeatureArray,
+    deserialize_nested_feature_arrays,
+    serialize_nested_feature_arrays,
+)
+from rasa.utils.tensorflow.model_data import (
+    FeatureSignature,
+    RasaModelData,
+)
+from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 
 logger = logging.getLogger(__name__)
 

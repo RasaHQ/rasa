@@ -2,42 +2,42 @@ import logging
 from collections import OrderedDict
 from pathlib import Path
 from typing import (
-    ClassVar,
-    Text,
     Any,
-    List,
+    Callable,
+    ClassVar,
     Dict,
+    Iterator,
+    List,
+    Optional,
+    Text,
     Tuple,
     Union,
-    Iterator,
-    Optional,
-    Callable,
 )
 
-import rasa.shared.data
-from rasa.shared.core.domain import Domain
-from rasa.shared.exceptions import YamlException
 from ruamel.yaml import StringIO
 from ruamel.yaml.scalarstring import LiteralScalarString
 
+import rasa.shared.data
+import rasa.shared.nlu.training_data.util
+import rasa.shared.utils.io
 from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
-from rasa.shared.nlu.constants import METADATA_INTENT, METADATA_EXAMPLE
+from rasa.shared.core.domain import Domain
+from rasa.shared.exceptions import YamlException
+from rasa.shared.nlu.constants import METADATA_EXAMPLE, METADATA_INTENT
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter,
 )
-import rasa.shared.utils.io
-import rasa.shared.nlu.training_data.util
-from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.yaml import (
+    is_key_in_yaml,
+    read_yaml,
     validate_raw_yaml_using_schema_file_with_responses,
     validate_training_data_format_version,
-    read_yaml,
-    is_key_in_yaml,
     write_yaml,
 )
 
@@ -409,8 +409,9 @@ class RasaYAMLWriter(TrainingDataWriter):
         Returns:
             `OrderedDict` containing all training data.
         """
-        from rasa.shared.utils.yaml import KEY_TRAINING_DATA_FORMAT_VERSION
         from ruamel.yaml.scalarstring import DoubleQuotedScalarString
+
+        from rasa.shared.utils.yaml import KEY_TRAINING_DATA_FORMAT_VERSION
 
         nlu_items = []
         nlu_items.extend(cls.process_intents(training_data))

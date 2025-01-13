@@ -2,22 +2,22 @@ import asyncio
 import filecmp
 import logging
 import os
+import re
 import tempfile
 import warnings
-import re
 from asyncio import AbstractEventLoop
 from collections import OrderedDict
 from io import StringIO
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    List,
     Optional,
     Text,
-    Any,
-    Union,
-    List,
     Type,
-    Callable,
-    TYPE_CHECKING,
+    Union,
 )
 
 from ruamel import yaml
@@ -153,8 +153,8 @@ def create_validator(
     """Helper method to create `Validator` classes from callable functions. Should be
     removed when questionary supports `Validator` objects.
     """
-    from prompt_toolkit.validation import Validator, ValidationError
     from prompt_toolkit.document import Document
+    from prompt_toolkit.validation import ValidationError, Validator
 
     class FunctionValidator(Validator):
         @staticmethod

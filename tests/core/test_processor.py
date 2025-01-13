@@ -15,14 +15,13 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import freezegun
 import pytest
+from _pytest.logging import LogCaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
+from aioresponses import aioresponses
 from pytest import CaptureFixture
 
 import rasa.shared.utils.io
 import tests.utilities
-from _pytest.logging import LogCaptureFixture
-from _pytest.monkeypatch import MonkeyPatch
-from aioresponses import aioresponses
-
 from rasa.core import jobs
 from rasa.core.actions.action import (
     ActionBotResponse,
@@ -42,6 +41,9 @@ from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
+from rasa.core.policies.flow_policy import (
+    FlowPolicy,
+)
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
@@ -121,9 +123,6 @@ from tests.conftest import (
     with_assistant_ids,
     with_model_id,
     with_model_ids,
-)
-from rasa.core.policies.flow_policy import (
-    FlowPolicy,
 )
 
 logger = logging.getLogger(__name__)

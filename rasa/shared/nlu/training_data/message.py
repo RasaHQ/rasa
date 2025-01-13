@@ -1,30 +1,29 @@
-from typing import Any, Optional, Tuple, Text, Dict, Set, List
-
-import typing
 import copy
+import typing
+from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
 import rasa.shared.utils.io
+from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    ACTION_TEXT,
     COMMANDS,
-    TEXT,
-    INTENT,
-    RESPONSE,
-    INTENT_RESPONSE_KEY,
-    METADATA,
-    METADATA_INTENT,
-    METADATA_EXAMPLE,
     ENTITIES,
-    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
-    RESPONSE_IDENTIFIER_DELIMITER,
+    ENTITY_ATTRIBUTE_START,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
-    ACTION_TEXT,
-    ACTION_NAME,
+    INTENT,
+    INTENT_RESPONSE_KEY,
+    METADATA,
+    METADATA_EXAMPLE,
+    METADATA_INTENT,
+    RESPONSE,
+    RESPONSE_IDENTIFIER_DELIMITER,
+    TEXT,
     TEXT_TOKENS,
 )
-from rasa.shared.constants import DIAGNOSTIC_DATA
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features

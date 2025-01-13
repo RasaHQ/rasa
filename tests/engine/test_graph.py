@@ -5,9 +5,9 @@ from typing import Dict, Text
 
 import pytest
 
-from rasa.engine.storage.resource import Resource
 from rasa.engine.exceptions import GraphSchemaException
-from rasa.engine.graph import SchemaNode, GraphSchema
+from rasa.engine.graph import GraphSchema, SchemaNode
+from rasa.engine.storage.resource import Resource
 from rasa.shared.utils.yaml import read_yaml_file
 from rasa.utils.io import write_yaml
 from tests.engine.graph_components_test_classes import PersistableTestComponent

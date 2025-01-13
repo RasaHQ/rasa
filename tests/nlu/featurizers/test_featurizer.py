@@ -1,12 +1,12 @@
-from rasa.shared.exceptions import InvalidConfigException
-from rasa.nlu.featurizers.featurizer import Featurizer
-from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
-from typing import List, Dict, Any, Text
+from typing import Any, Dict, List, Text
 
 import numpy as np
 import pytest
 
+from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
+from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.shared.exceptions import InvalidConfigException
 
 
 @pytest.mark.parametrize(

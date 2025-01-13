@@ -15,6 +15,7 @@ from rasa.e2e_test.assertions import (
     Assertion,
     AssertionFailure,
     AssertionType,
+    BotDidNotUtterAssertion,
     BotUtteredAssertion,
     FlowCancelledAssertion,
     FlowCompletedAssertion,
@@ -25,7 +26,6 @@ from rasa.e2e_test.assertions import (
     PatternClarificationContainsAssertion,
     SlotWasNotSetAssertion,
     SlotWasSetAssertion,
-    BotDidNotUtterAssertion,
 )
 from rasa.e2e_test.e2e_config import LLMJudgeConfig
 from rasa.shared.core.events import (

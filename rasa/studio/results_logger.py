@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from functools import wraps
-from typing import Callable, Any, Dict
+from typing import Any, Callable, Dict
 
 import structlog
 from keycloak.exceptions import KeycloakError
-from requests.exceptions import RequestException, Timeout, ConnectionError
+from requests.exceptions import ConnectionError, RequestException, Timeout
 
 from rasa.shared.exceptions import RasaException
-from rasa.shared.utils.cli import print_success, print_error
+from rasa.shared.utils.cli import print_error, print_success
 from rasa.studio.config import StudioConfig
 
 structlogger = structlog.get_logger()

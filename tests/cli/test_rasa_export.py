@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
-from typing import Callable, Optional, Text, List, Tuple
-from unittest.mock import Mock, AsyncMock
+from typing import Callable, List, Optional, Text, Tuple
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -11,16 +11,16 @@ import rasa.core.utils as rasa_core_utils
 from rasa.cli import export
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.pika import PikaEventBroker
+from rasa.exceptions import NoEventsToMigrateError, PublishingError
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.exceptions import PublishingError, NoEventsToMigrateError
+from tests.cli.conftest import RASA_EXE
 from tests.conftest import (
     MockExporter,
     random_user_uttered_event,
     write_endpoint_config_to_yaml,
 )
 from tests.utilities import clear_available_endpoints_class_instance
-from tests.cli.conftest import RASA_EXE
 
 
 def test_export_help(run: Callable[..., RunResult]):

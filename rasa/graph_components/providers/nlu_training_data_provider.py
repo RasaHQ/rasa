@@ -1,12 +1,14 @@
 from __future__ import annotations
-from typing import Dict, Text, Any
-from rasa.engine.graph import GraphComponent, ExecutionContext
+
+from typing import Any, Dict, Text
+
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import (
-    TrainingData,
     DEFAULT_TRAINING_DATA_OUTPUT_PATH,
+    TrainingData,
 )
 
 

@@ -1,26 +1,27 @@
-from typing import Text, List, Tuple, Union, Optional
-import pytest
-from _pytest.monkeypatch import MonkeyPatch
-import numpy as np
-import tensorflow as tf
+from typing import List, Optional, Text, Tuple, Union
 
-from rasa.utils.tensorflow.layers import (
-    DotProductLoss,
-    MultiLabelDotProductLoss,
-    RandomlyConnectedDense,
-    DenseForSparse,
-)
-from rasa.utils.tensorflow.constants import INNER, SOFTMAX, LABEL, LABEL_PAD_ID
+import numpy as np
+import pytest
+import tensorflow as tf
+from _pytest.monkeypatch import MonkeyPatch
+
 import rasa.utils.tensorflow.layers_utils as layers_utils
+from rasa.core.constants import DIALOGUE
 from rasa.shared.nlu.constants import (
-    TEXT,
-    INTENT,
     ACTION_NAME,
     ACTION_TEXT,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
+    INTENT,
+    TEXT,
 )
-from rasa.core.constants import DIALOGUE
+from rasa.utils.tensorflow.constants import INNER, LABEL, LABEL_PAD_ID, SOFTMAX
+from rasa.utils.tensorflow.layers import (
+    DenseForSparse,
+    DotProductLoss,
+    MultiLabelDotProductLoss,
+    RandomlyConnectedDense,
+)
 
 
 def test_dot_product_loss_inner_sim():

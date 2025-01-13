@@ -3,36 +3,36 @@ import textwrap
 import pytest
 
 from rasa.shared.constants import RASA_PATTERN_HUMAN_HANDOFF
+from rasa.shared.core.flows import Flow
 from rasa.shared.core.flows.steps import LinkFlowStep
 from rasa.shared.core.flows.steps.constants import (
-    START_STEP,
-    END_STEP,
     CONTINUE_STEP_PREFIX,
+    END_STEP,
+    START_STEP,
 )
 from rasa.shared.core.flows.validation import (
     DuplicatedStepIdException,
+    DuplicateNLUTriggerException,
     DuplicateSlotPersistConfigException,
     EmptyFlowException,
     EmptyStepSequenceException,
+    FlowIdNamingException,
     InvalidPersistSlotsException,
     MissingElseBranchException,
-    NoLinkAllowedInCalledFlowException,
-    PatternReferencedFlowException,
-    ReferenceToPatternException,
-    UnreachableFlowStepException,
     MissingNextLinkException,
-    ReservedFlowStepIdException,
+    NoLinkAllowedInCalledFlowException,
     NoNextAllowedForLinkException,
+    PatternReferencedFlowException,
+    PatternReferencedPatternException,
+    ReferenceToPatternException,
+    ReservedFlowStepIdException,
+    SlotNamingException,
+    UnreachableFlowStepException,
     UnresolvedFlowException,
     UnresolvedFlowStepIdException,
-    DuplicateNLUTriggerException,
-    SlotNamingException,
-    FlowIdNamingException,
     validate_patterns_are_not_calling_or_linking_other_flows,
     validate_slot_persistence_configuration,
-    PatternReferencedPatternException,
 )
-from rasa.shared.core.flows import Flow
 from rasa.shared.core.flows.yaml_flows_io import (
     YAMLFlowsReader,
 )

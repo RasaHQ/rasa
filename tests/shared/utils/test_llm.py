@@ -1,27 +1,28 @@
 from pathlib import Path
-from typing import Text, Any, Dict, Optional
+from typing import Any, Dict, Optional, Text
 from unittest import mock
 from unittest.mock import patch
 
 import pytest
 from pytest import MonkeyPatch
+
 from rasa.shared.constants import (
-    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
-    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
     MODEL_GROUP_CONFIG_KEY,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import BotUttered, UserUttered, SessionStarted, Restarted
+from rasa.shared.core.events import BotUttered, Restarted, SessionStarted, UserUttered
 from rasa.shared.core.slots import (
-    FloatSlot,
-    TextSlot,
     BooleanSlot,
     CategoricalSlot,
+    FloatSlot,
     Slot,
+    TextSlot,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.engine.caching import CACHE_LOCATION_ENV
-from rasa.shared.exceptions import ProviderClientValidationError, InvalidConfigException
+from rasa.shared.exceptions import InvalidConfigException, ProviderClientValidationError
 from rasa.shared.providers.embedding.azure_openai_embedding_client import (
     AzureOpenAIEmbeddingClient,
 )
@@ -45,21 +46,21 @@ from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
 from rasa.shared.providers.router.router_client import RouterClient
 from rasa.shared.utils.llm import (
-    get_prompt_template,
-    sanitize_message_for_prompt,
-    tracker_as_readable_transcript,
-    embedder_factory,
-    llm_factory,
     ERROR_PLACEHOLDER,
     allowed_values_for_slot,
-    get_provider_from_config,
-    ensure_cache,
     combine_custom_and_default_config,
-    resolve_model_client_config,
     embedder_client_factory,
-    llm_client_factory,
-    llm_router_factory,
+    embedder_factory,
     embedder_router_factory,
+    ensure_cache,
+    get_prompt_template,
+    get_provider_from_config,
+    llm_client_factory,
+    llm_factory,
+    llm_router_factory,
+    resolve_model_client_config,
+    sanitize_message_for_prompt,
+    tracker_as_readable_transcript,
 )
 
 

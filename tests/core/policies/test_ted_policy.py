@@ -1,66 +1,68 @@
 from pathlib import Path
-from typing import Optional, List, Type, Dict, Text, Any
+from typing import Any, Dict, List, Optional, Text, Type
 
 import numpy as np
 import pytest
-from _pytest.tmpdir import TempPathFactory
-from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
+from _pytest.tmpdir import TempPathFactory
 
 import tests.core.test_policies
 from rasa.core.constants import POLICY_MAX_HISTORY
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.tracker_featurizers import (
+    MaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
+)
 from rasa.core.policies.policy import Policy as Policy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import (
-    ActionExecuted,
-    UserUttered,
-    Event,
-    EntitiesAdded,
-    ActiveLoop,
-)
-from rasa.shared.core.slots import BooleanSlot
-from rasa.shared.exceptions import RasaException, InvalidConfigException
-from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
-from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.model_training import train_core
-from rasa.utils.tensorflow.constants import (
-    EVAL_NUM_EXAMPLES,
-    KEY_RELATIVE_ATTENTION,
-    LOSS_TYPE,
-    MAX_RELATIVE_POSITION,
-    RANKING_LENGTH,
-    RENORMALIZE_CONFIDENCES,
-    SCALE_LOSS,
-    SIMILARITY_TYPE,
-    VALUE_RELATIVE_ATTENTION,
-    MODEL_CONFIDENCE,
-    COSINE,
-    AUTO,
-    LABEL,
-    MASK,
-    SENTENCE,
-    IDS,
-    EPOCHS,
-    EPOCH_OVERRIDE,
-)
-from rasa.shared.nlu.constants import ACTION_NAME
-from rasa.utils.tensorflow import model_data_utils
-from rasa.utils.tensorflow.models import RasaModel
-from tests.core.test_policies import PolicyTestCollection
 from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     ROUTE_TO_CALM_SLOT,
 )
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import (
+    ActionExecuted,
+    ActiveLoop,
+    EntitiesAdded,
+    Event,
+    UserUttered,
+)
+from rasa.shared.core.slots import BooleanSlot
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import InvalidConfigException, RasaException
+from rasa.shared.nlu.constants import ACTION_NAME
+from rasa.utils.tensorflow import model_data_utils
+from rasa.utils.tensorflow.constants import (
+    AUTO,
+    COSINE,
+    EPOCH_OVERRIDE,
+    EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    IDS,
+    KEY_RELATIVE_ATTENTION,
+    LABEL,
+    LOSS_TYPE,
+    MASK,
+    MAX_RELATIVE_POSITION,
+    MODEL_CONFIDENCE,
+    RANKING_LENGTH,
+    RENORMALIZE_CONFIDENCES,
+    SCALE_LOSS,
+    SENTENCE,
+    SIMILARITY_TYPE,
+    VALUE_RELATIVE_ATTENTION,
+)
+from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
+from rasa.utils.tensorflow.models import RasaModel
+from tests.core.test_policies import PolicyTestCollection
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"

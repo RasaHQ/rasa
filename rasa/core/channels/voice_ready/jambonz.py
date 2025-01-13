@@ -1,18 +1,18 @@
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
 
 import structlog
-from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
-from rasa.core.channels.voice_ready.jambonz_protocol import (
-    send_ws_text_message,
-    websocket_message_handler,
-    send_ws_hangup_message,
-)
-from rasa.core.channels.voice_ready.utils import validate_voice_license_scope
-from rasa.shared.exceptions import RasaException
-from sanic import Blueprint, response, Websocket  # type: ignore[attr-defined]
+from sanic import Blueprint, Websocket, response  # type: ignore[attr-defined]
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.core.channels.voice_ready.jambonz_protocol import (
+    send_ws_hangup_message,
+    send_ws_text_message,
+    websocket_message_handler,
+)
+from rasa.core.channels.voice_ready.utils import validate_voice_license_scope
+from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.common import mark_as_beta_feature
 from rasa.utils.io import remove_emojis
 

@@ -1,3 +1,4 @@
+# ruff: noqa: I001
 from typing import Text, Dict, List, Type
 
 from rasa.core.channels.channel import (  # noqa: F401

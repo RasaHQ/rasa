@@ -1,17 +1,17 @@
-from typing import List, Dict, Any, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 import pandas as pd
 import structlog
 
 from rasa.dialogue_understanding.commands import (
-    KnowledgeAnswerCommand,
-    StartFlowCommand,
-    SetSlotCommand,
-    ClarifyCommand,
-    HumanHandoffCommand,
     CancelFlowCommand,
     ChitChatAnswerCommand,
+    ClarifyCommand,
+    HumanHandoffCommand,
+    KnowledgeAnswerCommand,
+    SetSlotCommand,
     SkipQuestionCommand,
+    StartFlowCommand,
 )
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.shared.core.flows import FlowsList

@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Text, Optional, List, Union
+from typing import List, Optional, Text, Union
 
 import rasa.shared.data
 import rasa.shared.utils.io

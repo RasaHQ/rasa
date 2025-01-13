@@ -1,22 +1,22 @@
 import json
 import logging
-from typing import Any, Dict, Generator, Optional, Sequence, List
+from typing import Any, Dict, Generator, List, Optional, Sequence
 from unittest.mock import Mock, patch
 
 import pytest
-from pytest import MonkeyPatch
-from pytest import LogCaptureFixture
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from pytest import LogCaptureFixture, MonkeyPatch
+
 from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, LLM_API_HEALTH_CHECK_ENV_VAR
+from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR, OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import DialogueStackUpdated, UserUttered, BotUttered
+from rasa.shared.core.events import BotUttered, DialogueStackUpdated, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import DialogueStateTracker

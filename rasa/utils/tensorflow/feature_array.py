@@ -1,9 +1,8 @@
-from typing import Dict, Any, List, Tuple, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from safetensors.numpy import save_file
 import numpy as np
-from safetensors.numpy import load_file
 import scipy.sparse
+from safetensors.numpy import load_file, save_file
 
 import rasa.shared.utils.io
 

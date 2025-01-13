@@ -1,5 +1,6 @@
-from typing import Any, Dict, List, Union
 import logging
+from typing import Any, Dict, List, Union
+
 import structlog
 
 from rasa.shared.exceptions import ProviderClientAPIException

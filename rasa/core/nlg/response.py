@@ -1,14 +1,13 @@
 import copy
 import logging
+from typing import Any, Dict, List, Optional, Text
+
 from rasa.core.constants import DEFAULT_TEMPLATE_ENGINE, TEMPLATE_ENGINE_CONFIG_KEY
-
-from rasa.shared.core.trackers import DialogueStateTracker
-from typing import Text, Any, Dict, Optional, List
-
 from rasa.core.nlg import interpolator
 from rasa.core.nlg.generator import NaturalLanguageGenerator, ResponseVariationFilter
 from rasa.shared.constants import RESPONSE_CONDITION
 from rasa.shared.core.domain import RESPONSE_KEYS_TO_INTERPOLATE
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import METADATA
 
 logger = logging.getLogger(__name__)

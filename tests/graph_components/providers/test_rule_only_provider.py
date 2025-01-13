@@ -4,7 +4,7 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.rule_only_provider import RuleOnlyDataProvider
-from rasa.shared.core.constants import RULE_ONLY_SLOTS, RULE_ONLY_LOOPS
+from rasa.shared.core.constants import RULE_ONLY_LOOPS, RULE_ONLY_SLOTS
 from rasa.shared.core.domain import Domain
 
 

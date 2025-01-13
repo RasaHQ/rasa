@@ -4,18 +4,18 @@ from typing import Any, Dict, List, Optional
 import structlog
 
 from rasa.shared.constants import (
+    API_BASE_CONFIG_KEY,
+    API_KEY,
+    API_VERSION_CONFIG_KEY,
     AZURE_API_BASE_ENV_VAR,
     AZURE_API_KEY_ENV_VAR,
     AZURE_API_TYPE_ENV_VAR,
     AZURE_API_VERSION_ENV_VAR,
+    AZURE_OPENAI_PROVIDER,
     OPENAI_API_BASE_ENV_VAR,
     OPENAI_API_KEY_ENV_VAR,
     OPENAI_API_TYPE_ENV_VAR,
     OPENAI_API_VERSION_ENV_VAR,
-    API_BASE_CONFIG_KEY,
-    API_KEY,
-    API_VERSION_CONFIG_KEY,
-    AZURE_OPENAI_PROVIDER,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers._configs.azure_openai_client_config import (

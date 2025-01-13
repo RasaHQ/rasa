@@ -1,11 +1,11 @@
-import logging
 import itertools
+import logging
 import os
 from functools import wraps
+from typing import Any, Callable, List, Optional, Text, Tuple, TypeVar, Union
 
-import numpy as np
-from typing import Any, Callable, List, Optional, Text, TypeVar, Union, Tuple
 import matplotlib
+import numpy as np
 from matplotlib.ticker import FormatStrFormatter
 
 import rasa.shared.utils.io

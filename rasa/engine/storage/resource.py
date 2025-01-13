@@ -1,10 +1,11 @@
 from __future__ import annotations
+
 import logging
 import typing
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Text
-import uuid
 
 import rasa.utils.common
 import rasa.utils.io

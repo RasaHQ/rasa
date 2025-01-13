@@ -1,19 +1,19 @@
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding_test.constants import (
-    ACTOR_USER,
-    KEY_COMMANDS,
     ACTOR_BOT,
-    KEY_TEST_CASE,
-    KEY_STEPS,
-    KEY_FIXTURES,
-    KEY_METADATA,
-    KEY_USER_INPUT,
+    ACTOR_USER,
     KEY_BOT_INPUT,
     KEY_BOT_UTTERED,
+    KEY_COMMANDS,
+    KEY_FIXTURES,
+    KEY_METADATA,
+    KEY_STEPS,
+    KEY_TEST_CASE,
+    KEY_USER_INPUT,
 )
 
 

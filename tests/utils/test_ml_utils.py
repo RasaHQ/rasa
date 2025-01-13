@@ -1,5 +1,4 @@
 from rasa.shared.core.domain import Domain
-
 from rasa.utils.ml_utils import (
     extract_ai_response_examples,
     extract_participant_messages_from_transcript,

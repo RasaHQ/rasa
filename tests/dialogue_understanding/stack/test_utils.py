@@ -16,7 +16,7 @@ from rasa.dialogue_understanding.stack.utils import (
     top_user_flow_frame,
     user_flows_on_the_stack,
 )
-from rasa.shared.core.events import SlotSet, UserUttered, FlowStarted
+from rasa.shared.core.events import FlowStarted, SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
 from tests.utilities import flows_from_str

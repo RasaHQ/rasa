@@ -13,10 +13,10 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Text,
     Tuple,
     Union,
-    Set,
     cast,
 )
 
@@ -50,28 +50,28 @@ from rasa.core import run, utils
 from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
 from rasa.core.utils import AvailableEndpoints
 from rasa.shared.constants import (
-    INTENT_MESSAGE_PREFIX,
     DEFAULT_SENDER_ID,
-    UTTER_PREFIX,
     DOCS_URL_NLU_BASED_POLICIES,
+    INTENT_MESSAGE_PREFIX,
+    UTTER_PREFIX,
 )
 from rasa.shared.core.constants import (
-    USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
-    LOOP_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
     ACTIVE_LOOP,
+    LOOP_INTERRUPTED,
+    LOOP_NAME,
     LOOP_REJECTED,
     REQUESTED_SLOT,
-    LOOP_INTERRUPTED,
-    ACTION_UNLIKELY_INTENT_NAME,
+    USER_INTENT_RESTART,
 )
 from rasa.shared.core.domain import (
-    Domain,
-    KEY_INTENTS,
-    KEY_ENTITIES,
-    KEY_RESPONSES,
     KEY_ACTIONS,
+    KEY_ENTITIES,
+    KEY_INTENTS,
+    KEY_RESPONSES,
     KEY_RESPONSES_TEXT,
+    Domain,
 )
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -79,11 +79,11 @@ from rasa.shared.core.events import (
     BotUttered,
     Event,
     Restarted,
-    UserUttered,
     UserUtteranceReverted,
+    UserUttered,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.core.training_data import visualization
 from rasa.shared.core.training_data.visualization import (
     VISUALIZATION_TEMPLATE_PATH,
@@ -91,7 +91,7 @@ from rasa.shared.core.training_data.visualization import (
 )
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.importers.rasa import TrainingDataImporter
-from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY, TEXT
 
 # noinspection PyProtectedMember
 from rasa.shared.nlu.training_data import loading

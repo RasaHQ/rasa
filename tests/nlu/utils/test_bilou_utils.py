@@ -1,14 +1,15 @@
 import logging
-from typing import Text, List, Optional
-from _pytest.logging import LogCaptureFixture
-import pytest
+from typing import List, Optional, Text
 
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+import pytest
+from _pytest.logging import LogCaptureFixture
+
 import rasa.nlu.utils.bilou_utils as bilou_utils
 from rasa.nlu.constants import BILOU_ENTITIES
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.constants import ENTITIES
-from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 @pytest.mark.parametrize(

@@ -1,7 +1,9 @@
-from unittest.mock import AsyncMock, call, _Call
-from rasa.core.channels.socketio import SocketIOOutput
+from typing import Any, Dict, List, Text
+from unittest.mock import AsyncMock, _Call, call
+
 import pytest
-from typing import List, Dict, Text, Any
+
+from rasa.core.channels.socketio import SocketIOOutput
 from rasa.shared.core.trackers import DialogueStateTracker
 
 

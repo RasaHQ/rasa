@@ -2,7 +2,7 @@ import argparse
 import logging
 import os
 from pathlib import Path
-from typing import Dict, Optional, Text, List
+from typing import Dict, List, Optional, Text
 
 import rasa.shared.utils.io
 import rasa.utils.io

@@ -1,20 +1,19 @@
-from collections import defaultdict
-import logging
 import json
+import logging
+from collections import defaultdict
 from typing import DefaultDict, Dict, Generator, List, NamedTuple, Optional, Text, Tuple
 
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
-    PREVIOUS_ACTION,
     ACTION_UNLIKELY_INTENT_NAME,
+    PREVIOUS_ACTION,
     USER,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
-
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 

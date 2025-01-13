@@ -1,24 +1,25 @@
-import numpy as np
-import typing
 import logging
-from typing import Any, Text, Dict, List, Type
+import typing
+from typing import Any, Dict, List, Text, Type
 
-from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+import numpy as np
+
 from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
-from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
-    SPACY_DOCS,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
+    SPACY_DOCS,
 )
-from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
-from rasa.utils.tensorflow.constants import POOLING, MEAN_POOLING
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE, TEXT
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
 
 if typing.TYPE_CHECKING:
     from spacy.tokens import Doc

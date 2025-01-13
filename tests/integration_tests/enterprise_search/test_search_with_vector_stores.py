@@ -1,7 +1,8 @@
 import pytest
+
 from tests.integration_tests.conftest import (
-    send_message_to_rasa_server,
     get_conversation_tracker,
+    send_message_to_rasa_server,
     was_enterprise_search_policy_used,
 )
 

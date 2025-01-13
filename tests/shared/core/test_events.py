@@ -1,68 +1,68 @@
 import copy
+import time
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Text, Type
 
 import pytest
 import pytz
-import time
-from datetime import datetime
 from dateutil import parser
 from pytest import CaptureFixture
-from typing import Type, Optional, Text, List, Any, Dict
 
-import rasa.shared.utils.common
 import rasa.shared.core.events
+import rasa.shared.utils.common
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.policies.enterprise_search_policy import (
     SEARCH_QUERY_METADATA_KEY,
     SEARCH_RESULTS_METADATA_KEY,
 )
 from rasa.core.test import (
-    WronglyClassifiedUserUtterance,
-    WarningPredictedAction,
-    WronglyPredictedAction,
     EndToEndUserUtterance,
     EvaluationStore,
+    WarningPredictedAction,
+    WronglyClassifiedUserUtterance,
+    WronglyPredictedAction,
 )
-from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.shared.core.events import (
-    Event,
-    UserUttered,
-    SlotSet,
-    Restarted,
     ActionExecuted,
-    AllSlotsReset,
-    ReminderScheduled,
-    ReminderCancelled,
-    ConversationResumed,
-    ConversationPaused,
-    StoryExported,
-    ActionReverted,
-    BotUttered,
-    FollowupAction,
-    UserUtteranceReverted,
-    AgentUttered,
-    SessionStarted,
-    EntitiesAdded,
-    DefinePrevUserUtteredFeaturization,
-    ActiveLoop,
-    LegacyForm,
-    LoopInterrupted,
     ActionExecutionRejected,
-    LegacyFormValidation,
-    format_message,
-    FlowStarted,
+    ActionReverted,
+    ActiveLoop,
+    AgentUttered,
+    AllSlotsReset,
+    BotUttered,
+    ConversationPaused,
+    ConversationResumed,
+    DefinePrevUserUtteredFeaturization,
+    DialogueStackUpdated,
+    EntitiesAdded,
+    Event,
+    FlowCancelled,
+    FlowCompleted,
     FlowInterrupted,
     FlowResumed,
-    FlowCompleted,
-    FlowCancelled,
-    DialogueStackUpdated,
+    FlowStarted,
+    FollowupAction,
+    LegacyForm,
+    LegacyFormValidation,
+    LoopInterrupted,
+    ReminderCancelled,
+    ReminderScheduled,
+    Restarted,
     RoutingSessionEnded,
     SessionEnded,
+    SessionStarted,
+    SlotSet,
+    StoryExported,
+    UserUtteranceReverted,
+    UserUttered,
+    format_message,
 )
+from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, METADATA_MODEL_ID
 from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_ACTION
 

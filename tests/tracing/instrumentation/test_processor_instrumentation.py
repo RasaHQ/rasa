@@ -5,14 +5,13 @@ from unittest.mock import Mock
 import pytest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from rasa_sdk import Action
+
 from rasa.core.actions.action import ActionBotResponse, RemoteAction
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import UserMessage
-from rasa.utils.endpoints import EndpointConfig
-
 from rasa.tracing.instrumentation import instrumentation
-from rasa_sdk import Action
-
+from rasa.utils.endpoints import EndpointConfig
 from tests.tracing.instrumentation.conftest import (
     MockMessageProcessor,
     TrackerMock,

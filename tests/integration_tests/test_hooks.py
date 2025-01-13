@@ -1,11 +1,10 @@
 from pathlib import Path
 
-from rasa.plugin import plugin_manager
-
 from rasa.anonymization.anonymization_pipeline import (
     BackgroundAnonymizationPipeline,
     SyncAnonymizationPipeline,
 )
+from rasa.plugin import plugin_manager
 
 
 def test_get_anonymization_pipeline_no_endpoints() -> None:

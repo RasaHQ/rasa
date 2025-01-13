@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import typing
-from typing import Optional, Text, Callable, Dict, Any, List
+from typing import Any, Callable, Dict, List, Optional, Text
 
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.formats.dialogflow import (
@@ -69,11 +69,11 @@ def load_data(resource_name: Text, language: Optional[Text] = "en") -> "Training
 def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
     """Generates the appropriate reader class based on the file format."""
     from rasa.shared.nlu.training_data.formats import (
-        RasaYAMLReader,
-        WitReader,
+        DialogflowReader,
         LuisReader,
         RasaReader,
-        DialogflowReader,
+        RasaYAMLReader,
+        WitReader,
     )
 
     reader: Optional["TrainingDataReader"] = None

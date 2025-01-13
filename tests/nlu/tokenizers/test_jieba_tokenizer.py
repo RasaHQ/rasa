@@ -1,20 +1,18 @@
 import logging
 from typing import Dict, Optional
 
+import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.tmpdir import TempPathFactory
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
-
-import pytest
-
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.shared.nlu.constants import TEXT, INTENT
+from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
+from rasa.shared.nlu.constants import INTENT, TEXT
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 def create_jieba(config: Optional[Dict] = None) -> JiebaTokenizer:

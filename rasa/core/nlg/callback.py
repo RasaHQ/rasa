@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List, Text, Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Text
 
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.nlg.generator import NaturalLanguageGenerator, ResponseVariationFilter
@@ -100,8 +100,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
     @staticmethod
     def validate_response(content: Optional[Dict[Text, Any]]) -> bool:
         """Validate the NLG response. Raises exception on failure."""
-        from jsonschema import validate
-        from jsonschema import ValidationError
+        from jsonschema import ValidationError, validate
 
         try:
             if content is None or content == "":

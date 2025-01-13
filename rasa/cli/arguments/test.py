@@ -1,17 +1,19 @@
 import argparse
 from typing import Union
 
-from rasa.shared.constants import DEFAULT_MODELS_PATH, DEFAULT_RESULTS_PATH
-
 from rasa.cli.arguments.default_arguments import (
-    add_stories_param,
+    add_endpoint_param,
     add_model_param,
     add_nlu_data_param,
-    add_endpoint_param,
     add_out_param,
+    add_stories_param,
 )
 from rasa.model import get_latest_model
-from rasa.shared.constants import DEFAULT_DOMAIN_PATH
+from rasa.shared.constants import (
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_MODELS_PATH,
+    DEFAULT_RESULTS_PATH,
+)
 
 
 def set_test_arguments(parser: argparse.ArgumentParser) -> None:

@@ -5,8 +5,7 @@ from dataclasses import dataclass, field
 from importlib.resources import read_text
 from pathlib import Path
 from textwrap import dedent
-from typing import List, Dict, Any
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import ruamel
@@ -21,8 +20,8 @@ from rasa.e2e_test.utils.validation import read_e2e_test_schema
 from rasa.exceptions import RasaException
 from rasa.shared.utils.llm import llm_factory
 from rasa.shared.utils.yaml import (
-    validate_yaml_data_using_schema_with_assertions,
     YamlValidationException,
+    validate_yaml_data_using_schema_with_assertions,
 )
 
 structlogger = structlog.get_logger()

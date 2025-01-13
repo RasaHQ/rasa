@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import dataclasses
+from dataclasses import dataclass
 from typing import Any, Dict, List
+
+import rasa.shared.utils.common
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
-import rasa.shared.utils.common
 
 
 @dataclass

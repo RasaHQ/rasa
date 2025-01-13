@@ -1,4 +1,5 @@
 import structlog
+
 from rasa.shared.utils.io import raise_deprecation_warning
 
 structlogger = structlog.get_logger()

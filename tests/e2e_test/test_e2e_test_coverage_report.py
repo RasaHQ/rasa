@@ -1,45 +1,45 @@
-from typing import List, Dict
+from typing import Dict, List
 from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
 
 from rasa.dialogue_understanding.commands import (
-    SetSlotCommand,
-    StartFlowCommand,
-    KnowledgeAnswerCommand,
-    ChitChatAnswerCommand,
     CancelFlowCommand,
-    HumanHandoffCommand,
-    NoopCommand,
-    SkipQuestionCommand,
+    ChitChatAnswerCommand,
     ClarifyCommand,
+    HumanHandoffCommand,
+    KnowledgeAnswerCommand,
+    NoopCommand,
+    SetSlotCommand,
+    SkipQuestionCommand,
+    StartFlowCommand,
 )
 from rasa.e2e_test.e2e_test_coverage_report import (
-    _empty_dataframe,
-    FLOW_NAME_COL_NAME,
     COVERAGE_COL_NAME,
-    NUM_STEPS_COL_NAME,
-    MISSING_STEPS_COL_NAME,
-    LINE_NUMBERS_COL_NAME,
-    _construct_dataframe,
-    _calculate_coverage,
-    _append_total_row,
-    _reorder_columns,
-    create_coverage_report,
+    FLOW_NAME_COL_NAME,
     FLOWS_KEY,
+    LINE_NUMBERS_COL_NAME,
+    MISSING_STEPS_COL_NAME,
+    NUM_STEPS_COL_NAME,
     NUMBER_OF_STEPS_KEY,
     NUMBER_OF_UNTESTED_STEPS_KEY,
     UNTESTED_LINES_KEY,
-    _extract_tested_flow_paths,
+    _append_total_row,
+    _calculate_coverage,
+    _construct_dataframe,
     _create_coverage_report_data,
+    _empty_dataframe,
+    _extract_tested_flow_paths,
     _get_unvisited_nodes_per_flow,
     _group_flow_paths_by_flow,
+    _reorder_columns,
+    create_coverage_report,
     extract_tested_commands,
 )
 from rasa.e2e_test.e2e_test_result import TestResult
-from rasa.shared.core.flows import FlowsList, Flow
-from rasa.shared.core.flows.flow_path import FlowPath, PathNode, FlowPathsList
+from rasa.shared.core.flows import Flow, FlowsList
+from rasa.shared.core.flows.flow_path import FlowPath, FlowPathsList, PathNode
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 
 

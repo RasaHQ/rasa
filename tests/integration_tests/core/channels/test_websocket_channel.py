@@ -1,4 +1,5 @@
 import asyncio
+
 from tests.integration_tests.core.channels.socketio_client import RasaSocketIOClient
 
 

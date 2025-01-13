@@ -1,7 +1,6 @@
 from typing import List, Optional, Text
 
 import pycountry
-from rasa.shared.exceptions import RasaException
 
 from rasa.anonymization.anonymization_rule_executor import (
     AnonymizationRule,
@@ -11,6 +10,7 @@ from rasa.anonymization.utils import (
     read_endpoint_config,
     validate_anonymization_yaml,
 )
+from rasa.shared.exceptions import RasaException
 
 KEY_ANONYMIZATION_RULES = "anonymization"
 

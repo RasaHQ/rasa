@@ -2,21 +2,21 @@ import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
-from tarsafe import TarSafe
 
 import freezegun
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
+from tarsafe import TarSafe
 
 import rasa.shared.utils.io
-from rasa.engine.graph import SchemaNode, GraphSchema, GraphModelConfiguration
+from rasa.engine.graph import GraphModelConfiguration, GraphSchema, SchemaNode
 from rasa.engine.storage.local_model_storage import (
-    LocalModelStorage,
     MODEL_ARCHIVE_METADATA_FILE,
+    LocalModelStorage,
 )
-from rasa.engine.storage.storage import ModelStorage, ModelMetadata
 from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelMetadata, ModelStorage
 from rasa.exceptions import UnsupportedModelVersionError
 from rasa.shared.core.domain import Domain
 from rasa.shared.data import TrainingType

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import lru_cache
-from typing import Dict, Any, List, Optional, Tuple, Union, Text
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import structlog
 from jinja2 import Template
@@ -13,22 +13,21 @@ from rasa.dialogue_understanding.commands import (
 from rasa.dialogue_understanding.generator import CommandGenerator
 from rasa.dialogue_understanding.generator.constants import (
     DEFAULT_LLM_CONFIG,
-    LLM_CONFIG_KEY,
-    FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
     FLOW_RETRIEVAL_FLOW_THRESHOLD,
+    FLOW_RETRIEVAL_KEY,
+    LLM_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
-from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.flows import FlowStep, Flow, FlowsList
+from rasa.shared.core.flows import Flow, FlowsList, FlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.exceptions import FileIOException
-from rasa.shared.exceptions import ProviderClientAPIException
+from rasa.shared.exceptions import FileIOException, ProviderClientAPIException
 from rasa.shared.nlu.constants import FLOWS_IN_PROMPT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData

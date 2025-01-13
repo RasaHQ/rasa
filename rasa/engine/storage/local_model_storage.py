@@ -8,17 +8,18 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from tarsafe import TarSafe
 from typing import Generator, Optional, Text, Tuple, Union
 
-import rasa.utils.common
+from tarsafe import TarSafe
+
+import rasa.model
 import rasa.shared.utils.io
-from rasa.engine.storage.storage import ModelMetadata, ModelStorage
+import rasa.utils.common
 from rasa.engine.graph import GraphModelConfiguration
 from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelMetadata, ModelStorage
 from rasa.exceptions import UnsupportedModelVersionError
 from rasa.shared.core.domain import Domain
-import rasa.model
 
 logger = logging.getLogger(__name__)
 

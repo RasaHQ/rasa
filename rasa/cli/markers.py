@@ -4,10 +4,9 @@ from typing import List, Text
 
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments.default_arguments import add_domain_param
+from rasa.markers.upload import upload
 from rasa.shared.core.domain import Domain
 from rasa.shared.utils.cli import print_error_and_exit
-
-from rasa.markers.upload import upload
 
 
 def add_subparser(

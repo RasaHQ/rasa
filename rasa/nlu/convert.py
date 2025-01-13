@@ -1,10 +1,10 @@
 import os
 from typing import Text, Union
 
-from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
-from rasa.shared.utils.cli import print_error
 import rasa.shared.nlu.training_data.loading
 from rasa.nlu.utils import write_to_file
+from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
+from rasa.shared.utils.cli import print_error
 
 
 def convert_training_data(

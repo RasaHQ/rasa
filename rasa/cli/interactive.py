@@ -4,11 +4,13 @@ import os
 from pathlib import Path
 from typing import List, Optional, Text, Union
 
+import rasa.cli.train as train
+import rasa.cli.utils
+import rasa.shared.utils.cli
+import rasa.utils.common
 from rasa import model
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import interactive as arguments
-import rasa.cli.train as train
-import rasa.cli.utils
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
@@ -18,9 +20,6 @@ from rasa.shared.constants import (
 )
 from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
-import rasa.shared.utils.cli
-import rasa.utils.common
-
 
 logger = logging.getLogger(__name__)
 

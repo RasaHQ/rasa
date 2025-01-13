@@ -1,7 +1,7 @@
+import argparse
 import hashlib
 import json
 import logging
-import argparse
 import os
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Text
@@ -16,8 +16,8 @@ import rasa.api
 import rasa.constants
 import rasa.utils.licensing
 from rasa import telemetry
-from rasa.cli.inspect import inspect
 from rasa.anonymization.anonymisation_rule_yaml_reader import KEY_ANONYMIZATION_RULES
+from rasa.cli.inspect import inspect
 from rasa.dialogue_understanding.generator.constants import (
     DEFAULT_LLM_CONFIG as LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG,
 )
@@ -34,9 +34,11 @@ from rasa.shared.constants import (
 from rasa.telemetry import (
     E2E_TEST_CONVERSION_FILE_TYPE,
     E2E_TEST_CONVERSION_TEST_CASE_COUNT,
+    FLOW_RETRIEVAL_EMBEDDING_MODEL_GROUP_ID,
     FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME,
     FLOW_RETRIEVAL_ENABLED,
     LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED,
+    LLM_COMMAND_GENERATOR_MODEL_GROUP_ID,
     LLM_COMMAND_GENERATOR_MODEL_NAME,
     METRICS_BACKEND,
     MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED,
@@ -51,13 +53,11 @@ from rasa.telemetry import (
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT,
     TELEMETRY_ID,
+    TELEMETRY_INSPECT_STARTED_EVENT,
+    TELEMETRY_UPLOAD_TO_STUDIO_FAILED_EVENT,
     TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE,
     TRACING_BACKEND,
     _get_llm_command_generator_config,
-    LLM_COMMAND_GENERATOR_MODEL_GROUP_ID,
-    FLOW_RETRIEVAL_EMBEDDING_MODEL_GROUP_ID,
-    TELEMETRY_INSPECT_STARTED_EVENT,
-    TELEMETRY_UPLOAD_TO_STUDIO_FAILED_EVENT,
 )
 from rasa.utils import licensing
 from rasa.utils.licensing import LICENSE_ENV_VAR

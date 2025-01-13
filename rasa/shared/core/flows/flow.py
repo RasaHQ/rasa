@@ -4,33 +4,33 @@ import copy
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
-from typing import Text, Optional, Dict, Any, List, Set, Union
+from typing import Any, Dict, List, Optional, Set, Text, Union
 
 import structlog
 from pypred import Predicate
 
 import rasa.shared.utils.io
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
-from rasa.shared.core.flows.flow_path import PathNode, FlowPath, FlowPathsList
+from rasa.shared.core.flows.flow_path import FlowPath, FlowPathsList, PathNode
 from rasa.shared.core.flows.flow_step import FlowStep
 from rasa.shared.core.flows.flow_step_links import (
-    FlowStepLink,
-    StaticFlowStepLink,
-    IfFlowStepLink,
     ElseFlowStepLink,
+    FlowStepLink,
+    IfFlowStepLink,
+    StaticFlowStepLink,
 )
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 from rasa.shared.core.flows.nlu_trigger import NLUTriggers
 from rasa.shared.core.flows.steps import (
+    ActionFlowStep,
     CollectInformationFlowStep,
     EndFlowStep,
     StartFlowStep,
-    ActionFlowStep,
 )
 from rasa.shared.core.flows.steps.constants import (
     CONTINUE_STEP_PREFIX,
-    START_STEP,
     END_STEP,
+    START_STEP,
 )
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
 from rasa.shared.core.slots import Slot
@@ -371,7 +371,7 @@ class Flow:
             True if dynamic literals are present, False otherwise.
         """
         from pypred import ast
-        from pypred.tiler import tile, SimplePattern
+        from pypred.tiler import SimplePattern, tile
 
         if not self.guard_condition:
             return False

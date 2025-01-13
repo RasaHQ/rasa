@@ -6,18 +6,18 @@ from unittest.mock import MagicMock, call
 
 import pytest
 from pytest import LogCaptureFixture, MonkeyPatch
-from rasa.core.brokers.broker import EventBroker
-from rasa.core.tracker_store import AwaitableTrackerStore
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActionExecuted, UserUttered
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.auth_retry_tracker_store import (
     DEFAULT_RETRIES,
     AuthRetryTrackerStore,
 )
+from rasa.core.brokers.broker import EventBroker
 from rasa.core.secrets_manager.secret_manager import EndpointResolver
+from rasa.core.tracker_store import AwaitableTrackerStore
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.utils.endpoints import EndpointConfig
 
 if sys.version_info[:2] >= (3, 8):
     from unittest.mock import AsyncMock

@@ -1,7 +1,6 @@
-from typing import Dict, List, Text, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Text
 
 import rasa.shared.core.events
-
 
 if TYPE_CHECKING:
     from rasa.shared.core.events import Event

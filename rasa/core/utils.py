@@ -1,23 +1,23 @@
-import structlog
 import logging
 import os
 from pathlib import Path
 from socket import SOCK_DGRAM, SOCK_STREAM
-from typing import Any, Dict, Optional, List, Set, TYPE_CHECKING, Text, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Text, Tuple, Union
 
 import numpy as np
+import structlog
 from sanic import Sanic
 
 import rasa.cli.utils as cli_utils
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
 from rasa.core.constants import (
-    DOMAIN_GROUND_TRUTH_METADATA_KEY,
-    UTTER_SOURCE_METADATA_KEY,
     ACTIVE_FLOW_METADATA_KEY,
+    DOMAIN_GROUND_TRUTH_METADATA_KEY,
     STEP_ID_METADATA_KEY,
+    UTTER_SOURCE_METADATA_KEY,
 )
-from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
+from rasa.core.lock_store import InMemoryLockStore, LockStore, RedisLockStore
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, TCP_PROTOCOL
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import (

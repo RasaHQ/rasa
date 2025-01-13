@@ -2,15 +2,15 @@ import json
 
 import pytest
 
+from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.domain import Domain
-from rasa.core.tracker_store import InMemoryTrackerStore
+from tests.core.utilities import tracker_from_dialogue
 from tests.dialogues import (
-    TEST_DIALOGUES,
     TEST_DEFAULT_DIALOGUE,
+    TEST_DIALOGUES,
     TEST_DOMAINS_FOR_DIALOGUES,
 )
-from tests.core.utilities import tracker_from_dialogue
 
 
 @pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, TEST_DOMAINS_FOR_DIALOGUES))

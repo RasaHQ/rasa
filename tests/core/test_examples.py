@@ -1,5 +1,5 @@
 import json
-from typing import Text, Optional, Dict, Any
+from typing import Any, Dict, Optional, Text
 
 import pytest
 from aioresponses import aioresponses

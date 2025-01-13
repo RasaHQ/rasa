@@ -1,10 +1,10 @@
-from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
-from rasa.shared.nlu.constants import TEXT, ENTITIES
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
-from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
+from rasa.shared.nlu.constants import ENTITIES, TEXT
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 def test_entity_synonyms(

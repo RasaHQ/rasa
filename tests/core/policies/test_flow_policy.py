@@ -10,6 +10,10 @@ from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames import (
+    SearchStackFrame,
+    UserFlowStackFrame,
+)
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -24,10 +28,6 @@ from rasa.shared.core.events import (
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.dialogue_understanding.stack.frames import (
-    UserFlowStackFrame,
-    SearchStackFrame,
-)
 from tests.utilities import (
     flows_default_domain,
     flows_from_str,

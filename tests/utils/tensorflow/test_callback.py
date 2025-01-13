@@ -1,11 +1,10 @@
-from typing import Dict, Text
 from pathlib import Path
+from typing import Dict, Text
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
 
 from rasa.core import training
-
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage

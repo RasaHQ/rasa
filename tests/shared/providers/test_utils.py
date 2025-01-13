@@ -1,12 +1,12 @@
 import pytest
 
 from rasa.shared.constants import (
-    AWS_ACCESS_KEY_ID_ENV_VAR,
-    AWS_SECRET_ACCESS_KEY_CONFIG_KEY,
     AWS_ACCESS_KEY_ID_CONFIG_KEY,
+    AWS_ACCESS_KEY_ID_ENV_VAR,
     AWS_REGION_NAME_CONFIG_KEY,
-    AWS_SESSION_TOKEN_CONFIG_KEY,
+    AWS_SECRET_ACCESS_KEY_CONFIG_KEY,
     AWS_SECRET_ACCESS_KEY_ENV_VAR,
+    AWS_SESSION_TOKEN_CONFIG_KEY,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers._configs.utils import resolve_aliases

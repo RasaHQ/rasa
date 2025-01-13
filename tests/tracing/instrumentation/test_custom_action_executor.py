@@ -1,22 +1,21 @@
-import pytest
 from typing import Any, Dict, Sequence
 
-from opentelemetry.sdk.trace import TracerProvider, ReadableSpan
+import pytest
+from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
-
 from rasa.tracing.instrumentation import instrumentation
+from rasa.utils.endpoints import EndpointConfig
 from tests.tracing.instrumentation.conftest import (
     MockCustomActionExecutor,
-    MockRetryCustomActionExecutor,
-    MockNoEndpointCustomActionExecutor,
-    MockHTTPCustomActionExecutor,
     MockGRPCCustomActionExecutor,
+    MockHTTPCustomActionExecutor,
+    MockNoEndpointCustomActionExecutor,
+    MockRetryCustomActionExecutor,
 )
-from rasa.utils.endpoints import EndpointConfig
 
 
 def mock_action_name() -> str:

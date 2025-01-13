@@ -3,17 +3,17 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import rasa.shared.utils.cli
 import requests
+
+import rasa.shared.utils.cli
 from rasa.shared.core.domain import KEY_RESPONSES, KEY_SLOTS, Domain
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.yaml import read_yaml, write_yaml
-from rasa.utils.common import get_temp_dir_name
-
 from rasa.studio.auth import KeycloakToken, KeycloakTokenReader, StudioAuth
 from rasa.studio.config import StudioConfig
+from rasa.utils.common import get_temp_dir_name
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Generator, Optional, Dict, Any
+from typing import Any, Dict, Generator, Optional
 
 import structlog
 from pydantic import BaseModel

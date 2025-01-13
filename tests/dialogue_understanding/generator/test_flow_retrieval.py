@@ -1,33 +1,34 @@
 import uuid
-from typing import List, Text, Any, Dict
+from typing import Any, Dict, List, Text
 from unittest.mock import Mock, patch
 
 import pytest
-from pytest import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 from langchain.docstore.document import Document
 from langchain_community.vectorstores.faiss import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
+from pytest import MonkeyPatch
+
 from rasa.dialogue_understanding.generator.flow_retrieval import (
-    FlowRetrieval,
-    SHOULD_EMBED_SLOTS_KEY,
-    MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY,
-    TURNS_TO_EMBED_KEY,
-    DEFAULT_TURNS_TO_EMBED,
     DEFAULT_MAX_FLOWS_FROM_SEMANTIC_SEARCH,
+    DEFAULT_TURNS_TO_EMBED,
+    MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY,
+    SHOULD_EMBED_SLOTS_KEY,
+    TURNS_TO_EMBED_KEY,
+    FlowRetrieval,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import EMBEDDINGS_CONFIG_KEY
 from rasa.shared.core.events import (
-    UserUttered,
     BotUttered,
-    FlowStarted,
     FlowCompleted,
+    FlowStarted,
+    UserUttered,
 )
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.slots import TextSlot, BooleanSlot, CategoricalSlot
+from rasa.shared.core.slots import BooleanSlot, CategoricalSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
@@ -37,7 +38,7 @@ from rasa.shared.providers.embedding._langchain_embedding_client_adapter import 
 from rasa.shared.providers.embedding.openai_embedding_client import (
     OpenAIEmbeddingClient,
 )
-from rasa.shared.utils.llm import USER, AI
+from rasa.shared.utils.llm import AI, USER
 from tests.utilities import flows_from_str
 
 

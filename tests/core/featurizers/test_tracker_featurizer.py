@@ -1,33 +1,35 @@
-from typing import Text, Dict, List, Optional
+from typing import Dict, List, Optional, Text
 
 import numpy as np
 import pytest
 
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.exceptions import InvalidTrackerFeaturizerUsageError
 from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
+    SingleStateFeaturizer,
+)
+from rasa.core.featurizers.tracker_featurizers import (
+    FullDialogueTrackerFeaturizer,
+    IntentMaxHistoryTrackerFeaturizer,
+    MaxHistoryTrackerFeaturizer,
 )
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer as TrackerFeaturizer,
 )
-from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
-from rasa.core.featurizers.tracker_featurizers import FullDialogueTrackerFeaturizer
-from rasa.shared.core.domain import Domain
-from tests.core.utilities import user_uttered
-from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.nlu.constants import INTENT, ACTION_NAME
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
-    USER,
     PREVIOUS_ACTION,
+    USER,
 )
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import ACTION_NAME, INTENT
+from rasa.shared.nlu.training_data.features import Features
 from rasa.utils.tensorflow.constants import LABEL_PAD_ID
 from rasa.utils.tensorflow.model_data import ragged_array_to_ndarray
-from rasa.core.exceptions import InvalidTrackerFeaturizerUsageError
+from tests.core.utilities import user_uttered
 
 
 def test_fail_to_load_non_existent_featurizer():

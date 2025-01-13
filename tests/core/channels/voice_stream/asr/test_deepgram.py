@@ -4,12 +4,11 @@ from unittest import mock
 import pytest
 
 from rasa.core.channels.voice_stream.asr.asr_event import UserIsSpeaking
-
 from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR, DeepgramASRConfig
 from rasa.shared.exceptions import ProviderClientValidationError
 from tests.core.channels.voice_stream.asr import (
-    run_transcription,
     run_single_utterance_transcription,
+    run_transcription,
 )
 
 

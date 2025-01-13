@@ -1,33 +1,35 @@
 import copy
-from typing import Text, List, Optional, Union, Any, Dict, Set
 import itertools
-import logging
-import structlog
 import json
+import logging
+from typing import Any, Dict, List, Optional, Set, Text, Union
+
+import structlog
 
 from rasa.core.actions import action
-from rasa.core.actions.loops import LoopAction
-from rasa.core.channels import OutputChannel
-from rasa.shared.core.domain import Domain, KEY_SLOTS
-from rasa.shared.core.constants import SlotMappingType, SLOT_MAPPINGS, MAPPING_TYPE
-
 from rasa.core.actions.action import RemoteAction
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
+from rasa.core.actions.loops import LoopAction
+from rasa.core.channels import OutputChannel
+from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.core.constants import (
     ACTION_EXTRACT_SLOTS,
     ACTION_LISTEN_NAME,
+    MAPPING_TYPE,
     REQUESTED_SLOT,
+    SLOT_MAPPINGS,
+    SlotMappingType,
 )
-from rasa.shared.constants import UTTER_PREFIX
+from rasa.shared.core.domain import KEY_SLOTS, Domain
 from rasa.shared.core.events import (
-    Event,
-    SlotSet,
     ActionExecuted,
-    ActiveLoop,
     ActionExecutionRejected,
+    ActiveLoop,
+    Event,
     Restarted,
+    SlotSet,
 )
-from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.core.slots import ListSlot
 from rasa.shared.core.trackers import DialogueStateTracker

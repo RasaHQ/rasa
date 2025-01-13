@@ -1,112 +1,114 @@
 import dataclasses
 import logging
 from pathlib import Path
-from typing import Any, List, Optional, Text, Dict, Type, Union
+from typing import Any, Dict, List, Optional, Text, Type, Union
 
 import numpy as np
 import tensorflow as tf
 
-import rasa.utils.common
-from rasa.engine.graph import ExecutionContext
-from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
-from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP, ACTION_UNLIKELY_INTENT_NAME
-from rasa.shared.core.events import UserUttered, ActionExecuted
 import rasa.shared.utils.io
-from rasa.shared.nlu.constants import (
-    INTENT,
-    TEXT,
-    ENTITIES,
-    ACTION_NAME,
-    SPLIT_ENTITIES_BY_COMMA,
-    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
-)
-from rasa.nlu.extractors.extractor import EntityTagSpec
-from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.featurizers.tracker_featurizers import IntentMaxHistoryTrackerFeaturizer
-from rasa.core.featurizers.single_state_featurizer import (
-    IntentTokenizerSingleStateFeaturizer,
-)
-from rasa.shared.core.generator import TrackerWithCachedStates
+import rasa.utils.common
 from rasa.core.constants import (
     DIALOGUE,
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
     UNLIKELY_INTENT_POLICY_PRIORITY,
 )
+from rasa.core.exceptions import RasaCoreException
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
+from rasa.core.featurizers.single_state_featurizer import (
+    IntentTokenizerSingleStateFeaturizer,
+)
+from rasa.core.featurizers.tracker_featurizers import (
+    IntentMaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
+)
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
     LABEL_KEY,
     LABEL_SUB_KEY,
-    TEDPolicy,
-    TED,
-    SEQUENCE_LENGTH,
-    SEQUENCE,
     PREDICTION_FEATURES,
+    SEQUENCE,
+    SEQUENCE_LENGTH,
+    TED,
+    TEDPolicy,
 )
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
+from rasa.nlu.extractors.extractor import EntityTagSpec
+from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME, ACTIVE_LOOP, SLOTS
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    ENTITIES,
+    INTENT,
+    SPLIT_ENTITIES_BY_COMMA,
+    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+    TEXT,
+)
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.utils import common
 from rasa.utils import train_utils
-from rasa.utils.tensorflow.models import RasaModel
+from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.constants import (
-    LABEL,
-    DENSE_DIMENSION,
-    ENCODING_DIMENSION,
-    UNIDIRECTIONAL_ENCODER,
-    TRANSFORMER_SIZE,
-    NUM_TRANSFORMER_LAYERS,
-    NUM_HEADS,
+    BALANCED,
     BATCH_SIZES,
     BATCH_STRATEGY,
-    EPOCHS,
-    RANDOM_SEED,
-    RANKING_LENGTH,
-    LOSS_TYPE,
-    SIMILARITY_TYPE,
-    NUM_NEG,
-    EVAL_NUM_EXAMPLES,
-    EVAL_NUM_EPOCHS,
-    REGULARIZATION_CONSTANT,
-    SCALE_LOSS,
-    EMBEDDING_DIMENSION,
-    DROP_RATE_DIALOGUE,
-    DROP_RATE_LABEL,
+    BILOU_FLAG,
+    CHECKPOINT_MODEL,
+    CONCAT_DIMENSION,
+    CONNECTION_DENSITY,
+    CROSS_ENTROPY,
+    DENSE_DIMENSION,
+    DENSE_INPUT_DROPOUT,
     DROP_RATE,
     DROP_RATE_ATTENTION,
-    CONNECTION_DENSITY,
-    KEY_RELATIVE_ATTENTION,
-    VALUE_RELATIVE_ATTENTION,
-    MAX_RELATIVE_POSITION,
+    DROP_RATE_DIALOGUE,
+    DROP_RATE_LABEL,
+    EMBEDDING_DIMENSION,
+    ENCODING_DIMENSION,
+    ENTITY_RECOGNITION,
+    EPOCHS,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    FEATURIZERS,
+    HIDDEN_LAYERS_SIZES,
+    IGNORE_INTENTS_LIST,
     INNER,
-    BALANCED,
+    KEY_RELATIVE_ATTENTION,
+    LABEL,
+    LABEL_PAD_ID,
+    LEARNING_RATE,
+    LOSS_TYPE,
+    MASKED_LM,
+    MAX_RELATIVE_POSITION,
+    NEGATIVE_SCORES_KEY,
+    NUM_HEADS,
+    NUM_NEG,
+    NUM_TRANSFORMER_LAYERS,
+    POSITIVE_SCORES_KEY,
+    RANDOM_SEED,
+    RANKING_LENGTH,
+    REGULARIZATION_CONSTANT,
+    SCALE_LOSS,
+    SIMILARITY_TYPE,
+    SPARSE_INPUT_DROPOUT,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
-    CHECKPOINT_MODEL,
-    FEATURIZERS,
-    ENTITY_RECOGNITION,
-    IGNORE_INTENTS_LIST,
-    BILOU_FLAG,
-    LEARNING_RATE,
-    CROSS_ENTROPY,
-    SPARSE_INPUT_DROPOUT,
-    DENSE_INPUT_DROPOUT,
-    MASKED_LM,
-    HIDDEN_LAYERS_SIZES,
-    CONCAT_DIMENSION,
     TOLERANCE,
-    LABEL_PAD_ID,
-    POSITIVE_SCORES_KEY,
-    NEGATIVE_SCORES_KEY,
+    TRANSFORMER_SIZE,
+    UNIDIRECTIONAL_ENCODER,
     USE_GPU,
+    VALUE_RELATIVE_ATTENTION,
 )
-from rasa.utils.tensorflow import layers
-from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray, Data
-from rasa.core.exceptions import RasaCoreException
-from rasa.shared.utils import common
+from rasa.utils.tensorflow.model_data import Data, FeatureArray, RasaModelData
+from rasa.utils.tensorflow.models import RasaModel
 
 
 @dataclasses.dataclass

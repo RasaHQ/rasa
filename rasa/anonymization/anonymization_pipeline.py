@@ -7,9 +7,6 @@ import queue
 from typing import Any, Dict, List, Optional, Text
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from rasa.core.brokers.kafka import KafkaEventBroker
-from rasa.shared.core.events import Event
-from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 
 from rasa.anonymization.anonymisation_rule_yaml_reader import (
     AnonymizationRulesYamlReader,
@@ -18,6 +15,9 @@ from rasa.anonymization.anonymization_rule_executor import AnonymizationRuleList
 from rasa.anonymization.anonymization_rule_orchestrator import (
     AnonymizationRuleOrchestrator,
 )
+from rasa.core.brokers.kafka import KafkaEventBroker
+from rasa.shared.core.events import Event
+from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from rasa.utils.singleton import Singleton
 
 logger = logging.getLogger(__name__)

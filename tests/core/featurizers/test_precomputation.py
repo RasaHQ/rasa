@@ -1,37 +1,37 @@
-import pytest
-import numpy as np
 import itertools
-from typing import List, Text, Optional, Dict
+from typing import Dict, List, Optional, Text
 
+import numpy as np
+import pytest
 
+from rasa.core.featurizers.precomputation import (
+    CoreFeaturizationCollector,
+    CoreFeaturizationInputConverter,
+    MessageContainerForCoreFeaturization,
+)
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.core.featurizers.precomputation import (
-    CoreFeaturizationCollector,
-    MessageContainerForCoreFeaturization,
-    CoreFeaturizationInputConverter,
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted, Event, UserUttered
+from rasa.shared.core.slots import TextSlot
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    ACTION_TEXT,
+    ENTITIES,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    INTENT,
+    INTENT_NAME_KEY,
+    TEXT,
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.constants import (
-    INTENT,
-    TEXT,
-    ENTITIES,
-    ACTION_NAME,
-    ACTION_TEXT,
-    INTENT_NAME_KEY,
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_GROUP,
-)
-from rasa.shared.core.slots import TextSlot
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import Event, UserUttered, ActionExecuted
-from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
-from rasa.shared.core.trackers import DialogueStateTracker
 
 
 def _dummy_features(id: int, attribute: Text) -> Features:

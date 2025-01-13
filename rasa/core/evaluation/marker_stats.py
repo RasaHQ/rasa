@@ -1,14 +1,13 @@
 from __future__ import annotations
-from typing import Dict, Text, Union, List, Tuple
 
-from rasa.utils.io import WriteRow
-from pathlib import Path
 import csv
+from pathlib import Path
+from typing import Dict, List, Text, Tuple, Union
 
 import numpy as np
 
-
 from rasa.core.evaluation.marker_base import EventMetaData
+from rasa.utils.io import WriteRow
 
 
 def compute_statistics(

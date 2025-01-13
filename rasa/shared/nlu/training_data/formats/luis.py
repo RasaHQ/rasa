@@ -1,22 +1,21 @@
 import logging
 from typing import Any, Dict, List, Text
 
+import rasa.shared.utils.io
 from rasa.shared.nlu.constants import (
-    TEXT,
-    INTENT,
     ENTITIES,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    INTENT,
     NO_ENTITY_TAG,
+    TEXT,
 )
 from rasa.shared.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
-import rasa.shared.utils.io
-
-from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 

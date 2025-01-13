@@ -1,15 +1,14 @@
 import logging
 from typing import List, Optional, Text
 
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActionExecuted, Event, SlotSet, UserUttered
-
 from rasa.markers.marker_base import (
     ConditionMarker,
     Marker,
     MarkerRegistry,
     OperatorMarker,
 )
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted, Event, SlotSet, UserUttered
 
 logger = logging.getLogger(__name__)
 

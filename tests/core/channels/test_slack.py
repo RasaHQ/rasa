@@ -1,16 +1,16 @@
 # file deepcode ignore HardcodedNonCryptoSecret/test: Secrets are all just examples for tests. # noqa: E501
 # file deepcode ignore NoHardcodedCredentials/test: Secrets are all just examples for tests. # noqa: E501
 
-from http import HTTPStatus
 import json
 import logging
 import time
+from http import HTTPStatus
 from typing import Any, Dict, Text
 from unittest import mock
 from unittest.mock import Mock, patch
 
-from aioresponses import aioresponses
 import pytest
+from aioresponses import aioresponses
 from sanic.compat import Header
 from sanic.request import Request
 

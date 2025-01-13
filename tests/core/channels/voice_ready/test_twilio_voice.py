@@ -1,17 +1,17 @@
 import logging
+from http import HTTPStatus
+from typing import Any, Dict, Text, Type
 
 import pytest
-from http import HTTPStatus
 
 from rasa import server
 from rasa.core.agent import Agent
 from rasa.core.channels import channel
-from rasa.shared.exceptions import InvalidConfigException, RasaException
-from rasa.core.channels.voice_ready.twilio_voice import TwilioVoiceInput
 from rasa.core.channels.voice_ready.twilio_voice import (
     TwilioVoiceCollectingOutputChannel,
+    TwilioVoiceInput,
 )
-from typing import Text, Any, Dict, Type
+from rasa.shared.exceptions import InvalidConfigException, RasaException
 
 logger = logging.getLogger(__name__)
 

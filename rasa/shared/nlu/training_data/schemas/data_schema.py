@@ -1,4 +1,4 @@
-from typing import Dict, Text, Any
+from typing import Any, Dict, Text
 
 
 def entity_dict_schema() -> Dict[Text, Any]:

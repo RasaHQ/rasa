@@ -8,38 +8,39 @@ import shutil
 import tempfile
 import warnings
 from pathlib import Path
+from socket import SOCK_DGRAM, SOCK_STREAM
 from types import TracebackType
 from typing import (
     Any,
+    ContextManager,
     Coroutine,
     Dict,
     List,
     Optional,
+    Set,
     Text,
+    Tuple,
     Type,
     TypeVar,
     Union,
-    ContextManager,
-    Set,
-    Tuple,
 )
 
-from socket import SOCK_DGRAM, SOCK_STREAM
 import numpy as np
+
+import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.anonymization import ENV_LOG_LEVEL_FAKER, ENV_LOG_LEVEL_PRESIDIO
 from rasa.constants import (
     DEFAULT_LOG_LEVEL_LIBRARIES,
+    ENV_LOG_LEVEL_KAFKA,
     ENV_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_MATPLOTLIB,
     ENV_LOG_LEVEL_MLFLOW,
     ENV_LOG_LEVEL_RABBITMQ,
-    ENV_LOG_LEVEL_KAFKA,
 )
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL, TCP_PROTOCOL
 from rasa.shared.exceptions import RasaException
-import rasa.shared.utils.io
-from rasa.shared.utils.yaml import read_yaml_file, write_yaml, read_config_file
+from rasa.shared.utils.yaml import read_config_file, read_yaml_file, write_yaml
 
 logger = logging.getLogger(__name__)
 
@@ -301,7 +302,7 @@ def update_sanic_log_level(
     syslog_protocol: Optional[Text] = None,
 ) -> None:
     """Set the log level to 'LOG_LEVEL_LIBRARIES' environment variable ."""
-    from sanic.log import logger, error_logger, access_logger
+    from sanic.log import access_logger, error_logger, logger
 
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
 

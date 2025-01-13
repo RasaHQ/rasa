@@ -6,16 +6,16 @@
 
 import itertools
 
-import pytest
 import numpy as np
+import pytest
 import tensorflow as tf
 
 from rasa.utils.tensorflow.crf import (
+    crf_binary_score,
+    crf_log_likelihood,
+    crf_log_norm,
     crf_sequence_score,
     crf_unary_score,
-    crf_binary_score,
-    crf_log_norm,
-    crf_log_likelihood,
 )
 
 

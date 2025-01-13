@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any, Dict
 
 import structlog
+
 from rasa.dialogue_understanding.stack.frames import (
     PatternFlowStackFrame,
 )

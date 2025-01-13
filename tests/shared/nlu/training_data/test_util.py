@@ -1,7 +1,9 @@
 from typing import Text
-import pytest
+
 import numpy as np
+import pytest
 import scipy.sparse
+
 import rasa.shared.nlu.training_data.util
 
 

@@ -1,18 +1,18 @@
-from typing import Dict, Text, Any, Optional, List
+from typing import Any, Dict, List, Optional, Text
 
 import structlog
 
 from rasa.dialogue_understanding.commands import (
     Command,
-    StartFlowCommand,
     SetSlotCommand,
+    StartFlowCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.commands.utils import (
     triggerable_pattern_to_command_class,
 )
 from rasa.dialogue_understanding.generator import CommandGenerator
-from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage

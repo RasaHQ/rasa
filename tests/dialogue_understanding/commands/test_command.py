@@ -1,4 +1,5 @@
 import pytest
+
 from rasa.dialogue_understanding.commands.command import Command
 from rasa.dialogue_understanding.commands.set_slot_command import (
     SetSlotCommand,

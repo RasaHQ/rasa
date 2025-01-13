@@ -1,13 +1,14 @@
-import pytest
-from pytest import MonkeyPatch
 from unittest.mock import MagicMock
+
+import pytest
+import spacy
+from pytest import MonkeyPatch
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.model import InvalidModelError
 from rasa.nlu.utils.spacy_utils import SpacyNLP
-import spacy
 
 
 def test_spacy_runtime_model_version_compatibility(

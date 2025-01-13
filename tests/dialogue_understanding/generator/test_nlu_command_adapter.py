@@ -11,11 +11,11 @@ from rasa.dialogue_understanding.commands import (
     Command,
     HumanHandoffCommand,
     KnowledgeAnswerCommand,
+    RestartCommand,
     SessionStartCommand,
+    SetSlotCommand,
     SkipQuestionCommand,
     StartFlowCommand,
-    SetSlotCommand,
-    RestartCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.generator.nlu_command_adapter import (
@@ -26,7 +26,7 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.dialogue_understanding.utils import set_record_commands_and_prompts
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
-from rasa.shared.core.domain import Domain, KEY_INTENTS
+from rasa.shared.core.domain import KEY_INTENTS, Domain
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -35,9 +35,9 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     INTENT,
     INTENT_NAME_KEY,
+    PREDICTED_COMMANDS,
     PREDICTED_CONFIDENCE_KEY,
     TEXT,
-    PREDICTED_COMMANDS,
 )
 from rasa.shared.nlu.training_data.message import Message
 from tests.utilities import flows_from_str

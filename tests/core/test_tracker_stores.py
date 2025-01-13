@@ -1,66 +1,63 @@
 # file deepcode ignore NoHardcodedCredentials/test: Secrets are all just examples for tests. # noqa: E501
 
 import logging
+import uuid
 import warnings
 from collections import deque
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any, ContextManager, Dict, List, Optional, Text, Tuple, Type, Union
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import fakeredis
 import pytest
 import sqlalchemy
-import uuid
-
 from _pytest.capture import CaptureFixture
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_aws
 from pymongo.errors import OperationFailure
+from sqlalchemy.dialects.oracle.base import OracleDialect
+from sqlalchemy.dialects.postgresql.base import PGDialect
+from sqlalchemy.dialects.sqlite.base import SQLiteDialect
+from sqlalchemy.engine.url import URL
 
+import rasa.core.tracker_store
 from rasa.core.agent import Agent
+from rasa.core.constants import POSTGRESQL_SCHEMA
+from rasa.core.tracker_store import (
+    DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX,
+    AwaitableTrackerStore,
+    DynamoTrackerStore,
+    FailSafeTrackerStore,
+    InMemoryTrackerStore,
+    RedisTrackerStore,
+    SQLTrackerStore,
+    TrackerStore,
+)
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.plugin import plugin_manager
 from rasa.shared.constants import DEFAULT_SENDER_ID
-from sqlalchemy.dialects.postgresql.base import PGDialect
-from sqlalchemy.dialects.sqlite.base import SQLiteDialect
-from sqlalchemy.dialects.oracle.base import OracleDialect
-from sqlalchemy.engine.url import URL
-from typing import Any, Tuple, Text, Type, Dict, List, Union, Optional, ContextManager
-from unittest.mock import MagicMock, Mock
-
-import rasa.core.tracker_store
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
 )
-from rasa.core.constants import POSTGRESQL_SCHEMA
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
-    DialogueStackUpdated,
-    SlotSet,
     ActionExecuted,
-    Restarted,
-    UserUttered,
-    SessionStarted,
     BotUttered,
+    DialogueStackUpdated,
     Event,
-)
-from rasa.shared.exceptions import ConnectionException, RasaException
-from rasa.core.tracker_store import (
-    TrackerStore,
-    InMemoryTrackerStore,
-    RedisTrackerStore,
-    DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX,
-    SQLTrackerStore,
-    DynamoTrackerStore,
-    FailSafeTrackerStore,
-    AwaitableTrackerStore,
+    Restarted,
+    SessionStarted,
+    SlotSet,
+    UserUttered,
 )
 from rasa.shared.core.trackers import DialogueStateTracker, TrackerEventDiffEngine
+from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-from unittest.mock import AsyncMock
 from tests.core.conftest import MockedMongoTrackerStore
 
 test_domain = Domain.load("data/test_domains/default.yml")

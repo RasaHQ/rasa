@@ -1,6 +1,6 @@
-from rasa.utils.tensorflow.constants import EPOCHS
-from typing import Any, Dict, List, Tuple, Text, Union
+from typing import Any, Dict, List, Text, Tuple, Union
 
+from rasa.utils.tensorflow.constants import EPOCHS
 
 COMPONENTS_TEST_PARAMS = {
     "DIETClassifier": {EPOCHS: 1},

@@ -19,8 +19,8 @@ from rasa.e2e_test.e2e_config import create_llm_e2e_test_converter_config
 from rasa.e2e_test.e2e_test_converter import E2ETestConverter
 from rasa.e2e_test.utils.e2e_yaml_utils import E2ETestYAMLWriter
 from rasa.shared.constants import (
-    DEFAULT_DATA_PATH,
     DEFAULT_CONFIG_PATH,
+    DEFAULT_DATA_PATH,
     DEFAULT_DOMAIN_PATHS,
 )
 from rasa.shared.exceptions import RasaException
@@ -230,11 +230,12 @@ def split_stories_data(args: argparse.Namespace) -> None:
     Args:
         args: Commandline arguments
     """
-    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-        YAMLStoryReader,
-        KEY_STORIES,
-    )
     from sklearn.model_selection import train_test_split
+
+    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+        KEY_STORIES,
+        YAMLStoryReader,
+    )
 
     data_path = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     data_files = rasa.shared.data.get_data_files(

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Dict, Text, Any, Optional
+from typing import Any, Dict, List, Optional, Text
 
 from rasa.shared.core.flows.flow_step import FlowStep, step_from_json
 from rasa.shared.core.flows.steps.internal import InternalFlowStep

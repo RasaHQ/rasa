@@ -1,35 +1,35 @@
 import csv
-from typing import List, Optional, Set, Text, Tuple, Type, Any
 import itertools
 from pathlib import Path
+from typing import Any, List, Optional, Set, Text, Tuple, Type
 
-import pytest
 import numpy as np
+import pytest
 
 from rasa.core.evaluation.marker import (
-    IntentDetectedMarker,
-    SlotSetMarker,
-    OccurrenceMarker,
     ActionExecutedMarker,
     AndMarker,
-    OrMarker,
+    IntentDetectedMarker,
     NotMarker,
+    OccurrenceMarker,
+    OrMarker,
     SequenceMarker,
+    SlotSetMarker,
 )
 from rasa.core.evaluation.marker_base import (
-    OperatorMarker,
-    Marker,
     ConditionMarker,
     InvalidMarkerConfig,
+    Marker,
+    OperatorMarker,
 )
-from rasa.shared.core.constants import ACTION_SESSION_START_NAME
-from rasa.shared.core.events import SlotSet, ActionExecuted, UserUttered, SessionStarted
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.shared.core.slots import TextSlot
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
-from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted, SessionStarted, SlotSet, UserUttered
+from rasa.shared.core.slots import TextSlot
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.utils.yaml import write_yaml
 
 CONDITION_MARKERS = [ActionExecutedMarker, SlotSetMarker, IntentDetectedMarker]

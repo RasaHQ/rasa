@@ -6,45 +6,47 @@ import logging
 from enum import Enum
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
+    Callable,
+    Dict,
     List,
     Optional,
     Text,
-    Dict,
-    Callable,
     Tuple,
     TypeVar,
-    TYPE_CHECKING,
 )
 
 import numpy as np
 
-from rasa.shared.constants import ROUTE_TO_CALM_SLOT
-from rasa.shared.core.events import Event
-from rasa.engine.graph import GraphComponent, ExecutionContext
-from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
-from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
-import rasa.utils.common
+import rasa.shared.utils.common
 import rasa.shared.utils.io
-from rasa.shared.exceptions import RasaException, FileIOException
-from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
-from rasa.shared.core.domain import Domain, State
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.generator import TrackerWithCachedStates
+import rasa.utils.common
 from rasa.core.constants import (
     DEFAULT_POLICY_PRIORITY,
-    POLICY_PRIORITY,
     POLICY_MAX_HISTORY,
+    POLICY_PRIORITY,
 )
-from rasa.shared.core.constants import USER, SLOTS, PREVIOUS_ACTION, ACTIVE_LOOP
-import rasa.shared.utils.common
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
+from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.core.constants import ACTIVE_LOOP, PREVIOUS_ACTION, SLOTS, USER
+from rasa.shared.core.domain import Domain, State
+from rasa.shared.core.events import Event
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import FileIOException, RasaException
+from rasa.shared.nlu.constants import ACTION_NAME, ACTION_TEXT, ENTITIES, INTENT, TEXT
 
 if TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.features import Features
-    from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-    from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+    from rasa.core.featurizers.tracker_featurizers import (
+        MaxHistoryTrackerFeaturizer,
+        TrackerFeaturizer,
+    )
     from rasa.dialogue_understanding.stack.frames import DialogueStackFrame
+    from rasa.shared.nlu.training_data.features import Features
 
 logger = logging.getLogger(__name__)
 
@@ -467,8 +469,8 @@ class Policy(GraphComponent):
     ) -> Policy:
         """Loads a trained policy (see parent class for full docstring)."""
         from rasa.core.featurizers.tracker_featurizers import (
-            TrackerFeaturizer,
             FEATURIZER_FILE,
+            TrackerFeaturizer,
         )
 
         featurizer = None

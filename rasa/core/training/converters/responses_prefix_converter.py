@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Text
 
+from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.core.domain import Domain, InvalidDomain
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
@@ -9,9 +10,7 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
-from rasa.shared.constants import UTTER_PREFIX
 from rasa.utils.converter import TrainingDataConverter
-
 
 OBSOLETE_RESPOND_PREFIX = "respond_"
 

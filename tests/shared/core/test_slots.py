@@ -1,4 +1,4 @@
-from typing import Any, Tuple, List, Dict, Text
+from typing import Any, Dict, List, Text, Tuple
 
 import pytest
 from _pytest.fixtures import SubRequest
@@ -6,16 +6,16 @@ from _pytest.fixtures import SubRequest
 import rasa.shared.core.constants
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.slots import (
+    AnySlot,
+    BooleanSlot,
+    CategoricalSlot,
+    FloatSlot,
+    InvalidSlotConfigError,
     InvalidSlotTypeException,
+    ListSlot,
     Slot,
     TextSlot,
-    BooleanSlot,
-    FloatSlot,
-    ListSlot,
-    CategoricalSlot,
     bool_from_any,
-    AnySlot,
-    InvalidSlotConfigError,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 

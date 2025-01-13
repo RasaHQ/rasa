@@ -5,27 +5,25 @@ import logging
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Text, Any, Optional, Tuple, List
+from typing import Any, List, Optional, Text, Tuple
 
+import sqlalchemy as sa
+import sqlalchemy.orm
 from packaging import version
 from sqlalchemy.engine import URL
-
 from sqlalchemy.exc import OperationalError
 from typing_extensions import Protocol, runtime_checkable
 
 import rasa
 import rasa.model
-import rasa.utils.common
 import rasa.shared.utils.common
+import rasa.utils.common
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
-import sqlalchemy as sa
-import sqlalchemy.orm
-
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.engine.caching import (
+    get_cache_database_name,
     get_local_cache_location,
     get_max_cache_size,
-    get_cache_database_name,
 )
 
 logger = logging.getLogger(__name__)

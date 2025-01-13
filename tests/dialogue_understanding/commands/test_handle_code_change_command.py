@@ -2,31 +2,30 @@ from unittest.mock import Mock
 
 import pytest
 
+from rasa.core.actions.action_clean_stack import ActionCleanStack
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.dialogue_understanding.commands.handle_code_change_command import (
     HandleCodeChangeCommand,
 )
-from rasa.core.actions.action_clean_stack import ActionCleanStack
-
 from rasa.dialogue_understanding.patterns.code_change import FLOW_PATTERN_CODE_CHANGE_ID
 from rasa.dialogue_understanding.processor.command_processor import execute_commands
 from rasa.dialogue_understanding.stack.frames import (
-    UserFlowStackFrame,
     PatternFlowStackFrame,
+    UserFlowStackFrame,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.flow import (
+    END_STEP,
     START_STEP,
     ContinueFlowStep,
-    END_STEP,
 )
-from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.commands.test_command_processor import (
-    start_bar_user_uttered,
     change_cases,
+    start_bar_user_uttered,
 )
 from tests.utilities import flows_from_str
 

@@ -5,14 +5,14 @@ import structlog
 
 from rasa.dialogue_understanding.commands import (
     Command,
+    ErrorCommand,
     SetSlotCommand,
     StartFlowCommand,
-    ErrorCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.shared.constants import (
-    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+    RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
 )
 from rasa.shared.core.constants import SlotMappingType
 from rasa.shared.core.domain import Domain
@@ -21,11 +21,11 @@ from rasa.shared.core.slot_mappings import SlotFillingManager
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
     COMMANDS,
-    TEXT,
+    KEY_SYSTEM_PROMPT,
+    KEY_USER_PROMPT,
     PREDICTED_COMMANDS,
     PROMPTS,
-    KEY_USER_PROMPT,
-    KEY_SYSTEM_PROMPT,
+    TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.llm import DEFAULT_MAX_USER_INPUT_CHARACTERS

@@ -1,57 +1,57 @@
-from contextlib import contextmanager
 import datetime
 import io
 import logging
 import os
 import re
 from collections import OrderedDict
-from dataclasses import dataclass
-from dataclasses import field
+from contextlib import contextmanager
+from dataclasses import dataclass, field
 from functools import lru_cache
 from io import StringIO
 from pathlib import Path
-from typing import Any, Generator, List, Optional, Tuple, Dict, Callable, Union
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union
 
 import jsonschema
 from importlib_resources import files
 from packaging import version
 from pykwalify.core import Core
 from pykwalify.errors import SchemaError
+from ruamel import yaml as yaml
+from ruamel.yaml import YAML, RoundTripRepresenter, YAMLError
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
+from ruamel.yaml.constructor import BaseConstructor, DuplicateKeyError, ScalarNode
+from ruamel.yaml.loader import SafeLoader
+
 from rasa.shared.constants import (
     ASSERTIONS_SCHEMA_EXTENSIONS_FILE,
     ASSERTIONS_SCHEMA_FILE,
-    MODEL_CONFIG_SCHEMA_FILE,
     CONFIG_SCHEMA_FILE,
     DOCS_URL_TRAINING_DATA,
-    PACKAGE_NAME,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
-    SCHEMA_EXTENSIONS_FILE,
+    MODEL_CONFIG_SCHEMA_FILE,
+    PACKAGE_NAME,
     RESPONSES_SCHEMA_FILE,
+    SCHEMA_EXTENSIONS_FILE,
     SENSITIVE_DATA,
 )
 from rasa.shared.exceptions import (
+    FileNotFoundException,
+    RasaException,
+    SchemaValidationError,
     YamlException,
     YamlSyntaxException,
-    SchemaValidationError,
-    RasaException,
-    FileNotFoundException,
 )
 from rasa.shared.utils.constants import (
     DEFAULT_ENCODING,
-    READ_YAML_FILE_CACHE_MAXSIZE_ENV_VAR,
     DEFAULT_READ_YAML_FILE_CACHE_MAXSIZE,
+    READ_YAML_FILE_CACHE_MAXSIZE_ENV_VAR,
 )
 from rasa.shared.utils.io import (
-    read_file,
     convert_to_ordered_dict,
     raise_warning,
+    read_file,
     read_json_file,
 )
-from ruamel import yaml as yaml
-from ruamel.yaml import YAML, RoundTripRepresenter, YAMLError
-from ruamel.yaml.comments import CommentedSeq, CommentedMap
-from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
-from ruamel.yaml.loader import SafeLoader
 
 logger = logging.getLogger(__name__)
 
@@ -1005,8 +1005,8 @@ def validate_yaml_with_jsonschema(
         YamlSyntaxException: if the yaml file is not valid.
         SchemaValidationError: if validation fails.
     """
-    from ruamel.yaml import YAMLError
     import importlib_resources
+    from ruamel.yaml import YAMLError
 
     schema_file = str(importlib_resources.files(package_name).joinpath(schema_path))
     schema_content = read_json_file(schema_file)

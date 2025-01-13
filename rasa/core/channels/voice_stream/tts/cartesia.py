@@ -1,16 +1,17 @@
+import os
 from dataclasses import dataclass
 from typing import AsyncIterator, Dict, Optional
-import os
+
 import aiohttp
 import structlog
 from aiohttp import ClientConnectorError, ClientTimeout
 
-from rasa.core.channels.voice_stream.tts.tts_engine import (
-    TTSEngineConfig,
-)
-
 from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
-from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
+from rasa.core.channels.voice_stream.tts.tts_engine import (
+    TTSEngine,
+    TTSEngineConfig,
+    TTSError,
+)
 from rasa.shared.constants import CARTESIA_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ConnectionException
 

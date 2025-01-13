@@ -4,8 +4,7 @@ from rasa.dialogue_understanding.patterns.internal_error import (
 )
 from rasa.dialogue_understanding.stack.frames.pattern_frame import PatternFlowStackFrame
 from rasa.shared.constants import RASA_PATTERN_INTERNAL_ERROR_DEFAULT
-from rasa.shared.core.events import DialogueStackUpdated
-from rasa.shared.core.events import UserUttered
+from rasa.shared.core.events import DialogueStackUpdated, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 
 

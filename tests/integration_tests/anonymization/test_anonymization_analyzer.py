@@ -1,11 +1,11 @@
 import pytest
-from rasa.shared.exceptions import RasaException
 
 from rasa.anonymization.anonymization_rule_executor import (
     AnonymizationAnalyzer,
     AnonymizationRule,
     AnonymizationRuleList,
 )
+from rasa.shared.exceptions import RasaException
 
 
 def test_anonymization_analyzer_raises_exception_with_invalid_spacy_model() -> None:

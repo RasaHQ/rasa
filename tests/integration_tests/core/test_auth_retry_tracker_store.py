@@ -4,14 +4,14 @@ from unittest.mock import MagicMock
 
 import pytest
 from pytest import MonkeyPatch
+
+from rasa.core.auth_retry_tracker_store import AuthRetryTrackerStore
+from rasa.core.secrets_manager.vault import VaultSecretsManager, VaultTokenManager
 from rasa.core.tracker_store import AwaitableTrackerStore, MongoTrackerStore
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
-
-from rasa.core.auth_retry_tracker_store import AuthRetryTrackerStore
-from rasa.core.secrets_manager.vault import VaultSecretsManager, VaultTokenManager
 
 
 class MockedMongoTrackerStore(MongoTrackerStore):

@@ -5,10 +5,9 @@ from typing import Any, Dict, Text
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader, YamlFlowsWriter
-
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader, YamlFlowsWriter
+from rasa.shared.importers.importer import TrainingDataImporter
 
 FLOWS_PERSISTENCE_FILE_NAME = "flows.yml"
 

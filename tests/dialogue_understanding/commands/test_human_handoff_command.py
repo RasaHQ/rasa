@@ -1,12 +1,9 @@
 from rasa.dialogue_understanding.commands.human_handoff_command import (
     HumanHandoffCommand,
-)
-from rasa.shared.core.events import UserUttered
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.dialogue_understanding.commands.human_handoff_command import (
     HumanHandoffPatternFlowStackFrame,
 )
-from rasa.shared.core.events import DialogueStackUpdated
+from rasa.shared.core.events import DialogueStackUpdated, UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
 
 
 def test_name_of_command():

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import dataclasses
-import typing
 import logging
+import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
@@ -10,10 +10,10 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import DENSE_FEATURIZABLE_ATTRIBUTES, SPACY_DOCS
-from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.nlu.model import InvalidModelError
 from rasa.shared.constants import DOCS_URL_COMPONENTS
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 

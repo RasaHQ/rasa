@@ -1,9 +1,9 @@
+import sys
 from pathlib import Path
 from typing import Callable
 
-from pytest import Testdir, RunResult
 import pytest
-import sys
+from pytest import RunResult, Testdir
 
 from tests.cli.conftest import RASA_EXE
 

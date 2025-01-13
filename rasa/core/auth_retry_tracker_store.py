@@ -2,12 +2,11 @@ import logging
 from typing import Iterable, Optional, Text
 
 from rasa.core.brokers.broker import EventBroker
+from rasa.core.secrets_manager.secret_manager import EndpointResolver
 from rasa.core.tracker_store import TrackerStore, create_tracker_store
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
-
-from rasa.core.secrets_manager.secret_manager import EndpointResolver
 
 logger = logging.getLogger(__name__)
 

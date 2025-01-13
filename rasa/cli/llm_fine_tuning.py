@@ -1,7 +1,7 @@
 import argparse
 import asyncio
 import sys
-from typing import List, Any, Dict
+from typing import Any, Dict, List
 
 import structlog
 
@@ -16,9 +16,9 @@ from rasa.cli.arguments.default_arguments import (
     add_remote_storage_param,
 )
 from rasa.cli.e2e_test import (
+    RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME,
     read_test_cases,
     validate_model_path,
-    RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME,
 )
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
@@ -31,14 +31,14 @@ from rasa.llm_fine_tuning.paraphrasing.conversation_rephraser import (
 )
 from rasa.llm_fine_tuning.paraphrasing_module import create_paraphrased_conversations
 from rasa.llm_fine_tuning.storage import (
+    FileStorageStrategy,
     StorageContext,
     StorageType,
-    FileStorageStrategy,
 )
 from rasa.llm_fine_tuning.train_test_split_module import (
-    split_llm_fine_tuning_data,
-    INSTRUCTION_DATA_FORMAT,
     CONVERSATIONAL_DATA_FORMAT,
+    INSTRUCTION_DATA_FORMAT,
+    split_llm_fine_tuning_data,
 )
 from rasa.shared.constants import (
     DEFAULT_ENDPOINTS_PATH,

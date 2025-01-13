@@ -4,8 +4,8 @@ import pytest
 from langchain.schema.embeddings import Embeddings
 from pytest import MonkeyPatch
 
-from rasa.core.information_retrieval.faiss import FAISS_Store
 from rasa.core.information_retrieval import InformationRetrievalException
+from rasa.core.information_retrieval.faiss import FAISS_Store
 
 
 async def test_faiss_search_raises_custom_exception(

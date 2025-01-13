@@ -1,19 +1,19 @@
 from typing import Any
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from pydantic import ValidationError
-from pytest import MonkeyPatch
 from langchain.schema.embeddings import Embeddings
 from langchain_community.vectorstores.qdrant import Qdrant
+from pydantic import ValidationError
+from pytest import MonkeyPatch
 
 from rasa.core.information_retrieval import InformationRetrievalException
-from rasa.utils.endpoints import EndpointConfig
 from rasa.core.information_retrieval.qdrant import (
     PayloadNotFoundException,
-    QdrantInformationRetrievalException,
     Qdrant_Store,
+    QdrantInformationRetrievalException,
 )
+from rasa.utils.endpoints import EndpointConfig
 
 
 def test_qdrant_store(embeddings: Embeddings) -> None:

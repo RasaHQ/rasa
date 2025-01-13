@@ -1,16 +1,17 @@
 import inspect
+import json
 import logging
 import uuid
-import json
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text
 
-import rasa.core.channels.channel
-from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
-import rasa.shared.utils.io
-from sanic import Blueprint, response, Sanic
+from sanic import Blueprint, Sanic, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from socketio import AsyncServer
+
+import rasa.core.channels.channel
+import rasa.shared.utils.io
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 
 logger = logging.getLogger(__name__)
 

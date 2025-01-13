@@ -1,9 +1,18 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Text, List, Optional
-from rasa.core.policies.flows import flow_executor
+from typing import Any, Dict, List, Optional, Text
 
+import structlog
+
+from rasa.core.constants import (
+    FLOW_POLICY_PRIORITY,
+    POLICY_MAX_HISTORY,
+    POLICY_PRIORITY,
+)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.policies.flows import flow_executor
 from rasa.core.policies.flows.flow_exceptions import FlowCircuitBreakerTrippedException
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
@@ -14,27 +23,17 @@ from rasa.dialogue_understanding.stack.frames import (
 from rasa.dialogue_understanding.stack.utils import (
     end_top_user_flow,
 )
-
-from rasa.core.constants import (
-    FLOW_POLICY_PRIORITY,
-    POLICY_MAX_HISTORY,
-    POLICY_PRIORITY,
-)
-
-from rasa.shared.core.events import Event
-from rasa.shared.core.flows import FlowsList
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import Event
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
-import structlog
 
 structlogger = structlog.get_logger()
 

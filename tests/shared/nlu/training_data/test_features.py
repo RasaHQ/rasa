@@ -2,7 +2,7 @@ import itertools
 import os
 import tempfile
 from pathlib import Path
-from typing import Optional, Text, List, Dict, Tuple, Any
+from typing import Any, Dict, List, Optional, Text, Tuple
 
 import numpy as np
 import pytest
@@ -11,14 +11,14 @@ import scipy.sparse
 from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
-    TEXT,
     INTENT,
+    TEXT,
 )
 from rasa.shared.nlu.training_data.features import (
-    Features,
     FeatureMetadata,
-    save_features,
+    Features,
     load_features,
+    save_features,
 )
 
 

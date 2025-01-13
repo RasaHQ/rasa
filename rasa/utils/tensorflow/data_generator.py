@@ -1,13 +1,13 @@
-import math
-from typing import List, Union, Text, Optional, Any, Tuple, Dict, cast
-
 import logging
-import scipy.sparse
+import math
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, cast
+
 import numpy as np
+import scipy.sparse
 from tensorflow.keras.utils import Sequence
 
-from rasa.utils.tensorflow.constants import SEQUENCE, BALANCED
-from rasa.utils.tensorflow.model_data import RasaModelData, Data, FeatureArray
+from rasa.utils.tensorflow.constants import BALANCED, SEQUENCE
+from rasa.utils.tensorflow.model_data import Data, FeatureArray, RasaModelData
 
 logger = logging.getLogger(__name__)
 

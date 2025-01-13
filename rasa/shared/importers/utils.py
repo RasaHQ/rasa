@@ -1,4 +1,4 @@
-from typing import Iterable, Text, Optional, List
+from typing import Iterable, List, Optional, Text
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList

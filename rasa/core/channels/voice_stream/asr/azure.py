@@ -1,7 +1,7 @@
+import asyncio
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, AsyncIterator
-import asyncio
+from typing import Any, AsyncIterator, Dict, Optional
 
 from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine, ASREngineConfig
 from rasa.core.channels.voice_stream.asr.asr_event import (

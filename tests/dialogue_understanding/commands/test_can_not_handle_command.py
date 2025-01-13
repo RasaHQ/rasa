@@ -6,7 +6,7 @@ from rasa.dialogue_understanding.patterns.cannot_handle import (
     CannotHandlePatternFlowStackFrame,
 )
 from rasa.shared.constants import RASA_PATTERN_CANNOT_HANDLE_DEFAULT
-from rasa.shared.core.events import UserUttered, DialogueStackUpdated
+from rasa.shared.core.events import DialogueStackUpdated, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 
 

@@ -1,27 +1,27 @@
 import asyncio
+import os
+import shutil
+import subprocess
 import uuid
 from http import HTTPStatus
 from pathlib import Path
-import subprocess
 from unittest.mock import MagicMock
 
 import pytest
-from sanic import Sanic
 from pytest import MonkeyPatch
-import os
-import shutil
+from sanic import Sanic
 from sanic_testing.testing import SanicASGITestClient
 
+from rasa.model_manager import config
 from rasa.model_manager.model_api import (
     external_blueprint,
     internal_blueprint,
     running_bots,
     trainings,
 )
+from rasa.model_manager.runner_service import BotSession
 from rasa.model_manager.trainer_service import TrainingSession, TrainingSessionStatus
 from rasa.model_manager.utils import models_base_path
-from rasa.model_manager.runner_service import BotSession
-from rasa.model_manager import config
 
 
 @pytest.fixture

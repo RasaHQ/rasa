@@ -2,6 +2,7 @@ from typing import Optional
 
 import structlog
 from jinja2 import Template
+
 from rasa.core.tracker_store import DialogueStateTracker
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.llm import (

@@ -1,23 +1,23 @@
 import asyncio
-import os
 import json
 import logging
+import os
+import threading
+import time
+from asyncio import AbstractEventLoop
 from functools import cached_property
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Union
 
 import structlog
-import threading
-from asyncio import AbstractEventLoop
-from typing import Any, Text, List, Optional, Union, Dict, TYPE_CHECKING
-import time
 
+import rasa.shared.utils.common
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.exceptions import KafkaProducerInitializationError
 from rasa.shared.utils.io import DEFAULT_ENCODING
 from rasa.utils.endpoints import EndpointConfig
-import rasa.shared.utils.common
 
 if TYPE_CHECKING:
-    from confluent_kafka import KafkaError, Producer, Message
+    from confluent_kafka import KafkaError, Message, Producer
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
@@ -293,7 +293,7 @@ def kafka_error_callback(err: "KafkaError") -> None:
     Any exception raised from this callback will be re-raised from the
     triggering flush() call.
     """
-    from confluent_kafka import KafkaException, KafkaError
+    from confluent_kafka import KafkaError, KafkaException
 
     # handle authentication / connection related issues, likely pointing
     # to a configuration error

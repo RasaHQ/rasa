@@ -2,9 +2,9 @@ import numpy as np
 import scipy.sparse
 
 from rasa.utils.tensorflow.feature_array import (
+    _deserialize_nested_data,
     _recursive_serialize,
     _serialize_nested_data,
-    _deserialize_nested_data,
 )
 from rasa.utils.tensorflow.model_data import RasaModelData
 

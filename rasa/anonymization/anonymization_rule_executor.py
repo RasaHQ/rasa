@@ -12,8 +12,8 @@ from presidio_analyzer.nlp_engine import (
 )
 from presidio_anonymizer import AnonymizerEngine
 from presidio_anonymizer.entities import OperatorConfig
-from rasa.shared.exceptions import RasaException
 
+from rasa.shared.exceptions import RasaException
 from rasa.utils.singleton import Singleton
 
 if typing.TYPE_CHECKING:

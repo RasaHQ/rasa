@@ -4,7 +4,7 @@ from rasa_sdk import Action, Tracker
 from rasa_sdk.events import SlotSet
 from rasa_sdk.executor import CollectingDispatcher
 
-from actions.db import add_contact, get_contacts, Contact
+from actions.db import Contact, add_contact, get_contacts
 
 
 class AddContact(Action):

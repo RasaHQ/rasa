@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Text, Any
+from typing import Any, Callable, Dict, Text
 
 import pytest
 import responses

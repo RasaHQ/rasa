@@ -1,37 +1,37 @@
 import sys
-from pathlib import Path
 import textwrap
+from pathlib import Path
 from typing import List, Text
 
 import pytest
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
+import rasa.cli.utils
+import rasa.core
+import rasa.model
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.agent import Agent
-from rasa.shared.core.events import UserUttered
 from rasa.core.test import (
     EvaluationStore,
     WronglyClassifiedUserUtterance,
     WronglyPredictedAction,
 )
+from rasa.nlu.test import NO_ENTITY
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
-import rasa.model
-import rasa.cli.utils
-from rasa.nlu.test import NO_ENTITY
-import rasa.core
 from rasa.shared.nlu.constants import (
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
-    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_TEXT,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
 )
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 
 def monkeypatch_get_latest_model(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:

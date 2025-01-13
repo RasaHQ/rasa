@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any, Dict, List, Optional, Text
 
-import dask.local
 import dask.core
-import asyncio
+import dask.local
 
 from rasa.engine.exceptions import GraphRunError
 from rasa.engine.graph import ExecutionContext, GraphNode, GraphNodeHook, GraphSchema

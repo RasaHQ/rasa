@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Text
 
 import structlog
 
-from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.commands.command import Command
 from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )

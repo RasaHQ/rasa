@@ -1,22 +1,23 @@
 from __future__ import annotations
-import time
+
 import json
 import logging
 import os
-import requests
-from typing import Any, List, Optional, Text, Dict
+import time
+from typing import Any, Dict, List, Optional, Text
 
+import requests
+
+import rasa.shared.utils.io
 import rasa.utils.endpoints as endpoints_utils
-from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.shared.nlu.constants import ENTITIES, TEXT
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.shared.nlu.training_data.message import Message
-import rasa.shared.utils.io
-
 
 logger = logging.getLogger(__name__)
 

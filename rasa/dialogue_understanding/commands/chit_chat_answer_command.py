@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List
-from rasa.dialogue_understanding.commands import FreeFormAnswerCommand
+
+from rasa.dialogue_understanding.commands.free_form_answer_command import (
+    FreeFormAnswerCommand,
+)
 from rasa.dialogue_understanding.patterns.chitchat import ChitchatPatternFlowStackFrame
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList

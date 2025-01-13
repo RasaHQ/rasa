@@ -19,7 +19,6 @@ from typing import (
 
 from sanic import Sanic
 from sanic.worker.loader import AppLoader
-from rasa.core.channels.development_inspector import DevelopmentInspectProxy
 
 import rasa.core.utils
 import rasa.shared.utils.common
@@ -33,6 +32,7 @@ from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
+from rasa.core.channels.development_inspector import DevelopmentInspectProxy
 from rasa.core.persistor import StorageType
 from rasa.core.utils import AvailableEndpoints
 from rasa.plugin import plugin_manager

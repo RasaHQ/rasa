@@ -1,10 +1,11 @@
 import copy
-import re
 import logging
-from jinja2 import Template
+import re
+from typing import Any, Dict, List, Text, Union
+
 import jinja2
 import structlog
-from typing import Text, Dict, Union, Any, List
+from jinja2 import Template
 
 from rasa.core.constants import JINJA2_TEMPLATE_ENGINE, RASA_FORMAT_TEMPLATE_ENGINE
 

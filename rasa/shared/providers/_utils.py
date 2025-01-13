@@ -1,17 +1,17 @@
 import structlog
+from litellm import validate_environment
 
 from rasa.shared.constants import (
-    AWS_ACCESS_KEY_ID_ENV_VAR,
     AWS_ACCESS_KEY_ID_CONFIG_KEY,
-    AWS_SECRET_ACCESS_KEY_ENV_VAR,
-    AWS_SECRET_ACCESS_KEY_CONFIG_KEY,
-    AWS_REGION_NAME_ENV_VAR,
+    AWS_ACCESS_KEY_ID_ENV_VAR,
     AWS_REGION_NAME_CONFIG_KEY,
+    AWS_REGION_NAME_ENV_VAR,
+    AWS_SECRET_ACCESS_KEY_CONFIG_KEY,
+    AWS_SECRET_ACCESS_KEY_ENV_VAR,
     AWS_SESSION_TOKEN_CONFIG_KEY,
     AWS_SESSION_TOKEN_ENV_VAR,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
-from litellm import validate_environment
 from rasa.shared.providers.embedding._base_litellm_embedding_client import (
     _VALIDATE_ENVIRONMENT_MISSING_KEYS_KEY,
 )

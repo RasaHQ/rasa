@@ -1,10 +1,10 @@
-from pathlib import Path
-import pytest
-from typing import Callable
 import shutil
-from _pytest.pytester import Pytester
-from _pytest.pytester import RunResult
+from pathlib import Path
+from typing import Callable
+
+import pytest
 from _pytest.fixtures import FixtureRequest
+from _pytest.pytester import Pytester, RunResult
 
 
 # NOTE this will be extended to test cli logs at process run to validate log level

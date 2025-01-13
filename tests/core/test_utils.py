@@ -1,8 +1,7 @@
 import os
-
 from decimal import Decimal
-from typing import Optional, Text, Union, Any
 from pathlib import Path
+from typing import Any, Optional, Text, Union
 
 import pytest
 
@@ -11,7 +10,7 @@ import rasa.utils.io
 import rasa.utils.json_utils
 from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core import utils
-from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
+from rasa.core.lock_store import InMemoryLockStore, LockStore, RedisLockStore
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig

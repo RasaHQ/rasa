@@ -2,11 +2,11 @@ from typing import Any, Dict, Text
 from unittest.mock import MagicMock
 
 import pytest
-from rasa.shared.core.domain import Domain
 
 from rasa.markers.marker import OrMarker
 from rasa.markers.marker_base import Marker
 from rasa.markers.validate import validate_markers
+from rasa.shared.core.domain import Domain
 
 
 @pytest.mark.parametrize(

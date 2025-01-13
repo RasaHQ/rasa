@@ -1,5 +1,5 @@
-from typing import AsyncIterator, Dict, Generic, Optional, Tuple, Type, TypeVar
 from dataclasses import dataclass
+from typing import AsyncIterator, Dict, Generic, Optional, Tuple, Type, TypeVar
 
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.util import MergeableConfig

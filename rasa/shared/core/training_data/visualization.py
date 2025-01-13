@@ -1,15 +1,14 @@
-from collections import defaultdict, deque
-
 import random
+from collections import defaultdict, deque
 from typing import (
+    TYPE_CHECKING,
     Any,
-    Text,
-    List,
     Deque,
     Dict,
+    List,
     Optional,
     Set,
-    TYPE_CHECKING,
+    Text,
     Union,
     cast,
 )
@@ -18,21 +17,22 @@ import rasa.shared.utils.io
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered, ActionExecuted, Event
+from rasa.shared.core.events import ActionExecuted, Event, UserUttered
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
 from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_VALUE,
     INTENT,
-    TEXT,
-    ENTITY_ATTRIBUTE_TYPE,
     INTENT_NAME_KEY,
+    TEXT,
 )
 
 if TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.training_data import TrainingData
-    from rasa.shared.nlu.training_data.message import Message
     import networkx
+
+    from rasa.shared.nlu.training_data.message import Message
+    from rasa.shared.nlu.training_data.training_data import TrainingData
 
 EDGE_NONE_LABEL = "NONE"
 

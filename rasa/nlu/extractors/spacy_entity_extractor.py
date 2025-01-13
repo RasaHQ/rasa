@@ -5,9 +5,9 @@ from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.nlu.constants import ENTITIES, TEXT
-from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
+from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.shared.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:

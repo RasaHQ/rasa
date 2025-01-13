@@ -1,16 +1,15 @@
-import pytest
-
-import scipy.sparse
 import numpy as np
+import pytest
+import scipy.sparse
 
+from rasa.utils.tensorflow.data_generator import (
+    RasaBatchDataGenerator,
+    RasaDataGenerator,
+)
 from rasa.utils.tensorflow.model_data import (
-    ragged_array_to_ndarray,
     FeatureArray,
     RasaModelData,
-)
-from rasa.utils.tensorflow.data_generator import (
-    RasaDataGenerator,
-    RasaBatchDataGenerator,
+    ragged_array_to_ndarray,
 )
 
 

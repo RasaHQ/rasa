@@ -1,11 +1,11 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from keycloak import KeycloakError
-from requests import RequestException, Timeout, ConnectionError
+from requests import ConnectionError, RequestException, Timeout
 
 from rasa.shared.exceptions import RasaException
-from rasa.studio.results_logger import with_studio_error_handler, StudioResult
+from rasa.studio.results_logger import StudioResult, with_studio_error_handler
 
 
 def test_handle_error_successful_execution():

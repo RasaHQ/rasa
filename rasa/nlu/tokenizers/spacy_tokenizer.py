@@ -1,10 +1,10 @@
 import typing
-from typing import Dict, Text, List, Any, Optional, Type
+from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-from rasa.nlu.utils.spacy_utils import SpacyNLP
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.constants import SPACY_DOCS
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.utils.spacy_utils import SpacyNLP
 from rasa.shared.nlu.training_data.message import Message
 
 if typing.TYPE_CHECKING:

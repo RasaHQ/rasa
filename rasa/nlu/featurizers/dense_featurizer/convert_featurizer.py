@@ -1,32 +1,33 @@
 from __future__ import annotations
+
 import logging
 import os
 from typing import Any, Dict, List, Optional, Text, Tuple, Type
 
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.eager.wrap_function import WrappedFunction
 from tqdm import tqdm
-import numpy as np
 
-from rasa.engine.graph import GraphComponent, ExecutionContext
-from rasa.engine.recipes.default_recipe import DefaultV1Recipe
-from rasa.engine.storage.storage import ModelStorage
-from rasa.engine.storage.resource import Resource
-import rasa.shared.utils.io
 import rasa.core.utils
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
+import rasa.nlu.utils
+import rasa.shared.utils.io
+import rasa.utils.train_utils as train_utils
+from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.exceptions import RasaException
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    TOKENS_NAMES,
     NUMBER_OF_SUB_TOKENS,
+    TOKENS_NAMES,
 )
-from rasa.shared.nlu.constants import TEXT, ACTION_TEXT
-from rasa.exceptions import RasaException
-import rasa.nlu.utils
-import rasa.utils.train_utils as train_utils
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.shared.nlu.constants import ACTION_TEXT, TEXT
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 

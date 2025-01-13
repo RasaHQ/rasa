@@ -1,12 +1,13 @@
+import os
 import shlex
 import subprocess
-from rasa.__main__ import main
-import os
-from typing import List
-import structlog
-from dataclasses import dataclass
 import uuid
+from dataclasses import dataclass
+from typing import List
 
+import structlog
+
+from rasa.__main__ import main
 from rasa.model_manager import config
 from rasa.model_manager.utils import ensure_base_directory_exists, logs_path
 
@@ -146,14 +147,15 @@ def warmup() -> None:
     directly start.
     """
     try:
-        import presidio_analyzer  # noqa: F401
-        import litellm  # noqa: F401
         import langchain  # noqa: F401
-        import tensorflow  # noqa: F401
+        import litellm  # noqa: F401
         import matplotlib  # noqa: F401
-        import pandas  # noqa: F401
         import numpy  # noqa: F401
+        import pandas  # noqa: F401
+        import presidio_analyzer  # noqa: F401
         import spacy  # noqa: F401
+        import tensorflow  # noqa: F401
+
         import rasa.validator  # noqa: F401
     except ImportError:
         pass

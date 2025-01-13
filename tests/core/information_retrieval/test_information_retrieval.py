@@ -1,11 +1,12 @@
-from unittest.mock import Mock, patch
 from typing import TYPE_CHECKING
+from unittest.mock import Mock, patch
+
 import pytest
 
+from data.test_information_retrieval.custom_store import CustomStore
 from rasa.core.information_retrieval import create_from_endpoint_config
 from rasa.core.information_retrieval.milvus import Milvus, Milvus_Store
 from rasa.core.information_retrieval.qdrant import Qdrant, Qdrant_Store
-from data.test_information_retrieval.custom_store import CustomStore
 
 if TYPE_CHECKING:
     from langchain.schema.embeddings import Embeddings

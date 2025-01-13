@@ -250,7 +250,7 @@ rasa = "rasa.__main__:main"
 # - D105: Missing docstring in magic method
 # - D107: Missing docstring in __init__
 ignore = [ "D100", "D101", "D102", "D103", "D104", "D105", "D107", "RUF001", "RUF002", "RUF003", "RUF005",]
-select = [ "D", "E", "F", "W", "RUF",]
+select = [ "D", "E", "F", "I", "W", "RUF",]
 
 [tool.pytest.ini_options]
 python_functions = "test_"

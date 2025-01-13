@@ -1,6 +1,7 @@
 import pytest
 import structlog
 from pytest import MonkeyPatch
+
 from rasa.shared.constants import OPENAI_API_BASE_ENV_VAR, OPENAI_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers.llm.llm_client import LLMClient

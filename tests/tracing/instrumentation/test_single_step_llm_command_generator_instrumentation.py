@@ -4,9 +4,9 @@ from typing import Any, Dict, Sequence
 from unittest.mock import Mock, patch
 
 import pytest
-from pytest import LogCaptureFixture
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from pytest import LogCaptureFixture
 
 from rasa.dialogue_understanding.commands import (
     SetSlotCommand,
@@ -20,12 +20,11 @@ from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
-
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.conftest import TRACING_TESTS_FIXTURES_DIRECTORY
 from tests.tracing.instrumentation.conftest import (
-    MockSingleStepLLMCommandGenerator,
     MockAvailableEndpoints,
+    MockSingleStepLLMCommandGenerator,
 )
 from tests.utilities import flows_from_str
 

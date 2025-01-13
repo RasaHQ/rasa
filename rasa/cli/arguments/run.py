@@ -5,8 +5,8 @@ from typing import Union
 from rasa.cli.arguments.default_arguments import (
     add_endpoint_param,
     add_model_param,
-    add_skip_validation_flag,
     add_remote_storage_param,
+    add_skip_validation_flag,
 )
 from rasa.core import constants
 from rasa.env import (

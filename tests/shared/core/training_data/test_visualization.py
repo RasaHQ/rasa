@@ -1,16 +1,16 @@
 from pathlib import Path
 from typing import Text
 
+import pytest
+
 import rasa.shared.utils.io
+import rasa.utils.io
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.shared.core.training_data import visualization
-import rasa.utils.io
-from rasa.shared.nlu.constants import TEXT, INTENT
+from rasa.shared.nlu.constants import INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-
-import pytest
 
 
 def test_style_transfer():
@@ -85,7 +85,9 @@ def test_common_action_prefix_unequal():
 
 def test_graph_persistence(domain: Domain, tmp_path: Path):
     from os.path import isfile
+
     from networkx.drawing import nx_pydot
+
     import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = core_loading.load_data_from_resource(
@@ -112,6 +114,7 @@ def test_graph_persistence(domain: Domain, tmp_path: Path):
 
 def test_merge_nodes(domain: Domain, tmp_path: Path):
     from os.path import isfile
+
     import rasa.shared.core.training_data.loading as core_loading
 
     story_steps = core_loading.load_data_from_resource(

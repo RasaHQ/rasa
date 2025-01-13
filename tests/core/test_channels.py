@@ -1,27 +1,26 @@
 # file deepcode ignore HardcodedNonCryptoSecret/test: Secrets are all just examples for tests. # noqa: E501
 
 import logging
+from typing import Dict
+from unittest.mock import MagicMock, Mock, patch
 
 import jwt
-from typing import Dict
-from unittest.mock import patch, MagicMock, Mock
-
 import pytest
 from aiogram.exceptions import TelegramAPIError
-from pytest import LogCaptureFixture, MonkeyPatch
 from aiohttp import ClientTimeout
 from aioresponses import aioresponses
+from pytest import LogCaptureFixture, MonkeyPatch
 from sanic import Sanic
 
-import rasa.core.run
 import rasa.core.channels.channel
+import rasa.core.run
 from rasa.core import utils
 from rasa.core.channels import RasaChatInput, console
 from rasa.core.channels.channel import UserMessage
 from rasa.core.channels.rasa_chat import (
-    JWT_USERNAME_KEY,
     CONVERSATION_ID_KEY,
     INTERACTIVE_LEARNING_PERMISSION,
+    JWT_USERNAME_KEY,
 )
 from rasa.core.channels.telegram import TelegramOutput
 from rasa.utils.endpoints import EndpointConfig
@@ -503,8 +502,9 @@ async def test_callback_calls_endpoint():
 
 
 def test_botframework_attachments():
-    from rasa.core.channels.botframework import BotFrameworkInput
     from copy import deepcopy
+
+    from rasa.core.channels.botframework import BotFrameworkInput
 
     ch = BotFrameworkInput("app_id", "app_pass")
 
@@ -604,8 +604,8 @@ def test_newsline_strip():
 
 def test_register_channel_without_route():
     """Check we properly connect the input channel blueprint if route is None"""
-    from rasa.core.channels import RestInput
     import rasa.core
+    from rasa.core.channels import RestInput
 
     input_channel = RestInput()
 
@@ -619,8 +619,8 @@ def test_register_channel_without_route():
 
 
 def test_channel_registration_with_absolute_url_prefix_overwrites_route():
-    from rasa.core.channels import RestInput
     import rasa.core
+    from rasa.core.channels import RestInput
 
     input_channel = RestInput()
     test_route = "/absolute_route"

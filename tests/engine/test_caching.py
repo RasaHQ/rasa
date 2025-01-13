@@ -3,7 +3,7 @@ import logging
 import shutil
 import uuid
 from pathlib import Path
-from typing import Dict, Text, Optional, Any, Callable
+from typing import Any, Callable, Dict, Optional, Text
 from unittest.mock import Mock
 
 import pytest
@@ -11,22 +11,22 @@ from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from sqlalchemy.exc import OperationalError
 
-import rasa.shared.utils.io
 import rasa.shared.utils.common
-from rasa.shared.engine.caching import (
-    CACHE_LOCATION_ENV,
-    DEFAULT_CACHE_NAME,
-    CACHE_SIZE_ENV,
-    CACHE_DB_NAME_ENV,
-)
+import rasa.shared.utils.io
+import tests.conftest
 from rasa.engine.caching import (
     LocalTrainingCache,
     TrainingCache,
 )
-import tests.conftest
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.engine.caching import (
+    CACHE_DB_NAME_ENV,
+    CACHE_LOCATION_ENV,
+    CACHE_SIZE_ENV,
+    DEFAULT_CACHE_NAME,
+)
 
 
 @dataclasses.dataclass

@@ -1,10 +1,10 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any, Dict
 
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
-
 
 FLOW_PATTERN_USER_SILENCE = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "user_silence"
 

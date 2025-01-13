@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import patch, MagicMock, call, Mock
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 
@@ -11,9 +11,9 @@ from rasa.llm_fine_tuning.storage import (
     StorageContext,
 )
 from rasa.llm_fine_tuning.train_test_split_module import (
-    InstructionDataFormat,
     ConversationalDataFormat,
     ConversationalMessageDataFormat,
+    InstructionDataFormat,
 )
 
 

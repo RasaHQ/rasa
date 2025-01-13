@@ -1,23 +1,24 @@
 from __future__ import annotations
+
 import logging
 import re
-from typing import Any, Dict, Optional, Text, List
+from typing import Any, Dict, List, Optional, Text
 
-from rasa.engine.graph import GraphComponent, ExecutionContext
+import rasa.shared.utils.io
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.classifiers.classifier import IntentClassifier
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.shared.nlu.constants import (
     INTENT,
-    TEXT,
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    TEXT,
 )
-import rasa.shared.utils.io
-from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 

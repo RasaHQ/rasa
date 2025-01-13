@@ -1,17 +1,17 @@
 import logging
-from typing import Text, Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional, Text
 
 import rasa.shared.core.training_data.structures
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_STORIES
-from rasa.shared.core.events import UserUttered, Event
+from rasa.shared.core.events import Event, UserUttered
 from rasa.shared.core.training_data.structures import (
-    Checkpoint,
     GENERATED_CHECKPOINT_PREFIX,
     GENERATED_HASH_LENGTH,
     STORY_START,
-    StoryStep,
+    Checkpoint,
     RuleStep,
+    StoryStep,
 )
 
 logger = logging.getLogger(__name__)

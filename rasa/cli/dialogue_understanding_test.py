@@ -29,9 +29,9 @@ from rasa.dialogue_understanding_test.du_test_runner import (
     DialogueUnderstandingTestRunner,
 )
 from rasa.dialogue_understanding_test.io import (
+    print_test_results,
     read_test_suite,
     write_test_results_to_file,
-    print_test_results,
 )
 from rasa.dialogue_understanding_test.validation import (
     validate_cli_arguments,

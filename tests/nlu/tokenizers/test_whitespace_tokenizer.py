@@ -1,12 +1,13 @@
-import pytest
 from typing import Dict, Optional
+
+import pytest
 
 import rasa.shared.utils.io
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_TEXT, ACTION_NAME
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.nlu.constants import ACTION_NAME, ACTION_TEXT, INTENT, TEXT
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 def create_whitespace_tokenizer(config: Optional[Dict] = None) -> WhitespaceTokenizer:

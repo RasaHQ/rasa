@@ -1,4 +1,3 @@
-from asyncio import AbstractEventLoop
 import hashlib
 import os
 import random
@@ -6,18 +5,18 @@ import re
 import time
 import typing
 import uuid
+from asyncio import AbstractEventLoop
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Optional, Set, Text, TypeVar
 
 import jwt
+import structlog
 from dotenv import dotenv_values
 from sanic import Sanic
-import structlog
-from rasa import telemetry
 
+from rasa import telemetry
 from rasa.core import jobs
 from rasa.shared.utils.cli import print_error_and_exit
-
 
 if typing.TYPE_CHECKING:
     from rasa.core.tracker_store import TrackerStore

@@ -1,15 +1,16 @@
 import pytest
+
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    FlowStackFrameType,
     InvalidFlowIdException,
     InvalidFlowStackFrameType,
     InvalidFlowStepIdException,
     UserFlowStackFrame,
-    FlowStackFrameType,
 )
-from rasa.shared.core.flows.flow_step_links import FlowStepLinks
-from rasa.shared.core.flows.steps.action import ActionFlowStep
-from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 from rasa.shared.core.flows import Flow, FlowsList
+from rasa.shared.core.flows.flow_step_links import FlowStepLinks
+from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
+from rasa.shared.core.flows.steps.action import ActionFlowStep
 
 
 def test_flow_frame_type():

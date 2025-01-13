@@ -1,20 +1,23 @@
 import audioop
 import base64
 import json
-
-import structlog
 import uuid
 from typing import Any, Awaitable, Callable, Optional, Tuple
 
-from sanic import Blueprint, HTTPResponse, Request, response
-from sanic import Websocket  # type: ignore
-
+import structlog
+from sanic import (  # type: ignore[attr-defined]
+    Blueprint,
+    HTTPResponse,
+    Request,
+    Websocket,
+    response,
+)
 
 from rasa.core.channels import UserMessage
 from rasa.core.channels.voice_ready.utils import CallParameters
+from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import call_state
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
-from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     EndConversationAction,

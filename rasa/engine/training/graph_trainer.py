@@ -4,16 +4,16 @@ from pathlib import Path
 from typing import Any, Dict, Text, Type, Union
 
 from rasa.engine.caching import TrainingCache
-from rasa.engine.graph import ExecutionContext, GraphSchema, GraphModelConfiguration
 from rasa.engine.constants import PLACEHOLDER_IMPORTER
+from rasa.engine.graph import ExecutionContext, GraphModelConfiguration, GraphSchema
 from rasa.engine.runner.interface import GraphRunner
-from rasa.engine.storage.storage import ModelStorage, ModelMetadata
+from rasa.engine.storage.storage import ModelMetadata, ModelStorage
 from rasa.engine.training.components import (
-    PrecomputedValueProvider,
     FingerprintComponent,
     FingerprintStatus,
+    PrecomputedValueProvider,
 )
-from rasa.engine.training.hooks import TrainingHook, LoggingHook
+from rasa.engine.training.hooks import LoggingHook, TrainingHook
 from rasa.shared.importers.importer import TrainingDataImporter
 
 logger = logging.getLogger(__name__)

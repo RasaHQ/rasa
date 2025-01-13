@@ -1,32 +1,31 @@
 import copy
 import logging
 import os
+from pathlib import Path
 from typing import (
-    Text,
-    Dict,
-    Optional,
-    List,
     Any,
+    Dict,
     Iterable,
+    List,
+    Optional,
+    Text,
     Tuple,
     Union,
 )
-from pathlib import Path
 
-from rasa.core.agent import Agent
-from rasa.engine.storage.local_model_storage import LocalModelStorage
+import rasa.model
+import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.common
-from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
+from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, RESULTS_FILE
+from rasa.core.agent import Agent
+from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.exceptions import ModelNotFound
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
-import rasa.shared.nlu.training_data.loading
 from rasa.shared.data import TrainingType
 from rasa.shared.nlu.training_data.training_data import TrainingData
-import rasa.model
-
 
 logger = logging.getLogger(__name__)
 
@@ -245,10 +244,9 @@ async def compare_nlu_models(
     exclusion_percentages: List[int],
 ) -> None:
     """Trains multiple models, compares them and saves the results."""
-    from rasa.nlu.test import drop_intents_below_freq
+    from rasa.nlu.test import compare_nlu, drop_intents_below_freq
     from rasa.nlu.utils import write_json_to_file
     from rasa.utils.io import create_path
-    from rasa.nlu.test import compare_nlu
 
     test_data = drop_intents_below_freq(test_data, cutoff=5)
 
@@ -313,10 +311,10 @@ async def perform_nlu_cross_validation(
             cross-validation, like number of `disable_plotting`.
     """
     from rasa.nlu.test import (
-        drop_intents_below_freq,
         cross_validate,
-        log_results,
+        drop_intents_below_freq,
         log_entity_results,
+        log_results,
     )
 
     additional_arguments = additional_arguments or {}

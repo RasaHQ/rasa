@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import logging
 from asyncio import AbstractEventLoop
-from typing import Any, Dict, Text, Optional, Union, TypeVar, Type
+from typing import Any, Dict, Optional, Text, Type, TypeVar, Union
 
 import aiormq
 

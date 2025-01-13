@@ -6,7 +6,6 @@ from unittest.mock import Mock
 import presidio_analyzer
 import pytest
 from pytest import LogCaptureFixture, MonkeyPatch
-from rasa.shared.exceptions import RasaException
 
 from rasa.anonymization.anonymization_rule_executor import (
     AnonymizationAnalyzer,
@@ -14,6 +13,7 @@ from rasa.anonymization.anonymization_rule_executor import (
     AnonymizationRuleExecutor,
     AnonymizationRuleList,
 )
+from rasa.shared.exceptions import RasaException
 
 
 @pytest.fixture(scope="session")

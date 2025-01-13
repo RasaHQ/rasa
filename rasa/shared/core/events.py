@@ -2,67 +2,65 @@ import abc
 import copy
 import json
 import logging
-import structlog
 import re
-from abc import ABC
-
-import jsonpickle
 import time
 import uuid
-from dateutil import parser
+from abc import ABC
 from datetime import datetime
 from typing import (
-    List,
-    Dict,
-    Text,
-    Any,
-    Type,
-    Optional,
     TYPE_CHECKING,
+    Any,
+    Dict,
     Iterable,
-    cast,
+    List,
+    Optional,
+    Text,
     Tuple,
+    Type,
     TypeVar,
+    Union,
+    cast,
 )
+
+import jsonpickle
+import structlog
+from dateutil import parser
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
-from typing import Union
-
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA
 from rasa.shared.core.constants import (
-    LOOP_NAME,
-    EXTERNAL_MESSAGE_PREFIX,
-    ACTION_NAME_SENDER_ID_CONNECTOR_STR,
-    IS_EXTERNAL,
-    USE_TEXT_FOR_FEATURIZATION,
-    LOOP_INTERRUPTED,
-    ENTITY_LABEL_SEPARATOR,
-    ACTION_SESSION_START_NAME,
     ACTION_LISTEN_NAME,
+    ACTION_NAME_SENDER_ID_CONNECTOR_STR,
+    ACTION_SESSION_START_NAME,
+    ENTITY_LABEL_SEPARATOR,
+    EXTERNAL_MESSAGE_PREFIX,
+    IS_EXTERNAL,
+    LOOP_INTERRUPTED,
+    LOOP_NAME,
+    USE_TEXT_FOR_FEATURIZATION,
 )
 from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.nlu.constants import (
-    ENTITY_ATTRIBUTE_TYPE,
-    INTENT,
-    TEXT,
-    ENTITIES,
-    COMMANDS,
-    ENTITY_ATTRIBUTE_VALUE,
-    ACTION_TEXT,
     ACTION_NAME,
-    INTENT_NAME_KEY,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_GROUP,
-    PREDICTED_CONFIDENCE_KEY,
-    INTENT_RANKING_KEY,
-    ENTITY_ATTRIBUTE_TEXT,
-    ENTITY_ATTRIBUTE_START,
+    ACTION_TEXT,
+    COMMANDS,
+    ENTITIES,
     ENTITY_ATTRIBUTE_CONFIDENCE,
     ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_TEXT,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
     FULL_RETRIEVAL_INTENT_NAME_KEY,
+    INTENT,
+    INTENT_NAME_KEY,
+    INTENT_RANKING_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+    TEXT,
 )
-
 
 if TYPE_CHECKING:
     from typing_extensions import TypedDict
@@ -147,8 +145,8 @@ def format_message(
         Message with entities annotated inline, e.g.
         `I am from [Berlin]{`"`entity`"`: `"`city`"`}`.
     """
-    from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
     from rasa.shared.nlu.training_data import entities_parser
+    from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
     message_from_md = entities_parser.parse_training_example(text, intent)
     deserialised_entities = deserialise_entities(entities)

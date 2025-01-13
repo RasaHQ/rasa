@@ -1,32 +1,29 @@
 import json
 import os
+import unittest.mock
 import uuid
 from collections import deque
 from pathlib import Path
 from typing import Any, Dict, List, Text, Tuple
-
-from rasa.shared.utils.yaml import read_config_file
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-import unittest.mock
-from unittest.mock import Mock
 
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.actions import action
 from rasa.core.training import interactive
 from rasa.shared.constants import (
-    INTENT_MESSAGE_PREFIX,
     DEFAULT_SENDER_ID,
     DOCS_URL_NLU_BASED_POLICIES,
+    INTENT_MESSAGE_PREFIX,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
 )
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import BotUttered, ActionExecuted, UserUttered
+from rasa.shared.core.events import ActionExecuted, BotUttered, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
@@ -34,8 +31,9 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
 from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
-from rasa.shared.nlu.training_data.loading import RASA, UNK, RASA_YAML
+from rasa.shared.nlu.training_data.loading import RASA, RASA_YAML, UNK
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils.yaml import read_config_file
 from rasa.utils.endpoints import EndpointConfig
 from tests import utilities
 

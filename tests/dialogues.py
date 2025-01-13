@@ -1,12 +1,11 @@
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.events import (
-    SlotSet,
-    UserUttered,
     ActionExecuted,
     ActiveLoop,
     BotUttered,
+    SlotSet,
+    UserUttered,
 )
-
 
 TEST_DEFAULT_DIALOGUE = Dialogue(
     name="default",

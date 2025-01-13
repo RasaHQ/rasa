@@ -1,18 +1,17 @@
 from pathlib import Path
-from typing import Dict, Any
-from unittest.mock import patch, Mock, AsyncMock
+from typing import Any, Dict
+from unittest.mock import AsyncMock, Mock, patch
 
 import pandas as pd
 import pytest
-
 from pytest import MonkeyPatch
 
 from rasa.e2e_test.e2e_config import LLME2ETestConverterConfig
 from rasa.e2e_test.e2e_test_converter import (
-    E2ETestConverter,
-    ConversationEntry,
     Conversation,
+    ConversationEntry,
     Conversations,
+    E2ETestConverter,
 )
 from rasa.shared.exceptions import RasaException
 

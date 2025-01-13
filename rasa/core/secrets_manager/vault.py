@@ -9,8 +9,6 @@ from typing import Any, Dict, Optional, Text, Union, cast
 import hvac.exceptions
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from rasa.shared.exceptions import RasaException
-from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.secrets_manager.constants import (
     TRACKER_STORE_ENDPOINT_TYPE,
@@ -25,6 +23,8 @@ from rasa.core.secrets_manager.endpoints import (
     TrackerStoreEndpointValidator,
 )
 from rasa.core.secrets_manager.secret_manager import SecretManagerConfig, SecretsManager
+from rasa.shared.exceptions import RasaException
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 

@@ -1,25 +1,26 @@
-import typing
 import copy
+import typing
+from collections import OrderedDict, defaultdict
+from typing import Any, DefaultDict, Dict, List, Optional, Text, Tuple, Union, cast
+
 import numpy as np
 import scipy.sparse
-from collections import defaultdict, OrderedDict
-from typing import List, Optional, Text, Dict, Tuple, Union, Any, DefaultDict, cast
 
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.utils.tensorflow.model_data import Data, FeatureArray, ragged_array_to_ndarray
-from rasa.utils.tensorflow.constants import MASK, IDS
-from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
-    TEXT,
     ENTITIES,
-    ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_TYPE,
+    TEXT,
 )
+from rasa.shared.nlu.training_data.message import Message
+from rasa.utils.tensorflow.constants import IDS, MASK
+from rasa.utils.tensorflow.model_data import Data, FeatureArray, ragged_array_to_ndarray
 
 if typing.TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.features import Features
     from rasa.nlu.extractors.extractor import EntityTagSpec
+    from rasa.shared.nlu.training_data.features import Features
 
 TAG_ID_ORIGIN = "tag_id_origin"
 

@@ -1,15 +1,13 @@
 import dataclasses
-
-from typing import DefaultDict, Dict, List, Optional, Set, Text, TYPE_CHECKING
 from collections import defaultdict
+from typing import TYPE_CHECKING, DefaultDict, Dict, List, Optional, Set, Text
 
-from rasa.shared.core.events import ActionExecuted, UserUttered
-from rasa.shared.core.events import SlotSet, ActiveLoop
+from rasa.shared.core.events import ActionExecuted, ActiveLoop, SlotSet, UserUttered
 
 if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
-    from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.shared.core.events import Event
+    from rasa.shared.core.trackers import DialogueStateTracker
 
 
 @dataclasses.dataclass

@@ -6,9 +6,6 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 from pytest import LogCaptureFixture, MonkeyPatch
-from rasa.core.brokers.kafka import KafkaEventBroker
-from rasa.shared.core.events import BotUttered, EntitiesAdded, SlotSet, UserUttered
-from rasa.utils.endpoints import EndpointConfig
 
 from rasa.anonymization.anonymization_pipeline import (
     AnonymizationPipelineProvider,
@@ -19,6 +16,9 @@ from rasa.anonymization.anonymization_pipeline import (
 from rasa.anonymization.anonymization_rule_orchestrator import (
     AnonymizationRuleOrchestrator,
 )
+from rasa.core.brokers.kafka import KafkaEventBroker
+from rasa.shared.core.events import BotUttered, EntitiesAdded, SlotSet, UserUttered
+from rasa.utils.endpoints import EndpointConfig
 
 
 def test_anonymization_pipeline_run_valid_events(

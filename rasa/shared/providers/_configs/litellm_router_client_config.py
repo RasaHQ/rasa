@@ -3,26 +3,26 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
 import structlog
+
 from rasa.shared.constants import (
-    ROUTER_CONFIG_KEY,
-    MODELS_CONFIG_KEY,
-    MODEL_GROUP_ID_CONFIG_KEY,
-    MODEL_NAME_CONFIG_KEY,
-    LITELLM_PARAMS_KEY,
-    PROVIDER_CONFIG_KEY,
-    DEPLOYMENT_CONFIG_KEY,
     API_TYPE_CONFIG_KEY,
+    DEPLOYMENT_CONFIG_KEY,
+    LITELLM_PARAMS_KEY,
     MODEL_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
     MODEL_LIST_KEY,
+    MODEL_NAME_CONFIG_KEY,
+    MODELS_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    ROUTER_CONFIG_KEY,
     USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY,
 )
 from rasa.shared.providers._configs.model_group_config import (
-    ModelGroupConfig,
     ModelConfig,
+    ModelGroupConfig,
 )
 from rasa.shared.providers.mappings import get_prefix_from_provider
 from rasa.shared.utils.llm import DEPLOYMENT_CENTRIC_PROVIDERS
-
 
 structlogger = structlog.get_logger()
 

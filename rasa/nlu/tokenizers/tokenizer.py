@@ -1,22 +1,21 @@
 import abc
 import logging
 import re
+from typing import Any, Dict, List, Optional, Text
 
-from typing import Text, List, Dict, Any, Optional
-
+import rasa.shared.utils.io
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
+from rasa.nlu.constants import MESSAGE_ATTRIBUTES, TOKENS_NAMES
 from rasa.shared.nlu.constants import (
+    ACTION_NAME,
     INTENT,
     INTENT_RESPONSE_KEY,
     RESPONSE_IDENTIFIER_DELIMITER,
-    ACTION_NAME,
 )
-import rasa.shared.utils.io
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 

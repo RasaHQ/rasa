@@ -1,9 +1,9 @@
 from typing import Any, Dict
 from unittest.mock import patch
-import pytest
-import structlog
 
 import litellm
+import pytest
+import structlog
 from litellm import Router
 
 from rasa.shared.exceptions import ProviderClientValidationError

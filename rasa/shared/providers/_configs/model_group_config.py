@@ -2,18 +2,19 @@ from dataclasses import asdict, dataclass, field
 from typing import List, Optional
 
 import structlog
+
 from rasa.shared.constants import (
     API_BASE_CONFIG_KEY,
     API_KEY,
     API_TYPE_CONFIG_KEY,
     API_VERSION_CONFIG_KEY,
     DEPLOYMENT_CONFIG_KEY,
-    PROVIDER_CONFIG_KEY,
+    EXTRA_PARAMETERS_KEY,
     MODEL_CONFIG_KEY,
     MODEL_GROUP_ID_CONFIG_KEY,
-    MODELS_CONFIG_KEY,
     MODEL_GROUPS_CONFIG_KEY,
-    EXTRA_PARAMETERS_KEY,
+    MODELS_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
 )
 from rasa.shared.providers.mappings import get_client_config_class_from_provider
 

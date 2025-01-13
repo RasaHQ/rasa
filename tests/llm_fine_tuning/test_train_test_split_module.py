@@ -1,5 +1,5 @@
 from typing import List
-from unittest.mock import call, MagicMock
+from unittest.mock import MagicMock, call
 
 import pytest
 import structlog
@@ -8,13 +8,13 @@ from rasa.cli.e2e_test import read_test_cases
 from rasa.e2e_test.e2e_test_case import TestSuite
 from rasa.llm_fine_tuning.llm_data_preparation_module import LLMDataExample
 from rasa.llm_fine_tuning.train_test_split_module import (
-    _get_minimum_test_case_groups_to_cover_all_commands,
-    split_llm_fine_tuning_data,
-    InstructionDataFormat,
+    CONVERSATIONAL_DATA_FORMAT,
+    INSTRUCTION_DATA_FORMAT,
     ConversationalDataFormat,
     ConversationalMessageDataFormat,
-    INSTRUCTION_DATA_FORMAT,
-    CONVERSATIONAL_DATA_FORMAT,
+    InstructionDataFormat,
+    _get_minimum_test_case_groups_to_cover_all_commands,
+    split_llm_fine_tuning_data,
 )
 from tests.utilities import filter_logs
 

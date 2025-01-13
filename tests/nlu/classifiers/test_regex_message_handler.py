@@ -1,17 +1,18 @@
-from rasa.nlu.constants import EXTRACTOR
-from rasa.shared.nlu.training_data.features import Features
 from typing import Text
-import numpy as np
 
-from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.core.domain import Domain
-from rasa.engine.storage.resource import Resource
+import numpy as np
+import pytest
+
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers.regex_message_handler import RegexMessageHandler
-import pytest
+from rasa.nlu.constants import EXTRACTOR
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, INTENT, TEXT, ENTITIES
+from rasa.shared.core.domain import Domain
+from rasa.shared.nlu.constants import ENTITIES, FEATURE_TYPE_SENTENCE, INTENT, TEXT
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.message import Message
 
 
 @pytest.fixture

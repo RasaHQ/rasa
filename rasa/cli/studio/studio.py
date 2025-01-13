@@ -3,15 +3,14 @@ from typing import List, Optional, Tuple
 from urllib.parse import ParseResult, urlparse
 
 import questionary
-from rasa.cli import SubParsersAction
 
-import rasa.shared.utils.cli
 import rasa.cli.studio.download
 import rasa.cli.studio.train
 import rasa.cli.studio.upload
+import rasa.shared.utils.cli
+from rasa.cli import SubParsersAction
 from rasa.studio.auth import StudioAuth
 from rasa.studio.config import StudioConfig
-
 
 DEFAULT_REALM_NAME = "rasa-studio"
 

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from rasa.dialogue_understanding.commands import Command
+
+from rasa.dialogue_understanding.commands.command import Command
 
 
 @dataclass

@@ -1,4 +1,6 @@
+import jsonpatch
 import pytest
+
 from rasa.dialogue_understanding.commands.cancel_flow_command import CancelFlowCommand
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
@@ -11,7 +13,6 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 from rasa.shared.core.events import DialogueStackUpdated, FlowCancelled
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.utilities import flows_from_str
-import jsonpatch
 
 
 def test_command_name():

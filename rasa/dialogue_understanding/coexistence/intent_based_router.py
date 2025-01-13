@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import Any, Dict, List, Optional
 
 import structlog
@@ -6,8 +7,8 @@ import structlog
 from rasa.dialogue_understanding.coexistence.constants import (
     CALM_ENTRY,
     NLU_ENTRY,
-    STICKY,
     NON_STICKY,
+    STICKY,
 )
 from rasa.dialogue_understanding.commands import Command, SetSlotCommand
 from rasa.dialogue_understanding.commands.noop_command import NoopCommand
@@ -26,7 +27,6 @@ from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.constants import COMMANDS, INTENT, INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-
 
 structlogger = structlog.get_logger()
 

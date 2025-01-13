@@ -3,14 +3,14 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Text, Type
 
 import rasa.shared.core.constants
-from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.shared.constants import (
-    DOCS_URL_SLOTS,
-    DOCS_URL_NLU_BASED_SLOTS,
     DOCS_URL_CATEGORICAL_SLOTS,
+    DOCS_URL_NLU_BASED_SLOTS,
+    DOCS_URL_SLOTS,
 )
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 

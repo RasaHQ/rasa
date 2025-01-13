@@ -3,31 +3,30 @@ import copy
 import inspect
 import json
 import logging
+from asyncio import CancelledError, Queue
 from functools import partial
-
-import structlog
-from asyncio import Queue, CancelledError
-from sanic import Blueprint, response
-from sanic.request import Request
 from typing import (
-    Text,
-    Dict,
     Any,
-    Optional,
-    Callable,
     Awaitable,
+    Callable,
+    Dict,
     NoReturn,
+    Optional,
+    Text,
     Union,
 )
-from sanic.response import HTTPResponse, ResponseStream, BaseHTTPResponse
+
+import structlog
+from sanic import Blueprint, response
+from sanic.request import Request
+from sanic.response import BaseHTTPResponse, HTTPResponse, ResponseStream
 
 import rasa.utils.endpoints
 from rasa.core.channels.channel import (
-    InputChannel,
     CollectingOutputChannel,
+    InputChannel,
     UserMessage,
 )
-
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()

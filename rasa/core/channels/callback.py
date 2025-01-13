@@ -1,17 +1,17 @@
 import logging
-from typing import Text, Dict, Optional, Callable, Awaitable, Any
+from typing import Any, Awaitable, Callable, Dict, Optional, Text
 
 from sanic import Blueprint, response
 from sanic.request import Request
+from sanic.response import HTTPResponse
 
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
-    UserMessage,
     InputChannel,
+    UserMessage,
 )
 from rasa.core.channels.rest import RestInput
-from rasa.utils.endpoints import EndpointConfig, ClientResponseError
-from sanic.response import HTTPResponse
+from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 
 logger = logging.getLogger(__name__)
 

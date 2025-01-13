@@ -1,26 +1,26 @@
 import textwrap
 from pathlib import Path
-from typing import List, Optional, Any, Dict
+from typing import Any, Dict, List, Optional
 from unittest.mock import MagicMock, Mock, patch
-from pytest import MonkeyPatch
 
 import pytest
 from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.llms.fake import FakeListLLM
+from pytest import MonkeyPatch
 
 import rasa.shared.utils.io
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.information_retrieval import (
     InformationRetrieval,
-    SearchResultList,
-    SearchResult,
     InformationRetrievalException,
+    SearchResult,
+    SearchResultList,
 )
 from rasa.core.policies.enterprise_search_policy import (
+    ENTERPRISE_SEARCH_CONFIG_FILE_NAME,
     SEARCH_QUERY_METADATA_KEY,
     SEARCH_RESULTS_METADATA_KEY,
     USE_LLM_PROPERTY,
-    ENTERPRISE_SEARCH_CONFIG_FILE_NAME,
     EnterpriseSearchPolicy,
     VectorStoreConfigurationError,
 )
@@ -36,14 +36,14 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
-    OPENAI_API_KEY_ENV_VAR,
-    LLM_CONFIG_KEY,
-    ROUTE_TO_CALM_SLOT,
     EMBEDDINGS_CONFIG_KEY,
+    LLM_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
+    OPENAI_API_KEY_ENV_VAR,
+    ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActionExecuted, UserUttered, BotUttered
+from rasa.shared.core.events import ActionExecuted, BotUttered, UserUttered
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 

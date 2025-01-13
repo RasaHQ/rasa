@@ -1,6 +1,6 @@
-from rasa.shared.core.training_data.structures import StoryGraph
 import rasa.shared.core.training_data.loading
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.training_data.structures import StoryGraph
 
 
 def check_graph_is_sorted(g, sorted_nodes, removed_edges):

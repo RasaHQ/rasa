@@ -1,26 +1,26 @@
 import copy
-from datetime import datetime, timezone, timedelta
 import json
 import uuid
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Text, Union
 from dataclasses import asdict
+from datetime import datetime, timedelta, timezone
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Text, Union
 
 import structlog
 from jsonschema import ValidationError, validate
-from rasa.core import jobs
-from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
-from rasa.core.channels.voice_ready.utils import (
-    validate_voice_license_scope,
-    CallParameters,
-)
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.shared.core.constants import USER_INTENT_SESSION_START
-from rasa.shared.exceptions import RasaException
 from sanic import Blueprint, response
 from sanic.exceptions import NotFound, SanicException, ServerError
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
+from rasa.core import jobs
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.core.channels.voice_ready.utils import (
+    CallParameters,
+    validate_voice_license_scope,
+)
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
+from rasa.shared.core.constants import USER_INTENT_SESSION_START
+from rasa.shared.exceptions import RasaException
 from rasa.utils.io import remove_emojis
 
 structlogger = structlog.get_logger()

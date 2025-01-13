@@ -2,18 +2,19 @@ from typing import Any, Dict, Optional, Text
 
 import structlog
 from jinja2 import Template
+
 from rasa import telemetry
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.core.nlg.summarize import summarize_conversation
 from rasa.shared.constants import (
     LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
+    OPENAI_PROVIDER,
     PROMPT_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
-    OPENAI_PROVIDER,
     TIMEOUT_CONFIG_KEY,
-    MODEL_GROUP_ID_CONFIG_KEY,
 )
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import BotUttered, UserUttered
@@ -27,8 +28,6 @@ from rasa.shared.utils.llm import (
     get_prompt_template,
     llm_factory,
     resolve_model_client_config,
-)
-from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
 )
 from rasa.utils.endpoints import EndpointConfig

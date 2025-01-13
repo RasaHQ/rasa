@@ -1,9 +1,10 @@
+import jsonpatch
 import pytest
+
 from rasa.dialogue_understanding.commands.clarify_command import ClarifyCommand
 from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.utilities import flows_from_str
-import jsonpatch
 
 
 def test_command_name():

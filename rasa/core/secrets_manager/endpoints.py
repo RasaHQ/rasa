@@ -2,15 +2,14 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Text, Union, cast
 
-from rasa.shared.exceptions import RasaException
-from rasa.utils.endpoints import EndpointConfig
-
 from rasa.core.secrets_manager.constants import (
     SECRET_KEY_LABEL,
     SECRET_MANAGER_PREFIX,
     SOURCE_KEY_LABEL,
     SUPPORTED_SECRET_MANAGERS,
 )
+from rasa.shared.exceptions import RasaException
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 

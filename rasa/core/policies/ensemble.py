@@ -1,22 +1,23 @@
 from __future__ import annotations
-from abc import abstractmethod, ABC
-from typing import Optional, Text, List, Dict, Any
-import logging
 
-from rasa.engine.graph import GraphComponent
-from rasa.engine.storage.storage import ModelStorage
-from rasa.engine.storage.resource import Resource
-from rasa.engine.runner.interface import ExecutionContext
+import logging
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Text
+
 from rasa.core.policies.policy import PolicyPrediction
-from rasa.shared.exceptions import RasaException, InvalidConfigException
+from rasa.engine.graph import GraphComponent
+from rasa.engine.runner.interface import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
-    ActionExecutionRejected,
     ActionExecuted,
+    ActionExecutionRejected,
     DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import InvalidConfigException, RasaException
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +35,11 @@ def is_not_in_training_data(
         `False` if and only if an action was predicted (i.e. `max_confidence` > 0) by
         a `MemoizationPolicy`
     """
-    from rasa.core.policies.rule_policy import RulePolicy
     from rasa.core.policies.memoization import (
-        MemoizationPolicy,
         AugmentedMemoizationPolicy,
+        MemoizationPolicy,
     )
+    from rasa.core.policies.rule_policy import RulePolicy
 
     if not policy_name:
         return True

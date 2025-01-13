@@ -4,13 +4,13 @@ import logging
 from collections import OrderedDict
 from typing import (
     Any,
-    Dict,
-    Text,
-    List,
-    Tuple,
     Callable,
-    Set,
+    Dict,
+    List,
     Optional,
+    Set,
+    Text,
+    Tuple,
     Type,
     Union,
 )

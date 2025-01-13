@@ -6,11 +6,11 @@ from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from rasa.dialogue_understanding.commands.correct_slots_command import (
-    CorrectSlotsCommand,
     CorrectedSlot,
+    CorrectSlotsCommand,
 )
-from rasa.shared.core.events import UserUttered, DialogueStackUpdated
-from rasa.shared.core.flows import FlowsList, Flow
+from rasa.shared.core.events import DialogueStackUpdated, UserUttered
+from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 from rasa.shared.core.flows.steps import CollectInformationFlowStep

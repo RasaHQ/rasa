@@ -1,7 +1,7 @@
 from rasa.shared.constants import (
-    PROVIDER_CONFIG_KEY,
-    OPENAI_PROVIDER,
     MODEL_CONFIG_KEY,
+    OPENAI_PROVIDER,
+    PROVIDER_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.utils.llm import (

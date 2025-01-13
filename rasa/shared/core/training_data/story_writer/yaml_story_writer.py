@@ -1,55 +1,53 @@
+import json
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict, List, Text, Union, Optional
+from typing import Any, Dict, List, Optional, Text, Union
 
 from ruamel import yaml
-import json
 from ruamel.yaml.comments import CommentedMap
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString, LiteralScalarString
 
-import rasa.shared.utils.io
 import rasa.shared.core.constants
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 import rasa.shared.core.events
+import rasa.shared.utils.io
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.constants import FLOW_HASHES_SLOT
 from rasa.shared.core.events import (
-    UserUttered,
     ActionExecuted,
-    SlotSet,
     ActiveLoop,
-    Event,
     DialogueStackUpdated,
+    Event,
+    SlotSet,
+    UserUttered,
 )
-
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    KEY_ACTION,
+    KEY_ACTIVE_LOOP,
+    KEY_BOT_END_TO_END_MESSAGE,
+    KEY_CHECKPOINT,
+    KEY_CHECKPOINT_SLOTS,
+    KEY_COMMANDS,
+    KEY_ENTITIES,
+    KEY_OR,
+    KEY_RULE_CONDITION,
+    KEY_RULE_FOR_CONVERSATION_START,
+    KEY_RULE_NAME,
+    KEY_RULES,
+    KEY_SLOT_NAME,
+    KEY_STACK_UPDATE,
+    KEY_STEPS,
     KEY_STORIES,
     KEY_STORY_NAME,
     KEY_USER_INTENT,
-    KEY_ENTITIES,
-    KEY_ACTION,
-    KEY_STEPS,
-    KEY_CHECKPOINT,
-    KEY_SLOT_NAME,
-    KEY_CHECKPOINT_SLOTS,
-    KEY_OR,
     KEY_USER_MESSAGE,
-    KEY_ACTIVE_LOOP,
-    KEY_BOT_END_TO_END_MESSAGE,
-    KEY_RULES,
-    KEY_RULE_FOR_CONVERSATION_START,
     KEY_WAIT_FOR_USER_INPUT_AFTER_RULE,
-    KEY_RULE_CONDITION,
-    KEY_RULE_NAME,
-    KEY_STACK_UPDATE,
-    KEY_COMMANDS,
 )
-
 from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
 from rasa.shared.core.training_data.structures import (
-    StoryStep,
-    Checkpoint,
     STORY_START,
+    Checkpoint,
     RuleStep,
+    StoryStep,
 )
 from rasa.shared.utils.yaml import write_yaml
 

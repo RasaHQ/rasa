@@ -1,21 +1,19 @@
-from pathlib import Path
-import sys
 import argparse
-
-import pytest
+import sys
+from pathlib import Path
 from typing import Callable
 
+import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 from aioresponses import aioresponses
 
 import rasa.shared.utils.io
-from rasa.cli import x
-from rasa.shared.utils.yaml import write_yaml, read_config_file
-from rasa.utils.endpoints import EndpointConfig
-from rasa.core.utils import AvailableEndpoints
 import rasa.version
-
+from rasa.cli import x
+from rasa.core.utils import AvailableEndpoints
+from rasa.shared.utils.yaml import read_config_file, write_yaml
+from rasa.utils.endpoints import EndpointConfig
 from tests.cli.conftest import RASA_EXE
 
 

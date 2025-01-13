@@ -1,9 +1,9 @@
 import json
 import os
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -11,9 +11,9 @@ from rasa.llm_fine_tuning.conversations import Conversation
 from rasa.shared.utils.yaml import write_yaml
 
 if TYPE_CHECKING:
+    from rasa.e2e_test.e2e_test_case import TestSuite
     from rasa.llm_fine_tuning.llm_data_preparation_module import LLMDataExample
     from rasa.llm_fine_tuning.train_test_split_module import DataExampleFormat
-    from rasa.e2e_test.e2e_test_case import TestSuite
 
 
 class StorageType(Enum):

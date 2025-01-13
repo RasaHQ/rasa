@@ -1,13 +1,13 @@
-import pytest
-from typing import Dict, Text, Union, Tuple, List
+from typing import Dict, List, Text, Tuple, Union
+
 import numpy as np
+import pytest
 import tensorflow as tf
 
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE, TEXT
+from rasa.utils.tensorflow.constants import IDS, LABEL, SENTENCE
+from rasa.utils.tensorflow.model_data import FeatureArray, RasaModelData
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
-from rasa.utils.tensorflow.model_data import RasaModelData
-from rasa.utils.tensorflow.model_data import FeatureArray
-from rasa.utils.tensorflow.constants import LABEL, IDS, SENTENCE
-from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 
 
 @pytest.mark.parametrize(

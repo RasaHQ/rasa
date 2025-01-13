@@ -1,18 +1,18 @@
 import itertools
-import shutil
 import re
+import shutil
 import textwrap
 from pathlib import Path
-from typing import Text, Any, Tuple, Callable
-from unittest.mock import patch, call
+from typing import Any, Callable, Text, Tuple
+from unittest.mock import call, patch
 
 import pytest
 
 import rasa.shared.utils.io
 from rasa.core import migrate
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import RasaException
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.utils.yaml import read_yaml_file
 
 

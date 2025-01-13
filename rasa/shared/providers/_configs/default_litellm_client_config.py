@@ -3,22 +3,22 @@ from typing import Any, Dict
 
 import structlog
 
+import rasa.shared.utils.cli
 from rasa.shared.constants import (
     MODEL_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
-    STREAM_CONFIG_KEY,
     N_REPHRASES_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
-    TIMEOUT_CONFIG_KEY,
     REQUEST_TIMEOUT_CONFIG_KEY,
+    STREAM_CONFIG_KEY,
+    TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.providers._configs.utils import (
-    validate_required_keys,
-    validate_forbidden_keys,
-    resolve_aliases,
     raise_deprecation_warnings,
+    resolve_aliases,
+    validate_forbidden_keys,
+    validate_required_keys,
 )
-import rasa.shared.utils.cli
 
 structlogger = structlog.get_logger()
 

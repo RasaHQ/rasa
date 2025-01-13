@@ -3,20 +3,20 @@ from typing import Any, Dict, Sequence
 from unittest.mock import Mock
 
 import pytest
-from pytest import LogCaptureFixture, MonkeyPatch
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, LLM_API_HEALTH_CHECK_ENV_VAR
+from pytest import LogCaptureFixture, MonkeyPatch
+
+from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR, OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.utils.llm import DEFAULT_OPENAI_GENERATE_MODEL_NAME
-from rasa.utils.endpoints import EndpointConfig
-
 from rasa.tracing.instrumentation import instrumentation
+from rasa.utils.endpoints import EndpointConfig
 from tests.tracing.instrumentation.conftest import (
-    MockContextualResponseRephraser,
     MockAvailableEndpoints,
+    MockContextualResponseRephraser,
     TestSpanExporter,
 )
 

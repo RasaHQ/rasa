@@ -1,13 +1,14 @@
 from datetime import datetime
 from pathlib import Path
+
 import pytest
 
-from rasa.exceptions import UnsupportedModelVersionError
-from rasa.shared.data import TrainingType
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelMetadata
+from rasa.exceptions import UnsupportedModelVersionError
 from rasa.shared.core.domain import Domain
+from rasa.shared.data import TrainingType
 from tests.engine.graph_components_test_classes import PersistableTestComponent
 
 

@@ -1,4 +1,5 @@
 import pytest
+
 from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame

@@ -1,12 +1,27 @@
+import dataclasses
 import uuid
 from pathlib import Path
-from typing import Type, List, Text, Optional, Dict, Any
-import dataclasses
+from typing import Any, Dict, List, Optional, Text, Type
 
 import numpy as np
 import pytest
 from _pytest.tmpdir import TempPathFactory
 
+from rasa.core import training
+from rasa.core.constants import POLICY_MAX_HISTORY
+from rasa.core.featurizers.single_state_featurizer import (
+    IntentTokenizerSingleStateFeaturizer,
+    SingleStateFeaturizer,
+)
+from rasa.core.featurizers.tracker_featurizers import (
+    IntentMaxHistoryTrackerFeaturizer,
+    MaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
+)
+from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
+from rasa.core.policies.policy import InvalidPolicyConfig, Policy, SupportedData
+from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
@@ -16,31 +31,16 @@ from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTEN
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
-    Event,
-    UserUttered,
     EntitiesAdded,
+    Event,
     SlotSet,
+    UserUttered,
 )
-from rasa.core import training
-from rasa.core.constants import POLICY_MAX_HISTORY
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer,
-    MaxHistoryTrackerFeaturizer,
-    IntentMaxHistoryTrackerFeaturizer,
-)
-from rasa.core.featurizers.single_state_featurizer import (
-    SingleStateFeaturizer,
-    IntentTokenizerSingleStateFeaturizer,
-)
-from rasa.core.policies.policy import SupportedData, InvalidPolicyConfig, Policy
-from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.generator import TrackerWithCachedStates
-from tests.dialogues import TEST_DEFAULT_DIALOGUE
 from tests.core.utilities import get_tracker, tracker_from_dialogue
+from tests.dialogues import TEST_DEFAULT_DIALOGUE
 
 
 def train_trackers(

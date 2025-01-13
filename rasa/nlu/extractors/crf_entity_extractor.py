@@ -1,38 +1,38 @@
 from __future__ import annotations
 
-from collections import OrderedDict
-from enum import Enum
 import logging
 import typing
-from typing import Any, Dict, List, Optional, Text, Tuple, Callable, Type
+from collections import OrderedDict
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Type
 
 import numpy as np
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
 import rasa.shared.utils.io
 import rasa.utils.train_utils
-from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.constants import TOKENS_NAMES
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.shared.nlu.constants import (
-    TEXT,
     ENTITIES,
-    ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_TYPE,
     NO_ENTITY_TAG,
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+    TEXT,
 )
-from rasa.shared.constants import DOCS_URL_COMPONENTS
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.tensorflow.constants import BILOU_FLAG, FEATURIZERS
 
 logger = logging.getLogger(__name__)

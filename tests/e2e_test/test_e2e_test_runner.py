@@ -3,12 +3,11 @@ import datetime
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Union
-from unittest.mock import MagicMock
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 import requests
-from pytest import LogCaptureFixture, MonkeyPatch, CaptureFixture
+from pytest import CaptureFixture, LogCaptureFixture, MonkeyPatch
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 from structlog.testing import capture_logs
 
@@ -23,9 +22,9 @@ from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,
     Fixture,
     Metadata,
+    TestCase,
     TestStep,
 )
-from rasa.e2e_test.e2e_test_case import TestCase
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.e2e_test_runner import TEST_TURNS_TYPE, E2ETestRunner
 from rasa.llm_fine_tuning.conversations import Conversation

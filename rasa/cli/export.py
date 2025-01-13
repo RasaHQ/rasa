@@ -2,23 +2,23 @@ import argparse
 import asyncio
 import logging
 import typing
-from typing import List, Text, Optional
+from typing import List, Optional, Text
 
-from rasa import telemetry
-from rasa.cli import SubParsersAction
 import rasa.core.utils
 import rasa.shared.utils.cli
 import rasa.utils.common
+from rasa import telemetry
+from rasa.cli import SubParsersAction
 from rasa.cli.arguments import export as arguments
-from rasa.shared.constants import DOCS_URL_EVENT_BROKERS, DOCS_URL_TRACKER_STORES
-from rasa.exceptions import PublishingError
-from rasa.shared.exceptions import RasaException
 from rasa.core.brokers.pika import PikaEventBroker
+from rasa.exceptions import PublishingError
+from rasa.shared.constants import DOCS_URL_EVENT_BROKERS, DOCS_URL_TRACKER_STORES
+from rasa.shared.exceptions import RasaException
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
-    from rasa.core.tracker_store import TrackerStore
     from rasa.core.exporter import Exporter
+    from rasa.core.tracker_store import TrackerStore
     from rasa.core.utils import AvailableEndpoints
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,6 @@
 import uuid
 from pathlib import Path
-from typing import List, Optional, Text, Dict, Any
+from typing import Any, Dict, List, Optional, Text
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -27,8 +27,8 @@ from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_KEY,
 )
 from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
-    MultiStepLLMCommandGenerator,
     MULTI_STEP_LLM_COMMAND_GENERATOR_CONFIG_FILE,
+    MultiStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.patterns.cancel import (
     FLOW_PATTERN_CANCEL,
@@ -45,12 +45,12 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
+    EMBEDDINGS_CONFIG_KEY,
+    LLM_CONFIG_KEY,
+    MODEL_GROUP_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
     RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED,
     ROUTE_TO_CALM_SLOT,
-    LLM_CONFIG_KEY,
-    EMBEDDINGS_CONFIG_KEY,
-    MODEL_GROUP_CONFIG_KEY,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
@@ -58,7 +58,7 @@ from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
-from rasa.shared.nlu.constants import PROMPTS, PREDICTED_COMMANDS, KEY_USER_PROMPT
+from rasa.shared.nlu.constants import KEY_USER_PROMPT, PREDICTED_COMMANDS, PROMPTS
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from tests.utilities import (

@@ -3,10 +3,10 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from pytest import CaptureFixture, MonkeyPatch
+from socketio import AsyncServer
 
 from rasa.model_manager.runner_service import BotSession
 from rasa.model_manager.socket_bridge import socketio_websocket_traffic_wrapper
-from socketio import AsyncServer
 
 
 @pytest.fixture

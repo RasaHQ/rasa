@@ -1,18 +1,18 @@
 from __future__ import annotations
-from typing import Dict, Text, Any, List
 
-from rasa.engine.graph import GraphComponent, ExecutionContext
+from typing import Any, Dict, List, Text
+
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
-from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
-    YAMLStoryWriter,
-)
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
-
+from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+    YAMLStoryWriter,
+)
+from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
+from rasa.shared.importers.importer import TrainingDataImporter
 
 STORIES_PERSISTENCE_FILE_NAME = "stories.yml"
 

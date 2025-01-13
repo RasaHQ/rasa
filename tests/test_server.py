@@ -3,34 +3,35 @@
 import asyncio
 import json
 import os
+import sys
 import textwrap
+import threading
 import time
 import urllib.parse
 import uuid
-import sys
 from argparse import Namespace
 from http import HTTPStatus
 from multiprocessing import Manager
 from multiprocessing.managers import DictProxy
 from pathlib import Path
-from typing import Any, List, Text, Tuple, Type, Generator, NoReturn, Dict, Optional
-from unittest.mock import Mock, ANY, AsyncMock, patch
+from typing import Any, Dict, Generator, List, NoReturn, Optional, Text, Tuple, Type
+from unittest.mock import ANY, AsyncMock, MagicMock, Mock, patch
 
-from _pytest.tmpdir import TempPathFactory
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
+from _pytest.tmpdir import TempPathFactory
 from aioresponses import aioresponses
 from freezegun import freeze_time
-from unittest.mock import MagicMock
 from ruamel.yaml import StringIO
 from sanic import Sanic
 from sanic_testing.testing import SanicASGITestClient
+from swagger_coverage_py.listener import CoverageListener
 
 import rasa
 import rasa.constants
 import rasa.core.jobs
-from rasa.engine.storage.local_model_storage import LocalModelStorage
 import rasa.nlu
+import rasa.nlu.test
 import rasa.server
 import rasa.shared.constants
 import rasa.shared.utils.io
@@ -38,44 +39,44 @@ import rasa.utils.io
 from rasa.core import utils
 from rasa.core.agent import Agent, load_agent
 from rasa.core.channels import (
-    channel,
+    CallbackInput,
     CollectingOutputChannel,
     RestInput,
     SlackInput,
-    CallbackInput,
+    channel,
 )
 from rasa.core.channels.slack import SlackBot
 from rasa.core.tracker_store import InMemoryTrackerStore
-import rasa.nlu.test
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.model_training import TrainingResult
 from rasa.nlu.test import CVEvaluationResult
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_SESSION_START_NAME,
-    ACTION_LISTEN_NAME,
     DEFAULT_SLOT_NAMES,
     REQUESTED_SLOT,
 )
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
+    ActionExecuted,
+    BotUttered,
     Event,
     Restarted,
-    UserUttered,
-    SlotSet,
-    BotUttered,
-    ActionExecuted,
     SessionStarted,
+    SlotSet,
+    UserUttered,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
-    INTENT_NAME_KEY,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_VALUE,
+    INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
 )
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
-from rasa.model_training import TrainingResult
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import (
@@ -86,8 +87,6 @@ from tests.conftest import (
 )
 from tests.nlu.utilities import ResponseTest
 from tests.utilities import json_of_latest_request, latest_request
-from swagger_coverage_py.listener import CoverageListener
-import threading
 
 # a couple of event instances that we can use for testing
 test_events = [

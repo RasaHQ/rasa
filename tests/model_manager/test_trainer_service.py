@@ -1,27 +1,27 @@
-import os
-from pathlib import Path
-import subprocess
 import base64
+import os
+import subprocess
+from pathlib import Path
 from typing import Dict
-import pytest
 from unittest import mock
+
+import pytest
 from pytest import MonkeyPatch
 
 import rasa.model_manager.config
-
 from rasa.model_manager.trainer_service import (
     TrainingSession,
-    train_path,
     cache_for_assistant_path,
-    write_encoded_data_to_file,
-    terminate_training,
-    update_training_status,
     complete_training,
-    seed_training_directory_with_rasa_cache,
     persist_rasa_cache,
-    write_training_data_to_files,
     prepare_training_directory,
     run_training,
+    seed_training_directory_with_rasa_cache,
+    terminate_training,
+    train_path,
+    update_training_status,
+    write_encoded_data_to_file,
+    write_training_data_to_files,
 )
 
 

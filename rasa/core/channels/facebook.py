@@ -2,20 +2,20 @@ import copy
 import hashlib
 import hmac
 import logging
+from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text, Union
+
 import structlog
 from fbmessenger import MessengerClient
 from fbmessenger.attachments import Image
 from fbmessenger.elements import Text as FBText
 from fbmessenger.quick_replies import QuickReplies, QuickReply
 from fbmessenger.sender_actions import SenderAction
-
-import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, List, Dict, Any, Callable, Awaitable, Iterable, Optional, Union
-
-from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 from sanic.response import HTTPResponse
+
+import rasa.shared.utils.io
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()

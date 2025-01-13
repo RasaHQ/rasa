@@ -1,5 +1,6 @@
 import logging
-from rasa.core import utils, run
+
+from rasa.core import run, utils
 from rasa.core.channels.twilio import TwilioInput
 
 logger = logging.getLogger(__name__)

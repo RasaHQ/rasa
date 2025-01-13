@@ -1,23 +1,25 @@
 import os
-from typing import Any, Dict, Optional
 import shutil
-import structlog
 import subprocess
+from enum import Enum
+from typing import Any, Dict, Optional
+
+import structlog
+from pydantic import BaseModel, ConfigDict
+
 from rasa.constants import MODEL_ARCHIVE_EXTENSION
+from rasa.model_manager import config
 from rasa.model_manager.utils import (
+    ensure_base_directory_exists,
+    logs_path,
     models_base_path,
     subpath,
     write_encoded_data_to_file,
 )
-from pydantic import BaseModel, ConfigDict
-from enum import Enum
-
-from rasa.model_manager import config
 from rasa.model_manager.warm_rasa_process import (
     start_rasa_process,
 )
 from rasa.model_training import generate_random_model_name
-from rasa.model_manager.utils import ensure_base_directory_exists, logs_path
 
 structlogger = structlog.get_logger()
 

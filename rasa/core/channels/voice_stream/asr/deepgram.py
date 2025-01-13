@@ -1,7 +1,7 @@
-from dataclasses import dataclass
-from typing import Any, Dict, Optional
 import json
 import os
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 
 import websockets

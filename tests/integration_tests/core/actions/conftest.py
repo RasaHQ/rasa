@@ -1,5 +1,6 @@
-from typing import Text
 import copy
+from typing import Text
+
 import pytest
 
 from rasa.shared.core.domain import Domain

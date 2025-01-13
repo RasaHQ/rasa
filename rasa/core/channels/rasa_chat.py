@@ -1,17 +1,17 @@
 import json
-from typing import Text, Optional, Dict, Any
+import logging
+from typing import Any, Dict, Optional, Text
 
 import aiohttp
-import logging
-from sanic.exceptions import SanicException
 import jwt
 import jwt.exceptions
+from sanic.exceptions import SanicException
+from sanic.request import Request
 
 import rasa.core.channels.channel
 from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.rest import RestInput
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from sanic.request import Request
 
 logger = logging.getLogger(__name__)
 

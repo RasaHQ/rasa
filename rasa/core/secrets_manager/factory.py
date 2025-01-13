@@ -1,9 +1,6 @@
 import os
 from typing import Optional, Text, cast
 
-from rasa.shared.exceptions import RasaException
-from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-
 from rasa.core.secrets_manager.constants import (
     SECRET_MANAGER_ENV_NAME,
     VAULT_DEFAULT_RASA_SECRETS_PATH,
@@ -29,6 +26,8 @@ from rasa.core.secrets_manager.vault import (
     VaultSecretManagerNonStrictConfig,
     VaultSecretsManager,
 )
+from rasa.shared.exceptions import RasaException
+from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 
 
 def create(config: SecretManagerConfig) -> Optional[SecretsManager]:

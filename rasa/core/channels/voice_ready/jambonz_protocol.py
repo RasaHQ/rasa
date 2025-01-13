@@ -1,14 +1,13 @@
-from dataclasses import dataclass, field
 import json
 import uuid
+from dataclasses import asdict, dataclass, field
 from typing import Any, Awaitable, Callable, Dict, List, Text
 
 import structlog
-from rasa.core.channels.channel import UserMessage
-from rasa.core.channels.voice_ready.utils import CallParameters
-from dataclasses import asdict
 from sanic import Websocket  # type: ignore[attr-defined]
 
+from rasa.core.channels.channel import UserMessage
+from rasa.core.channels.voice_ready.utils import CallParameters
 
 structlogger = structlog.get_logger()
 

@@ -2,13 +2,13 @@ from textwrap import dedent
 from typing import Any, Dict, Text
 
 import pytest
-from rasa.shared.exceptions import RasaException
 
 from rasa.anonymization.utils import (
     extract_anonymization_traits,
     read_endpoint_config,
     validate_anonymization_yaml,
 )
+from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import parse_raw_yaml
 
 

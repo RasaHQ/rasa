@@ -33,8 +33,8 @@ from rasa.model_training import (
     CODE_FORCED_TRAINING,
     CODE_NEEDS_TO_BE_RETRAINED,
     CODE_NO_NEED_TO_TRAIN,
-    determine_model_name,
     _dry_run_result,
+    determine_model_name,
 )
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.shared.constants import (

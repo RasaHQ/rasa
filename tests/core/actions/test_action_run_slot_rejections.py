@@ -12,15 +12,15 @@ from rasa.core.actions.action_run_slot_rejections import (
 )
 from rasa.core.channels import OutputChannel
 from rasa.core.constants import (
-    DOMAIN_GROUND_TRUTH_METADATA_KEY,
-    UTTER_SOURCE_METADATA_KEY,
     ACTIVE_FLOW_METADATA_KEY,
+    DOMAIN_GROUND_TRUTH_METADATA_KEY,
     STEP_ID_METADATA_KEY,
+    UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
-from rasa.shared.core.domain import Domain, KEY_RESPONSES_TEXT
+from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.slots import (
     BooleanSlot,

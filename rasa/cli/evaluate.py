@@ -1,6 +1,6 @@
 import argparse
 from pathlib import Path
-from typing import List, Text, Optional
+from typing import List, Optional, Text
 
 import rasa.cli.arguments.evaluate as arguments
 import rasa.shared.utils.cli

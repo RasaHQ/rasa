@@ -1,24 +1,23 @@
 import uuid
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, Optional, Text, List
-from unittest.mock import Mock, AsyncMock
+from typing import Any, AsyncIterator, Dict, List, Optional, Text
+from unittest.mock import AsyncMock, Mock
 
 import pytest
-
-from rasa.shared.core.constants import ACTION_SESSION_START_NAME
-from rasa.shared.core.domain import Domain
 
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
-from rasa.shared.core.events import Event, SessionStarted, ActionExecuted
 from rasa.core.tracker_store import SQLTrackerStore
-from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.exceptions import (
     NoConversationsInTrackerStoreError,
     NoEventsToMigrateError,
     PublishingError,
 )
+from rasa.shared.core.constants import ACTION_SESSION_START_NAME
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted, Event, SessionStarted
+from rasa.shared.core.trackers import DialogueStateTracker
 from tests.conftest import MockExporter, random_user_uttered_event
 
 

@@ -1,7 +1,7 @@
-from rasa.graph_components.providers.responses_provider import ResponsesProvider
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.graph_components.providers.responses_provider import ResponsesProvider
 from rasa.shared.core.domain import Domain
 
 

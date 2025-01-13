@@ -1,131 +1,133 @@
 from __future__ import annotations
 
-import logging
-from pathlib import Path
-from collections import defaultdict
 import contextlib
-from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
+import logging
+from collections import defaultdict
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Text, Tuple, Type, Union
 
 import numpy as np
 import tensorflow as tf
 
-from rasa.engine.recipes.default_recipe import DefaultV1Recipe
+import rasa.core.actions.action
+import rasa.shared.utils.io
+import rasa.utils.io
+from rasa.core.constants import (
+    DEFAULT_MAX_HISTORY,
+    DEFAULT_POLICY_PRIORITY,
+    DIALOGUE,
+    POLICY_MAX_HISTORY,
+    POLICY_PRIORITY,
+)
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
+from rasa.core.featurizers.tracker_featurizers import (
+    MaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
+)
+from rasa.core.policies.policy import Policy, PolicyPrediction, SupportedData
 from rasa.engine.graph import ExecutionContext
+from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.exceptions import ModelNotFound
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.nlu.extractors.extractor import EntityTagSpec, EntityExtractorMixin
-import rasa.core.actions.action
-from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.nlu.extractors.extractor import EntityExtractorMixin, EntityTagSpec
+from rasa.shared.constants import DIAGNOSTIC_DATA
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTIVE_LOOP, SLOTS
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import EntitiesAdded, Event
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
-    ACTION_TEXT,
     ACTION_NAME,
-    INTENT,
-    TEXT,
+    ACTION_TEXT,
     ENTITIES,
-    FEATURE_TYPE_SENTENCE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,
     EXTRACTOR,
+    FEATURE_TYPE_SENTENCE,
+    INTENT,
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+    TEXT,
 )
-from rasa.core.policies.policy import PolicyPrediction, Policy, SupportedData
-from rasa.core.constants import (
-    DIALOGUE,
-    POLICY_MAX_HISTORY,
-    DEFAULT_MAX_HISTORY,
-    DEFAULT_POLICY_PRIORITY,
-    POLICY_PRIORITY,
-)
-from rasa.shared.constants import DIAGNOSTIC_DATA
-from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.shared.core.events import EntitiesAdded, Event
-from rasa.shared.core.domain import Domain
-from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.features import (
     Features,
-    save_features,
     load_features,
+    save_features,
 )
-import rasa.shared.utils.io
-import rasa.utils.io
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils import train_utils
-from rasa.utils.tensorflow.feature_array import (
-    FeatureArray,
-    serialize_nested_feature_arrays,
-    deserialize_nested_feature_arrays,
-)
-from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow import rasa_layers
-from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature, Data
-from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
 from rasa.utils.tensorflow.constants import (
-    LABEL,
-    IDS,
-    TRANSFORMER_SIZE,
-    NUM_TRANSFORMER_LAYERS,
-    NUM_HEADS,
-    BATCH_SIZES,
-    BATCH_STRATEGY,
-    EPOCHS,
-    RANDOM_SEED,
-    LEARNING_RATE,
-    RANKING_LENGTH,
-    RENORMALIZE_CONFIDENCES,
-    LOSS_TYPE,
-    SIMILARITY_TYPE,
-    NUM_NEG,
-    EVAL_NUM_EXAMPLES,
-    EVAL_NUM_EPOCHS,
-    NEGATIVE_MARGIN_SCALE,
-    REGULARIZATION_CONSTANT,
-    SCALE_LOSS,
-    USE_MAX_NEG_SIM,
-    MAX_NEG_SIM,
-    MAX_POS_SIM,
-    EMBEDDING_DIMENSION,
-    DROP_RATE_DIALOGUE,
-    DROP_RATE_LABEL,
-    DROP_RATE,
-    DROP_RATE_ATTENTION,
-    CONNECTION_DENSITY,
-    KEY_RELATIVE_ATTENTION,
-    VALUE_RELATIVE_ATTENTION,
-    MAX_RELATIVE_POSITION,
-    CROSS_ENTROPY,
     AUTO,
     BALANCED,
+    BATCH_SIZES,
+    BATCH_STRATEGY,
+    BILOU_FLAG,
+    CHECKPOINT_MODEL,
+    CONCAT_DIMENSION,
+    CONNECTION_DENSITY,
+    CONSTRAIN_SIMILARITIES,
+    CROSS_ENTROPY,
+    DENSE_DIMENSION,
+    DENSE_INPUT_DROPOUT,
+    DROP_RATE,
+    DROP_RATE_ATTENTION,
+    DROP_RATE_DIALOGUE,
+    DROP_RATE_LABEL,
+    EMBEDDING_DIMENSION,
+    ENCODING_DIMENSION,
+    ENTITY_RECOGNITION,
+    EPOCH_OVERRIDE,
+    EPOCHS,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    FEATURIZERS,
+    HIDDEN_LAYERS_SIZES,
+    IDS,
+    KEY_RELATIVE_ATTENTION,
+    LABEL,
+    LEARNING_RATE,
+    LOSS_TYPE,
+    MASK,
+    MASKED_LM,
+    MAX_NEG_SIM,
+    MAX_POS_SIM,
+    MAX_RELATIVE_POSITION,
+    MODEL_CONFIDENCE,
+    NEGATIVE_MARGIN_SCALE,
+    NUM_HEADS,
+    NUM_NEG,
+    NUM_TRANSFORMER_LAYERS,
+    RANDOM_SEED,
+    RANKING_LENGTH,
+    REGULARIZATION_CONSTANT,
+    RENORMALIZE_CONFIDENCES,
+    SCALE_LOSS,
+    SENTENCE,
+    SEQUENCE,
+    SEQUENCE_LENGTH,
+    SIMILARITY_TYPE,
+    SOFTMAX,
+    SPARSE_INPUT_DROPOUT,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
-    CHECKPOINT_MODEL,
-    ENCODING_DIMENSION,
+    TRANSFORMER_SIZE,
     UNIDIRECTIONAL_ENCODER,
-    SEQUENCE,
-    SENTENCE,
-    SEQUENCE_LENGTH,
-    DENSE_DIMENSION,
-    CONCAT_DIMENSION,
-    SPARSE_INPUT_DROPOUT,
-    DENSE_INPUT_DROPOUT,
-    MASKED_LM,
-    MASK,
-    HIDDEN_LAYERS_SIZES,
-    FEATURIZERS,
-    ENTITY_RECOGNITION,
-    CONSTRAIN_SIMILARITIES,
-    MODEL_CONFIDENCE,
-    SOFTMAX,
-    BILOU_FLAG,
-    EPOCH_OVERRIDE,
     USE_GPU,
+    USE_MAX_NEG_SIM,
+    VALUE_RELATIVE_ATTENTION,
 )
+from rasa.utils.tensorflow.feature_array import (
+    FeatureArray,
+    deserialize_nested_feature_arrays,
+    serialize_nested_feature_arrays,
+)
+from rasa.utils.tensorflow.model_data import Data, FeatureSignature, RasaModelData
+from rasa.utils.tensorflow.model_data_utils import convert_to_data_format
+from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 
 logger = logging.getLogger(__name__)
 

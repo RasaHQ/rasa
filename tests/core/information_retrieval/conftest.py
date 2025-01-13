@@ -1,7 +1,8 @@
-from langchain_community.embeddings import FakeEmbeddings
-from langchain.schema.embeddings import Embeddings
-import pytest
 from unittest.mock import Mock
+
+import pytest
+from langchain.schema.embeddings import Embeddings
+from langchain_community.embeddings import FakeEmbeddings
 
 
 @pytest.fixture

@@ -1,5 +1,5 @@
 from typing import Any
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
 from langchain_community.llms import OpenAI
 from openai import OpenAIError

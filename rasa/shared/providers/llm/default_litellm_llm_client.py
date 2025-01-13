@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Any, Dict
 
 from rasa.shared.constants import (
     AWS_BEDROCK_PROVIDER,

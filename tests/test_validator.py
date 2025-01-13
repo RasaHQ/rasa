@@ -2,7 +2,7 @@ import textwrap
 import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Text, Union
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import structlog

@@ -1,18 +1,18 @@
-from typing import Any, Dict, List
 import os
-import structlog
+from typing import Any, Dict, List
 
+import structlog
 from litellm import Router
 
 from rasa.shared.constants import (
-    MODEL_LIST_KEY,
-    MODEL_GROUP_ID_CONFIG_KEY,
-    ROUTER_CONFIG_KEY,
-    SELF_HOSTED_VLLM_PREFIX,
-    SELF_HOSTED_VLLM_API_KEY_ENV_VAR,
-    LITELLM_PARAMS_KEY,
     API_KEY,
+    LITELLM_PARAMS_KEY,
     MODEL_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
+    MODEL_LIST_KEY,
+    ROUTER_CONFIG_KEY,
+    SELF_HOSTED_VLLM_API_KEY_ENV_VAR,
+    SELF_HOSTED_VLLM_PREFIX,
     USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY,
 )
 from rasa.shared.exceptions import ProviderClientValidationError

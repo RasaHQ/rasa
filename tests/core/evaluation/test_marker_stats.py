@@ -1,10 +1,10 @@
 import csv
+import itertools
 from pathlib import Path
 from typing import Dict, List, Text, Tuple
-import itertools
 
-import pytest
 import numpy as np
+import pytest
 
 from rasa.core.evaluation.marker_stats import (
     EventMetaData,

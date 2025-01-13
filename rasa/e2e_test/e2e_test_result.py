@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text
 
 if TYPE_CHECKING:
     from rasa.e2e_test.assertions import AssertionFailure

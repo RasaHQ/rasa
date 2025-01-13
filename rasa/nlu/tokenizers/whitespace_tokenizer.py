@@ -1,11 +1,11 @@
 from __future__ import annotations
+
 from typing import Any, Dict, List, Optional, Text
 
 import regex
 
 import rasa.shared.utils.io
 import rasa.utils.io
-
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource

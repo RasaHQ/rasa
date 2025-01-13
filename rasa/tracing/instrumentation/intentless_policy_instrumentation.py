@@ -1,7 +1,7 @@
 import functools
 import json
 import logging
-from typing import Callable, List, Optional, TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Callable, List, Optional, Type
 
 from opentelemetry.trace import Tracer
 

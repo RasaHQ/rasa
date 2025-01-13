@@ -3,6 +3,7 @@ import textwrap
 from typing import Any, Dict, List, Text, Union
 
 import pytest
+
 from rasa.shared.utils.yaml import (
     YamlValidationException,
     parse_raw_yaml,

@@ -1,16 +1,15 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Text, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import rasa.shared.nlu.training_data.util
+import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_BASE_URL
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataReader
-from rasa.shared.nlu.training_data.util import transform_entity_synonyms
-import rasa.shared.utils.io
-
-from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.nlu.training_data.util import transform_entity_synonyms
 
 logger = logging.getLogger(__name__)
 

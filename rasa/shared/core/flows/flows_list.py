@@ -2,21 +2,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Generator, Any, Optional, Dict, Text, Set, Union
+from typing import Any, Dict, Generator, List, Optional, Set, Text, Union
 
 import rasa.shared.utils.io
 from rasa.shared.core.flows import Flow
 from rasa.shared.core.flows.flow_path import FlowPathsList
 from rasa.shared.core.flows.validation import (
+    DuplicatedFlowIdException,
+    validate_called_flows_exists,
     validate_flow,
     validate_link_in_call_restriction,
-    validate_called_flows_exists,
     validate_linked_flows_exists,
     validate_nlu_trigger,
     validate_patterns_are_not_called_or_linked,
     validate_patterns_are_not_calling_or_linking_other_flows,
     validate_step_ids_are_unique,
-    DuplicatedFlowIdException,
 )
 from rasa.shared.core.slots import Slot
 

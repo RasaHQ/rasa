@@ -1,6 +1,6 @@
 import asyncio
-from typing import Any, Dict, Optional, List
-from unittest.mock import patch, MagicMock, Mock
+from typing import Any, Dict, List, Optional
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from structlog.testing import capture_logs

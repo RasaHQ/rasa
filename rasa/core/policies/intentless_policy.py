@@ -1,7 +1,7 @@
 import importlib.resources
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Text, Tuple
 
 import structlog
 import tiktoken
@@ -30,19 +30,18 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
 from rasa.shared.constants import (
-    REQUIRED_SLOTS_KEY,
     EMBEDDINGS_CONFIG_KEY,
     LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
+    MODEL_GROUP_ID_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
+    OPENAI_PROVIDER,
     PROMPT_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
-    OPENAI_PROVIDER,
+    REQUIRED_SLOTS_KEY,
     TIMEOUT_CONFIG_KEY,
-    MODEL_GROUP_ID_CONFIG_KEY,
 )
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
-from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -75,9 +74,9 @@ from rasa.shared.utils.llm import (
     embedder_factory,
     get_prompt_template,
     llm_factory,
+    resolve_model_client_config,
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
-    resolve_model_client_config,
 )
 from rasa.utils.log_utils import log_llm
 from rasa.utils.ml_utils import (

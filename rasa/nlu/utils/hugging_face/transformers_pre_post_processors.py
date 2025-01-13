@@ -1,4 +1,5 @@
-from typing import List, Tuple, Text
+from typing import List, Text, Tuple
+
 import numpy as np
 
 

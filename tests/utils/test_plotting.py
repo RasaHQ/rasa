@@ -1,7 +1,9 @@
 from typing import List
-import rasa.utils.plotting
+
 import numpy as np
 import pytest
+
+import rasa.utils.plotting
 
 
 @pytest.mark.parametrize(

@@ -12,8 +12,8 @@ from rasa.dialogue_understanding.patterns.correction import (
 from rasa.dialogue_understanding.stack.frames.dialogue_stack_frame import (
     DialogueStackFrame,
     InvalidStackFrameType,
-    generate_stack_frame_id,
     _get_all_subclasses,
+    generate_stack_frame_id,
 )
 
 

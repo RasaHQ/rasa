@@ -2,16 +2,16 @@ import uuid
 from collections import defaultdict
 from typing import Any, Dict, Text
 
+from rasa.nlu.emulators.emulator import Emulator
 from rasa.shared.nlu.constants import (
-    INTENT_NAME_KEY,
     ENTITIES,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_VALUE,
     INTENT,
-    TEXT,
+    INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    TEXT,
 )
-from rasa.nlu.emulators.emulator import Emulator
 
 
 class DialogflowEmulator(Emulator):

@@ -1,20 +1,21 @@
-from pathlib import Path
 import textwrap
-from typing import Text
 from collections import OrderedDict
-import pytest
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from pathlib import Path
+from typing import Text
 
+import pytest
+
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.constants import (
-    ACTION_SESSION_START_NAME,
     ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
-    UserUttered,
     DefinePrevUserUtteredFeaturization,
+    UserUttered,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (

@@ -1,10 +1,10 @@
 import pytest
 
 from rasa.shared.nlu.constants import (
-    TEXT,
     INTENT,
-    PREDICTED_CONFIDENCE_KEY,
     INTENT_NAME_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+    TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from tests.utilities import flows_from_str

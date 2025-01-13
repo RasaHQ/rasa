@@ -1,6 +1,6 @@
-from typing import List, Any, Text, Dict, Callable, Optional
-
 import dataclasses
+from typing import Any, Callable, Dict, List, Optional, Text
+
 import numpy as np
 import pytest
 import scipy.sparse
@@ -8,17 +8,17 @@ import scipy.sparse
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.constants import TOKENS_NAMES, SPACY_DOCS
-from rasa.nlu.utils.spacy_utils import SpacyModel
-from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, ACTION_TEXT, ACTION_NAME
-from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.constants import SPACY_DOCS, TOKENS_NAMES
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.utils.spacy_utils import SpacyModel
+from rasa.shared.nlu.constants import ACTION_NAME, ACTION_TEXT, INTENT, RESPONSE, TEXT
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 @pytest.fixture()

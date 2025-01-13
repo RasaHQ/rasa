@@ -1,17 +1,17 @@
 from typing import Any
-
-import pytest
-from rasa.core import run, utils
-from rasa.shared.exceptions import RasaException
-from _pytest.capture import CaptureFixture
 from unittest.mock import AsyncMock
 
+import pytest
+from _pytest.capture import CaptureFixture
+
+from rasa.core import run, utils
+from rasa.core.channels.channel import UserMessage
 from rasa.core.channels.voice_ready.audiocodes import (
     AudiocodesInput,
     AudiocodesOutput,
     Conversation,
 )
-from rasa.core.channels.channel import UserMessage
+from rasa.shared.exceptions import RasaException
 
 
 @pytest.mark.parametrize(

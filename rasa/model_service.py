@@ -1,18 +1,16 @@
 import logging
+from urllib.parse import urlparse
 
-from sanic import Sanic
 import structlog
+from sanic import Sanic
 
+import rasa.utils.licensing
 from rasa.cli.scaffold import print_error_and_exit
 from rasa.core.persistor import RemoteStorageType, get_persistor
 from rasa.core.utils import list_routes
-from rasa.model_manager import model_api
-from rasa.model_manager import config
+from rasa.model_manager import config, model_api
 from rasa.model_manager.config import SERVER_BASE_URL, SERVER_PORT
 from rasa.utils.common import configure_logging_and_warnings
-import rasa.utils.licensing
-from urllib.parse import urlparse
-
 from rasa.utils.log_utils import configure_structlog
 from rasa.utils.sanic_error_handler import register_custom_sanic_error_handler
 

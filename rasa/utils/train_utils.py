@@ -1,43 +1,45 @@
 from pathlib import Path
-import numpy as np
-from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, Union
 
+import numpy as np
+
+import rasa.nlu.utils.bilou_utils
 import rasa.shared.utils.common
 import rasa.shared.utils.io
-import rasa.nlu.utils.bilou_utils
-from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
-from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 import rasa.utils.io as io_utils
+from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
+from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.nlu.constants import SPLIT_ENTITIES_BY_COMMA
+from rasa.utils.tensorflow.callback import RasaModelCheckpoint, RasaTrainingLogger
 from rasa.utils.tensorflow.constants import (
+    AUTO,
+    CHECKPOINT_MODEL,
+    CONSTRAIN_SIMILARITIES,
+    COSINE,
+    CROSS_ENTROPY,
+    EPOCHS,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    INNER,
     LOSS_TYPE,
+    MARGIN,
+    MODEL_CONFIDENCE,
     RANKING_LENGTH,
     RENORMALIZE_CONFIDENCES,
-    SIMILARITY_TYPE,
-    EVAL_NUM_EXAMPLES,
-    EVAL_NUM_EPOCHS,
-    EPOCHS,
-    SOFTMAX,
-    MARGIN,
-    AUTO,
-    INNER,
-    COSINE,
     SEQUENCE,
-    CROSS_ENTROPY,
-    CONSTRAIN_SIMILARITIES,
-    MODEL_CONFIDENCE,
+    SIMILARITY_TYPE,
+    SOFTMAX,
     TOLERANCE,
-    CHECKPOINT_MODEL,
 )
-from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.utils.tensorflow.model_data import RasaModelData
-from rasa.shared.nlu.constants import SPLIT_ENTITIES_BY_COMMA
-from rasa.shared.exceptions import InvalidConfigException
 
 if TYPE_CHECKING:
+    from tensorflow.keras.callbacks import Callback
+
     from rasa.nlu.extractors.extractor import EntityTagSpec
     from rasa.nlu.tokenizers.tokenizer import Token
-    from tensorflow.keras.callbacks import Callback
 
 
 def rank_and_mask(
@@ -174,11 +176,11 @@ def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
 def load_tf_hub_model(model_url: Text) -> Any:
     """Load model from cache if possible, otherwise from TFHub."""
     import os
-    from tensorflow_hub.module_v2 import load as tfhub_load
 
     # needed to load the ConveRT model
     # noinspection PyUnresolvedReferences
     import tensorflow_text  # noqa: F401
+    from tensorflow_hub.module_v2 import load as tfhub_load
 
     # required to take care of cases when other files are already
     # stored in the default TFHUB_CACHE_DIR

@@ -1,34 +1,35 @@
-import tensorflow as tf
-import numpy as np
-from typing import Text, List, Dict, Any, Union, Optional, Tuple, Callable
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
-from rasa.shared.nlu.constants import TEXT
-from rasa.utils.tensorflow.model_data import FeatureSignature
-from rasa.utils.tensorflow.constants import (
-    REGULARIZATION_CONSTANT,
-    CONNECTION_DENSITY,
-    NUM_TRANSFORMER_LAYERS,
-    TRANSFORMER_SIZE,
-    NUM_HEADS,
-    UNIDIRECTIONAL_ENCODER,
-    KEY_RELATIVE_ATTENTION,
-    VALUE_RELATIVE_ATTENTION,
-    MAX_RELATIVE_POSITION,
-    MASKED_LM,
-    HIDDEN_LAYERS_SIZES,
-    DROP_RATE,
-    SPARSE_INPUT_DROPOUT,
-    DENSE_INPUT_DROPOUT,
-    DENSE_DIMENSION,
-    CONCAT_DIMENSION,
-    DROP_RATE_ATTENTION,
-    SEQUENCE,
-    SENTENCE,
-)
-from rasa.utils.tensorflow import layers
-from rasa.utils.tensorflow.exceptions import TFLayerConfigException
-from rasa.utils.tensorflow.transformer import TransformerEncoder
+import numpy as np
+import tensorflow as tf
+
 from rasa.nlu.constants import DEFAULT_TRANSFORMER_SIZE
+from rasa.shared.nlu.constants import TEXT
+from rasa.utils.tensorflow import layers
+from rasa.utils.tensorflow.constants import (
+    CONCAT_DIMENSION,
+    CONNECTION_DENSITY,
+    DENSE_DIMENSION,
+    DENSE_INPUT_DROPOUT,
+    DROP_RATE,
+    DROP_RATE_ATTENTION,
+    HIDDEN_LAYERS_SIZES,
+    KEY_RELATIVE_ATTENTION,
+    MASKED_LM,
+    MAX_RELATIVE_POSITION,
+    NUM_HEADS,
+    NUM_TRANSFORMER_LAYERS,
+    REGULARIZATION_CONSTANT,
+    SENTENCE,
+    SEQUENCE,
+    SPARSE_INPUT_DROPOUT,
+    TRANSFORMER_SIZE,
+    UNIDIRECTIONAL_ENCODER,
+    VALUE_RELATIVE_ATTENTION,
+)
+from rasa.utils.tensorflow.exceptions import TFLayerConfigException
+from rasa.utils.tensorflow.model_data import FeatureSignature
+from rasa.utils.tensorflow.transformer import TransformerEncoder
 
 
 class RasaCustomLayer(tf.keras.layers.Layer):

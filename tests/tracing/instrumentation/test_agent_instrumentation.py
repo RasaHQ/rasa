@@ -2,12 +2,12 @@ import logging
 from typing import Sequence
 
 import pytest
-from pytest import LogCaptureFixture
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from opentelemetry.trace import SpanContext
-from rasa.core.channels import UserMessage
+from pytest import LogCaptureFixture
 
+from rasa.core.channels import UserMessage
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import MockAgent
 

@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Type
 import numpy as np
 
 import rasa.shared.utils.io
-from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -291,8 +291,8 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
         **kwargs: Any,
     ) -> SklearnIntentClassifier:
         """Loads trained component (see parent class for full docstring)."""
-        from sklearn.preprocessing import LabelEncoder
         import skops.io as sio
+        from sklearn.preprocessing import LabelEncoder
 
         try:
             with model_storage.read_from(resource) as model_dir:

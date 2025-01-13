@@ -1,31 +1,30 @@
+import copy
 import logging
+import re
+from typing import Any, Callable, Dict, Text
 
 import pytest
-from typing import Callable, Dict, Text, Any
-import re
-import copy
-
 from _pytest.logging import LogCaptureFixture
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
-from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.constants import EXTRACTOR, TOKENS_NAMES
-from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
 from rasa.shared.nlu.constants import (
     ENTITIES,
     ENTITY_ATTRIBUTE_CONFIDENCE,
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
     INTENT,
     TEXT,
 )
-from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 @pytest.fixture

@@ -7,11 +7,11 @@ from rasa.e2e_test.aggregate_test_stats_calculator import (
     AggregateTestStatsCalculator,
 )
 from rasa.e2e_test.assertions import (
-    _get_all_assertion_subclasses,
-    PatternClarificationContainsAssertion,
     BotUtteredAssertion,
+    PatternClarificationContainsAssertion,
+    _get_all_assertion_subclasses,
 )
-from rasa.e2e_test.e2e_test_case import TestStep, TestCase
+from rasa.e2e_test.e2e_test_case import TestCase, TestStep
 from rasa.e2e_test.e2e_test_result import TestResult
 
 

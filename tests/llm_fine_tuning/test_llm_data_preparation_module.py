@@ -3,15 +3,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from rasa.dialogue_understanding.commands import StartFlowCommand, SetSlotCommand
+from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowCommand
 from rasa.e2e_test.e2e_test_case import TestCase
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.llm_data_preparation_module import (
-    _construct_new_conversations,
-    _update_prompt,
-    _create_data_point,
     LLMDataExample,
+    _construct_new_conversations,
     _convert_conversation_into_llm_data,
+    _create_data_point,
+    _update_prompt,
     convert_to_fine_tuning_data,
 )
 

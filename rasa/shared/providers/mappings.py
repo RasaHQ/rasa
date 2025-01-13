@@ -1,12 +1,27 @@
-from typing import Dict, Type, Optional
+from typing import Dict, Optional, Type
 
 from rasa.shared.constants import (
     AZURE_OPENAI_PROVIDER,
     HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
     OPENAI_PROVIDER,
-    SELF_HOSTED_PROVIDER,
     RASA_PROVIDER,
+    SELF_HOSTED_PROVIDER,
     SELF_HOSTED_VLLM_PREFIX,
+)
+from rasa.shared.providers._configs.azure_openai_client_config import (
+    AzureOpenAIClientConfig,
+)
+from rasa.shared.providers._configs.client_config import ClientConfig
+from rasa.shared.providers._configs.default_litellm_client_config import (
+    DefaultLiteLLMClientConfig,
+)
+from rasa.shared.providers._configs.huggingface_local_embedding_client_config import (
+    HuggingFaceLocalEmbeddingClientConfig,
+)
+from rasa.shared.providers._configs.openai_client_config import OpenAIClientConfig
+from rasa.shared.providers._configs.rasa_llm_client_config import RasaLLMClientConfig
+from rasa.shared.providers._configs.self_hosted_llm_client_config import (
+    SelfHostedLLMClientConfig,
 )
 from rasa.shared.providers.embedding.azure_openai_embedding_client import (
     AzureOpenAIEmbeddingClient,
@@ -25,24 +40,8 @@ from rasa.shared.providers.llm.azure_openai_llm_client import AzureOpenAILLMClie
 from rasa.shared.providers.llm.default_litellm_llm_client import DefaultLiteLLMClient
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
-from rasa.shared.providers.llm.self_hosted_llm_client import SelfHostedLLMClient
 from rasa.shared.providers.llm.rasa_llm_client import RasaLLMClient
-from rasa.shared.providers._configs.azure_openai_client_config import (
-    AzureOpenAIClientConfig,
-)
-from rasa.shared.providers._configs.default_litellm_client_config import (
-    DefaultLiteLLMClientConfig,
-)
-from rasa.shared.providers._configs.huggingface_local_embedding_client_config import (
-    HuggingFaceLocalEmbeddingClientConfig,
-)
-from rasa.shared.providers._configs.openai_client_config import OpenAIClientConfig
-from rasa.shared.providers._configs.self_hosted_llm_client_config import (
-    SelfHostedLLMClientConfig,
-)
-from rasa.shared.providers._configs.rasa_llm_client_config import RasaLLMClientConfig
-
-from rasa.shared.providers._configs.client_config import ClientConfig
+from rasa.shared.providers.llm.self_hosted_llm_client import SelfHostedLLMClient
 
 _provider_to_llm_client_mapping: Dict[str, Type[LLMClient]] = {
     OPENAI_PROVIDER: OpenAILLMClient,

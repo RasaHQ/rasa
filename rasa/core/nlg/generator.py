@@ -1,12 +1,12 @@
 import logging
-from typing import List, Optional, Union, Text, Any, Dict
+from typing import Any, Dict, List, Optional, Text, Union
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.shared.constants import CHANNEL, RESPONSE_CONDITION
 from rasa.shared.core.domain import Domain
-from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 

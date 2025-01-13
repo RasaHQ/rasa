@@ -1,6 +1,6 @@
 from __future__ import annotations
+
 import logging
-from rasa.nlu.featurizers.featurizer import Featurizer
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
@@ -9,11 +9,12 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.shared.nlu.constants import TEXT, INTENT
-from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
+from rasa.shared.nlu.constants import INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 if typing.TYPE_CHECKING:
     import mitie

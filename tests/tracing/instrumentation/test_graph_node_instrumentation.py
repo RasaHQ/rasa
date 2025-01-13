@@ -4,6 +4,7 @@ from typing import Any, Sequence, Text, Tuple
 import pytest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.storage import ModelStorage
@@ -32,7 +33,6 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import (
     MockGraphComponent,

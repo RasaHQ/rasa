@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 from rasa.shared.exceptions import YamlException
 from rasa.shared.nlu.constants import INTENT, INTENT_NAME_KEY, PREDICTED_CONFIDENCE_KEY

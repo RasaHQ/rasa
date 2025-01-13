@@ -1,17 +1,20 @@
-from typing import List, Optional, Set, Tuple
 import typing
+from typing import List, Optional, Set, Tuple
+
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
-from rasa.dialogue_understanding.stack.frames import BaseFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
+from rasa.dialogue_understanding.stack.frames import (
+    BaseFlowStackFrame,
+    UserFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
 from rasa.dialogue_understanding.stack.frames.pattern_frame import PatternFlowStackFrame
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.flows.steps.constants import END_STEP
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
-from rasa.shared.core.flows import FlowsList
 
 if typing.TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker

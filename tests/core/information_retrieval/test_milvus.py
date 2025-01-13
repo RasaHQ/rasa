@@ -1,15 +1,14 @@
 from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+from langchain.schema import Document
+from langchain.schema.embeddings import Embeddings
+from langchain_community.vectorstores.milvus import Milvus
 from pytest import MonkeyPatch
 
 from rasa.core.information_retrieval import InformationRetrievalException
 from rasa.core.information_retrieval.milvus import Milvus_Store
-from langchain.schema.embeddings import Embeddings
-from langchain.schema import Document
-from unittest.mock import AsyncMock, patch
-import pytest
-from unittest.mock import MagicMock
-from langchain_community.vectorstores.milvus import Milvus
 
 
 def test_milvus_store(embeddings: Embeddings):

@@ -1,9 +1,9 @@
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from rasa.dialogue_understanding.commands import StartFlowCommand, SetSlotCommand
+from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowCommand
 from rasa.e2e_test.e2e_test_case import TestCase
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.paraphrasing.conversation_rephraser import (
@@ -12,8 +12,10 @@ from rasa.llm_fine_tuning.paraphrasing.conversation_rephraser import (
 from rasa.llm_fine_tuning.paraphrasing.rephrased_user_message import (
     RephrasedUserMessage,
 )
-from rasa.llm_fine_tuning.paraphrasing_module import _filter_rephrasings
-from rasa.llm_fine_tuning.paraphrasing_module import create_paraphrased_conversations
+from rasa.llm_fine_tuning.paraphrasing_module import (
+    _filter_rephrasings,
+    create_paraphrased_conversations,
+)
 from rasa.shared.core.flows import FlowsList
 
 

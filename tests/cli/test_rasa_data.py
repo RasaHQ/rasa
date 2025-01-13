@@ -2,7 +2,7 @@ import argparse
 import os
 from pathlib import Path
 from typing import Callable
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 from _pytest.fixtures import FixtureRequest
 from _pytest.pytester import RunResult

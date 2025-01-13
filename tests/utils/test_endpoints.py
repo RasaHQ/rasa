@@ -1,14 +1,14 @@
-import structlog
 from pathlib import Path
-from typing import Text, Optional, Union
+from typing import Optional, Text, Union
 from unittest.mock import Mock
 
 import pytest
+import structlog
 from aioresponses import aioresponses
 
-from rasa.shared.exceptions import FileNotFoundException
-from tests.utilities import latest_request, json_of_latest_request
 import rasa.utils.endpoints as endpoint_utils
+from rasa.shared.exceptions import FileNotFoundException
+from tests.utilities import json_of_latest_request, latest_request
 
 
 @pytest.mark.parametrize(

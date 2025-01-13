@@ -1,8 +1,10 @@
 import logging
+
 import pytest
-from rasa.core import utils, run
-from rasa.core.channels.facebook import MessengerBot
 from fbmessenger import MessengerClient
+
+from rasa.core import run, utils
+from rasa.core.channels.facebook import MessengerBot
 
 logger = logging.getLogger(__name__)
 

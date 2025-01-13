@@ -2,7 +2,7 @@ import logging
 import textwrap
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Text
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -64,8 +64,8 @@ from rasa.shared.core.constants import (
     USER_INTENT_SESSION_START,
 )
 from rasa.shared.core.domain import (
-    KEY_RESPONSES_TEXT,
     KEY_E2E_ACTIONS,
+    KEY_RESPONSES_TEXT,
     ActionNotFoundException,
     Domain,
     SessionConfig,

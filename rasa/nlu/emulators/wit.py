@@ -4,13 +4,13 @@ from typing import Any, Dict, Text
 from rasa.nlu.emulators.emulator import Emulator
 from rasa.shared.nlu.constants import (
     ENTITIES,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_VALUE,
     ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_START,
-    TEXT,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
     INTENT,
+    TEXT,
 )
 
 

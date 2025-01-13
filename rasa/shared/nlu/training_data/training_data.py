@@ -1,31 +1,30 @@
+import copy
 import logging
+import operator
 import os
-from functools import cached_property
-from pathlib import Path
 import random
 from collections import Counter, OrderedDict
-import copy
+from functools import cached_property
 from os.path import relpath
-from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
-import operator
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Set, Text, Tuple
 
 import rasa.shared.data
 import rasa.shared.utils.io
 from rasa.shared.nlu.constants import (
-    RESPONSE,
-    INTENT_RESPONSE_KEY,
-    ENTITY_ATTRIBUTE_TYPE,
+    ACTION_NAME,
+    ENTITIES,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
-    NO_ENTITY_TAG,
+    ENTITY_ATTRIBUTE_TYPE,
     INTENT,
-    ENTITIES,
+    INTENT_RESPONSE_KEY,
+    NO_ENTITY_TAG,
+    RESPONSE,
     TEXT,
-    ACTION_NAME,
 )
-from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
-
+from rasa.shared.nlu.training_data.message import Message
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
 

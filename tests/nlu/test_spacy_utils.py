@@ -1,12 +1,11 @@
 from typing import Optional, Text
 
 import pytest
-
 import spacy.tokens.doc
 
 from rasa.nlu.constants import DENSE_FEATURIZABLE_ATTRIBUTES, SPACY_DOCS
 from rasa.nlu.model import InvalidModelError
-from rasa.nlu.utils.spacy_utils import SpacyNLP, SpacyModel
+from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import ACTION_TEXT, RESPONSE, TEXT
 from rasa.shared.nlu.training_data.message import Message

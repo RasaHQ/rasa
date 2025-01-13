@@ -9,12 +9,12 @@ import pytest
 import questionary
 from pytest import MonkeyPatch
 
-from rasa.shared.exceptions import RasaException
-import rasa.studio.upload
 import rasa.shared.utils.io
 import rasa.shared.utils.yaml
+import rasa.studio.upload
+from rasa.shared.exceptions import RasaException
 from rasa.studio.config import StudioConfig
-from rasa.studio.results_logger import with_studio_error_handler, StudioResult
+from rasa.studio.results_logger import StudioResult, with_studio_error_handler
 from rasa.studio.upload import make_request
 from tests.studio.conftest import (
     CALM_ENDPOINTS_YAML,

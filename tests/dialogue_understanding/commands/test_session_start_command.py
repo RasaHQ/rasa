@@ -1,7 +1,8 @@
+import jsonpatch
+
 from rasa.dialogue_understanding.commands import SessionStartCommand
 from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.trackers import DialogueStateTracker
-import jsonpatch
 
 
 def test_name_of_command():

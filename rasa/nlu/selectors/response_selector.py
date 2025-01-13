@@ -1,23 +1,17 @@
 from __future__ import annotations
+
 import copy
 import logging
-from rasa.nlu.featurizers.featurizer import Featurizer
+from typing import Any, Dict, List, Optional, Text, Tuple, Type, Union
 
 import numpy as np
 import tensorflow as tf
 
-from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
-
+import rasa.shared.utils.io
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import DIAGNOSTIC_DATA
-from rasa.shared.nlu.training_data import util
-import rasa.shared.utils.io
-from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.classifiers.diet_classifier import (
     DIET,
     LABEL_KEY,
@@ -26,81 +20,86 @@ from rasa.nlu.classifiers.diet_classifier import (
     SEQUENCE,
     DIETClassifier,
 )
+from rasa.nlu.constants import (
+    DEFAULT_TRANSFORMER_SIZE,
+    RESPONSE_SELECTOR_DEFAULT_INTENT,
+    RESPONSE_SELECTOR_PREDICTION_KEY,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_RANKING_KEY,
+    RESPONSE_SELECTOR_RESPONSES_KEY,
+    RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
+    RESPONSE_SELECTOR_UTTER_ACTION_KEY,
+)
 from rasa.nlu.extractors.extractor import EntityTagSpec
+from rasa.nlu.featurizers.featurizer import Featurizer
+from rasa.shared.constants import DIAGNOSTIC_DATA
+from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.nlu.constants import (
+    INTENT,
+    INTENT_NAME_KEY,
+    INTENT_RESPONSE_KEY,
+    PREDICTED_CONFIDENCE_KEY,
+    RESPONSE,
+    TEXT,
+)
+from rasa.shared.nlu.training_data import util
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.constants import (
-    LABEL,
-    HIDDEN_LAYERS_SIZES,
-    SHARE_HIDDEN_LAYERS,
-    TRANSFORMER_SIZE,
-    NUM_TRANSFORMER_LAYERS,
-    NUM_HEADS,
-    BATCH_SIZES,
-    BATCH_STRATEGY,
-    EPOCHS,
-    RANDOM_SEED,
-    LEARNING_RATE,
-    RANKING_LENGTH,
-    RENORMALIZE_CONFIDENCES,
-    LOSS_TYPE,
-    SIMILARITY_TYPE,
-    NUM_NEG,
-    SPARSE_INPUT_DROPOUT,
-    DENSE_INPUT_DROPOUT,
-    MASKED_LM,
-    ENTITY_RECOGNITION,
-    INTENT_CLASSIFICATION,
-    EVAL_NUM_EXAMPLES,
-    EVAL_NUM_EPOCHS,
-    UNIDIRECTIONAL_ENCODER,
-    DROP_RATE,
-    DROP_RATE_ATTENTION,
-    CONNECTION_DENSITY,
-    NEGATIVE_MARGIN_SCALE,
-    REGULARIZATION_CONSTANT,
-    SCALE_LOSS,
-    USE_MAX_NEG_SIM,
-    MAX_NEG_SIM,
-    MAX_POS_SIM,
-    EMBEDDING_DIMENSION,
-    BILOU_FLAG,
-    KEY_RELATIVE_ATTENTION,
-    VALUE_RELATIVE_ATTENTION,
-    MAX_RELATIVE_POSITION,
-    RETRIEVAL_INTENT,
-    USE_TEXT_AS_LABEL,
-    CROSS_ENTROPY,
     AUTO,
     BALANCED,
+    BATCH_SIZES,
+    BATCH_STRATEGY,
+    BILOU_FLAG,
+    CHECKPOINT_MODEL,
+    CONCAT_DIMENSION,
+    CONNECTION_DENSITY,
+    CONSTRAIN_SIMILARITIES,
+    CROSS_ENTROPY,
+    DENSE_DIMENSION,
+    DENSE_INPUT_DROPOUT,
+    DROP_RATE,
+    DROP_RATE_ATTENTION,
+    EMBEDDING_DIMENSION,
+    ENTITY_RECOGNITION,
+    EPOCHS,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    FEATURIZERS,
+    HIDDEN_LAYERS_SIZES,
+    INTENT_CLASSIFICATION,
+    KEY_RELATIVE_ATTENTION,
+    LABEL,
+    LEARNING_RATE,
+    LOSS_TYPE,
+    MASKED_LM,
+    MAX_NEG_SIM,
+    MAX_POS_SIM,
+    MAX_RELATIVE_POSITION,
+    MODEL_CONFIDENCE,
+    NEGATIVE_MARGIN_SCALE,
+    NUM_HEADS,
+    NUM_NEG,
+    NUM_TRANSFORMER_LAYERS,
+    RANDOM_SEED,
+    RANKING_LENGTH,
+    REGULARIZATION_CONSTANT,
+    RENORMALIZE_CONFIDENCES,
+    RETRIEVAL_INTENT,
+    SCALE_LOSS,
+    SHARE_HIDDEN_LAYERS,
+    SIMILARITY_TYPE,
+    SOFTMAX,
+    SPARSE_INPUT_DROPOUT,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
-    CONCAT_DIMENSION,
-    FEATURIZERS,
-    CHECKPOINT_MODEL,
-    DENSE_DIMENSION,
-    CONSTRAIN_SIMILARITIES,
-    MODEL_CONFIDENCE,
-    SOFTMAX,
+    TRANSFORMER_SIZE,
+    UNIDIRECTIONAL_ENCODER,
+    USE_MAX_NEG_SIM,
+    USE_TEXT_AS_LABEL,
+    VALUE_RELATIVE_ATTENTION,
 )
-from rasa.nlu.constants import (
-    RESPONSE_SELECTOR_PROPERTY_NAME,
-    RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
-    RESPONSE_SELECTOR_RESPONSES_KEY,
-    RESPONSE_SELECTOR_PREDICTION_KEY,
-    RESPONSE_SELECTOR_RANKING_KEY,
-    RESPONSE_SELECTOR_UTTER_ACTION_KEY,
-    RESPONSE_SELECTOR_DEFAULT_INTENT,
-    DEFAULT_TRANSFORMER_SIZE,
-)
-from rasa.shared.nlu.constants import (
-    TEXT,
-    INTENT,
-    RESPONSE,
-    INTENT_RESPONSE_KEY,
-    INTENT_NAME_KEY,
-    PREDICTED_CONFIDENCE_KEY,
-)
-
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel
 

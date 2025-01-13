@@ -8,14 +8,15 @@ import pytest
 from matplotlib import pyplot as plt
 from pytest import TempPathFactory
 from structlog.testing import capture_logs
+
+from rasa.e2e_test.assertions import AssertionFailure, FlowStartedAssertion
 from rasa.e2e_test.constants import (
-    KEY_USER_INPUT,
     KEY_BOT_INPUT,
     KEY_TEST_CASE,
     KEY_TEST_CASES,
+    KEY_USER_INPUT,
     STATUS_PASSED,
 )
-from rasa.e2e_test.assertions import AssertionFailure, FlowStartedAssertion
 from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase, TestStep, TestSuite
 from rasa.e2e_test.e2e_test_coverage_report import (
     COVERAGE_COL_NAME,

@@ -1,6 +1,6 @@
 import argparse
-from typing import Callable, Dict, Any, Optional, Text
-from unittest.mock import patch, Mock
+from typing import Any, Callable, Dict, Optional, Text
+from unittest.mock import Mock, patch
 
 import pytest
 from pytest import RunResult
@@ -8,24 +8,24 @@ from pytest import RunResult
 from rasa.cli.llm_fine_tuning import (
     PARAMETERS_FILE,
     RESULT_SUMMARY_FILE,
+    _get_llm_command_generator_config,
+    create_storage_context,
     restricted_float,
     write_params,
     write_statistics,
-    create_storage_context,
-    _get_llm_command_generator_config,
 )
 from rasa.dialogue_understanding.generator import (
-    SingleStepLLMCommandGenerator,
     MultiStepLLMCommandGenerator,
+    SingleStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.constants import DEFAULT_LLM_CONFIG
 from rasa.engine.graph import GraphSchema, SchemaNode
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.llm_fine_tuning.storage import (
-    StorageType,
-    StorageContext,
     FileStorageStrategy,
+    StorageContext,
+    StorageType,
 )
 from rasa.shared.utils.llm import combine_custom_and_default_config
 

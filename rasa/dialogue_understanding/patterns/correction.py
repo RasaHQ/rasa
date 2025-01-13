@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Any, Dict, Text, List, Optional
+from typing import Any, Dict, List, Optional, Text
 
 import structlog
+
 from rasa.core.actions import action
 from rasa.core.channels import OutputChannel
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -26,7 +28,7 @@ from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.constants import ACTION_CORRECT_FLOW_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event, SlotSet
-from rasa.shared.core.flows.flow import ContinueFlowStep, END_STEP, START_STEP
+from rasa.shared.core.flows.flow import END_STEP, START_STEP, ContinueFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 
 structlogger = structlog.get_logger()

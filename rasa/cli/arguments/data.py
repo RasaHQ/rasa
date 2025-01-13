@@ -2,10 +2,10 @@ import argparse
 from typing import Text
 
 from rasa.cli.arguments.default_arguments import (
-    add_nlu_data_param,
-    add_out_param,
     add_data_param,
     add_domain_param,
+    add_nlu_data_param,
+    add_out_param,
 )
 from rasa.shared.constants import DEFAULT_CONVERTED_DATA_PATH
 

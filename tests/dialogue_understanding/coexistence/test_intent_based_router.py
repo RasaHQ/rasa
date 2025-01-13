@@ -8,8 +8,8 @@ from _pytest.tmpdir import TempPathFactory
 from rasa.dialogue_understanding.coexistence.constants import (
     CALM_ENTRY,
     NLU_ENTRY,
-    STICKY,
     NON_STICKY,
+    STICKY,
 )
 from rasa.dialogue_understanding.coexistence.intent_based_router import (
     IntentBasedRouter,

@@ -1,18 +1,17 @@
 import copy
 import logging
-import structlog
-import google.auth.transport.requests
-import cachecontrol
-import requests
-
 from asyncio import CancelledError
-from sanic import Blueprint, response
-from sanic.request import Request
-from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable, Union
+from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text, Union
 
+import cachecontrol
+import google.auth.transport.requests
+import requests
+import structlog
 from google.oauth2 import id_token
-from sanic.response import HTTPResponse
+from sanic import Blueprint, response
 from sanic.exceptions import SanicException
+from sanic.request import Request
+from sanic.response import HTTPResponse
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 

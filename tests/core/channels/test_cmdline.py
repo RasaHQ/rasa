@@ -2,12 +2,12 @@ from typing import List, Text
 
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
-from prompt_toolkit import PromptSession, Application
+from aioresponses import aioresponses
+from prompt_toolkit import Application, PromptSession
 from prompt_toolkit.input.defaults import create_pipe_input
 from prompt_toolkit.output import DummyOutput
-from rasa.core.channels.console import record_messages
 
-from aioresponses import aioresponses
+from rasa.core.channels.console import record_messages
 
 ENTER = "\x0a"
 

@@ -2,19 +2,20 @@
 
 from typing import Text
 
-import docker
 import pytest
 import randomname
 from pytest import LogCaptureFixture
 from structlog.testing import capture_logs
 
-from rasa.core.brokers.pika import PikaEventBroker, RABBITMQ_EXCHANGE
+import docker
+from rasa.core.brokers.pika import RABBITMQ_EXCHANGE, PikaEventBroker
+
 from .conftest import (
+    RABBITMQ_DEFAULT_QUEUE,
     RABBITMQ_HOST,
+    RABBITMQ_PASSWORD,
     RABBITMQ_PORT,
     RABBITMQ_USER,
-    RABBITMQ_PASSWORD,
-    RABBITMQ_DEFAULT_QUEUE,
 )
 
 

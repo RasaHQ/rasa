@@ -1,8 +1,8 @@
 import os.path
 import uuid
 from pathlib import Path
-from typing import Optional, Dict, Text, Any, Set, List
-from unittest.mock import Mock, patch, AsyncMock
+from typing import Any, Dict, List, Optional, Set, Text
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 import structlog
@@ -11,31 +11,31 @@ from pytest import MonkeyPatch
 
 import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
+    CancelFlowCommand,
+    CannotHandleCommand,
+    ChitChatAnswerCommand,
+    ClarifyCommand,
     Command,
     ErrorCommand,
-    SetSlotCommand,
-    CancelFlowCommand,
-    StartFlowCommand,
     HumanHandoffCommand,
-    ChitChatAnswerCommand,
-    SkipQuestionCommand,
     KnowledgeAnswerCommand,
-    ClarifyCommand,
-    CannotHandleCommand,
+    SetSlotCommand,
+    SkipQuestionCommand,
+    StartFlowCommand,
 )
 from rasa.dialogue_understanding.generator.constants import (
-    FLOW_RETRIEVAL_KEY,
     FLOW_RETRIEVAL_ACTIVE_KEY,
     FLOW_RETRIEVAL_FLOW_THRESHOLD,
+    FLOW_RETRIEVAL_KEY,
     LLM_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import (
     FlowRetrieval,
 )
 from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator import (  # noqa: E501
-    SingleStepLLMCommandGenerator,
     DEFAULT_COMMAND_PROMPT_TEMPLATE,
     SINGLE_STEP_LLM_COMMAND_GENERATOR_CONFIG_FILE,
+    SingleStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.utils import set_record_commands_and_prompts
@@ -44,10 +44,10 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.llm_fine_tuning.annotation_module import set_preparing_fine_tuning_data
 from rasa.shared.constants import (
-    OPENAI_API_KEY_ENV_VAR,
-    ROUTE_TO_CALM_SLOT,
     EMBEDDINGS_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
+    OPENAI_API_KEY_ENV_VAR,
+    ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
@@ -58,12 +58,12 @@ from rasa.shared.core.slots import (
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import (
-    TEXT,
-    LLM_PROMPT,
-    LLM_COMMANDS,
-    PROMPTS,
-    PREDICTED_COMMANDS,
     KEY_USER_PROMPT,
+    LLM_COMMANDS,
+    LLM_PROMPT,
+    PREDICTED_COMMANDS,
+    PROMPTS,
+    TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -71,7 +71,7 @@ from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.llm import (
     DEFAULT_MAX_USER_INPUT_CHARACTERS,
 )
-from tests.utilities import flows_from_str, filter_logs
+from tests.utilities import filter_logs, flows_from_str
 
 EXPECTED_PROMPT_PATH = "./tests/dialogue_understanding/generator/rendered_prompt.txt"
 EXPECTED_RENDERED_FLOW_DESCRIPTION_PATH = (

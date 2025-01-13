@@ -3,13 +3,12 @@ import json
 import logging
 from typing import Any, Dict, List, Optional, Text
 
-from rasa.core.brokers.broker import EventBroker
-from rasa.core.brokers.kafka import KafkaEventBroker
-
 from rasa.anonymization.anonymization_rule_executor import (
     AnonymizationRuleExecutor,
     AnonymizationRuleList,
 )
+from rasa.core.brokers.broker import EventBroker
+from rasa.core.brokers.kafka import KafkaEventBroker
 
 logger = logging.getLogger(__name__)
 

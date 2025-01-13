@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 def test_hangouts_channel():
-    from rasa.core.channels.hangouts import HangoutsInput
     import rasa.core
+    from rasa.core.channels.hangouts import HangoutsInput
 
     input_channel = HangoutsInput(
         project_id="12345678901",
@@ -109,8 +109,8 @@ def test_hangouts_extract_functions():
         },
     }
 
-    from rasa.core.channels.hangouts import HangoutsInput
     import rasa.core
+    from rasa.core.channels.hangouts import HangoutsInput
 
     input_channel = HangoutsInput(
         project_id="12345678901",

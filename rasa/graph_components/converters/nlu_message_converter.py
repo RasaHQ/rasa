@@ -1,9 +1,9 @@
 from __future__ import annotations
-from typing import Dict, Text, Any, List
+
+from typing import Any, Dict, List, Text
 
 from rasa.core.channels.channel import UserMessage
-
-from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.nlu.constants import TEXT, TEXT_TOKENS

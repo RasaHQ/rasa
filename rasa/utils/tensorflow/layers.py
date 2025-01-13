@@ -1,29 +1,35 @@
 import logging
-from typing import List, Optional, Text, Tuple, Callable, Union, Any
+from typing import Any, Callable, List, Optional, Text, Tuple, Union
+
 import tensorflow as tf
+import tensorflow.keras.backend as K
 
 # TODO: The following is not (yet) available via tf.keras
 from keras.src.utils.control_flow_util import smart_cond
-import tensorflow.keras.backend as K
 
 import rasa.utils.tensorflow.crf
+import rasa.utils.tensorflow.layers_utils as layers_utils
+from rasa.core.constants import DIALOGUE
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    ACTION_TEXT,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+    INTENT,
+    TEXT,
+)
 from rasa.utils.tensorflow.constants import (
-    SOFTMAX,
-    MARGIN,
     COSINE,
-    INNER,
     CROSS_ENTROPY,
+    INNER,
     LABEL,
     LABEL_PAD_ID,
+    MARGIN,
+    SOFTMAX,
 )
-from rasa.core.constants import DIALOGUE
-from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
-from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_NAME, ACTION_TEXT
-
-from rasa.utils.tensorflow.metrics import F1Score
-from rasa.utils.tensorflow.exceptions import TFLayerConfigException
-import rasa.utils.tensorflow.layers_utils as layers_utils
 from rasa.utils.tensorflow.crf import crf_log_likelihood
+from rasa.utils.tensorflow.exceptions import TFLayerConfigException
+from rasa.utils.tensorflow.metrics import F1Score
 
 logger = logging.getLogger(__name__)
 

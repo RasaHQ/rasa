@@ -7,7 +7,8 @@
 import numpy as np
 import pytest
 import tensorflow as tf
-from rasa.utils.tensorflow.metrics import FBetaScore, F1Score
+
+from rasa.utils.tensorflow.metrics import F1Score, FBetaScore
 
 
 def test_config_fbeta():

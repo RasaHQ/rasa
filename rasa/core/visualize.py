@@ -3,9 +3,9 @@ import os
 from typing import Text
 
 from rasa import telemetry
+from rasa.shared.core.domain import Domain, InvalidDomain
 from rasa.shared.core.training_data import loading
 from rasa.shared.utils.cli import print_error
-from rasa.shared.core.domain import InvalidDomain, Domain
 
 logger = logging.getLogger(__name__)
 

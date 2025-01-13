@@ -1,4 +1,5 @@
 from typing import Set
+
 from rasa.shared.utils.io import raise_deprecation_warning
 
 RESET_PROPERTY_NAME = "reset_after_flow_ends"

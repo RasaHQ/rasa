@@ -2,7 +2,8 @@ import json
 import logging
 import textwrap
 from pathlib import Path
-from typing import Union, Text, List, Optional, Type
+from typing import List, Optional, Text, Type, Union
+from unittest.mock import AsyncMock
 
 import aio_pika.exceptions
 import aiormq.exceptions
@@ -19,12 +20,11 @@ from rasa.core.brokers import pika
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.file import FileEventBroker
 from rasa.core.brokers.kafka import KafkaEventBroker, KafkaProducerInitializationError
-from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
+from rasa.core.brokers.pika import DEFAULT_QUEUE_NAME, PikaEventBroker
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-from unittest.mock import AsyncMock
 
 TEST_EVENTS = [
     UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),

@@ -1,10 +1,10 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any, Dict
 
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
-
 
 FLOW_PATTERN_HUMAN_HANDOFF = RASA_DEFAULT_FLOW_PATTERN_PREFIX + "human_handoff"
 

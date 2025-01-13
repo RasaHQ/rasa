@@ -1,5 +1,5 @@
 import copy
-from typing import Dict, Text, List, Any, Callable
+from typing import Any, Callable, Dict, List, Text
 
 import numpy as np
 import pytest
@@ -18,7 +18,7 @@ from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
 from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.shared.nlu.constants import TEXT, ENTITIES
+from rasa.shared.nlu.constants import ENTITIES, TEXT
 from rasa.shared.nlu.training_data.message import Message
 
 

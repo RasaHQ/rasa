@@ -1,16 +1,16 @@
 from __future__ import annotations
+
 import asyncio
-from contextlib import asynccontextmanager
 import json
 import logging
 import os
-
+from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Dict, Optional, Text, Union
 
-from rasa.shared.exceptions import RasaException, ConnectionException
 import rasa.shared.utils.common
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock
+from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)

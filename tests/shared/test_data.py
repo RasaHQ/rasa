@@ -4,17 +4,17 @@ from pathlib import Path
 from typing import Optional
 
 import pytest
-import rasa.shared
 
+import rasa.shared
 import rasa.shared.data
 from rasa.core.channels import UserMessage
 from rasa.shared.core.command_payload_reader import CommandPayloadReader
 from rasa.shared.core.domain import Domain
-from rasa.shared.nlu.training_data.loading import load_data
-from rasa.shared.utils.io import write_text_file, json_to_string
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
+from rasa.shared.nlu.training_data.loading import load_data
+from rasa.shared.utils.io import json_to_string, write_text_file
 
 
 @pytest.mark.parametrize(

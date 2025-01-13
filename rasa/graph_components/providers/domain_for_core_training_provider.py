@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import copy
-from typing import Dict, Text, Any
+from typing import Any, Dict, Text
 
-from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import REQUIRED_SLOTS_KEY
-from rasa.shared.core.domain import KEY_RESPONSES, Domain, SESSION_CONFIG_KEY, KEY_FORMS
+from rasa.shared.core.domain import KEY_FORMS, KEY_RESPONSES, SESSION_CONFIG_KEY, Domain
 
 
 class DomainForCoreTrainingProvider(GraphComponent):

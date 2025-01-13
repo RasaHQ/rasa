@@ -1,43 +1,42 @@
 from pathlib import Path
-from typing import Text, List, Dict, Any
+from typing import Any, Dict, List, Text
 from unittest.mock import Mock
+
+import numpy as np
+import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-import pytest
-import numpy as np
-
+import rasa.shared.data
 import rasa.shared.utils.io
-from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
-from rasa.shared.nlu.constants import (
-    TEXT,
-    INTENT_RESPONSE_KEY,
-    ENTITY_ATTRIBUTE_START,
-    ENTITY_ATTRIBUTE_END,
-    ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_TYPE,
-    ENTITIES,
-    INTENT,
-    ACTION_NAME,
-    FEATURE_TYPE_SENTENCE,
-)
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
+from rasa.shared.importers.importer import E2EImporter, TrainingDataImporter
+from rasa.shared.nlu.constants import (
+    ACTION_NAME,
+    ENTITIES,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    FEATURE_TYPE_SENTENCE,
+    INTENT,
+    INTENT_RESPONSE_KEY,
+    TEXT,
+)
 from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.loading import UNK, guess_format, load_data
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
 from rasa.shared.nlu.training_data.util import (
     get_file_format_extension,
-    template_key_to_intent_response_key,
     intent_response_key_to_template_key,
+    template_key_to_intent_response_key,
 )
-
-import rasa.shared.data
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered, ActionExecuted
-from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
-from rasa.shared.importers.importer import TrainingDataImporter, E2EImporter
 
 
 def test_luis_data():

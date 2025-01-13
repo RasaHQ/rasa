@@ -7,8 +7,8 @@ import pytest
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.flow_path import (
     FlowPath,
-    PathNode,
     FlowPathsList,
+    PathNode,
 )
 
 

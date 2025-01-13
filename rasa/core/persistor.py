@@ -9,14 +9,13 @@ from typing import TYPE_CHECKING, List, Optional, Text, Tuple, Union
 
 import structlog
 
-from rasa.exceptions import ModelNotFound
 import rasa.shared.utils.common
 import rasa.utils.common
 from rasa.constants import (
+    DEFAULT_BUCKET_NAME,
     HTTP_STATUS_FORBIDDEN,
     HTTP_STATUS_NOT_FOUND,
     MODEL_ARCHIVE_EXTENSION,
-    DEFAULT_BUCKET_NAME,
 )
 from rasa.env import (
     AWS_ENDPOINT_URL_ENV,
@@ -26,6 +25,7 @@ from rasa.env import (
     BUCKET_NAME_ENV,
     REMOTE_STORAGE_PATH_ENV,
 )
+from rasa.exceptions import ModelNotFound
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.io import raise_warning
 
@@ -367,8 +367,8 @@ class GCSPersistor(Persistor):
         self.bucket = self.storage_client.bucket(bucket_name)
 
     def _ensure_bucket_exists(self, bucket_name: Text) -> None:
-        from google.cloud import exceptions
         from google.auth import exceptions as auth_exceptions
+        from google.cloud import exceptions
 
         try:
             self.storage_client.get_bucket(bucket_name)

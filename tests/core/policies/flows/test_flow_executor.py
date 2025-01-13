@@ -10,8 +10,8 @@ from rasa.core.policies.flows.flow_exceptions import (
     NoNextStepInFlowException,
 )
 from rasa.core.policies.flows.flow_executor import (
-    validate_custom_slot_mappings,
     validate_collect_step,
+    validate_custom_slot_mappings,
 )
 from rasa.core.policies.flows.flow_step_result import (
     ContinueFlowWithNextStep,
@@ -43,6 +43,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
+    DialogueStackUpdated,
     Event,
     FlowCompleted,
     FlowResumed,
@@ -50,7 +51,6 @@ from rasa.shared.core.events import (
     SlotSet,
     UserUttered,
 )
-from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.flow import (
     END_STEP,
@@ -66,8 +66,8 @@ from rasa.shared.core.flows.steps.collect import (
 from rasa.shared.core.slots import FloatSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
-from tests.utilities import filter_logs
 from tests.utilities import (
+    filter_logs,
     flows_from_str,
     flows_from_str_including_defaults,
 )

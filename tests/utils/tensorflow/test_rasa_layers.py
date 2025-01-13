@@ -1,42 +1,41 @@
+from typing import Any, Dict, List, Text, Type, Union
+
+import numpy as np
 import pytest
 import tensorflow as tf
-import numpy as np
 
-from typing import Text, Union, Any, Dict, List, Type
-
-from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE, TEXT
 from rasa.utils.tensorflow import layers
-from rasa.utils.tensorflow.rasa_layers import (
-    ConcatenateSparseDenseFeatures,
-    RasaFeatureCombiningLayer,
-    RasaSequenceLayer,
-    RasaCustomLayer,
-)
 from rasa.utils.tensorflow.constants import (
-    DENSE_INPUT_DROPOUT,
-    SPARSE_INPUT_DROPOUT,
-    DROP_RATE,
-    DENSE_DIMENSION,
-    REGULARIZATION_CONSTANT,
     CONCAT_DIMENSION,
     CONNECTION_DENSITY,
+    DENSE_DIMENSION,
+    DENSE_INPUT_DROPOUT,
+    DROP_RATE,
     DROP_RATE_ATTENTION,
-    KEY_RELATIVE_ATTENTION,
-    VALUE_RELATIVE_ATTENTION,
-    MAX_RELATIVE_POSITION,
-    UNIDIRECTIONAL_ENCODER,
     HIDDEN_LAYERS_SIZES,
-    NUM_TRANSFORMER_LAYERS,
-    TRANSFORMER_SIZE,
+    KEY_RELATIVE_ATTENTION,
+    LABEL,
+    MASKED_LM,
+    MAX_RELATIVE_POSITION,
     NUM_HEADS,
+    NUM_TRANSFORMER_LAYERS,
+    REGULARIZATION_CONSTANT,
     SENTENCE,
     SEQUENCE,
-    MASKED_LM,
-    LABEL,
+    SPARSE_INPUT_DROPOUT,
+    TRANSFORMER_SIZE,
+    UNIDIRECTIONAL_ENCODER,
+    VALUE_RELATIVE_ATTENTION,
 )
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.model_data import FeatureSignature
-
+from rasa.utils.tensorflow.rasa_layers import (
+    ConcatenateSparseDenseFeatures,
+    RasaCustomLayer,
+    RasaFeatureCombiningLayer,
+    RasaSequenceLayer,
+)
 
 attribute_name = TEXT
 units_1 = 2

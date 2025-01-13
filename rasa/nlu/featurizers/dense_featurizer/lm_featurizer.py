@@ -1,27 +1,28 @@
 from __future__ import annotations
-import numpy as np
-import logging
 
-from typing import Any, Text, List, Dict, Tuple, Type
+import logging
+from typing import Any, Dict, List, Text, Tuple, Type
+
+import numpy as np
 import tensorflow as tf
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
     DENSE_FEATURIZABLE_ATTRIBUTES,
-    SEQUENCE_FEATURES,
-    SENTENCE_FEATURES,
     NO_LENGTH_RESTRICTION,
     NUMBER_OF_SUB_TOKENS,
+    SENTENCE_FEATURES,
+    SEQUENCE_FEATURES,
     TOKENS_NAMES,
 )
-from rasa.shared.nlu.constants import TEXT, ACTION_TEXT
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.shared.nlu.constants import ACTION_TEXT, TEXT
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.model_data import ragged_array_to_ndarray
 

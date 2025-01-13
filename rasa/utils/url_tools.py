@@ -1,7 +1,7 @@
 from __future__ import annotations
+
 import enum
 from typing import Dict
-
 from urllib.parse import urlparse
 
 import structlog

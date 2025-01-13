@@ -1,11 +1,11 @@
 import json
-from typing import Optional, Text, Dict, Any
+from typing import Any, Dict, Optional, Text
 
 import jsonschema
 from ruamel.yaml.error import (
     MarkedYAMLError,
-    MarkedYAMLWarning,
     MarkedYAMLFutureWarning,
+    MarkedYAMLWarning,
 )
 
 

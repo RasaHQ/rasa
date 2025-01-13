@@ -4,7 +4,7 @@ import shutil
 import sys
 from pathlib import Path
 from typing import Callable, List, Union
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from _pytest.capture import CaptureFixture

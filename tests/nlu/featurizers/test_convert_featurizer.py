@@ -1,28 +1,29 @@
+import os
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple
+
 import numpy as np
 import pytest
-from typing import Text, Optional, List, Tuple, Dict, Any, Callable
-from pathlib import Path
-import os
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.exceptions import RasaException
 from rasa.nlu.constants import (
     FEATURIZER_CLASS_ALIAS,
-    TOKENS_NAMES,
     NUMBER_OF_SUB_TOKENS,
+    TOKENS_NAMES,
 )
-from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import (
-    ConveRTFeaturizer,
-    RESTRICTED_ACCESS_URL,
     ORIGINAL_TF_HUB_MODULE_URL,
+    RESTRICTED_ACCESS_URL,
+    ConveRTFeaturizer,
 )
-from rasa.exceptions import RasaException
-from rasa.engine.graph import ExecutionContext
-from rasa.engine.storage.storage import ModelStorage
-from rasa.engine.storage.resource import Resource
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.nlu.constants import INTENT, RESPONSE, TEXT
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 @pytest.fixture

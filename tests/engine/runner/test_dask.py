@@ -1,19 +1,20 @@
 from __future__ import annotations
+
 from typing import Optional
 
 import pytest
 
-from rasa.engine.graph import ExecutionContext, GraphSchema, SchemaNode
 from rasa.engine.exceptions import GraphRunError
+from rasa.engine.graph import ExecutionContext, GraphSchema, SchemaNode
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.storage import ModelStorage
 from tests.engine.graph_components_test_classes import (
     AddInputs,
     AssertComponent,
     ExecutionContextAware,
+    PersistableTestComponent,
     ProvideX,
     SubtractByX,
-    PersistableTestComponent,
 )
 
 

@@ -1,11 +1,14 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
-from rasa.dialogue_understanding.stack.frames import DialogueStackFrame
-from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
+
+from rasa.dialogue_understanding.stack.frames import (
+    DialogueStackFrame,
+    PatternFlowStackFrame,
+)
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.flows.steps.collect import SlotRejection
-
 
 FLOW_PATTERN_COLLECT_INFORMATION = (
     RASA_DEFAULT_FLOW_PATTERN_PREFIX + "collect_information"

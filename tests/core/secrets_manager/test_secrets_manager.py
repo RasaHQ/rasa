@@ -6,13 +6,13 @@ from unittest.mock import MagicMock
 import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
-from rasa.utils.endpoints import EndpointConfig
 
 from rasa.core.secrets_manager.secret_manager import (
     EndpointResolver,
     SecretsManagerProvider,
 )
 from rasa.core.secrets_manager.vault import VaultSecretsManager
+from rasa.utils.endpoints import EndpointConfig
 
 
 @pytest.fixture

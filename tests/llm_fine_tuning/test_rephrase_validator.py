@@ -1,22 +1,22 @@
 import asyncio
 from typing import List
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
 from rasa.dialogue_understanding.commands import (
-    SetSlotCommand,
-    StartFlowCommand,
-    ClarifyCommand,
     CancelFlowCommand,
-    SkipQuestionCommand,
-    HumanHandoffCommand,
     ChitChatAnswerCommand,
-    KnowledgeAnswerCommand,
+    ClarifyCommand,
     Command,
+    HumanHandoffCommand,
+    KnowledgeAnswerCommand,
+    SetSlotCommand,
+    SkipQuestionCommand,
+    StartFlowCommand,
 )
 from rasa.e2e_test.e2e_test_case import TestCase
-from rasa.llm_fine_tuning.conversations import ConversationStep, Conversation
+from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.paraphrasing.rephrase_validator import RephraseValidator
 from rasa.llm_fine_tuning.paraphrasing.rephrased_user_message import (
     RephrasedUserMessage,

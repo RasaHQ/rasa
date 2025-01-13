@@ -1,16 +1,18 @@
-import pytest
 import os
-from rasa.shared.core.events import UserUttered, SessionStarted
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.domain import Domain
-from rasa.shared.exceptions import RasaException
+
+import pytest
+
 from rasa.core.evaluation.marker_tracker_loader import (
-    MarkerTrackerLoader,
     STRATEGY_ALL,
-    STRATEGY_SAMPLE_N,
     STRATEGY_FIRST_N,
+    STRATEGY_SAMPLE_N,
+    MarkerTrackerLoader,
 )
-from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore, SQLTrackerStore
+from rasa.core.tracker_store import InMemoryTrackerStore, SQLTrackerStore, TrackerStore
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import SessionStarted, UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import RasaException
 
 
 @pytest.fixture

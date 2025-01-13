@@ -5,20 +5,20 @@ from abc import abstractmethod
 from collections import defaultdict
 from pathlib import Path
 from typing import (
-    Tuple,
-    List,
-    Optional,
-    Dict,
-    Text,
-    Union,
     Any,
-    Iterator,
-    Set,
-    DefaultDict,
-    cast,
-    Type,
     Callable,
     ClassVar,
+    DefaultDict,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Text,
+    Tuple,
+    Type,
+    Union,
+    cast,
 )
 
 import numpy as np
@@ -30,15 +30,15 @@ from rasa.core.exceptions import InvalidTrackerFeaturizerUsageError
 from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.constants import (
-    USER,
     ACTION_UNLIKELY_INTENT_NAME,
     PREVIOUS_ACTION,
+    USER,
 )
-from rasa.shared.core.domain import State, Domain
-from rasa.shared.core.events import Event, ActionExecuted, UserUttered
+from rasa.shared.core.domain import Domain, State
+from rasa.shared.core.events import ActionExecuted, Event, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
-from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES, ACTION_NAME
+from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES, INTENT, TEXT
 from rasa.shared.nlu.training_data.features import Features
 from rasa.utils.tensorflow.constants import LABEL_PAD_ID
 from rasa.utils.tensorflow.model_data import ragged_array_to_ndarray

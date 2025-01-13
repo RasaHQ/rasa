@@ -1,13 +1,12 @@
 import logging
+from typing import Any, Awaitable, Callable, Dict, Optional, Text
+
 from sanic import Blueprint, response
 from sanic.request import Request
-from typing import Text, Optional, Dict, Any, Callable, Awaitable
-
 from sanic.response import HTTPResponse
 from webexteamssdk import WebexTeamsAPI, Webhook
 
-from rasa.core.channels.channel import InputChannel
-from rasa.core.channels.channel import UserMessage, OutputChannel
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 
 logger = logging.getLogger(__name__)
 

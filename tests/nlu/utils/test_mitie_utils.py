@@ -7,7 +7,6 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.utils.mitie_utils import MitieNLP
-
 from rasa.shared.exceptions import RasaException
 
 

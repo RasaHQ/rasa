@@ -1,5 +1,5 @@
-import os
 import base64
+import os
 from typing import Optional
 
 import structlog

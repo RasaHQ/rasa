@@ -6,10 +6,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Union
 
 import jwt
-from keycloak import KeycloakOpenID, KeycloakError
+from keycloak import KeycloakError, KeycloakOpenID
+
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
-
 from rasa.studio.config import StudioConfig
 from rasa.studio.constants import (
     KEYCLOAK_ACCESS_TOKEN_KEY,
@@ -17,7 +17,7 @@ from rasa.studio.constants import (
     KEYCLOAK_REFRESH_EXPIRES_IN_KEY,
     KEYCLOAK_REFRESH_TOKEN,
 )
-from rasa.studio.results_logger import with_studio_error_handler, StudioResult
+from rasa.studio.results_logger import StudioResult, with_studio_error_handler
 
 
 class StudioAuth:

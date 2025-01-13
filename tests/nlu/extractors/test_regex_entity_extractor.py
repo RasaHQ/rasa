@@ -1,24 +1,24 @@
 import copy
-from rasa.engine.graph import ExecutionContext
-from rasa.engine.storage.storage import ModelStorage
-from typing import Any, Text, Dict, List, Callable
+from typing import Any, Callable, Dict, List, Text
 
 import pytest
 
+from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
 from rasa.shared.nlu.constants import (
     ENTITIES,
+    ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_VALUE,
-    ENTITY_ATTRIBUTE_START,
-    ENTITY_ATTRIBUTE_END,
-    TEXT,
-    INTENT,
     EXTRACTOR,
+    INTENT,
+    TEXT,
 )
-from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 @pytest.fixture()

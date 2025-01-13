@@ -18,7 +18,7 @@ flows within a conversational context.
 """
 
 import importlib
-from typing import Dict, Text, Any, List, Optional
+from typing import Any, Dict, List, Optional, Text
 
 import structlog
 from jinja2 import Template
@@ -27,19 +27,19 @@ from langchain.schema.embeddings import Embeddings
 from langchain_community.vectorstores.faiss import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
 
+import rasa.shared.utils.io
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-import rasa.shared.utils.io
 from rasa.shared.constants import (
     EMBEDDINGS_CONFIG_KEY,
-    PROVIDER_CONFIG_KEY,
     OPENAI_PROVIDER,
+    PROVIDER_CONFIG_KEY,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
-from rasa.shared.nlu.constants import TEXT, FLOWS_FROM_SEMANTIC_SEARCH
+from rasa.shared.nlu.constants import FLOWS_FROM_SEMANTIC_SEARCH, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
     _LangchainEmbeddingClientAdapter,
@@ -48,13 +48,13 @@ from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
     EmbeddingsHealthCheckMixin,
 )
 from rasa.shared.utils.llm import (
-    tracker_as_readable_transcript,
-    embedder_factory,
     DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
     USER,
-    get_prompt_template,
     allowed_values_for_slot,
+    embedder_factory,
+    get_prompt_template,
     resolve_model_client_config,
+    tracker_as_readable_transcript,
 )
 
 DEFAULT_FLOW_DOCUMENT_TEMPLATE = importlib.resources.read_text(

@@ -6,9 +6,9 @@ import logging
 from unittest.mock import patch
 
 import rasa.core.run
+from rasa.core.agent import Agent
 from rasa.core.channels import TelegramInput
 from rasa.core.channels.telegram import TelegramOutput
-from rasa.core.agent import Agent
 
 logger = logging.getLogger(__name__)
 

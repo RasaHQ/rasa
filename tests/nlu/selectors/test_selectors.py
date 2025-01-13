@@ -1,10 +1,21 @@
 import copy
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 
-import pytest
 import numpy as np
-from typing import List, Dict, Text, Any, Optional, Tuple, Union, Callable
+import pytest
 
 import rasa.model
+import rasa.shared.nlu.training_data.loading
+from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.constants import (
+    DEFAULT_TRANSFORMER_SIZE,
+    RESPONSE_SELECTOR_DEFAULT_INTENT,
+    RESPONSE_SELECTOR_PREDICTION_KEY,
+    RESPONSE_SELECTOR_PROPERTY_NAME,
+    RESPONSE_SELECTOR_RESPONSES_KEY,
+)
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
@@ -12,51 +23,40 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
     LexicalSyntacticFeaturizer,
 )
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
+from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.engine.graph import ExecutionContext, GraphComponent
-from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.shared.nlu.training_data import util
-import rasa.shared.nlu.training_data.loading
-from rasa.utils.tensorflow.constants import (
-    EPOCHS,
-    MASKED_LM,
-    NUM_TRANSFORMER_LAYERS,
-    RENORMALIZE_CONFIDENCES,
-    TRANSFORMER_SIZE,
-    CONSTRAIN_SIMILARITIES,
-    CHECKPOINT_MODEL,
-    MODEL_CONFIDENCE,
-    RANDOM_SEED,
-    RANKING_LENGTH,
-    LOSS_TYPE,
-    HIDDEN_LAYERS_SIZES,
-    LABEL,
-    EVAL_NUM_EXAMPLES,
-    EVAL_NUM_EPOCHS,
-    RUN_EAGERLY,
-)
 from rasa.shared.nlu.constants import (
-    TEXT,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     INTENT_RESPONSE_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    TEXT,
 )
-from rasa.utils.tensorflow.model_data_utils import FeatureArray
+from rasa.shared.nlu.training_data import util
 from rasa.shared.nlu.training_data.loading import load_data
-from rasa.shared.constants import DIAGNOSTIC_DATA
-from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.nlu.constants import (
-    DEFAULT_TRANSFORMER_SIZE,
-    RESPONSE_SELECTOR_PROPERTY_NAME,
-    RESPONSE_SELECTOR_DEFAULT_INTENT,
-    RESPONSE_SELECTOR_PREDICTION_KEY,
-    RESPONSE_SELECTOR_RESPONSES_KEY,
+from rasa.utils.tensorflow.constants import (
+    CHECKPOINT_MODEL,
+    CONSTRAIN_SIMILARITIES,
+    EPOCHS,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    HIDDEN_LAYERS_SIZES,
+    LABEL,
+    LOSS_TYPE,
+    MASKED_LM,
+    MODEL_CONFIDENCE,
+    NUM_TRANSFORMER_LAYERS,
+    RANDOM_SEED,
+    RANKING_LENGTH,
+    RENORMALIZE_CONFIDENCES,
+    RUN_EAGERLY,
+    TRANSFORMER_SIZE,
 )
+from rasa.utils.tensorflow.model_data_utils import FeatureArray
 
 
 @pytest.fixture()

@@ -1,18 +1,17 @@
 from __future__ import annotations
 
+import dataclasses
 import inspect
 from dataclasses import dataclass, field
-import dataclasses
 from enum import Enum
 from functools import lru_cache
 from typing import Any, Dict, List, Tuple, Type
 
 import structlog
-from rasa.shared.exceptions import RasaException
 
 import rasa.shared.utils.common
+from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.io import random_string
-
 
 structlogger = structlog.get_logger()
 

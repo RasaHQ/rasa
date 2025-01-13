@@ -1,31 +1,32 @@
 from __future__ import annotations
-from collections import defaultdict
-from typing import Iterable, List, Dict, Text, Any, Set, Type, cast
 
+from collections import defaultdict
+from typing import Any, Dict, Iterable, List, Set, Text, Type, cast
+
+import rasa.shared.utils.io
+from rasa.core.constants import POLICY_PRIORITY
 from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
+from rasa.core.policies.flow_policy import FlowPolicy
+from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
+from rasa.core.policies.policy import Policy, SupportedData
+from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
-from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
-from rasa.nlu.featurizers.featurizer import Featurizer
-from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
-from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.extractors.crf_entity_extractor import (
     CRFEntityExtractor,
     CRFEntityExtractorOptions,
 )
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
+from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
+from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.policy import Policy, SupportedData
-from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
-from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.core.policies.flow_policy import FlowPolicy
-from rasa.core.constants import POLICY_PRIORITY
-from rasa.shared.core.training_data.structures import RuleStep, StoryGraph
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DOCS_URL_COMPONENTS,
@@ -33,18 +34,17 @@ from rasa.shared.constants import (
     DOCS_URL_NLU_BASED_POLICIES,
     DOCS_URL_RULES,
 )
-from rasa.shared.core.domain import Domain, InvalidDomain
 from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
     ACTION_RESTART_NAME,
     USER_INTENT_BACK,
     USER_INTENT_RESTART,
 )
+from rasa.shared.core.domain import Domain, InvalidDomain
+from rasa.shared.core.training_data.structures import RuleStep, StoryGraph
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
-import rasa.shared.utils.io
-
 
 # TODO: Can we replace this with the registered types from the regitry?
 TRAINABLE_EXTRACTORS = [MitieEntityExtractor, CRFEntityExtractor, DIETClassifier]

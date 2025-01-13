@@ -1,14 +1,14 @@
 import argparse
 import sys
-from typing import Callable, Generator, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Generator
 from unittest.mock import Mock
 
-from keycloak import KeycloakOpenID
-from pytest import RunResult, CaptureFixture, MonkeyPatch
 import pytest
+from keycloak import KeycloakOpenID
 from prompt_toolkit.application import create_app_session
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
+from pytest import CaptureFixture, MonkeyPatch, RunResult
 
 from rasa.cli.studio.studio import _configure_studio_config, _studio_login
 from rasa.studio.constants import (

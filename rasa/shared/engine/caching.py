@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 
-
 DEFAULT_CACHE_LOCATION = Path(".rasa", "cache")
 DEFAULT_CACHE_NAME = "cache.db"
 DEFAULT_CACHE_SIZE_MB = 1000

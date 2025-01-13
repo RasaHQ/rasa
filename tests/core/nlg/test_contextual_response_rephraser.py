@@ -1,17 +1,18 @@
-from typing import Any, Optional, Dict
+from typing import Any, Dict, Optional
 
 import pytest
 from pytest import MonkeyPatch
+
 from rasa.core.nlg.contextual_response_rephraser import (
     ContextualResponseRephraser,
 )
 from rasa.shared.constants import (
-    OPENAI_API_KEY_ENV_VAR,
     LLM_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
+    OPENAI_API_KEY_ENV_VAR,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered, BotUttered
+from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 

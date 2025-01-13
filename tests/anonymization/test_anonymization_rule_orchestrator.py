@@ -5,8 +5,6 @@ from unittest.mock import MagicMock
 
 import pytest
 from pytest import LogCaptureFixture, MonkeyPatch
-from rasa.core.brokers.kafka import KafkaEventBroker
-from rasa.core.brokers.pika import PikaEventBroker
 
 from rasa.anonymization.anonymization_rule_executor import (
     AnonymizationRule,
@@ -15,6 +13,8 @@ from rasa.anonymization.anonymization_rule_executor import (
 from rasa.anonymization.anonymization_rule_orchestrator import (
     AnonymizationRuleOrchestrator,
 )
+from rasa.core.brokers.kafka import KafkaEventBroker
+from rasa.core.brokers.pika import PikaEventBroker
 
 
 def test_anonymization_rule_orchestrator_initialization_without_kafka() -> None:

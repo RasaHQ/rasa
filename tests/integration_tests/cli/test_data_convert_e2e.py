@@ -1,10 +1,10 @@
-from pathlib import Path
-from pytest import FixtureRequest
-from pytest import MonkeyPatch
-import subprocess
 import glob
+import subprocess
+from pathlib import Path
+
 import pandas as pd
 import yaml
+from pytest import FixtureRequest, MonkeyPatch
 
 
 def input_data_file(request: FixtureRequest, name):

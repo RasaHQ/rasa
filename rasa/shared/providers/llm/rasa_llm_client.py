@@ -3,15 +3,14 @@ from typing import Any, Dict, Optional
 import structlog
 
 from rasa.shared.constants import (
-    RASA_PROVIDER,
     OPENAI_PROVIDER,
+    RASA_PROVIDER,
 )
 from rasa.shared.providers._configs.rasa_llm_client_config import (
     RasaLLMClientConfig,
 )
-from rasa.utils.licensing import retrieve_license_from_env
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
-
+from rasa.utils.licensing import retrieve_license_from_env
 
 structlogger = structlog.get_logger()
 

@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import Dict, List
 
 from rasa.dialogue_understanding_test.du_test_result import (
     DialogueUnderstandingTestResult,

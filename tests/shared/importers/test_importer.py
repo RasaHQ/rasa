@@ -1,31 +1,30 @@
 import os
 from pathlib import Path
-from typing import Text, Dict, Type, List, Any
+from typing import Any, Dict, List, Text, Type
 
 import pytest
+import structlog
 
+import rasa.shared.core.constants
+import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
-    DEFAULT_DOMAIN_PATH,
-    DEFAULT_DATA_PATH,
     DEFAULT_CONVERSATION_TEST_PATH,
+    DEFAULT_DATA_PATH,
+    DEFAULT_DOMAIN_PATH,
 )
-import rasa.shared.utils.io
-import rasa.shared.core.constants
-from rasa.shared.core.events import SlotSet, UserUttered, ActionExecuted
-from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
+from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
+from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
 from rasa.shared.importers.importer import (
-    TrainingDataImporter,
-    NluDataImporter,
     E2EImporter,
+    NluDataImporter,
     ResponsesSyncImporter,
+    TrainingDataImporter,
 )
 from rasa.shared.importers.multi_project import MultiProjectImporter
 from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT
+from rasa.shared.nlu.constants import ACTION_NAME, ACTION_TEXT, INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
-import structlog
-
 from rasa.shared.utils.yaml import write_yaml
 from tests.utilities import filter_logs
 

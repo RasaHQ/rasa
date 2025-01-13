@@ -2,18 +2,17 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, Text
 
+import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
-from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
+from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
     TrainingDataWriter,
 )
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.util import transform_entity_synonyms
 from rasa.shared.utils.io import json_to_string
-
-from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.nlu.training_data.message import Message
-import rasa.shared.utils.io
 from rasa.shared.utils.yaml import validate_training_data
 
 logger = logging.getLogger(__name__)

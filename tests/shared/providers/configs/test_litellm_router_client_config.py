@@ -4,8 +4,8 @@ from rasa.shared.providers._configs.litellm_router_client_config import (
     LiteLLMRouterClientConfig,
 )
 from rasa.shared.providers._configs.model_group_config import (
-    ModelGroupConfig,
     ModelConfig,
+    ModelGroupConfig,
 )
 
 

@@ -3,7 +3,7 @@ import json
 import logging
 import re
 from http import HTTPStatus
-from typing import Text, Dict, Any, List, Iterable, Callable, Awaitable, Optional
+from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text
 
 import jwt
 import requests
@@ -14,7 +14,7 @@ from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
-from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
+from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 
 MICROSOFT_OPEN_ID_URI = (
     "https://login.botframework.com/v1/.well-known/openidconfiguration"

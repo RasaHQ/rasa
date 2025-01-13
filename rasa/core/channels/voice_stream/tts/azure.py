@@ -1,6 +1,6 @@
 import os
-from typing import AsyncIterator, Dict, Optional
 from dataclasses import dataclass
+from typing import AsyncIterator, Dict, Optional
 
 import aiohttp
 import structlog
@@ -14,7 +14,6 @@ from rasa.core.channels.voice_stream.tts.tts_engine import (
 )
 from rasa.shared.constants import AZURE_SPEECH_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ConnectionException
-
 
 structlogger = structlog.get_logger()
 

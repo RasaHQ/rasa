@@ -1,29 +1,29 @@
 import logging
 import operator
-from collections import defaultdict, Counter
-from typing import List, Tuple, Text, Optional, Dict, Any, TYPE_CHECKING
+from collections import Counter, defaultdict
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple
 
 from rasa.nlu.constants import (
-    TOKENS_NAMES,
     BILOU_ENTITIES,
     BILOU_ENTITIES_GROUP,
     BILOU_ENTITIES_ROLE,
+    TOKENS_NAMES,
 )
 from rasa.shared.nlu.constants import (
-    TEXT,
     ENTITIES,
-    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
-    ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_TYPE,
     NO_ENTITY_TAG,
+    TEXT,
 )
 
 if TYPE_CHECKING:
     from rasa.nlu.tokenizers.tokenizer import Token
-    from rasa.shared.nlu.training_data.training_data import TrainingData
     from rasa.shared.nlu.training_data.message import Message
+    from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 

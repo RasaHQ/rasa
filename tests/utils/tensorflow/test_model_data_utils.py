@@ -1,35 +1,34 @@
-from typing import Any, Text, Optional, Dict, List
+import copy
+from typing import Any, Dict, List, Optional, Text
 
+import numpy as np
 import pytest
 import scipy.sparse
-import numpy as np
-import copy
-
 from spacy import Language
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.constants import SPACY_DOCS
+from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa.utils.tensorflow import model_data_utils
-from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
-    TEXT,
-    INTENT,
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
+    INTENT,
+    TEXT,
 )
-from rasa.utils.tensorflow.constants import SENTENCE
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.utils.tensorflow import model_data_utils
+from rasa.utils.tensorflow.constants import SENTENCE
 from rasa.utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
 
 shape = 100

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import abc
-from typing import Text, Dict, Any, Optional, Tuple, Set
+from typing import Any, Dict, Optional, Set, Text, Tuple
 
 import rasa.shared.utils.io
 from rasa.engine.graph import GraphModelConfiguration
-from rasa.shared.exceptions import RasaException
 from rasa.shared.data import TrainingType
+from rasa.shared.exceptions import RasaException
 
 
 class InvalidRecipeException(RasaException):

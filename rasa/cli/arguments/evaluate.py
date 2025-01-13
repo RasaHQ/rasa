@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
-from rasa.cli.arguments.default_arguments import add_endpoint_param, add_domain_param
+
+from rasa.cli.arguments.default_arguments import add_domain_param, add_endpoint_param
 
 
 def set_markers_arguments(parser: argparse.ArgumentParser) -> None:

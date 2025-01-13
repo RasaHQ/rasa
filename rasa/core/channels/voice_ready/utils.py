@@ -1,7 +1,7 @@
-import structlog
 from dataclasses import dataclass
 from typing import Optional
 
+import structlog
 
 structlogger = structlog.get_logger()
 

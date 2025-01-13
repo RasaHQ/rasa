@@ -1,16 +1,17 @@
-import pytest
 from typing import List
+
+import pytest
 
 import rasa.core
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
+    ActionExecuted,
+    DefinePrevUserUtteredFeaturization,
     SessionStarted,
     SlotSet,
     UserUttered,
-    ActionExecuted,
-    DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
@@ -19,10 +20,9 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
-from rasa.shared.core.training_data.structures import Story
+from rasa.shared.core.training_data.structures import Story, StoryGraph, StoryStep
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.utils.yaml import read_yaml
-from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
 
 domain = Domain.load("data/test_moodbot/domain.yml")
 

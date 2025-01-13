@@ -1,29 +1,30 @@
 from __future__ import annotations
+
 import logging
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
-from rasa.engine.graph import GraphComponent, ExecutionContext
+import rasa.shared.utils.io
+from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
+from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.constants import (
+    ENTITIES,
     ENTITY_ATTRIBUTE_CONFIDENCE,
-    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_END,
+    ENTITY_ATTRIBUTE_START,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_VALUE,
     TEXT,
-    ENTITIES,
 )
-from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
-from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-import rasa.shared.utils.io
-from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.nlu.training_data.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 

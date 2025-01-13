@@ -1,4 +1,5 @@
 import argparse
+
 from rasa.cli.arguments import default_arguments
 from rasa.cli.arguments.run import add_server_arguments
 

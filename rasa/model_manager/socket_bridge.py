@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 
-from socketio import AsyncServer
 import structlog
+from socketio import AsyncServer
 from socketio.asyncio_client import AsyncClient
 
 from rasa.model_manager.runner_service import BotSession

@@ -1,6 +1,6 @@
 import asyncio
-from functools import partial
 import json
+from functools import partial
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -11,22 +11,22 @@ from typing import (
     Set,
     Text,
 )
-from socketio import AsyncServer
 
 import structlog
-from sanic import response
-from sanic.request import Request
 import websockets
+from sanic import Blueprint, Sanic, Websocket, response  # type: ignore[attr-defined]
+from sanic.request import Request
+from socketio import AsyncServer
 
 from rasa.core.channels.channel import InputChannel, OutputChannel
 from rasa.shared.core.trackers import EventVerbosity
 from rasa.shared.utils.cli import print_info
-from sanic import Blueprint, Websocket, Sanic  # type: ignore[attr-defined]
 
 if TYPE_CHECKING:
-    from rasa.core.channels.channel import UserMessage
     from sanic.request import Request
     from sanic.response import HTTPResponse
+
+    from rasa.core.channels.channel import UserMessage
 
 
 INSPECT_TEMPLATE_PATH = "inspector/dist"

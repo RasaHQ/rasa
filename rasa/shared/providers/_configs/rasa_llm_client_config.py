@@ -4,10 +4,10 @@ from typing import Optional
 import structlog
 
 from rasa.shared.constants import (
-    MODEL_CONFIG_KEY,
-    RASA_PROVIDER,
-    PROVIDER_CONFIG_KEY,
     API_BASE_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    PROVIDER_CONFIG_KEY,
+    RASA_PROVIDER,
 )
 from rasa.shared.providers._configs.utils import (
     validate_required_keys,

@@ -1,9 +1,9 @@
 from typing import List, Optional
 
 from rasa.core.channels import UserMessage
+from rasa.core.utils import AvailableEndpoints
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.core.utils import AvailableEndpoints
 
 PLACEHOLDER_IMPORTER = "__importer__"
 PLACEHOLDER_MESSAGE = "__message__"
