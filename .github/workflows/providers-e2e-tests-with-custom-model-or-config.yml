@@ -1,0 +1,224 @@
+name: E2E Test on Rasa-Calm-Demo with supported providers and specified config
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        # In-case provider only has supported model for one
+        # (for e.g. only chat-completion), then default OpenAI
+        # would be used for the other
+        description: "LLM chat-completion and Embeddings model provider. Ignored if `run-with-user-provided-config-and-endpoint-files==true`"
+        type: choice
+        required: true
+        default: openai
+
+        options:
+          - openai
+          - azure
+          - bedrock
+          - gemini
+          - huggingface
+          - huggingface_local
+          - anthropic
+          # - cohere TODO: Enable after ENG-1411 is unblocked
+          # - mistral TODO: Enable after ENG-1412 is unblocked
+          - together_ai
+          - groq
+          # - voyage TODO: Enable after ENG-1415 is unblocked
+          - ollama
+          # - self-hosted
+          - azure-multiple-deployments-with-simple-shuffle-routing
+          - azure-multiple-deployments-with-least-busy-routing
+          - azure-multiple-deployments-with-usage-based-routing
+          - azure-multiple-deployments-with-usage-based-routing-v2
+          - azure-multiple-deployments-with-latency-based-routing
+          - azure-multiple-deployments-with-cost-based-routing
+          - gemini-multiple-deployments-with-routing
+          - huggingface-multiple-deployments-with-routing
+          - bedrock-multiple-deployments-with-routing
+          - litellm-proxy-multiple-deployments-with-routing
+
+      llm-model-name:
+        description: "LLM model to use from provider (in case of `azure` provider, fill `llm-deployment` input instead). If unspecified, then model already defined in `data/test_config/providers/<provider>/*endpoint|config*.yml` is used"
+        type: string
+        required: false
+      
+      embeddings-model-name:
+        description: "Embeddings model to use from provider (in case of `azure` provider, fill `embeddings-deployment` input instead). If unspecified, then model already defined in `data/test_config/providers/<provider>/*endpoint|config*.yml` is used"
+        type: string
+        required: false
+
+      llm-deployment:
+        description: "Azure LLM model deployment to use. If unspecified, then deployment already defined in `data/test_config/providers/<provider>/*endpoint|config*.yml` is used"
+        type: string
+        required: false
+
+      embeddings-deployment:
+        description: "Azure Embeddings model deployment to use. If unspecified, then deployment already defined in `data/test_config/providers/<provider>/*endpoint|config*.yml` is used"
+        type: string
+        required: false
+
+      llm-api-version:
+        description: "Azure LLM API version to use. If unspecified, then API-version already defined in `data/test_config/providers/<provider>/*endpoint|config*.yml` is used"
+        type: string
+        required: false
+
+      embeddings-api-version:
+        description: "Azure Embeddings API version to use. If unspecified, then API-version already defined in `data/test_config/providers/<provider>/*endpoint|config*.yml` is used"
+        type: string
+        required: false
+
+      llm-api-base:
+        description: "Azure or Hugging Face Inference Endpoint API base to use. If unspecified, then API-version already defined in `data/test_config/providers/<provider>/*endpoint|config*.yml` is used"
+        type: string
+        required: false
+
+      embeddings-api-base:
+        description: "Azure or Hugging Face Inference Endpoint API base to use. If unspecified, then API-version already defined in `data/test_config/providers/<provider>/*endpoint|config*.yml` is used"
+        type: string
+        required: false
+
+      rasa-calm-demo-branch:
+        description: "Branch to checkout for `rasa-calm-demo`"
+        type: string
+        required: true
+        default: "main"
+        
+env:
+  DEFAULT_PYTHON_VERSION: "3.10"
+  RASA_PRO_BETA_E2E_ASSERTIONS: true
+  RASA_PRO_BETA_STUB_CUSTOM_ACTION: true
+  LOG_LEVEL_LLM: DEBUG
+  ENDPOINTS_FILE_NAME: endpoints
+  REDIS_HOST: localhost
+  REDIS_PORT: 6379
+  RASA_TELEMETRY_DEBUG: true
+  OTEL_EXPORTER: otlp_grpc
+  OTEL_ENDPOINT: http:/0.0.0.0:4317
+  API_KEY_NAMES: '{"azure": "AZURE_API_KEY", "gemini": "GEMINI_API_KEY", "huggingface": "HUGGINGFACE_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "together_ai": "TOGETHERAI_API_KEY", "groq": "GROQ_API_KEY", "openai": "OPENAI_API_KEY", "mistral": "MISTRAL_API_KEY", "cohere": "COHERE_API_KEY", "voyage": "VOYAGE_API_KEY"}'
+  RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+  DUCKLING_URL: http://localhost:8000
+  SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+  RASA_CALM_DEMO_READ_TOKEN: ${{ secrets.RASA_CALM_DEMO_READ }}
+
+  # Providers' required environment variables (API key values also stored in 1Password):
+
+  # OpenAI
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+   # Hugging Face
+  HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
+
+  # AWS Bedrock
+  AWS_REGION_NAME: us-east-1
+
+  # Gemini - Google AI Studio
+  GEMINI_API_KEY_1: ${{ secrets.GEMINI_API_KEY }}
+  GEMINI_API_KEY_2: ${{ secrets.GEMINI_ALTERNATE_API_KEY }} # API key for different deployment, to test multi-LLM-routing
+
+  # Ollama
+  OLLAMA_API_BASE: http://localhost:11434
+
+  # Azure multi-deployments (for multi-LLM routing):
+  LLM_API_HEALTH_CHECK: True
+
+  # Training deployment
+  AZURE_DEPLOYMENT_GPT3_5_TURBO: "test-gpt-35-turbo"
+  AZURE_API_BASE_GPT3_5_TURBO: "https://engine-testing.openai.azure.com/"
+  AZURE_API_VERSION_GPT3_5_TURBO: "2024-02-01"
+  AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA: "test-text-embedding-ada-002"
+  AZURE_API_BASE_TXT_EMBEDDING_ADA: "https://engine-testing.openai.azure.com/"
+  AZURE_API_VERSION_TXT_EMBEDDING_ADA: "2023-05-15"
+  AZURE_API_KEY_TRAINING: ${{ secrets.AZURE_OPENAI_API_KEY_ENGINE_TESTING }}
+
+    # Deployment 1
+  AZURE_DEPLOYMENT_GPT3_5_TURBO_CA: "test-gpt-35-turbo"
+  AZURE_API_BASE_GPT3_5_TURBO_CA: "https://devtribe-testing-canada-east.openai.azure.com/"
+  AZURE_API_VERSION_GPT3_5_TURBO_CA: "2024-02-01"
+  AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_CA: "test-text-embedding-ada-002"
+  AZURE_API_BASE_TXT_EMBEDDING_ADA_CA: "https://devtribe-testing-canada-east.openai.azure.com"
+  AZURE_API_VERSION_TXT_EMBEDDING_ADA_CA: "2023-05-15"
+  AZURE_API_KEY_CA: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING_CANADA_EAST }}
+
+    # Deployment 2
+  AZURE_DEPLOYMENT_GPT3_5_TURBO_FR: "test-gpt-35-turbo"
+  AZURE_API_BASE_GPT3_5_TURBO_FR: "https://devtribe-testing.openai.azure.com/"
+  AZURE_API_VERSION_GPT3_5_TURBO_FR: "2024-02-01"
+  AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_FR: "test-text-embedding-ada-002"
+  AZURE_API_BASE_TXT_EMBEDDING_ADA_FR: "https://devtribe-testing.openai.azure.com/"
+  AZURE_API_VERSION_TXT_EMBEDDING_ADA_FR: "2023-05-15"
+  AZURE_API_KEY_FR: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING }}
+
+  # AWS Bedrock regions, for multi-LLM-routing testing
+  AWS_REGION_NAME_1: us-east-1
+  AWS_REGION_NAME_2: eu-central-1
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: read
+
+jobs:
+  lint_action:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+      - uses: ./.github/actions/lint-action
+        with:
+          workflow_path: .github/workflows/providers-e2e-tests-with-custom-model-or-config.yml
+  
+  e2e_test_with_user_provided_config_and_endpoint_files:
+    name: Run e2e Test
+    needs: lint_action
+    runs-on: ubuntu-22.04
+    services:
+      redis:
+        image: redis:6
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    strategy:
+      fail-fast: false
+      matrix:
+        train-and-test: ["singlestep", "multistep"]
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Set provider API key
+        continue-on-error: true
+        run: |
+          : Set provider API key
+          echo "${{ fromJson(env.API_KEY_NAMES)[inputs.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[inputs.provider]] }}" >> "$GITHUB_ENV"
+
+      - name: Update endpoint and config files to use specified model config
+        if: ${{ !(inputs.llm-model-name == '' && inputs.embeddings-model-name == '' && inputs.llm-deployment == '' && inputs.embeddings-deployment == '' && inputs.llm-api-version == '' && inputs.embeddings-api-version == '' && inputs.llm-api-base == '' && inputs.embeddings-api-base == '') }}
+        working-directory: data/test_config/providers
+        env:
+            PROVIDER: ${{ inputs.provider }}
+            LLM_MODEL_NAME: ${{ inputs.llm-model-name }}
+            EMBEDDINGS_MODEL_NAME: ${{ inputs.embeddings-model-name }}
+            LLM_DEPLOYMENT: ${{ inputs.llm-deployment }}
+            EMBEDDINGS_DEPLOYMENT: ${{ inputs.embeddings-deployment }}
+            LLM_API_VERSION: ${{ inputs.llm-api-version || '2024-08-01-preview' }}
+            EMBEDDINGS_API_VERSION: ${{ inputs.embeddings-api-version }}
+            LLM_API_BASE: ${{ inputs.llm-api-base }}
+            EMBEDDINGS_API_BASE: ${{ inputs.embeddings-api-base }}
+        run: ./update-model-name-in-config-and-endpoint-files.py
+
+      - name: E2E test with user provided config and endpoint files
+        uses: ./.github/actions/providers-e2e-test
+        with:
+          provider: ${{ inputs.provider }}
+          train-and-test: ${{ matrix.train-and-test }}
+          rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch }}
+          single-step-e2e-test-with-assertions: e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml
+          multi-step-e2e-test-with-assertions: e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml
+          llm-as-judge-model: gpt-4o-mini

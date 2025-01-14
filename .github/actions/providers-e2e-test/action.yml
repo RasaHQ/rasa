@@ -35,22 +35,6 @@ inputs:
     required: true
     default: gpt-4o-mini
 
-  rasa-calm-demo-read-token:
-    description: 'Token to enable read access to `rasa-calm-demo` repository'
-    required: true
-
-  rasa-pro-license:
-    description: 'RASA-Pro license'
-    required: true
-
-  duckling-url:
-    description: 'Duckling server URL'
-    required: true
-
-  slack-bot-token:
-    description: 'Token to enable sending Slack notifications'
-    required: true
-
 runs:
   using: composite
   steps:
@@ -60,7 +44,7 @@ runs:
         repository: RasaHQ/rasa-calm-demo
         ref: ${{ inputs.rasa-calm-demo-branch }}
         path: rasa-calm-demo
-        token: ${{ inputs.rasa-calm-demo-read-token }}
+        token: ${{ env.RASA_CALM_DEMO_READ_TOKEN }}
 
     - name: Setup LLM-as-judge model
       working-directory: rasa-calm-demo
@@ -178,8 +162,8 @@ runs:
     - name: Run action server
       id: run-action-server
       env:
-        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
-        RASA_DUCKLING_HTTP_URL: ${{ inputs.duckling-url }}
+        RASA_PRO_LICENSE: ${{ env.RASA_PRO_LICENSE }}
+        RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
       working-directory: rasa-calm-demo
       run: |
@@ -200,7 +184,7 @@ runs:
     - name: Train model
       uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
       env:
-        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_PRO_LICENSE: ${{ env.RASA_PRO_LICENSE }}
         RASA_PRO_BETA_INTENTLESS: true
       with:
         timeout_minutes: 15
@@ -272,8 +256,8 @@ runs:
       if: ${{ inputs.train-and-test == 'singlestep' }}
       id: e2e-test-on-singlestep-trained-model
       env:
-        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
-        RASA_DUCKLING_HTTP_URL: ${{ inputs.duckling-url }}
+        RASA_PRO_LICENSE: ${{ env.RASA_PRO_LICENSE }}
+        RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
       with:
         timeout_minutes: 15
@@ -294,8 +278,8 @@ runs:
       uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
       if: ${{ inputs.train-and-test == 'multistep' }}
       env:
-        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
-        RASA_DUCKLING_HTTP_URL: ${{ inputs.duckling-url }}
+        RASA_PRO_LICENSE: ${{ env.RASA_PRO_LICENSE }}
+        RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
       with:
         timeout_minutes: 15
@@ -343,7 +327,7 @@ runs:
     - name: Get Rasa-pro version and short-SHA, and set as environment variables
       if: always()
       env:
-        RASA_PRO_LICENSE: ${{ inputs.rasa-pro-license }}
+        RASA_PRO_LICENSE: ${{ env.RASA_PRO_LICENSE }}
       run: |
         echo "RASA_VERSION=$(rasa --version | grep 'Rasa Pro Version' | tr -d ' ' | awk -F ':' '{print $2}')" >> $GITHUB_ENV
         echo "SHORT_SHA=`git rev-parse --short HEAD`" >> $GITHUB_ENV
@@ -360,7 +344,7 @@ runs:
           information can be found <https://github.com/${{ github.repository
           }}/actions/runs/${{ github.run_id }}|here>.'
       env:
-        SLACK_BOT_TOKEN: ${{ inputs.slack-bot-token }}
+        SLACK_BOT_TOKEN: ${{ env.SLACK_BOT_TOKEN }}
 
     - name: Notify Slack of failing test ⛔️
       if: failure()
@@ -375,4 +359,4 @@ runs:
           More information can be found <https://github.com/${{
           github.repository }}/actions/runs/${{ github.run_id }}|here>.'
       env:
-        SLACK_BOT_TOKEN: ${{ inputs.slack-bot-token }}
+        SLACK_BOT_TOKEN: ${{ env.SLACK_BOT_TOKEN }}

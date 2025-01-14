@@ -24,7 +24,7 @@ metrics:
 model_groups:
   - id: huggingface_llm
     models:
-    # Same LLM models across multiple GCP projects
+    # Same LLM models across multiple inference endpoints
       - provider: huggingface
         model: rasa/cmd_gen_codellama_13b_calm_demo
         api_base: https://vguojsa987r65sjk.us-east-1.aws.endpoints.huggingface.cloud

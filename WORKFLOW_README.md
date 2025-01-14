@@ -36,6 +36,16 @@ also be triggered manually/on-demand, and test results' notification is sent to
 `#dev-tribe-alerts` Slack channel. In case of failure, test results are saved, and can be
 found on GitHub's web interface, in the `Artifacts` section of the `Action`'s run summary page.
 
+### E2E Test on Rasa-Calm-Demo with supported providers and specified config
+This workflow runs a single E2E test (with assertions) on the `rasa-calm-demo` 
+bot (from its `passing/happy_path` category), using the specified CALM supported LLM 
+or Embeddings provider (with option to also specify specific model to be used from the provider), 
+to verify CALM's integration/compatibility with the providers' APIs.
+
+This workflow can be triggered manually/on-demand, and test results' notification is sent to 
+`#dev-tribe-alerts` Slack channel. In case of failure, test results are saved, and can be
+found on GitHub's web interface, in the `Artifacts` section of the `Action`'s run summary page.
+
 ### Release Artifacts Workflow
 Workflow runs on a tag push to the `main` branch and `release branches`. 
 This workflow does the following:
