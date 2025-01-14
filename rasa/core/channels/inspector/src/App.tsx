@@ -131,6 +131,7 @@ export function App() {
       setStack(updatedStack);
       setFrame(updatedActiveFrame(frame, updatedStack, lastJsonMessage.events));
       setRasaChatSessionId(lastJsonMessage.sender_id);
+      fetchStory();
     } else if (
       rasaChatSessionId &&
       lastJsonMessage.sender_id !== rasaChatSessionId
@@ -139,10 +140,6 @@ export function App() {
       // switch to the new chat session. the alert should be dissmissable.
     }
   }, [lastJsonMessage, rasaChatSessionId]);
-
-  useEffect(() => {
-    fetchStory();
-  }, [rasaChatSessionId]);
 
   const borderRadiusSx = {
     borderRadius: rasaRadii.normal,
