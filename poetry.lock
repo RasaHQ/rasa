@@ -3571,13 +3571,13 @@ psutil = "*"
 
 [[package]]
 name = "minio"
-version = "7.2.3"
+version = "7.2.11"
 description = "MinIO Python SDK for Amazon S3 Compatible Cloud Storage"
 optional = false
-python-versions = "*"
+python-versions = ">=3.9"
 files = [
-    {file = "minio-7.2.3-py3-none-any.whl", hash = "sha256:e6b5ce0a9b4368da50118c3f0c4df5dbf33885d44d77fce6c0aa1c485e6af7a1"},
-    {file = "minio-7.2.3.tar.gz", hash = "sha256:4971dfb1a71eeefd38e1ce2dc7edc4e6eb0f07f1c1d6d70c15457e3280cfc4b9"},
+    {file = "minio-7.2.11-py3-none-any.whl", hash = "sha256:153582ed52ff3b5005ba558e1f25bfe1e9e834f7f0745e594777f28e3e81e1a0"},
+    {file = "minio-7.2.11.tar.gz", hash = "sha256:4db95a21fe1e2022ec975292d8a1f83bd5b18f830d23d42a4518ac7a5281d7c5"},
 ]
 
 [package.dependencies]
@@ -5210,16 +5210,17 @@ python-dateutil = ">=2.8.0"
 
 [[package]]
 name = "pymilvus"
-version = "2.3.6"
+version = "2.4.1"
 description = "Python Sdk for Milvus"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pymilvus-2.3.6-py3-none-any.whl", hash = "sha256:eebeab9a43827bb90ceb7ff658eeb25a0383980d75be3b2aa3dd151a42f60c9a"},
-    {file = "pymilvus-2.3.6.tar.gz", hash = "sha256:61ab05d77728ddca79793abec50cf7d441c902790b0f70d2a3dd74ec76ec2cd2"},
+    {file = "pymilvus-2.4.1-py3-none-any.whl", hash = "sha256:1ad85c011e56b40944b224c34ad5c1565fe5ac703589986d323b9fd7ad3973bf"},
+    {file = "pymilvus-2.4.1.tar.gz", hash = "sha256:e77ceb3459d4574685fa3e346c4608354272b50b16a2d65fb7928068184a1ab7"},
 ]
 
 [package.dependencies]
+azure-storage-blob = "*"
 environs = "<=9.5.0"
 grpcio = ">=1.49.1,<=1.60.0"
 minio = ">=7.0.0"
@@ -5227,8 +5228,13 @@ pandas = ">=1.2.4"
 protobuf = ">=3.20.0"
 pyarrow = ">=12.0.0"
 requests = "*"
+scipy = "*"
 setuptools = ">=67"
 ujson = ">=2.0.0"
+
+[package.extras]
+model = ["milvus-model (>=0.1.0)"]
+test = ["black", "grpcio-testing", "pytest (>=5.3.4)", "pytest-cov (>=2.8.1)", "pytest-timeout (>=1.3.4)", "ruff (>=0.3.3)"]
 
 [[package]]
 name = "pymongo"
@@ -8763,4 +8769,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
-content-hash = "8e359ad275246d867b4a1ed7bb0626f54ca4260d1f83ab9921a6412b6fd39e0c"
+content-hash = "861672319643211278391e1e132095a2fef868748f89e92e00948f4db06b0198"
