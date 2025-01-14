@@ -429,7 +429,7 @@ class TestLLMBasedCommandGenerator:
 
         # Given
         expected_llm_config = {
-            "model": "gpt-4",
+            "model": "gpt-4-0613",
             "provider": "openai",
             "timeout": 7,
             "temperature": 0.0,

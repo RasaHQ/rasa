@@ -55,13 +55,13 @@ def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
             {
                 "prompt": TEST_PROMPT_DIRECTORY,
                 "llm": {
-                    "model_name": "gpt-4",
+                    "model_name": "gpt-4-0613",
                     "request_timeout": 7,
                     "temperature": 0.0,
                 },
             },
             {
-                "llm_model": "gpt-4",
+                "llm_model": "gpt-4-0613",
             },
         ),
         (
@@ -75,7 +75,7 @@ def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
                 "llm_model": "gpt-3.5-turbo",
             },
         ),
-        ({"prompt": TEST_PROMPT_DIRECTORY}, {"llm_model": "gpt-4"}),
+        ({"prompt": TEST_PROMPT_DIRECTORY}, {"llm_model": "gpt-4-0613"}),
         (
             {
                 "prompt": TEST_PROMPT_DIRECTORY,
@@ -85,7 +85,7 @@ def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
                 },
             },
             {
-                "llm_model": "gpt-4",
+                "llm_model": "gpt-4-0613",
             },
         ),
         (
@@ -189,7 +189,7 @@ async def test_tracing_llm_command_generator_azure_attrs(
         llm_command_generator_class=component_class,
     )
 
-    model = "gpt-4"
+    model = "gpt-4-0613"
     config = {
         "prompt": TEST_PROMPT_DIRECTORY,
         "llm": {
@@ -435,7 +435,7 @@ async def test_tracing_llm_command_generator_prompt_tokens(
         "len_prompt_tokens": "6",
         # llm attributes
         "llm_type": "openai",
-        "llm_model": "gpt-4",
+        "llm_model": "gpt-4-0613",
         "llm_model_group_id": "None",
         "llm_temperature": "0.0",
         "llm_request_timeout": "7",

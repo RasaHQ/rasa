@@ -178,7 +178,7 @@ class TestMultiStepLLMCommandGenerator:
         """Test predict_commands_for_handling_flows calls llm correctly."""
         # Given
         expected_llm_config = {
-            "model": "gpt-4",
+            "model": "gpt-4-0613",
             "provider": "openai",
             "timeout": 7,
             "temperature": 0.0,
