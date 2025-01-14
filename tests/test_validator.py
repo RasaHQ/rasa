@@ -1972,7 +1972,7 @@ def test_validator_check_for_placeholder(
     assert Validator.check_for_placeholder(response) is result
 
 
-def test_validator_check_for_empty_paranthesis_in_text_response() -> None:
+def test_validator_check_for_empty_parenthesis_in_text_response() -> None:
     test_domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -1987,7 +1987,7 @@ def test_validator_check_for_empty_paranthesis_in_text_response() -> None:
     assert validator.check_for_no_empty_parenthesis_in_responses() is False
 
 
-def test_validator_check_for_empty_paranthesis_in_image_response() -> None:
+def test_validator_check_for_empty_parenthesis_in_image_response() -> None:
     test_domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -2002,7 +2002,7 @@ def test_validator_check_for_empty_paranthesis_in_image_response() -> None:
     assert validator.check_for_no_empty_parenthesis_in_responses() is False
 
 
-def test_validator_check_for_empty_paranthesis_in_button_response() -> None:
+def test_validator_check_for_empty_parenthesis_in_button_response() -> None:
     test_domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -2021,7 +2021,7 @@ def test_validator_check_for_empty_paranthesis_in_button_response() -> None:
     assert validator.check_for_no_empty_parenthesis_in_responses() is False
 
 
-def test_validator_check_for_empty_paranthesis_in_text_button_response() -> None:
+def test_validator_check_for_empty_parenthesis_in_text_button_response() -> None:
     test_domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -2040,7 +2040,7 @@ def test_validator_check_for_empty_paranthesis_in_text_button_response() -> None
     assert validator.check_for_no_empty_parenthesis_in_responses() is False
 
 
-def test_validator_check_for_empty_paranthesis_in_custom_response() -> None:
+def test_validator_check_for_empty_parenthesis_in_custom_response() -> None:
     test_domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -2058,7 +2058,7 @@ def test_validator_check_for_empty_paranthesis_in_custom_response() -> None:
     assert validator.check_for_no_empty_parenthesis_in_responses() is False
 
 
-def test_validator_check_for_empty_paranthesis_multiple_errors() -> None:
+def test_validator_check_for_empty_parenthesis_multiple_errors() -> None:
     test_domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -2090,7 +2090,7 @@ def test_validator_check_for_empty_paranthesis_multiple_errors() -> None:
     assert validator.check_for_no_empty_parenthesis_in_responses() is False
 
 
-def test_validator_check_for_empty_paranthesis_all_good() -> None:
+def test_validator_check_for_empty_parenthesis_all_good() -> None:
     test_domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -2120,6 +2120,28 @@ def test_validator_check_for_empty_paranthesis_all_good() -> None:
 
     validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
     assert validator.check_for_no_empty_parenthesis_in_responses() is True
+
+
+def test_validator_check_for_empty_parenthesis_empty_response(
+    capsys: CaptureFixture,
+) -> None:
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_greet: []
+        """
+    )
+
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.check_for_no_empty_parenthesis_in_responses() is False
+
+    captured = capsys.readouterr()
+    assert (
+        "The response 'utter_greet' in the domain file "
+        "does not have any variations. Please add at least one "
+        "variation to the response." in captured.out
+    )
 
 
 def test_validator_fail_as_both_utterance_and_action_defined_for_collect(

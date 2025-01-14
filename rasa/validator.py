@@ -317,6 +317,18 @@ class Validator:
         everything_is_alright = True
 
         for response_text, response_variations in self.domain.responses.items():
+            if not response_variations:
+                structlogger.error(
+                    "validator.empty_response",
+                    response=response_text,
+                    event_info=(
+                        f"The response '{response_text}' in the domain file "
+                        f"does not have any variations. Please add at least one "
+                        f"variation to the response."
+                    ),
+                )
+                everything_is_alright = False
+
             for response in response_variations:
                 if any(
                     self.check_for_placeholder(response.get(key))
