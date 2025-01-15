@@ -10,6 +10,28 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.11.3] - 2025-01-14
+                        
+Rasa Pro 3.11.3 (2025-01-14)                             
+### Improvements
+- [#1547](https://github.com/rasahq/rasa-private/issues/1547): Enhances YAML parser to validate environment variable resolution for sensitive keys.
+
+### Bugfixes
+- [#1787](https://github.com/rasahq/rasa-private/issues/1787): Add flow yaml validation when using the HTTP API `/model/train` endpoint.
+  An invalid flow yaml will return a 400 response status code with a message describing the error.
+- [#1790](https://github.com/rasahq/rasa-private/issues/1790): Make `pattern_session_start` work with `rasa inspector` to allow the assistant proactively start the conversation with a user.
+- [#1792](https://github.com/rasahq/rasa-private/issues/1792): Fix writing the test cases obtained via the e2e test case conversion command to file, where `test_cases` key
+  was written as a list item, instead of a dict key. This caused running the test cases to fail because it didn't comply
+  with the e2e test schema. This PR fixes the issue by writing the test cases as a dict key.
+- [#1812](https://github.com/rasahq/rasa-private/issues/1812): Fixed Inspector's Tracker State view not updating in real-time by moving story fetch logic into WebSocket message handler. Previously, story updates were only triggered on session ID changes, causing stale tracker state after the first conversation turn.
+- [#1820](https://github.com/rasahq/rasa-private/issues/1820): Add pre-training custom validation to the domain responses that would raise a Rasa Pro validation error when a domain response is an empty sequence.
+- [#1821](https://github.com/rasahq/rasa-private/issues/1821): Fixes a critical security vulnerability with `jsonpickle` dependency by upgrading to the patched version.
+- [#1826](https://github.com/rasahq/rasa-private/issues/1826): Updated `pymilvus` and `minio` to address security vulnerability.
+
+### Miscellaneous internal changes
+- [#1819](https://github.com/rasahq/rasa-private/issues/1819)
+
+
 ## [3.11.2] - 2024-12-19
                         
 Rasa Pro 3.11.2 (2024-12-19)                             
