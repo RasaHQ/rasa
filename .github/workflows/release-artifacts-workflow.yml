@@ -287,7 +287,7 @@ jobs:
     # Push to the public PYPI release registry
     - name: Publish to public PyPI 📦
       if: always()
-      uses: pypa/gh-action-pypi-publish@e53eb8b103ffcb59469888563dc324e3c8ba6f06
+      uses: pypa/gh-action-pypi-publish@67339c736fd9354cd4f8cb0b744f2b82a74b5c70
       with:
         password: ${{ secrets.PYPI_TOKEN }}
         repository-url: "https://upload.pypi.org/legacy/"
