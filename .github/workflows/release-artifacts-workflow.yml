@@ -357,7 +357,7 @@ jobs:
     steps:
       - name: Notify Slack of successful release 💬
         if: ${{ needs.release-artifacts-docker.result == 'success' && needs.release-artifacts-pypi.result == 'success' }}
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
         with:
           # Send notification to #release slack channel
           channel-id: "C024Z61K9QU"
@@ -367,7 +367,7 @@ jobs:
 
       - name: Notify Slack of unsuccessful release ⛔️
         if: ${{ needs.release-artifacts-docker.result != 'success' || needs.release-artifacts-pypi.result != 'success' }}
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
         with:
            # Send notification to #devtribe slack channel
            channel-id: "C061J0LGHU0"
