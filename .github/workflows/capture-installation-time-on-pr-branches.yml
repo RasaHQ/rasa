@@ -11,7 +11,7 @@ jobs:
       lock_file: ${{ steps.filter.outputs.lock_file }}
     steps:
       - name: Check out code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - id: filter
         name: Check for changes in poetry.lock
         uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50  #v2.11.1
