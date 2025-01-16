@@ -40,3 +40,12 @@ class ContinueInterruptedPatternFlowStackFrame(PatternFlowStackFrame):
             step_id=data["step_id"],
             previous_flow_name=data["previous_flow_name"],
         )
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, ContinueInterruptedPatternFlowStackFrame):
+            return False
+        return (
+            self.flow_id == other.flow_id
+            and self.step_id == other.step_id
+            and self.previous_flow_name == other.previous_flow_name
+        )

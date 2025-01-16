@@ -80,6 +80,7 @@ def top_user_flow_frame(dialogue_stack: DialogueStack) -> Optional[UserFlowStack
         if (
             isinstance(frame, UserFlowStackFrame)
             and frame.frame_type != FlowStackFrameType.CALL
+            and frame.frame_type != FlowStackFrameType.LINK
         ):
             return frame
     return None

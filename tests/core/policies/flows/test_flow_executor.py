@@ -600,6 +600,92 @@ def test_trigger_pattern_continue_interrupted_does_not_trigger_if_not_user_frame
     assert len(stack.frames) == 1
 
 
+def test_trigger_pattern_continue_interrupted_triggers_correctly_with_link_step():
+    """
+    Test if pattern_continue_interrupted triggers correctly with link step.
+
+    Conversation being tested (expected behaviour):
+    User: Remove contact
+    Bot: What's the handle of the user you want to remove?
+    User: You didn't understand me correctly
+    Bot: <utter_test_b>
+    Bot: <utter_test_c> (1)
+    Bot: Let's continue with remove a contact. (2)
+    Bot: What's the handle of the user you want to remove?
+
+    The primary objective is to verify that the bot correctly invokes
+    `pattern_continue_interrupted` after <utter_test_c> (1) in flow_c,
+    and then resumes flow_a from the point where it was interrupted.
+    """
+
+    flows = flows_from_str(
+        """
+        flows:
+          flow_a:
+            name: remove a contact
+            description: remove a contact from your contact list
+            steps:
+              - collect: "remove_contact_handle"
+                description: "a contact handle starting with @"
+              - collect: "remove_contact_confirmation"
+                ask_before_filling: true
+          flow_b:
+            description: dummy flow b
+            steps:
+              - action: utter_test_b
+              - link: flow_c
+          flow_c:
+            description: dummy link flow c
+            if: False
+            steps:
+              - action: utter_test_c
+        """
+    )
+
+    frame1 = UserFlowStackFrame(
+        flow_id="flow_a",
+        frame_type=FlowStackFrameType.REGULAR,
+        step_id="0_collect_remove_contact_handle",
+        frame_id="id0",
+    )
+    frame2 = CollectInformationPatternFlowStackFrame(
+        flow_id="pattern_collect_information", step_id="4_action_listen", frame_id="id1"
+    )
+    frame3 = UserFlowStackFrame(
+        flow_id="flow_c",
+        frame_type=FlowStackFrameType.LINK,
+        step_id="START",
+        frame_id="id2",
+    )
+    stack = DialogueStack(frames=[frame1, frame2, frame3])
+    current_frame = UserFlowStackFrame(
+        flow_id="flow_b",
+        frame_type=FlowStackFrameType.INTERRUPT,
+        step_id="END",
+        frame_id="some-id",
+    )
+    flow_resumed = FlowResumed(
+        flow_id="flow_a", step_id="0_collect_remove_contact_handle"
+    )
+    continue_interrupted = ContinueInterruptedPatternFlowStackFrame(
+        flow_id="pattern_continue_interrupted",
+        step_id="START",
+        frame_id="some-id",
+        previous_flow_name="remove a contact",
+    )
+
+    resumed_events = flow_executor.trigger_pattern_continue_interrupted(
+        current_frame, stack, flows
+    )
+
+    # if the `pattern_continue_interrupted` is correctly invoked, both the stack
+    # `resumed_events` will indicate the return to `flow_a`
+    assert len(resumed_events) == 1
+    assert resumed_events[0] == flow_resumed
+    assert len(stack.frames) == 4
+    assert stack.frames[-1] == continue_interrupted
+
+
 def test_trigger_pattern_completed_on_user_flow_frame():
     flows = flows_from_str(
         """
