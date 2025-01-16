@@ -1,5 +1,4 @@
 services:
-
   otel-collector:
     container_name: otel-collector
     image: otel/opentelemetry-collector-contrib:0.114.0
@@ -9,3 +8,7 @@ services:
       - ./otel-collector-config.yml:/etc/otel-collector-config.yaml
     ports:
       - 4317:4317
+      - 13133:13133
+    environment:
+      - HONEYCOMB_API_KEY=${HONEYCOMB_API_KEY?"HONEYCOMB_API_KEY not set"}
+      - OTEL_RESOURCE_ATTRIBUTES=${OTEL_RESOURCE_ATTRIBUTES?"OTEL_RESOURCE_ATTRIBUTES not set"}

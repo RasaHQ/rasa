@@ -33,11 +33,11 @@ tracing:
  endpoint: localhost:4317
  insecure: true
  host: localhost
- service_name: rasa-providers-e2e-tests-azure
+ service_name: e2e-tests-azure-multiple-deployments-with-least-busy-routing
 
 metrics:
  type: otlp
  endpoint: localhost:4317
  insecure: true
  host: localhost
- service_name: rasa-providers-e2e-tests-azure
+ service_name: e2e-tests-azure-multiple-deployments-with-least-busy-routing

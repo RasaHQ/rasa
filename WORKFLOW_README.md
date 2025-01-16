@@ -33,7 +33,7 @@ providers' APIs.
 
 This workflow runs as a cron job at 1am UTC every Sunday, and can 
 also be triggered manually/on-demand, and test results' notification is sent to 
-`#dev-tribe-alerts` Slack channel. In case of failure, test results are saved, and can be
+`#dev-tribe-alerts` Slack channel, and traces and metrics from Rasa components are sent to [`Honeycomb`](https://ui.honeycomb.io/rasa/environments/engine). In case of failure, test results are saved, and can be
 found on GitHub's web interface, in the `Artifacts` section of the `Action`'s run summary page.
 
 ### E2E Test on Rasa-Calm-Demo with supported providers and specified config
@@ -43,7 +43,7 @@ or Embeddings provider (with option to also specify specific model to be used fr
 to verify CALM's integration/compatibility with the providers' APIs.
 
 This workflow can be triggered manually/on-demand, and test results' notification is sent to 
-`#dev-tribe-alerts` Slack channel. In case of failure, test results are saved, and can be
+`#dev-tribe-alerts` Slack channel, and traces and metrics from Rasa components are sent to [`Honeycomb`](https://ui.honeycomb.io/rasa/environments/engine). In case of failure, test results are saved, and can be
 found on GitHub's web interface, in the `Artifacts` section of the `Action`'s run summary page.
 
 ### Release Artifacts Workflow

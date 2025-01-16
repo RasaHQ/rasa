@@ -570,3 +570,18 @@ test-mongodb-tracker-store:  ## Run the MongoDB tracker store integration tests.
 		pytest $(TRACKER_STORE_INTEGRATION_TEST_PATH)/test_mongo_tracker_store.py \
 			-n $(JOBS) \
 			--junitxml=integration-results-mongo-tracker-store.xml
+
+set-otel-resource-attributes: ## Set OTEL_RESOURCE_ATTRIBUTES with rasa version and git info
+	. data/test_config/providers/set-otel-resource-attributes.sh
+
+run-otel-collector: ## Run OTEL collector, which would recieve traces and metrics, and export them to OTEL monitoring backend
+	docker compose -f data/test_config/providers/otel-docker-compose.yml run --remove-orphans --build --name otel-collector -d -P otel-collector
+
+print-otel-collector-logs: ## Print OTEL collector logs on console
+	docker logs otel-collector
+
+otel-collector-health-check: ## Conduct health check on OTEL collector (requires curl and jq tools)
+	curl -sf http://localhost:13133/health/status | jq '.status' | grep 'Server available'
+
+stop-otel-collector: ## Stop OTEL collector
+	docker compose -f data/test_config/providers/otel-docker-compose.yml down otel-collector -v --remove-orphans --rmi all

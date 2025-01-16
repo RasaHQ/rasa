@@ -12,14 +12,14 @@ tracing:
  endpoint: localhost:4317
  insecure: true
  host: localhost
- service_name: rasa-providers-e2e-tests-azure-multi-deployments-with-usage-based-routing-v2
+ service_name: e2e-tests-azure-multiple-deployments-with-usage-based-routing-v2
 
 metrics:
  type: otlp
  endpoint: localhost:4317
  insecure: true
  host: localhost
- service_name: rasa-providers-e2e-tests-azure-multi-deployments-with-usage-based-routing-v2
+ service_name: e2e-tests-azure-multiple-deployments-with-usage-based-routing-v2
 
 model_groups:
   - id: azure_llm

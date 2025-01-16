@@ -80,6 +80,12 @@ on:
         required: true
         default: gpt-4o-mini
 
+      instrument-litellm-provider-calls:
+        description: "Also instrument LiteLLM calls to each provider (creates another detailed child span in Rasa LLM component trace spans)"
+        type: boolean
+        required: false
+        default: false
+
     # Enable optionally calling this re-usable Workflow from
     # `release-artifacts-workflow` also, with same input
     # parameters as above
@@ -128,7 +134,9 @@ env:
   REDIS_PORT: 6379
   RASA_TELEMETRY_DEBUG: true
   OTEL_EXPORTER: otlp_grpc
-  OTEL_ENDPOINT: http:/0.0.0.0:4317
+  OTEL_ENDPOINT: http://0.0.0.0:4317
+  INSTRUMENT_LITELLM_PROVIDER_CALLS: ${{ inputs.instrument-litellm-provider-calls }}
+  HONEYCOMB_API_KEY: ${{ secrets.HONEYCOMB_API_KEY }}
   API_KEY_NAMES: '{"azure": "AZURE_API_KEY", "gemini": "GEMINI_API_KEY", "huggingface": "HUGGINGFACE_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "together_ai": "TOGETHERAI_API_KEY", "groq": "GROQ_API_KEY", "openai": "OPENAI_API_KEY", "mistral": "MISTRAL_API_KEY", "cohere": "COHERE_API_KEY", "voyage": "VOYAGE_API_KEY"}'
   RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
   DUCKLING_URL: ${{ secrets.DUCKLING_URL }}
@@ -301,6 +309,8 @@ jobs:
 
       - name: E2E test
         uses: ./.github/actions/providers-e2e-test
+        env:
+          OTEL_SERVICE_NAME: e2e-tests-${{ matrix.provider }}
         with:
           provider: ${{ matrix.provider }}
           train-and-test: ${{ matrix.train-and-test }}
@@ -343,6 +353,8 @@ jobs:
 
       - name: E2E test on single provider
         uses: ./.github/actions/providers-e2e-test
+        env:
+          OTEL_SERVICE_NAME: e2e-tests-${{ inputs.provider }}
         with:
           provider: ${{ inputs.provider }}
           train-and-test: ${{ matrix.train-and-test }}

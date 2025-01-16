@@ -55,9 +55,18 @@ runs:
                 model: ${{ inputs.llm-as-judge-model }}" > conftest.yml
       shell: bash
 
-    - name: Run OTEL collector for Tracing and Metrics collection
-      working-directory: data/test_config/providers
-      run: docker compose -f otel-docker-compose.yml up -d
+    # TODO: Investigate using LiteLLM-proxy, and adding callbacks to proxy only, for non `litellm_proxy` providers also
+    - name: Instrument LiteLLM providers
+      if: ${{ env.INSTRUMENT_LITELLM_PROVIDER_CALLS && !contains(inputs.provider, 'litellm-proxy') }}
+      working-directory: rasa/shared/providers
+      run: |
+        : Instrument LiteLLM providers
+        echo 'import litellm' > /tmp/newfile
+        echo 'litellm.callbacks=["otel"]' >> /tmp/newfile
+        cat llm/_base_litellm_client.py >> /tmp/newfile
+        cat embedding/_base_litellm_embedding_client.py >> /tmp/newfile
+        cp /tmp/newfile llm/_base_litellm_client.py
+        cp /tmp/newfile embedding/_base_litellm_embedding_client.py
       shell: bash
 
     - name: Setup Python Environment
@@ -149,24 +158,24 @@ runs:
       run: |
         : Install LiteLLM proxy with instrumentation
         source $VENV && pip install 'litellm[proxy]'
-        echo "OTEL_TRACER_NAME=rasa-providers-e2e-tests-litellm-proxy" >> $GITHUB_ENV
-        echo "OTEL_SERVICE_NAME=rasa-providers-e2e-tests-litellm-proxy" >> $GITHUB_ENV
+        echo "OTEL_TRACER_NAME=litellm-proxy-multiple-deployments-with-routing" >> $GITHUB_ENV
       shell: bash
 
     - name: Run duckling server
       working-directory: rasa-calm-demo
       run: |
+        : Run duckling server
         make run-duckling
       shell: bash
 
     - name: Run action server
       id: run-action-server
       env:
-        RASA_PRO_LICENSE: ${{ env.RASA_PRO_LICENSE }}
         RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
       working-directory: rasa-calm-demo
       run: |
+        : Run action server
         rasa run actions &
       shell: bash
 
@@ -181,10 +190,20 @@ runs:
         echo "litellm-proxy-pid=$pid" >> $GITHUB_ENV
       shell: bash
 
+    - name: Run OTEL collector for Tracing and Metrics collection
+      env:
+        RASA_CALM_DEMO_BRANCH: ${{ inputs.rasa-calm-demo-branch || 'main' }}
+      run: |
+        : Run OTEL collector for Tracing and Metrics collection
+        `make set-otel-resource-attributes`
+        make run-otel-collector
+        make otel-collector-health-check
+        echo "OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES" >> $GITHUB_ENV
+      shell: bash
+
     - name: Train model
       uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
       env:
-        RASA_PRO_LICENSE: ${{ env.RASA_PRO_LICENSE }}
         RASA_PRO_BETA_INTENTLESS: true
       with:
         timeout_minutes: 15
@@ -205,6 +224,7 @@ runs:
 
     - name: Verify LLM and Embeddings API health checks during training
       run: |
+        : Verify LLM and Embeddings API health checks during training
         grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' model-training-log \
           && grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' model-training-log \
           && grep -i 'Sending a test LLM API request for the component - EnterpriseSearchPolicy' model-training-log \
@@ -256,7 +276,6 @@ runs:
       if: ${{ inputs.train-and-test == 'singlestep' }}
       id: e2e-test-on-singlestep-trained-model
       env:
-        RASA_PRO_LICENSE: ${{ env.RASA_PRO_LICENSE }}
         RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
       with:
@@ -278,7 +297,6 @@ runs:
       uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
       if: ${{ inputs.train-and-test == 'multistep' }}
       env:
-        RASA_PRO_LICENSE: ${{ env.RASA_PRO_LICENSE }}
         RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
       with:
@@ -299,6 +317,7 @@ runs:
     - name: Verify LLM and Embeddings API health checks during inference
       if: ${{ !contains(inputs.provider, 'azure-multiple-deployments-with-') }}
       run: |
+        : Verify LLM and Embeddings API health checks during inference
         grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' e2e-tests-log \
           && grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' e2e-tests-log \
           && grep -i 'Sending a test LLM API request for the component - EnterpriseSearchPolicy' e2e-tests-log \
@@ -324,10 +343,32 @@ runs:
         name: LiteLLM-proxy-logs
         path: data/test_config/providers/litellm-proxy-multiple-deployments-with-routing/proxy-log-*
 
+    - name: Collect OTEL collector logs
+      if: failure()
+      env:
+          RASA_CALM_DEMO_BRANCH: ${{ inputs.rasa-calm-demo-branch || 'main' }}
+      run: |
+        : Print OTEL collector logs
+        make print-otel-collector-logs | otel-logs-${{ inputs.provider }}-${{ inputs.train-and-test }}.txt
+      shell: bash
+
+    - name: Save OTEL collector logs
+      if: failure()
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+      with:
+        name: otel-collector-logs-${{ inputs.provider }}-${{ inputs.train-and-test }}
+        path: otel-logs-${{ inputs.provider }}-${{ inputs.train-and-test }}.txt
+
+    - name: Stop OTEL collector
+      env:
+          RASA_CALM_DEMO_BRANCH: ${{ inputs.rasa-calm-demo-branch || 'main' }}
+      run: |
+        : Stop OTEL collector
+        make stop-otel-collector
+      shell: bash
+
     - name: Get Rasa-pro version and short-SHA, and set as environment variables
       if: always()
-      env:
-        RASA_PRO_LICENSE: ${{ env.RASA_PRO_LICENSE }}
       run: |
         echo "RASA_VERSION=$(rasa --version | grep 'Rasa Pro Version' | tr -d ' ' | awk -F ':' '{print $2}')" >> $GITHUB_ENV
         echo "SHORT_SHA=`git rev-parse --short HEAD`" >> $GITHUB_ENV

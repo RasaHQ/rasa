@@ -95,6 +95,7 @@ env:
   RASA_TELEMETRY_DEBUG: true
   OTEL_EXPORTER: otlp_grpc
   OTEL_ENDPOINT: http:/0.0.0.0:4317
+  HONEYCOMB_API_KEY: ${{ secrets.HONEYCOMB_API_KEY }}
   API_KEY_NAMES: '{"azure": "AZURE_API_KEY", "gemini": "GEMINI_API_KEY", "huggingface": "HUGGINGFACE_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "together_ai": "TOGETHERAI_API_KEY", "groq": "GROQ_API_KEY", "openai": "OPENAI_API_KEY", "mistral": "MISTRAL_API_KEY", "cohere": "COHERE_API_KEY", "voyage": "VOYAGE_API_KEY"}'
   RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
   DUCKLING_URL: http://localhost:8000
