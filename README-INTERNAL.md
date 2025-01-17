@@ -81,15 +81,34 @@ export PATH="$HOME/.cargo/bin:$PATH"
 #### Installing from published Python package
 
 We have a private package registry running at **europe-west3-docker.pkg.dev/rasa-releases/** which hosts python packages as well
-as docker containers. To use it, you need to be authenticated.
-Follow the steps in the [google documentation](https://cloud.google.com/artifact-registry/docs/python/authentication#keyring)
-to make sure `pip` has the necessary credentials to authenticate with the registry.
-Afterwards, you should be able to run `pip install rasa`.
+as docker containers. To install the latest version of `rasa-pro` from the registry, you can run:
+
+```bash
+python3 -m pip install -U pip
+pip install rasa-pro --extra-index-url=https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/simple/
+````
+
+You can significantly speed up the installation process with uv:
+
+```bash
+pip install uv
+uv pip install rasa-pro --extra-index-url=https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/simple/
+```
 
 To be able to pull the docker image via `docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa/rasa`,
 you’ll need to authenticate using the `gcloud auth` command: `gcloud auth configure-docker europe-west3-docker.pkg.dev`.
 
 More information is available in our [public documentation](https://rasa.com/docs/rasa-pro/installation/python/installation).
+
+
+### Dependency Management
+
+To ensure we keep our `pip` installation reasonably fast (max 5 minutes), please follow these best practices when adding or updating dependencies:
+- do not use the [caret specification](https://python-poetry.org/docs/dependency-specification/#caret-requirements); instead use the [tilde](https://python-poetry.org/docs/dependency-specification/#tilde-requirements) `~` or [inequality](https://python-poetry.org/docs/dependency-specification/#inequality-requirements) specification
+- specify the micro version for the dependency, for example `3.11.3` instead of `3.11`
+- always update the lower bound to the latest version the dependency is being upgraded to
+- apply a strict upper bound to prevent `pip` taking a long time to resolve dependencies when newer versions had been released that we haven't caught up to
+
 
 ### Running the Tests
 
