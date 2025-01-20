@@ -1276,4 +1276,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_SCANNER_OPTS: -Dsonar.python.coverage.reportPaths=unit-tests-results-*.xml
