@@ -17,3 +17,8 @@ runs:
     run: |
       docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-assistant
     shell: bash
+
+  - name: Check postgres container logs  
+    run: |
+      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs postgres
+    shell: bash

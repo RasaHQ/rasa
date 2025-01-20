@@ -18,6 +18,7 @@ CALM_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PA
 ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/enterprise_search
 CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/channels
 TRACKER_STORE_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/tracker_stores
+CUSTOM_COMPONENT_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/custom_components
 INTEGRATION_TEST_DEPLOYMENT_PATH = $(PWD)/tests_deployment
 BASE_IMAGE_HASH ?= localdev
 BASE_BUILDER_IMAGE_HASH ?= localdev
@@ -145,6 +146,7 @@ ifeq (,$(wildcard $(INTEGRATION_TEST_DEPLOYMENT_PATH)/.env))
 			--ignore $(ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH) \
 			--ignore $(TRACKER_STORE_INTEGRATION_TEST_PATH) \
 			--ignore $(CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH) \
+			--ignore $(CUSTOM_COMPONENT_INTEGRATION_TEST_PATH) \
 			--junitxml=report_integration.xml
 else
 	set -o allexport; \
@@ -545,6 +547,13 @@ test-channel-connectors-integration-with-calm-bot: CHANNEL_CONNECTOR_TEST_PATH =
 test-channel-connectors-integration-with-calm-bot: RESULTS_FILE = integration-results-channel-connectors-with-calm-bot-results.xml
 test-channel-connectors-integration-with-calm-bot: ## Run the channel connectors integration tests with CALM bot.
 	$(TEST_CHANNEL_CONNECTOR_INTEGRATION_COMMAND)
+
+# Run the Custom Broker integration tests with CALM bot
+test-custom-broker-integration-with-calm-bot: 
+	poetry run \
+        pytest tests/integration_tests/core/custom_components/test_custom_broker.py \
+        -n $(JOBS) \
+        --junitxml=integration-results-custom-broker-with-calm-bot-results.xml
 
 stop-channel-connectors-integration-containers: ## Stop the channel connectors integration test containers.
 	$(STOP_CHANNEL_CONNECTOR_CONTAINER_COMMAND)

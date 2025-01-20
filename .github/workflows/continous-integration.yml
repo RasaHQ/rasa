@@ -1036,14 +1036,14 @@ jobs:
           PYTHONIOENCODING: "utf-8"
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
 
+      - name: Integration Test for Custom Broker
+        run: make test-custom-broker-integration-with-calm-bot
+
       - name: Show container logs
         if: always()
         uses: ./.github/actions/debug-rasa-pro-assistant-container-logs
         with:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_channel_connectors/docker-compose.yml
-          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
-          BOT_PATH: "./tests_deployment/integration_tests_channel_connectors/calm-demo-bot"
 
       - name: Channel connector Integration Tests - Stop docker containers
         if: always()
@@ -1055,7 +1055,9 @@ jobs:
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
         with:
           name: Channel connector Integration Tests Test Results
-          path: integration-results-channel-connectors-with-calm-bot-results.xml
+          path: |
+           integration-results-channel-connectors-with-calm-bot-results.xml
+           integration-results-custom-broker-with-calm-bot-results.xml
 
   unit-test:
     name: Run Unit Tests

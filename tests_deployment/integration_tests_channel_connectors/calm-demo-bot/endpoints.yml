@@ -1,2 +1,11 @@
 action_endpoint:
     actions_module: "actions"
+
+event_broker:
+  type: addons.custom_sql.SQLEventBroker
+  url: postgres
+  port: 5432
+  dialect: postgresql
+  username: rasa
+  password: rasa
+  db: rasa
