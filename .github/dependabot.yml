@@ -38,7 +38,6 @@ updates:
           - "python-engineio"
           - "sklearn*"
           - "scikit-learn"
-          - "setuptools"
           - "confluent-kafka"
           - "pypred"
           - "structlog"
@@ -98,7 +97,6 @@ updates:
           - "sklearn*"
           - "skops"
           - "scikit-learn"
-          - "setuptools"
           - "confluent-kafka"
           - "pypred"
           - "structlog"
@@ -127,6 +125,9 @@ updates:
       - dependency-name: prompt-toolkit
         versions:
           - "> 2.0.10"
+      - dependency-name: setuptools
+        versions:
+          - "> 70.0.0"
 
   - package-ecosystem: github-actions
     directory: "/"
