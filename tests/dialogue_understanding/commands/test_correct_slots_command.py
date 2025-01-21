@@ -361,7 +361,7 @@ def test_run_command_on_tracker_correcting_during_a_correction():
     stack.push(
         CorrectionPatternFlowStackFrame(
             corrected_slots={"foo": "not-foofoo"},
-            step_id="0_action_correct_flow_slot",
+            step_id="pattern_correction_0_action_correct_flow_slot",
             reset_flow_id="my_flow",
             reset_step_id="collect_foo",
             is_reset_only=False,

@@ -313,7 +313,7 @@ async def test_policy_cancels_user_flow_and_trigger_error_pattern_invalid_custom
     first_frame = updated_stack.frames[0]
     assert isinstance(first_frame, UserFlowStackFrame)
     assert first_frame.flow_id == "foo_flow"
-    assert first_frame.step_id == "0_collect_bar_slot"
+    assert first_frame.step_id == "foo_flow_0_collect_bar_slot"
     second_frame = updated_stack.frames[1]
     assert isinstance(second_frame, CancelPatternFlowStackFrame)
     assert second_frame.canceled_name == "foo flow"

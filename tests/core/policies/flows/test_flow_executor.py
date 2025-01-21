@@ -1,5 +1,6 @@
 import uuid
 from typing import List, Optional, Tuple
+from unittest.mock import Mock
 
 import pytest
 import structlog
@@ -10,6 +11,7 @@ from rasa.core.policies.flows.flow_exceptions import (
     NoNextStepInFlowException,
 )
 from rasa.core.policies.flows.flow_executor import (
+    select_next_step,
     validate_collect_step,
     validate_custom_slot_mappings,
 )
@@ -63,6 +65,7 @@ from rasa.shared.core.flows.steps.collect import (
     CollectInformationFlowStep,
     SlotRejection,
 )
+from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 from rasa.shared.core.slots import FloatSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
@@ -166,17 +169,18 @@ def test_is_step_end_of_flow_is_false_for_set_slot():
         slots=[],
         metadata={},
         next=FlowStepLinks(links=[]),
+        flow_id="my_flow",
     )
     assert not flow_executor.is_step_end_of_flow(step)
 
 
 def test_is_step_end_of_flow_is_true_for_end():
-    step = EndFlowStep()
+    step = EndFlowStep("my_flow")
     assert flow_executor.is_step_end_of_flow(step)
 
 
 def test_is_step_end_of_flow_is_true_for_step_continuing_at_end():
-    step = ContinueFlowStep(target_step_id=END_STEP)
+    step = ContinueFlowStep(flow_id="my_flow", target_step_id=END_STEP)
     assert flow_executor.is_step_end_of_flow(step)
 
 
@@ -601,8 +605,7 @@ def test_trigger_pattern_continue_interrupted_does_not_trigger_if_not_user_frame
 
 
 def test_trigger_pattern_continue_interrupted_triggers_correctly_with_link_step():
-    """
-    Test if pattern_continue_interrupted triggers correctly with link step.
+    """Test if pattern_continue_interrupted triggers correctly with link step.
 
     Conversation being tested (expected behaviour):
     User: Remove contact
@@ -617,7 +620,6 @@ def test_trigger_pattern_continue_interrupted_triggers_correctly_with_link_step(
     `pattern_continue_interrupted` after <utter_test_c> (1) in flow_c,
     and then resumes flow_a from the point where it was interrupted.
     """
-
     flows = flows_from_str(
         """
         flows:
@@ -645,7 +647,7 @@ def test_trigger_pattern_continue_interrupted_triggers_correctly_with_link_step(
     frame1 = UserFlowStackFrame(
         flow_id="flow_a",
         frame_type=FlowStackFrameType.REGULAR,
-        step_id="0_collect_remove_contact_handle",
+        step_id="flow_a_0_collect_remove_contact_handle",
         frame_id="id0",
     )
     frame2 = CollectInformationPatternFlowStackFrame(
@@ -665,7 +667,7 @@ def test_trigger_pattern_continue_interrupted_triggers_correctly_with_link_step(
         frame_id="some-id",
     )
     flow_resumed = FlowResumed(
-        flow_id="flow_a", step_id="0_collect_remove_contact_handle"
+        flow_id="flow_a", step_id="flow_a_0_collect_remove_contact_handle"
     )
     continue_interrupted = ContinueInterruptedPatternFlowStackFrame(
         flow_id="pattern_continue_interrupted",
@@ -1835,7 +1837,9 @@ def test_flow_executor_validate_custom_slot_mappings_valid() -> None:
         - action_ask_loyalty_points
     """
     )
-    step = CollectInformationFlowStep.from_json({"collect": "loyalty_points"})
+    step = CollectInformationFlowStep.from_json(
+        "my_flow", {"collect": "loyalty_points"}
+    )
     stack = DialogueStack(frames=[UserFlowStackFrame(flow_id="my_flow", step_id="1")])
     tracker = DialogueStateTracker.from_events("test", [], slots=domain.slots)
     tracker.update_stack(stack)
@@ -1861,7 +1865,9 @@ def test_flow_executor_validate_custom_slot_mappings_invalid() -> None:
             - text: "Let's proceed checking how many loyalty points you have."
     """
     )
-    step = CollectInformationFlowStep.from_json({"collect": "loyalty_points"})
+    step = CollectInformationFlowStep.from_json(
+        "my_flow", {"collect": "loyalty_points"}
+    )
     stack = DialogueStack(frames=[UserFlowStackFrame(flow_id="my_flow", step_id="1")])
     tracker = DialogueStateTracker.from_events("test", [], slots=domain.slots)
     tracker.update_stack(stack)
@@ -1894,7 +1900,9 @@ def test_flow_executor_validate_collect_step_invalid() -> None:
                 - type: from_llm
     """
     )
-    step = CollectInformationFlowStep.from_json({"collect": "loyalty_points"})
+    step = CollectInformationFlowStep.from_json(
+        "my_flow", {"collect": "loyalty_points"}
+    )
     stack = DialogueStack(frames=[UserFlowStackFrame(flow_id="my_flow", step_id="1")])
     tracker = DialogueStateTracker.from_events("test", [], slots=test_domain.slots)
     tracker.update_stack(stack)
@@ -1932,7 +1940,9 @@ def test_flow_executor_validate_collect_step_with_initial_value_defined() -> Non
                 - type: from_llm
     """
     )
-    step = CollectInformationFlowStep.from_json({"collect": "loyalty_points"})
+    step = CollectInformationFlowStep.from_json(
+        "my_flow", {"collect": "loyalty_points"}
+    )
     stack = DialogueStack(frames=[UserFlowStackFrame(flow_id="my_flow", step_id="1")])
     tracker = DialogueStateTracker.from_events("test", [], slots=test_domain.slots)
     tracker.update_stack(stack)
@@ -1985,3 +1995,48 @@ def test_run_step_adds_metadata_to_flow_started_event():
     assert result.events == [expected_event]
 
     assert expected_event.metadata.get("names") == ["foo", "bar"]
+
+
+async def test_correct_next_step_selected_with_call_step() -> None:
+    """The flows from example below have a similar structure: `set_slots` step is
+    located third in both flows, which may lead to name collision - in both flows this
+    step will get the name `2_set_slots` in both flows.
+    In this case the `select_next_step` function could return the wrong step if the
+    step ids are not unique.
+    """
+    flows_data = """
+        flows:
+          parent_flow:
+            description: This is a test flow.
+            steps:
+              - call: child_flow
+              - id: collect_foo_step
+                collect: foo
+              - set_slots:
+                - slot_a: value_a
+          child_flow:
+            description: This is a test flow.
+            steps:
+              - collect: fizz
+              - collect: buzz
+              - set_slots:
+                - abc: def
+                - ghi: jkl
+        """
+    flows: FlowsList = YAMLFlowsReader.read_from_string(
+        flows_data, file_path="path/flow.py"
+    )
+    mock_dialog_stack = Mock()
+    mock_dialog_state_tracker = Mock()
+
+    parent_flow = flows.flow_by_id("parent_flow")
+    collect_foo_step = parent_flow.step_by_id("collect_foo_step")
+
+    selected_next_step = select_next_step(
+        collect_foo_step, parent_flow, mock_dialog_stack, mock_dialog_state_tracker
+    )
+
+    # if ids are not unique, `step_by_id` will return the first step with the given id
+    # which in this case in from the called `child_flow`,
+    # which is not the correct behavior
+    assert selected_next_step.slots[0]["key"] == "slot_a"

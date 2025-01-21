@@ -18,16 +18,17 @@ class CallFlowStep(FlowStep):
     called_flow_reference: Optional["Flow"] = None
 
     @classmethod
-    def from_json(cls, data: Dict[Text, Any]) -> CallFlowStep:
+    def from_json(cls, flow_id: Text, data: Dict[Text, Any]) -> CallFlowStep:
         """Used to read flow steps from parsed YAML.
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: The parsed YAML as a dictionary.
 
         Returns:
             The parsed flow step.
         """
-        base = super().from_json(data)
+        base = super().from_json(flow_id, data)
         return CallFlowStep(
             call=data.get("call", ""),
             **base.__dict__,
@@ -47,7 +48,6 @@ class CallFlowStep(FlowStep):
         self, should_resolve_calls: bool = True
     ) -> Generator[FlowStep, None, None]:
         """Returns the steps in the tree of the flow step."""
-
         yield self
 
         if should_resolve_calls:

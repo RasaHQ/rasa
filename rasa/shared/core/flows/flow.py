@@ -79,7 +79,7 @@ class Flow:
         Returns:
             A Flow object.
         """
-        step_sequence = FlowStepSequence.from_json(data.get("steps"))
+        step_sequence = FlowStepSequence.from_json(flow_id, data.get("steps"))
         nlu_triggers = NLUTriggers.from_json(data.get("nlu_trigger"))
 
         if file_path and isinstance(file_path, Path):
@@ -185,13 +185,13 @@ class Flow:
             return None
 
         if step_id == START_STEP:
-            return StartFlowStep(self.first_step_in_flow().id)
+            return StartFlowStep(self.id, self.first_step_in_flow().id)
 
         if step_id == END_STEP:
-            return EndFlowStep()
+            return EndFlowStep(self.id)
 
         if step_id.startswith(CONTINUE_STEP_PREFIX):
-            return ContinueFlowStep(step_id[len(CONTINUE_STEP_PREFIX) :])
+            return ContinueFlowStep(self.id, step_id[len(CONTINUE_STEP_PREFIX) :])
 
         for step in self.steps_with_calls_resolved:
             if step.id == step_id:

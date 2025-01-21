@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Set, Text
 
 from rasa.shared.constants import ACTION_ASK_PREFIX, UTTER_ASK_PREFIX
 from rasa.shared.core.flows.flow_step import FlowStep
@@ -61,16 +61,19 @@ class CollectInformationFlowStep(FlowStep):
     """Whether to reset the slot value at the end of the flow."""
 
     @classmethod
-    def from_json(cls, data: Dict[str, Any]) -> CollectInformationFlowStep:
+    def from_json(
+        cls, flow_id: Text, data: Dict[str, Any]
+    ) -> CollectInformationFlowStep:
         """Create a CollectInformationFlowStep object from serialized data.
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: data for a CollectInformationFlowStep object in a serialized format
 
         Returns:
             A CollectInformationFlowStep object
         """
-        base = super().from_json(data)
+        base = super().from_json(flow_id, data)
         return CollectInformationFlowStep(
             collect=data["collect"],
             utter=data.get("utter", f"{UTTER_ASK_PREFIX}{data['collect']}"),

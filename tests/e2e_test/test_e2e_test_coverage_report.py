@@ -81,15 +81,15 @@ def sample_tested_flow_paths() -> List[FlowPath]:
     path1 = FlowPath(
         flow="flow1",
         nodes=[
-            PathNode(step_id="0_collect_step1", flow="flow1"),
+            PathNode(step_id="flow1_0_collect_step1", flow="flow1"),
         ],
     )
     path2 = FlowPath(
         flow="flow2",
         nodes=[
-            PathNode(step_id="0_collect_step1", flow="flow2"),
-            PathNode(step_id="1_collect_step2", flow="flow2"),
-            PathNode(step_id="2_collect_step3", flow="flow2"),
+            PathNode(step_id="flow2_0_collect_step1", flow="flow2"),
+            PathNode(step_id="flow2_1_collect_step2", flow="flow2"),
+            PathNode(step_id="flow2_2_collect_step3", flow="flow2"),
         ],
     )
     return [path1, path2]

@@ -11,22 +11,24 @@ class NoOperationFlowStep(FlowStep):
     """A step that doesn't do a thing.
 
     This is NOT a branching step (but it can branch - but in addition to that
-    it also does nothing)."""
+    it also does nothing).
+    """
 
     noop: Any
     """The id of the flow that should be started subsequently."""
 
     @classmethod
-    def from_json(cls, data: Dict[Text, Any]) -> NoOperationFlowStep:
+    def from_json(cls, flow_id: Text, data: Dict[Text, Any]) -> NoOperationFlowStep:
         """Create a NoOperationFlowStep from serialized data
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: data for a NoOperationFlowStep in a serialized format
 
         Returns:
             a NoOperationFlowStep object
         """
-        base = super().from_json(data)
+        base = super().from_json(flow_id, data)
         return NoOperationFlowStep(
             noop=data["noop"],
             **base.__dict__,

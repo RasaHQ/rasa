@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Text
 
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks, StaticFlowStepLink
 from rasa.shared.core.flows.steps.constants import (
@@ -14,7 +15,7 @@ from rasa.shared.core.flows.steps.internal import InternalFlowStep
 class ContinueFlowStep(InternalFlowStep):
     """A flow step that is dynamically introduced to jump to other flow steps."""
 
-    def __init__(self, target_step_id: str) -> None:
+    def __init__(self, flow_id: Text, target_step_id: str) -> None:
         """Initializes a continue-step flow step."""
         super().__init__(
             idx=UNSET_FLOW_STEP_ID,
@@ -29,6 +30,7 @@ class ContinueFlowStep(InternalFlowStep):
             # This is why the continue step links to the step that should be
             # continued.
             next=FlowStepLinks(links=[StaticFlowStepLink(target_step_id)]),
+            flow_id=flow_id,
         )
 
     @staticmethod

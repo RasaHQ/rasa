@@ -571,6 +571,7 @@ class TestLLMBasedCommandGenerator:
             description="test_slot",
             metadata={},
             next="next_step",
+            flow_id="test_flow",
         )
 
     def test_is_extractable_with_no_slot(
@@ -612,6 +613,7 @@ class TestLLMBasedCommandGenerator:
             description="test_slot",
             metadata={},
             next="next_step",
+            flow_id="test_flow",
         )
         # When
         is_extractable = command_generator.is_extractable(collect_info_step, tracker)
@@ -697,7 +699,8 @@ class TestLLMBasedCommandGenerator:
         self, model_storage, resource
     ):
         """Test that rasa generator modules can be imported
-        without errors from generator module."""
+        without errors from generator module.
+        """
         from rasa.dialogue_understanding.generator import (
             LLMCommandGenerator,
             MultiStepLLMCommandGenerator,
@@ -725,7 +728,8 @@ class TestLLMBasedCommandGenerator:
 
     def test_import_rasa_generators_directly(self, model_storage, resource):
         """Test that rasa generator modules can be imported
-        without errors directly."""
+        without errors directly.
+        """
         from rasa.dialogue_understanding.generator.llm_command_generator import (
             LLMCommandGenerator,
         )
@@ -766,7 +770,8 @@ class TestLLMBasedCommandGenerator:
         self, base_class, flows, model_storage, resource
     ):
         """Test that if custom component has overriden the predict_commands
-        method, it will be called and not the parent's."""
+        method, it will be called and not the parent's.
+        """
 
         class CustomCommandGenerator(base_class):
             async def predict_commands(

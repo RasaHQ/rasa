@@ -15,10 +15,11 @@ from rasa.shared.core.flows.steps.internal import InternalFlowStep
 class StartFlowStep(InternalFlowStep):
     """A dynamically added flow step that represents the beginning of a flow."""
 
-    def __init__(self, start_step_id: Text) -> None:
+    def __init__(self, flow_id: Text, start_step_id: Text) -> None:
         """Initializes a start flow step.
 
         Args:
+            flow_id: The id of the flow that contains the step
             start_step_id: The step id of the first step of the flow
         """
         super().__init__(
@@ -27,4 +28,5 @@ class StartFlowStep(InternalFlowStep):
             description=None,
             metadata={},
             next=FlowStepLinks(links=[StaticFlowStepLink(start_step_id)]),
+            flow_id=flow_id,
         )

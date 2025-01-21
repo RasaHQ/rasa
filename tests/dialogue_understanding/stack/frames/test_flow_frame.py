@@ -75,6 +75,7 @@ def test_flow_get_step():
         description=None,
         metadata={},
         next=FlowStepLinks(links=[]),
+        flow_id="foo",
     )
     all_flows = FlowsList(
         [Flow("foo", step_sequence=FlowStepSequence(child_steps=[step]))]

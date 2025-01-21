@@ -13,10 +13,11 @@ class InternalFlowStep(FlowStep):
     """
 
     @classmethod
-    def from_json(cls, data: Dict[Text, Any]) -> InternalFlowStep:
+    def from_json(cls, flow_id: Text, data: Dict[Text, Any]) -> InternalFlowStep:
         """Create an InternalFlowStep object from serialized data.
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: data for an InternalFlowStep in a serialized format
 
         Returns:

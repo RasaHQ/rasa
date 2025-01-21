@@ -21,10 +21,11 @@ if TYPE_CHECKING:
 structlogger = structlog.get_logger()
 
 
-def step_from_json(data: Dict[Text, Any]) -> FlowStep:
+def step_from_json(flow_id: Text, data: Dict[Text, Any]) -> FlowStep:
     """Create a specific FlowStep from serialized data.
 
     Args:
+        flow_id: The id of the flow that contains the step.
         data: data for a specific FlowStep object in a serialized data format.
 
     Returns:
@@ -40,17 +41,17 @@ def step_from_json(data: Dict[Text, Any]) -> FlowStep:
     )
 
     if "action" in data:
-        return ActionFlowStep.from_json(data)
+        return ActionFlowStep.from_json(flow_id, data)
     if "collect" in data:
-        return CollectInformationFlowStep.from_json(data)
+        return CollectInformationFlowStep.from_json(flow_id, data)
     if "link" in data:
-        return LinkFlowStep.from_json(data)
+        return LinkFlowStep.from_json(flow_id, data)
     if "call" in data:
-        return CallFlowStep.from_json(data)
+        return CallFlowStep.from_json(flow_id, data)
     if "set_slots" in data:
-        return SetSlotsFlowStep.from_json(data)
+        return SetSlotsFlowStep.from_json(flow_id, data)
     if "noop" in data:
-        return NoOperationFlowStep.from_json(data)
+        return NoOperationFlowStep.from_json(flow_id, data)
     raise RasaException(f"Failed to parse step from json. Unknown type for {data}.")
 
 
@@ -68,12 +69,15 @@ class FlowStep:
     """Additional, unstructured information about this flow step."""
     next: FlowStepLinks
     """The next steps of the flow step."""
+    flow_id: Text
+    """The id of the flow that contains the step."""
 
     @classmethod
-    def from_json(cls, data: Dict[Text, Any]) -> FlowStep:
+    def from_json(cls, flow_id: Text, data: Dict[Text, Any]) -> FlowStep:
         """Create a FlowStep object from data in a serialized format.
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: The data for a FlowStep object in a serialized format.
 
         Returns:
@@ -88,7 +92,8 @@ class FlowStep:
             custom_id=data.get("id"),
             description=data.get("description"),
             metadata=data.get("metadata", {}),
-            next=FlowStepLinks.from_json(data.get("next", [])),
+            next=FlowStepLinks.from_json(flow_id, data.get("next", [])),
+            flow_id=flow_id,
         )
 
     def does_allow_for_next_step(self) -> bool:
@@ -126,7 +131,7 @@ class FlowStep:
     @property
     def default_id(self) -> str:
         """Returns the default id of the flow step."""
-        return f"{self.idx}_{self.default_id_postfix}"
+        return f"{self.flow_id}_{self.idx}_{self.default_id_postfix}"
 
     @property
     def default_id_postfix(self) -> str:

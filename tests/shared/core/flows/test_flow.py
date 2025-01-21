@@ -379,14 +379,14 @@ def test_create_default_name(user_flows_and_patterns: FlowsList):
 
 def test_assignment_of_default_ids(add_contact_flow: Flow):
     assert [s.default_id for s in add_contact_flow.steps_with_calls_resolved] == [
-        "0_collect_add_contact_handle",
-        "1_collect_add_contact_name",
-        "2_collect_add_contact_confirmation",
-        "3_utter_add_contact_cancelled",
-        "4_add_contact",
-        "5_utter_contact_added",
-        "6_utter_contact_already_exists",
-        "7_utter_add_contact_error",
+        "add_contact_0_collect_add_contact_handle",
+        "add_contact_1_collect_add_contact_name",
+        "add_contact_2_collect_add_contact_confirmation",
+        "add_contact_3_utter_add_contact_cancelled",
+        "add_contact_4_add_contact",
+        "add_contact_5_utter_contact_added",
+        "add_contact_6_utter_contact_already_exists",
+        "add_contact_7_utter_add_contact_error",
     ]
 
 
@@ -409,7 +409,7 @@ def test_step_by_id_returns_proper_start_step(add_contact_flow: Flow):
     assert len(start_step.next.links) == 1
     link = start_step.next.links[0]
     assert isinstance(link, StaticFlowStepLink)
-    assert link.target == "0_collect_add_contact_handle"
+    assert link.target == "add_contact_0_collect_add_contact_handle"
 
 
 def test_step_by_id_returns_end_step(add_contact_flow: Flow):
@@ -431,7 +431,10 @@ def test_step_by_id_returns_proper_continuation_step(add_contact_flow: Flow):
 
 
 def test_first_step_in_flow(add_contact_flow: Flow):
-    assert add_contact_flow.first_step_in_flow().id == "0_collect_add_contact_handle"
+    assert (
+        add_contact_flow.first_step_in_flow().id
+        == "add_contact_0_collect_add_contact_handle"
+    )
 
 
 def test_is_rasa_default_flow(user_flows_and_patterns: FlowsList):
@@ -454,7 +457,7 @@ def test_previous_collect_steps_collect(add_contact_flow: Flow):
     all_flows = FlowsList(underlying_flows=[add_contact_flow])
     tracker = DialogueStateTracker.from_events("test", evts=[])
     update_tracker_with_path_through_flow(
-        tracker, "add_contact", ["0_collect_add_contact_handle"]
+        tracker, "add_contact", ["add_contact_0_collect_add_contact_handle"]
     )
 
     collects = previous_collect_steps_for_active_flow(tracker, all_flows)
@@ -463,13 +466,13 @@ def test_previous_collect_steps_collect(add_contact_flow: Flow):
     assert collects[0][0].collect == "add_contact_handle"
     assert collects[0][1] == "add_contact"
 
-    advance_top_tracker_flow(tracker, "1_collect_add_contact_name")
+    advance_top_tracker_flow(tracker, "add_contact_1_collect_add_contact_name")
     collects_second = previous_collect_steps_for_active_flow(tracker, all_flows)
     assert len(collects_second) == 2
     assert collects_second[:1] == collects
     assert collects_second[1][0].collect == "add_contact_name"
 
-    advance_top_tracker_flow(tracker, "2_collect_add_contact_confirmation")
+    advance_top_tracker_flow(tracker, "add_contact_2_collect_add_contact_confirmation")
     collects_third = previous_collect_steps_for_active_flow(tracker, all_flows)
     assert len(collects_third) == 3
     assert collects_third[:2] == collects_second
@@ -878,7 +881,7 @@ def test_extract_all_paths_correct_order():
                 flow="correct_order",
                 nodes=[
                     PathNode(
-                        step_id="0_collect_correct_order",
+                        step_id="correct_order_0_collect_correct_order",
                         flow="correct_order",
                         lines="11-11",
                     ),

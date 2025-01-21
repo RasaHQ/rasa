@@ -15,16 +15,17 @@ class ActionFlowStep(FlowStep):
     """The action of the flow step."""
 
     @classmethod
-    def from_json(cls, data: Dict[Text, Any]) -> ActionFlowStep:
+    def from_json(cls, flow_id: Text, data: Dict[Text, Any]) -> ActionFlowStep:
         """Create an ActionFlowStep object from serialized data
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: data for an ActionFlowStep object in a serialized format
 
         Returns:
             An ActionFlowStep object
         """
-        base = super().from_json(data)
+        base = super().from_json(flow_id, data)
         return ActionFlowStep(
             action=data["action"],
             **base.__dict__,

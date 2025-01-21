@@ -16,10 +16,13 @@ class FlowStepLinks:
     links: List[FlowStepLink]
 
     @staticmethod
-    def from_json(data: Union[str, List[Dict[Text, Any]]]) -> FlowStepLinks:
+    def from_json(
+        flow_id: Text, data: Union[str, List[Dict[Text, Any]]]
+    ) -> FlowStepLinks:
         """Create a FlowStepLinks object from a serialized data format.
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: data for a FlowStepLinks object in a serialized format.
 
         Returns:
@@ -29,11 +32,11 @@ class FlowStepLinks:
             return FlowStepLinks(links=[])
 
         if isinstance(data, str):
-            return FlowStepLinks(links=[StaticFlowStepLink.from_json(data)])
+            return FlowStepLinks(links=[StaticFlowStepLink.from_json(flow_id, data)])
 
         return FlowStepLinks(
             links=[
-                BranchingFlowStepLink.from_json(link_config)
+                BranchingFlowStepLink.from_json(flow_id, link_config)
                 for link_config in data
                 if link_config
             ]
@@ -93,10 +96,11 @@ class FlowStepLink:
         raise NotImplementedError()
 
     @staticmethod
-    def from_json(data: Any) -> FlowStepLink:
+    def from_json(flow_id: Text, data: Any) -> FlowStepLink:
         """Create a FlowStepLink object from a serialized data format.
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: data for a FlowStepLink object in a serialized format.
 
         Returns:
@@ -162,19 +166,20 @@ class BranchingFlowStepLink(FlowStepLink):
             return self.target_reference
 
     @staticmethod
-    def from_json(data: Dict[Text, Any]) -> BranchingFlowStepLink:
+    def from_json(flow_id: Text, data: Dict[Text, Any]) -> BranchingFlowStepLink:
         """Create a BranchingFlowStepLink object from a serialized data format.
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: data for a BranchingFlowStepLink object in a serialized format.
 
         Returns:
             a BranchingFlowStepLink object.
         """
         if "if" in data:
-            return IfFlowStepLink.from_json(data)
+            return IfFlowStepLink.from_json(flow_id, data)
         else:
-            return ElseFlowStepLink.from_json(data)
+            return ElseFlowStepLink.from_json(flow_id, data)
 
     def depth_in_tree(self) -> int:
         """Returns the depth in the tree."""
@@ -197,10 +202,11 @@ class IfFlowStepLink(BranchingFlowStepLink):
     """The condition that needs to be satisfied to follow this flow step link."""
 
     @staticmethod
-    def from_json(data: Dict[Text, Any]) -> IfFlowStepLink:
+    def from_json(flow_id: Text, data: Dict[Text, Any]) -> IfFlowStepLink:
         """Create an IfFlowStepLink object from a serialized data format.
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: data for a IfFlowStepLink in a serialized format.
 
         Returns:
@@ -212,7 +218,7 @@ class IfFlowStepLink(BranchingFlowStepLink):
             return IfFlowStepLink(target_reference=data["then"], condition=data["if"])
         else:
             return IfFlowStepLink(
-                target_reference=FlowStepSequence.from_json(data["then"]),
+                target_reference=FlowStepSequence.from_json(flow_id, data["then"]),
                 condition=data["if"],
             )
 
@@ -237,10 +243,11 @@ class ElseFlowStepLink(BranchingFlowStepLink):
     """A flow step link that is taken when conditional flow step links weren't taken."""
 
     @staticmethod
-    def from_json(data: Dict[Text, Any]) -> ElseFlowStepLink:
+    def from_json(flow_id: Text, data: Dict[Text, Any]) -> ElseFlowStepLink:
         """Create an ElseFlowStepLink object from serialized data.
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: data for an ElseFlowStepLink in a serialized format
 
         Returns:
@@ -252,7 +259,7 @@ class ElseFlowStepLink(BranchingFlowStepLink):
             return ElseFlowStepLink(target_reference=data["else"])
         else:
             return ElseFlowStepLink(
-                target_reference=FlowStepSequence.from_json(data["else"])
+                target_reference=FlowStepSequence.from_json(flow_id, data["else"])
             )
 
     def as_json(self) -> Dict[Text, Any]:
@@ -278,10 +285,11 @@ class StaticFlowStepLink(FlowStepLink):
     """The id of the linked step."""
 
     @staticmethod
-    def from_json(data: Text) -> StaticFlowStepLink:
+    def from_json(flow_id: Text, data: Text) -> StaticFlowStepLink:
         """Create a StaticFlowStepLink from serialized data
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: data for a StaticFlowStepLink in a serialized format
 
         Returns:

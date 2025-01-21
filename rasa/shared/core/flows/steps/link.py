@@ -16,20 +16,22 @@ class LinkFlowStep(FlowStep):
     def does_allow_for_next_step(self) -> bool:
         """Returns whether this step allows for following steps.
 
-        Link steps need to be terminal steps, so can't have a next step."""
+        Link steps need to be terminal steps, so can't have a next step.
+        """
         return False
 
     @classmethod
-    def from_json(cls, data: Dict[Text, Any]) -> LinkFlowStep:
+    def from_json(cls, flow_id: Text, data: Dict[Text, Any]) -> LinkFlowStep:
         """Create a LinkFlowStep from serialized data
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: data for a LinkFlowStep in a serialized format
 
         Returns:
             a LinkFlowStep object
         """
-        base = super().from_json(data)
+        base = super().from_json(flow_id, data)
         return LinkFlowStep(
             link=data["link"],
             **base.__dict__,

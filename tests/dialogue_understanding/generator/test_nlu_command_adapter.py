@@ -618,7 +618,7 @@ class TestNLUCommandAdapter:
                 [
                     UserFlowStackFrame(
                         flow_id="test_flow",
-                        step_id="2_collect_another_slot",
+                        step_id="test_flow_2_collect_another_slot",
                         frame_id="some-frame-id",
                     ),
                 ]

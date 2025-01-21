@@ -1067,6 +1067,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                     ]
                                 ),
                                 action="check_balance",
+                                flow_id="check_balance",
                             ),
                             ActionFlowStep(
                                 custom_id="1_utter_current_balance",
@@ -1077,6 +1078,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                     links=[StaticFlowStepLink(target_step_id="END")]
                                 ),
                                 action="utter_current_balance",
+                                flow_id="check_balance",
                             ),
                         ]
                     ),
@@ -1104,6 +1106,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                                         metadata={},
                                                         next=FlowStepLinks(links=[]),
                                                         link="replace_eligible_card",
+                                                        flow_id="replace_card",
                                                     )
                                                 ]
                                             ),
@@ -1125,6 +1128,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                                             ]
                                                         ),
                                                         action="utter_relevant_card_not_linked",
+                                                        flow_id="replace_card",
                                                     )
                                                 ]
                                             )
@@ -1137,6 +1141,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                 rejections=[],
                                 ask_before_filling=True,
                                 reset_after_flow_ends=True,
+                                flow_id="replace_card",
                             )
                         ]
                     ),
@@ -1162,6 +1167,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                     ]
                                 ),
                                 action="check_balance",
+                                flow_id="check_balance",
                             ),
                             ActionFlowStep(
                                 custom_id="1_utter_current_balance",
@@ -1172,6 +1178,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                     links=[StaticFlowStepLink(target_step_id="END")]
                                 ),
                                 action="utter_current_balance",
+                                flow_id="check_balance",
                             ),
                         ]
                     ),
@@ -1199,6 +1206,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                                         metadata={},
                                                         next=FlowStepLinks(links=[]),
                                                         link="replace_eligible_card",
+                                                        flow_id="replace_card",
                                                     )
                                                 ]
                                             ),
@@ -1220,6 +1228,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                                             ]
                                                         ),
                                                         action="utter_relevant_card_not_linked",
+                                                        flow_id="replace_card",
                                                     )
                                                 ]
                                             )
@@ -1232,6 +1241,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                 rejections=[],
                                 ask_before_filling=True,
                                 reset_after_flow_ends=True,
+                                flow_id="replace_card",
                             )
                         ]
                     ),
@@ -1264,6 +1274,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                                         metadata={},
                                                         next=FlowStepLinks(links=[]),
                                                         link="replace_eligible_card",
+                                                        flow_id="replace_card",
                                                     )
                                                 ]
                                             ),
@@ -1285,6 +1296,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                                             ]
                                                         ),
                                                         action="utter_relevant_card_not_linked",
+                                                        flow_id="replace_card",
                                                     )
                                                 ]
                                             )
@@ -1297,6 +1309,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                 rejections=[],
                                 ask_before_filling=True,
                                 reset_after_flow_ends=True,
+                                flow_id="replace_card",
                             )
                         ]
                     ),
@@ -1322,6 +1335,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                     ]
                                 ),
                                 action="check_balance",
+                                flow_id="check_balance",
                             ),
                             ActionFlowStep(
                                 custom_id="1_utter_current_balance",
@@ -1332,6 +1346,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                     links=[StaticFlowStepLink(target_step_id="END")]
                                 ),
                                 action="utter_current_balance",
+                                flow_id="check_balance",
                             ),
                         ]
                     ),
@@ -1359,6 +1374,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                                         metadata={},
                                                         next=FlowStepLinks(links=[]),
                                                         link="replace_eligible_card",
+                                                        flow_id="replace_card",
                                                     )
                                                 ]
                                             ),
@@ -1380,6 +1396,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                                             ]
                                                         ),
                                                         action="utter_relevant_card_not_linked",
+                                                        flow_id="replace_card",
                                                     )
                                                 ]
                                             )
@@ -1392,6 +1409,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                 rejections=[],
                                 ask_before_filling=True,
                                 reset_after_flow_ends=True,
+                                flow_id="replace_card",
                             )
                         ]
                     ),
@@ -1417,6 +1435,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                     ]
                                 ),
                                 action="check_balance",
+                                flow_id="check_balance",
                             ),
                             ActionFlowStep(
                                 custom_id="1_utter_current_balance",
@@ -1427,6 +1446,7 @@ def test_diff_generator_nlu_empty_everything() -> None:
                                     links=[StaticFlowStepLink(target_step_id="END")]
                                 ),
                                 action="utter_current_balance",
+                                flow_id="check_balance",
                             ),
                         ]
                     ),

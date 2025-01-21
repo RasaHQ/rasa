@@ -37,6 +37,7 @@ def flow_step() -> CollectInformationFlowStep:
         utter="utter_ask_transfer_money_amount_of_money",
         collect_action="action_ask_transfer_money_amount_of_money",
         rejections=[],
+        flow_id="transfer_money_test_flow",
     )
 
 

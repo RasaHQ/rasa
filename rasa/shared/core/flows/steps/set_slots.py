@@ -14,16 +14,17 @@ class SetSlotsFlowStep(FlowStep):
     """Slots and their values to set in the flow step."""
 
     @classmethod
-    def from_json(cls, data: Dict[Text, Any]) -> SetSlotsFlowStep:
+    def from_json(cls, flow_id: Text, data: Dict[Text, Any]) -> SetSlotsFlowStep:
         """Create a SetSlotsFlowStep from serialized data
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: data for a SetSlotsFlowStep in a serialized format
 
         Returns:
             a SetSlotsFlowStep object
         """
-        base = super().from_json(data)
+        base = super().from_json(flow_id, data)
         slots = [
             {"key": k, "value": v}
             for slot_sets in data["set_slots"]

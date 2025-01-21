@@ -2,7 +2,7 @@ from typing import Type
 
 import pytest
 
-from rasa.shared.core.flows import Flow, FlowStep
+from rasa.shared.core.flows import Flow, FlowsList, FlowStep
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps import (
     ActionFlowStep,
@@ -12,6 +12,7 @@ from rasa.shared.core.flows.steps import (
 )
 from rasa.shared.core.flows.steps.call import CallFlowStep
 from rasa.shared.core.flows.steps.no_operation import NoOperationFlowStep
+from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 from tests.utilities import flows_from_str
 
 
@@ -72,7 +73,7 @@ def test_flow_step_serialization(
     step = flow_with_all_steps.step_by_id(flow_step_id)
     assert isinstance(step, flow_step_class)
     step_data = step.as_json()
-    step_from_data = flow_step_class.from_json(step_data)
+    step_from_data = flow_step_class.from_json("test_flow", step_data)
     # overwriting idx of the re-serialized class as this is normally only happening
     # when reading entire flows
     step_from_data.idx = step.idx
@@ -86,7 +87,7 @@ def test_flow_step_serialization_for_call_step(flow_with_all_steps: Flow):
     step = flow_with_all_steps.step_by_id("call_step")
     assert isinstance(step, CallFlowStep)
     step_data = step.as_json()
-    step_from_data = CallFlowStep.from_json(step_data)
+    step_from_data = CallFlowStep.from_json("test_flow", step_data)
     # overwriting idx of the re-serialized class as this is normally only happening
     # when reading entire flows
     step_from_data.idx = step.idx
@@ -147,9 +148,10 @@ def test_flow_step_always_has_an_id_even_if_not_set():
         description=None,
         metadata={},
         next=FlowStepLinks([]),
+        flow_id="test_flow",
     )
-    assert step.id == "0_action_listen"
-    assert step.as_json().get("id") == "0_action_listen"
+    assert step.id == "test_flow_0_action_listen"
+    assert step.as_json().get("id") == "test_flow_0_action_listen"
 
 
 def test_flow_step_dump_uses_explicit_id():
@@ -160,6 +162,44 @@ def test_flow_step_dump_uses_explicit_id():
         description=None,
         metadata={},
         next=FlowStepLinks([]),
+        flow_id="test_flow",
     )
     assert step.id == "foo"
     assert step.as_json().get("id") == "foo"
+
+
+async def test_unique_flow_step_ids_with_call_step() -> None:
+    """Test that flow step ids are unique in the flow that contains a `call` step.
+
+    The flows from example below have a similar structure: `set_slots` step is located
+    third in both flows, which may lead to name collision - in both flows this step
+    will get the name `2_set_slots` in both flows
+    """
+    flows_data = """
+        flows:
+          parent_flow:
+            description: This is a test flow.
+            steps:
+              - call: child_flow
+              - collect: foo
+              - set_slots:
+                - slot_a: value_a
+          child_flow:
+            description: This is a test flow.
+            steps:
+              - collect: fizz
+              - collect: buzz
+              - set_slots:
+                - abc: def
+                - ghi: jkl
+        """
+
+    flows: FlowsList = YAMLFlowsReader.read_from_string(
+        flows_data, file_path="path/flow.py"
+    )
+
+    parent_flow = flows.flow_by_id("parent_flow")
+    # this assertion will fail if the ids are not unique
+    assert len(parent_flow.steps_with_calls_resolved) == len(
+        set(step.id for step in parent_flow.steps_with_calls_resolved)
+    )

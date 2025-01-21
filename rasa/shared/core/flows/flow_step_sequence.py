@@ -14,17 +14,19 @@ class FlowStepSequence:
     child_steps: List[FlowStep]
 
     @staticmethod
-    def from_json(data: List[Dict[Text, Any]]) -> FlowStepSequence:
+    def from_json(flow_id: Text, data: List[Dict[Text, Any]]) -> FlowStepSequence:
         """Create a FlowStepSequence object from serialized data
 
         Args:
+            flow_id: The id of the flow that contains the step.
             data: data for a StepSequence in a serialized format
 
         Returns:
             A StepSequence object including its flow step objects.
         """
-
-        flow_steps: List[FlowStep] = [step_from_json(config) for config in data]
+        flow_steps: List[FlowStep] = [
+            step_from_json(flow_id, config) for config in data
+        ]
 
         return FlowStepSequence(child_steps=flow_steps)
 
