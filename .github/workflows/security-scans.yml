@@ -11,7 +11,7 @@ concurrency:
 jobs:
   changes:
     name: Check for file changes
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       docker: ${{ steps.filter.outputs.docker }}
@@ -25,7 +25,7 @@ jobs:
 
   trivy:
     name: Detecting hardcoded secrets
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
@@ -74,7 +74,7 @@ jobs:
 
   bandit:
     name: Detect python security issues
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [changes]
 
     steps:
@@ -82,7 +82,7 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
-      - name: Set up Python 3.11 🐍
+      - name: Set up Python 🐍
         if: needs.changes.outputs.backend == 'true'
         uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:

@@ -108,8 +108,8 @@ jobs:
   release-artifacts-docker:
     name: Release Artifacts Docker
     # Run this workflow on a large runner because ARM64 build consumes disk space
-    # ubuntu-22.04-4core - 4 cores, 16GB of RAM and 150 GB SSD
-    runs-on: ubuntu-22.04-4core
+    # ubuntu-24.04-4core - 4 cores, 16GB of RAM and 150 GB SSD
+    runs-on: ubuntu-24.04-4core
 
     outputs:
       tag_version: ${{ steps.set-tag-version.outputs.tag_version }}
@@ -244,7 +244,7 @@ jobs:
 
   release-artifacts-pypi:
     name: Release Artifacts PyPI
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     
     steps:
     - name: Check out code
@@ -252,7 +252,7 @@ jobs:
       with:
         ref: ${{ env.TAG_VERSION }}
           
-    - name: Set up Python 3.11 🐍
+    - name: Set up Python 🐍
       uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
       with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
@@ -305,7 +305,7 @@ jobs:
 
   release-atifacts-publish-release:
     name: Release Artifacts Publish Release
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [release-artifacts-docker, release-artifacts-pypi]
 
     steps:
@@ -350,7 +350,7 @@ jobs:
 
   release-artifact-slack-notifications:
     name: Release Artifact Slack Notifications
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [release-artifacts-docker, release-artifacts-pypi]
     if: always()  # Ensures this job runs regardless of the result of previous jobs
 

@@ -9,7 +9,7 @@ on:
 
 
 env:
-  DEFAULT_PYTHON_VERSION: '3.10'
+  DEFAULT_PYTHON_VERSION: '3.9'
   POETRY_VERSION: 1.8.2
   RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
 
@@ -21,15 +21,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-22.04, windows-2022 ]
-        python-version: [ 3.9, '3.10', '3.11' ]
+        os: [ ubuntu-24.04, windows-2022 ]
+        python-version: [3.9]
 
     steps:
     - name: Checkout git repository 🕝
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
     - name: Free Up GitHub Actions Ubuntu Runner Disk Space 🔧
-      if: matrix.os == 'ubuntu-22.04'
+      if: matrix.os == 'ubuntu-24.04'
       # switching to a better maintained action https://github.com/insightsengineering/disk-space-reclaimer
       uses: insightsengineering/disk-space-reclaimer@124df9d297f0327c676943bb718a894af8d3897f
       with:
@@ -108,7 +108,7 @@ jobs:
 
   send_slack_notification_on_failure:
     name: Notify Slack
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: always()
     needs:
       - anonymization_test

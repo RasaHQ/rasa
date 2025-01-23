@@ -25,14 +25,14 @@ env:
     INPUT_VERSION: ${{ github.event.inputs.version }}
     INPUT_RASA_SDK_VERSION: ${{ github.event.inputs['rasa-sdk-version'] }}
     COMMIT_EMAIL: sara-tagger@users.noreply.github.com
-    DEFAULT_PYTHON_VERSION: "3.10"
+    DEFAULT_PYTHON_VERSION: "3.11"
     RELEASE_FOM_MAIN: ${{ github.event.inputs.fromMain }}
     SOURCE_BRANCH: prepare-release-${{ github.event.inputs.version }}
 
 jobs:
   prepare-the-release:
     if: ${{ github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -170,7 +170,7 @@ jobs:
 
   if_merged_tag_release:
     if: startsWith(github.head_ref, 'prepare-release-') && github.event.pull_request.merged == true
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4

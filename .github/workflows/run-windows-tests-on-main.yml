@@ -2,8 +2,8 @@ name: Run Windows Tests On Main
 
 on:
   schedule:
-    # Runs at the end of every day
-    - cron: 0 0 * * *
+    # Runs at 3am UTC Monday to Friday
+    - cron: 0 3 * * 1-5
   workflow_dispatch:
 
 env:
@@ -32,7 +32,7 @@ jobs:
           - test-full-model-training
           - test-other-unit-tests
           - test-performance
-        python-version: [ 3.9, "3.10", "3.11"]
+        python-version: [ 3.9]
 
     steps:
       - name: Checkout git repository 🕝
@@ -147,7 +147,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ 3.9, "3.10", "3.11"]
+        python-version: [ 3.9]
 
     steps:
       - name: Checkout git repository 🕝
@@ -251,7 +251,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9, "3.10", "3.11"]
+        python-version: [3.9]
 
     steps:
       - name: Checkout git repository 🕝
@@ -345,7 +345,7 @@ jobs:
 
   send_slack_notification_on_failure:
     name: Notify Slack
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: always()
     needs: [ test, test-anonymization, test-flaky ]
 

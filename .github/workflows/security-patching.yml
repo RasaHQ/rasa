@@ -2,7 +2,7 @@ name: Security Patching for Rasa Private
 
 on:
   schedule:
-    # Run cron job at 8AM Monday to Sunday.
+    # Runs at 8AM Monday to Sunday.
     - cron: '0 8 * * *'
   workflow_dispatch:
 
@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   get_tags:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     continue-on-error: true
     outputs:
       tags: ${{ steps.tags.outputs.tags }}
@@ -29,7 +29,7 @@ jobs:
         with:
             fetch-depth: 0
 
-      - name: Set up Python 3.11
+      - name: Set up Python
         uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: '3.11'
@@ -74,7 +74,7 @@ jobs:
         run: |
           echo "Tags: ${{ steps.tags.outputs.tags }}"
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: get_tags
     # Don't allow a single image failure to block all the image builds.
     continue-on-error: true

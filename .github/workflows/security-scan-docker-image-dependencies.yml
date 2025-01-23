@@ -2,6 +2,7 @@ name: Scan Rasa Private App Dependencies
 
 on:
     schedule:
+      # Runs at 8AM on Monday.
       - cron: '0 8 * * MON'
     workflow_dispatch:
 
@@ -16,7 +17,7 @@ permissions:
 
 jobs:
   scan_and_alert:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Checkout repository to check tags

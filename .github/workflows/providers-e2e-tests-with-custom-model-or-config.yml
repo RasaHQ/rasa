@@ -85,7 +85,7 @@ on:
         default: "main"
         
 env:
-  DEFAULT_PYTHON_VERSION: "3.10"
+  DEFAULT_PYTHON_VERSION: "3.11"
   RASA_PRO_BETA_E2E_ASSERTIONS: true
   RASA_PRO_BETA_STUB_CUSTOM_ACTION: true
   LOG_LEVEL_LLM: DEBUG
@@ -161,7 +161,7 @@ permissions:
 
 jobs:
   lint_action:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
@@ -172,7 +172,7 @@ jobs:
   e2e_test_with_user_provided_config_and_endpoint_files:
     name: Run e2e Test
     needs: lint_action
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     services:
       redis:
         image: redis:6

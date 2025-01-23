@@ -1,11 +1,20 @@
 name: Continuous Integration
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-  merge_group:
+  workflow_call:
+    inputs:
+      # CI only runs tests for the lowest supported Python version
+      python-versions:
+        type: string
+        default: '[3.9]'
+        required: false
+        description: "Python versions to run the tests on."
+      # Code Quality checks are enabled by default
+      run_code_quality:
+        type: string
+        required: false
+        default: 'true'
+        description: "Whether to run the Code Quality checks."
 
 concurrency:
   group: continous-integration-${{ github.ref }} # branch or tag name
@@ -23,7 +32,7 @@ env:
   AWS_REGION: us-east-1
   RASA_PRO_DEV_REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-private-dev
   RASA_SDK_DEV_REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-sdk-dev
-  DEFAULT_PYTHON_VERSION: "3.10"
+  DEFAULT_PYTHON_VERSION: "3.9"
   NODE_VERSION_INSPECTOR_BUILD: 20
 
 permissions:
@@ -36,7 +45,7 @@ permissions:
 jobs:
   check-poetry-lock-is-up-to-date:
     name: check poetry lock is up to date
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -44,7 +53,7 @@ jobs:
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
-          DEFAULT_PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Check poetry lock
@@ -55,7 +64,8 @@ jobs:
 
   quality:
     name: Code Quality
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
+    if: ${{ inputs.run_code_quality != 'false' }}
 
     steps:
       - name: Check out code
@@ -113,7 +123,7 @@ jobs:
 
   rasa-private-dev-docker-image:
     name: rasa-private dev docker image
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       PLATFORM: linux/amd64
 
@@ -175,7 +185,7 @@ jobs:
 
   check_inspector_build:
     name: Check Inspector Build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     defaults:
       run:
         shell: bash
@@ -224,7 +234,7 @@ jobs:
   tracing-integration-test:
     name: Tracing Integration Tests
     needs: rasa-private-dev-docker-image
-    runs-on: ubuntu-22.04-4core
+    runs-on: ubuntu-24.04-4core
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -296,7 +306,7 @@ jobs:
   metric-integration-test:
     name: Metric Integration Tests
     needs: rasa-private-dev-docker-image
-    runs-on: ubuntu-22.04-4core
+    runs-on: ubuntu-24.04-4core
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -364,7 +374,7 @@ jobs:
     needs: rasa-private-dev-docker-image
     env:
       RASA_SDK_IMAGE_TAG: latest
-    runs-on: ubuntu-22.04-4core
+    runs-on: ubuntu-24.04-4core
 
     steps:
       - name: Check out code
@@ -444,7 +454,7 @@ jobs:
   custom-action-integration-test-with-calm-bot:
     name: Custom Action Integration Tests With CALM bot
     needs: rasa-private-dev-docker-image
-    runs-on: ubuntu-22.04-4core
+    runs-on: ubuntu-24.04-4core
     env:
       RASA_SDK_IMAGE_TAG: latest
     steps:
@@ -522,7 +532,7 @@ jobs:
   enterprise-search-integration-tests:
     name: Run Enterprise Search Integration Tests
     needs: rasa-private-dev-docker-image
-    runs-on: ubuntu-22.04-4core
+    runs-on: ubuntu-24.04-4core
     env:
       RASA_SDK_IMAGE_TAG: latest
     steps:
@@ -538,11 +548,11 @@ jobs:
             echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           fi
 
-      - name: Set up Python ${{ inputs.PYTHON_VERSION }} 🐍
+      - name: Set up Python 3.9 🐍
         id: setup-python
         uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
-          python-version: ${{ inputs.PYTHON_VERSION }}
+          python-version: '3.9'
 
       - name: Read Poetry Version 🔢
         run: |
@@ -668,7 +678,7 @@ jobs:
 
   sequential-integration-test:
       name: Run Sequential Integration Tests
-      runs-on: ubuntu-20.04
+      runs-on: ubuntu-24.04
       timeout-minutes: 60
       env:
         POSTGRES_HOST: localhost
@@ -730,7 +740,7 @@ jobs:
 
   non-sequential-integration-test:
     name: Run Non-Sequential Integration Tests
-    runs-on: ubuntu-22.04-8core
+    runs-on: ubuntu-24.04-8core
     timeout-minutes: 60
     env:
       REDIS_HOST: localhost
@@ -813,7 +823,7 @@ jobs:
 
   tracker-store-integration-test:
     name: Run Tracker Store Integration Tests
-    runs-on: ubuntu-22.04-8core
+    runs-on: ubuntu-24.04-8core
     timeout-minutes: 60
     env:
       DB_PORT: 27017
@@ -875,7 +885,7 @@ jobs:
 
   concurrent-lockstore-integration-test:
     name: Run Concurrent LockStore Integration Tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
       REDIS_HOST: localhost
@@ -932,7 +942,7 @@ jobs:
 
   broker_integration_test:
     name: Run Broker Integration Tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
 
     steps:
@@ -989,7 +999,7 @@ jobs:
   channel_connector_integration_tests:
     name: Channel Connector Integration Tests With CALM bot
     needs: rasa-private-dev-docker-image
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -1061,7 +1071,7 @@ jobs:
 
   unit-test:
     name: Run Unit Tests
-    runs-on: ubuntu-22.04-4core
+    runs-on: ubuntu-24.04-4core
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -1076,7 +1086,7 @@ jobs:
           - test-other-unit-tests
           - test-performance
           - test-flaky
-        python-version: [3.9, "3.10", "3.11"]
+        python-version: ${{ fromJson(inputs.python-versions) }}
 
     steps:
       - name: Check out code
@@ -1096,14 +1106,6 @@ jobs:
           make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
-
-      - name: Add github workflow problem matchers
-        if: matrix.python-version == 3.7
-        # only annotate based on test runs on ubuntu: otherwise
-        # all errors will be duplicated for each python / os combination
-        # therefore, we only enable for the one where most tests are run
-        # (tests will still run in other envs, they will just not create annotations)
-        run: pip install pytest-github-actions-annotate-failures
 
       - name: Install ddtrace on Linux
         run: poetry run pip install -U 'ddtrace==2.10.5'
@@ -1166,12 +1168,12 @@ jobs:
 
   test-anonymization:
     name: Run Anonymization Unit Tests
-    runs-on: ubuntu-22.04-4core
+    runs-on: ubuntu-24.04-4core
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9, "3.10", "3.11"]
+        python-version: ${{ fromJson(inputs.python-versions) }}
 
     steps:
       - name: Check out code
@@ -1223,7 +1225,7 @@ jobs:
               ${{ github.workspace }}/unit-tests-results-test-anonymization-python-${{ matrix.python-version }}.xml
 
   publish-test-results:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: [ tracing-integration-test,
              metric-integration-test,
              enterprise-search-integration-tests,
@@ -1258,7 +1260,7 @@ jobs:
 
   sonarqube:
     name: SonarQube
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: [ unit-test, test-anonymization ]
     if: always()
     steps:

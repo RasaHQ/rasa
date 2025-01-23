@@ -1,0 +1,20 @@
+name: Scheduled CI Tests
+
+on:
+  schedule:
+    # Runs at 3AM Monday to Friday
+    - cron: '0 3 * * 1-5'
+  workflow_dispatch:
+
+# Reusing continous-integration.yml workflow
+# Inputs:
+# - python-versions: Python versions to run the tests on
+# - run_code_quality: Whether to run the Code Quality checks
+jobs:
+  scheduled-tests:
+    uses: ./.github/workflows/continous-integration.yml
+    with:
+      python-versions: '["3.10", "3.11"]'
+      # We don't want to run the code quality checks on scheduled runs
+      run_code_quality: 'false'
+    secrets: inherit

@@ -1,0 +1,17 @@
+name: Continous Integration Tests
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+    merge_group:
+
+# Reusing continous-integration.yml workflow with default values
+# Inputs:
+# - python-versions: Python versions to run the tests on
+# - run_code_quality: Whether to run the Code Quality checks
+jobs:
+  ci-tests:
+    uses: ./.github/workflows/continous-integration.yml
+    secrets: inherit
