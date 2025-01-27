@@ -19,14 +19,14 @@ inputs:
     required: true
     default: main
 
-  single-step-e2e-test-with-assertions:
-      description: "Path to test file, on `rasa-calm-demo` repository"
+  single-step-tests:
+      description: "Path to test file(s), on `rasa-calm-demo` repository"
       required: true
       # TODO: Use test that invokes enterprise-search, when flakiness is resolved
       default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
 
-  multi-step-e2e-test-with-assertions:
-    description: "Path to test file, on `rasa-calm-demo` repository"
+  multi-step-tests:
+    description: "Path to test file(s), on `rasa-calm-demo` repository"
     required: true
     default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
 
@@ -223,6 +223,7 @@ runs:
             | tee model-training-log
 
     - name: Verify LLM and Embeddings API health checks during training
+      if: ${{ !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
       run: |
         : Verify LLM and Embeddings API health checks during training
         grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' model-training-log \
@@ -273,8 +274,7 @@ runs:
 
     - name: Run e2e test (Single Step Command Generator)
       uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
-      if: ${{ inputs.train-and-test == 'singlestep' }}
-      id: e2e-test-on-singlestep-trained-model
+      if: ${{ inputs.train-and-test == 'singlestep' && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
       env:
         RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
@@ -285,7 +285,7 @@ runs:
         shell: bash
         command: |
           : Run e2e test on SingleStepCommandGenerator model
-          rasa test e2e rasa-calm-demo/${{ inputs.single-step-e2e-test-with-assertions }} \
+          rasa test e2e rasa-calm-demo/${{ inputs.single-step-tests }} \
             --e2e-results \
             --debug \
             --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
@@ -295,7 +295,7 @@ runs:
 
     - name: Run e2e test (Multi-Step Command Generator)
       uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
-      if: ${{ inputs.train-and-test == 'multistep' }}
+      if: ${{ inputs.train-and-test == 'multistep' && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
       env:
         RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
@@ -306,7 +306,7 @@ runs:
         shell: bash
         command: |
           : Run e2e test on MultiStepCommandGenerator model
-          rasa test e2e rasa-calm-demo/${{ inputs.multi-step-e2e-test-with-assertions }} \
+          rasa test e2e rasa-calm-demo/${{ inputs.multi-step-tests }} \
             --e2e-results \
             --debug \
             --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
@@ -314,8 +314,30 @@ runs:
             2>&1 \
             | tee e2e-tests-log
 
+    - name: Run Dialogue Understanding Tests
+      uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
+      if: ${{ env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
+      env:
+        RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
+        RASA_PRO_BETA_INTENTLESS: true
+      with:
+        timeout_minutes: 15
+        max_attempts: 2
+        retry_wait_seconds: 300
+        shell: bash
+        command: |
+          : Run dialogue understanding tests
+          rasa test du rasa-calm-demo/${{ inputs.single-step-tests }} \
+            --output-file dut-${{ inputs.provider }}-${{ inputs.train-and-test }}.yml \
+            --output-prompt \
+            --debug \
+            --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+            --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
+            2>&1 \
+            | tee e2e-tests-log
+
     - name: Verify LLM and Embeddings API health checks during inference
-      if: ${{ !contains(inputs.provider, 'azure-multiple-deployments-with-') }}
+      if: ${{ !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
       run: |
         : Verify LLM and Embeddings API health checks during inference
         grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' e2e-tests-log \
@@ -329,12 +351,19 @@ runs:
           && echo 'LLM and Embeddings API health checks passed for all components during inference'
       shell: bash
 
-    - name: Save test results
-      if: failure()
+    - name: Save E2E test results
+      if: ${{ failure() && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
       with:
         name: ${{ inputs.provider }}-E2E-test-${{ inputs.train-and-test }}-results
         path: tests/e2e_results_failed.yml
+
+    - name: Save DUT results
+      if: ${{ failure() && env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+      with:
+        name: ${{ inputs.provider }}-DUT-${{ inputs.train-and-test }}-results
+        path: dut-${{ inputs.provider }}-${{ inputs.train-and-test }}.yml
 
     - name: Save LiteLLM-proxy logs
       if: ${{ failure() && inputs.provider == 'litellm-proxy-multiple-deployments-with-routing' }}
@@ -381,7 +410,7 @@ runs:
         # Send notification to #dev-tribe-alerts slack channel
         channel-id: C070ELPSLBB 
         slack-message: ':rocket: *Rasa-Pro* (version `${{ env.RASA_VERSION }}`, `rasa-private` branch `${{ github.ref_name }}` sha `${{ env.SHORT_SHA }}`)
-          CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) passed against: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model. More
+          CALM tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) passed against: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model. More
           information can be found <https://github.com/${{ github.repository
           }}/actions/runs/${{ github.run_id }}|here>.'
       env:
@@ -396,7 +425,7 @@ runs:
 
         # Alert Engine-squad
         slack-message: '<!subteam^S0322UJCPU1> :broken_heart: *Rasa-Pro* (version `${{ env.RASA_VERSION
-          }}`, `rasa-private` branch `${{ github.ref_name }}` sha `${{ env.SHORT_SHA }}`) CALM E2E tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) failed against: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model!
+          }}`, `rasa-private` branch `${{ github.ref_name }}` sha `${{ env.SHORT_SHA }}`) CALM tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) failed against: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model!
           More information can be found <https://github.com/${{
           github.repository }}/actions/runs/${{ github.run_id }}|here>.'
       env:

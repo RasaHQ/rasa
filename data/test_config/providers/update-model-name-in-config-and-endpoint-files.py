@@ -38,6 +38,7 @@ CONFIG_FILES = glob(f"{PROVIDER_CONFIG_AND_ENDPOINTS_FILE_DIRECTORY}/*config*.ym
 
 class ModelConfigKey(str, Enum):
     """Config parameter keys to specify model."""
+
     MODEL = "model"
     DEPLOYMENT = "deployment"
     API_VERSION = "api_version"
@@ -174,13 +175,18 @@ def update_config_files() -> None:
                     if not (
                         ("singlestep" in config_file and "Multi" in sub_component)
                         or ("multistep" in config_file and "Single" in sub_component)
+                        or ("dut" in config_file and sub_component == "LLMBasedRouter")
                     ):
-                        sub_component_block = next(
-                            item
-                            for item in yml_data[component]
-                            if item["name"] == sub_component
-                        )
-                        if llm := sub_component_block.get("llm"):
+                        if (
+                            sub_component_block := next(
+                                (
+                                    item
+                                    for item in yml_data[component]
+                                    if item["name"] == sub_component
+                                ),
+                                None,
+                            )
+                        ) and (llm := sub_component_block.get("llm")):
                             if LLM_MODEL_NAME and ModelConfigKey.MODEL in llm:
                                 llm[ModelConfigKey.MODEL] = LLM_MODEL_NAME
                                 model_updated = True
@@ -193,11 +199,12 @@ def update_config_files() -> None:
                             if LLM_API_BASE and ModelConfigKey.API_BASE in llm:
                                 llm[ModelConfigKey.API_BASE] = LLM_API_BASE
                                 model_updated = True
-                        update_embeddings_model_config(sub_component_block)
-                        if "flow_retrieval" in sub_component_block:
-                            update_embeddings_model_config(
-                                sub_component_block["flow_retrieval"]
-                            )
+                        if sub_component_block:
+                            update_embeddings_model_config(sub_component_block)
+                            if "flow_retrieval" in sub_component_block:
+                                update_embeddings_model_config(
+                                    sub_component_block["flow_retrieval"]
+                                )
         if model_updated:
             with open(config_file, "w", encoding="utf-8") as file:
                 yaml.dump(yml_data, stream=file)

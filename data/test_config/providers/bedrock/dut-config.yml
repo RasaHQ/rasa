@@ -1,0 +1,17 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: NLUCommandAdapter
+- name: SingleStepLLMCommandGenerator
+  llm:
+    provider: bedrock
+    model: anthropic.claude-3-5-sonnet-20240620-v1:0
+
+policies:
+- name: FlowPolicy
+- name: EnterpriseSearchPolicy
+  vector_store:
+      source: rasa-calm-demo/docs/
+- name: IntentlessPolicy
+
+assistant_id: 20240418-073244-narrow-archive

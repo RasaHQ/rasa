@@ -1,0 +1,21 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: NLUCommandAdapter
+- name: SingleStepLLMCommandGenerator
+  llm:
+    provider: azure
+    deployment: test-gpt-35-turbo
+    api_type: azure
+    api_base: https://devtribe-testing-canada-east.openai.azure.com/
+    api_version: 2024-02-01
+    timeout: 7
+
+policies:
+- name: FlowPolicy
+- name: EnterpriseSearchPolicy
+  vector_store:
+      source: rasa-calm-demo/docs/
+- name: IntentlessPolicy
+
+assistant_id: 20240418-073244-narrow-archive

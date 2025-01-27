@@ -1,0 +1,18 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: NLUCommandAdapter
+- name: SingleStepLLMCommandGenerator
+  llm:
+    provider: huggingface
+    model: rasa/cmd_gen_codellama_13b_calm_demo
+    api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+
+policies:
+- name: FlowPolicy
+- name: EnterpriseSearchPolicy
+  vector_store:
+      source: rasa-calm-demo/docs/
+- name: IntentlessPolicy
+
+assistant_id: 20240418-073244-narrow-archive

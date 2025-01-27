@@ -1,0 +1,17 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: NLUCommandAdapter
+- name: SingleStepLLMCommandGenerator
+  llm:
+    provider: together_ai
+    model: meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo
+
+policies:
+- name: FlowPolicy
+- name: EnterpriseSearchPolicy
+  vector_store:
+      source: rasa-calm-demo/docs/
+- name: IntentlessPolicy
+
+assistant_id: 20240418-073244-narrow-archive

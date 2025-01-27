@@ -308,15 +308,15 @@ jobs:
           echo "${{ fromJson(env.API_KEY_NAMES)[matrix.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[matrix.provider]] }}" >> "$GITHUB_ENV"
 
       - name: E2E test
-        uses: ./.github/actions/providers-e2e-test
+        uses: ./.github/actions/providers-tests
         env:
           OTEL_SERVICE_NAME: e2e-tests-${{ matrix.provider }}
         with:
           provider: ${{ matrix.provider }}
           train-and-test: ${{ matrix.train-and-test }}
           rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch || 'main' }}
-          single-step-e2e-test-with-assertions: ${{ inputs.single-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }} # TODO: Use test that invokes enterprise-search, when flakiness is resolved
-          multi-step-e2e-test-with-assertions: ${{ inputs.multi-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }}
+          single-step-tests: ${{ inputs.single-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }} # TODO: Use test that invokes enterprise-search, when flakiness is resolved
+          multi-step-tests: ${{ inputs.multi-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }}
           llm-as-judge-model: ${{ inputs.llm-as-judge-model || 'gpt-4o-mini' }}
 
   e2e_test_on_single_provider:
@@ -352,13 +352,13 @@ jobs:
 
 
       - name: E2E test on single provider
-        uses: ./.github/actions/providers-e2e-test
+        uses: ./.github/actions/providers-tests
         env:
           OTEL_SERVICE_NAME: e2e-tests-${{ inputs.provider }}
         with:
           provider: ${{ inputs.provider }}
           train-and-test: ${{ matrix.train-and-test }}
           rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch }}
-          single-step-e2e-test-with-assertions: ${{ inputs.single-step-e2e-test-with-assertions }}
-          multi-step-e2e-test-with-assertions: ${{ inputs.multi-step-e2e-test-with-assertions }}
+          single-step-tests: ${{ inputs.single-step-e2e-test-with-assertions }}
+          multi-step-tests: ${{ inputs.multi-step-e2e-test-with-assertions }}
           llm-as-judge-model: ${{ inputs.llm-as-judge-model }}

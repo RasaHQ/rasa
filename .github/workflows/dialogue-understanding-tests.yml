@@ -1,4 +1,4 @@
-name: E2E Test on Rasa-Calm-Demo with supported providers and specified config
+name: Dialogue Understanding Tests
 
 on:
   workflow_dispatch:
@@ -26,17 +26,6 @@ on:
           - groq
           # - voyage TODO: Enable after ENG-1415 is unblocked
           - ollama
-          # - self-hosted
-          - azure-multiple-deployments-with-simple-shuffle-routing
-          - azure-multiple-deployments-with-least-busy-routing
-          - azure-multiple-deployments-with-usage-based-routing
-          - azure-multiple-deployments-with-usage-based-routing-v2
-          - azure-multiple-deployments-with-latency-based-routing
-          - azure-multiple-deployments-with-cost-based-routing
-          - gemini-multiple-deployments-with-routing
-          - huggingface-multiple-deployments-with-routing
-          - bedrock-multiple-deployments-with-routing
-          - litellm-proxy-multiple-deployments-with-routing
 
       llm-model-name:
         description: "Model from LLM provider (for `azure` provider, use `llm-deployment` input instead). Default: model from `data/test_config/providers/<provider>/*endpoint|config*.yml`"
@@ -82,12 +71,13 @@ on:
         description: "Branch to checkout for `rasa-calm-demo`"
         type: string
         required: true
-        default: "main"
+        default: "calm-only-du" # TODO: Use `main` branch once `calm-only-du` changes are merged to `main`
         
 env:
-  DEFAULT_PYTHON_VERSION: "3.11"
+  DEFAULT_PYTHON_VERSION: "3.10"
   RASA_PRO_BETA_E2E_ASSERTIONS: true
   RASA_PRO_BETA_STUB_CUSTOM_ACTION: true
+  RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST: true
   LOG_LEVEL_LLM: DEBUG
   ENDPOINTS_FILE_NAME: endpoints
   REDIS_HOST: localhost
@@ -161,18 +151,18 @@ permissions:
 
 jobs:
   lint_action:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
       - uses: ./.github/actions/lint-action
         with:
-          workflow_path: .github/workflows/providers-e2e-tests-with-custom-model-or-config.yml
+          workflow_path: .github/workflows/dialogue-understanding-tests.yml
   
-  e2e_test_with_user_provided_config_and_endpoint_files:
-    name: Run e2e Test
+  dialogue_understanding_tests:
+    name: Run Dialogue Understanding Tests
     needs: lint_action
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     services:
       redis:
         image: redis:6
@@ -184,10 +174,6 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
-    strategy:
-      fail-fast: false
-      matrix:
-        train-and-test: ["singlestep", "multistep"]
 
     steps:
       - name: Checkout git repository 🕝
@@ -214,12 +200,12 @@ jobs:
             EMBEDDINGS_API_BASE: ${{ inputs.embeddings-api-base }}
         run: ./update-model-name-in-config-and-endpoint-files.py
 
-      - name: E2E test with user provided config and endpoint files
+      - name: Dialogue Understanding Tests
         uses: ./.github/actions/providers-tests
         with:
           provider: ${{ inputs.provider }}
-          train-and-test: ${{ matrix.train-and-test }}
+          train-and-test: dut
           rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch }}
-          single-step-tests: e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml
-          multi-step-tests: e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml
+          single-step-tests: dialogue_understanding_tests/user_adds_contact_to_their_list.yml # TODO: Enable running whole folder once errors are resolved
+          multi-step-tests: dialogue_understanding_tests/user_adds_contact_to_their_list.yml # TODO: Enable running whole folder once errors are resolved
           llm-as-judge-model: gpt-4o-mini

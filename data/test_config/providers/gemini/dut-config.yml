@@ -1,0 +1,17 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: NLUCommandAdapter
+- name: SingleStepLLMCommandGenerator
+  llm:
+    provider: gemini
+    model: gemini-pro
+
+policies:
+- name: FlowPolicy
+- name: EnterpriseSearchPolicy
+  vector_store:
+      source: rasa-calm-demo/docs/
+- name: IntentlessPolicy
+
+assistant_id: 20240418-073244-narrow-archive

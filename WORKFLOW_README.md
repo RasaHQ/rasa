@@ -46,6 +46,15 @@ This workflow can be triggered manually/on-demand, and test results' notificatio
 `#dev-tribe-alerts` Slack channel, and traces and metrics from Rasa components are sent to [`Honeycomb`](https://ui.honeycomb.io/rasa/environments/engine). In case of failure, test results are saved, and can be
 found on GitHub's web interface, in the `Artifacts` section of the `Action`'s run summary page.
 
+### Dialogue Understanding Tests
+This workflow runs a Dialogue Understanding tests on the `rasa-calm-demo` 
+bot, using the specified CALM supported LLM or Embeddings provider (with option to also specify specific model to be used from the provider), 
+to evaluate Command Generator.
+
+This workflow can be triggered manually/on-demand, and test results' notification is sent to 
+`#dev-tribe-alerts` Slack channel, and traces and metrics from Rasa components are sent to [`Honeycomb`](https://ui.honeycomb.io/rasa/environments/engine). In case of failure, test results are saved, and can be
+found on GitHub's web interface, in the `Artifacts` section of the `Action`'s run summary page.
+
 ### Release Artifacts Workflow
 Workflow runs on a tag push to the `main` branch and `release branches`. 
 This workflow does the following:
