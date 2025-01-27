@@ -54,7 +54,4 @@ class SessionStartCommand(Command):
         return hash(self.command())
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, SessionStartCommand):
-            return False
-
-        return True
+        return isinstance(other, SessionStartCommand)

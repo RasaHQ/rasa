@@ -1345,6 +1345,15 @@ def e2e_input_folder() -> pathlib.Path:
     )
 
 
+@pytest.fixture
+def dialogue_understanding_tests_input_folder() -> pathlib.Path:
+    return (
+        pathlib.Path(__file__).parent.parent
+        / "data"
+        / "dialogue_understanding_tests_input_files"
+    )
+
+
 @pytest.fixture(scope="session")
 def load_env_vars() -> None:
     load_dotenv()

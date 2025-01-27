@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
@@ -12,7 +13,8 @@ from rasa.shared.core.trackers import DialogueStateTracker
 @dataclass
 class ChangeFlowCommand(Command):
     """A command to indicate a change of flows was requested by the command
-    generator."""
+    generator.
+    """
 
     @classmethod
     def command(cls) -> str:
@@ -43,3 +45,16 @@ class ChangeFlowCommand(Command):
 
     def __hash__(self) -> int:
         return hash(self.command())
+
+    def to_dsl(self) -> str:
+        """Converts the command to a DSL string."""
+        return "ChangeFlow()"
+
+    @staticmethod
+    def from_dsl(match: re.Match, **kwargs: Any) -> ChangeFlowCommand:
+        """Converts the DSL string to a command."""
+        return ChangeFlowCommand()
+
+    @staticmethod
+    def regex_pattern() -> str:
+        return r"ChangeFlow\(\)"

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
@@ -55,7 +56,17 @@ class RepeatBotMessagesCommand(Command):
         return hash(self.command())
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, RepeatBotMessagesCommand):
-            return False
+        return isinstance(other, RepeatBotMessagesCommand)
 
-        return True
+    def to_dsl(self) -> str:
+        """Converts the command to a DSL string."""
+        return "RepeatLastBotMessages()"
+
+    @classmethod
+    def from_dsl(cls, match: re.Match, **kwargs: Any) -> RepeatBotMessagesCommand:
+        """Converts the DSL string to a command."""
+        return RepeatBotMessagesCommand()
+
+    @staticmethod
+    def regex_pattern() -> str:
+        return r"RepeatLastBotMessages\(\)"

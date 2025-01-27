@@ -5,7 +5,7 @@ import difflib
 from asyncio import CancelledError
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, DefaultDict, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Callable, DefaultDict, Dict, List, Optional, Text, Tuple, Union
 from urllib.parse import urlparse
 
 import requests
@@ -18,6 +18,7 @@ from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.persistor import StorageType
 from rasa.core.utils import AvailableEndpoints
+from rasa.dialogue_understanding_test.du_test_case import DialogueUnderstandingTestCase
 from rasa.e2e_test.constants import TEST_CASE_NAME, TEST_FILE_NAME
 from rasa.e2e_test.e2e_config import create_llm_judge_config
 from rasa.e2e_test.e2e_test_case import (
@@ -963,18 +964,10 @@ class E2ETestRunner:
                 ).name
                 self.agent.endpoints.action.kwargs[TEST_CASE_NAME] = test_case_name
 
-            # add timestamp suffix to ensure sender_id is unique
-            sender_id = f"{test_case_name}_{datetime.datetime.now()}"
-            test_turns = await self._run_test_case(
-                sender_id, input_fixtures, input_metadata, test_case
+            sender_id = self.generate_sender_id(test_case.name)
+            _, test_result = await self._process_test_case(
+                test_case, sender_id, input_fixtures, input_metadata
             )
-
-            if not test_case.uses_assertions():
-                test_result = self.generate_test_result(test_turns, test_case)
-            else:
-                test_result = await self.run_assertions(
-                    sender_id, test_case, input_metadata
-                )
 
             results.append(test_result)
 
@@ -1022,6 +1015,32 @@ class E2ETestRunner:
             input_metadata,
         )
 
+    @staticmethod
+    def generate_sender_id(test_case_name: str) -> str:
+        # add timestamp suffix to ensure sender_id is unique
+        return f"{test_case_name}_{datetime.datetime.now()}"
+
+    async def _process_test_case(
+        self,
+        test_case: TestCase,
+        sender_id: str,
+        input_fixtures: List[Fixture],
+        input_metadata: Optional[List[Metadata]],
+    ) -> Tuple[TEST_TURNS_TYPE, TestResult]:
+        """Runs a single test case and returns the test turns and result."""
+        test_turns = await self._run_test_case(
+            sender_id, input_fixtures, input_metadata, test_case
+        )
+
+        if not test_case.uses_assertions():
+            test_result = self.generate_test_result(test_turns, test_case)
+        else:
+            test_result = await self.run_assertions(
+                sender_id, test_case, input_metadata
+            )
+
+        return test_turns, test_result
+
     async def run_tests_for_fine_tuning(
         self,
         input_test_cases: List[TestCase],
@@ -1047,20 +1066,12 @@ class E2ETestRunner:
 
         for i in tqdm(range(len(input_test_cases))):
             test_case = input_test_cases[i]
-            # add timestamp suffix to ensure sender_id is unique
-            sender_id = f"{test_case.name}_{datetime.datetime.now()}"
-            test_turns = await self._run_test_case(
-                sender_id, input_fixtures, input_metadata, test_case
+            sender_id = self.generate_sender_id(test_case.name)
+
+            test_turns, test_result = await self._process_test_case(
+                test_case, sender_id, input_fixtures, input_metadata
             )
 
-            # check if the e2e test is passing, only convert passing e2e tests into
-            # conversations
-            if not test_case.uses_assertions():
-                test_result = self.generate_test_result(test_turns, test_case)
-            else:
-                test_result = await self.run_assertions(
-                    sender_id, test_case, input_metadata
-                )
             if not test_result.pass_status:
                 structlogger.warning(
                     "annotation_module.skip_test_case.failing_e2e_test",
@@ -1078,6 +1089,59 @@ class E2ETestRunner:
                 conversations.append(conversation)
 
         return conversations
+
+    async def run_tests_to_convert_tests_to_du_tests(
+        self,
+        input_test_cases: List[TestCase],
+        input_fixtures: List[Fixture],
+        input_metadata: Optional[List[Metadata]],
+        converting_method: Callable[
+            [TEST_TURNS_TYPE, TestCase, bool, bool],
+            Optional[DialogueUnderstandingTestCase],
+        ],
+    ) -> Tuple[
+        List[DialogueUnderstandingTestCase], List[DialogueUnderstandingTestCase]
+    ]:
+        """Runs the test cases to convert them into dialogue understanding tests.
+
+        Converts test cases into dialogue understanding test cases.
+
+        Args:
+            input_test_cases: Input test cases.
+            input_fixtures: Input fixtures.
+            input_metadata: Input metadata.
+            converting_method: The method to convert the e2e test case into a
+              dialogue understanding test case.
+
+        Returns:
+            List of ready dialogue understanding test cases and list of
+            dialogue understanding test cases to review.
+        """
+        ready_du_test_cases = []
+        to_review_du_test_cases = []
+
+        for i in tqdm(range(len(input_test_cases))):
+            test_case = input_test_cases[i]
+            sender_id = self.generate_sender_id(test_case.name)
+
+            test_turns, test_result = await self._process_test_case(
+                test_case, sender_id, input_fixtures, input_metadata
+            )
+
+            du_test_case = converting_method(
+                test_turns,
+                test_case,
+                test_case.uses_assertions(),
+                test_result.pass_status,
+            )
+
+            if du_test_case:
+                if test_result.pass_status:
+                    ready_du_test_cases.append(du_test_case)
+                else:
+                    to_review_du_test_cases.append(du_test_case)
+
+        return ready_du_test_cases, to_review_du_test_cases
 
     @staticmethod
     def _action_server_is_reachable(

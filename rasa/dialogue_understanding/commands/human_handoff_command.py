@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
@@ -61,7 +62,17 @@ class HumanHandoffCommand(Command):
         return hash(self.command())
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, HumanHandoffCommand):
-            return False
+        return isinstance(other, HumanHandoffCommand)
 
-        return True
+    def to_dsl(self) -> str:
+        """Converts the command to a DSL string."""
+        return "HumanHandoff()"
+
+    @classmethod
+    def from_dsl(cls, match: re.Match, **kwargs: Any) -> HumanHandoffCommand:
+        """Converts the DSL string to a command."""
+        return HumanHandoffCommand()
+
+    @staticmethod
+    def regex_pattern() -> str:
+        return r"HumanHandoff\(\)"

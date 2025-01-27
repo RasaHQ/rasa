@@ -488,53 +488,6 @@ class TestLLMBasedCommandGenerator:
             assert logs[0]["event"] == "llm_based_command_generator.llm.error"
 
     @pytest.mark.parametrize(
-        "input_value, expected_output",
-        [
-            ("text", "text"),
-            (" text ", "text"),
-            ('"text"', "text"),
-            ("'text'", "text"),
-            ("' \"text' \"  ", "text"),
-            ("", ""),
-        ],
-    )
-    def test_clean_extracted_value(
-        self, input_value: str, expected_output: str, base_command_generator_fixture
-    ):
-        """Test that clean_extracted_value removes
-        the leading and trailing whitespaces.
-        """
-        command_generator = base_command_generator_fixture
-        # When
-        cleaned_value = command_generator.clean_extracted_value(input_value)
-        # Then
-        assert cleaned_value == expected_output
-
-    @pytest.mark.parametrize(
-        "input_value, expected_truthiness",
-        [
-            ("", False),
-            (" ", False),
-            ("none", False),
-            ("some text", False),
-            ("[missing information]", True),
-            ("[missing]", True),
-            ("None", True),
-            ("undefined", True),
-            ("null", True),
-        ],
-    )
-    def test_is_none_value(
-        self,
-        input_value: str,
-        expected_truthiness: bool,
-        base_command_generator_fixture,
-    ):
-        """Test that is_none_value returns True when the value is None."""
-        command_generator = base_command_generator_fixture
-        assert command_generator.is_none_value(input_value) == expected_truthiness
-
-    @pytest.mark.parametrize(
         "slot, slot_name, expected_output",
         [
             (TextSlot("test_slot", [], initial_value="hello"), "test_slot", "hello"),

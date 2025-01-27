@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
@@ -227,3 +229,21 @@ def test_run_start_flow_with_multiple_flows():
     assert isinstance(updated_stack.frames[0], UserFlowStackFrame)
     assert updated_stack.frames[0].frame_type == "regular"
     assert updated_stack.frames[0].flow_id == "bar"
+
+
+def test_to_dsl():
+    command = StartFlowCommand("foo")
+    assert command.to_dsl() == "StartFlow(foo)"
+
+
+def test_regex_pattern():
+    assert (
+        StartFlowCommand.regex_pattern() == r"StartFlow\(['\"]?([a-zA-Z0-9_-]+)['\"]?\)"
+    )
+
+
+def test_from_dsl():
+    action = "StartFlow(foo)"
+    pattern = re.compile(StartFlowCommand.regex_pattern())
+    match = pattern.search(action)
+    assert StartFlowCommand.from_dsl(match) == StartFlowCommand("foo")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
@@ -54,7 +55,17 @@ class ChitChatAnswerCommand(FreeFormAnswerCommand):
         return hash(self.command())
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, ChitChatAnswerCommand):
-            return False
+        return isinstance(other, ChitChatAnswerCommand)
 
-        return True
+    def to_dsl(self) -> str:
+        """Converts the command to a DSL string."""
+        return "ChitChat()"
+
+    @classmethod
+    def from_dsl(cls, match: re.Match, **kwargs: Any) -> ChitChatAnswerCommand:
+        """Converts the DSL string to a command."""
+        return ChitChatAnswerCommand()
+
+    @staticmethod
+    def regex_pattern() -> str:
+        return r"ChitChat\(\)"

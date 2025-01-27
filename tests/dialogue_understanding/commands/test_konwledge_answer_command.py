@@ -35,3 +35,16 @@ def test_run_command_on_tracker():
 
     frame = updated_stack.frames[0]
     assert frame.type() == "pattern_search"
+
+
+def test_to_dsl():
+    command = KnowledgeAnswerCommand()
+    assert command.to_dsl() == "SearchAndReply()"
+
+
+def test_from_dsl():
+    assert KnowledgeAnswerCommand.from_dsl(None) == KnowledgeAnswerCommand()
+
+
+def test_regex_pattern():
+    assert KnowledgeAnswerCommand.regex_pattern() == r"SearchAndReply\(\)"

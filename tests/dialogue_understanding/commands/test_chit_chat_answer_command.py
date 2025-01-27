@@ -39,3 +39,16 @@ def test_run_command_on_tracker():
 
     frame = dialogue_stack_dump[0]
     assert frame["type"] == "pattern_chitchat"
+
+
+def test_to_dsl():
+    command = ChitChatAnswerCommand()
+    assert command.to_dsl() == "ChitChat()"
+
+
+def test_from_dsl():
+    assert ChitChatAnswerCommand.from_dsl(None) == ChitChatAnswerCommand()
+
+
+def test_regex_pattern():
+    assert ChitChatAnswerCommand.regex_pattern() == r"ChitChat\(\)"

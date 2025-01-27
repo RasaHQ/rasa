@@ -125,3 +125,8 @@ def test_clarify_command_hash_not_equal():
     assert hash(command) != hash(other_command)
     assert command != other_command
     assert command.options != other_command.options
+
+
+def test_to_dsl():
+    command = ClarifyCommand(options=["foo", "bar", "baz"])
+    assert command.to_dsl() == "Clarify(foo, bar, baz)"

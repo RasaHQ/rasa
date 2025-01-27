@@ -1,3 +1,4 @@
+import re
 from typing import Any, List
 
 import pytest
@@ -439,3 +440,35 @@ def test_run_command_on_tracker_slot_value_is_coerced_to_right_type(
     )
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
     assert events == [SlotSet(command.name, expected_value)]
+
+
+def test_to_dsl():
+    command = SetSlotCommand("foo", "bar")
+    assert command.to_dsl() == "SetSlot(foo, bar)"
+
+
+def test_from_dsl():
+    action = "SetSlot(foo, bar)"
+    pattern = re.compile(SetSlotCommand.regex_pattern())
+    match = pattern.search(action)
+    assert SetSlotCommand.from_dsl(match) == SetSlotCommand("foo", "bar")
+
+
+@pytest.mark.parametrize(
+    "value1, value2, equal",
+    [
+        ("foo", "foo", True),
+        ("foo", "bar", False),
+        ("foo", 1, False),
+        (1, 1, True),
+        (1, 2, False),
+        (True, True, True),
+        (True, False, False),
+        (True, "True", True),
+        ("value", "Value", True),
+        (123, "123", True),
+    ],
+)
+def test_equal(value1: Any, value2: Any, equal: bool):
+    commands_equal = SetSlotCommand("name", value1) == SetSlotCommand("name", value2)
+    assert commands_equal is equal

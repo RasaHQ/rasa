@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
@@ -54,7 +55,17 @@ class KnowledgeAnswerCommand(FreeFormAnswerCommand):
         return hash(self.command())
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, KnowledgeAnswerCommand):
-            return False
+        return isinstance(other, KnowledgeAnswerCommand)
 
-        return True
+    def to_dsl(self) -> str:
+        """Converts the command to a DSL string."""
+        return "SearchAndReply()"
+
+    @classmethod
+    def from_dsl(cls, match: re.Match, **kwargs: Any) -> KnowledgeAnswerCommand:
+        """Converts the DSL string to a command."""
+        return KnowledgeAnswerCommand()
+
+    @staticmethod
+    def regex_pattern() -> str:
+        return r"SearchAndReply\(\)"

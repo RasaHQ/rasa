@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List
@@ -7,6 +8,10 @@ from typing import Any, Dict, List
 import structlog
 
 from rasa.dialogue_understanding.commands.command import Command
+from rasa.dialogue_understanding.commands.utils import (
+    clean_extracted_value,
+    get_nullable_slot_value,
+)
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
@@ -158,4 +163,22 @@ class SetSlotCommand(Command):
         if not isinstance(other, SetSlotCommand):
             return False
 
-        return other.value == self.value and other.name == self.name
+        return (
+            str(other.value).lower() == str(self.value).lower()
+            and other.name == self.name
+        )
+
+    def to_dsl(self) -> str:
+        """Converts the command to a DSL string."""
+        return f"SetSlot({self.name}, {self.value})"
+
+    @classmethod
+    def from_dsl(cls, match: re.Match, **kwargs: Any) -> SetSlotCommand:
+        """Converts the DSL string to a command."""
+        slot_name = str(match.group(1).strip())
+        slot_value = clean_extracted_value(match.group(2))
+        return SetSlotCommand(name=slot_name, value=get_nullable_slot_value(slot_value))
+
+    @staticmethod
+    def regex_pattern() -> str:
+        return r"""SetSlot\(['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]?, ?['"]?(.*)['"]?\)"""

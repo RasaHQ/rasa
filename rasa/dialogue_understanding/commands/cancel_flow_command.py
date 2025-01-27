@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
@@ -45,7 +46,8 @@ class CancelFlowCommand(Command):
             current_flow: The current flow.
 
         Returns:
-            The frames that were canceled."""
+        The frames that were canceled.
+        """
         canceled_frames = []
         # we need to go through the original stack dump in reverse order
         # to find the frames that were canceled. we cancel everything from
@@ -83,7 +85,6 @@ class CancelFlowCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-
         stack = tracker.stack
         original_stack = original_tracker.stack
 
@@ -119,7 +120,17 @@ class CancelFlowCommand(Command):
         return hash(self.command())
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, CancelFlowCommand):
-            return False
+        return isinstance(other, CancelFlowCommand)
 
-        return True
+    def to_dsl(self) -> str:
+        """Converts the command to a DSL string."""
+        return "CancelFlow()"
+
+    @classmethod
+    def from_dsl(cls, match: re.Match, **kwargs: Any) -> CancelFlowCommand:
+        """Converts a DSL string to a command."""
+        return CancelFlowCommand()
+
+    @staticmethod
+    def regex_pattern() -> str:
+        return r"CancelFlow\(\)"

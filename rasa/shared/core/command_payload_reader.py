@@ -4,7 +4,9 @@ from typing import List, Optional
 
 import structlog
 
+from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
+from rasa.dialogue_understanding.utils import add_commands_to_message_parse_data
 from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.constants import COMMANDS, SET_SLOT_COMMAND, TEXT
 from rasa.shared.nlu.training_data.message import Message
@@ -78,13 +80,18 @@ class CommandPayloadReader:
             )
 
             # Create new SetSlot commands from the extracted attributes.
-            commands.append(
-                {
-                    "command": SET_SLOT_COMMAND,
-                    "name": slot_name,
-                    "value": slot_value,
-                    "extractor": entity_extractor_name,
-                }
+            command = {
+                "command": SET_SLOT_COMMAND,
+                "name": slot_name,
+                "value": slot_value,
+                "extractor": entity_extractor_name,
+            }
+            commands.append(command)
+
+            add_commands_to_message_parse_data(
+                message,
+                CommandPayloadReader.__name__,
+                [Command.command_from_json(command)],
             )
 
             structlogger.debug(
@@ -94,6 +101,7 @@ class CommandPayloadReader:
 
         # set the command(s) on the Message object
         message.set(COMMANDS, commands, add_to_output=True)
+
         return message
 
     @staticmethod

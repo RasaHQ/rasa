@@ -1,0 +1,15 @@
+test_cases:
+- test_case: missing commands in step 3
+  steps:
+  - user: send money to John
+    commands:
+    - StartFlow(transfer_money)
+    - SetSlot(transfer_money_recipient, John)
+  - utter: utter_ask_transfer_money_amount_of_money
+  - user: cancel
+  - utter: utter_flow_cancelled_rasa
+  - utter: utter_can_do_something_else
+  - user: send money
+    commands:
+    - StartFlow(transfer_money)
+  - utter: utter_ask_transfer_money_recipient

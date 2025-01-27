@@ -1,8 +1,10 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.generator.command_parser import parse_commands
+from rasa.dialogue_understanding_test.command_comparison import are_command_lists_equal
 from rasa.dialogue_understanding_test.constants import (
     ACTOR_BOT,
     ACTOR_USER,
@@ -15,6 +17,8 @@ from rasa.dialogue_understanding_test.constants import (
     KEY_TEST_CASE,
     KEY_USER_INPUT,
 )
+from rasa.shared.core.flows import FlowsList
+from rasa.shared.nlu.constants import KEY_USER_PROMPT
 
 
 class DialogueUnderstandingOutput(BaseModel):
@@ -23,10 +27,10 @@ class DialogueUnderstandingOutput(BaseModel):
     Example of commands:
         {
             "MultiStepLLMCommandGenerator": [
-                {"command": "set_slot", "name": "slot_name", "value": "slot_value"},
+                SetSlotCommand(name="slot_name", value="slot_value"),
             ],
             "NLUCommandAdapter": [
-                {"command": "start_flow", "name": "test_flow"},
+                StartFlowCommand("test_flow"),
             ]
         }
 
@@ -51,16 +55,50 @@ class DialogueUnderstandingOutput(BaseModel):
         }
     """
 
-    prompts: Dict[str, tuple[str, Dict[str, str]]]
+    # Dict with component name as key and list of commands as value
     commands: Dict[str, List[Command]]
+    # Dict with component name as key and tuple with prompt name and
+    # prompts as value (user and system)
+    prompts: Optional[Dict[str, List[tuple[str, Dict[str, str]]]]] = None
 
     model_config = ConfigDict(frozen=True)
 
-    def get_component_data(
-        self, component_name: str
-    ) -> tuple[Optional[tuple[str, Dict[str, str]]], List[Command]]:
-        """Get both the prompts and commands for a specific component."""
-        return self.prompts.get(component_name), self.commands.get(component_name, [])
+    def get_predicted_commands(self) -> List[Command]:
+        """Get all commands from the output."""
+        return [
+            command
+            for predicted_commands in self.commands.values()
+            for command in predicted_commands
+        ]
+
+    def get_component_names_that_predicted_commands(self) -> List[str]:
+        """Get all component names that have predicted commands."""
+        if self.commands is None:
+            return []
+        return [
+            component_name
+            for component_name, predicted_commands in self.commands.items()
+            if predicted_commands
+        ]
+
+    def get_component_name_to_user_prompts(self) -> Dict[str, List[Tuple[str, str]]]:
+        """Return a dictionary of component names  to a list of prompts.
+
+        The prompts are represented as tuples of (prompt_name, user_prompt).
+        """
+        if self.prompts is None:
+            return {}
+
+        data = {}
+        for (
+            command_generator,
+            prompts,
+        ) in self.prompts.items():
+            data[command_generator] = [
+                (prompt_name, prompt_content[KEY_USER_PROMPT])
+                for prompt_name, prompt_content in prompts
+            ]
+        return data
 
 
 class DialogueUnderstandingTestStep(BaseModel):
@@ -77,22 +115,97 @@ class DialogueUnderstandingTestStep(BaseModel):
             if self.commands:
                 return {
                     KEY_USER_INPUT: self.text,
-                    # TODO: The command should be converted into our DSL
-                    KEY_COMMANDS: [command.as_dict() for command in self.commands],
+                    KEY_COMMANDS: [command.to_dsl() for command in self.commands],
                 }
             return {ACTOR_USER: self.text}
         elif self.actor == ACTOR_BOT:
-            if self.text is not None:
-                return {KEY_BOT_INPUT: self.text}
-            elif self.template is not None:
+            if self.template is not None:
                 return {KEY_BOT_UTTERED: self.template}
+            elif self.text is not None:
+                return {KEY_BOT_INPUT: self.text}
 
         return {}
+
+    @staticmethod
+    def from_dict(
+        step: Dict[str, Any],
+        flows: FlowsList,
+        custom_command_classes: List[Command] = [],
+        remove_default_commands: List[str] = [],
+    ) -> "DialogueUnderstandingTestStep":
+        """Creates a DialogueUnderstandingTestStep from a dictionary.
+
+        Example:
+            >>> DialogueUnderstandingTestStep.from_dict({"user": "hello"})
+
+        Args:
+            step: Dictionary containing the step.
+            flows: List of flows.
+            custom_commands: Custom commands to use in the test case.
+            remove_default_commands: Default commands to remove from the test case.
+
+        Returns:
+            DialogueUnderstandingTestStep: The constructed test step.
+
+        Raises:
+            ValueError: If the step has invalid commands that are not parseable.
+        """
+        # Safely extract commands from the step.
+        commands = []
+        for command in step.get(KEY_COMMANDS, []):
+            try:
+                commands.extend(
+                    parse_commands(
+                        command,
+                        flows,
+                        clarify_options_optional=True,
+                        additional_commands=custom_command_classes,
+                        default_commands_to_remove=remove_default_commands,
+                    )
+                )
+            except (IndexError, ValueError) as e:
+                raise ValueError(f"Failed to parse command '{command}': {e}") from e
+
+        # Construct the DialogueUnderstandingTestStep
+        return DialogueUnderstandingTestStep(
+            actor=ACTOR_USER if ACTOR_USER in step else ACTOR_BOT,
+            text=step.get(KEY_USER_INPUT) or step.get(KEY_BOT_INPUT),
+            template=step.get(KEY_BOT_UTTERED),
+            line=step.lc.line + 1 if hasattr(step, "lc") else None,
+            metadata_name=step.get(KEY_METADATA, ""),
+            commands=commands,
+        )
+
+    def get_predicted_commands(self) -> List[Command]:
+        """Get all predicted commands from the test case."""
+        if self.dialogue_understanding_output is None:
+            return []
+
+        return self.dialogue_understanding_output.get_predicted_commands()
+
+    def has_passed(self) -> bool:
+        expected_commands = self.commands or []
+        predicted_commands = self.get_predicted_commands()
+
+        return are_command_lists_equal(expected_commands, predicted_commands)
+
+    def to_str(self) -> str:
+        """Converts the test step to a readable output string."""
+        if self.actor == ACTOR_BOT:
+            if self.text:
+                return f"{KEY_BOT_INPUT}: {self.text}"
+            elif self.template:
+                return f"{KEY_BOT_UTTERED}: {self.template}"
+
+        if self.actor == ACTOR_USER:
+            return f"{KEY_USER_INPUT}: {self.text}"
+
+        return ""
 
 
 class DialogueUnderstandingTestCase(BaseModel):
     name: str
-    steps: list[DialogueUnderstandingTestStep] = Field(min_length=1)
+    steps: List[DialogueUnderstandingTestStep] = Field(min_length=1)
     file: Optional[str] = None
     line: Optional[int] = None
     fixture_names: Optional[List[str]] = None
@@ -111,6 +224,99 @@ class DialogueUnderstandingTestCase(BaseModel):
         if self.metadata_name:
             result[KEY_METADATA] = self.metadata_name
         return result
+
+    @staticmethod
+    def from_dict(
+        input_test_case: Dict[str, Any],
+        flows: FlowsList,
+        file: Optional[str] = None,
+        custom_command_classes: List[Command] = [],
+        remove_default_commands: List[str] = [],
+    ) -> "DialogueUnderstandingTestCase":
+        """Creates a DialogueUnderstandingTestCase from a dictionary.
+
+        Example:
+            >>> DialogueUnderstandingTestCase.from_dict({
+                    "test_case": "test",
+                    "steps": [{"user": "hello"}]
+                })
+
+        Args:
+            input_test_case: Dictionary containing the test case.
+            flows: List of flows.
+            file: File name of the test case.
+            custom_command_classes: Custom command classes to use in the test case.
+            remove_default_commands: Default commands to remove from the test case.
+
+        Returns:
+            DialogueUnderstandingTestCase object.
+        """
+        steps = [
+            DialogueUnderstandingTestStep.from_dict(
+                step, flows, custom_command_classes, remove_default_commands
+            )
+            for step in input_test_case.get(KEY_STEPS, [])
+        ]
+
+        return DialogueUnderstandingTestCase(
+            name=input_test_case.get(KEY_TEST_CASE, "default"),
+            steps=steps,
+            file=file,
+            line=(
+                input_test_case.lc.line + 1 if hasattr(input_test_case, "lc") else None
+            ),
+            fixture_names=input_test_case.get(KEY_FIXTURES),
+            metadata_name=input_test_case.get(KEY_METADATA),
+        )
+
+    def to_readable_conversation(self, until_step: Optional[int] = None) -> List[str]:
+        if until_step:
+            steps = self.steps[:until_step]
+        else:
+            steps = self.steps
+
+        return [step.to_str() for step in steps]
+
+    def get_expected_commands(self) -> List[Command]:
+        """Get all commands from the test steps."""
+        return [
+            command
+            for step in self.iterate_over_user_steps()
+            for command in (step.commands or [])
+        ]
+
+    def iterate_over_user_steps(self) -> Iterator[DialogueUnderstandingTestStep]:
+        """Iterate over user steps, i.e. steps with commands."""
+        for step in self.steps:
+            if step.commands:
+                yield step
+
+    def get_next_user_and_bot_steps(
+        self, from_index: int
+    ) -> Tuple[
+        Optional[DialogueUnderstandingTestStep], List[DialogueUnderstandingTestStep]
+    ]:
+        """Get the next user step and all following bot steps."""
+        user_step = None
+        bot_steps = []
+
+        for step in self.steps[from_index:]:
+            if user_step is not None and step.actor == ACTOR_USER:
+                return user_step, bot_steps
+
+            if step.actor == ACTOR_USER:
+                user_step = step
+            elif step.actor == ACTOR_BOT:
+                bot_steps.append(step)
+
+        return user_step, bot_steps
+
+    def failed_user_steps(self) -> List[DialogueUnderstandingTestStep]:
+        return [
+            step
+            for step in self.steps
+            if not step.has_passed() and step.actor == ACTOR_USER
+        ]
 
 
 # Update forward references

@@ -54,3 +54,16 @@ def test_run_command_on_tracker():
     assert isinstance(frame, CannotHandlePatternFlowStackFrame)
     assert frame.type() == FLOW_PATTERN_CANNOT_HANDLE
     assert frame.step_id == "START"
+
+
+def test_to_dsl():
+    command = CannotHandleCommand("test_reason")
+    assert command.to_dsl() == "CannotHandle()"
+
+
+def test_from_dsl():
+    assert CannotHandleCommand.from_dsl(None) == CannotHandleCommand()
+
+
+def test_regex_pattern():
+    assert CannotHandleCommand.regex_pattern() == r"CannotHandle\(\)"

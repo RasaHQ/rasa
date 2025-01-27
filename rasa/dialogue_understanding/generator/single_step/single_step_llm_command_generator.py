@@ -1,22 +1,17 @@
 import importlib.resources
-import re
 from typing import Any, Dict, List, Optional, Text
 
 import structlog
 
 import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
-    CancelFlowCommand,
     CannotHandleCommand,
-    ChitChatAnswerCommand,
-    ClarifyCommand,
     Command,
     ErrorCommand,
-    HumanHandoffCommand,
-    KnowledgeAnswerCommand,
-    RepeatBotMessagesCommand,
     SetSlotCommand,
-    SkipQuestionCommand,
+)
+from rasa.dialogue_understanding.generator.command_parser import (
+    parse_commands as parse_commands_using_command_parsers,
 )
 from rasa.dialogue_understanding.generator.constants import (
     DEFAULT_LLM_CONFIG,
@@ -24,13 +19,15 @@ from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
     USER_INPUT_CONFIG_KEY,
 )
-from rasa.dialogue_understanding.generator.flow_retrieval import (
-    FlowRetrieval,
-)
+from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.dialogue_understanding.generator.llm_based_command_generator import (
     LLMBasedCommandGenerator,
 )
 from rasa.dialogue_understanding.stack.utils import top_flow_frame
+from rasa.dialogue_understanding.utils import (
+    add_commands_to_message_parse_data,
+    add_prompt_to_message_parse_data,
+)
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -281,10 +278,10 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         commands = self.parse_commands(action_list, tracker, flows)
 
         self._update_message_parse_data_for_fine_tuning(message, commands, flow_prompt)
-        self._add_commands_to_message_parse_data(
+        add_commands_to_message_parse_data(
             message, SingleStepLLMCommandGenerator.__name__, commands
         )
-        self._add_prompt_to_message_parse_data(
+        add_prompt_to_message_parse_data(
             message,
             SingleStepLLMCommandGenerator.__name__,
             "command_generator_prompt",
@@ -323,70 +320,7 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         Returns:
             The parsed commands.
         """
-        if actions is None:
-            return []
-
-        commands: List[Command] = []
-
-        slot_set_re = re.compile(
-            r"""SetSlot\(['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]?, ?['"]?(.*)['"]?\)"""
-        )
-        start_flow_re = re.compile(r"StartFlow\(['\"]?([a-zA-Z0-9_-]+)['\"]?\)")
-        cancel_flow_re = re.compile(r"CancelFlow\(\)")
-        chitchat_re = re.compile(r"ChitChat\(\)")
-        skip_question_re = re.compile(r"SkipQuestion\(\)")
-        knowledge_re = re.compile(r"SearchAndReply\(\)")
-        humand_handoff_re = re.compile(r"HumanHandoff\(\)")
-        clarify_re = re.compile(r"Clarify\(([\"\'a-zA-Z0-9_, ]+)\)")
-        repeat_re = re.compile(r"RepeatLastBotMessages\(\)")
-
-        for action in actions.strip().splitlines():
-            if match := slot_set_re.search(action):
-                slot_name = match.group(1).strip()
-                slot_value = cls.clean_extracted_value(match.group(2))
-                # error case where the llm tries to start a flow using a slot set
-                if slot_name == "flow_name":
-                    commands.extend(cls.start_flow_by_name(slot_value, flows))
-                else:
-                    typed_slot_value = cls.get_nullable_slot_value(slot_value)
-                    commands.append(
-                        SetSlotCommand(name=slot_name, value=typed_slot_value)
-                    )
-            elif match := start_flow_re.search(action):
-                flow_name = match.group(1).strip()
-                commands.extend(cls.start_flow_by_name(flow_name, flows))
-            elif cancel_flow_re.search(action):
-                commands.append(CancelFlowCommand())
-            elif chitchat_re.search(action):
-                commands.append(ChitChatAnswerCommand())
-            elif skip_question_re.search(action):
-                commands.append(SkipQuestionCommand())
-            elif knowledge_re.search(action):
-                commands.append(KnowledgeAnswerCommand())
-            elif humand_handoff_re.search(action):
-                commands.append(HumanHandoffCommand())
-            elif repeat_re.search(action):
-                commands.append(RepeatBotMessagesCommand())
-            elif match := clarify_re.search(action):
-                options = sorted([opt.strip() for opt in match.group(1).split(",")])
-                # Remove surrounding quotes if present
-                cleaned_options = []
-                for flow in options:
-                    if (flow.startswith('"') and flow.endswith('"')) or (
-                        flow.startswith("'") and flow.endswith("'")
-                    ):
-                        cleaned_options.append(flow[1:-1])
-                    else:
-                        cleaned_options.append(flow)
-                # check if flow is valid
-                valid_options = [
-                    flow for flow in cleaned_options if flow in flows.user_flow_ids
-                ]
-                if len(set(valid_options)) == 1:
-                    commands.extend(cls.start_flow_by_name(valid_options[0], flows))
-                elif len(valid_options) > 1:
-                    commands.append(ClarifyCommand(valid_options))
-
+        commands = parse_commands_using_command_parsers(actions, flows)
         if not commands:
             structlogger.debug(
                 "single_step_llm_command_generator.parse_commands",

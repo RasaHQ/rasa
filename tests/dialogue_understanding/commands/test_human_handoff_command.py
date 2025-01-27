@@ -37,3 +37,16 @@ def test_run_command_on_tracker():
 
     frame = updated_stack.frames[0]
     assert isinstance(frame, HumanHandoffPatternFlowStackFrame)
+
+
+def test_to_dsl():
+    command = HumanHandoffCommand()
+    assert command.to_dsl() == "HumanHandoff()"
+
+
+def test_from_dsl():
+    assert HumanHandoffCommand.from_dsl(None) == HumanHandoffCommand()
+
+
+def test_regex_pattern():
+    assert HumanHandoffCommand.regex_pattern() == r"HumanHandoff\(\)"

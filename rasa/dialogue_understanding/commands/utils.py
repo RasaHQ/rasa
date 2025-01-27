@@ -1,45 +1,64 @@
-from typing import Dict, Type
+from typing import TYPE_CHECKING, List, Optional, Union
 
-from rasa.dialogue_understanding.commands import (
-    CancelFlowCommand,
-    CannotHandleCommand,
-    ChitChatAnswerCommand,
-    Command,
-    HumanHandoffCommand,
-    KnowledgeAnswerCommand,
-    RestartCommand,
-    SessionStartCommand,
-    SkipQuestionCommand,
-)
-from rasa.dialogue_understanding.commands.user_silence_command import UserSilenceCommand
-from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
-from rasa.dialogue_understanding.patterns.cannot_handle import (
-    CannotHandlePatternFlowStackFrame,
-)
-from rasa.dialogue_understanding.patterns.chitchat import ChitchatPatternFlowStackFrame
-from rasa.dialogue_understanding.patterns.human_handoff import (
-    HumanHandoffPatternFlowStackFrame,
-)
-from rasa.dialogue_understanding.patterns.restart import RestartPatternFlowStackFrame
-from rasa.dialogue_understanding.patterns.search import SearchPatternFlowStackFrame
-from rasa.dialogue_understanding.patterns.session_start import (
-    SessionStartPatternFlowStackFrame,
-)
-from rasa.dialogue_understanding.patterns.skip_question import (
-    SkipQuestionPatternFlowStackFrame,
-)
-from rasa.dialogue_understanding.patterns.user_silence import (
-    UserSilencePatternFlowStackFrame,
-)
+import structlog
 
-triggerable_pattern_to_command_class: Dict[str, Type[Command]] = {
-    SessionStartPatternFlowStackFrame.flow_id: SessionStartCommand,
-    UserSilencePatternFlowStackFrame.flow_id: UserSilenceCommand,
-    CancelPatternFlowStackFrame.flow_id: CancelFlowCommand,
-    ChitchatPatternFlowStackFrame.flow_id: ChitChatAnswerCommand,
-    HumanHandoffPatternFlowStackFrame.flow_id: HumanHandoffCommand,
-    SearchPatternFlowStackFrame.flow_id: KnowledgeAnswerCommand,
-    SkipQuestionPatternFlowStackFrame.flow_id: SkipQuestionCommand,
-    CannotHandlePatternFlowStackFrame.flow_id: CannotHandleCommand,
-    RestartPatternFlowStackFrame.flow_id: RestartCommand,
-}
+if TYPE_CHECKING:
+    from rasa.dialogue_understanding.commands import StartFlowCommand
+    from rasa.shared.core.flows import FlowsList
+
+structlogger = structlog.get_logger()
+
+
+def start_flow_by_name(
+    flow_name: str, flows: "FlowsList"
+) -> Optional["StartFlowCommand"]:
+    from rasa.dialogue_understanding.commands import StartFlowCommand
+
+    if flow_name in flows.user_flow_ids:
+        return StartFlowCommand(flow=flow_name)
+    else:
+        structlogger.debug(
+            "command_parser.start_flow_by_name.invalid_flow_id", flow=flow_name
+        )
+        return None
+
+
+def extract_cleaned_options(options_str: str) -> List[str]:
+    """Extract and clean options from a string."""
+    return sorted(
+        opt.strip().strip('"').strip("'")
+        for opt in options_str.split(",")
+        if opt.strip()
+    )
+
+
+def is_none_value(value: str) -> bool:
+    """Check if the value is a none value."""
+    if not value:
+        return True
+    return value in {
+        "[missing information]",
+        "[missing]",
+        "None",
+        "undefined",
+        "null",
+    }
+
+
+def clean_extracted_value(value: str) -> str:
+    """Clean up the extracted value from the llm."""
+    # replace any combination of single quotes, double quotes, and spaces
+    # from the beginning and end of the string
+    return value.strip("'\" ")
+
+
+def get_nullable_slot_value(slot_value: str) -> Union[str, None]:
+    """Get the slot value or None if the value is a none value.
+
+    Args:
+        slot_value: the value to coerce
+
+    Returns:
+        The slot value or None if the value is a none value.
+    """
+    return slot_value if not is_none_value(slot_value) else None

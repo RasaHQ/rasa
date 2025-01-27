@@ -1,0 +1,33 @@
+metadata:
+  - user_info:
+      language: English
+      location: Europe
+  - device_info:
+      os: linux
+
+fixtures:
+  - premium:
+      - membership_type: premium
+  - standard:
+      - membership_type: standard
+
+test_cases:
+- test_case: cancellation respects scope
+  metadata: user_info
+  fixtures:
+      - standard
+  steps:
+  - user: send money to John
+    commands:
+    - StartFlow(transfer_money)
+    - SetSlot(transfer_money_recipient, John)
+  - utter: utter_ask_transfer_money_amount_of_money
+  - user: cancel
+    commands:
+    - CancelFlow()
+  - utter: utter_flow_cancelled_rasa
+  - utter: utter_can_do_something_else
+  - user: send money
+    commands:
+    - StartFlow(transfer_money)
+  - utter: utter_ask_transfer_money_recipient

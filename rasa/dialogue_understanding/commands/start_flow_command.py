@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import structlog
 
@@ -106,3 +107,16 @@ class StartFlowCommand(Command):
             return False
 
         return other.flow == self.flow
+
+    def to_dsl(self) -> str:
+        """Converts the command to a DSL string."""
+        return f"StartFlow({self.flow})"
+
+    @classmethod
+    def from_dsl(cls, match: re.Match, **kwargs: Any) -> Optional[StartFlowCommand]:
+        """Converts the DSL string to a command."""
+        return StartFlowCommand(flow=str(match.group(1).strip()))
+
+    @staticmethod
+    def regex_pattern() -> str:
+        return r"StartFlow\(['\"]?([a-zA-Z0-9_-]+)['\"]?\)"

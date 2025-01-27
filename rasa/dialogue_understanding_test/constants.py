@@ -10,8 +10,13 @@ KEY_STEPS = constants.KEY_STEPS
 KEY_TEST_CASE = constants.KEY_TEST_CASE
 KEY_TEST_CASES = constants.KEY_TEST_CASES
 KEY_COMMANDS = "commands"
+KEY_ADDITIONAL_COMMANDS = "additional_commands"
+KEY_REMOVE_DEFAULT_COMMANDS = "remove_default_commands"
 
 ACTOR_USER = "user"
 ACTOR_BOT = "bot"
 
-DEFAULT_INPUT_TESTS_PATH = "du_tests/"
+DEFAULT_INPUT_TESTS_PATH = "dialogue_understanding_tests/"
+SCHEMA_FILE_PATH = "dialogue_understanding_test/du_test_schema.yml"
+
+PLACEHOLDER_GENERATED_ANSWER_TEMPLATE = "placeholder_generated_answer"

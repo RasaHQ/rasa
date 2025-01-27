@@ -35,6 +35,7 @@ from rasa.dialogue_understanding.commands import (
     NoopCommand,
     SetSlotCommand,
 )
+from rasa.dialogue_understanding.utils import add_commands_to_message_parse_data
 from rasa.engine import loader
 from rasa.engine.constants import (
     PLACEHOLDER_ENDPOINTS,
@@ -89,6 +90,7 @@ from rasa.shared.nlu.constants import (
     INTENT,
     INTENT_NAME_KEY,
     INTENT_RESPONSE_KEY,
+    PREDICTED_COMMANDS,
     PREDICTED_CONFIDENCE_KEY,
     RESPONSE,
     RESPONSE_SELECTOR,
@@ -819,9 +821,7 @@ class MessageProcessor:
         return parse_data
 
     def _sanitize_message(self, message: UserMessage) -> UserMessage:
-        """Sanitize user message by removing prepended slashes before the
-        actual content.
-        """
+        """Sanitize user message by removing prepended slashes before the content."""
         # Regex pattern to match leading slashes and any whitespace before
         # actual content
         pattern = r"^[/\s]+"
@@ -899,9 +899,14 @@ class MessageProcessor:
             NLUCommandAdapter,
         )
 
+        message = Message(parse_data)
         commands = NLUCommandAdapter.convert_nlu_to_commands(
-            Message(parse_data), tracker, await self.get_flows(), self.domain
+            message, tracker, await self.get_flows(), self.domain
         )
+        add_commands_to_message_parse_data(
+            message, NLUCommandAdapter.__name__, commands
+        )
+        parse_data[PREDICTED_COMMANDS] = message.get(PREDICTED_COMMANDS, [])
 
         # if there are no converted commands and parsed data contains invalid intent
         # add CannotHandleCommand as fallback

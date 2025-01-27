@@ -28,6 +28,10 @@ from rasa.e2e_test.constants import (
     STUB_CUSTOM_ACTION_NAME_SEPARATOR,
 )
 from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase, TestSuite
+from rasa.e2e_test.stub_custom_action import (
+    StubCustomAction,
+    get_stub_custom_action_key,
+)
 from rasa.e2e_test.utils.validation import (
     read_e2e_test_schema,
     validate_path_to_test_cases,
@@ -274,7 +278,7 @@ def split_into_passed_failed(
     return passed_cases, failed_cases
 
 
-def has_test_case_with_assertions(test_cases: List["TestCase"]) -> bool:
+def has_test_case_with_assertions(test_cases: List[TestCase]) -> bool:
     """Check if the test cases contain assertions."""
     try:
         next(test_case for test_case in test_cases if test_case.uses_assertions())
@@ -318,6 +322,104 @@ def is_test_case_file(file_path: Union[str, Path]) -> bool:
     )
 
 
+def extract_test_cases(
+    test_file_content: dict,
+    test_case_name: str,
+    test_file: str,
+) -> List[TestCase]:
+    """Extract test cases from the test file content.
+
+    Args:
+        test_file_content: Content of the test file.
+        test_case_name: Name of the test case to extract.
+        test_file: Path to the test file.
+
+    Returns:
+        List of test cases.
+    """
+    test_cases_content = test_file_content.get(KEY_TEST_CASES) or []
+    if test_case_name:
+        return [
+            TestCase.from_dict(test_case_dict, file=test_file)
+            for test_case_dict in test_cases_content
+            if test_case_name == test_case_dict.get(KEY_TEST_CASE)
+        ]
+    return [
+        TestCase.from_dict(test_case_dict, file=test_file)
+        for test_case_dict in test_cases_content
+    ]
+
+
+def extract_fixtures(
+    test_file_content: dict, existing_fixtures: Dict[str, Fixture]
+) -> Dict[str, Fixture]:
+    """Extract fixtures from the test file content.
+
+    Args:
+        test_file_content: Content of the test file.
+        existing_fixtures: Existing fixtures.
+
+    Returns:
+        Dict of fixtures.
+    """
+    fixtures_content = test_file_content.get(KEY_FIXTURES) or []
+    _fixtures = {}
+    for fixture in fixtures_content:
+        fixture_obj = Fixture.from_dict(fixture_dict=fixture)
+        if existing_fixtures.get(fixture_obj.name) is None:
+            _fixtures[fixture_obj.name] = fixture_obj
+    return _fixtures
+
+
+def extract_metadata(
+    test_file_content: dict, existing_metadata: Dict[str, Metadata]
+) -> Dict[str, Metadata]:
+    """Extract metadata from the test file content.
+
+    Args:
+        test_file_content: Content of the test file.
+        existing_metadata: Existing metadata.
+
+    Returns:
+        Dict of metadata.
+    """
+    metadata_contents = test_file_content.get(KEY_METADATA) or []
+    _metadata = {}
+    for metadata_content in metadata_contents:
+        metadata_obj = Metadata.from_dict(metadata_dict=metadata_content)
+        if existing_metadata.get(metadata_obj.name) is None:
+            _metadata[metadata_obj.name] = metadata_obj
+    return _metadata
+
+
+def extract_stub_custom_actions(
+    test_file_content: dict, test_file: str
+) -> Dict[str, StubCustomAction]:
+    """Extract stub custom actions from the test file content.
+
+    Args:
+        test_file_content: Content of the test file.
+        test_file: Path to the test file.
+
+    Returns:
+        Dict of stub custom actions.
+    """
+    stub_custom_actions_contents = test_file_content.get(KEY_STUB_CUSTOM_ACTIONS) or {}
+    _stub_custom_actions = {}
+    for action_name, stub_data in stub_custom_actions_contents.items():
+        if STUB_CUSTOM_ACTION_NAME_SEPARATOR in action_name:
+            stub_custom_action_key = action_name
+        else:
+            test_file_name = Path(test_file).name
+            stub_custom_action_key = get_stub_custom_action_key(
+                test_file_name, action_name
+            )
+        _stub_custom_actions[stub_custom_action_key] = StubCustomAction.from_dict(
+            action_name=action_name, stub_data=stub_data
+        )
+    return _stub_custom_actions
+
+
 def read_test_cases(path: str) -> TestSuite:
     """Read test cases from the given path.
 
@@ -327,92 +429,46 @@ def read_test_cases(path: str) -> TestSuite:
     Returns:
         TestSuite.
     """
-    from rasa.e2e_test.stub_custom_action import (
-        StubCustomAction,
-        get_stub_custom_action_key,
-    )
-
+    # Extract test case path and name
     path, test_case_name = extract_test_case_from_path(path)
     validate_path_to_test_cases(path)
 
+    # Load test files and schema
     test_files = rasa.shared.data.get_data_files([path], is_test_case_file)
     e2e_test_schema = read_e2e_test_schema()
 
+    # Initialize containers
     input_test_cases = []
     fixtures: Dict[str, Fixture] = {}
     metadata: Dict[str, Metadata] = {}
     stub_custom_actions: Dict[str, StubCustomAction] = {}
-
     beta_flag_verified = False
 
+    # Process each test file
     for test_file in test_files:
         test_file_content = parse_raw_yaml(Path(test_file).read_text(encoding="utf-8"))
 
+        # Validate YAML content using the provided function
         validate_yaml_data_using_schema_with_assertions(
             yaml_data=test_file_content, schema_content=e2e_test_schema
         )
 
-        test_cases_content = test_file_content.get(KEY_TEST_CASES) or []
-
-        if test_case_name:
-            test_cases = [
-                TestCase.from_dict(test_case_dict, file=test_file)
-                for test_case_dict in test_cases_content
-                if test_case_name == test_case_dict.get(KEY_TEST_CASE)
-            ]
-        else:
-            test_cases = [
-                TestCase.from_dict(test_case_dict, file=test_file)
-                for test_case_dict in test_cases_content
-            ]
+        # Parse test cases, fixtures, metadata, and stub custom actions
+        test_cases = extract_test_cases(test_file_content, test_case_name, test_file)
+        fixtures.update(extract_fixtures(test_file_content, fixtures))
+        metadata.update(extract_metadata(test_file_content, metadata))
+        stub_custom_actions.update(
+            extract_stub_custom_actions(test_file_content, test_file)
+        )
 
         beta_flag_verified = verify_beta_feature_flag_for_assertions(
             test_cases, beta_flag_verified
         )
-
         input_test_cases.extend(test_cases)
-        fixtures_content = test_file_content.get(KEY_FIXTURES) or []
-        for fixture in fixtures_content:
-            fixture_obj = Fixture.from_dict(fixture_dict=fixture)
-
-            # avoid adding duplicates from across multiple files
-            if fixtures.get(fixture_obj.name) is None:
-                fixtures[fixture_obj.name] = fixture_obj
-
-        metadata_contents = test_file_content.get(KEY_METADATA) or []
-        for metadata_content in metadata_contents:
-            metadata_obj = Metadata.from_dict(metadata_dict=metadata_content)
-
-            # avoid adding duplicates from across multiple files
-            if metadata.get(metadata_obj.name) is None:
-                metadata[metadata_obj.name] = metadata_obj
-
-        stub_custom_actions_contents = (
-            test_file_content.get(KEY_STUB_CUSTOM_ACTIONS) or {}
-        )
-
-        for action_name, stub_data in stub_custom_actions_contents.items():
-            if STUB_CUSTOM_ACTION_NAME_SEPARATOR in action_name:
-                stub_custom_action_key = action_name
-            else:
-                test_file_name = Path(test_file).name
-                stub_custom_action_key = get_stub_custom_action_key(
-                    test_file_name, action_name
-                )
-            stub_custom_actions[stub_custom_action_key] = StubCustomAction.from_dict(
-                action_name=action_name,
-                stub_data=stub_data,
-            )
 
     validate_test_case(test_case_name, input_test_cases, fixtures, metadata)
-    try:
-        if stub_custom_actions:
-            ensure_beta_feature_is_enabled(
-                "enabling stubs for custom actions",
-                RASA_PRO_BETA_STUB_CUSTOM_ACTION_ENV_VAR_NAME,
-            )
-    except BetaNotEnabledException as exc:
-        rasa.shared.utils.cli.print_error_and_exit(str(exc))
+    if stub_custom_actions:
+        check_beta_feature_flag_for_custom_actions_stubs()
 
     return TestSuite(
         input_test_cases,
@@ -422,8 +478,19 @@ def read_test_cases(path: str) -> TestSuite:
     )
 
 
+def check_beta_feature_flag_for_custom_actions_stubs() -> None:
+    """Check the beta feature flag for custom actions stub and exit if not enabled."""
+    try:
+        ensure_beta_feature_is_enabled(
+            "enabling stubs for custom actions",
+            RASA_PRO_BETA_STUB_CUSTOM_ACTION_ENV_VAR_NAME,
+        )
+    except BetaNotEnabledException as exc:
+        rasa.shared.utils.cli.print_error_and_exit(str(exc))
+
+
 def verify_beta_feature_flag_for_assertions(
-    test_cases: List["TestCase"], beta_flag_verified: bool
+    test_cases: List[TestCase], beta_flag_verified: bool
 ) -> bool:
     """Verify the beta feature flag for assertions."""
     if beta_flag_verified:

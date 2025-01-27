@@ -54,7 +54,4 @@ class UserSilenceCommand(Command):
         return hash(self.command())
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, UserSilenceCommand):
-            return False
-
-        return True
+        return isinstance(other, UserSilenceCommand)

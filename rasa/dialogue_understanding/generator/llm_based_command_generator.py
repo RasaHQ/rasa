@@ -8,7 +8,6 @@ from jinja2 import Template
 import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
     Command,
-    StartFlowCommand,
 )
 from rasa.dialogue_understanding.generator import CommandGenerator
 from rasa.dialogue_understanding.generator.constants import (
@@ -326,50 +325,6 @@ class LLMBasedCommandGenerator(
             raise ProviderClientAPIException(
                 message="LLM call exception", original_exception=e
             )
-
-    @staticmethod
-    def start_flow_by_name(flow_name: str, flows: FlowsList) -> List[Command]:
-        """Start a flow by name.
-
-        If the flow does not exist, no command is returned.
-        """
-        if flow_name in flows.user_flow_ids:
-            return [StartFlowCommand(flow=flow_name)]
-        else:
-            structlogger.debug(
-                "llm_command_generator.flow.start_invalid_flow_id", flow=flow_name
-            )
-            return []
-
-    @staticmethod
-    def is_none_value(value: str) -> bool:
-        """Check if the value is a none value."""
-        return value in {
-            "[missing information]",
-            "[missing]",
-            "None",
-            "undefined",
-            "null",
-        }
-
-    @staticmethod
-    def clean_extracted_value(value: str) -> str:
-        """Clean up the extracted value from the llm."""
-        # replace any combination of single quotes, double quotes, and spaces
-        # from the beginning and end of the string
-        return value.strip("'\" ")
-
-    @classmethod
-    def get_nullable_slot_value(cls, slot_value: str) -> Union[str, None]:
-        """Get the slot value or None if the value is a none value.
-
-        Args:
-            slot_value: the value to coerce
-
-        Returns:
-            The slot value or None if the value is a none value.
-        """
-        return slot_value if not cls.is_none_value(slot_value) else None
 
     def prepare_flows_for_template(
         self, flows: FlowsList, tracker: DialogueStateTracker

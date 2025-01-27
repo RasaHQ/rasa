@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Text
 
@@ -11,6 +12,8 @@ from rasa.shared.constants import RASA_PATTERN_CANNOT_HANDLE_DEFAULT
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
+
+DATA_KEY_CANNOT_HANDLE_REASON = "cannot_handle_reason"
 
 
 @dataclass
@@ -68,3 +71,19 @@ class CannotHandleCommand(Command):
             return False
 
         return other.reason == self.reason
+
+    def to_dsl(self) -> str:
+        """Converts the command to a DSL string."""
+        return "CannotHandle()"
+
+    @classmethod
+    def from_dsl(cls, match: re.Match, **kwargs: Any) -> CannotHandleCommand:
+        """Converts a DSL string to a command."""
+        reason = kwargs.get("data", {}).get(
+            DATA_KEY_CANNOT_HANDLE_REASON, RASA_PATTERN_CANNOT_HANDLE_DEFAULT
+        )
+        return CannotHandleCommand(reason)
+
+    @staticmethod
+    def regex_pattern() -> str:
+        return r"CannotHandle\(\)"

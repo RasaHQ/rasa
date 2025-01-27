@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import structlog
 
 from rasa.dialogue_understanding.commands.command import Command
+from rasa.dialogue_understanding.commands.utils import extract_cleaned_options
 from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
@@ -55,7 +57,6 @@ class ClarifyCommand(Command):
         Returns:
             The events to apply to the tracker.
         """
-
         flows = [all_flows.flow_by_id(opt) for opt in self.options]
         clean_options = [flow.id for flow in flows if flow is not None]
         if len(clean_options) != len(self.options):
@@ -85,3 +86,17 @@ class ClarifyCommand(Command):
             return False
 
         return other.options == self.options
+
+    def to_dsl(self) -> str:
+        """Converts the command to a DSL string."""
+        return f"Clarify({', '.join(self.options)})"
+
+    @classmethod
+    def from_dsl(cls, match: re.Match, **kwargs: Any) -> Optional[ClarifyCommand]:
+        """Converts the DSL string to a command."""
+        cleaned_options = extract_cleaned_options(match.group(1))
+        return ClarifyCommand(cleaned_options)
+
+    @staticmethod
+    def regex_pattern() -> str:
+        return r"Clarify\(([\"\'a-zA-Z0-9_, ]*)\)"

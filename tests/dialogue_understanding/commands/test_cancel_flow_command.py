@@ -164,3 +164,16 @@ def test_select_canceled_frames_raises_if_frame_not_found():
         # this should never happen as the flow should always be on the stack
         # when this command is executed.
         CancelFlowCommand.select_canceled_frames(stack)
+
+
+def test_to_dsl():
+    command = CancelFlowCommand()
+    assert command.to_dsl() == "CancelFlow()"
+
+
+def test_from_dsl():
+    assert CancelFlowCommand.from_dsl(None) == CancelFlowCommand()
+
+
+def test_regex_pattern():
+    assert CancelFlowCommand.regex_pattern() == r"CancelFlow\(\)"

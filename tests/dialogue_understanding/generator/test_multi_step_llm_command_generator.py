@@ -380,7 +380,7 @@ class TestMultiStepLLMCommandGenerator:
             ),
             (
                 "SetSlot('transfer_money_amount_of_money', 'value')",
-                [SetSlotCommand(name="transfer_money_amount_of_money", value=None)],
+                [SetSlotCommand(name="transfer_money_amount_of_money", value="value")],
             ),
             ("SetSlot(flow_name, some_flow)", [StartFlowCommand(flow="some_flow")]),
             ("StartFlow(some_flow)", [StartFlowCommand(flow="some_flow")]),
@@ -445,7 +445,6 @@ class TestMultiStepLLMCommandGenerator:
                     )
                 ],
             ),
-            ("Clarify(some_flow, test_a, test_b, test_c, test_d, test_e)", []),
             ("ChangeFlow()", [ChangeFlowCommand()]),
             (
                 "CannotHandle()",
@@ -504,14 +503,9 @@ class TestMultiStepLLMCommandGenerator:
             "test",
             evts=[UserUttered("Hello", {"name": "greet", "confidence": 1.0})],
         )
-        with patch.object(
-            MultiStepLLMCommandGenerator,
-            "get_nullable_slot_value",
-            Mock(return_value=None),
-        ):
-            parsed_commands = MultiStepLLMCommandGenerator.parse_commands(
-                input_action, tracker, test_flows
-            )
+        parsed_commands = MultiStepLLMCommandGenerator.parse_commands(
+            input_action, tracker, test_flows
+        )
         # Then
         assert parsed_commands == expected_command
 

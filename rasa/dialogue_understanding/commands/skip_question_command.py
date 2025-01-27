@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
@@ -70,7 +71,17 @@ class SkipQuestionCommand(Command):
         return hash(self.command())
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, SkipQuestionCommand):
-            return False
+        return isinstance(other, SkipQuestionCommand)
 
-        return True
+    def to_dsl(self) -> str:
+        """Converts the command to a DSL string."""
+        return "SkipQuestion()"
+
+    @classmethod
+    def from_dsl(cls, match: re.Match, **kwargs: Any) -> SkipQuestionCommand:
+        """Converts the DSL string to a command."""
+        return SkipQuestionCommand()
+
+    @staticmethod
+    def regex_pattern() -> str:
+        return r"SkipQuestion\(\)"

@@ -1,20 +1,25 @@
 import argparse
 import asyncio
 import datetime
+import importlib
 import sys
-from typing import List
+from typing import List, Optional
 
 import structlog
 
 import rasa.cli.utils
+import rasa.shared.utils.cli
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments.default_arguments import (
     add_endpoint_param,
     add_model_param,
     add_remote_storage_param,
 )
+from rasa.core.agent import Agent
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
+from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.generator.command_parser import DEFAULT_COMMANDS
 from rasa.dialogue_understanding_test.command_metric_calculation import (
     calculate_command_metrics,
 )
@@ -24,6 +29,7 @@ from rasa.dialogue_understanding_test.constants import (
 )
 from rasa.dialogue_understanding_test.du_test_result import (
     DialogueUnderstandingTestResult,
+    DialogueUnderstandingTestSuiteResult,
 )
 from rasa.dialogue_understanding_test.du_test_runner import (
     DialogueUnderstandingTestRunner,
@@ -39,7 +45,9 @@ from rasa.dialogue_understanding_test.validation import (
 )
 from rasa.e2e_test.e2e_test_case import TestSuite
 from rasa.exceptions import RasaException
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, ROUTE_TO_CALM_SLOT
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.flows import FlowsList
 from rasa.utils.beta import ensure_beta_feature_is_enabled
 from rasa.utils.endpoints import EndpointConfig
 
@@ -136,6 +144,38 @@ def add_du_test_arguments(parser: argparse.ArgumentParser) -> None:
         help="If set, the dialogue understanding test output will contain "
         "prompts for each failure.",
     )
+    du_arguments.add_argument(
+        "--additional-commands",
+        type=str,
+        nargs="*",
+        help=(
+            "List of additional custom command classes to add, separated by spaces. "
+            "For example: --additional-commands my_module.MyCustomCommand"
+        ),
+    )
+    du_arguments.add_argument(
+        "--remove-default-commands",
+        type=str,
+        nargs="*",
+        help=(
+            f"List of default commands to remove, separated by spaces. "
+            f"Default commands include: "
+            f"{', '.join([command.__name__ for command in DEFAULT_COMMANDS])}. "
+            f"For example: --remove-default-commands ClarifyCommand HumanHandoffCommand"
+        ),
+    )
+
+
+def ensure_calm_only_bot(agent: Agent) -> None:
+    if agent.domain is None:
+        return
+
+    if ROUTE_TO_CALM_SLOT in [slot.name for slot in agent.domain.slots]:
+        rasa.shared.utils.cli.print_error(
+            "You are using coexistence. Dialogue Understanding Tests do only work for "
+            "CALM only assistants."
+        )
+        sys.exit(0)
 
 
 def execute_dialogue_understanding_tests(args: argparse.Namespace) -> None:
@@ -155,12 +195,6 @@ def execute_dialogue_understanding_tests(args: argparse.Namespace) -> None:
     # initialization of endpoints
     endpoints = set_up_available_endpoints(args)
 
-    # read test cases from the given path
-    test_suite = get_valid_test_suite(args)
-
-    # setup stub custom actions if they are used
-    set_up_stub_custom_actions(test_suite, endpoints)
-
     # set up the test runner, e.g. start the agent
     try:
         test_runner = DialogueUnderstandingTestRunner(
@@ -175,34 +209,91 @@ def execute_dialogue_understanding_tests(args: argparse.Namespace) -> None:
         )
         sys.exit(1)
 
+    # Exit if the bot is not calm only
+    ensure_calm_only_bot(test_runner.agent)
+
+    # Get flows from the agent
+    # we need them to parse the commands when reading the test cases
+    if test_runner.agent.processor is None:
+        rasa.shared.utils.cli.print_error(
+            "No processor: Not able to retrieve flows and config from trained model."
+        )
+        sys.exit(0)
+    flows = asyncio.run(test_runner.agent.processor.get_flows())
+
+    # read test cases from the given path
+    test_suite: TestSuite = get_valid_test_suite(args, flows, test_runner.agent.domain)
+
+    # setup stub custom actions if they are used
+    set_up_stub_custom_actions(test_suite, endpoints)
+
     # run the actual test cases
     test_results = asyncio.run(
-        test_runner.run_tests(
+        test_runner.run_test_cases(
             test_suite.test_cases, test_suite.fixtures, test_suite.metadata
         )
     )
 
     # evaluate test results
-    failed_tests, passed_tests = split_test_results(test_results)
+    passing_test_results, failing_test_results = split_test_results(test_results)
     command_metrics = calculate_command_metrics(test_results)
 
+    test_suite_result = DialogueUnderstandingTestSuiteResult.from_results(
+        failing_test_results, passing_test_results, command_metrics
+    )
+
     # write results to console and file
-    print_test_results(failed_tests, passed_tests, command_metrics, args.output_prompt)
+    print_test_results(test_suite_result, output_prompt=args.output_prompt)
     if not args.no_output:
         write_test_results_to_file(
-            failed_tests,
-            passed_tests,
-            command_metrics,
+            test_suite_result,
             args.output_file,
             args.output_prompt,
         )
 
 
-def get_valid_test_suite(args: argparse.Namespace) -> TestSuite:
+def _import_custom_command_class(class_path: str) -> Command:
+    """Dynamically import a command class from a string path."""
+    try:
+        module_name, class_name = class_path.rsplit(".", 1)
+        module = importlib.import_module(module_name)
+        clz = getattr(module, class_name)
+    except (ImportError, AttributeError, ValueError) as e:
+        raise ValueError(f"Failed to import class '{class_path}': {e}")
+    if not issubclass(clz, Command):
+        structlogger.error(
+            "rasa.dialogue_understanding_test.invalid_additional_command",
+            event_info="The custom command class must be a subclass of Command.",
+            class_path=class_path,
+        )
+        sys.exit(1)
+    return clz
+
+
+def _extract_additional_command_classes_from_cli_args(
+    args: argparse.Namespace,
+) -> List[Command]:
+    """Extract additional command classes from the CLI arguments."""
+    additional_commands = getattr(args, "additional_commands", [])
+    if not additional_commands:
+        return []
+    return [
+        _import_custom_command_class(command_module)
+        for command_module in additional_commands
+    ]
+
+
+def get_valid_test_suite(
+    args: argparse.Namespace, flows: FlowsList, domain: Optional[Domain]
+) -> TestSuite:
     """Read the test cases from the given test case path and validate them."""
     path_to_test_cases = getattr(args, "path-to-test-cases", DEFAULT_INPUT_TESTS_PATH)
-    test_suite = read_test_suite(path_to_test_cases)
-    validate_test_cases(test_suite.test_cases)
+    remove_default_commands = getattr(args, "remove_default_commands", [])
+    custom_command_classes = _extract_additional_command_classes_from_cli_args(args)
+    test_suite = read_test_suite(
+        path_to_test_cases, flows, custom_command_classes, remove_default_commands
+    )
+    validate_test_cases(test_suite.test_cases, domain)
     return test_suite
 
 

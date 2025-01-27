@@ -8,10 +8,11 @@ from rasa.dialogue_understanding.commands import (
     StartFlowCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
-from rasa.dialogue_understanding.commands.utils import (
+from rasa.dialogue_understanding.generator import CommandGenerator
+from rasa.dialogue_understanding.generator.utils import (
     triggerable_pattern_to_command_class,
 )
-from rasa.dialogue_understanding.generator import CommandGenerator
+from rasa.dialogue_understanding.utils import add_commands_to_message_parse_data
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -20,10 +21,7 @@ from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.flows.steps import CollectInformationFlowStep
-from rasa.shared.core.slot_mappings import (
-    SlotFillingManager,
-    extract_slot_value,
-)
+from rasa.shared.core.slot_mappings import SlotFillingManager, extract_slot_value
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import ENTITIES, INTENT
 from rasa.shared.nlu.training_data.message import Message
@@ -205,7 +203,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
             commands=commands,
         )
 
-        CommandGenerator._add_commands_to_message_parse_data(
+        add_commands_to_message_parse_data(
             message, NLUCommandAdapter.__name__, commands
         )
         return commands

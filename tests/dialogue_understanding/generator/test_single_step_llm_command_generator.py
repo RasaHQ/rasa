@@ -769,9 +769,9 @@ class TestSingleStepLLMCommandGenerator:
                 "SetSlot(transfer_money_amount_of_money, )",
                 [SetSlotCommand(name="transfer_money_amount_of_money", value=None)],
             ),
-            ("SetSlot(name, value)", [SetSlotCommand(name="name", value=None)]),
-            ("SetSlot('name', 'value')", [SetSlotCommand(name="name", value=None)]),
-            ('SetSlot("name", "value")', [SetSlotCommand(name="name", value=None)]),
+            ("SetSlot(name, value)", [SetSlotCommand(name="name", value="value")]),
+            ("SetSlot('name', 'value')", [SetSlotCommand(name="name", value="value")]),
+            ('SetSlot("name", "value")', [SetSlotCommand(name="name", value="value")]),
             # Start flow
             ("SetSlot(flow_name, some_flow)", [StartFlowCommand(flow="some_flow")]),
             ("StartFlow(some_flow)", [StartFlowCommand(flow="some_flow")]),
@@ -851,14 +851,9 @@ class TestSingleStepLLMCommandGenerator:
                   collect: some_slot
             """
         )
-        with patch.object(
-            SingleStepLLMCommandGenerator,
-            "get_nullable_slot_value",
-            Mock(return_value=None),
-        ):
-            parsed_commands = SingleStepLLMCommandGenerator.parse_commands(
-                input_action, Mock(), test_flows
-            )
+        parsed_commands = SingleStepLLMCommandGenerator.parse_commands(
+            input_action, Mock(), test_flows
+        )
         # Then
         assert parsed_commands == expected_command
 

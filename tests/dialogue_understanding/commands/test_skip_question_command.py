@@ -72,3 +72,16 @@ def test_run_command_on_tracker():
     assert isinstance(frame, PatternFlowStackFrame)
     assert frame.type() == FLOW_PATTERN_SKIP_QUESTION
     assert frame.step_id == "START"
+
+
+def test_to_dsl():
+    command = SkipQuestionCommand()
+    assert command.to_dsl() == "SkipQuestion()"
+
+
+def test_from_dsl():
+    assert SkipQuestionCommand.from_dsl(None) == SkipQuestionCommand()
+
+
+def test_regex_pattern():
+    assert SkipQuestionCommand.regex_pattern() == r"SkipQuestion\(\)"
