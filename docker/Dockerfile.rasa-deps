@@ -2,7 +2,7 @@
 ARG IMAGE_BASE_NAME
 ARG BASE_BUILDER_IMAGE_HASH
 
-FROM ${IMAGE_BASE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH} as rasa-deps
+FROM ${IMAGE_BASE_NAME}:${BASE_BUILDER_IMAGE_HASH} as rasa-deps
 
 ARG POETRY_VERSION
 
@@ -27,7 +27,7 @@ RUN python3 -m venv /opt/venv && \
   pip install --no-cache-dir -U "pip==22.*" -U "wheel>0.38.0" && \
   poetry install --only main --no-root --no-interaction
 
-FROM ${IMAGE_BASE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}
+FROM ${IMAGE_BASE_NAME}:${BASE_BUILDER_IMAGE_HASH}
 
 COPY --from=rasa-deps /opt/venv /opt/venv
 
