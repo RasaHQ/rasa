@@ -74,31 +74,12 @@ jobs:
       run: |
         gsutil -h "Content-Type:text/plain; charset=utf-8" -h "Cache-Control:public, max-age=0, no-transform" cp scan-result.txt gs://${{ env.REPORT_BUCKET }}/rasa-private-dependency-report-${{ steps.find-tag.outputs.tag }}-${{ steps.date.outputs.date }}.txt
 
-    - name: Alert Slack on findings
+    - name: Notify Slack of findings
       if: steps.trivy.outcome == 'failure'
-      uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+      uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
       with:
-        # atom-sqad-alert and engine-squad-alert channels
-        channel-id: 'C070ELPSLBB'
-        payload: |
-          {
-            "text": "Dependency vulnerabilities have been found in the Docker image for Rasa Private ${{ steps.find-tag.outputs.tag }} that could impact customer deployments. Please schedule these for resolution.",
-            "blocks": [
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "Dependency vulnerabilities have been found in the Docker image for Rasa Private ${{ steps.find-tag.outputs.tag }} that could impact customer deployments. Please schedule these for resolution depending on their severity:\n - Critical: This sprint. \n - High: Next sprint. \n - Medium or Low: Add to backlog."
-                }
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "<https://storage.googleapis.com/${{ env.REPORT_BUCKET }}/rasa-private-dependency-report-${{ steps.find-tag.outputs.tag }}-${{ steps.date.outputs.date }}.txt|View Scan Report>"
-                }
-              }
-            ]
-          }
+        # Send notification to #dev-tribe-alerts slack channel
+        channel-id: "C070ELPSLBB"
+        slack-message: "Dependency vulnerabilities have been found in the Docker image for Rasa Private ${{ steps.find-tag.outputs.tag }} that could impact customer deployments. Please schedule these for resolution depending on their severity:\n - Critical: This sprint. \n - High: Next sprint. \n - Medium or Low: Add to backlog. \n <https://storage.googleapis.com/${{ env.REPORT_BUCKET }}/rasa-private-dependency-report-${{ steps.find-tag.outputs.tag }}-${{ steps.date.outputs.date }}.txt|View Scan Report>"
       env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_CODESECURITY_BOT_TOKEN }}
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
