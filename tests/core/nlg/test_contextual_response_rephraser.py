@@ -1,11 +1,14 @@
 from typing import Any, Dict, Optional
+from unittest.mock import MagicMock
 
 import pytest
 from pytest import MonkeyPatch
 
+from rasa.core.actions.action import ActionBotResponse
 from rasa.core.nlg.contextual_response_rephraser import (
     ContextualResponseRephraser,
 )
+from rasa.dialogue_understanding.utils import set_record_commands_and_prompts
 from rasa.shared.constants import (
     LLM_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
@@ -14,6 +17,14 @@ from rasa.shared.constants import (
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import (
+    KEY_COMPONENT_NAME,
+    KEY_LLM_RESPONSE_METADATA,
+    KEY_PROMPT_NAME,
+    KEY_USER_PROMPT,
+    PROMPTS,
+)
+from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
 from rasa.utils.endpoints import EndpointConfig
 
 
@@ -84,8 +95,14 @@ class MockedContextualResponseRephraser(ContextualResponseRephraser):
     async def _create_history(self, tracker: DialogueStateTracker) -> str:
         return "User said hello"
 
-    async def _generate_llm_response(self, prompt: str) -> Optional[str]:
-        return "hello foobar"
+    async def _generate_llm_response(self, prompt: str) -> Optional[LLMResponse]:
+        return LLMResponse(
+            id="mock-id",
+            created=123456,
+            choices=["hello foobar"],
+            model="test-model",
+            usage=LLMUsage(prompt_tokens=5, completion_tokens=7),
+        )
 
 
 def test_does_allow_rephrasing(monkeypatch: MonkeyPatch) -> None:
@@ -175,14 +192,15 @@ async def test_rephraser_uses_template_from_response(
     monkeypatch: MonkeyPatch,
     greet_tracker: DialogueStateTracker,
     domain_with_responses: Domain,
+    llm_response_object: LLMResponse,
 ) -> None:
     class MockedTemplatedResponseRephraser(ContextualResponseRephraser):
         async def _create_history(self, tracker: DialogueStateTracker) -> str:
             return "User said hello"
 
-        async def _generate_llm_response(self, prompt: str) -> Optional[str]:
-            assert prompt == "foobar"
-            return "hello foobar"
+        async def _generate_llm_response(self, prompt: str) -> Optional[LLMResponse]:
+            llm_response_object.choices = ["hello foobar"]
+            return llm_response_object
 
     endpoint_config = EndpointConfig.from_dict({})
     rephraser = MockedTemplatedResponseRephraser(
@@ -204,12 +222,13 @@ async def test_rephraser_default_template(
     monkeypatch: MonkeyPatch,
     greet_tracker: DialogueStateTracker,
     domain_with_responses: Domain,
+    llm_response_object: LLMResponse,
 ) -> None:
     class MockedTemplatedResponseRephraser(ContextualResponseRephraser):
         async def _create_history(self, tracker: DialogueStateTracker) -> str:
             return "User said hello"
 
-        async def _generate_llm_response(self, prompt: str) -> Optional[str]:
+        async def _generate_llm_response(self, prompt: str) -> Optional[LLMResponse]:
             assert prompt == (
                 "The following is a conversation with\n"
                 "an AI assistant. The assistant is helpful, creative, "
@@ -224,7 +243,8 @@ async def test_rephraser_default_template(
                 "AI Response: Hey there! How can I help you?\n\n"
                 "Rephrased AI Response:"
             )
-            return "hello foobar"
+            llm_response_object.choices = ["hello foobar"]
+            return llm_response_object
 
     endpoint_config = EndpointConfig.from_dict({})
     rephraser = MockedTemplatedResponseRephraser(
@@ -341,14 +361,16 @@ async def test_rephraser_template_summarisation(
     domain_with_responses: Domain,
     endpoint_config: Dict[str, Any],
     expected_prompt: str,
+    llm_response_object: LLMResponse,
 ) -> None:
     class MockedTemplatedResponseRephraser(ContextualResponseRephraser):
         async def _create_history(self, tracker: DialogueStateTracker) -> str:
             return "User said hello"
 
-        async def _generate_llm_response(self, prompt: str) -> Optional[str]:
+        async def _generate_llm_response(self, prompt: str) -> Optional[LLMResponse]:
             assert prompt == expected_prompt
-            return "hello foobar"
+            llm_response_object.choices = ["hello foobar"]
+            return llm_response_object
 
     endpoint_config = EndpointConfig.from_dict(endpoint_config)
     rephraser = MockedTemplatedResponseRephraser(
@@ -435,3 +457,109 @@ def test_contextual_response_rephraser_init_with_different_llm_configs(
     )
 
     assert rephraser.llm_config == expected_llm_config
+
+
+def test_add_prompt_and_llm_metadata_to_response_with_llm_response(
+    llm_response_object: LLMResponse,
+):
+    response = {}
+    prompt_name = "test_prompt"
+    user_prompt = "What is the weather like?"
+    with set_record_commands_and_prompts():
+        result = ContextualResponseRephraser._add_prompt_and_llm_metadata_to_response(
+            response, prompt_name, user_prompt, llm_response_object
+        )
+        assert result[PROMPTS] == [
+            {
+                KEY_COMPONENT_NAME: ContextualResponseRephraser.__name__,
+                KEY_PROMPT_NAME: prompt_name,
+                KEY_USER_PROMPT: user_prompt,
+                KEY_LLM_RESPONSE_METADATA: llm_response_object.to_dict(),
+            },
+        ]
+
+
+def test_add_prompt_and_llm_metadata_to_response_without_llm_response():
+    response = {}
+    prompt_name = "test_prompt"
+    user_prompt = "What is the weather like?"
+
+    with set_record_commands_and_prompts():
+        result = ContextualResponseRephraser._add_prompt_and_llm_metadata_to_response(
+            response, prompt_name, user_prompt
+        )
+
+    assert result["prompts"] == [
+        {
+            KEY_COMPONENT_NAME: ContextualResponseRephraser.__name__,
+            KEY_PROMPT_NAME: prompt_name,
+            KEY_USER_PROMPT: user_prompt,
+            KEY_LLM_RESPONSE_METADATA: None,
+        }
+    ]
+
+
+def test_add_prompt_and_llm_metadata_to_response_existing_prompts():
+    response = {
+        PROMPTS: [
+            {
+                KEY_COMPONENT_NAME: ContextualResponseRephraser.__name__,
+                KEY_PROMPT_NAME: "existing_prompt",
+                KEY_USER_PROMPT: "Existing prompt",
+            }
+        ]
+    }
+    prompt_name = "test_prompt"
+    user_prompt = "What is the weather like?"
+    with set_record_commands_and_prompts():
+        result = ContextualResponseRephraser._add_prompt_and_llm_metadata_to_response(
+            response, prompt_name, user_prompt
+        )
+
+    assert result["prompts"] == [
+        {
+            KEY_COMPONENT_NAME: ContextualResponseRephraser.__name__,
+            KEY_PROMPT_NAME: "existing_prompt",
+            KEY_USER_PROMPT: "Existing prompt",
+        },
+        {
+            KEY_COMPONENT_NAME: ContextualResponseRephraser.__name__,
+            KEY_PROMPT_NAME: prompt_name,
+            KEY_USER_PROMPT: user_prompt,
+            KEY_LLM_RESPONSE_METADATA: None,
+        },
+    ]
+
+
+async def test_rephraser_prompt_is_stored_in_the_tracker(
+    default_channel,
+    default_nlg,
+    default_tracker,
+    domain: Domain,
+    llm_response_dict: Dict[str, Any],
+    monkeypatch: MonkeyPatch,
+):
+    monkeypatch.setattr(
+        ContextualResponseRephraser,
+        "does_response_allow_rephrasing",
+        MagicMock(return_value=True),
+    )
+
+    endpoint_config = EndpointConfig.from_dict({})
+    rephraser = MockedContextualResponseRephraser(
+        endpoint_config=endpoint_config, domain=domain
+    )
+    with set_record_commands_and_prompts():
+        events = await ActionBotResponse("utter_channel").run(
+            default_channel, rephraser, default_tracker, domain
+        )
+
+    prompts = events[0].metadata[PROMPTS]
+
+    assert prompts[0][KEY_COMPONENT_NAME] == MockedContextualResponseRephraser.__name__
+    assert prompts[0][KEY_PROMPT_NAME] == "rephrase_prompt"
+    assert KEY_USER_PROMPT in prompts[0]
+    assert KEY_LLM_RESPONSE_METADATA in prompts[0]
+
+    llm_response_dict["choices"] = ["hello foobar"]
+    assert prompts[0][KEY_LLM_RESPONSE_METADATA] == llm_response_dict

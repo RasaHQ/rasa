@@ -927,9 +927,7 @@ class MessageProcessor:
         return [command.as_dict() for command in commands]
 
     def _contains_undefined_intent(self, message: Message) -> bool:
-        """Checks if the message contains an intent that is undefined
-        in the domain.
-        """
+        """Checks if the message contains an undefined intent."""
         intent_name = message.get(INTENT, {}).get("name")
         return intent_name is not None and intent_name not in self.domain.intents
 
@@ -992,6 +990,8 @@ class MessageProcessor:
 
         if parse_data["entities"]:
             self._log_slots(tracker)
+
+        plugin_manager().hook.after_new_user_message(tracker=tracker)
 
         logger.debug(
             f"Logged UserUtterance - tracker now has {len(tracker.events)} events."
@@ -1276,6 +1276,7 @@ class MessageProcessor:
                 events = await action.run(
                     output_channel, nlg, temporary_tracker, self.domain
                 )
+            self._log_action_and_events_on_tracker(tracker, action, events, prediction)
         except ActionExecutionRejection:
             events = [
                 ActionExecutionRejected(
@@ -1284,7 +1285,7 @@ class MessageProcessor:
             ]
             tracker.update(events[0])
             return self.should_predict_another_action(action.name())
-        except Exception:
+        except Exception as e:
             structlogger.exception(
                 "rasa.core.processor.run_action.exception",
                 event_info=f"Encountered an exception while "
@@ -1293,9 +1294,15 @@ class MessageProcessor:
                 f"Please check the logs of your action server for "
                 f"more information.",
             )
+            error_messge = str(e)
             events = []
-
-        self._log_action_on_tracker(tracker, action, events, prediction)
+            self._log_action_prediction_on_tracker(
+                tracker,
+                action,
+                prediction,
+                was_successful=False,
+                error_message=error_messge,
+            )
 
         if any(isinstance(e, UserUttered) for e in events):
             logger.debug(
@@ -1311,10 +1318,10 @@ class MessageProcessor:
             self._log_slots(tracker)
 
         await self.execute_side_effects(events, tracker, output_channel)
-
+        plugin_manager().hook.after_action_executed(tracker=tracker)
         return self.should_predict_another_action(action.name())
 
-    def _log_action_on_tracker(
+    def _log_action_and_events_on_tracker(
         self,
         tracker: DialogueStateTracker,
         action: Action,
@@ -1331,16 +1338,9 @@ class MessageProcessor:
             isinstance(event, ActionExecutionRejected) for event in events
         )
         if not action_was_rejected_manually:
-            structlogger.debug(
-                "processor.actions.policy_prediction",
-                prediction_events=copy.deepcopy(prediction.events),
-                policy_name=prediction.policy_name,
-                action_name=action.name(),
+            self._log_action_prediction_on_tracker(
+                tracker, action, prediction, was_successful=True, error_message=None
             )
-            tracker.update_with_events(prediction.events)
-
-            # log the action and its produced events
-            tracker.update(action.event_for_successful_execution(prediction))
 
         structlogger.debug(
             "processor.actions.log",
@@ -1348,6 +1348,29 @@ class MessageProcessor:
             rasa_events=copy.deepcopy(events),
         )
         tracker.update_with_events(events)
+
+    def _log_action_prediction_on_tracker(
+        self,
+        tracker: DialogueStateTracker,
+        action: Action,
+        prediction: PolicyPrediction,
+        was_successful: bool,
+        error_message: Optional[str],
+    ) -> None:
+        structlogger.debug(
+            "processor.actions.policy_prediction",
+            prediction_events=copy.deepcopy(prediction.events),
+            policy_name=prediction.policy_name,
+            action_name=action.name(),
+        )
+        tracker.update_with_events(prediction.events)
+
+        # log the action and its produced events
+        tracker.update(
+            action.event_for_successful_execution(
+                prediction, was_successful, error_message
+            )
+        )
 
     def _has_session_expired(self, tracker: DialogueStateTracker) -> bool:
         """Determine whether the latest session in `tracker` has expired.
@@ -1447,8 +1470,10 @@ class MessageProcessor:
         return len(filtered_commands) > 0
 
     def _is_calm_assistant(self) -> bool:
-        """Inspects the nodes of the graph schema to determine whether
-        any node is associated with the `FlowPolicy`, which is indicative of a
+        """Inspects the nodes of the graph schema to decide if we are in CALM.
+
+        To determine whether we are in CALM mode, we check if any node is
+        associated with the `FlowPolicy`, which is indicative of a
         CALM assistant setup.
 
         Returns:

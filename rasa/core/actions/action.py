@@ -41,10 +41,17 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_UTTER_ACTION_KEY,
 )
 from rasa.shared.constants import (
+    ATTACHMENT,
+    BUTTONS,
+    CUSTOM,
     DEFAULT_NLU_FALLBACK_INTENT_NAME,
     DOCS_BASE_URL,
+    ELEMENTS,
     FLOW_PREFIX,
+    IMAGE,
+    QUICK_REPLIES,
     ROUTE_TO_CALM_SLOT,
+    TEXT,
     UTTER_PREFIX,
 )
 from rasa.shared.core.constants import (
@@ -55,6 +62,8 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_EXTRACT_SLOTS,
     ACTION_LISTEN_NAME,
+    ACTION_METADATA_EXECUTION_ERROR_MESSAGE,
+    ACTION_METADATA_EXECUTION_SUCCESS,
     ACTION_RESET_ROUTING,
     ACTION_RESTART_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
@@ -255,18 +264,18 @@ def action_for_name_or_text(
 def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
     """Create BotUttered event from message."""
     bot_message = BotUttered(
-        text=message.pop("text", None),
+        text=message.pop(TEXT, None),
         data={
-            "elements": message.pop("elements", None),
-            "quick_replies": message.pop("quick_replies", None),
-            "buttons": message.pop("buttons", None),
+            ELEMENTS: message.pop(ELEMENTS, None),
+            QUICK_REPLIES: message.pop(QUICK_REPLIES, None),
+            BUTTONS: message.pop(BUTTONS, None),
             # for legacy / compatibility reasons we need to set the image
             # to be the attachment if there is no other attachment (the
             # `.get` is intentional - no `pop` as we still need the image`
             # property to set it in the following line)
-            "attachment": message.pop("attachment", None) or message.get("image", None),
-            "image": message.pop("image", None),
-            "custom": message.pop("custom", None),
+            ATTACHMENT: message.pop(ATTACHMENT, None) or message.get(IMAGE, None),
+            IMAGE: message.pop(IMAGE, None),
+            CUSTOM: message.pop(CUSTOM, None),
         },
         metadata=message,
     )
@@ -310,22 +319,30 @@ class Action:
         return f"{self.__class__.__name__}('{self.name()}')"
 
     def event_for_successful_execution(
-        self, prediction: PolicyPrediction
+        self,
+        prediction: PolicyPrediction,
+        was_successful: bool,
+        error_message: Optional[str],
     ) -> ActionExecuted:
         """Event which should be logged for the successful execution of this action.
 
         Args:
             prediction: Prediction which led to the execution of this event.
+            was_successful: Whether the action was executed successfully.
+            error_message: Error message if the action was not executed successfully.
 
         Returns:
             Event which should be logged onto the tracker.
         """
+        metadata = prediction.action_metadata or {}
+        metadata[ACTION_METADATA_EXECUTION_SUCCESS] = was_successful
+        metadata[ACTION_METADATA_EXECUTION_ERROR_MESSAGE] = error_message
         return ActionExecuted(
             self.name(),
             prediction.policy_name,
             prediction.max_confidence,
             hide_rule_turn=prediction.hide_rule_turn,
-            metadata=prediction.action_metadata,
+            metadata=metadata,
         )
 
 
@@ -412,22 +429,31 @@ class ActionEndToEndResponse(Action):
         return [create_bot_utterance(message)]
 
     def event_for_successful_execution(
-        self, prediction: PolicyPrediction
+        self,
+        prediction: PolicyPrediction,
+        was_successful: bool,
+        error_message: Optional[str],
     ) -> ActionExecuted:
         """Event which should be logged for the successful execution of this action.
 
         Args:
             prediction: Prediction which led to the execution of this event.
+            was_successful: Whether the action was executed successfully.
+            error_message: Error message if the action was not executed successfully.
 
         Returns:
             Event which should be logged onto the tracker.
         """
+        metadata = prediction.action_metadata or {}
+        metadata[ACTION_METADATA_EXECUTION_SUCCESS] = was_successful
+        metadata[ACTION_METADATA_EXECUTION_ERROR_MESSAGE] = error_message
+
         return ActionExecuted(
             policy=prediction.policy_name,
             confidence=prediction.max_confidence,
             action_text=self.action_text,
             hide_rule_turn=prediction.hide_rule_turn,
-            metadata=prediction.action_metadata,
+            metadata=metadata,
         )
 
 
@@ -727,10 +753,7 @@ class ActionDeactivateLoop(Action):
 
 
 class RemoteActionJSONValidator:
-    """
-    A validator class for ensuring that the JSON response from a custom action executor
-    adheres to the expected schema.
-    """
+    """Check action responses for JSON schema validation."""
 
     @staticmethod
     def action_response_format_spec() -> Dict[Text, Any]:
@@ -753,8 +776,7 @@ class RemoteActionJSONValidator:
 
     @classmethod
     def validate(cls, result: Dict[Text, Any]) -> bool:
-        """
-        Validate the given JSON result against the expected Action response schema.
+        """Validate the given JSON result against the expected Action response schema.
 
         This method uses a cached JSON schema validator to check if the provided result
         conforms to the predefined schema.
@@ -788,8 +810,7 @@ class RemoteActionJSONValidator:
     @classmethod
     @lru_cache(maxsize=1)
     def get_action_response_validator(cls) -> Draft202012Validator:
-        """
-        Retrieve a cached JSON schema validator for the Action response schema.
+        """Retrieve a cached JSON schema validator for the Action response schema.
 
         Returns:
             Draft202012Validator: An instance of the JSON schema validator.

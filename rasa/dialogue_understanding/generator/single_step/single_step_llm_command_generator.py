@@ -43,6 +43,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import LLM_COMMANDS, LLM_PROMPT, TEXT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     get_prompt_template,
@@ -261,12 +262,15 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
             prompt=flow_prompt,
         )
 
-        action_list = await self.invoke_llm(flow_prompt)
+        response = await self.invoke_llm(flow_prompt)
+        llm_response = LLMResponse.ensure_llm_response(response)
         # The check for 'None' maintains compatibility with older versions
         # of LLMCommandGenerator. In previous implementations, 'invoke_llm'
         # might return 'None' to indicate a failure to generate actions.
-        if action_list is None:
+        if llm_response is None or not llm_response.choices:
             return [ErrorCommand()]
+
+        action_list = llm_response.choices[0]
 
         log_llm(
             logger=structlogger,
@@ -282,10 +286,11 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
             message, SingleStepLLMCommandGenerator.__name__, commands
         )
         add_prompt_to_message_parse_data(
-            message,
-            SingleStepLLMCommandGenerator.__name__,
-            "command_generator_prompt",
-            flow_prompt,
+            message=message,
+            component_name=SingleStepLLMCommandGenerator.__name__,
+            prompt_name="command_generator_prompt",
+            user_prompt=flow_prompt,
+            llm_response=llm_response,
         )
 
         return commands

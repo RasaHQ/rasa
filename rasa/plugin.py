@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.tracker_store import TrackerStore
     from rasa.shared.core.domain import Domain
+    from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.utils.endpoints import EndpointConfig
 
 
@@ -88,3 +89,13 @@ def after_server_stop() -> None:
     Use this hook to de-initialize any resources that require explicit cleanup like,
     thread shutdown, closing connections, etc.
     """
+
+
+@hookspec  # type: ignore[misc]
+def after_new_user_message(tracker: "DialogueStateTracker") -> None:
+    """Hook specification for after a new user message is received."""
+
+
+@hookspec  # type: ignore[misc]
+def after_action_executed(tracker: "DialogueStateTracker") -> None:
+    """Hook specification for after an action is executed."""

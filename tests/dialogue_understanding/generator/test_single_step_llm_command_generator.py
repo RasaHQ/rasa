@@ -58,6 +58,7 @@ from rasa.shared.core.slots import (
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import (
+    KEY_COMPONENT_NAME,
     KEY_USER_PROMPT,
     LLM_COMMANDS,
     LLM_PROMPT,
@@ -67,7 +68,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
 from rasa.shared.utils.llm import (
     DEFAULT_MAX_USER_INPUT_CHARACTERS,
 )
@@ -290,14 +291,14 @@ class TestSingleStepLLMCommandGenerator:
         command_generator: SingleStepLLMCommandGenerator,
         flows: FlowsList,
         tracker_with_routing_slot: DialogueStateTracker,
+        llm_response_object: LLMResponse,
     ):
         """Test that predict_commands sets the routing slot to True."""
         # Given
-        llm_mock = AsyncMock()
-        llm_mock.acompletion.return_value = AsyncMock(
-            spec=LLMResponse, choices=["StartFlow(test_flow)"]
-        )
-        mock_llm_factory.return_value = llm_mock
+        mock_llm_client = AsyncMock()
+        llm_response_object.choices = ["StartFlow(test_flow)"]
+        mock_llm_client.acompletion.return_value = llm_response_object
+        mock_llm_factory.return_value = mock_llm_client
 
         # When
         predicted_commands = await command_generator.predict_commands(
@@ -319,15 +320,15 @@ class TestSingleStepLLMCommandGenerator:
         command_generator: SingleStepLLMCommandGenerator,
         flows: FlowsList,
         tracker: DialogueStateTracker,
+        llm_response_object: LLMResponse,
     ):
         """Test that predict_commands sets the routing slot to True."""
         # Given
         message = Message.build(text="start test_flow")
-        llm_mock = Mock()
-        acompletion_mock = AsyncMock(spec=LLMResponse)
-        acompletion_mock.choices = ["StartFlow(test_flow)"]
-        llm_mock.acompletion = acompletion_mock
-        mock_llm_factory.return_value = llm_mock
+        mock_llm_client = AsyncMock()
+        llm_response_object.choices = ["StartFlow(test_flow)"]
+        mock_llm_client.acompletion.return_value = llm_response_object
+        mock_llm_factory.return_value = mock_llm_client
 
         # When
         await command_generator.predict_commands(
@@ -349,17 +350,17 @@ class TestSingleStepLLMCommandGenerator:
         command_generator: SingleStepLLMCommandGenerator,
         flows: FlowsList,
         tracker: DialogueStateTracker,
+        llm_response_object: LLMResponse,
     ):
         """Test that predict_commands sets the routing slot to True."""
         message = Message.build(text="start test_flow")
 
         # Given
         with set_preparing_fine_tuning_data():
-            llm_mock = AsyncMock()
-            llm_mock.acompletion.return_value = AsyncMock(
-                spec=LLMResponse, choices=["StartFlow(test_flow)"]
-            )
-            mock_llm_factory.return_value = llm_mock
+            mock_llm_client = AsyncMock()
+            llm_response_object.choices = ["StartFlow(test_flow)"]
+            mock_llm_client.acompletion.return_value = llm_response_object
+            mock_llm_factory.return_value = mock_llm_client
 
             # When
             await command_generator.predict_commands(
@@ -386,17 +387,17 @@ class TestSingleStepLLMCommandGenerator:
         command_generator: SingleStepLLMCommandGenerator,
         flows: FlowsList,
         tracker: DialogueStateTracker,
+        llm_response_object: LLMResponse,
     ):
         """Test that predict_commands sets the routing slot to True."""
         message = Message.build(text="start test_flow")
 
         # Given
         with set_record_commands_and_prompts():
-            llm_mock = AsyncMock()
-            llm_mock.acompletion.return_value = AsyncMock(
-                spec=LLMResponse, choices=["StartFlow(test_flow)"]
-            )
-            mock_llm_factory.return_value = llm_mock
+            mock_llm_client = AsyncMock()
+            llm_response_object.choices = ["StartFlow(test_flow)"]
+            mock_llm_client.acompletion.return_value = llm_response_object
+            mock_llm_factory.return_value = mock_llm_client
 
             # When
             await command_generator.predict_commands(
@@ -406,11 +407,14 @@ class TestSingleStepLLMCommandGenerator:
             )
 
         # Then
-        assert message.get(PROMPTS) is not None
-        assert SingleStepLLMCommandGenerator.__name__ in message.get(PROMPTS)
-        assert message.get(PROMPTS)[SingleStepLLMCommandGenerator.__name__][0][1][
-            KEY_USER_PROMPT
-        ].startswith("Your task is to analyze the current conversation context")
+        prompts = message.get(PROMPTS)
+        assert prompts is not None
+        assert (
+            prompts[0].get(KEY_COMPONENT_NAME) == SingleStepLLMCommandGenerator.__name__
+        )
+        assert prompts[0][KEY_USER_PROMPT].startswith(
+            "Your task is to analyze the current conversation context"
+        )
         assert message.get(PREDICTED_COMMANDS)[
             SingleStepLLMCommandGenerator.__name__
         ] == [{"command": "start flow", "flow": "test_flow"}]
@@ -534,23 +538,41 @@ class TestSingleStepLLMCommandGenerator:
         "llm_response, expected_commands",
         [
             (
-                None,
+                LLMResponse.from_dict({"id": None, "choices": None, "created": None}),
                 [ErrorCommand()],
             ),
             (
-                "StartFlow(this_flow_does_not_exists)",
+                LLMResponse(
+                    id="mock-id",
+                    created=123456,
+                    choices=["StartFlow(this_flow_does_not_exists)"],
+                    model="test-model",
+                    usage=LLMUsage(prompt_tokens=5, completion_tokens=7),
+                ),
                 [
                     CannotHandleCommand(),
                 ],
             ),
             (
-                "A random response from LLM",
+                LLMResponse(
+                    id="mock-id",
+                    created=123456,
+                    choices=["A random response from LLM"],
+                    model="test-model",
+                    usage=LLMUsage(prompt_tokens=5, completion_tokens=7),
+                ),
                 [
                     CannotHandleCommand(),
                 ],
             ),
             (
-                "SetSlot(flow_name, some_flow)",
+                LLMResponse(
+                    id="mock-id",
+                    created=123456,
+                    choices=["SetSlot(flow_name, some_flow)"],
+                    model="test-model",
+                    usage=LLMUsage(prompt_tokens=5, completion_tokens=7),
+                ),
                 [
                     StartFlowCommand(flow="some_flow"),
                 ],

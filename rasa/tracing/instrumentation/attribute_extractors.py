@@ -578,6 +578,7 @@ def extract_attrs_for_run_step(
     tracker: DialogueStateTracker,
     available_actions: List[str],
     flows: FlowsList,
+    previous_step_id: Text,
 ) -> Dict[str, Any]:
     current_context = extract_current_context_attribute(stack)
 
@@ -586,6 +587,7 @@ def extract_attrs_for_run_step(
         "step_description": step.description if step.description else "None",
         "current_flow_id": flow.id,
         "current_context": json.dumps(current_context),
+        "previous_step_id": previous_step_id,
     }
 
 

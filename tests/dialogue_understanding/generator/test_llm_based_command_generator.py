@@ -1,6 +1,6 @@
 import uuid
 from typing import Any, ClassVar, Dict, List, Optional, Text
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
@@ -42,7 +42,6 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
 from tests.utilities import flows_from_str
 
 
@@ -423,6 +422,7 @@ class TestLLMBasedCommandGenerator:
         self,
         mock_llm_factory: Mock,
         base_command_generator_fixture,
+        llm_response_dict: Dict[Text, Any],
     ):
         """Test that _generate_action_list calls llm correctly."""
         command_generator = base_command_generator_fixture
@@ -435,7 +435,12 @@ class TestLLMBasedCommandGenerator:
             "temperature": 0.0,
             "max_tokens": 256,
         }
-        mock_llm_factory.return_value = AsyncMock(spec=OpenAILLMClient)
+
+        mock_raw_response = AsyncMock()
+        mock_raw_response.to_dict = MagicMock(return_value=llm_response_dict)
+        mock_llm_client = AsyncMock()
+        mock_llm_client.acompletion.return_value = mock_raw_response
+        mock_llm_factory.return_value = mock_llm_client
 
         # When
         await command_generator.invoke_llm("some prompt")
@@ -450,19 +455,22 @@ class TestLLMBasedCommandGenerator:
         self,
         mock_llm_factory: Mock,
         base_command_generator_fixture,
+        llm_response_dict: Dict[Text, Any],
     ):
         """Test that _generate_action_list calls llm correctly."""
         # Given
         command_generator = base_command_generator_fixture
-        llm_mock = Mock()
-        predict_mock = AsyncMock()
-        llm_mock.acompletion = predict_mock
-        mock_llm_factory.return_value = llm_mock
+
+        mock_raw_response = AsyncMock()
+        mock_raw_response.to_dict = MagicMock(return_value=llm_response_dict)
+        mock_llm_client = AsyncMock()
+        mock_llm_client.acompletion.return_value = mock_raw_response
+        mock_llm_factory.return_value = mock_llm_client
 
         # When
         await command_generator.invoke_llm("some prompt")
         # Then
-        predict_mock.assert_called_once_with("some prompt")
+        mock_llm_client.acompletion.assert_called_once_with("some prompt")
 
     @patch(
         "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"

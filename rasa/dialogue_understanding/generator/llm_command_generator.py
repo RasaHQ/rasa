@@ -10,6 +10,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import ProviderClientAPIException
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.io import raise_deprecation_warning
 
 structlogger = structlog.get_logger()
@@ -53,7 +54,7 @@ class LLMCommandGenerator(SingleStepLLMCommandGenerator):
             **kwargs,
         )
 
-    async def invoke_llm(self, prompt: Text) -> Optional[Text]:
+    async def invoke_llm(self, prompt: Text) -> Optional[LLMResponse]:
         try:
             return await super().invoke_llm(prompt)
         except ProviderClientAPIException:

@@ -4,7 +4,6 @@ from urllib.parse import urlparse
 import structlog
 from sanic import Sanic
 
-import rasa.utils.licensing
 from rasa.cli.scaffold import print_error_and_exit
 from rasa.core.persistor import RemoteStorageType, get_persistor
 from rasa.core.utils import list_routes
@@ -62,6 +61,8 @@ def main() -> None:
     The API server can receive requests to train models, run bots, and manage
     the lifecycle of models and bots.
     """
+    import rasa.utils.licensing
+
     log_level = logging.DEBUG
     configure_logging_and_warnings(
         log_level=log_level,

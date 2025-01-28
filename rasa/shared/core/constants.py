@@ -52,6 +52,9 @@ ACTION_RESET_ROUTING = "action_reset_routing"
 ACTION_HANGUP = "action_hangup"
 ACTION_REPEAT_BOT_MESSAGES = "action_repeat_bot_messages"
 
+ACTION_METADATA_EXECUTION_SUCCESS = "execution_success"
+ACTION_METADATA_EXECUTION_ERROR_MESSAGE = "execution_error_message"
+
 
 DEFAULT_ACTION_NAMES = [
     ACTION_LISTEN_NAME,

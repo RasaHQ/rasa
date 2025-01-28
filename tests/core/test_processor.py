@@ -28,6 +28,7 @@ from rasa.core.actions.action import (
     ActionListen,
     ActionSendText,
     ActionUnlikelyIntent,
+    RemoteAction,
 )
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.agent import Agent, load_agent
@@ -77,6 +78,8 @@ from rasa.shared.core.constants import (
     ACTION_CORRECT_FLOW_SLOT,
     ACTION_EXTRACT_SLOTS,
     ACTION_LISTEN_NAME,
+    ACTION_METADATA_EXECUTION_ERROR_MESSAGE,
+    ACTION_METADATA_EXECUTION_SUCCESS,
     ACTION_RESTART_NAME,
     ACTION_SEND_TEXT_NAME,
     ACTION_SESSION_START_NAME,
@@ -1044,6 +1047,32 @@ async def test_action_send_text_metadata(default_processor: MessageProcessor):
     assert applied_events[1].metadata == metadata
 
 
+async def test_action_invalid_metadata(default_processor: MessageProcessor):
+    tracker = DialogueStateTracker.from_events(
+        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
+    )
+    domain = Domain.empty()
+
+    await default_processor._run_action(
+        RemoteAction("bar"),  # not configured with an endpoint -> so should fail
+        tracker,
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        PolicyPrediction([], "some policy"),
+    )
+
+    applied_events = tracker.applied_events()
+    assert len(applied_events) == 2
+    assert applied_events[0] == ActionExecuted(ACTION_LISTEN_NAME)
+    assert isinstance(applied_events[1], ActionExecuted)
+    assert applied_events[1].action_name == "bar"
+    assert applied_events[1].metadata[ACTION_METADATA_EXECUTION_SUCCESS] is False
+    assert (
+        "Failed to execute custom action 'bar'"
+        in applied_events[1].metadata[ACTION_METADATA_EXECUTION_ERROR_MESSAGE]
+    )
+
+
 async def test_restart_triggers_session_start(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -1433,7 +1462,7 @@ async def test_predict_next_action_with_hidden_rules(
     assert action._name == rule_action
     assert prediction.hide_rule_turn
 
-    processor._log_action_on_tracker(
+    processor._log_action_and_events_on_tracker(
         tracker, action, [SlotSet(rule_slot, rule_slot)], prediction
     )
 
@@ -1441,7 +1470,7 @@ async def test_predict_next_action_with_hidden_rules(
     assert isinstance(action, ActionListen)
     assert prediction.hide_rule_turn
 
-    processor._log_action_on_tracker(tracker, action, None, prediction)
+    processor._log_action_and_events_on_tracker(tracker, action, None, prediction)
 
     tracker.events.append(UserUttered(intent={"name": story_intent}))
 
@@ -1450,7 +1479,7 @@ async def test_predict_next_action_with_hidden_rules(
     assert action._name == story_action
     assert not prediction.hide_rule_turn
 
-    processor._log_action_on_tracker(
+    processor._log_action_and_events_on_tracker(
         tracker, action, [SlotSet(story_slot, story_slot)], prediction
     )
 
@@ -2200,6 +2229,7 @@ async def test_run_command_processor_parsing_a_message_with_invalid_use_of_slash
     predicted_commands: List[Command],
     flow_policy_bot_agent: Agent,
     domain: Domain,
+    llm_response_object: LLMResponse,
 ) -> None:
     # Given
     processor = flow_policy_bot_agent.processor
@@ -2211,7 +2241,8 @@ async def test_run_command_processor_parsing_a_message_with_invalid_use_of_slash
     mock_filter_flows.return_value = FlowsList(underlying_flows=[])
     # the return value does not matter here, it only matters
     # that we got the response from the LLM
-    mock_invoke_llm.return_value = "ChitChat()"
+    llm_response_object.choices = ["ChitChat()"]
+    mock_invoke_llm.return_value = llm_response_object
 
     # When
     parse_data = await processor.parse_message(message, tracker)

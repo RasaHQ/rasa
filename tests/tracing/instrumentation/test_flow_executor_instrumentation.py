@@ -10,6 +10,7 @@ from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 from rasa.shared.core.flows.steps import CollectInformationFlowStep
+from rasa.shared.core.flows.steps.constants import START_STEP
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.tracing.instrumentation import instrumentation
 from rasa.tracing.instrumentation.instrumentation import FLOW_EXECUTOR_MODULE_NAME
@@ -100,6 +101,7 @@ def test_tracing_flow_executor_run_step(
         tracker,
         available_actions,
         FlowsList(underlying_flows=[flow]),
+        previous_step_id=START_STEP,
     )
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
@@ -116,6 +118,7 @@ def test_tracing_flow_executor_run_step(
         "step_description": "ask for the amount of money to transfer",
         "current_flow_id": "transfer_money",
         "current_context": "{}",
+        "previous_step_id": START_STEP,
     }
     assert current_span.attributes == expected_attributes
 

@@ -161,7 +161,7 @@ FLOW_CANCELLED = {
     }
 }
 DIALOGUE_STACK_UPDATED = {
-    "properties": {"event": {"const": "stack"}, "update": {"type": "array"}}
+    "properties": {"event": {"const": "stack"}, "update": {"type": "string"}}
 }
 ROUTING_SESSION_ENDED = {"properties": {"event": {"const": "routing_session_ended"}}}
 

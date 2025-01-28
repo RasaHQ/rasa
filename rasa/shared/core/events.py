@@ -31,6 +31,8 @@ import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
+    ACTION_METADATA_EXECUTION_ERROR_MESSAGE,
+    ACTION_METADATA_EXECUTION_SUCCESS,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     ACTION_SESSION_START_NAME,
     ENTITY_LABEL_SEPARATOR,
@@ -59,6 +61,7 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     INTENT_RANKING_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    PROMPTS,
     TEXT,
 )
 
@@ -96,6 +99,7 @@ if TYPE_CHECKING:
             ENTITIES: List[EntityPrediction],
             "message_id": Optional[Text],
             "metadata": Dict,
+            PROMPTS: Dict,
         },
         total=False,
     )
@@ -1702,7 +1706,15 @@ class ActionExecuted(Event):
         super().__init__(timestamp, metadata)
 
     def __members__(self) -> Tuple[Optional[Text], Optional[Text], Text]:
-        meta_no_nones = {k: v for k, v in self.metadata.items() if v is not None}
+        items_to_ignore = [
+            ACTION_METADATA_EXECUTION_SUCCESS,
+            ACTION_METADATA_EXECUTION_ERROR_MESSAGE,
+        ]
+        meta_no_nones = {
+            k: v
+            for k, v in self.metadata.items()
+            if v is not None and k not in items_to_ignore
+        }
         return (self.action_name, self.action_text, jsonpickle.encode(meta_no_nones))
 
     def __repr__(self) -> Text:

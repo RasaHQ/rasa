@@ -1,5 +1,9 @@
 from dataclasses import asdict, dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Text, Union
+
+import structlog
+
+structlogger = structlog.get_logger()
 
 
 @dataclass
@@ -15,6 +19,17 @@ class LLMUsage:
 
     def __post_init__(self) -> None:
         self.total_tokens = self.prompt_tokens + self.completion_tokens
+
+    @classmethod
+    def from_dict(cls, data: Dict[Text, Any]) -> "LLMUsage":
+        """Creates an LLMUsage object from a dictionary.
+        If any keys are missing, they will default to zero
+        or whatever default you prefer.
+        """
+        return cls(
+            prompt_tokens=data.get("prompt_tokens"),
+            completion_tokens=data.get("completion_tokens"),
+        )
 
     def to_dict(self) -> dict:
         """Converts the LLMUsage dataclass instance into a dictionary."""
@@ -41,6 +56,30 @@ class LLMResponse:
     additional_info: Optional[Dict] = None
     """Optional dictionary for storing additional information related to the
     completion that may not be covered by other fields."""
+
+    @classmethod
+    def from_dict(cls, data: Dict[Text, Any]) -> "LLMResponse":
+        """Creates an LLMResponse from a dictionary."""
+        usage_data = data.get("usage", {})
+        usage_obj = LLMUsage.from_dict(usage_data) if usage_data else None
+
+        return cls(
+            id=data["id"],
+            choices=data["choices"],
+            created=data["created"],
+            model=data.get("model"),
+            usage=usage_obj,
+            additional_info=data.get("additional_info"),
+        )
+
+    @classmethod
+    def ensure_llm_response(cls, response: Union[str, "LLMResponse"]) -> "LLMResponse":
+        if isinstance(response, LLMResponse):
+            return response
+
+        structlogger.warn("llm_response.deprecated_response_type", response=response)
+        data = {"id": None, "choices": [response], "created": None}
+        return LLMResponse.from_dict(data)
 
     def to_dict(self) -> dict:
         """Converts the LLMResponse dataclass instance into a dictionary."""

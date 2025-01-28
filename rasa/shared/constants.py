@@ -320,3 +320,12 @@ SENSITIVE_DATA = [
     AWS_SECRET_ACCESS_KEY_CONFIG_KEY,
     AWS_SESSION_TOKEN_CONFIG_KEY,
 ]
+
+# Used for key values in BotUtterance.data
+TEXT = "text"
+ELEMENTS = "elements"
+QUICK_REPLIES = "quick_replies"
+BUTTONS = "buttons"
+ATTACHMENT = "attachment"
+IMAGE = "image"
+CUSTOM = "custom"

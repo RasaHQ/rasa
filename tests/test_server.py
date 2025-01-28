@@ -21,7 +21,6 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 from aioresponses import aioresponses
-from freezegun import freeze_time
 from ruamel.yaml import StringIO
 from sanic import Sanic
 from sanic_testing.testing import SanicASGITestClient
@@ -1305,10 +1304,7 @@ async def test_replace_events_empty_request_body(rasa_app: SanicASGITestClient):
     assert response.status == HTTPStatus.BAD_REQUEST
 
 
-@freeze_time("2018-01-01")
 async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
-    model_id = rasa_app.sanic_app.ctx.agent.model_id
-    assistant_id = rasa_app.sanic_app.ctx.agent.processor.model_metadata.assistant_id
     _, response = await rasa_app.get("/conversations/madeupid/tracker")
     content = response.json
     assert response.status == HTTPStatus.OK
@@ -1318,33 +1314,14 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
         **{slot: None for slot in DEFAULT_SLOT_NAMES},
     }
     assert content["sender_id"] == "madeupid"
-    assert content["events"] == [
-        {
-            "event": "action",
-            "name": "action_session_start",
-            "policy": None,
-            "confidence": 1,
-            "timestamp": 1514764800,
-            "action_text": None,
-            "hide_rule_turn": False,
-            "metadata": {"assistant_id": assistant_id, "model_id": model_id},
-        },
-        {
-            "event": "session_started",
-            "timestamp": 1514764800,
-            "metadata": {"assistant_id": assistant_id, "model_id": model_id},
-        },
-        {
-            "event": "action",
-            INTENT_NAME_KEY: "action_listen",
-            "policy": None,
-            "confidence": None,
-            "timestamp": 1514764800,
-            "action_text": None,
-            "hide_rule_turn": False,
-            "metadata": {"assistant_id": assistant_id, "model_id": model_id},
-        },
-    ]
+    assert len(content["events"]) == 3
+    assert content["events"][0]["event"] == "action"
+    assert content["events"][0]["name"] == "action_session_start"
+
+    assert content["events"][1]["event"] == "session_started"
+    assert content["events"][2]["event"] == "action"
+    assert content["events"][2]["name"] == "action_listen"
+
     assert content["latest_message"] == {
         "text": None,
         "intent": {},

@@ -4,18 +4,17 @@ from typing import TYPE_CHECKING, List, Optional, Text, Union
 
 import pluggy
 
-from rasa.cli import SubParsersAction
-from rasa.cli import x as rasa_x
-from rasa.core.auth_retry_tracker_store import AuthRetryTrackerStore
-from rasa.core.secrets_manager.factory import load_secret_manager
-from rasa.tracing import config
-from rasa.utils.endpoints import EndpointConfig
+# IMPORTANT: do not import anything from rasa here - use scoped imports
+#  this avoids circular imports, as the hooks are used in different places
+#  across the codebase.
 
 if TYPE_CHECKING:
     from rasa.anonymization.anonymization_pipeline import AnonymizationPipeline
+    from rasa.cli import SubParsersAction
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.tracker_store import TrackerStore
     from rasa.shared.core.domain import Domain
+    from rasa.utils.endpoints import EndpointConfig
 
 hookimpl = pluggy.HookimplMarker("rasa")
 logger = logging.getLogger(__name__)
@@ -23,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 @hookimpl  # type: ignore[misc]
 def refine_cli(
-    subparsers: SubParsersAction,
+    subparsers: "SubParsersAction",
     parent_parsers: List[argparse.ArgumentParser],
 ) -> None:
     from rasa.cli import dialogue_understanding_test, e2e_test, inspect, markers
@@ -41,6 +40,9 @@ def refine_cli(
 
 @hookimpl  # type: ignore[misc]
 def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Text]:
+    from rasa.cli import x as rasa_x
+    from rasa.tracing import config
+
     endpoints_file = None
 
     if cmdline_arguments.func.__name__ == "rasa_x":
@@ -67,6 +69,8 @@ def init_telemetry(endpoints_file: Optional[Text]) -> None:
 
 @hookimpl  # type: ignore[misc]
 def init_managers(endpoints_file: Optional[Text]) -> None:
+    from rasa.core.secrets_manager.factory import load_secret_manager
+
     load_secret_manager(endpoints_file)
 
 
@@ -76,6 +80,9 @@ def create_tracker_store(
     domain: "Domain",
     event_broker: Optional["EventBroker"],
 ) -> "TrackerStore":
+    from rasa.core.auth_retry_tracker_store import AuthRetryTrackerStore
+    from rasa.utils.endpoints import EndpointConfig
+
     if isinstance(endpoint_config, EndpointConfig):
         return AuthRetryTrackerStore(
             endpoint_config=endpoint_config, domain=domain, event_broker=event_broker

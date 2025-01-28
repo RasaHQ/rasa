@@ -82,6 +82,7 @@ from rasa.shared.core.flows.steps import (
     SetSlotsFlowStep,
 )
 from rasa.shared.core.flows.steps.collect import SlotRejection
+from rasa.shared.core.flows.steps.constants import START_STEP
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
@@ -316,7 +317,7 @@ def reset_scoped_slots(
     def _reset_slot(slot_name: Text, dialogue_tracker: DialogueStateTracker) -> None:
         slot = dialogue_tracker.slots.get(slot_name, None)
         initial_value = slot.initial_value if slot else None
-        events.append(SlotSet(slot_name, initial_value))
+        events.append(SlotSet(slot_name, initial_value, metadata={"reset": True}))
 
     if (
         isinstance(current_frame, UserFlowStackFrame)
@@ -448,6 +449,7 @@ def advance_flows_until_next_action(
                     tracker,
                     available_actions,
                     flows,
+                    previous_step_id,
                 )
                 new_events = step_result.events
                 if (
@@ -464,6 +466,9 @@ def advance_flows_until_next_action(
                     new_events.insert(
                         idx, FlowCompleted(active_frame.flow_id, previous_step_id)
                     )
+                attach_stack_metadata_to_events(
+                    next_step.id, current_flow.id, new_events
+                )
                 tracker.update_stack(step_stack)
                 tracker.update_with_events(new_events)
 
@@ -567,6 +572,17 @@ def validate_custom_slot_mappings(
     return True
 
 
+def attach_stack_metadata_to_events(
+    step_id: str,
+    flow_id: str,
+    events: List[Event],
+) -> None:
+    """Attach the stack metadata to the events."""
+    for event in events:
+        event.metadata[STEP_ID_METADATA_KEY] = step_id
+        event.metadata[ACTIVE_FLOW_METADATA_KEY] = flow_id
+
+
 def run_step(
     step: FlowStep,
     flow: Flow,
@@ -574,6 +590,7 @@ def run_step(
     tracker: DialogueStateTracker,
     available_actions: List[str],
     flows: FlowsList,
+    previous_step_id: str,
 ) -> FlowStepResult:
     """Run a single step of a flow.
 
@@ -591,12 +608,19 @@ def run_step(
         tracker: The tracker to run the step on.
         available_actions: The actions that are available in the domain.
         flows: All flows.
+        previous_step_id: The ID of the previous step.
 
     Returns:
     A result of running the step describing where to transition to.
     """
     initial_events: List[Event] = []
-    if step == flow.first_step_in_flow():
+    if previous_step_id == START_STEP:
+        # if the previous step id is the start step, we need to add a flow
+        # started event to the initial events.
+        # we can't use the current step to check this, as the current step is the
+        # first step in the flow -> other steps might link to this flow, so the
+        # only reliable way to check if we are starting a new flow is checking for
+        # the START_STEP meta step
         initial_events.append(FlowStarted(flow.id, metadata=stack.current_context()))
 
     if isinstance(step, CollectInformationFlowStep):

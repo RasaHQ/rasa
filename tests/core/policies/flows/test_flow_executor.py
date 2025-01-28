@@ -65,6 +65,7 @@ from rasa.shared.core.flows.steps.collect import (
     CollectInformationFlowStep,
     SlotRejection,
 )
+from rasa.shared.core.flows.steps.constants import START_STEP
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 from rasa.shared.core.slots import FloatSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -835,7 +836,10 @@ def test_reset_scoped_slots():
     tracker = DialogueStateTracker.from_events(
         "test",
         [
-            SlotSet("foo", "foo"),
+            SlotSet(
+                "foo",
+                "foo",
+            ),
             SlotSet("bar", "bar"),
             SlotSet("baz", "baz"),
         ],
@@ -845,6 +849,8 @@ def test_reset_scoped_slots():
         tracker.stack.top(), current_flow, tracker
     )
     assert events == [SlotSet("foo", None), SlotSet("baz", None)]
+    assert events[0].metadata == {"reset": True}
+    assert events[1].metadata == {"reset": True}
 
 
 def test_reset_scoped_slots_uses_initial_value():
@@ -873,6 +879,7 @@ def test_reset_scoped_slots_uses_initial_value():
         tracker.stack.top(), current_flow, tracker
     )
     assert events == [SlotSet("foo", "42")]
+    assert events[0].metadata == {"reset": True}
 
 
 def test_reset_scoped_slots_resets_set_slots():
@@ -897,6 +904,7 @@ def test_reset_scoped_slots_resets_set_slots():
         tracker.stack.top(), current_flow, tracker
     )
     assert events == [SlotSet("foo", None)]
+    assert events[0].metadata == {"reset": True}
 
 
 def test_reset_scoped_slots_does_not_reset_set_slots_if_collect_forbids_it():
@@ -962,6 +970,7 @@ def test_reset_scoped_slots_with_persisted_slots_set():
         tracker.stack.top(), current_flow, tracker
     )
     assert events == [SlotSet("baz", None)]
+    assert events[0].metadata == {"reset": True}
 
 
 def test_run_step_collect():
@@ -990,7 +999,13 @@ def test_run_step_collect():
     available_actions = ["utter_ask_foo"]
 
     result = flow_executor.run_step(
-        step, flow, stack, tracker, available_actions, flows
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions,
+        flows,
+        previous_step_id=START_STEP,
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
@@ -1025,7 +1040,9 @@ def test_run_step_collect_with_ask_before_filling(ask_before_filling: bool):
     step = user_flow_frame.step(flows)
     flow = user_flow_frame.flow(flows)
 
-    result = flow_executor.run_step(step, flow, stack, tracker, actions, flows)
+    result = flow_executor.run_step(
+        step, flow, stack, tracker, actions, flows, previous_step_id=START_STEP
+    )
     expected_events = [FlowStarted(flow_id="my_flow")]
     if ask_before_filling:
         expected_events.append(SlotSet("foo", None))
@@ -1077,7 +1094,13 @@ def test_run_step_action():
     available_actions = ["utter_ask_foo"]
 
     result = flow_executor.run_step(
-        step, flow, stack, tracker, available_actions, flows
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions,
+        flows,
+        previous_step_id=START_STEP,
     )
 
     assert isinstance(result, PauseFlowReturnPrediction)
@@ -1108,9 +1131,15 @@ def test_run_step_action_check_warnings():
     available_actions = ["utter_ask_foo"]
 
     # Run the utter step of the collect.
-    step = flow.step_by_id("utter")
+    utter_step = flow.step_by_id("utter")
     result = flow_executor.run_step(
-        step, flow, stack, tracker, available_actions, flows
+        utter_step,
+        flow,
+        stack,
+        tracker,
+        available_actions,
+        flows,
+        previous_step_id=START_STEP,
     )
     assert isinstance(result, PauseFlowReturnPrediction)
     assert result.action_prediction.action_name == "utter_ask_foo"
@@ -1121,7 +1150,13 @@ def test_run_step_action_check_warnings():
     expected_log_level = "warning"
     with structlog.testing.capture_logs() as caplog:
         result = flow_executor.run_step(
-            step, flow, stack, tracker, available_actions, flows
+            step,
+            flow,
+            stack,
+            tracker,
+            available_actions,
+            flows,
+            previous_step_id=utter_step.id,
         )
         logs = filter_logs(caplog, expected_event, expected_log_level)
         assert len(logs) == 1
@@ -1162,7 +1197,13 @@ def test_run_step_link():
     # test that my_flow is still on top to be wrapped up and that the linked
     # flow was inserted just below
     result = flow_executor.run_step(
-        step, flow, stack, tracker, available_actions, flows
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions,
+        flows,
+        previous_step_id=START_STEP,
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
@@ -1203,7 +1244,13 @@ def test_run_step_link_human_handoff():
     # test that my_flow is still on top to be wrapped up and that the linked
     # flow was inserted just below
     result = flow_executor.run_step(
-        step, flow, stack, tracker, available_actions, flows
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions,
+        flows,
+        previous_step_id=START_STEP,
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
@@ -1248,7 +1295,13 @@ def test_run_step_call():
     # test that bar_flow is on top and my_flow is underneath to be continued
     # after bar_flow finished
     result = flow_executor.run_step(
-        step, flow, stack, tracker, available_actions, flows
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions,
+        flows,
+        previous_step_id=START_STEP,
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
@@ -1291,7 +1344,13 @@ def test_run_step_set_slot():
     available_actions = []
 
     result = flow_executor.run_step(
-        step, flow, stack, tracker, available_actions, flows
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions,
+        flows,
+        previous_step_id=START_STEP,
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
@@ -1324,11 +1383,16 @@ def test_run_step_end():
     available_actions = []
 
     result = flow_executor.run_step(
-        step, flow, stack, tracker, available_actions, flows
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions,
+        flows,
+        previous_step_id=START_STEP,
     )
-
     assert isinstance(result, ContinueFlowWithNextStep)
-    assert result.events == [SlotSet("bar", None)]
+    assert result.events == [FlowStarted("my_flow"), SlotSet("bar", None)]
 
 
 def test_executor_does_not_get_tripped_if_an_action_is_predicted_in_loop():
@@ -1583,6 +1647,7 @@ def test_flow_policy_events_after_flow_starts() -> None:
         tracker=tracker,
         available_actions=available_actions,
         flows=flows,
+        previous_step_id=START_STEP,
     )
     assert step_result is not None
     assert step_result.events == [FlowStarted("search_hotels")]
@@ -1986,7 +2051,13 @@ def test_run_step_adds_metadata_to_flow_started_event():
     available_actions = ["action_clarify_flows"]
 
     result = flow_executor.run_step(
-        step, flow, stack, tracker, available_actions, flows
+        step,
+        flow,
+        stack,
+        tracker,
+        available_actions,
+        flows,
+        previous_step_id=START_STEP,
     )
 
     expected_event = FlowStarted(
@@ -1995,6 +2066,43 @@ def test_run_step_adds_metadata_to_flow_started_event():
     assert result.events == [expected_event]
 
     assert expected_event.metadata.get("names") == ["foo", "bar"]
+
+
+def test_run_step_does_not_emit_flow_started_event_after_flow_has_started():
+    # we reenter the collect_foo step because there is a loop. in this case
+    # no flow started event should be emitted - even if we are at the first
+    # step of the flow
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: collect_foo
+              collect: foo
+            - id: utter_foo
+              action: utter_foo
+              next: collect_foo
+        """
+    )
+    slots = [TextSlot("foo", [], initial_value="some value")]
+    actions = ["utter_ask_foo"]
+
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="collect_foo", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events("test", [], slots=slots)
+    tracker.update_stack(stack)
+    step = user_flow_frame.step(flows)
+    flow = user_flow_frame.flow(flows)
+
+    result = flow_executor.run_step(
+        step, flow, stack, tracker, actions, flows, previous_step_id="utter_foo"
+    )
+
+    assert isinstance(result, ContinueFlowWithNextStep)
+    assert result.events == []
 
 
 async def test_correct_next_step_selected_with_call_step() -> None:

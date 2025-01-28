@@ -50,6 +50,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     allowed_values_for_slot,
@@ -463,7 +464,12 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             prompt=prompt,
         )
 
-        actions = await self.invoke_llm(prompt)
+        response = await self.invoke_llm(prompt)
+        llm_response = LLMResponse.ensure_llm_response(response)
+        actions = None
+        if llm_response and llm_response.choices:
+            actions = llm_response.choices[0]
+
         structlogger.debug(
             "multi_step_llm_command_generator"
             ".predict_commands_for_active_flow"
@@ -475,10 +481,11 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
 
         if commands:
             add_prompt_to_message_parse_data(
-                message,
-                MultiStepLLMCommandGenerator.__name__,
-                "fill_slots_for_active_flow_prompt",
-                prompt,
+                message=message,
+                component_name=MultiStepLLMCommandGenerator.__name__,
+                prompt_name="fill_slots_for_active_flow_prompt",
+                user_prompt=prompt,
+                llm_response=llm_response,
             )
 
         return commands
@@ -512,7 +519,12 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             prompt=prompt,
         )
 
-        actions = await self.invoke_llm(prompt)
+        response = await self.invoke_llm(prompt)
+        llm_response = LLMResponse.ensure_llm_response(response)
+        actions = None
+        if llm_response and llm_response.choices:
+            actions = llm_response.choices[0]
+
         structlogger.debug(
             "multi_step_llm_command_generator"
             ".predict_commands_for_handling_flows"
@@ -526,10 +538,11 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
 
         if commands:
             add_prompt_to_message_parse_data(
-                message,
-                MultiStepLLMCommandGenerator.__name__,
-                "handle_flows_prompt",
-                prompt,
+                message=message,
+                component_name=MultiStepLLMCommandGenerator.__name__,
+                prompt_name="handle_flows_prompt",
+                user_prompt=prompt,
+                llm_response=llm_response,
             )
 
         return commands
@@ -596,7 +609,12 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             prompt=prompt,
         )
 
-        actions = await self.invoke_llm(prompt)
+        response = await self.invoke_llm(prompt)
+        llm_response = LLMResponse.ensure_llm_response(response)
+        actions = None
+        if llm_response and llm_response.choices:
+            actions = llm_response.choices[0]
+
         structlogger.debug(
             "multi_step_llm_command_generator"
             ".predict_commands_for_newly_started_flow"
@@ -623,10 +641,11 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
 
         if commands:
             add_prompt_to_message_parse_data(
-                message,
-                MultiStepLLMCommandGenerator.__name__,
-                "fill_slots_for_new_flow_prompt",
-                prompt,
+                message=message,
+                component_name=MultiStepLLMCommandGenerator.__name__,
+                prompt_name="fill_slots_for_new_flow_prompt",
+                user_prompt=prompt,
+                llm_response=llm_response,
             )
 
         return commands

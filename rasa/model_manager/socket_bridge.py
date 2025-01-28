@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict, Optional
 
 import structlog
@@ -92,7 +93,7 @@ def create_bridge_server(sio: AsyncServer, running_bots: Dict[str, BotSession]) 
 
     @sio.on("*")
     async def handle_message(event: str, sid: str, data: Dict[str, Any]) -> None:
-        """ "Bridge messages between user and bot.
+        """Bridge messages between user and bot.
 
         Both incoming user messages to the bot_url and
         bot responses sent back to the client need to
@@ -111,7 +112,7 @@ async def create_bridge_client(
 ) -> AsyncClient:
     """Create a new socket bridge client.
 
-    Forwards messages comming from the bot to the user.
+    Forwards messages coming from the bot to the user.
     """
     client = AsyncClient()
 
@@ -128,6 +129,10 @@ async def create_bridge_client(
     async def bot_message(data: Dict[str, Any]) -> None:
         structlogger.debug("model_runner.bot_message", deployment_id=deployment_id)
         await sio.emit("bot_message", data, room=sid)
+
+    @client.event  # type: ignore[misc]
+    async def tracker(data: Dict[str, Any]) -> None:
+        await sio.emit("tracker", json.loads(data), room=sid)
 
     @client.event  # type: ignore[misc]
     async def disconnect() -> None:

@@ -30,6 +30,7 @@ from rasa.shared.exceptions import FileIOException, ProviderClientAPIException
 from rasa.shared.nlu.constants import FLOWS_IN_PROMPT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.llm import (
     allowed_values_for_slot,
@@ -302,22 +303,21 @@ class LLMBasedCommandGenerator(
         )
         return filtered_flows
 
-    async def invoke_llm(self, prompt: Text) -> Optional[Text]:
+    async def invoke_llm(self, prompt: Text) -> Optional[LLMResponse]:
         """Use LLM to generate a response.
 
         Args:
             prompt: The prompt to send to the LLM.
 
         Returns:
-            The generated text.
+            An LLMResponse object.
 
         Raises:
-            ProviderClientAPIException if an error during API call.
+            ProviderClientAPIException: If an error occurs during the LLM API call.
         """
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
         try:
-            llm_response = await llm.acompletion(prompt)
-            return llm_response.choices[0]
+            return await llm.acompletion(prompt)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here

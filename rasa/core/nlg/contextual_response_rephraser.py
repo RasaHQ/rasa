@@ -19,6 +19,14 @@ from rasa.shared.constants import (
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import (
+    KEY_COMPONENT_NAME,
+    KEY_LLM_RESPONSE_METADATA,
+    KEY_PROMPT_NAME,
+    KEY_USER_PROMPT,
+    PROMPTS,
+)
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_GENERATE_MODEL_NAME,
@@ -123,6 +131,39 @@ class ContextualResponseRephraser(
             ContextualResponseRephraser.__name__,
         )
 
+    @classmethod
+    def _add_prompt_and_llm_metadata_to_response(
+        cls,
+        response: Dict[str, Any],
+        prompt_name: str,
+        user_prompt: str,
+        llm_response: Optional["LLMResponse"] = None,
+    ) -> Dict[str, Any]:
+        """Stores the prompt and LLMResponse metadata to response.
+
+        Args:
+            response: The response to add the prompt and LLMResponse metadata to.
+            prompt_name: A name identifying prompt usage.
+            user_prompt: The user prompt that was sent to the LLM.
+            llm_response: The response object from the LLM (None if no response).
+        """
+        from rasa.dialogue_understanding.utils import record_commands_and_prompts
+
+        if not record_commands_and_prompts:
+            return response
+
+        prompt_data: Dict[Text, Any] = {
+            KEY_COMPONENT_NAME: cls.__name__,
+            KEY_PROMPT_NAME: prompt_name,
+            KEY_USER_PROMPT: user_prompt,
+            KEY_LLM_RESPONSE_METADATA: llm_response.to_dict() if llm_response else None,
+        }
+
+        prompts = response.get(PROMPTS, [])
+        prompts.append(prompt_data)
+        response[PROMPTS] = prompts
+        return response
+
     def _last_message_if_human(self, tracker: DialogueStateTracker) -> Optional[str]:
         """Returns the latest message from the tracker.
 
@@ -141,20 +182,20 @@ class ContextualResponseRephraser(
                 return None
         return None
 
-    async def _generate_llm_response(self, prompt: str) -> Optional[str]:
-        """Use LLM to generate a response.
+    async def _generate_llm_response(self, prompt: str) -> Optional[LLMResponse]:
+        """Use LLM to generate a response, returning an LLMResponse object
+        containing both the generated text (choices) and metadata.
 
         Args:
-            prompt: the prompt to send to the LLM
+            prompt: The prompt to send to the LLM.
 
         Returns:
-            generated text
+            An LLMResponse object if successful, otherwise None.
         """
         llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
 
         try:
-            llm_response = await llm.acompletion(prompt)
-            return llm_response.choices[0]
+            return await llm.acompletion(prompt)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
@@ -254,11 +295,21 @@ class ContextualResponseRephraser(
             or self.llm_property(MODEL_NAME_CONFIG_KEY),
             llm_model_group_id=self.llm_property(MODEL_GROUP_ID_CONFIG_KEY),
         )
-        if not (updated_text := await self._generate_llm_response(prompt)):
-            # If the LLM fails to generate a response, we
-            # return the original response.
+        llm_response = await self._generate_llm_response(prompt)
+        llm_response = LLMResponse.ensure_llm_response(llm_response)
+
+        response = self._add_prompt_and_llm_metadata_to_response(
+            response=response,
+            prompt_name="rephrase_prompt",
+            user_prompt=prompt,
+            llm_response=llm_response,
+        )
+
+        if not (llm_response and llm_response.choices and llm_response.choices[0]):
+            # If the LLM fails to generate a response, return the original response.
             return response
 
+        updated_text = llm_response.choices[0]
         structlogger.debug(
             "nlg.rewrite.complete",
             response_text=response_text,

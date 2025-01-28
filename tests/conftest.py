@@ -102,6 +102,7 @@ from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.embedding.embedding_response import EmbeddingResponse
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.endpoints import EndpointConfig
 from tests.license_env import (
@@ -1533,3 +1534,24 @@ def mock_replace_environment_variables(
     )
 
     return mock_replace_env_vars
+
+
+@pytest.fixture
+def llm_response_dict() -> Dict[Text, Any]:
+    return {
+        "id": "mock-id",
+        "choices": ["some message"],
+        "created": 123456,
+        "model": "test-model",
+        "usage": {
+            "prompt_tokens": 5,
+            "completion_tokens": 7,
+            "total_tokens": 12,
+        },
+        "additional_info": None,
+    }
+
+
+@pytest.fixture
+def llm_response_object(llm_response_dict: Dict[Text, Any]) -> LLMResponse:
+    return LLMResponse.from_dict(llm_response_dict)

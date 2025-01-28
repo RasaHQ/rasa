@@ -64,11 +64,19 @@ from rasa.shared.core.events import BotUttered, Event, UserUttered
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.exceptions import FileIOException, RasaException
+from rasa.shared.nlu.constants import (
+    KEY_COMPONENT_NAME,
+    KEY_LLM_RESPONSE_METADATA,
+    KEY_PROMPT_NAME,
+    KEY_USER_PROMPT,
+    PROMPTS,
+)
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
     _LangchainEmbeddingClientAdapter,
 )
 from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.cli import print_error_and_exit
 from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
     EmbeddingsHealthCheckMixin,
@@ -273,6 +281,43 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         )
         # Wrap the embedding client in the adapter
         return _LangchainEmbeddingClientAdapter(client)
+
+    @classmethod
+    def _add_prompt_and_llm_response_to_latest_message(
+        cls,
+        tracker: DialogueStateTracker,
+        prompt_name: str,
+        user_prompt: str,
+        llm_response: Optional[LLMResponse] = None,
+    ) -> None:
+        """Stores the prompt and LLMResponse metadata in the tracker.
+
+        Args:
+            tracker: The DialogueStateTracker containing the current conversation state.
+            prompt_name: A name identifying prompt usage.
+            user_prompt: The user prompt that was sent to the LLM.
+            llm_response: The response object from the LLM (None if no response).
+        """
+        from rasa.dialogue_understanding.utils import record_commands_and_prompts
+
+        if not record_commands_and_prompts:
+            return
+
+        if not tracker.latest_message:
+            return
+
+        parse_data = tracker.latest_message.parse_data
+        if PROMPTS not in parse_data:
+            parse_data[PROMPTS] = []  # type: ignore[literal-required]
+
+        prompt_data: Dict[Text, Any] = {
+            KEY_COMPONENT_NAME: cls.__name__,
+            KEY_PROMPT_NAME: prompt_name,
+            KEY_USER_PROMPT: user_prompt,
+            KEY_LLM_RESPONSE_METADATA: llm_response.to_dict() if llm_response else None,
+        }
+
+        parse_data[PROMPTS].append(prompt_data)  # type: ignore[literal-required]
 
     def train(  # type: ignore[override]
         self,
@@ -500,13 +545,27 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
 
         if self.use_llm:
             prompt = self._render_prompt(tracker, documents.results)
-            llm_answer = await self._generate_llm_answer(llm, prompt)
+            llm_response = await self._generate_llm_answer(llm, prompt)
+            llm_response = LLMResponse.ensure_llm_response(llm_response)
 
-            if self.citation_enabled:
-                llm_answer = self.post_process_citations(llm_answer)
+            self._add_prompt_and_llm_response_to_latest_message(
+                tracker=tracker,
+                prompt_name="enterprise_search_prompt",
+                user_prompt=prompt,
+                llm_response=llm_response,
+            )
 
-            logger.debug(f"{logger_key}.llm_answer", llm_answer=llm_answer)
-            response = llm_answer
+            if llm_response is None or not llm_response.choices:
+                logger.debug(f"{logger_key}.no_llm_response")
+                response = None
+            else:
+                llm_answer = llm_response.choices[0]
+
+                if self.citation_enabled:
+                    llm_answer = self.post_process_citations(llm_answer)
+
+                logger.debug(f"{logger_key}.llm_answer", llm_answer=llm_answer)
+                response = llm_answer
         else:
             response = documents.results[0].metadata.get("answer", None)
             if not response:
@@ -518,7 +577,6 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                 "enterprise_search_policy.predict_action_probabilities.no_llm",
                 search_results=documents,
             )
-
         if response is None:
             return self._create_prediction_internal_error(domain, tracker)
 
@@ -583,10 +641,18 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
 
     async def _generate_llm_answer(
         self, llm: LLMClient, prompt: Text
-    ) -> Optional[Text]:
+    ) -> Optional[LLMResponse]:
+        """Fetches an LLM completion for the provided prompt.
+
+        Args:
+            llm: The LLM client used to get the completion.
+            prompt: The prompt text to send to the model.
+
+        Returns:
+            An LLMResponse object, or None if the call fails.
+        """
         try:
-            llm_response = await llm.acompletion(prompt)
-            llm_answer = llm_response.choices[0]
+            return await llm.acompletion(prompt)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
@@ -594,9 +660,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                 "enterprise_search_policy._generate_llm_answer.llm_error",
                 error=e,
             )
-            llm_answer = None
-
-        return llm_answer
+            return None
 
     def _create_prediction(
         self,
@@ -694,7 +758,6 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         **kwargs: Any,
     ) -> "EnterpriseSearchPolicy":
         """Loads a trained policy (see parent class for full docstring)."""
-
         # Perform health checks for both LLM and embeddings client configs
         cls._perform_health_checks(config, "enterprise_search_policy.load")
 

@@ -16,7 +16,7 @@ structlogger = structlog.get_logger()
 
 
 class RasaLLMClient(_BaseLiteLLMClient):
-    """A client for interfacing with a Rasa-Hosted LLM endpoint that uses
+    """A client for interfacing with a Rasa-Hosted LLM endpoint that uses.
 
     Parameters:
         model (str): The model or deployment name.
@@ -49,15 +49,12 @@ class RasaLLMClient(_BaseLiteLLMClient):
 
     @property
     def api_base(self) -> Optional[str]:
-        """
-        Returns the base API URL for the openai llm client.
-        """
+        """Returns the base API URL for the openai llm client."""
         return self._api_base
 
     @property
     def provider(self) -> str:
-        """
-        Returns the provider name for the self hosted llm client.
+        """Returns the provider name for the self hosted llm client.
 
         Returns:
             String representing the provider name.
@@ -82,9 +79,7 @@ class RasaLLMClient(_BaseLiteLLMClient):
 
     @property
     def _completion_fn_args(self) -> Dict[str, Any]:
-        """Returns the completion arguments for invoking a call through
-        LiteLLM's completion functions.
-        """
+        """Returns the completion arguments for invoking a call using completions."""
         fn_args = super()._completion_fn_args
         fn_args.update(
             {"api_base": self.api_base, "api_key": retrieve_license_from_env()}

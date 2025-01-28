@@ -58,7 +58,12 @@ from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
-from rasa.shared.nlu.constants import KEY_USER_PROMPT, PREDICTED_COMMANDS, PROMPTS
+from rasa.shared.nlu.constants import (
+    KEY_COMPONENT_NAME,
+    KEY_USER_PROMPT,
+    PREDICTED_COMMANDS,
+    PROMPTS,
+)
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from tests.utilities import (
@@ -174,6 +179,7 @@ class TestMultiStepLLMCommandGenerator:
         self,
         mock_llm_factory: Mock,
         command_generator: MultiStepLLMCommandGenerator,
+        llm_response_object: LLMResponse,
     ):
         """Test predict_commands_for_handling_flows calls llm correctly."""
         # Given
@@ -184,9 +190,11 @@ class TestMultiStepLLMCommandGenerator:
             "temperature": 0.0,
             "max_tokens": 256,
         }
-        mock_llm = AsyncMock()
-        mock_llm.apredict = AsyncMock(return_value="StartFlow(test_flow)")
-        mock_llm_factory.return_value = mock_llm
+
+        mock_llm_client = AsyncMock()
+        llm_response_object.choices = ["StartFlow(test_flow)"]
+        mock_llm_client.acompletion.return_value = llm_response_object
+        mock_llm_factory.return_value = mock_llm_client
 
         # When
         await command_generator._predict_commands_for_handling_flows(
@@ -209,14 +217,12 @@ class TestMultiStepLLMCommandGenerator:
         self,
         mock_llm_factory: Mock,
         command_generator: MultiStepLLMCommandGenerator,
+        llm_response_object: LLMResponse,
     ):
-        """Test predict_commands_for_handling_flows calls llm correctly."""
-        llm_mock = Mock()
-        predict_mock = AsyncMock()
-        llm_mock.acompletion = predict_mock
-        mock_llm_factory.return_value = llm_mock
-        llm_mock.apredict.return_value = "some value"
-        # When
+        mock_llm = AsyncMock()
+        mock_llm.acompletion.return_value = llm_response_object
+        mock_llm_factory.return_value = mock_llm
+
         await command_generator._predict_commands_for_handling_flows(
             Message(),
             DialogueStateTracker.from_events(
@@ -227,8 +233,8 @@ class TestMultiStepLLMCommandGenerator:
             FlowsList(underlying_flows=[]),
         )
         # Then
-        predict_mock.assert_called_once()
-        args, _ = predict_mock.call_args
+        mock_llm.acompletion.assert_called_once()
+        args, _ = mock_llm.acompletion.call_args
         assert args[0].startswith("Your task is to analyze the current")
 
     ### Test fingerprint
@@ -1341,6 +1347,7 @@ class TestMultiStepLLMCommandGenerator:
         command_generator: MultiStepLLMCommandGenerator,
         flows: FlowsList,
         tracker: DialogueStateTracker,
+        llm_response_object: LLMResponse,
     ):
         """Test that predict_commands sets the routing slot to True."""
         message = Message.build(text="start test_flow")
@@ -1348,9 +1355,8 @@ class TestMultiStepLLMCommandGenerator:
         # Given
         with set_record_commands_and_prompts():
             llm_mock = AsyncMock()
-            llm_mock.acompletion.return_value = AsyncMock(
-                spec=LLMResponse, choices=["StartFlow(test_flow)"]
-            )
+            llm_response_object.choices = ["StartFlow(test_flow)"]
+            llm_mock.acompletion.return_value = llm_response_object
             mock_llm_factory.return_value = llm_mock
 
             mock_filter_flows.return_value = flows
@@ -1363,11 +1369,10 @@ class TestMultiStepLLMCommandGenerator:
             )
 
         # Then
-        assert message.get(PROMPTS) is not None
-        assert MultiStepLLMCommandGenerator.__name__ in message.get(PROMPTS)
-        assert message.get(PROMPTS)[MultiStepLLMCommandGenerator.__name__][0][1][
-            KEY_USER_PROMPT
-        ].startswith(
+        prompts = message.get(PROMPTS)
+        assert prompts is not None
+        assert prompts[0][KEY_COMPONENT_NAME] == MultiStepLLMCommandGenerator.__name__
+        assert prompts[0][KEY_USER_PROMPT].startswith(
             "Your task is to analyze the current situation and to start and/or end "
             "business processes that we call flows"
         )

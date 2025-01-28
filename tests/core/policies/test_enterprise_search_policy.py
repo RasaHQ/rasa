@@ -32,6 +32,7 @@ from rasa.dialogue_understanding.stack.frames import (
     SearchStackFrame,
     UserFlowStackFrame,
 )
+from rasa.dialogue_understanding.utils import set_record_commands_and_prompts
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -46,6 +47,14 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, BotUttered, UserUttered
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.nlu.constants import (
+    KEY_COMPONENT_NAME,
+    KEY_LLM_RESPONSE_METADATA,
+    KEY_PROMPT_NAME,
+    KEY_USER_PROMPT,
+    PROMPTS,
+)
+from rasa.shared.providers.llm.llm_response import LLMResponse
 
 
 @pytest.fixture
@@ -1108,6 +1117,7 @@ async def test_enterprise_search_policy_response_with_use_llm_true(
     enterprise_search_tracker: DialogueStateTracker,
     search_results: SearchResultList,
     monkeypatch: MonkeyPatch,
+    llm_response_object: LLMResponse,
 ) -> None:
     """Given the `USE_LLM_PROPERTY` is set to True, the policy should return
     a response using the LLM. Response text should be from the LLM.
@@ -1133,10 +1143,11 @@ async def test_enterprise_search_policy_response_with_use_llm_true(
         ):
             # mock self._generate_llm_answer(llm, prompt) to
             # return LLM generated response
+            llm_response_object.choices = ["LLM generated response"]
             with patch.object(
                 policy,
                 "_generate_llm_answer",
-                return_value="LLM generated response",
+                return_value=llm_response_object,
             ):
                 prediction = await policy.predict_action_probabilities(
                     tracker=enterprise_search_tracker,
@@ -1493,3 +1504,85 @@ async def test_enterprise_search_policy_fingerprint_addon_with_different_model_c
         assert fingerprint_1 != fingerprint_2
     else:
         assert fingerprint_1 == fingerprint_2
+
+
+def test_add_prompt_and_llm_response_to_latest_message_with_llm_response(
+    llm_response_object: LLMResponse,
+):
+    tracker = DialogueStateTracker("default", slots={})
+    tracker.update(UserUttered("Hello"))
+    prompt_name = "test_prompt"
+    user_prompt = "What is the weather like?"
+
+    with set_record_commands_and_prompts():
+        EnterpriseSearchPolicy._add_prompt_and_llm_response_to_latest_message(
+            tracker, prompt_name, user_prompt, llm_response_object
+        )
+
+    parse_data = tracker.latest_message.parse_data
+    assert parse_data[PROMPTS] == [
+        {
+            KEY_COMPONENT_NAME: EnterpriseSearchPolicy.__name__,
+            KEY_PROMPT_NAME: prompt_name,
+            KEY_USER_PROMPT: user_prompt,
+            KEY_LLM_RESPONSE_METADATA: llm_response_object.to_dict(),
+        },
+    ]
+
+
+def test_add_prompt_and_llm_response_to_latest_message_without_llm_response():
+    tracker = DialogueStateTracker("default", slots={})
+    tracker.update(UserUttered("Hello"))
+    prompt_name = "test_prompt"
+    user_prompt = "What is the weather like?"
+
+    with set_record_commands_and_prompts():
+        EnterpriseSearchPolicy._add_prompt_and_llm_response_to_latest_message(
+            tracker, prompt_name, user_prompt
+        )
+
+    parse_data = tracker.latest_message.parse_data
+    assert parse_data[PROMPTS] == [
+        {
+            KEY_COMPONENT_NAME: EnterpriseSearchPolicy.__name__,
+            KEY_PROMPT_NAME: prompt_name,
+            KEY_USER_PROMPT: user_prompt,
+            KEY_LLM_RESPONSE_METADATA: None,
+        }
+    ]
+
+
+def test_add_prompt_and_llm_response_to_latest_message_existing_prompts():
+    tracker = DialogueStateTracker("default", slots={})
+    tracker.update(UserUttered("Hello"))
+    tracker.latest_message.parse_data = {
+        PROMPTS: [
+            {
+                KEY_COMPONENT_NAME: EnterpriseSearchPolicy.__name__,
+                KEY_PROMPT_NAME: "existing_prompt",
+                KEY_USER_PROMPT: "Existing prompt",
+            }
+        ]
+    }
+    prompt_name = "test_prompt"
+    user_prompt = "What is the weather like?"
+
+    with set_record_commands_and_prompts():
+        EnterpriseSearchPolicy._add_prompt_and_llm_response_to_latest_message(
+            tracker, prompt_name, user_prompt
+        )
+
+    parse_data = tracker.latest_message.parse_data
+    assert parse_data[PROMPTS] == [
+        {
+            KEY_COMPONENT_NAME: EnterpriseSearchPolicy.__name__,
+            KEY_PROMPT_NAME: "existing_prompt",
+            KEY_USER_PROMPT: "Existing prompt",
+        },
+        {
+            KEY_COMPONENT_NAME: EnterpriseSearchPolicy.__name__,
+            KEY_PROMPT_NAME: prompt_name,
+            KEY_USER_PROMPT: user_prompt,
+            KEY_LLM_RESPONSE_METADATA: None,
+        },
+    ]

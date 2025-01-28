@@ -8,6 +8,9 @@ from typing import List
 import structlog
 
 from rasa.__main__ import main
+from rasa.dialogue_understanding.constants import (
+    RASA_RECORD_COMMANDS_AND_PROMPTS_ENV_VAR_NAME,
+)
 from rasa.model_manager import config
 from rasa.model_manager.utils import ensure_base_directory_exists, logs_path
 
@@ -44,6 +47,7 @@ def _create_warm_rasa_process() -> WarmRasaProcess:
 
     envs = os.environ.copy()
     envs["RASA_TELEMETRY_ENABLED"] = "false"
+    envs[RASA_RECORD_COMMANDS_AND_PROMPTS_ENV_VAR_NAME] = "true"
 
     log_id = uuid.uuid4().hex
     log_path = logs_path(log_id)

@@ -16,6 +16,7 @@ from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtract
 from rasa.dialogue_understanding.processor.command_processor import CANNOT_HANDLE_REASON
 from rasa.shared.core.events import BotUttered, SlotSet
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import TrainedAsync
 
@@ -215,6 +216,7 @@ async def test_processor_handle_message_calm_slots_custom_action_invalid(
     capsys: CaptureFixture,
     mock_llm_based_router_generate_answer_CALM: AsyncMock,
     mock_filter_flows: AsyncMock,
+    llm_response_object: LLMResponse,
 ) -> None:
     """Test that custom slot mappings are validated correctly.
 
@@ -233,7 +235,8 @@ async def test_processor_handle_message_calm_slots_custom_action_invalid(
     )
 
     async def mock_invoke_llm(*args, **kwargs):
-        return "StartFlow(authenticate_user)"
+        llm_response_object.choices = ["StartFlow(authenticate_user)"]
+        return llm_response_object
 
     monkeypatch.setattr(
         "rasa.dialogue_understanding.generator.llm_command_generator.LLMCommandGenerator.invoke_llm",
@@ -339,6 +342,7 @@ async def test_processor_handle_message_calm_cannot_handle_command(
     capsys: CaptureFixture,
     mock_llm_based_router_generate_answer_CALM: AsyncMock,
     mock_filter_flows: AsyncMock,
+    llm_response_object: LLMResponse,
 ):
     """Test the skipping mechanism for SetSlot commands from LLM command generators.
 
@@ -356,7 +360,8 @@ async def test_processor_handle_message_calm_cannot_handle_command(
     )
 
     async def mock_invoke_llm(*args, **kwargs):
-        return "SetSlot(payment_option, credit card)"
+        llm_response_object.choices = ["SetSlot(payment_option, credit card)"]
+        return llm_response_object
 
     monkeypatch.setattr(
         "rasa.dialogue_understanding.generator.llm_command_generator.LLMCommandGenerator.invoke_llm",

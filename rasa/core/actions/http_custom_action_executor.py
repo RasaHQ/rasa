@@ -94,6 +94,13 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
                 )
                 logger.error(exception.message)
                 raise exception
+            elif e.status == 404:
+                message = (
+                    f"Custom action implementation with name '{self.action_name}' "
+                    f"not found."
+                )
+                logger.error(message)
+                raise RasaException(message) from e
             else:
                 raise RasaException(
                     f"Failed to execute custom action '{self.action_name}'"

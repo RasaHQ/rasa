@@ -32,6 +32,7 @@ from rasa.core.channels.vier_cvg import CVGInput
 from rasa.core.channels.voice_stream.twilio_media_streams import (
     TwilioMediaStreamsInputChannel,
 )
+from rasa.core.channels.studio_chat import StudioChatInput
 
 input_channel_classes: List[Type[InputChannel]] = [
     CmdlineInput,
@@ -54,6 +55,7 @@ input_channel_classes: List[Type[InputChannel]] = [
     JambonzVoiceReadyInput,
     TwilioMediaStreamsInputChannel,
     BrowserAudioInputChannel,
+    StudioChatInput,
 ]
 
 # Mapping from an input channel name to its class to allow name based lookup.

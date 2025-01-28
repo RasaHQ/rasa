@@ -106,3 +106,5 @@ swagger-coverage-results.json
 swagger-doc*
 working-data
 __pycache__/
+
+.codegpt

@@ -14,6 +14,9 @@ from rasa.dialogue_understanding.utils import (
     set_record_commands_and_prompts,
 )
 from rasa.shared.nlu.constants import (
+    KEY_COMPONENT_NAME,
+    KEY_LLM_RESPONSE_METADATA,
+    KEY_PROMPT_NAME,
     KEY_SYSTEM_PROMPT,
     KEY_USER_PROMPT,
     PREDICTED_COMMANDS,
@@ -21,6 +24,7 @@ from rasa.shared.nlu.constants import (
     TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.providers.llm.llm_response import LLMResponse
 
 
 @pytest.mark.parametrize(
@@ -72,64 +76,86 @@ def test_add_commands_to_message_parse_data(
     "current_prompts, component_name, system_prompt, expected_prompts",
     [
         (
-            {
-                MultiStepLLMCommandGenerator.__name__: [
-                    (
-                        "prompt_template",
-                        {
-                            KEY_USER_PROMPT: "prompt content",
-                            KEY_SYSTEM_PROMPT: "system prompt",
-                        },
-                    )
-                ]
-            },
+            [
+                {
+                    KEY_COMPONENT_NAME: MultiStepLLMCommandGenerator.__name__,
+                    KEY_PROMPT_NAME: "prompt_template",
+                    KEY_USER_PROMPT: "prompt content",
+                    KEY_SYSTEM_PROMPT: "system prompt",
+                    KEY_LLM_RESPONSE_METADATA: LLMResponse(
+                        id="mock-id", choices=["some message"], created=123456
+                    ).to_dict(),
+                },
+            ],
             MultiStepLLMCommandGenerator.__name__,
             None,
-            {
-                MultiStepLLMCommandGenerator.__name__: [
-                    (
-                        "prompt_template",
-                        {
-                            KEY_USER_PROMPT: "prompt content",
-                            KEY_SYSTEM_PROMPT: "system prompt",
-                        },
-                    ),
-                    ("prompt name", {KEY_USER_PROMPT: "test prompt"}),
-                ]
-            },
+            [
+                {
+                    KEY_COMPONENT_NAME: MultiStepLLMCommandGenerator.__name__,
+                    KEY_PROMPT_NAME: "prompt_template",
+                    KEY_USER_PROMPT: "prompt content",
+                    KEY_SYSTEM_PROMPT: "system prompt",
+                    KEY_LLM_RESPONSE_METADATA: LLMResponse(
+                        id="mock-id", choices=["some message"], created=123456
+                    ).to_dict(),
+                },
+                {
+                    KEY_COMPONENT_NAME: MultiStepLLMCommandGenerator.__name__,
+                    KEY_PROMPT_NAME: "prompt name",
+                    KEY_USER_PROMPT: "test prompt",
+                    KEY_LLM_RESPONSE_METADATA: LLMResponse(
+                        id="mock-id", choices=["some message"], created=123456
+                    ).to_dict(),
+                },
+            ],
         ),
         (
             None,
             SingleStepLLMCommandGenerator.__name__,
             "system prompt content",
-            {
-                SingleStepLLMCommandGenerator.__name__: [
-                    (
-                        "prompt name",
-                        {
-                            KEY_USER_PROMPT: "test prompt",
-                            KEY_SYSTEM_PROMPT: "system prompt content",
-                        },
-                    )
-                ]
-            },
+            [
+                {
+                    KEY_COMPONENT_NAME: SingleStepLLMCommandGenerator.__name__,
+                    KEY_PROMPT_NAME: "prompt name",
+                    KEY_USER_PROMPT: "test prompt",
+                    KEY_SYSTEM_PROMPT: "system prompt content",
+                    KEY_LLM_RESPONSE_METADATA: LLMResponse(
+                        id="mock-id", choices=["some message"], created=123456
+                    ).to_dict(),
+                },
+            ],
         ),
         (
-            {
-                SingleStepLLMCommandGenerator.__name__: [
-                    ("prompt_template", {KEY_USER_PROMPT: "prompt content"})
-                ]
-            },
+            [
+                {
+                    KEY_COMPONENT_NAME: SingleStepLLMCommandGenerator.__name__,
+                    KEY_PROMPT_NAME: "prompt_template",
+                    KEY_USER_PROMPT: "prompt content",
+                    KEY_LLM_RESPONSE_METADATA: LLMResponse(
+                        id="mock-id", choices=["some message"], created=123456
+                    ).to_dict(),
+                },
+            ],
             MultiStepLLMCommandGenerator.__name__,
             None,
-            {
-                MultiStepLLMCommandGenerator.__name__: [
-                    ("prompt name", {KEY_USER_PROMPT: "test prompt"})
-                ],
-                SingleStepLLMCommandGenerator.__name__: [
-                    ("prompt_template", {KEY_USER_PROMPT: "prompt content"})
-                ],
-            },
+            [
+                {
+                    KEY_COMPONENT_NAME: SingleStepLLMCommandGenerator.__name__,
+                    KEY_PROMPT_NAME: "prompt_template",
+                    KEY_USER_PROMPT: "prompt content",
+                    KEY_LLM_RESPONSE_METADATA: LLMResponse(
+                        id="mock-id", choices=["some message"], created=123456
+                    ).to_dict(),
+                },
+                {
+                    KEY_COMPONENT_NAME: MultiStepLLMCommandGenerator.__name__,
+                    KEY_PROMPT_NAME: "prompt name",
+                    KEY_USER_PROMPT: "test prompt",
+                    KEY_LLM_RESPONSE_METADATA: LLMResponse(
+                        id="mock-id", choices=["some message"], created=123456
+                    ).to_dict(),
+                },
+            ],
         ),
     ],
 )
@@ -143,11 +169,17 @@ def test_add_prompt_to_message_parse_data(
     message = Message(data={TEXT: "some message", PROMPTS: current_prompts})
     user_prompt = "test prompt"
     prompt_name = "prompt name"
+    llm_response = LLMResponse(id="mock-id", choices=["some message"], created=123456)
 
     # When
     with set_record_commands_and_prompts():
         add_prompt_to_message_parse_data(
-            message, component_name, prompt_name, user_prompt, system_prompt
+            message,
+            component_name,
+            prompt_name,
+            user_prompt,
+            system_prompt,
+            llm_response,
         )
 
     # Then
