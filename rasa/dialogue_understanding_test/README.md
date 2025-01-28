@@ -36,6 +36,9 @@ precision, recall, and f1-score for all commands.
 
 ## Running Dialogue Understanding Tests
 
+Dialogue Understanding Tests are hidden behind a feature flag. To enable the feature, set the
+environment variable `RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST` to `true`.
+
 To run Dialogue Understanding Tests, execute the following command:
 
 ```bash

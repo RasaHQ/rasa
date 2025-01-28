@@ -249,9 +249,11 @@ class DialogueUnderstandingTestRunner:
         # convert the predicted commands to Command objects
         commands = {}
         for component, list_of_commands in predicted_commands.items():
-            commands[component] = [
-                Command.command_from_json(command) for command in list_of_commands
-            ]
+            commands[component] = list(
+                set(
+                    [Command.command_from_json(command) for command in list_of_commands]
+                )
+            )
 
         return DialogueUnderstandingOutput(
             commands=commands,
