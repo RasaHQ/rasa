@@ -100,8 +100,8 @@ jobs:
     with:
       provider: ${{ inputs.provider }}
       rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch }}
-      single-step-tests: ${{ inputs.single-step-e2e-test-with-assertions }}
-      multi-step-tests: ${{ inputs.multi-step-e2e-test-with-assertions }}
+      single-step-e2e-test-with-assertions: ${{ inputs.single-step-e2e-test-with-assertions }}
+      multi-step-e2e-test-with-assertions: ${{ inputs.multi-step-e2e-test-with-assertions }}
       command-generator: ${{ inputs.command-generator }}
       llm-as-judge-model: ${{ inputs.llm-as-judge-model }}
 
