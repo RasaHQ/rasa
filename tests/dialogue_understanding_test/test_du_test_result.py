@@ -15,14 +15,23 @@ from rasa.dialogue_understanding_test.du_test_result import (
     FailedTestStep,
     get_command_comparison,
 )
+from rasa.shared.nlu.constants import (
+    KEY_COMPONENT_NAME,
+    KEY_PROMPT_NAME,
+    KEY_USER_PROMPT,
+)
 
 
 @pytest.fixture
 def sample_output() -> DialogueUnderstandingOutput:
     return DialogueUnderstandingOutput(
-        prompts={
-            "component1": [("system1", {"user_prompt": "user1"})],
-        },
+        prompts=[
+            {
+                KEY_COMPONENT_NAME: "component1",
+                KEY_USER_PROMPT: "prompt_content",
+                KEY_PROMPT_NAME: "prompt_name",
+            }
+        ],
         commands={
             "component1": [StartFlowCommand("bar")],
         },
@@ -292,9 +301,13 @@ class TestDialogueUnderstandingTestSuiteResult:
                     ],
                     "component2": [StartFlowCommand("foo")],
                 },
-                prompts={
-                    "component1": [("system1", {"user_prompt": "user1"})],
-                },
+                prompts=[
+                    {
+                        KEY_COMPONENT_NAME: "component1",
+                        KEY_USER_PROMPT: "prompt_content",
+                        KEY_PROMPT_NAME: "prompt_name",
+                    }
+                ],
             ),
         )
 

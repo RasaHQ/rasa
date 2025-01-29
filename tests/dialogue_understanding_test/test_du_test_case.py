@@ -17,7 +17,11 @@ from rasa.dialogue_understanding_test.du_test_case import (
     DialogueUnderstandingTestStep,
 )
 from rasa.shared.core.flows import Flow, FlowsList
-from rasa.shared.nlu.constants import KEY_USER_PROMPT
+from rasa.shared.nlu.constants import (
+    KEY_COMPONENT_NAME,
+    KEY_PROMPT_NAME,
+    KEY_USER_PROMPT,
+)
 
 
 @pytest.fixture
@@ -27,9 +31,13 @@ def sample_output() -> DialogueUnderstandingOutput:
             "component1": [SetSlotCommand("bar", "baz"), SetSlotCommand("foo", "bar")],
             "component2": [StartFlowCommand("foo")],
         },
-        prompts={
-            "component1": [("system1", {"user_prompt": "user1"})],
-        },
+        prompts=[
+            {
+                KEY_COMPONENT_NAME: "component1",
+                KEY_USER_PROMPT: "prompt_content",
+                KEY_PROMPT_NAME: "prompt_name",
+            }
+        ],
     )
 
 
@@ -45,7 +53,6 @@ def sample_test_step(
         metadata_name=None,
         commands=[StartFlowCommand("bar")],
         dialogue_understanding_output=sample_output,
-        index_user_message=0,
     )
 
 
@@ -66,7 +73,6 @@ def sample_correct_user_step(
         metadata_name=None,
         commands=commands,
         dialogue_understanding_output=sample_output,
-        index_user_message=0,
     )
 
 
@@ -143,25 +149,21 @@ class TestDialogueUnderstandingOutput:
 
     def test_get_component_name_to_prompts(self):
         output = DialogueUnderstandingOutput(
-            commands={},
-            prompts={
-                "componentA": [
-                    (
-                        "promptA",
-                        {
-                            KEY_USER_PROMPT: "User prompt content A",
-                            "system_prompt": "SystemA",
-                        },
-                    ),
-                    (
-                        "promptB",
-                        {
-                            KEY_USER_PROMPT: "User prompt content B",
-                            "system_prompt": "SystemB",
-                        },
-                    ),
-                ]
+            commands={
+                "componentA": [SetSlotCommand("slotA", "valA")],
             },
+            prompts=[
+                {
+                    KEY_COMPONENT_NAME: "componentA",
+                    KEY_PROMPT_NAME: "promptA",
+                    KEY_USER_PROMPT: "User prompt content A",
+                },
+                {
+                    KEY_COMPONENT_NAME: "componentA",
+                    KEY_PROMPT_NAME: "promptB",
+                    KEY_USER_PROMPT: "User prompt content B",
+                },
+            ],
         )
         result = output.get_component_name_to_user_prompts()
         assert list(result.keys()) == ["componentA"]

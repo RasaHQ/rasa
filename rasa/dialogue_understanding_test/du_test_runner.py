@@ -249,6 +249,7 @@ class DialogueUnderstandingTestRunner:
         # convert the predicted commands to Command objects
         commands = {}
         for component, list_of_commands in predicted_commands.items():
+            # remove any duplicate commands
             commands[component] = list(
                 set(
                     [Command.command_from_json(command) for command in list_of_commands]
@@ -257,7 +258,7 @@ class DialogueUnderstandingTestRunner:
 
         return DialogueUnderstandingOutput(
             commands=commands,
-            prompts=user_uttered_event.parse_data.get(PROMPTS, {}),
+            prompts=user_uttered_event.parse_data.get(PROMPTS, []),
         )
 
     @staticmethod

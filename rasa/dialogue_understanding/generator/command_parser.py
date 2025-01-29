@@ -43,8 +43,7 @@ def _get_compiled_pattern(pattern_str: str) -> re.Pattern:
 def _create_default_commands(
     default_commands_to_remove: Union[List[Type[Command]], List[str]],
 ) -> List[Type[Command]]:
-    """
-    Return an updated list of default commands after removing the provided commands.
+    """Return an updated list of default commands after removing the provided commands.
 
     Args:
         default_commands_to_remove: A list of commands to remove from the default
@@ -105,11 +104,13 @@ def parse_commands(
             ):
                 break
         commands.extend(
-            _parse_standard_commands(default_commands, action, flows, **kwargs)
+            _parse_standard_commands(default_commands, action.strip(), flows, **kwargs)
         )
         if additional_commands:
             commands.extend(
-                _parse_custom_commands(additional_commands, action, flows, **kwargs)
+                _parse_custom_commands(
+                    additional_commands, action.strip(), flows, **kwargs
+                )
             )
     return commands
 

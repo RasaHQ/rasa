@@ -54,11 +54,12 @@ class FailedTestStep(BaseModel):
         user_utterance = step.text or ""
         line_number = step.line or -1
 
-        predicted_cmds: Dict[str, List[Command]] = {}
+        predicted_commands: Dict[str, List[Command]] = {}
         prompts: Optional[Dict[str, Any]] = None
-        command_generators: Optional[List[str]] = None
+        command_generators: List[str] = []
+
         if step.dialogue_understanding_output:
-            predicted_cmds = step.dialogue_understanding_output.commands
+            predicted_commands = step.dialogue_understanding_output.commands
             command_generators = step.dialogue_understanding_output.get_component_names_that_predicted_commands()  # noqa: E501
             prompts = (
                 step.dialogue_understanding_output.get_component_name_to_user_prompts()
@@ -79,7 +80,7 @@ class FailedTestStep(BaseModel):
             command_generators=command_generators,
             prompt=prompts,
             expected_commands=step.commands or [],
-            predicted_commands=predicted_cmds,
+            predicted_commands=predicted_commands,
             conversation_with_diff=conversation_with_diff,
         )
 

@@ -18,7 +18,13 @@ from rasa.dialogue_understanding_test.du_test_runner import (
 )
 from rasa.shared.core.events import BotUttered, Event, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.constants import PREDICTED_COMMANDS, PROMPTS
+from rasa.shared.nlu.constants import (
+    KEY_COMPONENT_NAME,
+    KEY_PROMPT_NAME,
+    KEY_USER_PROMPT,
+    PREDICTED_COMMANDS,
+    PROMPTS,
+)
 from tests.core.test_auth_retry_tracker_store import AsyncMock
 
 
@@ -82,24 +88,13 @@ def test_get_dialogue_understanding_output_with_user_uttered_events(
             StartFlowCommand("test_flow").as_dict(),
         ],
     }
-    prompts = {
-        "MultiStepLLMCommandGenerator": [
-            (
-                "fill_slots_prompt",
-                {
-                    "user_prompt": "<prompt content>",
-                    "system_prompt": "<prompt content>",
-                },
-            ),
-            (
-                "handle_flows_prompt",
-                {
-                    "user_prompt": "<prompt content>",
-                    "system_prompt": "<prompt content>",
-                },
-            ),
-        ],
-    }
+    prompts = [
+        {
+            KEY_COMPONENT_NAME: "component1",
+            KEY_USER_PROMPT: "prompt_content",
+            KEY_PROMPT_NAME: "prompt_name",
+        }
+    ]
 
     user_uttered_event = UserUttered(
         text="hi",

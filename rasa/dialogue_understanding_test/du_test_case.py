@@ -18,7 +18,11 @@ from rasa.dialogue_understanding_test.constants import (
     KEY_USER_INPUT,
 )
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.nlu.constants import KEY_USER_PROMPT
+from rasa.shared.nlu.constants import (
+    KEY_COMPONENT_NAME,
+    KEY_PROMPT_NAME,
+    KEY_USER_PROMPT,
+)
 
 
 class DialogueUnderstandingOutput(BaseModel):
@@ -35,31 +39,28 @@ class DialogueUnderstandingOutput(BaseModel):
         }
 
     Example of prompts:
-        {
-            "MultiStepLLMCommandGenerator": [
-                (
-                    "fill_slots_prompt",
-                    {
-                        "user_prompt": "<prompt content>",
-                        "system_prompt": "<prompt content>"
-                    }
-                ),
-                (
-                    "handle_flows_prompt",
-                    {
-                        "user_prompt": "<prompt content>",
-                        "system_prompt": "<prompt content>"
-                    }
-                ),
-            ],
-        }
+        [
+            {
+                "component_name": "MultiStepLLMCommandGenerator",
+                "prompt_name": "fill_slots_prompt",
+                "user_prompt": "...",
+                "system_prompt": "...",
+                "llm_response_metadata": { ... }
+            },
+            {
+                "component_name": "MultiStepLLMCommandGenerator",
+                "prompt_name": "handle_flows_prompt",
+                "user_prompt": "...",
+                "system_prompt": "...",
+                "llm_response_metadata": { ... }
+            },
+        ]
     """
 
     # Dict with component name as key and list of commands as value
     commands: Dict[str, List[Command]]
-    # Dict with component name as key and tuple with prompt name and
-    # prompts as value (user and system)
-    prompts: Optional[Dict[str, List[tuple[str, Dict[str, str]]]]] = None
+    # List of prompts
+    prompts: Optional[List[Dict[str, Any]]] = None
 
     model_config = ConfigDict(frozen=True)
 
@@ -82,22 +83,29 @@ class DialogueUnderstandingOutput(BaseModel):
         ]
 
     def get_component_name_to_user_prompts(self) -> Dict[str, List[Tuple[str, str]]]:
-        """Return a dictionary of component names  to a list of prompts.
+        """Return a dictionary of component names to a list of prompts.
 
         The prompts are represented as tuples of (prompt_name, user_prompt).
         """
         if self.prompts is None:
             return {}
 
-        data = {}
-        for (
-            command_generator,
-            prompts,
-        ) in self.prompts.items():
-            data[command_generator] = [
-                (prompt_name, prompt_content[KEY_USER_PROMPT])
-                for prompt_name, prompt_content in prompts
-            ]
+        data: Dict[str, List[Tuple[str, str]]] = {}
+        relevant_component_names = self.get_component_names_that_predicted_commands()
+
+        for prompt_data in self.prompts:
+            component_name = prompt_data[KEY_COMPONENT_NAME]
+
+            if component_name not in relevant_component_names:
+                continue
+
+            prompt_name = prompt_data[KEY_PROMPT_NAME]
+            user_prompt = prompt_data[KEY_USER_PROMPT]
+
+            if component_name not in data:
+                data[component_name] = []
+            data[component_name].append((prompt_name, user_prompt))
+
         return data
 
 

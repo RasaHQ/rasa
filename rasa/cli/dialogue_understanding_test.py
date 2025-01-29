@@ -167,13 +167,20 @@ def add_du_test_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def ensure_calm_only_bot(agent: Agent) -> None:
-    if agent.domain is None:
+    if agent.domain is None or agent.processor is None:
         return
 
     if ROUTE_TO_CALM_SLOT in [slot.name for slot in agent.domain.slots]:
         rasa.shared.utils.cli.print_error(
             "You are using coexistence. Dialogue Understanding Tests do only work for "
             "CALM only assistants."
+        )
+        sys.exit(0)
+
+    if not agent.processor.is_calm_assistant:
+        rasa.shared.utils.cli.print_error(
+            "Dialogue Understanding Tests do only work for CALM assistants. "
+            "Your assistant does not use CALM."
         )
         sys.exit(0)
 
