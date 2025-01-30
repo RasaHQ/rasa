@@ -60,6 +60,8 @@ def _coexistence_used(agent: Agent) -> bool:
 
 def convert_e2e_tests_to_du_tests(args: argparse.Namespace) -> None:
     e2e_test_runner = set_up_e2e_test_runner(args)
+    # disable NLG
+    e2e_test_runner.agent.endpoints.nlg = None
 
     # read e2e test cases
     path_to_test_cases = getattr(args, "path_to_e2e_tests", DEFAULT_INPUT_E2E_TEST_PATH)
@@ -387,13 +389,14 @@ def _extract_commands(
     extracted_commands = turn.user_uttered_events[0].parse_data[PREDICTED_COMMANDS]
 
     # convert the extracted commands to Command objects
-    commands = [
+    commands = set(
         Command.command_from_json(command_data)
         for command_list in extracted_commands.values()
         for command_data in command_list
-    ]
+    )
 
-    return commands
+    # make sure that the commands are unique
+    return list(commands)
 
 
 def _parse_arguments():
