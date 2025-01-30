@@ -1,8 +1,8 @@
 import argparse
 import asyncio
 import logging
-import os
-from typing import List, Optional
+import os.path
+from typing import List, Optional, Tuple
 
 import structlog
 from mypy.binder import defaultdict
@@ -96,7 +96,11 @@ def convert_e2e_tests_to_du_tests(args: argparse.Namespace) -> None:
 
     # write dialogue understanding test cases to file
     _write_du_test_cases(
-        args.output_folder, e2e_test_suite, ready_du_test_cases, to_review_du_test_cases
+        args.output_folder,
+        path_to_test_cases,
+        e2e_test_suite,
+        ready_du_test_cases,
+        to_review_du_test_cases,
     )
 
     structlogger.info(
@@ -108,18 +112,41 @@ def convert_e2e_tests_to_du_tests(args: argparse.Namespace) -> None:
     )
 
 
+def _get_output_folder_and_file_name(
+    file_path: str, input_folder: str
+) -> Tuple[Optional[str], str]:
+    # if the input folder was referring to a file, the file_path and
+    # the input_folder are identical
+    if file_path == input_folder or os.path.isfile(file_path):
+        return None, os.path.basename(file_path)
+
+    # if the file path starts with the input folder, remove the input folder
+    if file_path.startswith(input_folder):
+        full_path = file_path[len(input_folder) + 1 :]
+        return os.path.dirname(full_path), os.path.basename(full_path)
+
+    return os.path.dirname(file_path), os.path.basename(file_path)
+
+
 def _write_du_test_cases(
     output_folder: str,
+    input_folder: str,
     e2e_test_suite: TestSuite,
     ready_du_test_cases: List[DialogueUnderstandingTestCase],
     to_review_du_test_cases: List[DialogueUnderstandingTestCase],
 ) -> None:
     _prepare_output_directory(output_folder)
     _write_du_test_cases_to_file(
-        f"{output_folder}/{READY_FOLDER}", e2e_test_suite, ready_du_test_cases
+        f"{output_folder}/{READY_FOLDER}",
+        input_folder,
+        e2e_test_suite,
+        ready_du_test_cases,
     )
     _write_du_test_cases_to_file(
-        f"{output_folder}/{TO_REVIEW_FOLDER}", e2e_test_suite, to_review_du_test_cases
+        f"{output_folder}/{TO_REVIEW_FOLDER}",
+        input_folder,
+        e2e_test_suite,
+        to_review_du_test_cases,
     )
 
 
@@ -131,6 +158,7 @@ def _prepare_output_directory(output_folder: str) -> None:
 
 def _write_du_test_cases_to_file(
     output_folder: str,
+    input_folder: str,
     e2e_test_suite: TestSuite,
     du_test_cases: List[DialogueUnderstandingTestCase],
 ):
@@ -152,10 +180,21 @@ def _write_du_test_cases_to_file(
         # remove empty fixtures, metadata and stub custom actions
         data = {k: v for k, v in data.items() if v}
 
-        write_yaml(
-            data,
-            f"{output_folder}/{os.path.basename(file)}",
+        output_folder_path, file_name = _get_output_folder_and_file_name(
+            file, input_folder
         )
+
+        if output_folder_path:
+            create_directory(f"{output_folder}/{output_folder_path}")
+            write_yaml(
+                data,
+                f"{output_folder}/{output_folder_path}/{file_name}",
+            )
+        else:
+            write_yaml(
+                data,
+                f"{output_folder}/{file_name}",
+            )
 
 
 def _filter_fixtures(

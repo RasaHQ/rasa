@@ -26,6 +26,7 @@ from scripts.convert_e2e_tests_to_du_tests import (
     _extract_commands,
     _filter_fixtures,
     _filter_metadata,
+    _get_output_folder_and_file_name,
     convert_test_case,
 )
 
@@ -361,3 +362,25 @@ def test_convert_to_bot_test_steps(
     actual_steps = _convert_to_bot_test_steps(turn)
 
     assert actual_steps == expected_steps
+
+
+@pytest.mark.parametrize(
+    "path, folder, expected",
+    [
+        ("e2e_tests/sub_folder/test.yml", "e2e_tests", ("sub_folder", "test.yml")),
+        (
+            "e2e_tests/sub_folder/another_folder/test.yml",
+            "e2e_tests",
+            ("sub_folder/another_folder", "test.yml"),
+        ),
+        ("e2e_tests/sub_folder/test.yml", "e2e_tests/sub_folder", ("", "test.yml")),
+        ("sub_folder/test.yml", "not_contained", ("sub_folder", "test.yml")),
+        (
+            "e2e_tests/sub_folder/test.yml",
+            "e2e_tests/sub_folder/test.yml",
+            (None, "test.yml"),
+        ),
+    ],
+)
+def test_get_output_folder_and_file_name(path: str, folder: str, expected: str):
+    assert _get_output_folder_and_file_name(path, folder) == expected
