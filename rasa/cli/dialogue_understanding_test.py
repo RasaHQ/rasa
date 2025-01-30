@@ -35,7 +35,6 @@ from rasa.dialogue_understanding_test.du_test_runner import (
     DialogueUnderstandingTestRunner,
 )
 from rasa.dialogue_understanding_test.io import (
-    print_test_results,
     read_test_suite,
     write_test_results_to_file,
 )
@@ -248,6 +247,12 @@ def execute_dialogue_understanding_tests(args: argparse.Namespace) -> None:
     test_suite_result = DialogueUnderstandingTestSuiteResult.from_results(
         failing_test_results, passing_test_results, command_metrics
     )
+
+    # Do not move this import to the top of the file as it will break the
+    # instrumentation of this function: the CLI module is initialized before the
+    # instrumentation is set up, and we won't be able to "replace" the function
+    # with the instrumented wrapper
+    from rasa.dialogue_understanding_test.io import print_test_results
 
     # write results to console and file
     print_test_results(test_suite_result, output_prompt=args.output_prompt)

@@ -84,6 +84,7 @@ COMMAND_PROCESSOR_MODULE_NAME = (
     "rasa.dialogue_understanding.processor.command_processor"
 )
 FLOW_EXECUTOR_MODULE_NAME = "rasa.core.policies.flows.flow_executor"
+DIALOG_UNDERSTANDING_TEST_IO_MODULE_NAME = "rasa.dialogue_understanding_test.io"
 
 
 def _check_extractor_argument_list(
@@ -151,7 +152,11 @@ def traceable(
         )
 
         module_name = attrs.pop("module_name", "")
-        if module_name in ["command_processor", FLOW_EXECUTOR_MODULE_NAME]:
+        if module_name in [
+            "command_processor",
+            FLOW_EXECUTOR_MODULE_NAME,
+            DIALOG_UNDERSTANDING_TEST_IO_MODULE_NAME,
+        ]:
             span_name = f"{module_name}.{fn.__name__}"
         else:
             span_name = f"{self.__class__.__name__}.{fn.__name__}"
@@ -583,6 +588,9 @@ def instrument(
     if not module_is_instrumented(FLOW_EXECUTOR_MODULE_NAME):
         _instrument_flow_executor_module(tracer_provider)
 
+    if not module_is_instrumented(DIALOG_UNDERSTANDING_TEST_IO_MODULE_NAME):
+        _instrument_dialog_understanding_test_io_module(tracer_provider)
+
     if policy_subclasses:
         for policy_subclass in policy_subclasses:
             if policy_subclass is not None and not class_is_instrumented(
@@ -972,6 +980,18 @@ def _instrument_flow_executor_module(tracer_provider: TracerProvider) -> None:
         attribute_extractors.extract_attrs_for_run_step,
     )
     mark_module_as_instrumented(FLOW_EXECUTOR_MODULE_NAME)
+
+
+def _instrument_dialog_understanding_test_io_module(
+    tracer_provider: TracerProvider,
+) -> None:
+    _instrument_function(
+        tracer_provider.get_tracer(DIALOG_UNDERSTANDING_TEST_IO_MODULE_NAME),
+        DIALOG_UNDERSTANDING_TEST_IO_MODULE_NAME,
+        "print_test_results",
+        attribute_extractors.extract_attrs_for_du_print_test_results,
+    )
+    mark_module_as_instrumented(DIALOG_UNDERSTANDING_TEST_IO_MODULE_NAME)
 
 
 def _instrument_advance_flows_until_next_action(

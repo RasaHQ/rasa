@@ -18,6 +18,16 @@ if typing.TYPE_CHECKING:
 KEY_TEST_CASES_ACCURACY = "test_cases"
 KEY_USER_UTTERANCES_ACCURACY = "user_utterances"
 
+OUTPUT_NUMBER_OF_FAILED_TESTS = "number_of_failed_tests"
+OUTPUT_NUMBER_OF_PASSED_TESTS = "number_of_passed_tests"
+OUTPUT_TEST_CASES_ACCURACY = "test_cases_accuracy"
+OUTPUT_USER_UTTERANCES_ACCURACY = "user_utterances_accuracy"
+OUTPUT_NUMBER_OF_PASSED_USER_UTTERANCES = "number_of_passed_user_utterances"
+OUTPUT_NUMBER_OF_FAILED_USER_UTTERANCES = "number_of_failed_user_utterances"
+OUTPUT_COMMAND_METRICS = "command_metrics"
+OUTPUT_NAMES_OF_FAILED_TESTS = "names_of_failed_tests"
+OUTPUT_NAMES_OF_PASSED_TESTS = "names_of_passed_tests"
+
 
 class DialogueUnderstandingTestResult(BaseModel):
     """Result of a single dialogue understanding test case."""
@@ -260,10 +270,10 @@ class DialogueUnderstandingTestSuiteResult:
                 "test_cases": self.accuracy[KEY_TEST_CASES_ACCURACY],
                 "user_utterances": self.accuracy[KEY_USER_UTTERANCES_ACCURACY],
             },
-            "number_of_passed_tests": self.number_of_passed_tests,
-            "number_of_failed_tests": self.number_of_failed_tests,
-            "number_of_passed_user_utterances": self.number_of_passed_user_utterances,
-            "number_of_failed_user_utterances": self.number_of_failed_user_utterances,
+            OUTPUT_NUMBER_OF_PASSED_TESTS: self.number_of_passed_tests,
+            OUTPUT_NUMBER_OF_FAILED_TESTS: self.number_of_failed_tests,
+            OUTPUT_NUMBER_OF_PASSED_USER_UTTERANCES: self.number_of_passed_user_utterances,  # noqa: E501
+            OUTPUT_NUMBER_OF_FAILED_USER_UTTERANCES: self.number_of_failed_user_utterances,  # noqa: E501
         }
 
         cmd_metrics_output = {}
@@ -274,10 +284,10 @@ class DialogueUnderstandingTestSuiteResult:
             else:
                 pass
 
-        result_dict["command_metrics"] = cmd_metrics_output
+        result_dict[OUTPUT_COMMAND_METRICS] = cmd_metrics_output
 
-        result_dict["names_of_passed_tests"] = self.names_of_passed_tests
-        result_dict["names_of_failed_tests"] = self.names_of_failed_tests
+        result_dict[OUTPUT_NAMES_OF_PASSED_TESTS] = self.names_of_passed_tests
+        result_dict[OUTPUT_NAMES_OF_FAILED_TESTS] = self.names_of_failed_tests
 
         failed_steps_list = []
         for failed_test_step in self.failed_test_steps:

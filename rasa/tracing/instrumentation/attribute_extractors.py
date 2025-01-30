@@ -21,6 +21,20 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.generator import LLMBasedCommandGenerator
 from rasa.dialogue_understanding.generator.constants import FLOW_RETRIEVAL_KEY
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding_test.du_test_result import (
+    KEY_TEST_CASES_ACCURACY,
+    KEY_USER_UTTERANCES_ACCURACY,
+    OUTPUT_COMMAND_METRICS,
+    OUTPUT_NAMES_OF_FAILED_TESTS,
+    OUTPUT_NAMES_OF_PASSED_TESTS,
+    OUTPUT_NUMBER_OF_FAILED_TESTS,
+    OUTPUT_NUMBER_OF_FAILED_USER_UTTERANCES,
+    OUTPUT_NUMBER_OF_PASSED_TESTS,
+    OUTPUT_NUMBER_OF_PASSED_USER_UTTERANCES,
+    OUTPUT_TEST_CASES_ACCURACY,
+    OUTPUT_USER_UTTERANCES_ACCURACY,
+    DialogueUnderstandingTestSuiteResult,
+)
 from rasa.engine.graph import ExecutionContext, GraphModelConfiguration, GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
 from rasa.shared.constants import (
@@ -569,6 +583,44 @@ def extract_attrs_for_advance_flows(
         "available_actions": json.dumps(available_actions),
         "current_context": json.dumps(current_context),
     }
+
+
+def extract_attrs_for_du_print_test_results(
+    test_suite_result: DialogueUnderstandingTestSuiteResult,
+    output_prompt: bool,
+) -> Dict[str, Any]:
+    """Extract the attributes for
+    `rasa.dialogue_understanding_test.io.print_test_results` function.
+    """
+    from rasa.tracing.instrumentation.instrumentation import (
+        DIALOG_UNDERSTANDING_TEST_IO_MODULE_NAME,
+    )
+
+    attributes_dict = {
+        "module_name": DIALOG_UNDERSTANDING_TEST_IO_MODULE_NAME,
+        OUTPUT_TEST_CASES_ACCURACY: test_suite_result.accuracy[KEY_TEST_CASES_ACCURACY],
+        OUTPUT_USER_UTTERANCES_ACCURACY: test_suite_result.accuracy[
+            KEY_USER_UTTERANCES_ACCURACY
+        ],
+        OUTPUT_NUMBER_OF_PASSED_TESTS: test_suite_result.number_of_passed_tests,
+        OUTPUT_NUMBER_OF_FAILED_TESTS: test_suite_result.number_of_failed_tests,
+        OUTPUT_NUMBER_OF_PASSED_USER_UTTERANCES: test_suite_result.number_of_passed_user_utterances,  # noqa: E501
+        OUTPUT_NUMBER_OF_FAILED_USER_UTTERANCES: test_suite_result.number_of_failed_user_utterances,  # noqa: E501
+        OUTPUT_NAMES_OF_PASSED_TESTS: json.dumps(
+            test_suite_result.names_of_passed_tests
+        ),
+        OUTPUT_NAMES_OF_FAILED_TESTS: json.dumps(
+            test_suite_result.names_of_failed_tests
+        ),
+    }
+    if test_suite_result.command_metrics:
+        attributes_dict[OUTPUT_COMMAND_METRICS] = json.dumps(
+            {
+                key: value.as_dict()
+                for key, value in test_suite_result.command_metrics.items()
+            }
+        )
+    return attributes_dict
 
 
 def extract_attrs_for_run_step(
