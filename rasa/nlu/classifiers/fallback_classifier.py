@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import logging
 from typing import Any, Dict, List, Optional, Text, Tuple, Type, Union
 
@@ -186,8 +185,6 @@ def undo_fallback_prediction(prediction: Dict[Text, Any]) -> Dict[Text, Any]:
     if len(intent_ranking) < 2:
         return prediction
 
-    prediction = copy.deepcopy(prediction)
     prediction[INTENT] = intent_ranking[1]
     prediction[INTENT_RANKING_KEY] = prediction[INTENT_RANKING_KEY][1:]
-
     return prediction
