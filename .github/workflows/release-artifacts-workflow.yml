@@ -115,8 +115,6 @@ jobs:
       tag_version: ${{ steps.set-tag-version.outputs.tag_version }}
 
     env:
-      GCP_RASA_BASE_IMAGES_REPOSITORY: ${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa
-      GCP_RASA_IMAGE_REPOSITORY: ${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa-pro
       DOCKER_HUB_RASA_IMAGE_REPOSITORY: docker.io/rasa/rasa-pro
 
     steps:
@@ -175,7 +173,7 @@ jobs:
       - name: Build Docker base images 🛠
         if: steps.check_image.outputs.base_exists == 'false'
         run: |
-          RASA_BASE_REPOSITORY=${{ env.GCP_RASA_BASE_IMAGES_REPOSITORY }} \
+          RASA_BASE_REPOSITORY=${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa \
           RASA_BASE_IMAGE_TAG=${{ env.TAG_VERSION }} \
           make build-multi-platform-base-docker
 
@@ -190,13 +188,13 @@ jobs:
         run: |     
           # Build the multi-platform docker image and push to GCP and Docker Hub
           RASA_IMAGE_TAGS="-t ${{ env.GCP_IMAGE_TAG }} -t ${{ env.GCP_LATEST_IMAGE_TAG }} -t ${{ env.DOCKER_HUB_IMAGE_TAG }}" \
-          RASA_BASE_REPOSITORY=${{ env.GCP_RASA_BASE_IMAGES_REPOSITORY }} \
+          RASA_BASE_REPOSITORY=${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa \
           RASA_BASE_IMAGE_TAG=${{ env.TAG_VERSION }} \
           make build-multi-platform-docker
         env:
           DOCKER_HUB_IMAGE_TAG: ${{ env.DOCKER_HUB_RASA_IMAGE_REPOSITORY }}:${{ env.TAG_VERSION }}
-          GCP_LATEST_IMAGE_TAG: ${{ env.GCP_RASA_IMAGE_REPOSITORY }}:${{ env.TAG_VERSION }}-latest
-          GCP_IMAGE_TAG: ${{ env.GCP_RASA_IMAGE_REPOSITORY }}:${{ env.TAG_VERSION }}
+          GCP_LATEST_IMAGE_TAG: ${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa-pro:${{ env.TAG_VERSION }}-latest
+          GCP_IMAGE_TAG: ${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa-pro:${{ env.TAG_VERSION }}
 
   release-artifacts-pypi:
     name: Release Artifacts PyPI
