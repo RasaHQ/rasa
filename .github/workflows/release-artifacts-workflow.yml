@@ -39,7 +39,7 @@ on:
           - azure-multiple-deployments-with-simple-shuffle-routing
           - azure-multiple-deployments-with-least-busy-routing
           - azure-multiple-deployments-with-usage-based-routing
-          - azure-multiple-deployments-with-usage-based-routing-v2
+          # - azure-multiple-deployments-with-usage-based-routing-v2 TODO: Enable after ENG-1651 is resolved
           - azure-multiple-deployments-with-latency-based-routing
           - azure-multiple-deployments-with-cost-based-routing
           - gemini-multiple-deployments-with-routing
