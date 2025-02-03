@@ -79,12 +79,16 @@ def calculate_command_metrics(
     return metrics
 
 
+def _get_command_name(command: Command) -> str:
+    return command.command().replace(" ", "_")
+
+
 def _increase_total_count(
     commands: List[Command],
     metrics: Dict[str, CommandMetrics],
 ) -> None:
     for command in commands:
-        metrics[command.command()].total_count += 1
+        metrics[_get_command_name(command)].total_count += 1
 
 
 def _increase_tp(
@@ -92,7 +96,7 @@ def _increase_tp(
     metrics: Dict[str, CommandMetrics],
 ) -> None:
     for command in commands:
-        metrics[command.command()].tp += 1
+        metrics[_get_command_name(command)].tp += 1
 
 
 def _update_metrics_true_positive_and_false_negative(
@@ -101,7 +105,7 @@ def _update_metrics_true_positive_and_false_negative(
     metrics: Dict[str, CommandMetrics],
 ) -> None:
     for expected_command in expected_commands:
-        command_name = expected_command.command()
+        command_name = _get_command_name(expected_command)
         if is_command_present_in_list(expected_command, predicted_commands):
             metrics[command_name].tp += 1
         else:
@@ -115,4 +119,4 @@ def _update_metrics_false_positive(
 ) -> None:
     for predicted_command in predicted_commands:
         if not is_command_present_in_list(predicted_command, expected_commands):
-            metrics[predicted_command.command()].fp += 1
+            metrics[_get_command_name(predicted_command)].fp += 1

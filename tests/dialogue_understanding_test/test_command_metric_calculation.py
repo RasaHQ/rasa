@@ -8,6 +8,7 @@ from rasa.dialogue_understanding_test.command_comparison import (
 )
 from rasa.dialogue_understanding_test.command_metric_calculation import (
     CommandMetrics,
+    _get_command_name,
     calculate_command_metrics,
 )
 from rasa.dialogue_understanding_test.du_test_result import (
@@ -110,7 +111,7 @@ class TestCalculateCommandMetrics:
 
         results = calculate_command_metrics([test_result])
 
-        command_name = StartFlowCommand.command()
+        command_name = _get_command_name(cmd1)
 
         assert command_name in results
         assert results[command_name].tp == 2
@@ -146,13 +147,13 @@ class TestCalculateCommandMetrics:
 
         # start flow should have fn=1 (missed prediction) and
         # fp=1 (false prediction)
-        command_name = StartFlowCommand.command()
+        command_name = _get_command_name(StartFlowCommand("flow1"))
         assert results[command_name].tp == 0
         assert results[command_name].fp == 1
         assert results[command_name].fn == 1
         assert results[command_name].total_count == 1
         # set slot should have fp=1 (false prediction)
-        command_name = SetSlotCommand.command()
+        command_name = _get_command_name(SetSlotCommand("value", "name"))
         assert results[command_name].tp == 0
         assert results[command_name].fp == 1
         assert results[command_name].fn == 0
@@ -191,7 +192,7 @@ class TestCalculateCommandMetrics:
 
         # start flow should have tp=1 from first test
         # start flow should have fp=1 and fn=1 from second test
-        command_name = StartFlowCommand.command()
+        command_name = _get_command_name(StartFlowCommand("flow1"))
         assert results[command_name].tp == 1
         assert results[command_name].fp == 1
         assert results[command_name].fn == 1
