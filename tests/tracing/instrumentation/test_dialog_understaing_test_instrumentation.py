@@ -15,7 +15,7 @@ from rasa.tracing.instrumentation.instrumentation import (
 )
 
 
-def test_tracing_command_processor_execute_commands(
+def test_dut_print_test_results_instrumentation(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -44,5 +44,8 @@ def test_tracing_command_processor_execute_commands(
     )
     assert captured_span.attributes["number_of_passed_tests"] == 42
     assert captured_span.attributes["number_of_failed_tests"] == 3
-    assert '"start":' in captured_span.attributes["command_metrics"]
-    assert '"tp": 8' in captured_span.attributes["command_metrics"]
+
+    assert captured_span.attributes["start_tp"] == 8
+    assert captured_span.attributes["start_fp"] == 2
+    assert captured_span.attributes["start_fn"] == 1
+    assert captured_span.attributes["start_total_count"] == 9

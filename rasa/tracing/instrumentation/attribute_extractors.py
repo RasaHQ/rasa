@@ -24,7 +24,6 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding_test.du_test_result import (
     KEY_TEST_CASES_ACCURACY,
     KEY_USER_UTTERANCES_ACCURACY,
-    OUTPUT_COMMAND_METRICS,
     OUTPUT_NAMES_OF_FAILED_TESTS,
     OUTPUT_NAMES_OF_PASSED_TESTS,
     OUTPUT_NUMBER_OF_FAILED_TESTS,
@@ -614,12 +613,15 @@ def extract_attrs_for_du_print_test_results(
         ),
     }
     if test_suite_result.command_metrics:
-        attributes_dict[OUTPUT_COMMAND_METRICS] = json.dumps(
-            {
-                key: value.as_dict()
-                for key, value in test_suite_result.command_metrics.items()
-            }
-        )
+        for (
+            command_name,
+            command_metric,
+        ) in test_suite_result.command_metrics.items():
+            # OpenTelemetry / Honeycomb doesn't support dictionaries/json values,
+            # so we need to set the values as separate attributes
+            for metric_name, value in command_metric.as_dict().items():
+                attributes_dict[f"{command_name}_{metric_name}"] = value
+
     return attributes_dict
 
 
