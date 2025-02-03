@@ -52,7 +52,7 @@ jobs:
 
       - name: Alert Slack if get_tags step fails
         if: steps.get_branches.outcome == 'failure' || steps.tags.outcome == 'failure'
-        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
         with:
           payload: |
             {
@@ -120,7 +120,7 @@ jobs:
 
       - name: Alert Slack if build fails
         if: steps.build.outcome == 'failure'
-        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
         with:
           payload: |
             {
