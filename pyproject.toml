@@ -214,10 +214,6 @@ optional = true
 version = "^2.0"
 optional = true
 
-[[tool.poetry.dependencies.mlflow]]
-version = "^2.15.1"
-optional = true
-
 [[tool.poetry.dependencies.gitpython]]
 version = "~3.1.41"
 optional = true
@@ -229,7 +225,6 @@ transformers = [ "transformers", "sentencepiece",]
 full = [ "spacy", "transformers", "sentencepiece", "jieba", "gitpython",]
 gh-release-notes = [ "github3.py",]
 metal = [ "tensorflow-metal",]
-mlflow = [ "mlflow",]
 
 [tool.poetry.scripts]
 rasa = "rasa.__main__:main"

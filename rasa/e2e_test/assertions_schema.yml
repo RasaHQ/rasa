@@ -115,6 +115,9 @@ schema;assertions:
            utter_name:
              type: str
              nullable: false
+           utter_source:
+             type: str
+             nullable: false
        generative_response_is_grounded:
          type: map
          mapping:
@@ -125,5 +128,8 @@ schema;assertions:
              type: str
              nullable: false
            ground_truth:
+             type: str
+             nullable: false
+           utter_source:
              type: str
              nullable: false

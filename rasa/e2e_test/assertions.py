@@ -3,13 +3,13 @@ from __future__ import annotations
 import dataclasses
 import json
 import re
+import sys
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     List,
     Optional,
@@ -19,19 +19,30 @@ from typing import (
     Type,
 )
 
-import pandas as pd
 import structlog
+from jinja2 import Template
 
 import rasa.shared.utils.common
-from rasa.core.constants import (
-    DOMAIN_GROUND_TRUTH_METADATA_KEY,
-    UTTER_SOURCE_METADATA_KEY,
-)
-from rasa.core.policies.enterprise_search_policy import (
-    SEARCH_QUERY_METADATA_KEY,
-    SEARCH_RESULTS_METADATA_KEY,
-)
+from rasa.core.constants import DOMAIN_GROUND_TRUTH_METADATA_KEY
+from rasa.core.policies.enterprise_search_policy import SEARCH_RESULTS_METADATA_KEY
 from rasa.dialogue_understanding.patterns.clarify import FLOW_PATTERN_CLARIFICATION
+from rasa.e2e_test.constants import (
+    DEFAULT_ANSWER_RELEVANCE_PROMPT_TEMPLATE_FILE_NAME,
+    DEFAULT_GROUNDEDNESS_PROMPT_TEMPLATE_FILE_NAME,
+    KEY_GROUND_TRUTH,
+    KEY_THRESHOLD,
+    KEY_UTTER_NAME,
+    KEY_UTTER_SOURCE,
+    LLM_JUDGE_PROMPTS_MODULE,
+)
+from rasa.e2e_test.utils.generative_assertions import (
+    ScoreInputs,
+    _find_matching_generative_events,
+    _parse_llm_output,
+    _validate_parsed_llm_output,
+    calculate_groundedness_score,
+    calculate_relevance_score,
+)
 from rasa.shared.core.constants import DEFAULT_SLOT_NAMES
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -44,8 +55,10 @@ from rasa.shared.core.events import (
     FlowStarted,
     SlotSet,
 )
-from rasa.shared.exceptions import RasaException
-from rasa.utils.common import update_mlflow_log_level
+from rasa.shared.exceptions import ProviderClientAPIException, RasaException
+from rasa.shared.utils.llm import (
+    llm_factory,
+)
 from rasa.utils.json_utils import SetEncoder
 
 if TYPE_CHECKING:
@@ -55,11 +68,6 @@ if TYPE_CHECKING:
 structlogger = structlog.get_logger()
 
 DEFAULT_THRESHOLD = 0.5
-ELIGIBLE_UTTER_SOURCE_METADATA = [
-    "EnterpriseSearchPolicy",
-    "ContextualResponseRephraser",
-    "IntentlessPolicy",
-]
 
 
 class AssertionType(Enum):
@@ -949,27 +957,36 @@ class BotDidNotUtterAssertion(Assertion):
 class GenerativeResponseMixin(Assertion):
     """Mixin class for storing generative response assertions."""
 
+    metric_adjective: str
     threshold: float = DEFAULT_THRESHOLD
     utter_name: Optional[str] = None
+    utter_source: Optional[str] = None
     line: Optional[int] = None
-    metric_adjective: Optional[str] = None
-    metric_name: Optional[str] = None
-    mlflow_metric: Callable = print
 
     @classmethod
     def type(cls) -> str:
         return ""
 
-    def _get_ground_truth(self, matching_event: BotUttered) -> str:
-        raise NotImplementedError
-
     def as_dict(self) -> Dict[str, Any]:
         data = super().as_dict()
-        data.pop("metric_name")
         data.pop("metric_adjective")
-        data.pop("mlflow_metric")
-
         return data
+
+    def _render_prompt(self, step_text: str, matching_event: BotUttered) -> str:
+        raise NotImplementedError
+
+    def _get_processed_output(self, parsed_llm_output: Dict[str, Any]) -> List[Any]:
+        raise NotImplementedError
+
+    def _process_response(
+        self, llm_response: str, bot_message: str
+    ) -> List[Dict[str, Any]]:
+        """Process the LLM response."""
+        parsed_llm_output = _parse_llm_output(llm_response, bot_message)
+        _validate_parsed_llm_output(parsed_llm_output, bot_message)
+
+        processed_output = self._get_processed_output(parsed_llm_output)
+        return processed_output
 
     def _run_llm_evaluation(
         self,
@@ -981,72 +998,40 @@ class GenerativeResponseMixin(Assertion):
         turn_events: List[Event],
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the LLM evaluation on the given event."""
-        import mlflow
+        bot_message = matching_event.text
+        prompt = self._render_prompt(step_text, matching_event)
+        llm_response = self._invoke_llm(llm_judge_config, prompt)
 
-        # we need to configure the log level for mlflow
-        # after a local import to avoid unnecessary logs
-        update_mlflow_log_level()
-
-        # extract user question from event if available
-        user_question_from_event = matching_event.metadata.get(
-            SEARCH_QUERY_METADATA_KEY
-        )
-        user_question = (
-            user_question_from_event if user_question_from_event else step_text
-        )
-
-        ground_truth = self._get_ground_truth(matching_event)
-
-        eval_data = pd.DataFrame(
-            {
-                "inputs": [user_question],
-                "ground_truth": [ground_truth],
-                "predictions": [matching_event.text],
-            }
-        )
-
-        model_uri = llm_judge_config.get_model_uri()
-
-        structlogger.debug(
-            f"generative_response_is_{self.metric_adjective}_assertion.run_llm_evaluation",
-            model_uri=model_uri,
-        )
-
-        with mlflow.start_run():
-            results = mlflow.evaluate(
-                data=eval_data,
-                targets="ground_truth",
-                predictions="predictions",
-                model_type="question-answering",
-                evaluators="default",
-                extra_metrics=[
-                    self.mlflow_metric(model_uri),
-                ],
+        try:
+            processed_output = self._process_response(llm_response, bot_message)
+        except RasaException as exc:
+            structlogger.error(
+                "e2e_test.generative_response_evaluation.error", error=exc
+            )
+            return self._generate_assertion_failure(
+                str(exc), prior_events, turn_events, self.line
             )
 
-        # Evaluation result for each data record is available in `results.tables`.
-        eval_table = results.tables["eval_results_table"]
-        score = eval_table.iloc[0][f"{self.metric_name}/v1/score"]
-        justification = eval_table.iloc[0][f"{self.metric_name}/v1/justification"]
-
-        # convert 1-5 score to 0-1 float
-        score = score * 20 / 100 if score is not None else 0
-
-        structlogger.debug(
-            f"generative_response_is_{self.metric_adjective}_assertion.run_results",
-            matching_event=repr(matching_event),
-            score=score,
-            justification=justification,
+        score_inputs = ScoreInputs(
+            threshold=self.threshold,
+            matching_event=matching_event,
+            user_question=step_text,
+            llm_judge_config=llm_judge_config,
+        )
+        score, error_justification = calculate_score(
+            assertion_type=self.type(),
+            processed_output=processed_output,
+            score_inputs=score_inputs,
         )
 
         if score < self.threshold:
             error_message = (
                 f"Generative response '{matching_event.text}' "
-                f"given to the user input '{user_question}' "
+                f"given to the user input '{step_text}' "
                 f"was not {self.metric_adjective}. "
                 f"Expected score to be above '{self.threshold}' threshold, "
-                f"but was '{score}'. The explanation for this score is: "
-                f"{justification}."
+                f"but was '{round(score,2)}'. The LLM Judge model has justified its "
+                f"score like so: {error_justification}."
             )
             error_message += assertion_order_error_message
 
@@ -1055,6 +1040,28 @@ class GenerativeResponseMixin(Assertion):
             )
 
         return None, matching_event
+
+    def _invoke_llm(self, llm_judge_config: LLMJudgeConfig, prompt: str) -> str:
+        """Invoke the LLM to evaluate the generative response."""
+        structlogger.debug(
+            f"generative_response_is_{self.metric_adjective}_assertion.run_llm_evaluation",
+        )
+
+        llm = llm_factory(
+            llm_judge_config.llm_config_as_dict,
+            llm_judge_config.get_default_llm_config(),
+        )
+
+        try:
+            llm_response = llm.completion(prompt)
+            return llm_response.choices[0]
+        except Exception as exc:
+            structlogger.error(
+                "e2e_test.generative_response_evaluation.llm.error", error=exc
+            )
+            raise ProviderClientAPIException(
+                message="LLM call exception", original_exception=exc
+            )
 
     def _run_assertion_with_utter_name(
         self,
@@ -1089,49 +1096,6 @@ class GenerativeResponseMixin(Assertion):
             turn_events,
         )
 
-    def _run_assertion_for_multiple_generative_responses(
-        self,
-        matching_events: List[BotUttered],
-        step_text: str,
-        llm_judge_config: "LLMJudgeConfig",
-        assertion_order_error_message: str,
-        prior_events: List[Event],
-        turn_events: List[Event],
-    ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
-        """Run LLM evaluation for multiple bot utterances."""
-        structlogger.debug(
-            f"generative_response_is_{self.metric_adjective}_assertion.run",
-            event_info="Multiple generative responses found, "
-            "we will evaluate each of the responses.",
-        )
-
-        passing_events = set()
-        for event in matching_events:
-            failure, event_result = self._run_llm_evaluation(
-                event,
-                step_text,
-                llm_judge_config,
-                assertion_order_error_message,
-                prior_events,
-                turn_events,
-            )
-            if event_result is not None:
-                passing_events.add(event_result)
-        else:
-            if not passing_events:
-                error_message = (
-                    f"None of the generative responses issued by either the "
-                    f"Enterprise Search Policy, IntentlessPolicy or the "
-                    f"Contextual Response Rephraser were {self.metric_adjective}."
-                )
-                error_message += assertion_order_error_message
-
-                return self._generate_assertion_failure(
-                    error_message, prior_events, turn_events, self.line
-                )
-
-        return None, list(passing_events)[-1]
-
     def run(
         self,
         turn_events: List[Event],
@@ -1143,7 +1107,7 @@ class GenerativeResponseMixin(Assertion):
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the LLM evaluation on the given events for that user turn."""
         matching_events: List[BotUttered] = _find_matching_generative_events(
-            turn_events
+            turn_events, self.utter_source
         )
 
         if not matching_events:
@@ -1169,13 +1133,11 @@ class GenerativeResponseMixin(Assertion):
             )
 
         if len(matching_events) > 1:
-            return self._run_assertion_for_multiple_generative_responses(
-                matching_events,
-                step_text,
-                llm_judge_config,
-                assertion_order_error_message,
-                prior_events,
-                turn_events,
+            structlogger.debug(
+                f"generative_response_is_{self.metric_adjective}_assertion.run",
+                event_info=f"Multiple generative responses found, "
+                f"we will evaluate the first of the responses "
+                f"'{matching_events[0].text}'.",
             )
 
         matching_event = matching_events[0]
@@ -1194,33 +1156,44 @@ class GenerativeResponseMixin(Assertion):
 class GenerativeResponseIsRelevantAssertion(GenerativeResponseMixin):
     """Class for storing the generative response is relevant assertion."""
 
-    def _get_ground_truth(self, matching_event: BotUttered) -> str:
-        return ""
-
     @classmethod
     def type(cls) -> str:
         return AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value
+
+    def _render_prompt(self, step_text: str, matching_event: BotUttered) -> str:
+        """Render the prompt."""
+        inputs = _get_prompt_inputs(self.type(), step_text, matching_event)
+        prompt_template = _get_default_prompt_template(
+            DEFAULT_ANSWER_RELEVANCE_PROMPT_TEMPLATE_FILE_NAME
+        )
+        return Template(prompt_template).render(**inputs)
 
     @staticmethod
     def from_dict(
         assertion_dict: Dict[Text, Any],
     ) -> GenerativeResponseIsRelevantAssertion:
-        import mlflow
-
         assertion_dict = assertion_dict.get(
             AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value, {}
         )
+
         return GenerativeResponseIsRelevantAssertion(
-            threshold=assertion_dict.get("threshold", DEFAULT_THRESHOLD),
-            utter_name=assertion_dict.get("utter_name"),
+            threshold=assertion_dict.get(KEY_THRESHOLD, DEFAULT_THRESHOLD),
+            utter_name=assertion_dict.get(KEY_UTTER_NAME),
             line=assertion_dict.lc.line + 1 if hasattr(assertion_dict, "lc") else None,
-            metric_name="answer_relevance",
             metric_adjective="relevant",
-            mlflow_metric=mlflow.metrics.genai.answer_relevance,
+            utter_source=assertion_dict.get(KEY_UTTER_SOURCE),
         )
 
     def __hash__(self) -> int:
         return hash(json.dumps(self.as_dict()))
+
+    def _get_processed_output(self, parsed_llm_output: Dict[str, Any]) -> List[Any]:
+        questions = parsed_llm_output.get("question_variations", [])
+        if not questions:
+            raise RasaException(
+                "No question variations were extracted by the LLM Judge."
+            )
+        return questions
 
 
 @dataclass
@@ -1233,44 +1206,49 @@ class GenerativeResponseIsGroundedAssertion(GenerativeResponseMixin):
     def type(cls) -> str:
         return AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value
 
+    def _render_prompt(self, step_text: str, matching_event: BotUttered) -> str:
+        """Render the prompt."""
+        inputs = _get_prompt_inputs(
+            assertion_type=self.type(),
+            step_text=step_text,
+            matching_event=matching_event,
+            ground_truth=self.ground_truth,
+        )
+        prompt_template = _get_default_prompt_template(
+            DEFAULT_GROUNDEDNESS_PROMPT_TEMPLATE_FILE_NAME
+        )
+        return Template(prompt_template).render(**inputs)
+
     @staticmethod
     def from_dict(
         assertion_dict: Dict[Text, Any],
     ) -> GenerativeResponseIsGroundedAssertion:
-        import mlflow
-
         assertion_dict = assertion_dict.get(
             AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value, {}
         )
+
         return GenerativeResponseIsGroundedAssertion(
-            threshold=assertion_dict.get("threshold", DEFAULT_THRESHOLD),
-            utter_name=assertion_dict.get("utter_name"),
-            ground_truth=assertion_dict.get("ground_truth"),
+            threshold=assertion_dict.get(KEY_THRESHOLD, DEFAULT_THRESHOLD),
+            utter_name=assertion_dict.get(KEY_UTTER_NAME),
+            ground_truth=assertion_dict.get(KEY_GROUND_TRUTH),
             line=assertion_dict.lc.line + 1 if hasattr(assertion_dict, "lc") else None,
-            metric_name="answer_correctness",
             metric_adjective="grounded",
-            mlflow_metric=mlflow.metrics.genai.answer_correctness,
+            utter_source=assertion_dict.get(KEY_UTTER_SOURCE),
         )
 
     def __hash__(self) -> int:
         return hash(json.dumps(self.as_dict()))
 
-    def _get_ground_truth(self, matching_event: BotUttered) -> str:
-        # extract ground truth from event if available or use the provided ground truth
-        ground_truth_event_metadata = matching_event.metadata.get(
-            SEARCH_RESULTS_METADATA_KEY, ""
-        ) or matching_event.metadata.get(DOMAIN_GROUND_TRUTH_METADATA_KEY, "")
+    def _get_processed_output(self, parsed_llm_output: Dict[str, Any]) -> List[Any]:
+        """Process the LLM response."""
+        statements = parsed_llm_output.get("statements", [])
+        if not statements:
+            raise RasaException(
+                "No statements were extracted and scored by the LLM Judge. "
+                "Please check the LLM Judge configuration"
+            )
 
-        if isinstance(ground_truth_event_metadata, list):
-            ground_truth_event_metadata = "\n".join(ground_truth_event_metadata)
-
-        ground_truth = (
-            self.ground_truth
-            if self.ground_truth is not None
-            else ground_truth_event_metadata
-        )
-
-        return ground_truth
+        return statements
 
 
 @dataclass
@@ -1312,17 +1290,6 @@ def create_actual_events_transcript(
     return event_transcript
 
 
-def _find_matching_generative_events(turn_events: List[Event]) -> List[BotUttered]:
-    """Find the matching events for the generative response assertions."""
-    return [
-        event
-        for event in turn_events
-        if isinstance(event, BotUttered)
-        and event.metadata.get(UTTER_SOURCE_METADATA_KEY)
-        in ELIGIBLE_UTTER_SOURCE_METADATA
-    ]
-
-
 def _get_turn_events_based_on_step_index(
     step_index: int, turn_events: List[Event], prior_events: List[Event]
 ) -> Tuple[List[Event], List[Event]]:
@@ -1343,3 +1310,65 @@ def _get_turn_events_based_on_step_index(
         return original_turn_events, prior_events + turn_events
 
     return original_turn_events, turn_events
+
+
+def _get_default_prompt_template(default_prompt_template_file_name: str) -> str:
+    # We cannot use importlib.resources with Python 3.9 because of an unfixed bug:
+    # https://bugs.python.org/issue44137
+    if sys.version_info < (3, 10):
+        from importlib_resources import files
+
+        default_prompt_template = (
+            files(LLM_JUDGE_PROMPTS_MODULE)
+            .joinpath(default_prompt_template_file_name)
+            .read_text()
+        )
+    else:
+        import importlib.resources
+
+        default_prompt_template = importlib.resources.read_text(
+            LLM_JUDGE_PROMPTS_MODULE,
+            default_prompt_template_file_name,
+        )
+
+    return default_prompt_template
+
+
+def _get_prompt_inputs(
+    assertion_type: str,
+    step_text: str,
+    matching_event: BotUttered,
+    ground_truth: Optional[str] = None,
+) -> Dict[str, Any]:
+    if assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value:
+        return {"num_variations": "3", "user_message": step_text}
+    elif assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value:
+        ground_truth_event_metadata = matching_event.metadata.get(
+            SEARCH_RESULTS_METADATA_KEY, ""
+        ) or matching_event.metadata.get(DOMAIN_GROUND_TRUTH_METADATA_KEY, "")
+
+        if isinstance(ground_truth_event_metadata, list):
+            ground_truth_event_metadata = "\n".join(ground_truth_event_metadata)
+
+        ground_truth = (
+            ground_truth if ground_truth is not None else ground_truth_event_metadata
+        )
+
+        return {
+            "bot_message": matching_event.text,
+            "ground_truth": ground_truth,
+        }
+    else:
+        raise ValueError(f"Invalid assertion type '{assertion_type}'")
+
+
+def calculate_score(
+    assertion_type: str, processed_output: List[Any], score_inputs: ScoreInputs
+) -> Tuple[float, str]:
+    """Calculate and return the score and justification."""
+    if assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value:
+        return calculate_relevance_score(processed_output, score_inputs)
+    elif assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value:
+        return calculate_groundedness_score(processed_output, score_inputs)
+    else:
+        raise ValueError(f"Invalid assertion type '{assertion_type}'")

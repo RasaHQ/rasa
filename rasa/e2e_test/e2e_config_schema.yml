@@ -1,19 +1,37 @@
 mapping:
-  llm_as_judge:
+  llm_judge:
     type: map
     mapping:
-      api_type:
-        type: str
-        required: true
-        nullable: false
-      model:
-        type: str
-        required: true
-        nullable: false
+      llm:
+        type: map
+        allowempty: true
+        mapping:
+          provider:
+            type: str
+            nullable: false
+          model:
+            type: str
+            nullable: false
+          model_group:
+            type: str
+            nullable: false
+      embeddings:
+        type: map
+        allowempty: true
+        mapping:
+          provider:
+            type: str
+            nullable: false
+          model:
+            type: str
+            nullable: false
+          model_group:
+            type: str
+            nullable: false
   llm_e2e_test_conversion:
     type: map
     mapping:
-      api_type:
+      provider:
         type: str
       model:
         type: str

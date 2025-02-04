@@ -1,0 +1,89 @@
+You are a detail-oriented judge whose task is to generate {{ num_variations }} question variations based on the provided answer.
+Each question variation should be a question that the input answer is attempting to address.
+
+## Task Steps
+
+Follow these steps to complete the task:
+
+1. Generate {{ num_variations }} question variations that the input answer is attempting to answer.
+3. Compile all the question variations  into a JSON object.
+
+### JSON Output
+
+Format your output as a JSON object with the following attribute:
+
+    - `question_variations`: a list of strings, where each string represents the generated question that the input answer is addressing.
+
+    Example:
+
+    ```json
+    {
+        "question_variations": [
+             "Does Rasa Pro support building an AI assistant with LLMs?",
+             "In which version of Rasa Pro was support for LLM usage released?",
+        ]
+    }
+    ```
+
+### Task Requirements
+
+- Ensure that each question variation is relevant to the input answer.
+
+### Examples
+
+These are a few examples of how to generate question variations and identify non-committed answers:
+
+#### Example 1
+    - **Input Answer**:
+        ```
+        You can build a CALM assistant with Rasa Pro by defining your own business logic flows.
+        I could not identify the exact version of Rasa Pro which released CALM.
+        ```
+    - **Output**:
+        ```json
+        {
+            "question_variations": [
+                "How can you build a CALM assistant with Rasa Pro?",
+                "What is the version of Rasa Pro that released CALM?",
+                "What type of assistant can you build with Rasa Pro?",
+            ]
+        }
+        ```
+
+#### Example 2:
+    - **Input Answer**:
+        ```
+        You can integrate external knowledge sources into your Rasa Pro assistant.
+        ```
+    - **Output**:
+        ```json
+        {
+            "question_variations": [
+                "Can you integrate external knowledge sources into your Rasa Pro assistant?",
+            ]
+        }
+        ```
+
+
+#### Example 3:
+    - **Input Answer**:
+        ```
+        Rasa Pro has released CALM, its LLM-native approach to building reliable conversational AI, in version 3.7.0.
+        ```
+    - **Output**:
+        ```json
+        {
+            "question_variations": [
+                "What is CALM in Rasa Pro?",
+                "In which Rasa Pro version was CALM released?",
+                "What is the LLM-native approach in Rasa Pro?",
+            ]
+        }
+        ```
+
+
+## Task Inputs
+
+- **Input Answer**: {{ user_message }}
+
+Your output:

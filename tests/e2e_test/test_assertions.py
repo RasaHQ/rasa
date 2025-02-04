@@ -1,9 +1,10 @@
-import sys
+import math
+from pathlib import Path
 from typing import Any, Dict, List
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, Mock, call, patch
 
-import pandas as pd
 import pytest
+from litellm.types.utils import EmbeddingResponse
 from pytest import MonkeyPatch
 
 from rasa.core.policies.enterprise_search_policy import SEARCH_RESULTS_METADATA_KEY
@@ -26,8 +27,16 @@ from rasa.e2e_test.assertions import (
     PatternClarificationContainsAssertion,
     SlotWasNotSetAssertion,
     SlotWasSetAssertion,
+    _get_default_prompt_template,
+    calculate_score,
+)
+from rasa.e2e_test.constants import (
+    DEFAULT_ANSWER_RELEVANCE_PROMPT_TEMPLATE_FILE_NAME,
+    DEFAULT_GROUNDEDNESS_PROMPT_TEMPLATE_FILE_NAME,
 )
 from rasa.e2e_test.e2e_config import LLMJudgeConfig
+from rasa.e2e_test.utils.generative_assertions import ScoreInputs
+from rasa.shared.constants import OPENAI_PROVIDER
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
@@ -40,6 +49,19 @@ from rasa.shared.core.events import (
     UserUttered,
 )
 from rasa.shared.exceptions import RasaException
+from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
+
+
+@pytest.fixture
+def llm_judge_config() -> LLMJudgeConfig:
+    config = LLMJudgeConfig.from_dict(
+        {
+            "llm": {},
+            "embeddings": {},
+        }
+    )
+    return config
 
 
 @pytest.mark.parametrize(
@@ -151,7 +173,7 @@ def test_create_typed_assertion_valid_subclasses(
                     "utter_name": "utter_options",
                 }
             },
-            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
+            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT,
             "answer_relevance",
         ),
         (
@@ -162,7 +184,7 @@ def test_create_typed_assertion_valid_subclasses(
                     "ground_truth": "The fee for transferring money is $5.",
                 }
             },
-            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value,
+            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED,
             "answer_correctness",
         ),
     ],
@@ -170,33 +192,22 @@ def test_create_typed_assertion_valid_subclasses(
 def test_create_typed_assertion_valid_generative_assertions(
     monkeypatch: MonkeyPatch,
     data: Dict[str, Any],
-    assertion_type: str,
+    assertion_type: AssertionType,
     metric_name: str,
 ):
-    mlflow_mock = MagicMock()
-    sys.modules["mlflow"] = mlflow_mock
-    mock_metric = MagicMock()
-    monkeypatch.setattr(mlflow_mock, f"metrics.genai.{metric_name}", mock_metric)
-
-    def get_expected_assertion(assertion_type: str) -> Assertion:
-        import mlflow
-
-        if assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value:
+    def get_expected_assertion(assertion_type: AssertionType) -> Assertion:
+        if assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED:
             return GenerativeResponseIsGroundedAssertion(
                 threshold=0.88,
                 utter_name="utter_fee",
                 ground_truth="The fee for transferring money is $5.",
-                metric_name="answer_correctness",
                 metric_adjective="grounded",
-                mlflow_metric=mlflow.metrics.genai.answer_correctness,
             )
-        elif assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value:
+        elif assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT:
             return GenerativeResponseIsRelevantAssertion(
                 threshold=0.9,
                 utter_name="utter_options",
-                metric_name="answer_relevance",
                 metric_adjective="relevant",
-                mlflow_metric=mlflow.metrics.genai.answer_relevance,
             )
 
     assert Assertion.create_typed_assertion(data) == get_expected_assertion(
@@ -737,12 +748,14 @@ def test_slot_was_not_set_assertions_returns_assertion_failure(
             GenerativeResponseIsRelevantAssertion(
                 threshold=0.9,
                 utter_name="utter_options",
+                metric_adjective="relevant",
             ),
             {
                 "threshold": 0.9,
                 "utter_name": "utter_options",
                 "type": "generative_response_is_relevant",
                 "line": None,
+                "utter_source": None,
             },
         ),
         (
@@ -750,12 +763,14 @@ def test_slot_was_not_set_assertions_returns_assertion_failure(
                 threshold=0.88,
                 utter_name="utter_fee",
                 ground_truth="The fee for transferring money is $5.",
+                metric_adjective="grounded",
             ),
             {
                 "threshold": 0.88,
                 "utter_name": "utter_fee",
                 "ground_truth": "The fee for transferring money is $5.",
                 "type": "generative_response_is_grounded",
+                "utter_source": None,
                 "line": None,
             },
         ),
@@ -794,75 +809,84 @@ def test_assertion_failure_as_dict(
 
 
 def set_up_tests_for_generative_response_assertions(
-    monkeypatch: MonkeyPatch, table: Dict[str, Any], metric_name: str
+    monkeypatch: MonkeyPatch, llm_response: str
 ) -> None:
-    # we need to mock mlflow because it's an optional dependency of rasa-pro,
-    # and it won't get installed in the CI
-    mlflow_mock = MagicMock()
-    sys.modules["mlflow"] = mlflow_mock
-    mlflow_evaluate_mock = MagicMock()
-    monkeypatch.setattr(mlflow_mock, "evaluate", mlflow_evaluate_mock)
+    def mock_invoke_llm(*args, **kwargs):
+        return llm_response
 
-    mock_result = MagicMock()
-    monkeypatch.setattr(mock_result, "tables", table)
-    mlflow_evaluate_mock.return_value = mock_result
-
-    mock_metric = MagicMock()
-    monkeypatch.setattr(mlflow_mock, f"metrics.genai.{metric_name}", mock_metric)
+    monkeypatch.setattr(
+        "rasa.e2e_test.assertions.GenerativeResponseMixin._invoke_llm", mock_invoke_llm
+    )
 
 
-def get_assertion(assertion_type: str):
-    if assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value:
+def set_up_tests_for_answer_relevance_assertion(
+    monkeypatch: MonkeyPatch, embedding_response: EmbeddingResponse
+) -> Mock:
+    monkeypatch.setenv("OPENAI_API_KEY", "openai llm embedding validation key")
+
+    mock_embed = Mock(return_value=embedding_response)
+    monkeypatch.setattr(
+        "rasa.shared.providers.embedding._base_litellm_embedding_client.embedding",
+        mock_embed,
+    )
+    return mock_embed
+
+
+def get_assertion(assertion_type: AssertionType):
+    if assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED:
         return GenerativeResponseIsGroundedAssertion.from_dict(
-            {assertion_type: {"threshold": 0.85, "utter_name": "utter_free_transfers"}}
+            {
+                assertion_type.value: {
+                    "threshold": 0.85,
+                    "ground_truth": "Sending money to friends and family with FinX incurs no charges.",  # noqa: E501
+                }
+            }
         )
-    elif assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value:
+    elif assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT:
         return GenerativeResponseIsRelevantAssertion.from_dict(
-            {assertion_type: {"threshold": 0.85, "utter_name": "utter_free_transfers"}}
+            {
+                assertion_type.value: {
+                    "threshold": 0.85,
+                    "utter_name": "utter_free_transfers",
+                }
+            }
         )
 
 
-@pytest.mark.parametrize(
-    "assertion_type, data, metric_name",
-    [
-        (
-            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
-            [
-                {
-                    "answer_relevance/v1/score": 5,
-                    "answer_relevance/v1/justification": "test justification",
-                }
-            ],
-            "answer_relevance",
-        ),
-        (
-            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value,
-            [
-                {
-                    "answer_correctness/v1/score": 5,
-                    "answer_correctness/v1/justification": "test justification",
-                }
-            ],
-            "answer_correctness",
-        ),
-    ],
-)
-def test_generative_response_assertions_run_llm_evaluation_success(
-    monkeypatch: MonkeyPatch,
-    assertion_type: str,
-    data: List[Dict[str, Any]],
-    metric_name: str,
+def test_generative_response_grounded_assertion_run_llm_evaluation_success(
+    monkeypatch: MonkeyPatch, llm_judge_config: LLMJudgeConfig
 ) -> None:
-    table = {"eval_results_table": pd.DataFrame(data=data)}
-    set_up_tests_for_generative_response_assertions(monkeypatch, table, metric_name)
-    assertion = get_assertion(assertion_type)
+    llm_response = """```json
+            {
+                "statements":[
+                    {
+                        "statement": "Transfers to friends and family through FinX are free of charge.",
+                        "score": 1,
+                        "justification": "The ground truth confirms that sending money to friends and family with FinX incurs no charges."
+                    },
+                    {
+                        "statement": "FinX allows fee-free transactions.",
+                        "score": 1,
+                        "justification": "The ground truth explicitly states that FinX offers fee-free transactions."
+                    },
+                     {
+                        "statement": "FinX provides the convenience of instant transfers.",
+                        "score": 1,
+                        "justification": "The ground truth highlights that FinX emphasises the ease of use in transferring funds."
+                    }
+                ]
+            }
+            ```
+            """  # noqa: E501
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
+    assertion = get_assertion(AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED)
 
     matching_event = BotUttered("Transfers are free for domestic service.")
 
     failure, event = assertion._run_llm_evaluation(
         matching_event,
         "Are transfers on free with this service?",
-        LLMJudgeConfig(),
+        llm_judge_config,
         "",
         [SessionStarted()],
         [UserUttered("Are transfers on free with this service?"), matching_event],
@@ -872,34 +896,160 @@ def test_generative_response_assertions_run_llm_evaluation_success(
     assert event == matching_event
 
 
-def test_generative_response_is_relevant_run_llm_evaluation_failure(
-    monkeypatch: MonkeyPatch,
+def test_generative_response_answer_relevance_assertion_run_llm_evaluation_success(
+    monkeypatch: MonkeyPatch, llm_judge_config: LLMJudgeConfig
 ) -> None:
-    table = {
-        "eval_results_table": pd.DataFrame(
-            data=[
-                {
-                    "answer_relevance/v1/score": 1,
-                    "answer_relevance/v1/justification": "test justification",
-                }
-            ],
-        )
-    }
-    set_up_tests_for_generative_response_assertions(
-        monkeypatch, table, "answer_relevance"
+    generated_question = "Are international transfers free with the domestic service?"
+    llm_response = f"""```json
+            {{
+                "question_variations":["{generated_question}"]
+            }}
+            ```
+            """
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
+    embedding_response = EmbeddingResponse(
+        data=[
+            {"embedding": [0.9, 0.9, 0.9], "index": 0, "object": "embedding"},
+        ]
     )
-    assertion = get_assertion(AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value)
+    mock_embed = set_up_tests_for_answer_relevance_assertion(
+        monkeypatch, embedding_response
+    )
+    assertion = get_assertion(AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT)
 
     matching_event = BotUttered("Transfers are free for domestic service.")
+    user_question = "Are transfers on free with this service?"
+
+    failure, event = assertion._run_llm_evaluation(
+        matching_event,
+        user_question,
+        llm_judge_config,
+        "",
+        [SessionStarted()],
+        [UserUttered(user_question), matching_event],
+    )
+
+    assert failure is None
+    assert event == matching_event
+
+    assert mock_embed.call_count == 2
+    assert mock_embed.call_args_list == [
+        call(
+            input=[user_question],
+            model="openai/text-embedding-ada-002",
+            api_base=None,
+            api_type="openai",
+            api_version=None,
+        ),
+        call(
+            input=[generated_question],
+            model="openai/text-embedding-ada-002",
+            api_base=None,
+            api_type="openai",
+            api_version=None,
+        ),
+    ]
+
+
+def test_generative_response_is_relevant_run_llm_evaluation_failure_no_generated_questions(  # noqa: E501
+    monkeypatch: MonkeyPatch, llm_judge_config: LLMJudgeConfig
+) -> None:
+    llm_response = """
+            ```json
+            {
+                "question_variations": []
+            }
+            ```
+    """
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
+
+    embedding_response = EmbeddingResponse(
+        data=[
+            {"embedding": [], "index": 0, "object": "embedding"},
+        ]
+    )
+    mock_embed = set_up_tests_for_answer_relevance_assertion(
+        monkeypatch, embedding_response
+    )
+
+    assertion = get_assertion(AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT)
+
+    matching_event = BotUttered("I don't know how to answer this.")
     prior_events = [SessionStarted()]
+
+    user_question = "Are transfers on free with this service?"
     turn_events = [
-        UserUttered("Are transfers on free with this service?"),
+        UserUttered(user_question),
         matching_event,
     ]
     failure, event = assertion._run_llm_evaluation(
         matching_event,
-        "Are transfers on free with this service?",
-        LLMJudgeConfig(),
+        user_question,
+        llm_judge_config,
+        "",
+        prior_events,
+        turn_events,
+    )
+
+    assert failure is not None
+    assert failure.assertion == assertion
+    assert (
+        failure.error_message
+        == "No question variations were extracted by the LLM Judge."
+    )
+
+    assert event is None
+    assert mock_embed.call_count == 0
+
+
+def test_generative_response_is_relevant_run_llm_evaluation_failure(
+    monkeypatch: MonkeyPatch, llm_judge_config: LLMJudgeConfig
+) -> None:
+    generated_question = "How is the weather today?"
+    llm_response = f"""
+            ```json
+            {{
+                "question_variations": ["{generated_question}"]
+            }}
+            ```
+    """
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
+
+    embedding_responses = [
+        EmbeddingResponse(
+            data=[
+                {"embedding": [0.9, 0.9, 0.9], "index": 0, "object": "embedding"},
+            ]
+        ),
+        EmbeddingResponse(
+            data=[
+                {"embedding": [0.1, 0.1, -0.1], "index": 0, "object": "embedding"},
+            ]
+        ),
+    ]
+    monkeypatch.setenv("OPENAI_API_KEY", "openai llm embedding validation key")
+
+    mock_embed = Mock()
+    mock_embed.side_effect = embedding_responses
+    monkeypatch.setattr(
+        "rasa.shared.providers.embedding._base_litellm_embedding_client.embedding",
+        mock_embed,
+    )
+
+    assertion = get_assertion(AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT)
+
+    matching_event = BotUttered("The weather is pleasant today. Enjoy your day!")
+    prior_events = [SessionStarted()]
+
+    user_question = "Are transfers on free with this service?"
+    turn_events = [
+        UserUttered(user_question),
+        matching_event,
+    ]
+    failure, event = assertion._run_llm_evaluation(
+        matching_event,
+        user_question,
+        llm_judge_config,
         "",
         prior_events,
         turn_events,
@@ -908,32 +1058,54 @@ def test_generative_response_is_relevant_run_llm_evaluation_failure(
     assert failure is not None
     assert failure.assertion == assertion
     assert failure.error_message == (
-        "Generative response 'Transfers are free for domestic service.' "
-        "given to the user input 'Are transfers on free with this service?' "
-        "was not relevant. "
-        "Expected score to be above '0.85' threshold, but was '0.2'. "
-        "The explanation for this score is: test justification."
+        "Generative response 'The weather is pleasant today. "
+        "Enjoy your day!' given to the user input "
+        "'Are transfers on free with this service?' was "
+        "not relevant. Expected score to be above '0.85' "
+        "threshold, but was '0.33'. The LLM Judge model "
+        "has justified its score like so: Question 'How "
+        "is the weather today?' has a cosine similarity "
+        "score of '0.33' with the user question "
+        "'Are transfers on free with this service?'."
     )
+
     assert event is None
+    assert mock_embed.call_count == 2
+    assert mock_embed.call_args_list == [
+        call(
+            input=[user_question],
+            model="openai/text-embedding-ada-002",
+            api_base=None,
+            api_type=OPENAI_PROVIDER,
+            api_version=None,
+        ),
+        call(
+            input=[generated_question],
+            model="openai/text-embedding-ada-002",
+            api_base=None,
+            api_type=OPENAI_PROVIDER,
+            api_version=None,
+        ),
+    ]
 
 
 def test_generative_response_is_grounded_run_llm_evaluation_failure(
-    monkeypatch: MonkeyPatch,
+    monkeypatch: MonkeyPatch, llm_judge_config: LLMJudgeConfig
 ) -> None:
-    table = {
-        "eval_results_table": pd.DataFrame(
-            data=[
-                {
-                    "answer_correctness/v1/score": 1,
-                    "answer_correctness/v1/justification": "test justification",
-                }
-            ],
-        )
+    llm_response = """```json
+    {
+        "statements": [
+            {
+                "statement": "Local transfers through FinX incur a small fee.",
+                "score": 0,
+                "justification": "test justification"
+            }
+        ]
     }
-    set_up_tests_for_generative_response_assertions(
-        monkeypatch, table, "answer_correctness"
-    )
-    assertion = get_assertion(AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value)
+    ```
+    """
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
+    assertion = get_assertion(AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED)
 
     matching_event = BotUttered(
         "Transfers are free for domestic service.",
@@ -949,7 +1121,7 @@ def test_generative_response_is_grounded_run_llm_evaluation_failure(
     failure, event = assertion._run_llm_evaluation(
         matching_event,
         "Are transfers on free with this service?",
-        LLMJudgeConfig(),
+        llm_judge_config,
         "",
         prior_events,
         turn_events,
@@ -961,47 +1133,37 @@ def test_generative_response_is_grounded_run_llm_evaluation_failure(
         "Generative response 'Transfers are free for domestic service.' "
         "given to the user input 'Are transfers on free with this service?' "
         "was not grounded. Expected score to be above '0.85' threshold, "
-        "but was '0.2'. The explanation for this score is: "
-        "test justification."
+        "but was '0.0'. The LLM Judge model has justified its score "
+        "like so: There were 1 incorrect statements out of 1 total "
+        "extracted statements. The justifications for these statements "
+        "include: test justification."
     )
     assert event is None
 
 
-@pytest.mark.parametrize(
-    "assertion_type, data, metric_name",
-    [
-        (
-            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value,
-            [
-                {
-                    "answer_correctness/v1/score": 5,
-                    "answer_correctness/v1/justification": "test justification",
-                }
-            ],
-            "answer_correctness",
-        ),
-        (
-            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
-            [
-                {
-                    "answer_relevance/v1/score": 5,
-                    "answer_relevance/v1/justification": "test justification",
-                }
-            ],
-            "answer_relevance",
-        ),
-    ],
-)
-def test_generative_response_assertions_run_assertion_with_utter_name_success(
-    monkeypatch: MonkeyPatch,
-    assertion_type: str,
-    data: List[Dict[str, Any]],
-    metric_name: str,
+def test_generative_response_answer_relevance_assertion_run_assertion_with_utter_name_success(  # noqa: E501
+    monkeypatch: MonkeyPatch, llm_judge_config: LLMJudgeConfig
 ) -> None:
-    table = {"eval_results_table": pd.DataFrame(data=data)}
+    generated_question = "Are international transfers free with the domestic service?"
+    llm_response = f"""
+            ```json
+            {{
+                "question_variations": ["{generated_question}"]
+            }}
+            ```
+            """
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
 
-    set_up_tests_for_generative_response_assertions(monkeypatch, table, metric_name)
-    assertion = get_assertion(assertion_type)
+    embedding_response = EmbeddingResponse(
+        data=[
+            {"embedding": [0.9, 0.9, 0.9], "index": 0, "object": "embedding"},
+        ]
+    )
+    mock_embed = set_up_tests_for_answer_relevance_assertion(
+        monkeypatch, embedding_response
+    )
+
+    assertion = get_assertion(AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT)
 
     matching_events = [
         BotUttered(
@@ -1016,57 +1178,54 @@ def test_generative_response_assertions_run_assertion_with_utter_name_success(
         ),
     ]
 
+    user_question = "Are transfers on free with this service?"
     failure, event = assertion._run_assertion_with_utter_name(
         matching_events,
-        "Are transfers on free with this service?",
-        LLMJudgeConfig(),
+        user_question,
+        llm_judge_config,
         "",
         [SessionStarted()],
-        [UserUttered("Are transfers on free with this service?"), *matching_events],
+        [UserUttered(user_question), *matching_events],
     )
 
     assert failure is None
     assert event == matching_events[0]
+    assert mock_embed.call_count == 2
+    assert mock_embed.call_args_list == [
+        call(
+            input=[user_question],
+            model="openai/text-embedding-ada-002",
+            api_base=None,
+            api_type="openai",
+            api_version=None,
+        ),
+        call(
+            input=[generated_question],
+            model="openai/text-embedding-ada-002",
+            api_base=None,
+            api_type="openai",
+            api_version=None,
+        ),
+    ]
 
 
-@pytest.mark.parametrize(
-    "assertion_type, data, metric_name",
-    [
-        (
-            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value,
-            [
-                {
-                    "answer_correctness/v1/score": 5,
-                    "answer_correctness/v1/justification": "test justification",
-                }
-            ],
-            "answer_correctness",
-        ),
-        (
-            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
-            [
-                {
-                    "answer_relevance/v1/score": 5,
-                    "answer_relevance/v1/justification": "test justification",
-                }
-            ],
-            "answer_relevance",
-        ),
-    ],
-)
 def test_generative_response_run_assertion_with_utter_name_failure(
-    monkeypatch: MonkeyPatch,
-    assertion_type: str,
-    data: List[Dict[str, Any]],
-    metric_name: str,
+    monkeypatch: MonkeyPatch, llm_judge_config: LLMJudgeConfig
 ) -> None:
-    table = {"eval_results_table": pd.DataFrame(data=data)}
-    set_up_tests_for_generative_response_assertions(monkeypatch, table, metric_name)
-    assertion = get_assertion(assertion_type)
+    llm_response = """
+            ```json
+            {
+                "question_variations": ["Are international transfers free with the domestic service?"]
+            }
+            ```
+            """  # noqa: E501
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
+    assertion = get_assertion(AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT)
     matching_events = [
         BotUttered(
             "International transfers are not free for domestic service.",
             metadata={
+                "utter_source": "EnterpriseSearchPolicy",
                 "utter_action": "utter_international_transfers",
             },
         ),
@@ -1079,7 +1238,7 @@ def test_generative_response_run_assertion_with_utter_name_failure(
     failure, event = assertion._run_assertion_with_utter_name(
         matching_events,
         "Are international transfers free with this service?",
-        LLMJudgeConfig(),
+        llm_judge_config,
         "",
         [SessionStarted()],
         [
@@ -1097,45 +1256,29 @@ def test_generative_response_run_assertion_with_utter_name_failure(
 
 
 @pytest.mark.parametrize(
-    "assertion_type, data, metric_name, expected_error_message",
+    "assertion_type, expected_adjective",
     [
         (
-            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value,
-            [
-                {
-                    "answer_correctness/v1/score": 1,
-                    "answer_correctness/v1/justification": "test justification",
-                }
-            ],
-            "answer_correctness",
-            "None of the generative responses issued by either the "
-            "Enterprise Search Policy, IntentlessPolicy or the "
-            "Contextual Response Rephraser were grounded.",
+            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED,
+            "grounded",
         ),
         (
-            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
-            [
-                {
-                    "answer_relevance/v1/score": 1,
-                    "answer_relevance/v1/justification": "test justification",
-                }
-            ],
-            "answer_relevance",
-            "None of the generative responses issued by either the "
-            "Enterprise Search Policy, IntentlessPolicy or the "
-            "Contextual Response Rephraser were relevant.",
+            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT,
+            "relevant",
         ),
     ],
 )
 def test_generative_response_assertions_run_multiple_responses_failure(
     monkeypatch: MonkeyPatch,
-    assertion_type: str,
-    data: List[Dict[str, Any]],
-    metric_name: str,
-    expected_error_message: str,
+    assertion_type: AssertionType,
+    expected_adjective: str,
+    llm_judge_config: LLMJudgeConfig,
 ) -> None:
-    table = {"eval_results_table": pd.DataFrame(data=data)}
-    set_up_tests_for_generative_response_assertions(monkeypatch, table, metric_name)
+    llm_response = """```json
+            {}
+            ```
+            """
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
     assertion = get_assertion(assertion_type)
     matching_events = [
         BotUttered(
@@ -1146,20 +1289,27 @@ def test_generative_response_assertions_run_multiple_responses_failure(
         ),
         BotUttered(
             "Is there anything else I can help you with?",
-            metadata={"utter_action": "utter_help"},
+            metadata={
+                "utter_action": "utter_help",
+            },
         ),
     ]
 
-    failure, event = assertion._run_assertion_for_multiple_generative_responses(
-        matching_events,
-        "Are international transfers free with this service?",
-        LLMJudgeConfig(),
-        "",
-        [SessionStarted()],
-        [
+    failure, event = assertion.run(
+        turn_events=[
             UserUttered("Are international transfers free with this service?"),
             *matching_events,
         ],
+        prior_events=[SessionStarted()],
+        llm_judge_config=llm_judge_config,
+        step_text="Are international transfers free with this service?",
+    )
+
+    expected_error_message = (
+        "No generative response issued by either "
+        "the Enterprise Search Policy, IntentlessPolicy "
+        "or the Contextual Response Rephraser was found, "
+        "but one was expected."
     )
 
     assert event is None
@@ -1168,102 +1318,166 @@ def test_generative_response_assertions_run_multiple_responses_failure(
     assert failure.error_message == expected_error_message
 
 
-@pytest.mark.parametrize(
-    "assertion_type, data, metric_name,",
-    [
-        (
-            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value,
-            [
-                {
-                    "answer_correctness/v1/score": 5,
-                    "answer_correctness/v1/justification": "test justification",
-                }
-            ],
-            "answer_correctness",
-        ),
-        (
-            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
-            [
-                {
-                    "answer_relevance/v1/score": 5,
-                    "answer_relevance/v1/justification": "test justification",
-                }
-            ],
-            "answer_relevance",
-        ),
-    ],
-)
-def test_generative_response_assertions_run_multiple_responses_success(
-    monkeypatch: MonkeyPatch,
-    assertion_type: str,
-    data: List[Dict[str, Any]],
-    metric_name: str,
+def test_generative_response_grounded_assertion_run_multiple_responses_success(
+    monkeypatch: MonkeyPatch, llm_judge_config: LLMJudgeConfig
 ) -> None:
-    table = {"eval_results_table": pd.DataFrame(data=data)}
-    set_up_tests_for_generative_response_assertions(monkeypatch, table, metric_name)
-    assertion = get_assertion(assertion_type)
+    llm_response = """
+            ```json
+            {
+                "statements":[
+                    {
+                        "statement": "International transfers are not free for the domestic service.",
+                        "score": 1,
+                        "justification": "test justification"
+                    }
+                ]
+            }
+            ```
+            """  # noqa: E501
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
+    assertion = GenerativeResponseIsGroundedAssertion.from_dict(
+        {
+            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value: {
+                "threshold": 0.85,
+                "utter_source": "EnterpriseSearchPolicy",
+            }
+        }
+    )
     matching_events = [
         BotUttered(
             "International transfers are not free for the domestic service.",
             metadata={
                 "utter_action": "utter_international_transfers",
+                "utter_source": "EnterpriseSearchPolicy",
             },
         ),
         BotUttered(
-            "Is there anything else I can help you with?",
-            metadata={"utter_action": "utter_help"},
+            "International transfers are free for premium service only.",
+            metadata={
+                "utter_action": "utter_premium_service",
+                "utter_source": "EnterpriseSearchPolicy",
+            },
         ),
     ]
 
-    failure, event = assertion._run_assertion_for_multiple_generative_responses(
-        matching_events,
-        "Are international transfers free with this service?",
-        LLMJudgeConfig(),
-        "",
-        [SessionStarted()],
-        [
+    failure, event = assertion.run(
+        turn_events=[
             UserUttered("Are international transfers free with this service?"),
             *matching_events,
         ],
+        prior_events=[SessionStarted()],
+        llm_judge_config=llm_judge_config,
+        step_text="Are international transfers free with this service?",
     )
 
     assert event is not None
     assert failure is None
 
 
+def test_generative_response_answer_relevance_assertion_run_multiple_responses_success(
+    monkeypatch: MonkeyPatch, llm_judge_config: LLMJudgeConfig
+) -> None:
+    llm_response = """
+            ```json
+            {
+                "question_variations": [
+                    "Are international transfers free with the domestic service?",
+                    "Are international transfers free with the premium service?"
+                ]
+            }
+            ```
+            """
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
+    assertion = GenerativeResponseIsRelevantAssertion.from_dict(
+        {
+            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value: {
+                "threshold": 0.85,
+                "utter_source": "EnterpriseSearchPolicy",
+            }
+        }
+    )
+
+    embedding_response = EmbeddingResponse(
+        data=[
+            {"embedding": [0.9, 0.9, 0.9], "index": 0, "object": "embedding"},
+            {"embedding": [0.9, 0.9, 0.9], "index": 1, "object": "embedding"},
+        ]
+    )
+    mock_embed = set_up_tests_for_answer_relevance_assertion(
+        monkeypatch, embedding_response
+    )
+
+    matching_events = [
+        BotUttered(
+            "International transfers are not free for the domestic service.",
+            metadata={
+                "utter_action": "utter_international_transfers",
+                "utter_source": "EnterpriseSearchPolicy",
+            },
+        ),
+        BotUttered(
+            "International transfers are free for premium service only.",
+            metadata={
+                "utter_action": "utter_premium_service",
+                "utter_source": "EnterpriseSearchPolicy",
+            },
+        ),
+    ]
+
+    user_question = "Are international transfers free with this service?"
+    failure, event = assertion.run(
+        turn_events=[
+            UserUttered(user_question),
+            *matching_events,
+        ],
+        prior_events=[SessionStarted()],
+        llm_judge_config=llm_judge_config,
+        step_text=user_question,
+    )
+
+    assert event is not None
+    assert failure is None
+
+    assert mock_embed.call_count == 2
+
+    assert mock_embed.call_args_list == [
+        call(
+            input=[user_question],
+            model="openai/text-embedding-ada-002",
+            api_base=None,
+            api_type="openai",
+            api_version=None,
+        ),
+        call(
+            input=[
+                "Are international transfers free with the domestic service?",
+                "Are international transfers free with the premium service?",
+            ],
+            model="openai/text-embedding-ada-002",
+            api_base=None,
+            api_type="openai",
+            api_version=None,
+        ),
+    ]
+
+
 @pytest.mark.parametrize(
-    "assertion_type, data, metric_name,",
+    "assertion_type, ",
     [
-        (
-            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value,
-            [
-                {
-                    "answer_correctness/v1/score": 5,
-                    "answer_correctness/v1/justification": "test justification",
-                }
-            ],
-            "answer_correctness",
-        ),
-        (
-            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value,
-            [
-                {
-                    "answer_relevance/v1/score": 5,
-                    "answer_relevance/v1/justification": "test justification",
-                }
-            ],
-            "answer_relevance",
-        ),
+        AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED,
+        AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT,
     ],
 )
 def test_generative_response_run_no_matching_events(
     monkeypatch: MonkeyPatch,
-    assertion_type: str,
-    data: List[Dict[str, Any]],
-    metric_name: str,
+    assertion_type: AssertionType,
 ) -> None:
-    table = {"eval_results_table": pd.DataFrame(data=data)}
-    set_up_tests_for_generative_response_assertions(monkeypatch, table, metric_name)
+    llm_response = """
+    ```json
+    {}
+    ```
+    """
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
     assertion = get_assertion(assertion_type)
     matching_events = [
         SlotSet("service_name", "domestic"),
@@ -1374,3 +1588,252 @@ def test_bot_utterance_multiple_errors(
     error_message = " ".join(expected_error_messages)
     assert failure is not None
     assert error_message == failure.error_message
+
+
+@pytest.mark.parametrize(
+    "expected_template_name",
+    [
+        DEFAULT_GROUNDEDNESS_PROMPT_TEMPLATE_FILE_NAME,
+        DEFAULT_ANSWER_RELEVANCE_PROMPT_TEMPLATE_FILE_NAME,
+    ],
+)
+def test_get_default_prompt_template(expected_template_name: str):
+    template = _get_default_prompt_template(expected_template_name)
+
+    expected_template = (
+        Path(__file__).parent.parent.parent
+        / "rasa"
+        / "e2e_test"
+        / "llm_judge_prompts"
+        / expected_template_name
+    )
+
+    assert template == expected_template.read_text()
+
+
+@patch("rasa.e2e_test.assertions.llm_factory")
+@pytest.mark.parametrize(
+    "assertion_type",
+    [
+        AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED,
+        AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT,
+    ],
+)
+def test_generative_response_mixin_calls_llm_factory_correctly(
+    mock_llm_factory: Mock,
+    monkeypatch: MonkeyPatch,
+    assertion_type: AssertionType,
+):
+    assertion = get_assertion(assertion_type)
+
+    # Given
+    llm_judge_config = LLMJudgeConfig.from_dict(
+        {
+            "llm": {
+                "model": "gpt-4-0613",
+                "provider": "openai",
+                "timeout": 7,
+                "temperature": 0.0,
+                "max_tokens": 256,
+            }
+        }
+    )
+    prompt = "some prompt"
+    mock_llm_client = AsyncMock(spec=OpenAILLMClient)
+    mock_completion = Mock(
+        return_value=LLMResponse(id="1", created=1, choices=["some response"])
+    )
+    monkeypatch.setattr(mock_llm_client, "completion", mock_completion)
+    mock_llm_factory.return_value = mock_llm_client
+
+    # When
+    assertion._invoke_llm(llm_judge_config, prompt)
+
+    # Then
+    mock_llm_factory.assert_called_once_with(
+        llm_judge_config.llm_config_as_dict, llm_judge_config.get_default_llm_config()
+    )
+    mock_completion.assert_called_once_with(prompt)
+
+
+def test_generative_response_mixin_process_response_success_groundedness():
+    # Given
+    assertion = get_assertion(AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED)
+    llm_response = """```json
+    {
+        "statements":[
+            {
+                "statement": "Local transfers through FinX incur a small fee.",
+                "score": 1,
+                "justification": "test justification"
+            }
+        ]
+    }
+    ```
+    """
+
+    # When
+    statements = assertion._process_response(llm_response, "some bot message")
+
+    # Then
+    assert len(statements) == 1
+    assert (
+        statements[0].get("statement")
+        == "Local transfers through FinX incur a small fee."
+    )
+    assert statements[0].get("score") == 1
+    assert statements[0].get("justification") == "test justification"
+
+
+def test_generative_response_mixin_process_response_success_relevance():
+    # Given
+    assertion = get_assertion(AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT)
+    llm_response = """```json
+    {
+        "question_variations": ["Do local transfers through FinX incur a fee?"]
+    }
+    ```
+    """
+
+    # When
+    questions = assertion._process_response(llm_response, "some bot message")
+
+    # Then
+    assert len(questions) == 1
+    assert questions[0] == "Do local transfers through FinX incur a fee?"
+
+
+@pytest.mark.parametrize(
+    "assertion_type",
+    [
+        AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED,
+        AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT,
+    ],
+)
+def test_generative_response_mixin_process_response_invalid_llm_output(
+    assertion_type: AssertionType,
+):
+    assertion = get_assertion(assertion_type)
+    llm_response = """```json
+    {
+        "statements": [
+            {
+                "statement": "Local transfers through FinX incur a small fee.",
+                "score": 1,
+                "justification": "test justification"
+            },
+        ]
+    }
+    ```
+    """
+
+    with pytest.raises(RasaException, match="Failed to parse the LLM Judge response"):
+        assertion._process_response(llm_response, "some bot message")
+
+
+@pytest.mark.parametrize(
+    "assertion_type, llm_response",
+    [
+        (
+            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED,
+            """```json
+                {
+                    "statements": [
+                        {
+                            "statement": "Local transfers through FinX
+                                         incur a small fee.",
+                            "score": 1,
+                            "explanation": "incorrect field name"
+                        }
+                    ]
+                }
+                ```
+                """,
+        ),
+        (
+            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT,
+            """```json
+                {
+                    "question_variation": [
+                        {
+                            "variation": "incorrect field name",
+                            "non_committed": 1
+                        }
+                    ]
+                }
+                ```
+                """,
+        ),
+    ],
+)
+def test_generative_response_mixin_process_response_invalid_llm_json(
+    assertion_type: AssertionType, llm_response: str
+):
+    assertion = get_assertion(assertion_type)
+
+    with pytest.raises(
+        RasaException, match="Failed to validate the LLM Judge json response"
+    ):
+        assertion._process_response(llm_response, "some bot message")
+
+
+@pytest.mark.parametrize(
+    "assertion_type, llm_output",
+    [
+        (AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED, "statements"),
+        (AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT, "question variations"),
+    ],
+)
+def test_generative_response_mixin_process_response_no_statements(
+    assertion_type: AssertionType, llm_output: str
+):
+    assertion = get_assertion(assertion_type)
+    llm_response = """```json
+    {
+        "statements": []
+    }
+    ```
+    """
+
+    with pytest.raises(RasaException, match=f"No {llm_output} were extracted"):
+        assertion._process_response(llm_response, "some bot message")
+
+
+def test_generative_response_mixin_calculate_score_groundedness() -> None:
+    assertion = get_assertion(AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED)
+    statements = [
+        {
+            "statement": "Local transfers through FinX incur a small fee.",
+            "score": 1,
+            "justification": "test justification 1",
+        },
+        {
+            "statement": "FinX allows fee-free transactions.",
+            "score": 1,
+            "justification": "test justification 2",
+        },
+        {
+            "statement": "FinX provides the convenience of instant transfers.",
+            "score": 0,
+            "justification": "test justification 3",
+        },
+    ]
+
+    score_inputs = ScoreInputs(
+        threshold=assertion.threshold,
+        matching_event=BotUttered("some bot message"),
+        user_question="",
+        llm_judge_config=LLMJudgeConfig.from_dict({}),
+    )
+
+    score, error_justifications = calculate_score(
+        assertion.type(), statements, score_inputs
+    )
+
+    assert math.isclose(score, 0.6666666666666666)
+    assert error_justifications == (
+        "There were 1 incorrect statements out of 3 "
+        "total extracted statements. "
+        "The justifications for these statements "
+        "include: test justification 3"
+    )

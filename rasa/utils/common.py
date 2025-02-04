@@ -35,7 +35,6 @@ from rasa.constants import (
     ENV_LOG_LEVEL_KAFKA,
     ENV_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_MATPLOTLIB,
-    ENV_LOG_LEVEL_MLFLOW,
     ENV_LOG_LEVEL_RABBITMQ,
 )
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL, TCP_PROTOCOL
@@ -394,19 +393,6 @@ def update_faker_log_level(library_log_level: Text) -> None:
     log_level = os.environ.get(ENV_LOG_LEVEL_FAKER, library_log_level)
     logging.getLogger("faker").setLevel(log_level)
     logging.getLogger("faker").propagate = False
-
-
-def update_mlflow_log_level() -> None:
-    """Set the log level of mlflow.
-
-    Uses the library specific log level or the general libraries log level.
-    """
-    library_log_level = os.environ.get(
-        ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES
-    )
-    log_level = os.environ.get(ENV_LOG_LEVEL_MLFLOW, library_log_level)
-    logging.getLogger("mlflow").setLevel(log_level)
-    logging.getLogger("mlflow").propagate = False
 
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:

@@ -30,8 +30,8 @@ inputs:
     required: true
     default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
 
-  llm-as-judge-model:
-    description: "Judge model (must be from OpenAI) to be used by assertions."
+  llm-judge-model:
+    description: "Judge model to be used by generative assertions."
     required: true
     default: gpt-4o-mini
 
@@ -46,13 +46,14 @@ runs:
         path: rasa-calm-demo
         token: ${{ env.RASA_CALM_DEMO_READ_TOKEN }}
 
-    - name: Setup LLM-as-judge model
+    - name: Setup LLM-judge model
       working-directory: rasa-calm-demo
       run: |
-        : Setup LLM-as-judge model
-        echo "llm_as_judge:
-                api_type: openai
-                model: ${{ inputs.llm-as-judge-model }}" > conftest.yml
+        : Setup LLM-judge model
+        echo "llm_judge:
+                llm:
+                  provider: openai
+                  model: ${{ inputs.llm-judge-model }}" > conftest.yml
       shell: bash
 
     # TODO: Investigate using LiteLLM-proxy, and adding callbacks to proxy only, for non `litellm_proxy` providers also
@@ -73,12 +74,6 @@ runs:
       uses: RasaHQ/rasa-private/.github/actions/setup-python-env@main
       with:
         PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-
-    - name: Install MLflow for e2e-tests-with-assertions
-      run: |
-        : Install MLflow for e2e-tests-with-assertions
-        source $VENV && poetry install -E mlflow
-      shell: bash
 
     - name: Install google-generative-ai package
       if: ${{ inputs.provider == 'gemini' }}

@@ -68,8 +68,8 @@ on:
         type: string
         required: true
         default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
-      llm-as-judge-model:
-        description: "Judge model (must be from OpenAI) to be used by assertions."
+      llm-judge-model:
+        description: "Judge model to be used by assertions."
         type: string
         required: true
         default: gpt-4o-mini
@@ -103,7 +103,7 @@ jobs:
       single-step-e2e-test-with-assertions: ${{ inputs.single-step-e2e-test-with-assertions }}
       multi-step-e2e-test-with-assertions: ${{ inputs.multi-step-e2e-test-with-assertions }}
       command-generator: ${{ inputs.command-generator }}
-      llm-as-judge-model: ${{ inputs.llm-as-judge-model }}
+      llm-judge-model: ${{ inputs.llm-judge-model }}
 
   release-artifacts-docker:
     name: Release Artifacts Docker

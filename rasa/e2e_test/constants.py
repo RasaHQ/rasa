@@ -17,9 +17,13 @@ KEY_METADATA = "metadata"
 KEY_ASSERTIONS = "assertions"
 KEY_ASSERTION_ORDER_ENABLED = "assertion_order_enabled"
 KEY_STUB_CUSTOM_ACTIONS = "stub_custom_actions"
+KEY_THRESHOLD = "threshold"
+KEY_UTTER_NAME = "utter_name"
+KEY_GROUND_TRUTH = "ground_truth"
+KEY_UTTER_SOURCE = "utter_source"
 
 KEY_MODEL = "model"
-KEY_LLM_AS_JUDGE = "llm_as_judge"
+KEY_LLM_JUDGE = "llm_judge"
 KEY_LLM_E2E_TEST_CONVERSION = "llm_e2e_test_conversion"
 
 DEFAULT_E2E_INPUT_TESTS_PATH = "tests/e2e_test_cases.yml"
@@ -29,3 +33,14 @@ DEFAULT_COVERAGE_OUTPUT_PATH = "e2e_coverage_results"
 # Test status
 STATUS_PASSED = "passed"
 STATUS_FAILED = "failed"
+
+# LLM Judge
+LLM_JUDGE_PROMPTS_MODULE = "rasa.e2e_test.llm_judge_prompts"
+DEFAULT_GROUNDEDNESS_PROMPT_TEMPLATE_FILE_NAME = "groundedness_prompt_template.jinja2"
+DEFAULT_ANSWER_RELEVANCE_PROMPT_TEMPLATE_FILE_NAME = (
+    "answer_relevance_prompt_template.jinja2"
+)
+DEFAULT_E2E_TESTING_MODEL = "gpt-4o-mini"
+KEY_SCORE = "score"
+KEY_JUSTIFICATION = "justification"
+KEY_EXTRA_PARAMETERS = "extra_parameters"

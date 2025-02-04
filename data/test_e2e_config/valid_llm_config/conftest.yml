@@ -1,3 +1,4 @@
-llm_as_judge:
-  api_type: openai
-  model: gpt-4
+llm_judge:
+  llm:
+    provider: openai
+    model: gpt-4

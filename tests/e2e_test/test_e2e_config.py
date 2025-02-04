@@ -4,9 +4,10 @@ from typing import Any
 import pytest
 from pytest import MonkeyPatch
 
-from rasa.e2e_test.constants import KEY_LLM_AS_JUDGE
+from rasa.core.utils import AvailableEndpoints
+from rasa.e2e_test.constants import DEFAULT_E2E_TESTING_MODEL, KEY_LLM_JUDGE
 from rasa.e2e_test.e2e_config import (
-    InvalidLLMConfiguration,
+    BaseModelConfig,
     LLME2ETestConverterConfig,
     LLMJudgeConfig,
     create_llm_e2e_test_converter_config,
@@ -14,6 +15,7 @@ from rasa.e2e_test.e2e_config import (
     get_conftest_path,
     read_conftest_file,
 )
+from rasa.shared.constants import OPENAI_PROVIDER
 from rasa.shared.utils.yaml import YamlValidationException, write_yaml
 
 
@@ -34,8 +36,12 @@ def test_create_llm_judge_config() -> None:
         "data/test_e2e_config/valid_llm_config/dummy_test_case_file.yml"
     )
     assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
-        api_type="openai",
-        model="gpt-4",
+        llm_config=BaseModelConfig(
+            provider=OPENAI_PROVIDER,
+            model="gpt-4",
+            extra_parameters={},
+        ),
+        embeddings=None,
     )
 
 
@@ -46,8 +52,12 @@ def test_create_llm_judge_config_no_conftest_detected(tmp_path: Path) -> None:
     test_case_path = tmp_path / "no_conftest_detected"
     test_case_path.mkdir()
     assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
-        api_type="openai",
-        model="gpt-4o-mini",
+        llm_config=BaseModelConfig(
+            provider=OPENAI_PROVIDER,
+            model=DEFAULT_E2E_TESTING_MODEL,
+            extra_parameters={},
+        ),
+        embeddings=None,
     )
 
 
@@ -58,8 +68,12 @@ def test_create_llm_judge_config_conftest_without_llm_judge_key(
     test_case_path = tmp_path / conftest_file_name
     test_case_path.write_text("")
     assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
-        api_type="openai",
-        model="gpt-4o-mini",
+        llm_config=BaseModelConfig(
+            provider=OPENAI_PROVIDER,
+            model=DEFAULT_E2E_TESTING_MODEL,
+            extra_parameters={},
+        ),
+        embeddings=None,
     )
 
 
@@ -69,30 +83,92 @@ def test_create_llm_judge_config_conftest_with_custom_config(
 ) -> None:
     test_case_path = tmp_path / conftest_file_name
     test_case_path.write_text("""
-    llm_as_judge:
-        api_type: openai
-        model: gpt-4
+    llm_judge:
+        llm:
+            provider: openai
+            model: gpt-4
+        embeddings:
+            provider: openai
+            model: text-embedding-3-small
     """)
     assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
-        api_type="openai",
-        model="gpt-4",
+        llm_config=BaseModelConfig(
+            provider=OPENAI_PROVIDER,
+            model="gpt-4",
+            extra_parameters={},
+        ),
+        embeddings=BaseModelConfig(
+            provider=OPENAI_PROVIDER,
+            model="text-embedding-3-small",
+            extra_parameters={},
+        ),
     )
 
 
 @pytest.mark.parametrize("conftest_file_name", ["conftest.yaml", "conftest.yml"])
-def test_create_llm_judge_config_conftest_with_invalid_llm_config(
+def test_create_llm_judge_config_conftest_with_different_llm_provider(
     tmp_path: Path, conftest_file_name: str
 ) -> None:
     test_case_path = tmp_path / conftest_file_name
     test_case_path.write_text("""
-    llm_as_judge:
-        api_type: anthropic
-        model: claude-2.1
+    llm_judge:
+        llm:
+            provider: anthropic
+            model: claude-2.1
     """)
-    # fallback to default configuration
     assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
-        api_type="openai",
-        model="gpt-4o-mini",
+        llm_config=BaseModelConfig(
+            provider="anthropic", model="claude-2.1", extra_parameters={}
+        ),
+        embeddings=None,
+    )
+
+
+@pytest.mark.parametrize("conftest_file_name", ["conftest.yaml", "conftest.yml"])
+def test_create_llm_judge_config_conftest_with_model_group(
+    tmp_path: Path, monkeypatch: MonkeyPatch, conftest_file_name: str
+) -> None:
+    test_case_path = tmp_path / conftest_file_name
+    test_case_path.write_text("""
+    llm_judge:
+        llm:
+            model_group: openai-direct-gpt-4
+        embeddings:
+            provider: openai
+            model: text-embedding-3-small
+    """)
+
+    endpoints_path = tmp_path / "endpoints.yml"
+    endpoints_path.write_text("""
+    model_groups:
+        - id: openai-direct-gpt-4
+          models:
+            - provider: openai
+              model: gpt-4
+              timeout: 7
+              temperature: 0.0
+              top_p: 0.0
+    """)
+    endpoints = AvailableEndpoints.read_endpoints(str(endpoints_path))
+    assert endpoints.model_groups is not None
+
+    monkeypatch.setattr(AvailableEndpoints, "get_instance", lambda: endpoints)
+
+    assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
+        llm_config=BaseModelConfig(
+            provider=OPENAI_PROVIDER,
+            model="gpt-4",
+            extra_parameters={
+                "timeout": 7,
+                "temperature": 0.0,
+                "top_p": 0.0,
+            },
+        ),
+        embeddings=BaseModelConfig(
+            provider=OPENAI_PROVIDER,
+            model="text-embedding-3-small",
+            extra_parameters={},
+        ),
     )
 
 
@@ -101,7 +177,7 @@ def test_read_conftest_file_raises_yaml_validation_error(
     tmp_path: Path,
     model_value: Any,
 ) -> None:
-    conftest_data = {KEY_LLM_AS_JUDGE: {"model": model_value}}
+    conftest_data = {KEY_LLM_JUDGE: {"model": model_value}}
     test_case_path = tmp_path / "conftest.yml"
     write_yaml(conftest_data, test_case_path)
 
@@ -127,57 +203,57 @@ def test_get_conftest_path_not_found(tmp_path: Path, test_case_path: Path) -> No
 
 def test_llm_judge_config_from_dict_valid_with_defaults() -> None:
     judge_config = LLMJudgeConfig.from_dict({})
-    assert judge_config.api_type == "openai"
-    assert judge_config.model == "gpt-4o-mini"
+    assert judge_config.llm_config.provider == OPENAI_PROVIDER
+    assert judge_config.llm_config.model == DEFAULT_E2E_TESTING_MODEL
+    assert judge_config.embeddings is None
 
 
 def test_llm_judge_config_from_dict_valid() -> None:
     judge_config = LLMJudgeConfig.from_dict(
         {
-            "api_type": "openai",
-            "model": "gpt-4",
+            "llm": {
+                "provider": "openai",
+                "model": "gpt-4",
+            }
         }
     )
 
-    assert judge_config.model == "gpt-4"
+    assert judge_config.llm_config.model == "gpt-4"
+    assert judge_config.embeddings is None
 
 
-def test_llm_judge_config_from_dict_invalid() -> None:
-    with pytest.raises(
-        InvalidLLMConfiguration,
-        match="Invalid LLM type 'anthropic'. Only 'openai' is supported.",
-    ):
-        LLMJudgeConfig.from_dict(
-            {
-                "api_type": "anthropic",
-                "model": "claude-2.1",
-            }
-        )
-
-
-def test_llm_judge_config_as_dict() -> None:
+def test_llm_judge_config_as_dict_provider_config() -> None:
     judge_config = LLMJudgeConfig.from_dict(
         {
-            "api_type": "openai",
-            "model": "gpt-4",
+            "llm": {
+                "provider": "openai",
+                "model": "gpt-4",
+            }
         }
     )
 
-    assert judge_config.as_dict() == {
-        "api_type": "openai",
+    assert judge_config.llm_config_as_dict == {
+        "provider": "openai",
         "model": "gpt-4",
     }
 
 
-def test_llm_judge_config_get_model_uri() -> None:
+def test_llm_judge_config_as_dict_provider_with_extra_parameters() -> None:
     judge_config = LLMJudgeConfig.from_dict(
         {
-            "api_type": "openai",
-            "model": "gpt-3.5-turbo",
+            "llm": {
+                "provider": "openai",
+                "model": "gpt-4",
+                "temperature": 0.0,
+            }
         }
     )
 
-    assert judge_config.get_model_uri() == "openai:/gpt-3.5-turbo"
+    assert judge_config.llm_config_as_dict == {
+        "provider": "openai",
+        "model": "gpt-4",
+        "temperature": 0.0,
+    }
 
 
 def test_create_llm_e2e_test_converter_config_no_conftest(tmp_path: Path):

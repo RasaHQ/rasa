@@ -222,4 +222,4 @@ jobs:
           rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch }}
           single-step-tests: e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml
           multi-step-tests: e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml
-          llm-as-judge-model: gpt-4o-mini
+          llm-judge-model: gpt-4o-mini

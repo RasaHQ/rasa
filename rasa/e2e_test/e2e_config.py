@@ -1,26 +1,31 @@
 from __future__ import annotations
 
-import dataclasses
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Generator, Optional
+from typing import Any, Dict, Generator, Optional, Tuple
 
 import structlog
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from rasa.e2e_test.constants import (
+    DEFAULT_E2E_TESTING_MODEL,
     E2E_CONFIG_SCHEMA_FILE_PATH,
-    KEY_LLM_AS_JUDGE,
+    KEY_EXTRA_PARAMETERS,
     KEY_LLM_E2E_TEST_CONVERSION,
+    KEY_LLM_JUDGE,
 )
 from rasa.shared.constants import (
     API_BASE_CONFIG_KEY,
     DEPLOYMENT_CONFIG_KEY,
+    EMBEDDINGS_CONFIG_KEY,
     MODEL_CONFIG_KEY,
+    MODELS_CONFIG_KEY,
     OPENAI_PROVIDER,
     PROVIDER_CONFIG_KEY,
 )
-from rasa.shared.exceptions import RasaException
+from rasa.shared.utils.llm import (
+    combine_custom_and_default_config,
+    resolve_model_client_config,
+)
 from rasa.shared.utils.yaml import (
     parse_raw_yaml,
     read_schema_file,
@@ -32,42 +37,103 @@ structlogger = structlog.get_logger()
 CONFTEST_PATTERNS = ["conftest.yml", "conftest.yaml"]
 
 
-class InvalidLLMConfiguration(RasaException):
-    """Exception raised when the LLM configuration is invalid."""
+class BaseModelConfig(BaseModel):
+    """Base class for model configurations used by generative assertions."""
 
-    def __init__(self, error_message: str) -> None:
-        """Creates a `InvalidLLMConfiguration`."""
-        super().__init__(error_message)
+    provider: Optional[str] = None
+    model: Optional[str] = None
+    extra_parameters: Dict[str, Any] = Field(default_factory=dict)
+    model_group: Optional[str] = None
 
 
-@dataclass
-class LLMJudgeConfig:
-    """Class for storing the configuration of the LLM-As-Judge.
+class LLMJudgeConfig(BaseModel):
+    """Class for storing the configuration of the LLM-Judge.
 
-    The LLM-As-Judge is used to measure the factual accuracy
+    The LLM-Judge is used to measure the factual correctness
     (i.e., how grounded in the source documents the response is),
      or relevance of the generated response during E2E testing.
     """
 
-    api_type: str = "openai"
-    model: str = "gpt-4o-mini"
+    llm_config: BaseModelConfig
+    embeddings: Optional[BaseModelConfig] = None
 
-    @staticmethod
-    def from_dict(config_data: Dict[str, Any]) -> LLMJudgeConfig:
+    @classmethod
+    def get_default_llm_config(cls) -> Dict[str, Any]:
+        return {
+            PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
+            MODEL_CONFIG_KEY: DEFAULT_E2E_TESTING_MODEL,
+        }
+
+    @classmethod
+    def from_dict(cls, config_data: Dict[str, Any]) -> LLMJudgeConfig:
         """Loads the configuration from a dictionary."""
-        llm_type = config_data.pop("api_type", "openai")
-        if llm_type != "openai":
-            raise InvalidLLMConfiguration(
-                f"Invalid LLM type '{llm_type}'. Only 'openai' is supported."
-            )
+        embeddings = config_data.pop(EMBEDDINGS_CONFIG_KEY, None)
+        llm_config = config_data.pop("llm", {})
 
-        return LLMJudgeConfig(**config_data)
+        llm_config = resolve_model_client_config(llm_config)
+        llm_config, extra_parameters = cls.extract_attributes(llm_config)
+        llm_config = combine_custom_and_default_config(
+            llm_config, cls.get_default_llm_config()
+        )
+        embeddings_config = resolve_model_client_config(embeddings)
 
-    def as_dict(self) -> Dict[str, Any]:
-        return dataclasses.asdict(self)
+        return LLMJudgeConfig(
+            llm_config=BaseModelConfig(extra_parameters=extra_parameters, **llm_config),
+            embeddings=BaseModelConfig(**embeddings_config)
+            if embeddings_config
+            else None,
+        )
 
-    def get_model_uri(self) -> str:
-        return f"{self.api_type}:/{self.model}"
+    @classmethod
+    def extract_attributes(
+        cls, llm_config: Dict[str, Any]
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Extract the expected fields from the configuration."""
+        required_config = {}
+
+        expected_fields = [
+            PROVIDER_CONFIG_KEY,
+            MODEL_CONFIG_KEY,
+        ]
+
+        if PROVIDER_CONFIG_KEY in llm_config:
+            required_config = {
+                expected_field: llm_config.pop(expected_field, None)
+                for expected_field in expected_fields
+            }
+
+        elif MODELS_CONFIG_KEY in llm_config:
+            llm_config = llm_config.pop(MODELS_CONFIG_KEY)[0]
+
+            required_config = {
+                expected_field: llm_config.pop(expected_field, None)
+                for expected_field in expected_fields
+            }
+
+        clean_config = clean_up_config(required_config)
+        return clean_config, llm_config
+
+    @property
+    def llm_config_as_dict(self) -> Dict[str, Any]:
+        return extract_config(self.llm_config)
+
+    @property
+    def embeddings_config_as_dict(self) -> Dict[str, Any]:
+        if self.embeddings is None:
+            return {}
+
+        return extract_config(self.embeddings)
+
+
+def clean_up_config(config_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Remove None values from the configuration."""
+    return {key: value for key, value in config_data.items() if value}
+
+
+def extract_config(config: BaseModelConfig) -> Dict[str, Any]:
+    clean_config = clean_up_config(dict(config))
+    extra_parameters = clean_config.pop(KEY_EXTRA_PARAMETERS, {})
+    return {**clean_config, **extra_parameters}
 
 
 class LLME2ETestConverterConfig(BaseModel):
@@ -99,7 +165,10 @@ class LLME2ETestConverterConfig(BaseModel):
 
     @classmethod
     def get_default_config(cls) -> Dict[str, Any]:
-        return {PROVIDER_CONFIG_KEY: OPENAI_PROVIDER, MODEL_CONFIG_KEY: "gpt-4o-mini"}
+        return {
+            PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
+            MODEL_CONFIG_KEY: DEFAULT_E2E_TESTING_MODEL,
+        }
 
     @staticmethod
     def _clean_up_config(config_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -160,24 +229,16 @@ def create_llm_judge_config(test_case_path: Optional[Path]) -> LLMJudgeConfig:
         structlogger.debug("e2e_config.create_llm_judge_config.no_conftest_detected")
         return LLMJudgeConfig.from_dict(config_data)
 
-    llm_judge_config_data = config_data.get(KEY_LLM_AS_JUDGE, {})
+    llm_judge_config_data = config_data.get(KEY_LLM_JUDGE, {})
     if not llm_judge_config_data:
-        structlogger.debug("e2e_config.create_llm_judge_config.no_llm_as_judge_key")
+        structlogger.debug("e2e_config.create_llm_judge_config.no_llm_judge_key")
 
     structlogger.info(
         "e2e_config.create_llm_judge_config.success",
         llm_judge_config_data=llm_judge_config_data,
     )
 
-    try:
-        return LLMJudgeConfig.from_dict(llm_judge_config_data)
-    except InvalidLLMConfiguration as e:
-        structlogger.error(
-            "e2e_config.create_llm_judge_config.invalid_llm_configuration",
-            error_message=str(e),
-            event_info="Falling back to default configuration.",
-        )
-        return LLMJudgeConfig()
+    return LLMJudgeConfig.from_dict(llm_judge_config_data)
 
 
 def create_llm_e2e_test_converter_config(

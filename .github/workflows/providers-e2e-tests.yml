@@ -74,8 +74,8 @@ on:
         required: true
         default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
 
-      llm-as-judge-model:
-        description: "Judge model (must be from OpenAI) to be used by assertions."
+      llm-judge-model:
+        description: "Judge model to be used by assertions."
         type: string
         required: true
         default: gpt-4o-mini
@@ -114,8 +114,8 @@ on:
         description: "Path to test file, on `rasa-calm-demo` repository"
         type: string
         required: true
-      llm-as-judge-model:
-        description: "Judge model (must be from OpenAI) to be used by assertions."
+      llm-judge-model:
+        description: "Judge model to be used by assertions."
         type: string
         required: true
   pull_request:
@@ -317,7 +317,7 @@ jobs:
           rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch || 'main' }}
           single-step-tests: ${{ inputs.single-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }} # TODO: Use test that invokes enterprise-search, when flakiness is resolved
           multi-step-tests: ${{ inputs.multi-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }}
-          llm-as-judge-model: ${{ inputs.llm-as-judge-model || 'gpt-4o-mini' }}
+          llm-judge-model: ${{ inputs.llm-judge-model || 'gpt-4o-mini' }}
 
   e2e_test_on_single_provider:
     name: Run e2e Test
@@ -361,4 +361,4 @@ jobs:
           rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch }}
           single-step-tests: ${{ inputs.single-step-e2e-test-with-assertions }}
           multi-step-tests: ${{ inputs.multi-step-e2e-test-with-assertions }}
-          llm-as-judge-model: ${{ inputs.llm-as-judge-model }}
+          llm-judge-model: ${{ inputs.llm-judge-model }}
