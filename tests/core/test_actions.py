@@ -1,5 +1,6 @@
 import logging
 import textwrap
+import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Text
 from unittest.mock import MagicMock, Mock
@@ -3405,3 +3406,63 @@ def test_remote_action_json_validator_caching():
     check_cache_after_validate(hits=0, misses=1, currsize=1)
     check_cache_after_validate(hits=1, misses=1, currsize=1)
     check_cache_after_validate(hits=2, misses=1, currsize=1)
+
+
+async def test_action_extract_slots_sets_slots_shared_for_coexistence() -> None:
+    slot_name = "special_requests"
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        slots:
+          {slot_name}:
+            type: text
+            shared_for_coexistence: true
+            mappings:
+            - type: from_text
+              conditions:
+                - active_loop: restaurant_form
+                  requested_slot: {slot_name}
+                - active_flow: add_contact
+
+        responses:
+            utter_ask_special_requests:
+                - text: "Would you like to add any special requests?"
+
+        forms:
+            restaurant_form:
+                required_slots:
+                - {slot_name}
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+
+    special_requests_msg = "Yes, add Sebi to my favourite contacts list."
+
+    initial_events = [
+        SessionStarted(),
+        UserUttered("I want to add Sebi to my contacts."),
+        ActiveLoop("restaurant_form"),
+        SlotSet("requested_slot", slot_name),
+        BotUttered("Would you like to add any special requests?"),
+        UserUttered(special_requests_msg),
+    ]
+    tracker = DialogueStateTracker.from_events(
+        sender_id=uuid.uuid4().hex, evts=initial_events
+    )
+
+    action_extract_slots = ActionExtractSlots(None)
+
+    metadata = {
+        "all_flows": {"add_contact": {"steps": [{"collect": "special_requests"}]}}
+    }
+
+    events = await action_extract_slots.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        tracker,
+        domain,
+        metadata=metadata,
+    )
+    tracker.update_with_events(events)
+    assert tracker.get_slot(slot_name) == special_requests_msg

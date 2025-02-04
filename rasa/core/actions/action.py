@@ -1307,7 +1307,9 @@ class ActionExtractSlots(Action):
         )
 
         for slot in user_slots:
-            if slot.name in calm_slot_names:
+            # allows the action to set slots that are shared between
+            # the NLU-based system and CALM system in a coexistence bot
+            if slot.name in calm_slot_names and not slot.shared_for_coexistence:
                 continue
 
             slot_value, is_extracted = extract_slot_value(slot, slot_filling_manager)
