@@ -272,7 +272,9 @@ def requires_auth(
             raise ErrorResponse(
                 HTTPStatus.UNAUTHORIZED,
                 "NotAuthenticated",
-                "User is not authenticated.",
+                "User is not authenticated. ",
+                "Please make sure the use of token is supported and that "
+                "the supplied token is valid.",
                 help_url=_docs(
                     "/user-guide/configuring-http-api/#security-considerations"
                 ),

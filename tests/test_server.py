@@ -2645,4 +2645,5 @@ def test_retrieve_flows_with_invalid_authentication(
     assert jsonResponse["reason"] == "NotAuthenticated"
     # Message assertion fails as actual message is just "User is not authenticated."
     # assert jsonResponse["message"] == "User is not authenticated to access resource."
+    assert "User is not authenticated. " in jsonResponse["message"]
     assert jsonResponse["code"] == HTTPStatus.UNAUTHORIZED
