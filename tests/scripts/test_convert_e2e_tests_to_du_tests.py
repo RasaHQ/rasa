@@ -50,7 +50,7 @@ def du_test_cases() -> List[DialogueUnderstandingTestCase]:
             name="test_case_2",
             steps=[DialogueUnderstandingTestStep(actor="user", text="hello")],
             file="test_file_2.yml",
-            fixture_names=["fixture_2", "fixture_3"],
+            fixture_names=["fixture_1", "fixture_2", "fixture_3"],
             metadata_name="metadata_2",
         ),
         DialogueUnderstandingTestCase(
@@ -226,7 +226,7 @@ def test_convert_passing_test_case_with_assertions():
     "test_case_index, expected",
     [
         (0, ["fixture_1"]),
-        (1, ["fixture_2", "fixture_3"]),
+        (1, ["fixture_1", "fixture_2", "fixture_3"]),
         (2, []),
         (None, ["fixture_1", "fixture_2", "fixture_3"]),
     ],

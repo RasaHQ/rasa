@@ -203,14 +203,18 @@ def _filter_fixtures(
     if not fixtures:
         return []
 
+    fixture_names = []
     filtered_fixtures = []
     for test_case in test_cases:
         if not test_case.fixture_names:
             continue
         for fixture_name in test_case.fixture_names:
+            if fixture_name in fixture_names:
+                continue
             filtered_fixtures.extend(
                 [fixture for fixture in fixtures if fixture.name == fixture_name]
             )
+            fixture_names.append(fixture_name)
 
     return filtered_fixtures
 
