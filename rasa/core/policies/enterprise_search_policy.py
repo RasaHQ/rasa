@@ -76,7 +76,7 @@ from rasa.shared.providers.embedding._langchain_embedding_client_adapter import 
     _LangchainEmbeddingClientAdapter,
 )
 from rasa.shared.providers.llm.llm_client import LLMClient
-from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.providers.llm.llm_response import LLMResponse, measure_llm_latency
 from rasa.shared.utils.cli import print_error_and_exit
 from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
     EmbeddingsHealthCheckMixin,
@@ -639,6 +639,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         )
         return prompt
 
+    @measure_llm_latency
     async def _generate_llm_answer(
         self, llm: LLMClient, prompt: Text
     ) -> Optional[LLMResponse]:

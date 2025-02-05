@@ -4,7 +4,7 @@ import os
 import tempfile
 import uuid
 from typing import Any, Dict, Sequence
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
@@ -17,6 +17,7 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import (
     MockAvailableEndpoints,
@@ -57,6 +58,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_default_conf
     previous_num_captured_spans: int,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
+    llm_response_object: LLMResponse,
 ) -> None:
     component_class = EnterpriseSearchPolicy
     vector_store = MockInformationRetrieval()
@@ -73,7 +75,9 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_default_conf
         execution_context=default_execution_context,
         vector_store=vector_store,
     )
-    await policy._generate_llm_answer(llm=Mock(), prompt="")
+    mock_llm_client = Mock()
+    mock_llm_client.acompletion = AsyncMock(return_value=llm_response_object)
+    await policy._generate_llm_answer(llm=mock_llm_client, prompt="")
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -178,6 +182,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_custom_confi
     expected: Dict[str, Any],
     monkeypatch: MonkeyPatch,
     mock_available_endpoints: MockAvailableEndpoints,
+    llm_response_object: LLMResponse,
 ) -> None:
     """Test that the instrumentation traces custom configuration for the EnterpriseSearchPolicy."""  # noqa: E501
     # In order to avoid race conditions when tests are run on the same
@@ -202,7 +207,9 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_custom_confi
             execution_context=default_execution_context,
             vector_store=vector_store,
         )
-        await policy._generate_llm_answer(llm=Mock(), prompt="")
+        mock_llm_client = Mock()
+        mock_llm_client.acompletion = AsyncMock(return_value=llm_response_object)
+        await policy._generate_llm_answer(llm=mock_llm_client, prompt="")
         captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
         num_captured_spans = len(captured_spans) - previous_num_captured_spans
@@ -225,6 +232,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     monkeypatch: MonkeyPatch,
+    llm_response_object: LLMResponse,
 ) -> None:
     """Test that the instrumentation traces ES prompt tokens for OpenAI models."""
     # In order to avoid race conditions when tests are run on the same
@@ -249,7 +257,11 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
             execution_context=default_execution_context,
             vector_store=vector_store,
         )
-        await policy._generate_llm_answer(llm=Mock(), prompt="This is a test prompt.")
+        mock_llm_client = Mock()
+        mock_llm_client.acompletion = AsyncMock(return_value=llm_response_object)
+        await policy._generate_llm_answer(
+            llm=mock_llm_client, prompt="This is a test prompt."
+        )
 
         captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -286,6 +298,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
     default_execution_context: ExecutionContext,
     caplog: LogCaptureFixture,
     monkeypatch: MonkeyPatch,
+    llm_response_object: LLMResponse,
 ) -> None:
     """Test that the instrumentation does not trace ES prompt tokens for non-OpenAI models."""  # noqa: E501
     # In order to avoid race conditions when tests are run on the same
@@ -315,8 +328,10 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
         )
 
         with caplog.at_level(logging.WARNING):
+            mock_llm_client = Mock()
+            mock_llm_client.acompletion = AsyncMock(return_value=llm_response_object)
             await policy._generate_llm_answer(
-                llm=Mock(), prompt="This is a test prompt."
+                llm=mock_llm_client, prompt="This is a test prompt."
             )
             assert (
                 "Tracing prompt tokens is only supported for OpenAI models. Skipping."

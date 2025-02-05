@@ -30,7 +30,7 @@ from rasa.shared.exceptions import FileIOException, ProviderClientAPIException
 from rasa.shared.nlu.constants import FLOWS_IN_PROMPT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.providers.llm.llm_response import LLMResponse, measure_llm_latency
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.llm import (
     allowed_values_for_slot,
@@ -303,6 +303,7 @@ class LLMBasedCommandGenerator(
         )
         return filtered_flows
 
+    @measure_llm_latency
     async def invoke_llm(self, prompt: Text) -> Optional[LLMResponse]:
         """Use LLM to generate a response.
 

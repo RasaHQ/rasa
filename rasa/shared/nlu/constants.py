@@ -9,6 +9,7 @@ KEY_SYSTEM_PROMPT = "system_prompt"
 KEY_LLM_RESPONSE_METADATA = "llm_response_metadata"
 KEY_PROMPT_NAME = "prompt_name"
 KEY_COMPONENT_NAME = "component_name"
+KEY_LATENCY = "latency"
 LLM_COMMANDS = "llm_commands"  # needed for fine-tuning
 LLM_PROMPT = "llm_prompt"  # needed for fine-tuning
 FLOWS_FROM_SEMANTIC_SEARCH = "flows_from_semantic_search"

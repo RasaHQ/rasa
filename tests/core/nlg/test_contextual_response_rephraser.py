@@ -19,6 +19,7 @@ from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
     KEY_COMPONENT_NAME,
+    KEY_LATENCY,
     KEY_LLM_RESPONSE_METADATA,
     KEY_PROMPT_NAME,
     KEY_USER_PROMPT,
@@ -562,4 +563,6 @@ async def test_rephraser_prompt_is_stored_in_the_tracker(
     assert KEY_LLM_RESPONSE_METADATA in prompts[0]
 
     llm_response_dict["choices"] = ["hello foobar"]
+    assert KEY_LATENCY in prompts[0][KEY_LLM_RESPONSE_METADATA]
+    del prompts[0][KEY_LLM_RESPONSE_METADATA][KEY_LATENCY]
     assert prompts[0][KEY_LLM_RESPONSE_METADATA] == llm_response_dict

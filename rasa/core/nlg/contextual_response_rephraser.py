@@ -26,7 +26,7 @@ from rasa.shared.nlu.constants import (
     KEY_USER_PROMPT,
     PROMPTS,
 )
-from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.providers.llm.llm_response import LLMResponse, measure_llm_latency
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_GENERATE_MODEL_NAME,
@@ -182,6 +182,7 @@ class ContextualResponseRephraser(
                 return None
         return None
 
+    @measure_llm_latency
     async def _generate_llm_response(self, prompt: str) -> Optional[LLMResponse]:
         """Use LLM to generate a response, returning an LLMResponse object
         containing both the generated text (choices) and metadata.

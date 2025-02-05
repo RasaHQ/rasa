@@ -1,5 +1,7 @@
+import functools
+import time
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, List, Optional, Text, Union
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Text, Union
 
 import structlog
 
@@ -57,6 +59,9 @@ class LLMResponse:
     """Optional dictionary for storing additional information related to the
     completion that may not be covered by other fields."""
 
+    latency: Optional[float] = None
+    """Optional field to store the latency of the LLM API call."""
+
     @classmethod
     def from_dict(cls, data: Dict[Text, Any]) -> "LLMResponse":
         """Creates an LLMResponse from a dictionary."""
@@ -70,6 +75,7 @@ class LLMResponse:
             model=data.get("model"),
             usage=usage_obj,
             additional_info=data.get("additional_info"),
+            latency=data.get("latency"),
         )
 
     @classmethod
@@ -87,3 +93,17 @@ class LLMResponse:
         if self.usage:
             result["usage"] = self.usage.to_dict()
         return result
+
+
+def measure_llm_latency(
+    func: Callable[..., Awaitable[Optional[LLMResponse]]],
+) -> Callable[..., Awaitable[Optional[LLMResponse]]]:
+    @functools.wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Optional[LLMResponse]:
+        start = time.perf_counter()
+        result: Optional[LLMResponse] = await func(*args, **kwargs)
+        if result:
+            result.latency = time.perf_counter() - start
+        return result
+
+    return wrapper
