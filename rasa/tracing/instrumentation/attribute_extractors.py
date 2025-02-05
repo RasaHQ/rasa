@@ -43,6 +43,7 @@ from rasa.shared.constants import (
     LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_GROUP_ID_CONFIG_KEY,
+    MODELS_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
 )
@@ -621,6 +622,19 @@ def extract_attrs_for_du_print_test_results(
             # so we need to set the values as separate attributes
             for metric_name, value in command_metric.as_dict().items():
                 attributes_dict[f"{command_name}_{metric_name}"] = value
+
+    if test_suite_result.llm_config:
+        # check if model group syntax is used
+        if MODELS_CONFIG_KEY in test_suite_result.llm_config:
+            for idx, model_group in enumerate(
+                test_suite_result.llm_config[MODELS_CONFIG_KEY]
+            ):
+                for key, value in model_group.items():
+                    if value is not None:
+                        attributes_dict[f"llm_config_{idx}_{key}"] = value
+        else:
+            for key, value in test_suite_result.llm_config.items():
+                attributes_dict[f"llm_config_0_{key}"] = value
 
     return attributes_dict
 

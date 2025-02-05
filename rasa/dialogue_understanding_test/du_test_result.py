@@ -27,6 +27,7 @@ OUTPUT_NUMBER_OF_FAILED_USER_UTTERANCES = "number_of_failed_user_utterances"
 OUTPUT_COMMAND_METRICS = "command_metrics"
 OUTPUT_NAMES_OF_FAILED_TESTS = "names_of_failed_tests"
 OUTPUT_NAMES_OF_PASSED_TESTS = "names_of_passed_tests"
+OUTPUT_LLM_COMMAND_GENERATOR_CONFIG = "llm_command_generator_config"
 
 
 class DialogueUnderstandingTestResult(BaseModel):
@@ -151,6 +152,7 @@ class DialogueUnderstandingTestSuiteResult:
         self.names_of_failed_tests: List[str] = []
         self.names_of_passed_tests: List[str] = []
         self.failed_test_steps: List[FailedTestStep] = []
+        self.llm_config: Optional[Dict[str, Any]] = None
 
     @classmethod
     def from_results(
@@ -158,6 +160,7 @@ class DialogueUnderstandingTestSuiteResult:
         failing_test_results: List[DialogueUnderstandingTestResult],
         passing_test_results: List[DialogueUnderstandingTestResult],
         command_metrics: Dict[str, "CommandMetrics"],
+        llm_config: Optional[Dict[str, Any]],
     ) -> "DialogueUnderstandingTestSuiteResult":
         """Create a DialogueUnderstandingTestSuiteResult object from the test results.
 
@@ -171,6 +174,7 @@ class DialogueUnderstandingTestSuiteResult:
                 representing the test cases that passed.
             command_metrics: A dictionary of command-specific performance metrics, keyed
                 by command name.
+            llm_config: A dictionary containing the command generator configuration.
 
         Returns:
             A DialogueUnderstandingTestSuiteResult object containing aggregated test
@@ -201,6 +205,8 @@ class DialogueUnderstandingTestSuiteResult:
         instance.failed_test_steps = cls._create_failed_steps_from_results(
             failing_test_results
         )
+
+        instance.llm_config = llm_config
 
         return instance
 
@@ -296,5 +302,8 @@ class DialogueUnderstandingTestSuiteResult:
             )
 
         result_dict["failed_test_steps"] = failed_steps_list
+
+        if self.llm_config:
+            result_dict[OUTPUT_LLM_COMMAND_GENERATOR_CONFIG] = self.llm_config
 
         return result_dict

@@ -3,7 +3,7 @@ import asyncio
 import datetime
 import importlib
 import sys
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import structlog
 
@@ -17,8 +17,12 @@ from rasa.cli.arguments.default_arguments import (
 )
 from rasa.core.agent import Agent
 from rasa.core.exceptions import AgentNotReady
+from rasa.core.processor import MessageProcessor
 from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.generator import (
+    LLMBasedCommandGenerator,
+)
 from rasa.dialogue_understanding.generator.command_parser import DEFAULT_COMMANDS
 from rasa.dialogue_understanding_test.command_metric_calculation import (
     calculate_command_metrics,
@@ -44,9 +48,17 @@ from rasa.dialogue_understanding_test.validation import (
 )
 from rasa.e2e_test.e2e_test_case import TestSuite
 from rasa.exceptions import RasaException
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import (
+    DEFAULT_ENDPOINTS_PATH,
+    LLM_CONFIG_KEY,
+    ROUTE_TO_CALM_SLOT,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.utils.llm import (
+    combine_custom_and_default_config,
+    resolve_model_client_config,
+)
 from rasa.utils.beta import ensure_beta_feature_is_enabled
 from rasa.utils.endpoints import EndpointConfig
 
@@ -218,14 +230,17 @@ def execute_dialogue_understanding_tests(args: argparse.Namespace) -> None:
     # Exit if the bot is not calm only
     ensure_calm_only_bot(test_runner.agent)
 
-    # Get flows from the agent
-    # we need them to parse the commands when reading the test cases
+    # Ensure processor is not None so that we can extract the flows and the llm config
     if test_runner.agent.processor is None:
         rasa.shared.utils.cli.print_error(
             "No processor: Not able to retrieve flows and config from trained model."
         )
         sys.exit(0)
+
+    # flows are needed in order to parse the commands when reading the test cases
     flows = asyncio.run(test_runner.agent.processor.get_flows())
+    # llm config is needed for instrumentation
+    llm_config = _get_llm_command_generator_config(test_runner.agent.processor)
 
     # read test cases from the given path
     test_suite: TestSuite = get_valid_test_suite(args, flows, test_runner.agent.domain)
@@ -245,7 +260,7 @@ def execute_dialogue_understanding_tests(args: argparse.Namespace) -> None:
     command_metrics = calculate_command_metrics(test_results)
 
     test_suite_result = DialogueUnderstandingTestSuiteResult.from_results(
-        failing_test_results, passing_test_results, command_metrics
+        failing_test_results, passing_test_results, command_metrics, llm_config
     )
 
     # Do not move this import to the top of the file as it will break the
@@ -352,3 +367,23 @@ def split_test_results(
     failed_cases = [r for r in results if not r.passed]
 
     return passed_cases, failed_cases
+
+
+def _get_llm_command_generator_config(
+    processor: MessageProcessor,
+) -> Optional[Dict[str, Any]]:
+    from rasa.dialogue_understanding.generator.constants import DEFAULT_LLM_CONFIG
+
+    train_schema = processor.model_metadata.train_schema
+
+    for node_name, node in train_schema.nodes.items():
+        if node.matches_type(LLMBasedCommandGenerator, include_subtypes=True):
+            # Configurations can reference model groups defined in the endpoints.yml
+            resolved_config = resolve_model_client_config(
+                node.config.get(LLM_CONFIG_KEY, {}), node_name
+            )
+            return combine_custom_and_default_config(
+                resolved_config, DEFAULT_LLM_CONFIG
+            )
+
+    return None

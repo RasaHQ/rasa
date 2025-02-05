@@ -134,6 +134,7 @@ class TestDialogueUnderstandingTestSuiteResult:
             failing_test_results=[failing_test_result],
             passing_test_results=[passing_test_result],
             command_metrics=metrics,
+            llm_config={"model": "gpt-4"},
         )
 
         assert result.number_of_passed_tests == 1
