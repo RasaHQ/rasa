@@ -33,7 +33,7 @@ on:
           - groq
           # - voyage TODO: Enable after ENG-1415 is unblocked
           - ollama
-          # - self-hosted
+          - self-hosted
           - azure-multiple-deployments-with-simple-shuffle-routing
           - azure-multiple-deployments-with-least-busy-routing
           - azure-multiple-deployments-with-usage-based-routing
@@ -200,6 +200,10 @@ permissions:
   contents: read
   pull-requests: read
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint_action:
     runs-on: ubuntu-24.04
@@ -255,7 +259,7 @@ jobs:
     name: Run e2e Test
     needs: [job_setup, check_changes_impacting_providers]
     if: ${{ always() && (github.event_name == 'schedule' || inputs.provider == 'all' || (needs.check_changes_impacting_providers.outputs.litellm_upgraded == 'success' || needs.check_changes_impacting_providers.outputs.openai_upgraded == 'success' || needs.check_changes_impacting_providers.outputs.provider_code_changed == 'true' )) }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.provider == 'self-hosted' && 'ubuntu-24.04-16core' || 'ubuntu-24.04' }}
     services:
       redis:
         image: redis:6
@@ -284,7 +288,7 @@ jobs:
             groq,
             # voyage, TODO: Enable after ENG-1415 is unblocked
             ollama,
-            # self-hosted,
+            self-hosted,
             azure-multiple-deployments-with-simple-shuffle-routing,
             azure-multiple-deployments-with-least-busy-routing,
             azure-multiple-deployments-with-usage-based-routing,
@@ -323,7 +327,7 @@ jobs:
     name: Run e2e Test
     needs: job_setup
     if: ${{ inputs.provider != 'all' && github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ inputs.provider == 'self-hosted' && 'ubuntu-24.04-16core' || 'ubuntu-24.04' }}
     services:
       redis:
         image: redis:6
@@ -349,7 +353,6 @@ jobs:
         run: |
           : Set provider API key
           echo "${{ fromJson(env.API_KEY_NAMES)[inputs.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[inputs.provider]] }}" >> "$GITHUB_ENV"
-
 
       - name: E2E test on single provider
         uses: ./.github/actions/providers-tests

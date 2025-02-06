@@ -26,7 +26,7 @@ on:
           - groq
           # - voyage TODO: Enable after ENG-1415 is unblocked
           - ollama
-          # - self-hosted
+          - self-hosted
           - azure-multiple-deployments-with-simple-shuffle-routing
           - azure-multiple-deployments-with-least-busy-routing
           - azure-multiple-deployments-with-usage-based-routing
@@ -159,6 +159,10 @@ permissions:
   contents: read
   pull-requests: read
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint_action:
     runs-on: ubuntu-24.04
@@ -172,7 +176,7 @@ jobs:
   e2e_test_with_user_provided_config_and_endpoint_files:
     name: Run e2e Test
     needs: lint_action
-    runs-on: ubuntu-24.04
+    runs-on: ${{ inputs.provider == 'self-hosted' && 'ubuntu-24.04-16core' || 'ubuntu-24.04' }}
     services:
       redis:
         image: redis:6
@@ -216,6 +220,8 @@ jobs:
 
       - name: E2E test with user provided config and endpoint files
         uses: ./.github/actions/providers-tests
+        env:
+            LLM_MODEL_NAME: ${{ inputs.llm-model-name }}
         with:
           provider: ${{ inputs.provider }}
           train-and-test: ${{ matrix.train-and-test }}

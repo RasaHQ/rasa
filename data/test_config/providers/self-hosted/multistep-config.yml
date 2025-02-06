@@ -5,9 +5,10 @@ pipeline:
     prompt: data/test_config/providers/router_template.jinja2
     llm:
       provider: self-hosted
-      model: Snowflake/snowflake-arctic-base
-      api_base: "http://localhost:8000/v1"
-      timeout: 7
+      model: Qwen/Qwen2.5-0.5B-Instruct
+      api_base: "http://localhost:8080/v1"
+      timeout: 900
+      temperature: 0.0
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
     nlu_entry:
@@ -35,9 +36,10 @@ pipeline:
   - name: MultiStepLLMCommandGenerator
     llm:
       provider: self-hosted
-      model: Snowflake/snowflake-arctic-base
-      api_base: "http://localhost:8000/v1"
-      timeout: 7
+      model: Qwen/Qwen2.5-0.5B-Instruct
+      api_base: "http://localhost:8080/v1"
+      timeout: 900
+      temperature: 0.0
 
 policies:
   - name: RulePolicy
@@ -51,14 +53,16 @@ policies:
       source: rasa-calm-demo/docs/
     llm:
       provider: self-hosted
-      model: Snowflake/snowflake-arctic-base
-      api_base: "http://localhost:8000/v1"
-      timeout: 7
+      model: Qwen/Qwen2.5-0.5B-Instruct
+      api_base: "http://localhost:8080/v1"
+      timeout: 900
+      temperature: 0.2
   - name: IntentlessPolicy
     llm:
       provider: self-hosted
-      model: Snowflake/snowflake-arctic-base
-      api_base: "http://localhost:8000/v1"
-      timeout: 7
+      model: Qwen/Qwen2.5-0.5B-Instruct
+      api_base: "http://localhost:8080/v1"
+      timeout: 900
+      temperature: 0.2
 
 assistant_id: 20240418-073244-narrow-archive

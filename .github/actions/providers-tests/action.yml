@@ -111,11 +111,75 @@ runs:
         ollama pull llama3.2
       shell: bash
 
-    - name: Setup vLLM
+    - name: Build vLLM Docker image
       if: ${{ inputs.provider == 'self-hosted' }}
       run: |
-        : Setup vLLM
-        pip install vllm==0.6.0 && vllm serve --trust-remote-code Snowflake/snowflake-arctic-base 
+        : Build vLLM Docker image
+        mkdir vllm
+        git clone https://github.com/vllm-project/vllm.git vllm
+        cd vllm
+        docker buildx build -f Dockerfile.cpu \
+        --cache-to type=gha \
+        --cache-from type=gha \
+        -t vllm-cpu-env \
+        --shm-size=60g .
+      shell: bash
+
+    - name: Install Huggingface CLI
+      if: ${{ inputs.provider == 'self-hosted' }}
+      run: |
+        : Install Huggingface CLI
+        source $VENV && pip install "huggingface_hub[cli,hf_transfer]"
+      shell: bash
+    
+    - name: Cache model to be used with vLLM
+      if: ${{ inputs.provider == 'self-hosted' }}
+      uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a #v4.1.2
+      id: vllm-model-cache
+      with:
+        path: model
+        key: ${{ runner.os }}-vllm-model-${{ hashFiles('model/**/*') }}
+
+    - name: Download model to be used with vLLM
+      if: ${{ inputs.provider == 'self-hosted' && steps.vllm-model-cache.outputs.cache-hit != 'true' }}
+      env:
+        LLM_MODEL_NAME: ${{ env.LLM_MODEL_NAME || 'Qwen/Qwen2.5-0.5B-Instruct' }}
+      run: |
+        : Download model to be used with vLLM
+        git config --global credential.helper cache
+        huggingface-cli login --token ${{ env.HUGGINGFACE_API_KEY }} --add-to-git-credential
+        mkdir model
+        export HF_HUB_ENABLE_HF_TRANSFER=1
+        huggingface-cli download ${{ env.LLM_MODEL_NAME }} --repo-type model --local-dir model --cache-dir model
+      shell: bash
+
+    - name: Performance tuning for vLLM
+      if: ${{ inputs.provider == 'self-hosted' }}
+      run: |
+        : Performance tuning for vLLM
+        sudo apt-get install libtcmalloc-minimal4
+        echo "LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4:$LD_PRELOAD" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Run vLLM Docker container with model
+      id: run-vllm-docker-container
+      env:
+        LLM_MODEL_NAME: ${{ env.LLM_MODEL_NAME || 'Qwen/Qwen2.5-0.5B-Instruct' }}
+      if: ${{ inputs.provider == 'self-hosted' }}
+      run: |
+        : Run vLLM Docker container with model
+        docker run -d -p 8080:8080 \
+        -v $(pwd)/model:/mnt/model \
+        -e VLLM_LOGGING_LEVEL=DEBUG \
+        --shm-size=60g \
+        --name vllm \
+        vllm-cpu-env \
+        --model "/mnt/model" \
+        --served-model-name ${{ env.LLM_MODEL_NAME }} \
+        --swap-space 0 \
+        --port 8080 \
+        --max_model_len 2048 \
+        --trust-remote-code
       shell: bash
 
     # As endpoint is scaled-to-zero upon inactivity for cost minimisation,
@@ -186,6 +250,7 @@ runs:
       shell: bash
 
     - name: Run OTEL collector for Tracing and Metrics collection
+      id: run-otel-collector
       env:
         RASA_CALM_DEMO_BRANCH: ${{ inputs.rasa-calm-demo-branch || 'main' }}
       run: |
@@ -207,6 +272,7 @@ runs:
         shell: bash
         command: |
           : Train model
+          set -Eeuxov pipefail
           rm -rf .rasa models \
             && rasa train \
             --config data/test_config/providers/${{ inputs.provider }}/${{ inputs.train-and-test }}-config.yml \
@@ -274,12 +340,13 @@ runs:
         RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
       with:
-        timeout_minutes: 15
+        timeout_minutes: 60
         max_attempts: 2
         retry_wait_seconds: 300
         shell: bash
         command: |
           : Run e2e test on SingleStepCommandGenerator model
+          set -Eeuxov pipefail
           rasa test e2e rasa-calm-demo/${{ inputs.single-step-tests }} \
             --e2e-results \
             --debug \
@@ -295,12 +362,13 @@ runs:
         RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
       with:
-        timeout_minutes: 15
+        timeout_minutes: 60
         max_attempts: 2
         retry_wait_seconds: 300
         shell: bash
         command: |
           : Run e2e test on MultiStepCommandGenerator model
+          set -Eeuxov pipefail
           rasa test e2e rasa-calm-demo/${{ inputs.multi-step-tests }} \
             --e2e-results \
             --debug \
@@ -367,23 +435,41 @@ runs:
         name: LiteLLM-proxy-logs
         path: data/test_config/providers/litellm-proxy-multiple-deployments-with-routing/proxy-log-*
 
+    - name: Collect vLLM logs
+      if: ${{ inputs.provider == 'self-hosted' && failure() && steps.run-vllm-docker-container.outcome == 'success' }}
+      run: |
+        : Collect vLLM logs
+        sudo cp $(docker inspect --format='{{.LogPath}}' vllm) vllm-logs-${{ inputs.train-and-test }}.txt
+        sudo chmod 755 vllm-logs-${{ inputs.train-and-test }}.txt
+      shell: bash
+
+    - name: Save vLLM logs
+      if: ${{ inputs.provider == 'self-hosted' && failure() }}
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+      with:
+        name: vllm-logs-${{ inputs.train-and-test }}
+        path: vllm-logs-${{ inputs.train-and-test }}.txt
+
     - name: Collect OTEL collector logs
-      if: failure()
+      id: collect-otel-collector-logs
+      if: ${{ failure() && steps.run-otel-collector.outcome == 'success' }}
       env:
           RASA_CALM_DEMO_BRANCH: ${{ inputs.rasa-calm-demo-branch || 'main' }}
       run: |
-        : Print OTEL collector logs
-        make print-otel-collector-logs | otel-logs-${{ inputs.provider }}-${{ inputs.train-and-test }}.txt
+        : Collect OTEL collector logs
+        sudo cp $(docker inspect --format='{{.LogPath}}' otel-collector) otel-collector-logs-${{ inputs.provider }}-${{ inputs.train-and-test }}.txt
+        sudo chmod 755 otel-collector-logs-${{ inputs.provider }}-${{ inputs.train-and-test }}.txt
       shell: bash
 
     - name: Save OTEL collector logs
-      if: failure()
+      if: ${{ failure() && steps.collect-otel-collector-logs.outcome == 'success' }}
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
       with:
         name: otel-collector-logs-${{ inputs.provider }}-${{ inputs.train-and-test }}
-        path: otel-logs-${{ inputs.provider }}-${{ inputs.train-and-test }}.txt
+        path: otel-collector-logs-${{ inputs.provider }}-${{ inputs.train-and-test }}.txt
 
     - name: Stop OTEL collector
+      if: ${{ steps.run-otel-collector.outcome == 'success' }}
       env:
           RASA_CALM_DEMO_BRANCH: ${{ inputs.rasa-calm-demo-branch || 'main' }}
       run: |

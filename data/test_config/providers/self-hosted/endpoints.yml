@@ -6,9 +6,10 @@ nlg:
  rephrase_all: True
  llm:
    provider: self-hosted
-   model: Snowflake/snowflake-arctic-base
-   api_base: "http://localhost:8000/v1"
-   timeout: 7
+   model: Qwen/Qwen2.5-0.5B-Instruct
+   api_base: "http://localhost:8080/v1"
+   timeout: 900
+   temperature: 0.2
 
 tracing:
  type: otlp

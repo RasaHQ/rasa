@@ -622,7 +622,7 @@ print-otel-collector-logs: ## Print OTEL collector logs on console
 	docker logs otel-collector
 
 otel-collector-health-check: ## Conduct health check on OTEL collector (requires curl and jq tools)
-	curl -sf http://localhost:13133/health/status | jq '.status' | grep 'Server available'
+	curl -sf --retry-max-time 30 --retry 10 http://localhost:13133/health/status | jq '.status' | grep 'Server available'
 
 stop-otel-collector: ## Stop OTEL collector
 	docker compose -f data/test_config/providers/otel-docker-compose.yml down otel-collector -v --remove-orphans --rmi all

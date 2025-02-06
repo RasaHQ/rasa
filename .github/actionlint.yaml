@@ -1,0 +1,2 @@
+self-hosted-runner:
+  labels: [ubuntu-24.04-16core]

@@ -8,13 +8,18 @@ Assistant C: {{ nlu_entry_sticky }}
 
 The user said: "{{ user_message }}"
 
-Answer which assistant needs to get this message. Answer must consist of ONLY a single alphabetical letter from these three choices: [A, B, C].
-Here are a few examples of valid answers:
+Answer which assistant needs to get this message. Answer must consist of ONLY a single alphabetical letter from these three choices: [A, B, C]. Check that your answer consists of 
+solely one single alphabetical letter. Here are a few examples of valid answers and invalid answers:
 
 """
-A
+Valid: A
+Invalid: The correct answer is A.
 
-B
+Valid: The answer is B
+Invalid: B.
 
-C
+Valid: C
+Invalid: It's C
 """
+
+Your answer:
