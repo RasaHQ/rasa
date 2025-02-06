@@ -7,7 +7,7 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
-      time: "13:00"
+      time: "2:00"
     pull-request-branch-name:
       separator: "-"
     open-pull-requests-limit: 20
@@ -134,7 +134,7 @@ updates:
     schedule:
       interval: weekly
       day: monday
-      time: "12:00"
+      time: "1:00"
     pull-request-branch-name:
       separator: "-"
     open-pull-requests-limit: 10
