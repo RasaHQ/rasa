@@ -106,5 +106,6 @@ swagger-coverage-results.json
 swagger-doc*
 working-data
 __pycache__/
+training_time.txt
 e2e_tests/
 .codegpt

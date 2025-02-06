@@ -172,51 +172,56 @@ else
 endif
 
 
-test-anonymization: PYTEST_MARKER=category_anonymization and (not flaky) and (not acceptance)
+test-anonymization: PYTEST_MARKER=category_anonymization and (not flaky) and (not acceptance) and (not category_large_data_tests)
 test-anonymization: DD_ARGS := $(or $(DD_ARGS),)
 test-anonymization: test-marker  ## Run anonymization tests
 
-test-cli: PYTEST_MARKER=category_cli and (not flaky) and (not acceptance) and (not category_anonymization)
+test-with-large-data: ## Run tests on large data set
+	poetry run \
+		pytest tests/acceptance_tests/large_data_tests/test_training_time.py \
+			-n $(JOBS)
+
+test-cli: PYTEST_MARKER=category_cli and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests)
 test-cli: DD_ARGS := $(or $(DD_ARGS),)
 test-cli: test-marker  ## Run cli tests
 
-test-core-featurizers: PYTEST_MARKER=category_core_featurizers and (not flaky) and (not acceptance) and (not category_anonymization)
+test-core-featurizers: PYTEST_MARKER=category_core_featurizers and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests)
 test-core-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-core-featurizers: test-marker  ## Run core featurizers tests
 
-test-policies: PYTEST_MARKER=category_policies and (not flaky) and (not acceptance) and (not category_anonymization)
+test-policies: PYTEST_MARKER=category_policies and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests)
 test-policies: DD_ARGS := $(or $(DD_ARGS),)
 test-policies: test-marker  ## Run policies tests
 
-test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky) and (not acceptance) and (not category_anonymization)
+test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests)
 test-nlu-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-featurizers: prepare-spacy prepare-mitie prepare-transformers test-marker  ## Run nlu featurizers tests
 
-test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky) and (not acceptance) and (not category_anonymization)
+test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests)
 test-nlu-predictors: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-predictors: prepare-spacy prepare-mitie test-marker  ## Run nlu predictors tests
 
-test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky) and (not acceptance) and (not category_anonymization)
+test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests)
 test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
 test-full-model-training: prepare-spacy prepare-mitie prepare-transformers test-marker  ## Run full model training tests
 
-test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization)
+test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests)
 test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
 test-other-unit-tests: prepare-spacy prepare-mitie test-marker  ## Run other unit tests
 
-test-performance: PYTEST_MARKER=category_performance and (not flaky) and (not acceptance) and (not category_anonymization)
+test-performance: PYTEST_MARKER=category_performance and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests)
 test-performance: DD_ARGS := $(or $(DD_ARGS),)
 test-performance: test-marker  ## Run performance tests
 
-test-flaky: PYTEST_MARKER=flaky and (not acceptance) and (not category_anonymization)
+test-flaky: PYTEST_MARKER=flaky and (not acceptance) and (not category_anonymization) and (not category_large_data_tests)
 test-flaky: DD_ARGS := $(or $(DD_ARGS),)
 test-flaky: prepare-spacy prepare-mitie test-marker  ## Run flaky tests
 
-test-acceptance: PYTEST_MARKER=acceptance and (not flaky) and (not category_anonymization)
+test-acceptance: PYTEST_MARKER=acceptance and (not flaky) and (not category_anonymization) and (not category_large_data_tests)
 test-acceptance: DD_ARGS := $(or $(DD_ARGS),)
 test-acceptance: prepare-spacy prepare-mitie test-marker ## Run acceptance tests
 
-test-audio-manual: PYTEST_MARKER=category_audio_manual and (not flaky) and (not category_anonymization)
+test-audio-manual: PYTEST_MARKER=category_audio_manual and (not flaky) and (not category_anonymization) and (not category_large_data_tests)
 test-audio-manual: DD_ARGS := $(or $(DD_ARGS),)
 test-audio-manual: test-marker
 

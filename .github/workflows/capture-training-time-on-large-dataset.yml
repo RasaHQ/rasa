@@ -1,0 +1,65 @@
+name: Capture Rasa Pro Training Time on Large Dataset
+
+on:
+  push:
+    branches:
+      - main
+      - '[0-9]+.[0-9]+.x'
+  workflow_dispatch:
+
+
+env:
+  DEFAULT_PYTHON_VERSION: '3.9'
+  POETRY_VERSION: 1.8.2
+  RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+
+jobs:
+  capture_training_time_on_large_data:
+    name: Capture training time on large data
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Prepare the job for unit tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION:  ${{ env.DEFAULT_PYTHON_VERSION }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies 📦
+        run: |
+          make install-full
+
+      - name: Test Code 🔍 (multi-process)
+        env:
+          JOBS: 1
+          PYTHONUTF8: 1
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          make test-with-large-data
+        shell: bash
+
+      - name: Read training time
+        id: read_training_time
+        run: |
+          sudo apt-get install bc
+          training_time=$(cat training_time.txt)
+          echo "Training time: $training_time seconds"
+          echo "::set-output name=training_time::$training_time" >> $GITHUB_ENV
+          if (( $(echo "$training_time > 60" | bc -l) )); then
+            echo "Training time exceeded 1 minute"
+            exit 1
+          fi
+
+      - name: Notify Slack of training time ⛔️
+        # send notification if 'training_time' is greater than 1 min
+        if: env.training_time > 60
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ *Training time with large dataset is > 1min 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

@@ -1,0 +1,52 @@
+version: "3.1"
+nlu:
+  - intent: was_bietet_der_chatbot
+    examples: |
+      - what can the chatbot do?
+      - can you open tickets for me?
+      - can I update an existing ticket using the chatbot?
+      - what can you do?
+      - will a human agent take care of my problem
+      - wird sich auch ein agent um mein problem kümmern?
+      - was kannst du?
+      - kann ich ein bestehendes ticket über den chatbot aktualisieren?
+      - erstellt der bot auch tickets für mich?
+      - was alles kann der chatbot überhaupt?
+  - intent: link_passwort_ruecksetzung
+    examples: |
+      - Wie bekomme ich wieder Zugang zu meinem Account?
+      - Hello bot i need unlocked my ciam account
+  - intent: aps_sw_installation_laeuft_auf_fehler
+    examples: |
+      - Installation via Software Center shows errors
+      - Die Installation von SAP Frontend kann nciht durchgeführt werden. Fahler 0x46(70)
+  - intent: 305713_mssd_ios_fm_iphone_ipad_verloren
+    examples: |
+      - Auf meinem Gerät erscheint die Meldung "iPad verloren"
+      - Fehlermeldung: "iPhone/iPad verloren"
+  - intent: 100217_myportal_allgemeine_stoerungsmeldung
+    examples: |
+      - Da steht was falsches in MyPortal
+      - Es gibt eine Störung mit MyPortal
+      - I cannot log into myportal using my CIAM account
+  - intent: reklamation_ticketnachfrage_wiederoeffnung
+    examples: |
+      - I want to reopen my ticket IMxyz, issue is not solved
+      - Ticketnummer IMxyz ist nicht gelöst. Software wird nicht installiert
+      - Wie ist der aktuelle Stand meines Störungsticket
+      - where can i find information about my incident?
+  - intent: workaround_mycard
+    examples: |
+      - Nach Tausch meiner Karte klappt der Gebäudezutritt nicht mehr
+      - I want to unlock my Smartcard
+      - After certificate update can't no longer log in with my mycard
+      - Nach der Aktualisierung der Zertifikate meiner mycard kan ich mich nicht mehr mit der mycard anmelden.
+      - Wie kann ich ein Zertifikat aus der Zertifikatsliste löschen?
+      - meine mycard hab ich verloren.
+      - I have a mac and forgot my mycard pin
+  - intent: aps_nw_anyconnect_breakdowns
+    examples: |
+      - Mein Cisco AnyConnect verliert immer wieder die Verbindung.
+      - Ich habe ständig Verbindungsabbrüche , wenn der PC / Laptop per WLAN verbunden ist . Beim Betrieb per Kabel verbindet sich der PC auch per VPN neu , aber ohne Abbrüche .
+      - meine Verbindung mit Cisco AnyConnect bricht ständig ab
+      - Verbindungsabbrüche in Cisco AnyConnect
