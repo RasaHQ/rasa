@@ -97,7 +97,7 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
             language="en-US",
             voice="en-US-JennyNeural",
             timeout=10,
-            speech_region="germanywestcentral",
+            speech_region="eastus",
         )
 
     @classmethod

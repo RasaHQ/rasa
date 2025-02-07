@@ -48,7 +48,7 @@ def test_azure_default_config():
     config = AzureTTS.get_default_config()
     assert config.language == "en-US"
     assert config.voice == "en-US-JennyNeural"
-    assert config.speech_region == "germanywestcentral"
+    assert config.speech_region == "eastus"
 
 
 def test_tts_url_creation():

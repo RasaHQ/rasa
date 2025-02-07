@@ -1,0 +1,102 @@
+name: Run Voice Tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run at 1am UTC each Monday
+    - cron: "0 1 * * MON"
+
+
+env:
+  DEFAULT_PYTHON_VERSION: '3.10'
+  POETRY_VERSION: 1.8.2
+  RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+
+jobs:
+
+  voice_unit_tests:
+    name: Run Unit Tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+          test:
+            - test-audio-manual
+          python-version: [ 3.9, "3.10", "3.11" ]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Prepare the job for unit tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies (Linux) 📦
+        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
+        # This is a workaround for that issue
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
+
+      - name: Install ddtrace on Linux
+        run: poetry run pip install -U 'ddtrace==2.10.5'
+
+      - name: Make direcory for Swagger/OpenAPI coverage results
+        if: matrix.test == 'test-other-unit-tests'
+        run: mkdir -p 'swagger-coverage-output/localhost:5005'
+
+      - name: Install additional dependencies for voice tests
+        if: matrix.test == 'test-audio-manual'
+        run: |
+          poetry run python -m pip install azure-cognitiveservices-speech
+
+      - name: Test Code 🔍 (multi-process)
+        env:
+          JOBS: 6
+          PYTHONUTF8: 1
+          DD_ENV: ${{ matrix.test }}
+          DD_SERVICE: rasa
+          DD_ARGS: --ddtrace --ddtrace-patch-all --junitxml=unit-tests-results.xml
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
+          DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
+          AZURE_SPEECH_API_KEY: ${{ secrets.AZURE_SPEECH_API_KEY }}
+          API_DOCS_FORMAT: yaml
+        run: |
+          make ${{ matrix.test }}
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+      - name: Prepare test results
+        if: always()
+        run: mv unit-tests-results.xml ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        with:
+          name: unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}
+          path: |
+            ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
+            
+            
+  send_slack_notification_on_failure:
+    name: Notify Slack
+    runs-on: ubuntu-24.04
+    if: always()
+    needs: [ voice_unit_tests ]
+
+    steps:
+      - name: Notify Slack of failure ⛔️
+        # send notification if 'voice_unit_tests' is skipped (previous needed job failed) or failed
+        if: needs.voice_unit_tests.result != 'success'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ *Voice Tests on Main* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

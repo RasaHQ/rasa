@@ -123,7 +123,7 @@ class AzureASR(ASREngine[AzureASRConfig]):
 
     @staticmethod
     def get_default_config() -> AzureASRConfig:
-        return AzureASRConfig("en-US", "germanywestcentral")
+        return AzureASRConfig("en-US", "eastus")
 
     @classmethod
     def from_config_dict(cls, config: Dict) -> "AzureASR":
