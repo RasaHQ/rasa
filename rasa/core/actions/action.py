@@ -803,7 +803,7 @@ class RemoteActionJSONValidator:
                 f". Failed to validate Action server response from API, "
                 f"make sure your response from the Action endpoint is valid. "
                 f"For more information about the format visit "
-                f"{DOCS_BASE_URL}/custom-actions"
+                f"{DOCS_BASE_URL}/action-server/actions"
             )
             raise e
 

@@ -84,7 +84,7 @@ class NoEndpointCustomActionExecutor(CustomActionExecutor):
             f"custom action. Please take a look at "
             f"the docs and set an endpoint configuration via the "
             f"--endpoints flag. "
-            f"{DOCS_BASE_URL}/custom-actions"
+            f"{DOCS_BASE_URL}/action-server/actions"
         )
 
 
