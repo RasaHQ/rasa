@@ -80,6 +80,12 @@ on:
         required: true
         default: gpt-4o-mini
 
+      send-results-notification-to-slack:
+        description: "Send results notifications to Slack's #dev-tribe-alerts channel"
+        type: boolean
+        required: false
+        default: false
+
       instrument-litellm-provider-calls:
         description: "Also instrument LiteLLM calls to each provider (creates another detailed child span in Rasa LLM component trace spans)"
         type: boolean
@@ -142,6 +148,7 @@ env:
   DUCKLING_URL: ${{ secrets.DUCKLING_URL }}
   SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
   RASA_CALM_DEMO_READ_TOKEN: ${{ secrets.RASA_CALM_DEMO_READ }}
+  SEND_RESULTS_NOTIFICATION_TO_SLACK: ${{ github.event_name == 'schedule' && true || inputs.send-results-notification-to-slack }}
 
   # Providers' required environment variables (API key values also stored in 1Password):
 

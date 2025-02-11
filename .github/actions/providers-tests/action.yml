@@ -485,7 +485,7 @@ runs:
       shell: bash
 
     - name: Notify Slack of successful test 💬
-      if: success()
+      if: ${{ success() && github.event_name != 'pull_request' && env.SEND_RESULTS_NOTIFICATION_TO_SLACK == 'true' }}
       uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
       with:
         # Send notification to #dev-tribe-alerts slack channel
@@ -498,7 +498,7 @@ runs:
         SLACK_BOT_TOKEN: ${{ env.SLACK_BOT_TOKEN }}
 
     - name: Notify Slack of failing test ⛔️
-      if: failure()
+      if: ${{ failure() && github.event_name != 'pull_request'  && env.SEND_RESULTS_NOTIFICATION_TO_SLACK == 'true' }}
       uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
       with:
         # Send notification to #dev-tribe-alerts slack channel
