@@ -1,6 +1,8 @@
+import copy
 import typing
 from typing import Any, Dict, List, Optional, Text
 
+import numpy as np
 from pydantic import BaseModel
 
 from rasa.dialogue_understanding.commands import Command
@@ -9,6 +11,10 @@ from rasa.dialogue_understanding_test.du_test_case import (
     DialogueUnderstandingTestStep,
 )
 from rasa.dialogue_understanding_test.utils import get_command_comparison
+from rasa.shared.nlu.constants import (
+    KEY_SYSTEM_PROMPT,
+    KEY_USER_PROMPT,
+)
 
 if typing.TYPE_CHECKING:
     from rasa.dialogue_understanding_test.command_metric_calculation import (
@@ -25,6 +31,9 @@ OUTPUT_USER_UTTERANCES_ACCURACY = "user_utterances_accuracy"
 OUTPUT_NUMBER_OF_PASSED_USER_UTTERANCES = "number_of_passed_user_utterances"
 OUTPUT_NUMBER_OF_FAILED_USER_UTTERANCES = "number_of_failed_user_utterances"
 OUTPUT_COMMAND_METRICS = "command_metrics"
+OUTPUT_LATENCY_METRICS = "latency"
+OUTPUT_COMPLETION_TOKEN_METRICS = "completion_token"
+OUTPUT_PROMPT_TOKEN_METRICS = "prompt_token"
 OUTPUT_NAMES_OF_FAILED_TESTS = "names_of_failed_tests"
 OUTPUT_NAMES_OF_PASSED_TESTS = "names_of_passed_tests"
 OUTPUT_LLM_COMMAND_GENERATOR_CONFIG = "llm_command_generator_config"
@@ -50,7 +59,7 @@ class FailedTestStep(BaseModel):
     error_line: int
     pass_status: bool
     command_generators: List[str]
-    prompt: Optional[Dict[str, Any]] = None
+    prompts: Optional[Dict[str, List[Dict[str, Any]]]] = None
     expected_commands: List[Command]
     predicted_commands: Dict[str, List[Command]]
     conversation_with_diff: List[str]
@@ -66,14 +75,14 @@ class FailedTestStep(BaseModel):
         line_number = step.line or -1
 
         predicted_commands: Dict[str, List[Command]] = {}
-        prompts: Optional[Dict[str, Any]] = None
+        prompts: Optional[Dict[str, List[Dict[str, Any]]]] = None
         command_generators: List[str] = []
 
         if step.dialogue_understanding_output:
             predicted_commands = step.dialogue_understanding_output.commands
             command_generators = step.dialogue_understanding_output.get_component_names_that_predicted_commands()  # noqa: E501
             prompts = (
-                step.dialogue_understanding_output.get_component_name_to_user_prompts()
+                step.dialogue_understanding_output.get_component_name_to_prompt_info()
             )
 
         step_index = test_case.steps.index(step)
@@ -89,13 +98,13 @@ class FailedTestStep(BaseModel):
             error_line=line_number,
             pass_status=False,
             command_generators=command_generators,
-            prompt=prompts,
+            prompts=prompts,
             expected_commands=step.commands or [],
             predicted_commands=predicted_commands,
             conversation_with_diff=conversation_with_diff,
         )
 
-    def to_dict(self, output_prompt: bool) -> Dict[Text, Any]:
+    def to_dict(self, output_prompt: bool) -> Dict[str, Any]:
         step_info = {
             "file": self.file,
             "test_case": self.test_case_name,
@@ -115,19 +124,17 @@ class FailedTestStep(BaseModel):
             ],
         }
 
-        if output_prompt and self.prompt:
-            step_info["prompts"] = [
-                {
-                    component: [
-                        {
-                            "prompt_name": prompt_name,
-                            "prompt_content": prompt_content,
-                        }
-                        for prompt_name, prompt_content in prompts
-                    ],
-                }
-                for component, prompts in self.prompt.items()
-            ]
+        if output_prompt and self.prompts:
+            step_info["prompts"] = copy.deepcopy(self.prompts)
+        elif self.prompts:
+            prompts = copy.deepcopy(self.prompts)
+            # remove user and system prompts
+            for prompt_data in prompts.values():
+                for prompt_info in prompt_data:
+                    prompt_info.pop(KEY_USER_PROMPT, None)
+                    prompt_info.pop(KEY_SYSTEM_PROMPT, None)
+
+                step_info["prompts"] = prompts
 
         return step_info
 
@@ -153,6 +160,9 @@ class DialogueUnderstandingTestSuiteResult:
         self.names_of_passed_tests: List[str] = []
         self.failed_test_steps: List[FailedTestStep] = []
         self.llm_config: Optional[Dict[str, Any]] = None
+        self.latency_metrics: Dict[str, float] = {}
+        self.prompt_token_metrics: Dict[str, float] = {}
+        self.completion_token_metrics: Dict[str, float] = {}
 
     @classmethod
     def from_results(
@@ -204,6 +214,16 @@ class DialogueUnderstandingTestSuiteResult:
 
         instance.failed_test_steps = cls._create_failed_steps_from_results(
             failing_test_results
+        )
+
+        instance.latency_metrics = cls.get_latency_metrics(
+            failing_test_results, passing_test_results
+        )
+        instance.prompt_token_metrics = cls.get_prompt_token_metrics(
+            failing_test_results, passing_test_results
+        )
+        instance.completion_token_metrics = cls.get_completion_token_metrics(
+            failing_test_results, passing_test_results
         )
 
         instance.llm_config = llm_config
@@ -264,7 +284,60 @@ class DialogueUnderstandingTestSuiteResult:
 
         return failed_test_steps
 
-    def to_dict(self, output_prompt: bool = False) -> Dict[Text, Any]:
+    @staticmethod
+    def _calculate_percentiles(values: List[float]) -> Dict[str, float]:
+        return {
+            "p50": float(np.percentile(values, 50)) if values else 0.0,
+            "p90": float(np.percentile(values, 90)) if values else 0.0,
+            "p99": float(np.percentile(values, 99)) if values else 0.0,
+        }
+
+    @classmethod
+    def get_latency_metrics(
+        cls,
+        failing_test_results: List["DialogueUnderstandingTestResult"],
+        passing_test_results: List["DialogueUnderstandingTestResult"],
+    ) -> Dict[str, float]:
+        latencies = [
+            latency
+            for result in failing_test_results + passing_test_results
+            for step in result.test_case.steps
+            for latency in step.get_latencies()
+        ]
+
+        return cls._calculate_percentiles(latencies)
+
+    @classmethod
+    def get_prompt_token_metrics(
+        cls,
+        failing_test_results: List["DialogueUnderstandingTestResult"],
+        passing_test_results: List["DialogueUnderstandingTestResult"],
+    ) -> Dict[str, float]:
+        tokens = [
+            token_count
+            for result in failing_test_results + passing_test_results
+            for step in result.test_case.steps
+            for token_count in step.get_prompt_tokens()
+        ]
+
+        return cls._calculate_percentiles(tokens)
+
+    @classmethod
+    def get_completion_token_metrics(
+        cls,
+        failing_test_results: List["DialogueUnderstandingTestResult"],
+        passing_test_results: List["DialogueUnderstandingTestResult"],
+    ) -> Dict[str, float]:
+        tokens = [
+            token_count
+            for result in failing_test_results + passing_test_results
+            for step in result.test_case.steps
+            for token_count in step.get_completion_tokens()
+        ]
+
+        return cls._calculate_percentiles(tokens)
+
+    def to_dict(self, output_prompt: bool = False) -> Dict[str, Any]:
         """Builds a dictionary for writing test results to a YML file.
 
         Args:
@@ -291,6 +364,10 @@ class DialogueUnderstandingTestSuiteResult:
                 pass
 
         result_dict[OUTPUT_COMMAND_METRICS] = cmd_metrics_output
+
+        result_dict[OUTPUT_LATENCY_METRICS] = self.latency_metrics
+        result_dict[OUTPUT_PROMPT_TOKEN_METRICS] = self.prompt_token_metrics
+        result_dict[OUTPUT_COMPLETION_TOKEN_METRICS] = self.completion_token_metrics
 
         result_dict[OUTPUT_NAMES_OF_PASSED_TESTS] = self.names_of_passed_tests
         result_dict[OUTPUT_NAMES_OF_FAILED_TESTS] = self.names_of_failed_tests

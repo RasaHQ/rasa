@@ -7,6 +7,10 @@ import rich
 import rasa.shared.data
 from rasa.dialogue_understanding_test.command_metric_calculation import CommandMetrics
 from rasa.dialogue_understanding_test.constants import SCHEMA_FILE_PATH
+from rasa.dialogue_understanding_test.du_test_case import (
+    KEY_COMPLETION_TOKENS,
+    KEY_PROMPT_TOKENS,
+)
 from rasa.dialogue_understanding_test.du_test_result import (
     DialogueUnderstandingTestSuiteResult,
     FailedTestStep,
@@ -31,6 +35,12 @@ from rasa.e2e_test.utils.io import (
     validate_test_case,
 )
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.nlu.constants import (
+    KEY_LATENCY,
+    KEY_PROMPT_NAME,
+    KEY_SYSTEM_PROMPT,
+    KEY_USER_PROMPT,
+)
 from rasa.shared.utils.yaml import (
     read_schema_file,
     validate_yaml_content_using_schema,
@@ -188,13 +198,11 @@ def print_test_results(
     """Print the result of the test run.
 
     Example output (truncated for brevity):
-        =================================================================== FAILURES
-        ===================================================================
+        ====== FAILURES ======
 
-        ---------------- test_case:
-        /Users/milos/Projects/rasa-calm-demo/dialogue_understanding_tests/
-        immediate_cancellation_and_start_of_new_flow.yml::
-        user immediately cancels and starts new flow -----------------
+        ---------------- test_case: rasa-calm-demo/dialogue_understanding_tests/
+        immediate_cancellation_and_start_of_new_flow.yml::user immediately cancels
+        and starts new flow -----------------
 
         == failure starting at user message 'I want to send money'.
 
@@ -208,7 +216,7 @@ def print_test_results(
         SetSlot(transfer_money_amount_of_money, 878) |
 
         ...
-
+        ====== COMMAND METRICS ======
         set slot (2 commands in total):
           tp: 0 fp: 1 fn: 2
           precision: 0.0000
@@ -221,9 +229,22 @@ def print_test_results(
           recall   : 1.0000
           f1       : 1.0000
 
-        =================================== 1 failed test cases, 0 passed test cases
-        ===================================
-        ======== 2 failed user steps, 1 passed user steps (accuracy: 0.3333) ========
+        ...
+        ====== LATENCY METRICS ======
+        p50: 0.00065571
+        p90: 0.00074687
+        p99: 0.00077837
+        ====== PROMPT TOKEN METRICS ======
+        p50: 1336.00
+        p90: 1389.50
+        p99: 1401.65
+        ====== COMPLETION TOKEN METRICS ======
+        p50: 12.00
+        p90: 15.80
+        p99: 16.88
+
+        ====== 1 failed test cases, 0 passed test cases ======
+        ====== 2 failed user steps, 1 passed user steps (accuracy: 0.3333) ======
 
     Args:
         test_suite_result: Test results suite containing the test results.
@@ -253,6 +274,7 @@ def print_test_results(
         print_failed_cases(test_suite_result, output_prompt=output_prompt)
 
     print_command_summary(test_suite_result.command_metrics)
+    print_latency_and_token_metrics(test_suite_result)
     print_final_line(test_suite_result)
 
 
@@ -290,16 +312,33 @@ def print_failed_cases(
 
 
 def print_prompt(step: FailedTestStep) -> None:
-    if step.prompt is None:
+    if step.prompts is None:
         return
-    prompt_data = step.prompt
+    prompts = step.prompts
 
     rich.print("\n[red3]-- PROMPT(s) --[/red3]")
-    for component, prompts in prompt_data.items():
+    for component, component_prompts in prompts.items():
         rich.print(f"[bold]{component}[/bold]")
-        for subcomponent, prompt in prompts:
-            rich.print(f"    [bold]{subcomponent}[/bold]")
-            rich.print(f"        {prompt}")
+        for prompt_data in component_prompts:
+            rich.print(
+                f"[bold]  prompt name      [/bold]: {prompt_data[KEY_PROMPT_NAME]}"
+            )
+            rich.print(
+                f"[bold]  prompt tokens    [/bold]: {prompt_data[KEY_PROMPT_TOKENS]}"
+            )
+            rich.print(
+                f"[bold]  completion tokens[/bold]: "
+                f"{prompt_data[KEY_COMPLETION_TOKENS]}"
+            )
+            rich.print(f"[bold]  latency          [/bold]: {prompt_data[KEY_LATENCY]}")
+            if KEY_SYSTEM_PROMPT in prompt_data:
+                rich.print(
+                    f"[bold]  system prompt    [/bold]: "
+                    f"{prompt_data[KEY_SYSTEM_PROMPT]}"
+                )
+            rich.print(
+                f"[bold]  user prompt      [/bold]: {prompt_data[KEY_USER_PROMPT]}"
+            )
 
 
 def print_command_summary(metrics: Dict[str, CommandMetrics]) -> None:
@@ -329,6 +368,24 @@ def print_command_summary(metrics: Dict[str, CommandMetrics]) -> None:
         rasa.shared.utils.cli.print_info(
             f"  f1       : {command_metric.get_f1_score():.4f}"
         )
+
+
+def print_latency_and_token_metrics(
+    result: DialogueUnderstandingTestSuiteResult,
+) -> None:
+    """Print the latency and token metrics."""
+    print()
+    rasa.shared.utils.cli.print_info(rasa.shared.utils.cli.pad("LATENCY METRICS"))
+    for key, value in result.latency_metrics.items():
+        rasa.shared.utils.cli.print_info(f"{key}: {value:.8f}")
+    rasa.shared.utils.cli.print_info(rasa.shared.utils.cli.pad("PROMPT TOKEN METRICS"))
+    for key, value in result.prompt_token_metrics.items():
+        rasa.shared.utils.cli.print_info(f"{key}: {value:.2f}")
+    rasa.shared.utils.cli.print_info(
+        rasa.shared.utils.cli.pad("COMPLETION TOKEN METRICS")
+    )
+    for key, value in result.completion_token_metrics.items():
+        rasa.shared.utils.cli.print_info(f"{key}: {value:.2f}")
 
 
 def print_final_line(test_suite_result: DialogueUnderstandingTestSuiteResult) -> None:

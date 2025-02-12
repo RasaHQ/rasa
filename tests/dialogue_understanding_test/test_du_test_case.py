@@ -12,6 +12,8 @@ from rasa.dialogue_understanding_test.constants import (
     KEY_USER_INPUT,
 )
 from rasa.dialogue_understanding_test.du_test_case import (
+    KEY_COMPLETION_TOKENS,
+    KEY_PROMPT_TOKENS,
     DialogueUnderstandingOutput,
     DialogueUnderstandingTestCase,
     DialogueUnderstandingTestStep,
@@ -19,7 +21,10 @@ from rasa.dialogue_understanding_test.du_test_case import (
 from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.nlu.constants import (
     KEY_COMPONENT_NAME,
+    KEY_LATENCY,
+    KEY_LLM_RESPONSE_METADATA,
     KEY_PROMPT_NAME,
+    KEY_SYSTEM_PROMPT,
     KEY_USER_PROMPT,
 )
 
@@ -36,7 +41,26 @@ def sample_output() -> DialogueUnderstandingOutput:
                 KEY_COMPONENT_NAME: "component1",
                 KEY_USER_PROMPT: "prompt_content",
                 KEY_PROMPT_NAME: "prompt_name",
-            }
+                KEY_LLM_RESPONSE_METADATA: {
+                    KEY_LATENCY: 1.23,
+                    "usage": {
+                        KEY_PROMPT_TOKENS: 1234,
+                        KEY_COMPLETION_TOKENS: 4,
+                    },
+                },
+            },
+            {
+                KEY_COMPONENT_NAME: "component2",
+                KEY_USER_PROMPT: "prompt_content",
+                KEY_PROMPT_NAME: "other_prompt_name",
+                KEY_LLM_RESPONSE_METADATA: {
+                    KEY_LATENCY: 1.55,
+                    "usage": {
+                        KEY_PROMPT_TOKENS: 1543,
+                        KEY_COMPLETION_TOKENS: 6,
+                    },
+                },
+            },
         ],
     )
 
@@ -86,7 +110,6 @@ def sample_correct_bot_step() -> DialogueUnderstandingTestStep:
         metadata_name=None,
         commands=None,
         dialogue_understanding_output=None,
-        index_user_message=0,
     )
 
 
@@ -94,7 +117,7 @@ class TestDialogueUnderstandingOutput:
     def test_valid_creation(self, sample_output: DialogueUnderstandingOutput):
         """Test that a valid output can be created."""
         assert isinstance(sample_output, DialogueUnderstandingOutput)
-        assert len(sample_output.prompts) == 1
+        assert len(sample_output.prompts) == 2
         assert len(sample_output.commands) == 2
 
     def test_get_predicted_commands(self, sample_output: DialogueUnderstandingOutput):
@@ -147,7 +170,7 @@ class TestDialogueUnderstandingOutput:
         component_names = output.get_component_names_that_predicted_commands()
         assert sorted(component_names) == ["componentA"]
 
-    def test_get_component_name_to_prompts(self):
+    def test_get_component_name_to_prompt_info(self):
         output = DialogueUnderstandingOutput(
             commands={
                 "componentA": [SetSlotCommand("slotA", "valA")],
@@ -157,21 +180,44 @@ class TestDialogueUnderstandingOutput:
                     KEY_COMPONENT_NAME: "componentA",
                     KEY_PROMPT_NAME: "promptA",
                     KEY_USER_PROMPT: "User prompt content A",
+                    KEY_SYSTEM_PROMPT: "System prompt content A",
+                    KEY_LLM_RESPONSE_METADATA: {
+                        KEY_LATENCY: 1.23,
+                        "usage": {
+                            KEY_PROMPT_TOKENS: 1234,
+                            KEY_COMPLETION_TOKENS: 4,
+                        },
+                    },
                 },
                 {
                     KEY_COMPONENT_NAME: "componentA",
                     KEY_PROMPT_NAME: "promptB",
                     KEY_USER_PROMPT: "User prompt content B",
+                    KEY_LLM_RESPONSE_METADATA: {
+                        "usage": {
+                            KEY_PROMPT_TOKENS: 7834,
+                            KEY_COMPLETION_TOKENS: 34,
+                        }
+                    },
                 },
             ],
         )
-        result = output.get_component_name_to_user_prompts()
+        result = output.get_component_name_to_prompt_info()
         assert list(result.keys()) == ["componentA"]
-        # We only return (prompt_name, user_prompt) in the result
-        assert result["componentA"] == [
-            ("promptA", "User prompt content A"),
-            ("promptB", "User prompt content B"),
-        ]
+        assert result["componentA"][0] == {
+            KEY_PROMPT_NAME: "promptA",
+            KEY_USER_PROMPT: "User prompt content A",
+            KEY_SYSTEM_PROMPT: "System prompt content A",
+            KEY_LATENCY: 1.23,
+            KEY_COMPLETION_TOKENS: 4,
+            KEY_PROMPT_TOKENS: 1234,
+        }
+        assert result["componentA"][1] == {
+            KEY_PROMPT_NAME: "promptB",
+            KEY_USER_PROMPT: "User prompt content B",
+            KEY_PROMPT_TOKENS: 7834,
+            KEY_COMPLETION_TOKENS: 34,
+        }
 
 
 class TestDialogueUnderstandingTestStep:
@@ -280,7 +326,9 @@ class TestDialogueUnderstandingTestStep:
             ),
         ],
     )
-    def test_to_str_bot_and_user(self, actor, text, template, expected_str):
+    def test_to_str_bot_and_user(
+        self, actor: str, text: str, template: str, expected_str: str
+    ):
         """Test the to_str output for both bot and user steps."""
         step = DialogueUnderstandingTestStep(
             actor=actor,
@@ -288,6 +336,20 @@ class TestDialogueUnderstandingTestStep:
             template=template,
         )
         assert step.to_str() == expected_str
+
+    def test_get_latencies(self, sample_test_step: DialogueUnderstandingTestStep):
+        """Test getting latencies from a test step."""
+        assert sample_test_step.get_latencies() == [1.23, 1.55]
+
+    def test_get_completion_tokens(
+        self, sample_test_step: DialogueUnderstandingTestStep
+    ):
+        """Test getting latencies from a test step."""
+        assert sample_test_step.get_completion_tokens() == [4, 6]
+
+    def test_get_prompt_tokens(self, sample_test_step: DialogueUnderstandingTestStep):
+        """Test getting latencies from a test step."""
+        assert sample_test_step.get_prompt_tokens() == [1234, 1543]
 
 
 class TestDialogueUnderstandingTestCase:

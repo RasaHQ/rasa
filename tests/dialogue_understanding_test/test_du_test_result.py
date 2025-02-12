@@ -5,6 +5,8 @@ from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowComman
 from rasa.dialogue_understanding_test.command_metric_calculation import CommandMetrics
 from rasa.dialogue_understanding_test.constants import ACTOR_USER
 from rasa.dialogue_understanding_test.du_test_case import (
+    KEY_COMPLETION_TOKENS,
+    KEY_PROMPT_TOKENS,
     DialogueUnderstandingOutput,
     DialogueUnderstandingTestCase,
     DialogueUnderstandingTestStep,
@@ -17,6 +19,8 @@ from rasa.dialogue_understanding_test.du_test_result import (
 )
 from rasa.shared.nlu.constants import (
     KEY_COMPONENT_NAME,
+    KEY_LATENCY,
+    KEY_LLM_RESPONSE_METADATA,
     KEY_PROMPT_NAME,
     KEY_USER_PROMPT,
 )
@@ -30,6 +34,13 @@ def sample_output() -> DialogueUnderstandingOutput:
                 KEY_COMPONENT_NAME: "component1",
                 KEY_USER_PROMPT: "prompt_content",
                 KEY_PROMPT_NAME: "prompt_name",
+                KEY_LLM_RESPONSE_METADATA: {
+                    KEY_LATENCY: 1.23,
+                    "usage": {
+                        KEY_PROMPT_TOKENS: 1234,
+                        KEY_COMPLETION_TOKENS: 4,
+                    },
+                },
             }
         ],
         commands={
@@ -59,6 +70,14 @@ def sample_test_case(
 ) -> DialogueUnderstandingTestCase:
     return DialogueUnderstandingTestCase(
         name="test", file="test.yml", line=1, steps=[sample_test_step]
+    )
+
+
+@pytest.fixture
+def sample_test_result(sample_test_case: DialogueUnderstandingTestCase):
+    return DialogueUnderstandingTestResult(
+        test_case=sample_test_case,
+        passed=True,
     )
 
 
@@ -93,7 +112,33 @@ class TestDialogueUnderstandingTestSuiteResult:
             dialogue_understanding_output=DialogueUnderstandingOutput(
                 commands={
                     "dummy_component": [SetSlotCommand(name="slot1", value="value1")]
-                }
+                },
+                prompts=[
+                    {
+                        KEY_COMPONENT_NAME: "dummy_component",
+                        KEY_USER_PROMPT: "prompt_content",
+                        KEY_PROMPT_NAME: "prompt_name",
+                        KEY_LLM_RESPONSE_METADATA: {
+                            KEY_LATENCY: 1.23,
+                            "usage": {
+                                KEY_PROMPT_TOKENS: 1234,
+                                KEY_COMPLETION_TOKENS: 4,
+                            },
+                        },
+                    },
+                    {
+                        KEY_COMPONENT_NAME: "dummy_component",
+                        KEY_USER_PROMPT: "prompt_content",
+                        KEY_PROMPT_NAME: "other_prompt_name",
+                        KEY_LLM_RESPONSE_METADATA: {
+                            KEY_LATENCY: 1.55,
+                            "usage": {
+                                KEY_PROMPT_TOKENS: 1543,
+                                KEY_COMPLETION_TOKENS: 6,
+                            },
+                        },
+                    },
+                ],
             ),
         )
         passing_test_case = DialogueUnderstandingTestCase(
@@ -114,7 +159,21 @@ class TestDialogueUnderstandingTestSuiteResult:
             dialogue_understanding_output=DialogueUnderstandingOutput(
                 commands={
                     "dummy_component": [SetSlotCommand(name="slot1", value="value2")]
-                }
+                },
+                prompts=[
+                    {
+                        KEY_COMPONENT_NAME: "dummy_component",
+                        KEY_USER_PROMPT: "prompt_content",
+                        KEY_PROMPT_NAME: "prompt_name",
+                        KEY_LLM_RESPONSE_METADATA: {
+                            KEY_LATENCY: 1.33,
+                            "usage": {
+                                KEY_PROMPT_TOKENS: 1222,
+                                KEY_COMPLETION_TOKENS: 5,
+                            },
+                        },
+                    },
+                ],
             ),
         )
         failing_test_case = DialogueUnderstandingTestCase(
@@ -151,6 +210,15 @@ class TestDialogueUnderstandingTestSuiteResult:
         # Check names of tests
         assert result.names_of_passed_tests == ["test_file_pass.yml::test_case_pass"]
         assert result.names_of_failed_tests == ["test_file_fail.yml::test_case_fail"]
+
+        # Check latency, prompt token, and completion token metrics
+        assert result.latency_metrics == {"p50": 1.33, "p90": 1.506, "p99": 1.5456}
+        assert result.completion_token_metrics == {"p50": 5.0, "p90": 5.8, "p99": 5.98}
+        assert result.prompt_token_metrics == {
+            "p50": 1234,
+            "p90": 1481.2,
+            "p99": 1536.82,
+        }
 
         # Check failed steps
         assert len(result.failed_test_steps) == 1
@@ -248,7 +316,7 @@ class TestDialogueUnderstandingTestSuiteResult:
             error_line=10,
             pass_status=False,
             command_generators=["SingleStepLLMCommandGenerator"],
-            prompt=None,
+            prompts=None,
             expected_commands=[SetSlotCommand(name="slot1", value="value1")],
             predicted_commands={
                 "dummy_comp": [SetSlotCommand(name="slot1", value="value2")]
@@ -320,3 +388,40 @@ class TestDialogueUnderstandingTestSuiteResult:
         assert any("SetSlot(bar, baz)" in line.split("|")[1] for line in diff_lines)
         assert any("SetSlot(foo, bar)" in line.split("|")[1] for line in diff_lines)
         assert any("StartFlow(foo)" in line.split("|")[1] for line in diff_lines)
+
+    def test_get_latency_metrics(
+        self, sample_test_result: DialogueUnderstandingTestResult
+    ):
+        latency_metrics = DialogueUnderstandingTestSuiteResult.get_latency_metrics(
+            [sample_test_result], [sample_test_result, sample_test_result]
+        )
+
+        assert latency_metrics["p50"] == 1.23
+        assert latency_metrics["p90"] == 1.23
+        assert latency_metrics["p99"] == 1.23
+
+    def test_get_prompt_token_metrics(
+        self, sample_test_result: DialogueUnderstandingTestResult
+    ):
+        prompt_token_metrics = (
+            DialogueUnderstandingTestSuiteResult.get_prompt_token_metrics(
+                [sample_test_result], [sample_test_result, sample_test_result]
+            )
+        )
+
+        assert prompt_token_metrics["p50"] == 1234
+        assert prompt_token_metrics["p90"] == 1234
+        assert prompt_token_metrics["p99"] == 1234
+
+    def test_get_completion_token_metrics(
+        self, sample_test_result: DialogueUnderstandingTestResult
+    ):
+        prompt_token_metrics = (
+            DialogueUnderstandingTestSuiteResult.get_completion_token_metrics(
+                [sample_test_result], [sample_test_result, sample_test_result]
+            )
+        )
+
+        assert prompt_token_metrics["p50"] == 4
+        assert prompt_token_metrics["p90"] == 4
+        assert prompt_token_metrics["p99"] == 4

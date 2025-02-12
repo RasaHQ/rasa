@@ -24,12 +24,15 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding_test.du_test_result import (
     KEY_TEST_CASES_ACCURACY,
     KEY_USER_UTTERANCES_ACCURACY,
+    OUTPUT_COMPLETION_TOKEN_METRICS,
+    OUTPUT_LATENCY_METRICS,
     OUTPUT_NAMES_OF_FAILED_TESTS,
     OUTPUT_NAMES_OF_PASSED_TESTS,
     OUTPUT_NUMBER_OF_FAILED_TESTS,
     OUTPUT_NUMBER_OF_FAILED_USER_UTTERANCES,
     OUTPUT_NUMBER_OF_PASSED_TESTS,
     OUTPUT_NUMBER_OF_PASSED_USER_UTTERANCES,
+    OUTPUT_PROMPT_TOKEN_METRICS,
     OUTPUT_TEST_CASES_ACCURACY,
     OUTPUT_USER_UTTERANCES_ACCURACY,
     DialogueUnderstandingTestSuiteResult,
@@ -635,6 +638,13 @@ def extract_attrs_for_du_print_test_results(
         else:
             for key, value in test_suite_result.llm_config.items():
                 attributes_dict[f"llm_config_0_{key}"] = value
+
+    for key, value in test_suite_result.latency_metrics.items():
+        attributes_dict[f"{OUTPUT_LATENCY_METRICS}_{key}"] = value
+    for key, value in test_suite_result.prompt_token_metrics.items():
+        attributes_dict[f"{OUTPUT_PROMPT_TOKEN_METRICS}_{key}"] = value
+    for key, value in test_suite_result.completion_token_metrics.items():
+        attributes_dict[f"{OUTPUT_COMPLETION_TOKEN_METRICS}_{key}"] = value
 
     return attributes_dict
 

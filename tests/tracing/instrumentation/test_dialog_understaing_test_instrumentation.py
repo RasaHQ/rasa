@@ -59,6 +59,21 @@ def test_dut_print_test_results_instrumentation(
         "start": CommandMetrics(tp=8, fp=2, fn=1, total_count=9)
     }
     test_suite_results.llm_config = llm_config
+    test_suite_results.latency_metrics = {
+        "p50": 0.1,
+        "p95": 0.2,
+        "p99": 0.3,
+    }
+    test_suite_results.prompt_token_metrics = {
+        "p50": 1000,
+        "p95": 1100,
+        "p99": 1200,
+    }
+    test_suite_results.completion_token_metrics = {
+        "p50": 4,
+        "p95": 5,
+        "p99": 6,
+    }
 
     module = importlib.import_module(DIALOG_UNDERSTANDING_TEST_IO_MODULE_NAME)
     module.print_test_results(test_suite_results, False)
@@ -85,3 +100,15 @@ def test_dut_print_test_results_instrumentation(
     assert captured_span.attributes["llm_config_0_temperature"] == 0.0
     assert captured_span.attributes["llm_config_0_timeout"] == 7
     assert captured_span.attributes["llm_config_0_top_p"] == 0.0
+
+    assert captured_span.attributes["latency_p50"] == 0.1
+    assert captured_span.attributes["latency_p95"] == 0.2
+    assert captured_span.attributes["latency_p99"] == 0.3
+
+    assert captured_span.attributes["prompt_token_p50"] == 1000
+    assert captured_span.attributes["prompt_token_p95"] == 1100
+    assert captured_span.attributes["prompt_token_p99"] == 1200
+
+    assert captured_span.attributes["completion_token_p50"] == 4
+    assert captured_span.attributes["completion_token_p95"] == 5
+    assert captured_span.attributes["completion_token_p99"] == 6

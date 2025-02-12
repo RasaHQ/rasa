@@ -1,6 +1,6 @@
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.generator.command_parser import parse_commands
@@ -20,9 +20,16 @@ from rasa.dialogue_understanding_test.constants import (
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.nlu.constants import (
     KEY_COMPONENT_NAME,
+    KEY_LATENCY,
+    KEY_LLM_RESPONSE_METADATA,
     KEY_PROMPT_NAME,
+    KEY_SYSTEM_PROMPT,
     KEY_USER_PROMPT,
 )
+
+KEY_USAGE = "usage"
+KEY_PROMPT_TOKENS = "prompt_tokens"
+KEY_COMPLETION_TOKENS = "completion_tokens"
 
 
 class DialogueUnderstandingOutput(BaseModel):
@@ -62,8 +69,6 @@ class DialogueUnderstandingOutput(BaseModel):
     # List of prompts
     prompts: Optional[List[Dict[str, Any]]] = None
 
-    model_config = ConfigDict(frozen=True)
-
     def get_predicted_commands(self) -> List[Command]:
         """Get all commands from the output."""
         return [
@@ -82,15 +87,31 @@ class DialogueUnderstandingOutput(BaseModel):
             if predicted_commands
         ]
 
-    def get_component_name_to_user_prompts(self) -> Dict[str, List[Tuple[str, str]]]:
-        """Return a dictionary of component names to a list of prompts.
+    def get_component_name_to_prompt_info(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Return a dictionary of component names to prompt information.
 
-        The prompts are represented as tuples of (prompt_name, user_prompt).
+        The prompt information includes the prompt name, user prompt, system prompt,
+        latency, and usage information.
+        The return dict is of the form:
+        {
+            "component_name": [
+                {
+                    "prompt_name": "...",
+                    "user_prompt": "...",
+                    "system_prompt": "...",
+                    "latency": 0.1,
+                    "prompt_tokens": 10,
+                    "completion_tokens": 20
+                },
+                ...
+            ],
+            ...
+        }
         """
         if self.prompts is None:
             return {}
 
-        data: Dict[str, List[Tuple[str, str]]] = {}
+        data: Dict[str, List[Dict[str, Any]]] = {}
         relevant_component_names = self.get_component_names_that_predicted_commands()
 
         for prompt_data in self.prompts:
@@ -99,12 +120,31 @@ class DialogueUnderstandingOutput(BaseModel):
             if component_name not in relevant_component_names:
                 continue
 
-            prompt_name = prompt_data[KEY_PROMPT_NAME]
-            user_prompt = prompt_data[KEY_USER_PROMPT]
-
             if component_name not in data:
                 data[component_name] = []
-            data[component_name].append((prompt_name, user_prompt))
+
+            prompt_info = {
+                KEY_PROMPT_NAME: prompt_data[KEY_PROMPT_NAME],
+                KEY_USER_PROMPT: prompt_data[KEY_USER_PROMPT],
+            }
+
+            latency = prompt_data.get(KEY_LLM_RESPONSE_METADATA, {}).get(KEY_LATENCY)
+            if latency:
+                prompt_info[KEY_LATENCY] = latency
+
+            if prompt_data.get(KEY_SYSTEM_PROMPT):
+                prompt_info[KEY_SYSTEM_PROMPT] = prompt_data[KEY_SYSTEM_PROMPT]
+
+            usage_object = prompt_data.get(KEY_LLM_RESPONSE_METADATA, {}).get(KEY_USAGE)
+            if usage_object:
+                if usage_object.get(KEY_PROMPT_TOKENS):
+                    prompt_info[KEY_PROMPT_TOKENS] = usage_object.get(KEY_PROMPT_TOKENS)
+                if usage_object.get(KEY_COMPLETION_TOKENS):
+                    prompt_info[KEY_COMPLETION_TOKENS] = usage_object.get(
+                        KEY_COMPLETION_TOKENS
+                    )
+
+            data[component_name].append(prompt_info)
 
         return data
 
@@ -149,7 +189,7 @@ class DialogueUnderstandingTestStep(BaseModel):
         Args:
             step: Dictionary containing the step.
             flows: List of flows.
-            custom_commands: Custom commands to use in the test case.
+            custom_command_classes: Custom commands to use in the test case.
             remove_default_commands: Default commands to remove from the test case.
 
         Returns:
@@ -209,6 +249,42 @@ class DialogueUnderstandingTestStep(BaseModel):
             return f"{KEY_USER_INPUT}: {self.text}"
 
         return ""
+
+    def get_latencies(self) -> List[float]:
+        if self.dialogue_understanding_output is None:
+            return []
+
+        prompts = self.dialogue_understanding_output.get_component_name_to_prompt_info()
+
+        return [
+            prompt_data.get(KEY_LATENCY, 0.0)
+            for prompt in prompts.values()
+            for prompt_data in prompt
+        ]
+
+    def get_completion_tokens(self) -> List[int]:
+        if self.dialogue_understanding_output is None:
+            return []
+
+        prompts = self.dialogue_understanding_output.get_component_name_to_prompt_info()
+
+        return [
+            prompt_data.get(KEY_COMPLETION_TOKENS, 0)
+            for prompt in prompts.values()
+            for prompt_data in prompt
+        ]
+
+    def get_prompt_tokens(self) -> List[int]:
+        if self.dialogue_understanding_output is None:
+            return []
+
+        prompts = self.dialogue_understanding_output.get_component_name_to_prompt_info()
+
+        return [
+            prompt_data.get(KEY_PROMPT_TOKENS, 0)
+            for prompt in prompts.values()
+            for prompt_data in prompt
+        ]
 
 
 class DialogueUnderstandingTestCase(BaseModel):
