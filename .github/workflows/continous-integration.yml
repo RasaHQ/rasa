@@ -34,6 +34,8 @@ env:
   RASA_SDK_DEV_REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-sdk-dev
   DEFAULT_PYTHON_VERSION: "3.9"
   NODE_VERSION_INSPECTOR_BUILD: 20
+  SONAR_ORGANIZATION: rasahq
+  SONAR_PROJECT_KEY: RasaHQ_rasa-private
 
 permissions:
   checks: write
@@ -1259,7 +1261,15 @@ jobs:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v4
+        uses: SonarSource/sonarqube-scan-action@bfd4e558cda28cda6b5defafb9232d191be8c203 # v4.2.1
         env:
           GITHUB_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ env.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ env.SONAR_ORGANIZATION }}
+        with:
+          args: >
+            -Dsonar.python.coverage.reportPaths=./artifacts/unit-tests-results-**.xml
+            -Dsonar.projectKey=RasaHQ_rasa-private
+            -Dsonar.organization=rasahq
+            -Dsonar.verbose=true
