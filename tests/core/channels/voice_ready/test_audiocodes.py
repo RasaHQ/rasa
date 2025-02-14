@@ -1,8 +1,12 @@
+import asyncio
+from datetime import datetime, timezone
 from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
 from _pytest.capture import CaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
+from sanic import Sanic
 
 from rasa.core import run, utils
 from rasa.core.channels.channel import UserMessage
@@ -188,3 +192,115 @@ async def test_handle_startup() -> None:
         "user_name": "+491604697810",
         "user_phone": "+493040739365",
     }
+
+
+async def test_on_activities_returns_immediately(monkeypatch: MonkeyPatch) -> None:
+    """
+    Test that on_activities endpoint returns immediately without
+    waiting for activity processing.
+    """
+
+    # Setup a slow activity handler
+    async def slow_on_new_message(message: UserMessage) -> None:
+        await asyncio.sleep(1.0)  # Simulate slow processing
+
+    input_channel = AudiocodesInput(
+        token="test_token",
+        use_websocket=False,
+        keep_alive=120,
+        keep_alive_expiration_factor=1.5,
+    )
+
+    conversation_id = "test_conv"
+    input_channel.conversations[conversation_id] = Conversation(conversation_id)
+
+    # Create Sanic test client
+    app = Sanic("test_app")
+    blueprint = input_channel.blueprint(slow_on_new_message)
+    app.blueprint(blueprint)
+    test_client = app.asgi_client
+
+    # Prepare request data
+    url_prefix = "rasa.core.channels.voice_ready.audiocodes"
+    url = f"{url_prefix}/conversation/{conversation_id}/activities"
+    data = {
+        "activities": [
+            {
+                "id": "test_id",
+                "type": "message",
+                "text": "hello",
+                "parameters": {},
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        ]
+    }
+    headers = {"Authorization": "test_token"}
+
+    # Measure response time
+    start_time = datetime.now()
+    _, response = await test_client.post(url, json=data, headers=headers)
+    elapsed_time = (datetime.now() - start_time).total_seconds()
+
+    # Response should return immediately
+    assert elapsed_time < 0.5  # Much less than the 1.0s sleep
+    assert response.status == 200
+    assert "activities" in response.json
+
+
+async def test_background_task_completes(monkeypatch: MonkeyPatch) -> None:
+    """
+    Test that background task created for activity handling
+    completes successfully.
+    """
+
+    processed_messages = []
+
+    async def tracking_on_new_message(message: UserMessage) -> None:
+        processed_messages.append(message.text)
+        await asyncio.sleep(0.1)  # Small delay to ensure it's running async
+
+    input_channel = AudiocodesInput(
+        token="test_token",
+        use_websocket=False,
+        keep_alive=120,
+        keep_alive_expiration_factor=1.5,
+    )
+
+    conversation_id = "test_conv"
+    input_channel.conversations[conversation_id] = Conversation(conversation_id)
+
+    # Create Sanic test client
+    app = Sanic("test_app")
+    blueprint = input_channel.blueprint(tracking_on_new_message)
+    app.blueprint(blueprint)
+    test_client = app.asgi_client
+
+    # Prepare request data
+    url_prefix = "rasa.core.channels.voice_ready.audiocodes"
+    url = f"{url_prefix}/conversation/{conversation_id}/activities"
+    data = {
+        "activities": [
+            {
+                "id": "test_id",
+                "type": "message",
+                "text": "test message",
+                "parameters": {},
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        ]
+    }
+    headers = {"Authorization": "test_token"}
+
+    # Make request
+    _, response = await test_client.post(url, json=data, headers=headers)
+    assert response.status == 200
+
+    # Wait for background task to complete
+    await asyncio.sleep(0.2)
+
+    # Verify message was processed
+    assert len(processed_messages) == 1
+    assert processed_messages[0] == "test message"
+
+    # Verify task cleanup
+    assert len(input_channel.background_tasks[conversation_id]) == 0

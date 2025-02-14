@@ -1,9 +1,11 @@
+import asyncio
 import copy
 import json
 import uuid
+from collections import defaultdict
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Text, Union
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, Text, Union
 
 import structlog
 from jsonschema import ValidationError, validate
@@ -223,6 +225,16 @@ class AudiocodesInput(InputChannel):
         self.scheduler_job = None
         self.keep_alive = keep_alive
         self.keep_alive_expiration_factor = keep_alive_expiration_factor
+        self.background_tasks: Dict[Text, Set[asyncio.Task]] = defaultdict(set)
+
+    def _create_task(self, conversation_id: Text, coro: Awaitable[Any]) -> asyncio.Task:
+        """Create and track an asyncio task for a conversation."""
+        task: asyncio.Task = asyncio.create_task(coro)
+        self.background_tasks[conversation_id].add(task)
+        task.add_done_callback(
+            lambda t: self.background_tasks[conversation_id].discard(t)
+        )
+        return task
 
     async def _set_scheduler_job(self) -> None:
         if self.scheduler_job:
@@ -251,11 +263,20 @@ class AudiocodesInput(InputChannel):
         )
         now = datetime.now(timezone.utc)
         delta = timedelta(seconds=self.keep_alive * self.keep_alive_expiration_factor)
-        self.conversations = {
-            k: v
-            for k, v in self.conversations.items()
-            if v.is_active_conversation(now, delta)
-        }
+
+        # clean up conversations
+        inactive = [
+            conv_id
+            for conv_id, conv in self.conversations.items()
+            if not conv.is_active_conversation(now, delta)
+        ]
+
+        # cancel tasks and remove conversations
+        for conv_id in inactive:
+            for task in self.background_tasks[conv_id]:
+                task.cancel()
+            self.background_tasks.pop(conv_id, None)
+            self.conversations.pop(conv_id, None)
 
     def handle_start_conversation(self, body: Dict[Text, Any]) -> Dict[Text, Any]:
         conversation_id = body["conversation"]
@@ -347,31 +368,29 @@ class AudiocodesInput(InputChannel):
             structlogger.debug("audiocodes.on_activities", conversation=conversation_id)
             conversation = self._get_conversation(request.token, conversation_id)
             if conversation is None:
+                structlogger.warning(
+                    "audiocodes.on_activities.no_conversation", request=request.json
+                )
                 return response.json({})
             elif conversation.ws:
                 ac_output: Union[WebsocketOutput, AudiocodesOutput] = WebsocketOutput(
                     conversation.ws, conversation_id
                 )
-                await conversation.handle_activities(
-                    request.json,
-                    output_channel=ac_output,
-                    on_new_message=on_new_message,
-                )
-                return response.json({})
+                response_json = {}
             else:
                 # handle non websocket case where messages get returned in json
                 ac_output = AudiocodesOutput()
-                await conversation.handle_activities(
-                    request.json,
-                    output_channel=ac_output,
-                    on_new_message=on_new_message,
-                )
-                return response.json(
-                    {
-                        "conversation": conversation_id,
-                        "activities": ac_output.messages,
-                    }
-                )
+                response_json = {
+                    "conversation": conversation_id,
+                    "activities": ac_output.messages,
+                }
+
+            # start a background task to handle activities
+            self._create_task(
+                conversation_id,
+                conversation.handle_activities(request.json, ac_output, on_new_message),
+            )
+            return response.json(response_json)
 
         @ac_webhook.route(
             "/conversation/<conversation_id>/disconnect", methods=["POST"]

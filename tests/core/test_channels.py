@@ -501,11 +501,29 @@ async def test_callback_calls_endpoint():
         assert text["text"] == "Hi there!"
 
 
-def test_botframework_attachments():
+@patch("requests.get")
+def test_botframework_attachments(mock_get: MagicMock):
     from copy import deepcopy
 
     from rasa.core.channels.botframework import BotFrameworkInput
 
+    # BotFrameworkInput will make two requests to fetch the JWT keys
+    mock_get.side_effect = [
+        # First request - OpenID config
+        Mock(
+            ok=True,
+            json=lambda: {
+                "jwks_uri": "https://login.botframework.com/v1/.well-known/keys"
+            },
+        ),
+        # Second request - JWT keys
+        Mock(
+            ok=True,
+            json=lambda: {
+                "keys": [{"kid": "key1", "kty": "RSA", "e": "value1", "n": "value2"}]
+            },
+        ),
+    ]
     ch = BotFrameworkInput("app_id", "app_pass")
 
     payload = {
