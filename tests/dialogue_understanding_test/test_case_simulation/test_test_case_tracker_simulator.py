@@ -26,7 +26,7 @@ from rasa.dialogue_understanding_test.test_case_simulation.test_case_tracker_sim
     TestCaseTrackerSimulator,
 )
 from rasa.e2e_test.e2e_test_case import Fixture, Metadata
-from rasa.shared.core.constants import MAPPING_TYPE, SlotMappingType
+from rasa.shared.core.constants import KEY_MAPPING_TYPE, SlotMappingType
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.slots import TextSlot
@@ -405,27 +405,27 @@ def test_create_user_message(
     "mapping, user_message, expected_set_slot_extractor",
     (
         (
-            {MAPPING_TYPE: SlotMappingType.FROM_ENTITY.value},
+            {KEY_MAPPING_TYPE: SlotMappingType.FROM_ENTITY.value},
             "message",
             SetSlotExtractor.NLU,
         ),
         (
-            {MAPPING_TYPE: SlotMappingType.FROM_TEXT.value},
+            {KEY_MAPPING_TYPE: SlotMappingType.FROM_TEXT.value},
             "message",
             SetSlotExtractor.NLU,
         ),
         (
-            {MAPPING_TYPE: SlotMappingType.FROM_INTENT.value},
+            {KEY_MAPPING_TYPE: SlotMappingType.FROM_INTENT.value},
             "message",
             SetSlotExtractor.NLU,
         ),
         (
-            {MAPPING_TYPE: SlotMappingType.FROM_LLM.value},
+            {KEY_MAPPING_TYPE: SlotMappingType.FROM_LLM.value},
             "message",
             SetSlotExtractor.LLM,
         ),
         (
-            {MAPPING_TYPE: SlotMappingType.FROM_LLM.value},
+            {KEY_MAPPING_TYPE: SlotMappingType.FROM_LLM.value},
             "/SetSlot(slot1, value1)",
             SetSlotExtractor.COMMAND_PAYLOAD_READER,
         ),

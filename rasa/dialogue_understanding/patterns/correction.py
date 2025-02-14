@@ -54,6 +54,8 @@ class CorrectionPatternFlowStackFrame(PatternFlowStackFrame):
     """The ID of the flow to reset to."""
     reset_step_id: Optional[str] = None
     """The ID of the step to reset to."""
+    new_slot_values: List[Any] = field(default_factory=list)
+    """The new values for the corrected slots."""
 
     @classmethod
     def type(cls) -> str:
@@ -70,6 +72,10 @@ class CorrectionPatternFlowStackFrame(PatternFlowStackFrame):
         Returns:
             The created `DialogueStackFrame`.
         """
+        new_slot_values = [
+            val.get("value") for _, val in data["corrected_slots"].items()
+        ]
+
         return CorrectionPatternFlowStackFrame(
             frame_id=data["frame_id"],
             step_id=data["step_id"],
@@ -77,6 +83,7 @@ class CorrectionPatternFlowStackFrame(PatternFlowStackFrame):
             corrected_slots=data["corrected_slots"],
             reset_flow_id=data["reset_flow_id"],
             reset_step_id=data["reset_step_id"],
+            new_slot_values=new_slot_values,
         )
 
 
@@ -118,7 +125,12 @@ class ActionCorrectFlowSlot(action.Action):
             )
             events.extend(tracker.create_stack_updated_events(updated_stack))
 
-        events.extend([SlotSet(k, v) for k, v in top.corrected_slots.items()])
+        events.extend(
+            [
+                SlotSet(name, value=val.get("value"), filled_by=val.get("filled_by"))
+                for name, val in top.corrected_slots.items()
+            ]
+        )
         return events
 
 

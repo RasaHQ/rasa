@@ -47,9 +47,9 @@ from rasa.shared.constants import (
 from rasa.shared.core.constants import (
     ACTION_SHOULD_SEND_DOMAIN,
     ACTIVE_LOOP,
+    KEY_MAPPING_TYPE,
     KNOWLEDGE_BASE_SLOT_NAMES,
     MAPPING_CONDITIONS,
-    MAPPING_TYPE,
     SLOT_MAPPINGS,
     SlotMappingType,
 )
@@ -596,7 +596,7 @@ class Domain:
                     ),
                 )
                 slot_dict[slot_name][SLOT_MAPPINGS] = [
-                    {MAPPING_TYPE: SlotMappingType.FROM_LLM.value}
+                    {KEY_MAPPING_TYPE: SlotMappingType.FROM_LLM.value}
                 ]
 
             slot = slot_class(slot_name, **slot_dict[slot_name])
@@ -1570,7 +1570,9 @@ class Domain:
 
                 for mapping in slot.mappings:
                     mapping_conditions = mapping.get(MAPPING_CONDITIONS)
-                    if mapping[MAPPING_TYPE] != str(SlotMappingType.FROM_ENTITY) or (
+                    if mapping[KEY_MAPPING_TYPE] != str(
+                        SlotMappingType.FROM_ENTITY
+                    ) or (
                         mapping_conditions
                         and mapping_conditions[0].get(ACTIVE_LOOP) is not None
                     ):
@@ -2021,7 +2023,7 @@ class Domain:
         for slot in self.slots:
             total_mappings += len(slot.mappings)
             for mapping in slot.mappings:
-                if mapping[MAPPING_TYPE] == str(SlotMappingType.CUSTOM):
+                if mapping[KEY_MAPPING_TYPE] == str(SlotMappingType.CUSTOM):
                     custom_mappings += 1
 
                 if MAPPING_CONDITIONS in mapping:

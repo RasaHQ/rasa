@@ -2567,19 +2567,7 @@ def test_domain_slots_contain_all_mapping_type(
         ],
     )
     validator = Validator.from_importer(importer)
-    assert validator.validate_CALM_slot_mappings() is False
-
-    captured = capsys.readouterr()
-    log_level = "error"
-    assert log_level in captured.out
-    assert (
-        "validator.validate_slot_mappings_in_CALM.llm_and_nlu_mappings" in captured.out
-    )
-    assert (
-        "The slot 'card_number' has both LLM and "
-        "NLU or custom slot mappings. "
-        "Please make sure that the slot has only one type of mapping."
-    ) in captured.out
+    assert validator.validate_CALM_slot_mappings() is True
 
 
 def test_validate_custom_action_defined_in_the_domain(
@@ -2836,3 +2824,45 @@ def test_verify_slot_persistence_configuration_raises_deprecation_warning() -> N
     assert len(record) == 1
     assert record[0].message.args[0] == deprecation_message
     assert isinstance(record[0].message, FutureWarning)
+
+
+def test_validate_allow_nlu_correction_valid() -> None:
+    importer = RasaFileImporter(
+        config_file="data/test_calm_slot_mappings/config.yml",
+        domain_path="data/test_calm_slot_mappings/validation/domain_with_valid_allow_nlu_correction.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is True
+
+
+def test_validate_allow_nlu_correction_invalid(
+    capsys: CaptureFixture,
+) -> None:
+    importer = RasaFileImporter(
+        config_file="data/test_calm_slot_mappings/config.yml",
+        domain_path="data/test_calm_slot_mappings/validation/domain_with_invalid_nlu_correction.yml",
+        training_data_paths=[
+            "data/test_calm_slot_mappings/validation/flows.yml",
+        ],
+    )
+    validator = Validator.from_importer(importer)
+    assert validator.validate_CALM_slot_mappings() is False
+
+    captured = capsys.readouterr()
+    log_level = "error"
+    assert log_level in captured.out
+    assert (
+        "The slot 'card_number' has at least 1 slot mapping with "
+        "'allow_nlu_correction' set to 'true', "
+        "but the slot mapping type is not 'from_llm'. "
+        "Please set the slot mapping type to 'from_llm' "
+        "to allow the LLM to correct this slot."
+    ) in captured.out
+    assert (
+        "The slot 'num_people' does not have any NLU-based slot mappings. "
+        "The property `allow_nlu_correction` is only applicable when the "
+        "slot contains both NLU-based and LLM-based slot mappings."
+    ) in captured.out

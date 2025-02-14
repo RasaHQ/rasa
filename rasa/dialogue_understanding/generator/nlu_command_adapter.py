@@ -98,9 +98,11 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
         Returns:
             The commands triggered by NLU.
         """
+        prior_commands = self._get_prior_commands(message)
+
         if tracker is None or flows.is_empty():
             # cannot do anything if there are no flows or no tracker
-            return []
+            return prior_commands
 
         domain = kwargs.get("domain", None)
         commands = self.convert_nlu_to_commands(message, tracker, flows, domain)
@@ -146,7 +148,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
                 commands=commands,
             )
 
-        return commands
+        return prior_commands + commands
 
     @staticmethod
     def convert_nlu_to_commands(

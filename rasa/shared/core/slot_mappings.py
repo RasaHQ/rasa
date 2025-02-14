@@ -6,8 +6,8 @@ from rasa.shared.constants import DOCS_URL_NLU_BASED_SLOTS, IGNORED_INTENTS
 from rasa.shared.core.constants import (
     ACTIVE_FLOW,
     ACTIVE_LOOP,
+    KEY_MAPPING_TYPE,
     MAPPING_CONDITIONS,
-    MAPPING_TYPE,
     REQUESTED_SLOT,
     SLOT_MAPPINGS,
     SlotMappingType,
@@ -59,11 +59,11 @@ class SlotMapping:
             )
 
         try:
-            mapping_type = SlotMappingType(mapping.get(MAPPING_TYPE))
+            mapping_type = SlotMappingType(mapping.get(KEY_MAPPING_TYPE))
         except ValueError:
             raise InvalidDomain(
                 f"Your domain uses an invalid slot mapping of type "
-                f"'{mapping.get(MAPPING_TYPE)}' for slot '{slot_name}'. Please see "
+                f"'{mapping.get(KEY_MAPPING_TYPE)}' for slot '{slot_name}'. Please see "
                 f"{DOCS_URL_NLU_BASED_SLOTS} for more information."
             )
 
@@ -299,7 +299,7 @@ class SlotFillingManager:
     def _verify_mapping_conditions(
         self, mapping: Dict[Text, Any], slot_name: Text
     ) -> bool:
-        if mapping.get(MAPPING_CONDITIONS) and mapping[MAPPING_TYPE] != str(
+        if mapping.get(MAPPING_CONDITIONS) and mapping[KEY_MAPPING_TYPE] != str(
             SlotMappingType.FROM_TRIGGER_INTENT
         ):
             if not self._matches_mapping_conditions(mapping, slot_name):
@@ -374,7 +374,7 @@ class SlotFillingManager:
     ) -> bool:
         from rasa.core.actions.forms import FormAction
 
-        if mapping[MAPPING_TYPE] != str(SlotMappingType.FROM_ENTITY):
+        if mapping[KEY_MAPPING_TYPE] != str(SlotMappingType.FROM_ENTITY):
             return False
 
         form_name = self.tracker.active_loop_name
@@ -495,7 +495,7 @@ def extract_slot_value(
 
     for mapping in slot.mappings:
         mapping_type = SlotMappingType(
-            mapping.get(MAPPING_TYPE, SlotMappingType.FROM_LLM.value)
+            mapping.get(KEY_MAPPING_TYPE, SlotMappingType.FROM_LLM.value)
         )
 
         if mapping_type in [SlotMappingType.FROM_LLM, SlotMappingType.CUSTOM]:

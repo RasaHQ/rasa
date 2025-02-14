@@ -36,8 +36,9 @@ from rasa.shared.core.command_payload_reader import (
 )
 from rasa.shared.core.constants import (
     ACTIVE_LOOP,
+    KEY_ALLOW_NLU_CORRECTION,
+    KEY_MAPPING_TYPE,
     MAPPING_CONDITIONS,
-    MAPPING_TYPE,
     SlotMappingType,
 )
 from rasa.shared.core.domain import (
@@ -520,7 +521,7 @@ class Validator:
             for mapping in slot.mappings:
                 for condition in mapping.get(MAPPING_CONDITIONS, []):
                     condition_active_loop = condition.get(ACTIVE_LOOP)
-                    mapping_type = SlotMappingType(mapping.get(MAPPING_TYPE))
+                    mapping_type = SlotMappingType(mapping.get(KEY_MAPPING_TYPE))
                     if (
                         condition_active_loop
                         and condition_active_loop not in self.domain.form_names
@@ -1394,29 +1395,31 @@ class Validator:
             nlu_mappings = any(
                 [
                     SlotMappingType(
-                        mapping.get("type", SlotMappingType.FROM_LLM.value)
+                        mapping.get(KEY_MAPPING_TYPE, SlotMappingType.FROM_LLM.value)
                     ).is_predefined_type()
                     for mapping in slot.mappings
                 ]
             )
             llm_mappings = any(
                 [
-                    SlotMappingType(mapping.get("type", SlotMappingType.FROM_LLM.value))
+                    SlotMappingType(
+                        mapping.get(KEY_MAPPING_TYPE, SlotMappingType.FROM_LLM.value)
+                    )
                     == SlotMappingType.FROM_LLM
                     for mapping in slot.mappings
                 ]
             )
             custom_mappings = any(
                 [
-                    SlotMappingType(mapping.get("type", SlotMappingType.FROM_LLM.value))
+                    SlotMappingType(
+                        mapping.get(KEY_MAPPING_TYPE, SlotMappingType.FROM_LLM.value)
+                    )
                     == SlotMappingType.CUSTOM
                     for mapping in slot.mappings
                 ]
             )
 
-            all_good = self._slot_contains_all_mappings_types(
-                llm_mappings, nlu_mappings, custom_mappings, slot.name, all_good
-            )
+            all_good = self._allow_nlu_correction_is_valid(slot, nlu_mappings, all_good)
 
             all_good = self._custom_action_name_is_defined_in_the_domain(
                 custom_mappings, slot, all_good
@@ -1433,23 +1436,48 @@ class Validator:
         return all_good
 
     @staticmethod
-    def _slot_contains_all_mappings_types(
-        llm_mappings: bool,
-        nlu_mappings: bool,
-        custom_mappings: bool,
-        slot_name: str,
-        all_good: bool,
+    def _allow_nlu_correction_is_valid(
+        slot: Slot, nlu_mappings: bool, all_good: bool
     ) -> bool:
-        if llm_mappings and (nlu_mappings or custom_mappings):
+        """Verify that `allow_nlu_correction` property is used correctly in a `from_llm` mappings only."""  # noqa: E501
+        if not slot.mappings:
+            return all_good
+
+        invalid_usage = False
+
+        for mapping in slot.mappings:
+            allow_nlu_correction = mapping.get(KEY_ALLOW_NLU_CORRECTION)
+            if (
+                allow_nlu_correction
+                and mapping.get(KEY_MAPPING_TYPE) != SlotMappingType.FROM_LLM.value
+            ):
+                invalid_usage = True
+
+            if allow_nlu_correction and not nlu_mappings:
+                structlogger.error(
+                    "validator.validate_slot_mappings_in_CALM.nlu_mappings_not_present",
+                    slot_name=slot.name,
+                    event_info=(
+                        f"The slot '{slot.name}' does not have any "
+                        f"NLU-based slot mappings. "
+                        f"The property `allow_nlu_correction` is only "
+                        f"applicable when the slot "
+                        f"contains both NLU-based and LLM-based slot mappings."
+                    ),
+                )
+                all_good = False
+
+        if invalid_usage:
             structlogger.error(
-                "validator.validate_slot_mappings_in_CALM.llm_and_nlu_mappings",
-                slot_name=slot_name,
+                "validator.validate_slot_mappings_in_CALM.allow_nlu_correction",
+                slot_name=slot.name,
                 event_info=(
-                    f"The slot '{slot_name}' has both LLM and "
-                    f"NLU or custom slot mappings. "
-                    f"Please make sure that the slot has only one type of mapping."
+                    f"The slot '{slot.name}' has at least 1 slot mapping with "
+                    f"'{KEY_ALLOW_NLU_CORRECTION}' set to 'true', but "
+                    f"the slot mapping type is not 'from_llm'. "
+                    f"Please set the slot mapping type to 'from_llm' "
+                    f"to allow the LLM to correct this slot."
                 ),
-                docs_link=DOCS_URL_DOMAIN + "#calm-slot-mappings",
             )
             all_good = False
 

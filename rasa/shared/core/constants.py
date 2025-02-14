@@ -137,7 +137,8 @@ DEFAULT_SLOT_NAMES = {
 
 SLOT_MAPPINGS = "mappings"
 MAPPING_CONDITIONS = "conditions"
-MAPPING_TYPE = "type"
+KEY_MAPPING_TYPE = "type"
+KEY_ALLOW_NLU_CORRECTION = "allow_nlu_correction"
 
 
 class SlotMappingType(Enum):
@@ -157,6 +158,18 @@ class SlotMappingType(Enum):
     def is_predefined_type(self) -> bool:
         """Returns True if the mapping type is NLU-predefined."""
         return not (self == SlotMappingType.CUSTOM or self == SlotMappingType.FROM_LLM)
+
+
+class SetSlotExtractor(Enum):
+    """The extractors that can set a slot."""
+
+    LLM = "LLM"
+    COMMAND_PAYLOAD_READER = "CommandPayloadReader"
+    NLU = "NLU"
+    CUSTOM = "CUSTOM"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 # the keys for `State` (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)

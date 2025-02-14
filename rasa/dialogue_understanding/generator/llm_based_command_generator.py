@@ -8,7 +8,10 @@ from jinja2 import Template
 import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
     Command,
+    SetSlotCommand,
+    StartFlowCommand,
 )
+from rasa.dialogue_understanding.constants import KEY_MINIMIZE_NUM_CALLS
 from rasa.dialogue_understanding.generator import CommandGenerator
 from rasa.dialogue_understanding.generator.constants import (
     DEFAULT_LLM_CONFIG,
@@ -18,13 +21,20 @@ from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
+from rasa.dialogue_understanding.stack.utils import top_flow_frame
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.core.constants import (
+    KEY_MAPPING_TYPE,
+    SetSlotExtractor,
+    SlotMappingType,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import Flow, FlowsList, FlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
+from rasa.shared.core.slot_mappings import SlotFillingManager
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import FileIOException, ProviderClientAPIException
 from rasa.shared.nlu.constants import FLOWS_IN_PROMPT
@@ -453,3 +463,118 @@ class LLMBasedCommandGenerator(
             if isinstance(current_step, CollectInformationFlowStep)
             else (None, None)
         )
+
+    @staticmethod
+    def _prior_commands_contain_start_flow(prior_commands: List[Command]) -> bool:
+        return any(isinstance(command, StartFlowCommand) for command in prior_commands)
+
+    @staticmethod
+    def _prior_commands_contain_set_slot_for_active_collect_step(
+        prior_commands: List[Command],
+        flows: FlowsList,
+        tracker: DialogueStateTracker,
+    ) -> bool:
+        latest_user_frame = top_flow_frame(tracker.stack, ignore_call_frames=False)
+
+        if latest_user_frame is None:
+            return False
+
+        active_flow = latest_user_frame.flow(flows)
+        active_step = active_flow.step_by_id(latest_user_frame.step_id)
+
+        if not isinstance(active_step, CollectInformationFlowStep):
+            return False
+
+        return any(
+            command.name == active_step.collect
+            for command in prior_commands
+            if isinstance(command, SetSlotCommand)
+        )
+
+    def _should_skip_llm_call(
+        self,
+        prior_commands: List[Command],
+        flows: FlowsList,
+        tracker: DialogueStateTracker,
+    ) -> bool:
+        """Skip invoking the LLM.
+
+        This returns True if the bot builder sets the property
+        KEY_MINIMIZE_NUM_CALLS to True and the prior commands
+        either contain a StartFlowCommand or a SetSlot command
+        for the current collect step.
+        """
+        return self.config.get(KEY_MINIMIZE_NUM_CALLS, False) and (
+            self._prior_commands_contain_start_flow(prior_commands)
+            or self._prior_commands_contain_set_slot_for_active_collect_step(
+                prior_commands, flows, tracker
+            )
+        )
+
+    @staticmethod
+    def _check_commands_against_slot_mappings(
+        commands: List[Command],
+        tracker: DialogueStateTracker,
+        domain: Optional[Domain] = None,
+    ) -> List[Command]:
+        """Check if the LLM-issued slot commands are fillable.
+
+        The LLM-issued slot commands are fillable if the slot
+        mappings are satisfied (in particular the mapping conditions).
+        """
+        if not domain:
+            return commands
+
+        llm_fillable_slots = [
+            tracker.slots.get(command.name)
+            for command in commands
+            if isinstance(command, SetSlotCommand)
+            and command.extractor == SetSlotExtractor.LLM.value
+            and tracker.slots.get(command.name) is not None
+        ]
+
+        if not llm_fillable_slots:
+            return commands
+
+        slot_filling_manager = SlotFillingManager(domain, tracker)
+        slots_to_be_removed = []
+
+        structlogger.debug(
+            "command_processor.check_commands_against_slot_mappings.active_flow",
+            active_flow=tracker.active_flow,
+        )
+
+        for slot in llm_fillable_slots:
+            should_fill_slot = False
+            for mapping in slot.mappings:  # type: ignore[union-attr]
+                mapping_type = SlotMappingType(mapping.get(KEY_MAPPING_TYPE))
+
+                should_fill_slot = slot_filling_manager.should_fill_slot(
+                    slot.name,  # type: ignore[union-attr]
+                    mapping_type,
+                    mapping,
+                )
+
+                if should_fill_slot:
+                    break
+
+            if not should_fill_slot:
+                structlogger.debug(
+                    "command_processor.check_commands_against_slot_mappings.slot_not_fillable",
+                    slot_name=slot.name,  # type: ignore[union-attr]
+                )
+                slots_to_be_removed.append(slot.name)  # type: ignore[union-attr]
+
+        if not slots_to_be_removed:
+            return commands
+
+        filtered_commands = [
+            command
+            for command in commands
+            if not (
+                isinstance(command, SetSlotCommand)
+                and command.name in slots_to_be_removed
+            )
+        ]
+
+        return filtered_commands

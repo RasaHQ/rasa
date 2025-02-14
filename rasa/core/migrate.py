@@ -14,7 +14,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.constants import (
     ACTIVE_LOOP,
-    MAPPING_TYPE,
+    KEY_MAPPING_TYPE,
     REQUESTED_SLOT,
     SLOT_MAPPINGS,
     SlotMappingType,
@@ -43,7 +43,7 @@ def _create_back_up(domain_file: Path, backup_location: Path) -> Dict[Text, Any]
 def _get_updated_mapping_condition(
     condition: Dict[Text, Text], mapping: Dict[Text, Any], slot_name: Text
 ) -> Dict[Text, Text]:
-    if mapping.get(MAPPING_TYPE) not in [
+    if mapping.get(KEY_MAPPING_TYPE) not in [
         str(SlotMappingType.FROM_ENTITY),
         str(SlotMappingType.FROM_TRIGGER_INTENT),
     ]:

@@ -63,6 +63,7 @@ from rasa.shared.core.constants import (
     RULE_SNIPPET_ACTION_NAME,
     SESSION_START_METADATA_SLOT,
     USER_INTENT_SESSION_START,
+    SetSlotExtractor,
 )
 from rasa.shared.core.domain import (
     KEY_E2E_ACTIONS,
@@ -329,7 +330,7 @@ async def test_remote_action_logs_events(
             UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
         },
     )
-    assert events[2] == SlotSet("name", "rasa")
+    assert events[2] == SlotSet("name", "rasa", filled_by=SetSlotExtractor.CUSTOM.value)
 
 
 async def test_remote_action_utterances_with_none_values(

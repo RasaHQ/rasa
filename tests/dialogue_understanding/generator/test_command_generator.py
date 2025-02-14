@@ -6,13 +6,11 @@ import pytest
 from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
-    SetSlotCommand,
     StartFlowCommand,
 )
 from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
     ChitChatAnswerCommand,
 )
-from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
@@ -243,49 +241,6 @@ async def test_command_generator_add_active_flows_to_available_flows() -> None:
     assert result == expected_flows
 
 
-@patch(
-    "rasa.dialogue_understanding.generator.command_generator"
-    ".CommandGenerator.get_active_flows"
-)
-@patch(
-    "rasa.dialogue_understanding.generator.command_generator"
-    ".CommandGenerator.get_startable_flows"
-)
-async def test_process_does_not_predict_commands_if_commands_already_present(
-    mock_get_active_flows: Mock,
-    mock_startable_flows: Mock,
-):
-    """Test that predict_commands does not overwrite commands
-    if commands are already set on message.
-    """
-    command_generator = CommandGenerator({})
-
-    command = StartFlowCommand("some flow").as_dict()
-
-    test_message = Message.build(text="some message")
-    test_message.set(COMMANDS, [command], add_to_output=True)
-
-    assert len(test_message.get(COMMANDS)) == 1
-    assert test_message.get(COMMANDS) == [command]
-
-    mock_tracker = Mock()
-    mock_tracker.get_slot = Mock(return_value=[])
-
-    mock_get_active_flows.return_value = FlowsList([])
-    mock_startable_flows.return_value = FlowsList([Flow("startable_flow")])
-
-    returned_message = (
-        await command_generator.process(
-            [test_message],
-            flows=FlowsList([Flow("startable_flow")]),
-            tracker=mock_tracker,
-        )
-    )[0]
-
-    assert len(returned_message.get(COMMANDS)) == 1
-    assert returned_message.get(COMMANDS) == [command]
-
-
 @pytest.mark.parametrize(
     "message, expected_error_type",
     [
@@ -335,67 +290,3 @@ async def test_evaluate_and_predict_commands(
     assert isinstance(commands[0], expected_command_type)
     if isinstance(commands[0], ErrorCommand):
         assert commands[0].error_type == expected_error_type
-
-
-@pytest.mark.parametrize(
-    "active_flow, input_commands, expected_commands",
-    [
-        (
-            "auth_user",
-            [SetSlotCommand("auth_token", "ABCD12EF", SetSlotExtractor.LLM.value)],
-            [SetSlotCommand("auth_token", "ABCD12EF", SetSlotExtractor.LLM.value)],
-        ),
-        (
-            "auth_user_2",
-            [SetSlotCommand("auth_token", "ABCD12EF", SetSlotExtractor.LLM.value)],
-            [],
-        ),
-        (
-            "loyalty_points",
-            [StartFlowCommand("loyalty_points")],
-            [StartFlowCommand("loyalty_points")],
-        ),
-        (
-            "some_flow",
-            [SetSlotCommand("nlu_slot", "some_value", SetSlotExtractor.NLU.value)],
-            [SetSlotCommand("nlu_slot", "some_value", SetSlotExtractor.NLU.value)],
-        ),
-    ],
-)
-def test_command_generator_check_commands_against_slot_mappings_active_flow(
-    active_flow: Text, input_commands: List[Command], expected_commands: List[Command]
-):
-    # Given
-    generator = CommandGenerator({})
-    slot_name = "auth_token"
-    flow_id = "auth_user"
-    domain = Domain.from_yaml(f"""
-    entities:
-    - nlu_entity
-    slots:
-      {slot_name}:
-        type: text
-        mappings:
-            - type: from_llm
-              conditions:
-                - active_flow: {flow_id}
-      nlu_slot:
-        type: text
-        mappings:
-        - type: from_entity
-          entity: nlu_entity
-    """)
-    tracker = DialogueStateTracker.from_events("test", [], slots=domain.slots)
-    user_frame = UserFlowStackFrame(
-        flow_id=active_flow, step_id="first_step", frame_id="some-frame-id"
-    )
-    stack = DialogueStack(frames=[user_frame])
-    tracker.update_stack(stack)
-
-    # When
-    actual_commands = generator._check_commands_against_slot_mappings(
-        input_commands, tracker, domain
-    )
-
-    # Then
-    assert actual_commands == expected_commands

@@ -31,6 +31,7 @@ class CorrectedSlot:
 
     name: str
     value: Any
+    filled_by: Optional[str] = None
 
 
 @dataclass
@@ -54,7 +55,9 @@ class CorrectSlotsCommand(Command):
         try:
             return CorrectSlotsCommand(
                 corrected_slots=[
-                    CorrectedSlot(s["name"], value=s["value"])
+                    CorrectedSlot(
+                        s["name"], value=s["value"], filled_by=s.get("filled_by", None)
+                    )
                     for s in data["corrected_slots"]
                 ]
             )
@@ -135,7 +138,10 @@ class CorrectSlotsCommand(Command):
         proposed_slots = {}
         for corrected_slot in self.corrected_slots:
             if tracker.get_slot(corrected_slot.name) != corrected_slot.value:
-                proposed_slots[corrected_slot.name] = corrected_slot.value
+                proposed_slots[corrected_slot.name] = {
+                    "value": corrected_slot.value,
+                    "filled_by": corrected_slot.filled_by,
+                }
             else:
                 structlogger.debug(
                     "command_executor.skip_correction.slot_already_set", command=self
@@ -240,6 +246,9 @@ class CorrectSlotsCommand(Command):
             corrected_slots=proposed_slots,
             reset_flow_id=earliest_collect.flow_id if earliest_collect else None,
             reset_step_id=earliest_collect.step.id if earliest_collect else None,
+            new_slot_values=[
+                value.get("value") for slot, value in proposed_slots.items()
+            ],
         )
 
     def run_command_on_tracker(

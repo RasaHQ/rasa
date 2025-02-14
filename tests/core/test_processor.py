@@ -714,6 +714,7 @@ async def test_custom_action_session_start_with_metadata(
             "name": SESSION_START_METADATA_SLOT,
             "value": metadata,
             "metadata": {"assistant_id": "placeholder_default", "model_id": model_id},
+            "filled_by": None,
         }
     ]
 
@@ -2235,7 +2236,9 @@ async def test_run_command_processor_parsing_a_message_with_invalid_use_of_slash
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
     tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
-    tracker.slots[ROUTE_TO_CALM_SLOT] = BooleanSlot(ROUTE_TO_CALM_SLOT, [{}])
+    tracker.slots[ROUTE_TO_CALM_SLOT] = BooleanSlot(
+        ROUTE_TO_CALM_SLOT, [{"type": "from_llm"}]
+    )
     # the return value here does not matter, it only matters
     # that filter_flows is not raising an exception
     mock_filter_flows.return_value = FlowsList(underlying_flows=[])

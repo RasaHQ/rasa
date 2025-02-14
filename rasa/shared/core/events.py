@@ -1032,6 +1032,7 @@ class SlotSet(Event):
         value: Optional[Any] = None,
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
+        filled_by: Optional[str] = None,
     ) -> None:
         """Creates event to set slot.
 
@@ -1043,6 +1044,7 @@ class SlotSet(Event):
         """
         self.key = key
         self.value = value
+        self._filled_by = filled_by
         super().__init__(timestamp, metadata)
 
     def __repr__(self) -> Text:
@@ -1059,6 +1061,14 @@ class SlotSet(Event):
             return NotImplemented
 
         return (self.key, self.value) == (other.key, other.value)
+
+    @property
+    def filled_by(self) -> Optional[str]:
+        return self._filled_by
+
+    @filled_by.setter
+    def filled_by(self, value: str) -> None:
+        self._filled_by = value
 
     def as_story_string(self) -> Text:
         """Returns text representation of event."""
@@ -1081,7 +1091,7 @@ class SlotSet(Event):
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
         d = super().as_dict()
-        d.update({"name": self.key, "value": self.value})
+        d.update({"name": self.key, "value": self.value, "filled_by": self.filled_by})
         return d
 
     @classmethod
@@ -1092,13 +1102,14 @@ class SlotSet(Event):
                 parameters.get("value"),
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
+                filled_by=parameters.get("filled_by"),
             )
         except KeyError as e:
             raise ValueError(f"Failed to parse set slot event. {e}")
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state."""
-        tracker._set_slot(self.key, self.value)
+        tracker._set_slot(self.key, self.value, self.filled_by)
 
 
 class Restarted(AlwaysEqualEventMixin):

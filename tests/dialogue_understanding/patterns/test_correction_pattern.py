@@ -22,6 +22,7 @@ from rasa.dialogue_understanding.stack.dialogue_stack import (
 )
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
+from rasa.shared.core.constants import SetSlotExtractor
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -41,15 +42,21 @@ async def test_correction_pattern_flow_stack_frame_from_dict() -> None:
         {
             "frame_id": "test_id",
             "step_id": "test_step_id",
-            "corrected_slots": {"foo": "bar"},
+            "corrected_slots": {
+                "foo": {"value": "bar", "filled_by": SetSlotExtractor.LLM.value}
+            },
             "is_reset_only": False,
             "reset_flow_id": None,
             "reset_step_id": None,
+            "new_slot_values": ["bar"],
         }
     )
     assert frame.frame_id == "test_id"
     assert frame.step_id == "test_step_id"
-    assert frame.corrected_slots == {"foo": "bar"}
+    assert frame.corrected_slots == {
+        "foo": {"value": "bar", "filled_by": SetSlotExtractor.LLM.value}
+    }
+    assert frame.new_slot_values == ["bar"]
     assert frame.is_reset_only is False
     assert frame.reset_flow_id is None
     assert frame.reset_step_id is None
@@ -112,10 +119,13 @@ async def test_action_correct_flow_slot_no_reset_step_id() -> None:
     correction_frame = CorrectionPatternFlowStackFrame(
         frame_id="test_id",
         step_id="1",
-        corrected_slots={"foo": "bar"},
+        corrected_slots={
+            "foo": {"value": "bar", "filled_by": SetSlotExtractor.LLM.value}
+        },
         is_reset_only=False,
         reset_flow_id="foo_flow",
         reset_step_id=None,
+        new_slot_values=["bar"],
     )
     tracker = DialogueStateTracker.from_events(
         "test",
@@ -157,7 +167,10 @@ async def test_action_correct_flow_slot_no_reset_step_id() -> None:
     assert isinstance(frame, CorrectionPatternFlowStackFrame)
     assert frame.flow_id == "pattern_correction"
     assert frame.step_id == "1"
-    assert frame.corrected_slots == {"foo": "bar"}
+    assert frame.corrected_slots == {
+        "foo": {"value": "bar", "filled_by": SetSlotExtractor.LLM.value}
+    }
+    assert frame.new_slot_values == ["bar"]
 
     correction_slot_set_event = events[1]
     assert isinstance(correction_slot_set_event, SlotSet)
@@ -182,10 +195,13 @@ async def test_action_correct_flow_slot() -> None:
     correction_frame = CorrectionPatternFlowStackFrame(
         frame_id="test_id",
         step_id="1",
-        corrected_slots={"foo": "bar"},
+        corrected_slots={
+            "foo": {"value": "bar", "filled_by": SetSlotExtractor.LLM.value}
+        },
         is_reset_only=False,
         reset_flow_id="foo_flow",
         reset_step_id="ask_some_slot",
+        new_slot_values=["bar"],
     )
     stack = DialogueStack(frames=[user_frame, collect_info_frame, correction_frame])
     tracker = DialogueStateTracker.from_events(
@@ -226,7 +242,10 @@ async def test_action_correct_flow_slot() -> None:
     assert isinstance(frame, CorrectionPatternFlowStackFrame)
     assert frame.flow_id == "pattern_correction"
     assert frame.step_id == "1"
-    assert frame.corrected_slots == {"foo": "bar"}
+    assert frame.corrected_slots == {
+        "foo": {"value": "bar", "filled_by": SetSlotExtractor.LLM.value}
+    }
+    assert frame.new_slot_values == ["bar"]
 
     correction_slot_set_event = events[1]
     assert isinstance(correction_slot_set_event, SlotSet)
@@ -256,10 +275,13 @@ async def test_action_correct_flow_slot_with_call() -> None:
     correction_frame = CorrectionPatternFlowStackFrame(
         frame_id="test_id",
         step_id="1",
-        corrected_slots={"foo": "bar"},
+        corrected_slots={
+            "foo": {"value": "bar", "filled_by": SetSlotExtractor.LLM.value}
+        },
         is_reset_only=False,
         reset_flow_id="foo_flow",
         reset_step_id="ask_some_slot",
+        new_slot_values=["bar"],
     )
     tracker = DialogueStateTracker.from_events(
         "test",
@@ -311,7 +333,10 @@ async def test_action_correct_flow_slot_with_call() -> None:
     assert isinstance(frame, CorrectionPatternFlowStackFrame)
     assert frame.flow_id == "pattern_correction"
     assert frame.step_id == "1"
-    assert frame.corrected_slots == {"foo": "bar"}
+    assert frame.corrected_slots == {
+        "foo": {"value": "bar", "filled_by": SetSlotExtractor.LLM.value}
+    }
+    assert frame.new_slot_values == ["bar"]
 
     correction_slot_set_event = events[1]
     assert isinstance(correction_slot_set_event, SlotSet)
@@ -345,10 +370,13 @@ async def test_action_correct_flow_slot_with_call_within_the_call() -> None:
     correction_frame = CorrectionPatternFlowStackFrame(
         frame_id="test_id",
         step_id="1",
-        corrected_slots={"foo": "bar"},
+        corrected_slots={
+            "foo": {"value": "bar", "filled_by": SetSlotExtractor.LLM.value}
+        },
         is_reset_only=False,
         reset_flow_id="called_flow",
         reset_step_id="ask_some_slot",
+        new_slot_values=["bar"],
     )
     tracker = DialogueStateTracker.from_events(
         "test",
@@ -401,7 +429,10 @@ async def test_action_correct_flow_slot_with_call_within_the_call() -> None:
     assert isinstance(frame, CorrectionPatternFlowStackFrame)
     assert frame.flow_id == "pattern_correction"
     assert frame.step_id == "1"
-    assert frame.corrected_slots == {"foo": "bar"}
+    assert frame.corrected_slots == {
+        "foo": {"value": "bar", "filled_by": SetSlotExtractor.LLM.value}
+    }
+    assert frame.new_slot_values == ["bar"]
 
     correction_slot_set_event = events[1]
     assert isinstance(correction_slot_set_event, SlotSet)
@@ -435,10 +466,13 @@ async def test_action_correct_flow_slot_with_call_from_another_call() -> None:
     correction_frame = CorrectionPatternFlowStackFrame(
         frame_id="test_id",
         step_id="1",
-        corrected_slots={"foo": "bar"},
+        corrected_slots={
+            "foo": {"value": "bar", "filled_by": SetSlotExtractor.LLM.value}
+        },
         is_reset_only=False,
         reset_flow_id="called_flow",
         reset_step_id="ask_some_slot",
+        new_slot_values=["bar"],
     )
     tracker = DialogueStateTracker.from_events(
         "test",
@@ -501,7 +535,10 @@ async def test_action_correct_flow_slot_with_call_from_another_call() -> None:
     assert isinstance(frame, CorrectionPatternFlowStackFrame)
     assert frame.flow_id == "pattern_correction"
     assert frame.step_id == "1"
-    assert frame.corrected_slots == {"foo": "bar"}
+    assert frame.corrected_slots == {
+        "foo": {"value": "bar", "filled_by": SetSlotExtractor.LLM.value}
+    }
+    assert frame.new_slot_values == ["bar"]
 
     correction_slot_set_event = events[1]
     assert isinstance(correction_slot_set_event, SlotSet)
@@ -535,10 +572,13 @@ async def test_action_correct_flow_slot_during_interruption() -> None:
     correction_frame = CorrectionPatternFlowStackFrame(
         frame_id="test_id",
         step_id="1",
-        corrected_slots={"foo": "bar"},
+        corrected_slots={
+            "foo": {"value": "bar", "filled_by": SetSlotExtractor.LLM.value}
+        },
         is_reset_only=False,
         reset_flow_id="foo_flow",
         reset_step_id="ask_some_slot",
+        new_slot_values=["bar"],
     )
     tracker = DialogueStateTracker.from_events(
         "test",
@@ -586,7 +626,10 @@ async def test_action_correct_flow_slot_during_interruption() -> None:
     assert isinstance(frame, CorrectionPatternFlowStackFrame)
     assert frame.flow_id == "pattern_correction"
     assert frame.step_id == "1"
-    assert frame.corrected_slots == {"foo": "bar"}
+    assert frame.corrected_slots == {
+        "foo": {"value": "bar", "filled_by": SetSlotExtractor.LLM.value}
+    }
+    assert frame.new_slot_values == ["bar"]
 
     correction_slot_set_event = events[1]
     assert isinstance(correction_slot_set_event, SlotSet)

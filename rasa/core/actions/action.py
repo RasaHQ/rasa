@@ -72,10 +72,11 @@ from rasa.shared.core.constants import (
     ACTION_UNLIKELY_INTENT_NAME,
     ACTION_VALIDATE_SLOT_MAPPINGS,
     DEFAULT_SLOT_NAMES,
+    KEY_MAPPING_TYPE,
     KNOWLEDGE_BASE_SLOT_NAMES,
-    MAPPING_TYPE,
     REQUESTED_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
+    SetSlotExtractor,
     SlotMappingType,
 )
 from rasa.shared.core.domain import Domain
@@ -940,7 +941,14 @@ class RemoteAction(Action):
         )
 
         events = rasa.shared.core.events.deserialise_events(events_json)
-        return cast(List[Event], bot_messages) + events
+
+        processed_events = []
+        for event in events:
+            if isinstance(event, SlotSet) and event.filled_by is None:
+                event.filled_by = SetSlotExtractor.CUSTOM.value
+            processed_events.append(event)
+
+        return cast(List[Event], bot_messages) + processed_events
 
     def name(self) -> Text:
         return self._name
@@ -1317,7 +1325,7 @@ class ActionExtractSlots(Action):
                 slot_events.append(SlotSet(slot.name, slot_value))
 
             for mapping in slot.mappings:
-                mapping_type = SlotMappingType(mapping.get(MAPPING_TYPE))
+                mapping_type = SlotMappingType(mapping.get(KEY_MAPPING_TYPE))
                 should_fill_custom_slot = mapping_type == SlotMappingType.CUSTOM
 
                 if should_fill_custom_slot:

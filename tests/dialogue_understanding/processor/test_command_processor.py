@@ -117,7 +117,10 @@ def pattern_frame_collect_eggs() -> CollectInformationPatternFlowStackFrame:
 def pattern_frame_correction() -> CorrectionPatternFlowStackFrame:
     """Return a correction pattern frame."""
     return CorrectionPatternFlowStackFrame(
-        corrected_slots={"ham": 100},
+        corrected_slots={
+            "ham": {"value": 100, "filled_by": SetSlotExtractor.LLM.value}
+        },
+        new_slot_values=[100],
     )
 
 
@@ -318,7 +321,12 @@ def test_get_current_collect_step_returns_none(
             [SetSlotCommand("ham", "prosciutto")],
             [
                 CorrectSlotsCommand(
-                    corrected_slots=[CorrectedSlot(name="ham", value="prosciutto")]
+                    corrected_slots=[
+                        CorrectedSlot(
+                            name="ham",
+                            value="prosciutto",
+                        )
+                    ]
                 )
             ],
         ),
@@ -852,3 +860,546 @@ def test_clean_up_slot_set_command_from_llm_extractor_for_custom_slot_mapping() 
         "extracted by an extractor that is incompatible with the slot mapping type."
     )
     assert cleaned_commands[0].reason == expected_reason
+
+
+@pytest.mark.parametrize(
+    "mappings",
+    [
+        "[{type: from_entity, entity: name}]",
+        "[{type: from_intent, intent: inform, value: Daisy}]",
+        "[{type: from_text, intent: inform}]",
+        "[{type: custom, action: action_set_custom_slot}]",
+        "[type: from_llm]",
+    ],
+)
+def test_should_slot_be_set_as_button_payload(mappings: str) -> None:
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+     intents:
+     - inform
+     entities:
+     - name
+     slots:
+       {slot_name}:
+         type: text
+         mappings: {mappings}
+     """)
+
+    commands_so_far = []
+    command = SetSlotCommand(
+        slot_name, "Daisy", SetSlotExtractor.COMMAND_PAYLOAD_READER.value
+    )
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+
+    result = should_slot_be_set(tracker.slots[slot_name], command, commands_so_far)
+
+    assert result is True
+
+
+@pytest.mark.parametrize(
+    "mappings, extractor",
+    [
+        ("""[{type: from_entity, entity: name}]""", SetSlotExtractor.LLM.value),
+        (
+            """[{type: from_intent, intent: inform, value: Daisy}]""",
+            SetSlotExtractor.LLM.value,
+        ),
+        ("""[{type: from_text, intent: inform}]""", SetSlotExtractor.LLM.value),
+        (
+            """[{type: custom, action: action_set_custom_slot}]""",
+            SetSlotExtractor.LLM.value,
+        ),
+        (
+            """[{type: custom, action: action_set_custom_slot}]""",
+            SetSlotExtractor.NLU.value,
+        ),
+        ("""[type: from_llm]""", SetSlotExtractor.NLU.value),
+    ],
+)
+def test_should_slot_be_set_single_mapping_type_invalid(
+    mappings: str, extractor: str
+) -> None:
+    """Test that the `should_slot_be_set` function correctly handles a slot command.
+
+    This test in particular tests those cases when the slot
+    has a single type of mapping. The function should return
+    False if the slot command extractor is incompatible with the slot mapping type.
+    """
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+     intents:
+     - inform
+     entities:
+     - name
+     slots:
+       {slot_name}:
+         type: text
+         mappings: {mappings}
+     """)
+
+    commands_so_far = []
+    command = SetSlotCommand(slot_name, "Daisy", extractor)
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+
+    result = should_slot_be_set(tracker.slots[slot_name], command, commands_so_far)
+
+    assert result is False
+
+
+@pytest.mark.parametrize(
+    "mappings, extractor",
+    [
+        ("""[{type: from_entity, entity: name}]""", SetSlotExtractor.NLU.value),
+        (
+            """[{type: from_intent, intent: inform, value: Daisy}]""",
+            SetSlotExtractor.NLU.value,
+        ),
+        ("""[{type: from_text, intent: inform}]""", SetSlotExtractor.NLU.value),
+        ("""[type: from_llm]""", SetSlotExtractor.LLM.value),
+    ],
+)
+def test_should_slot_be_set_single_mapping_type_valid(
+    mappings: str, extractor: str
+) -> None:
+    """Test that the `should_slot_be_set` function correctly handles a slot command.
+
+    This test in particular tests those cases when
+    the slot has a single type of mapping. The function should return
+    False if the slot command extractor is incompatible with the slot mapping type.
+    """
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+     intents:
+     - inform
+     entities:
+     - name
+     slots:
+       {slot_name}:
+         type: text
+         mappings: {mappings}
+     """)
+
+    commands_so_far = []
+    command = SetSlotCommand(slot_name, "Daisy", extractor)
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+
+    result = should_slot_be_set(tracker.slots[slot_name], command, commands_so_far)
+
+    assert result is True
+
+
+def test_should_slot_be_set_disallow_llm_value() -> None:
+    """Test that the `should_slot_be_set` function correctly handles a slot command.
+
+    This test in particular tests those cases when the NLU-based
+    pipeline has issued a SetSlot command. The function should return
+    False and not allow the SetSlot command from the LLM-based command generator.
+    """
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+     entities:
+     - name
+     slots:
+       {slot_name}:
+         type: text
+         mappings:
+         - type: from_entity
+           entity: name
+         - type: from_llm
+     """)
+
+    commands_so_far = [
+        SetSlotCommand(slot_name, "Daisy Smith", SetSlotExtractor.NLU.value)
+    ]
+    command = SetSlotCommand(slot_name, "Daisy", SetSlotExtractor.LLM.value)
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+
+    result = should_slot_be_set(tracker.slots[slot_name], command, commands_so_far)
+
+    assert result is False
+
+
+def test_should_slot_be_set_accept_llm_value() -> None:
+    """Test that the `should_slot_be_set` function correctly handles a slot command.
+
+    This test in particular tests those cases when the NLU-based pipeline
+    has not issued a SetSlot command. The function should return False
+    and not allow the SetSlot command from the LLM-based command generator.
+    """
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+     entities:
+     - name
+     slots:
+       {slot_name}:
+         type: text
+         mappings:
+         - type: from_entity
+           entity: name
+         - type: from_llm
+     """)
+
+    commands_so_far = []
+    command = SetSlotCommand(slot_name, "Daisy", SetSlotExtractor.LLM.value)
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
+
+    result = should_slot_be_set(tracker.slots[slot_name], command, commands_so_far)
+
+    assert result is True
+
+
+def test_clean_up_slot_command_accept_nlu_correction_valid() -> None:
+    """Test that the `clean_up_slot_command` correctly handles a slot command.
+
+    This test in particular tests those cases when the NLU-based pipeline
+    has not issued a SetSlot command. The function should return False
+    and not allow the SetSlot command from the LLM-based command generator.
+    """
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+     entities:
+     - name
+     slots:
+       {slot_name}:
+         type: text
+         mappings:
+         - type: from_entity
+           entity: name
+         - type: from_llm
+           allow_nlu_correction: true
+     """)
+
+    commands_so_far = []
+    command = SetSlotCommand(slot_name, "Daisy", SetSlotExtractor.LLM.value)
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [SlotSet("name", "Smith", filled_by=SetSlotExtractor.NLU.value)],
+        slots=domain.slots,
+    )
+    slots_so_far = set()
+    all_flows = FlowsList(underlying_flows=[])
+
+    result = clean_up_slot_command(
+        commands_so_far, command, tracker, all_flows, slots_so_far
+    )
+
+    assert result == [command]
+
+
+def test_clean_up_slot_command_accept_nlu_correction_invalid() -> None:
+    """Test that the `clean_up_slot_command` correctly handles a slot command.
+
+    This test in particular tests those cases when the NLU-based pipeline
+    has not issued a SetSlot command. The function should return False
+    and not allow the SetSlot command from the LLM-based command generator.
+    """
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+     entities:
+     - name
+     slots:
+       {slot_name}:
+         type: text
+         mappings:
+         - type: from_entity
+           entity: name
+         - type: from_llm
+     """)
+
+    commands_so_far = []
+    command = SetSlotCommand(slot_name, "Daisy", SetSlotExtractor.LLM.value)
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [SlotSet("name", "Smith", filled_by=SetSlotExtractor.NLU.value)],
+        slots=domain.slots,
+    )
+    slots_so_far = set()
+    all_flows = FlowsList(underlying_flows=[])
+
+    result = clean_up_slot_command(
+        commands_so_far, command, tracker, all_flows, slots_so_far
+    )
+
+    assert result == []
+
+
+# scenario 3
+def test_clean_up_slot_command_nlu_filled_slot_valid() -> None:
+    """Test that the `clean_up_slot_command` correctly handles a slot command.
+
+    This test in particular tests those cases when the NLU-based pipeline
+    issues a correction for a NLU-filled slot. The function should return
+    a CorrectSlotsCommand with the corrected slot value.
+    """
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+     entities:
+     - name
+     slots:
+       {slot_name}:
+         type: text
+         mappings:
+         - type: from_entity
+           entity: name
+         - type: from_llm
+     """)
+
+    commands_so_far = []
+    command = SetSlotCommand(slot_name, "Daisy", SetSlotExtractor.NLU.value)
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [SlotSet("name", "Smith", filled_by=SetSlotExtractor.NLU.value)],
+        slots=domain.slots,
+    )
+    slots_so_far = {"name"}
+    all_flows = FlowsList(underlying_flows=[])
+
+    result = clean_up_slot_command(
+        commands_so_far, command, tracker, all_flows, slots_so_far
+    )
+
+    assert result == [
+        CorrectSlotsCommand(
+            corrected_slots=[
+                CorrectedSlot(
+                    name="name", value="Daisy", filled_by=SetSlotExtractor.NLU.value
+                )
+            ]
+        )
+    ]
+
+
+# scenario 3
+def test_clean_up_slot_command_nlu_filled_slot_invalid() -> None:
+    """Test that the `clean_up_slot_command` function correctly handles a slot command.
+
+    This test in particular tests those cases when both NLU and LLM-based pipelines
+    issue a SetSlot command for the same slot which was originally nlu-filled.
+    The function should return the NLU correction command only.
+    """
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+     entities:
+     - name
+     slots:
+       {slot_name}:
+         type: text
+         mappings:
+         - type: from_entity
+           entity: name
+         - type: from_llm
+     """)
+
+    commands_so_far = [
+        CorrectSlotsCommand(
+            corrected_slots=[
+                CorrectedSlot(
+                    name="name", value="Pika", filled_by=SetSlotExtractor.NLU.value
+                )
+            ]
+        )
+    ]
+    command = SetSlotCommand(slot_name, "Pika Chu", SetSlotExtractor.LLM.value)
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [SlotSet("name", "Smith", filled_by=SetSlotExtractor.NLU.value)],
+        slots=domain.slots,
+    )
+    slots_so_far = {"name"}
+    all_flows = FlowsList(underlying_flows=[])
+
+    result = clean_up_slot_command(
+        commands_so_far, command, tracker, all_flows, slots_so_far
+    )
+
+    assert result == commands_so_far
+
+
+# scenario 4
+def test_clean_up_slot_command_llm_filled_slot_corrected_by_nlu() -> None:
+    """Test that the `clean_up_slot_command` function correctly handles a slot command.
+
+    This test in particular tests those cases when both NLU and LLM-based pipelines
+    issue a SetSlot command for the same slot which was originally llm-filled.
+    The function should return the NLU correction command only.
+    """
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+     entities:
+     - name
+     slots:
+       {slot_name}:
+         type: text
+         mappings:
+         - type: from_entity
+           entity: name
+         - type: from_llm
+     """)
+
+    commands_so_far = [
+        CorrectSlotsCommand(
+            corrected_slots=[
+                CorrectedSlot(
+                    name="name", value="Pika", filled_by=SetSlotExtractor.NLU.value
+                )
+            ]
+        )
+    ]
+    command = SetSlotCommand(slot_name, "Pika Chu", SetSlotExtractor.LLM.value)
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [SlotSet("name", "Smith", filled_by=SetSlotExtractor.LLM.value)],
+        slots=domain.slots,
+    )
+    slots_so_far = {"name"}
+    all_flows = FlowsList(underlying_flows=[])
+
+    result = clean_up_slot_command(
+        commands_so_far, command, tracker, all_flows, slots_so_far
+    )
+
+    assert result == commands_so_far
+
+
+# scenario 5
+def test_clean_up_slot_command_llm_filled_slot_not_corrected_by_nlu() -> None:
+    """Test that the `clean_up_slot_command` function correctly handles a slot command.
+
+    This test in particular tests those cases when only the LLM-based pipelines
+    issue a SetSlot command for the same slot which was originally llm-filled.
+    The function should return the LLM correction command only.
+    """
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+     entities:
+     - name
+     slots:
+       {slot_name}:
+         type: text
+         mappings:
+         - type: from_entity
+           entity: name
+         - type: from_llm
+     """)
+
+    commands_so_far = []
+    command = SetSlotCommand(slot_name, "Pikachu", SetSlotExtractor.LLM.value)
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [SlotSet("name", "Pika", filled_by=SetSlotExtractor.LLM.value)],
+        slots=domain.slots,
+    )
+    slots_so_far = {"name"}
+    all_flows = FlowsList(underlying_flows=[])
+
+    result = clean_up_slot_command(
+        commands_so_far, command, tracker, all_flows, slots_so_far
+    )
+
+    assert result == [
+        CorrectSlotsCommand(
+            corrected_slots=[
+                CorrectedSlot(
+                    name="name", value="Pikachu", filled_by=SetSlotExtractor.LLM.value
+                )
+            ]
+        )
+    ]
+
+
+# scenario 6
+def test_clean_up_slot_command_nlu_filled_slot_not_corrected_by_nlu() -> None:
+    """Test that the `clean_up_slot_command` function correctly handles a slot command.
+
+    This test in particular tests those cases when only the LLM-based pipelines
+    issue a SetSlot command for the same slot which was originally nlu-filled.
+    The function should return the LLM correction command only.
+    """
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+     entities:
+     - name
+     slots:
+       {slot_name}:
+         type: text
+         mappings:
+         - type: from_entity
+           entity: name
+         - type: from_llm
+           allow_nlu_correction: true
+     """)
+
+    commands_so_far = []
+    command = SetSlotCommand(slot_name, "Pikachu", SetSlotExtractor.LLM.value)
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [SlotSet("name", "Pika", filled_by=SetSlotExtractor.NLU.value)],
+        slots=domain.slots,
+    )
+    slots_so_far = {"name"}
+    all_flows = FlowsList(underlying_flows=[])
+
+    result = clean_up_slot_command(
+        commands_so_far, command, tracker, all_flows, slots_so_far
+    )
+
+    assert result == [
+        CorrectSlotsCommand(
+            corrected_slots=[
+                CorrectedSlot(
+                    name="name", value="Pikachu", filled_by=SetSlotExtractor.LLM.value
+                )
+            ]
+        )
+    ]
+
+
+# scenario 6
+def test_clean_up_slot_command_nlu_filled_slot_not_corrected_by_nlu_invalid() -> None:
+    """Test that the `clean_up_slot_command` function correctly handles a slot command.
+
+    This test in particular tests those cases when only the LLM-based pipelines
+    issue a SetSlot command for the same slot which was originally nlu-filled.
+    The function should not return any correction.
+    """
+    slot_name = "name"
+    domain = Domain.from_yaml(f"""
+     entities:
+     - name
+     slots:
+       {slot_name}:
+         type: text
+         mappings:
+         - type: from_entity
+           entity: name
+         - type: from_llm
+     """)
+
+    commands_so_far = []
+    command = SetSlotCommand(slot_name, "Pikachu", SetSlotExtractor.LLM.value)
+    sender_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [SlotSet("name", "Pika", filled_by=SetSlotExtractor.NLU.value)],
+        slots=domain.slots,
+    )
+    slots_so_far = {"name"}
+    all_flows = FlowsList(underlying_flows=[])
+
+    result = clean_up_slot_command(
+        commands_so_far, command, tracker, all_flows, slots_so_far
+    )
+
+    assert result == []

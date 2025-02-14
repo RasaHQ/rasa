@@ -6,18 +6,17 @@ import structlog
 from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
-    SetSlotCommand,
     StartFlowCommand,
 )
-from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
+from rasa.dialogue_understanding.utils import (
+    _handle_via_nlu_in_coexistence,
+)
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
 )
-from rasa.shared.core.constants import SlotMappingType
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.slot_mappings import SlotFillingManager
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
     COMMANDS,
@@ -92,9 +91,9 @@ class CommandGenerator:
         )
 
         for message in messages:
-            if message.get(COMMANDS):
-                # do not overwrite commands if they are already present
-                # i.e. another command generator already predicted commands
+            if _handle_via_nlu_in_coexistence(tracker, message):
+                # Skip running the CALM pipeline if the message should
+                # be handled by the NLU-based system in a coexistence mode.
                 continue
 
             commands = await self._evaluate_and_predict(
@@ -105,9 +104,6 @@ class CommandGenerator:
             # flow list supplied in the prompt.
             commands = self._check_commands_against_startable_flows(
                 commands, startable_flows
-            )
-            commands = self._check_commands_against_slot_mappings(
-                commands, tracker, domain
             )
             commands_dicts = [command.as_dict() for command in commands]
             message.set(COMMANDS, commands_dicts, add_to_output=True)
@@ -278,70 +274,8 @@ class CommandGenerator:
         return len(message.get(TEXT, "").strip()) == 0
 
     @staticmethod
-    def _check_commands_against_slot_mappings(
-        commands: List[Command],
-        tracker: DialogueStateTracker,
-        domain: Optional[Domain] = None,
-    ) -> List[Command]:
-        """Check if the LLM-issued slot commands are fillable.
-
-        The LLM-issued slot commands are fillable if the slot
-        mappings are satisfied.
-        """
-        if not domain:
-            return commands
-
-        llm_fillable_slot_names = [
-            command.name
-            for command in commands
-            if isinstance(command, SetSlotCommand)
-            and command.extractor == SetSlotExtractor.LLM.value
+    def _get_prior_commands(message: Message) -> List[Command]:
+        """Get the prior commands from the tracker."""
+        return [
+            Command.command_from_json(command) for command in message.get(COMMANDS, [])
         ]
-
-        if not llm_fillable_slot_names:
-            return commands
-
-        llm_fillable_slots = [
-            slot for slot in domain.slots if slot.name in llm_fillable_slot_names
-        ]
-
-        slot_filling_manager = SlotFillingManager(domain, tracker)
-        slots_to_be_removed = []
-
-        structlogger.debug(
-            "command_processor.check_commands_against_slot_mappings.active_flow",
-            active_flow=tracker.active_flow,
-        )
-
-        for slot in llm_fillable_slots:
-            should_fill_slot = False
-            for mapping in slot.mappings:
-                mapping_type = SlotMappingType(mapping.get("type"))
-
-                should_fill_slot = slot_filling_manager.should_fill_slot(
-                    slot.name, mapping_type, mapping
-                )
-
-                if should_fill_slot:
-                    break
-
-            if not should_fill_slot:
-                structlogger.debug(
-                    "command_processor.check_commands_against_slot_mappings.slot_not_fillable",
-                    slot_name=slot.name,
-                )
-                slots_to_be_removed.append(slot.name)
-
-        if not slots_to_be_removed:
-            return commands
-
-        filtered_commands = [
-            command
-            for command in commands
-            if not (
-                isinstance(command, SetSlotCommand)
-                and command.name in slots_to_be_removed
-            )
-        ]
-
-        return filtered_commands

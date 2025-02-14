@@ -26,6 +26,7 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
+    SetSlotExtractor,
 )
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -62,6 +63,7 @@ from rasa.shared.core.events import (
     UserUttered,
     format_message,
 )
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, METADATA_MODEL_ID
 from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_ACTION
@@ -954,3 +956,21 @@ def test_clean_up_metadata_in_bot_event(capsys: CaptureFixture) -> None:
         "Removed search_results metadata key only "
         "from the string representation of the bot event."
     ) in out
+
+
+@pytest.mark.parametrize(
+    "expected_filled_by",
+    [
+        None,
+        SetSlotExtractor.LLM.value,
+        SetSlotExtractor.NLU.value,
+        SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
+        SetSlotExtractor.CUSTOM.value,
+    ],
+)
+def test_slot_set_apply_to(expected_filled_by: Optional[str]) -> None:
+    event = SlotSet("my_slot", "value", filled_by=expected_filled_by)
+    tracker = DialogueStateTracker.from_events("sender", [])
+    event.apply_to(tracker)
+
+    assert tracker.slots.get("my_slot").filled_by == expected_filled_by

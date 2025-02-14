@@ -916,11 +916,13 @@ class DialogueStateTracker:
                 continue
             slot.reset()
 
-    def _set_slot(self, key: Text, value: Any) -> None:
+    def _set_slot(self, key: Text, value: Any, filled_by: Optional[str] = None) -> None:
         """Sets the value of a slot if that slot exists."""
         if key in self.slots:
             slot = self.slots[key]
             slot.value = value
+            if filled_by is not None:
+                slot.filled_by = filled_by
         else:
             logger.error(
                 f"Tried to set non existent slot '{key}'. Make sure you "

@@ -42,6 +42,8 @@ from rasa.shared.constants import (
 from rasa.shared.core.constants import (
     ACTION_TRIGGER_CHITCHAT,
     FLOW_HASHES_SLOT,
+    KEY_ALLOW_NLU_CORRECTION,
+    KEY_MAPPING_TYPE,
     SlotMappingType,
 )
 from rasa.shared.core.events import Event, SlotSet
@@ -527,12 +529,47 @@ def clean_up_slot_command(
         )
         return resulting_commands
 
-    if not should_slot_be_set(slot, command):
+    if not should_slot_be_set(slot, command, resulting_commands):
+        structlogger.debug(
+            "command_processor.clean_up_slot_command.skip_command.extractor_"
+            "does_not_match_slot_mapping",
+            extractor=command.extractor,
+            slot_name=slot.name,
+        )
+
+        # prevent adding a cannot handle command in case commands_so_far already
+        # contains a valid prior set slot command for the same slot whose current
+        # slot command was rejected by should_slot_be_set
+        slot_command_exists_already = any(
+            isinstance(command, SetSlotCommand) and command.name == slot.name
+            for command in resulting_commands
+        )
+
         cannot_handle = CannotHandleCommand(reason=CANNOT_HANDLE_REASON)
-        if cannot_handle not in resulting_commands:
+        if not slot_command_exists_already and cannot_handle not in resulting_commands:
             resulting_commands.append(cannot_handle)
 
         return resulting_commands
+
+    if (
+        slot.filled_by == SetSlotExtractor.NLU.value
+        and command.extractor == SetSlotExtractor.LLM.value
+    ):
+        allow_nlu_correction = any(
+            [
+                mapping.get(KEY_ALLOW_NLU_CORRECTION, False)
+                for mapping in slot.mappings
+                if mapping.get(KEY_MAPPING_TYPE) == SlotMappingType.FROM_LLM.value
+            ]
+        )
+
+        if not allow_nlu_correction:
+            structlogger.debug(
+                "command_processor.clean_up_slot_command"
+                ".skip_command.disallow_llm_correction_of_nlu_set_value",
+                command=command,
+            )
+            return resulting_commands
 
     if command.name in slots_so_far and command.name != ROUTE_TO_CALM_SLOT:
         current_collect_info = get_current_collect_step(stack, all_flows)
@@ -574,7 +611,7 @@ def clean_up_slot_command(
         )
 
         # Group all corrections into one command
-        corrected_slot = CorrectedSlot(command.name, command.value)
+        corrected_slot = CorrectedSlot(command.name, command.value, command.extractor)
         for c in resulting_commands:
             if isinstance(c, CorrectSlotsCommand):
                 c.corrected_slots.append(corrected_slot)
@@ -658,7 +695,9 @@ def clean_up_chitchat_command(
     return resulting_commands
 
 
-def should_slot_be_set(slot: Slot, command: SetSlotCommand) -> bool:
+def should_slot_be_set(
+    slot: Slot, command: SetSlotCommand, commands_so_far: Optional[List[Command]] = None
+) -> bool:
     """Check if a slot should be set by a command."""
     if command.extractor == SetSlotExtractor.COMMAND_PAYLOAD_READER.value:
         # if the command is issued by the command payload reader, it means the slot
@@ -666,37 +705,62 @@ def should_slot_be_set(slot: Slot, command: SetSlotCommand) -> bool:
         # we can always set it
         return True
 
+    if commands_so_far is None:
+        commands_so_far = []
+
+    set_slot_commands_so_far = [
+        command
+        for command in commands_so_far
+        if isinstance(command, SetSlotCommand) and command.name == slot.name
+    ]
+
     slot_mappings = slot.mappings
 
-    if not slot_mappings:
-        slot_mappings = [{"type": SlotMappingType.FROM_LLM.value}]
+    if not slot.mappings:
+        slot_mappings = [{KEY_MAPPING_TYPE: SlotMappingType.FROM_LLM.value}]
 
-    for mapping in slot_mappings:
-        mapping_type = SlotMappingType(
-            mapping.get("type", SlotMappingType.FROM_LLM.value)
-        )
+    mapping_types = [
+        SlotMappingType(mapping.get(KEY_MAPPING_TYPE, SlotMappingType.FROM_LLM.value))
+        for mapping in slot_mappings
+    ]
 
-        should_be_set_by_llm = (
-            command.extractor == SetSlotExtractor.LLM.value
-            and mapping_type == SlotMappingType.FROM_LLM
-        )
-        should_be_set_by_nlu = (
-            command.extractor == SetSlotExtractor.NLU.value
-            and mapping_type.is_predefined_type()
-        )
+    slot_has_nlu_mapping = any(
+        [mapping_type.is_predefined_type() for mapping_type in mapping_types]
+    )
+    slot_has_llm_mapping = any(
+        [mapping_type == SlotMappingType.FROM_LLM for mapping_type in mapping_types]
+    )
+    slot_has_custom_mapping = any(
+        [mapping_type == SlotMappingType.CUSTOM for mapping_type in mapping_types]
+    )
 
-        if should_be_set_by_llm or should_be_set_by_nlu:
-            # if the extractor matches the mapping type, we can continue
-            # setting the slot
-            break
-
-        structlogger.debug(
-            "command_processor.clean_up_slot_command.skip_command.extractor_"
-            "does_not_match_slot_mapping",
-            extractor=command.extractor,
-            slot_name=slot.name,
-            mapping_type=mapping_type.value,
+    if set_slot_commands_so_far and command.extractor == SetSlotExtractor.LLM.value:
+        # covers the following scenarios:
+        # scenario 1: NLU mapping extracts a value for slot_a → If LLM extracts a value for slot_a, it is discarded.  # noqa: E501
+        # scenario 2: NLU mapping is unable to extract a value for slot_a → If LLM extracts a value for slot_a, it is accepted.  # noqa: E501
+        command_has_nlu_extractor = any(
+            [
+                command.extractor == SetSlotExtractor.NLU.value
+                for command in set_slot_commands_so_far
+            ]
         )
+        return not command_has_nlu_extractor and slot_has_llm_mapping
+
+    if (
+        slot_has_nlu_mapping
+        and command.extractor == SetSlotExtractor.LLM.value
+        and not slot_has_llm_mapping
+    ):
+        return False
+
+    if (
+        slot_has_llm_mapping
+        and command.extractor == SetSlotExtractor.NLU.value
+        and not slot_has_nlu_mapping
+    ):
+        return False
+
+    if slot_has_custom_mapping and not (slot_has_nlu_mapping or slot_has_llm_mapping):
         return False
 
     return True

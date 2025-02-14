@@ -41,6 +41,7 @@ class Slot(ABC):
         influence_conversation: bool = True,
         is_builtin: bool = False,
         shared_for_coexistence: bool = False,
+        filled_by: Optional[str] = None,
     ) -> None:
         """Create a Slot.
 
@@ -57,6 +58,7 @@ class Slot(ABC):
                 such as `return_value`.
             shared_for_coexistence: If `True` the slot is not forgotten after either
                 dm1 or CALM finishes.
+            filled_by: The name of the extractor that fills the slot.
         """
         self.name = name
         self.mappings = mappings
@@ -67,6 +69,7 @@ class Slot(ABC):
         self._has_been_set = False
         self.is_builtin = is_builtin
         self.shared_for_coexistence = shared_for_coexistence
+        self._filled_by = filled_by
 
     def feature_dimensionality(self) -> int:
         """How many features this single slot creates.
@@ -131,6 +134,16 @@ class Slot(ABC):
         """Sets the slot's value."""
         self._value = value
         self._has_been_set = True
+
+    @property
+    def filled_by(self) -> Optional[str]:
+        """Gets the slot's latest value extractor."""
+        return self._filled_by
+
+    @filled_by.setter
+    def filled_by(self, extractor: str) -> None:
+        """Sets the slot's latest value extractor."""
+        self._filled_by = extractor
 
     def has_same_coerced_value(self, other_value: Any) -> bool:
         """Checks if the coerced value of is the same as the slot value.
@@ -215,6 +228,7 @@ class FloatSlot(Slot):
         influence_conversation: bool = True,
         is_builtin: bool = False,
         shared_for_coexistence: bool = False,
+        filled_by: Optional[str] = None,
     ) -> None:
         """Creates a FloatSlot.
 
@@ -230,6 +244,7 @@ class FloatSlot(Slot):
             influence_conversation,
             is_builtin,
             shared_for_coexistence,
+            filled_by=filled_by,
         )
         self.max_value = max_value
         self.min_value = min_value
@@ -387,6 +402,7 @@ class CategoricalSlot(Slot):
         influence_conversation: bool = True,
         is_builtin: bool = False,
         shared_for_coexistence: bool = False,
+        filled_by: Optional[str] = None,
     ) -> None:
         """Creates a `Categorical  Slot` (see parent class for detailed docstring)."""
         super().__init__(
@@ -397,6 +413,7 @@ class CategoricalSlot(Slot):
             influence_conversation,
             is_builtin,
             shared_for_coexistence,
+            filled_by=filled_by,
         )
         if values and None in values:
             rasa.shared.utils.io.raise_warning(
@@ -607,6 +624,7 @@ class AnySlot(Slot):
         influence_conversation: bool = False,
         is_builtin: bool = False,
         shared_for_coexistence: bool = False,
+        filled_by: Optional[str] = None,
     ) -> None:
         """Creates an `Any  Slot` (see parent class for detailed docstring).
 
@@ -630,6 +648,7 @@ class AnySlot(Slot):
             influence_conversation,
             is_builtin,
             shared_for_coexistence,
+            filled_by=filled_by,
         )
 
     def __eq__(self, other: Any) -> bool:

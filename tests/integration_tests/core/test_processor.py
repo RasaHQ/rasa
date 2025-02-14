@@ -62,12 +62,13 @@ async def calm_slot_mappings_agent(
     mock_try_instantiate_llm_client: Mock,
     mock_try_instantiate_embedder: Mock,
     mock_flow_search_create_embedder: Mock,
-    mock_load_local: Mock,
+    mock_load_local: AsyncMock,
     trained_calm_slot_mappings_bot: str,
 ) -> Agent:
     mock_try_instantiate_llm_client.return_value = Mock()
     mock_flow_search_create_embedder.return_value = Mock()
-    mock_load_local.return_value = Mock()
+    mock_try_instantiate_embedder.return_value = Mock()
+    mock_load_local.return_value = AsyncMock()
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     return Agent.load(
         model_path=trained_calm_slot_mappings_bot, action_endpoint=endpoint
@@ -239,7 +240,7 @@ async def test_processor_handle_message_calm_slots_custom_action_invalid(
         return llm_response_object
 
     monkeypatch.setattr(
-        "rasa.dialogue_understanding.generator.llm_command_generator.LLMCommandGenerator.invoke_llm",
+        "rasa.dialogue_understanding.generator.llm_command_generator.SingleStepLLMCommandGenerator.invoke_llm",
         mock_invoke_llm,
     )
 
@@ -311,7 +312,13 @@ async def test_processor_handle_message_calm_corrections_for_NLU_slots(
         ],
         [
             CorrectSlotsCommand(
-                [CorrectedSlot(name="pizza", value="margherita")]
+                [
+                    CorrectedSlot(
+                        name="pizza",
+                        value="margherita",
+                        filled_by=SetSlotExtractor.NLU.value,
+                    )
+                ]
             ).as_dict(),
         ],
     ]

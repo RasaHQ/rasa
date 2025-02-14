@@ -5,7 +5,10 @@ from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.constants import (
     RASA_RECORD_COMMANDS_AND_PROMPTS_ENV_VAR_NAME,
 )
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
+    COMMANDS,
     KEY_COMPONENT_NAME,
     KEY_LLM_RESPONSE_METADATA,
     KEY_PROMPT_NAME,
@@ -13,6 +16,7 @@ from rasa.shared.nlu.constants import (
     KEY_USER_PROMPT,
     PREDICTED_COMMANDS,
     PROMPTS,
+    SET_SLOT_COMMAND,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.llm.llm_response import LLMResponse
@@ -131,3 +135,30 @@ def add_prompt_to_message_parse_data(
 
     # Update the message with the new prompts list.
     message.set(PROMPTS, prompts, add_to_output=True)
+
+
+def _handle_via_nlu_in_coexistence(
+    tracker: Optional[DialogueStateTracker], message: Message
+) -> bool:
+    """Check if the message should be handled by the NLU subsystem in coexistence mode."""  # noqa: E501
+    if not tracker:
+        return False
+
+    if not tracker.has_coexistence_routing_slot:
+        return False
+
+    value = tracker.get_slot(ROUTE_TO_CALM_SLOT)
+    if value is not None:
+        return not value
+
+    # routing slot has been reset so we need to check
+    # the command issued by the Router component
+    if message.get(COMMANDS):
+        for command in message.get(COMMANDS):
+            if (
+                command.get("command") == SET_SLOT_COMMAND
+                and command.get("name") == ROUTE_TO_CALM_SLOT
+            ):
+                return not command.get("value")
+
+    return False

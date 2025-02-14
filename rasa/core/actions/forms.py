@@ -16,7 +16,7 @@ from rasa.shared.constants import UTTER_PREFIX
 from rasa.shared.core.constants import (
     ACTION_EXTRACT_SLOTS,
     ACTION_LISTEN_NAME,
-    MAPPING_TYPE,
+    KEY_MAPPING_TYPE,
     REQUESTED_SLOT,
     SLOT_MAPPINGS,
     SlotMappingType,
@@ -158,7 +158,9 @@ class FormAction(LoopAction):
         domain_slots = domain.as_dict().get(KEY_SLOTS, {})
         for slot in domain.required_slots_for_form(self.name()):
             for slot_mapping in domain_slots.get(slot, {}).get(SLOT_MAPPINGS, []):
-                if slot_mapping.get(MAPPING_TYPE) == str(SlotMappingType.FROM_ENTITY):
+                if slot_mapping.get(KEY_MAPPING_TYPE) == str(
+                    SlotMappingType.FROM_ENTITY
+                ):
                     mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
                     if mapping_as_string in unique_entity_slot_mappings:
                         unique_entity_slot_mappings.remove(mapping_as_string)

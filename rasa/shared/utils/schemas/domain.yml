@@ -78,7 +78,6 @@ mapping:
           mappings:
            type: "seq"
            required: False
-           allowempty: False
            sequence:
               - type: "map"
                 allowempty: True

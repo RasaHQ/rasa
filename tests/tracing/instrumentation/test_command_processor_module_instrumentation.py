@@ -165,7 +165,7 @@ def test_tracing_command_processor_validate_state_of_commands(
     assert captured_span.name == "command_processor.validate_state_of_commands"
 
     expected_attributes = {
-        "cleaned_up_commands": "[{'corrected_slots': [{'name': 'recipient'}], 'command': 'correct slot'}]"  # noqa: E501
+        "cleaned_up_commands": "[{'corrected_slots': [{'name': 'recipient', 'filled_by': None}], 'command': 'correct slot'}]"  # noqa: E501
     }
     assert captured_span.attributes == expected_attributes
 

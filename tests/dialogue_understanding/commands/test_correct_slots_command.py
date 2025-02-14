@@ -18,6 +18,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
 )
+from rasa.shared.core.constants import SetSlotExtractor
 from rasa.shared.core.events import DialogueStackUpdated, Event, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
@@ -111,7 +112,11 @@ def test_run_command_on_tracker_correcting_previous_flow():
         tracker, "my_flow", ["collect_foo", "collect_bar"]
     )
     command = CorrectSlotsCommand(
-        corrected_slots=[CorrectedSlot(name="foo", value="not-foofoo")]
+        corrected_slots=[
+            CorrectedSlot(
+                name="foo", value="not-foofoo", filled_by=SetSlotExtractor.LLM.value
+            )
+        ]
     )
 
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
@@ -129,10 +134,13 @@ def test_run_command_on_tracker_correcting_previous_flow():
     assert dialogue_stack_dump[1]["type"] == "pattern_correction"
     assert dialogue_stack_dump[1]["flow_id"] == "pattern_correction"
     assert dialogue_stack_dump[1]["step_id"] == "START"
-    assert dialogue_stack_dump[1]["corrected_slots"] == {"foo": "not-foofoo"}
+    assert dialogue_stack_dump[1]["corrected_slots"] == {
+        "foo": {"value": "not-foofoo", "filled_by": SetSlotExtractor.LLM.value}
+    }
     assert dialogue_stack_dump[1]["reset_flow_id"] == "my_flow"
     assert dialogue_stack_dump[1]["reset_step_id"] == "collect_foo"
     assert dialogue_stack_dump[1]["is_reset_only"] is False
+    assert dialogue_stack_dump[1]["new_slot_values"] == ["not-foofoo"]
 
 
 def test_run_command_on_tracker_correcting_current_flow(
@@ -189,10 +197,13 @@ def test_run_command_on_tracker_correcting_current_flow(
     assert dialogue_stack_dump[3]["type"] == "pattern_correction"
     assert dialogue_stack_dump[3]["flow_id"] == "pattern_correction"
     assert dialogue_stack_dump[3]["step_id"] == "START"
-    assert dialogue_stack_dump[3]["corrected_slots"] == {"bar": "barbar"}
+    assert dialogue_stack_dump[3]["corrected_slots"] == {
+        "bar": {"value": "barbar", "filled_by": None}
+    }
     assert dialogue_stack_dump[3]["reset_flow_id"] == "my_flow"
     assert dialogue_stack_dump[3]["reset_step_id"] == "collect_bar"
     assert dialogue_stack_dump[3]["is_reset_only"] is False
+    assert dialogue_stack_dump[3]["new_slot_values"] == ["barbar"]
 
 
 # Skipped in https://rasahq.atlassian.net/browse/ENG-687
@@ -332,9 +343,10 @@ def test_run_command_on_tracker_correcting_slot_with_asked_before_filling():
     assert isinstance(frame, CorrectionPatternFlowStackFrame)
     assert frame.flow_id == "pattern_correction"
     assert frame.is_reset_only
-    assert frame.corrected_slots == {"foo": "foofoo"}
+    assert frame.corrected_slots == {"foo": {"value": "foofoo", "filled_by": None}}
     assert frame.step_id == "START"
     assert frame.reset_step_id == "collect_foo"
+    assert frame.new_slot_values == ["foofoo"]
 
 
 def test_run_command_on_tracker_correcting_during_a_correction():
@@ -360,18 +372,25 @@ def test_run_command_on_tracker_correcting_during_a_correction():
     stack = tracker.stack
     stack.push(
         CorrectionPatternFlowStackFrame(
-            corrected_slots={"foo": "not-foofoo"},
+            corrected_slots={
+                "foo": {"value": "not-foofoo", "filled_by": SetSlotExtractor.LLM.value}
+            },
             step_id="pattern_correction_0_action_correct_flow_slot",
             reset_flow_id="my_flow",
             reset_step_id="collect_foo",
             is_reset_only=False,
             frame_id="some-other-id",
+            new_slot_values=["not-foofoo"],
         )
     )
     tracker.update_stack(stack)
 
     command = CorrectSlotsCommand(
-        corrected_slots=[CorrectedSlot(name="bar", value="barbar")]
+        corrected_slots=[
+            CorrectedSlot(
+                name="bar", value="barbar", filled_by=SetSlotExtractor.LLM.value
+            )
+        ]
     )
 
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
@@ -388,12 +407,18 @@ def test_run_command_on_tracker_correcting_during_a_correction():
     assert dialogue_stack_dump[1]["type"] == "pattern_correction"
     assert dialogue_stack_dump[1]["flow_id"] == "pattern_correction"
     assert dialogue_stack_dump[1]["step_id"] == "START"
-    assert dialogue_stack_dump[1]["corrected_slots"] == {"bar": "barbar"}
+    assert dialogue_stack_dump[1]["corrected_slots"] == {
+        "bar": {"value": "barbar", "filled_by": SetSlotExtractor.LLM.value}
+    }
     assert dialogue_stack_dump[1]["reset_flow_id"] == "my_flow"
     assert dialogue_stack_dump[1]["reset_step_id"] == "collect_bar"
+    assert dialogue_stack_dump[1]["new_slot_values"] == ["barbar"]
 
     assert dialogue_stack_dump[2]["type"] == "pattern_correction"
-    assert dialogue_stack_dump[2]["corrected_slots"] == {"foo": "not-foofoo"}
+    assert dialogue_stack_dump[2]["corrected_slots"] == {
+        "foo": {"value": "not-foofoo", "filled_by": SetSlotExtractor.LLM.value}
+    }
+    assert dialogue_stack_dump[2]["new_slot_values"] == ["not-foofoo"]
 
 
 def test_determine_index_for_new_correction_frame_handles_empty_stack():

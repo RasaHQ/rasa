@@ -173,7 +173,7 @@ class TestLLMBasedCommandGenerator:
     @pytest.mark.asyncio
     async def test_predict_commands_no_flows(self, command_generator_fixture):
         generator = command_generator_fixture
-        message = Mock()
+        message = Message()
         message.data = {TEXT: "some_message"}
         tracker = Mock(spec=DialogueStateTracker)
         flows = FlowsList(underlying_flows=[])
@@ -185,7 +185,7 @@ class TestLLMBasedCommandGenerator:
     @pytest.mark.asyncio
     async def test_predict_commands_no_tracker(self, command_generator_fixture):
         generator = command_generator_fixture
-        message = Mock()
+        message = Message()
         message.data = {TEXT: "some_message"}
         flows = FlowsList(underlying_flows=[])
 
@@ -369,7 +369,7 @@ class TestLLMBasedCommandGenerator:
         flows: FlowsList,
     ) -> None:
         generator = command_generator_fixture
-        message = Mock()
+        message = Message()
         message.data = {TEXT: "some_message"}
         mock_flow_retrieval_filter_flows.side_effect = ProviderClientAPIException(
             message="Test Exception", original_exception=Exception("API exception")

@@ -22,6 +22,7 @@ from rasa.dialogue_understanding.commands import (
     SkipQuestionCommand,
     StartFlowCommand,
 )
+from rasa.dialogue_understanding.constants import KEY_MINIMIZE_NUM_CALLS
 from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_ACTIVE_KEY,
     FLOW_RETRIEVAL_KEY,
@@ -52,13 +53,15 @@ from rasa.shared.constants import (
     RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED,
     ROUTE_TO_CALM_SLOT,
 )
+from rasa.shared.core.constants import SetSlotExtractor
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
-from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import (
+    COMMANDS,
     KEY_COMPONENT_NAME,
     KEY_USER_PROMPT,
     PREDICTED_COMMANDS,
@@ -984,9 +987,9 @@ class TestMultiStepLLMCommandGenerator:
         )
         test_available_flows = all_flows.user_flows.exclude_link_only_flows()
 
-        mock_message = Mock(spec=Message)
-        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True)
-        mock_domain = Mock(spec=Domain)
+        mock_message = Message()
+        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True, slots={})
+        mock_domain = Domain.empty()
         command_generator = MultiStepLLMCommandGenerator.create(
             config={"flow_retrieval": {"active": False}},
             resource=Mock(),
@@ -1419,6 +1422,165 @@ class TestMultiStepLLMCommandGenerator:
         assert message.get(PROMPTS) is None
         assert message.get(PREDICTED_COMMANDS) is None
 
+    async def test_predict_commands_if_commands_already_present(
+        self, command_generator: MultiStepLLMCommandGenerator, monkeypatch: MonkeyPatch
+    ):
+        """Test that predict_commands adds commands to the prior set commands on the Message object."""  # noqa: E501
+        command = StartFlowCommand("some_flow").as_dict()
+
+        test_message = Message.build(text="some message")
+        test_message.set(COMMANDS, [command], add_to_output=True)
+
+        assert len(test_message.get(COMMANDS)) == 1
+        assert test_message.get(COMMANDS) == [command]
+
+        test_tracker = DialogueStateTracker.from_events(uuid.uuid4().hex, [])
+        mock_get_active_flows = Mock(return_value=FlowsList([]))
+        mock_startable_flows = Mock(return_value=FlowsList([Flow("some_flow")]))
+
+        async def mock_predict_commands(*args, **kwargs) -> List[Command]:
+            return [SetSlotCommand("some slot", "some value")]
+
+        monkeypatch.setattr(
+            command_generator,
+            "_predict_commands_with_multi_step",
+            mock_predict_commands,
+        )
+        monkeypatch.setattr(
+            command_generator, "get_startable_flows", mock_startable_flows
+        )
+        monkeypatch.setattr(
+            command_generator, "get_active_flows", mock_get_active_flows
+        )
+
+        returned_message = (
+            await command_generator.process(
+                [test_message],
+                flows=FlowsList([Flow("some_flow")]),
+                tracker=test_tracker,
+            )
+        )[0]
+
+        assert len(returned_message.get(COMMANDS)) == 2
+        assert returned_message.get(COMMANDS) == [
+            command,
+            SetSlotCommand("some slot", "some value").as_dict(),
+        ]
+
+    @pytest.mark.parametrize(
+        "command",
+        [
+            StartFlowCommand("some_flow").as_dict(),
+            SetSlotCommand("some_slot", "some_value").as_dict(),
+        ],
+    )
+    async def test_process_should_skip_llm_call(
+        self,
+        command: Dict[str, Any],
+        command_generator: MultiStepLLMCommandGenerator,
+        monkeypatch: MonkeyPatch,
+    ):
+        """Test that predict_commands does not add commands when should_skip_llm_call is True."""  # noqa: E501
+        test_message = Message.build(text="some message")
+        test_message.set(COMMANDS, [command], add_to_output=True)
+
+        assert len(test_message.get(COMMANDS)) == 1
+        assert test_message.get(COMMANDS) == [command]
+
+        command_generator.config[KEY_MINIMIZE_NUM_CALLS] = True
+        mock_predict_commands = AsyncMock()
+        monkeypatch.setattr(
+            command_generator,
+            "_predict_commands_with_multi_step",
+            mock_predict_commands,
+        )
+
+        mock_get_active_flows = Mock(return_value=FlowsList([]))
+        mock_startable_flows = Mock(return_value=FlowsList([Flow("some_flow")]))
+        monkeypatch.setattr(
+            command_generator, "get_startable_flows", mock_startable_flows
+        )
+        monkeypatch.setattr(
+            command_generator, "get_active_flows", mock_get_active_flows
+        )
+
+        returned_message = (
+            await command_generator.process(
+                [test_message],
+                flows=FlowsList([Flow("some_flow")]),
+                tracker=None,
+            )
+        )[0]
+
+        assert len(returned_message.get(COMMANDS)) == 1
+        assert returned_message.get(COMMANDS) == [command]
+
+    @pytest.mark.parametrize(
+        "active_flow, input_commands, expected_commands",
+        [
+            (
+                "auth_user",
+                [SetSlotCommand("auth_token", "ABCD12EF", SetSlotExtractor.LLM.value)],
+                [SetSlotCommand("auth_token", "ABCD12EF", SetSlotExtractor.LLM.value)],
+            ),
+            (
+                "auth_user_2",
+                [SetSlotCommand("auth_token", "ABCD12EF", SetSlotExtractor.LLM.value)],
+                [],
+            ),
+            (
+                "loyalty_points",
+                [StartFlowCommand("loyalty_points")],
+                [StartFlowCommand("loyalty_points")],
+            ),
+            (
+                "some_flow",
+                [SetSlotCommand("nlu_slot", "some_value", SetSlotExtractor.NLU.value)],
+                [SetSlotCommand("nlu_slot", "some_value", SetSlotExtractor.NLU.value)],
+            ),
+        ],
+    )
+    def test_command_generator_check_commands_against_slot_mappings_active_flow(
+        self,
+        active_flow: Text,
+        input_commands: List[Command],
+        expected_commands: List[Command],
+        command_generator: MultiStepLLMCommandGenerator,
+    ):
+        # Given
+        slot_name = "auth_token"
+        flow_id = "auth_user"
+        domain = Domain.from_yaml(f"""
+        entities:
+        - nlu_entity
+        slots:
+          {slot_name}:
+            type: text
+            mappings:
+                - type: from_llm
+                  conditions:
+                    - active_flow: {flow_id}
+          nlu_slot:
+            type: text
+            mappings:
+            - type: from_entity
+              entity: nlu_entity
+        """)
+        tracker = DialogueStateTracker.from_events("test", [], slots=domain.slots)
+        user_frame = UserFlowStackFrame(
+            flow_id=active_flow, step_id="first_step", frame_id="some-frame-id"
+        )
+        stack = DialogueStack(frames=[user_frame])
+        tracker.update_stack(stack)
+
+        # When
+        actual_commands = command_generator._check_commands_against_slot_mappings(
+            input_commands, tracker, domain
+        )
+
+        # Then
+        assert actual_commands == expected_commands
+
 
 class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
     @pytest.fixture
@@ -1515,10 +1677,10 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
     ):
         # Given
         filtered_flows = test_flows_with_defaults.user_flows.exclude_link_only_flows()
-        mock_message = Mock(spec=Message)
-        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True)
+        mock_message = Message()
+        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True, slots={})
         mock_tracker.has_coexistence_routing_slot = True
-        mock_domain = Mock(spec=Domain)
+        mock_domain = Domain.empty()
 
         # When
         predicted_commands = await multi_step_llm_command_generator.predict_commands(
@@ -1543,9 +1705,9 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
     ):
         # Given
         filtered_flows = test_flows_with_defaults.user_flows.exclude_link_only_flows()
-        mock_message = Mock(spec=Message)
-        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True)
-        mock_domain = Mock(spec=Domain)
+        mock_message = Message()
+        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True, slots={})
+        mock_domain = Domain.empty()
 
         mock_filter_flows.side_effect = ProviderClientAPIException(
             message="Something went wrong",
@@ -1573,9 +1735,9 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
     ):
         # Given
         filtered_flows = test_flows_with_defaults.user_flows.exclude_link_only_flows()
-        mock_message = Mock(spec=Message)
-        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True)
-        mock_domain = Mock(spec=Domain)
+        mock_message = Message()
+        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True, slots={})
+        mock_domain = Domain.empty()
 
         mock_predict_commands_for_active_flow.side_effect = ProviderClientAPIException(
             message="Something went wrong",
@@ -1603,9 +1765,9 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
     ):
         # Given
         filtered_flows = test_flows_with_defaults.user_flows.exclude_link_only_flows()
-        mock_message = Mock(spec=Message)
-        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True)
-        mock_domain = Mock(spec=Domain)
+        mock_message = Message()
+        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True, slots={})
+        mock_domain = Domain.empty()
 
         mock_predict_commands_for_handling_flows.side_effect = (
             ProviderClientAPIException(
@@ -1635,9 +1797,9 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
     ):
         # Given
         filtered_flows = test_flows_with_defaults.user_flows.exclude_link_only_flows()
-        mock_message = Mock(spec=Message)
-        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True)
-        mock_domain = Mock(spec=Domain)
+        mock_message = Message()
+        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True, slots={})
+        mock_domain = Domain.empty()
 
         mock_predict_commands_for_newly_started_flows.side_effect = (
             ProviderClientAPIException(
@@ -1667,9 +1829,9 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
     ):
         # Given
         filtered_flows = test_flows_with_defaults.user_flows.exclude_link_only_flows()
-        mock_message = Mock(spec=Message)
-        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True)
-        mock_domain = Mock(spec=Domain)
+        mock_message = Message()
+        mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True, slots={})
+        mock_domain = Domain.empty()
 
         mock_predict_commands_for_newly_started_flows.return_value = [
             ChangeFlowCommand()

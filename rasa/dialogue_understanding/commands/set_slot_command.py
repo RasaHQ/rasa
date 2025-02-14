@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Dict, List
 
 import structlog
@@ -19,23 +18,13 @@ from rasa.dialogue_understanding.stack.utils import (
     get_collect_steps_excluding_ask_before_filling_for_active_flow,
 )
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.core.constants import SetSlotExtractor
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import SET_SLOT_COMMAND
 
 structlogger = structlog.get_logger()
-
-
-class SetSlotExtractor(Enum):
-    """The extractors that can set a slot."""
-
-    LLM = "LLM"
-    COMMAND_PAYLOAD_READER = "CommandPayloadReader"
-    NLU = "NLU"
-
-    def __str__(self) -> str:
-        return self.value
 
 
 def get_flows_predicted_to_start_from_tracker(
@@ -137,6 +126,7 @@ class SetSlotCommand(Command):
             in {
                 SetSlotExtractor.LLM.value,
                 SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
+                SetSlotExtractor.NLU.value,
             }
         ):
             # Get the other predicted flows from the most recent message on the tracker.
@@ -154,7 +144,9 @@ class SetSlotCommand(Command):
                 return []
 
         structlogger.debug("command_executor.set_slot", command=self)
-        return [SlotSet(self.name, slot.coerce_value(self.value))]
+        return [
+            SlotSet(self.name, slot.coerce_value(self.value), filled_by=self.extractor)
+        ]
 
     def __hash__(self) -> int:
         return hash(self.value) + hash(self.name)

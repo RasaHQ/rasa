@@ -1,0 +1,11 @@
+entities:
+  - card_number
+
+slots:
+  card_number:
+    type: text
+    mappings:
+      - type: from_llm
+        allow_nlu_correction: true
+      - type: from_entity
+        entity: card_number
