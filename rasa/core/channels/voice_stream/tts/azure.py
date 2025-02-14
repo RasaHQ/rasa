@@ -81,7 +81,8 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
     @staticmethod
     def create_request_body(text: str, conf: AzureTTSConfig) -> str:
         return f"""
-        <speak version='1.0' xml:lang='{conf.language}'>
+        <speak version='1.0' xml:lang='{conf.language}' xmlns:mstts='http://www.w3.org/2001/mstts'
+                xmlns='http://www.w3.org/2001/10/synthesis'>
             <voice xml:lang='{conf.language}' name='{conf.voice}'>
                 {text}
             </voice>
