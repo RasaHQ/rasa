@@ -99,6 +99,7 @@ jobs:
           }
           make install-full
           make prepare-tests-windows-gha
+          make update-rasa-sdk-to-main
 
       - name: Disable "LongPathsEnabled" option on Windows
         # On Windows laptops, a default preset prevents path names from being longer than
@@ -122,6 +123,7 @@ jobs:
           DD_ENV: ${{ matrix.test }}
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           BLOCKED_LICENSE: ${{ secrets.BLOCKED_LICENSE }}
           CHAMPION_LICENSE: ${{ secrets.CHAMPION_LICENSE }}
@@ -214,6 +216,7 @@ jobs:
           }
           make install-full
           make prepare-tests-windows-gha
+          make update-rasa-sdk-to-main
 
       - name: Install spaCy language model
         run: |
@@ -240,6 +243,7 @@ jobs:
           PYTHONUTF8: 1
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
         run: |
           make test-anonymization
         shell: bash # bash shell is a way to make code run for both Linux and Windows
@@ -316,6 +320,7 @@ jobs:
           }
           make install-full
           make prepare-tests-windows-gha
+          make update-rasa-sdk-to-main
 
       - name: Disable "LongPathsEnabled" option on Windows
         # On Windows laptops, a default preset prevents path names from being longer than
@@ -339,6 +344,7 @@ jobs:
           DD_ENV: test-flaky
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
         run: |
           make test-flaky
         shell: bash # bash shell is a way to make code run for both Linux and Windows

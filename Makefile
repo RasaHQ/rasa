@@ -83,6 +83,9 @@ types:  ## Check for type errors using mypy.
 
 static-checks: lint lint-security types  ## Run all python static checks.
 
+update-rasa-sdk-to-main: ## Update the Rasa SDK to the latest version on the main branch.
+	poetry run python -m pip install git+https://github.com/RasaHQ/rasa-sdk.git@main
+
 prepare-spacy:  ## Download models needed for spacy tests.
 	poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.7.1/en_core_web_md-3.7.1-py3-none-any.whl
 	poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.7.0/de_core_news_sm-3.7.0-py3-none-any.whl
