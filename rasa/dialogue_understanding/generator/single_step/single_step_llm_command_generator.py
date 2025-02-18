@@ -51,7 +51,6 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
 )
-from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enabled
 from rasa.utils.log_utils import log_llm
 
 COMMAND_PROMPT_FILE_NAME = "command_prompt.jinja2"
@@ -111,7 +110,6 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         )
 
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
-        self.repeat_command_enabled = self.is_repeat_command_enabled()
 
     ### Implementations of LLMBasedCommandGenerator parent
     @staticmethod
@@ -414,20 +412,6 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
             "current_slot": current_slot,
             "current_slot_description": current_slot_description,
             "user_message": latest_user_message,
-            "is_repeat_command_enabled": self.repeat_command_enabled,
         }
 
         return self.compile_template(self.prompt_template).render(**inputs)
-
-    def is_repeat_command_enabled(self) -> bool:
-        """Check for feature flag"""
-        RASA_PRO_BETA_REPEAT_COMMAND_ENV_VAR_NAME = "RASA_PRO_BETA_REPEAT_COMMAND"
-        try:
-            ensure_beta_feature_is_enabled(
-                "Repeat Command",
-                env_flag=RASA_PRO_BETA_REPEAT_COMMAND_ENV_VAR_NAME,
-            )
-        except BetaNotEnabledException:
-            return False
-
-        return True
