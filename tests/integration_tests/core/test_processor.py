@@ -17,8 +17,10 @@ from rasa.dialogue_understanding.processor.command_processor import CANNOT_HANDL
 from rasa.shared.core.events import BotUttered, SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.utils.io import read_file
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import TrainedAsync
+from tests.utilities import flows_from_str
 
 
 @pytest.fixture(scope="session")
@@ -422,3 +424,356 @@ async def test_processor_handle_message_calm_cannot_handle_command(
         f"CannotHandleCommand(reason='{CANNOT_HANDLE_REASON}')"
     )
     assert command_processor_debug_log in captured.out
+
+
+@pytest.fixture(scope="session")
+@patch("langchain_community.vectorstores.faiss.FAISS.save_local")
+@patch("langchain_community.vectorstores.faiss.FAISS.from_documents")
+@patch(
+    "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
+)
+@patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
+@patch("rasa.shared.utils.health_check.health_check.try_instantiate_embedder")
+async def trained_handle_digressions_bot(
+    mock_try_instantiate_llm_client: Mock,
+    mock_try_instantiate_embedder: Mock,
+    mock_save_local: Mock,
+    mock_from_documents: Mock,
+    mock_flow_search_create_embedder: Mock,
+    trained_async: TrainedAsync,
+) -> str:
+    mock_try_instantiate_llm_client.return_value = Mock()
+    mock_try_instantiate_embedder.return_value = Mock()
+    mock_flow_search_create_embedder.return_value = Mock()
+    mock_from_documents.return_value = Mock()
+    mock_save_local.return_value = Mock()
+    return await trained_async(
+        domain="data/test_handle_digressions/domain.yml",
+        config="data/test_handle_digressions/config.yml",
+        training_files=[
+            "data/test_handle_digressions/data/flows.yml",
+        ],
+    )
+
+
+async def mocked_filter_flows(*args, **kwargs) -> FlowsList:
+    return flows_from_str(read_file("data/test_handle_digressions/data/flows.yml"))
+
+
+@pytest.fixture
+@patch("langchain_community.vectorstores.faiss.FAISS.load_local")
+@patch(
+    "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval._create_embedder"
+)
+@patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
+@patch("rasa.shared.utils.health_check.health_check.try_instantiate_embedder")
+async def calm_handle_digressions_agent(
+    mock_try_instantiate_llm_client: Mock,
+    mock_try_instantiate_embedder: Mock,
+    mock_flow_search_create_embedder: Mock,
+    mock_load_local: AsyncMock,
+    trained_handle_digressions_bot: str,
+    monkeypatch: MonkeyPatch,
+) -> Agent:
+    mock_try_instantiate_llm_client.return_value = Mock()
+    mock_flow_search_create_embedder.return_value = Mock()
+    mock_try_instantiate_embedder.return_value = Mock()
+    mock_load_local.return_value = AsyncMock()
+    monkeypatch.setattr(
+        "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator.SingleStepLLMCommandGenerator.filter_flows",
+        mocked_filter_flows,
+    )
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    return Agent.load(
+        model_path=trained_handle_digressions_bot, action_endpoint=endpoint
+    )
+
+
+async def test_processor_handle_digressions_confirm_digression(
+    calm_handle_digressions_agent: Agent,
+    monkeypatch: MonkeyPatch,
+):
+    """Test the mechanism that the processor uses to handle digressions.
+
+    The scenario is as follows:
+    1. User starts the order_pizza flow.
+    2. User digresses to check account balance.
+    3. Bot asks the user if to continue with the order_pizza original flow.
+    4. User decides to continue the order_pizza flow.
+    """
+    sender_id = uuid.uuid4().hex
+    processor = calm_handle_digressions_agent.processor
+
+    user_messages = [
+        "I would like to order 1 pepperoni pizza.",
+        "Before ordering can i check my account balance first?",
+        "/SetSlots(continue_previous_flow=True)",
+    ]
+
+    flows = ["order_pizza", "pattern_handle_digressions", "order_pizza"]
+
+    for i, user_msg in enumerate(user_messages):
+        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
+
+        tracker = await processor.get_tracker(sender_id)
+        assert tracker.latest_message is not None
+        assert tracker.latest_message.text == user_msg
+        assert tracker.active_flow == flows[i]
+    else:
+        actual_responses = []
+        for event in tracker.events:
+            if isinstance(event, BotUttered):
+                actual_responses.append(event.metadata.get("utter_action"))
+
+        assert actual_responses == [
+            "utter_ask_address",
+            "utter_ask_continue_previous_flow",
+            "utter_block_digressions",
+            "utter_ask_address",
+        ]
+
+
+async def test_processor_handle_digressions_continue_interruption(
+    calm_handle_digressions_agent: Agent,
+    monkeypatch: MonkeyPatch,
+):
+    """Test the mechanism that the processor uses to handle digressions.
+
+    The scenario is as follows:
+    1. User starts the order_pizza flow.
+    2. User digresses to check account balance.
+    3. Bot asks the user if to continue with the order_pizza original flow.
+    4. User decides to continue with the digression.
+    """
+    sender_id = uuid.uuid4().hex
+    processor = calm_handle_digressions_agent.processor
+
+    user_messages = [
+        "I would like to order 1 pepperoni pizza.",
+        "Before ordering can i check my account balance first?",
+        "/SetSlots(continue_previous_flow=False)",
+    ]
+
+    flows = ["order_pizza", "pattern_handle_digressions", "order_pizza"]
+
+    for i, user_msg in enumerate(user_messages):
+        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
+
+        tracker = await processor.get_tracker(sender_id)
+        assert tracker.latest_message is not None
+        assert tracker.latest_message.text == user_msg
+        assert tracker.active_flow == flows[i]
+    else:
+        actual_responses = []
+        for event in tracker.events:
+            if isinstance(event, BotUttered):
+                actual_responses.append(event.metadata.get("utter_action"))
+
+        assert actual_responses == [
+            "utter_ask_address",
+            "utter_ask_continue_previous_flow",
+            "utter_continue_interruption",
+            "utter_check_balance",
+            "utter_flow_continue_interrupted",
+            "utter_ask_address",
+        ]
+
+
+async def test_processor_handle_digressions_block_digression(
+    calm_handle_digressions_agent: Agent,
+    monkeypatch: MonkeyPatch,
+):
+    """Test the mechanism that the processor uses to handle digressions.
+
+    The scenario is as follows:
+    1. User starts the order_pizza flow.
+    2. User digresses to check account balance.
+    3. Bot informs the user that they will continue with the pizza order and
+    then return to the digression.
+    """
+    sender_id = uuid.uuid4().hex
+    processor = calm_handle_digressions_agent.processor
+
+    user_messages = [
+        "I would like to order 1 pepperoni pizza.",
+        "1 Clerkenwell Road",
+        "Before ordering can i check my account balance first?",
+        "/SetSlots(order_confirmation=True)",
+    ]
+
+    flows = ["order_pizza", "order_pizza", "order_pizza", None]
+
+    for i, user_msg in enumerate(user_messages):
+        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
+
+        tracker = await processor.get_tracker(sender_id)
+        assert tracker.latest_message is not None
+        assert tracker.latest_message.text == user_msg
+        assert tracker.active_flow == flows[i]
+    else:
+        actual_responses = []
+        for event in tracker.events:
+            if isinstance(event, BotUttered):
+                actual_responses.append(event.metadata.get("utter_action"))
+
+        assert actual_responses == [
+            "utter_ask_address",
+            "utter_ask_order_confirmation",
+            "utter_block_digressions",
+            "utter_ask_order_confirmation",
+            "utter_place_order",
+            "utter_flow_continue_interrupted",
+            "utter_check_balance",
+            "utter_can_do_something_else",
+        ]
+
+
+async def test_processor_handle_digressions_digression_is_not_blocked(
+    calm_handle_digressions_agent: Agent,
+    monkeypatch: MonkeyPatch,
+):
+    """Test the mechanism that the processor uses to handle digressions.
+
+    The scenario is as follows:
+    1. User starts the payment flow.
+    2. User digresses to check account balance.
+    3. Bot interrupts the payment flow because check account balance is not listed in
+    block_digressions of the card number collect step.
+    """
+    sender_id = uuid.uuid4().hex
+    processor = calm_handle_digressions_agent.processor
+
+    user_messages = [
+        "I would like to pay for my electricity bill",
+        "/SetSlots(payment_option=card)",
+        "Before ordering can i check my account balance first?",
+    ]
+
+    for i, user_msg in enumerate(user_messages):
+        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
+    else:
+        tracker = await processor.get_tracker(sender_id)
+        actual_responses = []
+        for event in tracker.events:
+            if isinstance(event, BotUttered):
+                actual_responses.append(event.metadata.get("utter_action"))
+
+        assert actual_responses == [
+            "utter_ask_payment_option",
+            "utter_ask_card_number",
+            "utter_continue_interruption",
+            "utter_check_balance",
+            "utter_flow_continue_interrupted",
+            "utter_ask_card_number",
+        ]
+
+
+async def test_processor_handle_digressions_trigger_clarification(
+    calm_handle_digressions_agent: Agent,
+    monkeypatch: MonkeyPatch,
+):
+    """Test the mechanism that the processor uses to handle digressions.
+
+    The scenario is as follows:
+    1. User starts the order_pizza flow.
+    2. User digresses the first time.
+    3. Bot informs the user that they will continue with the pizza order and
+    then return to the digression.
+    4. User digresses a second time and then chooses to continue with the pizza order.
+    5. Order pizza flow is completed and the bot triggers pattern clarification for the
+    user to choose from the pending 2 digressions.
+    6. User chooses to check account balance.
+    7. Bot triggers the check account balance flow, completes it and then proceeds
+    with the payment flow.
+    """
+    sender_id = uuid.uuid4().hex
+    processor = calm_handle_digressions_agent.processor
+
+    user_messages = [
+        "I would like to order 1 pepperoni pizza.",
+        "Oh can i pay my council tax bill first?",
+        "/SetSlots(continue_previous_flow=True)",
+        "1 Clerkenwell Road",
+        "Before ordering can i check my account balance first?",
+        "/SetSlots(order_confirmation=True)",
+        "check account balance",
+    ]
+
+    for i, user_msg in enumerate(user_messages):
+        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
+    else:
+        actual_responses = []
+        tracker = await processor.get_tracker(sender_id)
+        for event in tracker.events:
+            if isinstance(event, BotUttered):
+                actual_responses.append(event.metadata.get("utter_action"))
+
+        assert actual_responses == [
+            "utter_ask_address",
+            "utter_ask_continue_previous_flow",
+            "utter_block_digressions",
+            "utter_ask_address",
+            "utter_ask_order_confirmation",
+            "utter_block_digressions",
+            "utter_ask_order_confirmation",
+            "utter_place_order",
+            "utter_clarification_options_rasa",
+            "utter_check_balance",
+            "utter_flow_continue_interrupted",
+            "utter_ask_payment_option",
+        ]
+
+
+async def test_processor_handle_digressions_cancel_clarification_options(
+    calm_handle_digressions_agent: Agent,
+    monkeypatch: MonkeyPatch,
+):
+    """Test the mechanism that the processor uses to handle digressions.
+
+    The scenario is as follows:
+    1. User starts the order_pizza flow.
+    2. User digresses the first time.
+    3. Bot informs the user that they will continue with the pizza order and
+    then return to the digression.
+    4. User digresses a second time and then chooses to continue with the pizza order.
+    5. Order pizza flow is completed and the bot triggers pattern clarification for the
+    user to choose from the pending 2 digressions.
+    6. User chooses to cancel all options.
+    7. Bot cancels all pending digressions.
+    """
+    sender_id = uuid.uuid4().hex
+    processor = calm_handle_digressions_agent.processor
+
+    user_messages = [
+        "I would like to order 1 pepperoni pizza.",
+        "Oh can i pay my council tax bill first?",
+        "/SetSlots(continue_previous_flow=True)",
+        "1 Clerkenwell Road",
+        "Before ordering can i check my account balance first?",
+        "/SetSlots(order_confirmation=True)",
+        "Cancel all.",
+    ]
+
+    for i, user_msg in enumerate(user_messages):
+        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
+    else:
+        actual_responses = []
+        tracker = await processor.get_tracker(sender_id)
+        for event in tracker.events:
+            if isinstance(event, BotUttered):
+                actual_responses.append(event.metadata.get("utter_action"))
+
+        assert actual_responses == [
+            "utter_ask_address",
+            "utter_ask_continue_previous_flow",
+            "utter_block_digressions",
+            "utter_ask_address",
+            "utter_ask_order_confirmation",
+            "utter_block_digressions",
+            "utter_ask_order_confirmation",
+            "utter_place_order",
+            "utter_clarification_options_rasa",
+            "utter_flow_cancelled_rasa",
+            "utter_flow_cancelled_rasa",
+            "utter_can_do_something_else",
+        ]

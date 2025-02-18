@@ -1,0 +1,55 @@
+version: "3.1"
+
+slots:
+  pizza_type:
+    type: text
+  quantity:
+    type: float
+  address:
+    type: text
+  order_confirmation:
+    type: bool
+  payment_option:
+    type: text
+  card_number:
+    type: text
+    mappings:
+      - type: from_llm
+
+responses:
+  utter_ask_pizza_type:
+    - text: What type of pizza would you like to order?
+
+  utter_place_order:
+    - text: Thank you for your order. Your pizza will be delivered to {address} in 30 minutes.
+
+  utter_ask_quantity:
+    - text: How many pizzas would you like to order?
+
+  utter_ask_address:
+    - text: What is the delivery address?
+
+  utter_ask_order_confirmation:
+    - text: You have put in a order for {quantity} {pizza_type} pizzas. Please confirm these details are correct?
+      buttons:
+        - title: Yes
+          payload: /SetSlots(order_confirmation=True)
+        - title: No
+          payload: /SetSlots(order_confirmation=False)
+
+  utter_cancel_order:
+    - text: Your order has been cancelled.
+
+  utter_ask_payment_option:
+    - text: How would you like to pay for your order?
+      buttons:
+        - title: Card
+          payload: /SetSlots(payment_option=card)
+        - title: Cash
+          payload: /SetSlots(payment_option=cash)
+
+  utter_ask_card_number:
+    - text: Please provide your card number.
+
+  utter_check_balance:
+    - text: Your current balance is $1000.

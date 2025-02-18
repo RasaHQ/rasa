@@ -1,4 +1,4 @@
-from typing import Type
+from typing import List, Type
 
 import pytest
 
@@ -12,6 +12,7 @@ from rasa.shared.core.flows.steps import (
 )
 from rasa.shared.core.flows.steps.call import CallFlowStep
 from rasa.shared.core.flows.steps.no_operation import NoOperationFlowStep
+from rasa.shared.core.flows.utils import ALL_LABEL
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 from tests.utilities import flows_from_str
 
@@ -203,3 +204,65 @@ async def test_unique_flow_step_ids_with_call_step() -> None:
     assert len(parent_flow.steps_with_calls_resolved) == len(
         set(step.id for step in parent_flow.steps_with_calls_resolved)
     )
+
+
+@pytest.mark.parametrize(
+    "ask_confirm_digressions, block_digressions, expected_ask, expected_block",
+    [
+        ("[bar]", "[]", ["bar"], []),
+        ("true", "false", [ALL_LABEL], []),
+        ("[]", "[bar]", [], ["bar"]),
+        ("false", "true", [], [ALL_LABEL]),
+    ],
+)
+def test_digressions_flow_properties_defined_at_collect_step(
+    ask_confirm_digressions: str,
+    block_digressions: str,
+    expected_ask: List[str],
+    expected_block: List[str],
+) -> None:
+    flows = flows_from_str(
+        f"""
+        flows:
+          foo:
+            description: a test flow
+            steps:
+              - id: collect_slot_a
+                collect: slot_a
+                ask_confirm_digressions: {ask_confirm_digressions}
+                block_digressions: {block_digressions}
+          bar:
+            description: another test flow
+            steps:
+              - action: utter_hello
+        """
+    )
+
+    foo_flow = flows.flow_by_id("foo")
+    step = foo_flow.step_by_id("collect_slot_a")
+    assert isinstance(step, CollectInformationFlowStep)
+    assert step.ask_confirm_digressions == expected_ask
+    assert step.block_digressions == expected_block
+
+
+def test_digressions_flow_properties_undefined() -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          foo:
+            description: a test flow
+            steps:
+              - collect: slot_a
+                id: collect_slot_a
+          bar:
+            description: another test flow
+            steps:
+              - action: utter_hello
+        """
+    )
+
+    foo_flow = flows.flow_by_id("foo")
+    step = foo_flow.step_by_id("collect_slot_a")
+    assert isinstance(step, CollectInformationFlowStep)
+    assert step.ask_confirm_digressions == []
+    assert step.block_digressions == []

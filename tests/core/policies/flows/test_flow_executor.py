@@ -1749,6 +1749,10 @@ def test_flow_policy_events_after_interruption() -> None:
             description: flow pattern_completed
             steps:
             - action: utter_how_else_can_i_help
+          pattern_clarification:
+            description: flow pattern_clarification
+            steps:
+            - action: utter_clarification
         """
     )
     stack = DialogueStack.from_dict(
@@ -2148,3 +2152,105 @@ async def test_correct_next_step_selected_with_call_step() -> None:
     # which in this case in from the called `child_flow`,
     # which is not the correct behavior
     assert selected_next_step.slots[0]["key"] == "slot_a"
+
+
+def test_run_end_step_triggers_clarify_pattern() -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          pattern_clarification:
+            description: Conversation repair flow
+            name: pattern clarification
+            steps:
+            - id: start
+              action: action_clarify_flows
+            - action: utter_clarification_options_rasa
+
+          flow_a:
+            description: flow a
+            steps:
+            - id: collect_foo
+              collect: foo
+
+          flow_b:
+            description: flow b
+            steps:
+            - id: collect_bar
+              collect: bar
+
+          flow_c:
+            description: flow c
+            steps:
+            - id: action
+              collect: collect_baz
+            - call: flow_d
+              id: call_flow_d
+
+          flow_d:
+            description: flow d
+            steps:
+            - id: collect_test_d
+              collect: test_d
+        """
+    )
+    stack = DialogueStack.from_dict(
+        [
+            {
+                "flow_id": "flow_b",
+                "frame_id": "flow-b-frame-id",
+                "frame_type": "regular",
+                "step_id": "start",
+                "type": "flow",
+            },
+            {
+                "flow_id": "flow_a",
+                "frame_id": "flow-a-frame-id",
+                "frame_type": "regular",
+                "step_id": "start",
+                "type": "flow",
+            },
+            {
+                "flow_id": "flow_c",
+                "frame_id": "flow-c-frame-id",
+                "frame_type": "regular",
+                "step_id": "call_flow_d",
+                "type": "flow",
+            },
+            {
+                "flow_id": "flow_d",
+                "frame_id": "flow-d-frame-id",
+                "frame_type": "call",
+                "step_id": "collect_test_d",
+                "type": "flow",
+            },
+        ]
+    )
+    tracker = DialogueStateTracker.from_events("test", [], slots=[])
+    tracker.update_stack(stack)
+
+    available_actions = ["action_clarify_flows"]
+    result = flow_executor.advance_flows_until_next_action(
+        tracker, available_actions, flows
+    )
+
+    assert result is not None
+    assert result.action_name == "action_clarify_flows"
+    last_event = result.events[-1]
+    assert isinstance(last_event, FlowStarted)
+    assert last_event.flow_id == "pattern_clarification"
+
+    tracker.update_with_events(result.events)
+    assert len(tracker.stack.frames) == 3
+
+    first_frame = tracker.stack.frames[0]
+    assert isinstance(first_frame, UserFlowStackFrame)
+    assert first_frame.flow_id == "flow_b"
+
+    second_frame = tracker.stack.frames[1]
+    assert isinstance(second_frame, UserFlowStackFrame)
+    assert second_frame.flow_id == "flow_a"
+
+    third_frame = tracker.stack.frames[2]
+    assert isinstance(third_frame, ClarifyPatternFlowStackFrame)
+    assert third_frame.flow_id == "pattern_clarification"
+    assert third_frame.names == ["flow b", "flow a"]

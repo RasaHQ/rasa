@@ -2866,3 +2866,319 @@ def test_validate_allow_nlu_correction_invalid(
         "The property `allow_nlu_correction` is only applicable when the "
         "slot contains both NLU-based and LLM-based slot mappings."
     ) in captured.out
+
+
+@pytest.mark.parametrize(
+    "ask_confirm_digressions, block_digressions",
+    [
+        (True, True),
+        ("[flow_b]", "[flow_c]"),
+    ],
+)
+def test_verify_digression_configuration_at_step_level_valid(
+    ask_confirm_digressions: Any, block_digressions: Any
+) -> None:
+    flows = flows_from_str(
+        f"""
+        flows:
+          flow_a:
+            description: Test that digressions properties are valid.
+            steps:
+            - collect: slot_a
+              ask_confirm_digressions: {ask_confirm_digressions}
+              block_digressions: {block_digressions}
+          flow_b:
+            description: Test flow B.
+            steps:
+            - action: utter_welcome
+          flow_c:
+            description: Test flow C.
+            steps:
+            - action: utter_chitchat
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          slot_a:
+            type: text
+            mappings: []
+        responses:
+            utter_welcome:
+                - text: "Welcome!"
+            utter_chitchat:
+                - text: "Chitchat!"
+            utter_ask_slot_a:
+                - text: "What is slot A?"
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    assert validator.verify_digression_configuration() is True
+
+
+@pytest.mark.parametrize(
+    "ask_confirm_digressions, block_digressions",
+    [
+        (True, True),
+        ("[flow_b]", "[flow_c]"),
+    ],
+)
+def test_verify_digression_configuration_at_flow_level_valid(
+    ask_confirm_digressions: Any, block_digressions: Any
+) -> None:
+    flows = flows_from_str(
+        f"""
+        flows:
+          flow_a:
+            description: Test that digressions properties are valid.
+            ask_confirm_digressions: {ask_confirm_digressions}
+            block_digressions: {block_digressions}
+            steps:
+            - collect: slot_a
+          flow_b:
+            description: Test flow B.
+            steps:
+            - action: utter_welcome
+          flow_c:
+            description: Test flow C.
+            steps:
+            - action: utter_chitchat
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          slot_a:
+            type: text
+            mappings: []
+        responses:
+            utter_welcome:
+                - text: "Welcome!"
+            utter_chitchat:
+                - text: "Chitchat!"
+            utter_ask_slot_a:
+                - text: "What is slot A?"
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    assert validator.verify_digression_configuration() is True
+
+
+def test_verify_digression_configuration_at_step_level_invalid(
+    capsys: CaptureFixture,
+) -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          flow_a:
+            description: Test that digressions properties are valid.
+            steps:
+            - collect: slot_a
+              id: collect_slot_a
+              ask_confirm_digressions:
+                - flow_b
+              block_digressions:
+                - flow_c
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          slot_a:
+            type: text
+            mappings: []
+        responses:
+            utter_ask_slot_a:
+                - text: "What is slot A?"
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    assert not validator.verify_digression_configuration()
+
+    expected_log_messages = [
+        "The flow 'flow_b' is listed in the `ask_confirm_digressions` "
+        "configuration of step 'collect_slot_a' in flow 'flow_a', but it is "
+        "not found in the flows file. Please make sure that the flow id is correct.",
+        "The flow 'flow_c' is listed in the `block_digressions` "
+        "configuration of step 'collect_slot_a' in flow 'flow_a', but it is "
+        "not found in the flows file. Please make sure that the flow id is correct.",
+    ]
+
+    captured = capsys.readouterr()
+
+    assert any(
+        [
+            expected_log_message in captured.out
+            for expected_log_message in expected_log_messages
+        ]
+    )
+    assert "validator.verify_digression_configuration" in captured.out
+    assert "error" in captured.out
+
+
+def test_verify_digression_configuration_at_flow_level_invalid(
+    capsys: CaptureFixture,
+) -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          flow_a:
+            description: Test that digressions properties are valid.
+            ask_confirm_digressions:
+             - flow_b
+            block_digressions:
+             - flow_c
+            steps:
+            - collect: slot_a
+              id: collect_slot_a
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          slot_a:
+            type: text
+            mappings: []
+        responses:
+            utter_ask_slot_a:
+                - text: "What is slot A?"
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    assert not validator.verify_digression_configuration()
+
+    expected_log_messages = [
+        "The flow 'flow_b' is listed in the `ask_confirm_digressions` "
+        "configuration of flow 'flow_a', but it is "
+        "not found in the flows file. Please make sure that the flow id is correct.",
+        "The flow 'flow_c' is listed in the `block_digressions` "
+        "configuration of flow 'flow_a', but it is "
+        "not found in the flows file. Please make sure that the flow id is correct.",
+    ]
+
+    captured = capsys.readouterr()
+
+    assert any(
+        [
+            expected_log_message in captured.out
+            for expected_log_message in expected_log_messages
+        ]
+    )
+    assert "validator.verify_digression_configuration" in captured.out
+    assert "error" in captured.out
+
+
+def test_verify_digression_configuration_at_step_level_invalid_duplicate(
+    capsys: CaptureFixture,
+) -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          flow_a:
+            description: Test that digressions properties are valid.
+            steps:
+            - collect: slot_a
+              id: collect_slot_a
+              ask_confirm_digressions:
+                - flow_b
+              block_digressions:
+                - flow_b
+          flow_b:
+            description: Test flow B.
+            steps:
+            - action: utter_welcome
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          slot_a:
+            type: text
+            mappings: []
+        responses:
+            utter_ask_slot_a:
+                - text: "What is slot A?"
+            utter_welcome:
+                - text: "Welcome!"
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    assert not validator.verify_digression_configuration()
+
+    expected_log_message = (
+        "The flow 'flow_b' is listed in both the "
+        "`ask_confirm_digressions` and `block_digressions` "
+        "configuration of step 'collect_slot_a' in flow 'flow_a'. "
+        "Please make sure that the flow id is not listed in both "
+        "configurations."
+    )
+
+    captured = capsys.readouterr()
+
+    assert expected_log_message in captured.out
+    assert "validator.verify_digression_configuration" in captured.out
+    assert "error" in captured.out
+
+
+def test_verify_digression_configuration_at_flow_level_invalid_duplicate(
+    capsys: CaptureFixture,
+) -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          flow_a:
+            description: Test that digressions properties are valid.
+            ask_confirm_digressions:
+             - flow_b
+            block_digressions:
+             - flow_b
+            steps:
+            - collect: slot_a
+              id: collect_slot_a
+          flow_b:
+            description: Test flow B.
+            steps:
+            - action: utter_welcome
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          slot_a:
+            type: text
+            mappings: []
+        responses:
+            utter_ask_slot_a:
+                - text: "What is slot A?"
+            utter_welcome:
+                - text: "Welcome!"
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, None)
+
+    assert not validator.verify_digression_configuration()
+
+    expected_log_message = (
+        "The flow 'flow_b' is listed in both the "
+        "`ask_confirm_digressions` and `block_digressions` "
+        "configuration of flow 'flow_a'. "
+        "Please make sure that the flow id is not listed in both "
+        "configurations."
+    )
+
+    captured = capsys.readouterr()
+
+    assert expected_log_message in captured.out
+    assert "validator.verify_digression_configuration" in captured.out
+    assert "error" in captured.out

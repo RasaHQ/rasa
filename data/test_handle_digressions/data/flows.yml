@@ -1,0 +1,56 @@
+flows:
+  order_pizza:
+    name: order pizza
+    description: user asks for a pizza
+    steps:
+    - collect: pizza_type
+    - collect: quantity
+    - collect: address
+      ask_confirm_digressions: true
+    - collect: order_confirmation
+      ask_before_filling: true
+      block_digressions: true
+      next:
+        - if: slots.order_confirmation
+          then: "place_order"
+        - else: "cancel_order"
+    - id: "place_order"
+      action: utter_place_order
+      next: END
+    - id: "cancel_order"
+      action: utter_cancel_order
+      next: END
+
+  payment_flow:
+    name: payment flow
+    description: user asks to pay for their bill
+    steps:
+      - collect: payment_option
+        next:
+          - if: slots.payment_option is 'card'
+            then: "use_card_details"
+          - else: "invalid_payment_option"
+      - id: "use_card_details"
+        collect: card_number
+        block_digressions:
+          - order_pizza
+        next:
+            - if: slots.card_number
+              then: "take_payment"
+            - else: "cancel_order"
+      - id: "invalid_payment_option"
+        action: utter_invalid_payment_option
+        next: END
+      - id: "take_payment"
+        action: utter_execute_payment
+        next: END
+      - id: "cancel_order"
+        action: utter_cancel_order
+        next: END
+
+  check_balance:
+    name: check balance
+    description: user asks to check balance
+    steps:
+      - action: utter_check_balance
+        next: END

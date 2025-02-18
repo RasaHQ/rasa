@@ -20,6 +20,7 @@ from rasa.shared.core.flows.steps.constants import (
     END_STEP,
     START_STEP,
 )
+from rasa.shared.core.flows.utils import ALL_LABEL
 from rasa.shared.core.flows.validation import DuplicatedFlowIdException
 from rasa.shared.core.flows.yaml_flows_io import (
     YAMLFlowsReader,
@@ -1033,3 +1034,59 @@ def test_available_slot_names(
         flows.available_slot_names(ask_before_filling=ask_before_filling)
         == expected_slot_names
     )
+
+
+@pytest.mark.parametrize(
+    "ask_confirm_digressions, block_digressions, expected_ask, expected_block",
+    [
+        ("[bar]", "[]", ["bar"], []),
+        ("true", "false", [ALL_LABEL], []),
+        ("[]", "[bar]", [], ["bar"]),
+        ("false", "true", [], [ALL_LABEL]),
+    ],
+)
+def test_digressions_flow_properties_defined(
+    ask_confirm_digressions: str,
+    block_digressions: str,
+    expected_ask: List[str],
+    expected_block: List[str],
+) -> None:
+    flows = flows_from_str(
+        f"""
+        flows:
+          foo:
+            description: a test flow
+            ask_confirm_digressions: {ask_confirm_digressions}
+            block_digressions: {block_digressions}
+            steps:
+              - collect: slot_a
+          bar:
+            description: another test flow
+            steps:
+              - action: utter_hello
+        """
+    )
+
+    foo_flow = flows.flow_by_id("foo")
+    assert foo_flow.ask_confirm_digressions == expected_ask
+    assert foo_flow.block_digressions == expected_block
+
+
+def test_digressions_flow_properties_undefined() -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          foo:
+            description: a test flow
+            steps:
+              - collect: slot_a
+          bar:
+            description: another test flow
+            steps:
+              - action: utter_hello
+        """
+    )
+
+    foo_flow = flows.flow_by_id("foo")
+    assert foo_flow.ask_confirm_digressions == []
+    assert foo_flow.block_digressions == []

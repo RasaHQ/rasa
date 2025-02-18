@@ -51,6 +51,8 @@ ACTION_TRIGGER_CHITCHAT = "action_trigger_chitchat"
 ACTION_RESET_ROUTING = "action_reset_routing"
 ACTION_HANGUP = "action_hangup"
 ACTION_REPEAT_BOT_MESSAGES = "action_repeat_bot_messages"
+ACTION_BLOCK_DIGRESSION = "action_block_digression"
+ACTION_CONTINUE_DIGRESSION = "action_continue_digression"
 
 ACTION_METADATA_EXECUTION_SUCCESS = "execution_success"
 ACTION_METADATA_EXECUTION_ERROR_MESSAGE = "execution_error_message"
@@ -81,6 +83,8 @@ DEFAULT_ACTION_NAMES = [
     ACTION_RESET_ROUTING,
     ACTION_HANGUP,
     ACTION_REPEAT_BOT_MESSAGES,
+    ACTION_BLOCK_DIGRESSION,
+    ACTION_CONTINUE_DIGRESSION,
 ]
 
 ACTION_SHOULD_SEND_DOMAIN = "send_domain"
@@ -194,3 +198,7 @@ POLICY_NAME_RULE = "RulePolicy"
 CLASSIFIER_NAME_FALLBACK = "FallbackClassifier"
 
 POLICIES_THAT_EXTRACT_ENTITIES = {"TEDPolicy"}
+
+# digression constants
+KEY_ASK_CONFIRM_DIGRESSIONS = "ask_confirm_digressions"
+KEY_BLOCK_DIGRESSIONS = "block_digressions"

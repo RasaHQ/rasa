@@ -11,6 +11,10 @@ from pypred import Predicate
 
 import rasa.shared.utils.io
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
+from rasa.shared.core.constants import (
+    KEY_ASK_CONFIRM_DIGRESSIONS,
+    KEY_BLOCK_DIGRESSIONS,
+)
 from rasa.shared.core.flows.flow_path import FlowPath, FlowPathsList, PathNode
 from rasa.shared.core.flows.flow_step import FlowStep
 from rasa.shared.core.flows.flow_step_links import (
@@ -33,6 +37,7 @@ from rasa.shared.core.flows.steps.constants import (
     START_STEP,
 )
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
+from rasa.shared.core.flows.utils import extract_digression_prop
 from rasa.shared.core.slots import Slot
 
 structlogger = structlog.get_logger()
@@ -62,6 +67,10 @@ class Flow:
     """The path to the file where the flow is stored."""
     persisted_slots: List[str] = field(default_factory=list)
     """The list of slots that should be persisted after the flow ends."""
+    ask_confirm_digressions: List[str] = field(default_factory=list)
+    """The flow ids for which the assistant should ask for confirmation."""
+    block_digressions: List[str] = field(default_factory=list)
+    """The flow ids that the assistant should block from digressing to."""
 
     @staticmethod
     def from_json(
@@ -98,6 +107,10 @@ class Flow:
             # data. When the model is trained, take the provided file_path.
             file_path=data.get("file_path") if "file_path" in data else file_path,
             persisted_slots=data.get("persisted_slots", []),
+            ask_confirm_digressions=extract_digression_prop(
+                KEY_ASK_CONFIRM_DIGRESSIONS, data
+            ),
+            block_digressions=extract_digression_prop(KEY_BLOCK_DIGRESSIONS, data),
         )
 
     def get_full_name(self) -> str:
@@ -172,6 +185,10 @@ class Flow:
             data["file_path"] = self.file_path
         if self.persisted_slots:
             data["persisted_slots"] = self.persisted_slots
+        if self.ask_confirm_digressions:
+            data[KEY_ASK_CONFIRM_DIGRESSIONS] = self.ask_confirm_digressions
+        if self.block_digressions:
+            data[KEY_BLOCK_DIGRESSIONS] = self.block_digressions
 
         return data
 

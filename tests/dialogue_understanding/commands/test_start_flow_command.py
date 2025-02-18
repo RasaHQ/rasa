@@ -3,6 +3,7 @@ import re
 import pytest
 
 from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
+from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
 from rasa.shared.core.events import DialogueStackUpdated, FlowInterrupted
@@ -247,3 +248,59 @@ def test_from_dsl():
     pattern = re.compile(StartFlowCommand.regex_pattern())
     match = pattern.search(action)
     assert StartFlowCommand.from_dsl(match) == StartFlowCommand("foo")
+
+
+def test_change_flow_frame_position_in_the_stack():
+    stack = DialogueStack.from_dict(
+        [
+            {
+                "type": "flow",
+                "frame_type": "regular",
+                "flow_id": "foo",
+                "step_id": "START",
+                "frame_id": "test",
+            },
+            {
+                "frame_id": "test_1",
+                "flow_id": "pattern_continue_interrupted",
+                "step_id": "start",
+                "previous_flow_name": "foo",
+                "type": "pattern_continue_interrupted",
+            },
+            {
+                "type": "flow",
+                "frame_type": "regular",
+                "flow_id": "bar",
+                "step_id": "START",
+                "frame_id": "test_2",
+            },
+            {
+                "frame_id": "test_3'",
+                "flow_id": "pattern_clarification",
+                "step_id": "start",
+                "names": ["flow b", "flow a"],
+                "clarification_options": "",
+                "type": "pattern_clarification",
+            },
+        ]
+    )
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    command = StartFlowCommand(flow="foo")
+
+    events = command.change_flow_frame_position_in_the_stack(stack, tracker)
+
+    tracker.update_with_events(events)
+    updated_stack = tracker.stack
+    assert len(updated_stack.frames) == 3
+
+    first_frame = updated_stack.frames[0]
+    assert isinstance(first_frame, UserFlowStackFrame)
+    assert first_frame.flow_id == "bar"
+
+    second_frame = updated_stack.frames[1]
+    assert isinstance(second_frame, ClarifyPatternFlowStackFrame)
+    assert second_frame.flow_id == "pattern_clarification"
+
+    third_frame = updated_stack.frames[2]
+    assert isinstance(third_frame, UserFlowStackFrame)
+    assert third_frame.flow_id == "foo"

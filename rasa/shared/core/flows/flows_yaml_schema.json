@@ -217,6 +217,12 @@
                             "reset_after_flow_ends": {
                                 "type": "boolean"
                             },
+                            "ask_confirm_digressions": {
+                                "$ref": "#/$defs/ask_confirm_digressions"
+                            },
+                            "block_digressions": {
+                                "$ref": "#/$defs/block_digressions"
+                            },
                             "utter": {
                                 "type": "string"
                             },
@@ -246,6 +252,32 @@
                     }
                 }
             }
+        },
+        "ask_confirm_digressions": {
+            "oneOf": [
+                {
+                    "type": "boolean"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            ]
+        },
+        "block_digressions": {
+            "oneOf": [
+                {
+                    "type": "boolean"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            ]
         },
         "flow": {
             "required": [
@@ -282,6 +314,12 @@
                 },
                 "persisted_slots": {
                     "$ref": "#/$defs/persisted_slots"
+                },
+                "ask_confirm_digressions": {
+                    "$ref": "#/$defs/ask_confirm_digressions"
+                },
+                "block_digressions": {
+                    "$ref": "#/$defs/block_digressions"
                 }
             }
         },

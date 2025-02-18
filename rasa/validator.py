@@ -46,13 +46,14 @@ from rasa.shared.core.domain import (
     Domain,
 )
 from rasa.shared.core.events import ActionExecuted, ActiveLoop, UserUttered
-from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.flows.flow_step_links import IfFlowStepLink
 from rasa.shared.core.flows.steps.action import ActionFlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.flows.steps.link import LinkFlowStep
 from rasa.shared.core.flows.steps.set_slots import SetSlotsFlowStep
 from rasa.shared.core.flows.utils import (
+    ALL_LABEL,
     get_duplicate_slot_persistence_config_error_message,
     get_invalid_slot_persistence_config_error_message,
     warn_deprecated_collect_step_config,
@@ -1265,6 +1266,7 @@ class Validator:
             self.verify_unique_flows(),
             self.verify_predicates(),
             self.verify_slot_persistence_configuration(),
+            self.verify_digression_configuration(),
         ]
 
         all_good = all(flow_validation_conditions)
@@ -1684,5 +1686,125 @@ class Validator:
         all_good = (
             valid_responses and valid_nlu and valid_flows and valid_calm_slot_mappings
         )
+
+        return all_good
+
+    def verify_digression_configuration(self) -> bool:
+        """Validates the digression configuration in flows."""
+        all_good = True
+
+        for flow in self.flows.underlying_flows:
+            all_good = self._validate_ask_confirm_digressions(flow, all_good)
+            all_good = self._validate_block_digressions(flow, all_good)
+
+        return all_good
+
+    def _validate_ask_confirm_digressions(self, flow: Flow, all_good: bool) -> bool:
+        """Validates the ask_confirm_digressions configuration in a flow."""
+        for flow_id in flow.ask_confirm_digressions:
+            if flow_id == ALL_LABEL:
+                continue
+            if flow_id not in self.flows.flow_ids:
+                structlogger.error(
+                    "validator.verify_digression_configuration.ask_confirm_digressions",
+                    flow=flow.id,
+                    event_info=(
+                        f"The flow '{flow_id}' is listed in the "
+                        f"`ask_confirm_digressions` configuration of flow "
+                        f"'{flow.id}', but it is not found in the "
+                        f"flows file. Please make sure that the flow id is correct."
+                    ),
+                )
+                all_good = False
+
+            if flow_id in flow.block_digressions:
+                structlogger.error(
+                    "validator.verify_digression_configuration.overlap_digressions",
+                    flow=flow.id,
+                    event_info=(
+                        f"The flow '{flow_id}' is listed in both the "
+                        f"`ask_confirm_digressions` and `block_digressions` "
+                        f"configuration of flow '{flow.id}'. "
+                        f"Please make sure that the flow id is not listed in both "
+                        f"configurations."
+                    ),
+                )
+                all_good = False
+
+        for step in flow.get_collect_steps():
+            for flow_id in step.ask_confirm_digressions:
+                if flow_id == ALL_LABEL:
+                    continue
+
+                if flow_id not in self.flows.flow_ids:
+                    structlogger.error(
+                        "validator.verify_digression_configuration.ask_confirm_digressions",
+                        flow=flow.id,
+                        step_id=step.id,
+                        event_info=(
+                            f"The flow '{flow_id}' is listed in the "
+                            f"`ask_confirm_digressions` configuration of step "
+                            f"'{step.id}' in flow '{flow.id}', but it is "
+                            f"not found in the flows file. "
+                            f"Please make sure that the flow id is correct."
+                        ),
+                    )
+                    all_good = False
+
+                if flow_id in step.block_digressions:
+                    structlogger.error(
+                        "validator.verify_digression_configuration.overlap_digressions",
+                        flow=flow.id,
+                        step_id=step.id,
+                        event_info=(
+                            f"The flow '{flow_id}' is listed in both the "
+                            f"`ask_confirm_digressions` and `block_digressions` "
+                            f"configuration of step '{step.id}' in flow '{flow.id}'. "
+                            f"Please make sure that the flow id is not listed in both "
+                            f"configurations."
+                        ),
+                    )
+                    all_good = False
+
+        return all_good
+
+    def _validate_block_digressions(self, flow: Flow, all_good: bool) -> bool:
+        """Validates the block_digressions configuration in a flow."""
+        for flow_id in flow.block_digressions:
+            if flow_id == ALL_LABEL:
+                continue
+
+            if flow_id not in self.flows.flow_ids:
+                structlogger.error(
+                    "validator.verify_digression_configuration.block_digressions",
+                    flow=flow.id,
+                    event_info=(
+                        f"The flow '{flow_id}' is listed in the `block_digressions` "
+                        f"configuration of flow '{flow.id}', but it is not found "
+                        f"in the flows file. Please make sure that the flow id "
+                        f"is correct."
+                    ),
+                )
+                all_good = False
+
+        for step in flow.get_collect_steps():
+            for flow_id in step.block_digressions:
+                if flow_id == ALL_LABEL:
+                    continue
+
+                if flow_id not in self.flows.flow_ids:
+                    structlogger.error(
+                        "validator.verify_digression_configuration.block_digressions",
+                        flow=flow.id,
+                        step_id=step.id,
+                        event_info=(
+                            f"The flow '{flow_id}' is listed in the "
+                            f"`block_digressions` configuration of step "
+                            f"'{step.id}' in flow '{flow.id}', but it is "
+                            f"not found in the flows file. "
+                            f"Please make sure that the flow id is correct."
+                        ),
+                    )
+                    all_good = False
 
         return all_good

@@ -1,9 +1,10 @@
-from typing import Set
+from typing import Any, Dict, List, Set
 
 from rasa.shared.utils.io import raise_deprecation_warning
 
 RESET_PROPERTY_NAME = "reset_after_flow_ends"
 PERSIST_PROPERTY_NAME = "persisted_slots"
+ALL_LABEL = "ALL"
 
 
 def warn_deprecated_collect_step_config(flow_id: str, collect_step: str) -> None:
@@ -38,3 +39,17 @@ def get_invalid_slot_persistence_config_error_message(
         f"are neither used in a collect step nor a set_slot step of the flow. "
         f"Please remove such slots from the '{PERSIST_PROPERTY_NAME}' property."
     )
+
+
+def extract_digression_prop(prop: str, data: Dict[str, Any]) -> List[str]:
+    """Extracts the digression property from the data.
+
+    There can be two types of properties: ask_confirm_digressions and
+    block_digressions.
+    """
+    digression_property = data.get(prop, [])
+
+    if isinstance(digression_property, bool):
+        digression_property = [ALL_LABEL] if digression_property else []
+
+    return digression_property

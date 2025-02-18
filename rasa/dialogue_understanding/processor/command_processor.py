@@ -18,6 +18,9 @@ from rasa.dialogue_understanding.commands import (
 from rasa.dialogue_understanding.commands.handle_code_change_command import (
     HandleCodeChangeCommand,
 )
+from rasa.dialogue_understanding.commands.handle_digressions_command import (
+    HandleDigressionsCommand,
+)
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
 from rasa.dialogue_understanding.patterns.collect_information import (
@@ -396,6 +399,28 @@ def clean_up_commands(
                 "command_processor.clean_up_commands.skip_command_flow_already_active",
                 command=command,
             )
+
+        elif isinstance(command, StartFlowCommand) and active_flow is not None:
+            # push handle digressions command if we are at a collect step of
+            # a flow and a new flow is started
+            collect_info = get_current_collect_step(tracker.stack, all_flows)
+            current_flow = all_flows.flow_by_id(active_flow)
+            current_flow_condition = current_flow and (
+                current_flow.ask_confirm_digressions or current_flow.block_digressions
+            )
+
+            if collect_info and (
+                collect_info.ask_confirm_digressions
+                or collect_info.block_digressions
+                or current_flow_condition
+            ):
+                clean_commands.append(HandleDigressionsCommand(flow=command.flow))
+                structlogger.debug(
+                    "command_processor.clean_up_commands.push_handle_digressions",
+                    command=command,
+                )
+            else:
+                clean_commands.append(command)
 
         # handle chitchat command differently from other free-form answer commands
         elif isinstance(command, ChitChatAnswerCommand):

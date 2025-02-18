@@ -17,6 +17,9 @@ from rasa.dialogue_understanding.commands import (
     StartFlowCommand,
 )
 from rasa.dialogue_understanding.commands.correct_slots_command import CorrectedSlot
+from rasa.dialogue_understanding.commands.handle_digressions_command import (
+    HandleDigressionsCommand,
+)
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
@@ -1403,3 +1406,62 @@ def test_clean_up_slot_command_nlu_filled_slot_not_corrected_by_nlu_invalid() ->
     )
 
     assert result == []
+
+
+@pytest.mark.parametrize(
+    "commands, expected_clean_commands",
+    [
+        ([StartFlowCommand("beans")], [HandleDigressionsCommand("beans")]),
+        ([StartFlowCommand("tomato")], [HandleDigressionsCommand("tomato")]),
+    ],
+)
+def test_clean_up_commands_with_interrupting_start_flow(
+    user_frame_collect_eggs: UserFlowStackFrame,
+    pattern_frame_collect_eggs: CollectInformationPatternFlowStackFrame,
+    commands: List[Command],
+    expected_clean_commands: List[Command],
+):
+    stack = DialogueStack(frames=[user_frame_collect_eggs, pattern_frame_collect_eggs])
+
+    tracker_eggs = DialogueStateTracker.from_events(sender_id="test", evts=[])
+    tracker_eggs.update_stack(stack)
+
+    flows = flows_from_str(
+        """
+        flows:
+          spam:
+            description: "This flow collects information."
+            steps:
+            - id: collect_ham
+              collect: ham
+              next: collect_eggs
+            - id: collect_eggs
+              collect: eggs
+              ask_confirm_digressions:
+                - beans
+              block_digressions:
+                - tomato
+          beans:
+            description: "This flow collects beans."
+            steps:
+            - id: collect_beans
+              collect: slot_beans
+          tomato:
+            description: "This flow collects tomatoes."
+            steps:
+            - id: collect_tomato
+              collect: slot_tomato
+        """
+    )
+    # When
+    with patch(
+        (
+            "rasa.dialogue_understanding.processor."
+            "command_processor.filled_slots_for_active_flow"
+        ),
+        Mock(return_value=({"ham"}, "spam")),
+    ):
+        clean_commands = clean_up_commands(commands, tracker_eggs, flows, Mock())
+
+    # Then
+    assert clean_commands == expected_clean_commands

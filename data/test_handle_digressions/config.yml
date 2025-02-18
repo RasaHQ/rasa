@@ -1,0 +1,12 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: SingleStepLLMCommandGenerator
+  llm:
+    model_name: gpt-4
+    request_timeout: 7
+    temperature: 0.0
+    top_p: 0.0
+
+policies:
+- name: FlowPolicy
