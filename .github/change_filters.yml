@@ -12,6 +12,44 @@ backend:
 providers:
   - 'rasa/shared/providers/**'
 
+dm1-tensorflow-files:
+  - rasa/cli/project_templates/default/**
+  - rasa/core/featurizers/**
+  - rasa/core/policies/ensemble.py
+  - rasa/core/policies/memoization.py
+  - rasa/core/policies/rule_policy.py
+  - rasa/core/policies/ted_policy.py
+  - rasa/core/policies/unexpected_intent_policy.py
+  - rasa/core/training/**
+  - rasa/graph_components/converters/**
+  - rasa/graph_components/providers/domain_for_core_training_provider.py
+  - rasa/graph_components/providers/forms_provider.py
+  - rasa/graph_components/providers/rule_only_provider.py
+  - rasa/graph_components/providers/story_graph_provider.py
+  - rasa/nlu/classifiers/diet_classifier.py
+  - rasa/nlu/classifiers/fallback_classifier.py
+  - rasa/nlu/classifiers/keyword_intent_classifier.py
+  - rasa/nlu/classifiers/mitie_intent_classifier.py
+  - rasa/nlu/classifiers/regex_message_handler.py
+  - rasa/nlu/classifiers/sklearn_intent_classifier.py
+  - rasa/nlu/emulators/**
+  - rasa/nlu/extractors/entity_synonyms.py
+  - rasa/nlu/extractors/mitie_entity_extractor.py
+  - rasa/nlu/extractors/regex_entity_extractor.py
+  - rasa/nlu/extractors/spacy_entity_extractor.py
+  - rasa/nlu/featurizers/dense_featurizer/convert_featurizer.py
+  - rasa/nlu/featurizers/dense_featurizer/mitie_featurizer.py
+  - rasa/nlu/featurizers/dense_featurizer/spacy_featurizer.py
+  - rasa/nlu/selectors/**
+  - rasa/nlu/tokenizers/jieba_tokenizer.py
+  - rasa/nlu/tokenizers/mitie_tokenizer.py
+  - rasa/nlu/tokenizers/spacy_tokenizer.py
+  - rasa/nlu/utils/mitie_utils.py
+  - rasa/shared/core/training_data/
+  - rasa/shared/nlu/**
+  - rasa/utils/tensorflow/
+  - rasa/utils/plotting.py
+
 docker:
   - 'pyproject.toml'
   - 'poetry.lock'

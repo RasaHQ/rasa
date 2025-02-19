@@ -55,6 +55,14 @@ This workflow can be triggered manually/on-demand, and test results' notificatio
 `#dev-tribe-alerts` Slack channel, and traces and metrics from Rasa components are sent to [`Honeycomb`](https://ui.honeycomb.io/rasa/environments/engine). In case of failure, test results are saved, and can be
 found on GitHub's web interface, in the `Artifacts` section of the `Action`'s run summary page.
 
+### DM1/Tensorflow tests
+This workflow runs DM1 tests (that use Tensorflow), on:
+1. Pull-requests and push to `main` and non-dev `release` branches and tags, when files containing DM1/Tensorflow code are changed. 
+    - The list of files and associated tests can be found [here](https://www.notion.so/rasa/ENG-1615-Identify-DM1-TensorFlow-files-and-tests-190b9c0d544a80198b11c70d55610273?pvs=4).
+2. Preparation of non-dev release branches.
+
+Purpose of this dedicated workflow is to reduce GHA costs, by not running DM1/Tensorflow tests on all CI runs.
+
 ### Release Artifacts Workflow
 Workflow runs on a tag push to the `main` branch and `release branches`. 
 This workflow does the following:

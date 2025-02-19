@@ -25,7 +25,7 @@ jobs:
       matrix:
         test:
           - test-cli
-          - test-core-featurizers
+          - test-dm1-tensorflow
           - test-policies
           - test-nlu-featurizers
           - test-nlu-predictors

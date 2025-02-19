@@ -1,0 +1,103 @@
+name: DM1/Tensorflow tests
+
+on:
+    push:
+        tags: '[0-9]+.[0-9]+.[0-9]*'
+        branches:
+          - main
+          - '[0-9]+.[0-9]+.x'
+        paths: [rasa/cli/project_templates/default/**,
+            rasa/core/featurizers/**,
+            rasa/core/policies/ensemble.py,
+            rasa/core/policies/memoization.py,
+            rasa/core/policies/rule_policy.py,
+            rasa/core/policies/ted_policy.py,
+            rasa/core/policies/unexpected_intent_policy.py,
+            rasa/core/training/**,
+            rasa/graph_components/converters/**,
+            rasa/graph_components/providers/domain_for_core_training_provider.py,
+            rasa/graph_components/providers/forms_provider.py,
+            rasa/graph_components/providers/rule_only_provider.py,
+            rasa/graph_components/providers/story_graph_provider.py,
+            rasa/nlu/classifiers/diet_classifier.py,
+            rasa/nlu/classifiers/fallback_classifier.py,
+            rasa/nlu/classifiers/keyword_intent_classifier.py,
+            rasa/nlu/classifiers/mitie_intent_classifier.py,
+            rasa/nlu/classifiers/regex_message_handler.py,
+            rasa/nlu/classifiers/sklearn_intent_classifier.py,
+            rasa/nlu/emulators/**,
+            rasa/nlu/extractors/entity_synonyms.py,
+            rasa/nlu/extractors/mitie_entity_extractor.py,
+            rasa/nlu/extractors/regex_entity_extractor.py,
+            rasa/nlu/extractors/spacy_entity_extractor.py,
+            rasa/nlu/featurizers/dense_featurizer/convert_featurizer.py,
+            rasa/nlu/featurizers/dense_featurizer/mitie_featurizer.py,
+            rasa/nlu/featurizers/dense_featurizer/spacy_featurizer.py,
+            rasa/nlu/selectors/**,
+            rasa/nlu/tokenizers/jieba_tokenizer.py,
+            rasa/nlu/tokenizers/mitie_tokenizer.py,
+            rasa/nlu/tokenizers/spacy_tokenizer.py,
+            rasa/nlu/utils/mitie_utils.py,
+            rasa/shared/core/training_data/,
+            rasa/shared/nlu/**,
+            rasa/utils/tensorflow/,
+            rasa/utils/plotting.py]
+    pull_request:
+        branches:
+          - main
+          - '[0-9]+.[0-9]+.x'
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+    check-dm1-tensorflow-changes:
+      runs-on: ubuntu-24.04
+      outputs:
+        dm1-tensorflow-files: ${{ steps.filter.outputs.dm1-tensorflow-files }}
+      steps:
+        - name: Checkout git repository 🕝
+          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        - id: filter
+          name: Check for changes in DM1/Tensorflow related files
+          uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50  #v2.11.1
+          with:
+            filters: .github/change_filters.yml
+
+    dm1-tensorflow-tests:
+        needs: check-dm1-tensorflow-changes
+        if: ${{ needs.check-dm1-tensorflow-changes.outputs.dm1-tensorflow-files == 'true' }}
+        runs-on: ubuntu-24.04-4core
+        timeout-minutes: 60
+        steps:
+        - name: Check out code
+          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+        - name: Prepare the job for DM1/Tensorflow tests
+          uses: ./.github/actions/test-prerequisites
+          with:
+                PYTHON_VERSION: 3.11
+                POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+        - name: Install Dependencies (Linux) 📦
+            # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
+            # This is a workaround for that issue
+          run: |
+            sudo apt-get -y install libpq-dev
+            make install-full | tee .output
+            if grep 'The lock file is not up to date' .output; then exit 1; fi
+            make prepare-tests-ubuntu
+
+        - name: Run DM1/Tensorflow tests
+          env:
+            RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          run: |
+            make test-dm1-tensorflow
+
+        - name: Save Test Results
+          if: always()
+          uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+          with:
+            name: dm1-tensorflow-tests-results
+            path: unit-tests-results.xml

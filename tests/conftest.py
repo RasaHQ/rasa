@@ -135,29 +135,106 @@ PATH_PYTEST_MARKER_MAPPINGS = {
         Path("tests", "anonymization", "large_data_tests").absolute()
     ],
     "category_cli": [Path("tests", "cli").absolute()],
-    "category_core_featurizers": [Path("tests", "core", "featurizers").absolute()],
     "category_policies": [
         Path("tests", "core", "test_policies.py").absolute(),
-        Path("tests", "core", "policies").absolute(),
+        Path("tests", "core", "policies", "flows").absolute(),
+        Path(
+            "tests", "core", "policies", "test_enterprise_search_policy.py"
+        ).absolute(),
+        Path("tests", "core", "policies", "test_flow_policy.py").absolute(),
+        Path("tests", "core", "policies", "test_intentless_policy.py").absolute(),
     ],
     "category_nlu_featurizers": [
-        Path("tests", "nlu", "featurizers").absolute(),
-        Path("tests", "nlu", "utils").absolute(),
+        Path(
+            "tests", "nlu", "featurizers", "test_count_vectors_featurizer.py"
+        ).absolute(),
+        Path("tests", "nlu", "featurizers", "test_featurizer.py").absolute(),
+        Path("tests", "nlu", "featurizers", "test_lm_featurizer.py").absolute(),
+        Path("tests", "nlu", "featurizers", "test_spacy_featurizer.py").absolute(),
+        Path("tests", "nlu", "utils", "test_bilou_utils.py").absolute(),
+        Path("tests", "nlu", "utils", "test_pattern_utils.py").absolute(),
     ],
     "category_nlu_predictors": [
-        Path("tests", "nlu", "classifiers").absolute(),
-        Path("tests", "nlu", "extractors").absolute(),
-        Path("tests", "nlu", "selectors").absolute(),
+        Path(
+            "tests", "nlu", "classifiers", "test_logistic_regression_classifier.py"
+        ).absolute(),
+        Path("tests", "nlu", "extractors", "test_crf_entity_extractor.py").absolute(),
+        Path(
+            "tests", "nlu", "extractors", "test_duckling_entity_extractor.py"
+        ).absolute(),
+        Path("tests", "nlu", "extractors", "test_extractor.py").absolute(),
     ],
     "category_full_model_training": [
         Path("tests", "test_model_training.py").absolute(),
         Path("tests", "nlu", "test_train.py").absolute(),
-        Path("tests", "core", "test_training.py").absolute(),
-        Path("tests", "core", "test_examples.py").absolute(),
     ],
     "category_performance": [Path("tests", "test_memory_leak.py").absolute()],
     "category_audio_manual": [
         Path("tests", "core", "channels", "voice_stream").absolute()
+    ],
+    "category_dm1_tensorflow": [
+        Path("tests", "core", "featurizers").absolute(),
+        Path("tests", "core", "policies", "test_rule_policy.py").absolute(),
+        Path("tests", "core", "policies", "test_ted_policy.py").absolute(),
+        Path(
+            "tests", "core", "policies", "test_unexpected_intent_policy.py"
+        ).absolute(),
+        Path("tests", "core", "training").absolute(),
+        Path("tests", "core", "test_ensemble.py").absolute(),
+        Path("tests", "core", "test_evaluation.py").absolute(),
+        Path("tests", "core", "test_examples.py").absolute(),
+        Path("tests", "core", "test_migrate.py").absolute(),
+        Path("tests", "core", "test_training.py").absolute(),
+        Path("tests", "graph_components", "converters").absolute(),
+        Path(
+            "tests",
+            "graph_components",
+            "providers",
+            "test_domain_for_core_training_provider.py",
+        ).absolute(),
+        Path(
+            "tests", "graph_components", "providers", "test_forms_provider.py"
+        ).absolute(),
+        Path(
+            "tests", "graph_components", "providers", "test_rule_only_provider.py"
+        ).absolute(),
+        Path(
+            "tests", "graph_components", "providers", "test_story_graph_provider.py"
+        ).absolute(),
+        Path("tests", "nlu", "classifiers", "test_diet_classifier.py").absolute(),
+        Path("tests", "nlu", "classifiers", "test_fallback_classifier.py").absolute(),
+        Path("tests", "nlu", "classifiers", "test_keyword_classifier.py").absolute(),
+        Path(
+            "tests", "nlu", "classifiers", "test_mitie_intent_classifier.py"
+        ).absolute(),
+        Path("tests", "nlu", "classifiers", "test_regex_message_handler.py").absolute(),
+        Path("tests", "nlu", "classifiers", "test_sklearn_classifier.py").absolute(),
+        Path("tests", "nlu", "emulators").absolute(),
+        Path("tests", "nlu", "extractors", "test_entity_synonyms.py").absolute(),
+        Path("tests", "nlu", "extractors", "test_mitie_entity_extractor.py").absolute(),
+        Path("tests", "nlu", "extractors", "test_regex_entity_extractor.py").absolute(),
+        Path("tests", "nlu", "extractors", "test_spacy_entity_extractor.py").absolute(),
+        Path("tests", "nlu", "featurizers", "test_convert_featurizer.py").absolute(),
+        Path(
+            "tests", "nlu", "featurizers", "test_lexical_syntactic_featurizer.py"
+        ).absolute(),
+        Path("tests", "nlu", "featurizers", "test_mitie_featurizer.py").absolute(),
+        Path("tests", "nlu", "featurizers", "test_regex_featurizer.py").absolute(),
+        Path("tests", "nlu", "selectors").absolute(),
+        Path("tests", "nlu", "tokenizers", "test_jieba_tokenizer.py").absolute(),
+        Path("tests", "nlu", "tokenizers", "test_mitie_tokenizer.py").absolute(),
+        Path("tests", "nlu", "tokenizers", "test_spacy_tokenizer.py").absolute(),
+        Path("tests", "nlu", "utils", "test_mitie_utils.py").absolute(),
+        Path("tests", "nlu", "utils", "test_spacy_utils.py").absolute(),
+        Path(
+            "tests", "regressions", "test_action_two_stage_fallback_11294.py"
+        ).absolute(),
+        Path("tests", "shared", "core", "training_data", "story_reader").absolute(),
+        Path("tests", "shared", "core", "training_data", "story_writer").absolute(),
+        Path("tests", "utils", "tensorflow").absolute(),
+        Path("tests", "utils", "test_mapper.py").absolute(),
+        Path("tests", "utils", "test_ml_utils.py").absolute(),
+        Path("tests", "utils", "test_plotting.py").absolute(),
     ],
 }
 
