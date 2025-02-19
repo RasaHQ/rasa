@@ -58,7 +58,7 @@ runs:
 
     # TODO: Investigate using LiteLLM-proxy, and adding callbacks to proxy only, for non `litellm_proxy` providers also
     - name: Instrument LiteLLM providers
-      if: ${{ env.INSTRUMENT_LITELLM_PROVIDER_CALLS && !contains(inputs.provider, 'litellm-proxy') }}
+      if: ${{ env.INSTRUMENT_LITELLM_PROVIDER_CALLS == 'true' && !contains(inputs.provider, 'litellm-proxy') }}
       working-directory: rasa/shared/providers
       run: |
         : Instrument LiteLLM providers
