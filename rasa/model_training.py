@@ -352,34 +352,31 @@ async def _train_graph(
         model_name = determine_model_name(fixed_model_name, training_type)
         full_model_path = Path(output_path, model_name)
 
-        with telemetry.track_model_training(
-            file_importer, model_type=training_type.model_type
-        ):
-            await trainer.train(
-                model_configuration,
-                file_importer,
-                full_model_path,
-                force_retraining=force_full_training,
-                is_finetuning=is_finetuning,
+        await trainer.train(
+            model_configuration,
+            file_importer,
+            full_model_path,
+            force_retraining=force_full_training,
+            is_finetuning=is_finetuning,
+        )
+        if remote_storage:
+            push_model_to_remote_storage(full_model_path, remote_storage)
+            if not keep_local_model_copy:
+                full_model_path.unlink()
+            structlogger.info(
+                "model_training.train.finished_training",
+                event_info=(
+                    f"Your Rasa model {model_name} is trained "
+                    f"and saved at remote storage provider '{remote_storage}'."
+                ),
             )
-            if remote_storage:
-                push_model_to_remote_storage(full_model_path, remote_storage)
-                if not keep_local_model_copy:
-                    full_model_path.unlink()
-                structlogger.info(
-                    "model_training.train.finished_training",
-                    event_info=(
-                        f"Your Rasa model {model_name} is trained "
-                        f"and saved at remote storage provider '{remote_storage}'."
-                    ),
-                )
-            else:
-                structlogger.info(
-                    "model_training.train.finished_training",
-                    event_info=(
-                        f"Your Rasa model is trained and saved at '{full_model_path}'."
-                    ),
-                )
+        else:
+            structlogger.info(
+                "model_training.train.finished_training",
+                event_info=(
+                    f"Your Rasa model is trained and saved at '{full_model_path}'."
+                ),
+            )
 
         return TrainingResult(str(full_model_path), 0)
 

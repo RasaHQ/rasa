@@ -9,6 +9,10 @@ from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
 from rasa.core import constants
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.exceptions import ModelNotFound
+from rasa.model import get_local_model
+from rasa.shared.utils.cli import print_error
 from rasa.utils.cli import remove_argument_from_parser
 
 
@@ -55,6 +59,8 @@ async def open_inspector_in_browser(server_url: Text, voice: bool = False) -> No
 def inspect(args: argparse.Namespace) -> None:
     """Inspect the bot using the most recent model."""
     import rasa.cli.run
+    from rasa.cli.utils import get_validated_path
+    from rasa.shared.constants import DEFAULT_MODELS_PATH
 
     async def after_start_hook_open_inspector(_: Sanic, __: AbstractEventLoop) -> None:
         """Hook to open the browser on server start."""
@@ -71,5 +77,18 @@ def inspect(args: argparse.Namespace) -> None:
     args.credentials = None
     args.server_listeners = [(after_start_hook_open_inspector, "after_server_start")]
 
-    telemetry.track_inspect_started(args.connector)
+    model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+
+    try:
+        model = get_local_model(model)
+    except ModelNotFound:
+        print_error(
+            "No model found. Train a model before running the "
+            "server using `rasa train`."
+        )
+        return
+
+    metadata = LocalModelStorage.metadata_from_archive(model)
+
+    telemetry.track_inspect_started(args.connector, metadata.assistant_id)
     rasa.cli.run.run(args)

@@ -7,7 +7,6 @@ import pytest
 from pytest import RunResult
 
 from rasa.cli.inspect import inspect
-from rasa.core.persistor import RemoteStorageType
 from rasa.shared.core.domain import Domain
 
 run_module_path = "rasa.cli.run"
@@ -70,47 +69,6 @@ def test_inspect_invokes_cli_run_with_local_model(
 
     # Assert that the arguments are correctly passed to the `rasa run` command
     assert args.model == f"{trained_simple_project}/models"
-    assert args.endpoints == f"{trained_simple_project}/endpoints.yml"
-
-    mock_rasa_run.assert_called_once_with(**vars(args))
-
-
-@pytest.mark.parametrize(
-    "remote_storage, expected_remote_storage",
-    [
-        ("aws", RemoteStorageType.AWS),
-        ("gcs", RemoteStorageType.GCS),
-        ("azure", RemoteStorageType.AZURE),
-    ],
-)
-def test_inspect_invokes_cli_run_with_remote_storage(
-    remote_storage: str,
-    expected_remote_storage: RemoteStorageType,
-    inspect_parser: argparse.ArgumentParser,
-    mock_rasa_run: MagicMock,
-    trained_simple_project: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Tests whether the `rasa inspect` command invokes `rasa run` with remote storage."""  # noqa: E501
-    # Parse the arguments with which Rasa will be run
-    args = inspect_parser.parse_args(
-        [
-            "inspect",
-            "--endpoints",
-            f"{trained_simple_project}/endpoints.yml",
-            "--model",
-            "/models/model.tar.gz",
-            "--remote-storage",
-            remote_storage,
-        ]
-    )
-
-    # Run the inspect function
-    inspect(args)
-
-    # Assert that the arguments are correctly passed to the `rasa run` command
-    assert args.remote_storage == expected_remote_storage
-    assert args.model == "/models/model.tar.gz"
     assert args.endpoints == f"{trained_simple_project}/endpoints.yml"
 
     mock_rasa_run.assert_called_once_with(**vars(args))

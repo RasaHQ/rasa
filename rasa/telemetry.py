@@ -15,7 +15,7 @@ from collections import defaultdict
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Text
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple
 
 import importlib_resources
 import requests
@@ -35,6 +35,7 @@ from rasa.constants import (
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
     CONFIG_LANGUAGE_KEY,
     CONFIG_PIPELINE_KEY,
     CONFIG_POLICIES_KEY,
@@ -111,6 +112,7 @@ CI_ENVIRONMENT_TELL = [
 # https://rasa.com/docs/rasa-pro/telemetry/reference
 TRAINING_STARTED_EVENT = "Training Started"
 TRAINING_COMPLETED_EVENT = "Training Completed"
+TRAINING_FAILED_EVENT = "Training Failed"
 TELEMETRY_DISABLED_EVENT = "Telemetry Disabled"
 TELEMETRY_DATA_SPLIT_EVENT = "Training Data Split"
 TELEMETRY_DATA_VALIDATED_EVENT = "Training Data Validated"
@@ -976,6 +978,7 @@ def track_model_training(
         "language": config.get(CONFIG_LANGUAGE_KEY),
         "training_id": training_id,
         "type": model_type,
+        "assistant_id": config.get(ASSISTANT_ID_KEY),
         "pipeline": config.get(CONFIG_PIPELINE_KEY),
         "policies": config.get(CONFIG_POLICIES_KEY),
         "train_schema": config.get(CONFIG_TRAIN_SCHEMA),
@@ -1021,13 +1024,28 @@ def track_model_training(
         tracking_data,
     )
     start = datetime.now()
-    yield
+    try:
+        yield
+    except (Exception, SystemExit):
+        runtime = datetime.now() - start
+        _track(
+            TRAINING_FAILED_EVENT,
+            {
+                "training_id": training_id,
+                "assistant_id": config.get(ASSISTANT_ID_KEY),
+                "type": model_type,
+                "runtime": int(runtime.total_seconds()),
+            },
+        )
+        raise
+
     runtime = datetime.now() - start
 
     _track(
         TRAINING_COMPLETED_EVENT,
         {
             "training_id": training_id,
+            "assistant_id": config.get(ASSISTANT_ID_KEY),
             "type": model_type,
             "runtime": int(runtime.total_seconds()),
         },
@@ -1326,23 +1344,27 @@ def track_server_start(
     """
     from rasa.core.utils import AvailableEndpoints
 
-    def project_fingerprint_from_model(
+    def project_fingerprint_and_assistant_id_from_model(
         _model_directory: Optional[Text],
-    ) -> Optional[Text]:
+    ) -> Tuple[Optional[Text], Optional[Text]]:
         """Gets project fingerprint from an app's loaded model."""
         if not model_directory:
-            return None
+            return None, None
 
         try:
             model_archive = model.get_local_model(_model_directory)
             metadata = LocalModelStorage.metadata_from_archive(model_archive)
 
-            return metadata.project_fingerprint
+            return metadata.project_fingerprint, metadata.assistant_id
         except Exception:
-            return None
+            return None, None
 
     if not endpoints:
         endpoints = AvailableEndpoints()
+
+    project, assistant_id = project_fingerprint_and_assistant_id_from_model(
+        model_directory
+    )
 
     _track(
         TELEMETRY_SERVER_STARTED_EVENT,
@@ -1365,7 +1387,8 @@ def track_server_start(
             "endpoints_event_broker": endpoints.event_broker.type
             if endpoints.event_broker
             else None,
-            "project": project_fingerprint_from_model(model_directory),
+            "project": project,
+            "assistant_id": assistant_id,
         },
     )
 
@@ -1383,23 +1406,30 @@ def track_project_init(path: Text) -> None:
 
 
 @ensure_telemetry_enabled
-def track_shell_started(model_type: Text) -> None:
+def track_shell_started(model_type: Text, assistant_id: Text) -> None:
     """Track when a user starts a bot using rasa shell.
 
     Args:
         model_type: Type of the model, core / nlu or rasa.
     """
-    _track(TELEMETRY_SHELL_STARTED_EVENT, {"type": model_type})
+    _track(
+        TELEMETRY_SHELL_STARTED_EVENT,
+        {"type": model_type, "assistant_id": assistant_id},
+    )
 
 
 @ensure_telemetry_enabled
-def track_inspect_started(model_type: Text) -> None:
+def track_inspect_started(channel: Text, assistant_id: Text) -> None:
     """Track when a user starts a bot using rasa inspect.
 
     Args:
-        model_type: Type of the model, core / nlu or rasa.
+        channel: Type of channel used.
+        assistant_id: ID of the assistant being inspected.
     """
-    _track(TELEMETRY_INSPECT_STARTED_EVENT, {"type": model_type})
+    _track(
+        TELEMETRY_INSPECT_STARTED_EVENT,
+        {"type": channel, "assistant_id": assistant_id},
+    )
 
 
 @ensure_telemetry_enabled

@@ -95,7 +95,7 @@ def shell_nlu(args: argparse.Namespace) -> None:
         )
         return
 
-    telemetry.track_shell_started("nlu")
+    telemetry.track_shell_started("nlu", metadata.assistant_id)
     rasa.nlu.run.run_cmdline(model)
 
 
@@ -129,12 +129,12 @@ def shell(args: argparse.Namespace) -> None:
     if metadata.training_type == TrainingType.NLU:
         import rasa.nlu.run
 
-        telemetry.track_shell_started("nlu")
+        telemetry.track_shell_started("nlu", metadata.assistant_id)
 
         rasa.nlu.run.run_cmdline(model)
     else:
         import rasa.cli.run
 
-        telemetry.track_shell_started("rasa")
+        telemetry.track_shell_started("rasa", metadata.assistant_id)
 
         rasa.cli.run.run(args)

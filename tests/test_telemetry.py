@@ -5,7 +5,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Text
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 import responses
@@ -54,9 +54,13 @@ from rasa.telemetry import (
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT,
     TELEMETRY_ID,
     TELEMETRY_INSPECT_STARTED_EVENT,
+    TELEMETRY_SERVER_STARTED_EVENT,
     TELEMETRY_UPLOAD_TO_STUDIO_FAILED_EVENT,
     TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE,
     TRACING_BACKEND,
+    TRAINING_COMPLETED_EVENT,
+    TRAINING_FAILED_EVENT,
+    TRAINING_STARTED_EVENT,
     _get_llm_command_generator_config,
 )
 from rasa.utils import licensing
@@ -1510,7 +1514,10 @@ def test_track_rasa_inspect_telemetry(
     inspect(args)
     mock_track.assert_called_once_with(
         TELEMETRY_INSPECT_STARTED_EVENT,
-        {"type": "rasa.core.channels.socketio.SocketIOInput"},
+        {
+            "type": "rasa.core.channels.socketio.SocketIOInput",
+            "assistant_id": "placeholder_default",
+        },
     )
     mock_run.assert_called_once()
 
@@ -1534,3 +1541,129 @@ def test_track_upload_to_studio_failed(
             "studio_response_json": test_response_json,
         },
     )
+
+
+@patch("rasa.telemetry._track")
+def test_train_telemetry_completed(
+    mock_track: MagicMock,
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    domain_path: Text,
+    stories_path: Text,
+    stack_config_path: Text,
+    nlu_data_path: Text,
+):
+    monkeypatch.setattr("rasa.model_training._train_graph", AsyncMock())
+
+    output = str(tmp_path / "models")
+
+    rasa.api.train(
+        domain_path,
+        stack_config_path,
+        [stories_path, nlu_data_path],
+        output=output,
+    )
+
+    assert mock_track.call_count == 2
+
+    first_call, second_call = mock_track.mock_calls
+    assert first_call.args[0] == TRAINING_STARTED_EVENT
+    assert first_call.args[1]["assistant_id"] == "unique_stack_assistant_test_name"
+    assert second_call.args[0] == TRAINING_COMPLETED_EVENT
+    assert second_call.args[1]["assistant_id"] == "unique_stack_assistant_test_name"
+    assert second_call.args[1]["training_id"] == first_call.args[1]["training_id"]
+    assert "runtime" in second_call.args[1]
+
+
+@patch("rasa.telemetry._track")
+def test_train_telemetry_failed(
+    mock_track: MagicMock,
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    domain_path: Text,
+    stories_path: Text,
+    stack_config_path: Text,
+    nlu_data_path: Text,
+):
+    monkeypatch.setattr(
+        "rasa.model_training._train_graph", AsyncMock(side_effect=Exception("Boom"))
+    )
+
+    output = str(tmp_path / "models")
+
+    with pytest.raises(Exception):
+        rasa.api.train(
+            domain_path,
+            stack_config_path,
+            [stories_path, nlu_data_path],
+            output=output,
+        )
+
+    assert mock_track.call_count == 2
+
+    first_call, second_call = mock_track.mock_calls
+    assert first_call.args[0] == TRAINING_STARTED_EVENT
+    assert first_call.args[1]["assistant_id"] == "unique_stack_assistant_test_name"
+    assert second_call.args[0] == TRAINING_FAILED_EVENT
+    assert second_call.args[1]["assistant_id"] == "unique_stack_assistant_test_name"
+    assert second_call.args[1]["training_id"] == first_call.args[1]["training_id"]
+    assert "runtime" in second_call.args[1]
+
+
+@patch("rasa.telemetry._track")
+def test_train_telemetry_failed_system_exit(
+    mock_track: MagicMock,
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    domain_path: Text,
+    stories_path: Text,
+    stack_config_path: Text,
+    nlu_data_path: Text,
+):
+    monkeypatch.setattr(
+        "rasa.model_training._train_graph", AsyncMock(side_effect=SystemExit(1))
+    )
+
+    output = str(tmp_path / "models")
+
+    with pytest.raises(SystemExit):
+        rasa.api.train(
+            domain_path,
+            stack_config_path,
+            [stories_path, nlu_data_path],
+            output=output,
+        )
+
+    assert mock_track.call_count == 2
+
+    first_call, second_call = mock_track.mock_calls
+    assert first_call.args[0] == TRAINING_STARTED_EVENT
+    assert first_call.args[1]["assistant_id"] == "unique_stack_assistant_test_name"
+    assert second_call.args[0] == TRAINING_FAILED_EVENT
+    assert second_call.args[1]["assistant_id"] == "unique_stack_assistant_test_name"
+    assert second_call.args[1]["training_id"] == first_call.args[1]["training_id"]
+    assert "runtime" in second_call.args[1]
+
+
+@patch("rasa.telemetry._track")
+def test_track_server_started(
+    mock_track: MagicMock,
+    trained_default_agent_model: Text,
+    monkeypatch: MonkeyPatch,
+):
+    from rasa.core.channels import SlackInput
+
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    telemetry.track_server_start(
+        [SlackInput], None, trained_default_agent_model, 4, True
+    )
+
+    assert mock_track.call_count == 1
+    mock_call = mock_track.mock_calls[0]
+    assert mock_call.args[0] == TELEMETRY_SERVER_STARTED_EVENT
+    assert mock_call.args[1]["input_channels"] == ["slack"]
+    assert mock_call.args[1]["api_enabled"] is True
+    assert mock_call.args[1]["number_of_workers"] == 4
+    assert mock_call.args[1]["assistant_id"] == "placeholder_default"
+    assert mock_call.args[1]["project"] is not None

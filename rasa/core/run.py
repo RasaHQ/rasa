@@ -283,9 +283,10 @@ def serve_application(
         endpoints.lock_store if endpoints else None
     )
 
-    telemetry.track_server_start(
-        input_channels, endpoints, model_path, number_of_workers, enable_api
-    )
+    if not inspect:
+        telemetry.track_server_start(
+            input_channels, endpoints, model_path, number_of_workers, enable_api
+        )
 
     rasa.utils.common.update_sanic_log_level(
         log_file, use_syslog, syslog_address, syslog_port, syslog_protocol
