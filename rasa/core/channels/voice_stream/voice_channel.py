@@ -315,6 +315,7 @@ class VoiceInputChannel(InputChannel):
     def map_input_message(
         self,
         message: Any,
+        ws: Websocket,
     ) -> VoiceChannelAction:
         """Map a channel input message to a voice channel action."""
         raise NotImplementedError
@@ -340,7 +341,7 @@ class VoiceInputChannel(InputChannel):
         async def consume_audio_bytes() -> None:
             async for message in channel_websocket:
                 is_bot_speaking_before = call_state.is_bot_speaking
-                channel_action = self.map_input_message(message)
+                channel_action = self.map_input_message(message, channel_websocket)
                 is_bot_speaking_after = call_state.is_bot_speaking
 
                 if not is_bot_speaking_before and is_bot_speaking_after:

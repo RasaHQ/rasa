@@ -65,6 +65,7 @@ class BrowserAudioInputChannel(VoiceInputChannel):
     def map_input_message(
         self,
         message: Any,
+        ws: Websocket,
     ) -> VoiceChannelAction:
         data = json.loads(message)
         if "audio" in data:

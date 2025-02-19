@@ -32,6 +32,7 @@ from rasa.core.channels.vier_cvg import CVGInput
 from rasa.core.channels.voice_stream.twilio_media_streams import (
     TwilioMediaStreamsInputChannel,
 )
+from rasa.core.channels.voice_stream.genesys import GenesysInputChannel
 from rasa.core.channels.studio_chat import StudioChatInput
 
 input_channel_classes: List[Type[InputChannel]] = [
@@ -55,6 +56,7 @@ input_channel_classes: List[Type[InputChannel]] = [
     JambonzVoiceReadyInput,
     TwilioMediaStreamsInputChannel,
     BrowserAudioInputChannel,
+    GenesysInputChannel,
     StudioChatInput,
 ]
 

@@ -98,6 +98,7 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
     def map_input_message(
         self,
         message: Any,
+        ws: Websocket,
     ) -> VoiceChannelAction:
         data = json.loads(message)
         if data["event"] == "media":
@@ -142,7 +143,7 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
-        """Defines a Sanic bluelogger.debug."""
+        """Defines a Sanic blueprint for the voice input channel."""
         blueprint = Blueprint("twilio_media_streams", __name__)
 
         @blueprint.route("/", methods=["GET"])
