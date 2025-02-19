@@ -1,7 +1,8 @@
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
 import structlog
 
+import rasa.dialogue_understanding.generator.utils
 from rasa.dialogue_understanding.commands import (
     Command,
     SetSlotCommand,
@@ -148,7 +149,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
                 commands=commands,
             )
 
-        return prior_commands + commands
+        return self._check_commands_overlap(prior_commands, commands)
 
     @staticmethod
     def convert_nlu_to_commands(
@@ -209,6 +210,44 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
             message, NLUCommandAdapter.__name__, commands
         )
         return commands
+
+    def _check_start_flow_command_overlap(
+        self,
+        prior_commands: List[Command],
+        commands: List[Command],
+        prior_start_flow_names: Set[str],
+        current_start_flow_names: Set[str],
+    ) -> List[Command]:
+        """Prioritize the current NLU commands over the prior commands."""
+        different_flow_names = prior_start_flow_names.difference(
+            current_start_flow_names
+        )
+
+        if not different_flow_names:
+            return prior_commands + commands
+
+        filtered_commands = [
+            command
+            for command in prior_commands
+            if not isinstance(command, StartFlowCommand)
+            or command.flow not in different_flow_names
+        ]
+
+        return filtered_commands + commands
+
+    def _filter_slot_commands(
+        self,
+        prior_commands: List[Command],
+        commands: List[Command],
+        overlapping_slot_names: Set[str],
+    ) -> Tuple[List[Command], List[Command]]:
+        """Prioritize NLU commands over prior_commands in the case of same slot."""
+        filtered_prior_commands = (
+            rasa.dialogue_understanding.generator.utils.filter_slot_commands(
+                prior_commands, overlapping_slot_names
+            )
+        )
+        return filtered_prior_commands, commands
 
 
 def _issue_set_slot_commands(

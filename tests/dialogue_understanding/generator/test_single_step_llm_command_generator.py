@@ -16,6 +16,8 @@ from rasa.dialogue_understanding.commands import (
     ChitChatAnswerCommand,
     ClarifyCommand,
     Command,
+    CorrectedSlot,
+    CorrectSlotsCommand,
     ErrorCommand,
     HumanHandoffCommand,
     KnowledgeAnswerCommand,
@@ -1651,3 +1653,99 @@ class TestSingleStepLLMCommandGenerator:
 
         # Then
         assert actual_commands == expected_commands
+
+    async def test_process_predict_commands_different_start_flow_names(
+        self, command_generator: SingleStepLLMCommandGenerator, monkeypatch: MonkeyPatch
+    ):
+        """Test that predict_commands filters out the LLM StartFlow predicted command."""  # noqa: E501
+        command = StartFlowCommand("some_flow").as_dict()
+
+        test_message = Message.build(text="some message")
+        test_message.set(COMMANDS, [command], add_to_output=True)
+
+        assert len(test_message.get(COMMANDS)) == 1
+        assert test_message.get(COMMANDS) == [command]
+
+        test_tracker = DialogueStateTracker.from_events(uuid.uuid4().hex, [])
+
+        mock_get_active_flows = Mock(return_value=FlowsList([]))
+        mock_startable_flows = Mock(
+            return_value=FlowsList([Flow("some_flow"), Flow("other_flow")])
+        )
+
+        async def mock_predict_commands(*args, **kwargs) -> List[Command]:
+            return [StartFlowCommand("other_flow")]
+
+        monkeypatch.setattr(
+            command_generator, "_predict_commands", mock_predict_commands
+        )
+        monkeypatch.setattr(
+            command_generator, "get_startable_flows", mock_startable_flows
+        )
+        monkeypatch.setattr(
+            command_generator, "get_active_flows", mock_get_active_flows
+        )
+
+        returned_message = (
+            await command_generator.process(
+                [test_message],
+                flows=FlowsList([Flow("some_flow"), Flow("other_flow")]),
+                tracker=test_tracker,
+            )
+        )[0]
+
+        assert len(returned_message.get(COMMANDS)) == 1
+        assert returned_message.get(COMMANDS) == [command]
+
+    @pytest.mark.parametrize(
+        "predicted_command",
+        [
+            SetSlotCommand("test-slot", "test-value-123"),
+            CorrectSlotsCommand([CorrectedSlot("test-slot", "test-value-123")]),
+        ],
+    )
+    async def test_process_predict_commands_same_slot(
+        self,
+        command_generator: SingleStepLLMCommandGenerator,
+        monkeypatch: MonkeyPatch,
+        predicted_command: Command,
+    ):
+        """Test that predict_commands filters out the LLM SetSlot predicted command."""
+        command = SetSlotCommand(
+            "test-slot", "test-value", SetSlotExtractor.NLU.value
+        ).as_dict()
+
+        test_message = Message.build(text="some message")
+        test_message.set(COMMANDS, [command], add_to_output=True)
+
+        assert len(test_message.get(COMMANDS)) == 1
+        assert test_message.get(COMMANDS) == [command]
+
+        test_tracker = DialogueStateTracker.from_events(uuid.uuid4().hex, [])
+
+        mock_get_active_flows = Mock(return_value=FlowsList([]))
+        mock_startable_flows = Mock(return_value=FlowsList([Flow("some_flow")]))
+
+        async def mock_predict_commands(*args, **kwargs) -> List[Command]:
+            return [predicted_command]
+
+        monkeypatch.setattr(
+            command_generator, "_predict_commands", mock_predict_commands
+        )
+        monkeypatch.setattr(
+            command_generator, "get_startable_flows", mock_startable_flows
+        )
+        monkeypatch.setattr(
+            command_generator, "get_active_flows", mock_get_active_flows
+        )
+
+        returned_message = (
+            await command_generator.process(
+                [test_message],
+                flows=FlowsList([Flow("some_flow")]),
+                tracker=test_tracker,
+            )
+        )[0]
+
+        assert len(returned_message.get(COMMANDS)) == 1
+        assert returned_message.get(COMMANDS) == [command]

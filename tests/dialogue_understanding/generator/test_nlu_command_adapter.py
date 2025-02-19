@@ -3,12 +3,15 @@ from typing import List, Optional, Type
 from unittest.mock import Mock, patch
 
 import pytest
+from pytest import MonkeyPatch
 
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     CannotHandleCommand,
     ChitChatAnswerCommand,
     Command,
+    CorrectedSlot,
+    CorrectSlotsCommand,
     HumanHandoffCommand,
     KnowledgeAnswerCommand,
     RestartCommand,
@@ -27,11 +30,12 @@ from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.dialogue_understanding.utils import set_record_commands_and_prompts
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
 from rasa.shared.core.domain import KEY_INTENTS, Domain
-from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.slots import BooleanSlot
+from rasa.shared.core.flows import Flow, FlowsList
+from rasa.shared.core.slots import BooleanSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.importers.importer import FlowSyncImporter
 from rasa.shared.nlu.constants import (
+    COMMANDS,
     ENTITIES,
     INTENT,
     INTENT_NAME_KEY,
@@ -683,3 +687,111 @@ class TestNLUCommandAdapter:
 
         # Then
         assert message.get(PREDICTED_COMMANDS) is None
+
+    async def test_process_predict_commands_different_start_flow_names(
+        self, command_generator: NLUCommandAdapter, monkeypatch: MonkeyPatch
+    ):
+        """Test that predict_commands retains only the NLU StartFlow predicted command."""  # noqa: E501
+        prior_command = StartFlowCommand("some_flow").as_dict()
+
+        test_message = Message.build(text="some message")
+        test_message.set(COMMANDS, [prior_command], add_to_output=True)
+
+        assert len(test_message.get(COMMANDS)) == 1
+        assert test_message.get(COMMANDS) == [prior_command]
+
+        test_tracker = DialogueStateTracker.from_events(uuid.uuid4().hex, [])
+
+        mock_get_active_flows = Mock(return_value=FlowsList([]))
+        mock_startable_flows = Mock(
+            return_value=FlowsList([Flow("some_flow"), Flow("other_flow")])
+        )
+        nlu_command = StartFlowCommand("other_flow")
+
+        def mock_predict_commands(*args, **kwargs) -> List[Command]:
+            return [nlu_command]
+
+        monkeypatch.setattr(
+            command_generator, "convert_nlu_to_commands", mock_predict_commands
+        )
+        monkeypatch.setattr(
+            command_generator, "get_startable_flows", mock_startable_flows
+        )
+        monkeypatch.setattr(
+            command_generator, "get_active_flows", mock_get_active_flows
+        )
+
+        returned_message = (
+            await command_generator.process(
+                [test_message],
+                flows=FlowsList([Flow("some_flow"), Flow("other_flow")]),
+                tracker=test_tracker,
+            )
+        )[0]
+
+        assert len(returned_message.get(COMMANDS)) == 1
+        assert returned_message.get(COMMANDS) == [nlu_command.as_dict()]
+
+    @pytest.mark.parametrize(
+        "predicted_command",
+        [
+            SetSlotCommand(
+                "test-slot", "test-value-123", extractor=SetSlotExtractor.NLU.value
+            ),
+            CorrectSlotsCommand(
+                [
+                    CorrectedSlot(
+                        "test-slot",
+                        "test-value-123",
+                        filled_by=SetSlotExtractor.NLU.value,
+                    )
+                ]
+            ),
+        ],
+    )
+    async def test_process_predict_commands_same_slot(
+        self,
+        command_generator: NLUCommandAdapter,
+        monkeypatch: MonkeyPatch,
+        predicted_command: Command,
+    ):
+        """Test that predict_commands filters out the LLM SetSlot predicted command."""
+        command = SetSlotCommand(
+            "test-slot", "test-value", SetSlotExtractor.LLM.value
+        ).as_dict()
+
+        test_message = Message.build(text="some message")
+        test_message.set(COMMANDS, [command], add_to_output=True)
+
+        assert len(test_message.get(COMMANDS)) == 1
+        assert test_message.get(COMMANDS) == [command]
+
+        test_tracker = DialogueStateTracker.from_events(
+            uuid.uuid4().hex, [], slots=[TextSlot("test-slot", [{"type": "from_text"}])]
+        )
+        mock_get_active_flows = Mock(return_value=FlowsList([]))
+        mock_startable_flows = Mock(return_value=FlowsList([Flow("some_flow")]))
+
+        def mock_predict_commands(*args, **kwargs) -> List[Command]:
+            return [predicted_command]
+
+        monkeypatch.setattr(
+            command_generator, "convert_nlu_to_commands", mock_predict_commands
+        )
+        monkeypatch.setattr(
+            command_generator, "get_startable_flows", mock_startable_flows
+        )
+        monkeypatch.setattr(
+            command_generator, "get_active_flows", mock_get_active_flows
+        )
+
+        returned_message = (
+            await command_generator.process(
+                [test_message],
+                flows=FlowsList([Flow("some_flow")]),
+                tracker=test_tracker,
+            )
+        )[0]
+
+        assert len(returned_message.get(COMMANDS)) == 1
+        assert returned_message.get(COMMANDS) == [predicted_command.as_dict()]

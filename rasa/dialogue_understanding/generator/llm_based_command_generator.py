@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union
 
 import structlog
 from jinja2 import Template
 
+import rasa.dialogue_understanding.generator.utils
 import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
     Command,
@@ -578,3 +579,41 @@ class LLMBasedCommandGenerator(
         ]
 
         return filtered_commands
+
+    def _check_start_flow_command_overlap(
+        self,
+        prior_commands: List[Command],
+        commands: List[Command],
+        prior_start_flow_names: Set[str],
+        current_start_flow_names: Set[str],
+    ) -> List[Command]:
+        """Prioritize the prior commands over the LLM-issued commands."""
+        different_flow_names = current_start_flow_names.difference(
+            prior_start_flow_names
+        )
+
+        if not different_flow_names:
+            return prior_commands + commands
+
+        # discard the flow names that are different to prior start flow commands
+        filtered_commands = [
+            command
+            for command in commands
+            if not isinstance(command, StartFlowCommand)
+            or command.flow not in different_flow_names
+        ]
+        return prior_commands + filtered_commands
+
+    def _filter_slot_commands(
+        self,
+        prior_commands: List[Command],
+        commands: List[Command],
+        overlapping_slot_names: Set[str],
+    ) -> Tuple[List[Command], List[Command]]:
+        """Prioritize prior commands over LLM ones in the case of same slot."""
+        filtered_commands = (
+            rasa.dialogue_understanding.generator.utils.filter_slot_commands(
+                commands, overlapping_slot_names
+            )
+        )
+        return prior_commands, filtered_commands

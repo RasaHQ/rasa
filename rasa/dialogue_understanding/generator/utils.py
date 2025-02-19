@@ -1,14 +1,16 @@
-from typing import Dict, Type
+from typing import Dict, List, Set, Type
 
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     CannotHandleCommand,
     ChitChatAnswerCommand,
     Command,
+    CorrectSlotsCommand,
     HumanHandoffCommand,
     KnowledgeAnswerCommand,
     RestartCommand,
     SessionStartCommand,
+    SetSlotCommand,
     SkipQuestionCommand,
 )
 from rasa.dialogue_understanding.commands.user_silence_command import UserSilenceCommand
@@ -43,3 +45,32 @@ triggerable_pattern_to_command_class: Dict[str, Type[Command]] = {
     CannotHandlePatternFlowStackFrame.flow_id: CannotHandleCommand,
     RestartPatternFlowStackFrame.flow_id: RestartCommand,
 }
+
+
+def filter_slot_commands(
+    commands: List[Command], overlapping_slot_names: Set[str]
+) -> List[Command]:
+    """Filter out slot commands that set overlapping slots."""
+    filtered_commands = []
+
+    for command in commands:
+        if (
+            isinstance(command, SetSlotCommand)
+            and command.name in overlapping_slot_names
+        ):
+            continue
+
+        if isinstance(command, CorrectSlotsCommand):
+            allowed_slots = [
+                slot
+                for slot in command.corrected_slots
+                if slot.name not in overlapping_slot_names
+            ]
+            if not allowed_slots:
+                continue
+
+            command.corrected_slots = allowed_slots
+
+        filtered_commands.append(command)
+
+    return filtered_commands

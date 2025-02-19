@@ -1,11 +1,13 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
 import structlog
 
 from rasa.dialogue_understanding.commands import (
     Command,
+    CorrectSlotsCommand,
     ErrorCommand,
+    SetSlotCommand,
     StartFlowCommand,
 )
 from rasa.dialogue_understanding.utils import (
@@ -198,6 +200,94 @@ class CommandGenerator:
         """
         raise NotImplementedError()
 
+    def _check_commands_overlap(
+        self, prior_commands: List[Command], commands: List[Command]
+    ) -> List[Command]:
+        """Check if there is overlap between the prior commands and the current ones.
+
+        Args:
+            prior_commands: The prior commands.
+            commands: The commands to check.
+
+        Returns:
+            The final commands.
+        """
+        if not prior_commands:
+            return commands
+
+        prior_commands, commands = self._check_slot_command_overlap(
+            prior_commands, commands
+        )
+
+        prior_start_flow_names = {
+            command.flow
+            for command in prior_commands
+            if isinstance(command, StartFlowCommand)
+        }
+        current_start_flow_names = {
+            command.flow
+            for command in commands
+            if isinstance(command, StartFlowCommand)
+        }
+
+        return self._check_start_flow_command_overlap(
+            prior_commands,
+            commands,
+            prior_start_flow_names,
+            current_start_flow_names,
+        )
+
+    def _check_start_flow_command_overlap(
+        self,
+        prior_commands: List[Command],
+        commands: List[Command],
+        prior_start_flow_names: Set[str],
+        current_start_flow_names: Set[str],
+    ) -> List[Command]:
+        """Get the final commands.
+
+        Args:
+            prior_commands: The prior commands.
+            commands: The currently predicted commands to check.
+            prior_start_flow_names: The names of the flows from the prior commands.
+            current_start_flow_names: The names of the flows from the current commands.
+
+        Returns:
+            The final commands.
+        """
+        raise NotImplementedError()
+
+    def _check_slot_command_overlap(
+        self,
+        prior_commands: List[Command],
+        commands: List[Command],
+    ) -> Tuple[List[Command], List[Command]]:
+        """Check if the current commands overlap with the prior commands."""
+        prior_slot_names = gather_slot_names(prior_commands)
+        current_slot_names = gather_slot_names(commands)
+        overlapping_slot_names = prior_slot_names.intersection(current_slot_names)
+
+        structlogger.debug(
+            "command_generator.check_slot_command_overlap",
+            overlapping_slot_names=overlapping_slot_names,
+        )
+
+        if not overlapping_slot_names:
+            return prior_commands, commands
+
+        return self._filter_slot_commands(
+            prior_commands, commands, overlapping_slot_names
+        )
+
+    def _filter_slot_commands(
+        self,
+        prior_commands: List[Command],
+        commands: List[Command],
+        overlapping_slot_names: Set[str],
+    ) -> Tuple[List[Command], List[Command]]:
+        """Filter out the overlapping slot commands."""
+        raise NotImplementedError()
+
     def _check_commands_against_startable_flows(
         self, commands: List[Command], startable_flows: FlowsList
     ) -> List[Command]:
@@ -279,3 +369,16 @@ class CommandGenerator:
         return [
             Command.command_from_json(command) for command in message.get(COMMANDS, [])
         ]
+
+
+def gather_slot_names(commands: List[Command]) -> Set[str]:
+    """Gather all slot names from the commands."""
+    slot_names = set()
+    for command in commands:
+        if isinstance(command, SetSlotCommand):
+            slot_names.add(command.name)
+        if isinstance(command, CorrectSlotsCommand):
+            for slot in command.corrected_slots:
+                slot_names.add(slot.name)
+
+    return slot_names

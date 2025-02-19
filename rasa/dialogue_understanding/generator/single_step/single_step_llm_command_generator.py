@@ -236,7 +236,7 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         domain = kwargs.get("domain")
         commands = self._check_commands_against_slot_mappings(commands, tracker, domain)
 
-        return prior_commands + commands
+        return self._check_commands_overlap(prior_commands, commands)
 
     async def _predict_commands(
         self,
