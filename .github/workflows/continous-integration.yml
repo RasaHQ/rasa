@@ -1244,32 +1244,3 @@ jobs:
         with:
           files: "artifacts/**/unit-tests-results-*.xml"
           check_name: "Unit Test Results"
-
-  sonarqube:
-    name: SonarQube
-    runs-on: ubuntu-24.04
-    needs: [ unit-test, test-anonymization ]
-    if: always()
-    steps:
-      - name: Download test reports
-        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 #v4.1.4
-        with:
-          path: artifacts
-
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@bfd4e558cda28cda6b5defafb9232d191be8c203 # v4.2.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: ${{ env.SONAR_PROJECT_KEY }}
-          SONAR_ORGANIZATION: ${{ env.SONAR_ORGANIZATION }}
-        with:
-          args: >
-            -Dsonar.python.coverage.reportPaths=./artifacts/unit-tests-results-**.xml
-            -Dsonar.projectKey=RasaHQ_rasa-private
-            -Dsonar.organization=rasahq
-            -Dsonar.verbose=true
