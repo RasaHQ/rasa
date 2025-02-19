@@ -1,3 +1,5 @@
+import base64
+import json
 import os
 from dataclasses import dataclass
 from typing import AsyncIterator, Dict, Optional
@@ -39,7 +41,7 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
     @staticmethod
     def get_tts_endpoint() -> str:
         """Create the endpoint string for cartesia."""
-        return "https://api.cartesia.ai/tts/bytes"
+        return "https://api.cartesia.ai/tts/sse"
 
     @staticmethod
     def get_request_body(text: str, config: CartesiaTTSConfig) -> Dict:
@@ -85,8 +87,19 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
                 url, headers=headers, json=payload, chunked=True
             ) as response:
                 if 200 <= response.status < 300:
-                    async for data in response.content.iter_chunked(1024):
-                        yield self.engine_bytes_to_rasa_audio_bytes(data)
+                    async for chunk in response.content:
+                        # we are looking for chunks in the response that look like
+                        # b"data: {..., data: <base64 encoded audio bytes> ...}"
+                        # and extract the audio bytes from that
+                        if chunk.startswith(b"data: "):
+                            json_bytes = chunk[5:-1]
+                            json_data = json.loads(json_bytes.decode())
+                            if "data" in json_data:
+                                base64_encoded_bytes = json_data["data"]
+                                channel_bytes = base64.b64decode(base64_encoded_bytes)
+                                yield self.engine_bytes_to_rasa_audio_bytes(
+                                    channel_bytes
+                                )
                     return
                 else:
                     structlogger.error(
