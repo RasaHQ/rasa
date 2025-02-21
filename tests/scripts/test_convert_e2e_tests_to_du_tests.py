@@ -384,3 +384,58 @@ def test_convert_to_bot_test_steps(
 )
 def test_get_output_folder_and_file_name(path: str, folder: str, expected: str):
     assert _get_output_folder_and_file_name(path, folder) == expected
+
+
+@pytest.mark.parametrize(
+    "path, folder, expected",
+    [
+        ("e2e_tests/sub_folder/test.yml", "e2e_tests", ("sub_folder", "test.yml")),
+        (
+            "e2e_tests/sub_folder/another_folder/test.yml",
+            "e2e_tests",
+            ("sub_folder/another_folder", "test.yml"),
+        ),
+        ("e2e_tests/sub_folder/test.yml", "e2e_tests/sub_folder", (None, "test.yml")),
+        (
+            "e2e_tests/sub_folder/test.yml",
+            "e2e_tests/sub_folder/test.yml",
+            (None, "test.yml"),
+        ),
+    ],
+)
+def test_get_output_folder_and_file_name_absolute_path(
+    tmp_path, path: str, folder: str, expected
+):
+    base_path = tmp_path / "e2e_tests"
+    base_path.mkdir()
+
+    file_path = base_path / path
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.touch()
+
+    folder_path = base_path / folder
+
+    assert (
+        _get_output_folder_and_file_name(str(file_path), str(folder_path)) == expected
+    )
+
+
+def test_get_output_folder_and_file_name_absolute_path_outside_input_folder(
+    tmp_path,
+):
+    # Create a base path for the file
+    base_path = tmp_path / "e2e_tests"
+    base_path.mkdir()
+
+    file_path = base_path / "sub_folder" / "test.yml"
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.touch()
+
+    # Define an unrelated input_folder outside `base_path`
+    unrelated_folder = tmp_path / "unrelated_folder"
+    unrelated_folder.mkdir()
+
+    assert _get_output_folder_and_file_name(str(file_path), str(unrelated_folder)) == (
+        str(base_path / "sub_folder"),
+        "test.yml",
+    )

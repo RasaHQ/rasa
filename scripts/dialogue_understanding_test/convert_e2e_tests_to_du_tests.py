@@ -115,16 +115,37 @@ def convert_e2e_tests_to_du_tests(args: argparse.Namespace) -> None:
 def _get_output_folder_and_file_name(
     file_path: str, input_folder: str
 ) -> Tuple[Optional[str], str]:
-    # if the input folder was referring to a file, the file_path and
-    # the input_folder are identical
-    if file_path == input_folder or os.path.isfile(file_path):
+    """
+    Determines the output folder and file name relative to the given input folder.
+
+    Args:
+        file_path (str): Absolute or relative path to the file.
+        input_folder (str): Root folder against which `file_path` is compared.
+
+    Returns:
+        Tuple[Optional[str], str]: A tuple containing:
+            - The output folder (relative to `input_folder`) or `None` if at the root.
+            - The file name.
+    """
+
+    # file_path is the same as input_folder or the file is directly in input_folder
+    if (
+        file_path == input_folder
+        or (
+            # Ensures it is a file
+            os.path.isfile(file_path)
+            # Checks if it's directly inside input_folder
+            and os.path.dirname(file_path) == input_folder
+        )
+    ):
         return None, os.path.basename(file_path)
 
-    # if the file path starts with the input folder, remove the input folder
+    # file_path is nested in subdirectories of input_folder
     if file_path.startswith(input_folder):
         full_path = file_path[len(input_folder) + 1 :]
         return os.path.dirname(full_path), os.path.basename(full_path)
 
+    # file_path is completely outside input_folder (not sure if this will ever happen)
     return os.path.dirname(file_path), os.path.basename(file_path)
 
 
