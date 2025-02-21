@@ -377,3 +377,53 @@ Test cases in **to_review** may require manual intervention because the E2E test
 Review these cases to ensure that the converted test cases are correct and the list of commands and
 bot responses is complete.
 
+
+## Converting DUT test from one DSL to a another DSL
+
+If you need to transform your commands from one DSL format to another
+(for instance, updating `StartFlow(flow_name)` to `start flow_name` or `SetSlot(slot_name, slot_value)` to `set slot_name slot_value`),
+you can use a standalone Python script:
+
+```bash
+python convert_dut_dsl.py --dut-tests-dir <path> --output-dir <path> --dsl-mappings <path>
+```
+
+The script has the following required parameters:
+
+- `--dut-tests-dir <path>`: The directory (relative or absolute) containing your
+  existing Dialogue Understanding Tests (DUT). The script will look for `.yaml` or 
+  `.yml` files within this folder (and subfolders).
+- `--output-dir <path>`: The directory where transformed files will be saved. The folder
+  structure from your `dut-tests-dir` is preserved.
+- `--dsl-mappings <path>`: The YAML file defining your DSL mapping rules.
+
+The YAML file containing the mappings must adhere to the following format: 
+  ```yaml
+  mappings:
+  
+  - from_dsl_regex: "^StartFlow\\(([^)]*)\\)$"
+    to_dsl_pattern: "start {1}"
+  
+  - from_dsl_regex: "^SetSlot\\(([^,]+),\\s*(.*)\\)$"
+    to_dsl_pattern: "set {1} {2}"
+  
+  - from_dsl_regex: "Clarify\(([\"\'a-zA-Z0-9_, ]*)\)"
+    to_dsl_pattern: "clarify {1}"
+    input_separators:
+      - ","
+      - " "
+    output_separator: " "
+  
+  # ... add more mappings here
+
+  ```
+
+- `from_dsl_regex`: A regular expression (string) used to match the old DSL command.
+  Must include any necessary anchors (like ^ and $) and capturing groups ( ... ) for 
+  dynamic parts.
+- `to_dsl_pattern`: A string that contains placeholders like `{1}`, `{2}`, etc. Each
+  placeholder corresponds to a capturing group in from_dsl_regex, in order of
+  appearance.
+- `input_separators`: Optional list of separators of the captured groups that can be replaced
+  with the `output_separator`
+- `output_separator`: Output separator to replace separators from the list of `input_separators` in the captured group.

@@ -19,7 +19,7 @@ from rasa.e2e_test.e2e_test_case import (
 from rasa.shared.core.constants import USER
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.nlu.constants import PREDICTED_COMMANDS
-from scripts.convert_e2e_tests_to_du_tests import (
+from scripts.dialogue_understanding_test.convert_e2e_tests_to_du_tests import (
     DialogueUnderstandingTestCase,
     TestSuite,
     _convert_to_bot_test_steps,
