@@ -45,13 +45,12 @@ from rasa.shared.constants import (
 from rasa.shared.core.constants import (
     ACTION_TRIGGER_CHITCHAT,
     FLOW_HASHES_SLOT,
-    KEY_ALLOW_NLU_CORRECTION,
-    KEY_MAPPING_TYPE,
     SlotMappingType,
 )
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
+from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -582,9 +581,9 @@ def clean_up_slot_command(
     ):
         allow_nlu_correction = any(
             [
-                mapping.get(KEY_ALLOW_NLU_CORRECTION, False)
+                mapping.allow_nlu_correction is True
                 for mapping in slot.mappings
-                if mapping.get(KEY_MAPPING_TYPE) == SlotMappingType.FROM_LLM.value
+                if mapping.type == SlotMappingType.FROM_LLM
             ]
         )
 
@@ -742,12 +741,9 @@ def should_slot_be_set(
     slot_mappings = slot.mappings
 
     if not slot.mappings:
-        slot_mappings = [{KEY_MAPPING_TYPE: SlotMappingType.FROM_LLM.value}]
+        slot_mappings = [SlotMapping(type=SlotMappingType.FROM_LLM)]
 
-    mapping_types = [
-        SlotMappingType(mapping.get(KEY_MAPPING_TYPE, SlotMappingType.FROM_LLM.value))
-        for mapping in slot_mappings
-    ]
+    mapping_types = [mapping.type for mapping in slot_mappings]
 
     slot_has_nlu_mapping = any(
         [mapping_type.is_predefined_type() for mapping_type in mapping_types]
@@ -755,8 +751,8 @@ def should_slot_be_set(
     slot_has_llm_mapping = any(
         [mapping_type == SlotMappingType.FROM_LLM for mapping_type in mapping_types]
     )
-    slot_has_custom_mapping = any(
-        [mapping_type == SlotMappingType.CUSTOM for mapping_type in mapping_types]
+    slot_has_controlled_mapping = any(
+        [mapping_type == SlotMappingType.CONTROLLED for mapping_type in mapping_types]
     )
 
     if set_slot_commands_so_far and command.extractor == SetSlotExtractor.LLM.value:
@@ -785,7 +781,9 @@ def should_slot_be_set(
     ):
         return False
 
-    if slot_has_custom_mapping and not (slot_has_nlu_mapping or slot_has_llm_mapping):
+    if slot_has_controlled_mapping and not (
+        slot_has_nlu_mapping or slot_has_llm_mapping
+    ):
         return False
 
     return True

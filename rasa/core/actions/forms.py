@@ -2,7 +2,7 @@ import copy
 import itertools
 import json
 import logging
-from typing import Any, Dict, List, Optional, Set, Text, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Text, Union
 
 import structlog
 
@@ -34,6 +34,9 @@ from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.core.slots import ListSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
+
+if TYPE_CHECKING:
+    from rasa.shared.core.slot_mappings import SlotMapping
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
@@ -171,7 +174,7 @@ class FormAction(LoopAction):
         return unique_entity_slot_mappings
 
     def entity_mapping_is_unique(
-        self, slot_mapping: Dict[Text, Any], domain: Domain
+        self, slot_mapping: "SlotMapping", domain: Domain
     ) -> bool:
         """Verifies if the from_entity mapping is unique."""
         if not self._have_unique_entity_mappings_been_initialized:
@@ -179,7 +182,7 @@ class FormAction(LoopAction):
             self._unique_entity_mappings = self._create_unique_entity_mappings(domain)
             self._have_unique_entity_mappings_been_initialized = True
 
-        mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
+        mapping_as_string = json.dumps(slot_mapping.as_dict(), sort_keys=True)
         return mapping_as_string in self._unique_entity_mappings
 
     @staticmethod

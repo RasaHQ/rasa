@@ -143,6 +143,8 @@ SLOT_MAPPINGS = "mappings"
 MAPPING_CONDITIONS = "conditions"
 KEY_MAPPING_TYPE = "type"
 KEY_ALLOW_NLU_CORRECTION = "allow_nlu_correction"
+KEY_ACTION = "action"
+KEY_RUN_ACTION_EVERY_TURN = "run_action_every_turn"
 
 
 class SlotMappingType(Enum):
@@ -153,7 +155,7 @@ class SlotMappingType(Enum):
     FROM_TRIGGER_INTENT = "from_trigger_intent"
     FROM_TEXT = "from_text"
     FROM_LLM = "from_llm"
-    CUSTOM = "custom"
+    CONTROLLED = "controlled"
 
     def __str__(self) -> str:
         """Returns the string representation that should be used in config files."""
@@ -161,7 +163,9 @@ class SlotMappingType(Enum):
 
     def is_predefined_type(self) -> bool:
         """Returns True if the mapping type is NLU-predefined."""
-        return not (self == SlotMappingType.CUSTOM or self == SlotMappingType.FROM_LLM)
+        return not (
+            self == SlotMappingType.CONTROLLED or self == SlotMappingType.FROM_LLM
+        )
 
 
 class SetSlotExtractor(Enum):

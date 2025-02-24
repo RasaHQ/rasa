@@ -4,7 +4,6 @@ import copy
 import io
 import os
 import pathlib
-import re
 import sys
 import tempfile
 from pathlib import Path
@@ -13,7 +12,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 import structlog
-from pytest import CaptureFixture, RunResult
+from pytest import CaptureFixture, RunResult, WarningsRecorder
 from ruamel.yaml import YAML
 
 import rasa.cli.utils
@@ -32,8 +31,9 @@ from rasa.shared.constants import (
 )
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
-from rasa.utils.common import EXPECTED_WARNINGS, TempDirectoryPath, get_temp_dir_name
+from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from tests.cli.conftest import RASA_EXE
+from tests.conftest import filter_expected_warnings
 from tests.utilities import filter_logs
 
 
@@ -448,7 +448,7 @@ def test_validate_files_form_not_found_invalid_domain(
     ("file_type", "data_type"), [("stories", "story"), ("rules", "rule")]
 )
 def test_validate_files_with_active_loop_null(
-    file_type: Text, data_type: Text, tmp_path: Path
+    file_type: Text, data_type: Text, tmp_path: Path, recwarn: WarningsRecorder
 ):
     domain_file = (
         "data/test_domains/minimal_domain_validate_files_with_active_loop_null.yml"
@@ -474,22 +474,11 @@ def test_validate_files_with_active_loop_null(
         domain_file,
         [file_name, nlu_file],
     )
-    with pytest.warns() as warning_recorder:
-        rasa.cli.utils.validate_files(
-            fail_on_warnings=False,
-            max_history=None,
-            importer=importer,
-        )
-
-    assert not [
-        warning.message
-        for warning in warning_recorder.list
-        if not any(
-            type(warning.message) == warning_type
-            and re.search(warning_message, str(warning.message))
-            for warning_type, warning_message in EXPECTED_WARNINGS
-        )
-    ]
+    rasa.cli.utils.validate_files(
+        fail_on_warnings=False, max_history=None, importer=importer, stories_only=True
+    )
+    records = filter_expected_warnings(recwarn)
+    assert len(records) == 0
 
 
 def test_validate_files_form_slots_not_matching(tmp_path: Path):

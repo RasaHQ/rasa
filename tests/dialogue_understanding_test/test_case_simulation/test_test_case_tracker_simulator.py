@@ -405,7 +405,7 @@ def test_create_user_message(
     "mapping, user_message, expected_set_slot_extractor",
     (
         (
-            {KEY_MAPPING_TYPE: SlotMappingType.FROM_ENTITY.value},
+            {KEY_MAPPING_TYPE: SlotMappingType.FROM_ENTITY.value, "entity": "entity1"},
             "message",
             SetSlotExtractor.NLU,
         ),
@@ -415,7 +415,11 @@ def test_create_user_message(
             SetSlotExtractor.NLU,
         ),
         (
-            {KEY_MAPPING_TYPE: SlotMappingType.FROM_INTENT.value},
+            {
+                KEY_MAPPING_TYPE: SlotMappingType.FROM_INTENT.value,
+                "intent": "intent1",
+                "value": "value1",
+            },
             "message",
             SetSlotExtractor.NLU,
         ),

@@ -647,8 +647,14 @@ def test_clean_up_chitchat_commands(
         ([{}], SetSlotExtractor.LLM.value),
         ([{"type": "from_llm"}], SetSlotExtractor.LLM.value),
         ([{"type": "from_entity", "entity": "name"}], SetSlotExtractor.NLU.value),
-        ([{"type": "from_intent", "intent": "inform"}], SetSlotExtractor.NLU.value),
-        ([{"type": "from_text", "intent": "inform"}], SetSlotExtractor.NLU.value),
+        (
+            [{"type": "from_intent", "intent": "inform", "value": "yes"}],
+            SetSlotExtractor.NLU.value,
+        ),
+        (
+            [{"type": "from_text", "intent": "inform", "value": "yes"}],
+            SetSlotExtractor.NLU.value,
+        ),
         ([{"type": "from_llm"}], SetSlotExtractor.COMMAND_PAYLOAD_READER.value),
         ([{"type": "custom"}], SetSlotExtractor.COMMAND_PAYLOAD_READER.value),
         (
@@ -656,11 +662,11 @@ def test_clean_up_chitchat_commands(
             SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
         ),
         (
-            [{"type": "from_intent", "intent": "inform"}],
+            [{"type": "from_intent", "intent": "inform", "value": "yes"}],
             SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
         ),
         (
-            [{"type": "from_text", "intent": "inform"}],
+            [{"type": "from_text", "intent": "inform", "value": "yes"}],
             SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
         ),
     ],
@@ -682,7 +688,10 @@ def test_command_processor_should_slot_be_set(
         ([{"type": "from_llm"}], SetSlotExtractor.NLU.value),
         ([{"type": "custom"}], SetSlotExtractor.NLU.value),
         ([{"type": "from_entity", "entity": "name"}], SetSlotExtractor.LLM.value),
-        ([{"type": "from_intent", "intent": "inform"}], SetSlotExtractor.LLM.value),
+        (
+            [{"type": "from_intent", "intent": "inform", "value": "yes"}],
+            SetSlotExtractor.LLM.value,
+        ),
         ([{"type": "from_text", "intent": "inform"}], SetSlotExtractor.LLM.value),
         ([{"type": "custom"}], SetSlotExtractor.LLM.value),
     ],

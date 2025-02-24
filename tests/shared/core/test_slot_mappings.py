@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Text
 from unittest.mock import Mock
 
 import pytest
-from pytest import MonkeyPatch
+from pytest import MonkeyPatch, WarningsRecorder
 
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
@@ -27,6 +27,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.yaml import YamlValidationException
+from tests.conftest import filter_expected_warnings
 
 
 @pytest.fixture
@@ -88,8 +89,9 @@ def test_slot_mapping_entity_is_desired(slot_name: Text, expected: List[Any]):
         entities=[{"entity": "GPE", "value": "Vancouver", "role": "destination"}],
     )
     tracker.update(event, domain)
-    slot_mappings = domain.as_dict().get("slots").get(slot_name).get("mappings")
-    actual = SlotMapping.entity_is_desired(slot_mappings[0], tracker)
+    slot_mappings = tracker.slots.get(slot_name).mappings
+    mapping = slot_mappings[0]
+    actual = mapping.entity_is_desired(tracker)
     assert actual == expected
 
 
@@ -116,15 +118,10 @@ def test_slot_mapping_entity_is_desired_with_message(
     cuisine_domain: Domain,
     cuisine_tracker: DialogueStateTracker,
 ) -> None:
-    mappings_for_cuisine = (
-        cuisine_domain.as_dict().get("slots").get("cuisine").get("mappings")
-    )
+    mappings_for_cuisine = cuisine_tracker.slots.get("cuisine").mappings
     message = Message(data={TEXT: user_text, ENTITIES: entities})
-
-    assert (
-        SlotMapping.entity_is_desired(mappings_for_cuisine[0], cuisine_tracker, message)
-        == expected
-    )
+    mapping = mappings_for_cuisine[0]
+    assert mapping.entity_is_desired(cuisine_tracker, message) == expected
 
 
 def test_slot_mapping_intent_is_desired() -> None:
@@ -136,10 +133,9 @@ def test_slot_mapping_intent_is_desired() -> None:
         entities=[{"entity": "number", "value": 2}],
     )
     tracker.update(event1, domain)
-    mappings_for_num_people = (
-        domain.as_dict().get("slots").get("num_people").get("mappings")
-    )
-    assert SlotMapping.intent_is_desired(mappings_for_num_people[0], tracker, domain)
+    mappings_for_num_people = tracker.slots.get("num_people").mappings
+    slot_mapping = mappings_for_num_people[0]
+    assert slot_mapping.intent_is_desired(tracker, domain)
 
     event2 = UserUttered(
         text="Yes, 2 please",
@@ -147,10 +143,7 @@ def test_slot_mapping_intent_is_desired() -> None:
         entities=[{"entity": "number", "value": 2}],
     )
     tracker.update(event2, domain)
-    assert (
-        SlotMapping.intent_is_desired(mappings_for_num_people[0], tracker, domain)
-        is False
-    )
+    assert slot_mapping.intent_is_desired(tracker, domain) is False
 
     event3 = UserUttered(
         text="Yes, please",
@@ -158,13 +151,9 @@ def test_slot_mapping_intent_is_desired() -> None:
         entities=[],
     )
     tracker.update(event3, domain)
-    mappings_for_preferences = (
-        domain.as_dict().get("slots").get("preferences").get("mappings")
-    )
-    assert (
-        SlotMapping.intent_is_desired(mappings_for_preferences[0], tracker, domain)
-        is False
-    )
+    mappings_for_preferences = tracker.slots.get("preferences").mappings
+    preferences_slot_mapping = mappings_for_preferences[0]
+    assert preferences_slot_mapping.intent_is_desired(tracker, domain) is False
 
 
 @pytest.mark.parametrize(
@@ -207,13 +196,10 @@ def test_slot_mapping_intent_is_desired_with_message(
         sender_id, evts=events, slots=domain.slots
     )
 
-    mappings_for_cuisine = domain.as_dict().get("slots").get("cuisine").get("mappings")
+    mappings_for_cuisine = tracker.slots.get("cuisine").mappings
     message = Message(data={TEXT: user_text, INTENT: {"name": intent}})
-
-    assert (
-        SlotMapping.intent_is_desired(mappings_for_cuisine[0], tracker, domain, message)
-        is expected
-    )
+    slot_mapping = mappings_for_cuisine[0]
+    assert slot_mapping.intent_is_desired(tracker, domain, message) is expected
 
 
 def test_slot_mappings_ignored_intents_during_active_loop():
@@ -246,10 +232,9 @@ def test_slot_mappings_ignored_intents_during_active_loop():
         entities=[],
     )
     tracker.update_with_events([event1, event2])
-    mappings_for_cuisine = domain.as_dict().get("slots").get("cuisine").get("mappings")
-    assert (
-        SlotMapping.intent_is_desired(mappings_for_cuisine[0], tracker, domain) is False
-    )
+    mappings_for_cuisine = tracker.slots.get("cuisine").mappings
+    slot_mapping = mappings_for_cuisine[0]
+    assert slot_mapping.intent_is_desired(tracker, domain) is False
 
 
 def test_slot_mappings_invalid_type_raises(
@@ -298,11 +283,11 @@ def test_slot_mappings_check_mapping_validity_from_intent():
                value: sad
         """
     )
-    mappings_for_slot = domain.as_dict().get("slots").get(slot_name).get("mappings")
-    assert SlotMapping.check_mapping_validity(
+    slot = next((slot for slot in domain.slots if slot.name == slot_name))
+    mapping = slot.mappings[0]
+
+    assert mapping.check_mapping_validity(
         slot_name=slot_name,
-        mapping_type=SlotMappingType.FROM_INTENT,
-        mapping=mappings_for_slot[0],
         domain=domain,
     )
 
@@ -313,7 +298,6 @@ def test_slot_mappings_check_mapping_validity_from_intent():
         (["goodbye", "mood_great", "greet"], True),
         ([], True),
         ("", True),
-        ({}, True),
         ("null", True),
     ],
 )
@@ -343,12 +327,11 @@ def test_slot_mappings_check_mapping_validity_valid_intent_list(
                 - test_slot
         """
     )
-    mappings_for_slot = domain.as_dict().get("slots").get(slot_name).get("mappings")
+    slot = next((slot for slot in domain.slots if slot.name == slot_name))
+    mapping = slot.mappings[0]
     assert (
-        SlotMapping.check_mapping_validity(
+        mapping.check_mapping_validity(
             slot_name=slot_name,
-            mapping_type=SlotMappingType.FROM_INTENT,
-            mapping=mappings_for_slot[0],
             domain=domain,
         )
         is expected
@@ -382,11 +365,10 @@ def test_slot_mappings_check_mapping_validity_invalid_intent_list():
                 - test_slot
         """
     )
-    mappings_for_slot = domain.as_dict().get("slots").get(slot_name).get("mappings")
-    assert not SlotMapping.check_mapping_validity(
+    slot = next((slot for slot in domain.slots if slot.name == slot_name))
+    mapping = slot.mappings[0]
+    assert not mapping.check_mapping_validity(
         slot_name=slot_name,
-        mapping_type=SlotMappingType.FROM_INTENT,
-        mapping=mappings_for_slot[0],
         domain=domain,
     )
 
@@ -416,8 +398,7 @@ def test_slot_filling_manager_is_slot_mapping_valid_true(
         assert (
             slot_filling_manager.is_slot_mapping_valid(
                 slot_name=slot_name,
-                mapping_type=SlotMappingType(mapping.get("type")),
-                mapping=mapping,
+                mapping=SlotMapping.from_dict(mapping, slot_name),
             )
             is expected
         )
@@ -456,8 +437,7 @@ def test_slot_filling_manager_is_slot_mapping_valid_false(
         assert (
             slot_filling_manager.is_slot_mapping_valid(
                 slot_name=slot_name,
-                mapping_type=SlotMappingType(mapping.get("type")),
-                mapping=mapping,
+                mapping=SlotMapping.from_dict(mapping, slot_name),
             )
             is expected
         )
@@ -531,7 +511,7 @@ def test_slot_filling_manager_verify_mapping_conditions_no_active_flow() -> None
     )
     tracker = DialogueStateTracker("sender_id", slots=domain.slots)
     slot_filling_manager = SlotFillingManager(domain, tracker)
-    mapping = next((slot.mappings for slot in domain.slots if slot.name == slot_name))
+    mapping = tracker.slots.get(slot_name).mappings
     assert (
         slot_filling_manager._verify_mapping_conditions(mapping[0], slot_name) is False
     )
@@ -543,8 +523,9 @@ def test_slot_filling_manager_should_fill_slot_invalid_slot_mapping(
     monkeypatch: MonkeyPatch,
 ) -> None:
     slot_name = "mood"
-    mapping = {"type": "from_entity", "entity": "mood"}
-    mapping_type = SlotMappingType(mapping.get("type"))
+    mapping = SlotMapping.from_dict(
+        {"type": "from_entity", "entity": "mood"}, slot_name
+    )
     slot_filling_manager = SlotFillingManager(cuisine_domain, cuisine_tracker)
 
     mock_is_slot_mapping_valid = Mock(return_value=False)
@@ -556,10 +537,8 @@ def test_slot_filling_manager_should_fill_slot_invalid_slot_mapping(
         slot_filling_manager, "is_intent_desired", mock_is_intent_desired
     )
 
-    assert (
-        slot_filling_manager.should_fill_slot(slot_name, mapping_type, mapping) is False
-    )
-    mock_is_slot_mapping_valid.assert_called_once_with(slot_name, mapping_type, mapping)
+    assert slot_filling_manager.should_fill_slot(slot_name, mapping) is False
+    mock_is_slot_mapping_valid.assert_called_once_with(slot_name, mapping)
     mock_is_intent_desired.assert_not_called()
 
 
@@ -569,8 +548,9 @@ def test_slot_filling_manager_should_fill_slot_intent_not_desired(
     monkeypatch: MonkeyPatch,
 ) -> None:
     slot_name = "cuisine"
-    mapping = {"type": "from_entity", "entity": "cuisine"}
-    mapping_type = SlotMappingType(mapping.get("type"))
+    mapping = SlotMapping.from_dict(
+        {"type": "from_entity", "entity": "cuisine"}, slot_name
+    )
     slot_filling_manager = SlotFillingManager(cuisine_domain, cuisine_tracker)
 
     mock_is_intent_desired = Mock(return_value=False)
@@ -584,9 +564,7 @@ def test_slot_filling_manager_should_fill_slot_intent_not_desired(
         mock_verify_mapping_conditions,
     )
 
-    assert (
-        slot_filling_manager.should_fill_slot(slot_name, mapping_type, mapping) is False
-    )
+    assert slot_filling_manager.should_fill_slot(slot_name, mapping) is False
     mock_is_intent_desired.assert_called_once_with(mapping)
     mock_verify_mapping_conditions.assert_not_called()
 
@@ -597,8 +575,9 @@ def test_slot_filling_manager_should_fill_slot_not_matching_mapping_conditions(
     monkeypatch: MonkeyPatch,
 ) -> None:
     slot_name = "cuisine"
-    mapping = {"type": "from_entity", "entity": "cuisine"}
-    mapping_type = SlotMappingType(mapping.get("type"))
+    mapping = SlotMapping.from_dict(
+        {"type": "from_entity", "entity": "cuisine"}, slot_name
+    )
     slot_filling_manager = SlotFillingManager(cuisine_domain, cuisine_tracker)
 
     mock_verify_mapping_conditions = Mock(return_value=False)
@@ -614,9 +593,7 @@ def test_slot_filling_manager_should_fill_slot_not_matching_mapping_conditions(
         mock_fails_unique_entity_mapping_check,
     )
 
-    assert (
-        slot_filling_manager.should_fill_slot(slot_name, mapping_type, mapping) is False
-    )
+    assert slot_filling_manager.should_fill_slot(slot_name, mapping) is False
     mock_verify_mapping_conditions.assert_called_once_with(mapping, slot_name)
     mock_fails_unique_entity_mapping_check.assert_not_called()
 
@@ -627,8 +604,9 @@ def test_slot_filling_manager_should_fill_slot_not_fails_unique_entity_mapping_c
     monkeypatch: MonkeyPatch,
 ) -> None:
     slot_name = "cuisine"
-    mapping = {"type": "from_entity", "entity": "cuisine"}
-    mapping_type = SlotMappingType(mapping.get("type"))
+    mapping = SlotMapping.from_dict(
+        {"type": "from_entity", "entity": "cuisine"}, slot_name
+    )
     slot_filling_manager = SlotFillingManager(cuisine_domain, cuisine_tracker)
 
     mock_fails_unique_entity_mapping_check = Mock(return_value=True)
@@ -638,9 +616,7 @@ def test_slot_filling_manager_should_fill_slot_not_fails_unique_entity_mapping_c
         mock_fails_unique_entity_mapping_check,
     )
 
-    assert (
-        slot_filling_manager.should_fill_slot(slot_name, mapping_type, mapping) is False
-    )
+    assert slot_filling_manager.should_fill_slot(slot_name, mapping) is False
     mock_fails_unique_entity_mapping_check.assert_called_once_with(slot_name, mapping)
 
 
@@ -650,13 +626,12 @@ def test_slot_filling_manager_should_fill_slot_valid(
     monkeypatch: MonkeyPatch,
 ) -> None:
     slot_name = "cuisine"
-    mapping = {"type": "from_entity", "entity": "cuisine"}
-    mapping_type = SlotMappingType(mapping.get("type"))
+    mapping = SlotMapping.from_dict(
+        {"type": "from_entity", "entity": "cuisine"}, slot_name
+    )
     slot_filling_manager = SlotFillingManager(cuisine_domain, cuisine_tracker)
 
-    assert (
-        slot_filling_manager.should_fill_slot(slot_name, mapping_type, mapping) is True
-    )
+    assert slot_filling_manager.should_fill_slot(slot_name, mapping) is True
 
 
 @pytest.mark.parametrize(
@@ -730,8 +705,8 @@ def test_slot_filling_manager_extract_slot_value_from_predefined_mapping_with_me
     )
     slot_filling_manager = SlotFillingManager(domain, tracker, message)
 
-    mappings = next((slot.mappings for slot in domain.slots if slot.name == slot_name))
-    mapping_type = SlotMappingType(mappings[0].get("type"))
+    mappings = tracker.slots.get(slot_name).mappings
+    mapping_type = mappings[0].type
 
     value = slot_filling_manager.extract_slot_value_from_predefined_mapping(
         mapping_type, mappings[0]
@@ -840,3 +815,37 @@ def test_extract_slot_value_true(
     slot = next((slot for slot in domain.slots if slot.name == slot_name))
 
     assert extract_slot_value(slot, slot_filling_manager) == (expected_value, True)
+
+
+def test_custom_slot_mapping_raises_deprecation_warning(
+    recwarn: WarningsRecorder,
+) -> None:
+    domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+            transactions_list:
+                type: list
+                mappings:
+                - type: custom
+                  action: action_search_transactions
+        """
+    )
+
+    filtered_warnings = filter_expected_warnings(recwarn)
+    assert len(filtered_warnings) == 2
+    assert (
+        "The `custom` slot mapping type is deprecated and "
+        "will be removed in Rasa Pro 4.0.0. "
+        "Please use the `controlled` slot mapping type instead."
+    ) in filtered_warnings[0].message.args[0]
+    assert (
+        "The `action` key in slot mappings is deprecated and "
+        "will be removed in Rasa Pro 4.0.0. "
+        "Please use the `run_action_every_turn` key instead."
+    ) in filtered_warnings[1].message.args[0]
+
+    tracker = DialogueStateTracker("sender_id", slots=domain.slots)
+    slot = tracker.slots.get("transactions_list")
+    assert slot.mappings[0].type == SlotMappingType.CONTROLLED
+    assert slot.mappings[0].run_action_every_turn == "action_search_transactions"

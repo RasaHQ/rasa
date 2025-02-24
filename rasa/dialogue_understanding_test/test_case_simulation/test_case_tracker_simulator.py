@@ -20,7 +20,7 @@ from rasa.dialogue_understanding_test.test_case_simulation.exception import (
 )
 from rasa.dialogue_understanding_test.utils import filter_metadata
 from rasa.e2e_test.e2e_test_case import Fixture, Metadata
-from rasa.shared.core.constants import KEY_MAPPING_TYPE, SlotMappingType
+from rasa.shared.core.constants import SlotMappingType
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import COMMANDS, ENTITIES, INTENT
@@ -328,8 +328,8 @@ class TestCaseTrackerSimulator:
                     command.extractor = SetSlotExtractor.COMMAND_PAYLOAD_READER.value
                 # Use the SetSlotExtractor.NLU extractor if the slot mapping type is
                 # not FROM_LLM.
-                elif SlotMappingType.FROM_LLM.value not in [
-                    mapping[KEY_MAPPING_TYPE] for mapping in slot_definition.mappings
+                elif SlotMappingType.FROM_LLM not in [
+                    mapping.type for mapping in slot_definition.mappings
                 ]:
                     command.extractor = SetSlotExtractor.NLU.value
 

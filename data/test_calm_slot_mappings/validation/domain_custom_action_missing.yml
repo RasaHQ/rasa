@@ -1,0 +1,6 @@
+slots:
+  card_number:
+    type: text
+    mappings:
+      - type: controlled
+        run_action_every_turn: action_set_card_number

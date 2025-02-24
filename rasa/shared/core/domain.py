@@ -46,10 +46,8 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.constants import (
     ACTION_SHOULD_SEND_DOMAIN,
-    ACTIVE_LOOP,
     KEY_MAPPING_TYPE,
     KNOWLEDGE_BASE_SLOT_NAMES,
-    MAPPING_CONDITIONS,
     SLOT_MAPPINGS,
     SlotMappingType,
 )
@@ -290,8 +288,6 @@ class Domain:
         responses = data.get(KEY_RESPONSES, {})
 
         domain_slots = data.get(KEY_SLOTS, {})
-        if domain_slots:
-            rasa.shared.core.slot_mappings.validate_slot_mappings(domain_slots)
         slots = cls.collect_slots(domain_slots)
         domain_actions = data.get(KEY_ACTIONS, [])
         actions = cls._collect_action_names(domain_actions)
@@ -1569,23 +1565,18 @@ class Domain:
                 matching_entities = []
 
                 for mapping in slot.mappings:
-                    mapping_conditions = mapping.get(MAPPING_CONDITIONS)
-                    if mapping[KEY_MAPPING_TYPE] != str(
-                        SlotMappingType.FROM_ENTITY
-                    ) or (
+                    mapping_conditions = mapping.conditions
+                    if mapping.type != SlotMappingType.FROM_ENTITY or (
                         mapping_conditions
-                        and mapping_conditions[0].get(ACTIVE_LOOP) is not None
+                        and mapping_conditions[0].active_loop is not None
                     ):
                         continue
 
                     for entity in entities:
                         if (
-                            entity.get(ENTITY_ATTRIBUTE_TYPE)
-                            == mapping.get(ENTITY_ATTRIBUTE_TYPE)
-                            and entity.get(ENTITY_ATTRIBUTE_ROLE)
-                            == mapping.get(ENTITY_ATTRIBUTE_ROLE)
-                            and entity.get(ENTITY_ATTRIBUTE_GROUP)
-                            == mapping.get(ENTITY_ATTRIBUTE_GROUP)
+                            entity.get(ENTITY_ATTRIBUTE_TYPE) == mapping.entity
+                            and entity.get(ENTITY_ATTRIBUTE_ROLE) == mapping.role
+                            and entity.get(ENTITY_ATTRIBUTE_GROUP) == mapping.group
                         ):
                             matching_entities.append(entity.get("value"))
 
@@ -2017,19 +2008,19 @@ class Domain:
             is the total number of mappings which have conditions attached.
         """
         total_mappings = 0
-        custom_mappings = 0
+        controlled_mappings = 0
         conditional_mappings = 0
 
         for slot in self.slots:
             total_mappings += len(slot.mappings)
             for mapping in slot.mappings:
-                if mapping[KEY_MAPPING_TYPE] == str(SlotMappingType.CUSTOM):
-                    custom_mappings += 1
+                if mapping.type == SlotMappingType.CONTROLLED:
+                    controlled_mappings += 1
 
-                if MAPPING_CONDITIONS in mapping:
+                if mapping.conditions:
                     conditional_mappings += 1
 
-        return (total_mappings, custom_mappings, conditional_mappings)
+        return total_mappings, controlled_mappings, conditional_mappings
 
     def does_custom_action_explicitly_need_domain(self, action_name: Text) -> bool:
         """Assert if action has explicitly stated that it needs domain.

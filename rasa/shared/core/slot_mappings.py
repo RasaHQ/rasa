@@ -1,15 +1,20 @@
+from __future__ import annotations
+
+import copy
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, Union, cast
+
+from pydantic import BaseModel, Field
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_NLU_BASED_SLOTS, IGNORED_INTENTS
 from rasa.shared.core.constants import (
-    ACTIVE_FLOW,
     ACTIVE_LOOP,
+    KEY_ACTION,
     KEY_MAPPING_TYPE,
+    KEY_RUN_ACTION_EVERY_TURN,
     MAPPING_CONDITIONS,
     REQUESTED_SLOT,
-    SLOT_MAPPINGS,
     SlotMappingType,
 )
 from rasa.shared.core.slots import ListSlot, Slot
@@ -21,7 +26,6 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_VALUE,
     INTENT,
     INTENT_NAME_KEY,
-    NOT_INTENT,
     TEXT,
 )
 
@@ -35,11 +39,81 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class SlotMapping:
-    """Defines functionality for the available slot mappings."""
+class SlotMappingCondition(BaseModel):
+    """Defines a condition for a slot mapping."""
+
+    active_loop: Optional[str]
+    requested_slot: Optional[str] = None
+    active_flow: Optional[str] = None
 
     @staticmethod
-    def validate(mapping: Dict[Text, Any], slot_name: Text) -> None:
+    def from_dict(data: Dict[str, Any]) -> SlotMappingCondition:
+        # we allow None as a valid value for active_loop
+        # therefore we need to set a different default value
+        active_loop = data.pop(ACTIVE_LOOP, "")
+
+        return SlotMappingCondition(active_loop=active_loop, **data)
+
+    def as_dict(self) -> Dict[str, Any]:
+        return self.model_dump(exclude_none=True)
+
+
+class SlotMapping(BaseModel):
+    """Defines functionality for the available slot mappings."""
+
+    type: SlotMappingType
+    conditions: List[SlotMappingCondition] = Field(default_factory=list)
+    entity: Optional[str] = None
+    intent: Optional[Union[str, List[str]]] = None
+    role: Optional[str] = None
+    group: Optional[str] = None
+    not_intent: Optional[Union[str, List[str]]] = None
+    value: Optional[Any] = None
+    allow_nlu_correction: Optional[bool] = None
+    run_action_every_turn: Optional[str] = None
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any], slot_name: str) -> SlotMapping:
+        data_copy = copy.deepcopy(data)
+        mapping_type = SlotMapping.validate_mapping(data_copy, slot_name)
+        conditions = [
+            SlotMappingCondition.from_dict(condition)
+            for condition in data_copy.pop(MAPPING_CONDITIONS, [])
+        ]
+
+        deprecated_action = data_copy.pop(KEY_ACTION, None)
+        if deprecated_action:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"The `{KEY_ACTION}` key in slot mappings is deprecated and "
+                f"will be removed in Rasa Pro 4.0.0. "
+                f"Please use the `{KEY_RUN_ACTION_EVERY_TURN}` key instead.",
+            )
+            data_copy[KEY_RUN_ACTION_EVERY_TURN] = deprecated_action
+
+        run_action_every_turn = data_copy.pop(KEY_RUN_ACTION_EVERY_TURN, None)
+
+        return SlotMapping(
+            type=mapping_type,
+            conditions=conditions,
+            run_action_every_turn=run_action_every_turn,
+            **data_copy,
+        )
+
+    def as_dict(self) -> Dict[str, Any]:
+        data = self.model_dump(mode="json", exclude_none=True)
+        data[KEY_MAPPING_TYPE] = self.type.value
+
+        if self.conditions:
+            data[MAPPING_CONDITIONS] = [
+                condition.as_dict() for condition in self.conditions
+            ]
+        else:
+            data.pop(MAPPING_CONDITIONS, None)
+
+        return data
+
+    @staticmethod
+    def validate_mapping(mapping: Dict[str, Any], slot_name: str) -> SlotMappingType:
         """Validates a slot mapping.
 
         Args:
@@ -58,12 +132,22 @@ class SlotMapping:
                 f"{DOCS_URL_NLU_BASED_SLOTS} for more information."
             )
 
+        mapping_raw = mapping.pop(KEY_MAPPING_TYPE, SlotMappingType.FROM_LLM.value)
+
+        if mapping_raw == "custom":
+            rasa.shared.utils.io.raise_deprecation_warning(
+                "The `custom` slot mapping type is deprecated and "
+                "will be removed in Rasa Pro 4.0.0. "
+                "Please use the `controlled` slot mapping type instead.",
+            )
+            mapping_raw = "controlled"
+
         try:
-            mapping_type = SlotMappingType(mapping.get(KEY_MAPPING_TYPE))
+            mapping_type = SlotMappingType(mapping_raw)
         except ValueError:
             raise InvalidDomain(
                 f"Your domain uses an invalid slot mapping of type "
-                f"'{mapping.get(KEY_MAPPING_TYPE)}' for slot '{slot_name}'. Please see "
+                f"'{mapping_raw}' for slot '{slot_name}'. Please see "
                 f"{DOCS_URL_NLU_BASED_SLOTS} for more information."
             )
 
@@ -72,7 +156,7 @@ class SlotMapping:
             SlotMappingType.FROM_INTENT: ["value"],
             SlotMappingType.FROM_TRIGGER_INTENT: ["value"],
             SlotMappingType.FROM_TEXT: [],
-            SlotMappingType.CUSTOM: [],
+            SlotMappingType.CONTROLLED: [],
             SlotMappingType.FROM_LLM: [],
         }
 
@@ -86,19 +170,18 @@ class SlotMapping:
                     f"{DOCS_URL_NLU_BASED_SLOTS} for more information."
                 )
 
-    @staticmethod
-    def _get_active_loop_ignored_intents(
-        mapping: Dict[Text, Any], domain: "Domain", active_loop_name: Text
-    ) -> List[Text]:
-        from rasa.shared.core.constants import ACTIVE_LOOP
+        return mapping_type
 
-        mapping_conditions = mapping.get(MAPPING_CONDITIONS)
+    def _get_active_loop_ignored_intents(
+        self, domain: "Domain", active_loop_name: Text
+    ) -> List[Text]:
+        mapping_conditions = self.conditions
         active_loop_match = True
         ignored_intents = []
 
         if mapping_conditions:
             match_list = [
-                condition.get(ACTIVE_LOOP) == active_loop_name
+                condition.active_loop == active_loop_name
                 for condition in mapping_conditions
             ]
             active_loop_match = any(match_list)
@@ -111,24 +194,21 @@ class SlotMapping:
 
         return ignored_intents
 
-    @staticmethod
     def intent_is_desired(
-        mapping: Dict[Text, Any],
+        self,
         tracker: "DialogueStateTracker",
         domain: "Domain",
         message: Optional["Message"] = None,
     ) -> bool:
         """Checks whether user intent matches slot mapping intent specifications."""
-        mapping_intents = SlotMapping.to_list(mapping.get(INTENT, []))
-        mapping_not_intents = SlotMapping.to_list(mapping.get(NOT_INTENT, []))
+        mapping_intents = SlotMapping.to_list(self.intent)
+        mapping_not_intents = SlotMapping.to_list(self.not_intent)
 
         active_loop_name = tracker.active_loop_name
         if active_loop_name:
             mapping_not_intents = (
                 mapping_not_intents
-                + SlotMapping._get_active_loop_ignored_intents(
-                    mapping, domain, active_loop_name
-                )
+                + self._get_active_loop_ignored_intents(domain, active_loop_name)
             )
 
         if message is not None:
@@ -155,16 +235,14 @@ class SlotMapping:
 
         return x
 
-    @staticmethod
     def entity_is_desired(
-        mapping: Dict[Text, Any],
+        self,
         tracker: "DialogueStateTracker",
         message: Optional["Message"] = None,
     ) -> List[str]:
         """Checks whether slot should be filled by an entity in the input or not.
 
         Args:
-            mapping: Slot mapping.
             tracker: The tracker.
             message: The message being processed.
 
@@ -176,19 +254,16 @@ class SlotMapping:
             matching_values = [
                 cast(Text, entity[ENTITY_ATTRIBUTE_VALUE])
                 for entity in extracted_entities
-                if entity.get(ENTITY_ATTRIBUTE_TYPE)
-                == mapping.get(ENTITY_ATTRIBUTE_TYPE)
-                and entity.get(ENTITY_ATTRIBUTE_GROUP)
-                == mapping.get(ENTITY_ATTRIBUTE_GROUP)
-                and entity.get(ENTITY_ATTRIBUTE_ROLE)
-                == mapping.get(ENTITY_ATTRIBUTE_ROLE)
+                if entity.get(ENTITY_ATTRIBUTE_TYPE) == self.entity
+                and entity.get(ENTITY_ATTRIBUTE_GROUP) == self.group
+                and entity.get(ENTITY_ATTRIBUTE_ROLE) == self.role
             ]
         elif tracker.latest_message and tracker.latest_message.text is not None:
             matching_values = list(
                 tracker.get_latest_entity_values(
-                    mapping.get(ENTITY_ATTRIBUTE_TYPE),
-                    mapping.get(ENTITY_ATTRIBUTE_ROLE),
-                    mapping.get(ENTITY_ATTRIBUTE_GROUP),
+                    self.entity,
+                    self.role,
+                    self.group,
                 )
             )
         else:
@@ -196,66 +271,43 @@ class SlotMapping:
 
         return matching_values
 
-    @staticmethod
     def check_mapping_validity(
+        self,
         slot_name: Text,
-        mapping_type: SlotMappingType,
-        mapping: Dict[Text, Any],
         domain: "Domain",
     ) -> bool:
         """Checks the mapping for validity.
 
         Args:
             slot_name: The name of the slot to be validated.
-            mapping_type: The type of the slot mapping.
-            mapping: Slot mapping.
             domain: The domain to check against.
 
         Returns:
             True, if intent and entity specified in a mapping exist in domain.
         """
         if (
-            mapping_type == SlotMappingType.FROM_ENTITY
-            and mapping.get(ENTITY_ATTRIBUTE_TYPE) not in domain.entities
+            self.type == SlotMappingType.FROM_ENTITY
+            and self.entity not in domain.entities
         ):
             rasa.shared.utils.io.raise_warning(
                 f"Slot '{slot_name}' uses a 'from_entity' mapping "
-                f"for a non-existent entity '{mapping.get(ENTITY_ATTRIBUTE_TYPE)}'. "
+                f"for a non-existent entity '{self.entity}'. "
                 f"Skipping slot extraction because of invalid mapping."
             )
             return False
 
-        if (
-            mapping_type == SlotMappingType.FROM_INTENT
-            and mapping.get(INTENT) is not None
-        ):
-            intent_list = SlotMapping.to_list(mapping.get(INTENT))
+        if self.type == SlotMappingType.FROM_INTENT and self.intent is not None:
+            intent_list = SlotMapping.to_list(self.intent)
             for intent in intent_list:
                 if intent and intent not in domain.intents:
                     rasa.shared.utils.io.raise_warning(
                         f"Slot '{slot_name}' uses a 'from_intent' mapping for "
-                        f"a non-existent intent '{mapping.get('intent')}'. "
+                        f"a non-existent intent '{intent}'. "
                         f"Skipping slot extraction because of invalid mapping."
                     )
                     return False
 
         return True
-
-
-def validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
-    """Raises InvalidDomain exception if slot mappings are invalid."""
-    rasa.shared.utils.io.raise_warning(
-        f"Slot auto-fill has been removed in 3.0 and replaced with a "
-        f"new explicit mechanism to set slots. "
-        f"Please refer to {DOCS_URL_NLU_BASED_SLOTS} to learn more.",
-        UserWarning,
-    )
-
-    for slot_name, properties in domain_slots.items():
-        mappings = properties.get(SLOT_MAPPINGS, [])
-
-        for slot_mapping in mappings:
-            SlotMapping.validate(slot_mapping, slot_name)
 
 
 class SlotFillingManager:
@@ -276,41 +328,34 @@ class SlotFillingManager:
     def is_slot_mapping_valid(
         self,
         slot_name: str,
-        mapping_type: SlotMappingType,
-        mapping: Dict[str, Any],
+        mapping: SlotMapping,
     ) -> bool:
         """Check if a slot mapping is valid."""
-        return SlotMapping.check_mapping_validity(
+        return mapping.check_mapping_validity(
             slot_name=slot_name,
-            mapping_type=mapping_type,
-            mapping=mapping,
             domain=self.domain,
         )
 
-    def is_intent_desired(self, mapping: Dict[str, Any]) -> bool:
+    def is_intent_desired(self, mapping: SlotMapping) -> bool:
         """Check if the intent matches the one indicated in the slot mapping."""
-        return SlotMapping.intent_is_desired(
-            mapping=mapping,
+        return mapping.intent_is_desired(
             tracker=self.tracker,
             domain=self.domain,
             message=self.message,
         )
 
-    def _verify_mapping_conditions(
-        self, mapping: Dict[Text, Any], slot_name: Text
-    ) -> bool:
-        if mapping.get(MAPPING_CONDITIONS) and mapping[KEY_MAPPING_TYPE] != str(
+    def _verify_mapping_conditions(self, mapping: SlotMapping, slot_name: Text) -> bool:
+        if mapping.conditions and mapping.type != str(
             SlotMappingType.FROM_TRIGGER_INTENT
         ):
-            if not self._matches_mapping_conditions(mapping, slot_name):
-                return False
+            return self._matches_mapping_conditions(mapping, slot_name)
 
         return True
 
     def _matches_mapping_conditions(
-        self, mapping: Dict[Text, Any], slot_name: Text
+        self, mapping: SlotMapping, slot_name: Text
     ) -> bool:
-        slot_mapping_conditions = mapping.get(MAPPING_CONDITIONS)
+        slot_mapping_conditions = mapping.conditions
 
         if not slot_mapping_conditions:
             return True
@@ -328,20 +373,20 @@ class SlotFillingManager:
     @staticmethod
     def _mapping_conditions_match_flow(
         active_flow: str,
-        slot_mapping_conditions: List[Dict[str, str]],
+        slot_mapping_conditions: List[SlotMappingCondition],
     ) -> bool:
         active_flow_conditions = list(
-            filter(lambda x: x.get(ACTIVE_FLOW) is not None, slot_mapping_conditions)
+            filter(lambda x: x.active_flow is not None, slot_mapping_conditions)
         )
         return any(
             [
-                condition.get(ACTIVE_FLOW) == active_flow
+                condition.active_flow == active_flow
                 for condition in active_flow_conditions
             ]
         )
 
     def _mapping_conditions_match_form(
-        self, slot_name: str, slot_mapping_conditions: List[Dict[str, str]]
+        self, slot_name: str, slot_mapping_conditions: List[SlotMappingCondition]
     ) -> bool:
         if (
             self.tracker.is_active_loop_rejected
@@ -351,12 +396,10 @@ class SlotFillingManager:
 
         # check if found mapping conditions matches form
         for condition in slot_mapping_conditions:
-            # we allow None as a valid value for active_loop
-            # therefore we need to set a different default value
-            active_loop = condition.get(ACTIVE_LOOP, "")
+            active_loop = condition.active_loop
 
             if active_loop and active_loop == self.tracker.active_loop_name:
-                condition_requested_slot = condition.get(REQUESTED_SLOT)
+                condition_requested_slot = condition.requested_slot
                 if not condition_requested_slot:
                     return True
                 if condition_requested_slot == self.tracker.get_slot(REQUESTED_SLOT):
@@ -370,11 +413,11 @@ class SlotFillingManager:
     def _fails_unique_entity_mapping_check(
         self,
         slot_name: Text,
-        mapping: Dict[Text, Any],
+        mapping: SlotMapping,
     ) -> bool:
         from rasa.core.actions.forms import FormAction
 
-        if mapping[KEY_MAPPING_TYPE] != str(SlotMappingType.FROM_ENTITY):
+        if mapping.type != SlotMappingType.FROM_ENTITY:
             return False
 
         form_name = self.tracker.active_loop_name
@@ -395,12 +438,9 @@ class SlotFillingManager:
 
         return True
 
-    def _is_trigger_intent_mapping_condition_met(
-        self, mapping: Dict[Text, Any]
-    ) -> bool:
+    def _is_trigger_intent_mapping_condition_met(self, mapping: SlotMapping) -> bool:
         active_loops_in_mapping_conditions = [
-            condition.get(ACTIVE_LOOP)
-            for condition in mapping.get(MAPPING_CONDITIONS, [])
+            condition.active_loop for condition in mapping.conditions
         ]
 
         trigger_mapping_condition_met = True
@@ -421,7 +461,7 @@ class SlotFillingManager:
     def extract_slot_value_from_predefined_mapping(
         self,
         mapping_type: SlotMappingType,
-        mapping: Dict[Text, Any],
+        mapping: SlotMapping,
     ) -> List[Any]:
         """Extracts slot value if slot has an applicable predefined mapping."""
         if (
@@ -454,9 +494,9 @@ class SlotFillingManager:
         value: List[Any] = []
 
         if should_fill_entity_slot:
-            value = SlotMapping.entity_is_desired(mapping, self.tracker, self.message)
+            value = mapping.entity_is_desired(self.tracker, self.message)
         elif should_fill_intent_slot or should_fill_trigger_slot:
-            value = [mapping.get("value")]
+            value = [mapping.value]
         elif should_fill_text_slot:
             value = [self.message.get(TEXT)] if self.message is not None else []
             if not value:
@@ -468,11 +508,9 @@ class SlotFillingManager:
 
         return value
 
-    def should_fill_slot(
-        self, slot_name: str, mapping_type: SlotMappingType, mapping: Dict[Text, Any]
-    ) -> bool:
+    def should_fill_slot(self, slot_name: str, mapping: SlotMapping) -> bool:
         """Checks if a slot should be filled based on the conversation context."""
-        if not self.is_slot_mapping_valid(slot_name, mapping_type, mapping):
+        if not self.is_slot_mapping_valid(slot_name, mapping):
             return False
 
         if not self.is_intent_desired(mapping):
@@ -494,14 +532,12 @@ def extract_slot_value(
     is_extracted = False
 
     for mapping in slot.mappings:
-        mapping_type = SlotMappingType(
-            mapping.get(KEY_MAPPING_TYPE, SlotMappingType.FROM_LLM.value)
-        )
+        mapping_type = mapping.type
 
-        if mapping_type in [SlotMappingType.FROM_LLM, SlotMappingType.CUSTOM]:
+        if mapping_type in [SlotMappingType.FROM_LLM, SlotMappingType.CONTROLLED]:
             continue
 
-        if not slot_filling_manager.should_fill_slot(slot.name, mapping_type, mapping):
+        if not slot_filling_manager.should_fill_slot(slot.name, mapping):
             continue
 
         value: List[Any] = (

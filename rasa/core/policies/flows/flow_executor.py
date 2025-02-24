@@ -54,7 +54,9 @@ from rasa.dialogue_understanding.stack.utils import (
     user_flows_on_the_stack,
 )
 from rasa.shared.constants import RASA_PATTERN_HUMAN_HANDOFF
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, SlotMappingType
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+)
 from rasa.shared.core.events import (
     Event,
     FlowCompleted,
@@ -564,38 +566,6 @@ def cancel_flow_and_push_internal_error(stack: DialogueStack, flow_name: str) ->
     stack.push(InternalErrorPatternFlowStackFrame())
 
 
-def validate_custom_slot_mappings(
-    step: CollectInformationFlowStep,
-    stack: DialogueStack,
-    tracker: DialogueStateTracker,
-    available_actions: List[str],
-    flow_name: str,
-) -> bool:
-    """Validate a slot with custom mappings.
-
-    If invalid, trigger pattern_internal_error and return False.
-    """
-    slot = tracker.slots.get(step.collect, None)
-    slot_mappings = slot.mappings if slot else []
-    for mapping in slot_mappings:
-        if (
-            mapping.get("type") == SlotMappingType.CUSTOM.value
-            and mapping.get("action") is None
-        ):
-            # this is a slot that must be filled by a custom action
-            # check if collect_action exists
-            if step.collect_action not in available_actions:
-                structlogger.error(
-                    "flow.step.run.collect_action_not_found_for_custom_slot_mapping",
-                    action=step.collect_action,
-                    collect=step.collect,
-                )
-                cancel_flow_and_push_internal_error(stack, flow_name)
-                return False
-
-    return True
-
-
 def attach_stack_metadata_to_events(
     step_id: str,
     flow_id: str,
@@ -789,14 +759,6 @@ def _run_collect_information_step(
     )
 
     if not is_step_valid:
-        # if we return any other FlowStepResult, the assistant will stay silent
-        # instead of triggering the internal error pattern
-        return ContinueFlowWithNextStep(events=initial_events)
-    is_mapping_valid = validate_custom_slot_mappings(
-        step, stack, tracker, available_actions, flow_name
-    )
-
-    if not is_mapping_valid:
         # if we return any other FlowStepResult, the assistant will stay silent
         # instead of triggering the internal error pattern
         return ContinueFlowWithNextStep(events=initial_events)

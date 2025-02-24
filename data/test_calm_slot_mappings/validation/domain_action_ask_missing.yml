@@ -1,5 +1,0 @@
-slots:
-  card_number:
-    type: text
-    mappings:
-      - type: custom

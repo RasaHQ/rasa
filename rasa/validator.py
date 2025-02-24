@@ -35,10 +35,7 @@ from rasa.shared.core.command_payload_reader import (
     CommandPayloadReader,
 )
 from rasa.shared.core.constants import (
-    ACTIVE_LOOP,
     KEY_ALLOW_NLU_CORRECTION,
-    KEY_MAPPING_TYPE,
-    MAPPING_CONDITIONS,
     SlotMappingType,
 )
 from rasa.shared.core.domain import (
@@ -520,9 +517,9 @@ class Validator:
 
         for slot in self.domain.slots:
             for mapping in slot.mappings:
-                for condition in mapping.get(MAPPING_CONDITIONS, []):
-                    condition_active_loop = condition.get(ACTIVE_LOOP)
-                    mapping_type = SlotMappingType(mapping.get(KEY_MAPPING_TYPE))
+                for condition in mapping.conditions:
+                    condition_active_loop = condition.active_loop
+                    mapping_type = mapping.type
                     if (
                         condition_active_loop
                         and condition_active_loop not in self.domain.form_names
@@ -1395,28 +1392,14 @@ class Validator:
 
         for slot in self.domain._user_slots:
             nlu_mappings = any(
-                [
-                    SlotMappingType(
-                        mapping.get(KEY_MAPPING_TYPE, SlotMappingType.FROM_LLM.value)
-                    ).is_predefined_type()
-                    for mapping in slot.mappings
-                ]
+                [mapping.type.is_predefined_type() for mapping in slot.mappings]
             )
             llm_mappings = any(
-                [
-                    SlotMappingType(
-                        mapping.get(KEY_MAPPING_TYPE, SlotMappingType.FROM_LLM.value)
-                    )
-                    == SlotMappingType.FROM_LLM
-                    for mapping in slot.mappings
-                ]
+                [mapping.type == SlotMappingType.FROM_LLM for mapping in slot.mappings]
             )
-            custom_mappings = any(
+            controlled_mappings = any(
                 [
-                    SlotMappingType(
-                        mapping.get(KEY_MAPPING_TYPE, SlotMappingType.FROM_LLM.value)
-                    )
-                    == SlotMappingType.CUSTOM
+                    mapping.type == SlotMappingType.CONTROLLED
                     for mapping in slot.mappings
                 ]
             )
@@ -1424,7 +1407,7 @@ class Validator:
             all_good = self._allow_nlu_correction_is_valid(slot, nlu_mappings, all_good)
 
             all_good = self._custom_action_name_is_defined_in_the_domain(
-                custom_mappings, slot, all_good
+                controlled_mappings, slot, all_good
             )
 
             all_good = self._config_contains_nlu_command_adapter(
@@ -1448,11 +1431,8 @@ class Validator:
         invalid_usage = False
 
         for mapping in slot.mappings:
-            allow_nlu_correction = mapping.get(KEY_ALLOW_NLU_CORRECTION)
-            if (
-                allow_nlu_correction
-                and mapping.get(KEY_MAPPING_TYPE) != SlotMappingType.FROM_LLM.value
-            ):
+            allow_nlu_correction = mapping.allow_nlu_correction
+            if allow_nlu_correction and mapping.type != SlotMappingType.FROM_LLM:
                 invalid_usage = True
 
             if allow_nlu_correction and not nlu_mappings:
@@ -1487,55 +1467,32 @@ class Validator:
 
     def _custom_action_name_is_defined_in_the_domain(
         self,
-        custom_mappings: bool,
+        controlled_mappings: bool,
         slot: Slot,
         all_good: bool,
     ) -> bool:
-        if not custom_mappings:
+        if not controlled_mappings:
             return all_good
 
-        if not self.flows:
-            return all_good
-
-        is_custom_action_defined = any(
-            [
-                mapping.get("action") is not None
-                and mapping.get("action") in self.domain.action_names_or_texts
-                for mapping in slot.mappings
-            ]
-        )
-
-        if is_custom_action_defined:
-            return all_good
-
-        slot_collected_by_flows = any(
-            [
-                step.collect == slot.name
-                for flow in self.flows.underlying_flows
-                for step in flow.steps
-                if isinstance(step, CollectInformationFlowStep)
-            ]
-        )
-
-        if not slot_collected_by_flows:
-            # if the slot is not collected by any flow,
-            # it could be a DM1 custom slot
-            return all_good
-
-        custom_action_ask_name = f"action_ask_{slot.name}"
-        if custom_action_ask_name not in self.domain.action_names_or_texts:
-            structlogger.error(
-                "validator.validate_slot_mappings_in_CALM.custom_action_not_in_domain",
-                slot_name=slot.name,
-                event_info=(
-                    f"The slot '{slot.name}' has a custom slot mapping, but "
-                    f"neither the action '{custom_action_ask_name}' nor "
-                    f"another custom action are defined in the domain file. "
-                    f"Please add one of the actions to your domain file."
-                ),
-                docs_link=DOCS_URL_DOMAIN + "#custom-slot-mappings",
-            )
-            all_good = False
+        for mapping in slot.mappings:
+            if (
+                mapping.run_action_every_turn is not None
+                and mapping.run_action_every_turn
+                not in self.domain.action_names_or_texts
+            ):
+                structlogger.error(
+                    "validator.validate_slot_mappings_in_CALM.custom_action_not_in_domain",
+                    slot_name=slot.name,
+                    action_name=mapping.run_action_every_turn,
+                    event_info=(
+                        f"The slot '{slot.name}' has a custom action "
+                        f"'{mapping.run_action_every_turn}' "
+                        f"defined in its slot mappings, "
+                        f"but the action is not listed in the domain actions. "
+                        f"Please add the action to your domain file."
+                    ),
+                )
+                all_good = False
 
         return all_good
 

@@ -221,12 +221,7 @@ async def test_processor_handle_message_calm_slots_custom_action_invalid(
     mock_filter_flows: AsyncMock,
     llm_response_object: LLMResponse,
 ) -> None:
-    """Test that custom slot mappings are validated correctly.
-
-    If the custom action action_ask_<slot_name> is not defined in the domain,
-    FlowPolicy will first cancel the user flow in progress and then
-    trigger pattern_internal_error.
-    """
+    """Test that controlled slot mappings function correctly."""
     monkeypatch.setattr(
         "rasa.dialogue_understanding.coexistence.llm_based_router.LLMBasedRouter._generate_answer_using_llm",
         mock_llm_based_router_generate_answer_CALM,
@@ -248,30 +243,20 @@ async def test_processor_handle_message_calm_slots_custom_action_invalid(
 
     sender_id = uuid.uuid4().hex
     processor = calm_slot_mappings_agent.processor
-    slot_name = "is_member"
 
     tracker = await processor.get_tracker(sender_id)
     assert tracker.active_flow is None
 
-    user_msg = "I would like to login."
-    responses = await processor.handle_message(
-        UserMessage(user_msg, sender_id=sender_id)
-    )
-    assert (
-        responses[0].get("text")
-        == "Sorry, I am having trouble with that. Please try again in a few minutes."
-    )
-
-    tracker = await processor.get_tracker(sender_id)
-    assert tracker.get_slot(slot_name) is None
-    assert (
-        tracker.get_last_event_for(BotUttered).metadata.get("utter_action")
-        == "utter_can_do_something_else"
-    )
-
-    captured = capsys.readouterr()
-    debug_log = "flow.step.run.collect_action_not_found_for_custom_slot_mapping"
-    assert debug_log in captured.out
+    user_messages = [
+        "I would like to login.",
+        "/SetSlots(is_member=True)",
+    ]
+    bot_messages = ["Are you a member?", "You have successfully logged in."]
+    for i, msg in enumerate(user_messages):
+        responses = await processor.handle_message(
+            UserMessage(msg, sender_id=sender_id)
+        )
+        assert responses[0].get("text") == bot_messages[i]
 
 
 async def test_processor_handle_message_calm_corrections_for_NLU_slots(

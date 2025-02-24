@@ -319,8 +319,8 @@ def test_early_exit_on_invalid_domain():
         validator = Validator.from_importer(importer)
     validator.verify_domain_validity()
 
-    # one for non-unique domain and second one for auto-fill removal
-    assert len(record) == 2
+    # one for non-unique domain
+    assert len(record) == 1
 
     non_unique_warnings = list(
         filter(
@@ -332,15 +332,6 @@ def test_early_exit_on_invalid_domain():
         )
     )
     assert len(non_unique_warnings) == 1
-
-    auto_fill_warnings = list(
-        filter(
-            lambda warning: "Slot auto-fill has been removed in 3.0"
-            in warning.message.args[0],
-            record,
-        )
-    )
-    assert len(auto_fill_warnings) == 1
 
 
 def test_verify_there_is_not_example_repetition_in_intents():
@@ -2575,7 +2566,7 @@ def test_validate_custom_action_defined_in_the_domain(
 ) -> None:
     importer = RasaFileImporter(
         config_file="data/test_calm_slot_mappings/config.yml",
-        domain_path="data/test_calm_slot_mappings/validation/domain_action_ask_missing.yml",
+        domain_path="data/test_calm_slot_mappings/validation/domain_custom_action_missing.yml",
         training_data_paths=[
             "data/test_calm_slot_mappings/validation/flows.yml",
         ],
@@ -2590,10 +2581,12 @@ def test_validate_custom_action_defined_in_the_domain(
         "validator.validate_slot_mappings_in_CALM.custom_action_not_in_domain"
         in captured.out
     )
+
     assert (
-        "The slot 'card_number' has a custom slot mapping, but neither the "
-        "action 'action_ask_card_number' nor another custom action are defined "
-        "in the domain file. Please add one of the actions to your domain file."
+        "The slot 'card_number' has a custom action 'action_set_card_number' "
+        "defined in its slot mappings, but the "
+        "action is not listed in the domain actions. "
+        "Please add the action to your domain file."
     ) in captured.out
 
 

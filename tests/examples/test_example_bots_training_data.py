@@ -1,6 +1,5 @@
 import warnings
 from pathlib import Path
-from typing import Optional, Text
 
 import pytest
 
@@ -10,89 +9,18 @@ from tests.conftest import filter_expected_warnings
 
 
 @pytest.mark.flaky
-@pytest.mark.parametrize(
-    "config_file, domain_file, data_folder, raise_slot_warning, msg",
-    [
-        (
-            "examples/nlu_based/concertbot/config.yml",
-            "examples/nlu_based/concertbot/domain.yml",
-            "examples/nlu_based/concertbot/data",
-            True,
-            None,
-        ),
-        (
-            "examples/nlu_based/formbot/config.yml",
-            "examples/nlu_based/formbot/domain.yml",
-            "examples/nlu_based/formbot/data",
-            True,
-            None,
-        ),
-        (
-            "examples/nlu_based/knowledgebasebot/config.yml",
-            "examples/nlu_based/knowledgebasebot/domain.yml",
-            "examples/nlu_based/knowledgebasebot/data",
-            True,
-            "You are using an experimental feature: "
-            "Action 'action_query_knowledge_base'!",
-        ),
-        (
-            "data/test_moodbot/config.yml",
-            "data/test_moodbot/domain.yml",
-            "data/test_moodbot/data",
-            False,
-            None,
-        ),
-        (
-            "examples/nlu_based/reminderbot/config.yml",
-            "examples/nlu_based/reminderbot/domain.yml",
-            "examples/nlu_based/reminderbot/data",
-            True,
-            None,
-        ),
-        (
-            "examples/nlu_based/rules/config.yml",
-            "examples/nlu_based/rules/domain.yml",
-            "examples/nlu_based/rules/data",
-            True,
-            None,
-        ),
-    ],
-)
-def test_example_bot_training_data_raises_only_auto_fill_warning(
-    config_file: Text,
-    domain_file: Text,
-    data_folder: Text,
-    raise_slot_warning: bool,
-    msg: Optional[Text],
-):
+def test_example_bot_training_data_does_not_raise_warnings() -> None:
     importer = TrainingDataImporter.load_from_config(
-        config_file, domain_file, [data_folder]
+        "data/test_moodbot/config.yml",
+        "data/test_moodbot/domain.yml",
+        ["data/test_moodbot/data"],
     )
 
-    if raise_slot_warning:
-        with pytest.warns() as record:
-            warnings.simplefilter(action="ignore", category=DeprecationWarning)
+    with warnings.catch_warnings() as record:
+        importer.get_nlu_data()
+        importer.get_stories()
 
-            if msg is not None:
-                warnings.filterwarnings(action="ignore", message=msg)
-
-            importer.get_nlu_data()
-            importer.get_stories()
-
-        assert len(record) == 1
-        assert all(
-            [
-                "Slot auto-fill has been removed in 3.0 and replaced with "
-                "a new explicit mechanism to set slots." in r.message.args[0]
-                for r in record
-            ]
-        )
-    else:
-        with warnings.catch_warnings() as record:
-            importer.get_nlu_data()
-            importer.get_stories()
-
-        assert record is None
+    assert record is None
 
 
 def test_example_bot_training_on_initial_project(tmp_path: Path):

@@ -72,7 +72,6 @@ from rasa.shared.core.constants import (
     ACTION_UNLIKELY_INTENT_NAME,
     ACTION_VALIDATE_SLOT_MAPPINGS,
     DEFAULT_SLOT_NAMES,
-    KEY_MAPPING_TYPE,
     KNOWLEDGE_BASE_SLOT_NAMES,
     REQUESTED_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
@@ -112,6 +111,7 @@ if TYPE_CHECKING:
     from rasa.core.channels.channel import OutputChannel
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.shared.core.events import IntentPrediction
+    from rasa.shared.core.slot_mappings import SlotMapping
 
 logger = logging.getLogger(__name__)
 
@@ -1222,7 +1222,7 @@ class ActionExtractSlots(Action):
 
     async def _execute_custom_action(
         self,
-        mapping: Dict[Text, Any],
+        mapping: "SlotMapping",
         executed_custom_actions: Set[Text],
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
@@ -1230,7 +1230,7 @@ class ActionExtractSlots(Action):
         domain: "Domain",
         calm_custom_action_names: Optional[Set[str]] = None,
     ) -> Tuple[List[Event], Set[Text]]:
-        custom_action = mapping.get("action")
+        custom_action = mapping.run_action_every_turn
 
         if not custom_action or custom_action in executed_custom_actions:
             return [], executed_custom_actions
@@ -1331,10 +1331,9 @@ class ActionExtractSlots(Action):
                 slot_events.append(SlotSet(slot.name, slot_value))
 
             for mapping in slot.mappings:
-                mapping_type = SlotMappingType(mapping.get(KEY_MAPPING_TYPE))
-                should_fill_custom_slot = mapping_type == SlotMappingType.CUSTOM
+                should_fill_controlled_slot = mapping.type == SlotMappingType.CONTROLLED
 
-                if should_fill_custom_slot:
+                if should_fill_controlled_slot:
                     (
                         custom_evts,
                         executed_custom_actions,

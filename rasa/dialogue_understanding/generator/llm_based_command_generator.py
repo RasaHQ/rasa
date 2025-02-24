@@ -28,9 +28,7 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.constants import (
-    KEY_MAPPING_TYPE,
     SetSlotExtractor,
-    SlotMappingType,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import Flow, FlowsList, FlowStep
@@ -548,11 +546,8 @@ class LLMBasedCommandGenerator(
         for slot in llm_fillable_slots:
             should_fill_slot = False
             for mapping in slot.mappings:  # type: ignore[union-attr]
-                mapping_type = SlotMappingType(mapping.get(KEY_MAPPING_TYPE))
-
                 should_fill_slot = slot_filling_manager.should_fill_slot(
                     slot.name,  # type: ignore[union-attr]
-                    mapping_type,
                     mapping,
                 )
 

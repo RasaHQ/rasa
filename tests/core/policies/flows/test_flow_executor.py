@@ -13,7 +13,6 @@ from rasa.core.policies.flows.flow_exceptions import (
 from rasa.core.policies.flows.flow_executor import (
     select_next_step,
     validate_collect_step,
-    validate_custom_slot_mappings,
 )
 from rasa.core.policies.flows.flow_step_result import (
     ContinueFlowWithNextStep,
@@ -1892,71 +1891,6 @@ def test_flow_executor_is_condition_satisfied_with_categorical_slots(
 
     context = {}
     assert flow_executor.is_condition_satisfied(predicate, context, tracker) == expected
-
-
-def test_flow_executor_validate_custom_slot_mappings_valid() -> None:
-    domain = Domain.from_yaml(
-        """
-    slots:
-        loyalty_points:
-            type: float
-            mappings:
-                - type: custom
-    actions:
-        - action_ask_loyalty_points
-    """
-    )
-    step = CollectInformationFlowStep.from_json(
-        "my_flow", {"collect": "loyalty_points"}
-    )
-    stack = DialogueStack(frames=[UserFlowStackFrame(flow_id="my_flow", step_id="1")])
-    tracker = DialogueStateTracker.from_events("test", [], slots=domain.slots)
-    tracker.update_stack(stack)
-
-    is_valid = validate_custom_slot_mappings(
-        step, stack, tracker, domain.action_names_or_texts, flow_name="my flow"
-    )
-
-    assert is_valid
-    assert stack.current_context().get("flow_id") == "my_flow"
-
-
-def test_flow_executor_validate_custom_slot_mappings_invalid() -> None:
-    domain = Domain.from_yaml(
-        """
-    slots:
-        loyalty_points:
-            type: float
-            mappings:
-                - type: custom
-    responses:
-        utter_ask_loyalty_points:
-            - text: "Let's proceed checking how many loyalty points you have."
-    """
-    )
-    step = CollectInformationFlowStep.from_json(
-        "my_flow", {"collect": "loyalty_points"}
-    )
-    stack = DialogueStack(frames=[UserFlowStackFrame(flow_id="my_flow", step_id="1")])
-    tracker = DialogueStateTracker.from_events("test", [], slots=domain.slots)
-    tracker.update_stack(stack)
-
-    is_valid = validate_custom_slot_mappings(
-        step, stack, tracker, domain.action_names_or_texts, flow_name="my flow"
-    )
-
-    assert not is_valid
-    assert stack.current_context().get("flow_id") == "pattern_internal_error"
-
-    bottom_frame = stack.frames[0]
-    assert isinstance(bottom_frame, UserFlowStackFrame)
-    assert bottom_frame.flow_id == "my_flow"
-    assert bottom_frame.step_id == "1"
-
-    next_frame = stack.frames[1]
-    assert isinstance(next_frame, BaseFlowStackFrame)
-    assert next_frame.flow_id == "pattern_cancel_flow"
-    assert next_frame.canceled_name == "my flow"
 
 
 def test_flow_executor_validate_collect_step_invalid() -> None:

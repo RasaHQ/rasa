@@ -60,8 +60,10 @@ class Slot(ABC):
                 dm1 or CALM finishes.
             filled_by: The name of the extractor that fills the slot.
         """
+        from rasa.shared.core.slot_mappings import SlotMapping
+
         self.name = name
-        self.mappings = mappings
+        self.mappings = [SlotMapping.from_dict(mapping, name) for mapping in mappings]
         self._value = initial_value
         self.initial_value = initial_value
         self._value_reset_delay = value_reset_delay
@@ -193,7 +195,7 @@ class Slot(ABC):
             "type": rasa.shared.utils.common.module_path_from_instance(self),
             "initial_value": self.initial_value,
             "influence_conversation": self.influence_conversation,
-            "mappings": self.mappings,
+            "mappings": [mapping.as_dict() for mapping in self.mappings],
         }
 
     def fingerprint(self) -> Text:
