@@ -2,6 +2,7 @@ import importlib.resources
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import structlog
+from deprecated import deprecated  # type: ignore[import]
 from jinja2 import Template
 
 import rasa.shared.utils.io
@@ -51,7 +52,7 @@ from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.llm.llm_response import LLMResponse
-from rasa.shared.utils.io import deep_container_fingerprint
+from rasa.shared.utils.io import deep_container_fingerprint, raise_deprecation_warning
 from rasa.shared.utils.llm import (
     allowed_values_for_slot,
     get_prompt_template,
@@ -100,6 +101,12 @@ structlogger = structlog.get_logger()
     ],
     is_trainable=True,
 )
+@deprecated(
+    reason=(
+        "The MultiStepLLMCommandGenerator is deprecated and will be removed in "
+        "Rasa `4.0.0`."
+    )
+)
 class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
     """An multi step command generator using LLM."""
 
@@ -111,6 +118,14 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         prompt_templates: Optional[Dict[Text, Optional[Text]]] = None,
         **kwargs: Any,
     ) -> None:
+        raise_deprecation_warning(
+            message=(
+                "Support for `MultiStepLLMCommandGenerator` will be removed in Rasa "
+                "`4.0.0`. Please modify your assistant's configuration to use other "
+                "LLM command generators like the `SingleStepLLMCommandGenerator`."
+            )
+        )
+
         super().__init__(
             config, model_storage, resource, prompt_templates=prompt_templates, **kwargs
         )
@@ -120,7 +135,6 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             FILL_SLOTS_KEY: None,
         }
         self._init_prompt_templates(prompt_templates)
-
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
 
     ### Implementations of LLMBasedCommandGenerator parent

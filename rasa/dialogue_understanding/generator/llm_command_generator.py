@@ -25,7 +25,7 @@ structlogger = structlog.get_logger()
 @deprecated(
     reason=(
         "The LLMCommandGenerator is deprecated and will be removed in Rasa 4.0.0. "
-        "Please use use SingleStepLLMCommandGenerator instead."
+        "Please use SingleStepLLMCommandGenerator instead."
     )
 )
 class LLMCommandGenerator(SingleStepLLMCommandGenerator):
