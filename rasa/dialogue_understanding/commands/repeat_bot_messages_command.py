@@ -5,6 +5,10 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 from rasa.dialogue_understanding.commands.command import Command
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.dialogue_understanding.patterns.repeat import (
     RepeatBotMessagesPatternFlowStackFrame,
 )
@@ -60,7 +64,14 @@ class RepeatBotMessagesCommand(Command):
 
     def to_dsl(self) -> str:
         """Converts the command to a DSL string."""
-        return "RepeatLastBotMessages()"
+        mapper = {
+            CommandSyntaxVersion.v1: "RepeatLastBotMessages()",
+            CommandSyntaxVersion.v2: "repeat message",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )
 
     @classmethod
     def from_dsl(cls, match: re.Match, **kwargs: Any) -> RepeatBotMessagesCommand:
@@ -69,4 +80,11 @@ class RepeatBotMessagesCommand(Command):
 
     @staticmethod
     def regex_pattern() -> str:
-        return r"RepeatLastBotMessages\(\)"
+        mapper = {
+            CommandSyntaxVersion.v1: r"RepeatLastBotMessages\(\)",
+            CommandSyntaxVersion.v2: r"^repeat message$",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )

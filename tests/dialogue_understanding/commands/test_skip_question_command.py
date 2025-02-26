@@ -1,4 +1,8 @@
 from rasa.dialogue_understanding.commands import SkipQuestionCommand
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.dialogue_understanding.patterns.skip_question import (
     FLOW_PATTERN_SKIP_QUESTION,
 )
@@ -74,7 +78,7 @@ def test_run_command_on_tracker():
     assert frame.step_id == "START"
 
 
-def test_to_dsl():
+def test_to_dsl_default():
     command = SkipQuestionCommand()
     assert command.to_dsl() == "SkipQuestion()"
 
@@ -83,5 +87,26 @@ def test_from_dsl():
     assert SkipQuestionCommand.from_dsl(None) == SkipQuestionCommand()
 
 
-def test_regex_pattern():
+def test_regex_pattern_default():
     assert SkipQuestionCommand.regex_pattern() == r"SkipQuestion\(\)"
+
+
+def test_to_dsl_v2_command_syntax():
+    # Set the syntax version to v2 to test the DSL.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    command = SkipQuestionCommand()
+    assert command.to_dsl() == "skip"
+
+    # Reset the syntax version to the default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
+def test_regex_pattern_v2_command_syntax():
+    # Set the syntax version to v2 to test the new regex pattern.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    assert SkipQuestionCommand.regex_pattern() == r"^skip$"
+
+    # Reset the syntax version to the default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()

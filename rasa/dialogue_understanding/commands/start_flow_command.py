@@ -7,6 +7,10 @@ from typing import Any, Dict, List, Optional
 import structlog
 
 from rasa.dialogue_understanding.commands.command import Command
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.dialogue_understanding.patterns.clarify import FLOW_PATTERN_CLARIFICATION
 from rasa.dialogue_understanding.patterns.continue_interrupted import (
     ContinueInterruptedPatternFlowStackFrame,
@@ -119,7 +123,14 @@ class StartFlowCommand(Command):
 
     def to_dsl(self) -> str:
         """Converts the command to a DSL string."""
-        return f"StartFlow({self.flow})"
+        mapper = {
+            CommandSyntaxVersion.v1: f"StartFlow({self.flow})",
+            CommandSyntaxVersion.v2: f"start {self.flow}",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )
 
     @classmethod
     def from_dsl(cls, match: re.Match, **kwargs: Any) -> Optional[StartFlowCommand]:
@@ -128,7 +139,14 @@ class StartFlowCommand(Command):
 
     @staticmethod
     def regex_pattern() -> str:
-        return r"StartFlow\(['\"]?([a-zA-Z0-9_-]+)['\"]?\)"
+        mapper = {
+            CommandSyntaxVersion.v1: r"StartFlow\(['\"]?([a-zA-Z0-9_-]+)['\"]?\)",
+            CommandSyntaxVersion.v2: r"^start ['\"]?([a-zA-Z0-9_-]+)['\"]?$",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )
 
     def change_flow_frame_position_in_the_stack(
         self, stack: DialogueStack, tracker: DialogueStateTracker

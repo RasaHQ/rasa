@@ -7,6 +7,10 @@ from typing import Any, Dict, List, Optional
 import structlog
 
 from rasa.dialogue_understanding.commands.command import Command
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.dialogue_understanding.commands.utils import extract_cleaned_options
 from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
 from rasa.shared.core.events import Event
@@ -89,7 +93,14 @@ class ClarifyCommand(Command):
 
     def to_dsl(self) -> str:
         """Converts the command to a DSL string."""
-        return f"Clarify({', '.join(self.options)})"
+        mapper = {
+            CommandSyntaxVersion.v1: f"Clarify({', '.join(self.options)})",
+            CommandSyntaxVersion.v2: f"disambiguate flows {' '.join(self.options)}",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )
 
     @classmethod
     def from_dsl(cls, match: re.Match, **kwargs: Any) -> Optional[ClarifyCommand]:
@@ -99,4 +110,11 @@ class ClarifyCommand(Command):
 
     @staticmethod
     def regex_pattern() -> str:
-        return r"Clarify\(([\"\'a-zA-Z0-9_, ]*)\)"
+        mapper = {
+            CommandSyntaxVersion.v1: r"Clarify\(([\"\'a-zA-Z0-9_, ]*)\)",
+            CommandSyntaxVersion.v2: r"^disambiguate flows([\"\'a-zA-Z0-9_, ]*)$",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )

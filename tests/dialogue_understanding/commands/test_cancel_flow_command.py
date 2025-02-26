@@ -4,6 +4,10 @@ import jsonpatch
 import pytest
 
 from rasa.dialogue_understanding.commands.cancel_flow_command import CancelFlowCommand
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
@@ -168,7 +172,7 @@ def test_select_canceled_frames_raises_if_frame_not_found():
         CancelFlowCommand.select_canceled_frames(stack)
 
 
-def test_to_dsl():
+def test_to_dsl_default():
     command = CancelFlowCommand()
     assert command.to_dsl() == "CancelFlow()"
 
@@ -177,8 +181,29 @@ def test_from_dsl():
     assert CancelFlowCommand.from_dsl(None) == CancelFlowCommand()
 
 
-def test_regex_pattern():
+def test_regex_pattern_default():
     assert CancelFlowCommand.regex_pattern() == r"CancelFlow\(\)"
+
+
+def test_to_dsl_v2_command_syntax():
+    # Set the syntax version to v2 to test the DSL.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    command = CancelFlowCommand()
+    assert command.to_dsl() == "cancel"
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
+def test_regex_pattern_v2_command_syntax():
+    # Set the syntax version to v2 to test the new regex pattern.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    assert CancelFlowCommand.regex_pattern() == r"^cancel$"
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
 
 
 def test_run_command_on_tracker_during_clarify():

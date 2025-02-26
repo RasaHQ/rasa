@@ -3,6 +3,10 @@ from typing import Any, List
 
 import pytest
 
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.dialogue_understanding.commands.set_slot_command import (
     Command,
     SetSlotCommand,
@@ -442,9 +446,40 @@ def test_run_command_on_tracker_slot_value_is_coerced_to_right_type(
     assert events == [SlotSet(command.name, expected_value)]
 
 
-def test_to_dsl():
+def test_to_dsl_default():
     command = SetSlotCommand("foo", "bar")
     assert command.to_dsl() == "SetSlot(foo, bar)"
+
+
+def test_to_dsl_v2_command_syntax():
+    # Set the syntax version to v2 to test the DSL.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    command = SetSlotCommand("foo", "bar")
+    assert command.to_dsl() == "set foo bar"
+
+    # Reset the syntax version to the default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
+def test_regex_pattern_default():
+    assert (
+        SetSlotCommand.regex_pattern()
+        == r"""SetSlot\(['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]?, ?['"]?(.*)['"]?\)"""
+    )
+
+
+def test_regex_pattern_v2_command_syntax():
+    # Set the syntax version to v2 to test the new regex pattern.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    assert (
+        SetSlotCommand.regex_pattern()
+        == r"""^set ['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]? ['"]?(.+?)['"]?$"""
+    )
+
+    # Reset the syntax version to the default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
 
 
 def test_from_dsl():

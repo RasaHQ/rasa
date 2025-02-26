@@ -8,12 +8,14 @@ from typing import Any, Dict, List
 import structlog
 
 from rasa.dialogue_understanding.commands.command import Command
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames import (
-    UserFlowStackFrame,
-)
+from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import FlowStackFrameType
 from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
 from rasa.shared.core.events import Event, FlowCancelled
@@ -144,7 +146,14 @@ class CancelFlowCommand(Command):
 
     def to_dsl(self) -> str:
         """Converts the command to a DSL string."""
-        return "CancelFlow()"
+        mapper = {
+            CommandSyntaxVersion.v1: "CancelFlow()",
+            CommandSyntaxVersion.v2: "cancel",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )
 
     @classmethod
     def from_dsl(cls, match: re.Match, **kwargs: Any) -> CancelFlowCommand:
@@ -153,7 +162,14 @@ class CancelFlowCommand(Command):
 
     @staticmethod
     def regex_pattern() -> str:
-        return r"CancelFlow\(\)"
+        mapper = {
+            CommandSyntaxVersion.v1: r"CancelFlow\(\)",
+            CommandSyntaxVersion.v2: r"^cancel$",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )
 
 
 def cancel_all_pending_clarification_options(

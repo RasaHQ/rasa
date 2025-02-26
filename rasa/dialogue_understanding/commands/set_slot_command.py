@@ -7,6 +7,10 @@ from typing import Any, Dict, List
 import structlog
 
 from rasa.dialogue_understanding.commands.command import Command
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.dialogue_understanding.commands.utils import (
     clean_extracted_value,
     get_nullable_slot_value,
@@ -162,7 +166,14 @@ class SetSlotCommand(Command):
 
     def to_dsl(self) -> str:
         """Converts the command to a DSL string."""
-        return f"SetSlot({self.name}, {self.value})"
+        mapper = {
+            CommandSyntaxVersion.v1: f"SetSlot({self.name}, {self.value})",
+            CommandSyntaxVersion.v2: f"set {self.name} {self.value}",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )
 
     @classmethod
     def from_dsl(cls, match: re.Match, **kwargs: Any) -> SetSlotCommand:
@@ -173,4 +184,15 @@ class SetSlotCommand(Command):
 
     @staticmethod
     def regex_pattern() -> str:
-        return r"""SetSlot\(['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]?, ?['"]?(.*)['"]?\)"""
+        mapper = {
+            CommandSyntaxVersion.v1: (
+                r"""SetSlot\(['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]?, ?['"]?(.*)['"]?\)"""
+            ),
+            CommandSyntaxVersion.v2: (
+                r"""^set ['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]? ['"]?(.+?)['"]?$"""
+            ),
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )

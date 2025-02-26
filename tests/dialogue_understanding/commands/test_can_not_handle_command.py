@@ -1,6 +1,10 @@
 from rasa.dialogue_understanding.commands.can_not_handle_command import (
     CannotHandleCommand,
 )
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.dialogue_understanding.patterns.cannot_handle import (
     FLOW_PATTERN_CANNOT_HANDLE,
     CannotHandlePatternFlowStackFrame,
@@ -56,7 +60,7 @@ def test_run_command_on_tracker():
     assert frame.step_id == "START"
 
 
-def test_to_dsl():
+def test_to_dsl_default():
     command = CannotHandleCommand("test_reason")
     assert command.to_dsl() == "CannotHandle()"
 
@@ -65,5 +69,26 @@ def test_from_dsl():
     assert CannotHandleCommand.from_dsl(None) == CannotHandleCommand()
 
 
-def test_regex_pattern():
+def test_regex_pattern_default():
     assert CannotHandleCommand.regex_pattern() == r"CannotHandle\(\)"
+
+
+def test_to_dsl_v2_command_syntax():
+    # Set the syntax version to v2 to test the DSL.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    command = CannotHandleCommand("test_reason")
+    assert command.to_dsl() == "cannot handle"
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
+def test_regex_pattern_v2_command_syntax():
+    # Set the syntax version to v2 to test the new regex pattern.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    assert CannotHandleCommand.regex_pattern() == r"^cannot handle$"
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()

@@ -7,6 +7,10 @@ from typing import Any, Dict, List
 import structlog
 
 from rasa.dialogue_understanding.commands.command import Command
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.dialogue_understanding.patterns.skip_question import (
     SkipQuestionPatternFlowStackFrame,
 )
@@ -75,7 +79,14 @@ class SkipQuestionCommand(Command):
 
     def to_dsl(self) -> str:
         """Converts the command to a DSL string."""
-        return "SkipQuestion()"
+        mapper = {
+            CommandSyntaxVersion.v1: "SkipQuestion()",
+            CommandSyntaxVersion.v2: "skip",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )
 
     @classmethod
     def from_dsl(cls, match: re.Match, **kwargs: Any) -> SkipQuestionCommand:
@@ -84,4 +95,11 @@ class SkipQuestionCommand(Command):
 
     @staticmethod
     def regex_pattern() -> str:
-        return r"SkipQuestion\(\)"
+        mapper = {
+            CommandSyntaxVersion.v1: r"SkipQuestion\(\)",
+            CommandSyntaxVersion.v2: r"^skip$",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )

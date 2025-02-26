@@ -4,6 +4,10 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.dialogue_understanding.commands.free_form_answer_command import (
     FreeFormAnswerCommand,
 )
@@ -59,7 +63,14 @@ class ChitChatAnswerCommand(FreeFormAnswerCommand):
 
     def to_dsl(self) -> str:
         """Converts the command to a DSL string."""
-        return "ChitChat()"
+        mapper = {
+            CommandSyntaxVersion.v1: "ChitChat()",
+            CommandSyntaxVersion.v2: "chat",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )
 
     @classmethod
     def from_dsl(cls, match: re.Match, **kwargs: Any) -> ChitChatAnswerCommand:
@@ -68,4 +79,11 @@ class ChitChatAnswerCommand(FreeFormAnswerCommand):
 
     @staticmethod
     def regex_pattern() -> str:
-        return r"ChitChat\(\)"
+        mapper = {
+            CommandSyntaxVersion.v1: r"ChitChat\(\)",
+            CommandSyntaxVersion.v2: r"^chat$",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )

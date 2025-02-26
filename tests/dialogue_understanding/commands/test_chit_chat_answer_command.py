@@ -3,6 +3,10 @@ import jsonpatch
 from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
     ChitChatAnswerCommand,
 )
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.shared.core.events import DialogueStackUpdated, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -41,7 +45,7 @@ def test_run_command_on_tracker():
     assert frame["type"] == "pattern_chitchat"
 
 
-def test_to_dsl():
+def test_to_dsl_default():
     command = ChitChatAnswerCommand()
     assert command.to_dsl() == "ChitChat()"
 
@@ -50,5 +54,26 @@ def test_from_dsl():
     assert ChitChatAnswerCommand.from_dsl(None) == ChitChatAnswerCommand()
 
 
-def test_regex_pattern():
+def test_regex_pattern_default():
     assert ChitChatAnswerCommand.regex_pattern() == r"ChitChat\(\)"
+
+
+def test_to_dsl_v2_command_syntax():
+    # Set the syntax version to v2 to test the DSL.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    command = ChitChatAnswerCommand()
+    assert command.to_dsl() == "chat"
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
+def test_regex_pattern_v2_command_syntax():
+    # Set the syntax version to v2 to test the new regex pattern.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    assert ChitChatAnswerCommand.regex_pattern() == r"^chat$"
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()

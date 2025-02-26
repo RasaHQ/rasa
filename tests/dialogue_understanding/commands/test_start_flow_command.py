@@ -2,6 +2,10 @@ import re
 
 import pytest
 
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
 from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
@@ -232,15 +236,36 @@ def test_run_start_flow_with_multiple_flows():
     assert updated_stack.frames[0].flow_id == "bar"
 
 
-def test_to_dsl():
+def test_to_dsl_default():
     command = StartFlowCommand("foo")
     assert command.to_dsl() == "StartFlow(foo)"
 
 
-def test_regex_pattern():
+def test_regex_pattern_default():
     assert (
         StartFlowCommand.regex_pattern() == r"StartFlow\(['\"]?([a-zA-Z0-9_-]+)['\"]?\)"
     )
+
+
+def test_to_dsl_v2_command_syntax():
+    # Set the syntax version to v2 to test the DSL.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    command = StartFlowCommand("foo")
+    assert command.to_dsl() == "start foo"
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
+def test_regex_pattern_v2_command_syntax():
+    # Set the syntax version to v2 to test the new regex pattern.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    assert StartFlowCommand.regex_pattern() == r"^start ['\"]?([a-zA-Z0-9_-]+)['\"]?$"
+
+    # Reset the syntax version to the default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
 
 
 def test_from_dsl():

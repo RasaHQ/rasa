@@ -5,6 +5,10 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 from rasa.dialogue_understanding.commands.command import Command
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -48,7 +52,14 @@ class ChangeFlowCommand(Command):
 
     def to_dsl(self) -> str:
         """Converts the command to a DSL string."""
-        return "ChangeFlow()"
+        mapper = {
+            CommandSyntaxVersion.v1: "ChangeFlow()",
+            CommandSyntaxVersion.v2: "change",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )
 
     @staticmethod
     def from_dsl(match: re.Match, **kwargs: Any) -> ChangeFlowCommand:
@@ -57,4 +68,11 @@ class ChangeFlowCommand(Command):
 
     @staticmethod
     def regex_pattern() -> str:
-        return r"ChangeFlow\(\)"
+        mapper = {
+            CommandSyntaxVersion.v1: r"ChangeFlow\(\)",
+            CommandSyntaxVersion.v2: r"^change",
+        }
+        return mapper.get(
+            CommandSyntaxManager.get_syntax_version(),
+            mapper[CommandSyntaxManager.get_default_syntax_version()],
+        )

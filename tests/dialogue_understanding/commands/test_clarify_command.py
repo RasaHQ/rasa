@@ -2,6 +2,10 @@ import jsonpatch
 import pytest
 
 from rasa.dialogue_understanding.commands.clarify_command import ClarifyCommand
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
 from rasa.shared.core.events import DialogueStackUpdated
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.utilities import flows_from_str
@@ -127,6 +131,33 @@ def test_clarify_command_hash_not_equal():
     assert command.options != other_command.options
 
 
-def test_to_dsl():
+def test_to_dsl_default():
     command = ClarifyCommand(options=["foo", "bar", "baz"])
     assert command.to_dsl() == "Clarify(foo, bar, baz)"
+
+
+def test_to_dsl_v2_command_syntax():
+    # Set the syntax version to v2 to test the DSL.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    command = ClarifyCommand(options=["foo", "bar", "baz"])
+    assert command.to_dsl() == "disambiguate flows foo bar baz"
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
+def test_regex_pattern_default():
+    assert ClarifyCommand.regex_pattern() == r"Clarify\(([\"\'a-zA-Z0-9_, ]*)\)"
+
+
+def test_regex_pattern_v2_command_syntax():
+    # Set the syntax version to v2 to test the new regex pattern.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    assert (
+        ClarifyCommand.regex_pattern() == r"^disambiguate flows([\"\'a-zA-Z0-9_, ]*)$"
+    )
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
