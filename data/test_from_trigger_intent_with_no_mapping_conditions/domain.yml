@@ -8,6 +8,8 @@ intents:
 - greet
 - mood_great
 - mood_unhappy
+- activate_form
+
 slots:
   test_trigger:
     type: text
@@ -15,7 +17,7 @@ slots:
     mappings:
     - type: from_trigger_intent
       value: testing123
-      intent: mood_great
+      intent: activate_form
   question1:
     type: text
     influence_conversation: false

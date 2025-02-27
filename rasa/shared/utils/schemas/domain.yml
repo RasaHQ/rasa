@@ -98,6 +98,11 @@ mapping:
                     type: "any"
                   action:
                     type: "str"
+                  run_action_every_turn:
+                    type: "str"
+                  coexistence_system:
+                    type: "str"
+                    enum: ["NLU", "CALM", "SHARED"]
                   conditions:
                     type: "seq"
                     sequence:

@@ -6,10 +6,9 @@ from typing import Any, Dict, List, Optional, Text
 from unittest.mock import MagicMock, Mock
 
 import pytest
-from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
 from jsonschema import ValidationError
-from pytest import MonkeyPatch
+from pytest import CaptureFixture, LogCaptureFixture, MonkeyPatch
 
 import rasa.core
 import rasa.shared.utils.common
@@ -38,6 +37,7 @@ from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.channels.slack import SlackBot
 from rasa.core.constants import (
     COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
+    KEY_IS_CALM_SYSTEM,
     UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -2370,7 +2370,7 @@ async def test_action_extract_slots_disallowed_events(caplog: LogCaptureFixture)
     ],
 )
 async def test_action_extract_slots_warns_custom_action_exceptions(
-    caplog: LogCaptureFixture, exception: Exception
+    capsys: CaptureFixture, exception: Exception
 ):
     domain_yaml = textwrap.dedent(
         f"""
@@ -2400,19 +2400,18 @@ async def test_action_extract_slots_warns_custom_action_exceptions(
         action_server = EndpointConfig(action_server_url)
         action_extract_slots = ActionExtractSlots(action_server)
 
-        with caplog.at_level(logging.WARNING):
-            await action_extract_slots.run(
-                CollectingOutputChannel(),
-                TemplatedNaturalLanguageGenerator(domain.responses),
-                tracker,
-                domain,
-            )
+        await action_extract_slots.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
 
+        captured = capsys.readouterr()
         assert any(
             [
                 "The default action 'action_extract_slots' failed to fill "
-                "slots with custom mappings." in message
-                for message in caplog.messages
+                "slots with custom mappings." in captured.out
             ]
         )
 
@@ -3145,8 +3144,8 @@ async def test_action_extract_slots_with_flows_metadata(
 ):
     """Test that the action `action_extract_slots` can handle metadata with flows.
 
-    The action should not extract slots that are collected by flows or actions that are
-    run within flows.
+    The action should not extract slots that are collected by flows
+    if they are not shared for coexistence.
     """
     slot_name = "store_location"
     action_name = "action_find_closest_store"
@@ -3158,15 +3157,19 @@ async def test_action_extract_slots_with_flows_metadata(
           {slot_name}:
             type: text
             mappings:
-            - type: custom
-              action: {action_name}
+            - type: controlled
+              run_action_every_turn: {action_name}
 
         actions:
         - {action_name}"""
     )
     domain = Domain.from_yaml(domain_yaml)
 
-    metadata = {"all_flows": {"find_store": {"steps": [{"action": action_name}]}}}
+    metadata = {
+        "all_flows": {"find_store": {"steps": [{"collect": slot_name}]}},
+        "is_calm_system": False,
+        "is_coexistence_assistant": True,
+    }
 
     event = UserUttered("Hi")
     tracker = DialogueStateTracker.from_events(
@@ -3205,6 +3208,153 @@ async def test_action_extract_slots_with_flows_metadata(
             ]
         )
         assert events == []
+
+
+@pytest.mark.parametrize(
+    "coexistence_system, is_calm_system", [("CALM", False), ("NLU", True)]
+)
+async def test_action_extract_slots_run_action_every_turn_calm_slot_in_coexistence(
+    caplog: LogCaptureFixture,
+    monkeypatch: MonkeyPatch,
+    coexistence_system: str,
+    is_calm_system: bool,
+):
+    """Test the action `action_extract_slots` in a coexistence scenario.
+
+    The action should not extract slots that are not shared for coexistence
+    when the subsystem that should be filling them is not active
+    for that conversation turn.
+    """
+    slot_name = "store_location"
+    action_name = "action_find_closest_store"
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        slots:
+          {slot_name}:
+            type: text
+            mappings:
+            - type: controlled
+              run_action_every_turn: {action_name}
+              coexistence_system: {coexistence_system}
+
+        actions:
+        - {action_name}"""
+    )
+    domain = Domain.from_yaml(domain_yaml)
+
+    metadata = {
+        "all_flows": {"welcome": {"steps": [{"action": "action_listen"}]}},
+        "is_calm_system": is_calm_system,
+        "is_coexistence_assistant": True,
+    }
+
+    event = UserUttered("Hi")
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test_id", evts=[event], slots=domain.slots
+    )
+
+    action_server_url = "https://my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "slot", "name": slot_name, "value": "Shoreditch Branch"}
+                ]
+            },
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+
+        with caplog.at_level(logging.DEBUG):
+            events = await action_extract_slots.run(
+                CollectingOutputChannel(),
+                TemplatedNaturalLanguageGenerator(domain.responses),
+                tracker,
+                domain,
+                metadata,
+            )
+
+        assert all(
+            [
+                f"Calling action endpoint to run action '{action_name}'."
+                not in record.message
+                for record in caplog.records
+            ]
+        )
+        assert events == []
+
+
+@pytest.mark.parametrize("is_calm_system", [True, False])
+async def test_action_extract_slots_for_shared_coexistence_slots(
+    caplog: LogCaptureFixture, monkeypatch: MonkeyPatch, is_calm_system: bool
+):
+    """Test that the action `action_extract_slots` can handle coexistence slots."""
+    slot_name = "store_location"
+    action_name = "action_find_closest_store"
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        slots:
+          {slot_name}:
+            type: text
+            shared_for_coexistence: true
+            mappings:
+            - type: controlled
+              run_action_every_turn: {action_name}
+
+        actions:
+        - {action_name}"""
+    )
+    domain = Domain.from_yaml(domain_yaml)
+
+    metadata = {
+        "all_flows": {"find_store": {"steps": [{"collect": slot_name}]}},
+        KEY_IS_CALM_SYSTEM: is_calm_system,
+    }
+
+    event = UserUttered("Hi")
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test_id", evts=[event], slots=domain.slots
+    )
+
+    action_server_url = "https://my-action-server:5055/webhook"
+
+    with aioresponses() as mocked:
+        mocked.post(
+            action_server_url,
+            payload={
+                "events": [
+                    {"event": "slot", "name": slot_name, "value": "Shoreditch Branch"}
+                ]
+            },
+        )
+
+        action_server = EndpointConfig(action_server_url)
+        action_extract_slots = ActionExtractSlots(action_server)
+
+        with caplog.at_level(logging.DEBUG):
+            events = await action_extract_slots.run(
+                CollectingOutputChannel(),
+                TemplatedNaturalLanguageGenerator(domain.responses),
+                tracker,
+                domain,
+                metadata,
+            )
+
+        assert all(
+            [
+                f"Calling action endpoint to run action '{action_name}'."
+                in record.message
+                for record in caplog.records
+            ]
+        )
+        assert events == [SlotSet(slot_name, "Shoreditch Branch")]
 
 
 async def test_action_bot_response_with_rephrased_utterance(
@@ -3455,7 +3605,8 @@ async def test_action_extract_slots_sets_slots_shared_for_coexistence() -> None:
     action_extract_slots = ActionExtractSlots(None)
 
     metadata = {
-        "all_flows": {"add_contact": {"steps": [{"collect": "special_requests"}]}}
+        "all_flows": {"add_contact": {"steps": [{"collect": "special_requests"}]}},
+        "is_calm_system": False,
     }
 
     events = await action_extract_slots.run(

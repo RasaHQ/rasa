@@ -56,6 +56,7 @@ from rasa.shared.core.flows.utils import (
     warn_deprecated_collect_step_config,
 )
 from rasa.shared.core.generator import TrainingDataGenerator
+from rasa.shared.core.slot_mappings import CoexistenceSystemType
 from rasa.shared.core.slots import BooleanSlot, CategoricalSlot, ListSlot, Slot
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
@@ -1410,6 +1411,8 @@ class Validator:
                 controlled_mappings, slot, all_good
             )
 
+            all_good = self._validate_controlled_mappings(slot, all_good)
+
             all_good = self._config_contains_nlu_command_adapter(
                 nlu_mappings, slot.name, all_good
             )
@@ -1763,5 +1766,80 @@ class Validator:
                         ),
                     )
                     all_good = False
+
+        return all_good
+
+    @staticmethod
+    def _validate_controlled_mappings(slot: Slot, all_good: bool) -> bool:
+        for mapping in slot.mappings:
+            if (
+                mapping.run_action_every_turn is not None
+                and mapping.type != SlotMappingType.CONTROLLED
+            ):
+                structlogger.error(
+                    "validator.validate_slot_mappings_in_CALM.run_action_every_turn_invalid",
+                    slot_name=slot.name,
+                    event_info=(
+                        f"The slot '{slot.name}' has a custom action "
+                        f"'{mapping.run_action_every_turn}' "
+                        f"defined in its slot mapping, "
+                        f"but the slot mapping type is not 'controlled'. "
+                    ),
+                )
+                all_good = False
+
+            if (
+                mapping.coexistence_system is not None
+                and mapping.type != SlotMappingType.CONTROLLED
+            ):
+                structlogger.error(
+                    "validator.validate_slot_mappings_in_CALM.coexistence_system_invalid",
+                    slot_name=slot.name,
+                    event_info=(
+                        f"The slot '{slot.name}' has a coexistence system "
+                        f"'{mapping.coexistence_system.value}' "
+                        f"defined in its slot mapping, "
+                        f"but the slot mapping type is not 'controlled'. "
+                    ),
+                )
+                all_good = False
+
+            if (
+                mapping.coexistence_system is not None
+                and mapping.coexistence_system != CoexistenceSystemType.SHARED
+                and slot.shared_for_coexistence
+            ):
+                structlogger.error(
+                    "validator.validate_slot_mappings_in_CALM.shared_for_coexistence_invalid",
+                    slot_name=slot.name,
+                    event_info=(
+                        f"The slot '{slot.name}' has the `shared_for_coexistence` "
+                        f"property set to `True`, but the slot mapping `controlled` "
+                        f"type defines the `coexistence_system` property with a "
+                        f"value different to the expected `SHARED` value. "
+                    ),
+                )
+                all_good = False
+
+        multiple_controlled_mappings = {
+            mapping.coexistence_system.value
+            for mapping in slot.mappings
+            if mapping.type == SlotMappingType.CONTROLLED
+            and mapping.coexistence_system is not None
+        }
+        contains_inconsistent_coexistence_system = len(multiple_controlled_mappings) > 1
+
+        if contains_inconsistent_coexistence_system:
+            structlogger.error(
+                "validator.validate_slot_mappings_in_CALM.inconsistent_multiple_mappings",
+                slot_name=slot.name,
+                event_info=(
+                    f"The slot '{slot.name}' has multiple `controlled` mappings "
+                    f"with different coexistence systems defined: "
+                    f"'{sorted(list(multiple_controlled_mappings))}'. "
+                    f"Please only define one coexistence system for the slot. "
+                ),
+            )
+            all_good = False
 
         return all_good

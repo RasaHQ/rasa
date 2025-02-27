@@ -25,6 +25,7 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
+from rasa.core.constants import KEY_IS_CALM_SYSTEM, KEY_IS_COEXISTENCE_ASSISTANT
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.core.lock_store import LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -201,10 +202,7 @@ class MessageProcessor:
             )
             return None
 
-        if not self.message_contains_commands(tracker.latest_message):
-            tracker = await self.run_action_extract_slots(
-                message.output_channel, tracker
-            )
+        tracker = await self.run_action_extract_slots(message.output_channel, tracker)
 
         await self._run_prediction_loop(message.output_channel, tracker)
 
@@ -218,7 +216,9 @@ class MessageProcessor:
         return None
 
     async def run_action_extract_slots(
-        self, output_channel: OutputChannel, tracker: DialogueStateTracker
+        self,
+        output_channel: OutputChannel,
+        tracker: DialogueStateTracker,
     ) -> DialogueStateTracker:
         """Run action to extract slots and update the tracker accordingly.
 
@@ -233,6 +233,10 @@ class MessageProcessor:
             ACTION_EXTRACT_SLOTS, self.domain, self.action_endpoint
         )
         metadata = await self._add_flows_to_metadata()
+        metadata[KEY_IS_CALM_SYSTEM] = self.message_contains_commands(
+            tracker.latest_message
+        )
+        metadata[KEY_IS_COEXISTENCE_ASSISTANT] = self._is_coexistence_assistant(tracker)
 
         extraction_events = await action_extract_slots.run(
             output_channel, self.nlg, tracker, self.domain, metadata
@@ -1262,6 +1266,12 @@ class MessageProcessor:
 
                 if isinstance(action, FormAction):
                     flows_metadata = await self._add_flows_to_metadata()
+                    flows_metadata[KEY_IS_CALM_SYSTEM] = self.message_contains_commands(
+                        temporary_tracker.latest_message
+                    )
+                    flows_metadata[KEY_IS_COEXISTENCE_ASSISTANT] = (
+                        self._is_coexistence_assistant(temporary_tracker)
+                    )
                     metadata = prediction.action_metadata or {}
                     metadata.update(flows_metadata)
 
@@ -1479,18 +1489,36 @@ class MessageProcessor:
         Returns:
             bool: True if any node in the graph schema uses `FlowPolicy`.
         """
+        flow_policy_class_path = "rasa.core.policies.flow_policy.FlowPolicy"
+        return self._is_component_present_in_graph_nodes(flow_policy_class_path)
+
+    @staticmethod
+    def _is_coexistence_assistant(tracker: DialogueStateTracker) -> bool:
+        """Inspect the tracker to decide if we are in coexistence.
+
+        Returns:
+            bool: True if the tracker contains the routine slot.
+        """
+        return tracker.slots.get(ROUTE_TO_CALM_SLOT) is not None
+
+    def _is_component_present_in_graph_nodes(self, component_path: Text) -> bool:
+        """Check if a component is present in the graph nodes.
+
+        Args:
+            component_path: The path of the component to check for.
+
+        Returns:
+            `True` if the component is present in the graph nodes, `False` otherwise.
+        """
         # Get the graph schema's nodes from the graph runner.
         nodes: dict[str, Any] = self.graph_runner._graph_schema.nodes  # type: ignore[attr-defined]
 
-        flow_policy_class_path = "rasa.core.policies.flow_policy.FlowPolicy"
-        # Iterate over the nodes and check if any node uses `FlowPolicy`.
         for node_name, schema_node in nodes.items():
             if (
                 schema_node.uses is not None
                 and f"{schema_node.uses.__module__}.{schema_node.uses.__name__}"
-                == flow_policy_class_path
+                == component_path
             ):
                 return True
 
-        # Return False if no node is found using `FlowPolicy`.
         return False

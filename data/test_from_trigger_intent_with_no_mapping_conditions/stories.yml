@@ -32,7 +32,7 @@ stories:
 
 - story: activate test form
   steps:
-  - intent: mood_great
+  - intent: activate_form
   - action: test_form
   - active_loop: test_form
   - active_loop: null

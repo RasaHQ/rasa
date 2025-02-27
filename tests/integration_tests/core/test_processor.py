@@ -171,8 +171,11 @@ async def test_processor_handle_message_calm_slots_with_nlu_pipeline(
         )
 
         captured = capsys.readouterr()
-        debug_log = "action_extract_slot=action_extract_slots"
-        assert debug_log not in captured.out
+        debug_log = (
+            "action_extract_slot=action_extract_slots "
+            "len_extraction_events=0 rasa_events=[]"
+        )
+        assert debug_log in captured.out
 
 
 async def test_processor_handle_message_calm_slots_coexistence_nlu(
@@ -468,7 +471,7 @@ async def calm_handle_digressions_agent(
         "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator.SingleStepLLMCommandGenerator.filter_flows",
         mocked_filter_flows,
     )
-    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    endpoint = EndpointConfig(actions_module="data.test_handle_digressions.actions")
     return Agent.load(
         model_path=trained_handle_digressions_bot, action_endpoint=endpoint
     )
@@ -762,3 +765,17 @@ async def test_processor_handle_digressions_cancel_clarification_options(
             "utter_flow_cancelled_rasa",
             "utter_can_do_something_else",
         ]
+
+
+async def test_processor_fill_controlled_slot_run_action_every_turn_enabled(
+    calm_handle_digressions_agent: Agent,
+) -> None:
+    processor = calm_handle_digressions_agent.processor
+    sender_id = uuid.uuid4().hex
+
+    await processor.handle_message(
+        UserMessage("I would like to order 1 pepperoni pizza.", sender_id=sender_id)
+    )
+
+    tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
+    assert tracker.get_slot("action_slot") == 123

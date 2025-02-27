@@ -82,3 +82,8 @@ nlu:
     - are you a human?
     - am I talking to a bot?
     - am I talking to a human?
+- intent: activate_form
+  examples: |
+    - start form
+    - begin with test form
+    - activate form

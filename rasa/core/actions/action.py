@@ -7,9 +7,7 @@ from typing import (
     Dict,
     List,
     Optional,
-    Set,
     Text,
-    Tuple,
     cast,
 )
 
@@ -29,6 +27,8 @@ from rasa.core.actions.e2e_stub_custom_action_executor import (
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
 from rasa.core.constants import (
+    KEY_IS_CALM_SYSTEM,
+    KEY_IS_COEXISTENCE_ASSISTANT,
     UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.policies.policy import PolicyPrediction
@@ -70,13 +70,11 @@ from rasa.shared.core.constants import (
     ACTION_SEND_TEXT_NAME,
     ACTION_SESSION_START_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
-    ACTION_VALIDATE_SLOT_MAPPINGS,
     DEFAULT_SLOT_NAMES,
     KNOWLEDGE_BASE_SLOT_NAMES,
     REQUESTED_SLOT,
     USER_INTENT_OUT_OF_SCOPE,
     SetSlotExtractor,
-    SlotMappingType,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -104,14 +102,13 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.utils.io import raise_warning
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
-from rasa.utils.endpoints import ClientResponseError, EndpointConfig
+from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.url_tools import UrlSchema, get_url_schema
 
 if TYPE_CHECKING:
     from rasa.core.channels.channel import OutputChannel
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.shared.core.events import IntentPrediction
-    from rasa.shared.core.slot_mappings import SlotMapping
 
 logger = logging.getLogger(__name__)
 
@@ -1179,113 +1176,6 @@ class ActionExtractSlots(Action):
         """Returns action_extract_slots name."""
         return ACTION_EXTRACT_SLOTS
 
-    async def _run_custom_action(
-        self,
-        custom_action: Text,
-        output_channel: "OutputChannel",
-        nlg: "NaturalLanguageGenerator",
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
-    ) -> List[Event]:
-        slot_events: List[Event] = []
-        remote_action = RemoteAction(custom_action, self._action_endpoint)
-        disallowed_types = set()
-
-        try:
-            custom_events = await remote_action.run(
-                output_channel, nlg, tracker, domain
-            )
-            for event in custom_events:
-                if isinstance(event, SlotSet):
-                    slot_events.append(event)
-                elif isinstance(event, BotUttered):
-                    slot_events.append(event)
-                else:
-                    disallowed_types.add(event.type_name)
-        except (RasaException, ClientResponseError) as e:
-            logger.warning(
-                f"Failed to execute custom action '{custom_action}' "
-                f"as a result of error '{e!s}'. The default action "
-                f"'{self.name()}' failed to fill slots with custom "
-                f"mappings."
-            )
-
-        for type_name in disallowed_types:
-            logger.info(
-                f"Running custom action '{custom_action}' has resulted "
-                f"in an event of type '{type_name}'. This is "
-                f"disallowed and the tracker will not be "
-                f"updated with this event."
-            )
-
-        return slot_events
-
-    async def _execute_custom_action(
-        self,
-        mapping: "SlotMapping",
-        executed_custom_actions: Set[Text],
-        output_channel: "OutputChannel",
-        nlg: "NaturalLanguageGenerator",
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
-        calm_custom_action_names: Optional[Set[str]] = None,
-    ) -> Tuple[List[Event], Set[Text]]:
-        custom_action = mapping.run_action_every_turn
-
-        if not custom_action or custom_action in executed_custom_actions:
-            return [], executed_custom_actions
-
-        if (
-            calm_custom_action_names is not None
-            and custom_action in calm_custom_action_names
-        ):
-            return [], executed_custom_actions
-
-        slot_events = await self._run_custom_action(
-            custom_action, output_channel, nlg, tracker, domain
-        )
-
-        executed_custom_actions.add(custom_action)
-
-        return slot_events, executed_custom_actions
-
-    async def _execute_validation_action(
-        self,
-        extraction_events: List[Event],
-        output_channel: "OutputChannel",
-        nlg: "NaturalLanguageGenerator",
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
-    ) -> List[Event]:
-        slot_events: List[SlotSet] = [
-            event for event in extraction_events if isinstance(event, SlotSet)
-        ]
-
-        slot_candidates = "\n".join([e.key for e in slot_events])
-        logger.debug(f"Validating extracted slots: {slot_candidates}")
-
-        if ACTION_VALIDATE_SLOT_MAPPINGS not in domain.user_actions:
-            return cast(List[Event], slot_events)
-
-        _tracker = DialogueStateTracker.from_events(
-            tracker.sender_id,
-            tracker.events_after_latest_restart() + cast(List[Event], slot_events),
-            slots=domain.slots,
-        )
-        validate_events = await self._run_custom_action(
-            ACTION_VALIDATE_SLOT_MAPPINGS, output_channel, nlg, _tracker, domain
-        )
-        validated_slot_names = [
-            event.key for event in validate_events if isinstance(event, SlotSet)
-        ]
-
-        # If the custom action doesn't return a SlotSet event for an extracted slot
-        # candidate we assume that it was valid. The custom action has to return a
-        # SlotSet(slot_name, None) event to mark a Slot as invalid.
-        return validate_events + [
-            event for event in slot_events if event.key not in validated_slot_names
-        ]
-
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -1296,59 +1186,59 @@ class ActionExtractSlots(Action):
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         slot_events: List[Event] = []
-        executed_custom_actions: Set[Text] = set()
-
         user_slots = [
             slot
             for slot in domain.slots
             if slot.name not in DEFAULT_SLOT_NAMES | KNOWLEDGE_BASE_SLOT_NAMES
         ]
 
-        calm_slot_names = set()
-        calm_custom_action_names = None
-        flows = None
-
-        if metadata is not None:
-            flows = metadata.get("all_flows")
-
-        if flows is not None:
-            flows = FlowsList.from_json(flows)
-            calm_slot_names = flows.available_slot_names()
-            calm_custom_action_names = flows.available_custom_actions()
-
+        all_flows = metadata.get("all_flows") if metadata else None
+        flows = FlowsList.from_json(all_flows) if all_flows else None
+        calm_slot_names = flows.available_slot_names() if flows else set()
+        is_calm_system = metadata.get(KEY_IS_CALM_SYSTEM) if metadata else False
+        is_coexistence_bot = (
+            metadata.get(KEY_IS_COEXISTENCE_ASSISTANT) if metadata else False
+        )
         slot_filling_manager = SlotFillingManager(
-            domain, tracker, action_endpoint=self._action_endpoint
+            domain,
+            tracker,
+            action_endpoint=self._action_endpoint,
         )
 
         for slot in user_slots:
             # allows the action to set slots that are shared between
             # the NLU-based system and CALM system in a coexistence bot
-            if slot.name in calm_slot_names and not slot.shared_for_coexistence:
-                continue
-
-            slot_value, is_extracted = extract_slot_value(slot, slot_filling_manager)
-            if is_extracted:
-                slot_events.append(SlotSet(slot.name, slot_value))
-
-            for mapping in slot.mappings:
-                should_fill_controlled_slot = mapping.type == SlotMappingType.CONTROLLED
-
-                if should_fill_controlled_slot:
-                    (
-                        custom_evts,
-                        executed_custom_actions,
-                    ) = await self._execute_custom_action(
-                        mapping,
-                        executed_custom_actions,
-                        output_channel,
-                        nlg,
-                        tracker,
-                        domain,
-                        calm_custom_action_names,
+            if is_coexistence_bot:
+                should_fill_slot_in_coexistence = (
+                    slot_filling_manager.should_fill_slot_in_coexistence(
+                        is_calm_system=is_calm_system,
+                        slot=slot,
+                        calm_slot_names=calm_slot_names,
                     )
-                    slot_events.extend(custom_evts)
+                )
+                if not should_fill_slot_in_coexistence:
+                    continue
 
-        validated_events = await self._execute_validation_action(
-            slot_events, output_channel, nlg, tracker, domain
-        )
-        return validated_events
+            if not is_calm_system:
+                slot_value, is_extracted = extract_slot_value(
+                    slot, slot_filling_manager
+                )
+                if is_extracted:
+                    slot_events.append(SlotSet(slot.name, slot_value))
+
+            custom_events = await slot_filling_manager.run_action_at_every_turn(
+                slot,
+                output_channel,
+                nlg,
+            )
+            slot_events.extend(custom_events)
+
+        if not is_calm_system:
+            validated_events = await slot_filling_manager.execute_validation_action(
+                slot_events,
+                output_channel,
+                nlg,
+            )
+            return validated_events
+
+        return slot_events

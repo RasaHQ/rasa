@@ -145,6 +145,7 @@ KEY_MAPPING_TYPE = "type"
 KEY_ALLOW_NLU_CORRECTION = "allow_nlu_correction"
 KEY_ACTION = "action"
 KEY_RUN_ACTION_EVERY_TURN = "run_action_every_turn"
+KEY_COEXISTENCE_SYSTEM = "coexistence_system"
 
 
 class SlotMappingType(Enum):

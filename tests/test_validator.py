@@ -3175,3 +3175,217 @@ def test_verify_digression_configuration_at_flow_level_invalid_duplicate(
     assert expected_log_message in captured.out
     assert "validator.verify_digression_configuration" in captured.out
     assert "error" in captured.out
+
+
+def test_run_action_every_turn_invalid_slot_mapping_type(
+    capsys: CaptureFixture,
+) -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          flow_a:
+            description: Test flow.
+            steps:
+            - action: utter_greet
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        entities:
+        - entity_a
+        slots:
+          slot_a:
+            type: text
+            mappings:
+             - type: from_entity
+               entity: entity_a
+               run_action_every_turn: action_set_slot_a
+        actions:
+         - action_set_slot_a
+        """
+    )
+    validator = Validator(
+        test_domain,
+        TrainingData(),
+        StoryGraph([]),
+        flows,
+        {"pipeline": [{"name": "NLUCommandAdapter"}]},
+    )
+
+    assert not validator.validate_CALM_slot_mappings()
+
+    expected_log_message = (
+        "The slot 'slot_a' has a custom action "
+        "'action_set_slot_a' "
+        "defined in its slot mapping, "
+        "but the slot mapping type is not 'controlled'. "
+    )
+
+    captured = capsys.readouterr()
+
+    assert expected_log_message in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.run_action_every_turn_invalid"
+        in captured.out
+    )
+    assert "error" in captured.out
+
+
+def test_run_coexistence_system_invalid_slot_mapping_type(
+    capsys: CaptureFixture,
+) -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          flow_a:
+            description: Test flow.
+            steps:
+            - action: utter_greet
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        entities:
+        - entity_a
+        slots:
+          slot_a:
+            type: text
+            mappings:
+             - type: from_entity
+               entity: entity_a
+               coexistence_system: NLU
+        """
+    )
+    validator = Validator(
+        test_domain,
+        TrainingData(),
+        StoryGraph([]),
+        flows,
+        {"pipeline": [{"name": "NLUCommandAdapter"}]},
+    )
+
+    assert not validator.validate_CALM_slot_mappings()
+
+    expected_log_message = (
+        "The slot 'slot_a' has a coexistence system "
+        "'NLU' defined in its slot mapping, "
+        "but the slot mapping type is not 'controlled'. "
+    )
+
+    captured = capsys.readouterr()
+
+    assert expected_log_message in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.coexistence_system_invalid"
+        in captured.out
+    )
+    assert "error" in captured.out
+
+
+def test_run_coexistence_system_inconsistent_shared_for_coexistence_flag(
+    capsys: CaptureFixture,
+) -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          flow_a:
+            description: Test flow.
+            steps:
+            - action: utter_greet
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        entities:
+        - entity_a
+        slots:
+          slot_a:
+            type: text
+            shared_for_coexistence: true
+            mappings:
+             - type: controlled
+               run_action_every_turn: action_set_slot_a
+               coexistence_system: NLU
+        actions:
+         - action_set_slot_a
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), flows, {})
+
+    assert not validator.validate_CALM_slot_mappings()
+
+    expected_log_message = (
+        "The slot 'slot_a' has the `shared_for_coexistence` "
+        "property set to `True`, but the slot mapping `controlled` "
+        "type defines the `coexistence_system` property with a "
+        "value different to the expected `SHARED` value. "
+    )
+
+    captured = capsys.readouterr()
+
+    assert expected_log_message in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.shared_for_coexistence_invalid"
+        in captured.out
+    )
+    assert "error" in captured.out
+
+
+def test_run_coexistence_system_inconsistent_multiple_mappings(
+    capsys: CaptureFixture,
+) -> None:
+    flows = flows_from_str(
+        """
+        flows:
+          flow_a:
+            description: Test flow.
+            steps:
+            - action: utter_greet
+        """
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        entities:
+        - entity_a
+        slots:
+          slot_a:
+            type: text
+            mappings:
+             - type: controlled
+               run_action_every_turn: action_set_slot_a
+               coexistence_system: NLU
+             - type: controlled
+               coexistence_system: CALM
+        actions:
+         - action_set_slot_a
+        """
+    )
+    validator = Validator(
+        test_domain,
+        TrainingData(),
+        StoryGraph([]),
+        flows,
+        {},
+    )
+
+    assert not validator.validate_CALM_slot_mappings()
+
+    expected_log_message = (
+        "The slot 'slot_a' has multiple `controlled` mappings "
+        "with different coexistence systems defined: "
+        "'['CALM', 'NLU']'. "
+        "Please only define one coexistence system for the slot. "
+    )
+
+    captured = capsys.readouterr()
+
+    assert expected_log_message in captured.out
+    assert (
+        "validator.validate_slot_mappings_in_CALM.inconsistent_multiple_mappings"
+        in captured.out
+    )
+    assert "error" in captured.out

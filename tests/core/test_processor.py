@@ -1931,11 +1931,11 @@ async def test_from_trigger_intent_no_form_condition_when_form_not_activated(
     sender_id_form_activation = "test_form_activation"
     await processor.handle_message(
         UserMessage(
-            text="great",
+            text="activate form",
             output_channel=CollectingOutputChannel(),
             sender_id=sender_id_form_activation,
             parse_data={
-                "intent": {"name": "mood_great", "confidence": 1},
+                "intent": {"name": "activate_form", "confidence": 1},
                 "entities": [],
             },
         )
@@ -2463,23 +2463,24 @@ async def test_parse_message_with_multiple_set_slots_button(
     assert tracker.get_slot("button_slot_b") is expected_value
 
 
-def test_handle_message_with_commands_does_not_run_action_extract_slots(
+async def test_handle_message_with_commands_runs_action_extract_slots(
     flow_policy_bot_agent: Agent,
     monkeypatch: MonkeyPatch,
 ) -> None:
     processor = flow_policy_bot_agent.processor
     sender_id = uuid.uuid4().hex
 
-    mock_run_action_extract_slots = MagicMock()
+    mock_tracker = DialogueStateTracker.from_events(sender_id, [])
+    mock_run_action_extract_slots = AsyncMock(return_value=mock_tracker)
     monkeypatch.setattr(
         processor, "run_action_extract_slots", mock_run_action_extract_slots
     )
 
-    processor.handle_message(
+    await processor.handle_message(
         UserMessage("/SetSlots(foo_slot_a=foo)", sender_id=sender_id)
     )
 
-    mock_run_action_extract_slots.assert_not_called()
+    mock_run_action_extract_slots.assert_called_once()
 
 
 def test_handle_message_with_commands_from_buttons_does_not_run_nlu_command_adapter(

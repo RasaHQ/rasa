@@ -15,6 +15,14 @@ slots:
     type: text
     mappings:
       - type: from_llm
+  action_slot:
+    type: float
+    mappings:
+      - type: controlled
+        run_action_every_turn: action_set_action_slot
+
+actions:
+  - action_set_action_slot
 
 responses:
   utter_ask_pizza_type:
