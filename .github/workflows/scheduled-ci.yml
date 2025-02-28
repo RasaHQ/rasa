@@ -17,4 +17,6 @@ jobs:
       python-versions: '["3.10", "3.11"]'
       # We don't want to run the code quality checks on scheduled runs
       run_code_quality: 'false'
+      # We only want to run the CI checks for unit tests that need to be run against multiple python versions
+      run_mode: 'false'
     secrets: inherit

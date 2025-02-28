@@ -15,6 +15,12 @@ on:
         required: false
         default: 'true'
         description: "Whether to run the Code Quality checks."
+      # Only run partial workflow steps
+      run_mode:
+        type: string
+        required: false
+        default: 'full'
+        description: "Whether to run all the CI checks."
 
 concurrency:
   group: continous-integration-${{ github.ref }} # branch or tag name
@@ -126,6 +132,7 @@ jobs:
   rasa-private-dev-docker-image:
     name: rasa-private dev docker image
     runs-on: ubuntu-24.04
+    if: ${{ inputs.run_mode != 'false' }}
     env:
       PLATFORM: linux/amd64
 
@@ -173,6 +180,7 @@ jobs:
   check_inspector_build:
     name: Check Inspector Build
     runs-on: ubuntu-24.04
+    if: ${{ inputs.run_mode != 'false' }}
     defaults:
       run:
         shell: bash
@@ -220,6 +228,7 @@ jobs:
 
   tracing-integration-test:
     name: Tracing Integration Tests
+    if: ${{ inputs.run_mode != 'false' }}
     needs: rasa-private-dev-docker-image
     runs-on: ubuntu-24.04-4core
     steps:
@@ -292,6 +301,7 @@ jobs:
 
   metric-integration-test:
     name: Metric Integration Tests
+    if: ${{ inputs.run_mode != 'false' }}
     needs: rasa-private-dev-docker-image
     runs-on: ubuntu-24.04-4core
     steps:
@@ -358,6 +368,7 @@ jobs:
 
   custom-action-integration-test-with-nlu-bot:
     name: Custom Action Integration Tests With NLU bot
+    if: ${{ inputs.run_mode != 'false' }}
     needs: rasa-private-dev-docker-image
     env:
       RASA_SDK_IMAGE_TAG: latest
@@ -440,6 +451,7 @@ jobs:
 
   custom-action-integration-test-with-calm-bot:
     name: Custom Action Integration Tests With CALM bot
+    if: ${{ inputs.run_mode != 'false' }}
     needs: rasa-private-dev-docker-image
     runs-on: ubuntu-24.04-4core
     env:
@@ -518,6 +530,7 @@ jobs:
 
   enterprise-search-integration-tests:
     name: Run Enterprise Search Integration Tests
+    if: ${{ inputs.run_mode != 'false' }}
     needs: rasa-private-dev-docker-image
     runs-on: ubuntu-24.04-4core
     env:
@@ -666,6 +679,7 @@ jobs:
   sequential-integration-test:
       name: Run Sequential Integration Tests
       runs-on: ubuntu-24.04
+      if: ${{ inputs.run_mode != 'false' }}
       timeout-minutes: 60
       env:
         POSTGRES_HOST: localhost
@@ -728,6 +742,7 @@ jobs:
   non-sequential-integration-test:
     name: Run Non-Sequential Integration Tests
     runs-on: ubuntu-24.04-8core
+    if: ${{ inputs.run_mode != 'false' }}
     timeout-minutes: 60
     env:
       REDIS_HOST: localhost
@@ -811,6 +826,7 @@ jobs:
   tracker-store-integration-test:
     name: Run Tracker Store Integration Tests
     runs-on: ubuntu-24.04-8core
+    if: ${{ inputs.run_mode != 'false' }}
     timeout-minutes: 60
     env:
       DB_PORT: 27017
@@ -873,6 +889,7 @@ jobs:
   concurrent-lockstore-integration-test:
     name: Run Concurrent LockStore Integration Tests
     runs-on: ubuntu-24.04
+    if: ${{ inputs.run_mode != 'false' }}
     timeout-minutes: 60
     env:
       REDIS_HOST: localhost
@@ -930,6 +947,7 @@ jobs:
   broker_integration_test:
     name: Run Broker Integration Tests
     runs-on: ubuntu-24.04
+    if: ${{ inputs.run_mode != 'false' }}
     timeout-minutes: 60
 
     steps:
@@ -986,6 +1004,7 @@ jobs:
   channel_connector_integration_tests:
     name: Channel Connector Integration Tests With CALM bot
     needs: rasa-private-dev-docker-image
+    if: ${{ inputs.run_mode != 'false' }}
     runs-on: ubuntu-24.04
     steps:
       - name: Check out code
@@ -1212,6 +1231,7 @@ jobs:
 
   publish-test-results:
     runs-on: ubuntu-24.04
+    if: ${{ inputs.run_mode != 'false' }}
     needs: [ tracing-integration-test,
              metric-integration-test,
              enterprise-search-integration-tests,
@@ -1223,7 +1243,6 @@ jobs:
              broker_integration_test,
              channel_connector_integration_tests,
              unit-test, test-anonymization ]
-    if: always()
     steps:
       - name: Download test reports
         uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 #v4.1.4
@@ -1243,3 +1262,29 @@ jobs:
         with:
           files: "artifacts/**/unit-tests-results-*.xml"
           check_name: "Unit Test Results"
+
+  publish-test-results-on-scheduled-runs:
+    runs-on: ubuntu-24.04
+    if: ${{ inputs.run_mode == 'false' }}
+    needs: [ unit-test, test-anonymization ]
+    steps:
+      - name: Download test reports
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
+        with:
+          path: artifacts
+
+      - name: Publish integration test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        with:
+          files: "artifacts/**/integration-results-*.xml"
+          check_name: "Integration Test Results"
+
+      - name: Publish unit-test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        with:
+          files: "artifacts/**/unit-tests-results-*.xml"
+          check_name: "Unit Test Results"
+
+          
