@@ -109,3 +109,5 @@ __pycache__/
 training_time.txt
 e2e_tests/
 .codegpt
+infrastructure/**/*.pyc
+infrastructure/**/venv
