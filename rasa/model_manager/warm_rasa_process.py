@@ -46,7 +46,6 @@ def _create_warm_rasa_process() -> WarmRasaProcess:
     ]
 
     envs = os.environ.copy()
-    envs["RASA_TELEMETRY_ENABLED"] = "false"
     envs[RASA_RECORD_COMMANDS_AND_PROMPTS_ENV_VAR_NAME] = "true"
 
     log_id = uuid.uuid4().hex
