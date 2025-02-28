@@ -4,7 +4,9 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 
+import structlog
 import websockets
+import websockets.exceptions
 from websockets.legacy.client import WebSocketClientProtocol
 
 from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine, ASREngineConfig
@@ -15,6 +17,8 @@ from rasa.core.channels.voice_stream.asr.asr_event import (
 )
 from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
 from rasa.shared.constants import DEEPGRAM_API_KEY_ENV_VAR
+
+logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -41,10 +45,22 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
         """Connect to the ASR system."""
         deepgram_api_key = os.environ[DEEPGRAM_API_KEY_ENV_VAR]
         extra_headers = {"Authorization": f"Token {deepgram_api_key}"}
-        return await websockets.connect(  # type: ignore
-            self._get_api_url_with_query_params(),
-            extra_headers=extra_headers,
-        )
+        try:
+            return await websockets.connect(  # type: ignore
+                self._get_api_url_with_query_params(),
+                extra_headers=extra_headers,
+            )
+        except websockets.exceptions.InvalidStatusCode as e:
+            if e.status_code == 401:
+                error_msg = "Please make sure your Deepgram API key is correct."
+            else:
+                error_msg = "Connection to Deepgram failed."
+            logger.error(
+                "deepgram.connection.failed",
+                status_code=e.status_code,
+                error=error_msg,
+            )
+            raise
 
     def _get_api_url_with_query_params(self) -> str:
         """Combine api url and query params."""

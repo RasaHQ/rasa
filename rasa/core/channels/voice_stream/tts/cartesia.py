@@ -101,13 +101,22 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
                                     channel_bytes
                                 )
                     return
+                elif response.status == 401:
+                    structlogger.error(
+                        "cartesia.synthesize.rest.unauthorized",
+                        status_code=response.status,
+                    )
+                    raise TTSError(
+                        "Unauthorized. Please make sure you have the correct API key."
+                    )
                 else:
+                    response_text = await response.text()
                     structlogger.error(
                         "cartesia.synthesize.rest.failed",
                         status_code=response.status,
-                        msg=response.text(),
+                        msg=response_text,
                     )
-                    raise TTSError(f"TTS failed: {response.text()}")
+                    raise TTSError(f"TTS failed: {response_text}")
         except ClientConnectorError as e:
             raise TTSError(e)
         except TimeoutError as e:

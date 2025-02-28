@@ -106,6 +106,9 @@ class BrowserAudioInputChannel(VoiceInputChannel):
 
         @blueprint.websocket("/websocket")  # type: ignore
         async def handle_message(request: Request, ws: Websocket) -> None:
-            await self.run_audio_streaming(on_new_message, ws)
+            try:
+                await self.run_audio_streaming(on_new_message, ws)
+            except Exception as e:
+                logger.error("browser_audio.handle_message.error", error=e)
 
         return blueprint
