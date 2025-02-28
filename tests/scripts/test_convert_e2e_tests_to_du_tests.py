@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Optional
 
 import pytest
@@ -393,7 +394,7 @@ def test_get_output_folder_and_file_name(path: str, folder: str, expected: str):
         (
             "e2e_tests/sub_folder/another_folder/test.yml",
             "e2e_tests",
-            ("sub_folder/another_folder", "test.yml"),
+            (str(Path("sub_folder/another_folder")), "test.yml"),
         ),
         ("e2e_tests/sub_folder/test.yml", "e2e_tests/sub_folder", (None, "test.yml")),
         (
@@ -404,7 +405,7 @@ def test_get_output_folder_and_file_name(path: str, folder: str, expected: str):
     ],
 )
 def test_get_output_folder_and_file_name_absolute_path(
-    tmp_path, path: str, folder: str, expected
+    tmp_path: Path, path: str, folder: str, expected
 ):
     base_path = tmp_path / "e2e_tests"
     base_path.mkdir()
