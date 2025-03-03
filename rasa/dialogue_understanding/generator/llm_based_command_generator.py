@@ -27,9 +27,7 @@ from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.constants import (
-    SetSlotExtractor,
-)
+from rasa.shared.core.constants import SetSlotExtractor
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import Flow, FlowsList, FlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
@@ -313,11 +311,20 @@ class LLMBasedCommandGenerator(
         return filtered_flows
 
     @measure_llm_latency
-    async def invoke_llm(self, prompt: Text) -> Optional[LLMResponse]:
+    async def invoke_llm(
+        self, prompt: Union[List[dict], List[str], str]
+    ) -> Optional[LLMResponse]:
         """Use LLM to generate a response.
 
         Args:
-            prompt: The prompt to send to the LLM.
+            prompt: The prompt can be,
+                - a list of preformatted messages. Each message should be a dictionary
+                    with the following keys:
+                    - content: The message content.
+                    - role: The role of the message (e.g. user or system).
+                - a list of messages. Each message is a string and will be formatted
+                    as a user message.
+                - a single message as a string which will be formatted as user message.
 
         Returns:
             An LLMResponse object.

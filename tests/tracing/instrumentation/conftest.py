@@ -14,6 +14,7 @@ from typing import (
     Text,
     Tuple,
     Type,
+    Union,
 )
 from unittest.mock import Mock, patch
 
@@ -374,7 +375,9 @@ class MockLLMCommandgenerator(LLMCommandGenerator):
                 f"instrumentation needs to be adapted!"
             )
 
-    async def invoke_llm(self, prompt: str) -> Optional[str]:
+    async def invoke_llm(
+        self, prompt: Union[List[dict], List[str], str]
+    ) -> Optional[str]:
         pass
 
 
@@ -401,7 +404,9 @@ class MockSingleStepLLMCommandGenerator(SingleStepLLMCommandGenerator):
                 f"instrumentation needs to be adapted!"
             )
 
-    async def invoke_llm(self, prompt: str) -> Optional[str]:
+    async def invoke_llm(
+        self, prompt: Union[List[dict], List[str], str]
+    ) -> Optional[str]:
         pass
 
 
@@ -427,7 +432,9 @@ class MockMultiStepLLMCommandGenerator(MultiStepLLMCommandGenerator):
                 f"instrumentation needs to be adapted!"
             )
 
-    async def invoke_llm(self, prompt: str) -> Optional[str]:
+    async def invoke_llm(
+        self, prompt: Union[List[dict], List[str], str]
+    ) -> Optional[str]:
         pass
 
 

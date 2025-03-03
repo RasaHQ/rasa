@@ -1,5 +1,5 @@
 import argparse
-from typing import Any, Callable, Dict, Optional, Text
+from typing import Any, Callable, Dict, List, Optional, Text, Union
 from unittest.mock import Mock, patch
 
 import pytest
@@ -45,7 +45,9 @@ class MockSingleStepLLMCommandGenerator(SingleStepLLMCommandGenerator):
     ) -> None:
         super().__init__(config, model_storage, resource, prompt_template)
 
-    async def invoke_llm(self, prompt: str) -> Optional[str]:
+    async def invoke_llm(
+        self, prompt: Union[List[dict], List[str], str]
+    ) -> Optional[str]:
         pass
 
 

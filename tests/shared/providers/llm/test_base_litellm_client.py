@@ -130,7 +130,10 @@ class TestBaseLLMClient:
         ],
     )
     def test_completion(
-        self, test_prompt: str, client: TestLiteLLMClient, mock_completion: Mock
+        self,
+        test_prompt: str,
+        client: TestLiteLLMClient,
+        mock_completion: Mock,
     ):
         # Given
         prompt_content = test_prompt if isinstance(test_prompt, str) else test_prompt[0]
@@ -192,3 +195,66 @@ class TestBaseLLMClient:
         mock_acompletion.side_effect = Exception("API exception raised!")
         with pytest.raises(ProviderClientAPIException):
             await client.acompletion(["test message"])
+
+    @pytest.mark.parametrize(
+        "test_prompt",
+        [
+            # Send the preformatted prompt as a list
+            ([{"content": "Hello, this is a test prompt.", "role": "user"}]),
+            ([{"content": "Hello, this is a test prompt.", "role": "system"}]),
+            (
+                [
+                    {"content": "Hello, this is a test prompt.", "role": "user"},
+                    {"content": "Hello, this is a test prompt.", "role": "system"},
+                ]
+            ),
+        ],
+    )
+    def test_completion_with_preformatted_messages(
+        self, test_prompt: str, client: TestLiteLLMClient, mock_completion: Mock
+    ):
+        # When
+        response = client.completion(test_prompt)
+
+        # Then
+        mock_completion.assert_called_once_with(
+            messages=test_prompt,
+            model=client._litellm_model_name,
+            drop_params=False,
+            test_parameter="test_value",
+        )
+        assert isinstance(response, LLMResponse)
+        assert response.choices == ["Hello from LiteLLM!"]
+
+    @pytest.mark.parametrize(
+        "test_prompt",
+        [
+            # Send the preformatted prompt as a list
+            ([{"content": "Hello, this is a test prompt.", "role": "user"}]),
+            ([{"content": "Hello, this is a test prompt.", "role": "system"}]),
+            (
+                [
+                    {"content": "Hello, this is a test prompt.", "role": "user"},
+                    {"content": "Hello, this is a test prompt.", "role": "system"},
+                ]
+            ),
+        ],
+    )
+    async def test_acompletion_with_preformatted_messages(
+        self,
+        test_prompt: Union[List[str], str],
+        client: TestLiteLLMClient,
+        mock_acompletion: Mock,
+    ):
+        # When
+        response = await client.acompletion(test_prompt)
+
+        # Then
+        mock_acompletion.assert_called_once_with(
+            messages=test_prompt,
+            model=client._litellm_model_name,
+            drop_params=False,
+            test_parameter="test_value",
+        )
+        assert isinstance(response, LLMResponse)
+        assert response.choices == ["Hello from LiteLLM!"]

@@ -30,7 +30,7 @@ class LLMClient(Protocol):
         """
         ...
 
-    def completion(self, messages: Union[List[str], str]) -> LLMResponse:
+    def completion(self, messages: Union[List[dict], List[str], str]) -> LLMResponse:
         """
         Synchronously generate completions for given list of messages.
 
@@ -38,14 +38,22 @@ class LLMClient(Protocol):
         strings) and return a list of completions (as strings).
 
         Args:
-            messages: List of messages or a single message to generate the
-                completion for.
+            messages: The message can be,
+                - a list of preformatted messages. Each message should be a dictionary
+                    with the following keys:
+                    - content: The message content.
+                    - role: The role of the message (e.g. user or system).
+                - a list of messages. Each message is a string and will be formatted
+                    as a user message.
+                - a single message as a string which will be formatted as user message.
         Returns:
             LLMResponse
         """
         ...
 
-    async def acompletion(self, messages: Union[List[str], str]) -> LLMResponse:
+    async def acompletion(
+        self, messages: Union[List[dict], List[str], str]
+    ) -> LLMResponse:
         """
         Asynchronously generate completions for given list of messages.
 
@@ -53,8 +61,14 @@ class LLMClient(Protocol):
         strings) and return a list of completions (as strings).
 
         Args:
-            messages: List of messages or a single message to generate the
-                completion for.
+            messages: The message can be,
+                - a list of preformatted messages. Each message should be a dictionary
+                    with the following keys:
+                    - content: The message content.
+                    - role: The role of the message (e.g. user or system).
+                - a list of messages. Each message is a string and will be formatted
+                    as a user message.
+                - a single message as a string which will be formatted as user message.
         Returns:
             LLMResponse
         """

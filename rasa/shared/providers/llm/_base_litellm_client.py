@@ -1,15 +1,11 @@
 import logging
 from abc import abstractmethod
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, cast
 
 import structlog
-from litellm import (
-    acompletion,
-    completion,
-    validate_environment,
-)
+from litellm import acompletion, completion, validate_environment
 
-from rasa.shared.constants import API_BASE_CONFIG_KEY, API_KEY
+from rasa.shared.constants import API_BASE_CONFIG_KEY, API_KEY, ROLE_USER
 from rasa.shared.exceptions import (
     ProviderClientAPIException,
     ProviderClientValidationError,
@@ -122,12 +118,18 @@ class _BaseLiteLLMClient:
             raise ProviderClientValidationError(event_info)
 
     @suppress_logs(log_level=logging.WARNING)
-    def completion(self, messages: Union[List[str], str]) -> LLMResponse:
+    def completion(self, messages: Union[List[dict], List[str], str]) -> LLMResponse:
         """Synchronously generate completions for given list of messages.
 
         Args:
-            messages: List of messages or a single message to generate the
-                completion for.
+            messages: The message can be,
+                - a list of preformatted messages. Each message should be a dictionary
+                    with the following keys:
+                    - content: The message content.
+                    - role: The role of the message (e.g. user or system).
+                - a list of messages. Each message is a string and will be formatted
+                    as a user message.
+                - a single message as a string which will be formatted as user message.
 
         Returns:
             List of message completions.
@@ -136,7 +138,7 @@ class _BaseLiteLLMClient:
             ProviderClientAPIException: If the API request fails.
         """
         try:
-            formatted_messages = self._format_messages(messages)
+            formatted_messages = self._get_formatted_messages(messages)
             arguments = resolve_environment_variables(self._completion_fn_args)
             response = completion(messages=formatted_messages, **arguments)
             return self._format_response(response)
@@ -144,12 +146,20 @@ class _BaseLiteLLMClient:
             raise ProviderClientAPIException(e)
 
     @suppress_logs(log_level=logging.WARNING)
-    async def acompletion(self, messages: Union[List[str], str]) -> LLMResponse:
+    async def acompletion(
+        self, messages: Union[List[dict], List[str], str]
+    ) -> LLMResponse:
         """Asynchronously generate completions for given list of messages.
 
         Args:
-            messages: List of messages or a single message to generate the
-                completion for.
+            messages: The message can be,
+                - a list of preformatted messages. Each message should be a dictionary
+                    with the following keys:
+                    - content: The message content.
+                    - role: The role of the message (e.g. user or system).
+                - a list of messages. Each message is a string and will be formatted
+                    as a user message.
+                - a single message as a string which will be formatted as user message.
 
         Returns:
             List of message completions.
@@ -158,7 +168,7 @@ class _BaseLiteLLMClient:
             ProviderClientAPIException: If the API request fails.
         """
         try:
-            formatted_messages = self._format_messages(messages)
+            formatted_messages = self._get_formatted_messages(messages)
             arguments = resolve_environment_variables(self._completion_fn_args)
             response = await acompletion(messages=formatted_messages, **arguments)
             return self._format_response(response)
@@ -181,11 +191,24 @@ class _BaseLiteLLMClient:
                 )
             raise ProviderClientAPIException(e, message)
 
+    def _get_formatted_messages(
+        self, messages: Union[List[dict], List[str], str]
+    ) -> List[Dict[str, str]]:
+        """Returns a list of formatted messages."""
+        if (
+            isinstance(messages, list)
+            and len(messages) > 0
+            and isinstance(messages[0], dict)
+        ):
+            # Check if the messages are already formatted. If so, return them as is.
+            return cast(List[Dict[str, str]], messages)
+        return self._format_messages(messages)
+
     def _format_messages(self, messages: Union[List[str], str]) -> List[Dict[str, str]]:
         """Formats messages (or a single message) to OpenAI format."""
         if isinstance(messages, str):
             messages = [messages]
-        return [{"content": message, "role": "user"} for message in messages]
+        return [{"content": message, "role": ROLE_USER} for message in messages]
 
     def _format_response(self, response: Any) -> LLMResponse:
         """Parses the LiteLLM response to Rasa format."""

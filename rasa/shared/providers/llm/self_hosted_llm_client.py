@@ -3,10 +3,7 @@ import os
 from typing import Any, Dict, List, Optional, Union
 
 import structlog
-from litellm import (
-    atext_completion,
-    text_completion,
-)
+from litellm import atext_completion, text_completion
 
 from rasa.shared.constants import (
     API_KEY,
@@ -214,7 +211,14 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         Asynchronously generate completions for given prompt.
 
         Args:
-            prompt: Prompt to generate the completion for.
+            messages: The message can be,
+                - a list of preformatted messages. Each message should be a dictionary
+                    with the following keys:
+                    - content: The message content.
+                    - role: The role of the message (e.g. user or system).
+                - a list of messages. Each message is a string and will be formatted
+                    as a user message.
+                - a single message as a string which will be formatted as user message.
         Returns:
             List of message completions.
         Raises:
@@ -226,7 +230,9 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         except Exception as e:
             raise ProviderClientAPIException(e)
 
-    async def acompletion(self, messages: Union[List[str], str]) -> LLMResponse:
+    async def acompletion(
+        self, messages: Union[List[dict], List[str], str]
+    ) -> LLMResponse:
         """Asynchronous completion of the model with the given messages.
 
         Method overrides the base class method to call the appropriate
@@ -235,7 +241,14 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         atext_completion method is called.
 
         Args:
-            messages: The messages to be used for completion.
+            messages: The message can be,
+                - a list of preformatted messages. Each message should be a dictionary
+                    with the following keys:
+                    - content: The message content.
+                    - role: The role of the message (e.g. user or system).
+                - a list of messages. Each message is a string and will be formatted
+                    as a user message.
+                - a single message as a string which will be formatted as user message.
 
         Returns:
             The completion response.
@@ -244,7 +257,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
             return await super().acompletion(messages)
         return await self._atext_completion(messages)
 
-    def completion(self, messages: Union[List[str], str]) -> LLMResponse:
+    def completion(self, messages: Union[List[dict], List[str], str]) -> LLMResponse:
         """Completion of the model with the given messages.
 
         Method overrides the base class method to call the appropriate

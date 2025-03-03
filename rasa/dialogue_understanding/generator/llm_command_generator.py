@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Union
 
 import structlog
 from deprecated import deprecated  # type: ignore[import]
@@ -54,7 +54,9 @@ class LLMCommandGenerator(SingleStepLLMCommandGenerator):
             **kwargs,
         )
 
-    async def invoke_llm(self, prompt: Text) -> Optional[LLMResponse]:
+    async def invoke_llm(
+        self, prompt: Union[List[dict], List[str], str]
+    ) -> Optional[LLMResponse]:
         try:
             return await super().invoke_llm(prompt)
         except ProviderClientAPIException:

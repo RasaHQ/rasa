@@ -329,3 +329,7 @@ BUTTONS = "buttons"
 ATTACHMENT = "attachment"
 IMAGE = "image"
 CUSTOM = "custom"
+
+# Used for LLM command generation
+ROLE_USER = "user"
+ROLE_SYSTEM = "system"
