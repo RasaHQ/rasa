@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Optional, Set, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union
 
 import pytest
 
@@ -8,9 +8,12 @@ from rasa.dialogue_understanding.stack.utils import (
 )
 from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.flows.flow_path import FlowPath, FlowPathsList, PathNode
-from rasa.shared.core.flows.flow_step_links import StaticFlowStepLink
+from rasa.shared.core.flows.flow_step_links import FlowStepLinks, StaticFlowStepLink
+from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
+from rasa.shared.core.flows.nlu_trigger import NLUTrigger, NLUTriggers
 from rasa.shared.core.flows.steps import (
     ActionFlowStep,
+    CallFlowStep,
     ContinueFlowStep,
     EndFlowStep,
     StartFlowStep,
@@ -1090,3 +1093,266 @@ def test_digressions_flow_properties_undefined() -> None:
     foo_flow = flows.flow_by_id("foo")
     assert foo_flow.ask_confirm_digressions == []
     assert foo_flow.block_digressions == []
+
+
+@pytest.mark.parametrize(
+    "run_pattern_completed",
+    [True, False],
+)
+def test_flow_with_run_pattern_completed(run_pattern_completed: bool) -> None:
+    """Tests that the `run_pattern_completed` property is set correctly."""
+    flows = flows_from_str(
+        f"""
+        flows:
+          foo:
+            description: a test flow
+            run_pattern_completed: {run_pattern_completed}
+            steps:
+              - collect: slot_a
+          bar:
+            description: another test flow
+            steps:
+              - action: utter_hello
+        """
+    )
+
+    foo_flow = flows.flow_by_id("foo")
+    assert foo_flow.run_pattern_completed == run_pattern_completed
+
+
+def test_flow_run_pattern_completed_undefined() -> None:
+    """Tests that the `run_pattern_completed` property is `True` by default."""
+    flows = flows_from_str(
+        """
+        flows:
+          foo:
+            description: a test flow
+            steps:
+              - collect: slot_a
+          bar:
+            description: another test flow
+            steps:
+              - action: utter_hello
+        """
+    )
+
+    foo_flow = flows.flow_by_id("foo")
+    assert foo_flow.run_pattern_completed
+
+
+@pytest.mark.parametrize(
+    "input, expected_json",
+    [
+        (
+            {
+                "id": "flow_1",
+                "custom_name": "some_name",
+                "description": "some description",
+                "guard_condition": "some guard condition",
+                "step_sequence": FlowStepSequence(child_steps=[]),
+                "nlu_triggers": NLUTriggers(trigger_conditions=[]),
+                "always_include_in_prompt": True,
+                "file_path": "some/file/path",
+                "persisted_slots": [],
+                "run_pattern_completed": False,
+            },
+            {
+                "id": "flow_1",
+                "description": "some description",
+                "steps": [],
+                "name": "some_name",
+                "if": "some guard condition",
+                "nlu_trigger": [],
+                "always_include_in_prompt": True,
+                "file_path": "some/file/path",
+                "run_pattern_completed": False,
+            },
+        ),
+        (
+            {
+                "id": "flow_1",
+                "custom_name": "some_name",
+                "description": "some description",
+                "guard_condition": "some guard condition",
+                "step_sequence": FlowStepSequence(
+                    child_steps=[
+                        CallFlowStep(
+                            custom_id="step_1",
+                            idx=0,
+                            description="some step",
+                            metadata={},
+                            flow_id="flow_1",
+                            next=FlowStepLinks(
+                                links=[StaticFlowStepLink(target_step_id="asasa")]
+                            ),
+                            call="some_flow",
+                        ),
+                    ]
+                ),
+                "nlu_triggers": NLUTriggers(
+                    trigger_conditions=[
+                        NLUTrigger(intent="intent_1", confidence_threshold=0.5),
+                    ]
+                ),
+                "always_include_in_prompt": True,
+                "file_path": "some/file/path",
+                "persisted_slots": [],
+                "run_pattern_completed": True,
+            },
+            {
+                "id": "flow_1",
+                "description": "some description",
+                "steps": [
+                    {
+                        "id": "step_1",
+                        "description": "some step",
+                        "next": "asasa",
+                        "call": "some_flow",
+                    },
+                ],
+                "name": "some_name",
+                "if": "some guard condition",
+                "nlu_trigger": [
+                    {"intent": {"confidence_threshold": 0.5, "name": "intent_1"}}
+                ],
+                "always_include_in_prompt": True,
+                "file_path": "some/file/path",
+                "run_pattern_completed": True,
+            },
+        ),
+        (
+            {
+                "id": "flow_1",
+                "custom_name": None,
+                "description": None,
+                "guard_condition": None,
+                "step_sequence": FlowStepSequence(child_steps=[]),
+                "nlu_triggers": None,
+                "always_include_in_prompt": None,
+                "file_path": None,
+                "persisted_slots": [],
+                "run_pattern_completed": False,
+            },
+            {
+                "id": "flow_1",
+                "steps": [],
+                "run_pattern_completed": False,
+            },
+        ),
+        (
+            {
+                "id": "flow_1",
+                "custom_name": None,
+                "description": None,
+                "guard_condition": None,
+                "step_sequence": FlowStepSequence(child_steps=[]),
+                "nlu_triggers": None,
+                "always_include_in_prompt": False,
+                "file_path": None,
+                "persisted_slots": [],
+                "run_pattern_completed": True,
+            },
+            {
+                "id": "flow_1",
+                "steps": [],
+                "always_include_in_prompt": False,
+                "run_pattern_completed": True,
+            },
+        ),
+    ],
+)
+def test_flow_as_json(input: Dict[str, Any], expected_json: Dict[str, Any]):
+    """Test that a flow can be serialized to JSON."""
+    flow = Flow(
+        **input,
+    )
+
+    result = flow.as_json()
+    assert result == expected_json
+
+
+@pytest.mark.parametrize(
+    "json_input, expected_flow",
+    [
+        (
+            {
+                "id": "flow_1",
+                "steps": [],
+                "always_include_in_prompt": False,
+                "run_pattern_completed": True,
+            },
+            Flow(
+                **{
+                    "id": "flow_1",
+                    "custom_name": None,
+                    "description": None,
+                    "guard_condition": None,
+                    "step_sequence": FlowStepSequence(child_steps=[]),
+                    "nlu_triggers": None,
+                    "always_include_in_prompt": False,
+                    "persisted_slots": [],
+                    "run_pattern_completed": True,
+                }
+            ),
+        ),
+        (
+            {
+                "id": "flow_1",
+                "description": "some description",
+                "steps": [
+                    {
+                        "id": "step_1",
+                        "description": "some step",
+                        "next": "asasa",
+                        "call": "some_flow",
+                    },
+                ],
+                "name": "some_name",
+                "if": "some guard condition",
+                "nlu_trigger": [
+                    {"intent": {"confidence_threshold": 0.5, "name": "intent_1"}}
+                ],
+                "always_include_in_prompt": True,
+                "file_path": "some/file/path",
+                "run_pattern_completed": True,
+            },
+            Flow(
+                **{
+                    "id": "flow_1",
+                    "custom_name": "some_name",
+                    "description": "some description",
+                    "guard_condition": "some guard condition",
+                    "step_sequence": FlowStepSequence(
+                        child_steps=[
+                            CallFlowStep(
+                                custom_id="step_1",
+                                idx=0,
+                                description="some step",
+                                metadata={},
+                                flow_id="flow_1",
+                                next=FlowStepLinks(
+                                    links=[StaticFlowStepLink(target_step_id="asasa")]
+                                ),
+                                call="some_flow",
+                            ),
+                        ]
+                    ),
+                    "nlu_triggers": NLUTriggers(
+                        trigger_conditions=[
+                            NLUTrigger(intent="intent_1", confidence_threshold=0.5),
+                        ]
+                    ),
+                    "always_include_in_prompt": True,
+                    "file_path": "some/file/path",
+                    "persisted_slots": [],
+                    "run_pattern_completed": True,
+                },
+            ),
+        ),
+    ],
+)
+# test that flow can be deserialized from JSON
+def test_flow_from_json(json_input: Dict[str, Any], expected_flow: Flow):
+    flow = Flow.from_json(flow_id="flow_1", data=json_input)
+
+    assert flow == expected_flow

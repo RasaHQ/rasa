@@ -56,6 +56,7 @@ CALM_CUSTOMIZED_PATTERNS_YAML = dedent(
         name: pattern_completed
         description: This is a pattern
         file_path: data/upload/customized_default_flows.yml
+        run_pattern_completed: true
     """
 )
 

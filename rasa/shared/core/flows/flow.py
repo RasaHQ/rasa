@@ -71,6 +71,8 @@ class Flow:
     """The flow ids for which the assistant should ask for confirmation."""
     block_digressions: List[str] = field(default_factory=list)
     """The flow ids that the assistant should block from digressing to."""
+    run_pattern_completed: bool = True
+    """Whether the pattern_completed flow should be run after the flow ends."""
 
     @staticmethod
     def from_json(
@@ -111,6 +113,7 @@ class Flow:
                 KEY_ASK_CONFIRM_DIGRESSIONS, data
             ),
             block_digressions=extract_digression_prop(KEY_BLOCK_DIGRESSIONS, data),
+            run_pattern_completed=data.get("run_pattern_completed", True),
         )
 
     def get_full_name(self) -> str:
@@ -189,6 +192,8 @@ class Flow:
             data[KEY_ASK_CONFIRM_DIGRESSIONS] = self.ask_confirm_digressions
         if self.block_digressions:
             data[KEY_BLOCK_DIGRESSIONS] = self.block_digressions
+        if self.run_pattern_completed is not None:
+            data["run_pattern_completed"] = self.run_pattern_completed
 
         return data
 

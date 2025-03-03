@@ -790,6 +790,32 @@ def test_trigger_pattern_completed_does_not_trigger_if_not_user_frame():
     assert len(stack.frames) == 0
 
 
+def test_trigger_pattern_completed_does_not_trigger_when_explicitly_prohibited():
+    """Tests that `trigger_pattern_completed` does not trigger when the flow has `run_pattern_completed: False`."""  # noqa: E501
+    flows = flows_from_str(
+        """
+        flows:
+          foo_flow:
+            run_pattern_completed: False
+            description: flow foo
+            name: foo flow
+            steps:
+            - id: "1"
+              collect: foo
+        """
+    )
+
+    stack = DialogueStack.empty()
+
+    current_frame = UserFlowStackFrame(
+        flow_id="foo_flow", step_id=END_STEP, frame_id="some-other-id"
+    )
+
+    flow_executor.trigger_pattern_completed(current_frame, stack, flows)
+
+    assert len(stack.frames) == 0
+
+
 def test_pattern_ask_collect_information():
     stack = DialogueStack.empty()
 

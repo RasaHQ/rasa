@@ -320,6 +320,9 @@
                 },
                 "block_digressions": {
                     "$ref": "#/$defs/block_digressions"
+                },
+                "run_pattern_completed": {
+                    "type": "boolean"
                 }
             }
         },

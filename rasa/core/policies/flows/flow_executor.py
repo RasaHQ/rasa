@@ -309,6 +309,9 @@ def trigger_pattern_completed(
         or isinstance(current_frame, SearchPatternFlowStackFrame)
     ):
         completed_flow = current_frame.flow(flows)
+        if not completed_flow.run_pattern_completed:
+            return
+
         completed_flow_name = completed_flow.readable_name() if completed_flow else None
         stack.push(
             CompletedPatternFlowStackFrame(
