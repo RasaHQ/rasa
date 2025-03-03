@@ -3347,14 +3347,15 @@ async def test_action_extract_slots_for_shared_coexistence_slots(
                 metadata,
             )
 
-        assert all(
-            [
-                f"Calling action endpoint to run action '{action_name}'."
-                in record.message
-                for record in caplog.records
-            ]
-        )
         assert events == [SlotSet(slot_name, "Shoreditch Branch")]
+
+        expected_log = [
+            record
+            for record in caplog.records
+            if f"Calling action endpoint to run action '{action_name}'."
+            in record.message
+        ]
+        assert len(expected_log) == 1
 
 
 async def test_action_bot_response_with_rephrased_utterance(
