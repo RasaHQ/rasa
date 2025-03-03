@@ -8,6 +8,7 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
     CommandSyntaxVersion,
 )
+from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
@@ -319,3 +320,8 @@ def test_run_command_on_tracker_during_clarify():
         "continue-interrupted-frame-id-1",
         "some-frame-id",
     ]
+
+
+def test_is_instance_of_prompt_command():
+    # Check if the command adheres to the PromptCommand protocol.
+    assert isinstance(CancelFlowCommand(), PromptCommand) is True

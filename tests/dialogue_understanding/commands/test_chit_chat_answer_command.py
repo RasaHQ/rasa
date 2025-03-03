@@ -7,6 +7,7 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
     CommandSyntaxVersion,
 )
+from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.shared.core.events import DialogueStackUpdated, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -77,3 +78,8 @@ def test_regex_pattern_v2_command_syntax():
 
     # Reset the syntax version to default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()
+
+
+def test_is_instance_of_prompt_command():
+    # Check if the command adheres to the PromptCommand protocol.
+    assert isinstance(ChitChatAnswerCommand(), PromptCommand) is True

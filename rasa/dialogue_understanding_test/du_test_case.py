@@ -2,7 +2,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
-from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.dialogue_understanding.generator.command_parser import parse_commands
 from rasa.dialogue_understanding_test.command_comparison import are_command_lists_equal
 from rasa.dialogue_understanding_test.constants import (
@@ -65,11 +65,18 @@ class DialogueUnderstandingOutput(BaseModel):
     """
 
     # Dict with component name as key and list of commands as value
-    commands: Dict[str, List[Command]]
+    commands: Dict[str, List[PromptCommand]]
     # List of prompts
     prompts: Optional[List[Dict[str, Any]]] = None
 
-    def get_predicted_commands(self) -> List[Command]:
+    class Config:
+        """Skip validation for PromptCommand protocol as pydantic does not know how to
+        serialize or handle instances of a protocol.
+        """
+
+        arbitrary_types_allowed = True
+
+    def get_predicted_commands(self) -> List[PromptCommand]:
         """Get all commands from the output."""
         return [
             command
@@ -155,8 +162,15 @@ class DialogueUnderstandingTestStep(BaseModel):
     template: Optional[str] = None
     line: Optional[int] = None
     metadata_name: Optional[str] = None
-    commands: Optional[List[Command]] = None
+    commands: Optional[List[PromptCommand]] = None
     dialogue_understanding_output: Optional[DialogueUnderstandingOutput] = None
+
+    class Config:
+        """Skip validation for PromptCommand protocol as pydantic does not know how to
+        serialize or handle instances of a protocol.
+        """
+
+        arbitrary_types_allowed = True
 
     def as_dict(self) -> Dict[str, Any]:
         if self.actor == ACTOR_USER:
@@ -178,7 +192,7 @@ class DialogueUnderstandingTestStep(BaseModel):
     def from_dict(
         step: Dict[str, Any],
         flows: FlowsList,
-        custom_command_classes: List[Command] = [],
+        custom_command_classes: List[PromptCommand] = [],
         remove_default_commands: List[str] = [],
     ) -> "DialogueUnderstandingTestStep":
         """Creates a DialogueUnderstandingTestStep from a dictionary.
@@ -224,7 +238,7 @@ class DialogueUnderstandingTestStep(BaseModel):
             commands=commands,
         )
 
-    def get_predicted_commands(self) -> List[Command]:
+    def get_predicted_commands(self) -> List[PromptCommand]:
         """Get all predicted commands from the test case."""
         if self.dialogue_understanding_output is None:
             return []
@@ -314,7 +328,7 @@ class DialogueUnderstandingTestCase(BaseModel):
         input_test_case: Dict[str, Any],
         flows: FlowsList,
         file: Optional[str] = None,
-        custom_command_classes: List[Command] = [],
+        custom_command_classes: List[PromptCommand] = [],
         remove_default_commands: List[str] = [],
     ) -> "DialogueUnderstandingTestCase":
         """Creates a DialogueUnderstandingTestCase from a dictionary.
@@ -361,7 +375,7 @@ class DialogueUnderstandingTestCase(BaseModel):
 
         return [step.to_str() for step in steps]
 
-    def get_expected_commands(self) -> List[Command]:
+    def get_expected_commands(self) -> List[PromptCommand]:
         """Get all commands from the test steps."""
         return [
             command

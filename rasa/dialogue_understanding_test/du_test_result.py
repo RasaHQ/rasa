@@ -5,16 +5,13 @@ from typing import Any, Dict, List, Optional, Text
 import numpy as np
 from pydantic import BaseModel
 
-from rasa.dialogue_understanding.commands import Command
+from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.dialogue_understanding_test.du_test_case import (
     DialogueUnderstandingTestCase,
     DialogueUnderstandingTestStep,
 )
 from rasa.dialogue_understanding_test.utils import get_command_comparison
-from rasa.shared.nlu.constants import (
-    KEY_SYSTEM_PROMPT,
-    KEY_USER_PROMPT,
-)
+from rasa.shared.nlu.constants import KEY_SYSTEM_PROMPT, KEY_USER_PROMPT
 
 if typing.TYPE_CHECKING:
     from rasa.dialogue_understanding_test.command_metric_calculation import (
@@ -46,7 +43,7 @@ class DialogueUnderstandingTestResult(BaseModel):
     passed: bool
     error_line: Optional[int] = None
 
-    def get_expected_commands(self) -> List[Command]:
+    def get_expected_commands(self) -> List[PromptCommand]:
         return self.test_case.get_expected_commands()
 
 
@@ -60,9 +57,16 @@ class FailedTestStep(BaseModel):
     pass_status: bool
     command_generators: List[str]
     prompts: Optional[Dict[str, List[Dict[str, Any]]]] = None
-    expected_commands: List[Command]
-    predicted_commands: Dict[str, List[Command]]
+    expected_commands: List[PromptCommand]
+    predicted_commands: Dict[str, List[PromptCommand]]
     conversation_with_diff: List[str]
+
+    class Config:
+        """Skip validation for PromptCommand protocol as pydantic does not know how to
+        serialize or handle instances of a protocol.
+        """
+
+        arbitrary_types_allowed = True
 
     @classmethod
     def from_dialogue_understanding_test_step(
@@ -74,7 +78,7 @@ class FailedTestStep(BaseModel):
         user_utterance = step.text or ""
         line_number = step.line or -1
 
-        predicted_commands: Dict[str, List[Command]] = {}
+        predicted_commands: Dict[str, List[PromptCommand]] = {}
         prompts: Optional[Dict[str, List[Dict[str, Any]]]] = None
         command_generators: List[str] = []
 

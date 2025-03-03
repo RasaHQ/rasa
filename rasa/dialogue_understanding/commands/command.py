@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import dataclasses
-import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import rasa.shared.utils.common
 from rasa.shared.core.events import Event
@@ -84,18 +83,4 @@ class Command:
         Returns:
             The events to apply to the tracker.
         """
-        raise NotImplementedError()
-
-    def to_dsl(self) -> str:
-        """Converts the command to a DSL string."""
-        raise NotImplementedError()
-
-    @classmethod
-    def from_dsl(cls, match: re.Match, **kwargs: Any) -> Optional[Command]:
-        """Converts the DSL string to a command."""
-        raise NotImplementedError()
-
-    @staticmethod
-    def regex_pattern() -> str:
-        """Returns the regex pattern for the command."""
         raise NotImplementedError()

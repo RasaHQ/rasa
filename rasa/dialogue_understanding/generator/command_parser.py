@@ -16,6 +16,7 @@ from rasa.dialogue_understanding.commands import (
     SkipQuestionCommand,
     StartFlowCommand,
 )
+from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.dialogue_understanding.commands.utils import start_flow_by_name
 from rasa.shared.core.flows import FlowsList
 
@@ -41,8 +42,8 @@ def _get_compiled_pattern(pattern_str: str) -> re.Pattern:
 
 
 def _create_default_commands(
-    default_commands_to_remove: Union[List[Type[Command]], List[str]],
-) -> List[Type[Command]]:
+    default_commands_to_remove: Union[List[Type[PromptCommand]], List[str]],
+) -> List[Type[PromptCommand]]:
     """Return an updated list of default commands after removing the provided commands.
 
     Args:
@@ -64,11 +65,11 @@ def _create_default_commands(
 
 
 def _get_additional_parsing_logic(
-    command_clz: Type[Command],
-) -> Optional[Callable[[Command, FlowsList], Optional[Command]]]:
+    command_clz: Type[PromptCommand],
+) -> Optional[Callable[[PromptCommand, FlowsList], Optional[PromptCommand]]]:
     """Get additional parsing logic for a command."""
     command_to_parsing_fn_mapper: Dict[
-        Type[Command], Callable[..., Optional[Command]]
+        Type[PromptCommand], Callable[..., Optional[PromptCommand]]
     ] = {
         ClarifyCommand: _parse_clarify_command,
         SetSlotCommand: _parse_set_slot_command,
@@ -81,8 +82,10 @@ def parse_commands(
     actions: Optional[str],
     flows: FlowsList,
     is_handle_flows_prompt: bool = False,
-    additional_commands: Optional[List[Type[Command]]] = None,
-    default_commands_to_remove: Optional[Union[List[Type[Command]], List[str]]] = None,
+    additional_commands: Optional[List[Type[PromptCommand]]] = None,
+    default_commands_to_remove: Optional[
+        Union[List[Type[PromptCommand]], List[str]]
+    ] = None,
     **kwargs: Any,
 ) -> List[Command]:
     """Parse a list of action commands."""
@@ -116,7 +119,7 @@ def parse_commands(
 
 
 def _parse_standard_commands(
-    standard_commands: List[Type[Command]],
+    standard_commands: List[Type[PromptCommand]],
     action: str,
     flows: FlowsList,
     **kwargs: Any,
@@ -135,7 +138,7 @@ def _parse_standard_commands(
 
 
 def _parse_custom_commands(
-    custom_commands: List[Type[Command]],
+    custom_commands: List[Type[PromptCommand]],
     action: str,
     flows: FlowsList,
     **kwargs: Any,
@@ -152,7 +155,7 @@ def _parse_custom_commands(
 
 def _parse_set_slot_command(
     parsed_command: Optional[SetSlotCommand], flows: FlowsList, **kwargs: Any
-) -> Optional[Command]:
+) -> Optional[PromptCommand]:
     """Additional parsing logic for the SetSlotCommand."""
     if not parsed_command:
         return None
@@ -164,7 +167,7 @@ def _parse_set_slot_command(
 
 def _parse_clarify_command(
     parsed_command: Optional[ClarifyCommand], flows: FlowsList, **kwargs: Any
-) -> Optional[Command]:
+) -> Optional[PromptCommand]:
     """Additional parsing logic for the ClarifyCommand."""
     if not parsed_command:
         return None
@@ -194,7 +197,7 @@ def _parse_clarify_command(
 
 def _parse_start_flow_command(
     parsed_command: Optional[StartFlowCommand], flows: FlowsList, **kwargs: Any
-) -> Optional[Command]:
+) -> Optional[PromptCommand]:
     """Additional parsing logic for the StartFlowCommand."""
     if not parsed_command:
         return None

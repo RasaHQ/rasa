@@ -7,6 +7,7 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
     CommandSyntaxVersion,
 )
+from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.dialogue_understanding.commands.set_slot_command import (
     Command,
     SetSlotCommand,
@@ -507,3 +508,8 @@ def test_from_dsl():
 def test_equal(value1: Any, value2: Any, equal: bool):
     commands_equal = SetSlotCommand("name", value1) == SetSlotCommand("name", value2)
     assert commands_equal is equal
+
+
+def test_is_instance_of_prompt_command():
+    # Check if the command adheres to the PromptCommand protocol.
+    assert isinstance(SetSlotCommand("foo", "buzz"), PromptCommand) is True

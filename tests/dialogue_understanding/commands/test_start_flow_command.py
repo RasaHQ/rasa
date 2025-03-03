@@ -6,6 +6,7 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
     CommandSyntaxVersion,
 )
+from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
 from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
@@ -329,3 +330,8 @@ def test_change_flow_frame_position_in_the_stack():
     third_frame = updated_stack.frames[2]
     assert isinstance(third_frame, UserFlowStackFrame)
     assert third_frame.flow_id == "foo"
+
+
+def test_is_instance_of_prompt_command():
+    # Check if the command adheres to the PromptCommand protocol.
+    assert isinstance(StartFlowCommand([]), PromptCommand) is True

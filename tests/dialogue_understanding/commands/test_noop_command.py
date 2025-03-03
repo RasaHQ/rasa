@@ -1,4 +1,5 @@
 from rasa.dialogue_understanding.commands.noop_command import NoopCommand
+from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -17,3 +18,8 @@ def test_run_command_on_tracker_without_flows():
     command = NoopCommand()
 
     assert command.run_command_on_tracker(tracker, [], tracker) == []
+
+
+def test_is_not_instance_of_prompt_command():
+    # Check if the command does not adhere to the PromptCommand protocol.
+    assert isinstance(NoopCommand(), PromptCommand) is False

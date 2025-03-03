@@ -1,4 +1,5 @@
 from rasa.dialogue_understanding.commands import ErrorCommand
+from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
@@ -58,3 +59,8 @@ def test_run_command_on_tracker():
     assert frame.flow_id == "pattern_internal_error"
     assert frame.error_type == RASA_PATTERN_INTERNAL_ERROR_DEFAULT
     assert frame.info == dict()
+
+
+def test_is_not_instance_of_prompt_command():
+    # Check if the command does not adhere to the PromptCommand protocol.
+    assert isinstance(ErrorCommand(), PromptCommand) is False
