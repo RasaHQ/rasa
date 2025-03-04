@@ -59,6 +59,7 @@ from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.slots import (
     BooleanSlot,
+    CategoricalSlot,
     TextSlot,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -85,6 +86,8 @@ EXPECTED_PROMPT_PATH = "./tests/dialogue_understanding/generator/rendered_prompt
 EXPECTED_RENDERED_FLOW_DESCRIPTION_PATH = (
     "./tests/dialogue_understanding/generator/rendered_flow.txt"
 )
+PROMPT_TEMPLATE_WITH_CURRENT_SLOT_INFORMATION_PATH = "./tests/dialogue_understanding/generator/prompt_template_with_current_slot_information.jinja2"  # noqa: E501
+EXPECTED_RENDERED_PROMPT_WITH_CURRENT_SLOT_INFORMATION = "./tests/dialogue_understanding/generator/rendered_prompt_with_current_slot_information.txt"  # noqa: E501
 
 
 @pytest.fixture(autouse=True)
@@ -102,6 +105,18 @@ class TestSingleStepLLMCommandGenerator:
         """Create an SingleStepLLMCommandGenerator."""
         return SingleStepLLMCommandGenerator.create(
             config={}, resource=Mock(), model_storage=Mock(), execution_context=Mock()
+        )
+
+    @pytest.fixture
+    def command_generator_with_custom_prompt_template(self):
+        """Create an SingleStepLLMCommandGenerator."""
+        return SingleStepLLMCommandGenerator.create(
+            config={
+                "prompt_template": PROMPT_TEMPLATE_WITH_CURRENT_SLOT_INFORMATION_PATH
+            },
+            resource=Mock(),
+            model_storage=Mock(),
+            execution_context=Mock(),
         )
 
     @pytest.fixture
@@ -712,6 +727,69 @@ class TestSingleStepLLMCommandGenerator:
             tracker=test_tracker,
             startable_flows=test_flows,
             all_flows=test_flows,
+        )
+        # Then
+        for rendered_line, expected_line in zip(
+            rendered_template.splitlines(True), expected_template
+        ):
+            assert rendered_line == expected_line
+
+    def test_render_template_with_current_slot_info(
+        self,
+        command_generator_with_custom_prompt_template: SingleStepLLMCommandGenerator,
+    ):
+        """Test that rendered template includes information about the current slot
+        type and allowed values if available.
+        """
+        # Given
+        test_message = Message.build(text="some message")
+        test_slot = CategoricalSlot(
+            name="test_slot",
+            mappings=[{}],
+            initial_value=None,
+            influence_conversation=False,
+            values=["A", "B"],
+        )
+        stack = DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "test_flow",
+                    "step_id": "first_step",
+                    "frame_id": "some-frame-id",
+                },
+            ]
+        )
+        test_tracker = DialogueStateTracker.from_events(
+            sender_id="test",
+            evts=[UserUttered("Hello"), BotUttered("Hi")],
+            slots=[test_slot],
+        )
+        test_tracker.update_stack(stack)
+        test_flows = flows_from_str(
+            """
+            flows:
+              test_flow:
+                description: some description
+                steps:
+                - id: first_step
+                  collect: test_slot
+            """
+        )
+        with open(
+            EXPECTED_RENDERED_PROMPT_WITH_CURRENT_SLOT_INFORMATION,
+            "r",
+            encoding="unicode_escape",
+        ) as f:
+            expected_template = f.readlines()
+        # When
+        rendered_template = (
+            command_generator_with_custom_prompt_template.render_template(
+                message=test_message,
+                tracker=test_tracker,
+                startable_flows=test_flows,
+                all_flows=test_flows,
+            )
         )
         # Then
         for rendered_line, expected_line in zip(

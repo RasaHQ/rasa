@@ -46,6 +46,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
+    allowed_values_for_slot,
     get_prompt_template,
     resolve_model_client_config,
     sanitize_message_for_prompt,
@@ -400,6 +401,17 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
         current_slot, current_slot_description = self.prepare_current_slot_for_template(
             current_step
         )
+        current_slot_type = None
+        current_slot_allowed_values = None
+        if current_slot:
+            current_slot_type = (
+                slot.type_name
+                if (slot := tracker.slots.get(current_slot)) is not None
+                else None
+            )
+            current_slot_allowed_values = allowed_values_for_slot(
+                tracker.slots.get(current_slot)
+            )
         current_conversation = tracker_as_readable_transcript(tracker)
         latest_user_message = sanitize_message_for_prompt(message.get(TEXT))
         current_conversation += f"\nUSER: {latest_user_message}"
@@ -413,6 +425,8 @@ class SingleStepLLMCommandGenerator(LLMBasedCommandGenerator):
             "current_flow": top_flow.id if top_flow is not None else None,
             "current_slot": current_slot,
             "current_slot_description": current_slot_description,
+            "current_slot_type": current_slot_type,
+            "current_slot_allowed_values": current_slot_allowed_values,
             "user_message": latest_user_message,
             "is_repeat_command_enabled": self.repeat_command_enabled,
         }
