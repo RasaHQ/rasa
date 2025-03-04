@@ -1,21 +1,9 @@
 import json
 import logging
+import typing
 from copy import deepcopy
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
 
-from aiogram import Bot
-from aiogram.exceptions import TelegramAPIError
-from aiogram.types import (
-    InlineKeyboardButton,
-    KeyboardButton,
-    Message,
-    Update,
-)
-from aiogram.utils.keyboard import (
-    InlineKeyboardBuilder,
-    KeyboardBuilder,
-    ReplyKeyboardBuilder,
-)
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
@@ -27,8 +15,11 @@ from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
+if typing.TYPE_CHECKING:
+    from aiogram.types import Message, Update
 
-class TelegramOutput(Bot, OutputChannel):
+
+class TelegramOutput(OutputChannel):
     """Output channel for Telegram."""
 
     # skipcq: PYL-W0236
@@ -37,20 +28,28 @@ class TelegramOutput(Bot, OutputChannel):
         return "telegram"
 
     def __init__(self, access_token: Optional[Text]) -> None:
-        Bot.__init__(self, access_token)
+        try:
+            from aiogram import Bot
+
+            self.bot = Bot(access_token)
+        except ImportError:
+            raise ImportError(
+                "To use the Telegram channel, please install the aiogram package "
+                "with 'pip install aiogram'"
+            )
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
         """Sends text message."""
         for message_part in text.strip().split("\n\n"):
-            await self.send_message(recipient_id, message_part)
+            await self.bot.send_message(recipient_id, message_part)
 
     async def send_image_url(
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
         """Sends an image."""
-        await self.send_photo(recipient_id, image)
+        await self.bot.send_photo(recipient_id, image)
 
     async def send_text_with_buttons(
         self,
@@ -70,8 +69,15 @@ class TelegramOutput(Bot, OutputChannel):
 
         :button_type reply: reply keyboard
         """
+        from aiogram.types import InlineKeyboardButton, KeyboardButton
+        from aiogram.utils.keyboard import (
+            InlineKeyboardBuilder,
+            KeyboardBuilder,
+            ReplyKeyboardBuilder,
+        )
+
         if button_type == "inline":
-            reply_markup_builder: KeyboardBuilder = InlineKeyboardBuilder()
+            reply_markup_builder: "KeyboardBuilder" = InlineKeyboardBuilder()
             button_list = [
                 InlineKeyboardButton(text=s["title"], callback_data=s["payload"])
                 for s in buttons
@@ -110,7 +116,7 @@ class TelegramOutput(Bot, OutputChannel):
             )
             return
 
-        await self.send_message(recipient_id, text, reply_markup=reply_markup)
+        await self.bot.send_message(recipient_id, text, reply_markup=reply_markup)
 
     async def send_custom_json(
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
@@ -150,8 +156,16 @@ class TelegramOutput(Bot, OutputChannel):
         for params in send_functions.keys():
             if all(json_message.get(p) is not None for p in params):
                 args = [json_message.pop(p) for p in params]
-                api_call = getattr(self, send_functions[params])
+                api_call = getattr(self.bot, send_functions[params])
                 await api_call(recipient_id, *args, **json_message)
+
+    async def get_me(self) -> Any:
+        """Get information about the bot itself."""
+        return await self.bot.get_me()
+
+    async def set_webhook(self, url: Text) -> None:
+        """Set the webhook URL for telegram."""
+        await self.bot.set_webhook(url=url)
 
 
 class TelegramInput(InputChannel):
@@ -185,19 +199,19 @@ class TelegramInput(InputChannel):
         self.debug_mode = debug_mode
 
     @staticmethod
-    def _is_location(message: Message) -> bool:
+    def _is_location(message: "Message") -> bool:
         return message.location is not None
 
     @staticmethod
-    def _is_user_message(message: Message) -> bool:
+    def _is_user_message(message: "Message") -> bool:
         return message.text is not None
 
     @staticmethod
-    def _is_edited_message(message: Update) -> bool:
+    def _is_edited_message(message: "Update") -> bool:
         return message.edited_message is not None
 
     @staticmethod
-    def _is_button(message: Update) -> bool:
+    def _is_button(message: "Update") -> bool:
         return message.callback_query is not None
 
     def blueprint(
@@ -223,6 +237,8 @@ class TelegramInput(InputChannel):
 
         @telegram_webhook.route("/webhook", methods=["GET", "POST"])
         async def message(request: Request) -> Any:
+            from aiogram.types import Update
+
             if request.method == "POST":
                 request_dict = request.json
                 if isinstance(request_dict, Text):
@@ -322,6 +338,8 @@ class TelegramInput(InputChannel):
         return TelegramOutput(self.access_token)
 
     async def set_webhook(self, channel: TelegramOutput) -> None:
+        from aiogram.exceptions import TelegramAPIError
+
         try:
             await channel.set_webhook(url=self.webhook_url)
         except TelegramAPIError as error:

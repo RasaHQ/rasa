@@ -4,20 +4,14 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Text, Union
 
 from faker import Faker
-from presidio_analyzer import AnalyzerEngine
-from presidio_analyzer.nlp_engine import (
-    SpacyNlpEngine,
-    StanzaNlpEngine,
-    TransformersNlpEngine,
-)
-from presidio_anonymizer import AnonymizerEngine
-from presidio_anonymizer.entities import OperatorConfig
 
 from rasa.shared.exceptions import RasaException
 from rasa.utils.singleton import Singleton
 
 if typing.TYPE_CHECKING:
+    from presidio_analyzer import AnalyzerEngine
     from presidio_analyzer.nlp_engine.nlp_engine import NlpEngine
+    from presidio_anonymizer.entities import OperatorConfig
 
 DEFAULT_PRESIDIO_LANG_CODE = "en"
 DEFAULT_PRESIDIO_MODEL_NAME = "en_core_web_lg"
@@ -61,8 +55,10 @@ class AnonymizationAnalyzer(metaclass=Singleton):
     @staticmethod
     def _get_analyzer_engine(
         anonymization_rule_list: AnonymizationRuleList,
-    ) -> AnalyzerEngine:
+    ) -> "AnalyzerEngine":
         """Returns an analyzer engine for all the anonymization rule lists."""
+        from presidio_analyzer import AnalyzerEngine
+
         try:
             nlp_engine = AnonymizationAnalyzer._build_presidio_nlp_engine(
                 anonymization_rule_list
@@ -84,6 +80,12 @@ class AnonymizationAnalyzer(metaclass=Singleton):
         anonymization_rule_list: AnonymizationRuleList,
     ) -> "NlpEngine":
         """Creates an instance of the Presidio nlp engine."""
+        from presidio_analyzer.nlp_engine import (
+            SpacyNlpEngine,
+            StanzaNlpEngine,
+            TransformersNlpEngine,
+        )
+
         if anonymization_rule_list.model_provider == "transformers":
             nlp_engine = TransformersNlpEngine(
                 models={
@@ -111,6 +113,8 @@ class AnonymizationRuleExecutor:
 
     def __init__(self, anonymization_rule_list: AnonymizationRuleList):
         """Initialize the anonymization rule executor."""
+        from presidio_anonymizer import AnonymizerEngine
+
         self.anonymization_rule_list = anonymization_rule_list
 
         is_valid_rule_list = self._validate_anonymization_rule_list(
@@ -243,8 +247,10 @@ class AnonymizationRuleExecutor:
 
         return func
 
-    def get_operators(self) -> Dict[Text, OperatorConfig]:
+    def get_operators(self) -> Dict[Text, "OperatorConfig"]:
         """Returns a dictionary of operators for the given anonymization rule list."""
+        from presidio_anonymizer.entities import OperatorConfig
+
         operators = {}
 
         for rule in self.anonymization_rule_list.rule_list:

@@ -258,10 +258,13 @@ def run_bot(
 
 async def update_bot_status(bot: BotSession) -> None:
     """Update the status of a bot based on the process return code."""
-    if bot.has_died_recently():
-        set_bot_status_to_stopped(bot)
-    elif await bot.completed_startup_recently():
-        set_bot_status_to_running(bot)
+    try:
+        if bot.has_died_recently():
+            set_bot_status_to_stopped(bot)
+        elif await bot.completed_startup_recently():
+            set_bot_status_to_running(bot)
+    except Exception as e:
+        structlogger.error("model_runner.update_bot_status.error", error=str(e))
 
 
 def terminate_bot(bot: BotSession) -> None:
