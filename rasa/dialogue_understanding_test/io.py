@@ -8,6 +8,7 @@ import rasa.shared.data
 from rasa.dialogue_understanding_test.command_metric_calculation import CommandMetrics
 from rasa.dialogue_understanding_test.constants import SCHEMA_FILE_PATH
 from rasa.dialogue_understanding_test.du_test_case import (
+    KEY_CHOICES,
     KEY_COMPLETION_TOKENS,
     KEY_PROMPT_TOKENS,
 )
@@ -309,6 +310,7 @@ def print_failed_cases(
                 print_prompt(step)
             rich.print("\n[red3]-- CONVERSATION --[/red3]")
             rich.print("\n".join(step.conversation_with_diff))
+            print_llm_output(step)
 
 
 def print_prompt(step: FailedTestStep) -> None:
@@ -339,6 +341,18 @@ def print_prompt(step: FailedTestStep) -> None:
             rich.print(
                 f"[bold]  user prompt      [/bold]: {prompt_data[KEY_USER_PROMPT]}"
             )
+
+
+def print_llm_output(step: FailedTestStep) -> None:
+    if not step.prompts:
+        return
+
+    for component, component_prompts in step.prompts.items():
+        for prompt_data in component_prompts:
+            if KEY_CHOICES in prompt_data:
+                rich.print("\n[red3]-- CHOICES --[/red3]")
+                rich.print(prompt_data.get(KEY_CHOICES))
+                rich.print("[red3]-------------[/red3]")
 
 
 def print_command_summary(metrics: Dict[str, CommandMetrics]) -> None:

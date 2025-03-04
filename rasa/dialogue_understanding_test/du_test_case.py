@@ -30,6 +30,7 @@ from rasa.shared.nlu.constants import (
 KEY_USAGE = "usage"
 KEY_PROMPT_TOKENS = "prompt_tokens"
 KEY_COMPLETION_TOKENS = "completion_tokens"
+KEY_CHOICES = "choices"
 
 
 class DialogueUnderstandingOutput(BaseModel):
@@ -150,6 +151,11 @@ class DialogueUnderstandingOutput(BaseModel):
                     prompt_info[KEY_COMPLETION_TOKENS] = usage_object.get(
                         KEY_COMPLETION_TOKENS
                     )
+
+            choices = prompt_data.get(KEY_LLM_RESPONSE_METADATA, {}).get(KEY_CHOICES)
+            if choices and len(choices) > 0:
+                # Add the action list returned by the LLM to the prompt_info
+                prompt_info[KEY_CHOICES] = choices[0]
 
             data[component_name].append(prompt_info)
 

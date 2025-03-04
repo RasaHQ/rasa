@@ -5,6 +5,7 @@ from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowComman
 from rasa.dialogue_understanding_test.command_metric_calculation import CommandMetrics
 from rasa.dialogue_understanding_test.constants import ACTOR_USER
 from rasa.dialogue_understanding_test.du_test_case import (
+    KEY_CHOICES,
     KEY_COMPLETION_TOKENS,
     KEY_PROMPT_TOKENS,
     DialogueUnderstandingOutput,
@@ -41,6 +42,7 @@ def sample_output() -> DialogueUnderstandingOutput:
                         KEY_COMPLETION_TOKENS: 4,
                     },
                 },
+                KEY_CHOICES: ["StartFlow(bar)"],
             }
         ],
         commands={
@@ -137,6 +139,7 @@ class TestDialogueUnderstandingTestSuiteResult:
                                 KEY_COMPLETION_TOKENS: 6,
                             },
                         },
+                        KEY_CHOICES: ["SetSlot(confirm_slot_correction, False)"],
                     },
                 ],
             ),
@@ -425,3 +428,42 @@ class TestDialogueUnderstandingTestSuiteResult:
         assert prompt_token_metrics["p50"] == 4
         assert prompt_token_metrics["p90"] == 4
         assert prompt_token_metrics["p99"] == 4
+
+    def test_key_choices_set_in_output(self):
+        """Test that KEY_CHOICES is set in the output when expected."""
+        step_with_choices = DialogueUnderstandingTestStep(
+            actor=ACTOR_USER,
+            text="hello",
+            commands=[StartFlowCommand("bar")],
+            dialogue_understanding_output=DialogueUnderstandingOutput(
+                commands={"dummy_component": [StartFlowCommand("bar")]},
+                prompts=[
+                    {
+                        KEY_COMPONENT_NAME: "dummy_component",
+                        KEY_USER_PROMPT: "prompt_content",
+                        KEY_PROMPT_NAME: "prompt_name",
+                        KEY_LLM_RESPONSE_METADATA: {
+                            KEY_LATENCY: 1.23,
+                            "usage": {
+                                KEY_PROMPT_TOKENS: 1234,
+                                KEY_COMPLETION_TOKENS: 4,
+                            },
+                        },
+                        KEY_CHOICES: ["StartFlow(bar)"],
+                    }
+                ],
+            ),
+        )
+        test_case = DialogueUnderstandingTestCase(
+            name="test_case_with_choices",
+            steps=[step_with_choices],
+            file="test_file_with_choices.yml",
+        )
+        test_result = DialogueUnderstandingTestResult(
+            test_case=test_case,
+            passed=True,
+        )
+
+        assert test_result.test_case.steps[0].dialogue_understanding_output.prompts[0][
+            KEY_CHOICES
+        ] == ["StartFlow(bar)"]
