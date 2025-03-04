@@ -26,12 +26,12 @@ model_groups:
     models:
     # Same LLM models across multiple GCP projects
       - provider: gemini
-        model: gemini-pro
+        model: gemini-2.0-flash-lite-001
         api_key: ${GEMINI_API_KEY_1}
         timeout: 7
         num_retries: 5
       - provider: gemini
-        model: gemini-pro
+        model: gemini-2.0-flash-lite-001
         api_key: ${GEMINI_API_KEY_2}
         timeout: 7
         num_retries: 5

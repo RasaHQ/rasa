@@ -11,7 +11,7 @@ model_groups:
   - id: gemini_llm
     models:
       - provider: gemini
-        model: gemini-pro
+        model: gemini-2.0-flash-lite-001
         api_key: ${GEMINI_API_KEY_1}
         timeout: 7
         num_retries: 5
