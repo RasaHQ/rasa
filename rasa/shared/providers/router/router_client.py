@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Dict, List, Protocol, runtime_checkable
 
 
@@ -9,7 +11,7 @@ class RouterClient(Protocol):
     """
 
     @classmethod
-    def from_config(cls, config: dict) -> "RouterClient":
+    def from_config(cls, config: dict) -> RouterClient:
         """
         Initializes the router client with the given configuration.
 

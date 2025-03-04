@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import Any, Dict, List, Union
 
@@ -7,6 +9,7 @@ from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers._configs.litellm_router_client_config import (
     LiteLLMRouterClientConfig,
 )
+from rasa.shared.providers.constants import LITE_LLM_MODEL_FIELD
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.providers.router._base_litellm_router_client import (
@@ -42,7 +45,7 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
         )
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> "LiteLLMRouterLLMClient":
+    def from_config(cls, config: Dict[str, Any]) -> LiteLLMRouterLLMClient:
         """Instantiates a LiteLLM Router LLM client from a configuration dict.
 
         Args:
@@ -87,6 +90,10 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
             ProviderClientAPIException: If the API request fails.
         """
         try:
+            structlogger.info(
+                "litellm_router_llm_client.text_completion",
+                _completion_fn_args=self._completion_fn_args,
+            )
             response = self.router_client.text_completion(
                 prompt=prompt, **self._completion_fn_args
             )
@@ -193,5 +200,5 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
         """
         return {
             **self._litellm_extra_parameters,
-            "model": self.model_group_id,
+            LITE_LLM_MODEL_FIELD: self.model_group_id,
         }

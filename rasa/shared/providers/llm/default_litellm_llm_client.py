@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Dict
 
 from rasa.shared.constants import (
@@ -35,7 +37,7 @@ class DefaultLiteLLMClient(_BaseLiteLLMClient):
         self.validate_client_setup()
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> "DefaultLiteLLMClient":
+    def from_config(cls, config: Dict[str, Any]) -> DefaultLiteLLMClient:
         default_config = DefaultLiteLLMClientConfig.from_dict(config)
         return cls(
             model=default_config.model,

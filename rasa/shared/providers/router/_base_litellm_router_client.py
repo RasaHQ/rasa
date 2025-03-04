@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from typing import Any, Dict, List
 
@@ -93,7 +95,7 @@ class _BaseLiteLLMRouterClient:
                 return
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> "_BaseLiteLLMRouterClient":
+    def from_config(cls, config: Dict[str, Any]) -> _BaseLiteLLMRouterClient:
         """Instantiates a LiteLLM Router Embedding client from a configuration dict.
 
         Args:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict
 
@@ -69,7 +71,7 @@ class DefaultLiteLLMClientConfig:
             raise ValueError(message)
 
     @classmethod
-    def from_dict(cls, config: dict) -> "DefaultLiteLLMClientConfig":
+    def from_dict(cls, config: dict) -> DefaultLiteLLMClientConfig:
         """
         Initializes a dataclass from the passed config.
 

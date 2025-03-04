@@ -1,6 +1,3 @@
-import os
-from unittest.mock import patch
-
 import pytest
 import structlog
 from pytest import MonkeyPatch
@@ -399,8 +396,8 @@ class TestAzureOpenAILLMClient:
 
         assert client._resolve_api_key_env_var() == "${API_KEY}"
 
-    @patch.dict(os.environ, {AZURE_API_KEY_ENV_VAR: "azure_api_key"})
-    def test_resolve_api_key_env_var_from_azure_env_var(self):
+    def test_resolve_api_key_env_var_from_azure_env_var(self, monkeypatch: MonkeyPatch):
+        monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "azure_api_key")
         client = AzureOpenAILLMClient(
             deployment="test_deployment",
             api_base="https://my.api.base.com/my_model",
@@ -410,8 +407,10 @@ class TestAzureOpenAILLMClient:
         client._extra_parameters = {}
         assert client._resolve_api_key_env_var() == "${AZURE_API_KEY}"
 
-    @patch.dict(os.environ, {OPENAI_API_KEY_ENV_VAR: "openai_api_key"})
-    def test_resolve_api_key_env_var_from_openai_env_var(self):
+    def test_resolve_api_key_env_var_from_openai_env_var(
+        self, monkeypatch: MonkeyPatch
+    ):
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "openai_api_key")
         client = AzureOpenAILLMClient(
             deployment="test_deployment",
             api_base="https://my.api.base.com/my_model",

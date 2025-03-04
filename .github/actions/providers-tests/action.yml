@@ -257,7 +257,6 @@ runs:
         : Run OTEL collector for Tracing and Metrics collection
         `make set-otel-resource-attributes`
         make run-otel-collector
-        make otel-collector-health-check
         echo "OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES" >> $GITHUB_ENV
       shell: bash
 

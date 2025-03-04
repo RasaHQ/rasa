@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import asdict, dataclass, field
 from typing import Optional
 
@@ -37,7 +39,7 @@ class RasaLLMClientConfig:
     extra_parameters: dict = field(default_factory=dict)
 
     @classmethod
-    def from_dict(cls, config: dict) -> "RasaLLMClientConfig":
+    def from_dict(cls, config: dict) -> RasaLLMClientConfig:
         """
         Initializes a dataclass from the passed config.
 

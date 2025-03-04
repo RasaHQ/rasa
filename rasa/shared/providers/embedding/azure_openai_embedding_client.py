@@ -19,7 +19,13 @@ from rasa.shared.constants import (
 )
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers._configs.azure_openai_client_config import (
+    AzureEntraIDOAuthConfig,
     AzureOpenAIClientConfig,
+)
+from rasa.shared.providers.constants import (
+    DEFAULT_AZURE_API_KEY_NAME,
+    LITE_LLM_API_KEY_FIELD,
+    LITE_LLM_AZURE_AD_TOKEN,
 )
 from rasa.shared.providers.embedding._base_litellm_embedding_client import (
     _BaseLiteLLMEmbeddingClient,
@@ -41,6 +47,8 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
             If not provided, it will be set via environment variable.
         api_version (Optional[str]): The version of the API to use.
             If not provided, it will be set via environment variable.
+        oauth (Optional[AzureEntraIDOAuthConfig]): Optional OAuth configuration.
+            If provided, the client will use OAuth for authentication.
         kwargs (Optional[Dict[str, Any]]): Optional configuration parameters specific
             to the embedding model deployment.
 
@@ -57,6 +65,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         api_base: Optional[str] = None,
         api_type: Optional[str] = None,
         api_version: Optional[str] = None,
+        oauth: Optional[AzureEntraIDOAuthConfig] = None,
         **kwargs: Any,
     ):
         super().__init__()  # type: ignore
@@ -84,7 +93,11 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
         # Litellm does not support use of OPENAI_API_KEY, so we need to map it
         # because of backward compatibility. However, we're first looking at
         # AZURE_API_KEY.
-        self._api_key_env_var = self._resolve_api_key_env_var()
+
+        self._oauth = oauth
+        self._api_key_env_var = (
+            self._resolve_api_key_env_var() if not self._oauth else None
+        )
 
         self.validate_client_setup()
 
@@ -100,7 +113,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
             return self._extra_parameters[API_KEY]
 
         if os.getenv(AZURE_API_KEY_ENV_VAR) is not None:
-            return "${AZURE_API_KEY}"
+            return f"${{{DEFAULT_AZURE_API_KEY_NAME}}}"
 
         if os.getenv(OPENAI_API_KEY_ENV_VAR) is not None:
             # API key can be set through OPENAI_API_KEY too,
@@ -163,6 +176,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
             api_base=azure_openai_config.api_base,
             api_type=azure_openai_config.api_type,
             api_version=azure_openai_config.api_version,
+            oauth=azure_openai_config.oauth,
             **azure_openai_config.extra_parameters,
         )
 
@@ -177,6 +191,7 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
             api_base=self.api_base,
             api_type=self.api_type,
             api_version=self.api_version,
+            oauth=self._oauth,
             extra_parameters=self._extra_parameters,
         )
         return config.to_dict()
@@ -219,13 +234,23 @@ class AzureOpenAIEmbeddingClient(_BaseLiteLLMEmbeddingClient):
 
     @property
     def _embedding_fn_args(self) -> dict:
+        auth_parameter: Dict[str, str] = {}
+
+        if self._oauth:
+            auth_parameter = {
+                **auth_parameter,
+                LITE_LLM_AZURE_AD_TOKEN: self._oauth.get_bearer_token(),
+            }
+        elif self._api_key_env_var:
+            auth_parameter = {LITE_LLM_API_KEY_FIELD: self._api_key_env_var}
+
         return {
             **self._litellm_extra_parameters,
             "model": self._litellm_model_name,
             "api_base": self.api_base,
             "api_type": self.api_type,
             "api_version": self.api_version,
-            "api_key": self._api_key_env_var,
+            **auth_parameter,
         }
 
     @property

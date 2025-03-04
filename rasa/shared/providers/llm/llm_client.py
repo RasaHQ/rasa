@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Dict, List, Protocol, Union, runtime_checkable
 
 from rasa.shared.providers.llm.llm_response import LLMResponse
@@ -11,7 +13,7 @@ class LLMClient(Protocol):
     """
 
     @classmethod
-    def from_config(cls, config: dict) -> "LLMClient":
+    def from_config(cls, config: dict) -> LLMClient:
         """
         Initializes the llm client with the given configuration.
 

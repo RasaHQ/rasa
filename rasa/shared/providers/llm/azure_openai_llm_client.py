@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import re
 from typing import Any, Dict, Optional
@@ -21,12 +23,37 @@ from rasa.shared.constants import (
 )
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers._configs.azure_openai_client_config import (
+    AzureEntraIDOAuthConfig,
     AzureOpenAIClientConfig,
+)
+from rasa.shared.providers.constants import (
+    DEFAULT_AZURE_API_KEY_NAME,
+    LITE_LLM_API_BASE_FIELD,
+    LITE_LLM_API_KEY_FIELD,
+    LITE_LLM_API_VERSION_FIELD,
+    LITE_LLM_AZURE_AD_TOKEN,
 )
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 from rasa.shared.utils.io import raise_deprecation_warning
 
 structlogger = structlog.get_logger()
+
+AZURE_CLIENT_ID = "AZURE_CLIENT_ID"
+AZURE_CLIENT_SECRET = "AZURE_CLIENT_SECRET"
+AZURE_TENANT_ID = "AZURE_TENANT_ID"
+CLIENT_SECRET_VARS = (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID)
+
+AZURE_CLIENT_CERTIFICATE_PATH = "AZURE_CLIENT_CERTIFICATE_PATH"
+AZURE_CLIENT_CERTIFICATE_PASSWORD = "AZURE_CLIENT_CERTIFICATE_PASSWORD"
+AZURE_CLIENT_SEND_CERTIFICATE_CHAIN = "AZURE_CLIENT_SEND_CERTIFICATE_CHAIN"
+CERT_VARS = (AZURE_CLIENT_ID, AZURE_CLIENT_CERTIFICATE_PATH, AZURE_TENANT_ID)
+
+
+class AzureADConfig:
+    def __init__(
+        self, client_id: str, client_secret: str, tenant_id: str, scopes: str
+    ) -> None:
+        self.scopes = scopes
 
 
 class AzureOpenAILLMClient(_BaseLiteLLMClient):
@@ -41,6 +68,7 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
             it will be set via environment variables.
         api_version (Optional[str]): The version of the API to use. If not provided,
             it will be set via environment variable.
+
         kwargs (Optional[Dict[str, Any]]): Optional configuration parameters specific
             to the model deployment.
 
@@ -57,6 +85,7 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
         api_type: Optional[str] = None,
         api_base: Optional[str] = None,
         api_version: Optional[str] = None,
+        oauth: Optional[AzureEntraIDOAuthConfig] = None,
         **kwargs: Any,
     ):
         super().__init__()  # type: ignore
@@ -80,13 +109,24 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
             or os.getenv(OPENAI_API_VERSION_ENV_VAR)
         )
 
-        self._api_key_env_var = self._resolve_api_key_env_var()
-
         # Not used by LiteLLM, here for backward compatibility
         self._api_type = (
             api_type
             or os.getenv(AZURE_API_TYPE_ENV_VAR)
             or os.getenv(OPENAI_API_TYPE_ENV_VAR)
+        )
+
+        os.unsetenv("OPENAI_API_KEY")
+        os.unsetenv("AZURE_API_KEY")
+
+        self._oauth = oauth
+
+        if self._oauth:
+            os.unsetenv(DEFAULT_AZURE_API_KEY_NAME)
+            os.unsetenv(AZURE_API_KEY_ENV_VAR)
+            os.unsetenv(OPENAI_API_KEY_ENV_VAR)
+        self._api_key_env_var = (
+            self._resolve_api_key_env_var() if not self._oauth else None
         )
 
         # Run helper function to check and raise deprecation warning if
@@ -157,7 +197,7 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
             return self._extra_parameters[API_KEY]
 
         if os.getenv(AZURE_API_KEY_ENV_VAR) is not None:
-            return "${AZURE_API_KEY}"
+            return f"${{{DEFAULT_AZURE_API_KEY_NAME}}}"
 
         if os.getenv(OPENAI_API_KEY_ENV_VAR) is not None:
             # API key can be set through OPENAI_API_KEY too,
@@ -188,7 +228,7 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
         )
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> "AzureOpenAILLMClient":
+    def from_config(cls, config: Dict[str, Any]) -> AzureOpenAILLMClient:
         """Initializes the client from given configuration.
 
         Args:
@@ -215,11 +255,12 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
             raise
 
         return cls(
-            azure_openai_config.deployment,
-            azure_openai_config.model,
-            azure_openai_config.api_type,
-            azure_openai_config.api_base,
-            azure_openai_config.api_version,
+            deployment=azure_openai_config.deployment,
+            model=azure_openai_config.model,
+            api_type=azure_openai_config.api_type,
+            api_base=azure_openai_config.api_base,
+            api_version=azure_openai_config.api_version,
+            oauth=azure_openai_config.oauth,
             **azure_openai_config.extra_parameters,
         )
 
@@ -234,6 +275,7 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
             api_base=self._api_base,
             api_version=self._api_version,
             api_type=self._api_type,
+            oauth=self._oauth,
             extra_parameters=self._extra_parameters,
         )
         return config.to_dict()
@@ -282,12 +324,23 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
         """Returns the completion arguments for invoking a call through
         LiteLLM's completion functions.
         """
+        # Set the API key env var to None if OAuth is used
+        auth_parameter: Dict[str, str] = {}
+
+        if self._oauth:
+            auth_parameter = {
+                **auth_parameter,
+                LITE_LLM_AZURE_AD_TOKEN: self._oauth.get_bearer_token(),
+            }
+        elif self._api_key_env_var:
+            auth_parameter = {LITE_LLM_API_KEY_FIELD: self._api_key_env_var}
+
         fn_args = super()._completion_fn_args
         fn_args.update(
             {
-                "api_base": self.api_base,
-                "api_version": self.api_version,
-                "api_key": self._api_key_env_var,
+                LITE_LLM_API_BASE_FIELD: self.api_base,
+                LITE_LLM_API_VERSION_FIELD: self.api_version,
+                **auth_parameter,
             }
         )
         return fn_args
@@ -314,41 +367,44 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
 
             return info.format(setting=setting, options=options)
 
+        env_var_field = "env_var"
+        config_key_field = "config_key"
+        current_value_field = "current_value"
         # All required settings for Azure OpenAI client
         settings: Dict[str, Dict[str, Any]] = {
             "API Base": {
-                "current_value": self.api_base,
-                "env_var": AZURE_API_BASE_ENV_VAR,
-                "config_key": API_BASE_CONFIG_KEY,
+                current_value_field: self.api_base,
+                env_var_field: AZURE_API_BASE_ENV_VAR,
+                config_key_field: API_BASE_CONFIG_KEY,
             },
             "API Version": {
-                "current_value": self.api_version,
-                "env_var": AZURE_API_VERSION_ENV_VAR,
-                "config_key": API_VERSION_CONFIG_KEY,
+                current_value_field: self.api_version,
+                env_var_field: AZURE_API_VERSION_ENV_VAR,
+                config_key_field: API_VERSION_CONFIG_KEY,
             },
             "Deployment Name": {
-                "current_value": self.deployment,
-                "env_var": None,
-                "config_key": DEPLOYMENT_CONFIG_KEY,
+                current_value_field: self.deployment,
+                env_var_field: None,
+                config_key_field: DEPLOYMENT_CONFIG_KEY,
             },
         }
 
         missing_settings = [
             setting_name
             for setting_name, setting_info in settings.items()
-            if setting_info["current_value"] is None
+            if setting_info[current_value_field] is None
         ]
 
         if missing_settings:
             event_info = f"Client settings not set: " f"{', '.join(missing_settings)}. "
 
             for missing_setting in missing_settings:
-                if settings[missing_setting]["current_value"] is not None:
+                if settings[missing_setting][current_value_field] is not None:
                     continue
                 event_info += generate_event_info_for_missing_setting(
                     missing_setting,
-                    settings[missing_setting]["env_var"],
-                    settings[missing_setting]["config_key"],
+                    settings[missing_setting][env_var_field],
+                    settings[missing_setting][config_key_field],
                 )
 
             structlogger.error(

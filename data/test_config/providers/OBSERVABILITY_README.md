@@ -9,7 +9,6 @@ via `` `make set-otel-resource-attributes` `` (note the backticks in the command
     - If intending to set other attributes also, such as git tag etc, then set `OTEL_RESOURCE_ATTRIBUTES` accordingly
     manually: `export OTEL_RESOURCE_ATTRIBUTES=key1=value,key2=value2,key-n=value-n`
 3. Start OTEL collector as a `docker` container (named `otel-collector`): `make run-otel-collector`
-    - **Optional**: A health check on the collector can be performed via `make otel-collector-health-check` (Note: `curl` and `jq` utilities required for this)
 4. Train and use Rasa bot assistant.
 5. View traces and metrics: Now generated traces and metrics would be visible in:
     - `Honeycomb`'s [web UI](https://ui.honeycomb.io/rasa/environments/engine) (or other chosen monitoring backend, if using a different one).

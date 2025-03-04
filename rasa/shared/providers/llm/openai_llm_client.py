@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import re
 from typing import Any, Dict, Optional
@@ -11,6 +13,10 @@ from rasa.shared.constants import (
     OPENAI_PROVIDER,
 )
 from rasa.shared.providers._configs.openai_client_config import OpenAIClientConfig
+from rasa.shared.providers.constants import (
+    LITE_LLM_API_KEY_FIELD,
+    LITE_LLM_API_VERSION_FIELD,
+)
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 
 structlogger = structlog.get_logger()
@@ -57,7 +63,7 @@ class OpenAILLMClient(_BaseLiteLLMClient):
         self.validate_client_setup()
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> "OpenAILLMClient":
+    def from_config(cls, config: Dict[str, Any]) -> OpenAILLMClient:
         """
         Initializes the client from given configuration.
 
@@ -148,8 +154,8 @@ class OpenAILLMClient(_BaseLiteLLMClient):
         fn_args = super()._completion_fn_args
         fn_args.update(
             {
-                "api_base": self.api_base,
-                "api_version": self.api_version,
+                LITE_LLM_API_KEY_FIELD: self.api_base,
+                LITE_LLM_API_VERSION_FIELD: self.api_version,
             }
         )
         return fn_args

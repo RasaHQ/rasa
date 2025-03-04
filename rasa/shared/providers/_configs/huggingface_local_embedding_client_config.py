@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, Optional
 
@@ -90,7 +92,7 @@ class HuggingFaceLocalEmbeddingClientConfig:
             raise ValueError(message)
 
     @classmethod
-    def from_dict(cls, config: dict) -> "HuggingFaceLocalEmbeddingClientConfig":
+    def from_dict(cls, config: dict) -> HuggingFaceLocalEmbeddingClientConfig:
         """
         Initializes a dataclass from the passed config.
 

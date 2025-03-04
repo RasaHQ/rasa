@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from abc import abstractmethod
 from typing import Any, Dict, List, Union, cast
@@ -46,7 +48,7 @@ class _BaseLiteLLMClient:
 
     @classmethod
     @abstractmethod
-    def from_config(cls, config: Dict[str, Any]) -> "_BaseLiteLLMClient":
+    def from_config(cls, config: Dict[str, Any]) -> _BaseLiteLLMClient:
         pass
 
     @property

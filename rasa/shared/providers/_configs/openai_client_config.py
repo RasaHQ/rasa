@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, Optional
 
@@ -111,7 +113,7 @@ class OpenAIClientConfig:
             raise ValueError(message)
 
     @classmethod
-    def from_dict(cls, config: dict) -> "OpenAIClientConfig":
+    def from_dict(cls, config: dict) -> OpenAIClientConfig:
         """
         Initializes a dataclass from the passed config.
 

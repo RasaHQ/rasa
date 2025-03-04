@@ -1,9 +1,9 @@
 services:
   otel-collector:
     container_name: otel-collector
-    image: otel/opentelemetry-collector-contrib:0.114.0
-    restart: always
-    command: ["--config=/etc/otel-collector-config.yaml", ""]
+    image: otel/opentelemetry-collector-contrib:0.119.0
+    restart: unless-stopped
+    command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./otel-collector-config.yml:/etc/otel-collector-config.yaml
     ports:
@@ -12,3 +12,26 @@ services:
     environment:
       - HONEYCOMB_API_KEY=${HONEYCOMB_API_KEY?"HONEYCOMB_API_KEY not set"}
       - OTEL_RESOURCE_ATTRIBUTES=${OTEL_RESOURCE_ATTRIBUTES?"OTEL_RESOURCE_ATTRIBUTES not set"}
+    networks:
+      - e2e-tests
+
+
+  otel-collector-health-check:
+    image: curlimages/curl:8.12.1
+    container_name: otel-collector-health-check
+    entrypoint: ["sh", "-c"]
+    command: ["sleep 40"]
+    networks:
+        - e2e-tests
+    depends_on:
+      - otel-collector
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://otel-collector:13133/health/status"]
+      interval: 30s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+
+networks:
+    e2e-tests:
+        name: e2e-tests

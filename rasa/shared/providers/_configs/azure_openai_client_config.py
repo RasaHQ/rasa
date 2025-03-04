@@ -1,10 +1,20 @@
+from __future__ import annotations
+
+from copy import deepcopy
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, Optional
+from typing import (
+    Any,
+    Dict,
+    Optional,
+    Set,
+)
 
 import structlog
+from pydantic import BaseModel
 
 from rasa.shared.constants import (
     API_BASE_CONFIG_KEY,
+    API_KEY,
     API_TYPE_CONFIG_KEY,
     API_VERSION_CONFIG_KEY,
     AZURE_API_TYPE,
@@ -25,12 +35,22 @@ from rasa.shared.constants import (
     STREAM_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
 )
+from rasa.shared.providers._configs.azure_entra_id_config import (
+    AzureEntraIDOAuthConfig,
+    AzureEntraIDOAuthType,
+)
+from rasa.shared.providers._configs.oauth_config import (
+    OAUTH_KEY,
+    OAUTH_TYPE_FIELD,
+    OAuth,
+)
 from rasa.shared.providers._configs.utils import (
     raise_deprecation_warnings,
     resolve_aliases,
     validate_forbidden_keys,
     validate_required_keys,
 )
+from rasa.shared.utils.common import class_from_module_path
 
 structlogger = structlog.get_logger()
 
@@ -61,6 +81,86 @@ FORBIDDEN_KEYS = [
 ]
 
 
+class OAuthConfigWrapper(OAuth, BaseModel):
+    """Wrapper for OAuth configuration.
+
+    It's main purpose is to provide to_dict method which is used to serialize
+    the oauth configuration to the original format.
+
+    """
+
+    # Pydantic configuration to allow arbitrary user defined types
+    class Config:
+        arbitrary_types_allowed = True
+
+    oauth: OAuth
+    original_config: Dict[str, Any]
+
+    def get_bearer_token(self) -> str:
+        """Returns a bearer token."""
+        return self.oauth.get_bearer_token()
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Converts the OAuth configuration to the original format."""
+        return self.original_config
+
+    @staticmethod
+    def _valid_type_values() -> Set[str]:
+        """Returns the valid built-in values for the `type` field in the `oauth`."""
+        return AzureEntraIDOAuthType.valid_string_values()
+
+    @classmethod
+    def from_dict(cls, oauth_config: Dict[str, Any]) -> OAuthConfigWrapper:
+        """Initializes a dataclass from the passed config.
+
+        Args:
+            oauth_config: (dict) The config from which to initialize.
+
+        Returns:
+            AzureOAuthConfig
+        """
+        original_config = deepcopy(oauth_config)
+
+        oauth_type: Optional[str] = oauth_config.get(OAUTH_TYPE_FIELD, None)
+
+        if oauth_type is None:
+            message = (
+                "Oauth configuration must contain "
+                f"'{OAUTH_TYPE_FIELD}' field and it must be set to one of the "
+                f"following values: {OAuthConfigWrapper._valid_type_values()}, "
+                f"or to the path of module which is "
+                f"implementing {OAuth.__name__} protocol."
+            )
+            structlogger.error(
+                "azure_oauth_config.missing_oauth_type",
+                message=message,
+            )
+            raise ValueError(message)
+
+        if oauth_type in AzureEntraIDOAuthType.valid_string_values():
+            return cls(
+                oauth=AzureEntraIDOAuthConfig.from_dict(oauth_config),
+                original_config=original_config,
+            )
+
+        module = class_from_module_path(oauth_type)
+
+        if not issubclass(module, OAuth):
+            message = (
+                f"Module {oauth_type} does not implement "
+                f"{OAuth.__name__} interface."
+            )
+            structlogger.error(
+                "azure_oauth_config.invalid_oauth_module",
+                message=message,
+            )
+            raise ValueError(message)
+
+        return cls(
+            oauth=module.from_dict(oauth_config), original_config=original_config
+        )
+
+
 @dataclass
 class AzureOpenAIClientConfig:
     """Parses configuration for Azure OpenAI client, resolves aliases and
@@ -80,10 +180,12 @@ class AzureOpenAIClientConfig:
     # API Type is not used by LiteLLM backend, but we define
     # it here for backward compatibility.
     api_type: Optional[str] = AZURE_API_TYPE
-
     # Provider is not used by LiteLLM backend, but we define it here since it's
     # used as switch between different clients.
     provider: str = AZURE_OPENAI_PROVIDER
+
+    # OAuth related parameters
+    oauth: Optional[OAuthConfigWrapper] = None
 
     extra_parameters: dict = field(default_factory=dict)
 
@@ -106,7 +208,7 @@ class AzureOpenAIClientConfig:
             raise ValueError(message)
 
     @classmethod
-    def from_dict(cls, config: dict) -> "AzureOpenAIClientConfig":
+    def from_dict(cls, config: dict) -> AzureOpenAIClientConfig:
         """Initializes a dataclass from the passed config.
 
         Args:
@@ -129,6 +231,16 @@ class AzureOpenAIClientConfig:
         # Validate that the forbidden keys are not present
         validate_forbidden_keys(config, FORBIDDEN_KEYS)
         # Init client config
+
+        cls._validate_authentication_configuration(config)
+
+        has_oauth_key = config.get(OAUTH_KEY, None) is not None
+        oauth = (
+            OAuthConfigWrapper.from_dict(config.pop(OAUTH_KEY))
+            if has_oauth_key
+            else None
+        )
+
         this = AzureOpenAIClientConfig(
             # Required parameters
             deployment=config.pop(DEPLOYMENT_CONFIG_KEY),
@@ -142,6 +254,8 @@ class AzureOpenAIClientConfig:
             # in clients.
             api_base=config.pop(API_BASE_CONFIG_KEY, None),
             api_version=config.pop(API_VERSION_CONFIG_KEY, None),
+            # OAuth related parameters, set only if auth_type is set to 'entra_id'
+            oauth=oauth,
             # The rest of parameters (e.g. model parameters) are considered
             # as extra parameters (this also includes timeout).
             extra_parameters=config,
@@ -154,11 +268,32 @@ class AzureOpenAIClientConfig:
         # Extra parameters should also be on the top level
         d.pop("extra_parameters", None)
         d.update(self.extra_parameters)
+
+        d.pop("oauth", None)
+        d.update({"oauth": self.oauth.to_dict()} if self.oauth else {})
         return d
 
     @staticmethod
     def resolve_config_aliases(config: Dict[str, Any]) -> Dict[str, Any]:
         return resolve_aliases(config, DEPRECATED_ALIASES_TO_STANDARD_KEY_MAPPING)
+
+    @staticmethod
+    def _validate_authentication_configuration(config: Dict[str, Any]) -> None:
+        """Validates the authentication configuration."""
+        has_api_key = config.get(API_KEY, None) is not None
+        has_oauth_key = config.get(OAUTH_KEY, None) is not None
+
+        if has_api_key and has_oauth_key:
+            message = (
+                "Azure OpenAI client configuration cannot contain "
+                f"both '{API_KEY}' and '{OAUTH_KEY}' fields. Please provide either "
+                f"'{API_KEY}' or '{OAUTH_KEY}' fields."
+            )
+            structlogger.error(
+                "azure_openai_client_config.multiple_auth_types_specified",
+                message=message,
+            )
+            raise ValueError(message)
 
 
 def is_azure_openai_config(config: dict) -> bool:

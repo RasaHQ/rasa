@@ -355,13 +355,13 @@ def _combine_single_model_configs(
         )
         # Checks for deprecated keys, resolves aliases and returns a valid config.
         # This is done to ensure that the custom config is valid.
-        return client_config_clazz.from_dict(custom_config).to_dict()
+        return client_config_clazz.from_dict(deepcopy(custom_config)).to_dict()
 
     # If the provider is the same in both configs
     # OR provider is not specified in the custom config
     # perform MERGE by overriding the default config keys and values
     # with custom config keys and values.
-    merged_config = {**default_config.copy(), **custom_config.copy()}
+    merged_config = {**deepcopy(default_config), **deepcopy(custom_config)}
     # Check for deprecated keys, resolve aliases and return a valid config.
     # This is done to ensure that the merged config is valid.
     default_config_clazz = get_client_config_class_from_provider(
@@ -512,7 +512,7 @@ def llm_client_factory(
     Returns:
         Instantiated LLM based on the configuration.
     """
-    config = combine_custom_and_default_config(custom_config, default_config)
+    config = combine_custom_and_default_config(deepcopy(custom_config), default_config)
 
     ensure_cache()
 
@@ -641,7 +641,7 @@ def embedder_client_factory(
     Returns:
         Instantiated Embedder based on the configuration.
     """
-    config = combine_custom_and_default_config(custom_config, default_config)
+    config = combine_custom_and_default_config(deepcopy(custom_config), default_config)
 
     ensure_cache()
 

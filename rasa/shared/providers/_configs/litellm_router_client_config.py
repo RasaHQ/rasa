@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
@@ -120,7 +122,7 @@ class LiteLLMRouterClientConfig:
             raise ValueError(message)
 
     @classmethod
-    def from_dict(cls, config: dict) -> "LiteLLMRouterClientConfig":
+    def from_dict(cls, config: dict) -> LiteLLMRouterClientConfig:
         """Initializes a dataclass from the passed config.
 
         Args:

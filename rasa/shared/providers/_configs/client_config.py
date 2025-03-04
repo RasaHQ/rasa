@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Protocol, runtime_checkable
 
 
@@ -9,7 +11,7 @@ class ClientConfig(Protocol):
     """
 
     @classmethod
-    def from_dict(cls, config: dict) -> "ClientConfig":
+    def from_dict(cls, config: dict) -> ClientConfig:
         """
         Initializes the client config with the given configuration.
 

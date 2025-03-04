@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Dict, Optional
 
 import structlog
@@ -8,6 +10,10 @@ from rasa.shared.constants import (
 )
 from rasa.shared.providers._configs.rasa_llm_client_config import (
     RasaLLMClientConfig,
+)
+from rasa.shared.providers.constants import (
+    LITE_LLM_API_BASE_FIELD,
+    LITE_LLM_API_KEY_FIELD,
 )
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 from rasa.utils.licensing import retrieve_license_from_env
@@ -82,12 +88,15 @@ class RasaLLMClient(_BaseLiteLLMClient):
         """Returns the completion arguments for invoking a call using completions."""
         fn_args = super()._completion_fn_args
         fn_args.update(
-            {"api_base": self.api_base, "api_key": retrieve_license_from_env()}
+            {
+                LITE_LLM_API_BASE_FIELD: self.api_base,
+                LITE_LLM_API_KEY_FIELD: retrieve_license_from_env(),
+            }
         )
         return fn_args
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> "RasaLLMClient":
+    def from_config(cls, config: Dict[str, Any]) -> RasaLLMClient:
         try:
             client_config = RasaLLMClientConfig.from_dict(config)
         except ValueError as e:

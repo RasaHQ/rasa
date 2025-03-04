@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import asdict, dataclass, field
 from typing import List, Optional
 
@@ -41,7 +43,7 @@ class ModelConfig:
     api_type: Optional[str] = None
 
     @classmethod
-    def from_dict(cls, config: dict) -> "ModelConfig":
+    def from_dict(cls, config: dict) -> ModelConfig:
         """Initializes a dataclass from the passed config. The provider config param is
         used to determine the client config class to use. The client config class takes
         care of resolving config aliases and throwing deprecation warnings.
@@ -131,7 +133,7 @@ class ModelGroupConfig:
             raise ValueError(message)
 
     @classmethod
-    def from_dict(cls, config: dict) -> "ModelGroupConfig":
+    def from_dict(cls, config: dict) -> ModelGroupConfig:
         """Initializes a dataclass from the passed config.
 
         Args:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 from typing import Any, Dict, List, Optional, Union
@@ -13,6 +15,10 @@ from rasa.shared.constants import (
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers._configs.self_hosted_llm_client_config import (
     SelfHostedLLMClientConfig,
+)
+from rasa.shared.providers.constants import (
+    LITE_LLM_API_BASE_FIELD,
+    LITE_LLM_API_VERSION_FIELD,
 )
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 from rasa.shared.providers.llm.llm_response import LLMResponse
@@ -64,7 +70,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
             self._apply_dummy_api_key_if_missing()
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> "SelfHostedLLMClient":
+    def from_config(cls, config: Dict[str, Any]) -> SelfHostedLLMClient:
         try:
             client_config = SelfHostedLLMClientConfig.from_dict(config)
         except ValueError as e:
@@ -181,8 +187,8 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         fn_args = super()._completion_fn_args
         fn_args.update(
             {
-                "api_base": self.api_base,
-                "api_version": self.api_version,
+                LITE_LLM_API_BASE_FIELD: self.api_base,
+                LITE_LLM_API_VERSION_FIELD: self.api_version,
             }
         )
         return fn_args

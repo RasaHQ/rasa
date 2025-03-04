@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, Optional
 
@@ -113,7 +115,7 @@ class SelfHostedLLMClientConfig:
             raise ValueError(message)
 
     @classmethod
-    def from_dict(cls, config: dict) -> "SelfHostedLLMClientConfig":
+    def from_dict(cls, config: dict) -> SelfHostedLLMClientConfig:
         """
         Initializes a dataclass from the passed config.
 
