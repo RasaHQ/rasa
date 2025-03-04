@@ -18,6 +18,8 @@ from sanic import Sanic
 from rasa.core.channels.socketio import SocketBlueprint, SocketIOInput
 from rasa.hooks import hookimpl
 from rasa.plugin import plugin_manager
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.trackers import EventVerbosity
 
 if TYPE_CHECKING:
@@ -41,6 +43,15 @@ def tracker_as_dump(tracker: "DialogueStateTracker") -> str:
 
     state = last_tracker.current_state(EventVerbosity.AFTER_RESTART)
     return json.dumps(state)
+
+
+def does_need_action_prediction(tracker: "DialogueStateTracker") -> bool:
+    """Check if the tracker needs an action prediction."""
+    return (
+        len(tracker.events) == 0
+        or not isinstance(tracker.events[-1], ActionExecuted)
+        or tracker.events[-1].action_name != ACTION_LISTEN_NAME
+    )
 
 
 class StudioTrackerUpdatePlugin:
@@ -168,6 +179,14 @@ class StudioChatInput(SocketIOInput):
 
             # will override an existing tracker with the same id!
             await self.agent.tracker_store.save(tracker)
+
+            processor = self.agent.processor
+            if processor and does_need_action_prediction(tracker):
+                output_channel = self.get_output_channel()
+
+                await processor._run_prediction_loop(output_channel, tracker)
+                await processor.run_anonymization_pipeline(tracker)
+                await self.agent.tracker_store.save(tracker)
 
         await self.on_tracker_updated(tracker)
 

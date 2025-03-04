@@ -2,8 +2,9 @@ from typing import Any, Dict
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from pytest import CaptureFixture, MonkeyPatch
+from pytest import MonkeyPatch
 from socketio import AsyncServer
+from socketio.exceptions import ConnectionRefusedError
 
 from rasa.model_manager.runner_service import BotSession
 from rasa.model_manager.socket_bridge import socketio_websocket_traffic_wrapper
@@ -69,7 +70,6 @@ async def test_socketio_websocket_traffic_wrapper_valid_token(
 async def test_socketio_websocket_traffic_wrapper_invalid_audience(
     mock_create_bridge_client: Mock,
     monkeypatch: MonkeyPatch,
-    capsys: CaptureFixture,
     test_public_key: str,
     jwt_token_with_invalid_audience: str,
     deployment_id: str,
@@ -84,21 +84,17 @@ async def test_socketio_websocket_traffic_wrapper_invalid_audience(
     )
     auth = {"deployment_id": deployment_id, "token": jwt_token_with_invalid_audience}
 
-    result = await socketio_websocket_traffic_wrapper(
-        mock_sio, running_bots, test_sid, auth
-    )
+    with pytest.raises(ConnectionRefusedError) as e:
+        await socketio_websocket_traffic_wrapper(mock_sio, running_bots, test_sid, auth)
 
-    assert result is False
+    assert str(e.value) == "model_runner.user_authentication_failed"
     mock_create_bridge_client.assert_not_called()
-    captured = capsys.readouterr()
-    assert "Invalid JWT token" in captured.out
 
 
 @patch("rasa.model_manager.socket_bridge.create_bridge_client")
 async def test_socketio_websocket_traffic_wrapper_no_token(
     mock_create_bridge_client: Mock,
     monkeypatch: MonkeyPatch,
-    capsys: CaptureFixture,
     test_public_key: str,
     deployment_id: str,
     running_bots: Dict[str, Any],
@@ -112,11 +108,9 @@ async def test_socketio_websocket_traffic_wrapper_no_token(
     )
     auth = {"deployment_id": deployment_id}
 
-    result = await socketio_websocket_traffic_wrapper(
-        mock_sio, running_bots, test_sid, auth
-    )
+    with pytest.raises(ConnectionRefusedError) as e:
+        await socketio_websocket_traffic_wrapper(mock_sio, running_bots, test_sid, auth)
 
-    assert result is False
+    assert str(e.value) == "model_runner.user_no_token"
+
     mock_create_bridge_client.assert_not_called()
-    captured = capsys.readouterr()
-    assert "model_runner.user_no_token" in captured.out

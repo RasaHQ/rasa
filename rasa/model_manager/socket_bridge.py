@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 import structlog
 from socketio import AsyncServer
 from socketio.asyncio_client import AsyncClient
+from socketio.exceptions import ConnectionRefusedError
 
 from rasa.model_manager.runner_service import BotSession
 from rasa.model_manager.studio_jwt_auth import (
@@ -29,7 +30,7 @@ async def socketio_websocket_traffic_wrapper(
 
     if auth_token is None:
         structlogger.error("model_runner.user_no_token", sid=sid)
-        return False
+        raise ConnectionRefusedError("model_runner.user_no_token")
 
     try:
         authenticate_user_to_service(auth_token)
@@ -38,22 +39,22 @@ async def socketio_websocket_traffic_wrapper(
         structlogger.error(
             "model_runner.user_authentication_failed", sid=sid, error=str(error)
         )
-        return False
+        raise ConnectionRefusedError("model_runner.user_authentication_failed")
 
     deployment_id = auth.get("deployment_id") if auth else None
 
     if deployment_id is None:
         structlogger.error("model_runner.bot_no_deployment_id", sid=sid)
-        return False
+        raise ConnectionRefusedError("model_runner.bot_no_deployment_id")
 
     bot = running_bots.get(deployment_id)
     if bot is None:
         structlogger.error("model_runner.bot_not_found", deployment_id=deployment_id)
-        return False
+        raise ConnectionRefusedError("model_runner.bot_not_found")
 
     if not bot.is_alive():
         structlogger.error("model_runner.bot_not_alive", deployment_id=deployment_id)
-        return False
+        raise ConnectionRefusedError("model_runner.bot_not_alive")
 
     client = await create_bridge_client(sio, bot.internal_url, sid, deployment_id)
 
@@ -67,7 +68,7 @@ async def socketio_websocket_traffic_wrapper(
         structlogger.error(
             "model_runner.bot_connection_failed", deployment_id=deployment_id
         )
-        return False
+        raise ConnectionRefusedError("model_runner.bot_connection_failed")
 
 
 def create_bridge_server(sio: AsyncServer, running_bots: Dict[str, BotSession]) -> None:
