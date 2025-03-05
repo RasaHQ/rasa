@@ -10,6 +10,7 @@ from typing import (
     TypeVar,
 )
 
+import structlog
 from websockets.legacy.client import WebSocketClientProtocol
 
 from rasa.core.channels.voice_stream.asr.asr_event import ASREvent
@@ -20,6 +21,7 @@ from rasa.shared.utils.common import validate_environment
 
 T = TypeVar("T", bound="ASREngineConfig")
 E = TypeVar("E", bound="ASREngine")
+logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -74,10 +76,14 @@ class ASREngine(Generic[T]):
         """Stream the events returned by the ASR system as it is fed audio bytes."""
         if self.asr_socket is None:
             raise ConnectionException("Websocket not connected.")
-        async for message in self.asr_socket:
-            asr_event = self.engine_event_to_asr_event(message)
-            if asr_event:
-                yield asr_event
+
+        try:
+            async for message in self.asr_socket:
+                asr_event = self.engine_event_to_asr_event(message)
+                if asr_event:
+                    yield asr_event
+        except Exception as e:
+            logger.warning(f"Error while streaming ASR events: {e}")
 
     def engine_event_to_asr_event(self, e: Any) -> Optional[ASREvent]:
         """Translate an engine event to a common ASREvent."""

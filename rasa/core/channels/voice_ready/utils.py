@@ -29,7 +29,7 @@ class CallParameters:
 
     call_id: str
     user_phone: str
-    bot_phone: str
+    bot_phone: Optional[str] = None
     user_name: Optional[str] = None
     user_host: Optional[str] = None
     bot_host: Optional[str] = None

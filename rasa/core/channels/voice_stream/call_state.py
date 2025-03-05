@@ -25,6 +25,9 @@ class CallState:
     server_sequence_number: int = 0
     audio_buffer: bytearray = field(default_factory=bytearray)
 
+    # Audiocodes requires a stream ID at start and end of stream
+    stream_id: int = 0
+
 
 _call_state: ContextVar[CallState] = ContextVar("call_state")
 call_state = LocalProxy(_call_state)

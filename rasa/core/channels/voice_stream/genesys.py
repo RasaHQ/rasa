@@ -104,7 +104,10 @@ class GenesysOutputChannel(VoiceOutputChannel):
                 current_position = end_position
 
     async def send_marker_message(self, recipient_id: str) -> None:
-        """Send a message that marks positions in the audio stream."""
+        """
+        Send a message that marks positions in the audio stream.
+        Genesys does not support this feature, so we do nothing here.
+        """
         pass
 
 
@@ -190,6 +193,8 @@ class GenesysInputChannel(VoiceInputChannel):
                 if call_state.should_hangup:
                     logger.info("genesys.hangup")
                     self.disconnect(ws, data)
+                    # the conversation should continue until
+                    # we receive a close message from Genesys
             elif msg_type == "dtmf":
                 logger.info("genesys.handle_dtmf", message=data)
             elif msg_type == "error":
@@ -259,7 +264,6 @@ class GenesysInputChannel(VoiceInputChannel):
         logger.debug("genesys.handle_close.closed", response=response)
 
         _schedule_ws_task(ws.send(json.dumps(response)))
-        _schedule_ws_task(ws.close())
 
     def disconnect(self, ws: Websocket, data: dict) -> None:
         """

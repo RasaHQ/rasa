@@ -34,6 +34,7 @@ from rasa.core.channels.voice_stream.twilio_media_streams import (
 )
 from rasa.core.channels.voice_stream.genesys import GenesysInputChannel
 from rasa.core.channels.studio_chat import StudioChatInput
+from rasa.core.channels.voice_stream.audiocodes import AudiocodesVoiceInputChannel
 
 input_channel_classes: List[Type[InputChannel]] = [
     CmdlineInput,
@@ -58,6 +59,7 @@ input_channel_classes: List[Type[InputChannel]] = [
     BrowserAudioInputChannel,
     GenesysInputChannel,
     StudioChatInput,
+    AudiocodesVoiceInputChannel,
 ]
 
 # Mapping from an input channel name to its class to allow name based lookup.

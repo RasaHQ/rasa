@@ -148,6 +148,19 @@ class VoiceOutputChannel(OutputChannel):
         await self.voice_websocket.send(marker_message)
         self.latest_message_id = mark_id
 
+    async def send_start_marker(self, recipient_id: str) -> None:
+        """Send a marker message before the first audio chunk."""
+        # Default implementation uses the generic marker message
+        await self.send_marker_message(recipient_id)
+
+    async def send_intermediate_marker(self, recipient_id: str) -> None:
+        """Send a marker message during audio streaming."""
+        await self.send_marker_message(recipient_id)
+
+    async def send_end_marker(self, recipient_id: str) -> None:
+        """Send a marker message after the last audio chunk."""
+        await self.send_marker_message(recipient_id)
+
     def update_silence_timeout(self) -> None:
         """Updates the silence timeout for the session."""
         if self.tracker_state:
@@ -173,6 +186,13 @@ class VoiceOutputChannel(OutputChannel):
         cached_audio_bytes = self.tts_cache.get(text)
         collected_audio_bytes = RasaAudioBytes(b"")
         seconds_marker = -1
+
+        # Send start marker before first chunk
+        try:
+            await self.send_start_marker(recipient_id)
+        except (WebsocketClosed, ServerError):
+            call_state.connection_failed = True  # type: ignore[attr-defined]
+
         if cached_audio_bytes:
             audio_stream = self.chunk_audio(cached_audio_bytes)
         else:
@@ -189,15 +209,16 @@ class VoiceOutputChannel(OutputChannel):
                 await self.send_audio_bytes(recipient_id, audio_bytes)
                 full_seconds_of_audio = len(collected_audio_bytes) // HERTZ
                 if full_seconds_of_audio > seconds_marker:
-                    await self.send_marker_message(recipient_id)
+                    await self.send_intermediate_marker(recipient_id)
                     seconds_marker = full_seconds_of_audio
 
             except (WebsocketClosed, ServerError):
                 # ignore sending error, and keep collecting and caching audio bytes
                 call_state.connection_failed = True  # type: ignore[attr-defined]
             collected_audio_bytes = RasaAudioBytes(collected_audio_bytes + audio_bytes)
+
         try:
-            await self.send_marker_message(recipient_id)
+            await self.send_end_marker(recipient_id)
         except (WebsocketClosed, ServerError):
             # ignore sending error
             pass
