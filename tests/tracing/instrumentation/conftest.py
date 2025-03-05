@@ -48,6 +48,7 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command, StartFlowCommand
 from rasa.dialogue_understanding.generator import (
+    CompactLLMCommandGenerator,
     LLMCommandGenerator,
     MultiStepLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
@@ -407,6 +408,33 @@ class MockSingleStepLLMCommandGenerator(SingleStepLLMCommandGenerator):
     async def invoke_llm(
         self, prompt: Union[List[dict], List[str], str]
     ) -> Optional[str]:
+        pass
+
+
+class MockCompactLLMCommandGenerator(CompactLLMCommandGenerator):
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        prompt_template: Optional[Text] = None,
+        **kwargs: Any,
+    ) -> None:
+        self.fail_if_undefined("invoke_llm")
+        super().__init__(config, model_storage, resource, prompt_template)
+
+    def fail_if_undefined(self, method_name: Text) -> None:
+        if not (
+            hasattr(self.__class__.__base__, method_name)
+            and callable(getattr(self.__class__.__base__, method_name))
+        ):
+            pytest.fail(
+                f"method '{method_name}' not found in {self.__class__.__base__}. "
+                f"This likely means the method was renamed, which means the "
+                f"instrumentation needs to be adapted!"
+            )
+
+    async def invoke_llm(self, prompt: str) -> Optional[str]:
         pass
 
 

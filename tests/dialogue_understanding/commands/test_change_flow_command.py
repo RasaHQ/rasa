@@ -50,7 +50,7 @@ def test_regex_pattern_v2_command_syntax():
     # Set the syntax version to v2 to test the new regex pattern.
     CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
 
-    assert ChangeFlowCommand.regex_pattern() == r"^change"
+    assert ChangeFlowCommand.regex_pattern() == r"^[^\w]*change$"
 
     # Reset the syntax version to the default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()

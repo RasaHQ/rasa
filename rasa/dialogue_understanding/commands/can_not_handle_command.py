@@ -99,7 +99,7 @@ class CannotHandleCommand(Command):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"CannotHandle\(\)",
-            CommandSyntaxVersion.v2: r"^cannot handle$",
+            CommandSyntaxVersion.v2: r"^[^\w]*cannot handle$",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

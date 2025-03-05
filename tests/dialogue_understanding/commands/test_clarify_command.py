@@ -157,7 +157,8 @@ def test_regex_pattern_v2_command_syntax():
     CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
 
     assert (
-        ClarifyCommand.regex_pattern() == r"^disambiguate flows([\"\'a-zA-Z0-9_, ]*)$"
+        ClarifyCommand.regex_pattern()
+        == r"^[^\w]*disambiguate flows ([\"\'a-zA-Z0-9_, ]*)$"
     )
 
     # Reset the syntax version to default, otherwise it will affect other tests.

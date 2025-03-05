@@ -65,7 +65,7 @@ class ChitChatAnswerCommand(FreeFormAnswerCommand):
         """Converts the command to a DSL string."""
         mapper = {
             CommandSyntaxVersion.v1: "ChitChat()",
-            CommandSyntaxVersion.v2: "chat",
+            CommandSyntaxVersion.v2: "offtopic reply",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -81,7 +81,7 @@ class ChitChatAnswerCommand(FreeFormAnswerCommand):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"ChitChat\(\)",
-            CommandSyntaxVersion.v2: r"^chat$",
+            CommandSyntaxVersion.v2: r"^[^\w]*offtopic reply$",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

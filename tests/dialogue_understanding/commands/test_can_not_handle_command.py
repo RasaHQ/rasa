@@ -89,7 +89,7 @@ def test_regex_pattern_v2_command_syntax():
     # Set the syntax version to v2 to test the new regex pattern.
     CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
 
-    assert CannotHandleCommand.regex_pattern() == r"^cannot handle$"
+    assert CannotHandleCommand.regex_pattern() == r"^[^\w]*cannot handle$"
 
     # Reset the syntax version to default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()

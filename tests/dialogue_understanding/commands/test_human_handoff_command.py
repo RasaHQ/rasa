@@ -72,7 +72,7 @@ def test_regex_pattern_v2_command_syntax():
     # Set the syntax version to v2 to test the new regex pattern.
     CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
 
-    assert HumanHandoffCommand.regex_pattern() == r"^hand over$"
+    assert HumanHandoffCommand.regex_pattern() == r"^[^\w]*hand over$"
 
     # Reset the syntax version to the default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()

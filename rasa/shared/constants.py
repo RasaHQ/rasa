@@ -83,6 +83,7 @@ ENV_LOG_LEVEL_LLM = "LOG_LEVEL_LLM"
 ENV_LOG_LEVEL_LLM_MODULE_NAMES = {
     "LLMCommandGenerator": "LOG_LEVEL_LLM_COMMAND_GENERATOR",
     "SingleStepLLMCommandGenerator": "LOG_LEVEL_LLM_COMMAND_GENERATOR",
+    "CompactLLMCommandGenerator": "LOG_LEVEL_LLM_COMMAND_GENERATOR",
     "MultiStepLLMCommandGenerator": "LOG_LEVEL_LLM_COMMAND_GENERATOR",
     "EnterpriseSearchPolicy": "LOG_LEVEL_LLM_ENTERPRISE_SEARCH",
     "IntentlessPolicy": "LOG_LEVEL_LLM_INTENTLESS_POLICY",
@@ -149,6 +150,8 @@ DEFAULT_MARKERS_PATH = "markers"
 DEFAULT_MARKERS_CONFIG_PATH = "markers/config"
 DEFAULT_MARKERS_OUTPUT_PATH = "markers/output"
 DEFAULT_MARKERS_STATS_PATH = "markers/stats"
+
+DEFAULT_PROMPT_PACKAGE_NAME = "rasa.dialogue_understanding.generator.prompt_templates"
 
 DIAGNOSTIC_DATA = "diagnostic_data"
 

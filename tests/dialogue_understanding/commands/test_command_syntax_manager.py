@@ -39,8 +39,8 @@ class TestCommandSyntaxManager:
         # Check if the validation log was found.
         assert found_validation_log
 
-        # Check if the syntax version is still v2.
-        assert CommandSyntaxManager.get_syntax_version() == CommandSyntaxVersion.v2
+        # Check if the syntax version is v1.
+        assert CommandSyntaxManager.get_syntax_version() == CommandSyntaxVersion.v1
 
         # Reset the syntax version.
         CommandSyntaxManager.reset_syntax_version()

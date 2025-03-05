@@ -1,15 +1,7 @@
 import copy
 import logging
 from functools import lru_cache
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    List,
-    Optional,
-    Text,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, cast
 
 from jsonschema import Draft202012Validator
 
@@ -90,16 +82,10 @@ from rasa.shared.core.events import (
     UserUttered,
 )
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.slot_mappings import (
-    SlotFillingManager,
-    extract_slot_value,
-)
+from rasa.shared.core.slot_mappings import SlotFillingManager, extract_slot_value
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
-from rasa.shared.nlu.constants import (
-    INTENT_NAME_KEY,
-    INTENT_RANKING_KEY,
-)
+from rasa.shared.nlu.constants import INTENT_NAME_KEY, INTENT_RANKING_KEY
 from rasa.shared.utils.io import raise_warning
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig

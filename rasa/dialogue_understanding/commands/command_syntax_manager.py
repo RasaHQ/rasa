@@ -33,11 +33,10 @@ class CommandSyntaxManager:
             structlogger.warn(
                 "command_syntax_manager.syntax_version_already_set",
                 event_info=(
-                    "The command syntax version has already been set. "
-                    "Skipping the new version."
+                    f"The command syntax version has already been set. Overwriting "
+                    f"the existing version with the new version - {version}."
                 ),
             )
-            return
         cls._version = version
 
     @classmethod

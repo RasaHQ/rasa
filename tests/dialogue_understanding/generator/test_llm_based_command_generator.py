@@ -13,6 +13,9 @@ from rasa.dialogue_understanding.commands import (
     ErrorCommand,
     SetSlotCommand,
 )
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+)
 from rasa.dialogue_understanding.generator import (
     LLMBasedCommandGenerator,
     LLMCommandGenerator,
@@ -34,10 +37,7 @@ from rasa.shared.core.flows.steps.collect import (
     CollectInformationFlowStep,
     SlotRejection,
 )
-from rasa.shared.core.slots import (
-    Slot,
-    TextSlot,
-)
+from rasa.shared.core.slots import Slot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import TEXT
@@ -129,6 +129,9 @@ class TestLLMBasedCommandGenerator:
     # Fixture for the implementated classes
     @pytest.fixture
     def llm_command_generator_fixture(self, model_storage, resource):
+        # Reset the command syntax version.
+        CommandSyntaxManager.reset_syntax_version()
+
         return LLMCommandGenerator.create(
             config={},
             model_storage=model_storage,
@@ -138,6 +141,9 @@ class TestLLMBasedCommandGenerator:
 
     @pytest.fixture
     def single_step_llm_command_generator_fixture(self, model_storage, resource):
+        # Reset the command syntax version.
+        CommandSyntaxManager.reset_syntax_version()
+
         return SingleStepLLMCommandGenerator.create(
             config={},
             model_storage=model_storage,
@@ -147,6 +153,9 @@ class TestLLMBasedCommandGenerator:
 
     @pytest.fixture
     def multi_step_llm_command_generator_fixture(self, model_storage, resource):
+        # Reset the command syntax version.
+        CommandSyntaxManager.reset_syntax_version()
+
         return MultiStepLLMCommandGenerator.create(
             config={},
             model_storage=model_storage,

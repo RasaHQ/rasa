@@ -168,7 +168,7 @@ class SetSlotCommand(Command):
         """Converts the command to a DSL string."""
         mapper = {
             CommandSyntaxVersion.v1: f"SetSlot({self.name}, {self.value})",
-            CommandSyntaxVersion.v2: f"set {self.name} {self.value}",
+            CommandSyntaxVersion.v2: f"set slot {self.name} {self.value}",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -189,7 +189,7 @@ class SetSlotCommand(Command):
                 r"""SetSlot\(['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]?, ?['"]?(.*)['"]?\)"""
             ),
             CommandSyntaxVersion.v2: (
-                r"""^set ['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]? ['"]?(.+?)['"]?$"""
+                r"""^[^\w]*set slot ['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]? ['"]?(.+?)['"]?$"""  # noqa: E501
             ),
         }
         return mapper.get(

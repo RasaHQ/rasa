@@ -1,3 +1,4 @@
+import importlib.resources
 import json
 from copy import deepcopy
 from functools import wraps
@@ -19,6 +20,8 @@ import structlog
 import rasa.shared.utils.io
 from rasa.core.utils import AvailableEndpoints
 from rasa.shared.constants import (
+    DEFAULT_PROMPT_PACKAGE_NAME,
+    MODEL_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     MODEL_GROUP_ID_CONFIG_KEY,
     MODELS_CONFIG_KEY,
@@ -29,9 +32,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.slots import BooleanSlot, CategoricalSlot, Slot
-from rasa.shared.engine.caching import (
-    get_local_cache_location,
-)
+from rasa.shared.engine.caching import get_local_cache_location
 from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
@@ -673,6 +674,28 @@ def get_prompt_template(
             jinja_file_path=jinja_file_path,
         )
     return default_prompt_template
+
+
+def get_default_prompt_template_based_on_model(
+    config: Dict[str, Any],
+    model_prompt_mapping: Dict[str, Any],
+    fallback_prompt_path: str,
+) -> Text:
+    """Returns the default prompt template based on the model name.
+
+    Args:
+        config: The model config.
+        model_prompt_mapping: The mapping of model name to prompt template.
+        fallback_prompt_path: The fallback prompt path.
+
+    Returns:
+        The default prompt template.
+    """
+    provider = config.get(PROVIDER_CONFIG_KEY)
+    model = config.get(MODEL_CONFIG_KEY, "")
+    model_name = model if provider and provider in model else f"{provider}/{model}"
+    prompt_file_path = model_prompt_mapping.get(model_name, fallback_prompt_path)
+    return importlib.resources.read_text(DEFAULT_PROMPT_PACKAGE_NAME, prompt_file_path)
 
 
 def allowed_values_for_slot(slot: Slot) -> Union[str, None]:

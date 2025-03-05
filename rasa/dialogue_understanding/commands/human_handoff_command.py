@@ -88,7 +88,7 @@ class HumanHandoffCommand(Command):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"HumanHandoff\(\)",
-            CommandSyntaxVersion.v2: r"^hand over$",
+            CommandSyntaxVersion.v2: r"^[^\w]*hand over$",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

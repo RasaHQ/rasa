@@ -65,7 +65,7 @@ class KnowledgeAnswerCommand(FreeFormAnswerCommand):
         """Converts the command to a DSL string."""
         mapper = {
             CommandSyntaxVersion.v1: "SearchAndReply()",
-            CommandSyntaxVersion.v2: "answer question",
+            CommandSyntaxVersion.v2: "provide info",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -81,7 +81,7 @@ class KnowledgeAnswerCommand(FreeFormAnswerCommand):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"SearchAndReply\(\)",
-            CommandSyntaxVersion.v2: r"^answer question$",
+            CommandSyntaxVersion.v2: r"^[^\w]*provide info$",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

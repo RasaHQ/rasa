@@ -125,7 +125,7 @@ class StartFlowCommand(Command):
         """Converts the command to a DSL string."""
         mapper = {
             CommandSyntaxVersion.v1: f"StartFlow({self.flow})",
-            CommandSyntaxVersion.v2: f"start {self.flow}",
+            CommandSyntaxVersion.v2: f"start flow {self.flow}",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -141,7 +141,7 @@ class StartFlowCommand(Command):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"StartFlow\(['\"]?([a-zA-Z0-9_-]+)['\"]?\)",
-            CommandSyntaxVersion.v2: r"^start ['\"]?([a-zA-Z0-9_-]+)['\"]?$",
+            CommandSyntaxVersion.v2: r"^[^\w]*start flow ['\"]?([a-zA-Z0-9_-]+)['\"]?",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

@@ -1,3 +1,4 @@
+import importlib.resources
 import os.path
 import uuid
 from pathlib import Path
@@ -22,7 +23,6 @@ from rasa.dialogue_understanding.commands import (
     HumanHandoffCommand,
     KnowledgeAnswerCommand,
     SetSlotCommand,
-    SkipQuestionCommand,
     StartFlowCommand,
 )
 from rasa.dialogue_understanding.commands.command_syntax_manager import (
@@ -38,9 +38,10 @@ from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
-from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator import (  # noqa: E501
-    DEFAULT_COMMAND_PROMPT_TEMPLATE,
-    SingleStepLLMCommandGenerator,
+from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
+    DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+    MODEL_PROMPT_MAPPER,
+    CompactLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
@@ -50,6 +51,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.llm_fine_tuning.annotation_module import set_preparing_fine_tuning_data
 from rasa.shared.constants import (
+    DEFAULT_PROMPT_PACKAGE_NAME,
     EMBEDDINGS_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
@@ -78,10 +80,6 @@ from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
 from rasa.shared.utils.llm import DEFAULT_MAX_USER_INPUT_CHARACTERS
 from tests.utilities import filter_logs, flows_from_str
 
-EXPECTED_PROMPT_PATH = "./tests/dialogue_understanding/generator/rendered_prompt.txt"
-EXPECTED_RENDERED_FLOW_DESCRIPTION_PATH = (
-    "./tests/dialogue_understanding/generator/rendered_flow.txt"
-)
 PROMPT_TEMPLATE_WITH_CURRENT_SLOT_INFORMATION_PATH = "./tests/dialogue_understanding/generator/prompt_template_with_current_slot_information.jinja2"  # noqa: E501
 EXPECTED_RENDERED_PROMPT_WITH_CURRENT_SLOT_INFORMATION = "./tests/dialogue_understanding/generator/rendered_prompt_with_current_slot_information.txt"  # noqa: E501
 
@@ -89,27 +87,26 @@ EXPECTED_RENDERED_PROMPT_WITH_CURRENT_SLOT_INFORMATION = "./tests/dialogue_under
 @pytest.fixture(autouse=True)
 def set_mock_openai_api_key(monkeypatch: MonkeyPatch):
     monkeypatch.setenv(
-        OPENAI_API_KEY_ENV_VAR, "mock key in test_single_step_llm_command_generator"
+        OPENAI_API_KEY_ENV_VAR, "mock key in test_compact_llm_command_generator"
     )
 
 
-class TestSingleStepLLMCommandGenerator:
-    """Tests for the SingleStepLLMCommandGenerator."""
+class TestCompactLLMCommandGenerator:
+    """Tests for the CompactLLMCommandGenerator."""
 
     @pytest.fixture
     def command_generator(self):
-        """Create an SingleStepLLMCommandGenerator."""
+        """Create an CompactLLMCommandGenerator."""
         # Reset the command syntax version.
         CommandSyntaxManager.reset_syntax_version()
 
-        return SingleStepLLMCommandGenerator.create(
+        return CompactLLMCommandGenerator.create(
             config={}, resource=Mock(), model_storage=Mock(), execution_context=Mock()
         )
 
     @pytest.fixture
     def command_generator_with_custom_prompt_template(self):
-        """Create an SingleStepLLMCommandGenerator."""
-        return SingleStepLLMCommandGenerator.create(
+        return CompactLLMCommandGenerator.create(
             config={
                 "prompt_template": PROMPT_TEMPLATE_WITH_CURRENT_SLOT_INFORMATION_PATH
             },
@@ -157,29 +154,6 @@ class TestSingleStepLLMCommandGenerator:
             ],
         )
 
-    async def test_deprecation_warning_with_prompt(self, model_storage):
-        # Given
-        resource = Resource("llmcmdgen")
-        config = {"prompt": "data/test_prompt_templates/test_prompt.jinja2"}
-
-        # When
-        with patch(
-            "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator.structlogger.warning"
-        ) as mock_warning:
-            SingleStepLLMCommandGenerator(
-                config,
-                model_storage,
-                resource,
-            )
-        mock_warning.assert_called_once_with(
-            "single_step_llm_command_generator.init",
-            event_info=(
-                "The config parameter 'prompt' is deprecated "
-                "and will be removed in Rasa 4.0.0. "
-                "Please use the config parameter 'prompt_template' instead. "
-            ),
-        )
-
     async def test_prompt_template_handling(self, model_storage):
         # Given
         resource = Resource("llmcmdgen")
@@ -187,7 +161,7 @@ class TestSingleStepLLMCommandGenerator:
         config = {"prompt_template": expected_template}
 
         # When
-        generator = SingleStepLLMCommandGenerator(
+        generator = CompactLLMCommandGenerator(
             config,
             model_storage,
             resource,
@@ -202,27 +176,30 @@ class TestSingleStepLLMCommandGenerator:
         # Given
         resource = Resource("llmcmdgen")
         config = {}  # No prompt or prompt_template provided
+        default_command_prompt = importlib.resources.read_text(
+            DEFAULT_PROMPT_PACKAGE_NAME, DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME
+        )
 
         # When
-        generator = SingleStepLLMCommandGenerator(
+        generator = CompactLLMCommandGenerator(
             config,
             model_storage,
             resource,
         )
 
         # Then
-        assert generator.prompt_template == DEFAULT_COMMAND_PROMPT_TEMPLATE
+        assert generator.prompt_template == default_command_prompt
 
-    async def test_single_step_llm_command_generator_init_custom(
+    async def test_compact_llm_command_generator_init_custom(
         self,
         model_storage: ModelStorage,
     ) -> None:
         # Given
         resource = Resource("llmcmdgen")
         # When
-        generator = SingleStepLLMCommandGenerator(
+        generator = CompactLLMCommandGenerator(
             {
-                "prompt": "data/test_prompt_templates/test_prompt.jinja2",
+                "prompt_template": "data/test_prompt_templates/test_prompt.jinja2",
                 FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False},
             },
             model_storage,
@@ -232,18 +209,14 @@ class TestSingleStepLLMCommandGenerator:
         assert generator.prompt_template.startswith("This is a test prompt.")
         assert generator.flow_retrieval is None
 
-    async def test_single_step_llm_command_generator_init_default(
+    async def test_compact_llm_command_generator_init_default(
         self,
         model_storage: ModelStorage,
     ) -> None:
         # When
-        generator = SingleStepLLMCommandGenerator(
-            {}, model_storage, Resource("llmcmdgen")
-        )
+        generator = CompactLLMCommandGenerator({}, model_storage, Resource("llmcmdgen"))
         # Then
-        assert generator.prompt_template.startswith(
-            "Your task is to analyze the current conversation"
-        )
+        assert generator.prompt_template.startswith("## Task Description")
         assert (
             generator.user_input_config.max_characters
             == DEFAULT_MAX_USER_INPUT_CHARACTERS
@@ -263,14 +236,14 @@ class TestSingleStepLLMCommandGenerator:
             ({"user_input": {}}, DEFAULT_MAX_USER_INPUT_CHARACTERS),
         ],
     )
-    def test_single_step_llm_command_generator_init_with_message_length_limit(
+    def test_compact_llm_command_generator_init_with_message_length_limit(
         self,
         config: Dict[Text, Any],
         expected_limit: Optional[int],
         model_storage: ModelStorage,
         resource: Resource,
     ) -> None:
-        generator = SingleStepLLMCommandGenerator(
+        generator = CompactLLMCommandGenerator(
             config,
             model_storage,
             resource,
@@ -279,7 +252,7 @@ class TestSingleStepLLMCommandGenerator:
 
     async def test_predict_commands_with_no_flows(
         self,
-        command_generator: SingleStepLLMCommandGenerator,
+        command_generator: CompactLLMCommandGenerator,
         tracker: DialogueStateTracker,
     ):
         """Test that predict_commands returns an empty list when flows is None."""
@@ -293,7 +266,7 @@ class TestSingleStepLLMCommandGenerator:
         assert not predicted_commands
 
     async def test_predict_commands_with_no_tracker(
-        self, command_generator: SingleStepLLMCommandGenerator
+        self, command_generator: CompactLLMCommandGenerator
     ):
         """Test that predict_commands returns an empty list when tracker is None."""
         # When
@@ -309,7 +282,7 @@ class TestSingleStepLLMCommandGenerator:
     async def test_predict_commands_sets_routing_slot(
         self,
         mock_llm_factory: Mock,
-        command_generator: SingleStepLLMCommandGenerator,
+        command_generator: CompactLLMCommandGenerator,
         flows: FlowsList,
         tracker_with_routing_slot: DialogueStateTracker,
         llm_response_object: LLMResponse,
@@ -317,7 +290,7 @@ class TestSingleStepLLMCommandGenerator:
         """Test that predict_commands sets the routing slot to True."""
         # Given
         mock_llm_client = AsyncMock()
-        llm_response_object.choices = ["StartFlow(test_flow)"]
+        llm_response_object.choices = ["start flow test_flow"]
         mock_llm_client.acompletion.return_value = llm_response_object
         mock_llm_factory.return_value = mock_llm_client
 
@@ -338,7 +311,7 @@ class TestSingleStepLLMCommandGenerator:
     async def test_predict_commands_does_not_set_llm_commands_and_prompt(
         self,
         mock_llm_factory: Mock,
-        command_generator: SingleStepLLMCommandGenerator,
+        command_generator: CompactLLMCommandGenerator,
         flows: FlowsList,
         tracker: DialogueStateTracker,
         llm_response_object: LLMResponse,
@@ -347,7 +320,7 @@ class TestSingleStepLLMCommandGenerator:
         # Given
         message = Message.build(text="start test_flow")
         mock_llm_client = AsyncMock()
-        llm_response_object.choices = ["StartFlow(test_flow)"]
+        llm_response_object.choices = ["start test_flow"]
         mock_llm_client.acompletion.return_value = llm_response_object
         mock_llm_factory.return_value = mock_llm_client
 
@@ -368,7 +341,7 @@ class TestSingleStepLLMCommandGenerator:
     async def test_predict_commands_sets_llm_commands_and_prompt(
         self,
         mock_llm_factory: Mock,
-        command_generator: SingleStepLLMCommandGenerator,
+        command_generator: CompactLLMCommandGenerator,
         flows: FlowsList,
         tracker: DialogueStateTracker,
         llm_response_object: LLMResponse,
@@ -379,7 +352,7 @@ class TestSingleStepLLMCommandGenerator:
         # Given
         with set_preparing_fine_tuning_data():
             mock_llm_client = AsyncMock()
-            llm_response_object.choices = ["StartFlow(test_flow)"]
+            llm_response_object.choices = ["start flow test_flow"]
             mock_llm_client.acompletion.return_value = llm_response_object
             mock_llm_factory.return_value = mock_llm_client
 
@@ -392,9 +365,7 @@ class TestSingleStepLLMCommandGenerator:
 
         # Then
         assert message.get(LLM_PROMPT) is not None
-        assert message.get(LLM_PROMPT).startswith(
-            "Your task is to analyze the current conversation context"
-        )
+        assert message.get(LLM_PROMPT).startswith("## Task Description")
         assert message.get(LLM_COMMANDS) == [
             {"command": "start flow", "flow": "test_flow"}
         ]
@@ -405,7 +376,7 @@ class TestSingleStepLLMCommandGenerator:
     async def test_predict_commands_adds_commands_and_prompt_to_message_object(
         self,
         mock_llm_factory: Mock,
-        command_generator: SingleStepLLMCommandGenerator,
+        command_generator: CompactLLMCommandGenerator,
         flows: FlowsList,
         tracker: DialogueStateTracker,
         llm_response_object: LLMResponse,
@@ -416,7 +387,7 @@ class TestSingleStepLLMCommandGenerator:
         # Given
         with set_record_commands_and_prompts():
             mock_llm_client = AsyncMock()
-            llm_response_object.choices = ["StartFlow(test_flow)"]
+            llm_response_object.choices = ["start flow test_flow"]
             mock_llm_client.acompletion.return_value = llm_response_object
             mock_llm_factory.return_value = mock_llm_client
 
@@ -430,15 +401,11 @@ class TestSingleStepLLMCommandGenerator:
         # Then
         prompts = message.get(PROMPTS)
         assert prompts is not None
-        assert (
-            prompts[0].get(KEY_COMPONENT_NAME) == SingleStepLLMCommandGenerator.__name__
-        )
-        assert prompts[0][KEY_USER_PROMPT].startswith(
-            "Your task is to analyze the current conversation context"
-        )
-        assert message.get(PREDICTED_COMMANDS)[
-            SingleStepLLMCommandGenerator.__name__
-        ] == [{"command": "start flow", "flow": "test_flow"}]
+        assert prompts[0].get(KEY_COMPONENT_NAME) == CompactLLMCommandGenerator.__name__
+        assert prompts[0][KEY_USER_PROMPT].startswith("## Task Description")
+        assert message.get(PREDICTED_COMMANDS)[CompactLLMCommandGenerator.__name__] == [
+            {"command": "start flow", "flow": "test_flow"}
+        ]
 
     @patch(
         "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
@@ -446,7 +413,7 @@ class TestSingleStepLLMCommandGenerator:
     async def test_predict_commands_does_not_add_commands_and_prompt_by_default(
         self,
         mock_llm_factory: Mock,
-        command_generator: SingleStepLLMCommandGenerator,
+        command_generator: CompactLLMCommandGenerator,
         flows: FlowsList,
         tracker: DialogueStateTracker,
     ):
@@ -456,7 +423,7 @@ class TestSingleStepLLMCommandGenerator:
         # Given
         llm_mock = AsyncMock()
         llm_mock.acompletion.return_value = AsyncMock(
-            spec=LLMResponse, choices=["StartFlow(test_flow)"]
+            spec=LLMResponse, choices=["start test_flow"]
         )
         mock_llm_factory.return_value = llm_mock
 
@@ -482,13 +449,13 @@ class TestSingleStepLLMCommandGenerator:
         ),
     )
     @patch(
-        "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator"
-        ".SingleStepLLMCommandGenerator"
+        "rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator"
+        ".CompactLLMCommandGenerator"
         ".render_template"
     )
     @patch(
-        "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator"
-        ".SingleStepLLMCommandGenerator"
+        "rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator"
+        ".CompactLLMCommandGenerator"
         ".invoke_llm"
     )
     async def test_predict_commands_calls_prompt_rendering_with_startable_flows_only(
@@ -497,7 +464,7 @@ class TestSingleStepLLMCommandGenerator:
         mock_render_template: Mock,
         flow_guard_value: Any,
         expected_flow_ids: Set[Text],
-        command_generator: SingleStepLLMCommandGenerator,
+        command_generator: CompactLLMCommandGenerator,
     ):
         # Given
         test_flows = flows_from_str(
@@ -534,7 +501,7 @@ class TestSingleStepLLMCommandGenerator:
         # regardless of flow retrieval we want to make sure we are calling the
         # prompt rendering only with startable flows.
         config = {"flow_retrieval": {"active": False}}
-        command_generator = SingleStepLLMCommandGenerator.create(
+        command_generator = CompactLLMCommandGenerator.create(
             config=config,
             resource=Mock(),
             model_storage=Mock(),
@@ -566,7 +533,7 @@ class TestSingleStepLLMCommandGenerator:
                 LLMResponse(
                     id="mock-id",
                     created=123456,
-                    choices=["StartFlow(this_flow_does_not_exists)"],
+                    choices=["start flow this_flow_does_not_exists"],
                     model="test-model",
                     usage=LLMUsage(prompt_tokens=5, completion_tokens=7),
                 ),
@@ -590,7 +557,7 @@ class TestSingleStepLLMCommandGenerator:
                 LLMResponse(
                     id="mock-id",
                     created=123456,
-                    choices=["SetSlot(flow_name, some_flow)"],
+                    choices=["set slot flow_name some_flow"],
                     model="test-model",
                     usage=LLMUsage(prompt_tokens=5, completion_tokens=7),
                 ),
@@ -601,12 +568,12 @@ class TestSingleStepLLMCommandGenerator:
         ],
     )
     @patch(
-        "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator."
-        "SingleStepLLMCommandGenerator.invoke_llm"
+        "rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator."
+        "CompactLLMCommandGenerator.invoke_llm"
     )
     @patch(
-        "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator."
-        "SingleStepLLMCommandGenerator.render_template"
+        "rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator."
+        "CompactLLMCommandGenerator.render_template"
     )
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.filter_flows"
@@ -618,7 +585,7 @@ class TestSingleStepLLMCommandGenerator:
         mock_generate_action_list_using_llm: Mock,
         llm_response: Text,
         expected_commands: List[Command],
-        command_generator: SingleStepLLMCommandGenerator,
+        command_generator: CompactLLMCommandGenerator,
         tracker_with_routing_slot: DialogueStateTracker,
     ):
         # Given
@@ -657,7 +624,7 @@ class TestSingleStepLLMCommandGenerator:
     async def test_predict_commands_and_flow_retrieval_api_error_throws_exception(
         self,
         mock_flow_retrieval_filter_flows: AsyncMock,
-        command_generator: SingleStepLLMCommandGenerator,
+        command_generator: CompactLLMCommandGenerator,
         tracker_with_routing_slot: DialogueStateTracker,
     ) -> None:
         # Given
@@ -690,115 +657,9 @@ class TestSingleStepLLMCommandGenerator:
         assert ErrorCommand() in predicted_commands
         assert SetSlotCommand(ROUTE_TO_CALM_SLOT, True) in predicted_commands
 
-    def test_render_template(
-        self,
-        command_generator: SingleStepLLMCommandGenerator,
-    ):
-        """Test that render_template renders the correct template string."""
-        # Given
-        test_message = Message.build(text="some message")
-        test_slot = TextSlot(
-            name="test_slot",
-            mappings=[{}],
-            initial_value=None,
-            influence_conversation=False,
-        )
-        test_tracker = DialogueStateTracker.from_events(
-            sender_id="test",
-            evts=[UserUttered("Hello"), BotUttered("Hi")],
-            slots=[test_slot],
-        )
-        test_flows = flows_from_str(
-            """
-            flows:
-              test_flow:
-                description: some description
-                steps:
-                - id: first_step
-                  collect: test_slot
-            """
-        )
-        with open(EXPECTED_PROMPT_PATH, "r", encoding="unicode_escape") as f:
-            expected_template = f.readlines()
-        # When
-        rendered_template = command_generator.render_template(
-            message=test_message,
-            tracker=test_tracker,
-            startable_flows=test_flows,
-            all_flows=test_flows,
-        )
-        # Then
-        for rendered_line, expected_line in zip(
-            rendered_template.splitlines(True), expected_template
-        ):
-            assert rendered_line == expected_line
-
-    def test_render_template_with_current_slot_info(
-        self,
-        command_generator_with_custom_prompt_template: SingleStepLLMCommandGenerator,
-    ):
-        """Test that rendered template includes information about the current slot
-        type and allowed values if available.
-        """
-        # Given
-        test_message = Message.build(text="some message")
-        test_slot = CategoricalSlot(
-            name="test_slot",
-            mappings=[{}],
-            initial_value=None,
-            influence_conversation=False,
-            values=["A", "B"],
-        )
-        stack = DialogueStack.from_dict(
-            [
-                {
-                    "type": "flow",
-                    "flow_id": "test_flow",
-                    "step_id": "first_step",
-                    "frame_id": "some-frame-id",
-                },
-            ]
-        )
-        test_tracker = DialogueStateTracker.from_events(
-            sender_id="test",
-            evts=[UserUttered("Hello"), BotUttered("Hi")],
-            slots=[test_slot],
-        )
-        test_tracker.update_stack(stack)
-        test_flows = flows_from_str(
-            """
-            flows:
-              test_flow:
-                description: some description
-                steps:
-                - id: first_step
-                  collect: test_slot
-            """
-        )
-        with open(
-            EXPECTED_RENDERED_PROMPT_WITH_CURRENT_SLOT_INFORMATION,
-            "r",
-            encoding="unicode_escape",
-        ) as f:
-            expected_template = f.readlines()
-        # When
-        rendered_template = (
-            command_generator_with_custom_prompt_template.render_template(
-                message=test_message,
-                tracker=test_tracker,
-                startable_flows=test_flows,
-                all_flows=test_flows,
-            )
-        )
-        # Then
-        for rendered_line, expected_line in zip(
-            rendered_template.splitlines(True), expected_template
-        ):
-            assert rendered_line == expected_line
-
     def test_render_template_call(
         self,
-        command_generator: SingleStepLLMCommandGenerator,
+        command_generator: CompactLLMCommandGenerator,
     ):
         """Test that render_template renders the correct template string."""
         # Given
@@ -860,10 +721,10 @@ class TestSingleStepLLMCommandGenerator:
         # make sure non-startable flow isn't there
         assert "called_flow" not in rendered_template
         # make sure it looks like we are in the calling flow
-        assert 'You are currently in the flow "test_flow".' in rendered_template
+        assert "You are currently in the flow `test_flow`." in rendered_template
         # make sure the slot from the called flow is available in the template
         assert (
-            'You have just asked the user for the slot "test_slot".'
+            "You have just asked the user for the slot `test_slot`."
             in rendered_template
         )
 
@@ -872,60 +733,81 @@ class TestSingleStepLLMCommandGenerator:
         [
             (None, []),
             (
-                "SetSlot(transfer_money_amount_of_money, )",
+                "set slot transfer_money_amount_of_money None",
                 [SetSlotCommand(name="transfer_money_amount_of_money", value=None)],
             ),
-            ("SetSlot(name, value)", [SetSlotCommand(name="name", value="value")]),
-            ("SetSlot('name', 'value')", [SetSlotCommand(name="name", value="value")]),
-            ('SetSlot("name", "value")', [SetSlotCommand(name="name", value="value")]),
-            # Start flow
-            ("SetSlot(flow_name, some_flow)", [StartFlowCommand(flow="some_flow")]),
-            ("StartFlow(some_flow)", [StartFlowCommand(flow="some_flow")]),
-            ("StartFlow('some_flow')", [StartFlowCommand(flow="some_flow")]),
-            ('StartFlow("some_flow")', [StartFlowCommand(flow="some_flow")]),
-            ("StartFlow(does_not_exist)", []),
+            ("set slot name value", [SetSlotCommand(name="name", value="value")]),
+            ("set slot 'name' 'value'", [SetSlotCommand(name="name", value="value")]),
+            ('set slot "name" "value"', [SetSlotCommand(name="name", value="value")]),
+            ("*** set slot name value", [SetSlotCommand(name="name", value="value")]),
             (
-                "StartFlow(02_benefits_learning_days)",
+                "*+```set slot name value   ",
+                [SetSlotCommand(name="name", value="value")],
+            ),
+            (
+                "```\nset slot document_type passport\n```",
+                [SetSlotCommand(name="document_type", value="passport")],
+            ),
+            (
+                "```plaintext\nset slot confirm_slot_correction True"
+                "\nset slot document_type national id\n```",
+                [
+                    SetSlotCommand(name="confirm_slot_correction", value="True"),
+                    SetSlotCommand(name="document_type", value="national id"),
+                ],
+            ),
+            # Start flow
+            ("set slot flow_name some_flow", [StartFlowCommand(flow="some_flow")]),
+            ("start flow some_flow", [StartFlowCommand(flow="some_flow")]),
+            ("start flow 'some_flow'", [StartFlowCommand(flow="some_flow")]),
+            ('start flow "some_flow"', [StartFlowCommand(flow="some_flow")]),
+            ("start flow does_not_exist", []),
+            (
+                "start flow 02_benefits_learning_days",
                 [StartFlowCommand(flow="02_benefits_learning_days")],
             ),
-            ("CancelFlow()", [CancelFlowCommand()]),
-            ("ChitChat()", [ChitChatAnswerCommand()]),
-            ("SkipQuestion()", [SkipQuestionCommand()]),
-            ("SearchAndReply()", [KnowledgeAnswerCommand()]),
-            ("HumanHandoff()", [HumanHandoffCommand()]),
+            ("* start flow 'some_flow'", [StartFlowCommand(flow="some_flow")]),
+            ("--->start flow 'some_flow'", [StartFlowCommand(flow="some_flow")]),
+            ("```start flow 'some_flow'```", [StartFlowCommand(flow="some_flow")]),
+            ("```start flow some_flow```", [StartFlowCommand(flow="some_flow")]),
+            # Cancel flow
+            ("cancel flow", [CancelFlowCommand()]),
+            ("offtopic reply", [ChitChatAnswerCommand()]),
+            ("provide info", [KnowledgeAnswerCommand()]),
+            ("hand over", [HumanHandoffCommand()]),
             (
-                "Here is a list of commands:\nSetSlot(flow_name, some_flow)\n",
+                "Here is a list of commands:\nset slot flow_name some_flow\n",
                 [StartFlowCommand(flow="some_flow")],
             ),
             (
-                """SetSlot(flow_name, some_flow)
-                       SetSlot(transfer_money_amount_of_money,)""",
+                """set slot flow_name some_flow
+                       set slot transfer_money_amount_of_money None""",
                 [
                     StartFlowCommand(flow="some_flow"),
                     SetSlotCommand(name="transfer_money_amount_of_money", value=None),
                 ],
             ),
             # Clarify of non-existent option is dropped
-            ("Clarify(transfer_money)", []),
+            ("disambiguate flows transfer_money", []),
             # Clarify orders options
             (
-                "Clarify(some_flow, 02_benefits_learning_days)",
+                "disambiguate flows some_flow 02_benefits_learning_days",
                 [ClarifyCommand(options=["02_benefits_learning_days", "some_flow"])],
             ),
             # Clarify with quotes around the flow names
             (
-                "Clarify('some_flow', 'another_flow')",
+                "disambiguate flows 'some_flow' 'another_flow'",
                 [ClarifyCommand(options=["another_flow", "some_flow"])],
             ),
             (
-                'Clarify("some_flow", "another_flow")',
+                'disambiguate flows "some_flow" "another_flow"',
                 [ClarifyCommand(options=["another_flow", "some_flow"])],
             ),
             # Clarify with single option is converted to a StartFlowCommand
-            ("Clarify(some_flow)", [StartFlowCommand(flow="some_flow")]),
+            ("disambiguate flows some_flow", [StartFlowCommand(flow="some_flow")]),
             # Clarify with multiple but same options is converted to a StartFlowCommand
             (
-                "Clarify(some_flow, some_flow, some_flow, some_flow)",
+                "disambiguate flows some_flow some_flow some_flow some_flow",
                 [StartFlowCommand(flow="some_flow")],
             ),
         ],
@@ -957,7 +839,7 @@ class TestSingleStepLLMCommandGenerator:
                   collect: some_slot
             """
         )
-        parsed_commands = SingleStepLLMCommandGenerator.parse_commands(
+        parsed_commands = CompactLLMCommandGenerator.parse_commands(
             input_action, Mock(), test_flows
         )
         # Then
@@ -973,8 +855,8 @@ class TestSingleStepLLMCommandGenerator:
         prompt_file = prompt_dir / "llm_command_generator_prompt.jinja2"
         prompt_file.write_text("This is a test prompt")
 
-        config = {"prompt": str(prompt_file)}
-        generator = SingleStepLLMCommandGenerator(
+        config = {"prompt_template": str(prompt_file)}
+        generator = CompactLLMCommandGenerator(
             config, model_storage, Resource("llmcmdgen")
         )
         fingerprint_1 = generator.fingerprint_addon(config)
@@ -993,8 +875,8 @@ class TestSingleStepLLMCommandGenerator:
         prompt_file = prompt_dir / "llm_command_generator_prompt.jinja2"
         prompt_file.write_text("This is a test prompt")
 
-        config = {"prompt": str(prompt_file)}
-        generator = SingleStepLLMCommandGenerator(
+        config = {"prompt_template": str(prompt_file)}
+        generator = CompactLLMCommandGenerator(
             config, model_storage, Resource("llmcmdgen")
         )
 
@@ -1007,9 +889,7 @@ class TestSingleStepLLMCommandGenerator:
         self,
         model_storage: ModelStorage,
     ) -> None:
-        generator = SingleStepLLMCommandGenerator(
-            {}, model_storage, Resource("llmcmdgen")
-        )
+        generator = CompactLLMCommandGenerator({}, model_storage, Resource("llmcmdgen"))
         fingerprint_1 = generator.fingerprint_addon({})
         fingerprint_2 = generator.fingerprint_addon({})
         assert fingerprint_1 is not None
@@ -1112,9 +992,7 @@ class TestSingleStepLLMCommandGenerator:
         model_storage: ModelStorage,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        generator = SingleStepLLMCommandGenerator(
-            {}, model_storage, Resource("llmcmdgen")
-        )
+        generator = CompactLLMCommandGenerator({}, model_storage, Resource("llmcmdgen"))
 
         class MockAvailableEndpoints:
             @staticmethod
@@ -1160,7 +1038,7 @@ class TestSingleStepLLMCommandGenerator:
         resource: Resource,
     ) -> None:
         # Given
-        generator = SingleStepLLMCommandGenerator(
+        generator = CompactLLMCommandGenerator(
             {FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False}},
             model_storage,
             resource,
@@ -1187,7 +1065,7 @@ class TestSingleStepLLMCommandGenerator:
                 - id: first_step
                   action: action_listen
             """
-        generator = SingleStepLLMCommandGenerator(
+        generator = CompactLLMCommandGenerator(
             {FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False}},
             model_storage,
             resource,
@@ -1220,7 +1098,7 @@ class TestSingleStepLLMCommandGenerator:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # Given
-        generator = SingleStepLLMCommandGenerator(
+        generator = CompactLLMCommandGenerator(
             {},
             model_storage,
             resource,
@@ -1248,7 +1126,7 @@ class TestSingleStepLLMCommandGenerator:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # Given
-        generator = SingleStepLLMCommandGenerator(
+        generator = CompactLLMCommandGenerator(
             {},
             model_storage,
             resource,
@@ -1270,7 +1148,7 @@ class TestSingleStepLLMCommandGenerator:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # Given
-        generator = SingleStepLLMCommandGenerator(
+        generator = CompactLLMCommandGenerator(
             {FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False}},
             model_storage,
             resource,
@@ -1279,7 +1157,7 @@ class TestSingleStepLLMCommandGenerator:
         domain.slots = []
         train_resource = generator.train(TrainingData(), flows, domain)
         # When
-        loaded = SingleStepLLMCommandGenerator.load(
+        loaded = CompactLLMCommandGenerator.load(
             generator.config,
             model_storage,
             train_resource,
@@ -1305,7 +1183,7 @@ class TestSingleStepLLMCommandGenerator:
     ) -> None:
         # Given
         config = {FLOW_RETRIEVAL_KEY: FlowRetrieval.get_default_config()}
-        generator = SingleStepLLMCommandGenerator(
+        generator = CompactLLMCommandGenerator(
             config,
             model_storage,
             resource,
@@ -1313,7 +1191,7 @@ class TestSingleStepLLMCommandGenerator:
         domain = Mock()
         train_resource = generator.train(TrainingData(), flows, domain)
         # When
-        loaded = SingleStepLLMCommandGenerator.load(
+        loaded = CompactLLMCommandGenerator.load(
             generator.config,
             model_storage,
             train_resource,
@@ -1341,14 +1219,14 @@ class TestSingleStepLLMCommandGenerator:
         # Given
         resource = Resource("llmcmdgen")
         config = {
-            "prompt": os.path.join(
+            "prompt_template": os.path.join(
                 "data", "test_prompt_templates", "test_prompt.jinja2"
             )
         }
-        generator = SingleStepLLMCommandGenerator(config, model_storage, resource)
+        generator = CompactLLMCommandGenerator(config, model_storage, resource)
         resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
         # When
-        loaded = SingleStepLLMCommandGenerator.load({}, model_storage, resource, Mock())
+        loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
         # Then
         assert loaded.prompt_template.startswith("This is a test prompt.")
 
@@ -1364,16 +1242,62 @@ class TestSingleStepLLMCommandGenerator:
     ):
         # Given
         resource = Resource("llmcmdgen")
-        generator = SingleStepLLMCommandGenerator({}, model_storage, resource)
+        generator = CompactLLMCommandGenerator({}, model_storage, resource)
         resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
         # When
-        loaded = SingleStepLLMCommandGenerator.load({}, model_storage, resource, Mock())
+        loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
+        # Then
+        assert loaded.prompt_template.startswith("## Task Description")
+
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
+    )
+    @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
+    def test_load_deafult_prompt_based_on_model_name_claude(
+        self,
+        mock_flow_retrieval_load: Mock,
+        mock_flow_retrieval_populate: Mock,
+        model_storage: ModelStorage,
+    ):
+        # Given
+        resource = Resource("llmcmdgen")
+        config = {
+            "provider": "anthropic",
+            "model": "claude-3-5-sonnet-20240620",
+        }
+        generator = CompactLLMCommandGenerator(config, model_storage, resource)
+        resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
+        # When
+        loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
         # Then
         assert loaded.prompt_template.startswith(
-            "Your task is to analyze the current conversation"
+            "Your task is to analyze the current conversation context and generate"
         )
 
-    async def test_single_step_llm_command_generator_load_prompt_from_model_storage(
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
+    )
+    @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
+    def test_load_deafult_prompt_based_on_model_name_gpt_4o(
+        self,
+        mock_flow_retrieval_load: Mock,
+        mock_flow_retrieval_populate: Mock,
+        model_storage: ModelStorage,
+    ):
+        # Given
+        resource = Resource("llmcmdgen")
+        config = {
+            "provider": "openai",
+            "model": "gpt-4o-2024-11-20",
+        }
+        generator = CompactLLMCommandGenerator(config, model_storage, resource)
+        resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
+        # When
+        loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
+        # Then
+        assert loaded.prompt_template.startswith("## Task Description")
+
+    async def test_compact_llm_command_generator_load_prompt_from_model_storage(
         self,
         model_storage: ModelStorage,
         tmp_path: Path,
@@ -1387,28 +1311,28 @@ class TestSingleStepLLMCommandGenerator:
         prompt_file.write_text("This is a custom prompt")
 
         # Add the prompt file path to the config.
-        config = {"prompt": str(prompt_file)}
+        config = {"prompt_template": str(prompt_file)}
 
         # Persist the prompt file to the model storage.
         resource = Resource("llmcmdgen")
-        generator = SingleStepLLMCommandGenerator(config, model_storage, resource)
+        generator = CompactLLMCommandGenerator(config, model_storage, resource)
         generator.persist()
 
         # Test loading the prompt from the model storage.
         # Case 1: No prompt in the config.
-        loaded = SingleStepLLMCommandGenerator.load({}, model_storage, resource, Mock())
+        loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
         assert loaded.prompt_template == "This is a custom prompt"
-        assert loaded.config["prompt"] is None
+        assert loaded.config["prompt_template"] is None
 
         # Case 2: Specifying a invalid prompt path in the config.
-        loaded = SingleStepLLMCommandGenerator.load(
-            {"prompt": "test_prompt.jinja2"},
+        loaded = CompactLLMCommandGenerator.load(
+            {"prompt_template": "test_prompt.jinja2"},
             model_storage,
             resource,
             Mock(),
         )
         assert loaded.prompt_template == "This is a custom prompt"
-        assert loaded.config["prompt"] == "test_prompt.jinja2"
+        assert loaded.config["prompt_template"] == "test_prompt.jinja2"
 
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval")
     def test_train_with_no_flows(
@@ -1419,7 +1343,7 @@ class TestSingleStepLLMCommandGenerator:
         # Given
         mock_flow_retrieval.__name__ = "FlowRetrieval"
         resource = Resource("llmcmdgen")
-        generator = SingleStepLLMCommandGenerator({}, model_storage, resource)
+        generator = CompactLLMCommandGenerator({}, model_storage, resource)
         # When
         generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
         # Then
@@ -1482,7 +1406,7 @@ class TestSingleStepLLMCommandGenerator:
             ),
         ],
     )
-    def test_single_step_llm_command_generator_init_with_different_llm_configs(
+    def test_compact_llm_command_generator_init_with_different_llm_configs(
         self,
         config: Optional[Dict[str, Any]],
         expected_llm_config: Optional[Dict[str, Any]],
@@ -1513,7 +1437,7 @@ class TestSingleStepLLMCommandGenerator:
         mock_endpoints = MockAvailableEndpoints()
         monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
 
-        generator = SingleStepLLMCommandGenerator(
+        generator = CompactLLMCommandGenerator(
             config,
             model_storage,
             resource,
@@ -1528,7 +1452,7 @@ class TestSingleStepLLMCommandGenerator:
                 == expected_flow_retrieval_embedding_config
             )
 
-    def test_single_step_llm_command_generator_persist_config(
+    def test_compact_llm_command_generator_persist_config(
         self,
         model_storage: LocalModelStorage,
         resource: Resource,
@@ -1551,7 +1475,7 @@ class TestSingleStepLLMCommandGenerator:
         monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
 
         config = {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"}}
-        generator = SingleStepLLMCommandGenerator(config, model_storage, resource)
+        generator = CompactLLMCommandGenerator(config, model_storage, resource)
 
         # Ensure the config is resolved
         assert generator.config[LLM_CONFIG_KEY] == {
@@ -1574,7 +1498,9 @@ class TestSingleStepLLMCommandGenerator:
         }
 
     async def test_process_predict_commands_if_commands_already_present(
-        self, command_generator: SingleStepLLMCommandGenerator, monkeypatch: MonkeyPatch
+        self,
+        command_generator: CompactLLMCommandGenerator,
+        monkeypatch: MonkeyPatch,
     ):
         """Test that predict_commands adds commands to the prior set commands on the Message object."""  # noqa: E501
         command = StartFlowCommand("some_flow").as_dict()
@@ -1627,7 +1553,7 @@ class TestSingleStepLLMCommandGenerator:
     async def test_process_should_skip_llm_call(
         self,
         command: Dict[str, Any],
-        command_generator: SingleStepLLMCommandGenerator,
+        command_generator: CompactLLMCommandGenerator,
         monkeypatch: MonkeyPatch,
     ):
         """Test that predict_commands does not add commands when should_skip_llm_call is True."""  # noqa: E501
@@ -1695,7 +1621,7 @@ class TestSingleStepLLMCommandGenerator:
         active_flow: Text,
         input_commands: List[Command],
         expected_commands: List[Command],
-        command_generator: SingleStepLLMCommandGenerator,
+        command_generator: CompactLLMCommandGenerator,
     ):
         # Given
         slot_name = "auth_token"
@@ -1732,7 +1658,9 @@ class TestSingleStepLLMCommandGenerator:
         assert actual_commands == expected_commands
 
     async def test_process_predict_commands_different_start_flow_names(
-        self, command_generator: SingleStepLLMCommandGenerator, monkeypatch: MonkeyPatch
+        self,
+        command_generator: CompactLLMCommandGenerator,
+        monkeypatch: MonkeyPatch,
     ):
         """Test that predict_commands filters out the LLM StartFlow predicted command."""  # noqa: E501
         command = StartFlowCommand("some_flow").as_dict()
@@ -1783,7 +1711,7 @@ class TestSingleStepLLMCommandGenerator:
     )
     async def test_process_predict_commands_same_slot(
         self,
-        command_generator: SingleStepLLMCommandGenerator,
+        command_generator: CompactLLMCommandGenerator,
         monkeypatch: MonkeyPatch,
         predicted_command: Command,
     ):
@@ -1827,6 +1755,87 @@ class TestSingleStepLLMCommandGenerator:
         assert len(returned_message.get(COMMANDS)) == 1
         assert returned_message.get(COMMANDS) == [command]
 
+    def test_model_prompt_mapper(self):
+        assert (
+            MODEL_PROMPT_MAPPER.get("openai/gpt-4o-2024-11-20")
+            == "command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
+        )
+        assert (
+            MODEL_PROMPT_MAPPER.get("azure/gpt-4o-2024-11-20")
+            == "command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
+        )
+        assert (
+            MODEL_PROMPT_MAPPER.get("anthropic/claude-3-5-sonnet-20240620")
+            == "command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
+        )
+        assert (
+            MODEL_PROMPT_MAPPER.get("bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0")
+            == "command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
+        )
+
     def test_command_syntax_version(self):
-        assert CommandSyntaxManager.get_syntax_version() == CommandSyntaxVersion.v1
+        assert CommandSyntaxManager.get_syntax_version() == CommandSyntaxVersion.v2
         CommandSyntaxManager.reset_syntax_version()
+
+    def test_render_template_with_current_slot_info(
+        self,
+        command_generator_with_custom_prompt_template: CompactLLMCommandGenerator,
+    ):
+        """Test that rendered template includes information about the current slot
+        type and allowed values if available.
+        """
+        # Given
+        test_message = Message.build(text="some message")
+        test_slot = CategoricalSlot(
+            name="test_slot",
+            mappings=[{}],
+            initial_value=None,
+            influence_conversation=False,
+            values=["A", "B"],
+        )
+        stack = DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "test_flow",
+                    "step_id": "first_step",
+                    "frame_id": "some-frame-id",
+                },
+            ]
+        )
+        test_tracker = DialogueStateTracker.from_events(
+            sender_id="test",
+            evts=[UserUttered("Hello"), BotUttered("Hi")],
+            slots=[test_slot],
+        )
+        test_tracker.update_stack(stack)
+        test_flows = flows_from_str(
+            """
+            flows:
+              test_flow:
+                description: some description
+                steps:
+                - id: first_step
+                  collect: test_slot
+            """
+        )
+        with open(
+            EXPECTED_RENDERED_PROMPT_WITH_CURRENT_SLOT_INFORMATION,
+            "r",
+            encoding="unicode_escape",
+        ) as f:
+            expected_template = f.readlines()
+        # When
+        rendered_template = (
+            command_generator_with_custom_prompt_template.render_template(
+                message=test_message,
+                tracker=test_tracker,
+                startable_flows=test_flows,
+                all_flows=test_flows,
+            )
+        )
+        # Then
+        for rendered_line, expected_line in zip(
+            rendered_template.splitlines(True), expected_template
+        ):
+            assert rendered_line == expected_line

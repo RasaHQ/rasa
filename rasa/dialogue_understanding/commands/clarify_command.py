@@ -112,7 +112,9 @@ class ClarifyCommand(Command):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"Clarify\(([\"\'a-zA-Z0-9_, ]*)\)",
-            CommandSyntaxVersion.v2: r"^disambiguate flows([\"\'a-zA-Z0-9_, ]*)$",
+            CommandSyntaxVersion.v2: (
+                r"^[^\w]*disambiguate flows ([\"\'a-zA-Z0-9_, ]*)$"
+            ),
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

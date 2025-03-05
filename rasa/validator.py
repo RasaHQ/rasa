@@ -34,14 +34,8 @@ from rasa.shared.core.command_payload_reader import (
     MAX_NUMBER_OF_SLOTS,
     CommandPayloadReader,
 )
-from rasa.shared.core.constants import (
-    KEY_ALLOW_NLU_CORRECTION,
-    SlotMappingType,
-)
-from rasa.shared.core.domain import (
-    RESPONSE_KEYS_TO_INTERPOLATE,
-    Domain,
-)
+from rasa.shared.core.constants import KEY_ALLOW_NLU_CORRECTION, SlotMappingType
+from rasa.shared.core.domain import RESPONSE_KEYS_TO_INTERPOLATE, Domain
 from rasa.shared.core.events import ActionExecuted, ActiveLoop, UserUttered
 from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.flows.flow_step_links import IfFlowStepLink

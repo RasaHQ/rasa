@@ -42,9 +42,7 @@ from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
-from rasa.core.policies.flow_policy import (
-    FlowPolicy,
-)
+from rasa.core.policies.flow_policy import FlowPolicy
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore

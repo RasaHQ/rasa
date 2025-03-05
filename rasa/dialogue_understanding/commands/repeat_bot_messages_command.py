@@ -82,7 +82,7 @@ class RepeatBotMessagesCommand(Command):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"RepeatLastBotMessages\(\)",
-            CommandSyntaxVersion.v2: r"^repeat message$",
+            CommandSyntaxVersion.v2: r"^[^\w]*repeat message$",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

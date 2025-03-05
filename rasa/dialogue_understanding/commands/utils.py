@@ -25,10 +25,13 @@ def start_flow_by_name(
 
 def extract_cleaned_options(options_str: str) -> List[str]:
     """Extract and clean options from a string."""
+    delimiters = [",", " "]
+
+    for delimiter in delimiters:
+        options_str = options_str.replace(delimiter, " ")
+
     return sorted(
-        opt.strip().strip('"').strip("'")
-        for opt in options_str.split(",")
-        if opt.strip()
+        opt.strip().strip('"').strip("'") for opt in options_str.split() if opt.strip()
     )
 
 

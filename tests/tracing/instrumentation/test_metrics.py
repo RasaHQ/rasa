@@ -6,6 +6,9 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
 from rasa.tracing.constants import (
+    COMPACT_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
+    COMPACT_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
+    COMPACT_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
     LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
@@ -269,6 +272,10 @@ def test_record_single_step_llm_command_generator_cpu_usage(
 
     resource_metrics = metrics_data.get("resource_metrics")[0]
     scope_metrics = resource_metrics.get("scope_metrics")[0]
+
+    # the first 6 metrics in the list were added by the unit tests above representing
+    # the CPU, memory usage and prompt token length of the LLMCommandGenerator and the
+    # CPU, memory usage and prompt token length of the MultiStepLLMCommandGenerator.
     metrics = scope_metrics.get("metrics")[6]
     assert (
         metrics.get("name") == SINGLE_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME
@@ -301,8 +308,9 @@ def test_record_single_step_llm_command_generator_memory_usage(
     resource_metrics = metrics_data.get("resource_metrics")[0]
     scope_metrics = resource_metrics.get("scope_metrics")[0]
 
-    # the first metric in the list was added by the unit test above
-    # representing the CPU usage
+    # the first 7 metrics in the list were added by the unit tests above representing
+    # the CPU, memory usage and prompt token length of the LLMCommandGenerator and the
+    # MultiStepLLMCommandGenerator.
     metrics = scope_metrics.get("metrics")[7]
     assert (
         metrics.get("name")
@@ -341,8 +349,9 @@ def test_record_single_step_llm_command_generator_prompt_token_exists(
     resource_metrics = metrics_data.get("resource_metrics")[0]
     scope_metrics = resource_metrics.get("scope_metrics")[0]
 
-    # the first 2 metrics in the list were added by the unit tests above
-    # representing the CPU and memory usage
+    # the first 8 metrics in the list were added by the unit tests above representing
+    # the CPU, memory usage and prompt token length of the LLMCommandGenerator and the
+    # MultiStepLLMCommandGenerator.
     metrics = scope_metrics.get("metrics")[8]
     assert (
         metrics.get("name")
@@ -351,6 +360,114 @@ def test_record_single_step_llm_command_generator_prompt_token_exists(
     assert (
         metrics.get("description")
         == "SingleStepLLMCommandGenerator prompt token length"
+    )
+    assert metrics.get("unit") == "1"
+
+    data_points = metrics.get("data", {}).get("data_points")[0]
+    assert data_points.get("count") == 1
+    assert (
+        data_points.get("sum")
+        == data_points.get("min")
+        == data_points.get("max")
+        == prompt_token_len
+    )
+
+
+def test_record_compact_llm_command_generator_cpu_usage(
+    test_meter_provider: MeterProvider,
+    in_memory_metric_reader: InMemoryMetricReader,
+) -> None:
+    # act
+    record_llm_based_command_generator_cpu_usage(
+        MetricInstrumentProvider(),
+        COMPACT_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
+    )
+
+    # assert
+    metrics_data = in_memory_metric_reader.get_metrics_data()
+    metrics_data = json.loads(metrics_data.to_json())
+
+    resource_metrics = metrics_data.get("resource_metrics")[0]
+    scope_metrics = resource_metrics.get("scope_metrics")[0]
+
+    # the first 9 metrics in the list were added by the unit tests above representing
+    # the CPU, memory usage and prompt token length of the LLMCommandGenerator, the
+    # MultiStepLLMCommandGenerator and the SingleStepLLMCommandGenerator.
+    metrics = scope_metrics.get("metrics")[9]
+    assert metrics.get("name") == COMPACT_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME
+    assert metrics.get("description") == "CPU percentage for CompactLLMCommandGenerator"
+    assert metrics.get("unit") == LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME
+
+    data_points = metrics.get("data", {}).get("data_points")[0]
+    assert data_points.get("count") == 1
+    assert 0 < data_points.get("min") <= 100
+    assert 0 <= data_points.get("max") <= 100
+
+
+def test_record_compact_llm_command_generator_memory_usage(
+    test_meter_provider: MeterProvider,
+    in_memory_metric_reader: InMemoryMetricReader,
+) -> None:
+    # act
+    record_llm_based_command_generator_memory_usage(
+        MetricInstrumentProvider(),
+        COMPACT_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
+    )
+
+    # assert
+    metrics_data = in_memory_metric_reader.get_metrics_data()
+    metrics_data = json.loads(metrics_data.to_json())
+
+    resource_metrics = metrics_data.get("resource_metrics")[0]
+    scope_metrics = resource_metrics.get("scope_metrics")[0]
+
+    # the first 10 metrics in the list were added by the unit tests above representing
+    # the CPU, memory usage and prompt token length of the LLMCommandGenerator, the
+    # MultiStepLLMCommandGenerator and the SingleStepLLMCommandGenerator.
+    metrics = scope_metrics.get("metrics")[10]
+    assert metrics.get("name") == COMPACT_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME
+    assert (
+        metrics.get("description") == "RAM memory usage for CompactLLMCommandGenerator"
+    )
+    assert metrics.get("unit") == LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME
+
+    data_points = metrics.get("data", {}).get("data_points")[0]
+    assert data_points.get("count") == 1
+    assert 0 < data_points.get("min") <= 100
+    assert 0 <= data_points.get("max") <= 100
+
+
+def test_record_compact_llm_command_generator_prompt_token_exists(
+    test_meter_provider: MeterProvider,
+    in_memory_metric_reader: InMemoryMetricReader,
+) -> None:
+    # arrange
+    prompt_token_len = 500
+
+    # act
+    record_llm_based_command_generator_prompt_token(
+        MetricInstrumentProvider(),
+        attributes={PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME: prompt_token_len},
+        metric_name=COMPACT_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    )
+
+    # assert
+    metrics_data = in_memory_metric_reader.get_metrics_data()
+    metrics_data = json.loads(metrics_data.to_json())
+
+    resource_metrics = metrics_data.get("resource_metrics")[0]
+    scope_metrics = resource_metrics.get("scope_metrics")[0]
+
+    # the first 11 metrics in the list were added by the unit tests above representing
+    # the CPU, memory usage and prompt token length of the LLMCommandGenerator, the
+    # MultiStepLLMCommandGenerator and the SingleStepLLMCommandGenerator.
+    metrics = scope_metrics.get("metrics")[11]
+    assert (
+        metrics.get("name")
+        == COMPACT_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME
+    )
+    assert (
+        metrics.get("description") == "CompactLLMCommandGenerator prompt token length"
     )
     assert metrics.get("unit") == "1"
 
@@ -386,10 +503,11 @@ def test_record_request_size_in_bytes(
     resource_metrics = metrics_data.get("resource_metrics")[0]
     scope_metrics = resource_metrics.get("scope_metrics")[0]
 
-    # the first 6 metrics in the list were added by the unit tests above representing
-    # the CPU, memory usage and prompt token length of the LLMCommandGenerator and the
-    # CPU, memory usage  and prompt token lenght of the MultiStepLLMCommandGenerator.
-    metrics = scope_metrics.get("metrics")[9]
+    # the first 12 metrics in the list were added by the unit tests above representing
+    # the CPU, memory usage and prompt token length of the LLMCommandGenerator, the
+    # MultiStepLLMCommandGenerator, the SingleStepLLMCommandGenerator and the
+    # CompactLLMCommandGenerator.
+    metrics = scope_metrics.get("metrics")[12]
     assert metrics.get("name") == RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME
     assert metrics.get("description") == "The rasa client request's body size"
     assert metrics.get("unit") == "byte"

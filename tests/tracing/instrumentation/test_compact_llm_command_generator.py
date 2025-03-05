@@ -8,10 +8,7 @@ from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from pytest import LogCaptureFixture
 
-from rasa.dialogue_understanding.commands import (
-    SetSlotCommand,
-    StartFlowCommand,
-)
+from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowCommand
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -24,7 +21,7 @@ from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.conftest import TRACING_TESTS_FIXTURES_DIRECTORY
 from tests.tracing.instrumentation.conftest import (
     MockAvailableEndpoints,
-    MockSingleStepLLMCommandGenerator,
+    MockCompactLLMCommandGenerator,
 )
 from tests.utilities import flows_from_str
 
@@ -53,7 +50,7 @@ def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
     [
         (
             {
-                "prompt": TEST_PROMPT_DIRECTORY,
+                "prompt_template": TEST_PROMPT_DIRECTORY,
                 "llm": {
                     "model_name": "gpt-4-0613",
                     "request_timeout": 7,
@@ -66,7 +63,7 @@ def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
         ),
         (
             {
-                "prompt": TEST_PROMPT_DIRECTORY,
+                "prompt_template": TEST_PROMPT_DIRECTORY,
                 "llm": {
                     "model": "gpt-3.5-turbo",
                 },
@@ -75,10 +72,10 @@ def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
                 "llm_model": "gpt-3.5-turbo",
             },
         ),
-        ({"prompt": TEST_PROMPT_DIRECTORY}, {"llm_model": "gpt-4-0613"}),
+        ({"prompt_template": TEST_PROMPT_DIRECTORY}, {"llm_model": "gpt-4-0613"}),
         (
             {
-                "prompt": TEST_PROMPT_DIRECTORY,
+                "prompt_template": TEST_PROMPT_DIRECTORY,
                 "llm": {
                     "request_timeout": 7,
                     "temperature": 0.0,
@@ -117,7 +114,7 @@ def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
         ),
     ],
 )
-async def test_tracing_single_step_llm_command_generator_default_attrs(
+async def test_tracing_compact_llm_command_generator_default_attrs(
     default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -126,19 +123,19 @@ async def test_tracing_single_step_llm_command_generator_default_attrs(
     expected: Dict[str, Any],
     mock_available_endpoints: MockAvailableEndpoints,
 ) -> None:
-    component_class = MockSingleStepLLMCommandGenerator
+    component_class = MockCompactLLMCommandGenerator
 
     instrumentation.instrument(
         tracer_provider,
-        single_step_llm_command_generator_class=component_class,
+        compact_llm_command_generator_class=component_class,
     )
 
-    mock_single_step_llm_command_generator = component_class(
+    mock_compact_llm_command_generator = component_class(
         config=config,
         model_storage=default_model_storage,
         resource=None,
     )
-    await mock_single_step_llm_command_generator.invoke_llm("some text")
+    await mock_compact_llm_command_generator.invoke_llm("some text")
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -146,7 +143,7 @@ async def test_tracing_single_step_llm_command_generator_default_attrs(
     assert num_captured_spans == 1
 
     captured_span = captured_spans[-1]
-    assert captured_span.name == "MockSingleStepLLMCommandGenerator.invoke_llm"
+    assert captured_span.name == "MockCompactLLMCommandGenerator.invoke_llm"
 
     expected_attributes = {
         "class_name": component_class.__name__,
@@ -176,22 +173,22 @@ async def test_tracing_single_step_llm_command_generator_default_attrs(
     assert captured_span.attributes == expected_attributes
 
 
-async def test_tracing_single_step_llm_command_generator_azure_attrs(
+async def test_tracing_compact_llm_command_generator_azure_attrs(
     default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
 ) -> None:
-    component_class = MockSingleStepLLMCommandGenerator
+    component_class = MockCompactLLMCommandGenerator
 
     instrumentation.instrument(
         tracer_provider,
-        single_step_llm_command_generator_class=component_class,
+        compact_llm_command_generator_class=component_class,
     )
 
     model = "gpt-4"
     config = {
-        "prompt": TEST_PROMPT_DIRECTORY,
+        "prompt_template": TEST_PROMPT_DIRECTORY,
         "llm": {
             "model_name": model,
             "request_timeout": 15,
@@ -201,12 +198,12 @@ async def test_tracing_single_step_llm_command_generator_azure_attrs(
         "flow_retrieval": {"embeddings": {"deployment": "test"}},
     }
 
-    mock_single_step_llm_command_generator = component_class(
+    mock_compact_llm_command_generator = component_class(
         config=config,
         model_storage=default_model_storage,
         resource=None,
     )
-    await mock_single_step_llm_command_generator.invoke_llm("some text")
+    await mock_compact_llm_command_generator.invoke_llm("some text")
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -214,7 +211,7 @@ async def test_tracing_single_step_llm_command_generator_azure_attrs(
     assert num_captured_spans == 1
 
     captured_span = captured_spans[-1]
-    assert captured_span.name == "MockSingleStepLLMCommandGenerator.invoke_llm"
+    assert captured_span.name == "MockCompactLLMCommandGenerator.invoke_llm"
 
     expected_attributes = {
         "class_name": component_class.__name__,
@@ -251,7 +248,7 @@ async def test_tracing_single_step_llm_command_generator_azure_attrs(
     [
         (
             {
-                "prompt": TEST_PROMPT_DIRECTORY,
+                "prompt_template": TEST_PROMPT_DIRECTORY,
                 "llm": {
                     "provider": "cohere",
                     "model": "command",
@@ -289,7 +286,7 @@ async def test_tracing_single_step_llm_command_generator_azure_attrs(
         ),
         (
             {
-                "prompt": TEST_PROMPT_DIRECTORY,
+                "prompt_template": TEST_PROMPT_DIRECTORY,
                 "llm": {
                     "model_group": "llm-model-group",
                 },
@@ -317,7 +314,7 @@ async def test_tracing_single_step_llm_command_generator_azure_attrs(
         ),
     ],
 )
-async def test_tracing_single_step_llm_command_generator_non_default_llm_attrs(
+async def test_tracing_compact_llm_command_generator_non_default_llm_attrs(
     default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -326,19 +323,19 @@ async def test_tracing_single_step_llm_command_generator_non_default_llm_attrs(
     expected: Dict[str, Any],
     mock_available_endpoints: MockAvailableEndpoints,
 ) -> None:
-    component_class = MockSingleStepLLMCommandGenerator
+    component_class = MockCompactLLMCommandGenerator
 
     instrumentation.instrument(
         tracer_provider,
         llm_command_generator_class=component_class,
     )
 
-    mock_single_step_llm_command_generator = component_class(
+    mock_compact_llm_command_generator = component_class(
         config=config,
         model_storage=default_model_storage,
         resource=None,
     )
-    await mock_single_step_llm_command_generator.invoke_llm("some text")
+    await mock_compact_llm_command_generator.invoke_llm("some text")
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -346,7 +343,7 @@ async def test_tracing_single_step_llm_command_generator_non_default_llm_attrs(
     assert num_captured_spans == 1
 
     captured_span = captured_spans[-1]
-    assert captured_span.name == "MockSingleStepLLMCommandGenerator.invoke_llm"
+    assert captured_span.name == "MockCompactLLMCommandGenerator.invoke_llm"
 
     expected_attributes = {
         "class_name": component_class.__name__,
@@ -361,14 +358,14 @@ def test_tracing_single_llm_command_generator_check_commands_against_startable_f
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
 ) -> None:
-    component_class = MockSingleStepLLMCommandGenerator
+    component_class = MockCompactLLMCommandGenerator
 
     instrumentation.instrument(
         tracer_provider,
         llm_command_generator_class=component_class,
     )
 
-    mock_single_step_llm_command_generator = component_class(
+    mock_compact_llm_command_generator = component_class(
         config={},
         model_storage=default_model_storage,
         resource=None,
@@ -377,7 +374,7 @@ def test_tracing_single_llm_command_generator_check_commands_against_startable_f
         StartFlowCommand(flow="transfer_money"),
         SetSlotCommand(name="amount", value=100),
     ]
-    mock_single_step_llm_command_generator._check_commands_against_startable_flows(
+    mock_compact_llm_command_generator._check_commands_against_startable_flows(
         commands=commands,
         startable_flows=FlowsList(underlying_flows=[Flow(id="transfer_money")]),
     )
@@ -391,7 +388,7 @@ def test_tracing_single_llm_command_generator_check_commands_against_startable_f
     captured_span = captured_spans[-1]
     assert (
         captured_span.name
-        == "MockSingleStepLLMCommandGenerator._check_commands_against_startable_flows"
+        == "MockCompactLLMCommandGenerator._check_commands_against_startable_flows"
     )
 
     expected_attributes = {
@@ -402,25 +399,25 @@ def test_tracing_single_llm_command_generator_check_commands_against_startable_f
     assert captured_span.attributes == expected_attributes
 
 
-async def test_tracing_single_step_llm_command_generator_prompt_tokens(
+async def test_tracing_compact_llm_command_generator_prompt_tokens(
     default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
 ) -> None:
-    component_class = MockSingleStepLLMCommandGenerator
+    component_class = MockCompactLLMCommandGenerator
 
     instrumentation.instrument(
         tracer_provider,
-        single_step_llm_command_generator_class=component_class,
+        compact_llm_command_generator_class=component_class,
     )
 
-    mock_single_step_llm_command_generator = component_class(
+    mock_compact_llm_command_generator = component_class(
         config={"trace_prompt_tokens": True},
         model_storage=default_model_storage,
         resource=Resource("llm-command-generator"),
     )
-    await mock_single_step_llm_command_generator.invoke_llm("This is a test prompt.")
+    await mock_compact_llm_command_generator.invoke_llm("This is a test prompt.")
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -428,7 +425,7 @@ async def test_tracing_single_step_llm_command_generator_prompt_tokens(
     assert num_captured_spans == 1
 
     captured_span = captured_spans[-1]
-    assert captured_span.name == "MockSingleStepLLMCommandGenerator.invoke_llm"
+    assert captured_span.name == "MockCompactLLMCommandGenerator.invoke_llm"
 
     expected_attributes = {
         "class_name": component_class.__name__,
@@ -459,21 +456,21 @@ async def test_tracing_single_step_llm_command_generator_prompt_tokens(
     assert captured_span.attributes == expected_attributes
 
 
-async def test_tracing_single_step_llm_command_generator_prompt_tokens_non_openai(
+async def test_tracing_compact_llm_command_generator_prompt_tokens_non_openai(
     default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
     caplog: LogCaptureFixture,
 ) -> None:
-    component_class = MockSingleStepLLMCommandGenerator
+    component_class = MockCompactLLMCommandGenerator
 
     instrumentation.instrument(
         tracer_provider,
-        single_step_llm_command_generator_class=component_class,
+        compact_llm_command_generator_class=component_class,
     )
 
-    mock_single_step_llm_command_generator = component_class(
+    mock_compact_llm_command_generator = component_class(
         config={
             "trace_prompt_tokens": True,
             "llm": {"provider": "cohere", "model": "command"},
@@ -483,9 +480,7 @@ async def test_tracing_single_step_llm_command_generator_prompt_tokens_non_opena
     )
 
     with caplog.at_level(logging.WARNING):
-        await mock_single_step_llm_command_generator.invoke_llm(
-            "This is a test prompt."
-        )
+        await mock_compact_llm_command_generator.invoke_llm("This is a test prompt.")
         assert (
             "Tracing prompt tokens is only supported for OpenAI models. Skipping."
             in caplog.text
@@ -497,7 +492,7 @@ async def test_tracing_single_step_llm_command_generator_prompt_tokens_non_opena
     assert num_captured_spans == 1
 
     captured_span = captured_spans[-1]
-    assert captured_span.name == "MockSingleStepLLMCommandGenerator.invoke_llm"
+    assert captured_span.name == "MockCompactLLMCommandGenerator.invoke_llm"
 
     assert captured_span.attributes["len_prompt_tokens"] == "None"
 
@@ -506,7 +501,7 @@ async def test_tracing_single_step_llm_command_generator_prompt_tokens_non_opena
     "llm_api_health_check_env_var_value",
     ["true", "false"],
 )
-async def test_tracing_single_step_llm_command_generator_training_and_inference_health_checks(  # noqa: E501
+async def test_tracing_compact_llm_command_generator_training_and_inference_health_checks(  # noqa: E501
     default_model_storage: ModelStorage,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
@@ -561,20 +556,20 @@ async def test_tracing_single_step_llm_command_generator_training_and_inference_
             "embeddings": {"provider": "openai", "model": "test-embeddings"},
         },
     }
-    component_class = MockSingleStepLLMCommandGenerator
+    component_class = MockCompactLLMCommandGenerator
     flow_retrieval_class = FlowRetrieval
     instrumentation.instrument(
         tracer_provider,
-        single_step_llm_command_generator_class=component_class,
+        compact_llm_command_generator_class=component_class,
         flow_retrieval_class=flow_retrieval_class,
     )
 
-    single_step_llm_command_generator = component_class(
+    compact_llm_command_generator = component_class(
         config=config,
         model_storage=default_model_storage,
         resource=Resource("llm-command-generator"),
     )
-    resource = single_step_llm_command_generator.train(
+    resource = compact_llm_command_generator.train(
         training_data=Mock(),
         flows=flows,
         domain=domain,
@@ -595,7 +590,7 @@ async def test_tracing_single_step_llm_command_generator_training_and_inference_
     span_training_llm_health_check = next(
         span
         for span in captured_spans
-        if span.name == "MockSingleStepLLMCommandGenerator.perform_llm_health_check"
+        if span.name == "MockCompactLLMCommandGenerator.perform_llm_health_check"
         and span.attributes.get("health_check_trigger_method")
         == "llm_based_command_generator.train"
         and span.attributes.get("health_check_trigger_component")
@@ -611,11 +606,11 @@ async def test_tracing_single_step_llm_command_generator_training_and_inference_
     span_inference_llm_health_check = next(
         span
         for span in captured_spans
-        if span.name == "MockSingleStepLLMCommandGenerator.perform_llm_health_check"
+        if span.name == "MockCompactLLMCommandGenerator.perform_llm_health_check"
         and span.attributes.get("health_check_trigger_method")
         == "compact_llm_command_generator.load"
         and span.attributes.get("health_check_trigger_component")
-        == "MockSingleStepLLMCommandGenerator"
+        == "MockCompactLLMCommandGenerator"
     )
     span_inference_embeddings_health_check = next(
         span

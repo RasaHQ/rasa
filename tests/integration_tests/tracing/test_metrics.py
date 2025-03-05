@@ -16,6 +16,7 @@ from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephra
 from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
 from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.dialogue_understanding.generator import (
+    CompactLLMCommandGenerator,
     LLMCommandGenerator,
     MultiStepLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
@@ -26,6 +27,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.domain import Domain
 from rasa.tracing.constants import (
+    COMPACT_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_METRIC_NAME,
     DURATION_UNIT_NAME,
     ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
@@ -117,6 +119,28 @@ def setup_test_single_step_llm_command_generator(
 
     return SingleStepLLMCommandGenerator(
         {}, default_model_storage, Resource("test_single_step_llm_command_generator")
+    )
+
+
+def setup_test_compact_llm_command_generator(
+    monkeypatch: MonkeyPatch,
+    **kwargs: Any,
+) -> CompactLLMCommandGenerator:
+    async def mock_compact_llm_command_generate(
+        self: Any, prompt: str
+    ) -> Optional[str]:
+        return ""
+
+    monkeypatch.setattr(
+        CompactLLMCommandGenerator,
+        "invoke_llm",
+        mock_compact_llm_command_generate,
+    )
+
+    default_model_storage = kwargs.get("default_model_storage")
+
+    return CompactLLMCommandGenerator(
+        {}, default_model_storage, Resource("test_compact_llm_command_generator")
     )
 
 
@@ -315,6 +339,17 @@ def setup_test_endpoint_config(
             11,
             SINGLE_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
             "The duration of SingleStepLLMCommandGenerator's LLM call",
+        ),
+        (
+            "compact_llm_command_generator_class",
+            CompactLLMCommandGenerator,
+            setup_test_compact_llm_command_generator,
+            ["default_model_storage"],
+            "invoke_llm",
+            ["prompt"],
+            14,
+            COMPACT_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
+            "The duration of CompactLLMCommandGenerator's LLM call",
         ),
     ],
 )

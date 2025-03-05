@@ -457,7 +457,7 @@ def test_to_dsl_v2_command_syntax():
     CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
 
     command = SetSlotCommand("foo", "bar")
-    assert command.to_dsl() == "set foo bar"
+    assert command.to_dsl() == "set slot foo bar"
 
     # Reset the syntax version to the default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()
@@ -476,7 +476,7 @@ def test_regex_pattern_v2_command_syntax():
 
     assert (
         SetSlotCommand.regex_pattern()
-        == r"""^set ['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]? ['"]?(.+?)['"]?$"""
+        == r"""^[^\w]*set slot ['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]? ['"]?(.+?)['"]?$"""
     )
 
     # Reset the syntax version to the default, otherwise it will affect other tests.

@@ -70,6 +70,11 @@ def test_clean_extracted_value(input_value: str, expected_output: str):
         ('"abc", "def", "ghi"', ["abc", "def", "ghi"]),
         ("'abc', ''def'', 'ghi", ["abc", "def", "ghi"]),
         ("'abc', 'def', 'ghi", ["abc", "def", "ghi"]),
+        ("abc def ghi", ["abc", "def", "ghi"]),
+        ("'abc' 'def' 'ghi'", ["abc", "def", "ghi"]),
+        ("'abc', 'def' 'ghi", ["abc", "def", "ghi"]),
+        ('"abc", "def" "ghi"', ["abc", "def", "ghi"]),
+        ("'abc'    'def' 'ghi     ", ["abc", "def", "ghi"]),
     ],
 )
 def test_extract_cleaned_options(input_value: str, expected_output: List[str]):

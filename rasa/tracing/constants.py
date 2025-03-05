@@ -32,6 +32,18 @@ SINGLE_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME = (
 SINGLE_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME = (
     "single_step_llm_command_generator_llm_response_duration"
 )
+COMPACT_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME = (
+    "compact_llm_command_generator_cpu_usage"
+)
+COMPACT_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME = (
+    "compact_llm_command_generator_memory_usage"
+)
+COMPACT_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME = (
+    "compact_llm_command_generator_prompt_token_usage"
+)
+COMPACT_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME = (
+    "compact_llm_command_generator_llm_response_duration"
+)
 MULTI_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME = (
     "multi_step_llm_command_generator_cpu_usage"
 )

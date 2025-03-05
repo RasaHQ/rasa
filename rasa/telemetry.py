@@ -1126,6 +1126,7 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
     retrieval is enabled, and flow retrieval embedding model.
     """
     from rasa.dialogue_understanding.generator import (
+        CompactLLMCommandGenerator,
         LLMCommandGenerator,
         MultiStepLLMCommandGenerator,
         SingleStepLLMCommandGenerator,
@@ -1155,6 +1156,7 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
                 LLMCommandGenerator.__name__,
                 SingleStepLLMCommandGenerator.__name__,
                 MultiStepLLMCommandGenerator.__name__,
+                CompactLLMCommandGenerator.__name__,
             ]:
                 return component
         return None

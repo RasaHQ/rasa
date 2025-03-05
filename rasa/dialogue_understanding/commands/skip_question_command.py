@@ -81,7 +81,7 @@ class SkipQuestionCommand(Command):
         """Converts the command to a DSL string."""
         mapper = {
             CommandSyntaxVersion.v1: "SkipQuestion()",
-            CommandSyntaxVersion.v2: "skip",
+            CommandSyntaxVersion.v2: "skip question",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -97,7 +97,7 @@ class SkipQuestionCommand(Command):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"SkipQuestion\(\)",
-            CommandSyntaxVersion.v2: r"^skip$",
+            CommandSyntaxVersion.v2: r"^[^\w]*skip question$",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

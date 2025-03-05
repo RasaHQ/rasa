@@ -24,6 +24,9 @@ from rasa.dialogue_understanding.commands import (
     SkipQuestionCommand,
     StartFlowCommand,
 )
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+)
 from rasa.dialogue_understanding.constants import KEY_MINIMIZE_NUM_CALLS
 from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_ACTIVE_KEY,
@@ -71,10 +74,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.llm.llm_response import LLMResponse
-from tests.utilities import (
-    flows_from_str,
-    flows_from_str_including_defaults,
-)
+from tests.utilities import flows_from_str, flows_from_str_including_defaults
 
 
 class TestMultiStepLLMCommandGenerator:
@@ -83,6 +83,9 @@ class TestMultiStepLLMCommandGenerator:
     @pytest.fixture
     def command_generator(self):
         """Create an MultiStepLLMCommandGenerator."""
+        # Reset the command syntax version.
+        CommandSyntaxManager.reset_syntax_version()
+
         return MultiStepLLMCommandGenerator.create(
             config={}, resource=Mock(), model_storage=Mock(), execution_context=Mock()
         )

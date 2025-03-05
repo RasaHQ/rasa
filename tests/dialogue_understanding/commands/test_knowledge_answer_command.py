@@ -60,7 +60,7 @@ def test_to_dsl_v2_command_syntax():
     CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
 
     command = KnowledgeAnswerCommand()
-    assert command.to_dsl() == "answer question"
+    assert command.to_dsl() == "provide info"
 
     # Reset the syntax version to the default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()
@@ -70,7 +70,7 @@ def test_regex_pattern_v2_command_syntax():
     # Set the syntax version to v2 to test the new regex pattern.
     CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
 
-    assert KnowledgeAnswerCommand.regex_pattern() == r"^answer question$"
+    assert KnowledgeAnswerCommand.regex_pattern() == r"^[^\w]*provide info$"
 
     # Reset the syntax version to the default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()

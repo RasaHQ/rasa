@@ -191,7 +191,7 @@ def test_to_dsl_v2_command_syntax():
     CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
 
     command = CancelFlowCommand()
-    assert command.to_dsl() == "cancel"
+    assert command.to_dsl() == "cancel flow"
 
     # Reset the syntax version to default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()
@@ -201,7 +201,7 @@ def test_regex_pattern_v2_command_syntax():
     # Set the syntax version to v2 to test the new regex pattern.
     CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
 
-    assert CancelFlowCommand.regex_pattern() == r"^cancel$"
+    assert CancelFlowCommand.regex_pattern() == r"^[^\w]*cancel flow$"
 
     # Reset the syntax version to default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()

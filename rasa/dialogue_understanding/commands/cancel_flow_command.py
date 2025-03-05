@@ -148,7 +148,7 @@ class CancelFlowCommand(Command):
         """Converts the command to a DSL string."""
         mapper = {
             CommandSyntaxVersion.v1: "CancelFlow()",
-            CommandSyntaxVersion.v2: "cancel",
+            CommandSyntaxVersion.v2: "cancel flow",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -164,7 +164,7 @@ class CancelFlowCommand(Command):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"CancelFlow\(\)",
-            CommandSyntaxVersion.v2: r"^cancel$",
+            CommandSyntaxVersion.v2: r"^[^\w]*cancel flow$",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

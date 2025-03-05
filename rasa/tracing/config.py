@@ -29,6 +29,7 @@ from rasa.dialogue_understanding.commands import (
     FreeFormAnswerCommand,
 )
 from rasa.dialogue_understanding.generator import (
+    CompactLLMCommandGenerator,
     LLMCommandGenerator,
     MultiStepLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
@@ -110,6 +111,7 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         endpoint_config_class=EndpointConfig,
         grpc_custom_action_executor_class=GRPCCustomActionExecutor,
         single_step_llm_command_generator_class=SingleStepLLMCommandGenerator,
+        compact_llm_command_generator_class=CompactLLMCommandGenerator,
         multi_step_llm_command_generator_class=MultiStepLLMCommandGenerator,
         custom_action_executor_subclasses=custom_action_executor_subclasses,
         flow_retrieval_class=FlowRetrieval,

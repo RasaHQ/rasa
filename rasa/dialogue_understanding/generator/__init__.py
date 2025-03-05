@@ -9,6 +9,7 @@ from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_gen
     MultiStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator import (  # noqa: E501
+    CompactLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
 )
 
@@ -18,4 +19,5 @@ __all__ = [
     "LLMCommandGenerator",
     "MultiStepLLMCommandGenerator",
     "SingleStepLLMCommandGenerator",
+    "CompactLLMCommandGenerator",
 ]
