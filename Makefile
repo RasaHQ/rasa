@@ -613,9 +613,6 @@ test-mongodb-tracker-store:  ## Run the MongoDB tracker store integration tests.
 			-n $(JOBS) \
 			--junitxml=integration-results-mongo-tracker-store.xml
 
-set-otel-resource-attributes: ## Set OTEL_RESOURCE_ATTRIBUTES with rasa version and git info
-	. data/test_config/providers/set-otel-resource-attributes.sh
-
 run-otel-collector: ## Run OTEL collector, which would recieve traces and metrics, and export them to OTEL monitoring backend
 	docker compose -f data/test_config/providers/otel-docker-compose.yml up --wait --remove-orphans
 

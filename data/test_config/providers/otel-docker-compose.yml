@@ -10,7 +10,6 @@ services:
       - 4317:4317
       - 13133:13133
     environment:
-      - HONEYCOMB_API_KEY=${HONEYCOMB_API_KEY?"HONEYCOMB_API_KEY not set"}
       - OTEL_RESOURCE_ATTRIBUTES=${OTEL_RESOURCE_ATTRIBUTES?"OTEL_RESOURCE_ATTRIBUTES not set"}
     networks:
       - e2e-tests

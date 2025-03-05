@@ -255,9 +255,7 @@ runs:
         RASA_CALM_DEMO_BRANCH: ${{ inputs.rasa-calm-demo-branch || 'main' }}
       run: |
         : Run OTEL collector for Tracing and Metrics collection
-        `make set-otel-resource-attributes`
         make run-otel-collector
-        echo "OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES" >> $GITHUB_ENV
       shell: bash
 
     - name: Train model
