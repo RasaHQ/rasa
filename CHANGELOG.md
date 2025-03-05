@@ -698,7 +698,7 @@ Rasa Pro 3.10.0 (2024-09-04)
   and needs the ability to import patterns from yaml files.
 - [#1126](https://github.com/rasahq/rasa-private/issues/1126): Improve events and responses sub-schemas used by the `stub_custom_actions` sub-schema of end-to-end testing.
   The events sub-schema only allows the usage of events which are supported by the `rasa-sdk`.
-  These are documented in the [action server API documentation](https://rasa.com/docs/rasa/pages/action-server-api#operation/call_action).
+  These are documented in the [action server API documentation](/reference/api/pro/action-server-api).
 - [#1260](https://github.com/rasahq/rasa-private/issues/1260): Change default model of conversation rephraser to 'gpt-4o-mini'.
 - [#1285](https://github.com/rasahq/rasa-private/issues/1285): Add `file_path` to `Flow` so that we can show the full name, e.g. `path/to/flow.py::flow name` in the
   e2e test coverage report.
@@ -975,7 +975,7 @@ Rasa Pro 3.9.0 (2024-07-03)
   Note that even if you have written custom slot validation actions (following the `validate_<slot_name>` convention)
   for slots set by the LLM-based command generator, you need to update your assistant configuration to use the new `from_llm` slot mapping type.
 
-  For [slots that are set only via the custom action](https://rasa.com/docs/rasa-pro/concepts/domain#custom-slot-mappings)
+  For [slots that are set only via the custom action](/reference/primitives/slots#custom-slot-mappings)
   e.g. slots set by external sources only, you need to add the action name to the slot mapping:
 
   ```yaml
@@ -1264,7 +1264,7 @@ Rasa Pro 3.8.0 (2024-04-03)
 
   Flow retrieval is **enabled by default**. To configure it, you can modify the settings under the `flow_retrieval`
   property of `LLMCommandGenerator` component. For detailed configuration options, refer to our
-  [documentation](https://rasa.com/docs/rasa-pro/concepts/dialogue-understanding#customizing-flow-retrieval).
+  [documentation](/reference/config/components/llm-command-generators#customizing-flow-retrieval).
 
   Introduces `always_include_in_prompt` field to the
   [flow definition](https://rasa.com/docs/rasa-pro/concepts/flows/#flow-properties).
@@ -1664,7 +1664,7 @@ Rasa Pro 3.7.0 (2023-11-22)
 ### Improved Documentation
 - [#12371](https://github.com/rasahq/rasa/issues/12371): Update wording in Rasa Pro installation page.
 - [#12677](https://github.com/rasahq/rasa/issues/12677): Updated docs on sending Conversation Events to Multiple DBs.
-- [#12685](https://github.com/rasahq/rasa/issues/12685): Corrected [action server api](https://rasa.com/docs/rasa/pages/action-server-api/) sample in docs.
+- [#12685](https://github.com/rasahq/rasa/issues/12685): Corrected [action server api](/reference/api/pro/action-server-api/) sample in docs.
 - [#12703](https://github.com/rasahq/rasa/issues/12703): Document support for Vault namespaces.
 - [#12721](https://github.com/rasahq/rasa/issues/12721): Updated tracing documentation to include tracing in the action server and the REST Channel.
 
@@ -2860,7 +2860,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   This change required changes to custom policies and custom NLU components. See the
   documentation for a detailed
-  [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#custom-policies-and-custom-components).
+  [migration guide](https://legacy-docs-oss.rasa.com/docs/rasa/migration-guide#custom-policies-and-custom-components).
 - [#9972](https://github.com/rasahq/rasa/issues/9972): Added explicit mechanism for slot filling that allows slots to be set and/or updated throughout the conversation.
   This mechanism is enabled by defining global slot mappings in the `slots` section of the domain file.
 
@@ -3933,7 +3933,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Bugfixes
 - [#7861](https://github.com/rasahq/rasa/issues/7861): Correctly include the `confused_with` field in the test report for the
-  [`POST /model/test/intents`](/pages/http-api#operation/testModelIntent) endpoint.
+  [`POST /model/test/intents`](/reference/api/pro/http-api) endpoint.
 
 
 ## [2.2.8] - 2021-01-28
@@ -4041,7 +4041,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   `Domain.action_names` is deprecated and will be removed in Rasa Open Source
   3.0.0. Please use `Domain.action_names_or_texts` instead.
 - [#7458](https://github.com/rasahq/rasa/issues/7458): Interfaces for `Policy.__init__` and `Policy.load` have changed.
-  See [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#rasa-21-to-rasa-22) for details.
+  See [migration guide](https://legacy-docs-oss.rasa.com/docs/rasa/migration-guide/#rasa-21-to-rasa-22) for details.
 - [#7495](https://github.com/rasahq/rasa/issues/7495): Deprecate training and test data in Markdown format. This includes:
   - reading and writing of story files in Markdown format
   - reading and writing of NLU data in Markdown format
@@ -4050,7 +4050,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Support for Markdown data will be removed entirely in Rasa Open Source 3.0.0.
 
   Please convert your existing Markdown data by using the commands
-  from the [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#rasa-21-to-rasa-22):
+  from the [migration guide](https://legacy-docs-oss.rasa.com/docs/rasa/migration-guide/#rasa-21-to-rasa-22):
 
   ```bash
   rasa data convert nlu -f yaml --data={SOURCE_DIR} --out={TARGET_DIR}
@@ -4071,20 +4071,20 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   and continue finetuning the model on the complete dataset consisting of
   new training examples. To do so, use `rasa train --finetune`. For more
   detailed explanation of the command, check out the docs on [incremental
-  training](https://rasa.com/docs/rasa-pro/command-line-interface#incremental-training).
+  training](https://legacy-docs-oss.rasa.com/docs/rasa/command-line-interface/#incremental-training).
 
   Added a configuration parameter `additional_vocabulary_size` to
   [`CountVectorsFeaturizer`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#countvectorsfeaturizer)
   and `number_additional_patterns` to [`RegexFeaturizer`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#regexfeaturizer).
   These parameters are useful to configure when using incremental training for your pipelines.
 - [#7408](https://github.com/rasahq/rasa/issues/7408): Add the option to use cross-validation to the
-  [`POST /model/test/intents`](/pages/http-api#operation/testModelIntent) endpoint.
+  [`POST /model/test/intents`](/reference/api/pro/http-api) endpoint.
   To use cross-validation specify the query parameter `cross_validation_folds` in addition
   to the training data in YAML format.
 
   Add option to run NLU evaluation
-  ([`POST /model/test/intents`](/pages/http-api#operation/testModelIntent)) and
-  model training ([`POST /model/train`](/pages/http-api#operation/trainModel))
+  ([`POST /model/test/intents`](/reference/api/pro/http-api)) and
+  model training ([`POST /model/train`](/reference/api/pro/http-api))
   asynchronously.
   To trigger asynchronous processing specify
   a callback URL in the query parameter `callback_url` which Rasa Open Source should send
@@ -4134,7 +4134,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Introduce `make static-checks` command to run all static checks locally.
 - [#7397](https://github.com/rasahq/rasa/issues/7397): Add `rasa train --dry-run` command that allows to check if training needs to be performed
   and what exactly needs to be retrained.
-- [#7408](https://github.com/rasahq/rasa/issues/7408): [`POST /model/test/intents`](/pages/http-api#operation/testModelIntent) now returns
+- [#7408](https://github.com/rasahq/rasa/issues/7408): [`POST /model/test/intents`](/reference/api/pro/http-api) now returns
   the `report` field for `intent_evaluation`, `entity_evaluation` and
   `response_selection_evaluation` as machine-readable JSON payload instead of string.
 - [#7436](https://github.com/rasahq/rasa/issues/7436): Make `rasa data validate stories` work for end-to-end.
@@ -4578,7 +4578,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#6354](https://github.com/rasahq/rasa/issues/6354): Specifying the parameters `force` and `save_to_default_model_directory` as part of the
   JSON payload when training a model using `POST /model/train` is now deprecated.
   Please use the query parameters `force_training` and `save_to_default_model_directory`
-  instead. See the [API documentation](/pages/http-api) for more information.
+  instead. See the [API documentation](/reference/api/pro/http-api) for more information.
 - [#6409](https://github.com/rasahq/rasa/issues/6409): The conversation event `form` was renamed to `active_loop`. Rasa Open Source
   will continue to be able to read and process old `form` events. Note that
   serialized trackers will no longer have the `active_form` field. Instead the
@@ -4626,7 +4626,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#6809](https://github.com/rasahq/rasa/issues/6809): [Slots](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#slots) of type `unfeaturized` are
   now deprecated and will be removed in Rasa Open Source 3.0. Instead you should use
   the property `influence_conversation: false` for every slot type as described in the
-  [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#unfeaturized-slots).
+  [migration guide](https://legacy-docs-oss.rasa.com/docs/rasa/migration-guide/#unfeaturized-slots).
 - [#6934](https://github.com/rasahq/rasa/issues/6934): [Conversation sessions](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain#session-configuration) are now enabled by default
   if your [Domain](https://rasa.com/docs/rasa-pro/nlu-based-assistants/domain) does not contain a session configuration.
   Previously a missing session configuration was treated as if conversation sessions
@@ -4752,7 +4752,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#6354](https://github.com/rasahq/rasa/issues/6354): The Rasa Open Source API endpoint `POST /model/train` now supports training data in YAML
   format. Please specify the header `Content-Type: application/yaml` when
   training a model using YAML training data.
-  See the [API documentation](/pages/http-api) for more information.
+  See the [API documentation](/reference/api/pro/http-api) for more information.
 - [#6374](https://github.com/rasahq/rasa/issues/6374): Added a YAML schema and a writer for 2.0 Training Core data.
 - [#6404](https://github.com/rasahq/rasa/issues/6404): Users can now use the ``rasa data convert {nlu|core} -f yaml`` command to convert training data from Markdown format to YAML format.
 - [#6536](https://github.com/rasahq/rasa/issues/6536): Add option `use_lemma` to `CountVectorsFeaturizer`. By default it is set to `True`.
@@ -5755,7 +5755,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   The new component will replace the `EmbeddingIntentClassifier` and the
   [CRFEntityExtractor](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#crfentityextractor) in the future.
   Those two components are deprecated from now on.
-  See [migration guide](https://rasa.com/docs/rasa-pro/migration-guide#rasa-17-to-rasa-18) for details on how to
+  See [migration guide](https://legacy-docs-oss.rasa.com/docs/rasa/migration-guide/#rasa-17-to-rasa-18) for details on how to
   switch to the new component.
 
   [TEDPolicy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#ted-policy) is the new name for EmbeddingPolicy.
@@ -5942,7 +5942,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   are `DucklingHTTPExtractor` and `SpacyEntityExtractor`.
 
 * [#4902](https://github.com/rasahq/rasa/issues/4902): The `EmbeddingPolicy`, `EmbeddingIntentClassifier`, and `ResponseSelector` now by default normalize confidence
-  levels over the top 10 results. See [Rasa 1.6 to Rasa 1.7](https://rasa.com/docs/rasa-pro/migration-guide#rasa-16-to-rasa-17) for more details.
+  levels over the top 10 results. See [Rasa 1.6 to Rasa 1.7](https://legacy-docs-oss.rasa.com/docs/rasa/migration-guide/#rasa-16-to-rasa-17) for more details.
 
 * [#4964](https://github.com/rasahq/rasa/issues/4964): `ReminderCancelled` can now cancel multiple reminders if no name is given. It still cancels a single
   reminder if the reminder's name is specified.
