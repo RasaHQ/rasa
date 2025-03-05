@@ -309,6 +309,9 @@ def _validate_domain(validator: "Validator") -> bool:
     valid_slot_mappings = validator.verify_slot_mappings()
     valid_responses = validator.check_for_no_empty_parenthesis_in_responses()
     valid_buttons = validator.validate_button_payloads()
+    valid_conditional_responses = (
+        validator.validate_conditional_response_variation_predicates()
+    )
     return (
         valid_domain_validity
         and valid_actions_in_stories_rules
@@ -317,6 +320,7 @@ def _validate_domain(validator: "Validator") -> bool:
         and valid_slot_mappings
         and valid_responses
         and valid_buttons
+        and valid_conditional_responses
     )
 
 

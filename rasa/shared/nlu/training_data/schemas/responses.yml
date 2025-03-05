@@ -57,15 +57,4 @@ schema;responses:
           metadata:
             type: "any"
           condition:
-            type: "seq"
-            sequence:
-              - type: "map"
-                allowempty: False
-                mapping:
-                  type:
-                    type: "str"
-                    enum: ['slot']
-                  name:
-                    type: "str"
-                  value:
-                    type: "any"
+            type: "any"

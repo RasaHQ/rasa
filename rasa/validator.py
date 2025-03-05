@@ -27,6 +27,7 @@ from rasa.shared.constants import (
     DOCS_URL_FORMS,
     DOCS_URL_RESPONSES,
     REQUIRED_SLOTS_KEY,
+    RESPONSE_CONDITION,
     UTTER_PREFIX,
 )
 from rasa.shared.core import constants
@@ -34,8 +35,15 @@ from rasa.shared.core.command_payload_reader import (
     MAX_NUMBER_OF_SLOTS,
     CommandPayloadReader,
 )
-from rasa.shared.core.constants import KEY_ALLOW_NLU_CORRECTION, SlotMappingType
-from rasa.shared.core.domain import RESPONSE_KEYS_TO_INTERPOLATE, Domain
+from rasa.shared.core.constants import (
+    KEY_ALLOW_NLU_CORRECTION,
+    SLOTS,
+    SlotMappingType,
+)
+from rasa.shared.core.domain import (
+    RESPONSE_KEYS_TO_INTERPOLATE,
+    Domain,
+)
 from rasa.shared.core.events import ActionExecuted, ActiveLoop, UserUttered
 from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.flows.flow_step_links import IfFlowStepLink
@@ -902,6 +910,16 @@ class Validator:
                         f"'{object_id}': {exception}"
                     ),
                 )
+            elif object_id.startswith("utter_"):
+                structlogger.error(
+                    "validator.validate_conditional_response_variation_predicates.error",
+                    utter=object_id,
+                    exception=exception,
+                    event_info=(
+                        f"Could not initialize the predicate found under response "
+                        f"variation '{object_id}': {exception}"
+                    ),
+                )
             else:
                 structlogger.error(
                     "validator.verify_predicates.flow_guard_predicate.error",
@@ -933,7 +951,7 @@ class Validator:
     def _extract_slot_name_and_slot_value(
         self,
         predicate_syntax_tree: Any,
-    ) -> tuple:
+    ) -> Tuple[Optional[List[str]], Optional[Any]]:
         """Extract the slot name and slot value from the predicate syntax tree.
 
         Args:
@@ -1038,15 +1056,15 @@ class Validator:
             False, if validation failed, previous value of all_good, otherwise
         """
         predicate_syntax_tree = self._extract_predicate_syntax_tree(predicate)
-        slot_name, slot_value = self._extract_slot_name_and_slot_value(
+        slot_namespace, slot_value = self._extract_slot_name_and_slot_value(
             predicate_syntax_tree
         )
 
-        if slot_name is None:
+        if slot_namespace is None:
             return all_good
 
-        if slot_name[0] == "slots":
-            slot_name = slot_name[1]
+        if slot_namespace[0] == "slots":
+            slot_name = slot_namespace[1]
             # slots.{{context.variable}} gets evaluated to `slots.None`,
             # these predicates can only be validated during runtime
             if slot_name == "None":
@@ -1835,5 +1853,77 @@ class Validator:
                 ),
             )
             all_good = False
+
+        return all_good
+
+    def validate_conditional_response_variation_predicates(self) -> bool:
+        """Validate the conditional response variation predicates."""
+        context = {"slots": {slot.name: None for slot in self.domain.slots}}
+        all_good = True
+
+        for utter_name, variations in self.domain.responses.items():
+            for variation in variations:
+                condition = variation.get(RESPONSE_CONDITION)
+                if not isinstance(condition, str):
+                    continue
+
+                predicate, all_good = self._construct_predicate(
+                    condition,
+                    utter_name,
+                    context,
+                    is_step=False,
+                    all_good=all_good,
+                )
+                if not predicate:
+                    continue
+
+                if not predicate.is_valid():
+                    structlogger.error(
+                        "validator.validate_conditional_response_variation_predicates.invalid_condition",
+                        utter=utter_name,
+                        event_info=(
+                            f"Detected invalid condition '{condition}' "
+                            f"for response variation '{utter_name}'. "
+                            f"Please make sure that all conditions are valid."
+                        ),
+                    )
+                    all_good = False
+                    continue
+
+                predicate_syntax_tree = self._extract_predicate_syntax_tree(predicate)
+                slot_namespace, _ = self._extract_slot_name_and_slot_value(
+                    predicate_syntax_tree
+                )
+
+                if slot_namespace is not None and slot_namespace[0] != SLOTS:
+                    structlogger.error(
+                        "validator.validate_conditional_response_variation_predicates.invalid_namespace",
+                        utter=utter_name,
+                        event_info=(
+                            f"Detected invalid namespace '{slot_namespace[0]}' in "
+                            f"condition '{condition}' for response variation "
+                            f"'{utter_name}'. Please make sure that you're "
+                            f"using a valid namespace. "
+                            f"The current supported option is: 'slots'."
+                        ),
+                    )
+                    all_good = False
+                    continue
+
+                if (
+                    slot_namespace is not None
+                    and slot_namespace[1] not in self.domain.slots
+                ):
+                    structlogger.error(
+                        "validator.validate_conditional_response_variation_predicates.invalid_slot",
+                        utter=utter_name,
+                        event_info=(
+                            f"Detected invalid slot '{slot_namespace[1]}' in "
+                            f"condition '{condition}' for response variation "
+                            f"'{utter_name}'. Please make sure that all slots "
+                            f"are specified in the domain file."
+                        ),
+                    )
+                    all_good = False
 
         return all_good

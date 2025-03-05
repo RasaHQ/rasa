@@ -10,9 +10,13 @@ from pytest import CaptureFixture, MonkeyPatch
 
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.constants import (
+    RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS_ENV_VAR_NAME,
+)
 from rasa.telemetry import (
     TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE,
     TELEMETRY_VALIDATION_ERROR_LOG_EVENT,
@@ -3389,3 +3393,64 @@ def test_run_coexistence_system_inconsistent_multiple_mappings(
         in captured.out
     )
     assert "error" in captured.out
+
+
+@pytest.mark.parametrize(
+    "predicate, log",
+    [
+        # invalid namespace
+        (
+            "context.slot_a is not null",
+            "validator.validate_conditional_response_variation_predicates.invalid_namespace",
+        ),
+        # no namespace
+        (
+            "slot_a is not null",
+            "validator.validate_conditional_response_variation_predicates.invalid_namespace",
+        ),
+        # invalid slot name
+        (
+            "slots.slot_b is not null",
+            "validator.validate_conditional_response_variation_predicates.invalid_slot",
+        ),
+        # invalid predicate syntax
+        (
+            "slots.slot_a not null",
+            "validator.validate_conditional_response_variation_predicates.invalid_condition",
+        ),
+    ],
+)
+def test_validate_conditional_response_variation_predicates_raises_errors(
+    capsys: CaptureFixture,
+    predicate: str,
+    log: str,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS_ENV_VAR_NAME, "true"
+    )
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+          slot_a:
+            type: text
+
+        responses:
+         utter_greet:
+            - text: "Hello!"
+              condition: {predicate}
+        """
+    )
+    validator = Validator(
+        test_domain,
+        TrainingData(),
+        StoryGraph([]),
+        FlowsList([]),
+        {},
+    )
+
+    assert not validator.validate_conditional_response_variation_predicates()
+    captured = capsys.readouterr()
+    assert "error" in captured.out
+    assert log in captured.out

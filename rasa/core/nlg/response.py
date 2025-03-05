@@ -49,9 +49,12 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
                 selected_response = np.random.choice(suitable_responses)
                 condition = selected_response.get(RESPONSE_CONDITION)
                 if condition:
-                    formatted_response_conditions = self._format_response_conditions(
-                        condition
-                    )
+                    if isinstance(condition, list):
+                        formatted_response_conditions = (
+                            self._format_response_conditions(condition)
+                        )
+                    else:
+                        formatted_response_conditions = condition
                     logger.debug(
                         "Selecting response variation with conditions:"
                         f"{formatted_response_conditions}"

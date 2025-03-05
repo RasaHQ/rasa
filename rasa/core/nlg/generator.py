@@ -1,5 +1,8 @@
-import logging
 from typing import Any, Dict, List, Optional, Text, Union
+
+import structlog
+from jinja2 import Template
+from pypred import Predicate
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -8,7 +11,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 class NaturalLanguageGenerator:
@@ -74,7 +77,11 @@ def _create_from_endpoint_config(
     else:
         nlg = _load_from_module_name_in_endpoint_config(endpoint_config, domain)
 
-    logger.debug(f"Instantiated NLG to '{nlg.__class__.__name__}'.")
+    structlogger.debug(
+        "rasa.core.nlg.generator.create",
+        nlg_class_name=nlg.__class__.__name__,
+        event_info=f"Instantiated NLG to '{nlg.__class__.__name__}'.",
+    )
     return nlg
 
 
@@ -112,18 +119,15 @@ class ResponseVariationFilter:
     ) -> bool:
         """Checks if the conditional response variation matches the filled slots."""
         constraints = response.get(RESPONSE_CONDITION, [])
-        for constraint in constraints:
-            name = constraint["name"]
-            value = constraint["value"]
-            filled_slots_value = filled_slots.get(name)
-            if isinstance(filled_slots_value, str) and isinstance(value, str):
-                if filled_slots_value.casefold() != value.casefold():
+        if isinstance(constraints, str) and not _evaluate_predicate(
+            constraints, filled_slots
+        ):
+            return False
+
+        elif isinstance(constraints, list):
+            for constraint in constraints:
+                if not _evaluate_and_deprecate_condition(constraint, filled_slots):
                     return False
-            # slot values can be of different data types
-            # such as int, float, bool, etc. hence, this check
-            # executes when slot values are not strings
-            elif filled_slots_value != value:
-                return False
 
         return True
 
@@ -180,7 +184,21 @@ class ResponseVariationFilter:
         if conditional_no_channel:
             return conditional_no_channel
 
-        return default_no_channel
+        if default_no_channel:
+            return default_no_channel
+
+        # if there is no response variation selected,
+        # return the internal error response to prevent
+        # the bot from staying silent
+        structlogger.error(
+            "rasa.core.nlg.generator.responses_for_utter_action.no_response",
+            utter_action=utter_action,
+            event_info=f"No response variation selected for the predicted "
+            f"utterance {utter_action}. Please check you have provided "
+            f"a default variation and that all the conditions are valid. "
+            f"Returning the internal error response.",
+        )
+        return self.responses.get("utter_internal_error_rasa", [])
 
     def get_response_variation_id(
         self,
@@ -228,3 +246,53 @@ class ResponseVariationFilter:
             response_ids.add(response_variation_id)
 
         return True
+
+
+def _evaluate_and_deprecate_condition(
+    constraint: Dict[Text, Any], filled_slots: Dict[Text, Any]
+) -> bool:
+    """Evaluates the condition of a response variation."""
+    rasa.shared.utils.io.raise_deprecation_warning(
+        "Using a dictionary as a condition in a response variation is deprecated. "
+        "Please use a pypred string predicate instead. "
+        "Dictionary conditions will be removed in Rasa Open Source 4.0.0 .",
+        warn_until_version="4.0.0",
+    )
+
+    name = constraint["name"]
+    value = constraint["value"]
+    filled_slots_value = filled_slots.get(name)
+    if isinstance(filled_slots_value, str) and isinstance(value, str):
+        if filled_slots_value.casefold() != value.casefold():
+            return False
+    # slot values can be of different data types
+    # such as int, float, bool, etc. hence, this check
+    # executes when slot values are not strings
+    elif filled_slots_value != value:
+        return False
+
+    return True
+
+
+def _evaluate_predicate(constraint: str, filled_slots: Dict[Text, Any]) -> bool:
+    """Evaluates the condition of a response variation."""
+    context = {"slots": filled_slots}
+    document = context.copy()
+    try:
+        rendered_template = Template(constraint).render(context)
+        predicate = Predicate(rendered_template)
+        result = predicate.evaluate(document)
+        structlogger.debug(
+            "rasa.core.nlg.generator.evaluate_conditional_response_predicate",
+            predicate=predicate.description(),
+            result=result,
+        )
+        return result
+    except (TypeError, Exception) as e:
+        structlogger.error(
+            "rasa.core.nlg.generator.evaluate_conditional_response_predicate.error",
+            predicate=constraint,
+            document=document,
+            error=str(e),
+        )
+        return False

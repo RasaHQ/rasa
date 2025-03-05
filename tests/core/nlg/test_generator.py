@@ -1,13 +1,19 @@
 import textwrap
-from typing import Text
+import uuid
+from typing import List, Text
 
 import pytest
+from pytest import MonkeyPatch
 
 from rasa.core.nlg.generator import ResponseVariationFilter
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import UserUttered
+from rasa.shared.core.events import Event, SlotSet, UserUttered
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.utils.constants import (
+    RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS_ENV_VAR_NAME,
+)
 
 
 def test_response_variation_filter_get_response_variation_id_interpolated_crv() -> None:
@@ -441,3 +447,146 @@ def test_response_variation_filter_raises_exception_duplicate_ids() -> None:
         )
 
     assert result is None
+
+
+@pytest.mark.parametrize(
+    "predicate, events",
+    [
+        ("slots.membership != 'gold'", [SlotSet("membership", "cashback")]),
+        ("not slots.membership", [UserUttered("hello")]),
+    ],
+)
+def test_response_variation_filter_evaluate_pypred_predicates(
+    predicate: str,
+    events: List[Event],
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test that the correct response variation id is retrieved when using pypred predicates."""  # noqa: E501
+    # Arrange
+    monkeypatch.setenv(
+        RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS_ENV_VAR_NAME, "true"
+    )
+    utter_action = "utter_greet"
+
+    output_channel = "default"
+
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        intents:
+        - greet
+
+        slots:
+          membership:
+             type: text
+             mappings:
+             - type: from_llm
+          logged_in:
+             type: bool
+             influence_conversation: false
+             mappings:
+             - type: from_llm
+
+        responses:
+          utter_greet:
+            - text: "Hello valued customer!"
+              id: "ID_1"
+              condition: slots.membership == 'gold'
+
+            - text: "Greetings"
+              id: "ID_2"
+              condition: {predicate}
+
+            - text: "Welcome back!"
+              id: "ID_3"
+              condition: slots.logged_in is true
+        """
+    )
+
+    domain = Domain.from_yaml(domain_yaml)
+    tracker = DialogueStateTracker.from_events(
+        sender_id="evaluate_pypred_predicates",
+        evts=events,
+        slots=domain.slots,
+    )
+    response_variation_filter = ResponseVariationFilter(domain.responses)
+
+    # Act
+    response_variation_id = response_variation_filter.get_response_variation_id(
+        utter_action, tracker, output_channel
+    )
+
+    # Assert
+    assert response_variation_id == "ID_2"
+
+
+@pytest.mark.parametrize(
+    "events, expected_response_variation_id",
+    [
+        ([UserUttered("hello")], "ID_2"),
+        ([SlotSet("membership", "gold")], "ID_1"),
+    ],
+)
+def test_response_variation_filter_evaluate_pypred_predicates_mixed_formats(
+    events: List[Event],
+    expected_response_variation_id: str,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test that the correct response variation id is retrieved when using different formats."""  # noqa: E501
+    # Arrange
+    monkeypatch.setenv(
+        RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS_ENV_VAR_NAME, "true"
+    )
+    utter_action = "utter_greet"
+
+    output_channel = "default"
+
+    domain_yaml = textwrap.dedent(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+
+        intents:
+        - greet
+
+        slots:
+          membership:
+             type: text
+             mappings:
+             - type: from_llm
+          logged_in:
+             type: bool
+             influence_conversation: false
+             mappings:
+             - type: from_llm
+
+        responses:
+          utter_greet:
+            - text: "Hello valued customer!"
+              id: "ID_1"
+              condition:
+                - type: slot
+                  name: membership
+                  value: gold
+
+            - text: "Greetings"
+              id: "ID_2"
+              condition: not slots.membership
+        """
+    )
+
+    domain = Domain.from_yaml(domain_yaml)
+    tracker = DialogueStateTracker.from_events(
+        sender_id=uuid.uuid4().hex,
+        evts=events,
+        slots=domain.slots,
+    )
+    response_variation_filter = ResponseVariationFilter(domain.responses)
+
+    # Act
+    response_variation_id = response_variation_filter.get_response_variation_id(
+        utter_action, tracker, output_channel
+    )
+
+    # Assert
+    assert response_variation_id == expected_response_variation_id
