@@ -1,6 +1,11 @@
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Text, Type
+
+from pydantic import BaseModel, Field
 
 import rasa.shared.core.constants
 import rasa.shared.utils.common
@@ -9,6 +14,9 @@ from rasa.shared.constants import (
     DOCS_URL_CATEGORICAL_SLOTS,
     DOCS_URL_NLU_BASED_SLOTS,
     DOCS_URL_SLOTS,
+    REFILL_UTTER,
+    REJECTIONS,
+    UTTER_ASK_PREFIX,
 )
 from rasa.shared.exceptions import RasaException
 
@@ -21,6 +29,80 @@ class InvalidSlotTypeException(RasaException):
 
 class InvalidSlotConfigError(RasaException, ValueError):
     """Raised if a slot's config is invalid."""
+
+
+@dataclass
+class SlotRejection:
+    """A pair of validation condition and an utterance for the case of failure."""
+
+    if_: str
+    """The condition that should be checked."""
+    utter: str
+    """The utterance that should be executed if the condition is met."""
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> SlotRejection:
+        """Create a SlotRejection object from serialized data.
+
+        Args:
+            data: data for a SlotRejection object in a serialized format
+
+        Returns:
+            A SlotRejection object
+        """
+        return SlotRejection(
+            if_=data["if"],
+            utter=data["utter"],
+        )
+
+    def as_dict(self) -> Dict[str, Any]:
+        """Serialize the SlotRejection object.
+
+        Returns:
+            the SlotRejection object as serialized data
+        """
+        return {
+            "if": self.if_,
+            "utter": self.utter,
+        }
+
+
+class SlotValidation(BaseModel):
+    rejections: List[SlotRejection] = Field(alias=REJECTIONS)
+    """how the slot value is validated using predicate evaluation."""
+    refill_utter: str = Field(alias=REFILL_UTTER)
+    """The utterance that the assistant uses to ask for the slot."""
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> SlotValidation:
+        """Creates a SlotValidation object from serialised data.
+
+        Args:
+            data: data for a SlotValidation object in a serialized format
+
+        Returns:
+            A SlotValidation object
+        """
+        rejections = data.get(REJECTIONS)
+        if rejections is not None:
+            rejections = [
+                SlotRejection.from_dict(rejection) for rejection in rejections
+            ]
+
+        return SlotValidation(
+            rejections=rejections, refill_utter=data.get(REFILL_UTTER)
+        )
+
+    def as_dict(self) -> Dict[str, Any]:
+        """Serialize the SlotValidation object.
+
+        Returns:
+            the SlotValidation object as serialized data
+        """
+        return {
+            REJECTIONS: [rejection.as_dict() for rejection in self.rejections],
+            REFILL_UTTER: self.refill_utter,
+        }
 
 
 class Slot(ABC):
@@ -42,6 +124,7 @@ class Slot(ABC):
         is_builtin: bool = False,
         shared_for_coexistence: bool = False,
         filled_by: Optional[str] = None,
+        validation: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Create a Slot.
 
@@ -59,6 +142,8 @@ class Slot(ABC):
             shared_for_coexistence: If `True` the slot is not forgotten after either
                 dm1 or CALM finishes.
             filled_by: The name of the extractor that fills the slot.
+            validation: The validation rules that should be used to validate
+                slot values.
         """
         from rasa.shared.core.slot_mappings import SlotMapping
 
@@ -72,6 +157,12 @@ class Slot(ABC):
         self.is_builtin = is_builtin
         self.shared_for_coexistence = shared_for_coexistence
         self._filled_by = filled_by
+
+        if validation:
+            validation.setdefault(REFILL_UTTER, f"{UTTER_ASK_PREFIX}{self.name}")
+        self.validation = (
+            SlotValidation.from_dict(validation) if validation else validation
+        )
 
     def feature_dimensionality(self) -> int:
         """How many features this single slot creates.
@@ -191,12 +282,15 @@ class Slot(ABC):
 
     def persistence_info(self) -> Dict[str, Any]:
         """Returns relevant information to persist this slot."""
-        return {
+        persistence_info_dict = {
             "type": rasa.shared.utils.common.module_path_from_instance(self),
             "initial_value": self.initial_value,
             "influence_conversation": self.influence_conversation,
             "mappings": [mapping.as_dict() for mapping in self.mappings],
         }
+        if self.validation:
+            persistence_info_dict["validation"] = self.validation.as_dict()  # type: ignore
+        return persistence_info_dict
 
     def fingerprint(self) -> Text:
         """Returns a unique hash for the slot which is stable across python runs.
@@ -212,6 +306,10 @@ class Slot(ABC):
         if not isinstance(other, Slot):
             return False
         return self.name == other.name and self.value == other.value
+
+    def requires_validation(self) -> bool:
+        """Indicates if the slot requires validation."""
+        return True if self.validation else False
 
 
 class FloatSlot(Slot):

@@ -10,42 +10,7 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.core.flows.flow_step import FlowStep
 from rasa.shared.core.flows.utils import extract_digression_prop
-
-
-@dataclass
-class SlotRejection:
-    """A pair of validation condition and an utterance for the case of failure."""
-
-    if_: str
-    """The condition that should be checked."""
-    utter: str
-    """The utterance that should be executed if the condition is met."""
-
-    @staticmethod
-    def from_dict(data: Dict[str, Any]) -> SlotRejection:
-        """Create a SlotRejection object from serialized data.
-
-        Args:
-            data: data for a SlotRejection object in a serialized format
-
-        Returns:
-            A SlotRejection object
-        """
-        return SlotRejection(
-            if_=data["if"],
-            utter=data["utter"],
-        )
-
-    def as_dict(self) -> Dict[str, Any]:
-        """Serialize the SlotRejection object.
-
-        Returns:
-            the SlotRejection object as serialized data
-        """
-        return {
-            "if": self.if_,
-            "utter": self.utter,
-        }
+from rasa.shared.core.slots import SlotRejection
 
 
 @dataclass

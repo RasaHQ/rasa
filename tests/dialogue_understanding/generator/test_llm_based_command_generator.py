@@ -35,9 +35,12 @@ from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps.collect import (
     CollectInformationFlowStep,
-    SlotRejection,
 )
-from rasa.shared.core.slots import Slot, TextSlot
+from rasa.shared.core.slots import (
+    Slot,
+    SlotRejection,
+    TextSlot,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import TEXT

@@ -116,6 +116,27 @@ mapping:
                           active_flow:
                             type: "str"
                             nullable: True
+          validation:
+            type: map
+            required: false
+            mapping:
+              rejections:
+                type: seq
+                required: true
+                sequence:
+                  - type: map
+                    mapping:
+                      if:
+                        type: str
+                        required: true
+                      utter:
+                        type: str
+                        required: true
+              refill_utter:
+                type: str
+                required: false
+                nullable: false
+
   forms:
     type: "map"
     required: False

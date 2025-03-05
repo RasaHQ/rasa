@@ -58,8 +58,16 @@ from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtract
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.patterns.correction import (
+    CorrectionPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.patterns.validate_slot import (
+    ValidateSlotPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
+from rasa.dialogue_understanding.stack.frames import (
+    UserFlowStackFrame,
+)
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
 from rasa.exceptions import ActionLimitReached
@@ -70,6 +78,8 @@ from rasa.shared.constants import (
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     OPENAI_API_KEY_ENV_VAR,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
+    REFILL_UTTER,
+    REJECTIONS,
     ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.constants import (
@@ -106,7 +116,7 @@ from rasa.shared.core.events import (
     UserUttered,
 )
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.slots import BooleanSlot
+from rasa.shared.core.slots import BooleanSlot, SlotValidation, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
     COMMANDS,
@@ -2636,3 +2646,162 @@ def test_is_calm_assistant(default_processor, nodes, expected_result):
 
     # Assert the method returns the expected result
     assert default_processor._is_calm_assistant() == expected_result
+
+
+@pytest.mark.parametrize(
+    "validation",
+    [
+        {
+            REFILL_UTTER: "utter_test_slot",
+            REJECTIONS: [
+                {"if": "test_slot == 'invalid'", "utter": "utter_invalid_test_slot"}
+            ],
+        },
+        {},
+    ],
+)
+def test_validate_corrected_slots_no_validate_frame(
+    default_processor: MessageProcessor,
+    validation: SlotValidation,
+):
+    """Test that validate_corrected_slots does not return validate frames"""
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(key="test_slot", value="valid"),
+            DialogueStackUpdated(
+                update='[{"op": "add", "path": "/0", "value": {"frame_id": "PWF4YX9P", "flow_id": "list_contacts", "step_id": "START", "frame_type": "regular", "type": "flow"}}]'  # noqa: E501
+            ),
+        ],
+        [
+            TextSlot(
+                name="test_slot",
+                mappings=[],
+                validation=validation,
+            ),
+        ],
+    )
+    tracker, validate_frames = default_processor.validate_corrected_slots(tracker)
+
+    assert validate_frames == []
+
+
+def test_validate_corrected_slots_valid_has_validate_frame(
+    default_processor: MessageProcessor,
+):
+    """Test that validate_corrected_slots returns validate frames."""
+    validation = {
+        REFILL_UTTER: "utter_test_slot",
+        REJECTIONS: [{"if": "test_condition", "utter": "utter_invalid_test_slot"}],
+    }
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [],
+        [
+            TextSlot(
+                name="test_slot",
+                mappings=[],
+                validation=validation,
+            ),
+            TextSlot(
+                name="test_slot_2",
+                mappings=[],
+                validation=validation,
+            ),
+        ],
+    )
+    correction_frame = CorrectionPatternFlowStackFrame(
+        corrected_slots={
+            "test_slot": {"value": "invalid", "filled_by": SetSlotExtractor.LLM.value},
+            "test_slot_2": {"value": "valid", "filled_by": SetSlotExtractor.LLM.value},
+        },
+        new_slot_values=["valid", "valid_2"],
+    )
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(flow_id="foo", step_id="0_collect_foo_slot_a"),
+                correction_frame,
+            ]
+        )
+    )
+    tracker.update_with_events(
+        [
+            SlotSet(key="test_slot", value="invalid"),
+            SlotSet(key="test_slot_2", value="valid"),
+        ]
+    )
+    tracker, frames = default_processor.validate_corrected_slots(tracker)
+
+    assert len(frames) == 2
+    assert isinstance(frames[0], ValidateSlotPatternFlowStackFrame)
+    assert isinstance(frames[1], ValidateSlotPatternFlowStackFrame)
+    top_frame = tracker.stack.top()
+    assert top_frame != correction_frame
+    assert "test_slot" not in top_frame.corrected_slots.keys()
+    assert "valid_2" not in top_frame.new_slot_values
+
+
+async def test_run_action_does_not_validate_corrected_slots(
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test that the validate_corrected_slots method is not called."""
+    mock_validate_corrected_slots = MagicMock()
+    monkeypatch.setattr(
+        default_processor, "validate_corrected_slots", mock_validate_corrected_slots
+    )
+    tracker = DialogueStateTracker.from_events(
+        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
+    )
+    domain = Domain.empty()
+    await default_processor._run_action(
+        ActionUnlikelyIntent(),
+        tracker,
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        PolicyPrediction([], "some policy"),
+    )
+
+    mock_validate_corrected_slots.assert_not_called()
+
+
+async def test_run_action_validates_corrected_slots(
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test that the validate_corrected_slots method is called."""
+    tracker = DialogueStateTracker.from_events(
+        "some-sender", evts=[ActionExecuted(ACTION_CORRECT_FLOW_SLOT)]
+    )
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(flow_id="foo", step_id="0_collect_foo_slot_a"),
+                CorrectionPatternFlowStackFrame(
+                    corrected_slots={
+                        "ham": {"value": 100, "filled_by": SetSlotExtractor.LLM.value}
+                    },
+                    new_slot_values=[100],
+                ),
+            ]
+        )
+    )
+    domain = Domain.empty()
+    mock_validate_corrected_slots = MagicMock(
+        return_value=(tracker, [ValidateSlotPatternFlowStackFrame()])
+    )
+    monkeypatch.setattr(
+        default_processor, "validate_corrected_slots", mock_validate_corrected_slots
+    )
+    await default_processor._run_action(
+        ActionBotResponse("some_utter"),
+        tracker,
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        PolicyPrediction([], "some policy"),
+    )
+
+    mock_validate_corrected_slots.assert_called()
+    assert isinstance(tracker.stack.top(), ValidateSlotPatternFlowStackFrame)

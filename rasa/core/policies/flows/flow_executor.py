@@ -85,9 +85,8 @@ from rasa.shared.core.flows.steps import (
     NoOperationFlowStep,
     SetSlotsFlowStep,
 )
-from rasa.shared.core.flows.steps.collect import SlotRejection
 from rasa.shared.core.flows.steps.constants import START_STEP
-from rasa.shared.core.slots import Slot
+from rasa.shared.core.slots import Slot, SlotRejection
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )

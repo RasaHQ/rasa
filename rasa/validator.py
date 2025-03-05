@@ -1781,6 +1781,40 @@ class Validator:
 
         return all_good
 
+    def verify_slot_validation(self) -> bool:
+        """Validates the slot validation configuration in the domain file."""
+        all_good = True
+
+        for slot in self.domain._user_slots:
+            if slot.requires_validation():
+                refill_utter = slot.validation.refill_utter  # type: ignore[union-attr]
+                if refill_utter and refill_utter not in self.domain.responses:
+                    self._log_slot_validation_error(
+                        slot.name, "refill utterance", refill_utter
+                    )
+                    all_good = False
+                rejections = slot.validation.rejections  # type: ignore[union-attr]
+                for rejection in rejections:
+                    if rejection.utter not in self.domain.responses:
+                        self._log_slot_validation_error(
+                            slot.name, "rejection utterance", rejection.utter
+                        )
+                        all_good = False
+
+        return all_good
+
+    def _log_slot_validation_error(self, slot_name: str, key: str, value: str) -> None:
+        structlogger.error(
+            "validator.verify_slot_validation.response_not_in_domain",
+            slot=slot_name,
+            event_info=(
+                f"The slot '{slot_name}' requires validation, "
+                f"but the {key} '{value}' "
+                f"is not listed in the domain responses. "
+                f"Please add it to your domain file."
+            ),
+        )
+
     @staticmethod
     def _validate_controlled_mappings(slot: Slot, all_good: bool) -> bool:
         for mapping in slot.mappings:

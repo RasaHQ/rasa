@@ -8,7 +8,11 @@ import pytest
 import structlog
 from pytest import CaptureFixture, MonkeyPatch
 
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import (
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    REFILL_UTTER,
+    REJECTIONS,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -3180,6 +3184,74 @@ def test_verify_digression_configuration_at_flow_level_invalid_duplicate(
     assert expected_log_message in captured.out
     assert "validator.verify_digression_configuration" in captured.out
     assert "error" in captured.out
+
+
+def test_verify_slot_validation_invalid(
+    capsys: CaptureFixture,
+) -> None:
+    """test that invalid slot validation configuration are detected."""
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+            test_slot:
+                type: text
+                validation:
+                    "{REJECTIONS}":
+                        - if: slots.test_slot == "invalid"
+                          utter: utter_reason_invalid
+                    "{REFILL_UTTER}": utter_ask_test_slot
+
+        responses:
+            utter_greet:
+                - text: "Hey! How are you?"
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert not validator.verify_slot_validation()
+
+    expected_log_message1 = (
+        "The slot 'test_slot' requires validation, "
+        "but the refill utterance 'utter_ask_test_slot' "
+        "is not listed in the domain responses. "
+        "Please add it to your domain file."
+    )
+    expected_log_message2 = (
+        "The slot 'test_slot' requires validation, "
+        "but the rejection utterance 'utter_reason_invalid' "
+        "is not listed in the domain responses. "
+        "Please add it to your domain file."
+    )
+    captured = capsys.readouterr()
+
+    assert expected_log_message1 in captured.out
+    assert expected_log_message2 in captured.out
+    assert "validator.verify_slot_validation.response_not_in_domain" in captured.out
+    assert "error" in captured.out
+
+
+def test_verify_slot_validation_valid() -> None:
+    """test that valid slot validation configuration."""
+    test_domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        slots:
+            test_slot:
+                type: text
+                validation:
+                    rejections:
+                        - if: slots.test_slot == "invalid"
+                          utter: utter_reason_invalid
+
+        responses:
+            utter_ask_test_slot:
+                - text: "Hey! How are you?"
+            utter_reason_invalid:
+                - text: "Invalid!"
+        """
+    )
+    validator = Validator(test_domain, TrainingData(), StoryGraph([]), None, None)
+    assert validator.verify_slot_validation()
 
 
 def test_run_action_every_turn_invalid_slot_mapping_type(

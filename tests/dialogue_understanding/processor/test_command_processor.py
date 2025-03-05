@@ -27,6 +27,9 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 from rasa.dialogue_understanding.patterns.correction import (
     CorrectionPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.patterns.validate_slot import (
+    ValidateSlotPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.processor.command_processor import (
     calculate_flow_fingerprints,
     clean_up_commands,
@@ -35,6 +38,7 @@ from rasa.dialogue_understanding.processor.command_processor import (
     execute_commands,
     get_commands_from_tracker,
     get_current_collect_step,
+    push_stack_frames_to_follow_commands,
     remove_duplicated_set_slots,
     should_slot_be_set,
     validate_state_of_commands,
@@ -1474,3 +1478,21 @@ def test_clean_up_commands_with_interrupting_start_flow(
 
     # Then
     assert clean_commands == expected_clean_commands
+
+
+def test_push_stack_frames_to_follow_commands(tracker: DialogueStateTracker):
+    """Test ValidateSlotPatternFlowStackFrame is pushed to stack."""
+    # Given
+    frames = [ValidateSlotPatternFlowStackFrame()]
+    # When
+    events = push_stack_frames_to_follow_commands(tracker, frames)
+    # Then
+    assert isinstance(events[0], DialogueStackUpdated)
+
+
+def test_push_stack_frames_to_follow_commands_no_update(tracker: DialogueStateTracker):
+    """Test ValidateSlotPatternFlowStackFrame is not pushed to stack."""
+    # When
+    events = push_stack_frames_to_follow_commands(tracker, [])
+    # Then
+    assert events == []

@@ -324,3 +324,7 @@ CUSTOM = "custom"
 # Used for LLM command generation
 ROLE_USER = "user"
 ROLE_SYSTEM = "system"
+
+# Used for key values in ValidateSlotPatternFlowStackFrame
+REFILL_UTTER = "refill_utter"
+REJECTIONS = "rejections"

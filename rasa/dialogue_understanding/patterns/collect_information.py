@@ -8,7 +8,7 @@ from rasa.dialogue_understanding.stack.frames import (
     PatternFlowStackFrame,
 )
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
-from rasa.shared.core.flows.steps.collect import SlotRejection
+from rasa.shared.core.slots import SlotRejection
 
 FLOW_PATTERN_COLLECT_INFORMATION = (
     RASA_DEFAULT_FLOW_PATTERN_PREFIX + "collect_information"

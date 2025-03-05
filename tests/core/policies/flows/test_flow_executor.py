@@ -62,11 +62,10 @@ from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.steps import SetSlotsFlowStep
 from rasa.shared.core.flows.steps.collect import (
     CollectInformationFlowStep,
-    SlotRejection,
 )
 from rasa.shared.core.flows.steps.constants import START_STEP
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
-from rasa.shared.core.slots import FloatSlot, TextSlot
+from rasa.shared.core.slots import FloatSlot, SlotRejection, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
 from tests.utilities import (

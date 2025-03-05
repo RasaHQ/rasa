@@ -19,7 +19,7 @@ from rasa.core.constants import (
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, REFILL_UTTER, REJECTIONS
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.slots import (
@@ -151,6 +151,29 @@ def rejection_test_dialogue_stack() -> DialogueStack:
     )
 
 
+@pytest.fixture
+def domain_slot_rejection_test_dialogue_stack() -> DialogueStack:
+    return DialogueStack.from_dict(
+        [
+            {
+                "frame_id": "6Z7PSTRM",
+                "flow_id": "pattern_validate_slot",
+                "step_id": "start",
+                "validate": "recurrent_payment_type",
+                REFILL_UTTER: "utter_ask_recurrent_payment_type",
+                "refill_action": "action_ask_recurrent_payment_type",
+                REJECTIONS: [
+                    {
+                        "if": "slots.recurrent_payment_type != invalid",
+                        "utter": "utter_invalid_recurrent_payment_type",
+                    }
+                ],
+                "type": "pattern_validate_slot",
+            },
+        ]
+    )
+
+
 async def test_action_run_slot_rejections_top_frame_not_collect_information(
     default_channel: OutputChannel,
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
@@ -268,12 +291,27 @@ async def test_action_run_slot_rejections_top_frame_slot_not_been_set(
     assert "[debug    ] first.collect.slot.not.set" in out
 
 
+@pytest.mark.parametrize(
+    "test_dialogue_stack, active_flow, step_id",
+    [
+        (
+            "rejection_test_dialogue_stack",
+            "setup_recurrent_payment",
+            "ask_payment_type",
+        ),
+        ("domain_slot_rejection_test_dialogue_stack", "pattern_validate_slot", "start"),
+    ],
+)
 async def test_action_run_slot_rejections_run_success(
     default_channel: OutputChannel,
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
-    rejection_test_dialogue_stack: DialogueStack,
+    test_dialogue_stack: DialogueStack,
+    active_flow: Text,
+    step_id: Text,
+    request: pytest.FixtureRequest,
 ) -> None:
+    test_dialogue_stack = request.getfixturevalue(test_dialogue_stack)
     tracker = DialogueStateTracker.from_events(
         sender_id=uuid.uuid4().hex,
         evts=[
@@ -284,7 +322,7 @@ async def test_action_run_slot_rejections_run_success(
             TextSlot("recurrent_payment_type", mappings=[]),
         ],
     )
-    tracker.update_stack(rejection_test_dialogue_stack)
+    tracker.update_stack(test_dialogue_stack)
     action_run_slot_rejections = ActionRunSlotRejections()
     events = await action_run_slot_rejections.run(
         output_channel=default_channel,
@@ -300,8 +338,8 @@ async def test_action_run_slot_rejections_run_success(
             metadata={
                 "utter_action": "utter_invalid_recurrent_payment_type",
                 UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
-                ACTIVE_FLOW_METADATA_KEY: "setup_recurrent_payment",
-                STEP_ID_METADATA_KEY: "ask_payment_type",
+                ACTIVE_FLOW_METADATA_KEY: active_flow,
+                STEP_ID_METADATA_KEY: step_id,
             },
         ),
     ]

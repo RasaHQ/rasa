@@ -22,12 +22,18 @@ from rasa.dialogue_understanding.commands.handle_digressions_command import (
     HandleDigressionsCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
+from rasa.dialogue_understanding.commands.utils import (
+    create_validate_frames_from_slot_set_events,
+)
 from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.patterns.correction import (
     CorrectionPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.patterns.validate_slot import (
+    ValidateSlotPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
@@ -234,16 +240,49 @@ def execute_commands(
     # and then pushing the commands onto the stack in the reversed order.
     reversed_commands = list(reversed(commands))
 
+    # we need to keep track of the ValidateSlotPatternFlowStackFrame that
+    # should be pushed onto the stack before executing the StartFlowCommands.
+    # This is necessary to make sure that slots filled before the start of a
+    # flow can be immediately validated without waiting till the flow is started
+    # and completed.
+    stack_frames_to_follow_commands: List[ValidateSlotPatternFlowStackFrame] = []
+
     validate_state_of_commands(commands)
 
     for command in reversed_commands:
         new_events = command.run_command_on_tracker(
             tracker, all_flows, original_tracker
         )
+
+        _, stack_frames_to_follow_commands = (
+            create_validate_frames_from_slot_set_events(
+                tracker, new_events, stack_frames_to_follow_commands
+            )
+        )
+
         events.extend(new_events)
         tracker.update_with_events(new_events)
 
+        new_events = push_stack_frames_to_follow_commands(
+            tracker, stack_frames_to_follow_commands
+        )
+        events.extend(new_events)
+
     return remove_duplicated_set_slots(events)
+
+
+def push_stack_frames_to_follow_commands(
+    tracker: DialogueStateTracker, stack_frames: List
+) -> List[Event]:
+    """Push stack frames to follow commands."""
+    new_events = []
+
+    for frame in stack_frames:
+        stack = tracker.stack
+        stack.push(frame)
+        new_events.extend(tracker.create_stack_updated_events(stack))
+    tracker.update_with_events(new_events)
+    return new_events
 
 
 def remove_duplicated_set_slots(events: List[Event]) -> List[Event]:

@@ -9,14 +9,17 @@ from rasa.core.utils import add_bot_utterance_metadata
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.patterns.validate_slot import (
+    ValidateSlotPatternFlowStackFrame,
+)
 from rasa.shared.core.constants import ACTION_RUN_SLOT_REJECTIONS_NAME
 from rasa.shared.core.events import Event, SlotSet
-from rasa.shared.core.flows.steps.collect import SlotRejection
 from rasa.shared.core.slots import (
     BooleanSlot,
     CategoricalSlot,
     FloatSlot,
     Slot,
+    SlotRejection,
 )
 
 if TYPE_CHECKING:
@@ -138,10 +141,19 @@ class ActionRunSlotRejections(Action):
         """Run the predicate checks."""
         utterance = None
         top_frame = tracker.stack.top()
-        if not isinstance(top_frame, CollectInformationPatternFlowStackFrame):
+        if not isinstance(
+            top_frame,
+            (
+                CollectInformationPatternFlowStackFrame,
+                ValidateSlotPatternFlowStackFrame,
+            ),
+        ):
             return []
+        elif isinstance(top_frame, CollectInformationPatternFlowStackFrame):
+            slot_name = top_frame.collect
+        elif isinstance(top_frame, ValidateSlotPatternFlowStackFrame):
+            slot_name = top_frame.validate
 
-        slot_name = top_frame.collect
         slot_instance = tracker.slots.get(slot_name)
         if slot_instance and not slot_instance.has_been_set:
             # this is the first time the assistant asks for the slot value,

@@ -359,3 +359,19 @@ flows:
               - action: action_hangup
                 next: END
           - else: END
+
+  pattern_validate_slot:
+    description: Flow for running validations on slots
+    name: pattern validate slot
+    steps:
+      - id: start
+        action: action_run_slot_rejections
+        next:
+          - if: "slots.{{context.validate}} is not null"
+            then: END
+          - else: ask_refill
+      - id: ask_refill
+        action: "{{context.refill_utter}}"
+      - action: "{{context.refill_action}}"
+      - action: action_listen
+        next: start

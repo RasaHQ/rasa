@@ -36,6 +36,12 @@ from rasa.dialogue_understanding.commands import (
     NoopCommand,
     SetSlotCommand,
 )
+from rasa.dialogue_understanding.commands.utils import (
+    create_validate_frames_from_slot_set_events,
+)
+from rasa.dialogue_understanding.patterns.validate_slot import (
+    ValidateSlotPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.utils import add_commands_to_message_parse_data
 from rasa.engine import loader
 from rasa.engine.constants import (
@@ -1255,6 +1261,12 @@ class MessageProcessor:
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:
+            validate_frames: List[ValidateSlotPatternFlowStackFrame] = []
+            # check if the last action was a correction action
+            # before validating the corrected slots
+            if tracker.latest_action_name == ACTION_CORRECT_FLOW_SLOT:
+                tracker, validate_frames = self.validate_corrected_slots(tracker)
+
             # Use temporary tracker as we might need to discard the policy events in
             # case of a rejection.
             temporary_tracker = tracker.copy()
@@ -1286,6 +1298,14 @@ class MessageProcessor:
                 events = await action.run(
                     output_channel, nlg, temporary_tracker, self.domain
                 )
+
+            if validate_frames:
+                stack = tracker.stack
+                for frame in validate_frames:
+                    stack.push(frame)
+                new_events = tracker.create_stack_updated_events(stack)
+                tracker.update_with_events(new_events)
+
             self._log_action_and_events_on_tracker(tracker, action, events, prediction)
         except ActionExecutionRejection:
             events = [
@@ -1522,3 +1542,18 @@ class MessageProcessor:
                 return True
 
         return False
+
+    def validate_corrected_slots(
+        self,
+        tracker: DialogueStateTracker,
+    ) -> Tuple[DialogueStateTracker, List[ValidateSlotPatternFlowStackFrame]]:
+        """Validate the slots that were corrected in the tracker."""
+        prior_tracker_events = list(reversed(tracker.events))
+        tracker, validate_frames = create_validate_frames_from_slot_set_events(
+            tracker,
+            prior_tracker_events,
+            should_break=True,
+            update_corrected_slots=True,
+        )
+
+        return tracker, validate_frames
