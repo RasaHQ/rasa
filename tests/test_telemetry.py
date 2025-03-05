@@ -1044,9 +1044,9 @@ def test_send_request_telemetry_debug_enabled(
 
     mock_is_telemetry_debug_enabled.assert_called_once()
     mock_print_telemetry_payload.assert_called_once_with(payload)
-    mock_get_telemetry_write_key.assert_not_called()
-    mock_segment_request_header.assert_not_called()
-    mock_requests_post.assert_not_called()
+    mock_get_telemetry_write_key.assert_called_once()
+    mock_segment_request_header.assert_called_once()
+    mock_requests_post.assert_called_once()
 
 
 def test_send_request_with_invalid_write_key(

@@ -529,7 +529,6 @@ def _send_request(url: Text, payload: Dict[Text, Any]) -> None:
     """
     if _is_telemetry_debug_enabled():
         print_telemetry_payload(payload)
-        return
 
     write_key = _get_telemetry_write_key()
     if not write_key:
