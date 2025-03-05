@@ -49,7 +49,6 @@ if TYPE_CHECKING:
     from rasa.e2e_test.e2e_test_result import TestResult
 
 
-RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME = "RASA_PRO_BETA_E2E_ASSERTIONS"
 RASA_PRO_BETA_STUB_CUSTOM_ACTION_ENV_VAR_NAME = "RASA_PRO_BETA_STUB_CUSTOM_ACTION"
 
 structlogger = structlog.get_logger()
@@ -278,16 +277,6 @@ def split_into_passed_failed(
     return passed_cases, failed_cases
 
 
-def has_test_case_with_assertions(test_cases: List[TestCase]) -> bool:
-    """Check if the test cases contain assertions."""
-    try:
-        next(test_case for test_case in test_cases if test_case.uses_assertions())
-    except StopIteration:
-        return False
-
-    return True
-
-
 @lru_cache(maxsize=1)
 def extract_test_case_from_path(path: str) -> Tuple[str, str]:
     """Extract test case from path if specified.
@@ -442,7 +431,6 @@ def read_test_cases(path: str) -> TestSuite:
     fixtures: Dict[str, Fixture] = {}
     metadata: Dict[str, Metadata] = {}
     stub_custom_actions: Dict[str, StubCustomAction] = {}
-    beta_flag_verified = False
 
     # Process each test file
     for test_file in test_files:
@@ -459,10 +447,6 @@ def read_test_cases(path: str) -> TestSuite:
         metadata.update(extract_metadata(test_file_content, metadata))
         stub_custom_actions.update(
             extract_stub_custom_actions(test_file_content, test_file)
-        )
-
-        beta_flag_verified = verify_beta_feature_flag_for_assertions(
-            test_cases, beta_flag_verified
         )
         input_test_cases.extend(test_cases)
 
@@ -487,27 +471,6 @@ def check_beta_feature_flag_for_custom_actions_stubs() -> None:
         )
     except BetaNotEnabledException as exc:
         rasa.shared.utils.cli.print_error_and_exit(str(exc))
-
-
-def verify_beta_feature_flag_for_assertions(
-    test_cases: List[TestCase], beta_flag_verified: bool
-) -> bool:
-    """Verify the beta feature flag for assertions."""
-    if beta_flag_verified:
-        return True
-
-    if not has_test_case_with_assertions(test_cases):
-        return beta_flag_verified
-
-    try:
-        ensure_beta_feature_is_enabled(
-            "end-to-end testing with assertions",
-            RASA_PRO_BETA_E2E_ASSERTIONS_ENV_VAR_NAME,
-        )
-    except BetaNotEnabledException as exc:
-        rasa.shared.utils.cli.print_error_and_exit(str(exc))
-
-    return True
 
 
 def _save_coverage_report(
