@@ -1,9 +1,9 @@
 recipe: default.v1
 language: en
 pipeline:
-  - name: SingleStepLLMCommandGenerator
+  - name: CompactLLMCommandGenerator
     llm:
-      model_group: openai-gpt-4
+      model_group: openai-gpt-4o
 
 policies:
   - name: FlowPolicy
