@@ -4,6 +4,9 @@ from unittest.mock import Mock
 import pytest
 
 from rasa.dialogue_understanding.commands import StartFlowCommand
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+)
 from rasa.dialogue_understanding.processor.command_processor import execute_commands
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
@@ -102,3 +105,10 @@ def advance_top_tracker_flow(tracker: DialogueStateTracker, step_id: str) -> Non
     else:
         raise ValueError(f"Top frame is not a user flow frame: {top_frame}")
     tracker.update_stack(stack)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def reset_syntax_version():
+    """Reset the syntax version only after all tests in this module have run."""
+    yield  # Let all tests run first
+    CommandSyntaxManager.reset_syntax_version()  # Reset after all tests finish
