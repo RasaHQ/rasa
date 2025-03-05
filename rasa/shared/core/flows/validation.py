@@ -723,7 +723,7 @@ def validate_slot_persistence_configuration(flow: Flow) -> None:
             flow_slots.add(step.collect)
             if not step.reset_after_flow_ends:
                 collect_step = step.collect
-                warn_deprecated_collect_step_config(flow_id, collect_step)
+                warn_deprecated_collect_step_config()
                 if has_flow_level_persistence:
                     raise DuplicateSlotPersistConfigException(flow_id, collect_step)
 

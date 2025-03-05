@@ -672,9 +672,10 @@ def test_validate_slot_persistence_configuration_raise_deprecation_warning():
     )
 
     deprecation_message = (
-        "Configuring 'reset_after_flow_ends' in collect step 'slot_a' is deprecated "
-        "and will be removed in Rasa Pro 4.0.0. In flow id 'flow_a', please use "
-        "the 'persisted_slots' property at the flow level instead."
+        "Configuring 'reset_after_flow_ends' in collect steps is "
+        "deprecated and will be removed in Rasa Pro 4.0.0. In the parent flow, "
+        "please use the 'persisted_slots' "
+        "property at the flow level instead."
     )
 
     with pytest.warns(FutureWarning) as record:

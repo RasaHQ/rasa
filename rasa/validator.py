@@ -1592,7 +1592,7 @@ class Validator:
                     collect_step = step.collect
                     flow_slots.add(collect_step)
                     if not step.reset_after_flow_ends:
-                        warn_deprecated_collect_step_config(flow_id, collect_step)
+                        warn_deprecated_collect_step_config()
 
                         if has_flow_level_persistence:
                             structlogger.error(

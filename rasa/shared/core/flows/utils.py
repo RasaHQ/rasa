@@ -7,11 +7,11 @@ PERSIST_PROPERTY_NAME = "persisted_slots"
 ALL_LABEL = "ALL"
 
 
-def warn_deprecated_collect_step_config(flow_id: str, collect_step: str) -> None:
+def warn_deprecated_collect_step_config() -> None:
     """Warns about deprecated reset_after_flow_ends usage in collect steps."""
     raise_deprecation_warning(
-        f"Configuring '{RESET_PROPERTY_NAME}' in collect step '{collect_step}' is "
-        f"deprecated and will be removed in Rasa Pro 4.0.0. In flow id '{flow_id}', "
+        f"Configuring '{RESET_PROPERTY_NAME}' in collect steps is "
+        f"deprecated and will be removed in Rasa Pro 4.0.0. In the parent flow, "
         f"please use the '{PERSIST_PROPERTY_NAME}' "
         "property at the flow level instead."
     )
