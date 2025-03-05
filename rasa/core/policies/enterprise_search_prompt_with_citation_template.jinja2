@@ -4,7 +4,7 @@ If the answer is not known or cannot be determined from the provided documents o
 Use the following documents to answer the question:
 {% for doc in docs %}
 {{ loop.cycle("*")}}. {{ doc.metadata }}
-{{ doc.page_content }}
+{{ doc.text }}
 {% endfor %}
 
 {% if citation_enabled %}

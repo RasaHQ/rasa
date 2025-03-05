@@ -1586,3 +1586,40 @@ def test_add_prompt_and_llm_response_to_latest_message_existing_prompts():
             KEY_LLM_RESPONSE_METADATA: None,
         },
     ]
+
+
+@pytest.mark.parametrize(
+    "documents",
+    [
+        [
+            SearchResult(metadata="Document 1", text="This is the first document."),
+            SearchResult(metadata="Document 2", text="This is the second document."),
+        ],
+        [
+            SearchResult(metadata="Doc A", text="Content of A."),
+            SearchResult(metadata="Doc B", text="Content of B."),
+        ],
+    ],
+)
+def test_render_prompt_includes_doc_text(
+    default_enterprise_search_policy: EnterpriseSearchPolicy,
+    documents: List[SearchResult],
+    monkeypatch: MonkeyPatch,
+):
+    """Test that _render_prompt correctly includes doc.text in the rendered output."""
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    domain = Domain.empty()
+
+    tracker = DialogueStateTracker.from_events(
+        "test render prompt",
+        domain=domain,
+        slots=domain.slots,
+        evts=[ActionExecuted(action_name="action_listen")],
+    )
+
+    rendered_prompt = default_enterprise_search_policy._render_prompt(
+        tracker, documents
+    )
+
+    for doc in documents:
+        assert doc.text in rendered_prompt
