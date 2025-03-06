@@ -3,7 +3,6 @@ action_endpoint:
 
 nlg:
  type: rephrase
- rephrase_all: True
  llm:
    provider: together_ai
    model: meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo

@@ -1,0 +1,44 @@
+recipe: default.v1
+language: en
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 4
+  - name: LogisticRegressionClassifier
+    max_iter: 100
+    solver: lbfgs
+    tol: 0.0001
+    random_state: 42
+    ranking_length: 10
+  - name: CRFEntityExtractor
+  - name: DucklingEntityExtractor
+    url: "http://localhost:8000"
+    dimensions: ["time", "number"]
+    timezone: "Europe/Berlin"
+    timeout: 3
+  - name: CompactLLMCommandGenerator
+    llm:
+      model_group: huggingface_llm
+
+policies:
+  - name: RulePolicy
+  # Enable when bug ENG-1747 is resolved 
+  # - name: TEDPolicy
+  #   constrain_similarities: true
+  - name: FlowPolicy
+  - name: EnterpriseSearchPolicy
+    max_messages_in_query: 4
+    citation_enabled: true
+    use_generative_llm: true
+    vector_store:
+      source: calm-benchmarking-bot/docs/
+    llm:
+      model_group: huggingface_llm
+  - name: IntentlessPolicy
+    llm:
+      model_group: huggingface_llm
+
+assistant_id: 20240418-073244-narrow-archive

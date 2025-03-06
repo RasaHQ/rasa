@@ -3,7 +3,6 @@ action_endpoint:
 
 nlg:
  type: rephrase
- rephrase_all: True
  llm:
     model_group: azure_llm
 
@@ -15,7 +14,11 @@ model_groups:
         api_base: ${AZURE_API_BASE_GPT3_5_TURBO}
         api_key: ${AZURE_API_KEY_TRAINING}
         api_version: ${AZURE_API_VERSION_GPT3_5_TURBO}
-        timeout: 7
+        timeout: 20
+        temperature: 0.0
+        top_p: 0.0
+        cache:
+          no-cache: true
         num_retries: 5
 
   - id: azure_embeddings
@@ -24,8 +27,8 @@ model_groups:
         deployment: ${AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA}
         api_base: ${AZURE_API_BASE_TXT_EMBEDDING_ADA}
         api_key: ${AZURE_API_KEY_TRAINING}
-        api_version: ${AZURE_API_VERSION_TXT_EMBEDDING_ADA}
-        timeout: 7
+        api_version: ${AZURE_API_VERSION_TXT_EMBEDDING_ADA}  
+        timeout: 20
         num_retries: 5
 
 tracing:

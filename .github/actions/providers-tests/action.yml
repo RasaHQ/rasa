@@ -1,5 +1,5 @@
-name: E2E Test on Rasa-Calm-Demo with supported providers
-description: Runs E2E Test on `Rasa-Calm-Demo` bot with supported providers
+name: Test on Bot with supported CALM providers
+description: Runs test(s) on bot with supported CALM providers
 
 inputs:
   provider:
@@ -19,16 +19,26 @@ inputs:
     required: true
     default: main
 
+  calm-benchmarking-bot-branch:
+    description: Branch to checkout for `calm-benchmarking-bot`
+    required: true
+    default: main
+
   single-step-tests:
-      description: "Path to test file(s), on `rasa-calm-demo` repository"
+      description: "Path to test file(s)"
       required: true
       # TODO: Use test that invokes enterprise-search, when flakiness is resolved
       default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
 
   multi-step-tests:
-    description: "Path to test file(s), on `rasa-calm-demo` repository"
+    description: "Path to test file(s)"
     required: true
     default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
+
+  compact-tests:
+    description: "Path to test file(s)"
+    required: true
+    default: "e2e/e2e_tests_with_assertions/test/happy_path/user_checks_balance.yml"
 
   llm-judge-model:
     description: "Judge model to be used by generative assertions."
@@ -38,7 +48,8 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Checkout git repository 🕝
+    - name: Checkout `rasa-calm-demo` git repository 🕝
+      if: ${{ inputs.train-and-test != 'compact' }}
       uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
       with:
         repository: RasaHQ/rasa-calm-demo
@@ -46,8 +57,17 @@ runs:
         path: rasa-calm-demo
         token: ${{ env.RASA_CALM_DEMO_READ_TOKEN }}
 
+    - name: Checkout `calm-benchmarking-bot` git repository 🕝
+      if: ${{ inputs.train-and-test == 'compact' }}
+      uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+      with:
+        repository: RasaHQ/calm-benchmarking-bot
+        ref: ${{ inputs.calm-benchmarking-bot-branch }}
+        path: calm-benchmarking-bot
+        token: ${{ env.CALM_BENCHMARKING_BOT_READ_TOKEN }}
+
     - name: Setup LLM-judge model
-      working-directory: rasa-calm-demo
+      working-directory: ${{ inputs.train-and-test == 'compact' && 'calm-benchmarking-bot' || 'rasa-calm-demo' }}
       run: |
         : Setup LLM-judge model
         echo "llm_judge:
@@ -221,7 +241,7 @@ runs:
       shell: bash
 
     - name: Run duckling server
-      working-directory: rasa-calm-demo
+      working-directory: ${{ inputs.train-and-test == 'compact' && 'calm-benchmarking-bot' || 'rasa-calm-demo' }}
       run: |
         : Run duckling server
         make run-duckling
@@ -232,7 +252,7 @@ runs:
       env:
         RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
-      working-directory: rasa-calm-demo
+      working-directory: ${{ inputs.train-and-test == 'compact' && 'calm-benchmarking-bot' || 'rasa-calm-demo' }}
       run: |
         : Run action server
         rasa run actions &
@@ -251,8 +271,6 @@ runs:
 
     - name: Run OTEL collector for Tracing and Metrics collection
       id: run-otel-collector
-      env:
-        RASA_CALM_DEMO_BRANCH: ${{ inputs.rasa-calm-demo-branch || 'main' }}
       run: |
         : Run OTEL collector for Tracing and Metrics collection
         make run-otel-collector
@@ -262,6 +280,7 @@ runs:
       uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
       env:
         RASA_PRO_BETA_INTENTLESS: true
+        BOT: ${{ inputs.train-and-test == 'compact' && 'calm-benchmarking-bot' || 'rasa-calm-demo' }}
       with:
         timeout_minutes: 15
         max_attempts: 2
@@ -274,25 +293,25 @@ runs:
             && rasa train \
             --config data/test_config/providers/${{ inputs.provider }}/${{ inputs.train-and-test }}-config.yml \
             --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
-            --domain rasa-calm-demo/domain \
-            --data rasa-calm-demo/data \
+            --domain ${{ env.BOT }}/domain \
+            --data ${{ env.BOT }}/data \
             --fixed-model-name ${{ inputs.train-and-test }}-${{ inputs.provider }}-model \
             2>&1 \
-            | tee model-training-log
+            | tee model-training-log.txt
 
     - name: Verify LLM and Embeddings API health checks during training
       if: ${{ !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
       run: |
         : Verify LLM and Embeddings API health checks during training
-        grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' model-training-log \
-          && grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' model-training-log \
-          && grep -i 'Sending a test LLM API request for the component - EnterpriseSearchPolicy' model-training-log \
-          && grep -i 'Sending a test LLM API request for the component - IntentlessPolicy' model-training-log \
-          && grep -i 'Sending a test LLM API request for the component - LLMBasedCommandGenerator' model-training-log \
-          && grep -i 'Sending a test Embeddings API request for the component - FlowRetrieval' model-training-log \
-          && grep -i 'Sending a test Embeddings API request for the component - EnterpriseSearchPolicy' model-training-log \
-          && grep -i 'Sending a test Embeddings API request for the component - IntentlessPolicy' model-training-log \
-          && grep -i 'Your Rasa model is trained and saved' model-training-log \
+        grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' model-training-log.txt \
+          && (grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' model-training-log.txt || grep -iv 'LLMBasedRouter.' data/test_config/providers/${{ inputs.provider }}/${{ inputs.train-and-test }}-config.yml) \
+          && grep -i 'Sending a test LLM API request for the component - EnterpriseSearchPolicy' model-training-log.txt \
+          && grep -i 'Sending a test LLM API request for the component - IntentlessPolicy' model-training-log.txt \
+          && grep -i 'Sending a test LLM API request for the component - LLMBasedCommandGenerator' model-training-log.txt \
+          && grep -i 'Sending a test Embeddings API request for the component - FlowRetrieval' model-training-log.txt \
+          && grep -i 'Sending a test Embeddings API request for the component - EnterpriseSearchPolicy' model-training-log.txt \
+          && grep -i 'Sending a test Embeddings API request for the component - IntentlessPolicy' model-training-log.txt \
+          && grep -i 'Your Rasa model is trained and saved' model-training-log.txt \
           && echo 'LLM and Embeddings API health checks passed for all components during training'
       shell: bash
     
@@ -342,7 +361,7 @@ runs:
         retry_wait_seconds: 300
         shell: bash
         command: |
-          : Run e2e test on SingleStepCommandGenerator model
+          : Run e2e test on SingleStepLLMCommandGenerator model
           set -Eeuxov pipefail
           rasa test e2e rasa-calm-demo/${{ inputs.single-step-tests }} \
             --e2e-results \
@@ -350,7 +369,7 @@ runs:
             --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
             --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
             2>&1 \
-            | tee e2e-tests-log
+            | tee e2e-tests-log.txt
 
     - name: Run e2e test (Multi-Step Command Generator)
       uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
@@ -364,7 +383,7 @@ runs:
         retry_wait_seconds: 300
         shell: bash
         command: |
-          : Run e2e test on MultiStepCommandGenerator model
+          : Run e2e test on MultiStepLLMCommandGenerator model
           set -Eeuxov pipefail
           rasa test e2e rasa-calm-demo/${{ inputs.multi-step-tests }} \
             --e2e-results \
@@ -372,7 +391,29 @@ runs:
             --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
             --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
             2>&1 \
-            | tee e2e-tests-log
+            | tee e2e-tests-log.txt
+
+    - name: Run e2e test (Compact Command Generator)
+      uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
+      if: ${{ inputs.train-and-test == 'compact' && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
+      env:
+        RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
+        RASA_PRO_BETA_INTENTLESS: true
+      with:
+        timeout_minutes: 60
+        max_attempts: 2
+        retry_wait_seconds: 300
+        shell: bash
+        command: |
+          : Run e2e test on CompactLLMCommandGenerator model
+          set -Eeuxov pipefail
+          rasa test e2e calm-benchmarking-bot/${{ inputs.compact-tests }} \
+            --e2e-results \
+            --debug \
+            --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+            --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
+            2>&1 \
+            | tee e2e-tests-log.txt
 
     - name: Run Dialogue Understanding Tests
       uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
@@ -387,27 +428,27 @@ runs:
         shell: bash
         command: |
           : Run dialogue understanding tests
-          rasa test du rasa-calm-demo/${{ inputs.single-step-tests }} \
+          rasa test du calm-benchmarking-bot/${{ inputs.single-step-tests }} \
             --output-file dut-${{ inputs.provider }}-${{ inputs.train-and-test }}.yml \
             --output-prompt \
             --debug \
             --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
             --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
             2>&1 \
-            | tee e2e-tests-log
+            | tee e2e-tests-log.txt
 
     - name: Verify LLM and Embeddings API health checks during inference
       if: ${{ !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
       run: |
         : Verify LLM and Embeddings API health checks during inference
-        grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' e2e-tests-log \
-          && grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' e2e-tests-log \
-          && grep -i 'Sending a test LLM API request for the component - EnterpriseSearchPolicy' e2e-tests-log \
-          && grep -i 'Sending a test LLM API request for the component - IntentlessPolicy' e2e-tests-log \
-          && (grep -i 'Sending a test LLM API request for the component - MultiStepLLMCommandGenerator' e2e-tests-log || grep -i 'Sending a test LLM API request for the component - SingleStepLLMCommandGenerator' e2e-tests-log) \
-          && grep -i 'Sending a test Embeddings API request for the component - FlowRetrieval' e2e-tests-log \
-          && grep -i 'Sending a test Embeddings API request for the component - EnterpriseSearchPolicy' e2e-tests-log \
-          && grep -i 'Sending a test Embeddings API request for the component - IntentlessPolicy' e2e-tests-log \
+        grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' e2e-tests-log.txt \
+          && (grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' e2e-tests-log.txt || grep -iv 'LLMBasedRouter.' data/test_config/providers/${{ inputs.provider }}/${{ inputs.train-and-test }}-config.yml) \
+          && grep -i 'Sending a test LLM API request for the component - EnterpriseSearchPolicy' e2e-tests-log.txt \
+          && grep -i 'Sending a test LLM API request for the component - IntentlessPolicy' e2e-tests-log.txt \
+          && (grep -i 'Sending a test LLM API request for the component - MultiStepLLMCommandGenerator' e2e-tests-log.txt || grep -i 'Sending a test LLM API request for the component - SingleStepLLMCommandGenerator' e2e-tests-log.txt || grep -i 'Sending a test LLM API request for the component - CompactLLMCommandGenerator' e2e-tests-log.txt) \
+          && grep -i 'Sending a test Embeddings API request for the component - FlowRetrieval' e2e-tests-log.txt \
+          && grep -i 'Sending a test Embeddings API request for the component - EnterpriseSearchPolicy' e2e-tests-log.txt \
+          && grep -i 'Sending a test Embeddings API request for the component - IntentlessPolicy' e2e-tests-log.txt \
           && echo 'LLM and Embeddings API health checks passed for all components during inference'
       shell: bash
 
@@ -417,6 +458,20 @@ runs:
       with:
         name: ${{ inputs.provider }}-E2E-test-${{ inputs.train-and-test }}-results
         path: tests/e2e_results_failed.yml
+
+    - name: Save training log
+      if: ${{ failure() && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+      with:
+        name: ${{ inputs.provider }}-E2E-test-${{ inputs.train-and-test }}-training-log
+        path: model-training-log.txt
+
+    - name: Save E2E tests log
+      if: ${{ failure() && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+      with:
+        name: ${{ inputs.provider }}-E2E-test-${{ inputs.train-and-test }}-e2e-tests-log.txt
+        path: e2e-tests-log.txt
 
     - name: Save DUT results
       if: ${{ failure() && env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
@@ -450,8 +505,6 @@ runs:
     - name: Collect OTEL collector logs
       id: collect-otel-collector-logs
       if: ${{ failure() && steps.run-otel-collector.outcome == 'success' }}
-      env:
-          RASA_CALM_DEMO_BRANCH: ${{ inputs.rasa-calm-demo-branch || 'main' }}
       run: |
         : Collect OTEL collector logs
         sudo cp $(docker inspect --format='{{.LogPath}}' otel-collector) otel-collector-logs-${{ inputs.provider }}-${{ inputs.train-and-test }}.txt
@@ -467,8 +520,6 @@ runs:
 
     - name: Stop OTEL collector
       if: ${{ steps.run-otel-collector.outcome == 'success' }}
-      env:
-          RASA_CALM_DEMO_BRANCH: ${{ inputs.rasa-calm-demo-branch || 'main' }}
       run: |
         : Stop OTEL collector
         make stop-otel-collector
@@ -488,11 +539,13 @@ runs:
         # Send notification to #dev-tribe-alerts slack channel
         channel-id: C070ELPSLBB
         slack-message: ':rocket: *Rasa-Pro* (version `${{ env.RASA_VERSION }}`, `rasa-private` branch `${{ github.ref_name }}` sha `${{ env.SHORT_SHA }}`)
-          CALM tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) passed against: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model. More
+          CALM tests (from `${{ env.BOT }}` branch `${{ env.BOT_BRANCH }}`) passed against: `${{ inputs.provider }}`, with ${{ inputs.train-and-test }} command-generator. More
           information can be found <https://github.com/${{ github.repository
           }}/actions/runs/${{ github.run_id }}|here>.'
       env:
         SLACK_BOT_TOKEN: ${{ env.SLACK_BOT_TOKEN }}
+        BOT: ${{ inputs.train-and-test == 'compact' && 'calm-benchmarking-bot' || 'rasa-calm-demo' }}
+        BOT_BRANCH: ${{ inputs.train-and-test == 'compact' && inputs.calm-benchmarking-bot-branch || inputs.rasa-calm-demo-branch }}
 
     - name: Notify Slack of failing test ⛔️
       if: ${{ failure() && github.event_name != 'pull_request'  && env.SEND_RESULTS_NOTIFICATION_TO_SLACK == 'true' }}
@@ -503,8 +556,10 @@ runs:
 
         # Alert Engine-squad
         slack-message: '<!subteam^S0322UJCPU1> :broken_heart: *Rasa-Pro* (version `${{ env.RASA_VERSION
-          }}`, `rasa-private` branch `${{ github.ref_name }}` sha `${{ env.SHORT_SHA }}`) CALM tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) failed against: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model!
+          }}`, `rasa-private` branch `${{ github.ref_name }}` sha `${{ env.SHORT_SHA }}`) CALM tests (from `${{ env.BOT }}` branch `${{ env.BOT_BRANCH }}`) failed against: `${{ inputs.provider }}`, with ${{ inputs.train-and-test }} command-generator!
           More information can be found <https://github.com/${{
           github.repository }}/actions/runs/${{ github.run_id }}|here>.'
       env:
         SLACK_BOT_TOKEN: ${{ env.SLACK_BOT_TOKEN }}
+        BOT: ${{ inputs.train-and-test == 'compact' && 'calm-benchmarking-bot' || 'rasa-calm-demo' }}
+        BOT_BRANCH: ${{ inputs.train-and-test == 'compact' && inputs.calm-benchmarking-bot-branch || inputs.rasa-calm-demo-branch }}

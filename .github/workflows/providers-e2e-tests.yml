@@ -1,4 +1,4 @@
-name: E2E Test on Rasa-Calm-Demo with supported providers
+name: E2E Test on Bot with supported CALM providers
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
     - cron: "0 1 * * SUN"
 
   # Allow running manually also, specifying the provider
-  # and `rasa-calm-demo` branch
+  # and Bot branch
   workflow_dispatch:
     inputs:
       provider:
@@ -44,35 +44,48 @@ on:
           - huggingface-multiple-deployments-with-routing
           - bedrock-multiple-deployments-with-routing
           - litellm-proxy-multiple-deployments-with-routing
-
+      
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`"
         type: string
         required: true
         default: "main"
 
+      calm-benchmarking-bot-branch:
+        description: "Branch to checkout for `calm-benchmarking-bot`"
+        type: string
+        required: true
+        default: "main"
+
       command-generator:
-        description: "Command-generator(s) to use: single-step, multi-step or both (1 job for each)"
+        description: "Command-generator(s) to use: single-step, multi-step, compact or all"
         type: choice
         required: true
-        default: both
+        default: all
         options:
           - single-step
           - multi-step
-          - both
+          - compact
+          - all
 
       single-step-e2e-test-with-assertions:
-        description: "Path to test file, on `rasa-calm-demo` repository, to be run with single-step trained model"
+        description: "Path to test file, to be run with single-step trained model"
         type: string
         required: true
         # TODO: Use test that invokes enterprise-search, when flakiness is resolved
         default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
 
       multi-step-e2e-test-with-assertions:
-        description: "Path to test file, on `rasa-calm-demo` repository, to be run with multi-step trained model"
+        description: "Path to test file, to be run with multi-step trained model"
         type: string
         required: true
         default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
+
+      compact-e2e-test-with-assertions:
+        description: "Path to test file, to be run with compact-LLM-Generator trained model"
+        type: string
+        required: true
+        default: "e2e/e2e_tests_with_assertions/test/happy_path/user_checks_balance.yml"
 
       llm-judge-model:
         description: "Judge model to be used by assertions."
@@ -108,16 +121,24 @@ on:
         description: "Branch to checkout for `rasa-calm-demo`"
         type: string
         required: true
+      calm-benchmarking-bot-branch:
+        description: "Branch to checkout for `calm-benchmarking-bot`"
+        type: string
+        required: true
       command-generator:
-        description: "Command-generator(s) to use: single-step, multi-step or both (1 job for each)"
+        description: "Command-generator(s) to use: single-step, multi-step, compact or all (1 job for each)"
         type: string
         required: true
       single-step-e2e-test-with-assertions:
-        description: "Path to test file, on `rasa-calm-demo` repository"
+        description: "Path to test file"
         type: string
         required: true
       multi-step-e2e-test-with-assertions:
-        description: "Path to test file, on `rasa-calm-demo` repository"
+        description: "Path to test file"
+        type: string
+        required: true
+      compact-e2e-test-with-assertions:
+        description: "Path to test file"
         type: string
         required: true
       llm-judge-model:
@@ -130,11 +151,10 @@ on:
 
 env:
   DEFAULT_PYTHON_VERSION: "3.11"
-  RASA_PRO_BETA_E2E_ASSERTIONS: true
   RASA_PRO_BETA_STUB_CUSTOM_ACTION: true
   LOG_LEVEL_LLM: DEBUG
-  COMMAND_GENERATOR: ${{ inputs.command-generator || 'both' }}
-  COMMAND_GENERATOR_MATRIX: '{"single-step": ["singlestep"], "multi-step": ["multistep"], "both": ["singlestep", "multistep"]}'
+  COMMAND_GENERATOR: ${{ inputs.command-generator || 'all' }}
+  COMMAND_GENERATOR_MATRIX: '{"single-step": ["singlestep"], "multi-step": ["multistep"], "compact": ["compact"], "all": ["singlestep", "multistep", "compact"]}'
   ENDPOINTS_FILE_NAME: endpoints
   REDIS_HOST: localhost
   REDIS_PORT: 6379
@@ -147,6 +167,7 @@ env:
   DUCKLING_URL: ${{ secrets.DUCKLING_URL }}
   SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
   RASA_CALM_DEMO_READ_TOKEN: ${{ secrets.RASA_CALM_DEMO_READ }}
+  CALM_BENCHMARKING_BOT_READ_TOKEN: ${{ secrets.CALM_BENCH_CLONE }}
   SEND_RESULTS_NOTIFICATION_TO_SLACK: ${{ github.event_name == 'schedule' && true || inputs.send-results-notification-to-slack }}
 
   # Providers' required environment variables (API key values also stored in 1Password):
@@ -325,8 +346,10 @@ jobs:
           provider: ${{ matrix.provider }}
           train-and-test: ${{ matrix.train-and-test }}
           rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch || 'main' }}
+          calm-benchmarking-bot-branch: ${{ inputs.calm-benchmarking-bot-branch || 'main' }}
           single-step-tests: ${{ inputs.single-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }} # TODO: Use test that invokes enterprise-search, when flakiness is resolved
           multi-step-tests: ${{ inputs.multi-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }}
+          compact-tests: ${{ inputs.compact-e2e-test-with-assertions || 'e2e/e2e_tests_with_assertions/test/happy_path/user_checks_balance.yml' }}
           llm-judge-model: ${{ inputs.llm-judge-model || 'gpt-4o-mini' }}
 
   e2e_test_on_single_provider:
@@ -367,7 +390,9 @@ jobs:
         with:
           provider: ${{ inputs.provider }}
           train-and-test: ${{ matrix.train-and-test }}
-          rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch }}
+          rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch || 'main' }}
+          calm-benchmarking-bot-branch: ${{ inputs.calm-benchmarking-bot-branch }}
           single-step-tests: ${{ inputs.single-step-e2e-test-with-assertions }}
           multi-step-tests: ${{ inputs.multi-step-e2e-test-with-assertions }}
+          compact-tests: ${{ inputs.compact-e2e-test-with-assertions }}
           llm-judge-model: ${{ inputs.llm-judge-model }}

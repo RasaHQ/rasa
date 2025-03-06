@@ -3,7 +3,6 @@ action_endpoint:
 
 nlg:
  type: rephrase
- rephrase_all: True
  llm:
     model_group: bedrock_llm
 

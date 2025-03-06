@@ -3,7 +3,6 @@ action_endpoint:
 
 nlg:
  type: rephrase
- rephrase_all: True
  llm:
     provider: azure
     deployment: test-gpt-35-turbo

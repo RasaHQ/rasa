@@ -3,7 +3,6 @@ action_endpoint:
 
 nlg:
  type: rephrase
- rephrase_all: True
  llm:
     model_group: azure_llm
 
@@ -13,12 +12,18 @@ model_groups:
       - provider: litellm_proxy
         api_base: ${LITELLM_PROXY} 
         model: gpt-3.5-turbo
+        timeout: 20
+        temperature: 0.0
+        top_p: 0.0
+        cache:
+          no-cache: true
 
   - id: azure_embeddings
     models:
       - provider: litellm_proxy
         api_base: ${LITELLM_PROXY}
         model: text-embedding-ada-002
+        timeout: 20
 
 tracing:
  type: otlp

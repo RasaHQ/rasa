@@ -25,9 +25,8 @@ This runs PII language and model provider specific tests on every merge to `main
 run as a [workflow dispatch](#glossary) event. 
 If this workflow fails a Slack notification is sent to the channel `#atom-squad-alerts`.
 
-### E2E Test on Rasa-Calm-Demo with supported providers
-This workflow runs a single E2E test (with assertions) on the `rasa-calm-demo` 
-bot (from its `passing/happy_path` category), using the various CALM supported LLM 
+### E2E Test on Bot with CALM supported providers
+This workflow runs a E2E test(s) on a bot, using the various CALM supported LLM 
 and Embeddings providers, to verify CALM's integration/compatibility with the 
 providers' APIs. 
 

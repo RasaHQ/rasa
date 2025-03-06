@@ -3,7 +3,6 @@ action_endpoint:
 
 nlg:
  type: rephrase
- rephrase_all: True
  llm:
     model_group: huggingface_llm
     
@@ -14,7 +13,10 @@ model_groups:
         model: rasa/cmd_gen_codellama_13b_calm_demo
         api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
         api_key: ${HUGGINGFACE_API_KEY}
-        timeout: 7
+        timeout: 20
+        temperature: 0.0
+        cache:
+          no-cache: true
         num_retries: 5
 
 tracing:

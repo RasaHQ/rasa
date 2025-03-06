@@ -46,28 +46,37 @@ on:
           - huggingface-multiple-deployments-with-routing
           - bedrock-multiple-deployments-with-routing
           - litellm-proxy-multiple-deployments-with-routing
-          
+      
       rasa-calm-demo-branch:
-        description: "Branch to checkout for `rasa-calm-demo`. Ignored unless `run_e2e_test_on_providers==true`"
+        description: "Branch to checkout for `rasa-calm-demo`"
         type: string
         required: true
-        default: "main"
+        default: main
+      calm-benchmarking-bot-branch:
+        description: "Branch to checkout for `calm-benchmarking-bot`"
+        type: string
+        required: true
+        default: main
       command-generator:
-        description: "Command-generator(s) to use: single-step, multi-step or both (1 job for each)"
-        type: string
+        description: "Command-generator(s) to use: single-step, multi-step, compact or all"
         required: true
-        default: both
+        default: all
       single-step-e2e-test-with-assertions:
-        description: "Path to test file, on `rasa-calm-demo` repository. Ignored unless `run_e2e_test_on_providers==true`"
+        description: "Path to test file. Ignored unless `run_e2e_test_on_providers==true`"
         type: string
         required: true
         # TODO: Use test that invokes enterprise-search, when flakiness is resolved
         default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
       multi-step-e2e-test-with-assertions:
-        description: "Path to test file, on `rasa-calm-demo` repository. Ignored unless `run_e2e_test_on_providers==true`"
+        description: "Path to test file. Ignored unless `run_e2e_test_on_providers==true`"
         type: string
         required: true
         default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
+      compact-e2e-test-with-assertions:
+        description: "Path to test file. Ignored unless `run_e2e_test_on_providers==true`"
+        type: string
+        required: true
+        default: "e2e/e2e_tests_with_assertions/test/happy_path/user_checks_balance.yml"
       llm-judge-model:
         description: "Judge model to be used by assertions."
         type: string
@@ -100,8 +109,10 @@ jobs:
     with:
       provider: ${{ inputs.provider }}
       rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch }}
+      calm-benchmarking-bot-branch: ${{ inputs.calm-benchmarking-bot-branch }}
       single-step-e2e-test-with-assertions: ${{ inputs.single-step-e2e-test-with-assertions }}
       multi-step-e2e-test-with-assertions: ${{ inputs.multi-step-e2e-test-with-assertions }}
+      compact-e2e-test-with-assertions: ${{ inputs.compact-e2e-test-with-assertions }}
       command-generator: ${{ inputs.command-generator }}
       llm-judge-model: ${{ inputs.llm-judge-model }}
 

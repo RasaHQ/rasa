@@ -1,0 +1,59 @@
+recipe: default.v1
+language: en
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 4
+  - name: LogisticRegressionClassifier
+    max_iter: 100
+    solver: lbfgs
+    tol: 0.0001
+    random_state: 42
+    ranking_length: 10
+  - name: CRFEntityExtractor
+  - name: DucklingEntityExtractor
+    url: "http://localhost:8000"
+    dimensions: ["time", "number"]
+    timezone: "Europe/Berlin"
+    timeout: 3
+  - name: CompactLLMCommandGenerator
+    llm:
+      provider: huggingface
+      model: rasa/cmd_gen_codellama_13b_calm_demo
+      api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+      timeout: 30
+      temperature: 0.0
+      cache:
+        no-cache: true
+      num_retries: 10
+
+policies:
+  - name: RulePolicy
+  # Enable when bug ENG-1747 is resolved 
+  # - name: TEDPolicy
+  #   constrain_similarities: true
+  - name: FlowPolicy
+  - name: EnterpriseSearchPolicy
+    max_messages_in_query: 4
+    citation_enabled: true
+    use_generative_llm: true
+    vector_store:
+      source: calm-benchmarking-bot/docs/
+    llm:
+      provider: huggingface
+      model: rasa/cmd_gen_codellama_13b_calm_demo
+      api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+      timeout: 30
+      num_retries: 10
+  - name: IntentlessPolicy
+    llm:
+      provider: huggingface
+      model: rasa/cmd_gen_codellama_13b_calm_demo
+      api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+      timeout: 30
+      num_retries: 10
+
+assistant_id: 20240418-073244-narrow-archive
