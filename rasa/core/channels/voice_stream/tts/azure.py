@@ -21,6 +21,7 @@ structlogger = structlog.get_logger()
 @dataclass
 class AzureTTSConfig(TTSEngineConfig):
     speech_region: Optional[str] = None
+    endpoint: Optional[str] = None
 
 
 class AzureTTS(TTSEngine[AzureTTSConfig]):
@@ -76,7 +77,13 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
 
     @staticmethod
     def get_tts_endpoint(config: AzureTTSConfig) -> str:
-        return f"https://{config.speech_region}.tts.speech.microsoft.com/cognitiveservices/v1"
+        if config.endpoint is not None:
+            return config.endpoint
+        else:
+            return (
+                f"https://{config.speech_region}.tts.speech.microsoft.com/"
+                f"cognitiveservices/v1"
+            )
 
     @staticmethod
     def create_request_body(text: str, conf: AzureTTSConfig) -> str:
@@ -99,6 +106,7 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
             voice="en-US-JennyNeural",
             timeout=10,
             speech_region="eastus",
+            endpoint=None,
         )
 
     @classmethod

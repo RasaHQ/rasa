@@ -24,6 +24,7 @@ structlogger = structlog.get_logger()
 class CartesiaTTSConfig(TTSEngineConfig):
     model_id: Optional[str] = None
     version: Optional[str] = None
+    endpoint: Optional[str] = None
 
 
 class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
@@ -37,11 +38,6 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
         # the async event loop doesn't work
         if self.__class__.session is None or self.__class__.session.closed:
             self.__class__.session = aiohttp.ClientSession(timeout=timeout)
-
-    @staticmethod
-    def get_tts_endpoint() -> str:
-        """Create the endpoint string for cartesia."""
-        return "https://api.cartesia.ai/tts/sse"
 
     @staticmethod
     def get_request_body(text: str, config: CartesiaTTSConfig) -> Dict:
@@ -79,7 +75,7 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
         config = self.config.merge(config)
         payload = self.get_request_body(text, config)
         headers = self.get_request_headers(config)
-        url = self.get_tts_endpoint()
+        url = self.config.endpoint
         if self.session is None:
             raise ConnectionException("Client session is not initialized")
         try:
@@ -134,6 +130,7 @@ class CartesiaTTS(TTSEngine[CartesiaTTSConfig]):
             timeout=10,
             model_id="sonic-english",
             version="2024-06-10",
+            endpoint="https://api.cartesia.ai/tts/sse",
         )
 
     @classmethod

@@ -18,6 +18,8 @@ from rasa.shared.exceptions import ConnectionException
 class AzureASRConfig(ASREngineConfig):
     language: Optional[str] = None
     speech_region: Optional[str] = None
+    speech_host: Optional[str] = None
+    speech_endpoint: Optional[str] = None
 
 
 class AzureASR(ASREngine[AzureASRConfig]):
@@ -52,9 +54,18 @@ class AzureASR(ASREngine[AzureASRConfig]):
     async def connect(self) -> None:
         import azure.cognitiveservices.speech as speechsdk
 
+        # connecting to eastus by default
+        if (
+            self.config.speech_region is None
+            and self.config.speech_host is None
+            and self.config.speech_endpoint is None
+        ):
+            self.config.speech_region = "eastus"
         speech_config = speechsdk.SpeechConfig(
             subscription=os.environ[AZURE_SPEECH_API_KEY_ENV_VAR],
             region=self.config.speech_region,
+            endpoint=self.config.speech_endpoint,
+            host=self.config.speech_host,
         )
         audio_format = speechsdk.audio.AudioStreamFormat(
             samples_per_second=HERTZ,
@@ -123,7 +134,9 @@ class AzureASR(ASREngine[AzureASRConfig]):
 
     @staticmethod
     def get_default_config() -> AzureASRConfig:
-        return AzureASRConfig("en-US", "eastus")
+        return AzureASRConfig(
+            language=None, speech_region=None, speech_host=None, speech_endpoint=None
+        )
 
     @classmethod
     def from_config_dict(cls, config: Dict) -> "AzureASR":
