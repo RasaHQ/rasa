@@ -9,13 +9,16 @@ import structlog
 from pytest import CaptureFixture, MonkeyPatch
 
 from rasa.shared.constants import (
+    CONFIG_ADDITIONAL_LANGUAGES_KEY,
+    CONFIG_LANGUAGE_KEY,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     REFILL_UTTER,
     REJECTIONS,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.constants import (
@@ -40,6 +43,66 @@ def validator_under_test() -> Validator:
     )
     validator = Validator.from_importer(importer)
     return validator
+
+
+@pytest.fixture
+def validator_without_translation() -> Validator:
+    flows = flows_from_str(
+        """
+        flows:
+          foo:
+            name: foo
+            description: Flow with no translation.
+            steps:
+              - id: noop
+                noop: true
+                next: END
+        """
+    )
+    domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_foo:
+            - text: utter foo
+        """
+    )
+    config = {CONFIG_LANGUAGE_KEY: "en", CONFIG_ADDITIONAL_LANGUAGES_KEY: ["it", "de"]}
+    return Validator(domain, TrainingData(), StoryGraph([]), flows, config)
+
+
+@pytest.fixture
+def validator_with_translation() -> Validator:
+    flows = flows_from_str(
+        """
+        flows:
+          foo:
+            name: foo
+            description: Flow with no translation.
+            translation:
+                it:
+                    name: Italian foo
+                de:
+                    name: German foo
+            steps:
+              - id: noop
+                noop: true
+                next: END
+        """
+    )
+    domain = Domain.from_yaml(
+        f"""
+        version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+        responses:
+            utter_foo:
+            - text: utter foo
+              translation:
+                it: utter Italian foo
+                de: utter German foo
+        """
+    )
+    config = {CONFIG_LANGUAGE_KEY: "en", CONFIG_ADDITIONAL_LANGUAGES_KEY: ["it", "de"]}
+    return Validator(domain, TrainingData(), StoryGraph([]), flows, config)
 
 
 def test_verify_nlu_with_e2e_story(
@@ -3527,3 +3590,171 @@ def test_validate_conditional_response_variation_predicates_raises_errors(
     captured = capsys.readouterr()
     assert "error" in captured.out
     assert log in captured.out
+
+
+def test_get_response_translation_warnings_no_missing_languages(
+    validator_with_translation: Validator,
+) -> None:
+    """Raise no warnings if all responses have translations across variations."""
+    warnings_list = validator_with_translation._get_response_translation_warnings()
+    assert warnings_list == []
+
+
+def test_get_response_translation_warnings_missing_languages(
+    validator_without_translation: Validator,
+) -> None:
+    """Raise a warning for a response missing translations across all its variations."""
+    warnings_list = validator_without_translation._get_response_translation_warnings()
+    assert len(warnings_list) == 1
+    warning = warnings_list[0]
+    assert warning["response"] == "utter_foo"
+    assert warning["missing_languages"] == ["it", "de"]
+    assert "missing a translation" in warning["event_info"]
+
+
+def test_get_response_translation_warnings_invalid_values(
+    validator_without_translation: Validator,
+) -> None:
+    """Verify translation across all variations of an utterance.
+
+    For a single utterance with multiple variations, a language is considered
+    provided if at least one variation supplies a valid translation.
+    """
+    # `utter_hi` has three variations, where two of which have a valid
+    # German translation, but none have a valid Italian translation.
+    validator_without_translation.domain.responses = {
+        "utter_hi": [
+            {"text": "hi", "translation": {"it": "", "de": "Hallo"}},
+            {"text": "hi", "translation": {"de": "Hallo"}},
+            {"text": "hi"},
+        ]
+    }
+
+    warnings_list = validator_without_translation._get_response_translation_warnings()
+    assert len(warnings_list) == 1
+    warning = warnings_list[0]
+    assert warning["response"] == "utter_hi"
+    assert warning["missing_languages"] == ["it"]
+
+
+def test_get_flow_translation_warnings_no_missing_languages(
+    validator_with_translation: Validator,
+) -> None:
+    """No warnings should be returned if all flows have translations."""
+    warnings_list = validator_with_translation._get_flow_translation_warnings()
+    assert warnings_list == []
+
+
+def test_get_flow_translation_warnings_missing_languages(
+    validator_without_translation: Validator,
+) -> None:
+    """Warnings should be returned for flows missing translations."""
+    warnings_list = validator_without_translation._get_flow_translation_warnings()
+    assert len(warnings_list) == 1
+    assert warnings_list[0]["flow"] == "foo"
+    assert warnings_list[0]["missing_languages"] == ["it", "de"]
+
+
+def test_get_flow_translation_warnings_invalid_values(
+    validator_with_translation: Validator,
+) -> None:
+    """Warnings should be returned for flows with invalid translations."""
+    # Add a flow with an empty string for the Italian translation.
+    flow = Flow.from_json(
+        "foo",
+        {
+            "translation": {
+                "it": {"name": ""},
+                "de": {"name": "German foo"},
+            },
+            "steps": [],
+        },
+    )
+    validator_with_translation.flows.underlying_flows.append(flow)
+    warnings_list = validator_with_translation._get_flow_translation_warnings()
+    assert len(warnings_list) == 1
+    assert warnings_list[0]["flow"] == "foo"
+    assert warnings_list[0]["missing_languages"] == ["it"]
+
+
+def test_verify_config_language_valid(
+    validator_with_translation: Validator,
+) -> None:
+    """Returns True if the default language is not in additional languages."""
+    result = validator_with_translation.verify_config_language()
+    assert result is True
+
+
+def test_verify_config_language_default_language_in_additional_languages(
+    validator_with_translation: Validator,
+) -> None:
+    """Raises an error if the default language is in additional languages."""
+    # Add `language` in the `additional_languages` list.
+    language = validator_with_translation.config[CONFIG_LANGUAGE_KEY]
+    validator_with_translation.config[CONFIG_ADDITIONAL_LANGUAGES_KEY].append(language)
+
+    with pytest.raises(RasaException) as exc_info:
+        result = validator_with_translation.verify_config_language()
+        assert result is False
+        expected = f"language '{language}' is listed as an additional language"
+        assert expected in str(exc_info)
+
+
+def test_verify_config_invalid_language(
+    validator_with_translation: Validator,
+) -> None:
+    """Raises an error if the default language is not a valid language code."""
+    validator_with_translation.config["language"] = "foo"
+    with pytest.raises(RasaException) as exc_info:
+        validator_with_translation.verify_config_language()
+        assert "is not a valid language code" in str(exc_info)
+
+
+def test_verify_config_language_invalid_additional_languages(
+    validator_with_translation: Validator,
+) -> None:
+    """Raises an error if an additional language is not a valid language code."""
+    validator_with_translation.config[CONFIG_ADDITIONAL_LANGUAGES_KEY].append("foo")
+    with pytest.raises(RasaException) as exc_info:
+        validator_with_translation.verify_config_language()
+        assert "is not a valid language code" in str(exc_info)
+
+
+def test_verify_config_language_empty_additional_languages(
+    validator_with_translation: Validator,
+) -> None:
+    """Returns True if there are no additional languages."""
+    validator_with_translation.config[CONFIG_ADDITIONAL_LANGUAGES_KEY] = []
+    result = validator_with_translation.verify_config_language()
+    assert result is True
+
+
+def test_verify_translations_with_warnings(
+    validator_without_translation: Validator, monkeypatch: MonkeyPatch
+) -> None:
+    """Verify that warnings are logged for responses and flows without translations."""
+    monkeypatch.setattr("rasa.validator.structlogger", structlog.get_logger())
+
+    with structlog.testing.capture_logs() as logs:
+        result = validator_without_translation.verify_translations(summary_mode=False)
+        assert result is True
+        # When summary mode is False, individual warnings are logged for each item.
+        assert len(logs) == 2
+        assert "missing_response_translation" in logs[0]["event"]
+        assert "missing_flow_translation" in logs[1]["event"]
+
+
+def test_verify_translations_with_summary_mode_warnings(
+    validator_without_translation: Validator, monkeypatch: MonkeyPatch
+) -> None:
+    """In summary mode, an individual warning is logged for all responses/flows."""
+    monkeypatch.setattr("rasa.validator.structlogger", structlog.get_logger())
+
+    with structlog.testing.capture_logs() as logs:
+        result = validator_without_translation.verify_translations(summary_mode=True)
+        assert result is True
+        # In summary mode, an individual warning is logged for each item.
+        # We expect one warning for the response and one for the flow.
+        assert len(logs) == 2
+        assert "missing_response_translation_summary" in logs[0]["event"]
+        assert "missing_flow_translation_summary" in logs[1]["event"]

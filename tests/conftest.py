@@ -1635,3 +1635,8 @@ def llm_response_dict() -> Dict[Text, Any]:
 @pytest.fixture
 def llm_response_object(llm_response_dict: Dict[Text, Any]) -> LLMResponse:
     return LLMResponse.from_dict(llm_response_dict)
+
+
+@pytest.fixture
+def additional_languages() -> List[Text]:
+    return ["it", "de", "es"]

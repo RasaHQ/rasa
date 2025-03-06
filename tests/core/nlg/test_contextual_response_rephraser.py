@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional
 from unittest.mock import MagicMock
 
 import pytest
+from jinja2 import Template
 from pytest import MonkeyPatch
 
 from rasa.core.actions.action import ActionBotResponse
@@ -9,6 +10,7 @@ from rasa.core.nlg.contextual_response_rephraser import (
     ContextualResponseRephraser,
 )
 from rasa.dialogue_understanding.utils import set_record_commands_and_prompts
+from rasa.engine.language import Language
 from rasa.shared.constants import (
     LLM_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
@@ -16,6 +18,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
+from rasa.shared.core.slots import StrictCategoricalSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
     KEY_COMPONENT_NAME,
@@ -92,6 +95,51 @@ def set_mock_openai_api_key(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in rephraser")
 
 
+@pytest.fixture
+def tracker_with_language(monkeypatch: MonkeyPatch) -> DialogueStateTracker:
+    language = Language.from_language_code("es", is_default=True)
+    slots = [
+        StrictCategoricalSlot(
+            name="language",
+            mappings=[{}],
+            initial_value=language.code,
+            values=[language.code],
+        )
+    ]
+    tracker = DialogueStateTracker("default", slots=slots)
+    return tracker
+
+
+@pytest.fixture
+def tracker_without_language(
+    monkeypatch: MonkeyPatch, patch_default_language: None
+) -> DialogueStateTracker:
+    return DialogueStateTracker("default", slots=[])
+
+
+@pytest.fixture
+def empty_rephraser() -> ContextualResponseRephraser:
+    domain = Domain.empty()
+    endpoint_config = EndpointConfig.from_dict({})
+    return ContextualResponseRephraser(endpoint_config=endpoint_config, domain=domain)
+
+
+@pytest.fixture
+def english_language() -> Language:
+    return Language.from_language_code("en", is_default=True)
+
+
+@pytest.fixture
+def patch_default_language(
+    monkeypatch: MonkeyPatch, english_language: Language
+) -> None:
+    monkeypatch.setattr(
+        DialogueStateTracker,
+        "default_language",
+        property(lambda self: english_language),
+    )
+
+
 class MockedContextualResponseRephraser(ContextualResponseRephraser):
     async def _create_history(self, tracker: DialogueStateTracker) -> str:
         return "User said hello"
@@ -128,6 +176,7 @@ async def test_rephraser_generates_response(
     monkeypatch: MonkeyPatch,
     greet_tracker: DialogueStateTracker,
     domain_with_responses: Domain,
+    patch_default_language: None,
 ) -> None:
     endpoint_config = EndpointConfig.from_dict({})
     rephraser = MockedContextualResponseRephraser(
@@ -167,6 +216,7 @@ async def test_rephraser_handles_failure_in_generation(
     monkeypatch: MonkeyPatch,
     greet_tracker: DialogueStateTracker,
     domain_with_responses: Domain,
+    patch_default_language: None,
 ) -> None:
     async def none_no_op(x: Any) -> None:
         return None
@@ -194,6 +244,7 @@ async def test_rephraser_uses_template_from_response(
     greet_tracker: DialogueStateTracker,
     domain_with_responses: Domain,
     llm_response_object: LLMResponse,
+    patch_default_language: None,
 ) -> None:
     class MockedTemplatedResponseRephraser(ContextualResponseRephraser):
         async def _create_history(self, tracker: DialogueStateTracker) -> str:
@@ -224,6 +275,7 @@ async def test_rephraser_default_template(
     greet_tracker: DialogueStateTracker,
     domain_with_responses: Domain,
     llm_response_object: LLMResponse,
+    patch_default_language: None,
 ) -> None:
     class MockedTemplatedResponseRephraser(ContextualResponseRephraser):
         async def _create_history(self, tracker: DialogueStateTracker) -> str:
@@ -236,7 +288,7 @@ async def test_rephraser_default_template(
                 "clever, and very friendly.\n"
                 "Rephrase the suggested AI response staying close "
                 "to the original message and retaining\n"
-                "its meaning. Use simple english.\n\n"
+                "its meaning. Use simple English.\n\n"
                 "Context / previous conversation with the user:\n"
                 "User said hello\n\n"
                 "USER: Hello\n\n"
@@ -271,7 +323,7 @@ async def test_rephraser_default_template(
             "clever, and very friendly.\n"
             "Rephrase the suggested AI response staying close "
             "to the original message and retaining\n"
-            "its meaning. Use simple english.\n\n"
+            "its meaning. Use simple English.\n\n"
             "Context / previous conversation with the user:\n"
             "User said hello\n\n"
             "USER: Hello\n\n"
@@ -280,7 +332,7 @@ async def test_rephraser_default_template(
             "Rephrased AI Response:",
         ),
         (
-            # explicity set summarize_history to true
+            # explicitly set summarize_history to true
             {
                 "summarize_history": True,
             },
@@ -289,7 +341,7 @@ async def test_rephraser_default_template(
             "clever, and very friendly.\n"
             "Rephrase the suggested AI response staying close "
             "to the original message and retaining\n"
-            "its meaning. Use simple english.\n\n"
+            "its meaning. Use simple English.\n\n"
             "Context / previous conversation with the user:\n"
             "User said hello\n\n"
             "USER: Hello\n\n"
@@ -308,7 +360,7 @@ async def test_rephraser_default_template(
             "clever, and very friendly.\n"
             "Rephrase the suggested AI response staying close "
             "to the original message and retaining\n"
-            "its meaning. Use simple english.\n\n"
+            "its meaning. Use simple English.\n\n"
             "Context / previous conversation with the user:\n"
             "USER: Hello\n\n\n\n"
             "Suggested "
@@ -326,7 +378,7 @@ async def test_rephraser_default_template(
             "clever, and very friendly.\n"
             "Rephrase the suggested AI response staying close "
             "to the original message and retaining\n"
-            "its meaning. Use simple english.\n\n"
+            "its meaning. Use simple English.\n\n"
             "Context / previous conversation with the user:\n"
             "AI: I'm a Rasa bot!\n"
             "AI: How can I help you today?\n"
@@ -346,7 +398,7 @@ async def test_rephraser_default_template(
             "clever, and very friendly.\n"
             "Rephrase the suggested AI response staying close "
             "to the original message and retaining\n"
-            "its meaning. Use simple english.\n\n"
+            "its meaning. Use simple English.\n\n"
             "Context / previous conversation with the user:\n"
             "AI: How can I help you today?\n"
             "USER: Hello\n\n\n\n"
@@ -363,6 +415,7 @@ async def test_rephraser_template_summarisation(
     endpoint_config: Dict[str, Any],
     expected_prompt: str,
     llm_response_object: LLMResponse,
+    patch_default_language: None,
 ) -> None:
     class MockedTemplatedResponseRephraser(ContextualResponseRephraser):
         async def _create_history(self, tracker: DialogueStateTracker) -> str:
@@ -538,6 +591,7 @@ async def test_rephraser_prompt_is_stored_in_the_tracker(
     default_tracker,
     domain: Domain,
     llm_response_dict: Dict[str, Any],
+    patch_default_language: None,
     monkeypatch: MonkeyPatch,
 ):
     monkeypatch.setattr(
@@ -566,3 +620,43 @@ async def test_rephraser_prompt_is_stored_in_the_tracker(
     assert KEY_LATENCY in prompts[0][KEY_LLM_RESPONSE_METADATA]
     del prompts[0][KEY_LLM_RESPONSE_METADATA][KEY_LATENCY]
     assert prompts[0][KEY_LLM_RESPONSE_METADATA] == llm_response_dict
+
+
+def test_get_language_label_with_language(
+    empty_rephraser: ContextualResponseRephraser,
+    tracker_with_language: DialogueStateTracker,
+):
+    """Language label should be extracted from the tracker."""
+    assert empty_rephraser.get_language_label(tracker_with_language) == "Spanish"
+
+
+def test_get_language_label_without_language(
+    empty_rephraser: ContextualResponseRephraser,
+    tracker_without_language: DialogueStateTracker,
+):
+    """Default language label should be used when no language is set."""
+    assert empty_rephraser.get_language_label(tracker_without_language) == "English"
+
+
+def test_prompt_includes_language_label_with_language(
+    empty_rephraser: ContextualResponseRephraser,
+    tracker_with_language: DialogueStateTracker,
+):
+    """Prompt should include the language label when language is set."""
+    prompt_template_text = empty_rephraser._template_for_response_rephrasing({})
+    prompt = Template(prompt_template_text).render(
+        language=empty_rephraser.get_language_label(tracker_with_language),
+    )
+    assert "simple Spanish" in prompt
+
+
+def test_prompt_includes_language_label_without_language(
+    empty_rephraser: ContextualResponseRephraser,
+    tracker_without_language: DialogueStateTracker,
+):
+    """Prompt should include the default language label when no language is set."""
+    prompt_template_text = empty_rephraser._template_for_response_rephrasing({})
+    prompt = Template(prompt_template_text).render(
+        language=empty_rephraser.get_language_label(tracker_without_language),
+    )
+    assert "simple English" in prompt

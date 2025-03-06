@@ -486,7 +486,7 @@ runs:
       uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
       with:
         # Send notification to #dev-tribe-alerts slack channel
-        channel-id: C070ELPSLBB 
+        channel-id: C070ELPSLBB
         slack-message: ':rocket: *Rasa-Pro* (version `${{ env.RASA_VERSION }}`, `rasa-private` branch `${{ github.ref_name }}` sha `${{ env.SHORT_SHA }}`)
           CALM tests (from `rasa-calm-demo` branch `${{ inputs.rasa-calm-demo-branch }}`) passed against: `${{ inputs.provider }}`, on ${{ inputs.train-and-test }} trained model. More
           information can be found <https://github.com/${{ github.repository
@@ -499,7 +499,7 @@ runs:
       uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
       with:
         # Send notification to #dev-tribe-alerts slack channel
-        channel-id: C070ELPSLBB 
+        channel-id: C070ELPSLBB
 
         # Alert Engine-squad
         slack-message: '<!subteam^S0322UJCPU1> :broken_heart: *Rasa-Pro* (version `${{ env.RASA_VERSION

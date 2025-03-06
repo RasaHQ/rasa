@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+from typing import List, Text
 
 import pytest
 
@@ -12,7 +13,9 @@ from rasa.shared.data import TrainingType
 from tests.engine.graph_components_test_classes import PersistableTestComponent
 
 
-def test_metadata_serialization(domain: Domain, tmp_path: Path):
+def test_metadata_serialization(
+    domain: Domain, tmp_path: Path, additional_languages: List[Text]
+):
     train_schema = GraphSchema(
         {
             "train": SchemaNode(
@@ -62,6 +65,7 @@ def test_metadata_serialization(domain: Domain, tmp_path: Path):
         core_target="core",
         nlu_target="nlu",
         language="zh",
+        additional_languages=additional_languages,
     )
 
     serialized = metadata.as_dict()
@@ -85,6 +89,7 @@ def test_metadata_serialization(domain: Domain, tmp_path: Path):
     assert loaded_metadata.core_target == "core"
     assert loaded_metadata.nlu_target == "nlu"
     assert loaded_metadata.language == "zh"
+    assert loaded_metadata.additional_languages == additional_languages
 
 
 def test_metadata_version_check():
@@ -109,4 +114,5 @@ def test_metadata_version_check():
             core_target="core",
             nlu_target="nlu",
             language="zh",
+            additional_languages=None,
         )

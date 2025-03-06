@@ -5,6 +5,7 @@ from rasa.engine.graph import GraphModelConfiguration, GraphSchema
 from rasa.engine.recipes.recipe import Recipe
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
+    CONFIG_ADDITIONAL_LANGUAGES_KEY,
     CONFIG_LANGUAGE_KEY,
     DOCS_URL_GRAPH_RECIPE,
 )
@@ -76,4 +77,5 @@ class GraphV1Recipe(Recipe):
             language=config.get(CONFIG_LANGUAGE_KEY),
             core_target=core_target,
             nlu_target=nlu_target,
+            additional_languages=config.get(CONFIG_ADDITIONAL_LANGUAGES_KEY),
         )

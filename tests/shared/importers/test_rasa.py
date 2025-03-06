@@ -77,7 +77,7 @@ def test_rasa_file_importer_with_invalid_domain(tmp_path: Path):
     config_file.write_text("")
     importer = TrainingDataImporter.load_from_dict({}, str(config_file), None, [])
 
-    actual = importer.get_domain()
+    actual = importer._importer.get_domain()
     assert actual.as_dict() == Domain.empty().as_dict()
 
 

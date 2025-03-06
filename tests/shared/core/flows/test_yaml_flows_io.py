@@ -3,7 +3,10 @@ import tempfile
 import textwrap
 
 import pytest
+import yaml
 
+from rasa.shared.core.flows.constants import KEY_TRANSLATION
+from rasa.shared.core.flows.flow import FlowLanguageTranslation
 from rasa.shared.core.flows.yaml_flows_io import (
     YAMLFlowsReader,
     YamlFlowsWriter,
@@ -306,3 +309,86 @@ def test_read_flow_without_metadata_with_line_numbers() -> None:
         flow.file_path = None
 
     assert flows == flows_with_metadata
+
+
+def test_read_flow_with_name_translation() -> None:
+    # Define flows and their translations as dictionaries.
+    flows_definition = {
+        "add_contact": {
+            "name": "add a contact",
+            "description": "Flow to add a contact to your contact list",
+            "translation": {
+                "en": {"name": "Add a Contact"},
+                "it": {"name": "Aggiungi un Contatto"},
+                "de": {"name": "Kontakt hinzufügen"},
+            },
+            "steps": [{"action": "utter_add_contact"}],
+        },
+        "remove_contact": {
+            "name": "remove a contact",
+            "description": "Another test flow",
+            "translation": {
+                "en": {"name": "Remove a Contact"},
+                "it": {"name": "Rimuovi un Contatto"},
+                "de": {"name": "Kontakt entfernen"},
+            },
+            "steps": [{"action": "utter_remove_contact"}],
+        },
+    }
+
+    # Dump the flows_definition into a YAML string.
+    data = yaml.dump({"flows": flows_definition}, sort_keys=False)
+
+    # Read the flows from the generated YAML string.
+    flows = YAMLFlowsReader.read_from_string(data, add_line_numbers=False)
+
+    # Compare the expected translations with those parsed from YAML.
+    for flow in flows.underlying_flows:
+        expected_translations = {
+            language: FlowLanguageTranslation.parse_obj(data)
+            for language, data in flows_definition[flow.id][KEY_TRANSLATION].items()
+        }
+        assert flow.translation == expected_translations
+
+
+def test_read_flow_with_missing_translation() -> None:
+    flows_definition = {
+        "add_contact": {
+            "name": "add a contact",
+            "description": "Flow to add a contact to your contact list",
+            "steps": [{"action": "utter_add_contact"}],
+        }
+    }
+    data = yaml.dump({"flows": flows_definition}, sort_keys=False)
+    flows = YAMLFlowsReader.read_from_string(data, add_line_numbers=False)
+    flow = flows.underlying_flows[0]
+    assert flow.translation == {}
+
+
+def test_read_flow_with_empty_translation() -> None:
+    flows_definition = {
+        "add_contact": {
+            "name": "add a contact",
+            "description": "Flow to add a contact to your contact list",
+            "translation": {},
+            "steps": [{"action": "utter_add_contact"}],
+        }
+    }
+    data = yaml.dump({"flows": flows_definition}, sort_keys=False)
+    flows = YAMLFlowsReader.read_from_string(data, add_line_numbers=False)
+    flow = flows.underlying_flows[0]
+    assert flow.translation == {}
+
+
+def test_read_flow_with_invalid_translation_format() -> None:
+    flows_definition = {
+        "add_contact": {
+            "name": "add a contact",
+            "description": "Flow to add a contact to your contact list",
+            "translation": "invalid_format",
+            "steps": [{"action": "utter_add_contact"}],
+        }
+    }
+    data = yaml.dump({"flows": flows_definition}, sort_keys=False)
+    with pytest.raises(YamlValidationException):
+        YAMLFlowsReader.read_from_string(data, add_line_numbers=False)

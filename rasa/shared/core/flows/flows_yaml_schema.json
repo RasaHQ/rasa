@@ -288,8 +288,36 @@
             "additionalProperties": false,
             "schema_name": "dictionary with flow properties",
             "properties": {
+                "name": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string"
+                },
+                "translation": {
+                    "type": "object",
+                    "schema_name": "flow translation mapping",
+                    "properties": {
+                        "metadata": {
+                            "type": "object"
+                        }
+                    },
+                    "patternProperties": {
+                        "^(?!metadata$).+": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                                "name"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "metadata": {}
+                            }
+                        }
+                    },
+                    "additionalProperties": false
                 },
                 "if": {
                     "type": [
@@ -299,9 +327,6 @@
                 },
                 "always_include_in_prompt": {
                     "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
                 },
                 "nlu_trigger": {
                     "$ref": "#/$defs/nlu_trigger"

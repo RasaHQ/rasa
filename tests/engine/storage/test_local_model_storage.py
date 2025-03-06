@@ -2,6 +2,7 @@ import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
+from typing import List, Text
 
 import freezegun
 import pytest
@@ -153,6 +154,7 @@ def test_read_long_resource_names_windows(
             nlu_target="",
             language="en",
             training_type=TrainingType.BOTH,
+            additional_languages=None,
         ).as_dict(),
     )
 
@@ -166,7 +168,11 @@ def test_read_long_resource_names_windows(
     storage.metadata_from_archive(model_archive_path=model_zips / resource_name)
 
 
-def test_create_model_package(tmp_path_factory: TempPathFactory, domain: Domain):
+def test_create_model_package(
+    tmp_path_factory: TempPathFactory,
+    domain: Domain,
+    additional_languages: List[Text],
+):
     train_model_storage = LocalModelStorage(
         tmp_path_factory.mktemp("train model storage")
     )
@@ -224,6 +230,7 @@ def test_create_model_package(tmp_path_factory: TempPathFactory, domain: Domain)
                 None,
                 None,
                 "nlu",
+                additional_languages,
             ),
             domain,
         )
@@ -248,6 +255,7 @@ def test_create_model_package(tmp_path_factory: TempPathFactory, domain: Domain)
     assert packaged_metadata.model_id
     assert packaged_metadata.assistant_id == "test_assistant"
     assert packaged_metadata.project_fingerprint
+    assert packaged_metadata.additional_languages == additional_languages
 
     persisted_resources = load_model_storage_dir.glob("*")
     assert list(persisted_resources) == [Path(load_model_storage_dir, "resource1")]
@@ -274,6 +282,7 @@ def test_read_unsupported_model(
         None,
         None,
         "nlu",
+        None,
     )
     outdated_model_meta_data = ModelMetadata(
         trained_at=trained_at,
@@ -288,6 +297,7 @@ def test_read_unsupported_model(
         language=model_configuration.language,
         core_target=model_configuration.core_target,
         nlu_target=model_configuration.nlu_target,
+        additional_languages=model_configuration.additional_languages,
     )
     old_version = "0.0.1"
     outdated_model_meta_data.rasa_open_source_version = old_version
@@ -333,6 +343,7 @@ def test_create_package_with_non_existing_parent(tmp_path: Path):
             None,
             None,
             "nlu",
+            None,
         ),
         Domain.empty(),
     )
@@ -363,6 +374,7 @@ def test_create_model_package_with_non_existing_dir(
             None,
             None,
             "nlu",
+            None,
         ),
         Domain.empty(),
     )

@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import structlog
+import yaml
 from _pytest.monkeypatch import MonkeyPatch
 from pytest import WarningsRecorder
 
@@ -49,7 +50,10 @@ from rasa.shared.core.domain import (
     State,
 )
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
-from rasa.shared.core.slots import InvalidSlotTypeException, TextSlot
+from rasa.shared.core.slots import (
+    InvalidSlotTypeException,
+    TextSlot,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import YamlException, YamlSyntaxException
 from rasa.shared.utils.yaml import YamlValidationException, read_yaml
@@ -62,13 +66,13 @@ def test_slots_states_before_user_utterance(domain: Domain):
     tracker = DialogueStateTracker.from_events(
         "bla",
         evts=[
-            SlotSet(domain.slots[0].name, "some_value"),
+            SlotSet(domain.slots[1].name, "some_value"),
             ActionExecuted("utter_default"),
         ],
         slots=domain.slots,
     )
     trackers_as_states, _ = featurizer.training_states_and_labels([tracker], domain)
-    expected_states = [[{"slots": {"name": (1.0,)}}]]
+    expected_states = [[{"slots": {"language": (0.0, 0.0, 1.0), "name": (1.0,)}}]]
     assert trackers_as_states == expected_states
 
 
@@ -86,17 +90,17 @@ def test_create_train_data_no_history(domain: Domain, stories_path: Text):
     hashed = sorted(hashed, reverse=True)
 
     assert hashed == [
-        "[{}]",
-        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
-        '[{"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
-        '[{"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
-        '[{"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}]',
-        '[{"prev_action": {"action_name": "utter_default"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{"slots": {"language": [0.0, 0.0, 1.0]}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_goodbye"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
     ]
 
 
@@ -113,19 +117,46 @@ def test_create_train_data_with_history(domain: Domain, stories_path: Text):
     hashed = sorted(hashed)
 
     assert hashed == [
-        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}, {"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}]',
-        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}, {"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
-        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
-        "[{}]",
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, '
+        '{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"intent": "default"}}, '
+        '{"prev_action": {"action_name": "utter_default"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}, '
+        '{"prev_action": {"action_name": "utter_default"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}, '
+        '{"prev_action": {"action_name": "utter_goodbye"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}, '
+        '{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}, '
+        '{"prev_action": {"action_name": "utter_default"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}, '
+        '{"prev_action": {"action_name": "utter_default"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}]',
+        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, '
+        '{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, '
+        '{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}, '
+        '{"prev_action": {"action_name": "utter_goodbye"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}]',
+        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}]',
+        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}, '
+        '{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}]',
+        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}, '
+        '{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}]',
+        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
+        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}]',
+        '[{"slots": {"language": [0.0, 0.0, 1.0]}}]',
     ]
 
 
@@ -2497,3 +2528,202 @@ def test_dict_from_raw_yaml_content_validation_disabled(
     Domain.from_yaml(small_domain)
 
     mock_validate_raw_yaml_using_schema_file_with_responses.assert_not_called()
+
+
+def test_response_text_translation() -> None:
+    responses_dictionary = {
+        "utter_ask_add_contact_confirmation": [
+            {
+                "text": "Do you want to add this contact to your list?",
+                "translation": {
+                    "it": "Vuoi aggiungere questo contatto alla tua lista?",
+                    "de": "Möchtest du diesen Kontakt zu deiner Liste hinzufügen?",
+                },
+            }
+        ]
+    }
+    domain_yaml = yaml.dump({"responses": responses_dictionary}, sort_keys=False)
+    domain = Domain.from_yaml(domain_yaml)
+    assert domain.responses == responses_dictionary
+
+
+def test_response_text_translation_with_buttons() -> None:
+    responses_dictionary = {
+        "utter_ask_add_contact_confirmation": [
+            {
+                "text": "Do you want to add this contact to your list?",
+                "translation": {
+                    "it": "Vuoi aggiungere questo contatto alla tua lista?",
+                    "de": "Möchtest du diesen Kontakt zu deiner Liste hinzufügen?",
+                },
+                "buttons": [
+                    {
+                        "payload": "/SetSlots(add_contact_confirmation=true)",
+                        "title": "Yes",
+                        "translation": {
+                            "it": {
+                                "payload": "/SetSlots(add_contact_confirmation=true)",
+                                "title": "Sì",
+                            },
+                            "de": {
+                                "payload": "/SetSlots(add_contact_confirmation=true)",
+                                "title": "Ja",
+                            },
+                        },
+                    },
+                    {
+                        "payload": "/SetSlots(add_contact_confirmation=true)",
+                        "title": "No, cancel",
+                        "translation": {
+                            "it": {
+                                "payload": "/SetSlots(add_contact_confirmation=true)",
+                                "title": "No, annulla",
+                            },
+                            "de": {
+                                "payload": "/SetSlots(add_contact_confirmation=true)",
+                                "title": "Nein, abbrechen",
+                            },
+                        },
+                    },
+                ],
+            }
+        ]
+    }
+    domain_yaml = yaml.dump({"responses": responses_dictionary}, sort_keys=False)
+    domain = Domain.from_yaml(domain_yaml)
+    assert domain.responses == responses_dictionary
+
+
+def test_response_text_translation_with_conditions() -> None:
+    responses_dictionary = {
+        "utter_ask_add_contact_confirmation": [
+            {
+                "condition": [
+                    {"type": "slot", "name": "contact_exists", "value": "false"}
+                ],
+                "text": "Do you want to add this contact to your list?",
+                "translation": {
+                    "it": "Vuoi aggiungere questo contatto alla tua lista?",
+                    "de": "Möchtest du diesen Kontakt zu deiner Liste hinzufügen?",
+                },
+            },
+            {
+                "condition": [
+                    {"type": "slot", "name": "contact_exists", "value": "true"}
+                ],
+                "text": "This contact has already been added.",
+                "translation": {
+                    "it": "Questo contatto è già stato aggiunto.",
+                    "de": "Dieser Kontakt wurde bereits hinzugefügt.",
+                },
+            },
+        ]
+    }
+    domain_yaml = yaml.dump({"responses": responses_dictionary}, sort_keys=False)
+    domain = Domain.from_yaml(domain_yaml)
+    assert domain.responses == responses_dictionary
+
+
+def test_response_text_translation_with_conditions_and_buttons() -> None:
+    responses_dictionary = {
+        "utter_ask_add_contact_confirmation": [
+            {
+                "condition": [
+                    {"type": "slot", "name": "contact_exists", "value": "false"}
+                ],
+                "text": "Do you want to add this contact to your list?",
+                "translation": {
+                    "it": "Vuoi aggiungere questo contatto alla tua lista?",
+                    "de": "Möchtest du diesen Kontakt zu deiner Liste hinzufügen?",
+                },
+                "buttons": [
+                    {
+                        "payload": "/SetSlots(add_contact_confirmation=true)",
+                        "title": "Yes",
+                        "translation": {
+                            "it": {
+                                "payload": "/SetSlots(add_contact_confirmation=true)",
+                                "title": "Sì",
+                            },
+                            "de": {
+                                "payload": "/SetSlots(add_contact_confirmation=true)",
+                                "title": "Ja",
+                            },
+                        },
+                    },
+                    {
+                        "payload": "/SetSlots(add_contact_confirmation=false)",
+                        "title": "No",
+                        "translation": {
+                            "it": {
+                                "payload": "/SetSlots(add_contact_confirmation=false)",
+                                "title": "No",
+                            },
+                            "de": {
+                                "payload": "/SetSlots(add_contact_confirmation=false)",
+                                "title": "Nein",
+                            },
+                        },
+                    },
+                ],
+            }
+        ]
+    }
+    domain_yaml = yaml.dump({"responses": responses_dictionary}, sort_keys=False)
+    domain = Domain.from_yaml(domain_yaml)
+    assert domain.responses == responses_dictionary
+
+
+def test_custom_response_translation() -> None:
+    responses_dictionary = {
+        "utter_custom_response": [
+            {
+                "custom": {
+                    "blocks": [
+                        {
+                            "type": "section",
+                            "text": {
+                                "text": "A custom response.",
+                                "type": "mrkdwn",
+                                "translation": {
+                                    "it": {"text": "Una risposta personalizzata."},
+                                    "de": {"text": "Eine benutzerdefinierte Antwort."},
+                                },
+                            },
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+    domain_yaml = yaml.dump({"responses": responses_dictionary}, sort_keys=False)
+    domain = Domain.from_yaml(domain_yaml)
+    assert domain.responses == responses_dictionary
+
+
+def test_response_text_translation_invalid_structure() -> None:
+    responses_dictionary = {
+        "utter_ask_add_contact_confirmation": [
+            {
+                "text": "Do you want to add this contact to your list?",
+                "translation": "invalid_structure",
+            }
+        ]
+    }
+    domain_yaml = yaml.dump({"responses": responses_dictionary}, sort_keys=False)
+    with pytest.raises(YamlException):
+        Domain.from_yaml(domain_yaml)
+
+
+def test_response_text_translation_empty() -> None:
+    responses_dictionary = {
+        "utter_ask_add_contact_confirmation": [
+            {
+                "text": "Do you want to add this contact to your list?",
+                "translation": {},
+            }
+        ]
+    }
+    domain_yaml = yaml.dump({"responses": responses_dictionary}, sort_keys=False)
+    domain = Domain.from_yaml(domain_yaml)
+    assert domain.responses == responses_dictionary

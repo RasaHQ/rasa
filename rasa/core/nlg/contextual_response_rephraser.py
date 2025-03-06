@@ -64,7 +64,7 @@ DEFAULT_LLM_CONFIG = {
 DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE = """The following is a conversation with
 an AI assistant. The assistant is helpful, creative, clever, and very friendly.
 Rephrase the suggested AI response staying close to the original message and retaining
-its meaning. Use simple english.
+its meaning. Use simple {{language}}.
 
 Context / previous conversation with the user:
 {{history}}
@@ -163,6 +163,22 @@ class ContextualResponseRephraser(
         prompts.append(prompt_data)
         response[PROMPTS] = prompts
         return response
+
+    @staticmethod
+    def get_language_label(tracker: DialogueStateTracker) -> str:
+        """Fetches the label of the language to be used for the rephraser.
+
+        Args:
+            tracker: The tracker to get the language from.
+
+        Returns:
+            The label of the current language, or "English" if no language is set.
+        """
+        return (
+            tracker.current_language.label
+            if tracker.current_language
+            else tracker.default_language.label
+        )
 
     def _last_message_if_human(self, tracker: DialogueStateTracker) -> Optional[str]:
         """Returns the latest message from the tracker.
@@ -281,6 +297,7 @@ class ContextualResponseRephraser(
             suggested_response=response_text,
             current_input=current_input,
             slots=tracker.current_slot_values(),
+            language=self.get_language_label(tracker),
         )
         log_llm(
             logger=structlogger,

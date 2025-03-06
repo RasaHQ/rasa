@@ -240,6 +240,7 @@ class LocalModelStorage(ModelStorage):
             training_type=model_configuration.training_type,
             project_fingerprint=rasa.model.project_fingerprint(),
             language=model_configuration.language,
+            additional_languages=model_configuration.additional_languages,
             core_target=model_configuration.core_target,
             nlu_target=model_configuration.nlu_target,
         )

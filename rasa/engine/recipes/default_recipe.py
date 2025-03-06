@@ -49,6 +49,7 @@ from rasa.graph_components.providers.training_tracker_provider import (
 )
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
+    CONFIG_ADDITIONAL_LANGUAGES_KEY,
     CONFIG_LANGUAGE_KEY,
     CONFIG_NAME_KEY,
     CONFIG_PIPELINE_KEY,
@@ -247,6 +248,7 @@ class DefaultV1Recipe(Recipe):
             language=config.get(CONFIG_LANGUAGE_KEY),
             core_target=core_target,
             nlu_target=f"{GRAPH_NODE_RUN_PREFIX}{RegexMessageHandler.__name__}",
+            additional_languages=config.get(CONFIG_ADDITIONAL_LANGUAGES_KEY),
         )
 
     def _create_train_nodes(

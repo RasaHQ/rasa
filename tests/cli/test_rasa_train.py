@@ -80,9 +80,13 @@ def test_train(
 
     _, metadata = LocalModelStorage.from_model_archive(tmp_path, model)
     assert metadata.model_id
-    assert (
-        metadata.domain.as_dict() == Domain.load(Path(temp_dir, "domain.yml")).as_dict()
-    )
+
+    # `language` slot is added when the model is trained.
+    # Remove it so we have fair comparison with the domain file.
+    metadata_domain_dict = metadata.domain.as_dict()
+    del metadata_domain_dict["slots"]
+
+    assert metadata_domain_dict == Domain.load(Path(temp_dir, "domain.yml")).as_dict()
 
 
 def test_train_finetune(

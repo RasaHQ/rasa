@@ -5,6 +5,7 @@ import pytest
 from aioresponses import aioresponses
 
 from rasa.core.agent import Agent
+from rasa.shared.core.constants import LANGUAGE_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.utils.endpoints import ClientResponseError
 
@@ -27,7 +28,8 @@ async def test_moodbot_example(trained_moodbot_path: Text):
     assert agent.domain.intents == moodbot_domain.intents
     assert agent.domain.entities == moodbot_domain.entities
     assert agent.domain.responses == moodbot_domain.responses
-    assert [s.name for s in agent.domain.slots] == [
+    # We remove the builtin language slot from the domain
+    assert [s.name for s in agent.domain.slots if s.name != LANGUAGE_SLOT] == [
         s.name for s in moodbot_domain.slots
     ]
 

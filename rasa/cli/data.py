@@ -178,6 +178,22 @@ def _add_data_validate_parsers(
     )
     arguments.set_validator_arguments(flows_structure_parser)
 
+    translations_structure_parser = validate_subparsers.add_parser(
+        "translations",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        parents=parents,
+        help="Checks for inconsistencies of the flow and response translation.",
+    )
+    translations_structure_parser.set_defaults(
+        func=lambda args: rasa.cli.utils.validate_files(
+            args.fail_on_warnings,
+            args.max_history,
+            _build_training_data_importer(args),
+            translations_only=True,
+        )
+    )
+    arguments.set_validator_arguments(translations_structure_parser)
+
 
 def _build_training_data_importer(args: argparse.Namespace) -> "TrainingDataImporter":
     config = rasa.cli.utils.get_validated_path(

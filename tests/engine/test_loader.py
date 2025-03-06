@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+from typing import List, Text
 
 import freezegun
 from _pytest.tmpdir import TempPathFactory
@@ -26,6 +27,7 @@ async def test_loader_loads_graph_runner(
     tmp_path: Path,
     tmp_path_factory: TempPathFactory,
     domain_path: Path,
+    additional_languages: List[Text],
 ):
     graph_trainer = GraphTrainer(
         model_storage=default_model_storage,
@@ -88,6 +90,7 @@ async def test_loader_loads_graph_runner(
                 language=None,
                 core_target=None,
                 nlu_target=None,
+                additional_languages=additional_languages,
             ),
             importer=importer,
             output_filename=output_filename,
@@ -114,3 +117,4 @@ async def test_loader_loads_graph_runner(
     assert model_metadata.domain.as_dict() == Domain.from_path(domain_path).as_dict()
     assert model_metadata.rasa_open_source_version == rasa.__version__
     assert model_metadata.trained_at == trained_at
+    assert model_metadata.additional_languages == additional_languages

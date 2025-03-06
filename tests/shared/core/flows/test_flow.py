@@ -6,6 +6,7 @@ import pytest
 from rasa.dialogue_understanding.stack.utils import (
     previous_collect_steps_for_active_flow,
 )
+from rasa.engine.language import Language
 from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.flows.flow_path import FlowPath, FlowPathsList, PathNode
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks, StaticFlowStepLink
@@ -118,6 +119,34 @@ add_contact_flow_collects = (
     "add_contact_name",
     "add_contact_confirmation",
 )
+
+FLOW_NAME_FOO = "foo"
+IT_LANGUAGE_CODE = "it"
+IT_FLOW_NAME = "Italian foo"
+DE_LANGUAGE_CODE = "de"
+DE_FLOW_NAME = "German foo"
+ES_LANGUAGE_CODE = "es"
+
+
+@pytest.fixture
+def flow_with_translated_names() -> Flow:
+    flows = flows_from_str(
+        f"""
+        flows:
+          {FLOW_NAME_FOO}:
+            name: {FLOW_NAME_FOO}
+            description: flow foo
+            translation:
+                {IT_LANGUAGE_CODE}:
+                  name: {IT_FLOW_NAME}
+                {DE_LANGUAGE_CODE}:
+                  name: {DE_FLOW_NAME}
+            steps:
+            - id: first_step
+              action: action_listen
+        """
+    )
+    return flows.underlying_flows[0]
 
 
 @pytest.fixture
@@ -1356,3 +1385,37 @@ def test_flow_from_json(json_input: Dict[str, Any], expected_flow: Flow):
     flow = Flow.from_json(flow_id="flow_1", data=json_input)
 
     assert flow == expected_flow
+
+
+def test_flow_localized_name(flow_with_translated_names: Flow) -> None:
+    language_it = Language.from_language_code(IT_LANGUAGE_CODE)
+    language_de = Language.from_language_code(DE_LANGUAGE_CODE)
+    language_es = Language.from_language_code(ES_LANGUAGE_CODE)
+
+    # If language is not specified, the localized name is None.
+    assert flow_with_translated_names.localized_name() is None
+
+    # If language is specified, the localized name should be the translated name.
+    assert flow_with_translated_names.localized_name(language_it) == IT_FLOW_NAME
+    assert flow_with_translated_names.localized_name(language_de) == DE_FLOW_NAME
+
+    # If the language is not available, the localized name is None.
+    assert flow_with_translated_names.localized_name(language_es) is None
+
+
+def test_flow_readable_name_uses_localized_name(
+    flow_with_translated_names: Flow,
+) -> None:
+    language_it = Language.from_language_code(IT_LANGUAGE_CODE)
+    language_de = Language.from_language_code(DE_LANGUAGE_CODE)
+    language_es = Language.from_language_code(ES_LANGUAGE_CODE)
+
+    # By default, the readable name should be the flow name.
+    assert flow_with_translated_names.readable_name() == FLOW_NAME_FOO
+
+    # If language is specified, the readable name should be the translated name.
+    assert flow_with_translated_names.readable_name(language_it) == IT_FLOW_NAME
+    assert flow_with_translated_names.readable_name(language_de) == DE_FLOW_NAME
+
+    # If the language is not available, the readable name should be the flow name.
+    assert flow_with_translated_names.readable_name(language_es) == FLOW_NAME_FOO

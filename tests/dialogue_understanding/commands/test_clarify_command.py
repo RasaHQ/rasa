@@ -7,7 +7,9 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxVersion,
 )
 from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
+from rasa.engine.language import Language
 from rasa.shared.core.events import DialogueStackUpdated
+from rasa.shared.core.slots import StrictCategoricalSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.utilities import flows_from_str
 
@@ -168,3 +170,41 @@ def test_regex_pattern_v2_command_syntax():
 def test_is_instance_of_prompt_command():
     # Check if the command adheres to the PromptCommand protocol.
     assert isinstance(ClarifyCommand([]), PromptCommand) is True
+
+
+def test_clarify_command_uses_localized_flow_name(monkeypatch: pytest.MonkeyPatch):
+    # Load a flow with translations.
+    german_flow_name = "German foo"
+    all_flows = flows_from_str(
+        f"""
+        flows:
+          foo:
+            description: flow foo
+            name: foo flow
+            translation:
+                de:
+                  name: {german_flow_name}
+            steps:
+            - id: first_step
+              action: action_listen
+        """
+    )
+
+    # Create a tracker with a language slot set to German language.
+    language = Language.from_language_code("de", is_default=True)
+    slots = [
+        StrictCategoricalSlot(
+            "language", [], initial_value=language.code, values=[language.code]
+        )
+    ]
+    tracker = DialogueStateTracker.from_events("test", evts=[], slots=slots)
+
+    # Run the clarify command.
+    command = ClarifyCommand(options=["foo"])
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+
+    # Check clarify command uses flow names with German translation.
+    dialogue_stack_event = events[0]
+    patch = jsonpatch.JsonPatch.from_string(dialogue_stack_event.update)
+    dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
+    assert dialogue_stack_dump[0]["names"] == [german_flow_name]

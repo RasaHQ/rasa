@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Text
+from typing import List, Text
 
 import pytest
 
@@ -9,7 +9,11 @@ from rasa.engine.exceptions import GraphSchemaException
 from rasa.engine.graph import GraphSchema
 from rasa.engine.recipes.graph_recipe import GraphV1Recipe
 from rasa.engine.recipes.recipe import Recipe
-from rasa.shared.constants import ASSISTANT_ID_KEY
+from rasa.shared.constants import (
+    ASSISTANT_ID_KEY,
+    CONFIG_ADDITIONAL_LANGUAGES_KEY,
+    CONFIG_LANGUAGE_KEY,
+)
 from rasa.shared.data import TrainingType
 from rasa.shared.utils.yaml import read_model_configuration, read_yaml, read_yaml_file
 
@@ -85,6 +89,11 @@ def test_generate_graphs(
     assert model_config.core_target == core_target
     assert model_config.nlu_target == config.get(
         "nlu_target", "run_RegexMessageHandler"
+    )
+
+    assert model_config.language == config.get(CONFIG_LANGUAGE_KEY)
+    assert model_config.additional_languages == config.get(
+        CONFIG_ADDITIONAL_LANGUAGES_KEY
     )
 
     rasa.engine.validation.validate(model_config)
@@ -168,3 +177,28 @@ def test_graph_config_for_recipe_with_assistant_id(assistant_id):
     model_config = recipe.graph_config_for_recipe(config, {})
 
     assert model_config.assistant_id == assistant_id
+
+
+def test_graph_config_for_recipe_with_additional_languages(
+    config_path: Text, additional_languages: List[Text]
+):
+    additional_languages_string = "\n      - ".join(additional_languages)
+    config = read_yaml(
+        f"""
+    recipe: graph.v1
+    language: xy
+    additional_languages:
+      - {additional_languages_string}
+    core_target: doesnt_validate_or_run
+    nlu_target: doesnt_validate_or_run
+
+    train_schema:
+      nodes: {{}}
+    predict_schema:
+      nodes: {{}}
+    """
+    )
+
+    recipe = Recipe.recipe_for_name(GraphV1Recipe.name)
+    model_config = recipe.graph_config_for_recipe(config, {})
+    assert model_config.additional_languages == additional_languages

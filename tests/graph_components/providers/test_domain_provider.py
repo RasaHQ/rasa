@@ -28,7 +28,8 @@ def test_domain_provider_provides_and_persists_domain(
     assert isinstance(component, DomainProvider)
 
     importer = TrainingDataImporter.load_from_config(config_path, domain_path)
-    training_domain = component.provide_train(importer)
+    # Outer importer is LanguageImporter that affects the domain's fingerprint.
+    training_domain = component.provide_train(importer._importer)
 
     assert isinstance(training_domain, Domain)
     assert domain.fingerprint() == training_domain.fingerprint()

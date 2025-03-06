@@ -13,6 +13,7 @@ USER_INTENT_SESSION_START = "session_start"
 USER_INTENT_SESSION_END = "session_end"
 USER_INTENT_SILENCE_TIMEOUT = "silence_timeout"
 SESSION_START_METADATA_SLOT = "session_started_metadata"
+LANGUAGE_SLOT = "language"
 
 DEFAULT_INTENTS = [
     USER_INTENT_RESTART,

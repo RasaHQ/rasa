@@ -29,7 +29,10 @@ from rasa.core.actions.action import (
     ActionSessionStart,
     RemoteAction,
     RemoteActionJSONValidator,
+    create_bot_utterance,
     default_actions,
+    get_translated_buttons,
+    get_translated_text,
 )
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.actions.forms import FormAction
@@ -46,11 +49,15 @@ from rasa.core.policies.enterprise_search_policy import (
     SEARCH_QUERY_METADATA_KEY,
     SEARCH_RESULTS_METADATA_KEY,
 )
+from rasa.engine.language import Language
 from rasa.shared.constants import (
+    BUTTONS,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     OPENAI_API_KEY_ENV_VAR,
+    PAYLOAD,
     REQUIRED_SLOTS_KEY,
     ROUTE_TO_CALM_SLOT,
+    TITLE,
     UTTER_PREFIX,
 )
 from rasa.shared.core.constants import (
@@ -59,6 +66,7 @@ from rasa.shared.core.constants import (
     DEFAULT_ACTION_NAMES,
     FLOW_HASHES_SLOT,
     FOLLOWUP_ACTION,
+    LANGUAGE_SLOT,
     REQUESTED_SLOT,
     RULE_SNIPPET_ACTION_NAME,
     SESSION_START_METADATA_SLOT,
@@ -99,6 +107,7 @@ from rasa.shared.core.events import (
     UserUtteranceReverted,
     UserUttered,
 )
+from rasa.shared.core.slots import StrictCategoricalSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import ClientResponseError, EndpointConfig
@@ -245,6 +254,7 @@ async def test_remote_action_runs(
                     REQUESTED_SLOT: None,
                     FLOW_HASHES_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
+                    LANGUAGE_SLOT: "en",
                 },
                 "events": [],
                 "latest_input_channel": None,
@@ -312,6 +322,7 @@ async def test_remote_action_logs_events(
                     REQUESTED_SLOT: None,
                     FLOW_HASHES_SLOT: None,
                     SESSION_START_METADATA_SLOT: None,
+                    LANGUAGE_SLOT: "en",
                 },
                 "events": [],
                 "latest_input_channel": None,
@@ -3619,3 +3630,113 @@ async def test_action_extract_slots_sets_slots_shared_for_coexistence() -> None:
     )
     tracker.update_with_events(events)
     assert tracker.get_slot(slot_name) == special_requests_msg
+
+
+@pytest.mark.parametrize(
+    "text, translation, language, expected",
+    [
+        # Translation exists for the provided language.
+        (
+            "default text",
+            {"fr": "texte traduit"},
+            Language.from_language_code("fr"),
+            "texte traduit",
+        ),
+        # Translation does not exist for the provided language.
+        (
+            "default text",
+            {"fr": "texte traduit"},
+            Language.from_language_code("en"),
+            "default text",
+        ),
+        # Translation does not exist.
+        ("default text", {}, Language.from_language_code("en"), "default text"),
+    ],
+)
+def test_get_translated_text(
+    text: str, translation: Dict[Text, Any], language: Language, expected: Text
+):
+    assert get_translated_text(text, translation, language) == expected
+
+
+@pytest.mark.parametrize(
+    "buttons, language, expected",
+    [
+        # Translation exists for the provided language.
+        (
+            [
+                {
+                    "title": "default title",
+                    "payload": "/default",
+                    "translation": {
+                        "fr": {"title": "titre traduit", "payload": "/traduit"}
+                    },
+                }
+            ],
+            Language.from_language_code("fr"),
+            [{"title": "titre traduit", "payload": "/traduit"}],
+        ),
+        # Translation does not exist for the provided language.
+        (
+            [
+                {
+                    "title": "default title",
+                    "payload": "/default",
+                    "translation": {
+                        "fr": {"title": "titre traduit", "payload": "/traduit"}
+                    },
+                }
+            ],
+            Language.from_language_code("en"),
+            [{"title": "default title", "payload": "/default"}],
+        ),
+        # Translation does not exist.
+        (
+            [{"title": "default title", "payload": "/default"}],
+            Language.from_language_code("en"),
+            [{"title": "default title", "payload": "/default"}],
+        ),
+    ],
+)
+def test_get_translated_buttons(buttons: List[Dict[Text, Any]], language, expected):
+    assert get_translated_buttons(buttons, language) == expected
+
+
+async def test_create_bot_utterance_translation(monkeypatch: MonkeyPatch):
+    responses = {
+        "utter_test": [
+            {
+                "text": "default text",
+                "translation": {"fr": "texte traduit"},
+                "buttons": [
+                    {
+                        "title": "default title",
+                        "payload": "/default",
+                        "translation": {
+                            "fr": {"title": "titre traduit", "payload": "/traduit"}
+                        },
+                    }
+                ],
+            },
+        ]
+    }
+    nlg = TemplatedNaturalLanguageGenerator(responses=responses)
+    language = Language.from_language_code("fr", is_default=True)
+    slots = [
+        StrictCategoricalSlot(
+            name="language",
+            mappings=[{}],
+            initial_value=language.code,
+            values=[language.code],
+        )
+    ]
+    tracker = DialogueStateTracker(sender_id="test", slots=slots)
+
+    default_response = await nlg.generate(
+        utter_action="utter_test", tracker=tracker, output_channel=""
+    )
+
+    bot_utterance = create_bot_utterance(default_response, tracker.current_language)
+    assert bot_utterance.text == "texte traduit"
+    assert bot_utterance.data[BUTTONS][0][TITLE] == "titre traduit"
+    assert bot_utterance.data[BUTTONS][0][PAYLOAD] == "/traduit"

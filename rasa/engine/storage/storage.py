@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Generator, Optional, Text, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Text, Tuple, Union
 
 from packaging import version
 
@@ -142,6 +142,7 @@ class ModelMetadata:
     core_target: Optional[Text]
     nlu_target: Text
     language: Optional[Text]
+    additional_languages: Optional[List[Text]]
     training_type: TrainingType = TrainingType.BOTH
 
     def __post_init__(self) -> None:
@@ -171,6 +172,7 @@ class ModelMetadata:
             "core_target": self.core_target,
             "nlu_target": self.nlu_target,
             "language": self.language,
+            "additional_languages": self.additional_languages,
         }
 
     @classmethod
@@ -198,4 +200,5 @@ class ModelMetadata:
             core_target=serialized["core_target"],
             nlu_target=serialized["nlu_target"],
             language=serialized["language"],
+            additional_languages=serialized.get("additional_languages"),
         )

@@ -14,6 +14,7 @@ from rasa.shared.core.slots import (
     InvalidSlotTypeException,
     ListSlot,
     Slot,
+    StrictCategoricalSlot,
     TextSlot,
     bool_from_any,
 )
@@ -474,3 +475,71 @@ def test_categorical_slot_ignores_none_value():
 
     message_text = "Rasa will ignore `null` as a possible value for the 'branch' slot."
     assert any(message_text in record.message.args[0] for record in records)
+
+
+class TestStrictCategoricalSlot(SlotTestCollection):
+    def create_slot(
+        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+    ) -> Slot:
+        # Use a fixed list of allowed values as strings.
+        # The order determines the one-hot encoding:
+        # "1"    → [1, 0, 0, 0]
+        # "two"  → [0, 1, 0, 0]
+        # "three"→ [0, 0, 1, 0]
+        # "nOnE" → [0, 0, 0, 1]
+        # (Coercion will normalize case as defined.)
+        return StrictCategoricalSlot(
+            "test",
+            mappings=mappings,
+            values=["1", "two", "three", "nOnE"],
+            influence_conversation=influence_conversation,
+        )
+
+    @pytest.fixture(
+        params=[
+            (None, [0, 0, 0, 0]),  # unset slot: no value chosen
+            ("1", [1, 0, 0, 0]),
+            ("two", [0, 1, 0, 0]),
+            ("TWO", [0, 1, 0, 0]),  # valid: normalized to "two"
+            ("three", [0, 0, 1, 0]),
+            ("None", [0, 0, 0, 1]),  # valid: matches "nOnE"
+        ]
+    )
+    def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
+        return request.param
+
+    @pytest.fixture(params=["unseen", "999", "invalid"])
+    def invalid_value(self, request: SubRequest) -> Any:
+        return request.param
+
+    # Override the base test for invalid values, so it expects an exception.
+    def test_handles_invalid_values(
+        self, invalid_value: Any, mappings: List[Dict[Text, Any]]
+    ):
+        slot = self.create_slot(mappings=mappings, influence_conversation=True)
+        with pytest.raises(InvalidSlotConfigError):
+            slot.value = invalid_value
+
+    # Override fingerprint uniqueness test so that it uses an allowed value change.
+    @pytest.mark.parametrize("influence_conversation", [True, False])
+    def test_slot_fingerprint_uniqueness(
+        self, influence_conversation: bool, mappings: List[Dict[Text, Any]]
+    ):
+        slot = self.create_slot(mappings, influence_conversation)
+        f1 = slot.fingerprint()
+        slot.value = "1"
+        f2 = slot.fingerprint()
+        assert f1 != f2
+
+    def test_set_invalid_value_raises_error(self, mappings: List[Dict[Text, Any]]):
+        slot = self.create_slot(mappings=mappings, influence_conversation=False)
+        with pytest.raises(InvalidSlotConfigError):
+            slot.value = "unseen"
+
+    def test_strict_coercion_normalizes_valid_value(
+        self, mappings: List[Dict[Text, Any]]
+    ):
+        slot = self.create_slot(mappings=mappings, influence_conversation=False)
+        # Set a value that is valid but in the wrong case. It should be normalized.
+        slot.value = "TWO"
+        assert slot.value == "two"

@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Text, Type
+from typing import Any, Callable, Dict, List, Optional, Text, Type
 from unittest.mock import Mock
 
 import pytest
@@ -43,6 +43,7 @@ async def test_graph_trainer_returns_model_metadata(
     temp_cache: TrainingCache,
     tmp_path: Path,
     domain_path: Path,
+    additional_languages: List[Text],
 ):
     graph_trainer = GraphTrainer(
         model_storage=default_model_storage,
@@ -95,6 +96,7 @@ async def test_graph_trainer_returns_model_metadata(
             core_target=None,
             nlu_target="nlu",
             training_type=TrainingType.BOTH,
+            additional_languages=additional_languages,
         ),
         importer=TrainingDataImporter.load_from_dict(domain_path=str(domain_path)),
         output_filename=output_filename,
@@ -104,6 +106,7 @@ async def test_graph_trainer_returns_model_metadata(
     assert model_metadata.domain.as_dict() == Domain.from_path(domain_path).as_dict()
     assert model_metadata.train_schema == train_schema
     assert model_metadata.predict_schema == predict_schema
+    assert model_metadata.additional_languages == additional_languages
 
 
 async def test_graph_trainer_fingerprints_and_caches(
@@ -343,6 +346,7 @@ def train_with_schema(
                 core_target=None,
                 nlu_target="nlu",
                 training_type=TrainingType.BOTH,
+                additional_languages=None,
             ),
             importer=TrainingDataImporter.load_from_dict(domain_path=str(domain_path)),
             output_filename=output_filename,

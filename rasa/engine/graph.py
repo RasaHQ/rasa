@@ -640,3 +640,4 @@ class GraphModelConfiguration:
     language: Optional[Text]
     core_target: Optional[Text]
     nlu_target: Optional[Text]
+    additional_languages: Optional[List[Text]]

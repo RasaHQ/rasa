@@ -248,6 +248,7 @@ def validate_files(
     importer: TrainingDataImporter,
     stories_only: bool = False,
     flows_only: bool = False,
+    translations_only: bool = False,
 ) -> None:
     """Validates either the story structure or the entire project.
 
@@ -257,6 +258,7 @@ def validate_files(
         importer: The `TrainingDataImporter` to use to load the training data.
         stories_only: If `True`, only the story structure is validated.
         flows_only: If `True`, only the flows are validated.
+        translations_only: If `True`, only the translations data is validated.
     """
     from rasa.validator import Validator
 
@@ -266,6 +268,8 @@ def validate_files(
         all_good = _validate_story_structure(validator, max_history, fail_on_warnings)
     elif flows_only:
         all_good = validator.verify_flows()
+    elif translations_only:
+        all_good = validator.verify_translations()
     else:
         if importer.get_domain().is_empty():
             structlogger.error(
@@ -280,6 +284,7 @@ def validate_files(
             validator, max_history, fail_on_warnings
         )
         valid_flows = validator.verify_flows()
+        valid_translations = validator.verify_translations(summary_mode=True)
         valid_CALM_slot_mappings = validator.validate_CALM_slot_mappings()
 
         all_good = (
@@ -287,6 +292,7 @@ def validate_files(
             and valid_nlu
             and valid_stories
             and valid_flows
+            and valid_translations
             and valid_CALM_slot_mappings
         )
 

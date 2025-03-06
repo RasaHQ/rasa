@@ -1,13 +1,17 @@
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Text, Type
+from unittest.mock import MagicMock
 
 import pytest
 import structlog
+from pytest import MonkeyPatch
 
 import rasa.shared.core.constants
 import rasa.shared.utils.io
 from rasa.shared.constants import (
+    CONFIG_ADDITIONAL_LANGUAGES_KEY,
+    CONFIG_LANGUAGE_KEY,
     DEFAULT_CONFIG_PATH,
     DEFAULT_CONVERSATION_TEST_PATH,
     DEFAULT_DATA_PATH,
@@ -17,6 +21,7 @@ from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
 from rasa.shared.importers.importer import (
     E2EImporter,
+    LanguageImporter,
     NluDataImporter,
     ResponsesSyncImporter,
     TrainingDataImporter,
@@ -77,11 +82,11 @@ def test_load_from_dict(
         config, config_path, domain_path, [default_data_path]
     )
 
-    assert isinstance(actual, E2EImporter)
-    assert isinstance(actual._importer._importer, ResponsesSyncImporter)
+    assert isinstance(actual, LanguageImporter)
+    assert isinstance(actual._importer._importer._importer, ResponsesSyncImporter)
 
     actual_importers = [
-        i.__class__ for i in actual._importer._importer._importer._importers
+        i.__class__ for i in actual._importer._importer._importer._importer._importers
     ]
     assert actual_importers == expected
 
@@ -92,10 +97,11 @@ def test_load_from_config(tmpdir: Path):
     write_yaml({"importers": [{"name": "MultiProjectImporter"}]}, config_path)
 
     importer = TrainingDataImporter.load_from_config(config_path)
-    assert isinstance(importer, E2EImporter)
-    assert isinstance(importer._importer._importer, ResponsesSyncImporter)
+    assert isinstance(importer, LanguageImporter)
+    assert isinstance(importer._importer._importer._importer, ResponsesSyncImporter)
     assert isinstance(
-        importer._importer._importer._importer._importers[0], MultiProjectImporter
+        importer._importer._importer._importer._importer._importers[0],
+        MultiProjectImporter,
     )
 
 
@@ -107,7 +113,9 @@ def test_nlu_only(project: Text):
     )
 
     assert isinstance(actual, NluDataImporter)
-    assert isinstance(actual._importer._importer, ResponsesSyncImporter)
+    assert isinstance(
+        actual._importer._importer._importer._importer, ResponsesSyncImporter
+    )
 
     stories = actual.get_stories()
     assert stories.is_empty()
@@ -129,8 +137,8 @@ def test_import_nlu_training_data_from_e2e_stories(
     default_importer: TrainingDataImporter,
 ):
     # The `E2EImporter` correctly wraps the underlying `CombinedDataImporter`
-    assert isinstance(default_importer, E2EImporter)
-    importer_without_e2e = default_importer._importer
+    assert isinstance(default_importer, LanguageImporter)
+    importer_without_e2e = default_importer._importer._importer
 
     stories = StoryGraph(
         [
@@ -229,8 +237,8 @@ def test_different_story_order_doesnt_change_nlu_training_data(
 def test_import_nlu_training_data_with_default_actions(
     default_importer: TrainingDataImporter,
 ):
-    assert isinstance(default_importer, E2EImporter)
-    importer_without_e2e = default_importer._importer
+    assert isinstance(default_importer, LanguageImporter)
+    importer_without_e2e = default_importer._importer._importer
 
     # Check additional NLU training data from domain was added
     nlu_data = default_importer.get_nlu_data()
@@ -401,3 +409,53 @@ def test_importer_fingerprint():
     fp1 = importer.fingerprint()
     fp2 = importer.fingerprint()
     assert fp1 != fp2
+
+
+def test_language_importer_adds_language_slot(
+    default_importer: TrainingDataImporter, monkeypatch: MonkeyPatch
+):
+    # Mock languages in config.yml
+    config = {CONFIG_LANGUAGE_KEY: "de", CONFIG_ADDITIONAL_LANGUAGES_KEY: ["en"]}
+    monkeypatch.setattr(
+        "rasa.shared.importers.importer.PassThroughImporter.get_config",
+        MagicMock(return_value=config),
+    )
+
+    # Initialize LanguageImporter with default importer
+    language_importer = LanguageImporter(default_importer)
+
+    # Verify the language slot is added to the domain
+    domain = language_importer.get_domain()
+    language_slot_name = rasa.shared.core.constants.LANGUAGE_SLOT
+    slots_map = {slot.name: slot for slot in domain.slots}
+    assert language_slot_name in slots_map
+
+    # Verify the slot's values list includes the language and additional languages
+    language_slot = slots_map[language_slot_name]
+    assert language_slot.initial_value == "de"
+    assert language_slot.values == ["en", "de"]
+
+
+def test_language_importer_adds_language_slot_without_additional_languages(
+    default_importer: TrainingDataImporter, monkeypatch: MonkeyPatch
+):
+    # Mock languages in config.yml
+    config = {CONFIG_LANGUAGE_KEY: "de"}
+    monkeypatch.setattr(
+        "rasa.shared.importers.importer.PassThroughImporter.get_config",
+        MagicMock(return_value=config),
+    )
+
+    # Initialize LanguageImporter with default importer
+    language_importer = LanguageImporter(default_importer)
+
+    # Verify the language slot is added to the domain
+    domain = language_importer.get_domain()
+    language_slot_name = rasa.shared.core.constants.LANGUAGE_SLOT
+    slots_map = {slot.name: slot for slot in domain.slots}
+    assert language_slot_name in slots_map
+
+    # Verify the slot's values list includes the language and additional languages
+    language_slot = slots_map[language_slot_name]
+    assert language_slot.initial_value == "de"
+    assert language_slot.values == ["de"]

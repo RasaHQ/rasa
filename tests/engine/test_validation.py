@@ -169,6 +169,7 @@ def create_test_schema(
         core_target=None,
         nlu_target="nlu_target",
         language=language,
+        additional_languages=None,
     )
 
 
@@ -752,6 +753,7 @@ def test_cycle(is_train_graph: bool):
                 language=None,
                 core_target=None,
                 nlu_target="nlu_target",
+                additional_languages=None,
             )
         )
 
@@ -793,6 +795,7 @@ def test_validation_with_placeholders():
             language=None,
             core_target=None,
             nlu_target="nlu_target",
+            additional_languages=None,
         )
     )
 
@@ -823,6 +826,7 @@ def test_validation_with_missing_nlu_target():
                 language=None,
                 core_target=None,
                 nlu_target=None,
+                additional_languages=None,
             )
         )
 
@@ -865,6 +869,7 @@ def test_validation_with_nlu_target_used_by_other_node():
                 language=None,
                 core_target=None,
                 nlu_target="A",
+                additional_languages=None,
             )
         )
 
@@ -893,6 +898,7 @@ def test_validation_with_nlu_target_wrong_type():
                 language=None,
                 core_target=None,
                 nlu_target="A",
+                additional_languages=None,
             )
         )
 
@@ -921,6 +927,7 @@ def test_validation_with_missing_core_target():
                 language=None,
                 core_target="B",
                 nlu_target="A",
+                additional_languages=None,
             )
         )
 
@@ -951,6 +958,7 @@ def test_validation_with_core_target_wrong_type():
                 language=None,
                 core_target="A",
                 nlu_target="A",
+                additional_languages=None,
             )
         )
 
@@ -1001,6 +1009,7 @@ def test_validation_with_core_target_used_by_other_node():
                 language=None,
                 core_target="B",
                 nlu_target="A",
+                additional_languages=None,
             )
         )
 
@@ -1189,6 +1198,7 @@ def test_validate_validates_required_components(
         None,
         None,
         "nlu_target",
+        None,
     )
 
     num_unmet = test_case.num_unmet_requirements

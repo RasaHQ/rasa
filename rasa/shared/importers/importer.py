@@ -20,16 +20,19 @@ import rasa.shared.constants
 import rasa.shared.core.constants
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+from rasa.shared.constants import CONFIG_ADDITIONAL_LANGUAGES_KEY, CONFIG_LANGUAGE_KEY
 from rasa.shared.core.domain import (
     IS_RETRIEVAL_INTENT_KEY,
     KEY_ACTIONS,
     KEY_E2E_ACTIONS,
     KEY_INTENTS,
     KEY_RESPONSES,
+    KEY_SLOTS,
     Domain,
 )
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.slots import StrictCategoricalSlot
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES
 from rasa.shared.nlu.training_data.message import Message
@@ -202,8 +205,10 @@ class TrainingDataImporter(ABC):
                 )
             ]
 
-        return E2EImporter(
-            FlowSyncImporter(ResponsesSyncImporter(CombinedDataImporter(importers)))
+        return LanguageImporter(
+            E2EImporter(
+                FlowSyncImporter(ResponsesSyncImporter(CombinedDataImporter(importers)))
+            )
         )
 
     @staticmethod
@@ -520,6 +525,49 @@ class FlowSyncImporter(PassThroughImporter):
     def get_user_domain(self) -> Domain:
         """Retrieves only user defined domain."""
         return self._importer.get_domain()
+
+
+class LanguageImporter(PassThroughImporter):
+    """Importer that configures the language settings in the domain."""
+
+    @cached_method
+    def get_domain(self) -> Domain:
+        domain = self._importer.get_domain()
+        if domain.is_empty():
+            return domain
+
+        config = self._importer.get_config()
+        language = config.get(CONFIG_LANGUAGE_KEY)
+        additional_languages = config.get(CONFIG_ADDITIONAL_LANGUAGES_KEY) or []
+
+        values = additional_languages.copy()
+        if language and language not in values:
+            values.append(language)
+
+        # Prepare the serialized representation of the language slot
+        slot_name = rasa.shared.core.constants.LANGUAGE_SLOT
+        serialized_slot: Dict[Text, Any] = {
+            "type": StrictCategoricalSlot.type_name,
+            "initial_value": language,
+            "values": values,
+            "mappings": [],
+            "is_builtin": True,
+        }
+
+        domain_with_language_slot = Domain.from_dict(
+            {KEY_SLOTS: {slot_name: serialized_slot}}
+        )
+        return domain.merge(domain_with_language_slot)
+
+    @cached_method
+    def get_user_domain(self) -> Domain:
+        """Delegate to the underlying importer to get the user domain."""
+        return self._importer.get_user_domain()
+
+    @cached_method
+    def get_user_flows(self) -> FlowsList:
+        """Delegate to the underlying importer to get user flows."""
+        return self._importer.get_user_flows()
 
 
 class ResponsesSyncImporter(PassThroughImporter):

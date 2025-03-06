@@ -1,6 +1,10 @@
-from typing import Any, Dict, List, Set
+from typing import TYPE_CHECKING, Any, Dict, List, Set, Text
 
 from rasa.shared.utils.io import raise_deprecation_warning
+
+if TYPE_CHECKING:
+    from rasa.shared.core.flows.flow import FlowLanguageTranslation
+
 
 RESET_PROPERTY_NAME = "reset_after_flow_ends"
 PERSIST_PROPERTY_NAME = "persisted_slots"
@@ -53,3 +57,23 @@ def extract_digression_prop(prop: str, data: Dict[str, Any]) -> List[str]:
         digression_property = [ALL_LABEL] if digression_property else []
 
     return digression_property
+
+
+def extract_translations(
+    translation_data: Dict[Text, Any],
+) -> Dict[Text, "FlowLanguageTranslation"]:
+    """Extracts translations from a dictionary.
+
+    Args:
+        translation_data: The dictionary containing the translations.
+
+    Returns:
+        A dictionary containing the extracted translations.
+    """
+    from rasa.shared.core.flows.flow import FlowLanguageTranslation
+
+    return {
+        language_code: FlowLanguageTranslation.parse_obj({**data})
+        for language_code, data in translation_data.items()
+        if language_code != "metadata"
+    }

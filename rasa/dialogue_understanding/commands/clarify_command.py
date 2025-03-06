@@ -78,7 +78,13 @@ class ClarifyCommand(Command):
 
         stack = tracker.stack
         relevant_flows = [all_flows.flow_by_id(opt) for opt in clean_options]
-        names = [flow.readable_name() for flow in relevant_flows if flow is not None]
+
+        names = [
+            flow.readable_name(language=tracker.current_language)
+            for flow in relevant_flows
+            if flow is not None
+        ]
+
         stack.push(ClarifyPatternFlowStackFrame(names=names))
         return tracker.create_stack_updated_events(stack)
 

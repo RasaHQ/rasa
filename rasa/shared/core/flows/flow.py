@@ -7,13 +7,28 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Text, Union
 
 import structlog
+from pydantic import BaseModel
 from pypred import Predicate
 
 import rasa.shared.utils.io
+from rasa.engine.language import Language
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.constants import (
     KEY_ASK_CONFIRM_DIGRESSIONS,
     KEY_BLOCK_DIGRESSIONS,
+)
+from rasa.shared.core.flows.constants import (
+    KEY_ALWAYS_INCLUDE_IN_PROMPT,
+    KEY_DESCRIPTION,
+    KEY_FILE_PATH,
+    KEY_ID,
+    KEY_IF,
+    KEY_NAME,
+    KEY_NLU_TRIGGER,
+    KEY_PERSISTED_SLOTS,
+    KEY_RUN_PATTERN_COMPLETED,
+    KEY_STEPS,
+    KEY_TRANSLATION,
 )
 from rasa.shared.core.flows.flow_path import FlowPath, FlowPathsList, PathNode
 from rasa.shared.core.flows.flow_step import FlowStep
@@ -43,6 +58,16 @@ from rasa.shared.core.slots import Slot
 structlogger = structlog.get_logger()
 
 
+class FlowLanguageTranslation(BaseModel):
+    """Represents the translation of the flow properties in a specific language."""
+
+    name: str
+    """The human-readable name of the flow."""
+
+    class Config:
+        extra = "ignore"
+
+
 @dataclass
 class Flow:
     """Represents the configuration of a flow."""
@@ -53,6 +78,8 @@ class Flow:
     """The human-readable name of the flow."""
     description: Optional[Text] = None
     """The description of the flow."""
+    translation: Dict[Text, FlowLanguageTranslation] = field(default_factory=dict)
+    """The translation of the flow properties in different languages."""
     guard_condition: Optional[Text] = None
     """The condition that needs to be fulfilled for the flow to be startable."""
     step_sequence: FlowStepSequence = field(default_factory=FlowStepSequence.empty)
@@ -90,6 +117,8 @@ class Flow:
         Returns:
             A Flow object.
         """
+        from rasa.shared.core.flows.utils import extract_translations
+
         step_sequence = FlowStepSequence.from_json(flow_id, data.get("steps"))
         nlu_triggers = NLUTriggers.from_json(data.get("nlu_trigger"))
 
@@ -98,22 +127,25 @@ class Flow:
 
         return Flow(
             id=flow_id,
-            custom_name=data.get("name"),
-            description=data.get("description"),
-            always_include_in_prompt=data.get("always_include_in_prompt"),
-            # str or bool are permitted in the flow schema but internally we want a str
-            guard_condition=str(data["if"]) if "if" in data else None,
+            custom_name=data.get(KEY_NAME),
+            description=data.get(KEY_DESCRIPTION),
+            always_include_in_prompt=data.get(KEY_ALWAYS_INCLUDE_IN_PROMPT),
+            # str or bool are permitted in the flow schema, but internally we want a str
+            guard_condition=str(data[KEY_IF]) if KEY_IF in data else None,
             step_sequence=Flow.resolve_default_ids(step_sequence),
             nlu_triggers=nlu_triggers,
             # If we are reading the flows in after training the file_path is part of
             # data. When the model is trained, take the provided file_path.
-            file_path=data.get("file_path") if "file_path" in data else file_path,
-            persisted_slots=data.get("persisted_slots", []),
+            file_path=data.get(KEY_FILE_PATH) if KEY_FILE_PATH in data else file_path,
+            persisted_slots=data.get(KEY_PERSISTED_SLOTS, []),
             ask_confirm_digressions=extract_digression_prop(
                 KEY_ASK_CONFIRM_DIGRESSIONS, data
             ),
             block_digressions=extract_digression_prop(KEY_BLOCK_DIGRESSIONS, data),
-            run_pattern_completed=data.get("run_pattern_completed", True),
+            run_pattern_completed=data.get(KEY_RUN_PATTERN_COMPLETED, True),
+            translation=extract_translations(
+                translation_data=data.get(KEY_TRANSLATION, {})
+            ),
         )
 
     def get_full_name(self) -> str:
@@ -171,35 +203,62 @@ class Flow:
             The Flow object as serialized data.
         """
         data: Dict[Text, Any] = {
-            "id": self.id,
-            "steps": self.step_sequence.as_json(),
+            KEY_ID: self.id,
+            KEY_STEPS: self.step_sequence.as_json(),
         }
         if self.custom_name is not None:
-            data["name"] = self.custom_name
+            data[KEY_NAME] = self.custom_name
         if self.description is not None:
-            data["description"] = self.description
+            data[KEY_DESCRIPTION] = self.description
         if self.guard_condition is not None:
-            data["if"] = self.guard_condition
+            data[KEY_IF] = self.guard_condition
         if self.always_include_in_prompt is not None:
-            data["always_include_in_prompt"] = self.always_include_in_prompt
+            data[KEY_ALWAYS_INCLUDE_IN_PROMPT] = self.always_include_in_prompt
         if self.nlu_triggers:
-            data["nlu_trigger"] = self.nlu_triggers.as_json()
+            data[KEY_NLU_TRIGGER] = self.nlu_triggers.as_json()
         if self.file_path:
-            data["file_path"] = self.file_path
+            data[KEY_FILE_PATH] = self.file_path
         if self.persisted_slots:
-            data["persisted_slots"] = self.persisted_slots
+            data[KEY_PERSISTED_SLOTS] = self.persisted_slots
         if self.ask_confirm_digressions:
             data[KEY_ASK_CONFIRM_DIGRESSIONS] = self.ask_confirm_digressions
         if self.block_digressions:
             data[KEY_BLOCK_DIGRESSIONS] = self.block_digressions
         if self.run_pattern_completed is not None:
             data["run_pattern_completed"] = self.run_pattern_completed
+        if self.translation:
+            data[KEY_TRANSLATION] = {
+                language_code: translation.dict()
+                for language_code, translation in self.translation.items()
+            }
 
         return data
 
-    def readable_name(self) -> str:
-        """Returns the name of the flow or its id if no name is set."""
-        return self.name or self.id
+    def localized_name(self, language: Optional[Language] = None) -> Optional[Text]:
+        """Returns the language specific flow name or None.
+
+        Args:
+            language: Preferred language code.
+
+        Returns:
+            Flow name in the specified language or None.
+        """
+        language_code = language.code if language else None
+        translation = self.translation.get(language_code)
+        return translation.name if translation else None
+
+    def readable_name(self, language: Optional[Language] = None) -> str:
+        """
+        Returns the flow's name in the specified language if available; otherwise
+        falls back to the flow's name, and finally the flow's ID.
+
+        Args:
+            language: Preferred language code.
+
+        Returns:
+            string: the localized name, the default name, or the flow's ID.
+        """
+        return self.localized_name(language) or self.name or self.id
 
     def step_by_id(self, step_id: Optional[Text]) -> Optional[FlowStep]:
         """Returns the step with the given id."""

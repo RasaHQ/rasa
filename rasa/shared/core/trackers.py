@@ -6,6 +6,7 @@ import os
 import time
 from collections import deque
 from enum import Enum
+from functools import cached_property
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -26,6 +27,7 @@ from typing import (
 )
 
 import rasa.shared.utils.io
+from rasa.engine.language import Language
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     DEFAULT_SENDER_ID,
@@ -37,6 +39,7 @@ from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
     ACTIVE_LOOP,
     FOLLOWUP_ACTION,
+    LANGUAGE_SLOT,
     LOOP_NAME,
     PREVIOUS_ACTION,
     SHOULD_NOT_BE_SET,
@@ -61,7 +64,8 @@ from rasa.shared.core.events import (
     UserUttered,
 )
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.slots import AnySlot, Slot
+from rasa.shared.core.slots import AnySlot, Slot, StrictCategoricalSlot
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
     ACTION_TEXT,
@@ -1096,6 +1100,75 @@ class DialogueStateTracker:
                     break
 
         return FlowsList(active_flows)
+
+    @cached_property
+    def supported_languages(self) -> List[Language]:
+        """Returns the supported languages for this model configuration
+
+        Returns:
+            A list of supported languages.
+        """
+        if LANGUAGE_SLOT not in self.slots:
+            raise RasaException(
+                f"The required slot '{LANGUAGE_SLOT}' is missing from the tracker. "
+                f"Please ensure that a slot named '{LANGUAGE_SLOT}' exists."
+            )
+
+        language_slot = self.slots[LANGUAGE_SLOT]
+
+        if not isinstance(language_slot, StrictCategoricalSlot):
+            raise RasaException(
+                f"The slot '{LANGUAGE_SLOT}' must be of type "
+                f"'{StrictCategoricalSlot.type_name}'. "
+                f"Please update the slot configuration accordingly."
+            )
+
+        return [
+            Language.from_language_code(language_code)
+            for language_code in language_slot.values
+        ]
+
+    @property
+    def current_language(self) -> Optional[Language]:
+        """Get the language of the current conversation.
+
+        Returns:
+            The language of the current conversation or `None` if not set.
+        """
+        language_code = self.get_slot("language")
+        if not language_code:
+            return None
+
+        supported_languages = self.supported_languages or []
+        matching_language = (
+            language
+            for language in supported_languages
+            if language.code == language_code
+        )
+        return next(matching_language, None)
+
+    @property
+    def default_language(self) -> Language:
+        """Get the assistant's default language.
+
+        Returns:
+            The assistant's default language.
+
+        Raises:
+            RasaException: If no default language is defined in the config.
+        """
+        supported_languages = self.supported_languages or []
+        matching_language = (
+            language for language in supported_languages if language.is_default is True
+        )
+        try:
+            return next(matching_language)
+        except StopIteration:
+            raise RasaException(
+                "No default language configured. "
+                "Please configure the `language` parameter in config.yml file. "
+                "Example: `language: en`."
+            )
 
 
 class TrackerEventDiffEngine:

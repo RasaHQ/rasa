@@ -1636,7 +1636,7 @@ async def test_predict_next_with_tracker_core_only(trained_core_model: Text):
     tracker = DialogueStateTracker("some_id", [])
     tracker.followup_action = None
     result = await processor.predict_next_with_tracker(tracker)
-    assert result["policy"] == "MemoizationPolicy"
+    assert result["policy"] == "RulePolicy"
 
 
 async def test_predict_next_with_tracker_full_model(trained_rasa_model: Text):
@@ -1644,7 +1644,7 @@ async def test_predict_next_with_tracker_full_model(trained_rasa_model: Text):
     tracker = DialogueStateTracker("some_id", [])
     tracker.followup_action = None
     result = await processor.predict_next_with_tracker(tracker)
-    assert result["policy"] == "MemoizationPolicy"
+    assert result["policy"] == "RulePolicy"
 
 
 async def test_get_tracker_adds_model_id(default_processor: MessageProcessor):

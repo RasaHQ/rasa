@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 import structlog
+from pytest import MonkeyPatch
 
 from rasa.core.policies.flows import flow_executor
 from rasa.core.policies.flows.flow_exceptions import (
@@ -40,6 +41,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     UserFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.frames.search_frame import SearchStackFrame
+from rasa.engine.language import Language
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -65,7 +67,12 @@ from rasa.shared.core.flows.steps.collect import (
 )
 from rasa.shared.core.flows.steps.constants import START_STEP
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
-from rasa.shared.core.slots import FloatSlot, SlotRejection, TextSlot
+from rasa.shared.core.slots import (
+    FloatSlot,
+    SlotRejection,
+    StrictCategoricalSlot,
+    TextSlot,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
 from tests.utilities import (
@@ -484,6 +491,8 @@ def test_trigger_pattern_continue_interrupted_adds_stackframe():
     stack = DialogueStack(
         frames=[UserFlowStackFrame(flow_id="bar_flow", step_id="2", frame_id="some-id")]
     )
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
 
     current_frame = UserFlowStackFrame(
         flow_id="foo_flow",
@@ -492,7 +501,9 @@ def test_trigger_pattern_continue_interrupted_adds_stackframe():
         frame_type=FlowStackFrameType.INTERRUPT,
     )
 
-    flow_executor.trigger_pattern_continue_interrupted(current_frame, stack, flows)
+    flow_executor.trigger_pattern_continue_interrupted(
+        current_frame, stack, flows, tracker
+    )
 
     top = stack.top()
     assert top is not None
@@ -522,12 +533,16 @@ def test_trigger_pattern_continue_interrupted_does_not_trigger_if_no_interrupt()
         flow_id="bar_flow", step_id="2", frame_id="some-id"
     )
     stack = DialogueStack(frames=[user_flow_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
 
     current_frame = UserFlowStackFrame(
         flow_id="foo_flow", step_id="1", frame_id="some-other-id"
     )
 
-    flow_executor.trigger_pattern_continue_interrupted(current_frame, stack, flows)
+    flow_executor.trigger_pattern_continue_interrupted(
+        current_frame, stack, flows, tracker
+    )
 
     # only the original frame should be on the stack
     assert len(stack.frames) == 1
@@ -562,12 +577,16 @@ def test_trigger_pattern_continue_interrupted_does_not_trigger_if_finished():
             )
         ]
     )
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
 
     current_frame = UserFlowStackFrame(
         flow_id="foo_flow", step_id="1", frame_id="some-other-id"
     )
 
-    flow_executor.trigger_pattern_continue_interrupted(current_frame, stack, flows)
+    flow_executor.trigger_pattern_continue_interrupted(
+        current_frame, stack, flows, tracker
+    )
 
     # only the original frame should be on the stack
     assert len(stack.frames) == 1
@@ -592,12 +611,16 @@ def test_trigger_pattern_continue_interrupted_does_not_trigger_if_not_user_frame
     )
 
     stack = DialogueStack(frames=[ChitChatStackFrame(frame_id="some-id")])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
 
     current_frame = UserFlowStackFrame(
         flow_id="foo_flow", step_id="1", frame_id="some-other-id"
     )
 
-    flow_executor.trigger_pattern_continue_interrupted(current_frame, stack, flows)
+    flow_executor.trigger_pattern_continue_interrupted(
+        current_frame, stack, flows, tracker
+    )
 
     # only the original frame should be on the stack
     assert len(stack.frames) == 1
@@ -659,6 +682,8 @@ def test_trigger_pattern_continue_interrupted_triggers_correctly_with_link_step(
         frame_id="id2",
     )
     stack = DialogueStack(frames=[frame1, frame2, frame3])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
     current_frame = UserFlowStackFrame(
         flow_id="flow_b",
         frame_type=FlowStackFrameType.INTERRUPT,
@@ -676,7 +701,7 @@ def test_trigger_pattern_continue_interrupted_triggers_correctly_with_link_step(
     )
 
     resumed_events = flow_executor.trigger_pattern_continue_interrupted(
-        current_frame, stack, flows
+        current_frame, stack, flows, tracker
     )
 
     # if the `pattern_continue_interrupted` is correctly invoked, both the stack
@@ -2213,3 +2238,58 @@ def test_run_end_step_triggers_clarify_pattern() -> None:
     assert isinstance(third_frame, ClarifyPatternFlowStackFrame)
     assert third_frame.flow_id == "pattern_clarification"
     assert third_frame.names == ["flow b", "flow a"]
+
+
+def test_trigger_pattern_continue_interrupted_uses_localized_flow_name(
+    monkeypatch: MonkeyPatch,
+):
+    # Load a flow with translations.
+    german_flow_name = "German foo"
+    flows = flows_from_str(
+        f"""
+        flows:
+          foo:
+            description: flow foo
+            name: foo flow
+            translation:
+                de:
+                  name: {german_flow_name}
+            steps:
+            - id: first_step
+              action: action_listen
+        """
+    )
+
+    # Create a tracker with a language slot set to German language.
+    language = Language.from_language_code("de", is_default=True)
+    slots = [
+        StrictCategoricalSlot(
+            "language", [], initial_value=language.code, values=[language.code]
+        )
+    ]
+    tracker = DialogueStateTracker.from_events("test", [], slots=slots)
+
+    # Create a stack with a flow frame.
+    stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(flow_id="foo", step_id="first_step", frame_id="some-id")
+        ]
+    )
+    tracker.update_stack(stack)
+
+    # Trigger the pattern continue interrupted.
+    current_frame = UserFlowStackFrame(
+        flow_id="foo",
+        step_id="second_step",
+        frame_id="some-other-id",
+        frame_type=FlowStackFrameType.INTERRUPT,
+    )
+    flow_executor.trigger_pattern_continue_interrupted(
+        current_frame, stack, flows, tracker
+    )
+
+    # Confirm that the stack now contains a new frame with the localized flow name.
+    top = stack.top()
+    assert top is not None
+    assert isinstance(top, ContinueInterruptedPatternFlowStackFrame)
+    assert top.previous_flow_name == german_flow_name

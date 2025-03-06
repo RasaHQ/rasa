@@ -113,7 +113,9 @@ class CancelFlowCommand(Command):
 
         stack.push(
             CancelPatternFlowStackFrame(
-                canceled_name=current_flow.readable_name(),
+                canceled_name=current_flow.readable_name(
+                    language=tracker.current_language
+                ),
                 canceled_frames=canceled_frames,
             )
         )

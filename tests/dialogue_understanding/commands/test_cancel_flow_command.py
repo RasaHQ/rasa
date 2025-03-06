@@ -17,7 +17,9 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
 )
+from rasa.engine.language import Language
 from rasa.shared.core.events import DialogueStackUpdated, FlowCancelled
+from rasa.shared.core.slots import StrictCategoricalSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.utilities import flows_from_str
 
@@ -325,3 +327,56 @@ def test_run_command_on_tracker_during_clarify():
 def test_is_instance_of_prompt_command():
     # Check if the command adheres to the PromptCommand protocol.
     assert isinstance(CancelFlowCommand(), PromptCommand) is True
+
+
+def test_cancel_flow_command_uses_localized_flow_name(monkeypatch: pytest.MonkeyPatch):
+    # Load a flow with translations.
+    german_flow_name = "German foo"
+    all_flows = flows_from_str(
+        f"""
+        flows:
+          foo:
+            description: flow foo
+            name: foo flow
+            translation:
+                de:
+                  name: {german_flow_name}
+            steps:
+            - id: first_step
+              action: action_listen
+        """
+    )
+
+    # Create a tracker with a language slot set to German language.
+    language = Language.from_language_code("de", is_default=True)
+    slots = [
+        StrictCategoricalSlot(
+            "language", [], initial_value=language.code, values=[language.code]
+        )
+    ]
+    tracker = DialogueStateTracker.from_events("test", evts=[], slots=slots)
+
+    # Add a flow to the tracker.
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "frame_type": "regular",
+                    "flow_id": "foo",
+                    "step_id": "first_step",
+                    "frame_id": "some-frame-id",
+                }
+            ]
+        )
+    )
+
+    # Run the cancel flow command.
+    command = CancelFlowCommand()
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+
+    # Check that the canceled name is the German translation.
+    dialogue_stack_event = events[-1]
+    patch = jsonpatch.JsonPatch.from_string(dialogue_stack_event.update)
+    dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
+    assert dialogue_stack_dump[-1]["canceled_name"] == german_flow_name

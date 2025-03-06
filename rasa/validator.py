@@ -16,9 +16,12 @@ import rasa.shared.utils.cli
 import rasa.shared.utils.io
 from rasa.core.channels import UserMessage
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
+from rasa.engine.language import Language
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
+    CONFIG_ADDITIONAL_LANGUAGES_KEY,
+    CONFIG_LANGUAGE_KEY,
     CONFIG_MANDATORY_KEYS,
     CONFIG_PIPELINE_KEY,
     DOCS_URL_ACTIONS,
@@ -46,6 +49,7 @@ from rasa.shared.core.domain import (
 )
 from rasa.shared.core.events import ActionExecuted, ActiveLoop, UserUttered
 from rasa.shared.core.flows import Flow, FlowsList
+from rasa.shared.core.flows.constants import KEY_NAME, KEY_TRANSLATION
 from rasa.shared.core.flows.flow_step_links import IfFlowStepLink
 from rasa.shared.core.flows.steps.action import ActionFlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
@@ -65,6 +69,7 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
 )
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.data import create_regex_pattern_reader
+from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import COMMANDS
 from rasa.shared.nlu.training_data.message import Message
@@ -1285,6 +1290,165 @@ class Validator:
 
         return all_good
 
+    def _get_response_translation_warnings(self) -> list:
+        """Collect warnings for responses missing translations.
+
+        Returns:
+            List of warnings for responses missing translations.
+        """
+        additional_languages = self.config.get(CONFIG_ADDITIONAL_LANGUAGES_KEY) or []
+        response_warnings = []
+
+        for response_name, responses in self.domain.responses.items():
+            provided_languages = set()
+            # For each response variation, we check if the additional
+            # languages are available in at least on variation
+            for response in responses:
+                translation = response.get(KEY_TRANSLATION) or {}
+                for language_code in additional_languages:
+                    if translation.get(language_code):
+                        provided_languages.add(language_code)
+
+            missing_languages = [
+                lang for lang in additional_languages if lang not in provided_languages
+            ]
+            if missing_languages:
+                language_code_str = ", ".join(missing_languages)
+                response_warnings.append(
+                    {
+                        "event": (
+                            "validator.verify_translations.missing_response_translation"
+                        ),
+                        "response": response_name,
+                        "missing_languages": missing_languages,
+                        "event_info": (
+                            f"The response '{response_name}' is "
+                            f"missing a translation for the following "
+                            f"languages: {language_code_str}."
+                        ),
+                    }
+                )
+        return response_warnings
+
+    def _get_flow_translation_warnings(self) -> list:
+        """Collect warnings for flows missing translations.
+
+        Returns:
+            List of warnings for flows missing translations.
+        """
+        additional_languages = self.config.get(CONFIG_ADDITIONAL_LANGUAGES_KEY) or []
+
+        flow_warnings = []
+        for flow in self.flows.underlying_flows:
+            required_field_translation = [KEY_NAME]
+            missing_languages = []
+            for language_code in additional_languages:
+                translation = flow.translation.get(language_code)
+                # If translation for the language code doesn't exist,
+                # or the required fields are not set properly,
+                # we add the language code to the list.
+                if not translation or not all(
+                    getattr(translation, field, None)
+                    for field in required_field_translation
+                ):
+                    missing_languages.append(language_code)
+
+            if missing_languages:
+                language_code_str = ", ".join(missing_languages)
+                flow_warnings.append(
+                    {
+                        "event": (
+                            "validator.verify_translations.missing_flow_translation"
+                        ),
+                        "flow": flow.id,
+                        "missing_languages": missing_languages,
+                        "event_info": (
+                            f"The flow '{flow.id}' is missing the translation for "
+                            f"the following languages: {language_code_str}."
+                        ),
+                    }
+                )
+        return flow_warnings
+
+    def verify_config_language(self) -> bool:
+        """Verify that config languages are properly set up.
+
+        Returns:
+            `True` if all languages are properly set up, `False` otherwise.
+
+        Raises:
+            RasaException: If the default language is listed as an
+            additional language or if the language code is invalid.
+        """
+        language = self.config.get(CONFIG_LANGUAGE_KEY)
+        additional_languages = self.config.get(CONFIG_ADDITIONAL_LANGUAGES_KEY, [])
+
+        # Check if the default language is in the additional languages.
+        if language in additional_languages:
+            raise RasaException(
+                f"The default language '{language}' is listed as an additional "
+                f"language in the configuration file. Please remove it from "
+                f"the list of additional languages."
+            )
+
+        # Verify the language codes by initializing the Language class.
+        for language_code in [language] + additional_languages:
+            Language.from_language_code(language_code=language_code)
+
+        return True
+
+    def verify_translations(self, summary_mode: bool = False) -> bool:
+        """Checks for inconsistencies in translations.
+
+        Args:
+            summary_mode: If True, logs a single aggregated warning per category;
+                otherwise, logs each warning individually.
+
+        Returns:
+            `True` if no inconsistencies were found, `False` otherwise.
+
+        Raises:
+            Warning: Single warning per response or flow missing translations
+            if `summary_mode` is `True`, otherwise one warning per missing translation.
+        """
+        all_good = self.verify_config_language()
+
+        additional_languages = self.config.get(CONFIG_ADDITIONAL_LANGUAGES_KEY, [])
+        if not additional_languages:
+            return all_good
+
+        response_warnings = self._get_response_translation_warnings()
+        flow_warnings = self._get_flow_translation_warnings()
+
+        if summary_mode:
+            if response_warnings:
+                count = len(response_warnings)
+                structlogger.warn(
+                    "validator.verify_translations.missing_response_translation_summary",
+                    count=count,
+                    event_info=(
+                        f"{count} response{' is' if count == 1 else 's are'} "
+                        f"missing translations for some languages. "
+                        "Run 'rasa data validate language' for details."
+                    ),
+                )
+            if flow_warnings:
+                count = len(flow_warnings)
+                structlogger.warn(
+                    "validator.verify_translations.missing_flow_translation_summary",
+                    count=count,
+                    event_info=(
+                        f"{count} flow{' is' if count == 1 else 's are'} "
+                        f"missing translations for some languages. "
+                        "Run 'rasa data validate language' for details."
+                    ),
+                )
+        else:
+            for warning in response_warnings + flow_warnings:
+                structlogger.warn(**warning)
+
+        return all_good
+
     def validate_button_payloads(self) -> bool:
         """Check if the response button payloads are valid."""
         all_good = True
@@ -1653,10 +1817,15 @@ class Validator:
                 self.verify_predicates(),
             ]
         )
+        valid_translations = self.verify_translations(summary_mode=True)
         valid_calm_slot_mappings = self.validate_CALM_slot_mappings()
 
         all_good = (
-            valid_responses and valid_nlu and valid_flows and valid_calm_slot_mappings
+            valid_responses
+            and valid_nlu
+            and valid_flows
+            and valid_translations
+            and valid_calm_slot_mappings
         )
 
         return all_good

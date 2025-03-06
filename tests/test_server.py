@@ -1310,6 +1310,7 @@ async def test_requesting_non_existent_tracker(rasa_app: SanicASGITestClient):
     assert response.status == HTTPStatus.OK
     assert content["paused"] is False
     assert content["slots"] == {
+        "language": "en",
         "name": None,
         **{slot: None for slot in DEFAULT_SLOT_NAMES},
     }

@@ -9,6 +9,10 @@ assistant_id: placeholder_default
 # Configuration for the Rasa NLU components.
 # https://rasa.com/docs/rasa-pro/nlu-based-assistants/components
 language: en
+additional_languages:
+  - it
+  - de
+  - es
 
 pipeline:
   - name: WhitespaceTokenizer

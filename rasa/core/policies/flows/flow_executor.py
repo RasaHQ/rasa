@@ -242,7 +242,10 @@ def events_for_collect_step_execution(
 
 
 def trigger_pattern_continue_interrupted(
-    current_frame: DialogueStackFrame, stack: DialogueStack, flows: FlowsList
+    current_frame: DialogueStackFrame,
+    stack: DialogueStack,
+    flows: FlowsList,
+    tracker: DialogueStateTracker,
 ) -> List[Event]:
     """Trigger the pattern to continue an interrupted flow if needed."""
     events: List[Event] = []
@@ -265,7 +268,9 @@ def trigger_pattern_continue_interrupted(
     ):
         stack.push(
             ContinueInterruptedPatternFlowStackFrame(
-                previous_flow_name=interrupted_user_flow.readable_name(),
+                previous_flow_name=interrupted_user_flow.readable_name(
+                    language=tracker.current_language
+                ),
             )
         )
         events.append(
@@ -672,7 +677,7 @@ def _run_end_step(
         trigger_pattern_clarification(current_frame, stack, flows)
     else:
         resumed_events = trigger_pattern_continue_interrupted(
-            current_frame, stack, flows
+            current_frame, stack, flows, tracker
         )
     reset_events: List[Event] = reset_scoped_slots(current_frame, flow, tracker)
     return ContinueFlowWithNextStep(

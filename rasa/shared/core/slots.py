@@ -771,3 +771,35 @@ class AnySlot(Slot):
             f"implement a custom slot type by subclassing '{Slot.__name__}'. "
             f"See the documentation for more information: {DOCS_URL_NLU_BASED_SLOTS}"
         )
+
+
+class StrictCategoricalSlot(CategoricalSlot):
+    """A categorical slot that strictly enforces allowed values."""
+
+    type_name = "strict_categorical"
+
+    def coerce_value(self, value: Any) -> Any:
+        """Coerce the value to one of the allowed ones or raise an error if invalid."""
+        if value is None:
+            return value
+
+        for allowed_value in self.values:
+            # Allowed values are always stored as strings, so we can use casefold().
+            if value.casefold() == allowed_value.casefold():
+                return allowed_value
+
+        raise InvalidSlotConfigError(
+            f"Value '{value}' is not allowed for the slot '{self.name}'. "
+            f"Allowed values are: {self.values}"
+        )
+
+    @Slot.value.setter  # type: ignore[attr-defined,misc]
+    def value(self, value: Any) -> None:
+        """Set the slot's value using strict coercion."""
+        coerced_value = self.coerce_value(value)
+        super(StrictCategoricalSlot, self.__class__).value.fset(self, coerced_value)
+
+    def add_default_value(self) -> None:
+        # StrictCategoricalSlot enforces validation against a specified set of values,
+        # so default values should not be automatically added.
+        pass
