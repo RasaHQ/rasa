@@ -230,7 +230,7 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
             structlogger.warning(
                 "llm_command_generator.predict_commands",
                 message="No commands were predicted as the LLM response could "
-                "not be parsed or the LLM responded with an invalid command."
+                "not be parsed or the LLM responded with an invalid command. "
                 "Returning a CannotHandleCommand instead.",
             )
             commands = [CannotHandleCommand()]
@@ -350,7 +350,7 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
         """
         commands = parse_commands_using_command_parsers(actions, flows)
         if not commands:
-            structlogger.debug(
+            structlogger.warning(
                 f"{cls.__class__.__name__}.parse_commands",
                 message="No commands were parsed from the LLM actions.",
                 actions=actions,

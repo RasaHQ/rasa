@@ -12,6 +12,7 @@ from rasa.dialogue_understanding_test.constants import (
     KEY_USER_INPUT,
 )
 from rasa.dialogue_understanding_test.du_test_case import (
+    KEY_CHOICES,
     KEY_COMPLETION_TOKENS,
     KEY_PROMPT_TOKENS,
     DialogueUnderstandingOutput,
@@ -167,8 +168,30 @@ class TestDialogueUnderstandingOutput:
                 "componentB": [],
             }
         )
-        component_names = output.get_component_names_that_predicted_commands()
+        component_names = (
+            output.get_component_names_that_predicted_commands_or_have_llm_response()
+        )
         assert sorted(component_names) == ["componentA"]
+
+    def test_get_component_names_without_commands_but_with_llm_response(self):
+        output = DialogueUnderstandingOutput(
+            commands={
+                "ComponentA": [SetSlotCommand("slotA", "valA")],
+                "ComponentB": [],
+            },
+            prompts=[
+                {
+                    KEY_COMPONENT_NAME: "ComponentB",
+                    KEY_LLM_RESPONSE_METADATA: {KEY_CHOICES: ["test LLM response"]},
+                }
+            ],
+        )
+
+        result = (
+            output.get_component_names_that_predicted_commands_or_have_llm_response()
+        )
+
+        assert set(result) == {"ComponentA", "ComponentB"}
 
     def test_get_component_name_to_prompt_info(self):
         output = DialogueUnderstandingOutput(
@@ -217,6 +240,57 @@ class TestDialogueUnderstandingOutput:
             KEY_USER_PROMPT: "User prompt content B",
             KEY_PROMPT_TOKENS: 7834,
             KEY_COMPLETION_TOKENS: 34,
+        }
+
+    def test_get_component_name_to_prompt_info_when_no_commands_were_predicted(self):
+        output = DialogueUnderstandingOutput(
+            commands={},
+            prompts=[
+                {
+                    KEY_COMPONENT_NAME: "componentA",
+                    KEY_PROMPT_NAME: "promptA",
+                    KEY_USER_PROMPT: "User prompt content A",
+                    KEY_SYSTEM_PROMPT: "System prompt content A",
+                    KEY_LLM_RESPONSE_METADATA: {
+                        KEY_LATENCY: 1.23,
+                        "usage": {
+                            KEY_PROMPT_TOKENS: 1234,
+                            KEY_COMPLETION_TOKENS: 4,
+                        },
+                        KEY_CHOICES: ["test LLM response"],
+                    },
+                },
+                {
+                    KEY_COMPONENT_NAME: "componentA",
+                    KEY_PROMPT_NAME: "promptB",
+                    KEY_USER_PROMPT: "User prompt content B",
+                    KEY_LLM_RESPONSE_METADATA: {
+                        "usage": {
+                            KEY_PROMPT_TOKENS: 7834,
+                            KEY_COMPLETION_TOKENS: 34,
+                        },
+                        KEY_CHOICES: ["test LLM response 2"],
+                    },
+                },
+            ],
+        )
+        result = output.get_component_name_to_prompt_info()
+        assert list(result.keys()) == ["componentA"]
+        assert result["componentA"][0] == {
+            KEY_PROMPT_NAME: "promptA",
+            KEY_USER_PROMPT: "User prompt content A",
+            KEY_SYSTEM_PROMPT: "System prompt content A",
+            KEY_LATENCY: 1.23,
+            KEY_COMPLETION_TOKENS: 4,
+            KEY_PROMPT_TOKENS: 1234,
+            KEY_CHOICES: "test LLM response",
+        }
+        assert result["componentA"][1] == {
+            KEY_PROMPT_NAME: "promptB",
+            KEY_USER_PROMPT: "User prompt content B",
+            KEY_PROMPT_TOKENS: 7834,
+            KEY_COMPLETION_TOKENS: 34,
+            KEY_CHOICES: "test LLM response 2",
         }
 
 

@@ -84,7 +84,7 @@ class FailedTestStep(BaseModel):
 
         if step.dialogue_understanding_output:
             predicted_commands = step.dialogue_understanding_output.commands
-            command_generators = step.dialogue_understanding_output.get_component_names_that_predicted_commands()  # noqa: E501
+            command_generators = step.dialogue_understanding_output.get_component_names_that_predicted_commands_or_have_llm_response()  # noqa: E501
             prompts = (
                 step.dialogue_understanding_output.get_component_name_to_prompt_info()
             )

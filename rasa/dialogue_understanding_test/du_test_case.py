@@ -85,15 +85,33 @@ class DialogueUnderstandingOutput(BaseModel):
             for command in predicted_commands
         ]
 
-    def get_component_names_that_predicted_commands(self) -> List[str]:
-        """Get all component names that have predicted commands."""
-        if self.commands is None:
-            return []
-        return [
-            component_name
-            for component_name, predicted_commands in self.commands.items()
-            if predicted_commands
-        ]
+    def get_component_names_that_predicted_commands_or_have_llm_response(
+        self,
+    ) -> List[str]:
+        """Get all component names that have predicted commands or recieved
+        non-empty response from LLM.
+        """
+        component_names_that_predicted_commands = (
+            [
+                component_name
+                for component_name, predicted_commands in self.commands.items()
+                if predicted_commands
+            ]
+            if self.commands
+            else []
+        )
+        components_with_prompts = (
+            [
+                str(prompt.get(KEY_COMPONENT_NAME, None))
+                for prompt in self.prompts
+                if prompt.get(KEY_LLM_RESPONSE_METADATA, None)
+            ]
+            if self.prompts
+            else []
+        )
+        return list(
+            set(component_names_that_predicted_commands + components_with_prompts)
+        )
 
     def get_component_name_to_prompt_info(self) -> Dict[str, List[Dict[str, Any]]]:
         """Return a dictionary of component names to prompt information.
@@ -120,7 +138,9 @@ class DialogueUnderstandingOutput(BaseModel):
             return {}
 
         data: Dict[str, List[Dict[str, Any]]] = {}
-        relevant_component_names = self.get_component_names_that_predicted_commands()
+        relevant_component_names = (
+            self.get_component_names_that_predicted_commands_or_have_llm_response()
+        )
 
         for prompt_data in self.prompts:
             component_name = prompt_data[KEY_COMPONENT_NAME]
