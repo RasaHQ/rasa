@@ -45,7 +45,7 @@ class ConversationStep:
             elif isinstance(command, SetSlotCommand):
                 output.append(f"SetSlot({command.name}, {command.value})")
             elif isinstance(command, ClarifyCommand):
-                output.append(f"Clarify({command.options})")
+                output.append(f"Clarify({', '.join(command.options)})")
             elif isinstance(command, CancelFlowCommand):
                 output.append("CancelFlow()")
             elif isinstance(command, ChitChatAnswerCommand):

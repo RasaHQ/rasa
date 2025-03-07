@@ -29,7 +29,7 @@ class TestConversationStep(unittest.TestCase):
             "llm_commands": [
                 "StartFlow(test_flow)",
                 "SetSlot(slot_name, slot_value)",
-                "Clarify(['option1', 'option2'])",
+                "Clarify(option1, option2)",
             ],
         }
 
@@ -49,7 +49,7 @@ class TestConversationStep(unittest.TestCase):
             "llm_commands": [
                 "StartFlow(test_flow)",
                 "SetSlot(slot_name, slot_value)",
-                "Clarify(['option1', 'option2'])",
+                "Clarify(option1, option2)",
             ],
             "passing_rephrasings": ["pass1"],
             "failing_rephrasings": ["fail1"],
