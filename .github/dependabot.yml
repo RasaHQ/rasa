@@ -15,19 +15,31 @@ updates:
       - type:dependencies
       - release:main
     groups:
-      essential-dependencies:
+      tensorflow:
         dependency-type: production
-        applies-to: version-updates
         patterns:
-          - "sanic*"
+          - "tensorflow*"
+      engine-squad:
+        dependency-type: production
+        patterns:
           - "dask"
           - "numpy"
           - "scipy"
-          - "tensorflow*"
           - "litellm"
           - "openai"
           - "langchain"
+          - "sklearn-crfsuite"
+          - "scikit-learn"
+          - "faiss-cpu"
+          - "tiktoken"
           - "matplotlib"
+      atom-squad:
+        dependency-type: production
+        patterns:
+          - "sanic"
+          - "sanic-cors"
+          - "sanic-jwt"
+          - "sanic-routing"
           - "redis"
           - "ruamel.yaml"
           - "pyyaml"
@@ -36,92 +48,36 @@ updates:
           - "aiohttp"
           - "python-socketio"
           - "python-engineio"
-          - "sklearn*"
-          - "scikit-learn"
           - "confluent-kafka"
           - "pypred"
           - "structlog"
           - "jinja2"
           - "jsonpatch"
-          - "faiss*"
-          - "tiktoken"
           - "sqlalchemy"
           - "psycopg2-binary"
-        update-types:
-          - "minor"
-          - "patch"
-          - "major"
+      cloud-and-channels:
+        dependency-type: production
+        patterns:
+          - "boto3"
+          - "google-cloud-storage"
+          - "azure-storage-blob"
+          - "fbmessenger"
+          - "twilio"
+          - "webexteamssdk"
+          - "mattermostwrapper"
+          - "rocketchat_API"
+          - "aiogram"
+          - "google-auth"
+          - "slack-sdk"
+          - "pymilvus"
+          - "qdrant-client"
+          - "azure-identity"
+      other-production-dependencies:
+        dependency-type: production
+        patterns:
+          - "*"
       dev-dependencies:
         dependency-type: development
-        applies-to: version-updates
-        patterns:
-          - "pytest*"
-          - "ruff"
-          - "mypy*"
-          - "sanic-testing"
-          - "docker"
-          - "moto"
-          - "towncrier"
-          - "fakeredis"
-          - "responses"
-          - "aioresponses"
-          - "datadog"
-          - "gitpython"
-          - "types-werkzeug"
-          - "tomlkit"
-          - "langcodes"
-        update-types:
-          - "minor"
-          - "patch"
-          - "major"
-      non-essential-dependencies:
-        applies-to: version-updates
-        exclude-patterns:
-          - "sanic*"
-          - "dask"
-          - "numpy"
-          - "scipy"
-          - "tensorflow*"
-          - "safetensors"
-          - "litellm"
-          - "openai"
-          - "langchain"
-          - "matplotlib"
-          - "redis"
-          - "ruamel.yaml"
-          - "pyyaml"
-          - "packaging"
-          - "websockets"
-          - "aiohttp"
-          - "python-socketio"
-          - "python-engineio"
-          - "sklearn*"
-          - "skops"
-          - "scikit-learn"
-          - "confluent-kafka"
-          - "pypred"
-          - "structlog"
-          - "jinja2"
-          - "jsonpatch"
-          - "faiss*"
-          - "tiktoken"
-          - "sqlalchemy"
-          - "psycopg2-binary"
-          - "pytest*"
-          - "ruff"
-          - "mypy*"
-          - "docker"
-          - "moto"
-          - "towncrier"
-          - "fakeredis"
-          - "responses"
-          - "aioresponses"
-          - "datadog"
-          - "swagger-coverage"
-        update-types:
-          - "minor"
-          - "patch"
-          - "major"
     ignore:
       - dependency-name: prompt-toolkit
         versions:
@@ -136,6 +92,14 @@ updates:
       interval: weekly
       day: monday
       time: "01:00"
+    groups:
+      actions-deps:
+        patterns:
+          - "*"
+        exclude-patterns:
+        # internal git repo, not reachable for depenabot
+          - "RasaHQ/get-release-records-from-datocms-gha"
+          - "RasaHQ/push-release-record-to-datocms-gha"
     pull-request-branch-name:
       separator: "-"
     open-pull-requests-limit: 10
