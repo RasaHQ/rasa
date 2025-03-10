@@ -59,7 +59,7 @@ module.exports = {
   themeConfig: {
     announcementBar: {
       id: 'rasa_oss_docs_change', // Any value that will identify this message.
-      content: 'You are viewing documentation for a legacy Rasa product. If you want to get started building assistants with Rasa please check out our latest <a href="https://rasa.com/docs/">documentation here</a>.',
+      content: 'You are viewing documentation for our open source project which is maintained by the community. If you want to get started building assistants with Rasa please check out our latest <a href="https://rasa.com/docs/">documentation here</a>.',
       backgroundColor: '#969faf', // Defaults to `#fff`.
       textColor: '#fff', // Defaults to `#000`.
       // isCloseable: false, // Defaults to `true`.
