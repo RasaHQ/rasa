@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 import structlog
 from _pytest.tmpdir import TempPathFactory
-from pytest import MonkeyPatch
+from pytest import LogCaptureFixture, MonkeyPatch
 
 import rasa.shared.utils.io
 from rasa.dialogue_understanding.commands import (
@@ -41,6 +41,7 @@ from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
     DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
     MODEL_PROMPT_MAPPER,
+    CommandParserValidatorSingleton,
     CompactLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
@@ -89,6 +90,11 @@ def set_mock_openai_api_key(monkeypatch: MonkeyPatch):
     monkeypatch.setenv(
         OPENAI_API_KEY_ENV_VAR, "mock key in test_compact_llm_command_generator"
     )
+
+
+@pytest.fixture(autouse=True)
+def reset_validator_state():
+    CommandParserValidatorSingleton.reset_command_parser_validation()
 
 
 class TestCompactLLMCommandGenerator:
@@ -1839,3 +1845,145 @@ class TestCompactLLMCommandGenerator:
             rendered_template.splitlines(True), expected_template
         ):
             assert rendered_line == expected_line
+
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
+    async def test_validation_command_parser_unable_to_parse_commands_N_turns(
+        self,
+        mock_llm_factory: Mock,
+        command_generator: CompactLLMCommandGenerator,
+        flows: FlowsList,
+        tracker: DialogueStateTracker,
+        caplog: LogCaptureFixture,
+    ):
+        # Given
+        message = Message.build(text="start test_flow")
+        llm_mock = AsyncMock()
+        llm_mock.acompletion.return_value = AsyncMock(
+            spec=LLMResponse, choices=["StartFlow(test_flow)"]
+        )
+        mock_llm_factory.return_value = llm_mock
+
+        # When
+        with structlog.testing.capture_logs() as caplog:
+            # Predict empty commands for 6 turns.
+            for _ in range(6):
+                commands = await command_generator.predict_commands(
+                    message,
+                    flows=flows,
+                    tracker=tracker,
+                )
+                assert len(commands) == 1
+                assert commands[0] == CannotHandleCommand()
+
+        # Then
+        assert (
+            CommandParserValidatorSingleton.get_no_command_predicted_turn_counter() == 6
+        )
+        assert CommandParserValidatorSingleton.should_validate_command_parser() is True
+
+        event = "llm_command_generator.predict_commands.command_parser_not_working"
+        found_validation_log = False
+        for record in caplog:
+            if record["event"] == event:
+                found_validation_log = True
+                break
+
+        # Check if the validation log was found.
+        assert found_validation_log
+
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
+    async def test_validation_command_parser_unable_to_parse_commands_intermittently(
+        self,
+        mock_llm_factory: Mock,
+        command_generator: CompactLLMCommandGenerator,
+        flows: FlowsList,
+        tracker: DialogueStateTracker,
+        caplog: LogCaptureFixture,
+    ):
+        """Test that predict_commands sets the routing slot to True."""
+        # Given, invalid command as the return value of the mock.
+        message = Message.build(text="start test_flow")
+        llm_mock = AsyncMock()
+        llm_mock.acompletion.return_value = AsyncMock(
+            spec=LLMResponse, choices=["StartFlow(test_flow)"]
+        )
+        mock_llm_factory.return_value = llm_mock
+
+        # When
+        with structlog.testing.capture_logs() as caplog:
+            # Predict empty commands for 3 turns.
+            for _ in range(3):
+                commands = await command_generator.predict_commands(
+                    message,
+                    flows=flows,
+                    tracker=tracker,
+                )
+                assert len(commands) == 1
+                assert commands[0] == CannotHandleCommand()
+
+        # Then
+        assert (
+            CommandParserValidatorSingleton.get_no_command_predicted_turn_counter() == 3
+        )
+        assert CommandParserValidatorSingleton.should_validate_command_parser() is True
+
+        # Change the return value of the mock to a valid command.
+        llm_mock = AsyncMock()
+        llm_mock.acompletion.return_value = AsyncMock(
+            spec=LLMResponse, choices=["start flow test_flow"]
+        )
+        mock_llm_factory.return_value = llm_mock
+
+        # Predict valid command once, causing the command parser to be validated.
+        commands = await command_generator.predict_commands(
+            message,
+            flows=flows,
+            tracker=tracker,
+        )
+
+        # Then
+        assert len(commands) == 1
+        assert commands[0] == StartFlowCommand("test_flow")
+        assert (
+            CommandParserValidatorSingleton.get_no_command_predicted_turn_counter() == 0
+        )
+        assert CommandParserValidatorSingleton.should_validate_command_parser() is False
+
+        # Given, invalid command as the return value of the mock.
+        llm_mock = AsyncMock()
+        llm_mock.acompletion.return_value = AsyncMock(
+            spec=LLMResponse, choices=["StartFlow(test_flow)"]
+        )
+        mock_llm_factory.return_value = llm_mock
+
+        # When
+        with structlog.testing.capture_logs() as caplog:
+            # Predict invalid command for 6 turns now.
+            for _ in range(6):
+                commands = await command_generator.predict_commands(
+                    message,
+                    flows=flows,
+                    tracker=tracker,
+                )
+                assert len(commands) == 1
+                assert commands[0] == CannotHandleCommand()
+
+        # Then
+        assert (
+            CommandParserValidatorSingleton.get_no_command_predicted_turn_counter() == 0
+        )
+        assert CommandParserValidatorSingleton.should_validate_command_parser() is False
+
+        event = "llm_command_generator.predict_commands.command_parser_not_working"
+        found_validation_log = False
+        for record in caplog:
+            if record["event"] == event:
+                found_validation_log = True
+                break
+
+        # Check if the validation log is not found as the command parser is working now.
+        assert found_validation_log is False
