@@ -1074,6 +1074,7 @@ jobs:
           path: |
            integration-results-channel-connectors-with-calm-bot-results.xml
            integration-results-custom-broker-with-calm-bot-results.xml
+           
 
   unit-test:
     name: Run Unit Tests
@@ -1146,7 +1147,8 @@ jobs:
 
       - name: Prepare test results
         if: always()
-        run: mv unit-tests-results.xml ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
+        run: |
+          mv unit-tests-results.xml ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
 
       - name: Generate Rasa server OpenAPI test coverage report
         if: always() && matrix.test == 'test-other-unit-tests'
@@ -1228,6 +1230,7 @@ jobs:
             name: unit-tests-results-test-anonymization-python-${{ matrix.python-version }}
             path: |
               ${{ github.workspace }}/unit-tests-results-test-anonymization-python-${{ matrix.python-version }}.xml
+              
 
   publish-test-results:
     runs-on: ubuntu-24.04
@@ -1262,7 +1265,7 @@ jobs:
         with:
           files: "artifacts/**/unit-tests-results-*.xml"
           check_name: "Unit Test Results"
-
+          
   publish-test-results-on-scheduled-runs:
     runs-on: ubuntu-24.04
     if: ${{ inputs.run_mode == 'false' }}
@@ -1287,4 +1290,32 @@ jobs:
           files: "artifacts/**/unit-tests-results-*.xml"
           check_name: "Unit Test Results"
 
+
+  sonarqube:
+    name: SonarQube
+    runs-on: ubuntu-24.04
+    needs: [ unit-test, test-anonymization ]
+    if: always()
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Download test reports
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 #v4.1.4
+        with:
+          path: ${{ github.workspace }}/artifacts
+          pattern: "unit-tests-results-**"
+          merge-multiple: true
+
+      - name: Check if reports are empty
+        run: |
+          cat ${{ github.workspace }}/artifacts/unit-tests-results-test-policies-python-3.9.xml
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@bfd4e558cda28cda6b5defafb9232d191be8c203 # v4.2.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+          
           
