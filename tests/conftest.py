@@ -1574,9 +1574,7 @@ def valid_license(load_env_vars) -> str:
 
 @pytest.fixture
 def setup_swagger_coverage():
-    reporter = CoverageReporter(
-        api_name="rasa-pro", host="https://rasa.com/docs/rasa-pro/spec"
-    )
+    reporter = CoverageReporter(api_name="rasa-pro", host="https://rasa.com/docs/spec")
     reporter.cleanup_input_files()
     reporter.setup("/rasa.yml")
 
