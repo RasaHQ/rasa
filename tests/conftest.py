@@ -57,6 +57,9 @@ from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import RestInput, channel
 from rasa.core.exporter import Exporter
 from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+)
 from rasa.e2e_test.constants import (
     KEY_STUB_CUSTOM_ACTIONS,
     STUB_CUSTOM_ACTION_NAME_SEPARATOR,
@@ -1638,3 +1641,10 @@ def llm_response_object(llm_response_dict: Dict[Text, Any]) -> LLMResponse:
 @pytest.fixture
 def additional_languages() -> List[Text]:
     return ["it", "de", "es"]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def reset_command_syntax_version():
+    """Reset the syntax version only after all tests in this module have run."""
+    yield  # Let all tests run first
+    CommandSyntaxManager.reset_syntax_version()  # Reset after all tests finish
