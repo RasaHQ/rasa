@@ -972,7 +972,7 @@ class GenerativeResponseMixin(Assertion):
         data.pop("metric_adjective")
         return data
 
-    def _render_prompt(self, step_text: str, matching_event: BotUttered) -> str:
+    def _render_prompt(self, matching_event: BotUttered) -> str:
         raise NotImplementedError
 
     def _get_processed_output(self, parsed_llm_output: Dict[str, Any]) -> List[Any]:
@@ -999,7 +999,7 @@ class GenerativeResponseMixin(Assertion):
     ) -> Tuple[Optional[AssertionFailure], Optional[Event]]:
         """Run the LLM evaluation on the given event."""
         bot_message = matching_event.text
-        prompt = self._render_prompt(step_text, matching_event)
+        prompt = self._render_prompt(matching_event)
         llm_response = self._invoke_llm(llm_judge_config, prompt)
 
         try:
@@ -1160,9 +1160,9 @@ class GenerativeResponseIsRelevantAssertion(GenerativeResponseMixin):
     def type(cls) -> str:
         return AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value
 
-    def _render_prompt(self, step_text: str, matching_event: BotUttered) -> str:
+    def _render_prompt(self, matching_event: BotUttered) -> str:
         """Render the prompt."""
-        inputs = _get_prompt_inputs(self.type(), step_text, matching_event)
+        inputs = _get_prompt_inputs(self.type(), matching_event)
         prompt_template = _get_default_prompt_template(
             DEFAULT_ANSWER_RELEVANCE_PROMPT_TEMPLATE_FILE_NAME
         )
@@ -1206,11 +1206,10 @@ class GenerativeResponseIsGroundedAssertion(GenerativeResponseMixin):
     def type(cls) -> str:
         return AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value
 
-    def _render_prompt(self, step_text: str, matching_event: BotUttered) -> str:
+    def _render_prompt(self, matching_event: BotUttered) -> str:
         """Render the prompt."""
         inputs = _get_prompt_inputs(
             assertion_type=self.type(),
-            step_text=step_text,
             matching_event=matching_event,
             ground_truth=self.ground_truth,
         )
@@ -1336,12 +1335,11 @@ def _get_default_prompt_template(default_prompt_template_file_name: str) -> str:
 
 def _get_prompt_inputs(
     assertion_type: str,
-    step_text: str,
     matching_event: BotUttered,
     ground_truth: Optional[str] = None,
 ) -> Dict[str, Any]:
     if assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value:
-        return {"num_variations": "3", "user_message": step_text}
+        return {"num_variations": "3", "bot_message": matching_event.text}
     elif assertion_type == AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value:
         ground_truth_event_metadata = matching_event.metadata.get(
             SEARCH_RESULTS_METADATA_KEY, ""
