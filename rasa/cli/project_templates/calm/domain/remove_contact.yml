@@ -7,8 +7,7 @@ slots:
   remove_contact_name:
     type: text
     mappings:
-      - type: custom
-        action: remove_contact
+      - type: controlled
   remove_contact_handle:
     type: text
     mappings:

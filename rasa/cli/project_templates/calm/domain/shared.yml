@@ -4,7 +4,4 @@ slots:
   return_value:
     type: any
     mappings:
-      - type: custom
-        action: add_contact
-      - type: custom
-        action: remove_contact
+      - type: controlled

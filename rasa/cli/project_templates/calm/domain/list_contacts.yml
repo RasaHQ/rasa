@@ -7,8 +7,7 @@ slots:
   contacts_list:
     type: text
     mappings:
-      - type: custom
-        action: list_contacts
+      - type: controlled
 
 responses:
   utter_no_contacts:

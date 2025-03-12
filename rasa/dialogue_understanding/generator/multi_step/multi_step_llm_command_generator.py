@@ -226,7 +226,7 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             # be completed, "predict" the ErrorCommand
             commands = [ErrorCommand()]
 
-        if not commands:
+        if not commands and not prior_commands:
             # if for any reason the final list of commands is empty,
             # "predict" CannotHandle
             commands = [CannotHandleCommand()]
