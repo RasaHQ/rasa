@@ -2,14 +2,13 @@
 
 <div align="center">
 
-[![Build Status](https://github.com/RasaHQ/rasa-private/workflows/Continuous%20Integration/badge.svg)](https://github.com/RasaHQ/rasa-private/actions)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=RasaHQ_rasa&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=RasaHQ_rasa)
-[![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs/rasa-pro/)
+[![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs/docs/pro/intro)
+![Python version support](https://img.shields.io/pypi/pyversions/rasa-pro)
 
 </div>
 
 <hr />
-
 
 Rasa Pro is a framework for building scalable, dynamic conversational AI assistants that integrate large language models (LLMs) to enable more contextually aware and agentic interactions. Whether you’re new to conversational AI or an experienced developer, Rasa Pro offers enhanced flexibility, control, and performance for mission-critical applications.
 
@@ -23,19 +22,17 @@ Building on the foundation of Rasa Open Source, Rasa Pro adds advanced features 
 - **Robustness and Control:** Maintain strict adherence to business logic, preventing unwanted behaviors like prompt injection and hallucinations, leading to more reliable responses and secure interactions.
 - **Built-in Security:** Safeguard sensitive data, control access, and ensure secure deployment, essential for production environments that demand high levels of security and compliance.
 
+A [free developer license](https://rasa.com/docs/pro/intro/#who-rasa-pro-is-for) is available so you can explore and get to know Rasa Pro. It allows you to take your assistant live in production a limited capacity. A paid license is required for larger-scale production use, but all code is visible and can be customized as needed.
 
+To get started right now, you can
 
-A [free developer license](https://rasa.com/docs/rasa-pro/developer-edition/) is available so you can explore and get to know Rasa Pro. For small production deployments, the Extended Developer License allows you to take your assistant live in a limited capacity. A paid license is required for larger-scale production use, but all code is visible and can be customized as needed.
+`pip install rasa-pro`
 
-To get started right now, you can 
+Check out our
 
-`pip install rasa-pro` 
-
-Check out our 
-
-- [Rasa-pro Quickstart](https://rasa.com/docs/rasa-pro/installation/quickstart/),
-- [Conversational AI with Language Models (CALM) conceptual rundown](https://rasa.com/docs/rasa-pro/calm/),
-- [Rasa Pro / CALM tutorial](https://rasa.com/docs/rasa-pro/tutorial), and
-- [Rasa pro changelog](https://rasa.com/docs/rasa/rasa-pro-changelog/)
+- [Rasa-pro Quickstart](https://rasa.com/docs/learn/quickstart/pro),
+- [Conversational AI with Language Models (CALM) conceptual rundown](https://rasa.com/docs/learn/concepts/calm),
+- [Rasa Pro / CALM tutorial](https://rasa.com/docs/pro/tutorial), and
+- [Rasa pro changelog](https://rasa.com/docs/reference/changelogs/rasa-pro-changelog)
 
 for more. Also feel free to reach out to us on the [Rasa forum](https://forum.rasa.com/).

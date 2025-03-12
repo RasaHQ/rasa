@@ -2492,7 +2492,7 @@ Yanked.
 
 ## [3.2.0] - 2022-06-14
 ### Deprecations and Removals
-- [#10989](https://github.com/rasahq/rasa/issues/10989): [NLU training data](https://rasa.com/docs/rasa-pro/nlu-based-assistants/nlu-training-data) in JSON format is deprecated and will be
+- [#10989](https://github.com/rasahq/rasa/issues/10989): [NLU training data](https://legacy-docs-oss.rasa.com/docs/rasa/nlu-training-data) in JSON format is deprecated and will be
   removed in Rasa Open Source 4.0.
   Please use `rasa data convert nlu -f yaml --data <path to NLU data>` to convert your
   NLU JSON data to YAML format before support for NLU JSON data is removed.
@@ -2753,7 +2753,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#8864](https://github.com/rasahq/rasa/issues/8864): Follow through on deprecation warnings for policies and policy ensembles.
 - [#8867](https://github.com/rasahq/rasa/issues/8867): Follow through on deprecation warnings for `rasa.shared.data`.
 - [#8868](https://github.com/rasahq/rasa/issues/8868): Follow through on deprecation warnings for the `Domain`. Most importantly this will
-  enforce the schema of the [`forms` section](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) in the domain file.
+  enforce the schema of the [`forms` section](https://legacy-docs-oss.rasa.com/docs/rasa/forms) in the domain file.
   This further includes the removal of the `UnfeaturizedSlot` type.
 - [#8869](https://github.com/rasahq/rasa/issues/8869): Remove deprecated `change_form_to` and `set_form_validation` methods from `DialogueStateTracker`.
 - [#8870](https://github.com/rasahq/rasa/issues/8870): Remove the support of Markdown training data format. This includes:
@@ -2844,7 +2844,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   `Markers` allow you to define points of interest in conversations as a set of conditions that need to be met.
   A new command `rasa evaluate markers` allows you to apply these conditions to your existing tracker stores
   and outputs the points at which the conditions were satisfied.
-- [#9803](https://github.com/rasahq/rasa/issues/9803): Rasa Open Source now uses the [model configuration](https://rasa.com/docs/rasa-pro/nlu-based-assistants/model-configuration) to build a
+- [#9803](https://github.com/rasahq/rasa/issues/9803): Rasa Open Source now uses the [model configuration](https://legacy-docs-oss.rasa.com/docs/rasa/model-configuration) to build a
 
   [directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
   This graph describes the dependencies between the items in your model configuration and
@@ -3218,7 +3218,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Therefore, `model_confidence=linear_norm` is now deprecated and
   will be removed in Rasa Open Source `3.0.0`. If you were using `model_confidence=linear_norm` for any of the mentioned components,
   we recommend to revert it back to `model_confidence=softmax` and re-train the assistant. After re-training,
-  we also recommend to [re-tune the thresholds for fallback components](https://rasa.com/docs/rasa-pro/nlu-based-assistants/fallback-handoff#fallbacks).
+  we also recommend to [re-tune the thresholds for fallback components](https://legacy-docs-oss.rasa.com/docs/rasa/fallback-handoff/#fallbacks).
 - [#9091](https://github.com/rasahq/rasa/issues/9091): The fallback mechanism for spaCy models has now been removed in Rasa `3.0.0`.
 
   Rasa Open Source `2.5.0` introduced support for spaCy 3.0. This introduced a
@@ -3231,7 +3231,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Features
 - [#8724](https://github.com/rasahq/rasa/issues/8724): Added `sasl_mechanism` as an optional configurable parameters for the [Kafka Producer](https://rasa.com/docs/rasa-pro/production/event-brokers#kafka-event-broker).
-- [#8913](https://github.com/rasahq/rasa/issues/8913): Introduces a new policy called [`UnexpecTEDIntentPolicy`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#unexpected-intent-policy).
+- [#8913](https://github.com/rasahq/rasa/issues/8913): Introduces a new policy called [`UnexpecTEDIntentPolicy`](https://legacy-docs-oss.rasa.com/docs/rasa/policies#unexpected-intent-policy).
 
   `UnexpecTEDIntentPolicy` helps you review conversations
    and also allows your bot to react to unexpected user turns in conversations.
@@ -3253,7 +3253,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   As part of the feature, it also introduces:
 
-  - [`IntentMaxHistoryTrackerFeaturizer`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#3-intent-max-history)
+  - [`IntentMaxHistoryTrackerFeaturizer`](https://legacy-docs-oss.rasa.com/docs/rasa/policies#3-intent-max-history)
     to featurize the trackers for `UnexpecTEDIntentPolicy`.
   - `MultiLabelDotProductLoss` to support `UnexpecTEDIntentPolicy`'s multi-label training objective.
   - A new default action called [`action_unlikely_intent`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/default-actions#action_unlikely_intent).
@@ -3287,8 +3287,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   models - `DIETClassifier`, `ResponseSelector`. In other words, no extra buffer is created in
   advance for additional vocabulary items and space will be dynamically allocated for them inside the model.
 
-  This means there's no need to specify `additional_vocabulary_size` for [`CountVectorsFeaturizer`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#countvectorsfeaturizer) or
-  `number_additional_patterns` for [`RegexFeaturizer`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#regexfeaturizer). These parameters are now deprecated.
+  This means there's no need to specify `additional_vocabulary_size` for [`CountVectorsFeaturizer`](https://legacy-docs-oss.rasa.com/docs/rasa/components#countvectorsfeaturizer) or
+  `number_additional_patterns` for [`RegexFeaturizer`](https://legacy-docs-oss.rasa.com/docs/rasa/components#regexfeaturizer). These parameters are now deprecated.
 
   **Before**
   ```yaml
@@ -3310,9 +3310,9 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Also, all custom layers specifically built for machine learning models - `RasaSequenceLayer`, `RasaFeatureCombiningLayer`
   and `ConcatenateSparseDenseFeatures` now inherit from `RasaCustomLayer` so that they support flexible incremental training out of the box.
-- [#8295](https://github.com/rasahq/rasa/issues/8295): Speed up the contradiction check of the [`RulePolicy`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#rule-policy)
+- [#8295](https://github.com/rasahq/rasa/issues/8295): Speed up the contradiction check of the [`RulePolicy`](https://legacy-docs-oss.rasa.com/docs/rasa/policies#rule-policy)
   by a factor of 3.
-- [#8801](https://github.com/rasahq/rasa/issues/8801): Change the confidence score assigned by [`FallbackClassifier`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#fallbackclassifier) to fallback intent to be the same as the fallback threshold.
+- [#8801](https://github.com/rasahq/rasa/issues/8801): Change the confidence score assigned by [`FallbackClassifier`](https://legacy-docs-oss.rasa.com/docs/rasa/components#fallbackclassifier) to fallback intent to be the same as the fallback threshold.
 - [#8926](https://github.com/rasahq/rasa/issues/8926): Issue a UserWarning if a specified **domain folder** contains files that look like YML files but cannot be parsed successfully.
   Only invoked if user specifies a folder path in `--domain` paramater. Previously those invalid files in the specified folder were silently ignored.
   **Does not apply** to individually specified domain YAML files, e.g. `--domain /some/path/domain.yml`, those being invalid will still raise an exception.
@@ -3440,7 +3440,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 ### Improvements
 - [#261](https://github.com/rasahq/rasa/issues/261): Added an optional `ignored_intents` parameter in forms.
 
-  - To use it, add the `ignored_intents` parameter  in your `domain.yml` file after the forms name and provide a list of intents to ignore. Please see [Forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) for more information.
+  - To use it, add the `ignored_intents` parameter  in your `domain.yml` file after the forms name and provide a list of intents to ignore. Please see [Forms](https://legacy-docs-oss.rasa.com/docs/rasa/forms) for more information.
   - This can be used in case the user never wants to fill any slots of a form with the specified intent, e.g. chitchat.
 - [#5786](https://github.com/rasahq/rasa/issues/5786): Add function to carry `max_history` to featurizer
 - [#7589](https://github.com/rasahq/rasa/issues/7589): Improved the machine learning models' codebase by factoring out shared feature-processing
@@ -3545,7 +3545,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   specify a `model`. This fallback behavior is temporary and will be deprecated in Rasa 3.0.0.
 
   We've updated our docs to reflect these changes. All examples now show a direct link to the
-  correct spaCy model. We've also added a warning to the [SpaCyNLP](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#spacynlp)
+  correct spaCy model. We've also added a warning to the [SpaCyNLP](https://legacy-docs-oss.rasa.com/docs/rasa/components#spacynlp)
   docs that explains the fallback behavior.
 
 ### Improvements
@@ -3648,8 +3648,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   - `check_missing_templates` will be removed in Rasa Open Source 3.0.0. Please use `check_missing_responses` instead.
 
   Response Selector
-  - The field `template_name` will be deprecated in Rasa Open Source 3.0.0. Please use `utter_action` instead. Please see [here](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#selectors) for more details.
-  - The field `response_templates` will be deprecated in Rasa Open Source 3.0.0. Please use `responses` instead. Please see [here](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#selectors) for more details.
+  - The field `template_name` will be deprecated in Rasa Open Source 3.0.0. Please use `utter_action` instead. Please see [here](https://legacy-docs-oss.rasa.com/docs/rasa/components#selectors) for more details.
+  - The field `response_templates` will be deprecated in Rasa Open Source 3.0.0. Please use `responses` instead. Please see [here](https://legacy-docs-oss.rasa.com/docs/rasa/components#selectors) for more details.
 
 ### Improvements
 - [#7022](https://github.com/rasahq/rasa/issues/7022): The following endpoints now require the existence of the conversation for the specified conversation ID, raising an exception and returning a 404 status code.
@@ -3771,11 +3771,11 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
     model_confidence: linear_norm
     constrain_similarities: True
   ```
-  This should ease up [tuning fallback thresholds](https://rasa.com/docs/rasa-pro/nlu-based-assistants/fallback-handoff#fallbacks) as confidences for wrong predictions are better distributed across the range `[0, 1]`.
+  This should ease up [tuning fallback thresholds](https://legacy-docs-oss.rasa.com/docs/rasa/fallback-handoff/#fallbacks) as confidences for wrong predictions are better distributed across the range `[0, 1]`.
 
   If you trained a model with `model_confidence=cosine` or `model_confidence=inner` setting using previous versions of Rasa Open Source, please re-train by either removing the `model_confidence` option from the configuration or setting it to `linear_norm`.
 
-  `model_confidence=cosine` is removed from the configuration generated by [auto-configuration](https://rasa.com/docs/rasa-pro/nlu-based-assistants/model-configuration#suggested-config).
+  `model_confidence=cosine` is removed from the configuration generated by [auto-configuration](https://legacy-docs-oss.rasa.com/docs/rasa/model-configuration#suggested-config).
 
 
 ## [2.3.3] - 2021-02-25
@@ -3855,7 +3855,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
           return [SessionStarted(), ActionExecuted("action_listen")]
   ```
 - [#7579](https://github.com/rasahq/rasa/issues/7579): Add BILOU tagging schema for entity extraction in end-to-end TEDPolicy.
-- [#7616](https://github.com/rasahq/rasa/issues/7616): Added two new parameters `constrain_similarities` and `model_confidence` to machine learning (ML) components - [DIETClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier), [ResponseSelector](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier) and [TEDPolicy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#ted-policy).
+- [#7616](https://github.com/rasahq/rasa/issues/7616): Added two new parameters `constrain_similarities` and `model_confidence` to machine learning (ML) components - [DIETClassifier](https://legacy-docs-oss.rasa.com/docs/rasa/components#dietclassifier), [ResponseSelector](https://legacy-docs-oss.rasa.com/docs/rasa/components#dietclassifier) and [TEDPolicy](https://legacy-docs-oss.rasa.com/docs/rasa/policies#ted-policy).
 
   Setting `constrain_similarities=True` adds a sigmoid cross-entropy loss on all similarity values to restrict them to an approximate range in `DotProductLoss`. This should help the models to perform better on real world test sets.
   By default, the parameter is set to `False` to preserve the old behaviour, but users are encouraged to set it to `True` and re-train their assistants as it will be set to `True` by default from Rasa Open Source 3.0.0 onwards.
@@ -3878,7 +3878,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Configuration option `loss_type=softmax` is now deprecated and will be removed in Rasa Open Source 3.0.0 . Use `loss_type=cross_entropy` instead.
 
-  The default [auto-configuration](https://rasa.com/docs/rasa-pro/nlu-based-assistants/model-configuration#suggested-config) is changed to use `constrain_similarities=True` and `model_confidence=cosine` in ML components so that new users start with the recommended configuration.
+  The default [auto-configuration](https://legacy-docs-oss.rasa.com/docs/rasa/model-configuration#suggested-config) is changed to use `constrain_similarities=True` and `model_confidence=cosine` in ML components so that new users start with the recommended configuration.
 
   **EDIT**: Some post-release experiments revealed that using `model_confidence=cosine` is wrong as it can change the order of predicted labels. That's why this option was removed in Rasa Open Source version `2.3.3`. `model_confidence=inner` is deprecated as it produces an unbounded range of confidences which can break the logic of assistants in various other places. Please use `model_confidence=linear_norm` which will produce a linearly normalized version of dot product similarities with each value in the range `[0,1]`. Please read more about this change under the notes for release `2.3.4`.
 
@@ -3940,7 +3940,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Bugfixes
-- [#7764](https://github.com/rasahq/rasa/issues/7764): Fixes a bug in [forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) where the next slot asked was not consistent after returning to a form from an unhappy path.
+- [#7764](https://github.com/rasahq/rasa/issues/7764): Fixes a bug in [forms](https://legacy-docs-oss.rasa.com/docs/rasa/forms) where the next slot asked was not consistent after returning to a form from an unhappy path.
 
 
 ## [2.2.7] - 2021-01-25
@@ -3979,7 +3979,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Improvements
-- [#7520](https://github.com/rasahq/rasa/issues/7520): Improve the warning in case the [RulePolicy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#rule-policy) or the deprecated
+- [#7520](https://github.com/rasahq/rasa/issues/7520): Improve the warning in case the [RulePolicy](https://legacy-docs-oss.rasa.com/docs/rasa/policies#rule-policy) or the deprecated
   [MappingPolicy](https://rasa.com/docs/rasa/2.x/policies#mapping-policy) are missing
   from the model's `policies` configuration. Changed the info log to a warning as one
   of this policies should be added to the model configuration.
@@ -4018,7 +4018,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Bugfixes
-- [#7557](https://github.com/rasahq/rasa/issues/7557): Fixed a problem where a [form](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) wouldn't reject when the
+- [#7557](https://github.com/rasahq/rasa/issues/7557): Fixed a problem where a [form](https://legacy-docs-oss.rasa.com/docs/rasa/forms) wouldn't reject when the
   `FormValidationAction` re-implemented `required_slots`.
 - [#7585](https://github.com/rasahq/rasa/issues/7585): Fixed an error when using the [SQLTrackerStore](https://rasa.com/docs/rasa-pro/production/tracker-stores#sqltrackerstore)
   with a Postgres database and the parameter `login_db` specified.
@@ -4074,8 +4074,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   training](https://legacy-docs-oss.rasa.com/docs/rasa/command-line-interface/#incremental-training).
 
   Added a configuration parameter `additional_vocabulary_size` to
-  [`CountVectorsFeaturizer`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#countvectorsfeaturizer)
-  and `number_additional_patterns` to [`RegexFeaturizer`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#regexfeaturizer).
+  [`CountVectorsFeaturizer`](https://legacy-docs-oss.rasa.com/docs/rasa/components#countvectorsfeaturizer)
+  and `number_additional_patterns` to [`RegexFeaturizer`](https://legacy-docs-oss.rasa.com/docs/rasa/components#regexfeaturizer).
   These parameters are useful to configure when using incremental training for your pipelines.
 - [#7408](https://github.com/rasahq/rasa/issues/7408): Add the option to use cross-validation to the
   [`POST /model/test/intents`](/reference/api/pro/http-api) endpoint.
@@ -4089,7 +4089,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   To trigger asynchronous processing specify
   a callback URL in the query parameter `callback_url` which Rasa Open Source should send
   the results to. This URL will also be called in case of errors.
-- [#7496](https://github.com/rasahq/rasa/issues/7496): Make [TED Policy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#ted-policy) an end-to-end policy. Namely, make it possible to train TED on stories that contain
+- [#7496](https://github.com/rasahq/rasa/issues/7496): Make [TED Policy](https://legacy-docs-oss.rasa.com/docs/rasa/policies#ted-policy) an end-to-end policy. Namely, make it possible to train TED on stories that contain
   intent and entities or user text and bot actions or bot text.
   If you don't have text in your stories, TED will behave the same way as before.
   Add possibility to predict entities using TED.
@@ -4211,7 +4211,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 
 ### Deprecations and Removals
-- [#7136](https://github.com/rasahq/rasa/issues/7136): The [`Policy`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies) interface was changed to return a `PolicyPrediction` object when
+- [#7136](https://github.com/rasahq/rasa/issues/7136): The [`Policy`](https://legacy-docs-oss.rasa.com/docs/rasa/policies) interface was changed to return a `PolicyPrediction` object when
   `predict_action_probabilities` is called. Returning a list of probabilities directly
   is deprecated and support for this will be removed in Rasa Open Source 3.0.
 
@@ -4273,13 +4273,13 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   ```
 
 ### Features
-- [#7136](https://github.com/rasahq/rasa/issues/7136): [Policies](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies) can now return obligatory and optional events as part of their
+- [#7136](https://github.com/rasahq/rasa/issues/7136): [Policies](https://legacy-docs-oss.rasa.com/docs/rasa/policies) can now return obligatory and optional events as part of their
   prediction. Obligatory events are always applied to the current conversation tracker.
   Optional events are only applied to the conversation tracker in case the policy wins.
 
 ### Improvements
 - [#4341](https://github.com/rasahq/rasa/issues/4341): Changed `Agent.load` method to support `pathlib` paths.
-- [#5715](https://github.com/rasahq/rasa/issues/5715): If you are using the feature [Entity Roles and Groups](https://rasa.com/docs/rasa-pro/nlu-based-assistants/nlu-training-data#entities-roles-and-groups), you should now also list the roles and groups
+- [#5715](https://github.com/rasahq/rasa/issues/5715): If you are using the feature [Entity Roles and Groups](https://legacy-docs-oss.rasa.com/docs/rasa/nlu-training-data#entities-roles-and-groups), you should now also list the roles and groups
   in your domain file if you want roles and groups to influence your conversations. For example:
   ```yaml
   entities:
@@ -4299,8 +4299,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   ```
 
   Entity roles and groups can now influence dialogue predictions. For more information see the section
-  [Entity Roles and Groups influencing dialogue predictions](https://rasa.com/docs/rasa-pro/nlu-based-assistants/nlu-training-data#entity-roles-and-groups-influencing-dialogue-predictions).
-- [#6285](https://github.com/rasahq/rasa/issues/6285): Predictions of the [`FallbackClassifier`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#fallbackclassifier) are
+  [Entity Roles and Groups influencing dialogue predictions](https://legacy-docs-oss.rasa.com/docs/rasa/nlu-training-data#entity-roles-and-groups-influencing-dialogue-predictions).
+- [#6285](https://github.com/rasahq/rasa/issues/6285): Predictions of the [`FallbackClassifier`](https://legacy-docs-oss.rasa.com/docs/rasa/components#fallbackclassifier) are
   ignored when
   [evaluating the NLU model](https://rasa.com/docs/rasa-pro/nlu-based-assistants/testing-your-assistant#evaluating-an-nlu-model)
   Note that the `FallbackClassifier` predictions still apply to
@@ -4358,8 +4358,8 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   instead.
 - [#6865](https://github.com/rasahq/rasa/issues/6865): Improve the `rasa data convert nlg` command and introduce the `rasa data convert responses` command
   to simplify the migration from pre-2.0 response selector format to the new format.
-- [#6966](https://github.com/rasahq/rasa/issues/6966): Added warning for when an option is provided for a [component](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components) that is not listed as a key in the defaults for that component.
-- [#6977](https://github.com/rasahq/rasa/issues/6977): [Forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) no longer reject their execution before a potential custom
+- [#6966](https://github.com/rasahq/rasa/issues/6966): Added warning for when an option is provided for a [component](https://legacy-docs-oss.rasa.com/docs/rasa/components) that is not listed as a key in the defaults for that component.
+- [#6977](https://github.com/rasahq/rasa/issues/6977): [Forms](https://legacy-docs-oss.rasa.com/docs/rasa/forms) no longer reject their execution before a potential custom
   action for validating / extracting slots was executed.
   Forms continue to reject in two cases automatically:
   - A slot was requested to be filled, but no slot mapping applied to the latest user
@@ -4377,9 +4377,9 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   `HFTransformersNLP` and `LanguageModelTokenizer` are now deprecated. `LanguageModelFeaturizer` implements the behavior
   of the stack and can be used with any other `Tokenizer`.
 - [#7061](https://github.com/rasahq/rasa/issues/7061): Gray out "Download" button in Rasa Playground when the project is not yet ready to be downloaded.
-- [#7068](https://github.com/rasahq/rasa/issues/7068): Slot mappings for [Forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) in the domain are now optional. If you do not
+- [#7068](https://github.com/rasahq/rasa/issues/7068): Slot mappings for [Forms](https://legacy-docs-oss.rasa.com/docs/rasa/forms) in the domain are now optional. If you do not
   provide any slot mappings as part of the domain, you need to provide
-  [custom slot mappings](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms#custom-slot-mappings) through a custom action.
+  [custom slot mappings](https://legacy-docs-oss.rasa.com/docs/rasa/forms#custom-slot-mappings) through a custom action.
   A form without slot mappings is specified as follows:
 
   ```rasa-yaml
@@ -4388,7 +4388,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
       # no mappings
   ```
 
-  The action for [forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) can now be overridden by defining a custom action
+  The action for [forms](https://legacy-docs-oss.rasa.com/docs/rasa/forms) can now be overridden by defining a custom action
   with the same name as the form. This can be used to keep using the deprecated
   Rasa Open Source `FormAction` which is implemented within the Rasa SDK. Note that it is
   **not** recommended to override the form action for anything else than using the
@@ -4398,7 +4398,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   Use a [language agnostic sentence embedding model](https://tfhub.dev/google/LaBSE/1)
   as the default model. These model weights should help improve performance on
   intent classification and response selection.
-- [#7122](https://github.com/rasahq/rasa/issues/7122): Add validations for [slot mappings](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms#slot-mappings).
+- [#7122](https://github.com/rasahq/rasa/issues/7122): Add validations for [slot mappings](https://legacy-docs-oss.rasa.com/docs/rasa/forms#slot-mappings).
   If a slot mapping is not valid, an `InvalidDomain` error is raised.
 - [#7132](https://github.com/rasahq/rasa/issues/7132): Adapt the training data reader and emulator for LUIS to their v3 format and add support for roles.
   Update the instructions in the "Migrate from LUIS" documentation page to reflect the recent changes made to the UI of LUIS.
@@ -4408,7 +4408,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#7263](https://github.com/rasahq/rasa/issues/7263): The [Pika Event Broker](https://rasa.com/docs/rasa-pro/production/event-brokers#pika-event-broker) was reimplemented with
   the `[aio-pika` library[(https://docs.aio-pika.com/). Messages will
   now be published to RabbitMQ asynchronously which improves the prediction performance.
-- [#7278](https://github.com/rasahq/rasa/issues/7278): The confidence of the [`FallbackClassifier`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#fallbackclassifier)
+- [#7278](https://github.com/rasahq/rasa/issues/7278): The confidence of the [`FallbackClassifier`](https://legacy-docs-oss.rasa.com/docs/rasa/components#fallbackclassifier)
   predictions is set to `1 - top intent confidence`.
 
 ### Bugfixes
@@ -4491,7 +4491,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Bugfixes
 - [#6629](https://github.com/rasahq/rasa/issues/6629): Fixed a bug that occurred when setting multiple Sanic workers in combination with a custom [Lock Store](https://rasa.com/docs/rasa-pro/production/lock-stores). Previously, if the number was set higher than 1 and you were using a custom lock store, it would reject because of a strict check to use a [Redis Lock Store](https://rasa.com/docs/rasa-pro/production/lock-stores#redislockstore).
-- [#7176](https://github.com/rasahq/rasa/issues/7176): Fixed a bug in the [`TwoStageFallback`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/fallback-handoff#two-stage-fallback) action which
+- [#7176](https://github.com/rasahq/rasa/issues/7176): Fixed a bug in the [`TwoStageFallback`](https://legacy-docs-oss.rasa.com/docs/rasa/fallback-handoff/#two-stage-fallback) action which
   reverted too many events after the user successfully rephrased.
 
 
@@ -4544,7 +4544,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 ### Bugfixes
 - [#7018](https://github.com/rasahq/rasa/issues/7018): Create correct `KafkaProducer` for `PLAINTEXT` and `SASL_SSL` security protocols.
-- [#7033](https://github.com/rasahq/rasa/issues/7033): - Fix `YAMLStoryReader` not being able to represent [`OR` statements](https://rasa.com/docs/rasa-pro/nlu-based-assistants/stories#or-statements) in conversion mode.
+- [#7033](https://github.com/rasahq/rasa/issues/7033): - Fix `YAMLStoryReader` not being able to represent [`OR` statements](https://legacy-docs-oss.rasa.com/docs/rasa/stories#or-statements) in conversion mode.
   - Fix `MarkdownStoryWriter` not being able to write stories with `OR` statements (when loaded in conversion mode).
 
 
@@ -4597,7 +4597,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Removed `_guess_format()` utils method from `rasa.nlu.training_data.loading` (use `guess_format` instead).
 
-  Removed several config options for [TED Policy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#ted-policy), [DIETClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier) and [ResponseSelector](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#responseselector):
+  Removed several config options for [TED Policy](https://legacy-docs-oss.rasa.com/docs/rasa/policies#ted-policy), [DIETClassifier](https://legacy-docs-oss.rasa.com/docs/rasa/components#dietclassifier) and [ResponseSelector](https://legacy-docs-oss.rasa.com/docs/rasa/components#responseselector):
   - `hidden_layers_sizes_pre_dial`
   - `hidden_layers_sizes_bot`
   - `droprate`
@@ -4640,7 +4640,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
     session_expiration_time: 0
   ```
 - [#6952](https://github.com/rasahq/rasa/issues/6952): Using the [default action](https://rasa.com/docs/rasa-pro/nlu-based-assistants/default-actions) `action_deactivate_form` to deactivate
-  the currently active loop / [Form](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) is deprecated.
+  the currently active loop / [Form](https://legacy-docs-oss.rasa.com/docs/rasa/forms) is deprecated.
   Please use `action_deactivate_loop` instead.
 
 ### Features
@@ -4651,12 +4651,12 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#5086](https://github.com/rasahq/rasa/issues/5086): Added a `--num-threads` CLI argument that can be passed to `rasa train`
   and will be used to train NLU components.
 - [#5510](https://github.com/rasahq/rasa/issues/5510): You can now define what kind of features should be used by what component
-  (see [Choosing a Pipeline](https://rasa.com/docs/rasa-pro/nlu-based-assistants/tuning-your-model)).
+  (see [Choosing a Pipeline](https://legacy-docs-oss.rasa.com/docs/rasa/tuning-your-model/)).
 
   You can set an alias via the option `alias` for every featurizer in your pipeline.
   The `alias` can be anything, by default it is set to the full featurizer class name.
   You can then specify, for example, on the
-  [DIETClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier) what features from which
+  [DIETClassifier](https://legacy-docs-oss.rasa.com/docs/rasa/components#dietclassifier) what features from which
   featurizers should be used.
   If you don't set the option `featurizers` all available features will be used.
   This is also the default behavior.
@@ -4699,7 +4699,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#5837](https://github.com/rasahq/rasa/issues/5837): Added `--port` commandline argument to the interactive learning mode to allow
   changing the port for the Rasa server running in the background.
 - [#5957](https://github.com/rasahq/rasa/issues/5957): Add new entity extractor `RegexEntityExtractor`. The entity extractor extracts entities using the lookup tables
-  and regexes defined in the training data. For more information see [RegexEntityExtractor](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#regexentityextractor).
+  and regexes defined in the training data. For more information see [RegexEntityExtractor](https://legacy-docs-oss.rasa.com/docs/rasa/components#regexentityextractor).
 - [#5996](https://github.com/rasahq/rasa/issues/5996): Introduced a new `YAML` format for Core training data and implemented a parser
   for it. Rasa Open Source can now read stories in both `Markdown` and `YAML` format.
 - [#6020](https://github.com/rasahq/rasa/issues/6020): You can now enable threaded message responses from Rasa through the Slack connector.
@@ -4713,9 +4713,9 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   ```
 
   Button support has also been added in the Slack connector.
-- [#6065](https://github.com/rasahq/rasa/issues/6065): Add support for [rules](https://rasa.com/docs/rasa-pro/nlu-based-assistants/rules) data and [forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) in YAML
+- [#6065](https://github.com/rasahq/rasa/issues/6065): Add support for [rules](https://legacy-docs-oss.rasa.com/docs/rasa/rules) data and [forms](https://legacy-docs-oss.rasa.com/docs/rasa/forms) in YAML
   format.
-- [#6066](https://github.com/rasahq/rasa/issues/6066): The NLU `interpreter` is now passed to the [Policies](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies) during training and
+- [#6066](https://github.com/rasahq/rasa/issues/6066): The NLU `interpreter` is now passed to the [Policies](https://legacy-docs-oss.rasa.com/docs/rasa/policies) during training and
   inference time. Note that this requires an additional parameter `interpreter` in the
   method `predict_action_probabilities` of the `Policy` interface. In case a
   custom `Policy` implementation doesn't provide this parameter Rasa Open Source
@@ -4726,9 +4726,9 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   [Two-Stage Fallback Policy](https://rasa.com/docs/rasa/2.x/policies#two-stage-fallback-policy), and
   [Form Policy](https://rasa.com/docs/rasa/2.x/policies#form-policy). These policies are now
   deprecated and will be removed in the future. Please see the
-  [rules documentation](https://rasa.com/docs/rasa-pro/nlu-based-assistants/rules) for more information.
+  [rules documentation](https://legacy-docs-oss.rasa.com/docs/rasa/rules) for more information.
 
-  Added new NLU component [FallbackClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#fallbackclassifier)
+  Added new NLU component [FallbackClassifier](https://legacy-docs-oss.rasa.com/docs/rasa/components#fallbackclassifier)
   which predicts an intent `nlu_fallback` in case the confidence was below a given
   threshold. The intent `nlu_fallback` may
   then be used to write stories / rules to handle the fallback in case of low NLU
@@ -4880,7 +4880,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   * Default TEDPolicy featurizer changed to `MaxHistoryTrackerFeaturizer` with infinite max history (takes all dialogue turns into account).
   * Default batch size for TED increased from [8,32] to [64, 256]
-- [#6323](https://github.com/rasahq/rasa/issues/6323): [Response selector templates](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#responseselector) now support all features that
+- [#6323](https://github.com/rasahq/rasa/issues/6323): [Response selector templates](https://legacy-docs-oss.rasa.com/docs/rasa/components#responseselector) now support all features that
   domain utterances do. They use the yaml format instead of markdown now.
   This means you can now use buttons, images, ... in your FAQ or chitchat responses
   (assuming they are using the response selector).
@@ -4888,7 +4888,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   As a consequence, training data form in markdown has to have the file
   suffix `.md` from now on to allow proper file type detection-
 - [#6457](https://github.com/rasahq/rasa/issues/6457): Support for test stories written in yaml format.
-- [#6466](https://github.com/rasahq/rasa/issues/6466): [Response Selectors](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#responseselector) are now trained on retrieval intent labels by default instead of the actual response text. For most models, this should improve training time and accuracy of the `ResponseSelector`.
+- [#6466](https://github.com/rasahq/rasa/issues/6466): [Response Selectors](https://legacy-docs-oss.rasa.com/docs/rasa/components#responseselector) are now trained on retrieval intent labels by default instead of the actual response text. For most models, this should improve training time and accuracy of the `ResponseSelector`.
 
   If you want to revert to the pre-2.0 default behavior, add the `use_text_as_label=true` parameter to your `ResponseSelector` component.
 
@@ -5032,7 +5032,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Update default stories and rules on "Prototype an Assistant" page.
 - [#6419](https://github.com/rasahq/rasa/issues/6419): Fixed a bug in the `serialise` method of the `EvaluationStore` class which resulted in a wrong end-to-end evaluation of the predicted entities.
-- [#6535](https://github.com/rasahq/rasa/issues/6535): [Forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms) with slot mappings defined in `domain.yml` must now be a
+- [#6535](https://github.com/rasahq/rasa/issues/6535): [Forms](https://legacy-docs-oss.rasa.com/docs/rasa/forms) with slot mappings defined in `domain.yml` must now be a
   dictionary (with form names as keys). The previous syntax where `forms` was simply a
   list of form names is still supported.
 - [#6577](https://github.com/rasahq/rasa/issues/6577): Remove BILOU tag prefix from role and group labels when creating entities.
@@ -5068,7 +5068,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 - [#5811](https://github.com/rasahq/rasa/issues/5811): Event brokers documentation should say `url` instead of `host`.
 - [#5952](https://github.com/rasahq/rasa/issues/5952): Update `rasa init` documentation to include `tests/conversation_tests.md`
   in the resulting directory tree.
-- [#6819](https://github.com/rasahq/rasa/issues/6819): Update ["Validating Form Input" section](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms#validating-form-input) to include details about
+- [#6819](https://github.com/rasahq/rasa/issues/6819): Update ["Validating Form Input" section](https://legacy-docs-oss.rasa.com/docs/rasa/forms#validating-form-input) to include details about
   how `FormValidationAction` class makes it easier to validate form slots in custom actions and how to use it.
 - [#6823](https://github.com/rasahq/rasa/issues/6823): Update the examples in the API docs to use YAML instead of Markdown
 
@@ -5348,15 +5348,15 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   The group label can be used to group multiple entities together.
   For example, you could group different pizza orders, so that you know what toppings goes with which pizza and
   what size which pizza has.
-  For more details see [Entities Roles and Groups](https://rasa.com/docs/rasa-pro/nlu-based-assistants/nlu-training-data#entities-roles-and-groups).
+  For more details see [Entities Roles and Groups](https://legacy-docs-oss.rasa.com/docs/rasa/nlu-training-data#entities-roles-and-groups).
 
   To fill slots from entities with a specific role/group, you need to either use forms or use a custom action.
   We updated the tracker method `get_latest_entity_values` to take an optional role/group label.
   If you want to use a form, you can add the specific role/group label of interest to the slot mapping function
-  `from_entity` (see [Forms](https://rasa.com/docs/rasa-pro/nlu-based-assistants/forms)).
+  `from_entity` (see [Forms](https://legacy-docs-oss.rasa.com/docs/rasa/forms)).
 
   :::note
-  Composite entities are currently just supported by the [DIETClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier) and [CRFEntityExtractor](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#crfentityextractor).
+  Composite entities are currently just supported by the [DIETClassifier](https://legacy-docs-oss.rasa.com/docs/rasa/components#dietclassifier) and [CRFEntityExtractor](https://legacy-docs-oss.rasa.com/docs/rasa/components#crfentityextractor).
 
   :::
 
@@ -5388,7 +5388,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   execute the following command on the terminal of your choice:
   `sed -i -E 's/\\[([^)]+)\\]\\(([^)]+):([^)]+)\\)/[\\1]{"entity": "\\2", "value": "\\3"}/g' nlu.md`
 
-  For more information about the new data format see [Training Data Format](https://rasa.com/docs/rasa-pro/nlu-based-assistants/training-data-format).
+  For more information about the new data format see [Training Data Format](https://legacy-docs-oss.rasa.com/docs/rasa/training-data-format).
 
 ### Improvements
 
@@ -5409,7 +5409,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   If you are using ResponseSelectors, they now produce similiar outputs during NLU evaluation. Misclassfied responses are listed in a “confused_with” attribute in the evaluation report. Similiarily, a confusion matrix of all responses is plotted.
 
-* [#5578](https://github.com/rasahq/rasa/issues/5578): Added `socketio` to the compatible channels for [Reminders and External Events](https://rasa.com/docs/rasa-pro/nlu-based-assistants/reaching-out-to-user).
+* [#5578](https://github.com/rasahq/rasa/issues/5578): Added `socketio` to the compatible channels for [Reminders and External Events](https://legacy-docs-oss.rasa.com/docs/rasa/reaching-out-to-user).
 
 * [#5595](https://github.com/rasahq/rasa/issues/5595): Update `POST /model/train` endpoint to accept retrieval action responses
   at the `responses` key of the JSON payload.
@@ -5680,7 +5680,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   `1.8.0`. Since version `1.8.0` the Rasa SDK Docker images does not longer run as
   `root` user by default. For commands which require `root` user usage, you have to
   switch back to the `root` user in your Docker image as described in
-  [Building an Action Server Image](https://rasa.com/docs/rasa-pro/deploy/deploy-action-server#building-an-action-server-image).
+  [Building an Action Server Image](https://legacy-docs-oss.rasa.com/docs/rasa/action-server/deploy-action-server#building-an-action-server-image).
 
 * [#5402](https://github.com/RasaHQ/rasa/issues/5402): Made improvements to Building Assistants tutorial
 
@@ -5714,7 +5714,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 * [#4088](https://github.com/rasahq/rasa/issues/4088): Add story structure validation functionality (e.g. rasa data validate stories –max-history 5).
 
-* [#5065](https://github.com/rasahq/rasa/issues/5065): Add [LexicalSyntacticFeaturizer](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#lexicalsyntacticfeaturizer) to sparse featurizers.
+* [#5065](https://github.com/rasahq/rasa/issues/5065): Add [LexicalSyntacticFeaturizer](https://legacy-docs-oss.rasa.com/docs/rasa/components#lexicalsyntacticfeaturizer) to sparse featurizers.
 
   `LexicalSyntacticFeaturizer` does the same featurization as the `CRFEntityExtractor`. We extracted the
   featurization into a separate component so that the features can be reused and featurization is independent from the
@@ -5724,7 +5724,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Add a new NLP component [HFTransformersNLP](https://rasa.com/docs/rasa/2.x/components#hftransformersnlp) which tokenizes and featurizes incoming messages using a specified
   pre-trained model with the Transformers library as the backend.
-  Add [LanguageModelTokenizer](https://rasa.com/docs/rasa/2.x/components#languagemodeltokenizer) and [LanguageModelFeaturizer](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#languagemodelfeaturizer) which use the information from
+  Add [LanguageModelTokenizer](https://rasa.com/docs/rasa/2.x/components#languagemodeltokenizer) and [LanguageModelFeaturizer](https://legacy-docs-oss.rasa.com/docs/rasa/components#languagemodelfeaturizer) which use the information from
   [HFTransformersNLP](https://rasa.com/docs/rasa/2.x/components#hftransformersnlp) and sets them correctly for message object.
   Language models currently supported: BERT, OpenAIGPT, GPT-2, XLNet, DistilBert, RoBERTa.
 
@@ -5734,7 +5734,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
 * [#5230](https://github.com/rasahq/rasa/issues/5230): Refactor how GPU and CPU environments are configured for TensorFlow 2.0.
 
-  Please refer to the documentation on [Configuring TensorFlow](https://rasa.com/docs/rasa-pro/nlu-based-assistants/tuning-your-model#configuring-tensorflow) to understand
+  Please refer to the documentation on [Configuring TensorFlow](https://legacy-docs-oss.rasa.com/docs/rasa/tuning-your-model/#configuring-tensorflow) to understand
   which environment variables to set in what scenarios. A couple of examples are shown below as well:
 
   ```python
@@ -5748,17 +5748,17 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
   TF_INTRA_OP_PARALLELISM_THREADS="2"
   ```
 
-* [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier) and a new policy [TEDPolicy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#ted-policy).
+* [#5266](https://github.com/rasahq/rasa/issues/5266): Added a new NLU component [DIETClassifier](https://legacy-docs-oss.rasa.com/docs/rasa/components#dietclassifier) and a new policy [TEDPolicy](https://legacy-docs-oss.rasa.com/docs/rasa/policies#ted-policy).
 
   DIET (Dual Intent and Entity Transformer) is a multi-task architecture for intent classification and entity
-  recognition. You can read more about this component in the [DIETClassifier](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#dietclassifier) documentation.
+  recognition. You can read more about this component in the [DIETClassifier](https://legacy-docs-oss.rasa.com/docs/rasa/components#dietclassifier) documentation.
   The new component will replace the `EmbeddingIntentClassifier` and the
-  [CRFEntityExtractor](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#crfentityextractor) in the future.
+  [CRFEntityExtractor](https://legacy-docs-oss.rasa.com/docs/rasa/components#crfentityextractor) in the future.
   Those two components are deprecated from now on.
   See [migration guide](https://legacy-docs-oss.rasa.com/docs/rasa/migration-guide/#rasa-17-to-rasa-18) for details on how to
   switch to the new component.
 
-  [TEDPolicy](https://rasa.com/docs/rasa-pro/nlu-based-assistants/policies#ted-policy) is the new name for EmbeddingPolicy.
+  [TEDPolicy](https://legacy-docs-oss.rasa.com/docs/rasa/policies#ted-policy) is the new name for EmbeddingPolicy.
   `EmbeddingPolicy` is deprecated from now on.
   The functionality of `TEDPolicy` and `EmbeddingPolicy` is the same.
   Please update your configuration file to use the new name for the policy.
@@ -6018,7 +6018,7 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
     min_df: 5
   ```
 
-* [#4957](https://github.com/rasahq/rasa/issues/4957): To [use custom features in the `CRFEntityExtractor`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#crfentityextractor)
+* [#4957](https://github.com/rasahq/rasa/issues/4957): To [use custom features in the `CRFEntityExtractor`](https://legacy-docs-oss.rasa.com/docs/rasa/components#crfentityextractor)
   use `text_dense_features` instead of `ner_features`. If
   `text_dense_features` are present in the feature set, the `CRFEntityExtractor` will automatically make use of
   them. Just make sure to add a dense featurizer in front of the `CRFEntityExtractor` in your pipeline and set the
@@ -6069,13 +6069,13 @@ Upgrade dependent libraries with security vulnerabilities (Pillow, TensorFlow, u
 
   Add option `return_sequence` to all featurizers. By default all featurizers return a matrix of size
   (1 x feature-dimension). If the option `return_sequence` is set to `True`, the corresponding featurizer will return
-  a matrix of size (token-length x feature-dimension). See [Text Featurizers](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#featurizers).
+  a matrix of size (token-length x feature-dimension). See [Text Featurizers](https://legacy-docs-oss.rasa.com/docs/rasa/components#featurizers).
   Default value is set to `False`. However, you might want to set it to `True` if you want to use custom features
   in the `CRFEntityExtractor`.
-  See [passing custom features to the `CRFEntityExtractor`](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#crfentityextractor)
+  See [passing custom features to the `CRFEntityExtractor`](https://legacy-docs-oss.rasa.com/docs/rasa/components#crfentityextractor)
 
   Changed some featurizers to use sparse features, which should reduce memory usage with large amounts of training data significantly.
-  Read more: [Text Featurizers](https://rasa.com/docs/rasa-pro/nlu-based-assistants/components#featurizers) .
+  Read more: [Text Featurizers](https://legacy-docs-oss.rasa.com/docs/rasa/components#featurizers) .
 
   :::caution
   These changes break model compatibility. You will need to retrain your old models!
