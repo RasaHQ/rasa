@@ -263,10 +263,10 @@ def execute_commands(
         events.extend(new_events)
         tracker.update_with_events(new_events)
 
-        new_events = push_stack_frames_to_follow_commands(
-            tracker, stack_frames_to_follow_commands
-        )
-        events.extend(new_events)
+    new_events = push_stack_frames_to_follow_commands(
+        tracker, stack_frames_to_follow_commands
+    )
+    events.extend(new_events)
 
     return remove_duplicated_set_slots(events)
 

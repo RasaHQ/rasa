@@ -329,6 +329,7 @@ class FloatSlot(Slot):
         is_builtin: bool = False,
         shared_for_coexistence: bool = False,
         filled_by: Optional[str] = None,
+        validation: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Creates a FloatSlot.
 
@@ -345,6 +346,7 @@ class FloatSlot(Slot):
             is_builtin,
             shared_for_coexistence,
             filled_by=filled_by,
+            validation=validation,
         )
         self.max_value = max_value
         self.min_value = min_value
@@ -503,6 +505,7 @@ class CategoricalSlot(Slot):
         is_builtin: bool = False,
         shared_for_coexistence: bool = False,
         filled_by: Optional[str] = None,
+        validation: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Creates a `Categorical  Slot` (see parent class for detailed docstring)."""
         super().__init__(
@@ -514,6 +517,7 @@ class CategoricalSlot(Slot):
             is_builtin,
             shared_for_coexistence,
             filled_by=filled_by,
+            validation=validation,
         )
         if values and None in values:
             rasa.shared.utils.io.raise_warning(
@@ -725,6 +729,7 @@ class AnySlot(Slot):
         is_builtin: bool = False,
         shared_for_coexistence: bool = False,
         filled_by: Optional[str] = None,
+        validation: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Creates an `Any  Slot` (see parent class for detailed docstring).
 
@@ -749,6 +754,7 @@ class AnySlot(Slot):
             is_builtin,
             shared_for_coexistence,
             filled_by=filled_by,
+            validation=validation,
         )
 
     def __eq__(self, other: Any) -> bool:

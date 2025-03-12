@@ -1,9 +1,10 @@
-from typing import Any, Dict, List, Text, Tuple
+from typing import Any, Dict, List, Optional, Text, Tuple
 
 import pytest
 from _pytest.fixtures import SubRequest
 
 import rasa.shared.core.constants
+from rasa.shared.constants import REFILL_UTTER, REJECTIONS
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.slots import (
     AnySlot,
@@ -27,7 +28,10 @@ class SlotTestCollection:
     Each slot can declare further tests on its own."""
 
     def create_slot(
-        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+        self,
+        mappings: List[Dict[Text, Any]],
+        influence_conversation: bool,
+        validation: Optional[Dict[Text, Any]] = None,
     ) -> Slot:
         raise NotImplementedError
 
@@ -43,6 +47,15 @@ class SlotTestCollection:
     @pytest.fixture()
     def mappings(self) -> List[Dict[Text, Any]]:
         return [{}]
+
+    @pytest.fixture()
+    def validation(self) -> Dict[Text, Any]:
+        return {
+            REFILL_UTTER: "utter_test_slot",
+            REJECTIONS: [
+                {"if": "test_slot == 'invalid'", "utter": "utter_invalid_test_slot"}
+            ],
+        }
 
     def test_featurization(
         self,
@@ -169,13 +182,25 @@ class SlotTestCollection:
         slot = self.create_slot(mappings, influence_conversation=False)
         assert not slot.is_builtin
 
+    def test_slot_has_validation(self, validation: Dict[Text, Any]):
+        slot = self.create_slot(
+            mappings=[], influence_conversation=True, validation=validation
+        )
+        assert slot.requires_validation
+
 
 class TestTextSlot(SlotTestCollection):
     def create_slot(
-        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+        self,
+        mappings: List[Dict[Text, Any]],
+        influence_conversation: bool,
+        validation: Optional[Dict[Text, Any]] = None,
     ) -> Slot:
         return TextSlot(
-            "test", mappings=mappings, influence_conversation=influence_conversation
+            "test",
+            mappings=mappings,
+            influence_conversation=influence_conversation,
+            validation=validation,
         )
 
     @pytest.fixture(params=[1, {"a": "b"}, 2.0, [], True])
@@ -196,10 +221,16 @@ class TestTextSlot(SlotTestCollection):
 
 class TestBooleanSlot(SlotTestCollection):
     def create_slot(
-        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+        self,
+        mappings: List[Dict[Text, Any]],
+        influence_conversation: bool,
+        validation: Optional[Dict[Text, Any]] = None,
     ) -> Slot:
         return BooleanSlot(
-            "test", mappings=mappings, influence_conversation=influence_conversation
+            "test",
+            mappings=mappings,
+            influence_conversation=influence_conversation,
+            validation=validation,
         )
 
     @pytest.fixture(params=[{"a": "b"}, [], "asd", "🌴"])
@@ -237,10 +268,16 @@ def test_bool_from_any_raises_type_error():
 
 class TestFloatSlot(SlotTestCollection):
     def create_slot(
-        self, mappings: List[Dict[Text, Any]], influence_conversation: bool = False
+        self,
+        mappings: List[Dict[Text, Any]],
+        influence_conversation: bool = False,
+        validation: Optional[Dict[Text, Any]] = None,
     ) -> Slot:
         return FloatSlot(
-            "test", mappings=mappings, influence_conversation=influence_conversation
+            "test",
+            mappings=mappings,
+            influence_conversation=influence_conversation,
+            validation=validation,
         )
 
     @pytest.fixture(params=[{"a": "b"}, [], "asd", "🌴"])
@@ -264,10 +301,16 @@ class TestFloatSlot(SlotTestCollection):
 
 class TestListSlot(SlotTestCollection):
     def create_slot(
-        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+        self,
+        mappings: List[Dict[Text, Any]],
+        influence_conversation: bool,
+        validation: Optional[Dict[Text, Any]] = None,
     ) -> Slot:
         return ListSlot(
-            "test", mappings=mappings, influence_conversation=influence_conversation
+            "test",
+            mappings=mappings,
+            influence_conversation=influence_conversation,
+            validation=validation,
         )
 
     @pytest.fixture(params=[{"a": "b"}, 1, True, "asd", "🌴"])
@@ -293,13 +336,17 @@ class TestListSlot(SlotTestCollection):
 
 class TestCategoricalSlot(SlotTestCollection):
     def create_slot(
-        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+        self,
+        mappings: List[Dict[Text, Any]],
+        influence_conversation: bool,
+        validation: Optional[Dict[Text, Any]] = None,
     ) -> Slot:
         return CategoricalSlot(
             "test",
             mappings=mappings,
             values=[1, "two", "小于", {"three": 3}, "nOnE", "None", "null"],
             influence_conversation=influence_conversation,
+            validation=validation,
         )
 
     # None is a special value reserved for unset slots.
@@ -396,13 +443,17 @@ class TestCategoricalSlot(SlotTestCollection):
 
 class TestCategoricalSlotDefaultValue(SlotTestCollection):
     def create_slot(
-        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+        self,
+        mappings: List[Dict[Text, Any]],
+        influence_conversation: bool,
+        validation: Optional[Dict[Text, Any]] = None,
     ) -> Slot:
         slot = CategoricalSlot(
             "test",
             mappings=mappings,
             values=[1, "two", "小于", {"three": 3}, "nOnE", "None", "null"],
             influence_conversation=influence_conversation,
+            validation=validation,
         )
         slot.add_default_value()
         return slot
@@ -435,9 +486,17 @@ class TestCategoricalSlotDefaultValue(SlotTestCollection):
 
 class TestAnySlot(SlotTestCollection):
     def create_slot(
-        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+        self,
+        mappings: List[Dict[Text, Any]],
+        influence_conversation: bool,
+        validation: Optional[Dict[Text, Any]] = None,
     ) -> Slot:
-        return AnySlot("test", mappings=mappings, influence_conversation=False)
+        return AnySlot(
+            "test",
+            mappings=mappings,
+            influence_conversation=False,
+            validation=validation,
+        )
 
     @pytest.fixture(params=["there is nothing invalid, but we need to pass something"])
     def invalid_value(self, request: SubRequest) -> Any:
@@ -479,7 +538,10 @@ def test_categorical_slot_ignores_none_value():
 
 class TestStrictCategoricalSlot(SlotTestCollection):
     def create_slot(
-        self, mappings: List[Dict[Text, Any]], influence_conversation: bool
+        self,
+        mappings: List[Dict[Text, Any]],
+        influence_conversation: bool,
+        validation: Optional[Dict[Text, Any]] = None,
     ) -> Slot:
         # Use a fixed list of allowed values as strings.
         # The order determines the one-hot encoding:
@@ -493,6 +555,7 @@ class TestStrictCategoricalSlot(SlotTestCollection):
             mappings=mappings,
             values=["1", "two", "three", "nOnE"],
             influence_conversation=influence_conversation,
+            validation=validation,
         )
 
     @pytest.fixture(

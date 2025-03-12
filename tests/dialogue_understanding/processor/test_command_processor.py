@@ -51,6 +51,8 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 from rasa.engine.graph import ExecutionContext
 from rasa.shared.constants import (
     RASA_PATTERN_CANNOT_HANDLE_CHITCHAT,
+    REFILL_UTTER,
+    REJECTIONS,
     ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
@@ -243,7 +245,7 @@ def test_execute_commands(all_flows: FlowsList):
 
     assert isinstance(events[0], SlotSet)
     assert events[0].key == "flow_hashes"
-    assert events[0].value.keys() == {"foo", "bar"}
+    assert events[0].value.keys() == {"foo", "bar", "ask"}
 
     assert isinstance(events[1], DialogueStackUpdated)
     updated_stack = tracker.stack.update_from_patch(events[1].update)
@@ -1496,3 +1498,73 @@ def test_push_stack_frames_to_follow_commands_no_update(tracker: DialogueStateTr
     events = push_stack_frames_to_follow_commands(tracker, [])
     # Then
     assert events == []
+
+
+def test_execute_commands_with_setslot_command(all_flows: FlowsList):
+    """Test if SetSlotcommands are correctly executed when slot requires validation."""
+    # Given
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            UserUttered(
+                "start foo slot value",
+                None,
+                None,
+                {
+                    COMMANDS: [
+                        StartFlowCommand("ask").as_dict(),
+                        SetSlotCommand("test_slot", "slot_value").as_dict(),
+                    ]
+                },
+            )
+        ],
+        slots=[
+            TextSlot(
+                name="test_slot",
+                mappings=[],
+                validation={
+                    REFILL_UTTER: "utter_test_slot",
+                    REJECTIONS: [
+                        {
+                            "if": "test_slot == 'invalid'",
+                            "utter": "utter_invalid_test_slot",
+                        }
+                    ],
+                },
+            ),
+        ],
+    )
+    # When
+    events = execute_commands(tracker, all_flows, Mock())
+    # Then
+    assert len(events) == 4
+
+    assert isinstance(events[0], SlotSet)
+    assert events[0].key == "flow_hashes"
+    assert events[0].value.keys() == {"foo", "bar", "ask"}
+
+    assert isinstance(events[1], SlotSet)
+    assert events[1].key == "test_slot"
+    assert events[1].value == "slot_value"
+
+    assert isinstance(events[2], DialogueStackUpdated)
+    updated_stack = tracker.stack.update_from_patch(events[2].update)
+
+    assert len(updated_stack.frames) == 3
+
+    frame = updated_stack.frames[1]
+    assert isinstance(frame, UserFlowStackFrame)
+    assert frame.flow_id == "ask"
+    assert frame.step_id == "START"
+    assert frame.frame_type == "regular"
+
+    assert isinstance(events[3], DialogueStackUpdated)
+    updated_stack = tracker.stack.update_from_patch(events[2].update)
+
+    assert len(updated_stack.frames) == 3
+
+    frame = updated_stack.frames[2]
+    assert isinstance(frame, ValidateSlotPatternFlowStackFrame)
+    assert frame.flow_id == "pattern_validate_slot"
+    assert frame.step_id == "START"
+    assert frame.validate == "test_slot"

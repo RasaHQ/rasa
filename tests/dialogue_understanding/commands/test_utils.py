@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 from unittest.mock import MagicMock
 
 import pytest
@@ -22,7 +22,16 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.shared.constants import REFILL_UTTER, REJECTIONS
 from rasa.shared.core.events import SlotSet
-from rasa.shared.core.slots import SlotRejection, TextSlot
+from rasa.shared.core.slots import (
+    AnySlot,
+    BooleanSlot,
+    CategoricalSlot,
+    FloatSlot,
+    ListSlot,
+    SlotRejection,
+    StrictCategoricalSlot,
+    TextSlot,
+)
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -101,10 +110,22 @@ def test_extract_cleaned_options(input_value: str, expected_output: List[str]):
     assert cleaned_options == expected_output
 
 
-def test_initialize_pattern_validate_slot_with_validation():
+@pytest.mark.parametrize(
+    "slot_type",
+    [
+        (TextSlot),
+        (FloatSlot),
+        (CategoricalSlot),
+        (AnySlot),
+        (BooleanSlot),
+        (ListSlot),
+        (StrictCategoricalSlot),
+    ],
+)
+def test_initialize_pattern_validate_slot_with_validation(slot_type: Any):
     """Test that the method creates a ValidateSlotPatternFlowStackFrame"""
     # Given
-    slot = TextSlot(
+    slot = slot_type(
         name="test_slot",
         mappings=[],
         validation={

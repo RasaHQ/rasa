@@ -29,6 +29,11 @@ def all_flows() -> FlowsList:
             steps:
             - id: also_first_step
               action: action_listen
+          ask:
+            description: flow ask
+            steps:
+            - id: ask_step
+              collect: test_slot
         """
     )
 
