@@ -194,6 +194,7 @@ scipy = "~1.13.1"
 scikit-learn = "~1.5.1"
 demoji = "^1.1.0"
 azure-identity = "~1.19.0"
+langcodes = "^3.5.0"
 
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31" # newer versions don't provide wheels for Windows
@@ -362,4 +363,3 @@ types-protobuf = "^4.24.0"
 types-toml = "^0.10.8.7"
 swagger-coverage = "^3.5.1"
 types-werkzeug = "^1.0.9"
-langcodes = "^3.5.0"
