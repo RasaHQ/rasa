@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pytest
 import structlog
 from pytest import MonkeyPatch
@@ -8,6 +10,7 @@ from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.llm.openai_llm_client import (
     OpenAILLMClient,
 )
+from tests.core.test_auth_retry_tracker_store import AsyncMock
 
 
 class TestOpenAILLMClient:
@@ -151,7 +154,7 @@ class TestOpenAILLMClient:
         with pytest.raises(ValueError):
             OpenAILLMClient.from_config(invalid_config)
 
-    def test_completion(
+    def test_completion_api_key_set_as_env(
         self,
         client: OpenAILLMClient,
         monkeypatch: MonkeyPatch,
@@ -173,6 +176,46 @@ class TestOpenAILLMClient:
         assert response.usage.completion_tokens > 0
         assert response.usage.total_tokens > 0
 
+    @pytest.fixture
+    def mocked_lite_llm_completion(self, monkeypatch: MonkeyPatch) -> MagicMock:
+        _mock = MagicMock()
+        monkeypatch.setattr(
+            "rasa.shared.providers.llm._base_litellm_client.completion", _mock
+        )
+        return _mock
+
+    def test_completion_call_arguments(
+        self,
+        client: OpenAILLMClient,
+        monkeypatch: MonkeyPatch,
+        mocked_lite_llm_completion: MagicMock,
+    ) -> None:
+        """Tests that the API base, version and key is resolved properly."""
+
+        # Given
+        api_key = "my key"
+        monkeypatch.setenv("RASA_OPENAI_API_KEY", api_key)
+        test_prompt = "Hello, this is a test prompt."
+
+        client._extra_parameters = {"api_key": "${RASA_OPENAI_API_KEY}"}
+        client._api_base = "https://my.api.base.com/my_model"
+        client._api_version = "v1"
+
+        # When
+        client.completion([test_prompt])
+
+        # Then
+        mocked_lite_llm_completion.assert_called_once_with(
+            messages=[{"content": "Hello, this is a test prompt.", "role": "user"}],
+            **{
+                "api_base": client._api_base,
+                "api_version": client._api_version,
+                "api_key": api_key,
+                "drop_params": False,
+                "model": "openai/test_model",
+            },
+        )
+
     async def test_acompletion(
         self, client: OpenAILLMClient, monkeypatch: MonkeyPatch
     ) -> None:
@@ -193,6 +236,49 @@ class TestOpenAILLMClient:
         assert response.usage.prompt_tokens > 0
         assert response.usage.completion_tokens > 0
         assert response.usage.total_tokens > 0
+
+    @pytest.fixture
+    def mocked_lite_llm_acompletion(self, monkeypatch: MonkeyPatch) -> AsyncMock:
+        _mock = AsyncMock()
+        monkeypatch.setattr(
+            "rasa.shared.providers.llm._base_litellm_client.acompletion", _mock
+        )
+        return _mock
+
+    async def test_acompletion_call_arguments(
+        self,
+        client: OpenAILLMClient,
+        monkeypatch: MonkeyPatch,
+        mocked_lite_llm_acompletion: MagicMock,
+    ) -> None:
+        """Tests that the API base, version and key is resolved properly for acompletion."""  # noqa: E501
+
+        # Given
+        api_key = "my key"
+        monkeypatch.setenv("RASA_OPENAI_API_KEY", api_key)
+        test_prompt = "Hello, this is a test prompt."
+
+        #  We are not testing for the response here, so we can mock the response
+        mocked_lite_llm_acompletion.return_value = MagicMock()
+
+        client._extra_parameters = {"api_key": "${RASA_OPENAI_API_KEY}"}
+        client._api_base = "https://my.api.base.com/my_model"
+        client._api_version = "v1"
+
+        # When
+        await client.acompletion([test_prompt])
+
+        # Then
+        mocked_lite_llm_acompletion.assert_called_once_with(
+            messages=[{"content": "Hello, this is a test prompt.", "role": "user"}],
+            **{
+                "api_base": client._api_base,
+                "api_version": client._api_version,
+                "api_key": api_key,
+                "drop_params": False,
+                "model": "openai/test_model",
+            },
+        )
 
     @pytest.mark.parametrize(
         "config",

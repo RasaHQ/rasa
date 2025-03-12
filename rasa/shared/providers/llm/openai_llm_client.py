@@ -14,7 +14,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.providers._configs.openai_client_config import OpenAIClientConfig
 from rasa.shared.providers.constants import (
-    LITE_LLM_API_KEY_FIELD,
+    LITE_LLM_API_BASE_FIELD,
     LITE_LLM_API_VERSION_FIELD,
 )
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
@@ -154,7 +154,7 @@ class OpenAILLMClient(_BaseLiteLLMClient):
         fn_args = super()._completion_fn_args
         fn_args.update(
             {
-                LITE_LLM_API_KEY_FIELD: self.api_base,
+                LITE_LLM_API_BASE_FIELD: self.api_base,
                 LITE_LLM_API_VERSION_FIELD: self.api_version,
             }
         )
