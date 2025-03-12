@@ -3,8 +3,12 @@ import pytest
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.patterns.continue_interrupted import (
+    ContinueInterruptedPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    BaseFlowStackFrame,
     FlowStackFrameType,
     UserFlowStackFrame,
 )
@@ -12,6 +16,7 @@ from rasa.dialogue_understanding.stack.utils import (
     end_top_user_flow,
     filled_slots_for_active_flow,
     get_collect_steps_excluding_ask_before_filling_for_active_flow,
+    remove_digression_from_stack,
     top_flow_frame,
     top_user_flow_frame,
     user_flows_on_the_stack,
@@ -432,3 +437,25 @@ def test_get_collect_steps_excluding_ask_before_filling_empty_stack() -> None:
         stack, all_flows
     )
     assert slots == set()
+
+
+def test_remove_digression_from_stack() -> None:
+    stack = DialogueStack.empty()
+    stack.push(UserFlowStackFrame(flow_id="flow1"))
+    stack.push(UserFlowStackFrame(flow_id="flow2"))
+    stack.push(UserFlowStackFrame(flow_id="flow3"))
+    stack.push(UserFlowStackFrame(flow_id="flow4"))
+    stack.push(ContinueInterruptedPatternFlowStackFrame(previous_flow_name="flow4"))
+    stack.push(UserFlowStackFrame(flow_id="flow5"))
+    stack.push(UserFlowStackFrame(flow_id="flow6"))
+
+    updated_stack = remove_digression_from_stack(stack, "flow4")
+    assert len(updated_stack.frames) == 5
+    assert all(
+        [isinstance(frame, BaseFlowStackFrame) for frame in updated_stack.frames]
+    )
+    assert updated_stack.frames[0].flow_id == "flow1"
+    assert updated_stack.frames[1].flow_id == "flow2"
+    assert updated_stack.frames[2].flow_id == "flow3"
+    assert updated_stack.frames[3].flow_id == "flow5"
+    assert updated_stack.frames[4].flow_id == "flow6"

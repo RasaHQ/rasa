@@ -51,20 +51,6 @@ def test_run_command_on_tracker_flow_not_in_available_flows():
     assert isinstance(tracker.stack.top(), CannotHandlePatternFlowStackFrame)
 
 
-def test_run_command_on_tracker_flow_already_on_the_stack():
-    patch = """
-    [{"op": "add", "path": "/0", "value":
-    {"frame_id": "flow-frame-id", "flow_id": "flow",
-    "step_id": "some-step-id", "type": "flow"}}]
-    """
-    tracker = DialogueStateTracker.from_events(
-        "test", evts=[DialogueStackUpdated(patch)]
-    )
-    command = HandleDigressionsCommand(flow="flow")
-
-    assert command.run_command_on_tracker(tracker, FlowsList([]), tracker) == []
-
-
 def test_run_command_on_tracker_empty_stack():
     tracker = DialogueStateTracker.from_events("test", evts=[])
     command = HandleDigressionsCommand(flow="flow")
@@ -75,11 +61,11 @@ def test_run_command_on_tracker_empty_stack():
     )
 
 
-def test_run_command_on_tracker_not_at_a_collect_step():
+def test_run_command_on_tracker_flow_already_on_the_stack_not_at_a_collect_step():
     patch = """
     [{"op": "add", "path": "/0", "value":
     {"frame_id": "flow-frame-id", "flow_id": "flow",
-    "step_id": "START", "type": "flow"}}]
+    "step_id": "some-step-id", "type": "flow"}}]
     """
     tracker = DialogueStateTracker.from_events(
         "test", evts=[DialogueStackUpdated(patch)]

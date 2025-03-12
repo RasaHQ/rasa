@@ -779,3 +779,109 @@ async def test_processor_fill_controlled_slot_run_action_every_turn_enabled(
 
     tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
     assert tracker.get_slot("action_slot") == 123
+
+
+async def test_processor_handle_multiple_digressions_continue_with_previous_flow_when_asked(  # noqa: E501
+    calm_handle_digressions_agent: Agent,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test how the processor handles multiple duplicate digressions.
+
+    The scenario is as follows:
+    1. User starts the add_contact flow.
+    2. User digresses the first time.
+    3. Bot informs the user that they will continue with the adding a contact and
+    then return to the digression.
+    4. User digresses a second time and then chooses to continue with
+    original flow: add_contact.
+    5. Add_contact flow is completed and the bot triggers pattern continue interrupted
+    for the checking balance digression.
+    6. Bot asks the user if they can do something else.
+    """
+    sender_id = uuid.uuid4().hex
+    processor = calm_handle_digressions_agent.processor
+
+    user_messages = [
+        "I want to add a contact",
+        "check balance",
+        "Loki",
+        "check balance",
+        "/SetSlots(continue_previous_flow=True)",
+        "0712345678",
+    ]
+
+    for i, user_msg in enumerate(user_messages):
+        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
+    else:
+        actual_responses = []
+        tracker = await processor.get_tracker(sender_id)
+        for event in tracker.events:
+            if isinstance(event, BotUttered):
+                actual_responses.append(event.metadata.get("utter_action"))
+
+        assert actual_responses == [
+            "utter_ask_contact_name",
+            "utter_block_digressions",
+            "utter_ask_contact_name",
+            "utter_ask_contact_number",
+            "utter_ask_continue_previous_flow",
+            "utter_block_digressions",
+            "utter_ask_contact_number",
+            "utter_contact_added",
+            "utter_flow_continue_interrupted",
+            "utter_check_balance",
+            "utter_can_do_something_else",
+        ]
+
+
+async def test_processor_handle_multiple_digressions_continue_with_digression_when_asked(  # noqa: E501
+    calm_handle_digressions_agent: Agent,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test how the processor handles multiple duplicate digressions.
+
+    The scenario is as follows:
+    1. User starts the add_contact flow.
+    2. User digresses the first time.
+    3. Bot informs the user that they will continue with the adding a contact and
+    then return to the digression.
+    4. User digresses a second time and then chooses to continue with
+    the digression: check_balance.
+    5. Bot triggers the check_balance flow, completes it and then proceeds w
+    ith the interrupted flow step: asking for contact_number.
+    6. User provides the contact number and the flow is completed.
+    """
+    sender_id = uuid.uuid4().hex
+    processor = calm_handle_digressions_agent.processor
+
+    user_messages = [
+        "I want to add a contact",
+        "check balance",
+        "Loki",
+        "check balance",
+        "/SetSlots(continue_previous_flow=False)",
+        "0712345678",
+    ]
+
+    for i, user_msg in enumerate(user_messages):
+        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
+    else:
+        actual_responses = []
+        tracker = await processor.get_tracker(sender_id)
+        for event in tracker.events:
+            if isinstance(event, BotUttered):
+                actual_responses.append(event.metadata.get("utter_action"))
+
+        assert actual_responses == [
+            "utter_ask_contact_name",
+            "utter_block_digressions",
+            "utter_ask_contact_name",
+            "utter_ask_contact_number",
+            "utter_ask_continue_previous_flow",
+            "utter_continue_interruption",
+            "utter_check_balance",
+            "utter_flow_continue_interrupted",
+            "utter_ask_contact_number",
+            "utter_contact_added",
+            "utter_can_do_something_else",
+        ]

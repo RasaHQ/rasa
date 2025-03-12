@@ -54,3 +54,14 @@ flows:
     steps:
       - action: utter_check_balance
         next: END
+
+  add_contact:
+    name: add contact
+    description: user asks to add a contact
+    steps:
+      - collect: contact_name
+        block_digressions: true
+      - collect: contact_number
+        ask_confirm_digressions: true
+      - action: utter_contact_added
+        next: END

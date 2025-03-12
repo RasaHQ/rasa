@@ -14,7 +14,6 @@ from rasa.dialogue_understanding.patterns.handle_digressions import (
 )
 from rasa.dialogue_understanding.stack.utils import (
     top_flow_frame,
-    user_flows_on_the_stack,
 )
 from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
@@ -71,12 +70,7 @@ class HandleDigressionsCommand(Command):
         stack = tracker.stack
         original_stack = original_tracker.stack
 
-        if self.flow in user_flows_on_the_stack(stack):
-            structlogger.debug(
-                "command_executor.skip_command.already_started_flow", command=self
-            )
-            return []
-        elif self.flow not in all_flows.flow_ids:
+        if self.flow not in all_flows.flow_ids:
             structlogger.debug(
                 "command_executor.push_cannot_handle.start_invalid_flow_id",
                 command=self,

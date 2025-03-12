@@ -20,6 +20,10 @@ slots:
     mappings:
       - type: controlled
         run_action_every_turn: action_set_action_slot
+  contact_name:
+    type: text
+  contact_number:
+    type: text
 
 actions:
   - action_set_action_slot
@@ -61,3 +65,12 @@ responses:
 
   utter_check_balance:
     - text: Your current balance is $1000.
+
+  utter_ask_contact_name:
+    - text: What is the name of the contact you would like to add?
+
+  utter_ask_contact_number:
+    - text: What is the number of the contact you would like to add?
+
+  utter_contact_added:
+    - text: Contact {contact_name} with number {contact_number} has been added.

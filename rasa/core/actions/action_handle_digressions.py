@@ -18,6 +18,10 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
 )
+from rasa.dialogue_understanding.stack.utils import (
+    remove_digression_from_stack,
+    user_flows_on_the_stack,
+)
 from rasa.shared.core.constants import (
     ACTION_BLOCK_DIGRESSION,
     ACTION_CONTINUE_DIGRESSION,
@@ -55,16 +59,24 @@ class ActionBlockDigressions(Action):
         frame_type = FlowStackFrameType.REGULAR
 
         stack = tracker.stack
-        stack.push(
-            UserFlowStackFrame(flow_id=blocked_flow_id, frame_type=frame_type), 0
-        )
-        stack.push(
-            ContinueInterruptedPatternFlowStackFrame(
-                previous_flow_name=blocked_flow_id
-            ),
-            1,
-        )
-        events = tracker.create_stack_updated_events(stack)
+
+        if blocked_flow_id in user_flows_on_the_stack(stack):
+            structlogger.debug(
+                "action_block_digressions.already_blocked_flow",
+                blocked_flow_id=blocked_flow_id,
+            )
+            events = []
+        else:
+            stack.push(
+                UserFlowStackFrame(flow_id=blocked_flow_id, frame_type=frame_type), 0
+            )
+            stack.push(
+                ContinueInterruptedPatternFlowStackFrame(
+                    previous_flow_name=blocked_flow_id
+                ),
+                1,
+            )
+            events = tracker.create_stack_updated_events(stack)
 
         utterance = "utter_block_digressions"
         message = await nlg.generate(
@@ -109,10 +121,20 @@ class ActionContinueDigression(Action):
         if not isinstance(top_frame, HandleDigressionsPatternFlowStackFrame):
             return []
 
-        blocked_flow_id = top_frame.interrupting_flow_id
-        frame_type = FlowStackFrameType.INTERRUPT
+        interrupting_flow_id = top_frame.interrupting_flow_id
         stack = tracker.stack
-        stack.push(UserFlowStackFrame(flow_id=blocked_flow_id, frame_type=frame_type))
+
+        if interrupting_flow_id in user_flows_on_the_stack(stack):
+            structlogger.debug(
+                "action_continue_digression.interrupting_flow_id_already_on_the_stack",
+                interrupting_flow_id=interrupting_flow_id,
+            )
+            stack = remove_digression_from_stack(stack, interrupting_flow_id)
+
+        frame_type = FlowStackFrameType.INTERRUPT
+        stack.push(
+            UserFlowStackFrame(flow_id=interrupting_flow_id, frame_type=frame_type)
+        )
 
         events = [
             FlowInterrupted(
