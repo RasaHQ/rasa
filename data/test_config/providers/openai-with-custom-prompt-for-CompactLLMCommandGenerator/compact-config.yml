@@ -1,0 +1,52 @@
+recipe: default.v1
+language: en
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 4
+  - name: LogisticRegressionClassifier
+    max_iter: 100
+    solver: lbfgs
+    tol: 0.0001
+    random_state: 42
+    ranking_length: 10
+  - name: CRFEntityExtractor
+  - name: DucklingEntityExtractor
+    url: "http://localhost:8000"
+    dimensions: ["time", "number"]
+    timezone: "Europe/Berlin"
+    timeout: 3
+  - name: CompactLLMCommandGenerator
+    llm:
+      model_group: openai_llm
+    flow_retrieval:
+      embeddings:
+        model_group: openai_embeddings
+    prompt_template: data/test_config/providers/custom-compact-llm-command-generator-prompt.jinja2
+
+policies:
+  - name: RulePolicy
+  # Enable when bug ENG-1747 is resolved 
+  # - name: TEDPolicy
+  #   constrain_similarities: true
+  - name: FlowPolicy
+  - name: EnterpriseSearchPolicy
+    llm:
+      model_group: openai_llm
+    max_messages_in_query: 4
+    citation_enabled: true
+    use_generative_llm: true
+    vector_store:
+      source: calm-benchmarking-bot/docs/
+    embeddings:
+      model_group: openai_embeddings
+  - name: IntentlessPolicy
+    llm:
+      model_group: openai_llm
+    embeddings:
+      model_group: openai_embeddings
+
+assistant_id: 20240418-073244-narrow-archive

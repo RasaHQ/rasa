@@ -46,6 +46,7 @@ on:
           - huggingface-multiple-deployments-with-routing
           - bedrock-multiple-deployments-with-routing
           - litellm-proxy-multiple-deployments-with-routing
+          - openai-with-custom-prompt-for-CompactLLMCommandGenerator
       
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`"

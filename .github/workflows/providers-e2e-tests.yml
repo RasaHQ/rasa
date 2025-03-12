@@ -44,6 +44,7 @@ on:
           - huggingface-multiple-deployments-with-routing
           - bedrock-multiple-deployments-with-routing
           - litellm-proxy-multiple-deployments-with-routing
+          - openai-with-custom-prompt-for-CompactLLMCommandGenerator
       
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`"
@@ -325,20 +326,32 @@ jobs:
             gemini-multiple-deployments-with-routing,
             huggingface-multiple-deployments-with-routing,
             bedrock-multiple-deployments-with-routing,
-            litellm-proxy-multiple-deployments-with-routing
+            litellm-proxy-multiple-deployments-with-routing,
+            openai-with-custom-prompt-for-CompactLLMCommandGenerator
           ] # TODO: Enable testing all the providers
         train-and-test: ${{ fromJson(needs.job_setup.outputs.COMMAND_GENERATOR_MATRIX)[needs.job_setup.outputs.COMMAND_GENERATOR] }}
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
+      # Skip job if required config file for provider does not exist
+      - name: Job to be skipped
+        run: |
+          if [[ -e data/test_config/providers/${{ matrix.provider }}/${{ matrix.train-and-test }}-config.yml ]]; then
+            echo "JOB_TO_BE_SKIPPED=false" >> "$GITHUB_ENV"
+          else 
+              echo "JOB_TO_BE_SKIPPED=true" >> "$GITHUB_ENV"
+          fi 
+
       - name: Set provider API key
+        if: ${{ env.JOB_TO_BE_SKIPPED == 'false' }}
         continue-on-error: true
         run: |
           : Set provider API key
           echo "${{ fromJson(env.API_KEY_NAMES)[matrix.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[matrix.provider]] }}" >> "$GITHUB_ENV"
 
       - name: E2E test
+        if: ${{ env.JOB_TO_BE_SKIPPED == 'false' }}
         uses: ./.github/actions/providers-tests
         env:
           OTEL_SERVICE_NAME: e2e-tests-${{ matrix.provider }}
@@ -377,13 +390,24 @@ jobs:
       - name: Checkout git repository 🕝
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
+      # Skip job if required config file for provider does not exist
+      - name: Job to be skipped
+        run: |
+          if [[ -e data/test_config/providers/${{ inputs.provider }}/${{ matrix.train-and-test }}-config.yml ]]; then
+            echo "JOB_TO_BE_SKIPPED=false" >> "$GITHUB_ENV"
+          else 
+              echo "JOB_TO_BE_SKIPPED=true" >> "$GITHUB_ENV"
+          fi 
+
       - name: Set provider API key
+        if: ${{ env.JOB_TO_BE_SKIPPED == 'false' }}
         continue-on-error: true
         run: |
           : Set provider API key
           echo "${{ fromJson(env.API_KEY_NAMES)[inputs.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[inputs.provider]] }}" >> "$GITHUB_ENV"
 
       - name: E2E test on single provider
+        if: ${{ env.JOB_TO_BE_SKIPPED == 'false' }}
         uses: ./.github/actions/providers-tests
         env:
           OTEL_SERVICE_NAME: e2e-tests-${{ inputs.provider }}
