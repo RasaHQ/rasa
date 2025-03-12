@@ -691,8 +691,11 @@ def get_default_prompt_template_based_on_model(
     Returns:
         The default prompt template.
     """
-    provider = config.get(PROVIDER_CONFIG_KEY)
-    model = config.get(MODEL_CONFIG_KEY, "")
+    _config = deepcopy(config)
+    if MODELS_CONFIG_KEY in _config:
+        _config = _config[MODELS_CONFIG_KEY][0]
+    provider = _config.get(PROVIDER_CONFIG_KEY)
+    model = _config.get(MODEL_CONFIG_KEY, "")
     model_name = model if provider and provider in model else f"{provider}/{model}"
     prompt_file_path = model_prompt_mapping.get(model_name, fallback_prompt_path)
     return importlib.resources.read_text(DEFAULT_PROMPT_PACKAGE_NAME, prompt_file_path)

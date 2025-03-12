@@ -1411,34 +1411,104 @@ class TestCompactLLMCommandGenerator:
         resource = Resource("llmcmdgen")
         generator = CompactLLMCommandGenerator({}, model_storage, resource)
         resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
+
         # When
         loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
+
         # Then
         assert loaded.prompt_template.startswith("## Task Description")
+        assert loaded.prompt_template.find("## Available Flows and Slots\n") > 0
+        assert loaded.prompt_template.find("```json\n") == -1
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
     )
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
-    def test_load_deafult_prompt_based_on_model_name_claude(
+    @patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
+    def test_load_default_prompt_based_on_model_name_claude(
         self,
         mock_flow_retrieval_load: Mock,
         mock_flow_retrieval_populate: Mock,
+        mock_perform_health_check: Mock,
         model_storage: ModelStorage,
     ):
         # Given
         resource = Resource("llmcmdgen")
         config = {
-            "provider": "anthropic",
-            "model": "claude-3-5-sonnet-20240620",
+            "llm": {
+                "provider": "anthropic",
+                "model": "claude-3-5-sonnet-20240620",
+            },
         }
         generator = CompactLLMCommandGenerator(config, model_storage, resource)
         resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
+
         # When
         loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
+
         # Then
         assert loaded.prompt_template.startswith(
             "Your task is to analyze the current conversation context and generate"
+        )
+        assert (
+            loaded.prompt_template.find(
+                "\nUse the following structured date:\n```xml\n"
+            )
+            > 0
+        )
+
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
+    )
+    @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
+    @patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
+    def test_load_default_prompt_based_on_model_name_from_model_group_claude(
+        self,
+        mock_flow_retrieval_load: Mock,
+        mock_flow_retrieval_populate: Mock,
+        mock_perform_health_check: Mock,
+        model_storage: ModelStorage,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
+        # Given
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = [
+                    {
+                        "id": "anthropic-claude-3-5",
+                        "models": [
+                            {
+                                "provider": "anthropic",
+                                "model": "claude-3-5-sonnet-20240620",
+                            }
+                        ],
+                    }
+                ]
+
+        mock_endpoints = MockAvailableEndpoints()
+        monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+        resource = Resource("llmcmdgen")
+
+        config = {"llm": {"model_group": "anthropic-claude-3-5"}}
+        generator = CompactLLMCommandGenerator(config, model_storage, resource)
+        resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
+
+        # When
+        loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
+
+        # Then
+        assert loaded.prompt_template.startswith(
+            "Your task is to analyze the current conversation context and generate"
+        )
+        assert (
+            loaded.prompt_template.find(
+                "\nUse the following structured date:\n```xml\n"
+            )
+            > 0
         )
 
     @patch(
@@ -1453,16 +1523,73 @@ class TestCompactLLMCommandGenerator:
     ):
         # Given
         resource = Resource("llmcmdgen")
-        config = {
-            "provider": "openai",
-            "model": "gpt-4o-2024-11-20",
-        }
+        config = {"llm": {"provider": "openai", "model": "gpt-4o-2024-11-20"}}
         generator = CompactLLMCommandGenerator(config, model_storage, resource)
         resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
+
         # When
         loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
+
         # Then
         assert loaded.prompt_template.startswith("## Task Description")
+        assert (
+            loaded.prompt_template.find(
+                "Flows and Slots\nUse the following structured date:\n```json\n"
+            )
+            > 0
+        )
+
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
+    )
+    @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
+    @patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
+    def test_load_deafult_prompt_based_on_model_name_from_model_group_gpt_4o(
+        self,
+        mock_flow_retrieval_load: Mock,
+        mock_flow_retrieval_populate: Mock,
+        mock_perform_health_check: Mock,
+        model_storage: ModelStorage,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
+        # Given
+        class MockAvailableEndpoints:
+            @staticmethod
+            def get_instance():
+                return MockAvailableEndpoints()
+
+            def __init__(self):
+                self.model_groups = [
+                    {
+                        "id": "openai-gpt-4o-direct",
+                        "models": [
+                            {
+                                "provider": "openai",
+                                "model": "gpt-4o-2024-11-20",
+                            }
+                        ],
+                    }
+                ]
+
+        mock_endpoints = MockAvailableEndpoints()
+        monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+        resource = Resource("llmcmdgen")
+        config = {"llm": {"model_group": "openai-gpt-4o-direct"}}
+        generator = CompactLLMCommandGenerator(config, model_storage, resource)
+        resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
+
+        # When
+        loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
+
+        # Then
+        assert loaded.prompt_template.startswith("## Task Description")
+        assert (
+            loaded.prompt_template.find(
+                "Flows and Slots\nUse the following structured date:\n```json\n"
+            )
+            > 0
+        )
 
     async def test_compact_llm_command_generator_load_prompt_from_model_storage(
         self,

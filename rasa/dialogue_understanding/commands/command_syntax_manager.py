@@ -30,7 +30,7 @@ class CommandSyntaxManager:
         syntax version remains consistent throughout the lifetime of the generator.
         """
         if cls._version:
-            structlogger.warn(
+            structlogger.debug(
                 "command_syntax_manager.syntax_version_already_set",
                 event_info=(
                     f"The command syntax version has already been set. Overwriting "

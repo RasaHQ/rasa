@@ -72,7 +72,6 @@ MODEL_PROMPT_MAPPER = {
     ),
 }
 
-
 DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME = "command_prompt_v2_default.jinja2"
 
 
@@ -157,12 +156,14 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
 
         # Get the default prompt template based on the model name
         default_command_prompt_template = get_default_prompt_template_based_on_model(
-            config, MODEL_PROMPT_MAPPER, DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME
+            self.config.get(LLM_CONFIG_KEY, {}) or {},
+            MODEL_PROMPT_MAPPER,
+            DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
         )
 
         # Set the prompt template either from the config or the default prompt template.
         self.prompt_template = prompt_template or get_prompt_template(
-            config.get(PROMPT_TEMPLATE_CONFIG_KEY),
+            self.config.get(PROMPT_TEMPLATE_CONFIG_KEY),
             default_command_prompt_template,
         )
 
@@ -500,19 +501,21 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
     def fingerprint_addon(cls: Any, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint for the graph."""
         # Get the default prompt template based on the model name
-        default_command_prompt_template = get_default_prompt_template_based_on_model(
-            config, MODEL_PROMPT_MAPPER, DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME
-        )
-        prompt_template = get_prompt_template(
-            config.get(PROMPT_TEMPLATE_CONFIG_KEY),
-            default_command_prompt_template,
-        )
         llm_config = resolve_model_client_config(
             config.get(LLM_CONFIG_KEY), CompactLLMCommandGenerator.__name__
         )
         embedding_config = resolve_model_client_config(
             config.get(FLOW_RETRIEVAL_KEY, {}).get(EMBEDDINGS_CONFIG_KEY),
             FlowRetrieval.__name__,
+        )
+        default_command_prompt_template = get_default_prompt_template_based_on_model(
+            llm_config or {},
+            MODEL_PROMPT_MAPPER,
+            DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+        )
+        prompt_template = get_prompt_template(
+            config.get(PROMPT_TEMPLATE_CONFIG_KEY),
+            default_command_prompt_template,
         )
         return deep_container_fingerprint(
             [prompt_template, llm_config, embedding_config]
