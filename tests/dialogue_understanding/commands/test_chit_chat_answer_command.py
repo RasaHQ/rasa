@@ -74,7 +74,9 @@ def test_regex_pattern_v2_command_syntax():
     # Set the syntax version to v2 to test the new regex pattern.
     CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
 
-    assert ChitChatAnswerCommand.regex_pattern() == r"^[^\w]*offtopic reply$"
+    assert (
+        ChitChatAnswerCommand.regex_pattern() == r"""^[\s\W\d]*offtopic reply['"`]*$"""
+    )
 
     # Reset the syntax version to default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()

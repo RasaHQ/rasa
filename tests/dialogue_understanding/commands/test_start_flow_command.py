@@ -265,7 +265,7 @@ def test_regex_pattern_v2_command_syntax():
 
     assert (
         StartFlowCommand.regex_pattern()
-        == r"^[^\w]*start flow ['\"]?([a-zA-Z0-9_-]+)['\"]?"
+        == r"""^[\s\W\d]*start flow ['"`]?([a-zA-Z0-9_-]+)['"`]*"""
     )
 
     # Reset the syntax version to the default, otherwise it will affect other tests.

@@ -70,7 +70,9 @@ def test_regex_pattern_v2_command_syntax():
     # Set the syntax version to v2 to test the new regex pattern.
     CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
 
-    assert KnowledgeAnswerCommand.regex_pattern() == r"^[^\w]*provide info$"
+    assert (
+        KnowledgeAnswerCommand.regex_pattern() == r"""^[\s\W\d]*provide info['"`]*$"""
+    )
 
     # Reset the syntax version to the default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()

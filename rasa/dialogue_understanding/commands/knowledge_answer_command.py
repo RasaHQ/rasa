@@ -81,7 +81,7 @@ class KnowledgeAnswerCommand(FreeFormAnswerCommand):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"SearchAndReply\(\)",
-            CommandSyntaxVersion.v2: r"^[^\w]*provide info$",
+            CommandSyntaxVersion.v2: r"""^[\s\W\d]*provide info['"`]*$""",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

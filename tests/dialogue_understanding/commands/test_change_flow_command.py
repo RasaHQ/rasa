@@ -1,3 +1,7 @@
+import re
+
+import pytest
+
 from rasa.dialogue_understanding.commands.change_flow_command import ChangeFlowCommand
 from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
@@ -50,7 +54,7 @@ def test_regex_pattern_v2_command_syntax():
     # Set the syntax version to v2 to test the new regex pattern.
     CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
 
-    assert ChangeFlowCommand.regex_pattern() == r"^[^\w]*change$"
+    assert ChangeFlowCommand.regex_pattern() == r"""^[\s\W\d]*change['"`]*$"""
 
     # Reset the syntax version to the default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()
@@ -59,3 +63,29 @@ def test_regex_pattern_v2_command_syntax():
 def test_is_instance_of_prompt_command():
     # Check if the command adheres to the PromptCommand protocol.
     assert isinstance(ChangeFlowCommand(), PromptCommand) is True
+
+
+@pytest.mark.parametrize(
+    "input_action",
+    [
+        "change",
+        " - change",
+        " --> change",
+        " *** change",
+        " 1. change",
+        " 2) change",
+        "'change'",
+        "```change```",
+        "```plaintext\nchange```",
+        "```plaintext\n'change'```",
+    ],
+)
+def test_parse(input_action):
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    pattern = re.compile(ChangeFlowCommand.regex_pattern())
+    match = pattern.search(input_action)
+    parsed_command = ChangeFlowCommand.from_dsl(match)
+    assert parsed_command == ChangeFlowCommand()
+
+    CommandSyntaxManager.reset_syntax_version()

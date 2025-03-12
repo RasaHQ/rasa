@@ -1,3 +1,7 @@
+import re
+
+import pytest
+
 from rasa.dialogue_understanding.commands.can_not_handle_command import (
     CannotHandleCommand,
 )
@@ -89,7 +93,7 @@ def test_regex_pattern_v2_command_syntax():
     # Set the syntax version to v2 to test the new regex pattern.
     CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
 
-    assert CannotHandleCommand.regex_pattern() == r"^[^\w]*cannot handle$"
+    assert CannotHandleCommand.regex_pattern() == r"""^[\s\W\d]*cannot handle['"`]*$"""
 
     # Reset the syntax version to default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()
@@ -98,3 +102,29 @@ def test_regex_pattern_v2_command_syntax():
 def test_is_instance_of_prompt_command():
     # Check if the command adheres to the PromptCommand protocol.
     assert isinstance(CannotHandleCommand(), PromptCommand) is True
+
+
+@pytest.mark.parametrize(
+    "input_action",
+    [
+        "cannot handle",
+        " - cannot handle",
+        " --> cannot handle",
+        " *** cannot handle",
+        " 1. cannot handle",
+        " 2) cannot handle",
+        "'cannot handle'",
+        "```cannot handle```",
+        "```plaintext\ncannot handle```",
+        "```plaintext\n'cannot handle'```",
+    ],
+)
+def test_parse(input_action):
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    pattern = re.compile(CannotHandleCommand.regex_pattern())
+    match = pattern.search(input_action)
+    parsed_command = CannotHandleCommand.from_dsl(match)
+    assert isinstance(parsed_command, CannotHandleCommand)
+
+    CommandSyntaxManager.reset_syntax_version()

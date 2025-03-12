@@ -81,7 +81,7 @@ class ChitChatAnswerCommand(FreeFormAnswerCommand):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"ChitChat\(\)",
-            CommandSyntaxVersion.v2: r"^[^\w]*offtopic reply$",
+            CommandSyntaxVersion.v2: r"""^[\s\W\d]*offtopic reply['"`]*$""",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

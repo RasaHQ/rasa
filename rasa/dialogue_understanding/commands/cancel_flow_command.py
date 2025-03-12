@@ -166,7 +166,7 @@ class CancelFlowCommand(Command):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"CancelFlow\(\)",
-            CommandSyntaxVersion.v2: r"^[^\w]*cancel flow$",
+            CommandSyntaxVersion.v2: r"""^[\s\W\d]*cancel flow['"`]*$""",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

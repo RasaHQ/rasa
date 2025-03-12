@@ -141,7 +141,9 @@ class StartFlowCommand(Command):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"StartFlow\(['\"]?([a-zA-Z0-9_-]+)['\"]?\)",
-            CommandSyntaxVersion.v2: r"^[^\w]*start flow ['\"]?([a-zA-Z0-9_-]+)['\"]?",
+            CommandSyntaxVersion.v2: (
+                r"""^[\s\W\d]*start flow ['"`]?([a-zA-Z0-9_-]+)['"`]*"""
+            ),
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

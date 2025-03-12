@@ -97,7 +97,7 @@ class SkipQuestionCommand(Command):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"SkipQuestion\(\)",
-            CommandSyntaxVersion.v2: r"^[^\w]*skip question$",
+            CommandSyntaxVersion.v2: r"""^[\s\W\d]*skip question['"`]*$""",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

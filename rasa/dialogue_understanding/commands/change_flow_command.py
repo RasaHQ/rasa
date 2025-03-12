@@ -70,7 +70,7 @@ class ChangeFlowCommand(Command):
     def regex_pattern() -> str:
         mapper = {
             CommandSyntaxVersion.v1: r"ChangeFlow\(\)",
-            CommandSyntaxVersion.v2: r"^[^\w]*change$",
+            CommandSyntaxVersion.v2: r"""^[\s\W\d]*change['"`]*$""",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

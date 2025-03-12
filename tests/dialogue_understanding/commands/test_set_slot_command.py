@@ -476,7 +476,7 @@ def test_regex_pattern_v2_command_syntax():
 
     assert (
         SetSlotCommand.regex_pattern()
-        == r"""^[^\w]*set slot ['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]? ['"]?(.+?)['"]?$"""
+        == r"""^[\s\W\d]*set slot ['"`]?([a-zA-Z_][a-zA-Z0-9_-]*)['"`]? ['"`]?(.+?)['"`]*$"""  # noqa: E501
     )
 
     # Reset the syntax version to the default, otherwise it will affect other tests.
