@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import structlog
 
@@ -100,7 +100,6 @@ def create_validate_frames_from_slot_set_events(
     events: List[Event],
     validate_frames: List[ValidateSlotPatternFlowStackFrame] = [],
     should_break: bool = False,
-    update_corrected_slots: bool = False,
 ) -> Tuple[DialogueStateTracker, List[ValidateSlotPatternFlowStackFrame]]:
     """Process SlotSet events and create validation frames.
 
@@ -111,8 +110,6 @@ def create_validate_frames_from_slot_set_events(
             if True, break out of the event loop as soon as the first non-SlotSet
             event is encountered.
             if False, continue processing the events until the end.
-        update_corrected_slots: whether or not corrected slots in the last
-            correction frame need to be updated.
 
     Returns:
         Tuple of (updated tracker, list of validation frames).
@@ -130,29 +127,5 @@ def create_validate_frames_from_slot_set_events(
 
         if frame:
             validate_frames.append(frame)
-            if update_corrected_slots:
-                tracker = update_corrected_slots_in_correction_frame(
-                    tracker, event.key, event.value
-                )
 
     return tracker, validate_frames
-
-
-def update_corrected_slots_in_correction_frame(
-    tracker: DialogueStateTracker, slot_name: str, slot_value: Any
-) -> DialogueStateTracker:
-    """Update the corrected_slots and new_slot_values of the
-    CorrectionPatternFlowStackFrame with only valid values.
-    """
-    stack = tracker.stack
-    top_frame = stack.top()
-    del top_frame.corrected_slots[slot_name]  # type: ignore[union-attr]
-    top_frame.new_slot_values.remove(slot_value)  # type: ignore[union-attr]
-
-    # since we can't directly modify a stack we have to pop first
-    # and then push back the updated frame
-    stack.pop()
-    stack.push(top_frame)
-    new_events = tracker.create_stack_updated_events(stack)
-    tracker.update_with_events(new_events)
-    return tracker

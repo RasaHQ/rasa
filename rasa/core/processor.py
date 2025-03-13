@@ -1553,7 +1553,6 @@ class MessageProcessor:
             tracker,
             prior_tracker_events,
             should_break=True,
-            update_corrected_slots=True,
         )
 
         return tracker, validate_frames

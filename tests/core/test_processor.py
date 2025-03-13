@@ -2737,10 +2737,6 @@ def test_validate_corrected_slots_valid_has_validate_frame(
     assert len(frames) == 2
     assert isinstance(frames[0], ValidateSlotPatternFlowStackFrame)
     assert isinstance(frames[1], ValidateSlotPatternFlowStackFrame)
-    top_frame = tracker.stack.top()
-    assert top_frame != correction_frame
-    assert "test_slot" not in top_frame.corrected_slots.keys()
-    assert "valid_2" not in top_frame.new_slot_values
 
 
 async def test_run_action_does_not_validate_corrected_slots(

@@ -1,27 +1,14 @@
 from typing import Any, List
-from unittest.mock import MagicMock
 
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.commands.utils import (
     clean_extracted_value,
-    create_validate_frames_from_slot_set_events,
     extract_cleaned_options,
     initialize_pattern_validate_slot,
     is_none_value,
 )
-from rasa.dialogue_understanding.patterns.correction import (
-    CorrectionPatternFlowStackFrame,
-)
-from rasa.dialogue_understanding.patterns.validate_slot import (
-    ValidateSlotPatternFlowStackFrame,
-)
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.shared.constants import REFILL_UTTER, REJECTIONS
-from rasa.shared.core.events import SlotSet
 from rasa.shared.core.slots import (
     AnySlot,
     BooleanSlot,
@@ -32,7 +19,6 @@ from rasa.shared.core.slots import (
     StrictCategoricalSlot,
     TextSlot,
 )
-from rasa.shared.core.trackers import DialogueStateTracker
 
 
 @pytest.mark.parametrize(
@@ -158,108 +144,3 @@ def test_initialize_pattern_validate_slot_without_validation():
     validate_frame = initialize_pattern_validate_slot(slot)
     # Then
     assert validate_frame is None
-
-
-def test_create_validate_frames_from_slot_set_events_does_not_modify_corrected_slots(
-    monkeypatch: MonkeyPatch,
-):
-    """Test that method validate_frames_from_slot_set_events modifies corrected slots"""
-    # Given
-    events = [SlotSet(key="test_slot", value="invalid")]
-    tracker = DialogueStateTracker.from_events(
-        "test",
-        [],
-        slots=[
-            TextSlot("test_slot2", mappings=[]),
-            TextSlot(
-                name="test_slot",
-                mappings=[],
-                validation={
-                    REFILL_UTTER: "utter_test_slot",
-                    REJECTIONS: [
-                        {"if": "test condition", "utter": "utter_invalid_test_slot"}
-                    ],
-                },
-            ),
-        ],
-    )
-    mock_update_corrected_slots_in_correction_frame = MagicMock()
-    monkeypatch.setattr(
-        "rasa.dialogue_understanding.commands.utils.update_corrected_slots_in_correction_frame",
-        mock_update_corrected_slots_in_correction_frame,
-    )
-    # When
-    tracker, validate_frames = create_validate_frames_from_slot_set_events(
-        tracker, events, []
-    )
-    # Then
-    assert len(validate_frames) == 1
-    assert isinstance(validate_frames[0], ValidateSlotPatternFlowStackFrame)
-    assert mock_update_corrected_slots_in_correction_frame.call_count == 0
-
-
-def test_create_validate_frames_from_slot_set_events_modifies_corrected_slots():
-    events = [
-        SlotSet(key="test_slot", value="valid"),
-        SlotSet(key="test_slot_2", value="valid"),
-    ]
-
-    tracker = DialogueStateTracker.from_events(
-        "default",
-        [],
-        [
-            TextSlot(
-                name="test_slot",
-                mappings=[],
-                validation={
-                    REFILL_UTTER: "utter_test_slot",
-                    REJECTIONS: [
-                        {
-                            "if": "test_slot == invalid",
-                            "utter": "utter_invalid_test_slot",
-                        }
-                    ],
-                },
-            ),
-            TextSlot(
-                name="test_slot_2",
-                mappings=[],
-                validation={
-                    REFILL_UTTER: "utter_test_slot",
-                    REJECTIONS: [
-                        {
-                            "if": "test_slot_2 == invalid",
-                            "utter": "utter_invalid_test_slot",
-                        }
-                    ],
-                },
-            ),
-        ],
-    )
-    correction_frame = CorrectionPatternFlowStackFrame(
-        corrected_slots={
-            "test_slot": {"value": "invalid", "filled_by": SetSlotExtractor.LLM.value},
-            "test_slot_2": {"value": "valid", "filled_by": SetSlotExtractor.LLM.value},
-        },
-        new_slot_values=["invalid", "valid"],
-    )
-    tracker.update_stack(
-        DialogueStack(
-            frames=[
-                UserFlowStackFrame(flow_id="foo", step_id="0_collect_foo_slot_a"),
-                correction_frame,
-            ]
-        )
-    )
-    tracker.update_with_events(events)
-    tracker, frames = create_validate_frames_from_slot_set_events(
-        tracker, events, should_break=True, update_corrected_slots=True
-    )
-
-    assert len(frames) == 2
-    assert isinstance(frames[0], ValidateSlotPatternFlowStackFrame)
-    assert isinstance(frames[1], ValidateSlotPatternFlowStackFrame)
-    top_frame = tracker.stack.top()
-    assert top_frame != correction_frame
-    assert "test_slot" not in top_frame.corrected_slots.keys()
-    assert "invalid" not in top_frame.new_slot_values
