@@ -314,6 +314,13 @@ runs:
           && grep -i 'Your Rasa model is trained and saved' model-training-log.txt \
           && echo 'LLM and Embeddings API health checks passed for all components during training'
       shell: bash
+
+    - name: Verify correct default model used for OpenAI provider by CompactLLMCommandGenerator
+      if: ${{ inputs.provider == 'openai' && inputs.train-and-test == 'compact' && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST  }}
+      run: |
+        : Verify correct default model used for OpenAI provider by CompactLLMCommandGenerator
+        grep -i '"model": "gpt-4o-2024-11-20"' model-training-log.txt
+      shell: bash
     
     - name: Get multi-deployments endpoints file
       if: ${{ contains(inputs.provider, '-multiple-deployments-with-') }}
@@ -414,6 +421,31 @@ runs:
             --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
             2>&1 \
             | tee e2e-tests-log.txt
+
+    - name: Verify correct JSON default prompt used for GPT-4o by CompactLLMCommandGenerator
+      if: ${{ contains(inputs.provider, 'openai') && inputs.train-and-test == 'compact' && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST  }}
+      run: |
+        : Verify correct default prompt used for GPT-4o by CompactLLMCommandGenerator
+        grep -i '## Task Description' e2e-tests-log.txt
+        grep -iF 'Use the following structured date:\n```json' e2e-tests-log.txt
+      shell: bash
+
+    - name: Verify correct XML default prompt used for Claude-Sonnet-3.5 by CompactLLMCommandGenerator
+      if: ${{ (contains(inputs.provider, 'bedrock') || inputs.provider == 'anthropic') && inputs.train-and-test == 'compact' && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST  }}
+      run: |
+        : Verify correct default prompt used for Claude-Sonnet-3.5 by CompactLLMCommandGenerator
+        grep -iv '## Task Description' e2e-tests-log.txt
+        grep -iF 'Use the following structured date:\n```xml' e2e-tests-log.txt
+      shell: bash
+
+    - name: Verify correct default prompt used for other models by CompactLLMCommandGenerator
+      if: ${{ !(contains(inputs.provider, 'bedrock') || inputs.provider == 'anthropic' || contains(inputs.provider, 'openai')) && inputs.train-and-test == 'compact' && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST  }}
+      run: |
+        : Verify correct default prompt used for Claude-Sonnet-3.5 by CompactLLMCommandGenerator
+        grep -i '## Task Description' e2e-tests-log.txt
+        grep -iv 'Use the following structured date:\n```xml' e2e-tests-log.txt
+        grep -iv 'Use the following structured date:\n```xml' e2e-tests-log.txt
+      shell: bash
 
     - name: Run Dialogue Understanding Tests
       uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
