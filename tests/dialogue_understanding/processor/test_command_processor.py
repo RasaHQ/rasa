@@ -1568,3 +1568,72 @@ def test_execute_commands_with_setslot_command(all_flows: FlowsList):
     assert frame.flow_id == "pattern_validate_slot"
     assert frame.step_id == "START"
     assert frame.validate == "test_slot"
+
+
+@pytest.mark.parametrize(
+    "step_type",
+    [
+        "call",
+        "link",
+    ],
+)
+def test_clean_up_commands_with_interrupting_start_flow_in_call_or_link_flow(
+    step_type: str,
+):
+    user_frame_collect_eggs = UserFlowStackFrame(
+        flow_id="spam", step_id="new_flow", frame_id="former-frame-id"
+    )
+    user_frame_collect_beans = UserFlowStackFrame(
+        flow_id="beans", step_id="collect_beans", frame_id="current-frame-id"
+    )
+    pattern_frame_collect_beans = CollectInformationPatternFlowStackFrame(
+        collect="slot_beans", frame_id="some-other-id"
+    )
+    stack = DialogueStack(
+        frames=[
+            user_frame_collect_eggs,
+            user_frame_collect_beans,
+            pattern_frame_collect_beans,
+        ]
+    )
+
+    tracker_eggs = DialogueStateTracker.from_events(sender_id="test", evts=[])
+    tracker_eggs.update_stack(stack)
+
+    flows = flows_from_str(
+        f"""
+        flows:
+          spam:
+            description: "This flow collects information."
+            steps:
+            - id: collect_ham
+              collect: ham
+            - id: new_flow
+              {step_type}: beans
+          beans:
+            description: "This flow collects beans."
+            block_digressions: true
+            steps:
+            - id: collect_beans
+              collect: slot_beans
+          tomato:
+            description: "This flow collects tomatoes."
+            steps:
+            - id: collect_tomato
+              collect: tomato
+        """
+    )
+    # When
+    with patch(
+        (
+            "rasa.dialogue_understanding.processor."
+            "command_processor.filled_slots_for_active_flow"
+        ),
+        Mock(return_value=({"ham"}, "spam")),
+    ):
+        commands = [StartFlowCommand("tomato")]
+        clean_commands = clean_up_commands(commands, tracker_eggs, flows, Mock())
+
+    # Then
+    expected_clean_commands = [HandleDigressionsCommand("tomato")]
+    assert clean_commands == expected_clean_commands

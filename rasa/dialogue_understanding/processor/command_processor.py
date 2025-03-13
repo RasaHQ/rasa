@@ -42,6 +42,7 @@ from rasa.dialogue_understanding.stack.frames import (
 from rasa.dialogue_understanding.stack.utils import (
     filled_slots_for_active_flow,
     top_flow_frame,
+    top_user_flow_frame,
 )
 from rasa.engine.graph import ExecutionContext
 from rasa.shared.constants import (
@@ -430,28 +431,22 @@ def clean_up_commands(
                 command=command,
             )
 
-        elif isinstance(command, StartFlowCommand) and command.flow == active_flow:
-            # drop a start flow command if the starting flow is equal to the currently
-            # active flow
-            structlogger.debug(
-                "command_processor.clean_up_commands.skip_command_flow_already_active",
-                command=command,
+        elif isinstance(command, StartFlowCommand):
+            top_user_frame = top_user_flow_frame(
+                tracker.stack, ignore_call_and_link_frames=False
             )
+            top_flow_id = top_user_frame.flow_id if top_user_frame else ""
 
-        elif isinstance(command, StartFlowCommand) and active_flow is not None:
-            # push handle digressions command if we are at a collect step of
-            # a flow and a new flow is started
-            collect_info = get_current_collect_step(tracker.stack, all_flows)
-            current_flow = all_flows.flow_by_id(active_flow)
-            current_flow_condition = current_flow and (
-                current_flow.ask_confirm_digressions or current_flow.block_digressions
-            )
+            if top_flow_id == command.flow:
+                # drop a start flow command if the starting flow is equal
+                # to the currently active flow
+                structlogger.debug(
+                    "command_processor.clean_up_commands.skip_command_flow_already_active",
+                    command=command,
+                )
+                continue
 
-            if collect_info and (
-                collect_info.ask_confirm_digressions
-                or collect_info.block_digressions
-                or current_flow_condition
-            ):
+            if should_add_handle_digressions_command(tracker, all_flows, top_flow_id):
                 clean_commands.append(HandleDigressionsCommand(flow=command.flow))
                 structlogger.debug(
                     "command_processor.clean_up_commands.push_handle_digressions",
@@ -848,3 +843,28 @@ def filter_cannot_handle_command_for_skipped_slots(
             and CANNOT_HANDLE_REASON == command.reason
         )
     ]
+
+
+def should_add_handle_digressions_command(
+    tracker: DialogueStateTracker, all_flows: FlowsList, top_flow_id: str
+) -> bool:
+    """Check if a handle digressions command should be added to the commands.
+
+    The command should replace a StartFlow command only if we are at a collect step of
+    a flow and a new flow is predicted by the command generator to start.
+    """
+    current_flow = all_flows.flow_by_id(top_flow_id)
+    current_flow_condition = current_flow and (
+        current_flow.ask_confirm_digressions or current_flow.block_digressions
+    )
+
+    collect_info = get_current_collect_step(tracker.stack, all_flows)
+
+    if collect_info and (
+        collect_info.ask_confirm_digressions
+        or collect_info.block_digressions
+        or current_flow_condition
+    ):
+        return True
+
+    return False

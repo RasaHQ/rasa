@@ -63,7 +63,9 @@ def top_flow_frame(
     return None
 
 
-def top_user_flow_frame(dialogue_stack: DialogueStack) -> Optional[UserFlowStackFrame]:
+def top_user_flow_frame(
+    dialogue_stack: DialogueStack, ignore_call_and_link_frames: bool = True
+) -> Optional[UserFlowStackFrame]:
     """Returns the topmost user flow frame from the tracker.
 
     User flows are flows that are created by developers of an assistant and
@@ -75,16 +77,19 @@ def top_user_flow_frame(dialogue_stack: DialogueStack) -> Optional[UserFlowStack
 
     Args:
         dialogue_stack: The dialogue stack to use.
+        ignore_call_and_link_frames: Whether to ignore user frames of type `call`
+            and `link`. By default, these frames are ignored.
 
     Returns:
     The topmost user flow frame from the tracker.
     """
     for frame in reversed(dialogue_stack.frames):
-        if (
-            isinstance(frame, UserFlowStackFrame)
-            and frame.frame_type != FlowStackFrameType.CALL
-            and frame.frame_type != FlowStackFrameType.LINK
-        ):
+        if isinstance(frame, UserFlowStackFrame):
+            if ignore_call_and_link_frames and (
+                frame.frame_type == FlowStackFrameType.CALL
+                or frame.frame_type == FlowStackFrameType.LINK
+            ):
+                continue
             return frame
     return None
 
