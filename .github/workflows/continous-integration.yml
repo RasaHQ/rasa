@@ -1148,7 +1148,7 @@ jobs:
       - name: Prepare test results
         if: always()
         run: |
-          mv unit-tests-results.xml ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
+          mv coverage.xml ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
 
       - name: Generate Rasa server OpenAPI test coverage report
         if: always() && matrix.test == 'test-other-unit-tests'
@@ -1221,7 +1221,7 @@ jobs:
 
       - name: Prepare test results
         if: always()
-        run: mv unit-tests-results.xml ${{ github.workspace }}/unit-tests-results-test-anonymization-python-${{ matrix.python-version }}.xml
+        run: mv coverage.xml ${{ github.workspace }}/unit-tests-results-test-anonymization-python-${{ matrix.python-version }}.xml
 
       - name: Save Test Results
         if: always()
@@ -1263,7 +1263,7 @@ jobs:
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
         with:
-          files: "artifacts/**/unit-tests-results-*.xml"
+          files: "artifacts/unit-tests-results-*.xml"
           check_name: "Unit Test Results"
           
   publish-test-results-on-scheduled-runs:
