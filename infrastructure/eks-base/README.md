@@ -1,7 +1,7 @@
 # Rasa Pro Pulumi Base Infrastructure
 
 ## Overview
-This repository contains a Pulumi script to provision AWS base infrastructure for running Rasa Pro cluster using AWS Fargate. The setup includes:
+This Pulumi script written in Python provisions AWS base infrastructure for running Rasa Pro cluster using AWS Fargate. The setup includes:
 
 - A Virtual Private Cloud (VPC)
 - Public and private subnets
@@ -81,7 +81,7 @@ Ensure you have the following installed before running the Pulumi script:
 
    ```sh
    git clone <this-repo-url>
-   cd <this-repo-directory>/infrastructure
+   cd <this-repo-directory>/infrastructure/eks-base
    ```
 
 2. **Login to Pulumi** (if not already logged in):
