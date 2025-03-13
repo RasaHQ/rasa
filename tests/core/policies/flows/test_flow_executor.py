@@ -42,6 +42,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 )
 from rasa.dialogue_understanding.stack.frames.search_frame import SearchStackFrame
 from rasa.engine.language import Language
+from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -2293,3 +2294,103 @@ def test_trigger_pattern_continue_interrupted_uses_localized_flow_name(
     assert top is not None
     assert isinstance(top, ContinueInterruptedPatternFlowStackFrame)
     assert top.previous_flow_name == german_flow_name
+
+
+def test_run_end_step_does_not_trigger_clarify_pattern() -> None:
+    """Do not push the clarification pattern when the top user frame is an interruption frame."""  # noqa: E501
+    flows = flows_from_str(
+        """
+        flows:
+          pattern_clarification:
+            description: Conversation repair flow
+            name: pattern clarification
+            steps:
+            - id: start
+              action: action_clarify_flows
+            - action: utter_clarification_options_rasa
+
+          pattern_completed:
+            description: Conversation repair flow
+            name: pattern completed
+            steps:
+            - action: utter_how_else_can_i_help
+              id: how_else_can_i_help
+
+          flow_a:
+            description: flow a
+            steps:
+            - id: collect_foo
+              collect: foo
+
+          flow_b:
+            description: flow b
+            steps:
+            - id: collect_bar
+              collect: bar
+
+          flow_c:
+            description: flow c
+            steps:
+            - id: collect_baz
+              collect: baz
+            - call: flow_b
+              id: call_flow_bar
+
+        """
+    )
+    domain = Domain.from_yaml(f"""
+    version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
+    slots:
+        foo:
+            type: text
+        bar:
+            type: text
+        baz:
+            type: text
+    """)
+    stack = DialogueStack.from_dict(
+        [
+            {
+                "flow_id": "flow_c",
+                "frame_id": "flow-c-frame-id",
+                "frame_type": "regular",
+                "step_id": "call_flow_bar",
+                "type": "flow",
+            },
+            {
+                "flow_id": "flow_b",
+                "frame_id": "flow-b-frame-id",
+                "frame_type": "call",
+                "step_id": "collect_bar",
+                "type": "flow",
+            },
+            {
+                "flow_id": "flow_a",
+                "frame_id": "flow-a-frame-id",
+                "frame_type": "interrupt",
+                "step_id": "collect_foo",
+                "type": "flow",
+            },
+        ]
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test", [], slots=domain.slots, domain=domain
+    )
+    tracker.update_stack(stack)
+
+    available_actions = ["action_clarify_flows"]
+    result = flow_executor.advance_flows_until_next_action(
+        tracker, available_actions, flows
+    )
+
+    assert result is not None
+    assert result.action_name == "action_listen"
+    last_event = result.events[-1]
+    assert isinstance(last_event, FlowCompleted)
+    assert last_event.flow_id == "pattern_completed"
+    assert last_event.step_id == "how_else_can_i_help"
+
+    tracker.update_with_events(result.events)
+    # all flows on the stack were completed
+    # and nothing else is pending e.g. pattern clarify does not trigger
+    assert len(tracker.stack.frames) == 0

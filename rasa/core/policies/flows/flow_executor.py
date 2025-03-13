@@ -287,8 +287,13 @@ def trigger_pattern_clarification(
     if not isinstance(current_frame, UserFlowStackFrame):
         return None
 
-    if current_frame.frame_type == FlowStackFrameType.CALL:
-        # we want to return to the flow that called the current flow
+    if current_frame.frame_type in [
+        FlowStackFrameType.CALL,
+        FlowStackFrameType.INTERRUPT,
+    ]:
+        # we want to return to the flow that called
+        # the current flow or the flow that was interrupted
+        # by the current flow
         return None
 
     pending_flows = [
