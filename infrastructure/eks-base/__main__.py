@@ -18,16 +18,21 @@ vpc = awsx.ec2.Vpc(
         awsx.ec2.SubnetSpecArgs(
             type=awsx.ec2.SubnetType.PUBLIC,
             cidr_mask=24,
+            tags={"kubernetes.io/role/elb": "1"},
         ),
         awsx.ec2.SubnetSpecArgs(
             type=awsx.ec2.SubnetType.PRIVATE,
             cidr_mask=24,
+            tags={"kubernetes.io/role/internal-elb": "1"},
         ),
     ],
     nat_gateways=awsx.ec2.NatGatewayConfigurationArgs(
         strategy=awsx.ec2.NatGatewayStrategy.SINGLE
     ),
-    tags={"Name": f"{project_name}-vpc"},
+    tags={
+        "Name": f"{project_name}-vpc",
+        f"kubernetes.io/cluster/{project_name}-cluster": "owned",
+    },
 )
 
 # 📌 **Step 2: Extract Subnets and Gateway**
