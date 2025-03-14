@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from copy import deepcopy
 from typing import Any, Dict, List
 
 import structlog
@@ -18,6 +19,7 @@ from rasa.shared.constants import (
     USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
+from rasa.shared.providers._configs.azure_entra_id_config import AzureEntraIDOAuthConfig
 from rasa.shared.providers._configs.litellm_router_client_config import (
     LiteLLMRouterClientConfig,
 )
@@ -61,12 +63,8 @@ class _BaseLiteLLMRouterClient:
         self._extra_parameters = kwargs or {}
         self.additional_client_setup()
         try:
-            resolved_model_configurations = (
-                self._resolve_env_vars_in_model_configurations()
-            )
-            self._router_client = Router(
-                model_list=resolved_model_configurations, **router_settings
-            )
+            # We instantiate a router client here to validate the configuration.
+            self._router_client = self._create_router_client()
         except Exception as e:
             event_info = "Cannot instantiate a router client."
             structlogger.error(
@@ -145,6 +143,14 @@ class _BaseLiteLLMRouterClient:
     @property
     def router_client(self) -> Router:
         """Returns the instantiated LiteLLM Router client."""
+        # In ca se oauth is used, due to a bug in LiteLLM,
+        # azure_ad_token_provider is not working as expected.
+        # To work around this, we create a new client every
+        # time we need to make a call which will
+        # ensure that the token is always fresh.
+        # GitHub issue for LiteLLm: https://github.com/BerriAI/litellm/issues/4417
+        if self._has_oauth():
+            return self._create_router_client()
         return self._router_client
 
     @property
@@ -175,11 +181,36 @@ class _BaseLiteLLMRouterClient:
             **self._litellm_extra_parameters,
         }
 
+    def _create_router_client(self) -> Router:
+        resolved_model_configurations = self._resolve_env_vars_in_model_configurations()
+        return Router(model_list=resolved_model_configurations, **self.router_settings)
+
+    def _has_oauth(self) -> bool:
+        for model_configuration in self.model_configurations:
+            if model_configuration.get("litellm_params", {}).get("oauth", None):
+                return True
+        return False
+
     def _resolve_env_vars_in_model_configurations(self) -> List:
         model_configuration_with_resolved_keys = []
         for model_configuration in self.model_configurations:
             resolved_model_configuration = resolve_environment_variables(
-                model_configuration
+                deepcopy(model_configuration)
             )
+
+            if not isinstance(resolved_model_configuration, dict):
+                continue
+
+            lite_llm_params = resolved_model_configuration.get("litellm_params", {})
+            if lite_llm_params.get("oauth", None):
+                oauth_config_dict = lite_llm_params.pop("oauth")
+                oauth_config = AzureEntraIDOAuthConfig.from_dict(oauth_config_dict)
+                credential = oauth_config.create_azure_credential()
+                # token_provider = get_bearer_token_provider(
+                #     credential, *oauth_config.scopes
+                # )
+                resolved_model_configuration["litellm_params"]["azure_ad_token"] = (
+                    credential.get_token(*oauth_config.scopes).token
+                )
             model_configuration_with_resolved_keys.append(resolved_model_configuration)
         return model_configuration_with_resolved_keys

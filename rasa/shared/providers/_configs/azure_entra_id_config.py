@@ -8,7 +8,7 @@ from functools import lru_cache
 from typing import Any, Callable, Dict, List, Optional, Set, Type
 
 import structlog
-from azure.core.credentials import TokenProvider
+from azure.core.credentials import TokenCredential
 from azure.identity import (
     CertificateCredential,
     ClientSecretCredential,
@@ -77,7 +77,7 @@ class AzureEntraIDTokenProviderConfig(abc.ABC):
     """Interface for Azure Entra ID OAuth credential configuration."""
 
     @abc.abstractmethod
-    def create_azure_token_provider(self) -> TokenProvider:
+    def create_azure_token_provider(self) -> TokenCredential:
         """Create an Azure Entra ID token provider."""
         ...
 
@@ -159,7 +159,7 @@ class AzureEntraIDClientCredentialsConfig(AzureEntraIDTokenProviderConfig, BaseM
             ),
         )
 
-    def create_azure_token_provider(self) -> TokenProvider:
+    def create_azure_token_provider(self) -> TokenCredential:
         """Create a ClientSecretCredential for Azure Entra ID."""
         return create_azure_entra_id_client_credentials(
             client_id=self.client_id,
@@ -286,7 +286,7 @@ class AzureEntraIDClientCertificateConfig(AzureEntraIDTokenProviderConfig, BaseM
             ),
         )
 
-    def create_azure_token_provider(self) -> TokenProvider:
+    def create_azure_token_provider(self) -> TokenCredential:
         """Creates a CertificateCredential for Azure Entra ID."""
         return create_azure_entra_id_certificate_credentials(
             client_id=self.client_id,
@@ -369,7 +369,7 @@ class AzureEntraIDDefaultCredentialsConfig(AzureEntraIDTokenProviderConfig, Base
         """
         return cls(authority_host=config.pop(AZURE_AUTHORITY_FIELD, None))
 
-    def create_azure_token_provider(self) -> TokenProvider:
+    def create_azure_token_provider(self) -> TokenCredential:
         """Creates a DefaultAzureCredential."""
         return create_azure_entra_id_default_credentials(
             authority_host=self.authority_host
@@ -530,12 +530,12 @@ class AzureEntraIDOAuthConfig(OAuth, BaseModel):
         azure_oauth_class = AzureEntraIDOAuthConfig._get_azure_oauth_by_type(oauth_type)
         return azure_oauth_class.from_dict(oauth_config)
 
-    def _create_azure_credential(
+    def create_azure_credential(
         self,
-    ) -> TokenProvider:
+    ) -> TokenCredential:
         """Create an Azure Entra ID client which can be used to get a bearer token."""
         return self.azure_entra_id_token_provider_config.create_azure_token_provider()
 
     def get_bearer_token(self) -> str:
         """Returns a bearer token."""
-        return self._create_azure_credential().get_token(*self.scopes).token  # type: ignore
+        return self.create_azure_credential().get_token(*self.scopes).token

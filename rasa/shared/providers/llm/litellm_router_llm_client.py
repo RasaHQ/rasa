@@ -198,6 +198,7 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
         """Returns the completion arguments for invoking a call through
         LiteLLM's completion functions.
         """
+
         return {
             **self._litellm_extra_parameters,
             LITE_LLM_MODEL_FIELD: self.model_group_id,
