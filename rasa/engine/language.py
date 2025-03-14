@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, Text
 
 from langcodes import Language as LangcodesLanguage
+from langcodes import standardize_tag
+from langcodes.tag_parser import LanguageTagError
 
 from rasa.shared.exceptions import RasaException
 
@@ -30,9 +32,14 @@ class Language:
         Raises:
             RasaException: If the language code or custom language code is invalid.
         """
-        language = LangcodesLanguage.make(language_code)
-        cls.validate_language(language)
+        if cls.is_custom_language_code(language_code):
+            cls.validate_custom_language_code(language_code)
+        elif not cls.is_language_code_bcp_47_standard(language_code):
+            raise RasaException(
+                f"Language '{language_code}' is not a BCP 47 standard language code."
+            )
 
+        language = LangcodesLanguage.get(language_code)
         return cls(
             code=language_code,
             label=cls.get_language_label(language),
@@ -40,7 +47,38 @@ class Language:
         )
 
     @staticmethod
-    def get_language_label(language: LangcodesLanguage) -> str:
+    def is_language_code_bcp_47_standard(language_code: str) -> bool:
+        """Checks if a language code is a BCP 47 standard language code.
+
+        Args:
+            language_code: The language code to check.
+
+        Returns:
+            `True` if the language code is a BCP 47 standard, `False` otherwise.
+        """
+        try:
+            standardized_language_code = standardize_tag(language_code)
+            return (
+                standardized_language_code == language_code
+                and LangcodesLanguage.get(language_code).is_valid()
+            )
+        except LanguageTagError:
+            return False
+
+    @staticmethod
+    def is_custom_language_code(language_code: str) -> bool:
+        """Checks if a language code is a custom language code.
+
+        Args:
+            language_code: The language code to check.
+
+        Returns:
+            `True` if the language code is a custom language code, `False` otherwise.
+        """
+        return language_code.startswith(CUSTOM_LANGUAGE_CODE_PREFIX)
+
+    @classmethod
+    def get_language_label(cls, language: LangcodesLanguage) -> str:
         """Gets the display name of a language.
 
         For custom languages (in the format "x-<base_lang>-<custom_label>"),
@@ -55,11 +93,11 @@ class Language:
         """
         language_code = str(language)
 
-        if language_code.startswith(CUSTOM_LANGUAGE_CODE_PREFIX):
+        if cls.is_custom_language_code(language_code):
             # If it's a custom language, derive the label from the base language code.
-            parts = language_code.split("-")
-            base_language_code = parts[1]
-            base_language = LangcodesLanguage.make(base_language_code)
+            without_prefix = language_code[len(CUSTOM_LANGUAGE_CODE_PREFIX) :]
+            base_language_code, _ = without_prefix.rsplit("-", 1)
+            base_language = LangcodesLanguage.get(base_language_code)
             return base_language.display_name()
         else:
             return language.display_name()
@@ -79,15 +117,15 @@ class Language:
 
         language_code = str(language)
         if language_code.startswith(CUSTOM_LANGUAGE_CODE_PREFIX):
-            cls.validate_custom_language(language_code)
+            cls.validate_custom_language_code(language_code)
 
-    @staticmethod
-    def validate_custom_language(custom_language_code: str) -> None:
+    @classmethod
+    def validate_custom_language_code(cls, custom_language_code: str) -> None:
         """Validates a custom language code.
 
         A valid custom language code should adhere to the format:
           "x-<existing_language_code>-<custom_label>"
-        Example: x-en-formal
+        Example: x-en-formal or x-en-US-formal.
 
         Args:
             custom_language_code: The custom language code to validate.
@@ -102,29 +140,33 @@ class Language:
                 f"start with '{CUSTOM_LANGUAGE_CODE_PREFIX}'."
             )
 
-        # Split the language code into parts.
-        parts = custom_language_code.split("-")
-        if len(parts) != 3:
+        # Remove the custom prefix.
+        without_prefix = custom_language_code[len(CUSTOM_LANGUAGE_CODE_PREFIX) :]
+        if "-" not in without_prefix:
             raise RasaException(
                 f"Custom language '{custom_language_code}' must be in the format "
                 f"'{CUSTOM_LANGUAGE_CODE_PREFIX}<language_code>-<custom_label>'."
             )
 
+        base_language_code, custom_label = without_prefix.rsplit("-", 1)
+        if not base_language_code:
+            raise RasaException(
+                f"Base language in '{custom_language_code}' cannot be empty. "
+                f"Expected custom language code format is "
+                f"'{CUSTOM_LANGUAGE_CODE_PREFIX}<language_code>-<custom_label>'."
+            )
+        if not custom_label:
+            raise RasaException(
+                f"Custom label in '{custom_language_code}' cannot be empty."
+                f"Expected custom language code format is "
+                f"'{CUSTOM_LANGUAGE_CODE_PREFIX}<language_code>-<custom_label>'."
+            )
+
         # Validate the base language code using langcodes.
-        base_language_code = parts[1]
-        base_language = LangcodesLanguage.make(base_language_code)
-        if not base_language.is_valid():
+        if not cls.is_language_code_bcp_47_standard(base_language_code):
             raise RasaException(
                 f"Base language '{base_language_code}' in custom language "
                 f"'{custom_language_code}' is not a valid language code."
-            )
-
-        # Ensure the custom label is not empty.
-        custom_label = parts[2]
-        if not custom_label:
-            raise RasaException(
-                f"Custom label in custom language "
-                f"'{custom_language_code}' cannot be empty."
             )
 
     def as_dict(self) -> Dict[Text, Any]:
