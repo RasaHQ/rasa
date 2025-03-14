@@ -45,6 +45,7 @@ on:
           - bedrock-multiple-deployments-with-routing
           - litellm-proxy-multiple-deployments-with-routing
           - openai-with-custom-prompt-for-CompactLLMCommandGenerator
+          - openai-with-custom-prompt-for-CustomLLMCommandGenerator
       
       rasa-calm-demo-branch:
         description: "Branch to checkout for `rasa-calm-demo`"
@@ -327,7 +328,8 @@ jobs:
             huggingface-multiple-deployments-with-routing,
             bedrock-multiple-deployments-with-routing,
             litellm-proxy-multiple-deployments-with-routing,
-            openai-with-custom-prompt-for-CompactLLMCommandGenerator
+            openai-with-custom-prompt-for-CompactLLMCommandGenerator,
+            openai-with-custom-prompt-for-CustomLLMCommandGenerator
           ] # TODO: Enable testing all the providers
         train-and-test: ${{ fromJson(needs.job_setup.outputs.COMMAND_GENERATOR_MATRIX)[needs.job_setup.outputs.COMMAND_GENERATOR] }}
     steps:
