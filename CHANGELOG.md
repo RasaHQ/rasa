@@ -9,6 +9,34 @@ You can find more information on how to add a new change log entry at
 https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
+## [3.11.5] - 2025-02-18
+                        
+Rasa Pro 3.11.5 (2025-02-18)                             
+### Bugfixes
+- [#1919](https://github.com/rasahq/rasa-private/issues/1919): Updated `Inspector` dependent packages (cross-spawn, mermaid, dom-purify, vite, braces, ws, axios and rollup) to address security vulnerabilities.
+- [#1921](https://github.com/rasahq/rasa-private/issues/1921): Enable default action `action_extract_slots` to set slots that should be shared for coexistence in a NLU-based system,
+  when the same slot can be requested and filled by a flow in the CALM system too.
+- [#1950](https://github.com/rasahq/rasa-private/issues/1950): Fixed conversation stalling in AudioCodes channel by handling activities in background tasks. Previously, activities were processed synchronously which blocked responses to AudioCodes, causing request timeouts and activity retries. These retries would cancel ongoing processing and get rejected as duplicates. Now activities are processed asynchronously while responding immediately to AudioCodes requests.
+
+### Miscellaneous internal changes
+- [#1929](https://github.com/rasahq/rasa-private/issues/1929)
+
+
+## [3.11.4] - 2025-01-30
+                        
+Rasa Pro 3.11.4 (2025-01-30)                             
+### Improvements
+- [#1900](https://github.com/rasahq/rasa-private/issues/1900): Remove unnecessary deepcopy to improve performance in `undo_fallback_prediction` method of `FallbackClassifier`
+
+### Bugfixes
+- [#1816](https://github.com/rasahq/rasa-private/issues/1816): - Fixed an issue where the `pattern_continue_interrupted` was not correctly triggered when the flow digressed to a step containing a link.
+- [#1828](https://github.com/rasahq/rasa-private/issues/1828): Add the flow ID as a prefix to step ID to ensure uniqueness. This resolves a rare bug where steps in a child flow with a structure similar to those in a parent flow (using a "call" step) could result in duplicate step IDs. In this case duplicates previously caused incorrect next step selection.
+- [#1871](https://github.com/rasahq/rasa-private/issues/1871): Optimized the `DirectCustomActionExecutor` by registering custom actions only once.
+- [#1898](https://github.com/rasahq/rasa-private/issues/1898): Updated `cryptography` and `anyio` to resolve security vulnerabilities.
+
+### Miscellaneous internal changes
+- [#1876](https://github.com/rasahq/rasa-private/issues/1876), [#1887](https://github.com/rasahq/rasa-private/issues/1887)
+
 
 ## [3.11.3] - 2025-01-14
 
