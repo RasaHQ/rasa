@@ -1,10 +1,9 @@
-import logging
 from typing import List
 from unittest.mock import Mock
 
 import pytest
 import sqlalchemy as sa
-from _pytest.logging import LogCaptureFixture
+import structlog
 from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.core.tracker_store import (
@@ -13,13 +12,12 @@ from rasa.core.tracker_store import (
 )
 from rasa.shared.core.events import Event
 from rasa.shared.core.trackers import DialogueStateTracker
+from tests.utilities import filter_logs
 
 from .conftest import (
     POSTGRES_HOST,
-    POSTGRES_LOGIN_DB,
     POSTGRES_PASSWORD,
     POSTGRES_PORT,
-    POSTGRES_TRACKER_STORE_DB,
     POSTGRES_USER,
 )
 
@@ -33,6 +31,8 @@ from .conftest import (
 @pytest.mark.timeout(10, func_only=True)
 def test_sql_tracker_store_with_login_db(
     postgres_login_db_connection: sa.engine.Connection,
+    postgres_db_name: str,
+    postgres_login_db_name: str,
 ):
     tracker_store = SQLTrackerStore(
         dialect="postgresql",
@@ -40,18 +40,18 @@ def test_sql_tracker_store_with_login_db(
         port=POSTGRES_PORT,
         username=POSTGRES_USER,
         password=POSTGRES_PASSWORD,
-        db=POSTGRES_TRACKER_STORE_DB,
-        login_db=POSTGRES_LOGIN_DB,
+        db=postgres_db_name,
+        login_db=postgres_login_db_name,
     )
 
     matching_rows = postgres_login_db_connection.execute(
         sa.text(
             f"SELECT 1 FROM pg_catalog.pg_database "
-            f"WHERE datname = '{POSTGRES_TRACKER_STORE_DB}'"
+            f"WHERE datname = '{postgres_db_name}'"
         )
     ).rowcount
     assert matching_rows == 1
-    assert tracker_store.engine.url.database == POSTGRES_TRACKER_STORE_DB
+    assert tracker_store.engine.url.database == postgres_db_name
     tracker_store.engine.dispose()
 
 
@@ -59,10 +59,10 @@ def test_sql_tracker_store_with_login_db(
 @pytest.mark.timeout(10, func_only=True)
 def test_sql_tracker_store_with_login_db_db_already_exists(
     postgres_login_db_connection: sa.engine.Connection,
+    postgres_db_name: str,
+    postgres_login_db_name: str,
 ):
-    postgres_login_db_connection.execute(
-        sa.text(f"CREATE DATABASE {POSTGRES_TRACKER_STORE_DB}")
-    )
+    postgres_login_db_connection.execute(sa.text(f"CREATE DATABASE {postgres_db_name}"))
 
     tracker_store = SQLTrackerStore(
         dialect="postgresql",
@@ -70,14 +70,14 @@ def test_sql_tracker_store_with_login_db_db_already_exists(
         port=POSTGRES_PORT,
         username=POSTGRES_USER,
         password=POSTGRES_PASSWORD,
-        db=POSTGRES_TRACKER_STORE_DB,
-        login_db=POSTGRES_LOGIN_DB,
+        db=postgres_db_name,
+        login_db=postgres_login_db_name,
     )
 
     matching_rows = postgres_login_db_connection.execute(
         sa.text(
             f"SELECT 1 FROM pg_catalog.pg_database "
-            f"WHERE datname = '{POSTGRES_TRACKER_STORE_DB}'"
+            f"WHERE datname = '{postgres_db_name}'"
         )
     ).rowcount
 
@@ -89,8 +89,9 @@ def test_sql_tracker_store_with_login_db_db_already_exists(
 @pytest.mark.timeout(10, func_only=True)
 def test_sql_tracker_store_with_login_db_race_condition(
     postgres_login_db_connection: sa.engine.Connection,
-    caplog: LogCaptureFixture,
     monkeypatch: MonkeyPatch,
+    postgres_login_db_name: str,
+    postgres_db_name: str,
 ):
     original_execute = sa.engine.Connection.execute
 
@@ -101,11 +102,11 @@ def test_sql_tracker_store_with_login_db_race_condition(
         if isinstance(args[0], Executable):
             if (
                 f"SELECT 1 FROM pg_catalog.pg_database "
-                f"WHERE datname = '{POSTGRES_TRACKER_STORE_DB}'" in str(args[0])
+                f"WHERE datname = '{postgres_db_name}'" in str(args[0])
             ):
                 original_execute(
                     self.execution_options(isolation_level="AUTOCOMMIT"),
-                    sa.text(f"CREATE DATABASE {POSTGRES_TRACKER_STORE_DB}"),
+                    sa.text(f"CREATE DATABASE {postgres_db_name}"),
                 )
                 return Mock(rowcount=0)
             else:
@@ -113,28 +114,30 @@ def test_sql_tracker_store_with_login_db_race_condition(
 
     with monkeypatch.context() as mp:
         mp.setattr(sa.engine.Connection, "execute", mock_execute)
-        with caplog.at_level(logging.ERROR):
+        with structlog.testing.capture_logs() as caplog:
             tracker_store = SQLTrackerStore(
                 dialect="postgresql",
                 host=POSTGRES_HOST,
                 port=POSTGRES_PORT,
                 username=POSTGRES_USER,
                 password=POSTGRES_PASSWORD,
-                db=POSTGRES_TRACKER_STORE_DB,
-                login_db=POSTGRES_LOGIN_DB,
+                db=postgres_db_name,
+                login_db=postgres_login_db_name,
             )
+            print(caplog)
+            # IntegrityError has been caught and we log the error
+            logs = filter_logs(
+                caplog,
+                event="sql_tracker_store.create_database_failed",
+                log_level="error",
+                log_message_parts=[f"Could not create database '{postgres_db_name}'"],
+            )
+            assert len(logs) == 1
 
-    # IntegrityError has been caught and we log the error
-    assert any(
-        [
-            f"Could not create database '{POSTGRES_TRACKER_STORE_DB}'" in record.message
-            for record in caplog.records
-        ]
-    )
     matching_rows = postgres_login_db_connection.execute(
         sa.text(
             f"SELECT 1 FROM pg_catalog.pg_database "
-            f"WHERE datname = '{POSTGRES_TRACKER_STORE_DB}'"
+            f"WHERE datname = '{postgres_db_name}'"
         )
     ).rowcount
 
@@ -147,12 +150,12 @@ def test_sql_tracker_store_with_login_db_race_condition(
 async def test_postgres_tracker_store_retrieve_full_tracker(
     tracker_with_restarted_event: DialogueStateTracker,
     postgres_login_db_connection: sa.engine.Connection,
+    postgres_login_db_name: str,
+    postgres_db_name: str,
 ) -> None:
     sender_id = tracker_with_restarted_event.sender_id
 
-    postgres_login_db_connection.execute(
-        sa.text(f"CREATE DATABASE {POSTGRES_TRACKER_STORE_DB}")
-    )
+    postgres_login_db_connection.execute(sa.text(f"CREATE DATABASE {postgres_db_name}"))
 
     tracker_store = SQLTrackerStore(
         dialect="postgresql",
@@ -160,8 +163,8 @@ async def test_postgres_tracker_store_retrieve_full_tracker(
         port=POSTGRES_PORT,
         username=POSTGRES_USER,
         password=POSTGRES_PASSWORD,
-        db=POSTGRES_TRACKER_STORE_DB,
-        login_db=POSTGRES_LOGIN_DB,
+        db=postgres_db_name,
+        login_db=postgres_login_db_name,
     )
     await tracker_store.save(tracker_with_restarted_event)
 
@@ -178,12 +181,12 @@ async def test_postgres_tracker_store_retrieve(
     tracker_with_restarted_event: DialogueStateTracker,
     events_after_restart: List[Event],
     postgres_login_db_connection: sa.engine.Connection,
+    postgres_login_db_name: str,
+    postgres_db_name: str,
 ) -> None:
     sender_id = tracker_with_restarted_event.sender_id
 
-    postgres_login_db_connection.execute(
-        sa.text(f"CREATE DATABASE {POSTGRES_TRACKER_STORE_DB}")
-    )
+    postgres_login_db_connection.execute(sa.text(f"CREATE DATABASE {postgres_db_name}"))
 
     tracker_store = SQLTrackerStore(
         dialect="postgresql",
@@ -191,8 +194,8 @@ async def test_postgres_tracker_store_retrieve(
         port=POSTGRES_PORT,
         username=POSTGRES_USER,
         password=POSTGRES_PASSWORD,
-        db=POSTGRES_TRACKER_STORE_DB,
-        login_db=POSTGRES_LOGIN_DB,
+        db=postgres_db_name,
+        login_db=postgres_login_db_name,
     )
     await tracker_store.save(tracker_with_restarted_event)
 

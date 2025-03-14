@@ -1,4 +1,5 @@
 import os
+import random
 from typing import Iterator, Text
 
 import pytest
@@ -33,7 +34,23 @@ def redis_lock_store() -> Iterator[RedisLockStore]:
 
 
 @pytest.fixture
-def postgres_login_db_connection() -> Iterator[sa.engine.Connection]:
+def postgres_db_name() -> str:
+    """Generates a random postgres database name."""
+    random_str = "".join([str(random.randint(0, 9)) for i in range(8)])
+    return f"{POSTGRES_TRACKER_STORE_DB}_{random_str}"
+
+
+@pytest.fixture
+def postgres_login_db_name() -> str:
+    """Generates a random postgres database name."""
+    random_str = "".join([str(random.randint(0, 9)) for i in range(8)])
+    return f"{POSTGRES_LOGIN_DB}_{random_str}"
+
+
+@pytest.fixture
+def postgres_login_db_connection(
+    postgres_db_name: str, postgres_login_db_name: str
+) -> Iterator[sa.engine.Connection]:
     engine = sa.create_engine(
         sa.engine.url.URL(
             "postgresql",
@@ -49,17 +66,17 @@ def postgres_login_db_connection() -> Iterator[sa.engine.Connection]:
     conn = engine.connect()
     conn.execution_options(isolation_level="AUTOCOMMIT")
     try:
-        _create_login_db(conn)
+        _create_login_db(conn, postgres_login_db_name)
         yield conn
     finally:
-        _drop_db(conn, POSTGRES_LOGIN_DB)
-        _drop_db(conn, POSTGRES_TRACKER_STORE_DB)
+        _drop_db(conn, postgres_login_db_name)
+        _drop_db(conn, postgres_db_name)
         conn.close()
         engine.dispose()
 
 
-def _create_login_db(connection: sa.engine.Connection) -> None:
-    connection.execute(sa.text(f"CREATE DATABASE {POSTGRES_LOGIN_DB}"))
+def _create_login_db(connection: sa.engine.Connection, login_db: str) -> None:
+    connection.execute(sa.text(f"CREATE DATABASE {login_db}"))
 
 
 def _drop_db(connection: sa.engine.Connection, database_name: Text) -> None:

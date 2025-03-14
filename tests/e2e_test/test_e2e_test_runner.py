@@ -52,6 +52,7 @@ from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
+from tests.utilities import filter_logs
 
 if sys.version_info[:2] >= (3, 8):
     from unittest.mock import AsyncMock
@@ -1276,15 +1277,15 @@ async def test_run_tests_for_fine_tuning(monkeypatch: MonkeyPatch) -> None:
 
     runner = E2ETestRunner()
 
-    with capture_logs() as logs:
+    with capture_logs() as caplog:
         result = await runner.run_tests_for_fine_tuning(
             test_cases,
             [],
             None,
         )
 
+        logs = filter_logs(caplog, log_level="warning")
         assert len(logs) == 1
-        assert logs[0]["log_level"] == "warning"
         assert logs[0]["test_case"] == "test_case_2"
 
     # Verify the result contains only the passing test case conversation
@@ -2823,11 +2824,18 @@ async def test_fail_fast_assertions_failure_occurs(
 
     # Assert that 2/3 assertions have been executed
     expected_logs = [
-        "running_assertion",
-        "running_assertion",
-        "assertion_failure_found",
+        "e2e_test_runner.run_assertions.running_assertion",
+        "e2e_test_runner.run_assertions.running_assertion",
+        "e2e_test_runner.run_assertions.assertion_failure_found",
     ]
-    assert all(expected_logs[idx] in log["event"] for idx, log in enumerate(caplog))
+    # extract e2e test runner logs
+    log_events = [
+        log["event"]
+        for _, log in enumerate(caplog)
+        if "e2e_test_runner.run_assertions" in log["event"]
+    ]
+
+    assert expected_logs == log_events
 
     # Assert that the test failed
     assert len(results) == 1
@@ -2898,7 +2906,18 @@ async def test_fail_fast_assertions_no_failure(
         "running_assertion",
         "running_assertion",
     ]
-    assert all(expected_logs[idx] in log["event"] for idx, log in enumerate(caplog))
+    # Assert that 2/3 assertions have been executed
+    expected_logs = [
+        "e2e_test_runner.run_assertions.running_assertion",
+        "e2e_test_runner.run_assertions.running_assertion",
+    ]
+    # extract e2e test runner logs
+    log_events = [
+        log["event"]
+        for _, log in enumerate(caplog)
+        if "e2e_test_runner.run_assertions" in log["event"]
+    ]
+    assert expected_logs == log_events
 
     # Assert that the test passed and executed all assertions
     assert len(results) == 1

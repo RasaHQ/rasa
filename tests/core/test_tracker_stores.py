@@ -1,6 +1,5 @@
 # file deepcode ignore NoHardcodedCredentials/test: Secrets are all just examples for tests. # noqa: E501
 
-import logging
 import uuid
 import warnings
 from collections import deque
@@ -21,8 +20,10 @@ from sqlalchemy.dialects.oracle.base import OracleDialect
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.engine.url import URL
+from structlog.testing import capture_logs
 
 import rasa.core.tracker_store
+from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core.agent import Agent
 from rasa.core.constants import POSTGRESQL_SCHEMA
 from rasa.core.tracker_store import (
@@ -59,8 +60,12 @@ from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import MockedMongoTrackerStore
+from tests.utilities import filter_logs
 
-test_domain = Domain.load("data/test_domains/default.yml")
+
+@pytest.fixture
+def test_domain() -> Domain:
+    return Domain.load("data/test_domains/default.yml")
 
 
 async def get_or_create_tracker_store(store: TrackerStore) -> None:
@@ -78,18 +83,18 @@ async def get_or_create_tracker_store(store: TrackerStore) -> None:
     assert again.get_slot(slot_key) == slot_val
 
 
-def test_get_or_create():
+def test_get_or_create(test_domain: Domain):
     get_or_create_tracker_store(InMemoryTrackerStore(test_domain))
 
 
 # noinspection PyPep8Naming
 @mock_aws
-def test_dynamo_get_or_create():
+def test_dynamo_get_or_create(test_domain: Domain) -> None:
     get_or_create_tracker_store(DynamoTrackerStore(test_domain))
 
 
 @mock_aws
-async def test_dynamo_tracker_floats():
+async def test_dynamo_tracker_floats(test_domain: Domain) -> None:
     conversation_id = uuid.uuid4().hex
 
     tracker_store = DynamoTrackerStore(test_domain)
@@ -107,6 +112,29 @@ async def test_dynamo_tracker_floats():
     retrieved_timestamp = tracker.events[0].timestamp
     assert isinstance(retrieved_timestamp, float)
     assert retrieved_timestamp == timestamp
+
+
+@mock_aws
+def test_dynamo_tracker_create_table_multiple_sanic_workers_error(
+    test_domain: Domain,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(ENV_SANIC_WORKERS, "2")
+
+    with capture_logs() as caplog:
+        with pytest.raises(RasaException) as raised_exception:
+            DynamoTrackerStore(test_domain)
+            assert (
+                "DynamoDB table creation is not supported in "
+                "case of multiple sanic workers." in str(raised_exception.value)
+            )
+
+        logs = filter_logs(
+            event="dynamo_tracker_store.table_creation_not_supported_in_multi_worker_mode",
+            log_level="error",
+            caplog=caplog,
+        )
+        assert len(logs) == 1
 
 
 async def test_restart_after_retrieval_from_tracker_store(domain: Domain):
@@ -340,9 +368,9 @@ def test_tracker_store_from_invalid_string(domain: Domain, monkeypatch: MonkeyPa
     assert isinstance(tracker_store, InMemoryTrackerStore)
 
 
-async def _tracker_store_and_tracker_with_slot_set() -> (
-    Tuple[InMemoryTrackerStore, DialogueStateTracker]
-):
+async def _tracker_store_and_tracker_with_slot_set(
+    test_domain: Domain,
+) -> Tuple[InMemoryTrackerStore, DialogueStateTracker]:
     # returns an InMemoryTrackerStore containing a tracker with a slot set
 
     slot_key = "cuisine"
@@ -356,8 +384,8 @@ async def _tracker_store_and_tracker_with_slot_set() -> (
     return store, tracker
 
 
-async def test_tracker_serialisation():
-    store, tracker = await _tracker_store_and_tracker_with_slot_set()
+async def test_tracker_serialisation(test_domain: Domain):
+    store, tracker = await _tracker_store_and_tracker_with_slot_set(test_domain)
     serialised = store.serialise_tracker(tracker)
 
     assert tracker == store.deserialise_tracker(DEFAULT_SENDER_ID, serialised)
@@ -432,14 +460,22 @@ def test_sql_tracker_store_logs_do_not_show_password(caplog: LogCaptureFixture):
     # deepcode ignore NoHardcodedPasswords/test: Test credential
     password = "some-password"
 
-    with caplog.at_level(logging.DEBUG):
+    with capture_logs() as caplog:
         _ = SQLTrackerStore(None, dialect, host, port, db, username, password)
-
-    # the URL in the logs does not contain the password
-    assert password not in caplog.text
-
-    # instead the password is displayed as '***'
-    assert f"postgresql://{username}:***@{host}:{port}/{db}" in caplog.text
+        # instead the password is displayed as '***'
+        logs = filter_logs(
+            caplog,
+            event="sql_tracker_store.connect_to_sql_database",
+            log_level="debug",
+            log_message_parts=[f"postgresql://{username}:***@{host}:{port}/{db}"],
+        )
+        assert len(logs) == 1
+        # the URL in the logs does not contain the password
+        logs = filter_logs(
+            caplog,
+            log_message_parts=[password],
+        )
+        assert len(logs) == 0
 
 
 def test_db_url_with_query_from_endpoint_config(tmp_path: Path):
@@ -1129,9 +1165,7 @@ async def test_fail_safe_tracker_store_retrieve_full_tracker(
     assert tracker == tracker_with_restarted_event
 
 
-async def test_fail_safe_tracker_store_retrieve_full_tracker_with_exception(
-    caplog: LogCaptureFixture,
-) -> None:
+async def test_fail_safe_tracker_store_retrieve_full_tracker_with_exception() -> None:
     primary_tracker_store = MagicMock()
     primary_tracker_store.domain = Domain.empty()
     primary_tracker_store.event_broker = None
@@ -1140,11 +1174,18 @@ async def test_fail_safe_tracker_store_retrieve_full_tracker_with_exception(
     primary_tracker_store.retrieve_full_tracker = AsyncMock(side_effect=exception)
 
     tracker_store = FailSafeTrackerStore(primary_tracker_store)
-    with caplog.at_level(logging.ERROR):
+    with capture_logs() as caplog:
         await tracker_store.retrieve_full_tracker("some_id")
-
-    assert "Error happened when trying to retrieve conversation tracker" in caplog.text
-    assert f"Please investigate the following error: {exception}." in caplog.text
+        logs = filter_logs(
+            caplog,
+            event="fail_safe_tracker_store.tracker_store_retrieve_error",
+            log_level="error",
+            log_message_parts=[
+                "Error happened when trying to retrieve conversation tracker"
+            ],
+            exec_info=exception,
+        )
+        assert len(logs) == 1
 
 
 async def test_sql_get_or_create_full_tracker_without_action_listen() -> None:

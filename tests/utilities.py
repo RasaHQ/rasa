@@ -54,6 +54,7 @@ def filter_logs(
     log_level: Optional[Text] = None,
     log_message_parts: Optional[List[Text]] = None,
     log_contains_all_message_parts: bool = True,
+    exec_info: Optional[Exception] = None,
 ) -> List[Dict]:
     """Filters structlog logs based on specified criteria.
 
@@ -71,6 +72,8 @@ def filter_logs(
             Flag determining the filtering logic for message parts. If True, a log
             entry must contain all specified parts to be included. If False, the
             presence of any specified part suffices for inclusion.
+        exec_info:
+            Exception information to be included in the log.
 
     Returns:
         A list of logs that matches the filtering criteria.
@@ -90,8 +93,14 @@ def filter_logs(
         matches_event = event is None or log["event"] == event
         matches_log_level = log_level is None or log["log_level"] == log_level
         matches_message_parts = log_message_parts is None or contains_message_parts(log)
+        matches_exec_info = exec_info is None or log["exec_info"] == exec_info
 
-        if matches_event and matches_log_level and matches_message_parts:
+        if (
+            matches_event
+            and matches_log_level
+            and matches_message_parts
+            and matches_exec_info
+        ):
             filtered_logs.append(log)
 
     return filtered_logs

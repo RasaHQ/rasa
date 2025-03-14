@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextlib
 import itertools
 import json
-import logging
 import os
 from inspect import isawaitable, iscoroutinefunction
 from time import sleep
@@ -24,6 +23,7 @@ from typing import (
 )
 
 import sqlalchemy as sa
+import structlog
 from boto3.dynamodb.conditions import Key
 from pymongo.collection import Collection
 
@@ -31,6 +31,7 @@ import rasa.shared.utils.cli
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.json_utils
+from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.constants import (
     POSTGRESQL_MAX_OVERFLOW,
@@ -59,7 +60,7 @@ if TYPE_CHECKING:
     from sqlalchemy.engine.url import URL
     from sqlalchemy.orm import Query, Session
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger(__name__)
 
 # default values of PostgreSQL pool size and max overflow
 POSTGRESQL_DEFAULT_MAX_OVERFLOW = 100
@@ -315,7 +316,10 @@ class TrackerStore:
     async def stream_events(self, tracker: DialogueStateTracker) -> None:
         """Streams events to a message broker."""
         if self.event_broker is None:
-            logger.debug("No event broker configured. Skipping streaming events.")
+            structlogger.debug(
+                "tracker_store.stream_events.no_broker_configured",
+                event_info="No event broker configured. Skipping streaming events.",
+            )
             return None
 
         old_tracker = await self.retrieve(tracker.sender_id)
@@ -437,13 +441,22 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
             fetch_all_sessions: Whether to fetch all sessions or only the last one.
         """
         if sender_id not in self.store:
-            logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
+            structlogger.debug(
+                "in_memory_tracker_store.retrieve.no_tracker_for_sender_id",
+                event_info=f"Could not find tracker for conversation ID '{sender_id}'.",
+            )
             return None
 
         tracker = self.deserialise_tracker(sender_id, self.store[sender_id])
 
         if not tracker:
-            logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
+            structlogger.debug(
+                "in_memory_tracker_store.retrieve.failed_to_deserialize_tracker",
+                event_info=(
+                    f"Could not deserialize tracker "
+                    f"for conversation ID '{sender_id}'.",
+                ),
+            )
             return None
 
         if fetch_all_sessions:
@@ -499,7 +512,10 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
 
         self.key_prefix = DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
         if key_prefix:
-            logger.debug(f"Setting non-default redis key prefix: '{key_prefix}'.")
+            structlogger.debug(
+                "redis_tracker_store.init.custom_key_prefix",
+                event_info=f"Setting non-default redis key prefix: '{key_prefix}'.",
+            )
             self._set_key_prefix(key_prefix)
 
         super().__init__(domain, event_broker, **kwargs)
@@ -508,9 +524,13 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
         if isinstance(key_prefix, str) and key_prefix.isalnum():
             self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
         else:
-            logger.warning(
-                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. "
-                f"Using default '{self.key_prefix}' instead."
+            structlogger.warning(
+                "redis_tracker_store.init.invalid_key_prefix",
+                event_info=(
+                    f"Omitting provided non-alphanumeric "
+                    f"redis key prefix: '{key_prefix}'. "
+                    f"Using default '{self.key_prefix}' instead."
+                ),
             )
 
     def _get_key_prefix(self) -> Text:
@@ -576,7 +596,10 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
         """
         stored = self.red.get(self.key_prefix + sender_id)
         if stored is None:
-            logger.debug(f"Could not find tracker for conversation ID '{sender_id}'.")
+            structlogger.debug(
+                "redis_tracker_store.retrieve.no_tracker_for_sender_id",
+                event_info=f"Could not find tracker for conversation ID '{sender_id}'.",
+            )
             return None
 
         tracker = self.deserialise_tracker(sender_id, stored)
@@ -674,6 +697,31 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
         try:
             self.client.describe_table(TableName=table_name)
         except self.client.exceptions.ResourceNotFoundException:
+            sanic_workers_count = int(
+                os.environ.get(ENV_SANIC_WORKERS, DEFAULT_SANIC_WORKERS)
+            )
+
+            if sanic_workers_count > 1:
+                structlogger.error(
+                    "dynamo_tracker_store.table_creation_not_supported_in_multi_worker_mode",
+                    event_info=(
+                        "DynamoDB table creation is not "
+                        "supported in multi-worker mode. "
+                        "Table should already exist.",
+                    ),
+                )
+                raise RasaException(
+                    "DynamoDB table creation is not supported in "
+                    "case of multiple sanic workers. To create the table either "
+                    "run Rasa with a single worker or create the table manually."
+                    "Here are the defaults which can be used to "
+                    "create the table manually: "
+                    f"Table name: {table_name}, Primary key: sender_id, "
+                    f"key type `HASH`, attribute type `S` (String), "
+                    "Provisioned throughput: Read capacity units: 5, "
+                    "Write capacity units: 5"
+                )
+
             table = dynamo.create_table(
                 TableName=self.table_name,
                 KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"}],
@@ -1001,7 +1049,10 @@ def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Any]:
     schema_name = os.environ.get(POSTGRESQL_SCHEMA)
 
     if schema_name:
-        logger.debug(f"Using PostgreSQL schema '{schema_name}'.")
+        structlogger.debug(
+            "postgresql_tracker_store.schema_name",
+            event_inf=f"Using PostgreSQL schema '{schema_name}'.",
+        )
         kwargs["connect_args"] = {"options": f"-csearch_path={schema_name}"}
 
     # pool_size and max_overflow can be set to control the number of
@@ -1114,7 +1165,10 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
 
         self.engine = sa.create_engine(engine_url, **create_engine_kwargs(engine_url))
 
-        logger.debug(f"Attempting to connect to database via '{self.engine.url!r}'.")
+        structlogger.debug(
+            "sql_tracker_store.connect_to_sql_database",
+            event_info=f"Attempting to connect to database via '{self.engine.url!r}'.",
+        )
 
         # Database might take a while to come up
         while True:
@@ -1133,7 +1187,11 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                     # Several Rasa services started in parallel may attempt to
                     # create tables at the same time. That is okay so long as
                     # the first services finishes the table creation.
-                    logger.error(f"Could not create tables: {e}")
+                    structlogger.error(
+                        "sql_tracker_store.create_tables_failed",
+                        event_info="Could not create tables",
+                        exec_info=e,
+                    )
 
                 self.sessionmaker = sa.orm.session.sessionmaker(bind=self.engine)
                 break
@@ -1141,10 +1199,17 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                 sqlalchemy.exc.OperationalError,
                 sqlalchemy.exc.IntegrityError,
             ) as error:
-                logger.warning(error)
+                structlogger.warning(
+                    "sql_tracker_store.initialisation_error",
+                    event_info="Failed to establish a connection to the SQL database. ",
+                    exc_info=error,
+                )
                 sleep(5)
 
-        logger.debug(f"Connection to SQL database '{db}' successful.")
+        structlogger.debug(
+            "sql_tracker_store.connected_to_sql_database",
+            event_info=f"Connection to SQL database '{db}' successful.",
+        )
 
         super().__init__(domain, event_broker, **kwargs)
 
@@ -1212,7 +1277,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
         """Creates database `db` and updates engine accordingly."""
         from sqlalchemy import create_engine
 
-        if not self.engine.dialect.name == "postgresql":
+        if self.engine.dialect.name != "postgresql":
             rasa.shared.utils.io.raise_warning(
                 "The parameter 'login_db' can only be used with a postgres database."
             )
@@ -1252,7 +1317,11 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                     sqlalchemy.exc.ProgrammingError,
                     sqlalchemy.exc.IntegrityError,
                 ) as e:
-                    logger.error(f"Could not create database '{database_name}': {e}")
+                    structlogger.error(
+                        "sql_tracker_store.create_database_failed",
+                        event_info=f"Could not create database '{database_name}'",
+                        exec_info=e,
+                    )
 
     @contextlib.contextmanager
     def session_scope(self) -> Generator["Session", None, None]:
@@ -1316,15 +1385,21 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             events = [json.loads(event.data) for event in serialised_events]
 
             if self.domain and len(events) > 0:
-                logger.debug(f"Recreating tracker from sender id '{sender_id}'")
+                structlogger.debug(
+                    "sql_tracker_store.recreating_tracker",
+                    event_info=f"Recreating tracker from sender id '{sender_id}'",
+                )
                 return DialogueStateTracker.from_dict(
                     sender_id, events, self.domain.slots
                 )
             else:
-                logger.debug(
-                    f"Can't retrieve tracker matching "
-                    f"sender id '{sender_id}' from SQL storage. "
-                    f"Returning `None` instead."
+                structlogger.debug(
+                    "sql_tracker_store._retrieve.no_tracker_for_sender_id",
+                    event_info=(
+                        f"Can't retrieve tracker matching "
+                        f"sender id '{sender_id}' from SQL storage. "
+                        f"Returning `None` instead.",
+                    ),
                 )
                 return None
 
@@ -1401,7 +1476,12 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
                 )
             session.commit()
 
-        logger.debug(f"Tracker with sender_id '{tracker.sender_id}' stored to database")
+        structlogger.debug(
+            "sql_tracker_store.save_tracker",
+            event_info=(
+                f"Tracker with sender_id " f"'{tracker.sender_id}' stored to database",
+            ),
+        )
 
     def _additional_events(
         self, session: "Session", tracker: DialogueStateTracker
@@ -1469,11 +1549,14 @@ class FailSafeTrackerStore(TrackerStore):
         if self._on_tracker_store_error:
             self._on_tracker_store_error(error)
         else:
-            logger.error(
-                f"Error happened when trying to save conversation tracker to "
-                f"'{self._tracker_store.__class__.__name__}'. Falling back to use "
-                f"the '{InMemoryTrackerStore.__name__}'. Please "
-                f"investigate the following error: {error}."
+            structlogger.error(
+                "fail_safe_tracker_store.tracker_store_error",
+                event_info=(
+                    f"Error happened when trying to save conversation tracker to "
+                    f"'{self._tracker_store.__class__.__name__}'. Falling back to use "
+                    f"the '{InMemoryTrackerStore.__name__}'. Please "
+                    f"investigate the following error: {error}."
+                ),
             )
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
@@ -1525,11 +1608,14 @@ class FailSafeTrackerStore(TrackerStore):
         if self._on_tracker_store_error:
             self._on_tracker_store_error(error)
         else:
-            logger.error(
-                f"Error happened when trying to retrieve conversation tracker from "
-                f"'{self._tracker_store.__class__.__name__}'. Falling back to use "
-                f"the '{InMemoryTrackerStore.__name__}'. Please "
-                f"investigate the following error: {error}."
+            structlogger.error(
+                "fail_safe_tracker_store.tracker_store_retrieve_error",
+                event_info=(
+                    f"Error happened when trying to retrieve conversation tracker from "
+                    f"'{self._tracker_store.__class__.__name__}'. Falling back to use "
+                    f"the '{InMemoryTrackerStore.__name__}'."
+                ),
+                exec_info=error,
             )
 
 
@@ -1574,7 +1660,10 @@ def _create_from_endpoint_config(
             domain, endpoint_config, event_broker
         )
 
-    logger.debug(f"Connected to {tracker_store.__class__.__name__}.")
+    structlogger.debug(
+        "tracker_store.create_tracker_store_from_endpoint_config",
+        eventi_info=f"Connected to {tracker_store.__class__.__name__}.",
+    )
 
     return tracker_store
 
