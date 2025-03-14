@@ -4,6 +4,9 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowCommand
+from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
+    CompactLLMCommandGenerator,
+)
 from rasa.e2e_test.e2e_test_case import TestCase
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.paraphrasing.conversation_rephraser import (
@@ -168,6 +171,7 @@ async def test_create_paraphrased_conversations_no_rephrases(
         num_rephrases=0,
         flows=flows,
         llm_command_generator_config={},
+        llm_command_generator=CompactLLMCommandGenerator,
         storage_context=mock_storage_context,
     )
 

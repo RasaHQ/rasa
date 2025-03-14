@@ -5,11 +5,9 @@ import pytest
 
 import rasa.shared.utils.io
 from rasa.cli.e2e_test import read_test_cases
+from rasa.dialogue_understanding.commands import StartFlowCommand
 from rasa.llm_fine_tuning.llm_data_preparation_module import LLMDataExample
-from rasa.llm_fine_tuning.storage import (
-    FileStorageStrategy,
-    StorageContext,
-)
+from rasa.llm_fine_tuning.storage import FileStorageStrategy, StorageContext
 from rasa.llm_fine_tuning.train_test_split_module import (
     ConversationalDataFormat,
     ConversationalMessageDataFormat,
@@ -74,7 +72,7 @@ def test_write_llm_data(tmpdir: str):
     llm_data = [
         LLMDataExample(
             "prompt",
-            "start_flow",
+            [StartFlowCommand("flow1")],
             "original test name",
             "original user utterance",
             "rephrased user utterance",

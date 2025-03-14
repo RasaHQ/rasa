@@ -4,8 +4,10 @@ from typing import Any, Dict, List, Optional
 import structlog
 from tqdm import tqdm
 
+from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.storage import StorageContext
+from rasa.llm_fine_tuning.utils import commands_as_string
 
 LLM_DATA_PREPARATION_MODULE_STORAGE_LOCATION = "3_llm_finetune_data/llm_ft_data.jsonl"
 
@@ -15,7 +17,7 @@ structlogger = structlog.get_logger()
 @dataclass
 class LLMDataExample:
     prompt: str
-    output: str
+    output: List[PromptCommand]
     original_test_name: str
     original_user_utterance: str
     rephrased_user_utterance: str
@@ -23,7 +25,7 @@ class LLMDataExample:
     def as_dict(self) -> Dict[str, Any]:
         return {
             "prompt": self.prompt,
-            "output": self.output,
+            "output": commands_as_string(self.output),
             "original_test_name": self.original_test_name,
             "original_user_utterance": self.original_user_utterance,
             "rephrased_user_utterance": self.rephrased_user_utterance,
@@ -38,7 +40,7 @@ def _create_data_point(
 ) -> LLMDataExample:
     return LLMDataExample(
         prompt,
-        step.commands_as_string(),
+        step.llm_commands,
         conversation.get_full_name(),
         step.original_test_step.text,
         rephrased_user_message,

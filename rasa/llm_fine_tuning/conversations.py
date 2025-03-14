@@ -1,17 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterator, List, Optional, Union
 
-from rasa.dialogue_understanding.commands import (
-    CancelFlowCommand,
-    ChitChatAnswerCommand,
-    ClarifyCommand,
-    Command,
-    HumanHandoffCommand,
-    KnowledgeAnswerCommand,
-    SetSlotCommand,
-    SkipQuestionCommand,
-    StartFlowCommand,
-)
+from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.e2e_test.e2e_test_case import TestCase, TestStep
 from rasa.shared.core.constants import USER
 
@@ -19,7 +9,7 @@ from rasa.shared.core.constants import USER
 @dataclass
 class ConversationStep:
     original_test_step: TestStep
-    llm_commands: List[Command]
+    llm_commands: List[PromptCommand]
     llm_prompt: str
     failed_rephrasings: List[str] = field(default_factory=list)
     passed_rephrasings: List[str] = field(default_factory=list)
@@ -38,25 +28,7 @@ class ConversationStep:
         return data
 
     def _commands_to_str(self) -> List[str]:
-        output = []
-        for command in self.llm_commands:
-            if isinstance(command, StartFlowCommand):
-                output.append(f"StartFlow({command.flow})")
-            elif isinstance(command, SetSlotCommand):
-                output.append(f"SetSlot({command.name}, {command.value})")
-            elif isinstance(command, ClarifyCommand):
-                output.append(f"Clarify({', '.join(command.options)})")
-            elif isinstance(command, CancelFlowCommand):
-                output.append("CancelFlow()")
-            elif isinstance(command, ChitChatAnswerCommand):
-                output.append("ChitChat()")
-            elif isinstance(command, SkipQuestionCommand):
-                output.append("SkipQuestion()")
-            elif isinstance(command, KnowledgeAnswerCommand):
-                output.append("SearchAndReply()")
-            elif isinstance(command, HumanHandoffCommand):
-                output.append("HumanHandoff()")
-        return output
+        return [command.to_dsl() for command in self.llm_commands]
 
     def commands_as_string(self) -> str:
         return "\n".join(self._commands_to_str())

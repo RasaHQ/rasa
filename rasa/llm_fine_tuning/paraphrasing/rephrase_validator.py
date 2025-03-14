@@ -1,18 +1,18 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Type
 
 import structlog
 
 from rasa.dialogue_understanding.commands import Command, SetSlotCommand
-from rasa.dialogue_understanding.generator import SingleStepLLMCommandGenerator
+from rasa.dialogue_understanding.generator.llm_based_command_generator import (
+    LLMBasedCommandGenerator,
+)
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.paraphrasing.rephrased_user_message import (
     RephrasedUserMessage,
 )
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.exceptions import ProviderClientAPIException
-from rasa.shared.utils.llm import (
-    llm_factory,
-)
+from rasa.shared.utils.llm import llm_factory
 
 structlogger = structlog.get_logger()
 
@@ -26,6 +26,7 @@ class RephraseValidator:
         self,
         rephrasings: List[RephrasedUserMessage],
         conversation: Conversation,
+        llm_command_generator: Type[LLMBasedCommandGenerator],
     ) -> List[RephrasedUserMessage]:
         """Split rephrased user messages into passing and failing.
 
@@ -38,6 +39,7 @@ class RephraseValidator:
         Args:
             rephrasings: The rephrased user messages.
             conversation: The conversation.
+            llm_command_generator: A LLM based command generator class.
 
         Returns:
             A list of rephrased user messages including the passing and failing
@@ -49,7 +51,9 @@ class RephraseValidator:
             current_rephrasings = rephrasings[i]
 
             for rephrase in current_rephrasings.rephrasings:
-                if await self._validate_rephrase_is_passing(rephrase, step):
+                if await self._validate_rephrase_is_passing(
+                    rephrase, step, llm_command_generator
+                ):
                     current_rephrasings.passed_rephrasings.append(rephrase)
                 else:
                     current_rephrasings.failed_rephrasings.append(rephrase)
@@ -60,6 +64,7 @@ class RephraseValidator:
         self,
         rephrase: str,
         step: ConversationStep,
+        llm_command_generator: Type[LLMBasedCommandGenerator],
     ) -> bool:
         prompt = self._update_prompt(
             rephrase, step.original_test_step.text, step.llm_prompt
@@ -68,8 +73,8 @@ class RephraseValidator:
         action_list = await self._invoke_llm(prompt)
 
         commands_from_original_utterance = step.llm_commands
-        commands_from_rephrased_utterance = (
-            SingleStepLLMCommandGenerator.parse_commands(action_list, None, self.flows)
+        commands_from_rephrased_utterance = llm_command_generator.parse_commands(  # type: ignore
+            action_list, None, self.flows
         )
         return self._check_commands_match(
             commands_from_original_utterance, commands_from_rephrased_utterance

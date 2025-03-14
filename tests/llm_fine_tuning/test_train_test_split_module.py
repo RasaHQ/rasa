@@ -5,6 +5,13 @@ import pytest
 import structlog
 
 from rasa.cli.e2e_test import read_test_cases
+from rasa.dialogue_understanding.commands import (
+    CancelFlowCommand,
+    ClarifyCommand,
+    HumanHandoffCommand,
+    SetSlotCommand,
+    StartFlowCommand,
+)
 from rasa.e2e_test.e2e_test_case import TestSuite
 from rasa.llm_fine_tuning.llm_data_preparation_module import LLMDataExample
 from rasa.llm_fine_tuning.train_test_split_module import (
@@ -30,28 +37,28 @@ def llm_fine_tuning_data() -> List[LLMDataExample]:
         LLMDataExample(
             original_test_name="e2e_sample_test.yml::test1",
             original_user_utterance="user_utterance_1",
-            output="StartFlow(abc), SetSlot(xyz, temp)",
+            output=[StartFlowCommand("abc"), SetSlotCommand("xyz", "temp")],
             prompt="test_prompt has rephrased_user_utterance_1",
             rephrased_user_utterance="rephrased_user_utterance_1",
         ),
         LLMDataExample(
             original_test_name="e2e_sample_test.yml::test1",
             original_user_utterance="user_utterance_1",
-            output="StartFlow(abc), SetSlot(xyz, temp)",
+            output=[StartFlowCommand("abc"), SetSlotCommand("xyz", "temp")],
             prompt="test_prompt has rephrased_user_utterance_2",
             rephrased_user_utterance="rephrased_user_utterance_2",
         ),
         LLMDataExample(
             original_test_name="e2e_sample_test.yml::test2",
             original_user_utterance="user_utterance_2",
-            output="StartFlow(def)",
+            output=[StartFlowCommand("def")],
             prompt="test_prompt has rephrased_user_utterance_A",
             rephrased_user_utterance="rephrased_user_utterance_A",
         ),
         LLMDataExample(
             original_test_name="e2e_sample_test.yml::test2",
             original_user_utterance="user_utterance_2",
-            output="StartFlow(def)",
+            output=[StartFlowCommand("def")],
             prompt="test_prompt has rephrased_user_utterance_B",
             rephrased_user_utterance="rephrased_user_utterance_B",
         ),
@@ -78,11 +85,11 @@ def test_split_llm_fine_tuning_data_train_alpaca_format_50_percent_split_frac(
         [
             InstructionDataFormat(
                 prompt="test_prompt has rephrased_user_utterance_1",
-                completion="StartFlow(abc), SetSlot(xyz, temp)",
+                completion="StartFlow(abc)\nSetSlot(xyz, temp)",
             ),
             InstructionDataFormat(
                 prompt="test_prompt has rephrased_user_utterance_2",
-                completion="StartFlow(abc), SetSlot(xyz, temp)",
+                completion="StartFlow(abc)\nSetSlot(xyz, temp)",
             ),
         ]
     )
@@ -109,7 +116,7 @@ def test_split_llm_fine_tuning_data_train_alpaca_format_50_percent_split_frac(
         log_level="warning",
     )
     assert len(logs) == 1
-    assert logs[0]["missing_commands"] == {"SetSlot"}
+    assert logs[0]["missing_commands"] == [SetSlotCommand.__name__]
 
     # Check for the expected calls to write the formatted fine-tuning data to storage.
     expected_calls = [
@@ -142,11 +149,11 @@ def test_split_llm_fine_tuning_data_train_alpaca_format_100_percent_split_frac(
         [
             InstructionDataFormat(
                 prompt="test_prompt has rephrased_user_utterance_1",
-                completion="StartFlow(abc), SetSlot(xyz, temp)",
+                completion="StartFlow(abc)\nSetSlot(xyz, temp)",
             ),
             InstructionDataFormat(
                 prompt="test_prompt has rephrased_user_utterance_2",
-                completion="StartFlow(abc), SetSlot(xyz, temp)",
+                completion="StartFlow(abc)\nSetSlot(xyz, temp)",
             ),
             InstructionDataFormat(
                 prompt="test_prompt has rephrased_user_utterance_A",
@@ -168,7 +175,10 @@ def test_split_llm_fine_tuning_data_train_alpaca_format_100_percent_split_frac(
         log_level="warning",
     )
     assert len(logs) == 1
-    assert logs[0]["missing_commands"] == {"SetSlot", "StartFlow"}
+    assert set(logs[0]["missing_commands"]) == {
+        SetSlotCommand.__name__,
+        StartFlowCommand.__name__,
+    }
 
     # Filter logs for empty validation dataset.
     logs = filter_logs(
@@ -214,7 +224,7 @@ def test_split_llm_fine_tuning_data_train_sharegpt_format(
                         content="test_prompt has rephrased_user_utterance_1",
                     ),
                     ConversationalMessageDataFormat(
-                        role="assistant", content="StartFlow(abc), SetSlot(xyz, temp)"
+                        role="assistant", content="StartFlow(abc)\nSetSlot(xyz, temp)"
                     ),
                 ]
             ),
@@ -225,7 +235,7 @@ def test_split_llm_fine_tuning_data_train_sharegpt_format(
                         content="test_prompt has rephrased_user_utterance_2",
                     ),
                     ConversationalMessageDataFormat(
-                        role="assistant", content="StartFlow(abc), SetSlot(xyz, temp)"
+                        role="assistant", content="StartFlow(abc)\nSetSlot(xyz, temp)"
                     ),
                 ]
             ),
@@ -267,7 +277,7 @@ def test_split_llm_fine_tuning_data_train_sharegpt_format(
         log_level="warning",
     )
     assert len(logs) == 1
-    assert logs[0]["missing_commands"] == {"SetSlot"}
+    assert logs[0]["missing_commands"] == [SetSlotCommand.__name__]
 
     # Check for the expected calls to write the formatted fine-tuning data to storage.
     expected_calls = [
@@ -305,19 +315,19 @@ def test_get_minimum_test_case_groups_to_cover_all_commands_selects_few_cases() 
         {
             "test_case_name": "t1",
             "data_examples": [],
-            "commands": {"StartFlow", "CancelFlow", "HumanHandoff"},
+            "commands": {StartFlowCommand, CancelFlowCommand, HumanHandoffCommand},
         },
-        {"test_case_name": "t2", "data_examples": [], "commands": {"CancelFlow"}},
-        {"test_case_name": "t3", "data_examples": [], "commands": {"SetSlot"}},
+        {"test_case_name": "t2", "data_examples": [], "commands": {CancelFlowCommand}},
+        {"test_case_name": "t3", "data_examples": [], "commands": {SetSlotCommand}},
         {
             "test_case_name": "t4",
             "data_examples": [],
-            "commands": {"SetSlot", "StartFlow"},
+            "commands": {SetSlotCommand, StartFlowCommand},
         },
         {
             "test_case_name": "t5",
             "data_examples": [],
-            "commands": {"SetSlot", "HumanHandoff"},
+            "commands": {SetSlotCommand, HumanHandoffCommand},
         },
     ]
 
@@ -331,11 +341,15 @@ def test_get_minimum_test_case_groups_to_cover_all_commands_selects_few_cases() 
 def test_get_minimum_test_case_groups_to_cover_all_commands_selects_all_cases() -> None:
     # Given
     grouped_data = [
-        {"test_case_name": "t1", "data_examples": [], "commands": {"StartFlow"}},
-        {"test_case_name": "t2", "data_examples": [], "commands": {"CancelFlow"}},
-        {"test_case_name": "t3", "data_examples": [], "commands": {"SetSlot"}},
-        {"test_case_name": "t4", "data_examples": [], "commands": {"Clarify"}},
-        {"test_case_name": "t5", "data_examples": [], "commands": {"HumanHandoff"}},
+        {"test_case_name": "t1", "data_examples": [], "commands": {StartFlowCommand}},
+        {"test_case_name": "t2", "data_examples": [], "commands": {CancelFlowCommand}},
+        {"test_case_name": "t3", "data_examples": [], "commands": {SetSlotCommand}},
+        {"test_case_name": "t4", "data_examples": [], "commands": {ClarifyCommand}},
+        {
+            "test_case_name": "t5",
+            "data_examples": [],
+            "commands": {HumanHandoffCommand},
+        },
     ]
 
     # When
@@ -353,19 +367,24 @@ def test_get_minimum_test_case_groups_to_cover_all_commands_selects_first_case()
         {
             "test_case_name": "t1",
             "data_examples": [],
-            "commands": {"StartFlow", "CancelFlow", "HumanHandoff", "SetSlot"},
+            "commands": {
+                StartFlowCommand,
+                CancelFlowCommand,
+                HumanHandoffCommand,
+                SetSlotCommand,
+            },
         },
-        {"test_case_name": "t2", "data_examples": [], "commands": {"CancelFlow"}},
-        {"test_case_name": "t3", "data_examples": [], "commands": {"SetSlot"}},
+        {"test_case_name": "t2", "data_examples": [], "commands": {CancelFlowCommand}},
+        {"test_case_name": "t3", "data_examples": [], "commands": {SetSlotCommand}},
         {
             "test_case_name": "t4",
             "data_examples": [],
-            "commands": {"SetSlot", "StartFlow"},
+            "commands": {SetSlotCommand, StartFlowCommand},
         },
         {
             "test_case_name": "t5",
             "data_examples": [],
-            "commands": {"SetSlot", "HumanHandoff"},
+            "commands": {SetSlotCommand, HumanHandoffCommand},
         },
     ]
 
@@ -379,22 +398,27 @@ def test_get_minimum_test_case_groups_to_cover_all_commands_selects_first_case()
 def test_get_minimum_test_case_groups_to_cover_all_commands_selects_last_case() -> None:
     # Given
     grouped_data = [
-        {"test_case_name": "t1", "data_examples": [], "commands": {"CancelFlow"}},
-        {"test_case_name": "t2", "data_examples": [], "commands": {"SetSlot"}},
+        {"test_case_name": "t1", "data_examples": [], "commands": {CancelFlowCommand}},
+        {"test_case_name": "t2", "data_examples": [], "commands": {SetSlotCommand}},
         {
             "test_case_name": "t3",
             "data_examples": [],
-            "commands": {"SetSlot", "StartFlow"},
+            "commands": {SetSlotCommand, StartFlowCommand},
         },
         {
             "test_case_name": "t4",
             "data_examples": [],
-            "commands": {"SetSlot", "HumanHandoff"},
+            "commands": {SetSlotCommand, HumanHandoffCommand},
         },
         {
             "test_case_name": "t5",
             "data_examples": [],
-            "commands": {"StartFlow", "CancelFlow", "HumanHandoff", "SetSlot"},
+            "commands": {
+                StartFlowCommand,
+                CancelFlowCommand,
+                HumanHandoffCommand,
+                SetSlotCommand,
+            },
         },
     ]
 

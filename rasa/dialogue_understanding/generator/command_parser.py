@@ -1,4 +1,5 @@
 import re
+import sys
 from functools import lru_cache
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
@@ -78,6 +79,44 @@ def _get_additional_parsing_logic(
     return command_to_parsing_fn_mapper.get(command_clz)
 
 
+def validate_custom_commands(command_classes: List[Type[PromptCommand]]) -> None:
+    clz_not_inheriting_from_command_clz = [
+        command_clz
+        for command_clz in command_classes
+        if not issubclass(command_clz, Command)
+    ]
+
+    if clz_not_inheriting_from_command_clz:
+        structlogger.error(
+            "command_parser.validate_custom_commands.invalid_command",
+            invalid_commands=clz_not_inheriting_from_command_clz,
+            event_info=(
+                "The additional command classes must be a subclass of the 'Command' "
+                "class. Please refer to the class in "
+                "`rasa.dialogue_understanding.commands.command.Command`"
+            ),
+        )
+        sys.exit(1)
+
+    clz_not_adhering_to_prompt_command_protocol = [
+        command_clz
+        for command_clz in command_classes
+        if not isinstance(command_clz, PromptCommand)
+    ]
+
+    if clz_not_adhering_to_prompt_command_protocol:
+        structlogger.error(
+            "command_parser.validate_custom_commands.invalid_command",
+            invalid_commands=clz_not_adhering_to_prompt_command_protocol,
+            event_info=(
+                "The additional command classes must adhere to the 'PromptCommand' "
+                "protocol. Please refer to the protocol in "
+                "`rasa.dialogue_understanding.commands.prompt_command.PromptCommand`"
+            ),
+        )
+        sys.exit(1)
+
+
 def parse_commands(
     actions: Optional[str],
     flows: FlowsList,
@@ -93,6 +132,8 @@ def parse_commands(
         return []
 
     commands: List[Command] = []
+    validate_custom_commands(additional_commands or [])
+
     default_commands = DEFAULT_COMMANDS
     if default_commands_to_remove:
         default_commands = _create_default_commands(default_commands_to_remove)

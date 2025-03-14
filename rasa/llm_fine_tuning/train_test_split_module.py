@@ -1,26 +1,17 @@
 import random
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, List, Protocol, Set, Tuple
+from typing import Any, Dict, List, Protocol, Set, Tuple, Type
 
 import structlog
 
+from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.e2e_test.e2e_test_case import TestSuite
 from rasa.llm_fine_tuning.llm_data_preparation_module import LLMDataExample
 from rasa.llm_fine_tuning.storage import StorageContext
+from rasa.llm_fine_tuning.utils import commands_as_string
 
 TRAIN_TEST_MODULE_STORAGE_LOCATION = "4_train_test_split"
-
-SUPPORTED_COMMANDS = [
-    "SetSlot",
-    "StartFlow",
-    "CancelFlow",
-    "ChitChat",
-    "SkipQuestion",
-    "SearchAndReply",
-    "HumanHandoff",
-    "Clarify",
-]
 
 INSTRUCTION_DATA_FORMAT = "instruction"
 CONVERSATIONAL_DATA_FORMAT = "conversational"
@@ -77,17 +68,19 @@ class ConversationalDataFormat(DataExampleFormat):
         }
 
 
-def _get_command_types_covered_by_llm_data_point(commands: LLMDataExample) -> Set[str]:
+def _get_command_types_covered_by_llm_data_point(
+    data_point: LLMDataExample,
+) -> Set[Type[PromptCommand]]:
     """Get the command types covered by the LLM data point.
 
     This function returns the set of command types from the output present in a
-    LLMDataExample object. Eg: The function returns {'SetSlot', 'StartFlow'} when the
-    LLMDataExample.output is 'SetSlot(slot, abc), SetSlot(slot, cde), StartFlow(xyz)'.
+    LLMDataExample object. Eg: The function returns {'SetSlotCommand',
+    'StartFlowCommand'} when the LLMDataExample.output is 'SetSlotCommand(slot, abc),
+    SetSlotCommand(slot, cde), StartFlowCommand(xyz)'.
     """
     commands_covered = set()
-    for command in SUPPORTED_COMMANDS:
-        if command in commands.output:
-            commands_covered.add(command)
+    for command in data_point.output:
+        commands_covered.add(command.__class__)
     return commands_covered
 
 
@@ -146,14 +139,18 @@ def _get_minimum_test_case_groups_to_cover_all_commands(
         {
             "test_case_name": "t1",
             "data_examples": [],
-            "commands": {"SetSlot", "CancelFlow"}
+            "commands": {"SetSlotCommand", "CancelFlowCommand"}
         },
-        {"test_case_name": "t2", "data_examples": [], "commands": {"CancelFlow"}},
-        {"test_case_name": "t3", "data_examples": [], "commands": {"StartFlow"}},
+        {
+            "test_case_name": "t2",
+            "data_examples": [],
+            "commands": {"CancelFlowCommand"}
+        },
+        {"test_case_name": "t3", "data_examples": [], "commands": {"StartFlowCommand"}},
         {
             "test_case_name": "t4",
             "data_examples": [],
-            "commands": {"SetSlot", "StartFlow"}
+            "commands": {"SetSlotCommand", "StartFlowCommand"}
         },
     ]
 
@@ -166,7 +163,7 @@ def _get_minimum_test_case_groups_to_cover_all_commands(
         command for test_group in grouped_data for command in test_group[KEY_COMMANDS]
     )
     selected_test_cases = []
-    covered_commands: Set[str] = set()
+    covered_commands: Set[Type[PromptCommand]] = set()
 
     while covered_commands != all_commands:
         # Find the test case group that covers the most number of uncovered commands
@@ -187,7 +184,7 @@ def _get_minimum_test_case_groups_to_cover_all_commands(
 
     structlogger.info(
         "llm_fine_tuning.train_test_split_module.command_coverage_in_train_dataset",
-        covered_commands=covered_commands,
+        covered_commands=[command.__name__ for command in covered_commands],
     )
     return selected_test_cases
 
@@ -205,7 +202,10 @@ def _get_finetuning_data_in_instruction_data_format(
         data: List[Dict[str, Any]],
     ) -> List[DataExampleFormat]:
         return [
-            InstructionDataFormat(llm_data_example.prompt, llm_data_example.output)
+            InstructionDataFormat(
+                llm_data_example.prompt,
+                commands_as_string(llm_data_example.output),
+            )
             for test_group in data
             for llm_data_example in test_group[KEY_DATA_EXAMPLES]
         ]
@@ -232,7 +232,7 @@ def _get_finetuning_data_in_conversational_data_format(
                 [
                     ConversationalMessageDataFormat("user", llm_data_example.prompt),
                     ConversationalMessageDataFormat(
-                        "assistant", llm_data_example.output
+                        "assistant", commands_as_string(llm_data_example.output)
                     ),
                 ]
             )
@@ -271,7 +271,7 @@ def _check_and_log_missing_validation_dataset_command_coverage(
         structlogger.warning(
             "llm_fine_tuning.train_test_split_module.missing_commands_in_validation_dat"
             "aset",
-            missing_commands=missing_commands,
+            missing_commands=[command.__name__ for command in missing_commands],
         )
 
 

@@ -5,10 +5,7 @@ import structlog
 from rasa.dialogue_understanding.patterns.validate_slot import (
     ValidateSlotPatternFlowStackFrame,
 )
-from rasa.shared.constants import (
-    ACTION_ASK_PREFIX,
-    UTTER_ASK_PREFIX,
-)
+from rasa.shared.constants import ACTION_ASK_PREFIX, UTTER_ASK_PREFIX
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import DialogueStateTracker

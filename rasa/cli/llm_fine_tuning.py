@@ -1,7 +1,7 @@
 import argparse
 import asyncio
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Type, cast
 
 import structlog
 
@@ -22,7 +22,12 @@ from rasa.cli.e2e_test import (
 )
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.utils import AvailableEndpoints
-from rasa.dialogue_understanding.generator import SingleStepLLMCommandGenerator
+from rasa.dialogue_understanding.generator.llm_based_command_generator import (
+    LLMBasedCommandGenerator,
+)
+from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
+    MultiStepLLMCommandGenerator,
+)
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from rasa.llm_fine_tuning.annotation_module import annotate_e2e_tests
 from rasa.llm_fine_tuning.llm_data_preparation_module import convert_to_fine_tuning_data
@@ -112,7 +117,6 @@ def create_llm_finetune_data_preparation_subparser(
         help_text="Configuration file for the model server and the connectors as a "
         "yml file.",
     )
-
     return data_preparation_subparser
 
 
@@ -205,6 +209,9 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
 
     flows = asyncio.run(e2e_test_runner.agent.processor.get_flows())
     llm_command_generator_config = _get_llm_command_generator_config(e2e_test_runner)
+    llm_command_generator: Type[LLMBasedCommandGenerator] = _get_llm_command_generator(
+        e2e_test_runner
+    )
 
     # set up storage context
     storage_context = create_storage_context(StorageType.FILE, output_dir)
@@ -235,6 +242,7 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
             rephrase_config,
             args.num_rephrases,
             flows,
+            llm_command_generator,
             llm_command_generator_config,
             storage_context,
         )
@@ -271,7 +279,7 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
     write_statistics(statistics, output_dir)
 
     rasa.shared.utils.cli.print_success(
-        f"Data and intermediate results are written " f"to '{output_dir}'."
+        f"Data and intermediate results are written to '{output_dir}'."
     )
 
 
@@ -281,20 +289,48 @@ def _get_llm_command_generator_config(e2e_test_runner: E2ETestRunner) -> Dict[st
     train_schema = e2e_test_runner.agent.processor.model_metadata.train_schema  # type: ignore
 
     for node_name, node in train_schema.nodes.items():
-        if node.matches_type(SingleStepLLMCommandGenerator, include_subtypes=True):
+        if node.matches_type(
+            LLMBasedCommandGenerator, include_subtypes=True
+        ) and not node.matches_type(
+            MultiStepLLMCommandGenerator, include_subtypes=True
+        ):
             # Configurations can reference model groups defined in the endpoints.yml
-            resolved_config = resolve_model_client_config(
+            resolved_llm_config = resolve_model_client_config(
                 node.config.get(LLM_CONFIG_KEY, {}), node_name
             )
             return combine_custom_and_default_config(
-                resolved_config, DEFAULT_LLM_CONFIG
+                resolved_llm_config, DEFAULT_LLM_CONFIG
             )
 
     rasa.shared.utils.cli.print_error(
         "The provided model is not trained using 'SingleStepLLMCommandGenerator' or "
-        "its subclasses. Without it, no data for fine-tuning can be generated. To "
-        "resolve this, please include 'SingleStepLLMCommandGenerator' or its subclass "
-        "in your config and train your model."
+        "'CompactLLMCommandGenerator' or its subclasses. Without it, no data for "
+        "fine-tuning can be generated. To resolve this, please include "
+        "'SingleStepLLMCommandGenerator' or 'CompactLLMCommandGenerator' or its "
+        "subclasses in your config and train your model."
+    )
+    sys.exit(1)
+
+
+def _get_llm_command_generator(
+    e2e_test_runner: E2ETestRunner,
+) -> Type[LLMBasedCommandGenerator]:
+    train_schema = e2e_test_runner.agent.processor.model_metadata.train_schema  # type: ignore
+
+    for _, node in train_schema.nodes.items():
+        if node.matches_type(
+            LLMBasedCommandGenerator, include_subtypes=True
+        ) and not node.matches_type(
+            MultiStepLLMCommandGenerator, include_subtypes=True
+        ):
+            return cast(Type[LLMBasedCommandGenerator], node.uses)
+
+    rasa.shared.utils.cli.print_error(
+        "The provided model is not trained using 'SingleStepLLMCommandGenerator' or "
+        "'CompactLLMCommandGenerator' or its subclasses. Without it, no data for "
+        "fine-tuning can be generated. To resolve this, please include "
+        "'SingleStepLLMCommandGenerator' or 'CompactLLMCommandGenerator' or its "
+        "subclasses in your config and train your model."
     )
     sys.exit(1)
 

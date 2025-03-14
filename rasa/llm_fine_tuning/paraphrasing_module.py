@@ -1,8 +1,11 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Type
 
 import structlog
 from tqdm import tqdm
 
+from rasa.dialogue_understanding.generator.llm_based_command_generator import (
+    LLMBasedCommandGenerator,
+)
 from rasa.llm_fine_tuning.conversations import Conversation
 from rasa.llm_fine_tuning.paraphrasing.conversation_rephraser import (
     ConversationRephraser,
@@ -25,6 +28,7 @@ async def create_paraphrased_conversations(
     rephrase_config: Dict[str, Any],
     num_rephrases: int,
     flows: FlowsList,
+    llm_command_generator: Type[LLMBasedCommandGenerator],
     llm_command_generator_config: Dict[str, Any],
     storage_context: StorageContext,
 ) -> Tuple[List[Conversation], Dict[str, Any]]:
@@ -71,7 +75,7 @@ async def create_paraphrased_conversations(
             rephrasings = _filter_rephrasings(rephrasings, conversations[i])
             # check if the rephrasings are still producing the same commands
             rephrasings = await validator.validate_rephrasings(
-                rephrasings, current_conversation
+                rephrasings, current_conversation, llm_command_generator
             )
         except ProviderClientAPIException as e:
             structlogger.error(

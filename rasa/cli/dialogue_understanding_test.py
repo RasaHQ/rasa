@@ -20,9 +20,7 @@ from rasa.core.exceptions import AgentNotReady
 from rasa.core.processor import MessageProcessor
 from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.commands import Command
-from rasa.dialogue_understanding.generator import (
-    LLMBasedCommandGenerator,
-)
+from rasa.dialogue_understanding.generator import LLMBasedCommandGenerator
 from rasa.dialogue_understanding.generator.command_parser import DEFAULT_COMMANDS
 from rasa.dialogue_understanding_test.command_metric_calculation import (
     calculate_command_metrics,

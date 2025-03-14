@@ -15,6 +15,7 @@ from rasa.cli.llm_fine_tuning import (
     write_statistics,
 )
 from rasa.dialogue_understanding.generator import (
+    CompactLLMCommandGenerator,
     MultiStepLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
 )
@@ -331,6 +332,90 @@ def test_get_llm_command_generator_config(
     if single_step_llm_command_generator_node is not None:
         graph_schema_nodes["test_SingleStepLLMCommandGenerator_3"] = (
             single_step_llm_command_generator_node
+        )
+
+    e2e_test_runner = Mock()
+    e2e_test_runner.agent.processor.model_metadata.train_schema = GraphSchema(
+        graph_schema_nodes
+    )
+    mock_endpoints = MockAvailableEndpoints()
+    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+
+    if not should_raise_an_error:
+        # When
+        result = _get_llm_command_generator_config(e2e_test_runner)
+        # Then A
+        assert result == expected_llm_config
+    else:
+        # Then B
+        with pytest.raises(SystemExit):
+            _get_llm_command_generator_config(e2e_test_runner)
+
+
+@pytest.mark.parametrize(
+    "compact_llm_command_generator_node,"
+    "expected_llm_config,"
+    "should_raise_an_error",
+    [
+        # Graph schema with CompactLLMCommandGenerator with deprecated LLM config
+        (
+            SchemaNode(
+                needs={},
+                uses=CompactLLMCommandGenerator,
+                constructor_name="create",
+                fn="train",
+                config={"llm": {"provider": "openai", "model": "test-gpt"}},
+                is_target=True,
+                is_input=False,
+            ),
+            combine_custom_and_default_config(
+                {"provider": "openai", "model": "test-gpt"}, DEFAULT_LLM_CONFIG
+            ),
+            False,
+        ),
+        # Graph schema with CompactLLMCommandGenerator with model groups LLM config
+        (
+            SchemaNode(
+                needs={},
+                uses=CompactLLMCommandGenerator,
+                constructor_name="create",
+                fn="train",
+                config={"llm": {"model_group": "llm-model-group"}},
+                is_target=True,
+                is_input=False,
+            ),
+            combine_custom_and_default_config(
+                MockAvailableEndpoints.get_instance().model_groups[0],
+                DEFAULT_LLM_CONFIG,
+            ),
+            False,
+        ),
+        # Graph schema without CompactLLMCommandGenerator
+        (
+            None,
+            None,
+            True,
+        ),
+    ],
+)
+def test_get_llm_command_generator_config_for_compact_llm_command_generator(
+    compact_llm_command_generator_node: SchemaNode,
+    expected_llm_config: dict,
+    should_raise_an_error: bool,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # Given
+    graph_schema_nodes = {
+        "test_node_1": SchemaNode(
+            needs={}, uses=Mock, constructor_name="create", fn="train", config={}
+        ),
+        "test_node_2": SchemaNode(
+            needs={}, uses=Mock, constructor_name="create", fn="train", config={}
+        ),
+    }
+    if compact_llm_command_generator_node is not None:
+        graph_schema_nodes["test_CompactLLMCommandGenerator_3"] = (
+            compact_llm_command_generator_node
         )
 
     e2e_test_runner = Mock()

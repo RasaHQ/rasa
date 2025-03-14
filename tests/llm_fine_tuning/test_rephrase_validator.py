@@ -15,6 +15,16 @@ from rasa.dialogue_understanding.commands import (
     SkipQuestionCommand,
     StartFlowCommand,
 )
+from rasa.dialogue_understanding.commands.command_syntax_manager import (
+    CommandSyntaxManager,
+    CommandSyntaxVersion,
+)
+from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
+    CompactLLMCommandGenerator,
+)
+from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator import (  # noqa: E501
+    SingleStepLLMCommandGenerator,
+)
 from rasa.e2e_test.e2e_test_case import TestCase
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.paraphrasing.rephrase_validator import RephraseValidator
@@ -119,7 +129,9 @@ def test_validate_rephrasings_passing(
 ):
     with patch.object(validator, "_validate_rephrase_is_passing", return_value=True):
         validated_rephrasings = asyncio.run(
-            validator.validate_rephrasings(rephrased_user_messages, conversation)
+            validator.validate_rephrasings(
+                rephrased_user_messages, conversation, CompactLLMCommandGenerator
+            )
         )
 
         assert len(validated_rephrasings[0].passed_rephrasings) == 2
@@ -135,7 +147,9 @@ def test_validate_rephrasings_failing(
 ):
     with patch.object(validator, "_validate_rephrase_is_passing", return_value=False):
         validated_rephrasings = asyncio.run(
-            validator.validate_rephrasings(rephrased_user_messages, conversation)
+            validator.validate_rephrasings(
+                rephrased_user_messages, conversation, CompactLLMCommandGenerator
+            )
         )
 
         assert len(validated_rephrasings[0].failed_rephrasings) == 2
@@ -148,22 +162,18 @@ def test_validate_rephrasings_failing(
     "rasa.llm_fine_tuning.paraphrasing.rephrase_validator.RephraseValidator."
     "_invoke_llm"
 )
-@patch(
-    "rasa.dialogue_understanding.generator.single_step."
-    "single_step_llm_command_generator.SingleStepLLMCommandGenerator.parse_commands"
-)
 def test_rephrase_is_passing(
-    mock_parse_commands: Mock,
     mock_invoke_llm: Mock,
     validator: RephraseValidator,
     conversation: Conversation,
 ):
     mock_invoke_llm.return_value = "StartFlow(transfer_money)"
-    mock_parse_commands.return_value = [StartFlowCommand("transfer_money")]
 
     rephrase = "I want to transfer some money to John"
     passing = asyncio.run(
-        validator._validate_rephrase_is_passing(rephrase, conversation.steps[0])
+        validator._validate_rephrase_is_passing(
+            rephrase, conversation.steps[0], SingleStepLLMCommandGenerator
+        )
     )
 
     assert passing is True
@@ -173,22 +183,47 @@ def test_rephrase_is_passing(
     "rasa.llm_fine_tuning.paraphrasing.rephrase_validator.RephraseValidator."
     "_invoke_llm"
 )
+def test_rephrase_is_passing_using_compact_llm_command_generator(
+    mock_invoke_llm: Mock,
+    validator: RephraseValidator,
+    conversation: Conversation,
+):
+    # Set syntax version to v2. This is required for the CompactLLMCommandGenerator
+    # to work. When the agent loads, the CompactLLMCommandGenerator is initialized
+    # and the command syntax is set to v2 automatically. However, in the tests, it is
+    # not loaded, so we need to set it manually.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+    mock_invoke_llm.return_value = "start flow transfer_money"
+
+    rephrase = "I want to transfer some money to John"
+    passing = asyncio.run(
+        validator._validate_rephrase_is_passing(
+            rephrase, conversation.steps[0], CompactLLMCommandGenerator
+        )
+    )
+
+    assert passing is True
+
+    # Reset the syntax version. This is required to avoid side effects in other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
 @patch(
-    "rasa.dialogue_understanding.generator.single_step."
-    "single_step_llm_command_generator.SingleStepLLMCommandGenerator.parse_commands"
+    "rasa.llm_fine_tuning.paraphrasing.rephrase_validator.RephraseValidator."
+    "_invoke_llm"
 )
 def test_rephrase_is_not_passing(
-    mock_parse_commands: Mock,
     mock_invoke_llm: Mock,
     validator: RephraseValidator,
     conversation: Conversation,
 ):
     mock_invoke_llm.return_value = "SetSlot('recipient', 'John')"
-    mock_parse_commands.return_value = [SetSlotCommand("recipient", "John")]
 
     rephrase = "I want to transfer some money to John"
     passing = asyncio.run(
-        validator._validate_rephrase_is_passing(rephrase, conversation.steps[0])
+        validator._validate_rephrase_is_passing(
+            rephrase, conversation.steps[0], SingleStepLLMCommandGenerator
+        )
     )
 
     assert passing is False

@@ -300,7 +300,7 @@ def test_create_data_point(conversation: Conversation):
 
     assert isinstance(data_point, LLMDataExample)
     assert data_point.prompt == prompt
-    assert data_point.output == step.commands_as_string()
+    assert data_point.output == step.llm_commands
     assert data_point.original_test_name == conversation.get_full_name()
     assert data_point.original_user_utterance == step.original_test_step.text
     assert data_point.rephrased_user_utterance == rephrased_user_message
@@ -324,10 +324,7 @@ def test_create_data_point_output_contains_multiple_commands(
 
     assert isinstance(data_point, LLMDataExample)
     assert data_point.prompt == prompt
-    assert (
-        data_point.output
-        == "StartFlow(transfer_money)\nSetSlot(transfer_money_recipient, Maria)\nSetSlot(transfer_money_amount_of_money, 413)"  # noqa: E501
-    )
+    assert data_point.output == step.llm_commands
     assert (
         data_point.original_test_name
         == conversation_mentioning_two_slots_upfront.get_full_name()

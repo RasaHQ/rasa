@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+import pytest
+
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     ChitChatAnswerCommand,
@@ -15,26 +17,39 @@ from rasa.dialogue_understanding.commands import (
     SkipQuestionCommand,
     StartFlowCommand,
 )
-from rasa.dialogue_understanding.generator.command_parser import parse_commands
+from rasa.dialogue_understanding.generator.command_parser import (
+    parse_commands,
+    validate_custom_commands,
+)
 from rasa.shared.core.flows import FlowsList
 from tests.utilities import flows_from_str
 
 
+class TestCommand(Command):
+    @classmethod
+    def command(cls) -> str:
+        return "test"
+
+    def to_dsl(self) -> str:
+        return "test()"
+
+    @classmethod
+    def from_dsl(cls, match: re.Match, **kwargs: Any) -> TestCommand:
+        return TestCommand()
+
+    @staticmethod
+    def regex_pattern() -> str:
+        return r"test\(\)"
+
+    def __hash__(self) -> int:
+        return hash(self.command())
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, TestCommand)
+
+
 def test_additional_command_parser():
     # Given
-    class TestCommand(Command):
-        @staticmethod
-        def command():
-            return "test"
-
-        @classmethod
-        def from_dsl(cls, match: re.Match, **kwargs: Any) -> TestCommand:
-            return TestCommand()
-
-        @staticmethod
-        def regex_pattern() -> str:
-            return r"test\(\)"
-
     # When
     command = parse_commands(
         "test()",
@@ -237,3 +252,19 @@ def test_parse_commands_repeat_bot_messages_command():
 
     # Then
     assert commands == [RepeatBotMessagesCommand()]
+
+
+def test_validate_custom_commands_passed():
+    # Given
+    validate_custom_commands([TestCommand])
+
+
+def test_validate_custom_commands_failed():
+    # Given
+    class InvalidCommand(Command):
+        @staticmethod
+        def regex_pattern() -> str:
+            return r"test\(\)"
+
+    with pytest.raises(SystemExit):
+        validate_custom_commands([InvalidCommand])
