@@ -1429,7 +1429,7 @@ class Validator:
                     event_info=(
                         f"{count} response{' is' if count == 1 else 's are'} "
                         f"missing translations for some languages. "
-                        "Run 'rasa data validate language' for details."
+                        "Run 'rasa data validate translations' for details."
                     ),
                 )
             if flow_warnings:
@@ -1440,7 +1440,7 @@ class Validator:
                     event_info=(
                         f"{count} flow{' is' if count == 1 else 's are'} "
                         f"missing translations for some languages. "
-                        "Run 'rasa data validate language' for details."
+                        "Run 'rasa data validate translations' for details."
                     ),
                 )
         else:

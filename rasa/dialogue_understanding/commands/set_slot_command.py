@@ -126,6 +126,7 @@ class SetSlotCommand(Command):
         if (
             self.name not in slots_of_active_flow
             and self.name != ROUTE_TO_CALM_SLOT
+            and not slot.is_builtin
             and self.extractor
             in {
                 SetSlotExtractor.LLM.value,

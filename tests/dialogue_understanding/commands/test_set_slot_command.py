@@ -513,3 +513,47 @@ def test_equal(value1: Any, value2: Any, equal: bool):
 def test_is_instance_of_prompt_command():
     # Check if the command adheres to the PromptCommand protocol.
     assert isinstance(SetSlotCommand("foo", "buzz"), PromptCommand) is True
+
+
+def test_run_command_sets_builtin_slot_even_when_not_asked_for() -> None:
+    """Test that a built-in slot is set even if it wasn't explicitly asked for"""
+    # Create a built-in slot by patching `is_builtin` to True.
+    slot = TextSlot("foo", mappings=[], is_builtin=True)
+    slots = [slot]
+
+    # Define flows that do NOT ask for the "foo" slot.
+    all_flows = flows_from_str(
+        """
+        flows:
+          test_flow:
+            description: "Test flow that collects a different slot"
+            steps:
+              - collect: bar
+        """
+    )
+
+    # Create a tracker with no active collect step for "foo"
+    tracker = DialogueStateTracker.from_events("test", evts=[], slots=slots)
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "test_flow",
+                    "step_id": "step1",
+                    "frame_id": "frame1",
+                }
+            ]
+        )
+    )
+
+    # Create a SetSlotCommand for the built-in slot "foo".
+    command = SetSlotCommand(name="foo", value="new_value")
+
+    # Run the command on the tracker.
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+
+    # Even though "foo" is not among the slots asked for in the active flow,
+    # because it is marked as built-in (i.e. slot.is_builtin is True),
+    # the command should not skip setting its value.
+    assert events == [SlotSet("foo", "new_value", filled_by=SetSlotExtractor.LLM.value)]

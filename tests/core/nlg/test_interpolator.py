@@ -1,5 +1,7 @@
 from rasa.core.nlg.interpolator import (
+    RASA_FORMAT_TEMPLATE_ENGINE,
     _get_variables_to_be_rendered,
+    interpolate,
     interpolate_format_template,
 )
 
@@ -80,3 +82,23 @@ async def test_nlg_interpolator_interpolate_format_template_empty_braces() -> No
     response = "Hello {}"
     values = {"name": "Rasa", "age": "100", "city": "Berlin"}
     assert interpolate_format_template(response, values) == "Hello {}"
+
+
+async def test_nlg_interpolator_interpolate_translation() -> None:
+    response = {
+        "text": "Add {add_contact_name} to your contacts?",
+        "translation": {
+            "it": "Aggiungi {add_contact_name} ai tuoi contatti?",
+            "de": "Fügen Sie {add_contact_name} zu Ihren Kontakten hinzu?",
+        },
+    }
+    values = {"add_contact_name": "Rasa", "add_contact_handle": "rasa"}
+    interpolated_response = interpolate(response, values, RASA_FORMAT_TEMPLATE_ENGINE)
+    expected_response = {
+        "text": "Add Rasa to your contacts?",
+        "translation": {
+            "it": "Aggiungi Rasa ai tuoi contatti?",
+            "de": "Fügen Sie Rasa zu Ihren Kontakten hinzu?",
+        },
+    }
+    assert interpolated_response == expected_response

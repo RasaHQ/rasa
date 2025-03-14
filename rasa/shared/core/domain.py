@@ -52,6 +52,7 @@ from rasa.shared.core.constants import (
     SlotMappingType,
 )
 from rasa.shared.core.events import SlotSet, UserUttered
+from rasa.shared.core.flows.constants import KEY_TRANSLATION
 from rasa.shared.core.slots import (
     AnySlot,
     CategoricalSlot,
@@ -117,6 +118,7 @@ RESPONSE_KEYS_TO_INTERPOLATE = [
     KEY_RESPONSES_BUTTONS,
     KEY_RESPONSES_ATTACHMENT,
     KEY_RESPONSES_QUICK_REPLIES,
+    KEY_TRANSLATION,
 ]
 
 ALL_DOMAIN_KEYS = [
