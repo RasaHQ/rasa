@@ -422,29 +422,12 @@ runs:
             2>&1 \
             | tee e2e-tests-log.txt
 
-    - name: Verify correct JSON default prompt used for GPT-4o by CompactLLMCommandGenerator
-      if: ${{ contains(inputs.provider, 'openai') && inputs.train-and-test == 'compact' && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST  }}
+    - name: Verify correct JSON default prompts used by CompactLLMCommandGenerator
+      if: ${{ inputs.train-and-test == 'compact' && !contains(inputs.provider, 'custom') && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST  }}
       run: |
-        : Verify correct default prompt used for GPT-4o by CompactLLMCommandGenerator
+        : Verify correct JSON default prompts used by CompactLLMCommandGenerator
         grep -i '## Task Description' e2e-tests-log.txt
-        grep -iF 'Use the following structured date:\n```json' e2e-tests-log.txt
-      shell: bash
-
-    - name: Verify correct XML default prompt used for Claude-Sonnet-3.5 by CompactLLMCommandGenerator
-      if: ${{ (contains(inputs.provider, 'bedrock') || inputs.provider == 'anthropic') && inputs.train-and-test == 'compact' && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST  }}
-      run: |
-        : Verify correct default prompt used for Claude-Sonnet-3.5 by CompactLLMCommandGenerator
-        grep -iv '## Task Description' e2e-tests-log.txt
-        grep -iF 'Use the following structured date:\n```xml' e2e-tests-log.txt
-      shell: bash
-
-    - name: Verify correct default prompt used for other models by CompactLLMCommandGenerator
-      if: ${{ !(contains(inputs.provider, 'bedrock') || inputs.provider == 'anthropic' || contains(inputs.provider, 'openai')) && inputs.train-and-test == 'compact' && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST  }}
-      run: |
-        : Verify correct default prompt used for Claude-Sonnet-3.5 by CompactLLMCommandGenerator
-        grep -i '## Task Description' e2e-tests-log.txt
-        grep -iv 'Use the following structured date:\n```xml' e2e-tests-log.txt
-        grep -iv 'Use the following structured date:\n```xml' e2e-tests-log.txt
+        grep -iF 'Use the following structured data:\n```json' e2e-tests-log.txt
       shell: bash
 
     - name: Run Dialogue Understanding Tests
