@@ -121,13 +121,14 @@ class VoiceOutputChannel(OutputChannel):
         voice_websocket: Websocket,
         tts_engine: TTSEngine,
         tts_cache: TTSCache,
+        min_buffer_size: int = 0,
     ):
         super().__init__()
         self.voice_websocket = voice_websocket
         self.tts_engine = tts_engine
         self.tts_cache = tts_cache
-
         self.latest_message_id: Optional[str] = None
+        self.min_buffer_size = min_buffer_size
 
     def rasa_audio_bytes_to_channel_bytes(
         self, rasa_audio_bytes: RasaAudioBytes
@@ -187,6 +188,7 @@ class VoiceOutputChannel(OutputChannel):
         cached_audio_bytes = self.tts_cache.get(text)
         collected_audio_bytes = RasaAudioBytes(b"")
         seconds_marker = -1
+        last_sent_offset = 0
 
         # Send start marker before first chunk
         try:
@@ -206,17 +208,37 @@ class VoiceOutputChannel(OutputChannel):
                 audio_stream = self.chunk_audio(generate_silence())
 
         async for audio_bytes in audio_stream:
-            try:
-                await self.send_audio_bytes(recipient_id, audio_bytes)
-                full_seconds_of_audio = len(collected_audio_bytes) // HERTZ
-                if full_seconds_of_audio > seconds_marker:
-                    await self.send_intermediate_marker(recipient_id)
-                    seconds_marker = full_seconds_of_audio
-
-            except (WebsocketClosed, ServerError):
-                # ignore sending error, and keep collecting and caching audio bytes
-                call_state.connection_failed = True  # type: ignore[attr-defined]
             collected_audio_bytes = RasaAudioBytes(collected_audio_bytes + audio_bytes)
+
+            # Check if we have enough new bytes to send
+            current_buffer_size = len(collected_audio_bytes) - last_sent_offset
+            should_send = current_buffer_size >= self.min_buffer_size
+
+            if should_send:
+                try:
+                    # Send only the new bytes since last send
+                    new_bytes = RasaAudioBytes(collected_audio_bytes[last_sent_offset:])
+                    await self.send_audio_bytes(recipient_id, new_bytes)
+                    last_sent_offset = len(collected_audio_bytes)
+
+                    full_seconds_of_audio = len(collected_audio_bytes) // HERTZ
+                    if full_seconds_of_audio > seconds_marker:
+                        await self.send_intermediate_marker(recipient_id)
+                        seconds_marker = full_seconds_of_audio
+
+                except (WebsocketClosed, ServerError):
+                    # ignore sending error, and keep collecting and caching audio bytes
+                    call_state.connection_failed = True  # type: ignore[attr-defined]
+
+        # Send any remaining audio not yet sent
+        remaining_bytes = len(collected_audio_bytes) - last_sent_offset
+        if remaining_bytes > 0:
+            try:
+                new_bytes = RasaAudioBytes(collected_audio_bytes[last_sent_offset:])
+                await self.send_audio_bytes(recipient_id, new_bytes)
+            except (WebsocketClosed, ServerError):
+                # ignore sending error
+                call_state.connection_failed = True  # type: ignore[attr-defined]
 
         try:
             await self.send_end_marker(recipient_id)

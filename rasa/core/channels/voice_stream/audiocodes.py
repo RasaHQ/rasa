@@ -46,6 +46,19 @@ class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
     def name(cls) -> str:
         return "ac_voice"
 
+    def _ensure_stream_id(self) -> None:
+        """Audiocodes requires a stream ID with playStream messages."""
+        if "stream_id" not in call_state.channel_data:
+            call_state.channel_data["stream_id"] = 0
+
+    def _increment_stream_id(self) -> None:
+        self._ensure_stream_id()
+        call_state.channel_data["stream_id"] += 1
+
+    def _get_stream_id(self) -> str:
+        self._ensure_stream_id()
+        return str(call_state.channel_data["stream_id"])
+
     def rasa_audio_bytes_to_channel_bytes(
         self, rasa_audio_bytes: RasaAudioBytes
     ) -> bytes:
@@ -55,7 +68,7 @@ class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
         media_message = json.dumps(
             {
                 "type": "playStream.chunk",
-                "streamId": str(call_state.stream_id),
+                "streamId": self._get_stream_id(),
                 "audioChunk": channel_bytes.decode("utf-8"),
             }
         )
@@ -63,14 +76,14 @@ class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
 
     async def send_start_marker(self, recipient_id: str) -> None:
         """Send playStream.start before first audio chunk."""
-        call_state.stream_id += 1  # type: ignore[attr-defined]
+        self._increment_stream_id()
         media_message = json.dumps(
             {
                 "type": "playStream.start",
-                "streamId": str(call_state.stream_id),
+                "streamId": self._get_stream_id(),
             }
         )
-        logger.debug("Sending start marker", stream_id=call_state.stream_id)
+        logger.debug("Sending start marker", stream_id=self._get_stream_id())
         await self.voice_websocket.send(media_message)
 
     async def send_intermediate_marker(self, recipient_id: str) -> None:
@@ -82,10 +95,10 @@ class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
         media_message = json.dumps(
             {
                 "type": "playStream.stop",
-                "streamId": str(call_state.stream_id),
+                "streamId": self._get_stream_id(),
             }
         )
-        logger.debug("Sending end marker", stream_id=call_state.stream_id)
+        logger.debug("Sending end marker", stream_id=self._get_stream_id())
         await self.voice_websocket.send(media_message)
 
 

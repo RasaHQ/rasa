@@ -27,8 +27,23 @@ from rasa.core.channels.voice_stream.voice_channel import (
     VoiceOutputChannel,
 )
 
-# Not mentioned in the documentation but observed in Geneys's example
-# https://github.com/GenesysCloudBlueprints/audioconnector-server-reference-implementation
+"""
+Genesys throws a rate limit error with too many audio messages.
+To avoid this, we buffer the audio messages and send them in chunks.
+
+- global.inbound.binary.average.rate.per.second: 5
+The allowed average rate per second of inbound binary data
+
+- global.inbound.binary.max: 25
+The maximum number of inbound binary data messages
+that can be sent instantaneously
+
+https://developer.genesys.cloud/organization/organization/limits#audiohook
+
+The maximum binary message size is not mentioned
+in the documentation but observed in their example app
+https://github.com/GenesysCloudBlueprints/audioconnector-server-reference-implementation
+"""
 MAXIMUM_BINARY_MESSAGE_SIZE = 64000  # 64KB
 logger = structlog.get_logger(__name__)
 
@@ -56,52 +71,7 @@ class GenesysOutputChannel(VoiceOutputChannel):
     async def send_audio_bytes(
         self, recipient_id: str, audio_bytes: RasaAudioBytes
     ) -> None:
-        """
-        Send audio bytes to the recipient with buffering.
-
-        Genesys throws a rate limit error with too many audio messages.
-        To avoid this, we buffer the audio messages and send them in chunks.
-
-        - global.inbound.binary.average.rate.per.second: 5
-        The allowed average rate per second of inbound binary data
-
-        - global.inbound.binary.max: 25
-        The maximum number of inbound binary data messages
-        that can be sent instantaneously
-
-        https://developer.genesys.cloud/organization/organization/limits#audiohook
-        """
-        call_state.audio_buffer.extend(audio_bytes)
-
-        # If we receive a non-standard chunk size, assume it's the end of a sequence
-        # or buffer is more than 32KB (this is half of genesys's max audio message size)
-        if len(audio_bytes) != 1024 or len(call_state.audio_buffer) >= (
-            MAXIMUM_BINARY_MESSAGE_SIZE / 2
-        ):
-            # TODO: we should send the buffer when we receive a synthesis complete event
-            # from TTS. This will ensure that the last audio chunk is always sent.
-            await self._send_audio_buffer(self.voice_websocket)
-
-    async def _send_audio_buffer(self, ws: Websocket) -> None:
-        """Send the audio buffer to the recipient if it's not empty."""
-        if call_state.audio_buffer:
-            buffer_bytes = bytes(call_state.audio_buffer)
-            await self._send_bytes_to_ws(ws, buffer_bytes)
-            call_state.audio_buffer.clear()
-
-    async def _send_bytes_to_ws(self, ws: Websocket, data: bytes) -> None:
-        """Send audio bytes to the recipient as a binary websocket message."""
-        if len(data) <= MAXIMUM_BINARY_MESSAGE_SIZE:
-            await self.voice_websocket.send(data)
-        else:
-            # split the audio into chunks
-            current_position = 0
-            while current_position < len(data):
-                end_position = min(
-                    current_position + MAXIMUM_BINARY_MESSAGE_SIZE, len(data)
-                )
-                await self.voice_websocket.send(data[current_position:end_position])
-                current_position = end_position
+        await self.voice_websocket.send(audio_bytes)
 
     async def send_marker_message(self, recipient_id: str) -> None:
         """
@@ -119,6 +89,17 @@ class GenesysInputChannel(VoiceInputChannel):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
+    def _ensure_channel_data_initialized(self) -> None:
+        """Initialize Genesys-specific channel data if not already present.
+
+        Genesys requires the server and client each maintain a
+        monotonically increasing message sequence number.
+        """
+        if "server_sequence_number" not in call_state.channel_data:
+            call_state.channel_data["server_sequence_number"] = 0
+        if "client_sequence_number" not in call_state.channel_data:
+            call_state.channel_data["client_sequence_number"] = 0
+
     def _get_next_sequence(self) -> int:
         """
         Get the next message sequence number
@@ -128,23 +109,26 @@ class GenesysInputChannel(VoiceInputChannel):
         Genesys requires the server and client each maintain a
         monotonically increasing message sequence number.
         """
-        cs = call_state
-        cs.server_sequence_number += 1  # type: ignore[attr-defined]
-        return cs.server_sequence_number
+        self._ensure_channel_data_initialized()
+        call_state.channel_data["server_sequence_number"] += 1
+        return call_state.channel_data["server_sequence_number"]
 
     def _get_last_client_sequence(self) -> int:
         """Get the last client(Genesys) sequence number."""
-        return call_state.client_sequence_number
+        self._ensure_channel_data_initialized()
+        return call_state.channel_data["client_sequence_number"]
 
     def _update_client_sequence(self, seq: int) -> None:
         """Update the client(Genesys) sequence number."""
-        if seq - call_state.client_sequence_number != 1:
+        self._ensure_channel_data_initialized()
+
+        if seq - call_state.channel_data["client_sequence_number"] != 1:
             logger.warning(
                 "genesys.update_client_sequence.sequence_gap",
                 received_seq=seq,
-                last_seq=call_state.client_sequence_number,
+                last_seq=call_state.channel_data["client_sequence_number"],
             )
-        call_state.client_sequence_number = seq  # type: ignore[attr-defined]
+        call_state.channel_data["client_sequence_number"] = seq
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
         return RasaAudioBytes(input_bytes)
@@ -211,6 +195,7 @@ class GenesysInputChannel(VoiceInputChannel):
             voice_websocket,
             tts_engine,
             self.tts_cache,
+            min_buffer_size=MAXIMUM_BINARY_MESSAGE_SIZE // 2,
         )
 
     async def handle_open(self, ws: Websocket, message: dict) -> CallParameters:
