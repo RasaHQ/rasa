@@ -15,7 +15,7 @@ from collections import defaultdict
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Type, cast
 
 import importlib_resources
 import requests
@@ -1126,12 +1126,12 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
     """
     from rasa.dialogue_understanding.generator import (
         CompactLLMCommandGenerator,
+        LLMBasedCommandGenerator,
         LLMCommandGenerator,
         MultiStepLLMCommandGenerator,
         SingleStepLLMCommandGenerator,
     )
     from rasa.dialogue_understanding.generator.constants import (
-        DEFAULT_LLM_CONFIG,
         FLOW_RETRIEVAL_KEY,
         LLM_CONFIG_KEY,
     )
@@ -1162,6 +1162,12 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
 
     def extract_llm_command_generator_llm_client_settings(component: Dict) -> Dict:
         """Extracts settings related to LLM command generator."""
+        component_class_lookup = {
+            LLMCommandGenerator.__name__: LLMCommandGenerator,
+            SingleStepLLMCommandGenerator.__name__: SingleStepLLMCommandGenerator,
+            MultiStepLLMCommandGenerator.__name__: MultiStepLLMCommandGenerator,
+            CompactLLMCommandGenerator.__name__: CompactLLMCommandGenerator,
+        }
         llm_config = component.get(LLM_CONFIG_KEY, {})
         # Config at this stage is not yet resolved, so read from `model_group`
         llm_model_group_id = llm_config.get(MODEL_GROUP_CONFIG_KEY)
@@ -1169,7 +1175,11 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
             MODEL_NAME_CONFIG_KEY
         )
         if llm_model_group_id is None and llm_model_name is None:
-            llm_model_name = DEFAULT_LLM_CONFIG[MODEL_CONFIG_KEY]
+            component_clz = cast(
+                Type[LLMBasedCommandGenerator],
+                component_class_lookup[component["name"]],
+            )
+            llm_model_name = component_clz.get_default_llm_config()[MODEL_CONFIG_KEY]
 
         custom_prompt_used = (
             PROMPT_CONFIG_KEY in component or PROMPT_TEMPLATE_CONFIG_KEY in component

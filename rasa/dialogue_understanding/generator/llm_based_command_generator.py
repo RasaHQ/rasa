@@ -175,7 +175,7 @@ class LLMBasedCommandGenerator(
         """
         self.perform_llm_health_check(
             self.config.get(LLM_CONFIG_KEY),
-            DEFAULT_LLM_CONFIG,
+            self.get_default_llm_config(),
             "llm_based_command_generator.train",
             LLMBasedCommandGenerator.__name__,
         )
@@ -332,7 +332,9 @@ class LLMBasedCommandGenerator(
         Raises:
             ProviderClientAPIException: If an error occurs during the LLM API call.
         """
-        llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
+        llm = llm_factory(
+            self.config.get(LLM_CONFIG_KEY), self.get_default_llm_config()
+        )
         try:
             return await llm.acompletion(prompt)
         except Exception as e:
@@ -619,3 +621,8 @@ class LLMBasedCommandGenerator(
             )
         )
         return prior_commands, filtered_commands
+
+    @staticmethod
+    def get_default_llm_config() -> Dict[str, Any]:
+        """Get the default LLM config for the command generator."""
+        return DEFAULT_LLM_CONFIG

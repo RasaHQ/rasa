@@ -667,38 +667,94 @@ def get_prompt_template(
     """
     try:
         if jinja_file_path is not None:
-            return rasa.shared.utils.io.read_file(jinja_file_path)
+            prompt_template = rasa.shared.utils.io.read_file(jinja_file_path)
+            structlogger.info(
+                "utils.llm.get_prompt_template.custom_prompt_template_read_successfull",
+                event_info=(
+                    f"Custom prompt template read successfully from "
+                    f"`{jinja_file_path}`."
+                ),
+                prompt_file_path=jinja_file_path,
+            )
+            return prompt_template
     except (FileIOException, FileNotFoundException):
         structlogger.warning(
-            "Failed to read custom prompt template. Using default template instead.",
-            jinja_file_path=jinja_file_path,
+            "utils.llm.get_prompt_template.failed_to_read_custom_prompt_template",
+            event_info=(
+                "Failed to read custom prompt template. Using default template instead."
+            ),
         )
     return default_prompt_template
 
 
 def get_default_prompt_template_based_on_model(
-    config: Dict[str, Any],
+    llm_config: Dict[str, Any],
     model_prompt_mapping: Dict[str, Any],
+    default_prompt_path: str,
     fallback_prompt_path: str,
 ) -> Text:
     """Returns the default prompt template based on the model name.
 
     Args:
-        config: The model config.
+        llm_config: The model config.
         model_prompt_mapping: The mapping of model name to prompt template.
-        fallback_prompt_path: The fallback prompt path.
+        default_prompt_path: The default prompt path of the component.
+        fallback_prompt_path: The fallback prompt path for all other models
+            that do not have a mapping in the model_prompt_mapping.
 
     Returns:
         The default prompt template.
     """
-    _config = deepcopy(config)
-    if MODELS_CONFIG_KEY in _config:
-        _config = _config[MODELS_CONFIG_KEY][0]
-    provider = _config.get(PROVIDER_CONFIG_KEY)
-    model = _config.get(MODEL_CONFIG_KEY, "")
+    _llm_config = deepcopy(llm_config)
+    if MODELS_CONFIG_KEY in _llm_config:
+        _llm_config = _llm_config[MODELS_CONFIG_KEY][0]
+    provider = _llm_config.get(PROVIDER_CONFIG_KEY)
+    model = _llm_config.get(MODEL_CONFIG_KEY)
+    if not model:
+        # If the model is not defined, we default to the default prompt template.
+        structlogger.info(
+            "utils.llm.get_default_prompt_template_based_on_model.using_default_prompt_template",
+            event_info=(
+                f"Model not defined in the config. Default prompt template read from"
+                f" - `{default_prompt_path}`."
+            ),
+            default_prompt_path=default_prompt_path,
+        )
+        return importlib.resources.read_text(
+            DEFAULT_PROMPT_PACKAGE_NAME, default_prompt_path
+        )
+
     model_name = model if provider and provider in model else f"{provider}/{model}"
-    prompt_file_path = model_prompt_mapping.get(model_name, fallback_prompt_path)
-    return importlib.resources.read_text(DEFAULT_PROMPT_PACKAGE_NAME, prompt_file_path)
+    if prompt_file_path := model_prompt_mapping.get(model_name):
+        # If the model is found in the mapping, we use the model-specific prompt
+        # template.
+        structlogger.info(
+            "utils.llm.get_default_prompt_template_based_on_model.using_model_specific_prompt_template",
+            event_info=(
+                f"Using model-specific default prompt template. Default prompt "
+                f"template read from - `{prompt_file_path}`."
+            ),
+            default_prompt_path=prompt_file_path,
+            model_name=model_name,
+        )
+        return importlib.resources.read_text(
+            DEFAULT_PROMPT_PACKAGE_NAME, prompt_file_path
+        )
+
+    # If the model is not found in the mapping, we default to the fallback prompt
+    # template.
+    structlogger.info(
+        "utils.llm.get_default_prompt_template_based_on_model.using_fallback_prompt_template",
+        event_info=(
+            f"Model not found in the model prompt mapping. Fallback prompt template "
+            f"read from - `{fallback_prompt_path}`."
+        ),
+        fallback_prompt_path=fallback_prompt_path,
+        model_name=model_name,
+    )
+    return importlib.resources.read_text(
+        DEFAULT_PROMPT_PACKAGE_NAME, fallback_prompt_path
+    )
 
 
 def allowed_values_for_slot(slot: Slot) -> Union[str, None]:

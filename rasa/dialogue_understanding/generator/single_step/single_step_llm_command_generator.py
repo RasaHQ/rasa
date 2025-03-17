@@ -8,6 +8,7 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxVersion,
 )
 from rasa.dialogue_understanding.generator.constants import (
+    DEFAULT_LLM_CONFIG,
     FLOW_RETRIEVAL_KEY,
     LLM_CONFIG_KEY,
     USER_INPUT_CONFIG_KEY,
@@ -71,18 +72,14 @@ class SingleStepLLMCommandGenerator(CompactLLMCommandGenerator):
                     "Please use the config parameter 'prompt_template' instead. "
                 ),
             )
-        config_prompt = (
-            config.get(PROMPT_CONFIG_KEY)
-            or config.get(PROMPT_TEMPLATE_CONFIG_KEY)
-            or None
-        )
-        self.prompt_template = prompt_template or get_prompt_template(
-            config_prompt,
-            DEFAULT_COMMAND_PROMPT_TEMPLATE,
+        self.prompt_template = self.resolve_component_prompt_template(
+            config, prompt_template
         )
 
         # Set the command syntax version to v1
-        CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v1)
+        CommandSyntaxManager.set_syntax_version(
+            self.get_component_command_syntax_version()
+        )
 
     @staticmethod
     def get_default_config() -> Dict[str, Any]:
@@ -98,15 +95,7 @@ class SingleStepLLMCommandGenerator(CompactLLMCommandGenerator):
     @classmethod
     def fingerprint_addon(cls: Any, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint for the graph."""
-        config_prompt = (
-            config.get(PROMPT_CONFIG_KEY)
-            or config.get(PROMPT_TEMPLATE_CONFIG_KEY)
-            or None
-        )
-        prompt_template = get_prompt_template(
-            config_prompt,
-            DEFAULT_COMMAND_PROMPT_TEMPLATE,
-        )
+        prompt_template = cls.resolve_component_prompt_template(config)
         llm_config = resolve_model_client_config(
             config.get(LLM_CONFIG_KEY), SingleStepLLMCommandGenerator.__name__
         )
@@ -116,4 +105,29 @@ class SingleStepLLMCommandGenerator(CompactLLMCommandGenerator):
         )
         return deep_container_fingerprint(
             [prompt_template, llm_config, embedding_config]
+        )
+
+    @staticmethod
+    def get_default_llm_config() -> Dict[str, Any]:
+        """Get the default LLM config for the command generator."""
+        return DEFAULT_LLM_CONFIG
+
+    @staticmethod
+    def get_component_command_syntax_version() -> CommandSyntaxVersion:
+        return CommandSyntaxVersion.v1
+
+    @staticmethod
+    def resolve_component_prompt_template(
+        config: Dict[str, Any], prompt_template: Optional[str] = None
+    ) -> Optional[str]:
+        """Get the prompt template from the config or the default prompt template."""
+        # Get the default prompt template based on the model name.
+        config_prompt = (
+            config.get(PROMPT_CONFIG_KEY)
+            or config.get(PROMPT_TEMPLATE_CONFIG_KEY)
+            or None
+        )
+        return prompt_template or get_prompt_template(
+            config_prompt,
+            DEFAULT_COMMAND_PROMPT_TEMPLATE,
         )

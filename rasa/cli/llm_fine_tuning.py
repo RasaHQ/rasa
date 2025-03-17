@@ -284,8 +284,6 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
 
 
 def _get_llm_command_generator_config(e2e_test_runner: E2ETestRunner) -> Dict[str, Any]:
-    from rasa.dialogue_understanding.generator.constants import DEFAULT_LLM_CONFIG
-
     train_schema = e2e_test_runner.agent.processor.model_metadata.train_schema  # type: ignore
 
     for node_name, node in train_schema.nodes.items():
@@ -298,8 +296,9 @@ def _get_llm_command_generator_config(e2e_test_runner: E2ETestRunner) -> Dict[st
             resolved_llm_config = resolve_model_client_config(
                 node.config.get(LLM_CONFIG_KEY, {}), node_name
             )
+            llm_command_generator = cast(Type[LLMBasedCommandGenerator], node.uses)
             return combine_custom_and_default_config(
-                resolved_llm_config, DEFAULT_LLM_CONFIG
+                resolved_llm_config, llm_command_generator.get_default_llm_config()
             )
 
     rasa.shared.utils.cli.print_error(

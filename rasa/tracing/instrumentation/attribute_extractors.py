@@ -58,9 +58,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, SET_SLOT_COMMAND
-from rasa.shared.utils.llm import (
-    combine_custom_and_default_config,
-)
+from rasa.shared.utils.llm import combine_custom_and_default_config
 from rasa.tracing.constants import (
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
     REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
@@ -375,14 +373,13 @@ def extract_attrs_for_llm_based_command_generator(
     self: "LLMBasedCommandGenerator",
     prompt: str,
 ) -> Dict[str, Any]:
-    from rasa.dialogue_understanding.generator.constants import DEFAULT_LLM_CONFIG
     from rasa.dialogue_understanding.generator.flow_retrieval import (
         DEFAULT_EMBEDDINGS_CONFIG,
     )
 
     attributes = extract_llm_config(
         self,
-        default_llm_config=DEFAULT_LLM_CONFIG,
+        default_llm_config=self.get_default_llm_config(),
         default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
     )
 

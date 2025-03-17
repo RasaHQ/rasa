@@ -116,7 +116,7 @@ def test_invoke_llm_failure(mock_llm_factory: Mock, validator: RephraseValidator
     # Call the private method _invoke_llm and assert it handles exception
     prompt = "test prompt"
     with pytest.raises(ProviderClientAPIException):
-        result = asyncio.run(validator._invoke_llm(prompt))
+        result = asyncio.run(validator._invoke_llm(prompt, {}))
 
         # Assertions
         assert result is None

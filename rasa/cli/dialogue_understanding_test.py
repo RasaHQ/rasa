@@ -3,7 +3,7 @@ import asyncio
 import datetime
 import importlib
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type, cast
 
 import structlog
 
@@ -370,18 +370,17 @@ def split_test_results(
 def _get_llm_command_generator_config(
     processor: MessageProcessor,
 ) -> Optional[Dict[str, Any]]:
-    from rasa.dialogue_understanding.generator.constants import DEFAULT_LLM_CONFIG
-
     train_schema = processor.model_metadata.train_schema
 
     for node_name, node in train_schema.nodes.items():
         if node.matches_type(LLMBasedCommandGenerator, include_subtypes=True):
             # Configurations can reference model groups defined in the endpoints.yml
-            resolved_config = resolve_model_client_config(
+            resolved_llm_config = resolve_model_client_config(
                 node.config.get(LLM_CONFIG_KEY, {}), node_name
             )
+            llm_command_generator = cast(Type[LLMBasedCommandGenerator], node.uses)
             return combine_custom_and_default_config(
-                resolved_config, DEFAULT_LLM_CONFIG
+                resolved_llm_config, llm_command_generator.get_default_llm_config()
             )
 
     return None

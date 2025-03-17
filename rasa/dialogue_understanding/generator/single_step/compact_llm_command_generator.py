@@ -1,3 +1,4 @@
+import copy
 from typing import Any, Dict, List, Optional, Text
 
 import structlog
@@ -19,10 +20,16 @@ from rasa.dialogue_understanding.generator.command_parser import (
 )
 from rasa.dialogue_understanding.generator.constants import (
     COMMAND_PROMPT_FILE_NAME,
-    DEFAULT_LLM_CONFIG,
+    DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
     FLOW_RETRIEVAL_KEY,
     LLM_BASED_COMMAND_GENERATOR_CONFIG_FILE,
     LLM_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    MODEL_NAME_CLAUDE_3_5_SONNET_20240620,
+    MODEL_NAME_GPT_4O_2024_11_20,
+    OPENAI_PROVIDER,
+    PROVIDER_CONFIG_KEY,
+    TIMEOUT_CONFIG_KEY,
     USER_INPUT_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
@@ -36,9 +43,14 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
+    ANTHROPIC_PROVIDER,
+    AWS_BEDROCK_PROVIDER,
+    AZURE_OPENAI_PROVIDER,
     EMBEDDINGS_CONFIG_KEY,
+    MAX_TOKENS_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
     ROUTE_TO_CALM_SLOT,
+    TEMPERATURE_CONFIG_KEY,
 )
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -61,18 +73,38 @@ from rasa.utils.log_utils import log_llm
 structlogger = structlog.get_logger()
 
 
+DEFAULT_LLM_CONFIG = {
+    PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
+    MODEL_CONFIG_KEY: MODEL_NAME_GPT_4O_2024_11_20,
+    TEMPERATURE_CONFIG_KEY: 0.0,
+    MAX_TOKENS_CONFIG_KEY: DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
+    TIMEOUT_CONFIG_KEY: 7,
+}
+
 MODEL_PROMPT_MAPPER = {
-    "openai/gpt-4o-2024-11-20": "command_prompt_v2_gpt_4o_2024_11_20_template.jinja2",
-    "azure/gpt-4o-2024-11-20": "command_prompt_v2_gpt_4o_2024_11_20_template.jinja2",
-    "bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0": (
+    f"{OPENAI_PROVIDER}/{MODEL_NAME_GPT_4O_2024_11_20}": (
+        "command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
+    ),
+    f"{AZURE_OPENAI_PROVIDER}/{MODEL_NAME_GPT_4O_2024_11_20}": (
+        "command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
+    ),
+    f"{AWS_BEDROCK_PROVIDER}/anthropic.{MODEL_NAME_CLAUDE_3_5_SONNET_20240620}-v1:0": (
         "command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
     ),
-    "anthropic/claude-3-5-sonnet-20240620": (
+    f"{ANTHROPIC_PROVIDER}/{MODEL_NAME_CLAUDE_3_5_SONNET_20240620}": (
         "command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
     ),
 }
 
-DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME = "command_prompt_v2_default.jinja2"
+# When model is not configured, then we use the default prompt template
+DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
+    "command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
+)
+# When the configured model is not found in the model prompt mapper, then we use the
+# fallback prompt template
+FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
+    "command_prompt_v2_fallback_other_models_template.jinja2"
+)
 
 
 class CommandParserValidatorSingleton:
@@ -154,24 +186,18 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
             **kwargs,
         )
 
-        # Get the default prompt template based on the model name
-        default_command_prompt_template = get_default_prompt_template_based_on_model(
-            self.config.get(LLM_CONFIG_KEY, {}) or {},
-            MODEL_PROMPT_MAPPER,
-            DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+        # Get the prompt template from the config or the default prompt template.
+        self.prompt_template = self.resolve_component_prompt_template(
+            self.config, prompt_template
         )
 
-        # Set the prompt template either from the config or the default prompt template.
-        self.prompt_template = prompt_template or get_prompt_template(
-            self.config.get(PROMPT_TEMPLATE_CONFIG_KEY),
-            default_command_prompt_template,
+        # Set the command syntax version to v2
+        CommandSyntaxManager.set_syntax_version(
+            self.get_component_command_syntax_version()
         )
 
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
         self.repeat_command_enabled = self.is_repeat_command_enabled()
-
-        # Set the command syntax version to v2
-        CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
 
     ### Implementations of LLMBasedCommandGenerator parent
     @staticmethod
@@ -219,7 +245,7 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
         llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY, {}))
         cls.perform_llm_health_check(
             llm_config,
-            DEFAULT_LLM_CONFIG,
+            cls.get_default_llm_config(),
             "compact_llm_command_generator.load",
             cls.__name__,
         )
@@ -508,15 +534,41 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
             config.get(FLOW_RETRIEVAL_KEY, {}).get(EMBEDDINGS_CONFIG_KEY),
             FlowRetrieval.__name__,
         )
-        default_command_prompt_template = get_default_prompt_template_based_on_model(
-            llm_config or {},
-            MODEL_PROMPT_MAPPER,
-            DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
-        )
-        prompt_template = get_prompt_template(
-            config.get(PROMPT_TEMPLATE_CONFIG_KEY),
-            default_command_prompt_template,
-        )
+
+        # Create a copy of the config to avoid modifying the original config
+        # and update the llm config with the resolved llm config.
+        _config_copy = copy.deepcopy(config)
+        _config_copy[LLM_CONFIG_KEY] = llm_config
+        prompt_template = cls.resolve_component_prompt_template(_config_copy)
+
         return deep_container_fingerprint(
             [prompt_template, llm_config, embedding_config]
+        )
+
+    @staticmethod
+    def get_default_llm_config() -> Dict[str, Any]:
+        """Get the default LLM config for the command generator."""
+        return DEFAULT_LLM_CONFIG
+
+    @staticmethod
+    def get_component_command_syntax_version() -> CommandSyntaxVersion:
+        return CommandSyntaxVersion.v2
+
+    @staticmethod
+    def resolve_component_prompt_template(
+        config: Dict[str, Any], prompt_template: Optional[str] = None
+    ) -> Optional[str]:
+        """Get the prompt template from the config or the default prompt template."""
+        # Get the default prompt template based on the model name.
+        default_command_prompt_template = get_default_prompt_template_based_on_model(
+            config.get(LLM_CONFIG_KEY, {}) or {},
+            MODEL_PROMPT_MAPPER,
+            DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+            FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+        )
+
+        # Return the prompt template either from the config or the default prompt.
+        return prompt_template or get_prompt_template(
+            config.get(PROMPT_TEMPLATE_CONFIG_KEY),
+            default_command_prompt_template,
         )

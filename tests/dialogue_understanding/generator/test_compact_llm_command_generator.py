@@ -1,4 +1,3 @@
-import importlib.resources
 import os.path
 import uuid
 from pathlib import Path
@@ -41,7 +40,6 @@ from rasa.dialogue_understanding.generator.constants import (
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
-    DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
     MODEL_PROMPT_MAPPER,
     CommandParserValidatorSingleton,
     CompactLLMCommandGenerator,
@@ -54,7 +52,6 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.llm_fine_tuning.annotation_module import set_preparing_fine_tuning_data
 from rasa.shared.constants import (
-    DEFAULT_PROMPT_PACKAGE_NAME,
     EMBEDDINGS_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
@@ -85,6 +82,23 @@ from tests.utilities import filter_logs, flows_from_str
 
 PROMPT_TEMPLATE_WITH_CURRENT_SLOT_INFORMATION_PATH = "./tests/dialogue_understanding/generator/prompt_template_with_current_slot_information.jinja2"  # noqa: E501
 EXPECTED_RENDERED_PROMPT_WITH_CURRENT_SLOT_INFORMATION = "./tests/dialogue_understanding/generator/rendered_prompt_with_current_slot_information.txt"  # noqa: E501
+
+# Path to the test prompt templates directory. We maintain a separate copy of the prompt
+# templates, so that changes to the original prompt will fail the tests. This is to
+# ensure that the changes to the prompt templates are intentional and have to be updated
+# in the test directory as well.
+TEST_PROMPT_TEMPLATE_DIR = "./tests/dialogue_understanding/generator/prompt_templates"
+
+# Load the prompt templates for testing from the test directory.
+command_prompt_v2_claude_3_5_sonnet_20240620_template = rasa.shared.utils.io.read_file(
+    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
+)
+command_prompt_v2_fallback_other_models_template = rasa.shared.utils.io.read_file(
+    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v2_fallback_other_models_template.jinja2"
+)
+command_prompt_v2_gpt_4o_2024_11_20_template = rasa.shared.utils.io.read_file(
+    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
+)
 
 
 @pytest.fixture(autouse=True)
@@ -184,9 +198,6 @@ class TestCompactLLMCommandGenerator:
         # Given
         resource = Resource("llmcmdgen")
         config = {}  # No prompt or prompt_template provided
-        default_command_prompt = importlib.resources.read_text(
-            DEFAULT_PROMPT_PACKAGE_NAME, DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME
-        )
 
         # When
         generator = CompactLLMCommandGenerator(
@@ -196,7 +207,7 @@ class TestCompactLLMCommandGenerator:
         )
 
         # Then
-        assert generator.prompt_template == default_command_prompt
+        assert generator.prompt_template == command_prompt_v2_gpt_4o_2024_11_20_template
 
     async def test_compact_llm_command_generator_init_custom(
         self,
@@ -729,10 +740,13 @@ class TestCompactLLMCommandGenerator:
         # make sure non-startable flow isn't there
         assert "called_flow" not in rendered_template
         # make sure it looks like we are in the calling flow
-        assert "You are currently in the flow `test_flow`." in rendered_template
+        assert (
+            """\nUse the following structured date:\n```json\n{\n    "flows": """
+            """[\n        {\n            "name": "test_flow","""
+        ) in rendered_template
         # make sure the slot from the called flow is available in the template
         assert (
-            "You have just asked the user for the slot `test_slot`."
+            """current_step": {\n        "requested_slot": "test_slot","""
             in rendered_template
         )
 
@@ -1418,7 +1432,36 @@ class TestCompactLLMCommandGenerator:
         # Then
         assert loaded.prompt_template.startswith("## Task Description")
         assert loaded.prompt_template.find("## Available Flows and Slots\n") > 0
+        assert loaded.prompt_template.find("```json\n") > 0
+        assert loaded.prompt_template == command_prompt_v2_gpt_4o_2024_11_20_template
+
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
+    )
+    @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
+    def test_load_with_fallback_prompt(
+        self,
+        mock_flow_retrieval_load: Mock,
+        mock_flow_retrieval_populate: Mock,
+        model_storage: ModelStorage,
+    ):
+        # Given
+        resource = Resource("llmcmdgen")
+        generator = CompactLLMCommandGenerator(
+            {"llm": {"provider": "unknown", "model": "test"}}, model_storage, resource
+        )
+        resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
+
+        # When
+        loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
+
+        # Then
+        assert loaded.prompt_template.startswith("## Task Description")
+        assert loaded.prompt_template.find("## Available Flows and Slots\n") > 0
         assert loaded.prompt_template.find("```json\n") == -1
+        assert (
+            loaded.prompt_template == command_prompt_v2_fallback_other_models_template
+        )
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
@@ -1455,6 +1498,10 @@ class TestCompactLLMCommandGenerator:
                 "\nUse the following structured date:\n```xml\n"
             )
             > 0
+        )
+        assert (
+            loaded.prompt_template
+            == command_prompt_v2_claude_3_5_sonnet_20240620_template
         )
 
     @patch(
@@ -1510,6 +1557,10 @@ class TestCompactLLMCommandGenerator:
             )
             > 0
         )
+        assert (
+            loaded.prompt_template
+            == command_prompt_v2_claude_3_5_sonnet_20240620_template
+        )
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
@@ -1538,6 +1589,7 @@ class TestCompactLLMCommandGenerator:
             )
             > 0
         )
+        assert loaded.prompt_template == command_prompt_v2_gpt_4o_2024_11_20_template
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
@@ -1590,6 +1642,7 @@ class TestCompactLLMCommandGenerator:
             )
             > 0
         )
+        assert loaded.prompt_template == command_prompt_v2_gpt_4o_2024_11_20_template
 
     async def test_compact_llm_command_generator_load_prompt_from_model_storage(
         self,

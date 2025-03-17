@@ -70,7 +70,9 @@ class RephraseValidator:
             rephrase, step.original_test_step.text, step.llm_prompt
         )
 
-        action_list = await self._invoke_llm(prompt)
+        action_list = await self._invoke_llm(
+            prompt, llm_command_generator.get_default_llm_config()
+        )
 
         commands_from_original_utterance = step.llm_commands
         commands_from_rephrased_utterance = llm_command_generator.parse_commands(  # type: ignore
@@ -80,10 +82,8 @@ class RephraseValidator:
             commands_from_original_utterance, commands_from_rephrased_utterance
         )
 
-    async def _invoke_llm(self, prompt: str) -> str:
-        from rasa.dialogue_understanding.generator.constants import DEFAULT_LLM_CONFIG
-
-        llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
+    async def _invoke_llm(self, prompt: str, default_llm_config: Dict[str, Any]) -> str:
+        llm = llm_factory(self.llm_config, default_llm_config)
 
         try:
             llm_response = await llm.acompletion(prompt)
