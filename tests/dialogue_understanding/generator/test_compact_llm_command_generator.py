@@ -741,14 +741,12 @@ class TestCompactLLMCommandGenerator:
         assert "called_flow" not in rendered_template
         # make sure it looks like we are in the calling flow
         assert (
-            """\nUse the following structured date:\n```json\n{\n    "flows": """
-            """[\n        {\n            "name": "test_flow","""
+            "\nUse the following structured data:\n"
+            "```json\n"
+            '{"flows":[{"name":"test_flow",'
         ) in rendered_template
         # make sure the slot from the called flow is available in the template
-        assert (
-            """current_step": {\n        "requested_slot": "test_slot","""
-            in rendered_template
-        )
+        assert """current_step":{"requested_slot":"test_slot",""" in rendered_template
 
     @pytest.mark.parametrize(
         "input_action, expected_command",
@@ -1458,7 +1456,12 @@ class TestCompactLLMCommandGenerator:
         # Then
         assert loaded.prompt_template.startswith("## Task Description")
         assert loaded.prompt_template.find("## Available Flows and Slots\n") > 0
-        assert loaded.prompt_template.find("```json\n") == -1
+        assert (
+            loaded.prompt_template.find(
+                "\nUse the following structured data:\n```json\n"
+            )
+            > 0
+        )
         assert (
             loaded.prompt_template == command_prompt_v2_fallback_other_models_template
         )
@@ -1490,15 +1493,15 @@ class TestCompactLLMCommandGenerator:
         loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
 
         # Then
-        assert loaded.prompt_template.startswith(
-            "Your task is to analyze the current conversation context and generate"
-        )
+        assert loaded.prompt_template.startswith("## Task Description")
         assert (
             loaded.prompt_template.find(
-                "\nUse the following structured date:\n```xml\n"
+                "\nUse the following structured data:\n```json\n"
             )
             > 0
         )
+        assert """{"flows":[""" in loaded.prompt_template  # minified JSON
+        assert "`provide info`" in loaded.prompt_template  # correct DSL
         assert (
             loaded.prompt_template
             == command_prompt_v2_claude_3_5_sonnet_20240620_template
@@ -1548,15 +1551,15 @@ class TestCompactLLMCommandGenerator:
         loaded = CompactLLMCommandGenerator.load({}, model_storage, resource, Mock())
 
         # Then
-        assert loaded.prompt_template.startswith(
-            "Your task is to analyze the current conversation context and generate"
-        )
+        assert loaded.prompt_template.startswith("## Task Description")
         assert (
             loaded.prompt_template.find(
-                "\nUse the following structured date:\n```xml\n"
+                "\nUse the following structured data:\n```json\n"
             )
             > 0
         )
+        assert """{"flows":[""" in loaded.prompt_template  # minified JSON
+        assert "`provide info`" in loaded.prompt_template  # correct DSL
         assert (
             loaded.prompt_template
             == command_prompt_v2_claude_3_5_sonnet_20240620_template
@@ -1585,7 +1588,7 @@ class TestCompactLLMCommandGenerator:
         assert loaded.prompt_template.startswith("## Task Description")
         assert (
             loaded.prompt_template.find(
-                "Flows and Slots\nUse the following structured date:\n```json\n"
+                "Flows and Slots\nUse the following structured data:\n```json\n"
             )
             > 0
         )
@@ -1596,7 +1599,7 @@ class TestCompactLLMCommandGenerator:
     )
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
     @patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
-    def test_load_deafult_prompt_based_on_model_name_from_model_group_gpt_4o(
+    def test_load_default_prompt_based_on_model_name_from_model_group_gpt_4o(
         self,
         mock_flow_retrieval_load: Mock,
         mock_flow_retrieval_populate: Mock,
@@ -1638,7 +1641,7 @@ class TestCompactLLMCommandGenerator:
         assert loaded.prompt_template.startswith("## Task Description")
         assert (
             loaded.prompt_template.find(
-                "Flows and Slots\nUse the following structured date:\n```json\n"
+                "Flows and Slots\nUse the following structured data:\n```json\n"
             )
             > 0
         )
