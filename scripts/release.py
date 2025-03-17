@@ -108,7 +108,7 @@ def write_version_to_pyproject(version: Version) -> None:
 
     try:
         with pyproject_file.open("r", encoding="utf8") as f:
-            doc = toml.parse(f.read())  
+            doc = toml.parse(f.read())
             doc["tool"]["poetry"]["version"] = toml.item(str(version))
 
         with pyproject_file.open("w", encoding="utf8") as f:
@@ -347,9 +347,7 @@ def generate_changelog(version: Version) -> None:
 
 def print_done_message(branch: Text, base: Text, version: Version) -> None:
     """Print final information for the user on what to do next."""
-    pull_request_url = (
-        f"{REPO_BASE_URL}/compare/{base}...{branch}?expand=1&labels=backport-to-main"
-    )
+    pull_request_url = f"{REPO_BASE_URL}/compare/{base}...{branch}?expand=1"
 
     print()
     print(f"\033[94m All done - changes for version {version} are ready! \033[0m")

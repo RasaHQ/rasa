@@ -1,0 +1,36 @@
+name: Setup changelog review
+
+on:
+  pull_request_target:
+    types: ["opened"]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  assign_reviewers_and_label:
+    name: Assign reviewers and label PR for backport
+    # do not run this job on prereleases (alpha, beta, dev, etc...)
+    if: startsWith(github.head_ref, 'prepare-release-') && !startsWith(github.head_ref, 'prepare-release-pre-')
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Add label to backport to main
+        uses: actions-ecosystem/action-add-labels@18f1af5e3544586314bbe15c0273249c770b2daf
+        with:
+          labels: backport-to-main
+
+      - name: Assign reviewers
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANGELOG_REVIEWERS: dakshvar22,andreaklmn
+        # FIXME: have to use the API and bypass the CLI commands
+        # because of this: https://github.com/cli/cli/issues/4844
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/requested_reviewers \
+            -F "reviewers[]=dakshvar22" \
+            -F "reviewers[]=andreaklmn"
