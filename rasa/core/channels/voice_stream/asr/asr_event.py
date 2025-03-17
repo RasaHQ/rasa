@@ -16,3 +16,8 @@ class NewTranscript(ASREvent):
 @dataclass
 class UserIsSpeaking(ASREvent):
     pass
+
+
+@dataclass
+class UserSilence(ASREvent):
+    pass
