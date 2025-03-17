@@ -1,0 +1,11 @@
+name: rasa-pro-eks-dashboard
+description: Rasa Pro Kuberenets Dashboard
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python
