@@ -103,7 +103,7 @@ DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
 # When the configured model is not found in the model prompt mapper, then we use the
 # fallback prompt template
 FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
-    "command_prompt_v2_fallback_other_models_template.jinja2"
+    "command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
 )
 
 

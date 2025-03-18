@@ -94,7 +94,7 @@ command_prompt_v2_claude_3_5_sonnet_20240620_template = rasa.shared.utils.io.rea
     f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
 )
 command_prompt_v2_fallback_other_models_template = rasa.shared.utils.io.read_file(
-    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v2_fallback_other_models_template.jinja2"
+    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
 )
 command_prompt_v2_gpt_4o_2024_11_20_template = rasa.shared.utils.io.read_file(
     f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v2_gpt_4o_2024_11_20_template.jinja2"
