@@ -2061,7 +2061,7 @@ class Validator:
 
     def validate_conditional_response_variation_predicates(self) -> bool:
         """Validate the conditional response variation predicates."""
-        context = {"slots": {slot.name: None for slot in self.domain.slots}}
+        context = {SLOTS: {slot.name: None for slot in self.domain.slots}}
         all_good = True
 
         for utter_name, variations in self.domain.responses.items():
@@ -2115,7 +2115,7 @@ class Validator:
 
                 if (
                     slot_namespace is not None
-                    and slot_namespace[1] not in self.domain.slots
+                    and slot_namespace[1] not in context[SLOTS]
                 ):
                     structlogger.error(
                         "validator.validate_conditional_response_variation_predicates.invalid_slot",
