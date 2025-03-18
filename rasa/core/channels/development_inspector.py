@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import asyncio
-import json
 from functools import partial
 from typing import (
     TYPE_CHECKING,
@@ -7,14 +8,21 @@ from typing import (
     Awaitable,
     Callable,
     Dict,
+    List,
     Optional,
     Set,
     Text,
 )
 
+import orjson
 import structlog
-import websockets
-from sanic import Blueprint, Sanic, Websocket, response  # type: ignore[attr-defined]
+from sanic import (  # type: ignore[attr-defined]
+    Blueprint,
+    Sanic,
+    Websocket,
+    exceptions,
+    response,
+)
 from sanic.request import Request
 from socketio import AsyncServer
 
@@ -27,11 +35,50 @@ if TYPE_CHECKING:
     from sanic.response import HTTPResponse
 
     from rasa.core.channels.channel import UserMessage
+    from rasa.shared.core.trackers import DialogueStateTracker
 
+from rasa.hooks import hookimpl
+from rasa.plugin import plugin_manager
 
 INSPECT_TEMPLATE_PATH = "inspector/dist"
 
 structlogger = structlog.get_logger()
+
+
+class DevelopmentInspectorPlugin:
+    """Plugin for broadcasting tracker updates to development inspector clients."""
+
+    def __init__(self, inspector: DevelopmentInspectProxy) -> None:
+        self.inspector = inspector
+        self.tasks: List[asyncio.Task] = []
+
+    def _cancel_tasks(self) -> None:
+        """Cancel all remaining tasks."""
+        [task.cancel() for task in self.tasks]
+        self.tasks = []
+
+    def _cleanup_completed_tasks(self) -> None:
+        """Remove tasks that have already completed."""
+        self.tasks = [task for task in self.tasks if not task.done()]
+
+    @hookimpl  # type: ignore[misc]
+    def after_new_user_message(self, tracker: DialogueStateTracker) -> None:
+        """Broadcasts tracker updates after a new user message."""
+        task = asyncio.create_task(self.inspector.on_tracker_updated(tracker))
+        self.tasks.append(task)
+        self._cleanup_completed_tasks()
+
+    @hookimpl  # type: ignore[misc]
+    def after_action_executed(self, tracker: DialogueStateTracker) -> None:
+        """Broadcasts tracker updates after an action is executed."""
+        task = asyncio.create_task(self.inspector.on_tracker_updated(tracker))
+        self.tasks.append(task)
+        self._cleanup_completed_tasks()
+
+    @hookimpl  # type: ignore[misc]
+    def after_server_stop(self) -> None:
+        """Cancels all remaining tasks when the server stops."""
+        self._cancel_tasks()
 
 
 class DevelopmentInspectProxy(InputChannel):
@@ -48,6 +95,8 @@ class DevelopmentInspectProxy(InputChannel):
         self.is_voice = is_voice
         self.processor = None
         self.tracker_stream = TrackerStream(get_tracker=self.get_tracker_state)
+        # Register the plugin to get tracker updates
+        plugin_manager().register(DevelopmentInspectorPlugin(self))
 
     def name(self) -> Text:  # type: ignore[override]
         """Channel name."""
@@ -78,16 +127,20 @@ class DevelopmentInspectProxy(InputChannel):
     async def get_tracker_state(self, sender_id: str) -> str:
         """Returns the state of the tracker as a json string."""
         if not self.processor:
+            structlogger.error(
+                "development_inspector.get_tracker_state.agent_not_initialized"
+            )
             return ""
 
         tracker = await self.processor.get_tracker(sender_id)
         state = tracker.current_state(EventVerbosity.AFTER_RESTART)
-        return json.dumps(state)
+        return orjson.dumps(state).decode("utf-8")
 
-    async def on_tracker_updated(self, sender_id: str) -> None:
-        """Called when a tracker has been updated."""
-        if self.tracker_stream:
-            tracker_dump = await self.get_tracker_state(sender_id)
+    async def on_tracker_updated(self, tracker: DialogueStateTracker) -> None:
+        """Notifies all clients about tracker updates in real-time."""
+        if self.tracker_stream and tracker.sender_id:
+            state = tracker.current_state(EventVerbosity.AFTER_RESTART)
+            tracker_dump = orjson.dumps(state).decode("utf-8")
             await self.tracker_stream.broadcast(tracker_dump)
 
     async def on_message_proxy(
@@ -95,30 +148,26 @@ class DevelopmentInspectProxy(InputChannel):
         on_new_message: Callable[["UserMessage"], Awaitable[Any]],
         message: "UserMessage",
     ) -> None:
-        """Proxies the on_new_message call to the underlying channel.
-
-        Triggers a tracker update notification after processing the message.
-        """
+        """Proxies the on_new_message call to the underlying channel."""
         await on_new_message(message)
-        await self.on_tracker_updated(message.sender_id)
 
     @classmethod
-    async def serve_inspect_html(cls) -> "HTTPResponse":
+    async def serve_inspect_html(cls) -> HTTPResponse:
         """Serves the inspect.html file."""
         return await response.file(cls.inspect_html_path() + "/index.html")
 
     def blueprint(
-        self, on_new_message: Callable[["UserMessage"], Awaitable[Any]]
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> "Blueprint":
         """Defines a Sanic blueprint."""
         self.sio = AsyncServer(async_mode="sanic", cors_allowed_origins=[])
-        underlying_webhook: "Blueprint" = self.underlying.blueprint(
+        underlying_webhook: Blueprint = self.underlying.blueprint(
             partial(self.on_message_proxy, on_new_message)
         )
         underlying_webhook.static("/assets", self.inspect_html_path() + "/assets")
 
         @underlying_webhook.route("/inspect.html", methods=["GET"], name="inspect")
-        async def inspect(_: "Request") -> "HTTPResponse":
+        async def inspect(_: Request) -> HTTPResponse:
             return await self.serve_inspect_html()
 
         @underlying_webhook.listener("after_server_start")  # type: ignore[misc]
@@ -162,19 +211,26 @@ class TrackerStream:
     async def stream(self, request: Request, ws: Websocket) -> None:
         """Handles connection of a new client."""
         self._connected_clients.add(ws)
-
         try:
             async for message_str in ws:
-                message = json.loads(message_str)
+                message = orjson.loads(message_str)
+                # allows frontend to request the tracker state
+                # used when websocket begins
+                # also used when URL changes (sender updated)
                 if message.get("action") == "retrieve":
                     sender_id = message.get("sender_id")
                     if not sender_id:
                         structlogger.warning(
-                            "Tried to retrieve tracker without sender_id."
+                            "development_insector.tracker_stream.missing_sender_id"
                         )
                         continue
                     tracker_dump = await self.get_tracker(sender_id)
                     await self._send(ws, tracker_dump)
+                else:
+                    structlogger.warning(
+                        "development_inspector.tracker_stream.unknown_action",
+                        message=message,
+                    )
         finally:
             self._connected_clients.remove(ws)
 
@@ -182,7 +238,7 @@ class TrackerStream:
         """Sends a message to a connected client."""
         try:
             await ws.send(message)
-        except websockets.exceptions.ConnectionClosed:
+        except exceptions.WebsocketClosed:
             pass
 
     async def broadcast(self, message: str) -> None:
