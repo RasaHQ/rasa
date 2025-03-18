@@ -17,8 +17,10 @@ from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_DOMAIN_PATH,
 )
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
+from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import (
     E2EImporter,
     LanguageImporter,
@@ -459,3 +461,29 @@ def test_language_importer_adds_language_slot_without_additional_languages(
     language_slot = slots_map[language_slot_name]
     assert language_slot.initial_value == "de"
     assert language_slot.values == ["de"]
+
+
+def test_builtin_language_slot_overriden(
+    default_importer: TrainingDataImporter, monkeypatch: MonkeyPatch
+):
+    domain = Domain.from_yaml(
+        """
+        slots:
+            language:
+                type: strict_categorical
+                initial_value: en
+                values:
+                    - en
+                    - de
+                    - it
+        """
+    )
+    monkeypatch.setattr(default_importer, "get_domain", MagicMock(return_value=domain))
+
+    # Initialize LanguageImporter with default importer
+    language_importer = LanguageImporter(default_importer)
+    with pytest.raises(RasaException) as exc_info:
+        language_importer.get_domain()
+
+    expected = "The 'language' slot is a builtin slot that cannot be overridden."
+    assert expected in str(exc_info.value)

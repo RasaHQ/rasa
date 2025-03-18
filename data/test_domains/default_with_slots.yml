@@ -16,15 +16,6 @@ entities:
  - name
 
 slots:
-  language:
-    type: strict_categorical
-    initial_value: en
-    values:
-      - it
-      - de
-      - en
-    mappings: []
-    is_builtin: true
   name:
     type: text
     mappings:

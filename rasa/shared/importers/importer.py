@@ -34,6 +34,7 @@ from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import StrictCategoricalSlot
 from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -536,6 +537,14 @@ class LanguageImporter(PassThroughImporter):
         if domain.is_empty():
             return domain
 
+        domain.remove_builtin_slots()
+        slot_name = rasa.shared.core.constants.LANGUAGE_SLOT
+        if any(slot.name == slot_name for slot in domain.slots):
+            raise RasaException(
+                f"The '{slot_name}' slot is a builtin slot that cannot be overridden. "
+                f"Please remove its definition from your domain configuration."
+            )
+
         config = self._importer.get_config()
         language = config.get(CONFIG_LANGUAGE_KEY)
         additional_languages = config.get(CONFIG_ADDITIONAL_LANGUAGES_KEY) or []
@@ -545,7 +554,6 @@ class LanguageImporter(PassThroughImporter):
             values.append(language)
 
         # Prepare the serialized representation of the language slot
-        slot_name = rasa.shared.core.constants.LANGUAGE_SLOT
         serialized_slot: Dict[Text, Any] = {
             "type": StrictCategoricalSlot.type_name,
             "initial_value": language,

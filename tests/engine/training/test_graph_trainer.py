@@ -24,7 +24,8 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.graph_trainer import GraphTrainer
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.constants import LANGUAGE_SLOT
+from rasa.shared.core.domain import KEY_SLOTS, Domain
 from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 from tests.engine.graph_components_test_classes import (
@@ -103,10 +104,14 @@ async def test_graph_trainer_returns_model_metadata(
     )
     assert model_metadata.model_id
     assert model_metadata.assistant_id == "test_assistant_id"
-    assert model_metadata.domain.as_dict() == Domain.from_path(domain_path).as_dict()
     assert model_metadata.train_schema == train_schema
     assert model_metadata.predict_schema == predict_schema
     assert model_metadata.additional_languages == additional_languages
+
+    # Language slot is not in the domain by default, but it's added by the importer
+    model_metadata_domain_dict = model_metadata.domain.as_dict()
+    del model_metadata_domain_dict[KEY_SLOTS][LANGUAGE_SLOT]
+    assert model_metadata.domain.as_dict() == Domain.from_path(domain_path).as_dict()
 
 
 async def test_graph_trainer_fingerprints_and_caches(

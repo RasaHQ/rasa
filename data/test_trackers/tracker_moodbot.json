@@ -34,7 +34,7 @@
   "followup_action": null,
   "stack": [],
   "slots": {
-    "language": "en",
+    "language": null,
     "flow_hashes": null,
     "name": null,
     "requested_slot": null,

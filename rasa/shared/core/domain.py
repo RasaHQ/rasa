@@ -2107,6 +2107,10 @@ class Domain:
 
         return read_yaml(raw_yaml_content, expand_env_vars=cls.expand_env_vars)
 
+    def remove_builtin_slots(self) -> None:
+        """Remove all builtin slots from the domain."""
+        self.slots = [slot for slot in self.slots if not slot.is_builtin]
+
 
 def warn_about_duplicates_found_during_domain_merging(
     duplicates: Dict[Text, List[Text]],

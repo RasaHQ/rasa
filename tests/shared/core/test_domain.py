@@ -66,13 +66,13 @@ def test_slots_states_before_user_utterance(domain: Domain):
     tracker = DialogueStateTracker.from_events(
         "bla",
         evts=[
-            SlotSet(domain.slots[1].name, "some_value"),
+            SlotSet(domain.slots[0].name, "some_value"),
             ActionExecuted("utter_default"),
         ],
         slots=domain.slots,
     )
     trackers_as_states, _ = featurizer.training_states_and_labels([tracker], domain)
-    expected_states = [[{"slots": {"language": (0.0, 0.0, 1.0), "name": (1.0,)}}]]
+    expected_states = [[{"slots": {"name": (1.0,)}}]]
     assert trackers_as_states == expected_states
 
 
@@ -90,17 +90,17 @@ def test_create_train_data_no_history(domain: Domain, stories_path: Text):
     hashed = sorted(hashed, reverse=True)
 
     assert hashed == [
-        '[{"slots": {"language": [0.0, 0.0, 1.0]}}]',
-        '[{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}]',
-        '[{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
-        '[{"prev_action": {"action_name": "utter_goodbye"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}]',
-        '[{"prev_action": {"action_name": "utter_default"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}]',
-        '[{"prev_action": {"action_name": "utter_default"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"intent": "default"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"intent": "default"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        "[{}]",
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "utter_default"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
     ]
 
 
@@ -117,46 +117,19 @@ def test_create_train_data_with_history(domain: Domain, stories_path: Text):
     hashed = sorted(hashed)
 
     assert hashed == [
-        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, '
-        '{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"intent": "default"}}, '
-        '{"prev_action": {"action_name": "utter_default"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"intent": "default"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}, '
-        '{"prev_action": {"action_name": "utter_default"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}, '
-        '{"prev_action": {"action_name": "utter_goodbye"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}]',
-        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}, '
-        '{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}, '
-        '{"prev_action": {"action_name": "utter_default"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}]',
-        '[{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}, '
-        '{"prev_action": {"action_name": "utter_default"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}]',
-        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, '
-        '{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"intent": "default"}}]',
-        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, '
-        '{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
-        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0], "name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
-        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}, '
-        '{"prev_action": {"action_name": "utter_goodbye"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}]',
-        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "goodbye"}}]',
-        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}, '
-        '{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "default"}}]',
-        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}, '
-        '{"prev_action": {"action_name": "utter_greet"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}]',
-        '[{"slots": {"language": [0.0, 0.0, 1.0]}}, '
-        '{"prev_action": {"action_name": "action_listen"}, "slots": {"language": [0.0, 0.0, 1.0]}, "user": {"intent": "greet"}}]',
-        '[{"slots": {"language": [0.0, 0.0, 1.0]}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}, {"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
+        '[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}]',
+        '[{"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "utter_default"}, "user": {"intent": "default"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"intent": "default"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "slots": {"name": [1.0]}, "user": {"entities": ["name"], "intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}, {"prev_action": {"action_name": "utter_goodbye"}, "user": {"intent": "goodbye"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "goodbye"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "default"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}, {"prev_action": {"action_name": "utter_greet"}, "user": {"intent": "greet"}}]',
+        '[{}, {"prev_action": {"action_name": "action_listen"}, "user": {"intent": "greet"}}]',
+        "[{}]",
     ]
 
 
@@ -2727,3 +2700,21 @@ def test_response_text_translation_empty() -> None:
     domain_yaml = yaml.dump({"responses": responses_dictionary}, sort_keys=False)
     domain = Domain.from_yaml(domain_yaml)
     assert domain.responses == responses_dictionary
+
+
+def test_remove_builtin_slots():
+    domain = Domain.from_yaml(
+        """
+        slots:
+            foo:
+                type: float
+                initial_value: 0.0
+            bar:
+                type: float
+                initial_value: 0.0
+                is_builtin: true
+        """
+    )
+    domain.remove_builtin_slots()
+    assert len(domain.slots) == 1
+    assert domain.slots[0].name == "foo"

@@ -26,7 +26,8 @@ from rasa.core.persistor import Persistor, RemoteStorageType
 from rasa.core.utils import AvailableEndpoints
 from rasa.exceptions import ModelNotFound
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.constants import LANGUAGE_SLOT
+from rasa.shared.core.domain import KEY_SLOTS, Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
@@ -76,9 +77,11 @@ async def test_agent_train(default_agent: Agent):
     assert default_agent.domain.intents == domain.intents
     assert default_agent.domain.entities == domain.entities
     assert default_agent.domain.responses == domain.responses
-    assert [s.name for s in default_agent.domain.slots] == [
-        s.name for s in domain.slots
+    # Language slot is not in the domain by default, but it's added by the importer
+    agent_slots = [
+        s.name for s in default_agent.domain.slots if s.name != LANGUAGE_SLOT
     ]
+    assert agent_slots == [s.name for s in domain.slots]
 
     assert default_agent.processor
     assert default_agent.processor.graph_runner
@@ -164,7 +167,11 @@ async def test_agent_with_model_server_in_thread(
     await asyncio.sleep(5)
 
     assert agent.fingerprint == "somehash"
-    assert agent.domain.as_dict() == domain.as_dict()
+
+    # Language slot is not in the domain by default, but it's added by the importer
+    agent_domain_dict = agent.domain.as_dict()
+    del agent_domain_dict[KEY_SLOTS][LANGUAGE_SLOT]
+    assert agent_domain_dict == domain.as_dict()
     assert agent.processor.graph_runner
 
     assert model_server.app.ctx.number_of_model_requests == 1
