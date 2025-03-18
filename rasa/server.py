@@ -1147,6 +1147,7 @@ def create_app(
                 f"An unexpected error occurred during training. Error: {e}",
             )
         finally:
+            rasa.shared.utils.common.display_research_study_prompt()
             with app.ctx.active_training_processes.get_lock():
                 app.ctx.active_training_processes.value -= 1
 

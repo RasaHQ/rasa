@@ -140,6 +140,7 @@ def _check_unresolved_slots(domain: Domain, stories: StoryGraph) -> None:
                 f"whether there is a spelling error."
             ),
         )
+        rasa.shared.utils.common.display_research_study_prompt()
         sys.exit(1)
 
 
@@ -296,6 +297,7 @@ async def _train_graph(
                     f"model within the directory '{output_path}'."
                 ),
             )
+            rasa.shared.utils.common.display_research_study_prompt()
             sys.exit(1)
 
         rasa.shared.utils.common.mark_as_experimental_feature(
@@ -377,7 +379,7 @@ async def _train_graph(
                     f"Your Rasa model is trained and saved at '{full_model_path}'."
                 ),
             )
-
+        rasa.shared.utils.common.display_research_study_prompt()
         return TrainingResult(str(full_model_path), 0)
 
 

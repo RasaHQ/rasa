@@ -89,6 +89,7 @@ from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.slots import Slot
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils.common import display_research_study_prompt
 
 TypeAnnotation = Union[TypeVar, Text, Type, Optional[AvailableEndpoints]]
 
@@ -1449,4 +1450,5 @@ def validate_api_type_config_key_usage(
                     f"For other providers, please use the '{PROVIDER_CONFIG_KEY}' key."
                 ),
             )
+            display_research_study_prompt()
             sys.exit(1)

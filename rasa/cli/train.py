@@ -24,6 +24,7 @@ from rasa.shared.constants import (
     LLM_CONFIG_KEY,
 )
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.utils.common import display_research_study_prompt
 
 structlogger = structlog.getLogger(__name__)
 
@@ -89,6 +90,7 @@ def _check_nlg_endpoint_validity(endpoint: Union[Path, str]) -> None:
                 f"{endpoint}. Please make sure the NLG configuration is correct."
             ),
         )
+        display_research_study_prompt()
         sys.exit(1)
 
 
@@ -155,6 +157,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         keep_local_model_copy=args.keep_local_model_copy,
     )
     if training_result.code != 0 and can_exit:
+        display_research_study_prompt()
         sys.exit(training_result.code)
 
     return training_result.model

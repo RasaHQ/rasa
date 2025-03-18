@@ -20,6 +20,7 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
 )
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.utils.common import display_research_study_prompt
 from rasa.shared.utils.yaml import read_config_file
 from rasa.utils.io import write_yaml
 
@@ -191,6 +192,7 @@ def validate_config_path(
                 f"Use '--config' to specify a valid config file."
             ),
         )
+        display_research_study_prompt()
         sys.exit(1)
 
     return str(config)
@@ -223,6 +225,7 @@ def validate_mandatory_config_keys(
                 )
             ),
         )
+        display_research_study_prompt()
         sys.exit(1)
 
     return str(config)
@@ -276,6 +279,7 @@ def validate_files(
                 "cli.validate_files.empty_domain",
                 event_info="Encountered empty domain during validation.",
             )
+            display_research_study_prompt()
             sys.exit(1)
 
         valid_domain = _validate_domain(validator)
@@ -304,6 +308,7 @@ def validate_files(
             "cli.validate_files.project_validation_error",
             event_info="Project validation completed with errors.",
         )
+        display_research_study_prompt()
         sys.exit(1)
 
 
@@ -378,6 +383,7 @@ def cancel_cause_not_found(
             f"with '--{parameter}'."
         ),
     )
+    display_research_study_prompt()
     sys.exit(1)
 
 

@@ -13,6 +13,7 @@ import rasa.shared.utils.io
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.exceptions import ProviderClientValidationError, RasaException
+from rasa.shared.utils.cli import print_success
 
 logger = logging.getLogger(__name__)
 
@@ -322,3 +323,11 @@ def validate_environment(
             raise MissingDependencyException(
                 f"Missing package for {component_name}: {p}"
             )
+
+
+def display_research_study_prompt() -> None:
+    """Logs a prompt to get users to participate in a UX Improvement research study."""
+    print_success(
+        "Help us improve Rasa Pro! "
+        "Sign up here (https://calendly.com/alvaro-rasa/rasa-pro-installation)."
+    )
