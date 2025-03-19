@@ -9,6 +9,147 @@ You can find more information on how to add a new change log entry at
 https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
+
+## [3.12.0] - 2025-03-19
+                        
+Rasa Pro 3.12.0 (2025-03-19)                             
+### Deprecations and Removals
+- [#1993](https://github.com/rasahq/rasa-private/issues/1993): Deprecate MultiStepLLMCommandGenerator and schedule for removal in Rasa `4.0.0`.
+- [#2015](https://github.com/rasahq/rasa-private/issues/2015): Remove the beta feature flag check from the e2e testing with assertions feature.
+  The `RASA_PRO_BETA_E2E_ASSERTIONS` environment variable is no longer needed as the feature is GA in 3.12.0.
+- [#1981](https://github.com/rasahq/rasa-private/issues/1981): Deprecate the `custom` slot mapping type and its `action` slot mapping property which has been replaced with `run_action_every_turn` property name to retain backwards-compatible behavior.
+- [#2000](https://github.com/rasahq/rasa-private/issues/2000): Deprecate the former list of dictionaries format for the `condition` key in a conditional response variation.
+
+### Features
+- [#1694](https://github.com/rasahq/rasa-private/issues/1694): Add capability to use OAuth over Azure Entra ID for OpenAI instances deployed on Azure.
+- [#1891](https://github.com/rasahq/rasa-private/issues/1891): Added Voice Stream Channel Connector for Genesys Cloud (AudioConnector Integration)
+- [#1894](https://github.com/rasahq/rasa-private/issues/1894): Prevent unwanted digressions at collect flow steps by using one of the following new attributes available at both flow and collect step level:
+  - `ask_confirm_digressions`: Asks the user to confirm if to continue with the current flow.
+  Can be set to `true` or to a list of flow ids for which this behaviour should be activated.
+  - `block_digressions`: Blocks any digression from the current flow and informs the user that they will return to the digression
+  once the current flow is completed. Can be set to `true` or to a list of flow ids for which this behaviour should be activated.
+
+  The above-mentioned behaviour is governed by a new pattern `pattern_handle_digressions` which is triggered only when the
+  above attributes are used.
+- [#1986](https://github.com/rasahq/rasa-private/issues/1986): Implement real-time validation of slot values.
+
+  Add an optional property `validation` to slots to configure validations that should be run immediately. 
+  This property expects a list of `rejections` and a `refill_utter` which will be used to prompt users to provide a new value when validation fails.
+
+  These validations are limited to common, reusable and universal checks that work independently of conversation context. For more complex validations that depend on conversation state, business logic, or external data, implement them in your flow definitions or custom actions instead.
+- [#2012](https://github.com/rasahq/rasa-private/issues/2012): Introducing the `CompactLLMCommandGenerator` component, an enhancement over the `SingleStepLLMCommandGenerator`. This new component utilizes the highest-performing prompts for the models `gpt-4o-2024-11-20` and `claude-3-5-sonnet-20240620`. 
+
+  To incorporate the `CompactLLMCommandGenerator` into your pipeline, simply add the following:
+  ```yaml
+  pipeline:
+    ...
+    - name: CompactLLMCommandGenerator
+    ...
+  ```
+- [#2038](https://github.com/rasahq/rasa-private/issues/2038): Multi-language support was implemented to enable the assistant to deliver localized responses and flow names that dynamically adjust to the user's language preference. In particular:
+
+  - The default language is defined using the `language` key in `config.yml`, while additional supported languages are specified under `additional_languages`.  
+  - A `translation` section was introduced for responses to provide language-specific versions of the response text.  
+  - A `translation` section was added for flows to define localized flow names.  
+  - The rephraser prompt now accommodates the selected language.  
+  - Validation mechanisms were implemented to ensure proper use of translations; the CLI command `rasa validate data translations` is available for verification.  
+  - A new slot type, `StrictCategoricalSlot`, was developed to restrict its values to a predefined set.  
+  - A built-in `language` slot of the `StrictCategoricalSlot` type was added for managing translations effectively.
+- [#2098](https://github.com/rasahq/rasa-private/issues/2098): [beta] Added Voice Stream channel connector to Audiocodes (audiocodes_stream)
+
+### Improvements
+- [#1722](https://github.com/rasahq/rasa-private/issues/1722): Added validation to issue warnings for non-existent fixture/metadata names referenced in end-to-end tests.
+- [#1739](https://github.com/rasahq/rasa-private/issues/1739): Implemented a fail fast mechanism that fails the end-to-end test case on the first failure, whether in user/bot turns or while using the assertions, to provide faster feedback.
+- [#1770](https://github.com/rasahq/rasa-private/issues/1770): Added `utterance_end_ms` configuration to deepgram asr to handle noisy environments better
+- [#1870](https://github.com/rasahq/rasa-private/issues/1870): Replace the optional dependency `mlflow` leveraged in the beta release of E2E testing with assertions when evaluating generative answers
+  with custom prompts for each of the two generative metrics: `generative_response_is_relevant` and `generative_response_is_grounded`.
+  This change now enables the usage of different LLM model providers and allows for a more flexible evaluation of generative components.
+
+  Additionally, these generative assertions can make use of a new property `utter_source` (i.e. Enterprise Search, Contextual Rephraser or Intentless).
+  This enables the assertion to be applied to a specific bot message source.
+  It also for example prevents phrases such as `Is there anything else i can help you with?` triggered by `pattern_completed` to be checked for groundedness when the assertion should not be applied to it. 
+  Remove applying the same generative assertion to multiple bot messages in the same turn, however one bot message can be evaluated by multiple generative assertions in the same turn.
+- [#1900](https://github.com/rasahq/rasa-private/issues/1900): Remove unnecessary deepcopy to improve performance in `undo_fallback_prediction` method of `FallbackClassifier`
+- [#1914](https://github.com/rasahq/rasa-private/issues/1914): Add capability to control whether `pattern_completed` should execute when flow completes its execution.
+  To control this behavior, a new parameter `run_pattern_completed` is added to the flow definition. 
+  By default this parameter is set to `True` which means `pattern_completed` will be executed when flow completes its execution (backward compatible). 
+  If this parameter is set to `False`, `pattern_completed` will not be executed when flow completes its execution.
+- [#1932](https://github.com/rasahq/rasa-private/issues/1932): Allow slots to be filled by different slot extraction mechanisms (e.g. from_llm, predefined NLU-based mappings, custom actions etc.).
+  Add new `from_llm` slot mapping boolean property `allow_nlu_correction`(by default set to `False`), which gives permission 
+  for LLM-issued SetSlot commands to correct slots previously filled via NLU-based mechanisms.
+
+  Allow LLM-based command generators to issue other commands after `NLUCommandAdapter` has issued commands.
+  Introduce a new LLM-based command generator config property `minimize_num_calls` (by default set to `False`) which maintains backwards
+  compatibility with previous behaviour where LLM-based command generators were blocked from invoking the LLM after 
+  `NLUCommandAdapter` had issued commands.
+
+  Update the default utterance `utter_corrected_previous_input` to use a new context property `new_slot_values`.
+- [#1970](https://github.com/rasahq/rasa-private/issues/1970): Set the default priority for StartFlow commands issued by different command generator types i.e. NLUCommandAdapter or LLM-based command generator: 
+  When the different command generators issue StartFlow commands for different flows in the same user turn, the NLUCommandAdapter 
+  will always take priority while the LLM-based start flow command will be discarded.
+
+  Remove the limitation that the NLUCommandAdapter must always precede the LLM-based command generator in the config pipeline.
+- [#1981](https://github.com/rasahq/rasa-private/issues/1981): Introduce a new slot mapping type `controlled` that can be assigned to slots that are set via button payloads,
+  `set_slots` flow steps or custom actions.
+
+  Slots that solely use the new `controlled` slot mapping will not be available to be filled probabilistically by the NLU or LLM
+  components. Note that this slot mapping can still be used alongside the other slot mapping types, however this comes with
+  the risk of the slot being filled by the NLU or LLM components in a probabilistic manner.
+- [#1990](https://github.com/rasahq/rasa-private/issues/1990): Slots with mappings of type `controlled` (formerly the now deprecated `custom` mapping type) can be set at every turn
+  without its custom action having to be called explicitly by the user flow.
+
+  If you are building a coexistence assistant where different `controlled` slots are set by custom actions in different
+  subsystems, you must indicate which coexistence system is allowed to fill the slot. This is done by setting the
+  `coexistence_system` property in the slot mapping configuration. This property is a string that must match one of the
+  available categorical values: `NLU`, `CALM`, `SHARED` (when either system can set the slot).
+- [#1994](https://github.com/rasahq/rasa-private/issues/1994): Support user to send a preformatted message to the `invoke_llm` method.
+  This let's the user switch between the `user` and `system` roles when invoking the LLM model.
+- [#2000](https://github.com/rasahq/rasa-private/issues/2000): Add support for [`pypred`](https://github.com/armon/pypred) predicates in conditional response variations, similar to
+  the usage of predicates in flows. The `condition` key in a response variation can now also be a string predicate 
+  that supports only the `slots` namespace. One of many logical operators supported is `not`.
+- [#2019](https://github.com/rasahq/rasa-private/issues/2019): Make current slot type and its allowed values available for the prompt template rendering in `SingleStepLLMCommandGenerator` and `CompactLLMCommandGenerator` classes. Now you can use `{{ current_slot_type }}` and `{{ current_slot_allowed_values }}` placeholders in your custom prompt template.
+- [#2030](https://github.com/rasahq/rasa-private/issues/2030): Made azure ASR `endpoint` and `host`, azure tts `endpoint` and cartesia tts `endpoint` configurable.
+- [#2080](https://github.com/rasahq/rasa-private/issues/2080): Support usage of custom commands in the fine-tuning recipe.
+- [#3350](https://github.com/rasahq/rasa-private/issues/3350): add support for `mstts` markups on azure TTS for improved SSML usage
+
+### Bugfixes
+- [#1703](https://github.com/rasahq/rasa-private/issues/1703): Add the possibility to pass a `transform` callable parameter when writing yaml.
+  This allows passing a custom function to transform endpoints before uploading to Studio.
+  This was required to fix the issue where yaml wraps in quotes any string that doesn't start with an alphabetic character
+  such as unexpanded environment variables in the endpoints yml file.
+- [#1716](https://github.com/rasahq/rasa-private/issues/1716): Fixed the accuracy calculation to prevent 100% assertion reporting when a test case fails before any assertions are reached.
+- [#1724](https://github.com/rasahq/rasa-private/issues/1724): Fixed regression on training time for projects with a lot of YAML files.
+- [#1759](https://github.com/rasahq/rasa-private/issues/1759): Fix AvailableEndpoints to read from the default `endpoints.yaml`, if no endpoint is specified.
+- [#1800](https://github.com/rasahq/rasa-private/issues/1800): Update domain yaml schema for conditional response condition `type` key to specify valid enum type as `slot` only.
+- [#1816](https://github.com/rasahq/rasa-private/issues/1816): - Fixed an issue where the `pattern_continue_interrupted` was not correctly triggered when the flow digressed to a step containing a link.
+- [#1828](https://github.com/rasahq/rasa-private/issues/1828): Add the flow ID as a prefix to step ID to ensure uniqueness. This resolves a rare bug where steps in a child flow with a structure similar to those in a parent flow (using a "call" step) could result in duplicate step IDs. In this case duplicates previously caused incorrect next step selection.
+- [#1921](https://github.com/rasahq/rasa-private/issues/1921): Enable default action `action_extract_slots` to set slots that should be shared for coexistence in a NLU-based system,
+  when the same slot can be requested and filled by a flow in the CALM system too.
+- [#1950](https://github.com/rasahq/rasa-private/issues/1950): Fixed conversation stalling in AudioCodes channel by handling activities in background tasks. Previously, activities were processed synchronously which blocked responses to AudioCodes, causing request timeouts and activity retries. These retries would cancel ongoing processing and get rejected as duplicates. Now activities are processed asynchronously while responding immediately to AudioCodes requests.
+- [#1982](https://github.com/rasahq/rasa-private/issues/1982): Improved error handling for Deepgram and Cartesia connection failures to display more meaningful error messages when authentication fails or other connection issues occur.
+- [#2027](https://github.com/rasahq/rasa-private/issues/2027): Modify Enterprise Search Citation Prompt Template to use `doc.text`
+- [#2048](https://github.com/rasahq/rasa-private/issues/2048): Fixes ClarifyCommand syntax in the fine-tuning recipe.
+- [#2056](https://github.com/rasahq/rasa-private/issues/2056): Fixed a bug that lead to the response to silence timeouts being cut off
+- [#2067](https://github.com/rasahq/rasa-private/issues/2067): Fixed a bug in Voice Inspector where the tracker (hence the conversation transcript) was only updated after the prediction loop was complete. The bug resulted in a perceived delay in case of slow custom actions where transcript was rendered after processing the complete conversation turn. Now the tracker is sent to the Inspector app after every iteration of prediction loop, which conveys a more accurate conversation state and transcript on the inspector app
+- [#2069](https://github.com/rasahq/rasa-private/issues/2069): Fix passing the incorrect input type (user question text instead of bot answer text) to the prompt used by the
+  `generative_response_is_relevant` assertion. Add instructions to both relevance and groundedness prompts to not add
+  any more explanations to the LLM output apart from the expected json output to prevent parsing errors.
+- [#2070](https://github.com/rasahq/rasa-private/issues/2070): Make real-time validation work with all slot types.
+  Fixes bug where the same `ValidateSlotPatternFlowStackFrame` was being triggered multiple times.
+- [#2078](https://github.com/rasahq/rasa-private/issues/2078): Handle multiple duplicate digressing flows occurring within the same flow: 
+  - if `action_block_digressions` runs for a found duplicate digressing flow already on the stack, it will not add it again
+  - if `action_continue_digressions` runs for a found duplicate digressing flow already on the stack, it first removes it
+  from the stack before pushing it to the top of the stack.
+- [#2086](https://github.com/rasahq/rasa-private/issues/2086): Do not push the clarification pattern when the top user frame is an interruption frame.
+- [#2088](https://github.com/rasahq/rasa-private/issues/2088): Consider linked and called flows as active flows when processing `StartFlow` commands.
+- [#2090](https://github.com/rasahq/rasa-private/issues/2090): Fixed slot value injection in translated responses by updating response keys to interpolate.
+- [#2096](https://github.com/rasahq/rasa-private/issues/2096): Updated language code parsing to enforce BCP 47 standard.
+- [#2112](https://github.com/rasahq/rasa-private/issues/2112): Fix validation check that ensures that the slot used in the response condition is defined in the domain file.
+
+### Miscellaneous internal changes
+- [#1685](https://github.com/rasahq/rasa-private/issues/1685), [#1760](https://github.com/rasahq/rasa-private/issues/1760), [#1780](https://github.com/rasahq/rasa-private/issues/1780), [#1784](https://github.com/rasahq/rasa-private/issues/1784), [#1829](https://github.com/rasahq/rasa-private/issues/1829), [#1868](https://github.com/rasahq/rasa-private/issues/1868), [#1873](https://github.com/rasahq/rasa-private/issues/1873), [#1929](https://github.com/rasahq/rasa-private/issues/1929), [#1930](https://github.com/rasahq/rasa-private/issues/1930), [#1946](https://github.com/rasahq/rasa-private/issues/1946), [#1949](https://github.com/rasahq/rasa-private/issues/1949), [#1955](https://github.com/rasahq/rasa-private/issues/1955), [#1972](https://github.com/rasahq/rasa-private/issues/1972), [#1989](https://github.com/rasahq/rasa-private/issues/1989), [#1991](https://github.com/rasahq/rasa-private/issues/1991), [#1998](https://github.com/rasahq/rasa-private/issues/1998), [#2004](https://github.com/rasahq/rasa-private/issues/2004), [#2016](https://github.com/rasahq/rasa-private/issues/2016), [#2024](https://github.com/rasahq/rasa-private/issues/2024), [#2037](https://github.com/rasahq/rasa-private/issues/2037), [#2077](https://github.com/rasahq/rasa-private/issues/2077), [#2079](https://github.com/rasahq/rasa-private/issues/2079), [#2100](https://github.com/rasahq/rasa-private/issues/2100), [#2113](https://github.com/rasahq/rasa-private/issues/2113), [#2124](https://github.com/rasahq/rasa-private/issues/2124)
+
+
 ## [3.11.5] - 2025-02-18
                         
 Rasa Pro 3.11.5 (2025-02-18)                             
