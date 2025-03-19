@@ -13,6 +13,7 @@ import { DialogueStack } from "./components/DialogueStack";
 import { DialougeInformation } from "./components/DialogueInformation";
 import { LoadingSpinner } from "./components/LoadingSpinner";
 import { DiagramFlow } from "./components/DiagramFlow";
+import { RecruitmentPanel } from "./components/RecruitmentPanel";
 import { formatSlots } from "./helpers/formatters";
 import { Slot, Stack, Event, Flow, SelectedStack, Tracker } from "./types";
 import {
@@ -34,6 +35,9 @@ export function App() {
   const [story, setStory] = useState<string>("");
   const [stack, setStack] = useState<Stack[]>([]);
   const [frame, setFrame] = useState<SelectedStack | undefined>(undefined);
+
+  // State to control the visibility of the RecruitmentPanel
+  const [showRecruitmentPanel, setShowRecruitmentPanel] = useState(true);
 
   // we only show the transcript if we are not on the socket io channel
   // on the socketio channel, we show the chat component instead
@@ -165,7 +169,9 @@ export function App() {
     height: "100%",
     overflow: "hidden",
     gridTemplateColumns: "1fr",
-    gridTemplateRows: "max-content minmax(10rem, 17.5rem) minmax(10rem, auto)",
+    gridTemplateRows: showRecruitmentPanel
+      ? "max-content max-content minmax(10rem, auto)"
+      : "max-content minmax(10rem, 17.5rem) minmax(10rem, auto)",
     gridRowGap: rasaSpace[1],
   };
 
@@ -177,13 +183,20 @@ export function App() {
     });
   };
 
+  const handleCloseRecruitmentPanel = () => {
+    setShowRecruitmentPanel(false);
+  };
+
   if (!rasaChatSessionId && !window.location.href.includes("socketio")) return <LoadingSpinner />;
 
   return (
     <Grid sx={gridSx}>
       <GridItem overflow="hidden">
         <Grid sx={leftColumnSx}>
-          <Welcome sx={boxSx} />
+          <Welcome sx={boxSx} isRecruitmentVisible={showRecruitmentPanel} />
+          {showRecruitmentPanel && (
+            <RecruitmentPanel onClose={handleCloseRecruitmentPanel} />
+          )}
           <DialogueStack
             sx={boxSx}
             stack={stack}

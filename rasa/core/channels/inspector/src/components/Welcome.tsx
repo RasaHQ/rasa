@@ -5,31 +5,33 @@ import {
   Heading,
   Link,
   Text,
-  useColorModeValue,
 } from "@chakra-ui/react";
-import { RasaLogo } from "./RasaLogo";
+import { RasaLogo, RasaLogoDark } from "./RasaLogo";
 import { useOurTheme } from "../theme";
 
-export const Welcome = ({ sx, ...props }: FlexProps) => {
+interface WelcomeProps extends FlexProps {
+  isRecruitmentVisible?: boolean;
+}
+
+export const Welcome = ({ sx, isRecruitmentVisible, ...props }: WelcomeProps) => {
   const { rasaSpace } = useOurTheme();
 
   const containerSx = {
     ...sx,
-    color: useColorModeValue("neutral.50", "neutral.50"),
-    bgGradient: "linear(to-b, #4E61E1, #7622D2)",
+    color: isRecruitmentVisible ? "black" : "neutral.50",
+    bg: isRecruitmentVisible ? "white" : undefined,
+    bgGradient: isRecruitmentVisible ? undefined : "linear(to-b, #4E61E1, #7622D2)",
   };
 
   const linkSx = {
     flexGrow: 0,
-    color: useColorModeValue("neutral.50", "neutral.50"),
+    color: isRecruitmentVisible ? "#0000EE" : "neutral.50",
+    textDecoration: "underline",
     _hover: {
-      color: useColorModeValue("neutral.400", "neutral.400"),
+      color: isRecruitmentVisible 
+        ? "link.visited" 
+        : "neutral.400",
     },
-  };
-
-  const logoSx = {
-    flexShrink:0,
-    marginLeft: "auto"
   };
 
   return (
@@ -48,7 +50,11 @@ export const Welcome = ({ sx, ...props }: FlexProps) => {
           ml={rasaSpace[0.25]}
         >Browse the docs</Link>
       </Box>
-      <RasaLogo sx={logoSx}/>
+      {isRecruitmentVisible ? (
+        <RasaLogoDark sx={{ flexShrink: 0, marginLeft: "auto" }}/>
+      ) : (
+        <RasaLogo sx={{ flexShrink: 0, marginLeft: "auto" }}/>
+      )}
     </Flex>
   );
 };
