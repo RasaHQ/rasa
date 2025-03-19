@@ -327,7 +327,12 @@ def validate_environment(
 
 def display_research_study_prompt() -> None:
     """Logs a prompt to get users to participate in a UX Improvement research study."""
-    print_success(
-        "Help us improve Rasa Pro! "
-        "Sign up here (https://calendly.com/alvaro-rasa/rasa-pro-installation)."
-    )
+    separator = "-" * 54
+    message = f"""
+{separator}
+Want to help shape the future of Rasa Pro?
+Share your feedback in a short conversation with our team.
+Sign up at: https://calendly.com/alvaro-rasa/rasa-pro-installation
+{separator}
+"""
+    print_success(message)
