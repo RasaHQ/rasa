@@ -13,6 +13,7 @@ from sanic import (  # type: ignore[attr-defined]
 )
 
 from rasa.core.channels import UserMessage
+from rasa.core.channels.voice_ready.audiocodes import map_call_params
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import (
@@ -27,24 +28,16 @@ from rasa.core.channels.voice_stream.voice_channel import (
     VoiceInputChannel,
     VoiceOutputChannel,
 )
+from rasa.shared.utils.common import mark_as_beta_feature
 
 logger = structlog.get_logger(__name__)
-
-
-def map_call_params(data: Dict[Text, Any]) -> CallParameters:
-    """Map the audiocodes stream parameters to the CallParameters dataclass."""
-    return CallParameters(
-        call_id=data["conversationId"],
-        user_phone=data["caller"],
-        # Bot phone is not available in the Audiocodes API
-        direction="inbound",  # AudioCodes calls are always inbound
-    )
+PREFERRED_AUDIO_FORMAT = "raw/mulaw"
 
 
 class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
     @classmethod
     def name(cls) -> str:
-        return "ac_voice"
+        return "audiocodes_stream"
 
     def _ensure_stream_id(self) -> None:
         """Audiocodes requires a stream ID with playStream messages."""
@@ -81,6 +74,7 @@ class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
             {
                 "type": "playStream.start",
                 "streamId": self._get_stream_id(),
+                "mediaFormat": PREFERRED_AUDIO_FORMAT,
             }
         )
         logger.debug("Sending start marker", stream_id=self._get_stream_id())
@@ -105,7 +99,17 @@ class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
 class AudiocodesVoiceInputChannel(VoiceInputChannel):
     @classmethod
     def name(cls) -> str:
-        return "ac_voice"
+        return "audiocodes_stream"
+
+    def __init__(
+        self,
+        server_url: str,
+        asr_config: Dict,
+        tts_config: Dict,
+        monitor_silence: bool = False,
+    ):
+        mark_as_beta_feature("Audiocodes (audiocodes_stream) Channel")
+        super().__init__(server_url, asr_config, tts_config, monitor_silence)
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
         return RasaAudioBytes(base64.b64decode(input_bytes))
@@ -116,13 +120,23 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         async for message in channel_websocket:
             data = json.loads(message)
             if data["type"] == "session.initiate":
-                # retrieve parameters set in the webhook - contains info about the
-                # caller
-                logger.info("received initiate message", data=data)
+                # contains info about mediaformats
+                logger.info(
+                    "audiocodes_stream.collect_call_parameters.session.initiate",
+                    data=data,
+                )
                 self._send_accepted(channel_websocket, data)
-                return map_call_params(data)
+            elif data["type"] == "activities":
+                activities = data["activities"]
+                for activity in activities:
+                    logger.debug(
+                        "audiocodes_stream.collect_call_parameters.activity",
+                        data=activity,
+                    )
+                    if activity["name"] == "start":
+                        return map_call_params(activity["parameters"])
             else:
-                logger.warning("ac_voice.unknown_message", data=data)
+                logger.warning("audiocodes_stream.unknown_message", data=data)
         return None
 
     def map_input_message(
@@ -134,14 +148,15 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         if data["type"] == "activities":
             activities = data["activities"]
             for activity in activities:
-                logger.debug("ac_voice.activity", data=activity)
+                logger.debug("audiocodes_stream.activity", data=activity)
                 if activity["name"] == "start":
+                    # already handled in collect_call_parameters
                     pass
                 elif activity["name"] == "dtmf":
                     # TODO: handle DTMF input
                     pass
                 elif activity["name"] == "playFinished":
-                    logger.debug("ac_voice.playFinished", data=activity)
+                    logger.debug("audiocodes_stream.playFinished", data=activity)
                     if call_state.should_hangup:
                         logger.info("audiocodes.hangup")
                         self._send_hangup(ws, data)
@@ -149,37 +164,37 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
                         # we receive a end message from audiocodes
                     pass
                 else:
-                    logger.warning("ac_voice.unknown_activity", data=activity)
+                    logger.warning("audiocodes_stream.unknown_activity", data=activity)
         elif data["type"] == "userStream.start":
-            logger.debug("ac_voice.userStream.start", data=data)
+            logger.debug("audiocodes_stream.userStream.start", data=data)
             self._send_recognition_started(ws, data)
         elif data["type"] == "userStream.chunk":
             audio_bytes = self.channel_bytes_to_rasa_audio_bytes(data["audioChunk"])
             return NewAudioAction(audio_bytes)
         elif data["type"] == "userStream.stop":
-            logger.debug("ac_voice.stop_recognition", data=data)
+            logger.debug("audiocodes_stream.stop_recognition", data=data)
             self._send_recognition_ended(ws, data)
         elif data["type"] == "session.resume":
-            logger.debug("ac_voice.resume", data=data)
+            logger.debug("audiocodes_stream.resume", data=data)
             self._send_accepted(ws, data)
         elif data["type"] == "session.end":
-            logger.debug("ac_voice.end", data=data)
+            logger.debug("audiocodes_stream.end", data=data)
             return EndConversationAction()
         elif data["type"] == "connection.validate":
             # not part of call flow; only sent when integration is created
             self._send_validated(ws, data)
         else:
-            logger.warning("ac_voice.unknown_message", data=data)
+            logger.warning("audiocodes_stream.unknown_message", data=data)
 
         return ContinueConversationAction()
 
     def _send_accepted(self, ws: Websocket, data: Dict[Text, Any]) -> None:
         supported_formats = data.get("supportedMediaFormats", [])
-        preferred_format = "raw/mulaw"
+        preferred_format = PREFERRED_AUDIO_FORMAT
 
         if preferred_format not in supported_formats:
             logger.warning(
-                "ac_voice.format_not_supported",
+                "audiocodes_stream.format_not_supported",
                 supported_formats=supported_formats,
                 preferred_format=preferred_format,
             )
@@ -187,7 +202,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
 
         payload = {
             "type": "session.accepted",
-            "mediaFormat": "raw/mulaw",
+            "mediaFormat": PREFERRED_AUDIO_FORMAT,
         }
         _schedule_async_task(ws.send(json.dumps(payload)))
 
@@ -243,7 +258,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
         """Defines a Sanic bluelogger.debug."""
-        blueprint = Blueprint("ac_voice", __name__)
+        blueprint = Blueprint("audiocodes_stream", __name__)
 
         @blueprint.route("/", methods=["GET"])
         async def health(_: Request) -> HTTPResponse:

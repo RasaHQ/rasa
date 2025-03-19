@@ -184,13 +184,13 @@ async def test_handle_startup() -> None:
     assert user_msg.sender_id == "test_id"
     assert user_msg.metadata == {
         "bot_host": "20.113.51.15",
-        "bot_phone": "+491604697810",
+        "bot_phone": "+493040739365",
         "call_id": "f010e998-4499-4ddb-80d4-fea137fd7b4d",
         "direction": None,
         "stream_id": None,
         "user_host": "sip.telnyx.eu",
         "user_name": "+491604697810",
-        "user_phone": "+493040739365",
+        "user_phone": "+491604697810",
     }
 
 

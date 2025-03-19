@@ -47,8 +47,8 @@ def map_call_params(parameters: Dict[Text, Any]) -> CallParameters:
     """Map the Audiocodes parameters to the CallParameters dataclass."""
     return CallParameters(
         call_id=parameters.get("vaigConversationId"),
-        user_phone=parameters.get("callee"),
-        bot_phone=parameters.get("caller"),
+        user_phone=parameters.get("caller"),
+        bot_phone=parameters.get("callee"),
         user_name=parameters.get("callerDisplayName"),
         user_host=parameters.get("callerHost"),
         bot_host=parameters.get("calleeHost"),
