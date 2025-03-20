@@ -79,7 +79,7 @@ class DefaultLiteLLMClient(_BaseLiteLLMClient):
 
         <provider>/<model or deployment name>
         """
-        if self.model and f"{self.provider}/" not in self.model:
+        if self.model and "/" not in self.model:
             return f"{self.provider}/{self.model}"
         return self.model
 

@@ -104,6 +104,11 @@ class TestDefaultLiteLLMEmbeddingClient:
                 "cohere/test-cohere",
                 "cohere/test-cohere",
             ),
+            (
+                {"provider": "sagemaker", "model": "sagemaker_chat/endpoint-xyz"},
+                "sagemaker_chat/endpoint-xyz",
+                "sagemaker_chat/endpoint-xyz",
+            ),
         ],
     )
     def test_that_litellm_model_name_is_correctly_initialized(
@@ -123,7 +128,7 @@ class TestDefaultLiteLLMEmbeddingClient:
         # Then
         assert client.model == expected_model
         assert client._litellm_model_name == expected_litellm_model_name
-        assert client.provider == "cohere"
+        assert client.provider == config["provider"]
 
     @pytest.mark.parametrize(
         "config, expected_model, api_key_env_var, api_base_env_var, expected_failure",
