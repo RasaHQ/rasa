@@ -133,6 +133,56 @@ def pattern_frame_correction() -> CorrectionPatternFlowStackFrame:
     )
 
 
+@pytest.fixture
+def digression_handling_tracker() -> DialogueStateTracker:
+    user_frame_collect_eggs = UserFlowStackFrame(
+        flow_id="spam", step_id="new_flow", frame_id="former-frame-id"
+    )
+    user_frame_collect_beans = UserFlowStackFrame(
+        flow_id="beans", step_id="collect_beans", frame_id="current-frame-id"
+    )
+    pattern_frame_collect_beans = CollectInformationPatternFlowStackFrame(
+        collect="slot_beans", frame_id="some-other-id"
+    )
+    stack = DialogueStack(
+        frames=[
+            user_frame_collect_eggs,
+            user_frame_collect_beans,
+            pattern_frame_collect_beans,
+        ]
+    )
+
+    tracker = DialogueStateTracker.from_events(sender_id="test", evts=[])
+    tracker.update_stack(stack)
+
+    return tracker
+
+
+@pytest.fixture
+def digression_flows() -> FlowsList:
+    return flows_from_str(
+        """
+        flows:
+          spam:
+            description: "This flow collects information."
+            steps:
+            - id: collect_ham
+              collect: ham
+          beans:
+            description: "This flow collects beans."
+            block_digressions: true
+            steps:
+            - id: collect_beans
+              collect: slot_beans
+          tomato:
+            description: "This flow collects tomatoes."
+            steps:
+            - id: collect_tomato
+              collect: tomato
+        """
+    )
+
+
 @pytest.mark.parametrize(
     "commands, command_type, expected_result",
     [
@@ -1579,27 +1629,8 @@ def test_execute_commands_with_setslot_command(all_flows: FlowsList):
 )
 def test_clean_up_commands_with_interrupting_start_flow_in_call_or_link_flow(
     step_type: str,
+    digression_handling_tracker: DialogueStateTracker,
 ):
-    user_frame_collect_eggs = UserFlowStackFrame(
-        flow_id="spam", step_id="new_flow", frame_id="former-frame-id"
-    )
-    user_frame_collect_beans = UserFlowStackFrame(
-        flow_id="beans", step_id="collect_beans", frame_id="current-frame-id"
-    )
-    pattern_frame_collect_beans = CollectInformationPatternFlowStackFrame(
-        collect="slot_beans", frame_id="some-other-id"
-    )
-    stack = DialogueStack(
-        frames=[
-            user_frame_collect_eggs,
-            user_frame_collect_beans,
-            pattern_frame_collect_beans,
-        ]
-    )
-
-    tracker_eggs = DialogueStateTracker.from_events(sender_id="test", evts=[])
-    tracker_eggs.update_stack(stack)
-
     flows = flows_from_str(
         f"""
         flows:
@@ -1632,7 +1663,52 @@ def test_clean_up_commands_with_interrupting_start_flow_in_call_or_link_flow(
         Mock(return_value=({"ham"}, "spam")),
     ):
         commands = [StartFlowCommand("tomato")]
-        clean_commands = clean_up_commands(commands, tracker_eggs, flows, Mock())
+        clean_commands = clean_up_commands(
+            commands, digression_handling_tracker, flows, Mock()
+        )
+
+    # Then
+    expected_clean_commands = [HandleDigressionsCommand("tomato")]
+    assert clean_commands == expected_clean_commands
+
+
+def test_clean_up_commands_with_no_duplicate_handle_digressions(
+    digression_handling_tracker: DialogueStateTracker,
+    digression_flows: FlowsList,
+) -> None:
+    # When
+    with patch(
+        (
+            "rasa.dialogue_understanding.processor."
+            "command_processor.filled_slots_for_active_flow"
+        ),
+        Mock(return_value=({"ham"}, "spam")),
+    ):
+        commands = [StartFlowCommand("tomato"), StartFlowCommand("tomato")]
+        clean_commands = clean_up_commands(
+            commands, digression_handling_tracker, digression_flows, Mock()
+        )
+
+    # Then
+    expected_clean_commands = [HandleDigressionsCommand("tomato")]
+    assert clean_commands == expected_clean_commands
+
+
+def test_clean_up_commands_with_cancel_command_during_digression_handling(
+    digression_handling_tracker: DialogueStateTracker, digression_flows: FlowsList
+) -> None:
+    # When
+    with patch(
+        (
+            "rasa.dialogue_understanding.processor."
+            "command_processor.filled_slots_for_active_flow"
+        ),
+        Mock(return_value=({"ham"}, "spam")),
+    ):
+        commands = [CancelFlowCommand(), StartFlowCommand("tomato")]
+        clean_commands = clean_up_commands(
+            commands, digression_handling_tracker, digression_flows, Mock()
+        )
 
     # Then
     expected_clean_commands = [HandleDigressionsCommand("tomato")]

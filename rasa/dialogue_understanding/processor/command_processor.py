@@ -447,7 +447,14 @@ def clean_up_commands(
                 continue
 
             if should_add_handle_digressions_command(tracker, all_flows, top_flow_id):
-                clean_commands.append(HandleDigressionsCommand(flow=command.flow))
+                handle_digression_command = HandleDigressionsCommand(flow=command.flow)
+                if handle_digression_command in clean_commands:
+                    structlogger.debug(
+                        "command_processor.clean_up_commands.skip_handle_digressions.command_already_present",
+                        command=handle_digression_command,
+                    )
+                    continue
+                clean_commands.append(handle_digression_command)
                 structlogger.debug(
                     "command_processor.clean_up_commands.push_handle_digressions",
                     command=command,
@@ -486,6 +493,18 @@ def clean_up_commands(
         clean_commands = filter_cannot_handle_command_for_skipped_slots(clean_commands)
     elif not tracker.has_coexistence_routing_slot and len(clean_commands) > 1:
         clean_commands = filter_cannot_handle_command_for_skipped_slots(clean_commands)
+
+    # remove cancel flow when there is a handle digression command
+    # otherwise the cancel command will cancel the active flow which defined a specific
+    # behavior for the digression
+    if contains_command(clean_commands, HandleDigressionsCommand) and contains_command(
+        clean_commands, CancelFlowCommand
+    ):
+        clean_commands = [
+            command
+            for command in clean_commands
+            if not isinstance(command, CancelFlowCommand)
+        ]
 
     clean_commands = ensure_max_number_of_command_type(
         clean_commands, RepeatBotMessagesCommand, 1
