@@ -2,7 +2,7 @@ recipe: default.v1
 language: en
 pipeline:
   - name: LLMBasedRouter
-    prompt: data/test_config/providers/router_template.jinja2
+    prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
       provider: huggingface
       model: rasa/cmd_gen_codellama_13b_calm_demo

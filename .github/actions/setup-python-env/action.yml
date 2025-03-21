@@ -5,6 +5,10 @@ inputs:
   PYTHON_VERSION:
     description: 'Default Python Version'
     required: true
+  WORKING_DIRECTORY:
+    description: 'Directory to run `make install` in'
+    required: false
+    default: ${{ github.workspace }}
   
 runs:
   using: 'composite'
@@ -38,11 +42,13 @@ runs:
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
       - name: Install Dependencies (Linux) 📦
+        working-directory: ${{ inputs.WORKING_DIRECTORY }}
         run: |
           make install
         shell: bash
 
       - name: Activate virtualenv
+        working-directory: ${{ inputs.WORKING_DIRECTORY }}
         run: |
           . .venv/bin/activate
           echo PATH=$PATH >> $GITHUB_ENV

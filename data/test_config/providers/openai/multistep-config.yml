@@ -4,7 +4,7 @@ pipeline:
   - name: LLMBasedRouter
     llm:
       model: gpt-4-turbo-2024-04-09
-    prompt: data/test_config/providers/router_template.jinja2
+    prompt: rasa-private/data/test_config/providers/router_template.jinja2
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
     nlu_entry:

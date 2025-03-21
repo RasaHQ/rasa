@@ -4,7 +4,7 @@ pipeline:
   - name: LLMBasedRouter
     llm:
       model: gpt-4-0613
-    prompt: data/test_config/providers/router_template.jinja2
+    prompt: rasa-private/data/test_config/providers/router_template.jinja2
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
     nlu_entry:
@@ -32,7 +32,7 @@ pipeline:
   - name: SingleStepLLMCommandGenerator
     llm:
       model: gpt-4-0613
-    prompt_template: data/test_config/providers/command_prompt.jinja2
+    prompt_template: rasa-private/data/test_config/providers/command_prompt.jinja2
 
 policies:
   - name: RulePolicy

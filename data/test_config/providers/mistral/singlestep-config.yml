@@ -2,7 +2,7 @@ recipe: default.v1
 language: en
 pipeline:
   - name: LLMBasedRouter
-    prompt: data/test_config/providers/router_template.jinja2
+    prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
       provider: mistral
       model: mistral-large-2407
@@ -32,7 +32,7 @@ pipeline:
     timeout: 3
   - name: NLUCommandAdapter
   - name: SingleStepLLMCommandGenerator
-    prompt_template: data/test_config/providers/command_prompt.jinja2
+    prompt_template: rasa-private/data/test_config/providers/command_prompt.jinja2
     llm:
       provider: mistral
       model: mistral-large-2407

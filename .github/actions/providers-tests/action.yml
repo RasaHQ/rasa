@@ -66,34 +66,31 @@ runs:
         path: calm-benchmarking-bot
         token: ${{ env.CALM_BENCHMARKING_BOT_READ_TOKEN }}
 
+    - name: Checkout specific `rasa-pro` version 🕝
+      if: ${{ env.RASA_PRO_VERSION != '' }}
+      uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+      with:
+        ref: ${{ env.RASA_PRO_VERSION }}
+        path: rasa-pro
+
     - name: Setup LLM-judge model
+      if: ${{ env.RASA_PRO_VERSION == '' }}
       working-directory: ${{ inputs.train-and-test == 'compact' && 'calm-benchmarking-bot' || 'rasa-calm-demo' }}
+      env:
+        LLM_JUDGE_MODEL: ${{ inputs.llm-judge-model }}
       run: |
         : Setup LLM-judge model
         echo "llm_judge:
                 llm:
                   provider: openai
-                  model: ${{ inputs.llm-judge-model }}" > conftest.yml
-      shell: bash
-
-    # TODO: Investigate using LiteLLM-proxy, and adding callbacks to proxy only, for non `litellm_proxy` providers also
-    - name: Instrument LiteLLM providers
-      if: ${{ env.INSTRUMENT_LITELLM_PROVIDER_CALLS == 'true' && !contains(inputs.provider, 'litellm-proxy') }}
-      working-directory: rasa/shared/providers
-      run: |
-        : Instrument LiteLLM providers
-        echo 'import litellm' > /tmp/newfile
-        echo 'litellm.callbacks=["otel"]' >> /tmp/newfile
-        cat llm/_base_litellm_client.py >> /tmp/newfile
-        cat embedding/_base_litellm_embedding_client.py >> /tmp/newfile
-        cp /tmp/newfile llm/_base_litellm_client.py
-        cp /tmp/newfile embedding/_base_litellm_embedding_client.py
+                  model: ${{ env.LLM_JUDGE_MODEL }}" > conftest.yml
       shell: bash
 
     - name: Setup Python Environment
-      uses: RasaHQ/rasa-private/.github/actions/setup-python-env@main
+      uses: ./rasa-private/.github/actions/setup-python-env
       with:
         PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+        WORKING_DIRECTORY: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
 
     - name: Install google-generative-ai package
       if: ${{ inputs.provider == 'gemini' }}
@@ -103,6 +100,7 @@ runs:
       shell: bash
 
     - name: Install sentence-transformers package
+      working-directory: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
       if: ${{ inputs.provider == 'huggingface_local' }}
       run: |
         : Install sentence-transformers package
@@ -146,6 +144,7 @@ runs:
       shell: bash
 
     - name: Install Huggingface CLI
+      working-directory: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
       if: ${{ inputs.provider == 'self-hosted' }}
       run: |
         : Install Huggingface CLI
@@ -206,7 +205,7 @@ runs:
     # so need to wake it up before usage
     - name: Wake up Hugging Face inference endpoint
       if: ${{ inputs.provider == 'huggingface' }}
-      working-directory: data/test_config/providers
+      working-directory: rasa-private/data/test_config/providers
       env:
         ENDPOINT_NAME: cmd-gen-codellama-13b-calm-d-bfz
         ENDPOINT_NAMESPACE: rasa
@@ -219,7 +218,7 @@ runs:
     # so need to wake them up before usage
     - name: Wake up multiple Hugging Face inference endpoints
       if: ${{ inputs.provider == 'huggingface-multiple-deployments-with-routing' }}
-      working-directory: data/test_config/providers
+      working-directory: rasa-private/data/test_config/providers
       env:
         ENDPOINT_NAME: cmd-gen-codellama-13b-calm-d-bfz
         ENDPOINT_NAMESPACE: rasa
@@ -233,6 +232,7 @@ runs:
       shell: bash
 
     - name: Install LiteLLM proxy with instrumentation
+      working-directory: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
       if: ${{ inputs.provider == 'litellm-proxy-multiple-deployments-with-routing' }}
       run: |
         : Install LiteLLM proxy with instrumentation
@@ -260,7 +260,7 @@ runs:
 
     - name: Start LiteLLM proxy for training
       if: ${{ inputs.provider == 'litellm-proxy-multiple-deployments-with-routing' }}
-      working-directory: data/test_config/providers/litellm-proxy-multiple-deployments-with-routing
+      working-directory: rasa-private/data/test_config/providers/litellm-proxy-multiple-deployments-with-routing
       run: |
         : Start LiteLLM proxy for training
         litellm --config proxy_config_training.yaml --detailed_debug --debug & pid=$!
@@ -270,6 +270,7 @@ runs:
       shell: bash
 
     - name: Run OTEL collector for Tracing and Metrics collection
+      working-directory: rasa-private
       id: run-otel-collector
       run: |
         : Run OTEL collector for Tracing and Metrics collection
@@ -281,30 +282,36 @@ runs:
       env:
         RASA_PRO_BETA_INTENTLESS: true
         BOT: ${{ inputs.train-and-test == 'compact' && 'calm-benchmarking-bot' || 'rasa-calm-demo' }}
+        PROVIDER: ${{ inputs.provider }}
+        COMMAND_GENERATOR: ${{ inputs.train-and-test }}
       with:
-        timeout_minutes: 15
+        timeout_minutes: 60
         max_attempts: 2
         retry_wait_seconds: 300
         shell: bash
         command: |
           : Train model
           set -Eeuxov pipefail
-          rm -rf .rasa models \
+          rasa_path="${GITHUB_WORKSPACE}"/${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
+          rm -rf "${rasa_path}"/.rasa "${rasa_path}"/models \
             && rasa train \
-            --config data/test_config/providers/${{ inputs.provider }}/${{ inputs.train-and-test }}-config.yml \
-            --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
-            --domain ${{ env.BOT }}/domain \
-            --data ${{ env.BOT }}/data \
-            --fixed-model-name ${{ inputs.train-and-test }}-${{ inputs.provider }}-model \
+            --config "${GITHUB_WORKSPACE}"/rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ env.COMMAND_GENERATOR }}-config.yml \
+            --endpoints "${GITHUB_WORKSPACE}"/rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+            --domain "${GITHUB_WORKSPACE}"/${{ env.BOT }}/domain \
+            --data "${GITHUB_WORKSPACE}"/${{ env.BOT }}/data \
+            --fixed-model-name ${{ env.COMMAND_GENERATOR }}-${{ env.PROVIDER }}-model \
             2>&1 \
             | tee model-training-log.txt
 
     - name: Verify LLM and Embeddings API health checks during training
       if: ${{ !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
+      env:
+        PROVIDER: ${{ inputs.provider }}
+        COMMAND_GENERATOR: ${{ inputs.train-and-test }}
       run: |
         : Verify LLM and Embeddings API health checks during training
         grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' model-training-log.txt \
-          && (grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' model-training-log.txt || grep -iv 'LLMBasedRouter.' data/test_config/providers/${{ inputs.provider }}/${{ inputs.train-and-test }}-config.yml) \
+          && (grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' model-training-log.txt || grep -iv 'LLMBasedRouter.' rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ env.COMMAND_GENERATOR }}-config.yml) \
           && grep -i 'Sending a test LLM API request for the component - EnterpriseSearchPolicy' model-training-log.txt \
           && grep -i 'Sending a test LLM API request for the component - IntentlessPolicy' model-training-log.txt \
           && grep -i 'Sending a test LLM API request for the component - LLMBasedCommandGenerator' model-training-log.txt \
@@ -338,7 +345,7 @@ runs:
 
     - name: Start LiteLLM proxy 1 for inference
       if: ${{ inputs.provider == 'litellm-proxy-multiple-deployments-with-routing' }}
-      working-directory: data/test_config/providers/litellm-proxy-multiple-deployments-with-routing
+      working-directory: rasa-private/data/test_config/providers/litellm-proxy-multiple-deployments-with-routing
       run: |
         : Start LiteLLM proxy 1 for inference
         litellm --config proxy_config_inference_ca_deployment.yaml --detailed_debug --debug 2>&1 > proxy-log-1 &
@@ -348,7 +355,7 @@ runs:
 
     - name: Start LiteLLM proxy 2 for inference
       if: ${{ inputs.provider == 'litellm-proxy-multiple-deployments-with-routing' }}
-      working-directory: data/test_config/providers/litellm-proxy-multiple-deployments-with-routing
+      working-directory: rasa-private/data/test_config/providers/litellm-proxy-multiple-deployments-with-routing
       run: |
         : Start LiteLLM proxy 2 for inference
         litellm --port 4001 --config proxy_config_inference_fr_deployment.yaml --detailed_debug --debug 2>&1 > proxy-log-2 &
@@ -362,6 +369,9 @@ runs:
       env:
         RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
+        TESTS: ${{ inputs.single-step-tests }}
+        PROVIDER: ${{ inputs.provider }}
+        COMMAND_GENERATOR: ${{ inputs.train-and-test }}
       with:
         timeout_minutes: 60
         max_attempts: 2
@@ -370,11 +380,14 @@ runs:
         command: |
           : Run e2e test on SingleStepLLMCommandGenerator model
           set -Eeuxov pipefail
-          rasa test e2e rasa-calm-demo/${{ inputs.single-step-tests }} \
+          if [[ ! -d tests ]]; then
+            mkdir tests;
+          fi
+          rasa test e2e "${GITHUB_WORKSPACE}"/rasa-calm-demo/${{ env.TESTS }} \
             --e2e-results \
             --debug \
-            --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
-            --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
+            --endpoints "${GITHUB_WORKSPACE}"/rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+            --model models/${{ env.COMMAND_GENERATOR }}-${{ env.PROVIDER }}-model.tar.gz \
             2>&1 \
             | tee e2e-tests-log.txt
 
@@ -384,6 +397,9 @@ runs:
       env:
         RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
+        TESTS: ${{ inputs.multi-step-tests }}
+        PROVIDER: ${{ inputs.provider }}
+        COMMAND_GENERATOR: ${{ inputs.train-and-test }}
       with:
         timeout_minutes: 60
         max_attempts: 2
@@ -392,11 +408,14 @@ runs:
         command: |
           : Run e2e test on MultiStepLLMCommandGenerator model
           set -Eeuxov pipefail
-          rasa test e2e rasa-calm-demo/${{ inputs.multi-step-tests }} \
+          if [[ ! -d tests ]]; then
+            mkdir tests;
+          fi
+          rasa test e2e "${GITHUB_WORKSPACE}"/rasa-calm-demo/${{ env.TESTS }} \
             --e2e-results \
             --debug \
-            --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
-            --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
+            --endpoints "${GITHUB_WORKSPACE}"/rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+            --model models/${{ env.COMMAND_GENERATOR }}-${{ env.PROVIDER }}-model.tar.gz \
             2>&1 \
             | tee e2e-tests-log.txt
 
@@ -406,6 +425,9 @@ runs:
       env:
         RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
+        TESTS: ${{ inputs.compact-tests }}
+        PROVIDER: ${{ inputs.provider }}
+        COMMAND_GENERATOR: ${{ inputs.train-and-test }}
       with:
         timeout_minutes: 60
         max_attempts: 2
@@ -414,11 +436,14 @@ runs:
         command: |
           : Run e2e test on CompactLLMCommandGenerator model
           set -Eeuxov pipefail
-          rasa test e2e calm-benchmarking-bot/${{ inputs.compact-tests }} \
+          if [[ ! -d tests ]]; then
+            mkdir tests;
+          fi
+          rasa test e2e "${GITHUB_WORKSPACE}"/calm-benchmarking-bot/${{ env.TESTS }} \
             --e2e-results \
             --debug \
-            --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
-            --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
+            --endpoints "${GITHUB_WORKSPACE}"/rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+            --model models/${{ env.COMMAND_GENERATOR }}-${{ env.PROVIDER }}-model.tar.gz \
             2>&1 \
             | tee e2e-tests-log.txt
 
@@ -436,6 +461,9 @@ runs:
       env:
         RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
+        TESTS: ${{ inputs.single-step-tests }}
+        PROVIDER: ${{ inputs.provider }}
+        COMMAND_GENERATOR: ${{ inputs.train-and-test }}
       with:
         timeout_minutes: 15
         max_attempts: 2
@@ -443,21 +471,24 @@ runs:
         shell: bash
         command: |
           : Run dialogue understanding tests
-          rasa test du calm-benchmarking-bot/${{ inputs.single-step-tests }} \
-            --output-file dut-${{ inputs.provider }}-${{ inputs.train-and-test }}.yml \
+          rasa test du calm-benchmarking-bot/${{ env.TESTS }} \
+            --output-file dut-${{ env.PROVIDER }}-${{ env.COMMAND_GENERATOR }}.yml \
             --output-prompt \
             --debug \
-            --endpoints data/test_config/providers/${{ inputs.provider }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
-            --model models/${{ inputs.train-and-test }}-${{ inputs.provider }}-model.tar.gz \
+            --endpoints data/test_config/providers/${{ env.PROVIDER }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+            --model models/${{ env.COMMAND_GENERATOR }}-${{ env.PROVIDER }}-model.tar.gz \
             2>&1 \
             | tee e2e-tests-log.txt
 
     - name: Verify LLM and Embeddings API health checks during inference
       if: ${{ !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
+      env:
+        PROVIDER: ${{ inputs.provider }}
+        COMMAND_GENERATOR: ${{ inputs.train-and-test }}
       run: |
         : Verify LLM and Embeddings API health checks during inference
         grep -i 'Sending a test LLM API request for the component - ContextualResponseRephraser' e2e-tests-log.txt \
-          && (grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' e2e-tests-log.txt || grep -iv 'LLMBasedRouter.' data/test_config/providers/${{ inputs.provider }}/${{ inputs.train-and-test }}-config.yml) \
+          && (grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' e2e-tests-log.txt || grep -iv 'LLMBasedRouter.' rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ env.COMMAND_GENERATOR }}-config.yml) \
           && grep -i 'Sending a test LLM API request for the component - EnterpriseSearchPolicy' e2e-tests-log.txt \
           && grep -i 'Sending a test LLM API request for the component - IntentlessPolicy' e2e-tests-log.txt \
           && (grep -i 'Sending a test LLM API request for the component - MultiStepLLMCommandGenerator' e2e-tests-log.txt || grep -i 'Sending a test LLM API request for the component - SingleStepLLMCommandGenerator' e2e-tests-log.txt || grep -i 'Sending a test LLM API request for the component - CompactLLMCommandGenerator' e2e-tests-log.txt || grep -i 'Sending a test LLM API request for the component - CustomCompactLLMCommandGenerator' e2e-tests-log.txt) \
@@ -500,14 +531,16 @@ runs:
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
       with:
         name: LiteLLM-proxy-logs
-        path: data/test_config/providers/litellm-proxy-multiple-deployments-with-routing/proxy-log-*
+        path: rasa-private/data/test_config/providers/litellm-proxy-multiple-deployments-with-routing/proxy-log-*
 
     - name: Collect vLLM logs
       if: ${{ inputs.provider == 'self-hosted' && failure() && steps.run-vllm-docker-container.outcome == 'success' }}
+      env:
+        COMMAND_GENERATOR: ${{ inputs.train-and-test }}
       run: |
         : Collect vLLM logs
-        sudo cp $(docker inspect --format='{{.LogPath}}' vllm) vllm-logs-${{ inputs.train-and-test }}.txt
-        sudo chmod 755 vllm-logs-${{ inputs.train-and-test }}.txt
+        sudo cp $(docker inspect --format='{{.LogPath}}' vllm) vllm-logs-${{ env.COMMAND_GENERATOR }}.txt
+        sudo chmod 755 vllm-logs-${{ env.COMMAND_GENERATOR }}.txt
       shell: bash
 
     - name: Save vLLM logs
@@ -520,10 +553,13 @@ runs:
     - name: Collect OTEL collector logs
       id: collect-otel-collector-logs
       if: ${{ failure() && steps.run-otel-collector.outcome == 'success' }}
+      env:
+        PROVIDER: ${{ inputs.provider }}
+        COMMAND_GENERATOR: ${{ inputs.train-and-test }}
       run: |
         : Collect OTEL collector logs
-        sudo cp $(docker inspect --format='{{.LogPath}}' otel-collector) otel-collector-logs-${{ inputs.provider }}-${{ inputs.train-and-test }}.txt
-        sudo chmod 755 otel-collector-logs-${{ inputs.provider }}-${{ inputs.train-and-test }}.txt
+        sudo cp $(docker inspect --format='{{.LogPath}}' otel-collector) otel-collector-logs-${{ env.PROVIDER }}-${{ env.COMMAND_GENERATOR }}.txt
+        sudo chmod 755 otel-collector-logs-${{ env.PROVIDER }}-${{ env.COMMAND_GENERATOR }}.txt
       shell: bash
 
     - name: Save OTEL collector logs
@@ -534,6 +570,7 @@ runs:
         path: otel-collector-logs-${{ inputs.provider }}-${{ inputs.train-and-test }}.txt
 
     - name: Stop OTEL collector
+      working-directory: rasa-private
       if: ${{ steps.run-otel-collector.outcome == 'success' }}
       run: |
         : Stop OTEL collector
@@ -541,6 +578,7 @@ runs:
       shell: bash
 
     - name: Get Rasa-pro version and short-SHA, and set as environment variables
+      working-directory: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
       if: always()
       run: |
         echo "RASA_VERSION=$(rasa --version | grep 'Rasa Pro Version' | tr -d ' ' | awk -F ':' '{print $2}')" >> $GITHUB_ENV
