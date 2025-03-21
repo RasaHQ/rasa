@@ -12,6 +12,9 @@ from rasa.dialogue_understanding.commands import (
     SetSlotCommand,
     StartFlowCommand,
 )
+from rasa.dialogue_understanding.commands.handle_digressions_command import (
+    HandleDigressionsCommand,
+)
 from rasa.dialogue_understanding.constants import KEY_MINIMIZE_NUM_CALLS
 from rasa.dialogue_understanding.generator import CommandGenerator
 from rasa.dialogue_understanding.generator.constants import (
@@ -584,6 +587,24 @@ class LLMBasedCommandGenerator(
 
         return filtered_commands
 
+    def _should_merge_llm_commands(
+        self,
+        prior_commands: List[Command],
+        prior_start_flow_names: Set[str],
+    ) -> bool:
+        """Check if the LLM current commands should be merged with the prior commands.
+
+        This can be done if there are no prior start flow commands and
+        no prior handle digressions commands.
+        """
+        prior_handle_digressions = [
+            command
+            for command in prior_commands
+            if isinstance(command, HandleDigressionsCommand)
+        ]
+
+        return not prior_start_flow_names and not prior_handle_digressions
+
     def _check_start_flow_command_overlap(
         self,
         prior_commands: List[Command],
@@ -596,7 +617,9 @@ class LLMBasedCommandGenerator(
             prior_start_flow_names
         )
 
-        if not different_flow_names:
+        if not different_flow_names or self._should_merge_llm_commands(
+            prior_commands, prior_start_flow_names
+        ):
             return prior_commands + commands
 
         # discard the flow names that are different to prior start flow commands

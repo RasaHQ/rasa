@@ -29,6 +29,9 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
     CommandSyntaxVersion,
 )
+from rasa.dialogue_understanding.commands.handle_digressions_command import (
+    HandleDigressionsCommand,
+)
 from rasa.dialogue_understanding.constants import KEY_MINIMIZE_NUM_CALLS
 from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_ACTIVE_KEY,
@@ -1830,3 +1833,85 @@ class TestSingleStepLLMCommandGenerator:
     def test_command_syntax_version(self):
         assert CommandSyntaxManager.get_syntax_version() == CommandSyntaxVersion.v1
         CommandSyntaxManager.reset_syntax_version()
+
+    async def test_process_keeps_start_flow(
+        self, command_generator: SingleStepLLMCommandGenerator, monkeypatch: MonkeyPatch
+    ):
+        """Test that predict_commands does not filter out the LLM StartFlow predicted command."""  # noqa: E501
+        command = SetSlotCommand(name="test_slot", value="test_value").as_dict()
+
+        test_message = Message.build(text="some message")
+        test_message.set(COMMANDS, [command], add_to_output=True)
+
+        test_tracker = DialogueStateTracker.from_events(uuid.uuid4().hex, [])
+
+        mock_get_active_flows = Mock(return_value=FlowsList([]))
+        mock_startable_flows = Mock(return_value=FlowsList([Flow("some_flow")]))
+
+        llm_command = [StartFlowCommand("some_flow")]
+
+        async def mock_predict_commands(*args, **kwargs) -> List[Command]:
+            return llm_command
+
+        monkeypatch.setattr(
+            command_generator, "_predict_commands", mock_predict_commands
+        )
+        monkeypatch.setattr(
+            command_generator, "get_startable_flows", mock_startable_flows
+        )
+        monkeypatch.setattr(
+            command_generator, "get_active_flows", mock_get_active_flows
+        )
+
+        returned_message = (
+            await command_generator.process(
+                [test_message],
+                flows=FlowsList([Flow("some_flow")]),
+                tracker=test_tracker,
+            )
+        )[0]
+
+        assert len(returned_message.get(COMMANDS)) == 2
+        assert returned_message.get(COMMANDS) == [command, llm_command[0].as_dict()]
+
+    async def test_process_removes_start_flow_with_prior_digression_command(
+        self, command_generator: SingleStepLLMCommandGenerator, monkeypatch: MonkeyPatch
+    ):
+        """Test that predict_commands filters out the LLM StartFlow command."""
+        command = HandleDigressionsCommand(flow="other_flow").as_dict()
+
+        test_message = Message.build(text="some message")
+        test_message.set(COMMANDS, [command], add_to_output=True)
+
+        test_tracker = DialogueStateTracker.from_events(uuid.uuid4().hex, [])
+
+        mock_get_active_flows = Mock(return_value=FlowsList([]))
+        mock_startable_flows = Mock(
+            return_value=FlowsList([Flow("some_flow"), Flow("other_flow")])
+        )
+
+        llm_command = [StartFlowCommand("some_flow")]
+
+        async def mock_predict_commands(*args, **kwargs) -> List[Command]:
+            return llm_command
+
+        monkeypatch.setattr(
+            command_generator, "_predict_commands", mock_predict_commands
+        )
+        monkeypatch.setattr(
+            command_generator, "get_startable_flows", mock_startable_flows
+        )
+        monkeypatch.setattr(
+            command_generator, "get_active_flows", mock_get_active_flows
+        )
+
+        returned_message = (
+            await command_generator.process(
+                [test_message],
+                flows=FlowsList([Flow("some_flow"), Flow("other_flow")]),
+                tracker=test_tracker,
+            )
+        )[0]
+
+        assert len(returned_message.get(COMMANDS)) == 1
+        assert returned_message.get(COMMANDS) == [command]
