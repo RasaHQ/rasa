@@ -1,11 +1,13 @@
 import copy
-import typing
 from typing import Any, Dict, List, Optional, Text
 
 import numpy as np
 from pydantic import BaseModel
 
 from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
+from rasa.dialogue_understanding_test.command_metrics import (
+    CommandMetrics,
+)
 from rasa.dialogue_understanding_test.du_test_case import (
     DialogueUnderstandingTestCase,
     DialogueUnderstandingTestStep,
@@ -13,26 +15,40 @@ from rasa.dialogue_understanding_test.du_test_case import (
 from rasa.dialogue_understanding_test.utils import get_command_comparison
 from rasa.shared.nlu.constants import KEY_SYSTEM_PROMPT, KEY_USER_PROMPT
 
-if typing.TYPE_CHECKING:
-    from rasa.dialogue_understanding_test.command_metric_calculation import (
-        CommandMetrics,
-    )
-
 KEY_TEST_CASES_ACCURACY = "test_cases"
 KEY_USER_UTTERANCES_ACCURACY = "user_utterances"
 
+KEY_COMMANDS_F1_MACRO = "macro"
+KEY_COMMANDS_F1_MICRO = "micro"
+KEY_COMMANDS_F1_WEIGHTED = "weighted_average"
+
+OUTPUT_DUT_ACCURACY = "accuracy"
+OUTPUT_DUT_ACCURACY_TEST_CASES = "test_cases"
+OUTPUT_DUT_ACCURACY_USER_UTTERANCES = "user_utterances"
+
+OUTPUT_COMMANDS_F1 = "f1_score"
+OUTPUT_COMMANDS_F1_MACRO = "macro"
+OUTPUT_COMMANDS_F1_MICRO = "micro"
+OUTPUT_COMMANDS_F1_WEIGHTED = "weighted_average"
+
 OUTPUT_NUMBER_OF_FAILED_TESTS = "number_of_failed_tests"
 OUTPUT_NUMBER_OF_PASSED_TESTS = "number_of_passed_tests"
-OUTPUT_TEST_CASES_ACCURACY = "test_cases_accuracy"
-OUTPUT_USER_UTTERANCES_ACCURACY = "user_utterances_accuracy"
 OUTPUT_NUMBER_OF_PASSED_USER_UTTERANCES = "number_of_passed_user_utterances"
 OUTPUT_NUMBER_OF_FAILED_USER_UTTERANCES = "number_of_failed_user_utterances"
+OUTPUT_NAMES_OF_FAILED_TESTS = "names_of_failed_tests"
+OUTPUT_NAMES_OF_PASSED_TESTS = "names_of_passed_tests"
+OUTPUT_FAILED_TEST_STEPS = "failed_test_steps"
+OUTPUT_TEST_CASES_ACCURACY = "test_cases_accuracy"
+OUTPUT_USER_UTTERANCES_ACCURACY = "user_utterances_accuracy"
 OUTPUT_COMMAND_METRICS = "command_metrics"
+OUTPUT_COMMANDS_F1_MACRO_INSTRUMENTATION_ATTR = "commands_f1_macro"
+OUTPUT_COMMANDS_F1_MICRO_INSTRUMENTATION_ATTR = "commands_f1_micro"
+OUTPUT_COMMANDS_F1_WEIGHTED_INSTRUMENTATION_ATTR = "commands_f1_weighted_average"
+
 OUTPUT_LATENCY_METRICS = "latency"
 OUTPUT_COMPLETION_TOKEN_METRICS = "completion_token"
 OUTPUT_PROMPT_TOKEN_METRICS = "prompt_token"
-OUTPUT_NAMES_OF_FAILED_TESTS = "names_of_failed_tests"
-OUTPUT_NAMES_OF_PASSED_TESTS = "names_of_passed_tests"
+
 OUTPUT_LLM_COMMAND_GENERATOR_CONFIG = "llm_command_generator_config"
 
 
@@ -155,11 +171,16 @@ class DialogueUnderstandingTestSuiteResult:
             KEY_TEST_CASES_ACCURACY: 0.0,
             KEY_USER_UTTERANCES_ACCURACY: 0.0,
         }
+        self.f1_score = {
+            KEY_COMMANDS_F1_MACRO: 0.0,
+            KEY_COMMANDS_F1_MICRO: 0.0,
+            KEY_COMMANDS_F1_WEIGHTED: 0.0,
+        }
         self.number_of_passed_tests = 0
         self.number_of_failed_tests = 0
         self.number_of_passed_user_utterances = 0
         self.number_of_failed_user_utterances = 0
-        self.command_metrics: Optional[Dict[str, "CommandMetrics"]] = None
+        self.command_metrics: Optional[Dict[str, CommandMetrics]] = None
         self.names_of_failed_tests: List[str] = []
         self.names_of_passed_tests: List[str] = []
         self.failed_test_steps: List[FailedTestStep] = []
@@ -173,7 +194,7 @@ class DialogueUnderstandingTestSuiteResult:
         cls,
         failing_test_results: List[DialogueUnderstandingTestResult],
         passing_test_results: List[DialogueUnderstandingTestResult],
-        command_metrics: Dict[str, "CommandMetrics"],
+        command_metrics: Dict[str, CommandMetrics],
         llm_config: Optional[Dict[str, Any]],
     ) -> "DialogueUnderstandingTestSuiteResult":
         """Create a DialogueUnderstandingTestSuiteResult object from the test results.
@@ -206,6 +227,16 @@ class DialogueUnderstandingTestSuiteResult:
         instance._set_user_utterance_metrics(failing_test_results, passing_test_results)
 
         instance.command_metrics = command_metrics
+
+        instance.f1_score[KEY_COMMANDS_F1_MACRO] = cls.calculate_f1_macro(
+            command_metrics
+        )
+        instance.f1_score[KEY_COMMANDS_F1_MICRO] = cls.calculate_f1_micro(
+            command_metrics
+        )
+        instance.f1_score[KEY_COMMANDS_F1_WEIGHTED] = cls.calculate_f1_weighted(
+            command_metrics
+        )
 
         instance.names_of_passed_tests = [
             passing_test_result.test_case.full_name()
@@ -288,17 +319,97 @@ class DialogueUnderstandingTestSuiteResult:
 
         return failed_test_steps
 
-    @staticmethod
-    def _calculate_percentiles(values: List[float]) -> Dict[str, float]:
-        return {
-            "p50": float(np.percentile(values, 50)) if values else 0.0,
-            "p90": float(np.percentile(values, 90)) if values else 0.0,
-            "p99": float(np.percentile(values, 99)) if values else 0.0,
+    def to_dict(self, output_prompt: bool = False) -> Dict[str, Any]:
+        """Builds a dictionary for writing test results to a YML file.
+
+        Args:
+            output_prompt: Whether to log the prompt or not.
+        """
+        result_dict: Dict[Text, Any] = {
+            # Accuracy block
+            OUTPUT_DUT_ACCURACY: {
+                OUTPUT_DUT_ACCURACY_TEST_CASES: self.accuracy[KEY_TEST_CASES_ACCURACY],
+                OUTPUT_DUT_ACCURACY_USER_UTTERANCES: self.accuracy[
+                    KEY_USER_UTTERANCES_ACCURACY
+                ],
+            },
+            # F1 block
+            OUTPUT_COMMANDS_F1: {
+                OUTPUT_COMMANDS_F1_MACRO: self.f1_score[KEY_COMMANDS_F1_MACRO],
+                OUTPUT_COMMANDS_F1_MICRO: self.f1_score[KEY_COMMANDS_F1_MICRO],
+                OUTPUT_COMMANDS_F1_WEIGHTED: self.f1_score[KEY_COMMANDS_F1_WEIGHTED],
+            },
+            # Other metrics block
+            OUTPUT_NUMBER_OF_PASSED_TESTS: self.number_of_passed_tests,
+            OUTPUT_NUMBER_OF_FAILED_TESTS: self.number_of_failed_tests,
+            OUTPUT_NUMBER_OF_PASSED_USER_UTTERANCES: self.number_of_passed_user_utterances,  # noqa: E501
+            OUTPUT_NUMBER_OF_FAILED_USER_UTTERANCES: self.number_of_failed_user_utterances,  # noqa: E501
         }
 
-    @classmethod
+        # Command metrics block
+        cmd_metrics_output = {}
+        if self.command_metrics:
+            if isinstance(self.command_metrics, dict):
+                for cmd_name, metrics_obj in self.command_metrics.items():
+                    cmd_metrics_output[cmd_name] = metrics_obj.as_dict()
+            else:
+                pass
+        result_dict[OUTPUT_COMMAND_METRICS] = cmd_metrics_output
+
+        # Latency and tokens metrics block
+        result_dict[OUTPUT_LATENCY_METRICS] = self.latency_metrics
+        result_dict[OUTPUT_PROMPT_TOKEN_METRICS] = self.prompt_token_metrics
+        result_dict[OUTPUT_COMPLETION_TOKEN_METRICS] = self.completion_token_metrics
+
+        # Passed and failed test names block
+        result_dict[OUTPUT_NAMES_OF_PASSED_TESTS] = self.names_of_passed_tests
+        result_dict[OUTPUT_NAMES_OF_FAILED_TESTS] = self.names_of_failed_tests
+
+        # Failed test steps block
+        failed_steps_list = []
+        for failed_test_step in self.failed_test_steps:
+            failed_steps_list.append(
+                failed_test_step.to_dict(output_prompt=output_prompt)
+            )
+        result_dict[OUTPUT_FAILED_TEST_STEPS] = failed_steps_list
+
+        # LLM config block
+        if self.llm_config:
+            result_dict[OUTPUT_LLM_COMMAND_GENERATOR_CONFIG] = self.llm_config
+
+        return result_dict
+
+    @staticmethod
+    def calculate_f1_macro(command_metrics: Dict[str, CommandMetrics]) -> float:
+        f1_scores = [metrics.get_f1_score() for metrics in command_metrics.values()]
+        return sum(f1_scores) / len(f1_scores)
+
+    @staticmethod
+    def calculate_f1_micro(command_metrics: Dict[str, CommandMetrics]) -> float:
+        combined_metrics = CommandMetrics(
+            tp=sum([metrics.tp for metrics in command_metrics.values()]),
+            fp=sum([metrics.fp for metrics in command_metrics.values()]),
+            fn=sum([metrics.fn for metrics in command_metrics.values()]),
+            total_count=sum(m.total_count for m in command_metrics.values()),
+        )
+        return combined_metrics.get_f1_score()
+
+    @staticmethod
+    def calculate_f1_weighted(command_metrics: Dict[str, CommandMetrics]) -> float:
+        class_counts = []
+        f1_scores = []
+        for metrics in command_metrics.values():
+            class_counts.append(metrics.total_count)
+            f1_scores.append(metrics.get_f1_score())
+
+        total_count = sum(class_counts)
+        weighted_f1 = sum(
+            (count / total_count) * f1 for f1, count in zip(f1_scores, class_counts)
+        )
+        return weighted_f1
+
+    @staticmethod
     def get_latency_metrics(
-        cls,
         failing_test_results: List["DialogueUnderstandingTestResult"],
         passing_test_results: List["DialogueUnderstandingTestResult"],
     ) -> Dict[str, float]:
@@ -309,11 +420,10 @@ class DialogueUnderstandingTestSuiteResult:
             for latency in step.get_latencies()
         ]
 
-        return cls._calculate_percentiles(latencies)
+        return DialogueUnderstandingTestSuiteResult._calculate_percentiles(latencies)
 
-    @classmethod
+    @staticmethod
     def get_prompt_token_metrics(
-        cls,
         failing_test_results: List["DialogueUnderstandingTestResult"],
         passing_test_results: List["DialogueUnderstandingTestResult"],
     ) -> Dict[str, float]:
@@ -324,11 +434,10 @@ class DialogueUnderstandingTestSuiteResult:
             for token_count in step.get_prompt_tokens()
         ]
 
-        return cls._calculate_percentiles(tokens)
+        return DialogueUnderstandingTestSuiteResult._calculate_percentiles(tokens)
 
-    @classmethod
+    @staticmethod
     def get_completion_token_metrics(
-        cls,
         failing_test_results: List["DialogueUnderstandingTestResult"],
         passing_test_results: List["DialogueUnderstandingTestResult"],
     ) -> Dict[str, float]:
@@ -339,52 +448,12 @@ class DialogueUnderstandingTestSuiteResult:
             for token_count in step.get_completion_tokens()
         ]
 
-        return cls._calculate_percentiles(tokens)
+        return DialogueUnderstandingTestSuiteResult._calculate_percentiles(tokens)
 
-    def to_dict(self, output_prompt: bool = False) -> Dict[str, Any]:
-        """Builds a dictionary for writing test results to a YML file.
-
-        Args:
-            output_prompt: Whether to log the prompt or not.
-        """
-        # 1. Accuracy block
-        result_dict: Dict[Text, Any] = {
-            "accuracy": {
-                "test_cases": self.accuracy[KEY_TEST_CASES_ACCURACY],
-                "user_utterances": self.accuracy[KEY_USER_UTTERANCES_ACCURACY],
-            },
-            OUTPUT_NUMBER_OF_PASSED_TESTS: self.number_of_passed_tests,
-            OUTPUT_NUMBER_OF_FAILED_TESTS: self.number_of_failed_tests,
-            OUTPUT_NUMBER_OF_PASSED_USER_UTTERANCES: self.number_of_passed_user_utterances,  # noqa: E501
-            OUTPUT_NUMBER_OF_FAILED_USER_UTTERANCES: self.number_of_failed_user_utterances,  # noqa: E501
+    @staticmethod
+    def _calculate_percentiles(values: List[float]) -> Dict[str, float]:
+        return {
+            "p50": float(np.percentile(values, 50)) if values else 0.0,
+            "p90": float(np.percentile(values, 90)) if values else 0.0,
+            "p99": float(np.percentile(values, 99)) if values else 0.0,
         }
-
-        cmd_metrics_output = {}
-        if self.command_metrics:
-            if isinstance(self.command_metrics, dict):
-                for cmd_name, metrics_obj in self.command_metrics.items():
-                    cmd_metrics_output[cmd_name] = metrics_obj.as_dict()
-            else:
-                pass
-
-        result_dict[OUTPUT_COMMAND_METRICS] = cmd_metrics_output
-
-        result_dict[OUTPUT_LATENCY_METRICS] = self.latency_metrics
-        result_dict[OUTPUT_PROMPT_TOKEN_METRICS] = self.prompt_token_metrics
-        result_dict[OUTPUT_COMPLETION_TOKEN_METRICS] = self.completion_token_metrics
-
-        result_dict[OUTPUT_NAMES_OF_PASSED_TESTS] = self.names_of_passed_tests
-        result_dict[OUTPUT_NAMES_OF_FAILED_TESTS] = self.names_of_failed_tests
-
-        failed_steps_list = []
-        for failed_test_step in self.failed_test_steps:
-            failed_steps_list.append(
-                failed_test_step.to_dict(output_prompt=output_prompt)
-            )
-
-        result_dict["failed_test_steps"] = failed_steps_list
-
-        if self.llm_config:
-            result_dict[OUTPUT_LLM_COMMAND_GENERATOR_CONFIG] = self.llm_config
-
-        return result_dict

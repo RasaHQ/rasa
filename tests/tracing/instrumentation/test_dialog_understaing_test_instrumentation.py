@@ -6,8 +6,11 @@ from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from opentelemetry.trace import TracerProvider
 
-from rasa.dialogue_understanding_test.command_metric_calculation import CommandMetrics
+from rasa.dialogue_understanding_test.command_metrics import CommandMetrics
 from rasa.dialogue_understanding_test.du_test_result import (
+    KEY_COMMANDS_F1_MACRO,
+    KEY_COMMANDS_F1_MICRO,
+    KEY_COMMANDS_F1_WEIGHTED,
     DialogueUnderstandingTestSuiteResult,
 )
 from rasa.tracing.instrumentation import instrumentation
@@ -58,6 +61,22 @@ def test_dut_print_test_results_instrumentation(
     test_suite_results.command_metrics = {
         "start": CommandMetrics(tp=8, fp=2, fn=1, total_count=9)
     }
+    test_suite_results.f1_score[KEY_COMMANDS_F1_MACRO] = (
+        DialogueUnderstandingTestSuiteResult.calculate_f1_macro(
+            test_suite_results.command_metrics
+        )
+    )
+    test_suite_results.f1_score[KEY_COMMANDS_F1_MICRO] = (
+        DialogueUnderstandingTestSuiteResult.calculate_f1_micro(
+            test_suite_results.command_metrics
+        )
+    )
+    test_suite_results.f1_score[KEY_COMMANDS_F1_WEIGHTED] = (
+        DialogueUnderstandingTestSuiteResult.calculate_f1_weighted(
+            test_suite_results.command_metrics
+        )
+    )
+
     test_suite_results.llm_config = llm_config
     test_suite_results.latency_metrics = {
         "p50": 0.1,
@@ -112,3 +131,13 @@ def test_dut_print_test_results_instrumentation(
     assert captured_span.attributes["completion_token_p50"] == 4
     assert captured_span.attributes["completion_token_p95"] == 5
     assert captured_span.attributes["completion_token_p99"] == 6
+
+    assert captured_span.attributes["commands_f1_macro"] == pytest.approx(
+        0.8421, rel=1e-4
+    )
+    assert captured_span.attributes["commands_f1_micro"] == pytest.approx(
+        0.8421, rel=1e-4
+    )
+    assert captured_span.attributes["commands_f1_weighted_average"] == pytest.approx(
+        0.8421, rel=1e-4
+    )

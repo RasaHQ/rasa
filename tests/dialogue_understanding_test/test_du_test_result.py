@@ -2,7 +2,7 @@ import pytest
 
 # Assuming these imports are from your actual code
 from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowCommand
-from rasa.dialogue_understanding_test.command_metric_calculation import CommandMetrics
+from rasa.dialogue_understanding_test.command_metrics import CommandMetrics
 from rasa.dialogue_understanding_test.constants import ACTOR_USER
 from rasa.dialogue_understanding_test.du_test_case import (
     KEY_CHOICES,
@@ -338,6 +338,10 @@ class TestDialogueUnderstandingTestSuiteResult:
         assert result["number_of_passed_user_utterances"] == 5
         assert result["number_of_failed_user_utterances"] == 2
         assert "command_metrics" in result
+        assert "f1_score" in result
+        assert "macro" in result["f1_score"]
+        assert "micro" in result["f1_score"]
+        assert "weighted_average" in result["f1_score"]
         assert result["command_metrics"]["some_command"]["total_count"] == 5
         assert result["names_of_passed_tests"] == ["file_pass:test_name_pass"]
         assert result["names_of_failed_tests"] == ["file_fail:test_name_fail"]
@@ -467,3 +471,48 @@ class TestDialogueUnderstandingTestSuiteResult:
         assert test_result.test_case.steps[0].dialogue_understanding_output.prompts[0][
             KEY_CHOICES
         ] == ["StartFlow(bar)"]
+
+    @pytest.mark.parametrize(
+        "command_metrics, expected_f1_macro, expected_f1_micro, expected_f1_weighted",
+        [
+            (
+                # tp = 190, fp = 40, fn = 40, total_count = 230
+                {
+                    "a": CommandMetrics(
+                        tp=33, fp=10, fn=12, total_count=45
+                    ),  # f1 = 0.75,  weighted part = 0.1467
+                    "b": CommandMetrics(
+                        tp=40, fp=10, fn=20, total_count=60
+                    ),  # f1 = 0.7273, weighted part = 0.1897
+                    "c": CommandMetrics(
+                        tp=57, fp=10, fn=2, total_count=59
+                    ),  # f1 = 0.9048,  weighted part = 0.2321
+                    "d": CommandMetrics(
+                        tp=60, fp=10, fn=6, total_count=66
+                    ),  # f1 = 0.8824, weighted part = 0.2532
+                },
+                0.8161,
+                0.8261,
+                0.8217,
+            ),
+        ],
+    )
+    def test_calculate_f1_scores(
+        self,
+        command_metrics: dict,
+        expected_f1_macro: float,
+        expected_f1_micro: float,
+        expected_f1_weighted: float,
+    ):
+        f1_macro = DialogueUnderstandingTestSuiteResult.calculate_f1_macro(
+            command_metrics
+        )
+        f1_micro = DialogueUnderstandingTestSuiteResult.calculate_f1_micro(
+            command_metrics
+        )
+        f1_weighted = DialogueUnderstandingTestSuiteResult.calculate_f1_weighted(
+            command_metrics
+        )
+        assert expected_f1_macro == pytest.approx(f1_macro, rel=1e-4)
+        assert expected_f1_micro == pytest.approx(f1_micro, rel=1e-4)
+        assert expected_f1_weighted == pytest.approx(f1_weighted, rel=1e-4)

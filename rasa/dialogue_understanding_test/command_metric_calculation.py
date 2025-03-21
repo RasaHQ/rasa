@@ -1,54 +1,21 @@
+import typing
 from collections import defaultdict
 from typing import Dict, List
-
-from pydantic import BaseModel
 
 from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding_test.command_comparison import (
     is_command_present_in_list,
 )
-from rasa.dialogue_understanding_test.du_test_result import (
-    DialogueUnderstandingTestResult,
-)
+from rasa.dialogue_understanding_test.command_metrics import CommandMetrics
 
-
-class CommandMetrics(BaseModel):
-    tp: int
-    fp: int
-    fn: int
-    total_count: int
-
-    @staticmethod
-    def _safe_divide(numerator: float, denominator: float) -> float:
-        """Safely perform division, returning 0.0 if the denominator is zero."""
-        return numerator / denominator if denominator > 0 else 0.0
-
-    def get_precision(self) -> float:
-        return self._safe_divide(self.tp, self.tp + self.fp)
-
-    def get_recall(self) -> float:
-        return self._safe_divide(self.tp, self.tp + self.fn)
-
-    def get_f1_score(self) -> float:
-        precision = self.get_precision()
-        recall = self.get_recall()
-
-        return self._safe_divide(2 * precision * recall, precision + recall)
-
-    def as_dict(self) -> Dict[str, float]:
-        return {
-            "tp": self.tp,
-            "fp": self.fp,
-            "fn": self.fn,
-            "precision": self.get_precision(),
-            "recall": self.get_recall(),
-            "f1_score": self.get_f1_score(),
-            "total_count": self.total_count,
-        }
+if typing.TYPE_CHECKING:
+    from rasa.dialogue_understanding_test.du_test_result import (
+        DialogueUnderstandingTestResult,
+    )
 
 
 def calculate_command_metrics(
-    test_results: List[DialogueUnderstandingTestResult],
+    test_results: List["DialogueUnderstandingTestResult"],
 ) -> Dict[str, CommandMetrics]:
     """Calculate the command metrics for the test result."""
     metrics: Dict[str, CommandMetrics] = defaultdict(

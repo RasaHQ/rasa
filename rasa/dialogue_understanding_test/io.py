@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Union
 import rich
 
 import rasa.shared.data
-from rasa.dialogue_understanding_test.command_metric_calculation import CommandMetrics
+from rasa.dialogue_understanding_test.command_metrics import CommandMetrics
 from rasa.dialogue_understanding_test.constants import SCHEMA_FILE_PATH
 from rasa.dialogue_understanding_test.du_test_case import (
     KEY_CHOICES,
@@ -13,6 +13,9 @@ from rasa.dialogue_understanding_test.du_test_case import (
     KEY_PROMPT_TOKENS,
 )
 from rasa.dialogue_understanding_test.du_test_result import (
+    KEY_COMMANDS_F1_MACRO,
+    KEY_COMMANDS_F1_MICRO,
+    KEY_COMMANDS_F1_WEIGHTED,
     DialogueUnderstandingTestSuiteResult,
     FailedTestStep,
 )
@@ -274,6 +277,7 @@ def print_test_results(
         # print failed test steps
         print_failed_cases(test_suite_result, output_prompt=output_prompt)
 
+    print_f1_summary(test_suite_result)
     print_command_summary(test_suite_result.command_metrics)
     print_latency_and_token_metrics(test_suite_result)
     print_final_line(test_suite_result)
@@ -353,6 +357,21 @@ def print_llm_output(step: FailedTestStep) -> None:
                 rich.print("\n[red3]-- CHOICES --[/red3]")
                 rich.print(prompt_data.get(KEY_CHOICES))
                 rich.print("[red3]-------------[/red3]")
+
+
+def print_f1_summary(result: DialogueUnderstandingTestSuiteResult) -> None:
+    """Print the f1 summary."""
+    print()
+    rasa.shared.utils.cli.print_info(rasa.shared.utils.cli.pad("COMMANDS F1"))
+    rasa.shared.utils.cli.print_info(
+        f"macro           : {result.f1_score[KEY_COMMANDS_F1_MACRO]:.8f}"
+    )
+    rasa.shared.utils.cli.print_info(
+        f"micro           : {result.f1_score[KEY_COMMANDS_F1_MICRO]:.8f}"
+    )
+    rasa.shared.utils.cli.print_info(
+        f"weighted average: {result.f1_score[KEY_COMMANDS_F1_WEIGHTED]:.8f}"
+    )
 
 
 def print_command_summary(metrics: Dict[str, CommandMetrics]) -> None:

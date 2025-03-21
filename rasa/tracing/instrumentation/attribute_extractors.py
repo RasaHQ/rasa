@@ -22,8 +22,14 @@ from rasa.dialogue_understanding.generator import LLMBasedCommandGenerator
 from rasa.dialogue_understanding.generator.constants import FLOW_RETRIEVAL_KEY
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding_test.du_test_result import (
+    KEY_COMMANDS_F1_MACRO,
+    KEY_COMMANDS_F1_MICRO,
+    KEY_COMMANDS_F1_WEIGHTED,
     KEY_TEST_CASES_ACCURACY,
     KEY_USER_UTTERANCES_ACCURACY,
+    OUTPUT_COMMANDS_F1_MACRO_INSTRUMENTATION_ATTR,
+    OUTPUT_COMMANDS_F1_MICRO_INSTRUMENTATION_ATTR,
+    OUTPUT_COMMANDS_F1_WEIGHTED_INSTRUMENTATION_ATTR,
     OUTPUT_COMPLETION_TOKEN_METRICS,
     OUTPUT_LATENCY_METRICS,
     OUTPUT_NAMES_OF_FAILED_TESTS,
@@ -611,6 +617,15 @@ def extract_attrs_for_du_print_test_results(
         ),
         OUTPUT_NAMES_OF_FAILED_TESTS: json.dumps(
             test_suite_result.names_of_failed_tests
+        ),
+        OUTPUT_COMMANDS_F1_MACRO_INSTRUMENTATION_ATTR: (
+            test_suite_result.f1_score[KEY_COMMANDS_F1_MACRO]
+        ),
+        OUTPUT_COMMANDS_F1_MICRO_INSTRUMENTATION_ATTR: (
+            test_suite_result.f1_score[KEY_COMMANDS_F1_MICRO]
+        ),
+        OUTPUT_COMMANDS_F1_WEIGHTED_INSTRUMENTATION_ATTR: (
+            test_suite_result.f1_score[KEY_COMMANDS_F1_WEIGHTED]
         ),
     }
     if test_suite_result.command_metrics:
