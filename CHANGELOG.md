@@ -10,6 +10,20 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.12.1] - 2025-03-21
+                        
+Rasa Pro 3.12.1 (2025-03-21)                             
+### Bugfixes
+- [#2130](https://github.com/rasahq/rasa-private/issues/2130): Fix filtering of StartFlow commands from LLM-based command generators during the overlap check with prior commands.
+  When prior commands do not contain any StartFlow or HandleDigression commands, we should not filter out the StartFlow command from the LLM-based command generator.
+- [#2131](https://github.com/rasahq/rasa-private/issues/2131): Remove:
+  - cancel command when digression handling is defined
+  - duplicate digression handling commands during command processing
+
+### Miscellaneous internal changes
+- [#2134](https://github.com/rasahq/rasa-private/issues/2134)
+
+
 ## [3.12.0] - 2025-03-19
                         
 Rasa Pro 3.12.0 (2025-03-19)                             
