@@ -300,9 +300,9 @@ build-docker-rasa-image:  ## Build Rasa Pro Docker image. Make sure to run build
 		--platform=$(PLATFORM)
 
 build-docker: build-docker-base build-docker-builder build-docker-rasa-deps build-docker-rasa-image## Build Rasa Pro Docker image.
-build-multi-platform-docker: PLATFORM = "linux/amd64,linux/arm64"
-build-multi-platform-docker: DOCKER_BUILD_COMMAND = buildx build --push
-build-multi-platform-docker: build-docker-base build-docker-builder build-docker-rasa-deps build-docker-rasa-image  ## Build Rasa Pro Docker image for multiple platforms.
+build-full-multi-platform-rasa-docker: PLATFORM = "linux/amd64,linux/arm64"
+build-full-multi-platform-rasa-docker: DOCKER_BUILD_COMMAND = buildx build --push
+build-full-multi-platform-rasa-docker: build-docker-base build-docker-builder build-docker-rasa-deps build-docker-rasa-image  ## Build Rasa Pro Docker image for multiple platforms.
 
 build-multi-platform-base-docker: PLATFORM = "linux/amd64,linux/arm64"
 build-multi-platform-base-docker: DOCKER_BUILD_COMMAND = buildx build --push
