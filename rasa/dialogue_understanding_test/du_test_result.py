@@ -77,6 +77,7 @@ class FailedTestStep(BaseModel):
     expected_commands: List[PromptCommand]
     predicted_commands: Dict[str, List[PromptCommand]]
     conversation_with_diff: List[str]
+    conversation_until_failed_user_utterance: List[str]
 
     class Config:
         """Skip validation for PromptCommand protocol as pydantic does not know how to
@@ -107,10 +108,12 @@ class FailedTestStep(BaseModel):
             )
 
         step_index = test_case.steps.index(step)
-
-        conversation_with_diff = test_case.to_readable_conversation(
+        conversation_until_failed_user_utterance = test_case.to_readable_conversation(
             until_step=step_index + 1
-        ) + get_command_comparison(step)
+        )
+        conversation_with_diff = (
+            conversation_until_failed_user_utterance + get_command_comparison(step)
+        )
 
         return cls(
             file=file_path,
@@ -123,12 +126,14 @@ class FailedTestStep(BaseModel):
             expected_commands=step.commands or [],
             predicted_commands=predicted_commands,
             conversation_with_diff=conversation_with_diff,
+            conversation_until_failed_user_utterance=conversation_until_failed_user_utterance,
         )
 
     def to_dict(self, output_prompt: bool) -> Dict[str, Any]:
         step_info = {
             "file": self.file,
             "test_case": self.test_case_name,
+            "conversation": self.conversation_until_failed_user_utterance,
             "failed_user_utterance": self.failed_user_utterance,
             "error_line": self.error_line,
             "pass_status": self.pass_status,

@@ -334,6 +334,7 @@ class TestDialogueUnderstandingTestSuiteResult:
             predicted_commands={
                 "dummy_comp": [SetSlotCommand(name="slot1", value="value2")]
             },
+            conversation_until_failed_user_utterance=["user: Hello", "bot: Hi!"],
             conversation_with_diff=["user: Hello", "bot: Hi!"],
         )
         dsr.failed_test_steps = [failed_step]
@@ -362,6 +363,7 @@ class TestDialogueUnderstandingTestSuiteResult:
         assert step_info["file"] == "fail_file_1.yml"
         assert step_info["test_case"] == "fail_tc_1"
         assert step_info["failed_user_utterance"] == "Hello"
+        assert step_info["conversation"] == ["user: Hello", "bot: Hi!"]
         assert step_info["error_line"] == 10
         assert step_info["pass_status"] is False
         assert step_info["expected_commands"] == ["SetSlot(slot1, value1)"]
