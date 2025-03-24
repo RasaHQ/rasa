@@ -1,7 +1,11 @@
+from collections import defaultdict
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
+from rasa.core import IntentlessPolicy
+from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
+from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
 from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.dialogue_understanding.generator.command_parser import parse_commands
 from rasa.dialogue_understanding_test.command_comparison import are_command_lists_equal
@@ -69,6 +73,8 @@ class DialogueUnderstandingOutput(BaseModel):
     commands: Dict[str, List[PromptCommand]]
     # List of prompts
     prompts: Optional[List[Dict[str, Any]]] = None
+    # Latency of the full message roundtrip
+    latency: Optional[float] = None
 
     class Config:
         """Skip validation for PromptCommand protocol as pydantic does not know how to
@@ -88,27 +94,41 @@ class DialogueUnderstandingOutput(BaseModel):
     def get_component_names_that_predicted_commands_or_have_llm_response(
         self,
     ) -> List[str]:
-        """Get all component names that have predicted commands or recieved
+        """Get all relevant component names.
+
+        Components are relevant if they have predicted commands or received a
         non-empty response from LLM.
         """
+        # Exclude components that are not related to Dialogue Understanding
+        component_names_to_exclude = [
+            EnterpriseSearchPolicy.__name__,
+            IntentlessPolicy.__name__,
+            ContextualResponseRephraser.__name__,
+        ]
+
         component_names_that_predicted_commands = (
             [
                 component_name
                 for component_name, predicted_commands in self.commands.items()
                 if predicted_commands
+                and component_name not in component_names_to_exclude
             ]
             if self.commands
             else []
         )
+
         components_with_prompts = (
             [
                 str(prompt.get(KEY_COMPONENT_NAME, None))
                 for prompt in self.prompts
                 if prompt.get(KEY_LLM_RESPONSE_METADATA, None)
+                and prompt.get(KEY_COMPONENT_NAME, None)
+                not in component_names_to_exclude
             ]
             if self.prompts
             else []
         )
+
         return list(
             set(component_names_that_predicted_commands + components_with_prompts)
         )
@@ -290,41 +310,54 @@ class DialogueUnderstandingTestStep(BaseModel):
 
         return ""
 
-    def get_latencies(self) -> List[float]:
+    def get_latencies(self) -> Dict[str, List[float]]:
         if self.dialogue_understanding_output is None:
-            return []
+            return {}
 
-        prompts = self.dialogue_understanding_output.get_component_name_to_prompt_info()
+        component_name_to_prompt_info = (
+            self.dialogue_understanding_output.get_component_name_to_prompt_info()
+        )
 
-        return [
-            prompt_data.get(KEY_LATENCY, 0.0)
-            for prompt in prompts.values()
-            for prompt_data in prompt
-        ]
+        latencies = defaultdict(list)
+        for component_name, prompt_info_list in component_name_to_prompt_info.items():
+            for prompt_info in prompt_info_list:
+                latencies[component_name].append(prompt_info.get(KEY_LATENCY, 0.0))
 
-    def get_completion_tokens(self) -> List[int]:
+        return latencies
+
+    def get_completion_tokens(self) -> Dict[str, List[float]]:
         if self.dialogue_understanding_output is None:
-            return []
+            return {}
 
-        prompts = self.dialogue_understanding_output.get_component_name_to_prompt_info()
+        component_name_to_prompt_info = (
+            self.dialogue_understanding_output.get_component_name_to_prompt_info()
+        )
 
-        return [
-            prompt_data.get(KEY_COMPLETION_TOKENS, 0)
-            for prompt in prompts.values()
-            for prompt_data in prompt
-        ]
+        completion_tokens = defaultdict(list)
+        for component_name, prompt_info_list in component_name_to_prompt_info.items():
+            for prompt_info in prompt_info_list:
+                completion_tokens[component_name].append(
+                    prompt_info.get(KEY_COMPLETION_TOKENS, 0.0)
+                )
 
-    def get_prompt_tokens(self) -> List[int]:
+        return completion_tokens
+
+    def get_prompt_tokens(self) -> Dict[str, List[float]]:
         if self.dialogue_understanding_output is None:
-            return []
+            return {}
 
-        prompts = self.dialogue_understanding_output.get_component_name_to_prompt_info()
+        component_name_to_prompt_info = (
+            self.dialogue_understanding_output.get_component_name_to_prompt_info()
+        )
 
-        return [
-            prompt_data.get(KEY_PROMPT_TOKENS, 0)
-            for prompt in prompts.values()
-            for prompt_data in prompt
-        ]
+        prompt_tokens = defaultdict(list)
+        for component_name, prompt_info_list in component_name_to_prompt_info.items():
+            for prompt_info in prompt_info_list:
+                prompt_tokens[component_name].append(
+                    prompt_info.get(KEY_PROMPT_TOKENS, 0.0)
+                )
+
+        return prompt_tokens
 
 
 class DialogueUnderstandingTestCase(BaseModel):

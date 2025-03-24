@@ -354,7 +354,7 @@ def print_llm_output(step: FailedTestStep) -> None:
     for component, component_prompts in step.prompts.items():
         for prompt_data in component_prompts:
             if KEY_CHOICES in prompt_data:
-                rich.print("\n[red3]-- CHOICES --[/red3]")
+                rich.print(f"\n[red3]-- LLM ouptut for {component} --[/red3]")
                 rich.print(prompt_data.get(KEY_CHOICES))
                 rich.print("[red3]-------------[/red3]")
 
@@ -409,16 +409,24 @@ def print_latency_and_token_metrics(
     """Print the latency and token metrics."""
     print()
     rasa.shared.utils.cli.print_info(rasa.shared.utils.cli.pad("LATENCY METRICS"))
-    for key, value in result.latency_metrics.items():
-        rasa.shared.utils.cli.print_info(f"{key}: {value:.8f}")
+    for component, latency_metric in result.latency_metrics.items():
+        rasa.shared.utils.cli.print_info(f"--- {component} ---")
+        for key, value in latency_metric.items():
+            rasa.shared.utils.cli.print_info(f"{key}: {value:.8f}")
+
     rasa.shared.utils.cli.print_info(rasa.shared.utils.cli.pad("PROMPT TOKEN METRICS"))
-    for key, value in result.prompt_token_metrics.items():
-        rasa.shared.utils.cli.print_info(f"{key}: {value:.2f}")
+    for component, prompt_token_metric in result.prompt_token_metrics.items():
+        rasa.shared.utils.cli.print_info(f"--- {component} ---")
+        for key, value in prompt_token_metric.items():
+            rasa.shared.utils.cli.print_info(f"{key}: {value:.2f}")
+
     rasa.shared.utils.cli.print_info(
         rasa.shared.utils.cli.pad("COMPLETION TOKEN METRICS")
     )
-    for key, value in result.completion_token_metrics.items():
-        rasa.shared.utils.cli.print_info(f"{key}: {value:.2f}")
+    for component, completion_token_metric in result.completion_token_metrics.items():
+        rasa.shared.utils.cli.print_info(f"--- {component} ---")
+        for key, value in completion_token_metric.items():
+            rasa.shared.utils.cli.print_info(f"{key}: {value:.2f}")
 
 
 def print_final_line(test_suite_result: DialogueUnderstandingTestSuiteResult) -> None:

@@ -48,6 +48,7 @@ def sample_output() -> DialogueUnderstandingOutput:
         commands={
             "component1": [StartFlowCommand("bar")],
         },
+        latency=2.34,
     )
 
 
@@ -112,6 +113,7 @@ class TestDialogueUnderstandingTestSuiteResult:
             text="hello",
             commands=[SetSlotCommand(name="slot1", value="value1")],
             dialogue_understanding_output=DialogueUnderstandingOutput(
+                latency=1.11,
                 commands={
                     "dummy_component": [SetSlotCommand(name="slot1", value="value1")]
                 },
@@ -160,6 +162,7 @@ class TestDialogueUnderstandingTestSuiteResult:
             text="world",
             commands=[SetSlotCommand(name="slot1", value="value1")],
             dialogue_understanding_output=DialogueUnderstandingOutput(
+                latency=2.11,
                 commands={
                     "dummy_component": [SetSlotCommand(name="slot1", value="value2")]
                 },
@@ -215,12 +218,19 @@ class TestDialogueUnderstandingTestSuiteResult:
         assert result.names_of_failed_tests == ["test_file_fail.yml::test_case_fail"]
 
         # Check latency, prompt token, and completion token metrics
-        assert result.latency_metrics == {"p50": 1.33, "p90": 1.506, "p99": 1.5456}
-        assert result.completion_token_metrics == {"p50": 5.0, "p90": 5.8, "p99": 5.98}
+        assert result.latency_metrics == {
+            "total": {"p50": 1.6099999999999999, "p90": 2.01, "p99": 2.1},
+            "dummy_component": {"p50": 1.33, "p90": 1.506, "p99": 1.5456},
+        }
+        assert result.completion_token_metrics == {
+            "dummy_component": {"p50": 5.0, "p90": 5.8, "p99": 5.98}
+        }
         assert result.prompt_token_metrics == {
-            "p50": 1234,
-            "p90": 1481.2,
-            "p99": 1536.82,
+            "dummy_component": {
+                "p50": 1234,
+                "p90": 1481.2,
+                "p99": 1536.82,
+            }
         }
 
         # Check failed steps
@@ -403,9 +413,14 @@ class TestDialogueUnderstandingTestSuiteResult:
             [sample_test_result], [sample_test_result, sample_test_result]
         )
 
-        assert latency_metrics["p50"] == 1.23
-        assert latency_metrics["p90"] == 1.23
-        assert latency_metrics["p99"] == 1.23
+        assert "total" in latency_metrics
+        assert latency_metrics["total"]["p50"] == 2.34
+        assert latency_metrics["total"]["p90"] == 2.34
+        assert latency_metrics["total"]["p99"] == 2.34
+        assert "component1" in latency_metrics
+        assert latency_metrics["component1"]["p50"] == 1.23
+        assert latency_metrics["component1"]["p90"] == 1.23
+        assert latency_metrics["component1"]["p99"] == 1.23
 
     def test_get_prompt_token_metrics(
         self, sample_test_result: DialogueUnderstandingTestResult
@@ -416,9 +431,10 @@ class TestDialogueUnderstandingTestSuiteResult:
             )
         )
 
-        assert prompt_token_metrics["p50"] == 1234
-        assert prompt_token_metrics["p90"] == 1234
-        assert prompt_token_metrics["p99"] == 1234
+        assert "component1" in prompt_token_metrics
+        assert prompt_token_metrics["component1"]["p50"] == 1234
+        assert prompt_token_metrics["component1"]["p90"] == 1234
+        assert prompt_token_metrics["component1"]["p99"] == 1234
 
     def test_get_completion_token_metrics(
         self, sample_test_result: DialogueUnderstandingTestResult
@@ -429,9 +445,10 @@ class TestDialogueUnderstandingTestSuiteResult:
             )
         )
 
-        assert prompt_token_metrics["p50"] == 4
-        assert prompt_token_metrics["p90"] == 4
-        assert prompt_token_metrics["p99"] == 4
+        assert "component1" in prompt_token_metrics
+        assert prompt_token_metrics["component1"]["p50"] == 4
+        assert prompt_token_metrics["component1"]["p90"] == 4
+        assert prompt_token_metrics["component1"]["p99"] == 4
 
     def test_key_choices_set_in_output(self):
         """Test that KEY_CHOICES is set in the output when expected."""

@@ -95,6 +95,7 @@ def test_get_dialogue_understanding_output_with_user_uttered_events(
             KEY_PROMPT_NAME: "prompt_name",
         }
     ]
+    latency = 0.234234
 
     user_uttered_event = UserUttered(
         text="hi",
@@ -107,7 +108,7 @@ def test_get_dialogue_understanding_output_with_user_uttered_events(
     tracker = DialogueStateTracker("sender", [])
     tracker.update(user_uttered_event)
 
-    result = mock_du_test_runner.get_dialogue_understanding_output(tracker, 0)
+    result = mock_du_test_runner.get_dialogue_understanding_output(tracker, 0, latency)
 
     assert result.commands == {
         "MultiStepLLMCommandGenerator": [
@@ -118,6 +119,7 @@ def test_get_dialogue_understanding_output_with_user_uttered_events(
         ],
     }
     assert result.prompts == prompts
+    assert result.latency == latency
 
 
 @pytest.mark.asyncio

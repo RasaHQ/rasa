@@ -1,4 +1,5 @@
 import asyncio
+import time
 from typing import Any, Dict, List, Optional, Text
 
 import structlog
@@ -184,8 +185,12 @@ class DialogueUnderstandingTestRunner:
                 user_uttered_event_indices[user_step_index],
             )
 
+            # Total latency of a message roundtrip
+            latency = None
+
             # send the user message
             try:
+                start = time.time()
                 await self._send_user_message(
                     step_sender_id,
                     test_case,
@@ -193,6 +198,8 @@ class DialogueUnderstandingTestRunner:
                     metadata,
                     output_channel=output_channel,
                 )
+                end = time.time()
+                latency = end - start
             except Exception as e:
                 structlogger.error(
                     "dialogue_understanding_test_runner.send_user_message.failed",
@@ -210,7 +217,7 @@ class DialogueUnderstandingTestRunner:
             # get the dialogue understanding output
             tracker = await self.agent.tracker_store.retrieve(step_sender_id)
             dialogue_understanding_output = self.get_dialogue_understanding_output(
-                tracker, user_uttered_event_indices[user_step_index]
+                tracker, user_uttered_event_indices[user_step_index], latency
             )
             user_step.dialogue_understanding_output = dialogue_understanding_output
 
@@ -224,6 +231,7 @@ class DialogueUnderstandingTestRunner:
         self,
         tracker: DialogueStateTracker,
         index_user_uttered_event: int,
+        latency: Optional[float] = None,
     ) -> Optional[DialogueUnderstandingOutput]:
         """Returns the dialogue understanding output.
 
@@ -259,6 +267,7 @@ class DialogueUnderstandingTestRunner:
         return DialogueUnderstandingOutput(
             commands=commands,
             prompts=user_uttered_event.parse_data.get(PROMPTS, []),
+            latency=latency,
         )
 
     @staticmethod

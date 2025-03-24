@@ -1,4 +1,5 @@
 import copy
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Text
 
 import numpy as np
@@ -185,9 +186,11 @@ class DialogueUnderstandingTestSuiteResult:
         self.names_of_passed_tests: List[str] = []
         self.failed_test_steps: List[FailedTestStep] = []
         self.llm_config: Optional[Dict[str, Any]] = None
-        self.latency_metrics: Dict[str, float] = {}
-        self.prompt_token_metrics: Dict[str, float] = {}
-        self.completion_token_metrics: Dict[str, float] = {}
+        # The performance metrics distribution per component
+        # For example: {"command_generator": {"p50": x, ...}, ...}
+        self.latency_metrics: Dict[str, Dict[str, float]] = {}
+        self.prompt_token_metrics: Dict[str, Dict[str, float]] = {}
+        self.completion_token_metrics: Dict[str, Dict[str, float]] = {}
 
     @classmethod
     def from_results(
@@ -264,60 +267,6 @@ class DialogueUnderstandingTestSuiteResult:
         instance.llm_config = llm_config
 
         return instance
-
-    def _set_user_utterance_metrics(
-        self,
-        failing_test_results: List[DialogueUnderstandingTestResult],
-        passing_test_results: List[DialogueUnderstandingTestResult],
-    ) -> None:
-        # Create list of booleans indicating whether each user utterance
-        # passed or failed
-        user_utterances_status = [
-            step.has_passed()
-            for test in failing_test_results + passing_test_results
-            for step in test.test_case.iterate_over_user_steps()
-        ]
-        # Calculate number of passed and failed user utterances
-        self.number_of_passed_user_utterances = sum(user_utterances_status)
-        self.number_of_failed_user_utterances = (
-            len(user_utterances_status) - self.number_of_passed_user_utterances
-        )
-        # Calculate user utterance accuracy
-        self.accuracy[KEY_USER_UTTERANCES_ACCURACY] = (
-            self.number_of_passed_user_utterances
-            / (
-                self.number_of_failed_user_utterances
-                + self.number_of_passed_user_utterances
-            )
-        )
-
-    @staticmethod
-    def _create_failed_steps_from_results(
-        failing_test_results: List["DialogueUnderstandingTestResult"],
-    ) -> List[FailedTestStep]:
-        """Create list of FailedTestStep objects from failing test results.
-
-        Given a list of failing DialogueUnderstandingTestResult objects,
-        create and return a list of FailedTestStep objects for each failing user step.
-
-        Args:
-            failing_test_results: Results of failing Dialogue Understanding tests.
-
-        Returns:
-            List of aggregated FailedTestStep objects for logging to console and file.
-        """
-        failed_test_steps: List[FailedTestStep] = []
-
-        for result in failing_test_results:
-            test_case = result.test_case
-            for step in test_case.failed_user_steps():
-                failed_test_steps.append(
-                    FailedTestStep.from_dialogue_understanding_test_step(
-                        step, test_case
-                    )
-                )
-
-        return failed_test_steps
 
     def to_dict(self, output_prompt: bool = False) -> Dict[str, Any]:
         """Builds a dictionary for writing test results to a YML file.
@@ -408,47 +357,66 @@ class DialogueUnderstandingTestSuiteResult:
         )
         return weighted_f1
 
-    @staticmethod
+    @classmethod
     def get_latency_metrics(
+        cls,
         failing_test_results: List["DialogueUnderstandingTestResult"],
         passing_test_results: List["DialogueUnderstandingTestResult"],
-    ) -> Dict[str, float]:
-        latencies = [
-            latency
-            for result in failing_test_results + passing_test_results
-            for step in result.test_case.steps
-            for latency in step.get_latencies()
-        ]
+    ) -> Dict[str, Dict[str, float]]:
+        latencies = defaultdict(list)
 
-        return DialogueUnderstandingTestSuiteResult._calculate_percentiles(latencies)
+        for result in failing_test_results + passing_test_results:
+            for step in result.test_case.steps:
+                if (
+                    step.dialogue_understanding_output
+                    and step.dialogue_understanding_output.latency
+                ):
+                    latencies["total"].append(
+                        step.dialogue_understanding_output.latency
+                    )
+                for component_name, latency in step.get_latencies().items():
+                    latencies[component_name].extend(latency)
 
-    @staticmethod
+        return {
+            component_name: cls._calculate_percentiles(latency_list)
+            for component_name, latency_list in latencies.items()
+        }
+
+    @classmethod
     def get_prompt_token_metrics(
+        cls,
         failing_test_results: List["DialogueUnderstandingTestResult"],
         passing_test_results: List["DialogueUnderstandingTestResult"],
-    ) -> Dict[str, float]:
-        tokens = [
-            token_count
-            for result in failing_test_results + passing_test_results
-            for step in result.test_case.steps
-            for token_count in step.get_prompt_tokens()
-        ]
+    ) -> Dict[str, Dict[str, float]]:
+        tokens = defaultdict(list)
 
-        return DialogueUnderstandingTestSuiteResult._calculate_percentiles(tokens)
+        for result in failing_test_results + passing_test_results:
+            for step in result.test_case.steps:
+                for component_name, token_count in step.get_prompt_tokens().items():
+                    tokens[component_name].extend(token_count)
 
-    @staticmethod
+        return {
+            component_name: cls._calculate_percentiles(latency_list)
+            for component_name, latency_list in tokens.items()
+        }
+
+    @classmethod
     def get_completion_token_metrics(
+        cls,
         failing_test_results: List["DialogueUnderstandingTestResult"],
         passing_test_results: List["DialogueUnderstandingTestResult"],
-    ) -> Dict[str, float]:
-        tokens = [
-            token_count
-            for result in failing_test_results + passing_test_results
-            for step in result.test_case.steps
-            for token_count in step.get_completion_tokens()
-        ]
+    ) -> Dict[str, Dict[str, float]]:
+        tokens = defaultdict(list)
 
-        return DialogueUnderstandingTestSuiteResult._calculate_percentiles(tokens)
+        for result in failing_test_results + passing_test_results:
+            for step in result.test_case.steps:
+                for component_name, token_count in step.get_completion_tokens().items():
+                    tokens[component_name].extend(token_count)
+
+        return {
+            component_name: cls._calculate_percentiles(latency_list)
+            for component_name, latency_list in tokens.items()
+        }
 
     @staticmethod
     def _calculate_percentiles(values: List[float]) -> Dict[str, float]:
@@ -457,3 +425,57 @@ class DialogueUnderstandingTestSuiteResult:
             "p90": float(np.percentile(values, 90)) if values else 0.0,
             "p99": float(np.percentile(values, 99)) if values else 0.0,
         }
+
+    @staticmethod
+    def _create_failed_steps_from_results(
+        failing_test_results: List["DialogueUnderstandingTestResult"],
+    ) -> List[FailedTestStep]:
+        """Create list of FailedTestStep objects from failing test results.
+
+        Given a list of failing DialogueUnderstandingTestResult objects,
+        create and return a list of FailedTestStep objects for each failing user step.
+
+        Args:
+            failing_test_results: Results of failing Dialogue Understanding tests.
+
+        Returns:
+            List of aggregated FailedTestStep objects for logging to console and file.
+        """
+        failed_test_steps: List[FailedTestStep] = []
+
+        for result in failing_test_results:
+            test_case = result.test_case
+            for step in test_case.failed_user_steps():
+                failed_test_steps.append(
+                    FailedTestStep.from_dialogue_understanding_test_step(
+                        step, test_case
+                    )
+                )
+
+        return failed_test_steps
+
+    def _set_user_utterance_metrics(
+        self,
+        failing_test_results: List[DialogueUnderstandingTestResult],
+        passing_test_results: List[DialogueUnderstandingTestResult],
+    ) -> None:
+        # Create list of booleans indicating whether each user utterance
+        # passed or failed
+        user_utterances_status = [
+            step.has_passed()
+            for test in failing_test_results + passing_test_results
+            for step in test.test_case.iterate_over_user_steps()
+        ]
+        # Calculate number of passed and failed user utterances
+        self.number_of_passed_user_utterances = sum(user_utterances_status)
+        self.number_of_failed_user_utterances = (
+            len(user_utterances_status) - self.number_of_passed_user_utterances
+        )
+        # Calculate user utterance accuracy
+        self.accuracy[KEY_USER_UTTERANCES_ACCURACY] = (
+            self.number_of_passed_user_utterances
+            / (
+                self.number_of_failed_user_utterances
+                + self.number_of_passed_user_utterances
+            )
+        )

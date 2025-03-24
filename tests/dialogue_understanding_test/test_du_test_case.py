@@ -3,6 +3,7 @@ from typing import List
 import pydantic_core
 import pytest
 
+from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
 from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowCommand
 from rasa.dialogue_understanding_test.constants import (
     ACTOR_BOT,
@@ -33,6 +34,7 @@ from rasa.shared.nlu.constants import (
 @pytest.fixture
 def sample_output() -> DialogueUnderstandingOutput:
     return DialogueUnderstandingOutput(
+        latency=0.1234,
         commands={
             "component1": [SetSlotCommand("bar", "baz"), SetSlotCommand("foo", "bar")],
             "component2": [StartFlowCommand("foo")],
@@ -183,7 +185,11 @@ class TestDialogueUnderstandingOutput:
                 {
                     KEY_COMPONENT_NAME: "ComponentB",
                     KEY_LLM_RESPONSE_METADATA: {KEY_CHOICES: ["test LLM response"]},
-                }
+                },
+                {
+                    KEY_COMPONENT_NAME: EnterpriseSearchPolicy.__name__,
+                    KEY_LLM_RESPONSE_METADATA: {KEY_CHOICES: ["test LLM response"]},
+                },
             ],
         )
 
@@ -413,17 +419,26 @@ class TestDialogueUnderstandingTestStep:
 
     def test_get_latencies(self, sample_test_step: DialogueUnderstandingTestStep):
         """Test getting latencies from a test step."""
-        assert sample_test_step.get_latencies() == [1.23, 1.55]
+        assert sample_test_step.get_latencies() == {
+            "component1": [1.23],
+            "component2": [1.55],
+        }
 
     def test_get_completion_tokens(
         self, sample_test_step: DialogueUnderstandingTestStep
     ):
         """Test getting latencies from a test step."""
-        assert sample_test_step.get_completion_tokens() == [4, 6]
+        assert sample_test_step.get_completion_tokens() == {
+            "component1": [4],
+            "component2": [6],
+        }
 
     def test_get_prompt_tokens(self, sample_test_step: DialogueUnderstandingTestStep):
         """Test getting latencies from a test step."""
-        assert sample_test_step.get_prompt_tokens() == [1234, 1543]
+        assert sample_test_step.get_prompt_tokens() == {
+            "component1": [1234],
+            "component2": [1543],
+        }
 
 
 class TestDialogueUnderstandingTestCase:

@@ -651,12 +651,27 @@ def extract_attrs_for_du_print_test_results(
             for key, value in test_suite_result.llm_config.items():
                 attributes_dict[f"llm_config_0_{key}"] = value
 
-    for key, value in test_suite_result.latency_metrics.items():
-        attributes_dict[f"{OUTPUT_LATENCY_METRICS}_{key}"] = value
-    for key, value in test_suite_result.prompt_token_metrics.items():
-        attributes_dict[f"{OUTPUT_PROMPT_TOKEN_METRICS}_{key}"] = value
-    for key, value in test_suite_result.completion_token_metrics.items():
-        attributes_dict[f"{OUTPUT_COMPLETION_TOKEN_METRICS}_{key}"] = value
+    for component_name, latency_metric in test_suite_result.latency_metrics.items():
+        for metric_name, metric_value in latency_metric.items():
+            attributes_dict[
+                f"{OUTPUT_LATENCY_METRICS}_{component_name}_{metric_name}"
+            ] = metric_value
+    for (
+        component_name,
+        prompt_token_metric,
+    ) in test_suite_result.prompt_token_metrics.items():
+        for metric_name, metric_value in prompt_token_metric.items():
+            attributes_dict[
+                f"{OUTPUT_PROMPT_TOKEN_METRICS}_{component_name}_{metric_name}"
+            ] = metric_value
+    for (
+        component_name,
+        completion_token_metric,
+    ) in test_suite_result.completion_token_metrics.items():
+        for metric_name, metric_value in completion_token_metric.items():
+            attributes_dict[
+                f"{OUTPUT_COMPLETION_TOKEN_METRICS}_{component_name}_{metric_name}"
+            ] = metric_value
 
     return attributes_dict
 
