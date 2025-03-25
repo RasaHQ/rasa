@@ -7,7 +7,7 @@ nlg:
    provider: ollama
    model: llama3.2
    api_base: "http://localhost:11434"
-   timeout: 7
+   timeout: 300
 
 tracing:
  type: otlp

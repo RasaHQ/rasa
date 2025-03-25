@@ -129,6 +129,16 @@ runs:
         ollama pull llama3.2
       shell: bash
 
+    - name: Ollama API health-check
+      if: ${{ inputs.provider == 'ollama' }}
+      run: |
+        : Ollama API health-check
+        curl http://localhost:11434/api/generate -d '{
+          "model": "llama3.2",
+          "prompt": "Why is the sky blue?"
+        }'
+      shell: bash
+
     - name: Build vLLM Docker image
       if: ${{ inputs.provider == 'self-hosted-vllm' }}
       run: |

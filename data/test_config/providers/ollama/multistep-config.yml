@@ -7,7 +7,7 @@ pipeline:
       provider: ollama
       model: llama3.2
       api_base: "http://localhost:11434"
-      timeout: 7
+      timeout: 300
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
     nlu_entry:
@@ -37,7 +37,7 @@ pipeline:
       provider: ollama
       model: llama3.2
       api_base: "http://localhost:11434"
-      timeout: 7
+      timeout: 300
 
 policies:
   - name: RulePolicy
@@ -53,12 +53,12 @@ policies:
       provider: ollama
       model: llama3.2
       api_base: "http://localhost:11434"
-      timeout: 7
+      timeout: 300
   - name: IntentlessPolicy
     llm:
       provider: ollama
       model: llama3.2
       api_base: "http://localhost:11434"
-      timeout: 7
+      timeout: 300
 
 assistant_id: 20240418-073244-narrow-archive

@@ -24,7 +24,7 @@ pipeline:
       provider: ollama
       model: llama3.2
       api_base: "http://localhost:11434"
-      timeout: 20
+      timeout: 300
       temperature: 0.0
       top_p: 0.0
       cache:
@@ -46,12 +46,12 @@ policies:
       provider: ollama
       model: llama3.2
       api_base: "http://localhost:11434"
-      timeout: 7
+      timeout: 300
   - name: IntentlessPolicy
     llm:
       provider: ollama
       model: llama3.2
       api_base: "http://localhost:11434"
-      timeout: 7
+      timeout: 300
 
 assistant_id: 20240418-073244-narrow-archive
