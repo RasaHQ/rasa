@@ -26,7 +26,8 @@ on:
           - groq
           # - voyage TODO: Enable after ENG-1415 is unblocked
           - ollama
-          - self-hosted
+          - self-hosted-vllm
+          - self-hosted-llama-cpp
           - azure-multiple-deployments-with-simple-shuffle-routing
           - azure-multiple-deployments-with-least-busy-routing
           - azure-multiple-deployments-with-usage-based-routing

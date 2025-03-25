@@ -130,7 +130,7 @@ runs:
       shell: bash
 
     - name: Build vLLM Docker image
-      if: ${{ inputs.provider == 'self-hosted' }}
+      if: ${{ inputs.provider == 'self-hosted-vllm' }}
       run: |
         : Build vLLM Docker image
         mkdir vllm
@@ -145,35 +145,43 @@ runs:
 
     - name: Install Huggingface CLI
       working-directory: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
-      if: ${{ inputs.provider == 'self-hosted' }}
+      if: ${{ contains(inputs.provider, 'self-hosted') }}
       run: |
         : Install Huggingface CLI
         source $VENV && pip install "huggingface_hub[cli,hf_transfer]"
       shell: bash
     
-    - name: Cache model to be used with vLLM
-      if: ${{ inputs.provider == 'self-hosted' }}
+    - name: Cache model to be used with self-hosted providers
+      if: ${{ contains(inputs.provider, 'self-hosted') }}
       uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
-      id: vllm-model-cache
+      id: self-hosted-model-cache
       with:
-        path: model
-        key: ${{ runner.os }}-vllm-model-${{ hashFiles('model/**/*') }}
+        path: models
+        key: ${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ inputs.provider }}-${{ inputs.train-and-test }}-model-${{ hashFiles('data/test_config/providers/self-hosted-vllm/*', 'data/test_config/providers/self-hosted-llama-cpp/*') }}
 
     - name: Download model to be used with vLLM
-      if: ${{ inputs.provider == 'self-hosted' && steps.vllm-model-cache.outputs.cache-hit != 'true' }}
+      if: ${{ inputs.provider == 'self-hosted-vllm' && steps.self-hosted-model-cache.outputs.cache-hit != 'true' }}
+      uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
       env:
         LLM_MODEL_NAME: ${{ env.LLM_MODEL_NAME || 'Qwen/Qwen2.5-0.5B-Instruct' }}
-      run: |
-        : Download model to be used with vLLM
-        git config --global credential.helper cache
-        huggingface-cli login --token ${{ env.HUGGINGFACE_API_KEY }} --add-to-git-credential
-        mkdir model
-        export HF_HUB_ENABLE_HF_TRANSFER=1
-        huggingface-cli download ${{ env.LLM_MODEL_NAME }} --repo-type model --local-dir model --cache-dir model
-      shell: bash
+      with:
+        timeout_minutes: 60
+        max_attempts: 2
+        retry_wait_seconds: 300
+        shell: bash
+        command: |
+          : Download model to be used with vLLM
+          set -Eeuxov pipefail
+          git config --global credential.helper cache
+          huggingface-cli login --token ${{ env.HUGGINGFACE_API_KEY }} --add-to-git-credential
+          if [[ ! -d models ]]; then
+            mkdir models;
+          fi
+          export HF_HUB_ENABLE_HF_TRANSFER=1
+          huggingface-cli download ${{ env.LLM_MODEL_NAME }} --repo-type model --local-dir models --cache-dir models
 
     - name: Performance tuning for vLLM
-      if: ${{ inputs.provider == 'self-hosted' }}
+      if: ${{ inputs.provider == 'self-hosted-vllm' }}
       run: |
         : Performance tuning for vLLM
         sudo apt-get install libtcmalloc-minimal4
@@ -184,11 +192,11 @@ runs:
       id: run-vllm-docker-container
       env:
         LLM_MODEL_NAME: ${{ env.LLM_MODEL_NAME || 'Qwen/Qwen2.5-0.5B-Instruct' }}
-      if: ${{ inputs.provider == 'self-hosted' }}
+      if: ${{ inputs.provider == 'self-hosted-vllm' }}
       run: |
         : Run vLLM Docker container with model
         docker run -d -p 8080:8080 \
-        -v $(pwd)/model:/mnt/model \
+        -v $(pwd)/models:/mnt/model \
         -e VLLM_LOGGING_LEVEL=DEBUG \
         --shm-size=60g \
         --name vllm \
@@ -199,6 +207,45 @@ runs:
         --port 8080 \
         --max_model_len 2048 \
         --trust-remote-code
+      shell: bash
+
+    - name: Download model to be used with llama.cpp
+      if: ${{ inputs.provider == 'self-hosted-llama-cpp' && steps.self-hosted-model-cache.outputs.cache-hit != 'true' }}
+      uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
+      env:
+        LLM_MODEL_NAME: ${{ env.LLM_MODEL_NAME || 'ggml-org/Meta-Llama-3.1-8B-Instruct-Q4_0-GGUF' }}
+      with:
+        timeout_minutes: 60
+        max_attempts: 2
+        retry_wait_seconds: 300
+        shell: bash
+        command: |
+          : Download model to be used with vLLM
+          set -Eeuxov pipefail
+          git config --global credential.helper cache
+          huggingface-cli login --token ${{ env.HUGGINGFACE_API_KEY }} --add-to-git-credential
+          if [[ ! -d models ]]; then
+            mkdir models;
+          fi
+          export HF_HUB_ENABLE_HF_TRANSFER=1
+          huggingface-cli download ${{ env.LLM_MODEL_NAME }} --repo-type model --local-dir models --cache-dir models
+
+    - name: Install llama.cpp
+      if: ${{ inputs.provider == 'self-hosted-llama-cpp' }}
+      run: |
+        : Install llama.cpp
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        brew install llama.cpp \
+        && brew list llama.cpp \
+        && brew info llama.cpp \
+        && echo "PATH=$PATH:$(brew --prefix llama.cpp)/bin" >> "$GITHUB_ENV"
+      shell: bash
+
+    - name: Start llama.cpp server
+      if: ${{ inputs.provider == 'self-hosted-llama-cpp' }}
+      run: |
+        : Start llama.cpp server
+        llama-server --model models/meta-llama-3.1-8b-instruct-q4_0.gguf -v --no-webui &
       shell: bash
 
     # As endpoint is scaled-to-zero upon inactivity for cost minimisation,
@@ -534,7 +581,7 @@ runs:
         path: rasa-private/data/test_config/providers/litellm-proxy-multiple-deployments-with-routing/proxy-log-*
 
     - name: Collect vLLM logs
-      if: ${{ inputs.provider == 'self-hosted' && failure() && steps.run-vllm-docker-container.outcome == 'success' }}
+      if: ${{ inputs.provider == 'self-hosted-vllm' && failure() && steps.run-vllm-docker-container.outcome == 'success' }}
       env:
         COMMAND_GENERATOR: ${{ inputs.train-and-test }}
       run: |
@@ -544,7 +591,7 @@ runs:
       shell: bash
 
     - name: Save vLLM logs
-      if: ${{ inputs.provider == 'self-hosted' && failure() }}
+      if: ${{ inputs.provider == 'self-hosted-vllm' && failure() }}
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
       with:
         name: vllm-logs-${{ inputs.train-and-test }}

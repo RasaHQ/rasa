@@ -39,8 +39,3 @@ runs:
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-      - name: Inject setuptools into poetry's environment
-        run: |
-          poetry self add setuptools
-        shell: bash

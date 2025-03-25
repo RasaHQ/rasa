@@ -1,0 +1,25 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ llm:
+   provider: self-hosted
+   model: ggml-org/Meta-Llama-3.1-8B-Instruct-Q4_0-GGUF
+   api_base: "http://localhost:8080/v1"
+   timeout: 900
+   temperature: 0.2
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: e2e-tests-self-hosted
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: e2e-tests-self-hosted

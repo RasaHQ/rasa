@@ -34,7 +34,8 @@ on:
           - groq
           # - voyage TODO: Enable after ENG-1415 is unblocked
           - ollama
-          - self-hosted
+          - self-hosted-vllm
+          - self-hosted-llama-cpp
           - azure-multiple-deployments-with-simple-shuffle-routing
           - azure-multiple-deployments-with-least-busy-routing
           - azure-multiple-deployments-with-usage-based-routing
@@ -289,7 +290,7 @@ jobs:
     name: Run e2e Test
     needs: [job_setup, check_changes_impacting_providers]
     if: ${{ always() && (github.event_name == 'schedule' || inputs.provider == 'all' || (needs.check_changes_impacting_providers.outputs.litellm_upgraded == 'success' || needs.check_changes_impacting_providers.outputs.openai_upgraded == 'success' || needs.check_changes_impacting_providers.outputs.provider_code_changed == 'true' )) }}
-    runs-on: ${{ matrix.provider == 'self-hosted' && 'ubuntu-24.04-16core' || 'ubuntu-24.04' }}
+    runs-on: ${{ contains(matrix.provider, 'self-hosted') && 'ubuntu-24.04-16core' || 'ubuntu-24.04' }}
     services:
       redis:
         image: redis:6
@@ -318,7 +319,8 @@ jobs:
             groq,
             # voyage, TODO: Enable after ENG-1415 is unblocked
             ollama,
-            self-hosted,
+            self-hosted-vllm,
+            self-hosted-llama-cpp,
             azure-multiple-deployments-with-simple-shuffle-routing,
             azure-multiple-deployments-with-least-busy-routing,
             azure-multiple-deployments-with-usage-based-routing,
@@ -374,7 +376,7 @@ jobs:
     name: Run e2e Test
     needs: job_setup
     if: ${{ inputs.provider != 'all' && github.event_name == 'workflow_dispatch' }}
-    runs-on: ${{ inputs.provider == 'self-hosted' && 'ubuntu-24.04-16core' || 'ubuntu-24.04' }}
+    runs-on: ${{ contains(inputs.provider, 'self-hosted') && 'ubuntu-24.04-16core' || 'ubuntu-24.04' }}
     services:
       redis:
         image: redis:6
