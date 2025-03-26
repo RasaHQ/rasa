@@ -50,13 +50,16 @@ on:
           - openai-with-custom-prompt-for-CompactLLMCommandGenerator
           - openai-with-custom-prompt-for-CustomLLMCommandGenerator
       
-      rasa-calm-demo-branch:
-        description: "Branch to checkout for `rasa-calm-demo`"
-        type: string
+      data-repo:
+        description: "Bot repository"
+        type: choice
         required: true
-        default: main
-      calm-benchmarking-bot-branch:
-        description: "Branch to checkout for `calm-benchmarking-bot`"
+        options:
+          - rasa-calm-demo
+          - calm-benchmarking-bot
+
+      data-repo-branch:
+        description: "Branch to checkout for data-repo/bot"
         type: string
         required: true
         default: main
@@ -111,8 +114,8 @@ jobs:
     if: ${{ inputs.run_e2e_test_on_providers }}
     with:
       provider: ${{ inputs.provider }}
-      rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch }}
-      calm-benchmarking-bot-branch: ${{ inputs.calm-benchmarking-bot-branch }}
+      data-repo: ${{ inputs.data-repo }}
+      data-repo-branch: ${{ inputs.data-repo-branch }}
       single-step-e2e-test-with-assertions: ${{ inputs.single-step-e2e-test-with-assertions }}
       multi-step-e2e-test-with-assertions: ${{ inputs.multi-step-e2e-test-with-assertions }}
       compact-e2e-test-with-assertions: ${{ inputs.compact-e2e-test-with-assertions }}

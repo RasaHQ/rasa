@@ -69,7 +69,7 @@ policies:
     citation_enabled: true
     use_generative_llm: true
     vector_store:
-      source: rasa-calm-demo/docs/
+      source: data-repo/docs/
     embeddings:
       provider: azure
       deployment: test-text-embedding-3-small

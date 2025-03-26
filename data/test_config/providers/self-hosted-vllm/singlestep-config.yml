@@ -52,7 +52,7 @@ policies:
     citation_enabled: true
     use_generative_llm: true
     vector_store:
-      source: rasa-calm-demo/docs/
+      source: data-repo/docs/
     llm:
       provider: self-hosted
       model: Qwen/Qwen2.5-0.5B-Instruct

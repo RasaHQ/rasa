@@ -47,7 +47,7 @@ policies:
     citation_enabled: true
     use_generative_llm: true
     vector_store:
-      source: rasa-calm-demo/docs/
+      source: data-repo/docs/
     llm:
       provider: together_ai
       model: meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo

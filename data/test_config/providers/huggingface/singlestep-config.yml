@@ -52,7 +52,7 @@ policies:
     citation_enabled: true
     use_generative_llm: true
     vector_store:
-      source: rasa-calm-demo/docs/
+      source: data-repo/docs/
     llm:
       provider: huggingface
       model: rasa/cmd_gen_codellama_13b_calm_demo

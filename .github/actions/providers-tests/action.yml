@@ -14,13 +14,13 @@ inputs:
     description: "Single-step or multi-step training type, and testing on corresponding model"
     required: true
 
-  rasa-calm-demo-branch:
-    description: Branch to checkout for `rasa-calm-demo`
+  data-repo:
+    description: Bot repository
     required: true
     default: main
 
-  calm-benchmarking-bot-branch:
-    description: Branch to checkout for `calm-benchmarking-bot`
+  data-repo-branch:
+    description: Branch to checkout for data-repo
     required: true
     default: main
 
@@ -48,23 +48,13 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Checkout `rasa-calm-demo` git repository 🕝
-      if: ${{ inputs.train-and-test != 'compact' }}
+    - name: Checkout ${{ inputs.data-repo }} git repository 🕝
       uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
       with:
-        repository: RasaHQ/rasa-calm-demo
-        ref: ${{ inputs.rasa-calm-demo-branch }}
-        path: rasa-calm-demo
-        token: ${{ env.RASA_CALM_DEMO_READ_TOKEN }}
-
-    - name: Checkout `calm-benchmarking-bot` git repository 🕝
-      if: ${{ inputs.train-and-test == 'compact' }}
-      uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-      with:
-        repository: RasaHQ/calm-benchmarking-bot
-        ref: ${{ inputs.calm-benchmarking-bot-branch }}
-        path: calm-benchmarking-bot
-        token: ${{ env.CALM_BENCHMARKING_BOT_READ_TOKEN }}
+        repository: RasaHQ/${{ inputs.data-repo }}
+        ref: ${{ inputs.data-repo-branch }}
+        path: data-repo
+        token: ${{ inputs.data-repo == 'rasa-calm-demo' && env.RASA_CALM_DEMO_READ_TOKEN || env.CALM_BENCHMARKING_BOT_READ_TOKEN }}
 
     - name: Checkout specific `rasa-pro` version 🕝
       if: ${{ env.RASA_PRO_VERSION != '' }}
@@ -75,7 +65,7 @@ runs:
 
     - name: Setup LLM-judge model
       if: ${{ env.RASA_PRO_VERSION == '' }}
-      working-directory: ${{ inputs.train-and-test == 'compact' && 'calm-benchmarking-bot' || 'rasa-calm-demo' }}
+      working-directory: data-repo
       env:
         LLM_JUDGE_MODEL: ${{ inputs.llm-judge-model }}
       run: |
@@ -298,7 +288,7 @@ runs:
       shell: bash
 
     - name: Run duckling server
-      working-directory: ${{ inputs.train-and-test == 'compact' && 'calm-benchmarking-bot' || 'rasa-calm-demo' }}
+      working-directory: data-repo
       run: |
         : Run duckling server
         make run-duckling
@@ -309,7 +299,7 @@ runs:
       env:
         RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
         RASA_PRO_BETA_INTENTLESS: true
-      working-directory: ${{ inputs.train-and-test == 'compact' && 'calm-benchmarking-bot' || 'rasa-calm-demo' }}
+      working-directory: data-repo
       run: |
         : Run action server
         rasa run actions &
@@ -338,7 +328,6 @@ runs:
       uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
       env:
         RASA_PRO_BETA_INTENTLESS: true
-        BOT: ${{ inputs.train-and-test == 'compact' && 'calm-benchmarking-bot' || 'rasa-calm-demo' }}
         PROVIDER: ${{ inputs.provider }}
         COMMAND_GENERATOR: ${{ inputs.train-and-test }}
       with:
@@ -354,8 +343,8 @@ runs:
             && rasa train \
             --config "${GITHUB_WORKSPACE}"/rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ env.COMMAND_GENERATOR }}-config.yml \
             --endpoints "${GITHUB_WORKSPACE}"/rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
-            --domain "${GITHUB_WORKSPACE}"/${{ env.BOT }}/domain \
-            --data "${GITHUB_WORKSPACE}"/${{ env.BOT }}/data \
+            --domain "${GITHUB_WORKSPACE}"/data-repo/domain \
+            --data "${GITHUB_WORKSPACE}"/data-repo/data \
             --fixed-model-name ${{ env.COMMAND_GENERATOR }}-${{ env.PROVIDER }}-model \
             2>&1 \
             | tee model-training-log.txt
@@ -440,7 +429,7 @@ runs:
           if [[ ! -d tests ]]; then
             mkdir tests;
           fi
-          rasa test e2e "${GITHUB_WORKSPACE}"/rasa-calm-demo/${{ env.TESTS }} \
+          rasa test e2e "${GITHUB_WORKSPACE}"/data-repo/${{ env.TESTS }} \
             --e2e-results \
             --debug \
             --endpoints "${GITHUB_WORKSPACE}"/rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
@@ -468,7 +457,7 @@ runs:
           if [[ ! -d tests ]]; then
             mkdir tests;
           fi
-          rasa test e2e "${GITHUB_WORKSPACE}"/rasa-calm-demo/${{ env.TESTS }} \
+          rasa test e2e "${GITHUB_WORKSPACE}"/data-repo/${{ env.TESTS }} \
             --e2e-results \
             --debug \
             --endpoints "${GITHUB_WORKSPACE}"/rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
@@ -496,7 +485,7 @@ runs:
           if [[ ! -d tests ]]; then
             mkdir tests;
           fi
-          rasa test e2e "${GITHUB_WORKSPACE}"/calm-benchmarking-bot/${{ env.TESTS }} \
+          rasa test e2e "${GITHUB_WORKSPACE}"/data-repo/${{ env.TESTS }} \
             --e2e-results \
             --debug \
             --endpoints "${GITHUB_WORKSPACE}"/rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
@@ -528,7 +517,7 @@ runs:
         shell: bash
         command: |
           : Run dialogue understanding tests
-          rasa test du calm-benchmarking-bot/${{ env.TESTS }} \
+          rasa test du data-repo/${{ env.TESTS }} \
             --output-file dut-${{ env.PROVIDER }}-${{ env.COMMAND_GENERATOR }}.yml \
             --output-prompt \
             --debug \
@@ -649,13 +638,11 @@ runs:
         # Send notification to #dev-tribe-alerts slack channel
         channel-id: C070ELPSLBB
         slack-message: ':rocket: *Rasa-Pro* (version `${{ env.RASA_VERSION }}`, `rasa-private` branch `${{ github.ref_name }}` sha `${{ env.SHORT_SHA }}`)
-          CALM tests (from `${{ env.BOT }}` branch `${{ env.BOT_BRANCH }}`) passed against: `${{ inputs.provider }}`, with ${{ inputs.train-and-test }} command-generator. More
+          CALM tests (from `${{ inputs.data-repo }}` branch `${{ inputs.data-repo-branch }}`) passed against: `${{ inputs.provider }}`, with ${{ inputs.train-and-test }} command-generator. More
           information can be found <https://github.com/${{ github.repository
           }}/actions/runs/${{ github.run_id }}|here>.'
       env:
         SLACK_BOT_TOKEN: ${{ env.SLACK_BOT_TOKEN }}
-        BOT: ${{ inputs.train-and-test == 'compact' && 'calm-benchmarking-bot' || 'rasa-calm-demo' }}
-        BOT_BRANCH: ${{ inputs.train-and-test == 'compact' && inputs.calm-benchmarking-bot-branch || inputs.rasa-calm-demo-branch }}
 
     - name: Notify Slack of failing test ⛔️
       if: ${{ failure() && github.event_name != 'pull_request'  && env.SEND_RESULTS_NOTIFICATION_TO_SLACK == 'true' }}
@@ -666,10 +653,8 @@ runs:
 
         # Alert Engine-squad
         slack-message: '<!subteam^S0322UJCPU1> :broken_heart: *Rasa-Pro* (version `${{ env.RASA_VERSION
-          }}`, `rasa-private` branch `${{ github.ref_name }}` sha `${{ env.SHORT_SHA }}`) CALM tests (from `${{ env.BOT }}` branch `${{ env.BOT_BRANCH }}`) failed against: `${{ inputs.provider }}`, with ${{ inputs.train-and-test }} command-generator!
+          }}`, `rasa-private` branch `${{ github.ref_name }}` sha `${{ env.SHORT_SHA }}`) CALM tests (from `${{ inputs.data-repo }}` branch `${{ inputs.data-repo-branch }}`) failed against: `${{ inputs.provider }}`, with ${{ inputs.train-and-test }} command-generator!
           More information can be found <https://github.com/${{
           github.repository }}/actions/runs/${{ github.run_id }}|here>.'
       env:
         SLACK_BOT_TOKEN: ${{ env.SLACK_BOT_TOKEN }}
-        BOT: ${{ inputs.train-and-test == 'compact' && 'calm-benchmarking-bot' || 'rasa-calm-demo' }}
-        BOT_BRANCH: ${{ inputs.train-and-test == 'compact' && inputs.calm-benchmarking-bot-branch || inputs.rasa-calm-demo-branch }}

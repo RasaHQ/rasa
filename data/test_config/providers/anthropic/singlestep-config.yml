@@ -48,7 +48,7 @@ policies:
     citation_enabled: true
     use_generative_llm: true
     vector_store:
-      source: rasa-calm-demo/docs/
+      source: data-repo/docs/
     llm:
       provider: anthropic
       model: claude-3-5-sonnet-latest

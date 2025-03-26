@@ -42,7 +42,7 @@ policies:
     citation_enabled: true
     use_generative_llm: true
     vector_store:
-      source: rasa-calm-demo/docs/
+      source: data-repo/docs/
   - name: IntentlessPolicy
     llm:
       model: gpt-4-turbo-2024-04-09

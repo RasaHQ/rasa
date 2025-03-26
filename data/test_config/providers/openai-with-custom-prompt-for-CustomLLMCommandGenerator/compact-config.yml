@@ -1,6 +1,12 @@
 recipe: default.v1
 language: en
 pipeline:
+  - name: LLMBasedRouter
+    calm_entry:
+      sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
+    nlu_entry:
+      sticky: "handles everything around health advice and hotel or restaurant bookings"
+      non_sticky: "handles chitchat"
   - name: WhitespaceTokenizer
   - name: CountVectorsFeaturizer
   - name: CountVectorsFeaturizer
@@ -19,7 +25,8 @@ pipeline:
     dimensions: ["time", "number"]
     timezone: "Europe/Berlin"
     timeout: 3
-  - name: calm-benchmarking-bot.custom.compact_llm_command_generator_override_component.CustomCompactLLMCommandGenerator
+  - name: NLUCommandAdapter
+  - name: data-repo.custom.compact_llm_command_generator_override_component.CustomCompactLLMCommandGenerator
     llm:
       model_group: openai_llm
     flow_retrieval:
@@ -29,9 +36,8 @@ pipeline:
 
 policies:
   - name: RulePolicy
-  # Enable when bug ENG-1747 is resolved 
-  # - name: TEDPolicy
-  #   constrain_similarities: true
+  - name: TEDPolicy
+    constrain_similarities: true
   - name: FlowPolicy
   - name: EnterpriseSearchPolicy
     llm:
@@ -40,7 +46,7 @@ policies:
     citation_enabled: true
     use_generative_llm: true
     vector_store:
-      source: calm-benchmarking-bot/docs/
+      source: data-repo/docs/
     embeddings:
       model_group: openai_embeddings
   - name: IntentlessPolicy

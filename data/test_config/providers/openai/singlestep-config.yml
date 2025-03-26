@@ -41,14 +41,14 @@ policies:
   - name: FlowPolicy
   - name: EnterpriseSearchPolicy
     llm:
-      model: gpt-4-0613
+      model: gpt-4o-2024-11-20
     max_messages_in_query: 4
     citation_enabled: true
     use_generative_llm: true
     vector_store:
-      source: rasa-calm-demo/docs/
+      source: data-repo/docs/
   - name: IntentlessPolicy
     llm:
-      model: gpt-4-0613
+      model: gpt-4o-2024-11-20
 
 assistant_id: 20240418-073244-narrow-archive

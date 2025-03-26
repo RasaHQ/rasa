@@ -48,7 +48,7 @@ policies:
     citation_enabled: true
     use_generative_llm: true
     vector_store:
-      source: rasa-calm-demo/docs/
+      source: data-repo/docs/
     llm:
       provider: ollama
       model: llama3.2

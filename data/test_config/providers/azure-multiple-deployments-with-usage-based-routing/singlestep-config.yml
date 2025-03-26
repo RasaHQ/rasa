@@ -47,7 +47,7 @@ policies:
     citation_enabled: true
     use_generative_llm: true
     vector_store:
-      source: rasa-calm-demo/docs/
+      source: data-repo/docs/
     embeddings:
       model_group: azure_embeddings
     llm:

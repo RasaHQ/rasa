@@ -54,14 +54,17 @@ on:
         type: string
         required: false
 
-      rasa-calm-demo-branch:
-        description: "Branch to checkout for `rasa-calm-demo`"
-        type: string
+      data-repo:
+        description: "Bot repository. Ensure provider config files are compatible with data."
+        type: choice
         required: true
-        default: "main"
+        default: rasa-calm-demo
+        options:
+          - rasa-calm-demo
+          - calm-benchmarking-bot
 
-      calm-benchmarking-bot-branch:
-        description: "Branch to checkout for `calm-benchmarking-bot`"
+      data-repo-branch:
+        description: "Branch to checkout for data-repo/bot"
         type: string
         required: true
         default: "main"
@@ -94,7 +97,7 @@ on:
         description: "Path to test file, to be run with compact-LLM-Generator trained model"
         type: string
         required: true
-        default: "e2e/e2e_tests_with_assertions/test/happy_path/user_checks_balance.yml"
+        default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
 
       llm-judge-model:
         description: "Judge model to be used by assertions. Ignored for < v3.12"
@@ -120,12 +123,12 @@ on:
         description: "LLM chat-completion and Embeddings model provider"
         type: string
         required: true
-      rasa-calm-demo-branch:
-        description: "Branch to checkout for `rasa-calm-demo`"
+      data-repo:
+        description: "Bot repository"
         type: string
         required: true
-      calm-benchmarking-bot-branch:
-        description: "Branch to checkout for `calm-benchmarking-bot`"
+      data-repo-branch:
+        description: "Branch to checkout for data-repo/bot"
         type: string
         required: true
       command-generator:
@@ -365,11 +368,11 @@ jobs:
         with:
           provider: ${{ matrix.provider }}
           train-and-test: ${{ matrix.train-and-test }}
-          rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch || 'main' }}
-          calm-benchmarking-bot-branch: ${{ inputs.calm-benchmarking-bot-branch || 'main' }}
+          data-repo: ${{ inputs.data-repo || 'rasa-calm-demo' }}
+          data-repo-branch: ${{ inputs.data-repo-branch || 'main' }}
           single-step-tests: ${{ inputs.single-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }} # TODO: Use test that invokes enterprise-search, when flakiness is resolved
           multi-step-tests: ${{ inputs.multi-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }}
-          compact-tests: ${{ inputs.compact-e2e-test-with-assertions || 'e2e/e2e_tests_with_assertions/test/happy_path/user_checks_balance.yml' }}
+          compact-tests: ${{ inputs.compact-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }}
           llm-judge-model: ${{ inputs.llm-judge-model || 'gpt-4o-mini' }}
 
   e2e_test_on_single_provider:
@@ -427,8 +430,8 @@ jobs:
         with:
           provider: ${{ inputs.provider }}
           train-and-test: ${{ matrix.train-and-test }}
-          rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch || 'main' }}
-          calm-benchmarking-bot-branch: ${{ inputs.calm-benchmarking-bot-branch }}
+          data-repo: ${{ inputs.data-repo || 'rasa-calm-demo' }}
+          data-repo-branch: ${{ inputs.data-repo-branch || 'main' }}
           single-step-tests: ${{ inputs.single-step-e2e-test-with-assertions }}
           multi-step-tests: ${{ inputs.multi-step-e2e-test-with-assertions }}
           compact-tests: ${{ inputs.compact-e2e-test-with-assertions }}
