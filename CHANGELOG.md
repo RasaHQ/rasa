@@ -10,6 +10,13 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.12.2] - 2025-03-25
+                        
+Rasa Pro 3.12.2 (2025-03-25)                              
+
+No significant changes.
+
+
 ## [3.12.1] - 2025-03-21
                         
 Rasa Pro 3.12.1 (2025-03-21)                             
