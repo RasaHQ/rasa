@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 from rasa.shared.constants import (
     AWS_BEDROCK_PROVIDER,
+    AWS_SAGEMAKER_CHAT_PROVIDER,
     AWS_SAGEMAKER_PROVIDER,
 )
 from rasa.shared.providers._configs.default_litellm_client_config import (
@@ -79,7 +80,7 @@ class DefaultLiteLLMClient(_BaseLiteLLMClient):
 
         <provider>/<model or deployment name>
         """
-        if self.model and "/" not in self.model:
+        if self.model and f"{self.provider}/" not in self.model:
             return f"{self.provider}/{self.model}"
         return self.model
 
@@ -100,7 +101,11 @@ class DefaultLiteLLMClient(_BaseLiteLLMClient):
         #       SageMaker) in Rasa by allowing AWS secrets to be provided as extra
         #       parameters without triggering validation errors due to missing AWS
         #       environment variables.
-        if self.provider.lower() in [AWS_BEDROCK_PROVIDER, AWS_SAGEMAKER_PROVIDER]:
+        if self.provider.lower() in {
+            AWS_BEDROCK_PROVIDER,
+            AWS_SAGEMAKER_PROVIDER,
+            AWS_SAGEMAKER_CHAT_PROVIDER,
+        }:
             validate_aws_setup_for_litellm_clients(
                 self._litellm_model_name,
                 self._litellm_extra_parameters,

@@ -183,6 +183,7 @@ OPENAI_API_VERSION_CONFIG_KEY = "openai_api_version"
 
 AWS_BEDROCK_PROVIDER = "bedrock"
 AWS_SAGEMAKER_PROVIDER = "sagemaker"
+AWS_SAGEMAKER_CHAT_PROVIDER = "sagemaker_chat"
 
 API_BASE_CONFIG_KEY = "api_base"
 API_TYPE_CONFIG_KEY = "api_type"

@@ -1,3 +1,5 @@
+from typing import List
+
 import pytest
 import structlog
 from pytest import MonkeyPatch
@@ -92,22 +94,43 @@ class TestDefaultLiteLLMEmbeddingClient:
         assert found_validation_log
 
     @pytest.mark.parametrize(
-        "config, expected_model, expected_litellm_model_name",
+        "config, expected_model, expected_litellm_model_name, mock_env_vars",
         [
             (
                 {"provider": "cohere", "model": "test-cohere"},
                 "test-cohere",
                 "cohere/test-cohere",
+                ["COHERE_API_KEY"],
             ),
             (
                 {"provider": "cohere", "model": "cohere/test-cohere"},
                 "cohere/test-cohere",
                 "cohere/test-cohere",
+                ["COHERE_API_KEY"],
             ),
             (
-                {"provider": "sagemaker", "model": "sagemaker_chat/endpoint-xyz"},
+                {"provider": "sagemaker_chat", "model": "sagemaker_chat/endpoint-xyz"},
                 "sagemaker_chat/endpoint-xyz",
                 "sagemaker_chat/endpoint-xyz",
+                [],
+            ),
+            (
+                {
+                    "provider": "huggingface",
+                    "model": "rasa/cmd_gen_codellama_13b_calm_demo",
+                },
+                "rasa/cmd_gen_codellama_13b_calm_demo",
+                "huggingface/rasa/cmd_gen_codellama_13b_calm_demo",
+                ["HUGGINGFACE_API_KEY"],
+            ),
+            (
+                {
+                    "provider": "together_ai",
+                    "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+                },
+                "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+                "together_ai/meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+                ["TOGETHERAI_API_KEY"],
             ),
         ],
     )
@@ -116,13 +139,15 @@ class TestDefaultLiteLLMEmbeddingClient:
         config: dict,
         expected_model: str,
         expected_litellm_model_name: str,
+        mock_env_vars: List[str],
         monkeypatch: MonkeyPatch,
     ):
         # Given
-        monkeypatch.setenv(
-            "COHERE_API_KEY",
-            "mock key in test_that_litellm_model_name_is_correctly_initialized",
-        )
+        for var in mock_env_vars:
+            monkeypatch.setenv(
+                var,
+                "mock key in test_that_litellm_model_name_is_correctly_initialized",
+            )
         # When
         client = DefaultLiteLLMClient.from_config(config)
         # Then
