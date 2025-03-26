@@ -134,13 +134,15 @@ class DevelopmentInspectProxy(InputChannel):
 
         tracker = await self.processor.get_tracker(sender_id)
         state = tracker.current_state(EventVerbosity.AFTER_RESTART)
-        return orjson.dumps(state).decode("utf-8")
+        return orjson.dumps(state, option=orjson.OPT_SERIALIZE_NUMPY).decode("utf-8")
 
     async def on_tracker_updated(self, tracker: DialogueStateTracker) -> None:
         """Notifies all clients about tracker updates in real-time."""
         if self.tracker_stream and tracker.sender_id:
             state = tracker.current_state(EventVerbosity.AFTER_RESTART)
-            tracker_dump = orjson.dumps(state).decode("utf-8")
+            tracker_dump = orjson.dumps(
+                state, option=orjson.OPT_SERIALIZE_NUMPY
+            ).decode("utf-8")
             await self.tracker_stream.broadcast(tracker_dump)
 
     async def on_message_proxy(
