@@ -56,6 +56,12 @@ runs:
         path: data-repo
         token: ${{ inputs.data-repo == 'rasa-calm-demo' && env.RASA_CALM_DEMO_READ_TOKEN || env.CALM_BENCHMARKING_BOT_READ_TOKEN }}
 
+    - name: Initialise data-repo as module
+      run: |
+        : Initialise data-repo as module
+        touch data-repo/__init__.py
+      shell: bash
+
     - name: Checkout specific `rasa-pro` version 🕝
       if: ${{ env.RASA_PRO_VERSION != '' }}
       uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c

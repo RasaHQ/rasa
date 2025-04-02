@@ -2,7 +2,7 @@ recipe: default.v1
 language: en
 pipeline:
   - name: LLMBasedRouter
-    prompt: data/test_config/providers/router_template.jinja2
+    prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
       provider: together_ai
       model: meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo

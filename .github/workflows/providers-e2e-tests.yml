@@ -176,6 +176,7 @@ env:
   RASA_CALM_DEMO_READ_TOKEN: ${{ secrets.RASA_CALM_DEMO_READ }}
   CALM_BENCHMARKING_BOT_READ_TOKEN: ${{ secrets.CALM_BENCH_CLONE }}
   SEND_RESULTS_NOTIFICATION_TO_SLACK: ${{ github.event_name == 'schedule' && true || inputs.send-results-notification-to-slack }}
+  RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS: true
 
   # Providers' required environment variables (API key values also stored in 1Password):
 
