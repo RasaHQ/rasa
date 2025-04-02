@@ -203,7 +203,7 @@ Rasa Pro 3.11.5 (2025-02-18)
 
 ## [3.11.4] - 2025-01-30
                         
-Rasa Pro 3.11.4 (2025-01-30)                             
+Rasa Pro 3.11.4 (2025-01-30)
 ### Improvements
 - [#1900](https://github.com/rasahq/rasa-private/issues/1900): Remove unnecessary deepcopy to improve performance in `undo_fallback_prediction` method of `FallbackClassifier`
 
@@ -517,6 +517,56 @@ Rasa Pro 3.11.0 (2024-12-11)
 
 ### Miscellaneous internal changes
 - [#1212](https://github.com/rasahq/rasa-private/issues/1212), [#1318](https://github.com/rasahq/rasa-private/issues/1318), [#1528](https://github.com/rasahq/rasa-private/issues/1528), [#1550](https://github.com/rasahq/rasa-private/issues/1550), [#1581](https://github.com/rasahq/rasa-private/issues/1581), [#1650](https://github.com/rasahq/rasa-private/issues/1650)
+
+
+## [3.10.18] - 2025-04-02
+
+Rasa Pro 3.10.18 (2025-04-02)
+### Bugfixes
+- [#1922](https://github.com/rasahq/rasa-private/issues/1922): Updated `Inspector` dependent packages (cross-spawn, mermaid, dom-purify, vite, braces, ws, axios and rollup) to address security vulnerabilities.
+- [#2027](https://github.com/rasahq/rasa-private/issues/2027): Modify Enterprise Search Citation Prompt Template to use `doc.text`
+- [#2048](https://github.com/rasahq/rasa-private/issues/2048): Fixes ClarifyCommand syntax in the fine-tuning recipe.
+- [#2168](https://github.com/rasahq/rasa-private/issues/2168): Send error event to the Kafka broker, when the original message size is too large, above the configured broker limit.
+  This error handling mechanism was added to prevent Rasa-Pro server crashes.
+- [#2173](https://github.com/rasahq/rasa-private/issues/2173): Update the following dependencies to versions that contain the latest patches for security vulnerabilities:
+  - `jinja2`
+  - `werkzeug`
+  - `requests`
+  - `cryptography`
+  - `pyarrow`
+  - `langchain`
+  - `langchain-community`
+
+
+## [3.10.17] - 2025-01-30
+
+Rasa Pro 3.10.17 (2025-01-30)
+### Improvements
+- [#1900](https://github.com/rasahq/rasa-private/issues/1900): Remove unnecessary deepcopy to improve performance in `undo_fallback_prediction` method of `FallbackClassifier`
+
+### Bugfixes
+- [#1816](https://github.com/rasahq/rasa-private/issues/1816): - Fixed an issue where the `pattern_continue_interrupted` was not correctly triggered when the flow digressed to a step containing a link.
+- [#1828](https://github.com/rasahq/rasa-private/issues/1828): Add the flow ID as a prefix to step ID to ensure uniqueness. This resolves a rare bug where steps in a child flow with a structure similar to those in a parent flow (using a "call" step) could result in duplicate step IDs. In this case duplicates previously caused incorrect next step selection.
+
+### Miscellaneous internal changes
+- [#1874](https://github.com/rasahq/rasa-private/issues/1874), [#1886](https://github.com/rasahq/rasa-private/issues/1886)
+
+
+## [3.10.16] - 2025-01-15
+
+Rasa Pro 3.10.16 (2025-01-15)
+### Bugfixes
+- [#1756](https://github.com/rasahq/rasa-private/issues/1756): * Fixed an error in `rasa llm finetune prepare-data` when using a subclass of `SingleStepLLMCommandGenerator`.
+- [#1790](https://github.com/rasahq/rasa-private/issues/1790): Make `pattern_session_start` work with `rasa inspector` to allow the assistant proactively start the conversation with a user.
+- [#1792](https://github.com/rasahq/rasa-private/issues/1792): Fix writing the test cases obtained via the e2e test case conversion command to file, where `test_cases` key
+  was written as a list item, instead of a dict key. This caused running the test cases to fail because it didn't comply
+  with the e2e test schema. This PR fixes the issue by writing the test cases as a dict key.
+- [#1820](https://github.com/rasahq/rasa-private/issues/1820): Add pre-training custom validation to the domain responses that would raise a Rasa Pro validation error when a domain response is an empty sequence.
+- [#1822](https://github.com/rasahq/rasa-private/issues/1822): Fixes a critical security vulnerability with `jsonpickle` dependency by upgrading to the patched version.
+- [#1827](https://github.com/rasahq/rasa-private/issues/1827): Updated `pymilvus` and `minio` to address security vulnerability.
+
+### Miscellaneous internal changes
+- [#1819](https://github.com/rasahq/rasa-private/issues/1819)
 
 
 ## [3.10.15] - 2024-12-18
