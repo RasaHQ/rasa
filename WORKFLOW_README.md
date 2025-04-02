@@ -62,6 +62,11 @@ This workflow runs DM1 tests (that use Tensorflow), on:
 
 Purpose of this dedicated workflow is to reduce GHA costs, by not running DM1/Tensorflow tests on all CI runs.
 
+### Verify patch releases are not model breaking
+This workflow runs on release branches, to verify compatibility between patch versions, by
+training model on an earlier `rasa-pro` patch version, and running inference with a newer `rasa-pro` 
+patch version using that same model, without having to re-train the model using newer patch version.
+
 ### Release Artifacts Workflow
 Workflow runs on a tag push to the `main` branch and `release branches`. 
 This workflow does the following:
