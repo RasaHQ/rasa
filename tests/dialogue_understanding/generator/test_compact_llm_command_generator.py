@@ -748,6 +748,108 @@ class TestCompactLLMCommandGenerator:
         # make sure the slot from the called flow is available in the template
         assert """current_step":{"requested_slot":"test_slot",""" in rendered_template
 
+    def test_render_template_with_multiline_flow_and_descriptions(
+        self,
+        command_generator: CompactLLMCommandGenerator,
+    ):
+        """
+        Test that render_template renders the template strings with valid JSON
+        (newline, tabs and quotes are escaped)
+        """
+        # Given
+        test_message = Message.build(text="Hey I want to test this")
+        test_slot = TextSlot(
+            name="test_slot",
+            mappings=[{}],
+            initial_value=None,
+            influence_conversation=False,
+        )
+        test_tracker = DialogueStateTracker.from_events(
+            sender_id="test",
+            evts=[UserUttered("Hello"), BotUttered("Hi")],
+            slots=[test_slot],
+        )
+        stack = DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "flow_id": "test_flow_multiline_descriptions",
+                    "step_id": "test_slot_with_multiline_description",
+                    "frame_id": "some-frame-id",
+                },
+            ]
+        )
+        test_flows = flows_from_str(
+            """
+            flows:
+              test_flow_inline_descriptions:
+                description: some inline flow description
+                steps:
+                  - id: test_slot_with_inline_description
+                    collect: test_slot
+                    description: some inline slot description
+              test_flow_multiline_descriptions:
+                description: |
+                  some multiline flow description
+                  * numbering 1
+                  * numbering 2
+                  lorem ipsum dolor sit amet
+                steps:
+                  - id: test_slot_with_multiline_description
+                    collect: test_slot
+                    description: |
+                      some multiline slot description
+                      * numbering 1
+                      * numbering 2
+                      lorem ipsum dolor sit amet
+            """
+        )
+        startable_test_flows = test_flows.exclude_link_only_flows()
+        test_tracker.update_stack(stack)
+        # When
+        rendered_template = command_generator.render_template(
+            message=test_message,
+            tracker=test_tracker,
+            startable_flows=startable_test_flows,
+            all_flows=test_flows,
+        )
+        # Then
+
+        # Make sure it looks like we are in the calling flow
+        assert (
+            "\nUse the following structured data:\n"
+            "```json\n"
+            '{"flows":[{"name":"test_flow_inline_descriptions",'
+        ) in rendered_template
+
+        # Make sure the valid JSON strings are present in the template
+        # Flow inline description
+        assert ('"description":"some inline flow description"') in rendered_template
+        # Slot inline description
+        assert ('"description":"some inline slot description"') in rendered_template
+        # Flow multiline description
+        assert (
+            '"description":'
+            '"'
+            "some multiline flow description"
+            "\\n* numbering 1"
+            "\\n* numbering 2"
+            "\\nlorem ipsum dolor sit amet"
+            "\\n"
+            '"'
+        ) in rendered_template
+        # Slot multiline description
+        assert (
+            '"description":'
+            '"'
+            "some multiline slot description"
+            "\\n* numbering 1"
+            "\\n* numbering 2"
+            "\\nlorem ipsum dolor sit amet"
+            "\\n"
+            '"'
+        ) in rendered_template
+
     @pytest.mark.parametrize(
         "input_action, expected_command",
         [

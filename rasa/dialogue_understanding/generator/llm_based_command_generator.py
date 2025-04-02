@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union
 
 import structlog
-from jinja2 import Template
+from jinja2 import Environment, Template
 
 import rasa.dialogue_understanding.generator.utils
 import rasa.shared.utils.io
@@ -17,12 +17,14 @@ from rasa.dialogue_understanding.commands.handle_digressions_command import (
 )
 from rasa.dialogue_understanding.constants import KEY_MINIMIZE_NUM_CALLS
 from rasa.dialogue_understanding.generator import CommandGenerator
+from rasa.dialogue_understanding.generator._jinja_filters import to_json_escaped_string
 from rasa.dialogue_understanding.generator.constants import (
     DEFAULT_LLM_CONFIG,
     FLOW_RETRIEVAL_ACTIVE_KEY,
     FLOW_RETRIEVAL_FLOW_THRESHOLD,
     FLOW_RETRIEVAL_KEY,
     LLM_CONFIG_KEY,
+    TO_JSON_ESCAPED_STRING_JINJA_FILTER,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.dialogue_understanding.stack.utils import top_flow_frame
@@ -226,12 +228,20 @@ class LLMBasedCommandGenerator(
 
     @lru_cache
     def compile_template(self, template: str) -> Template:
-        """Compile the prompt template.
+        """
+        Compile the prompt template and register custom filters.
 
         Compiling the template is an expensive operation,
         so we cache the result.
         """
-        return Template(template)
+        # Create an environment
+        env = Environment()
+
+        # Register filters
+        env.filters[TO_JSON_ESCAPED_STRING_JINJA_FILTER] = to_json_escaped_string
+
+        # Return the template which can leverage registered filters
+        return env.from_string(template)
 
     @classmethod
     def load_prompt_template_from_model_storage(
