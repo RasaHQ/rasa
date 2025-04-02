@@ -170,6 +170,23 @@ Rasa Pro 3.12.0 (2025-03-19)
 ### Miscellaneous internal changes
 - [#1685](https://github.com/rasahq/rasa-private/issues/1685), [#1760](https://github.com/rasahq/rasa-private/issues/1760), [#1780](https://github.com/rasahq/rasa-private/issues/1780), [#1784](https://github.com/rasahq/rasa-private/issues/1784), [#1829](https://github.com/rasahq/rasa-private/issues/1829), [#1868](https://github.com/rasahq/rasa-private/issues/1868), [#1873](https://github.com/rasahq/rasa-private/issues/1873), [#1929](https://github.com/rasahq/rasa-private/issues/1929), [#1930](https://github.com/rasahq/rasa-private/issues/1930), [#1946](https://github.com/rasahq/rasa-private/issues/1946), [#1949](https://github.com/rasahq/rasa-private/issues/1949), [#1955](https://github.com/rasahq/rasa-private/issues/1955), [#1972](https://github.com/rasahq/rasa-private/issues/1972), [#1989](https://github.com/rasahq/rasa-private/issues/1989), [#1991](https://github.com/rasahq/rasa-private/issues/1991), [#1998](https://github.com/rasahq/rasa-private/issues/1998), [#2004](https://github.com/rasahq/rasa-private/issues/2004), [#2016](https://github.com/rasahq/rasa-private/issues/2016), [#2024](https://github.com/rasahq/rasa-private/issues/2024), [#2037](https://github.com/rasahq/rasa-private/issues/2037), [#2077](https://github.com/rasahq/rasa-private/issues/2077), [#2079](https://github.com/rasahq/rasa-private/issues/2079), [#2100](https://github.com/rasahq/rasa-private/issues/2100), [#2113](https://github.com/rasahq/rasa-private/issues/2113), [#2124](https://github.com/rasahq/rasa-private/issues/2124)
 
+## [3.11.6] - 2025-04-02
+
+Rasa Pro 3.11.6 (2025-04-02)                             
+### Bugfixes
+- [#1982](https://github.com/rasahq/rasa-private/issues/1982): Improved error handling for Deepgram and Cartesia connection failures to display more meaningful error messages when authentication fails or other connection issues occur.
+- [#2027](https://github.com/rasahq/rasa-private/issues/2027): Modify Enterprise Search Citation Prompt Template to use `doc.text`
+- [#2048](https://github.com/rasahq/rasa-private/issues/2048): Fixes ClarifyCommand syntax in the fine-tuning recipe.
+- [#2168](https://github.com/rasahq/rasa-private/issues/2168): Send error event to the Kafka broker, when the original message size is too large, above the configured broker limit.
+  This error handling mechanism was added to prevent Rasa-Pro server crashes.
+- [#2172](https://github.com/rasahq/rasa-private/issues/2172): Update the following dependencies to versions that contain the latest patches for security vulnerabilities:
+  - `jinja2`
+  - `werkzeug`
+  - `requests`
+  - `cryptography`
+  - `pyarrow`
+  - `langchain`
+  - `langchain-community`
 
 ## [3.11.5] - 2025-02-18
                         
