@@ -41,6 +41,7 @@ from rasa.shared.core.events import (
     DefinePrevUserUtteredFeaturization,
     DialogueStackUpdated,
     EntitiesAdded,
+    ErrorHandled,
     Event,
     FlowCancelled,
     FlowCompleted,
@@ -866,6 +867,7 @@ tested_events = [
     FlowCancelled("foo", "bar"),
     RoutingSessionEnded(),
     SessionEnded(metadata={"reason": "call disconnected"}),
+    ErrorHandled(error_code=10),
 ]
 
 

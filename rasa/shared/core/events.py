@@ -36,6 +36,7 @@ from rasa.shared.core.constants import (
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     ACTION_SESSION_START_NAME,
     ENTITY_LABEL_SEPARATOR,
+    ERROR_CODE_KEY,
     EXTERNAL_MESSAGE_PREFIX,
     IS_EXTERNAL,
     LOOP_INTERRUPTED,
@@ -2578,3 +2579,69 @@ class SessionEnded(AlwaysEqualEventMixin):
         """Applies event to current conversation state."""
         # noinspection PyProtectedMember
         tracker._reset()
+
+
+class ErrorHandled(Event):
+    """An error occurred during the conversation.
+
+    The error message is stored in the metadata of the event.
+    """
+
+    type_name = "error"
+
+    def __init__(
+        self,
+        error_code: int,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Creates event for an error.
+
+        Args:
+            error_code: Error int code.
+            timestamp: When the event was created.
+            metadata: Additional event metadata.
+        """
+        self.error_code = error_code
+        super().__init__(timestamp, metadata)
+
+    def __str__(self) -> Text:
+        """Returns text representation of event."""
+        return f"ErrorHandled({self.error_code})"
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return f"ErrorHandled({self.error_code}, {self.timestamp}, {self.metadata})"
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash(self.error_code)
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, ErrorHandled):
+            return NotImplemented
+
+        return self.error_code == other.error_code
+
+    def as_story_string(self) -> Text:
+        """Returns text representation of event."""
+        props = json.dumps({ERROR_CODE_KEY: self.error_code})
+        return f"{ErrorHandled.type_name}{props}"
+
+    @classmethod
+    def _from_story_string(cls, parameters: Dict[Text, Any]) -> List["ErrorHandled"]:
+        """Called to convert a parsed story line into an event."""
+        return [
+            ErrorHandled(
+                parameters.get(ERROR_CODE_KEY),
+                parameters.get("timestamp"),
+                parameters.get("metadata"),
+            )
+        ]
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
+        serialized = super().as_dict()
+        serialized.update({ERROR_CODE_KEY: self.error_code})
+        return serialized

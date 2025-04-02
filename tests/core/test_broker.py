@@ -3,7 +3,7 @@ import logging
 import textwrap
 from pathlib import Path
 from typing import List, Optional, Text, Type, Union
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import aio_pika.exceptions
 import aiormq.exceptions
@@ -13,6 +13,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aiormq import ChannelNotFoundEntity
+from confluent_kafka import KafkaError, KafkaException
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -412,3 +413,54 @@ def test_pika_event_broker_configure_url(
     broker = PikaEventBroker(host=host, username=username, password=password)
     url = broker._configure_url()
     assert url == expected_url
+
+
+def test_kafka_event_broker_handle_message_size_too_large(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    # raise exception only first time when called
+    mock_publish = Mock(side_effect=[KafkaException(KafkaError(10)), None])
+    mock_retry_publish = Mock()
+
+    monkeypatch.setattr(
+        "rasa.core.brokers.kafka.KafkaEventBroker._create_producer", MagicMock()
+    )
+    monkeypatch.setattr(
+        "rasa.core.brokers.kafka.KafkaEventBroker._check_kafka_connection", Mock()
+    )
+    monkeypatch.setattr(
+        "rasa.core.brokers.kafka.KafkaEventBroker._retry_publish", mock_retry_publish
+    )
+    monkeypatch.setattr(
+        "rasa.core.brokers.kafka.KafkaEventBroker._publish", mock_publish
+    )
+
+    # Given
+    event = {
+        "sender_id": "message_size_test",
+        "event": "user",
+        "text": "test",
+    }
+
+    # When
+    broker = KafkaEventBroker(
+        "localhost",
+        sasl_username="username",
+        sasl_password="password",
+        sasl_mechanism="PLAIN",
+        topic="topic",
+        partition_by_sender=True,
+        security_protocol="SASL_PLAINTEXT",
+    )
+    broker.publish(event, retries=2, retry_delay_in_seconds=1)
+
+    # Then
+    assert mock_retry_publish.call_count == 1
+    error_event = mock_retry_publish.call_args[0][0]
+    assert error_event["event"] == "error"
+    assert error_event["error_code"] == 10
+    assert error_event["metadata"]["error_source"] == "KafkaEventBroker"
+    assert (
+        "Skipping message for event type 'user' because of Kafka message size limit"
+        in error_event["metadata"]["error_msg"]
+    )

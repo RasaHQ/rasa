@@ -13,6 +13,7 @@ import structlog
 import rasa.shared.utils.common
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.exceptions import KafkaProducerInitializationError
+from rasa.shared.core.events import ErrorHandled
 from rasa.shared.utils.io import DEFAULT_ENCODING
 from rasa.utils.endpoints import EndpointConfig
 
@@ -119,7 +120,7 @@ class KafkaEventBroker(EventBroker):
         retry_delay_in_seconds: float = 5,
     ) -> None:
         """Publishes events."""
-        from confluent_kafka import KafkaException
+        from confluent_kafka import KafkaError, KafkaException
 
         if retries == 1:
             retries = 2
@@ -143,27 +144,65 @@ class KafkaEventBroker(EventBroker):
                 )
                 self.producer.poll(1)
                 retries -= 1
-            except Exception as e:
-                logger.error(
-                    f"Could not publish message to kafka url '{self.url}'. "
-                    f"Failed with error: {e}"
-                )
-                try:
-                    self._check_kafka_connection()
-                except KafkaException:
-                    logger.debug("Connection to kafka lost, reconnecting...")
-                    self.producer = self._create_producer()
-                    try:
-                        self._check_kafka_connection()
-                        logger.debug("Reconnection to kafka successful")
-                        self._publish(event)
-                        return
-                    except KafkaException:
-                        pass
-                retries -= 1
-                time.sleep(retry_delay_in_seconds)
+            except Exception as exc:
+                if (
+                    isinstance(exc, KafkaException)
+                    and exc.args[0].code() == KafkaError.MSG_SIZE_TOO_LARGE
+                ):
+                    logger.warning(
+                        "Message size is too large for the Kafka broker. "
+                        "Please check the message.max.bytes configuration. "
+                        "Sending error event."
+                    )
+
+                    original_event_type = event.get("event", "")
+                    sender_id = event.get("sender_id", "")
+                    event = ErrorHandled(
+                        error_code=KafkaError.MSG_SIZE_TOO_LARGE,
+                        metadata={
+                            "error_msg": f"Skipping message for event type "
+                            f"'{original_event_type}' because "
+                            f"of Kafka message size limit: {exc.args[0].str()}.",
+                            "error_source": "KafkaEventBroker",
+                        },
+                    ).as_dict()
+                    event.update({"sender_id": sender_id})
+                else:
+                    logger.error(
+                        f"Could not publish message to kafka url '{self.url}'. "
+                        f"Failed with error: {exc}"
+                    )
+                self._retry_publish(event, retries, retry_delay_in_seconds)
 
         logger.error("Failed to publish Kafka event.")
+
+    def _retry_publish(
+        self,
+        event: Dict[Text, Any],
+        retries: int,
+        retry_delay_in_seconds: float,
+    ) -> None:
+        """Retries publishing if the producer is not connected.
+
+        Args:
+            event: The event to publish.
+        """
+        from confluent_kafka import KafkaException
+
+        try:
+            self._check_kafka_connection()
+        except KafkaException:
+            logger.debug("Connection to kafka lost, reconnecting...")
+            self.producer = self._create_producer()
+            try:
+                self._check_kafka_connection()
+                logger.debug("Reconnection to kafka successful")
+                self._publish(event)
+                return
+            except KafkaException:
+                pass
+        retries -= 1
+        time.sleep(retry_delay_in_seconds)
 
     def _check_kafka_connection(self) -> None:
         """Verifies connection with Kafka.

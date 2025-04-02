@@ -165,8 +165,7 @@ DIALOGUE_STACK_UPDATED = {
 }
 ROUTING_SESSION_ENDED = {"properties": {"event": {"const": "routing_session_ended"}}}
 
-
-ROUTING_SESSION_ENDED = {"properties": {"event": {"const": "routing_session_ended"}}}
+ERROR_HANDLED = {"properties": {"event": {"const": "error"}}}
 
 EVENT_SCHEMA = {
     "type": "object",
@@ -208,6 +207,7 @@ EVENT_SCHEMA = {
         DIALOGUE_STACK_UPDATED,
         ROUTING_SESSION_ENDED,
         SESSION_ENDED,
+        ERROR_HANDLED,
     ],
 }
 

@@ -208,3 +208,5 @@ POLICIES_THAT_EXTRACT_ENTITIES = {"TEDPolicy"}
 # digression constants
 KEY_ASK_CONFIRM_DIGRESSIONS = "ask_confirm_digressions"
 KEY_BLOCK_DIGRESSIONS = "block_digressions"
+
+ERROR_CODE_KEY = "error_code"
