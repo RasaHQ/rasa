@@ -18,14 +18,14 @@ jobs:
     name: Build python package
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         if: github.event_name == 'repository_dispatch'
         with:
           fetch-depth: 0
           # checkout on the PR branch that triggered the workflow
           ref: ${{ github.event.client_payload.branch }}
 
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         if: github.event_name != 'repository_dispatch'
 
       - name: Read Poetry Version 🔢
@@ -70,14 +70,14 @@ jobs:
         rasa_pro_version: ${{ steps.installation.outputs.rasa_pro_version }}
         archive_size_kb: ${{ steps.installation.outputs.archive_size_kb }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         if: github.event_name == 'repository_dispatch'
         with:
           fetch-depth: 0
           # checkout on the PR branch that triggered the workflow
           ref: ${{ github.event.client_payload.branch }}
 
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         if: github.event_name != 'repository_dispatch'
 
       - name: Read Poetry Version 🔢

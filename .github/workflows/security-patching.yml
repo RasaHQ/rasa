@@ -25,7 +25,7 @@ jobs:
     steps:
       # We have to check out the repo to be able to list the tags.
       - name: Checkout repository to check tags
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
             fetch-depth: 0
 
@@ -85,7 +85,7 @@ jobs:
 
     steps:
       - name: Checkout repository to check tags
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       # Determine the date in the right format for us to tag the image.
       - name: Get current date
