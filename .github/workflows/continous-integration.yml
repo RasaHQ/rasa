@@ -1307,10 +1307,6 @@ jobs:
           pattern: "unit-tests-results-**"
           merge-multiple: true
 
-      - name: Check if reports are empty
-        run: |
-          cat ${{ github.workspace }}/artifacts/unit-tests-results-test-policies-python-3.9.xml
-
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@bfd4e558cda28cda6b5defafb9232d191be8c203 # v4.2.1
         env:
