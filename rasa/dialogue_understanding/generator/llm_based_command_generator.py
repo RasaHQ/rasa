@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union
 
 import structlog
-from jinja2 import Environment, Template
+from jinja2 import Environment, Template, select_autoescape
 
 import rasa.dialogue_understanding.generator.utils
 import rasa.shared.utils.io
@@ -235,8 +235,13 @@ class LLMBasedCommandGenerator(
         so we cache the result.
         """
         # Create an environment
-        env = Environment()
-
+        # Autoescaping disabled explicitly for LLM prompt templates rendered from
+        # strings (safe, not HTML)
+        env = Environment(
+            autoescape=select_autoescape(
+                disabled_extensions=["jinja2"], default_for_string=False, default=True
+            )
+        )
         # Register filters
         env.filters[TO_JSON_ESCAPED_STRING_JINJA_FILTER] = to_json_escaped_string
 
