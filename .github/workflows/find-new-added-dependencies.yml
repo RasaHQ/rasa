@@ -22,7 +22,7 @@ jobs:
           ref: main
 
       - name: Prepare the job
-        uses: ./.github/actions/test-prerequisites
+        uses: RasaHQ/rasa-private/.github/actions/test-prerequisites@b8016beeb87d41e7288dcea419b80da36a241255 # 3.12.4
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
