@@ -86,7 +86,9 @@ from rasa.shared.constants import (
 from rasa.shared.core.constants import ACTION_RESET_ROUTING, ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import Flow, FlowsList
+from rasa.shared.core.policies.utils import contains_intentless_policy_responses
 from rasa.shared.core.slots import Slot
+from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.common import display_research_study_prompt
@@ -642,10 +644,17 @@ def _recursively_check_required_components(
 
 
 def validate_flow_component_dependencies(
-    flows: FlowsList, model_configuration: GraphModelConfiguration
+    flows: FlowsList,
+    domain: Domain,
+    story_graph: StoryGraph,
+    model_configuration: GraphModelConfiguration,
 ) -> None:
     if (pattern_chitchat := flows.flow_by_id(FLOW_PATTERN_CHITCHAT)) is not None:
         _validate_chitchat_dependencies(pattern_chitchat, model_configuration)
+
+    _validate_intentless_policy_responses(
+        flows, domain, story_graph, model_configuration
+    )
 
 
 def _validate_chitchat_dependencies(
@@ -672,6 +681,32 @@ def _validate_chitchat_dependencies(
                 f"configured."
             ),
         )
+
+
+def _validate_intentless_policy_responses(
+    flows: FlowsList,
+    domain: Domain,
+    story_graph: StoryGraph,
+    model_configuration: GraphModelConfiguration,
+) -> None:
+    """If IntentlessPolicy is configured, validate that it has responses to use:
+    either responses from the domain that are not part of any flow, or from
+    end-to-end stories.
+    """
+    if not model_configuration.predict_schema.has_node(IntentlessPolicy):
+        return
+
+    if not contains_intentless_policy_responses(flows, domain, story_graph):
+        structlogger.error(
+            "validation.intentless_policy.no_applicable_responses_found",
+            event_info=(
+                "IntentlessPolicy is configured, but no applicable responses are "
+                "found. Please make sure that there are responses defined in the "
+                "domain that are not part of any flow, or that there are "
+                "end-to-end stories in the training data."
+            ),
+        )
+        sys.exit(1)
 
 
 def get_component_index(schema: GraphSchema, component_class: Type) -> Optional[int]:

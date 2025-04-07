@@ -460,6 +460,7 @@ def extract_attrs_for_execute_commands(
     all_flows: FlowsList,
     execution_context: ExecutionContext,
     story_graph: Optional[StoryGraph] = None,
+    domain: Optional[Domain] = None,
 ) -> Dict[str, Any]:
     return {
         "number_of_events": len(tracker.events),
@@ -503,6 +504,7 @@ def extract_attrs_for_clean_up_commands(
     all_flows: FlowsList,
     execution_context: ExecutionContext,
     story_graph: Optional[StoryGraph] = None,
+    domain: Optional[Domain] = None,
 ) -> Dict[str, Any]:
     commands_list = []
 

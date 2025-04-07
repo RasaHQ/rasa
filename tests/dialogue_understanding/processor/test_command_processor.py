@@ -600,54 +600,106 @@ def test_clean_up_commands_with_start_flow(
 
 @pytest.mark.parametrize(
     (
-        "commands,"
-        "uses_action_trigger_chitchat,"
-        "defines_intentless_policy,"
-        "e2e_stories,"
-        "expected_clean_commands"
+        "commands",
+        "uses_action_trigger_chitchat",
+        "defines_intentless_policy",
+        "domain",
+        "e2e_stories",
+        "expected_clean_commands",
     ),
     [
         ## working inputs
-        # trigger, policy and stories
+        # trigger, policy, responses in domain, stories
         (
             [ChitChatAnswerCommand()],
             True,
             True,
+            Domain.from_yaml("""
+            responses:
+                utter_bot:
+                    - text: I'm a virtual assistant made with Rasa.
+            """),
             [StoryStep(block_name="smth", events=[UserUttered(text="Hi")])],
             [ChitChatAnswerCommand()],
         ),
-        # no trigger, no policy and no stories
-        ([ChitChatAnswerCommand()], False, False, [], [ChitChatAnswerCommand()]),
-        # no trigger, but policy and stories
+        # trigger, policy, no responses in domain, stories
+        (
+            [ChitChatAnswerCommand()],
+            True,
+            True,
+            Domain.empty(),
+            [StoryStep(block_name="smth", events=[UserUttered(text="Hi")])],
+            [ChitChatAnswerCommand()],
+        ),
+        # no trigger, no policy, responses in domain, no stories
+        (
+            [ChitChatAnswerCommand()],
+            False,
+            False,
+            Domain.from_yaml("""
+            responses:
+                utter_bot:
+                    - text: I'm a virtual assistant made with Rasa.
+            """),
+            [],
+            [ChitChatAnswerCommand()],
+        ),
+        # no trigger, no policy, no responses in domain, no stories
+        (
+            [ChitChatAnswerCommand()],
+            False,
+            False,
+            Domain.empty(),
+            [],
+            [ChitChatAnswerCommand()],
+        ),
+        # no trigger, no responses in domain, but policy and stories
         (
             [ChitChatAnswerCommand()],
             False,
             True,
+            Domain.empty(),
             [StoryStep(block_name="smth", events=[UserUttered(text="Hi")])],
+            [ChitChatAnswerCommand()],
+        ),
+        # no trigger, responses in domain, policy, but no stories
+        (
+            [ChitChatAnswerCommand()],
+            False,
+            False,
+            Domain.from_yaml("""
+            responses:
+                utter_bot:
+                    - text: I'm a virtual assistant made with Rasa.
+            """),
+            [],
             [ChitChatAnswerCommand()],
         ),
         ## inputs leading to cannot-handle
-        # no trigger, policy and no stories
+        # no trigger, policy, no responses in domain and no stories
         (
             [ChitChatAnswerCommand()],
             False,
             True,
+            Domain.empty(),
             [],
             [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
         ),
-        # trigger, policy and no stories
+        # trigger, policy, no responses in domain and no stories
         (
             [ChitChatAnswerCommand()],
             True,
             True,
+            Domain.empty(),
             [],
             [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
         ),
-        # trigger, no policy and no stories
+        # trigger, no policy, no responses in domain and no stories
         (
             [ChitChatAnswerCommand()],
             True,
             False,
+            Domain.empty(),
             [],
             [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
         ),
@@ -661,6 +713,7 @@ def test_clean_up_chitchat_commands(
     commands,
     uses_action_trigger_chitchat,
     defines_intentless_policy,
+    domain,
     e2e_stories,
     expected_clean_commands,
 ):
@@ -690,9 +743,7 @@ def test_clean_up_chitchat_commands(
 
     # Then
     mock_execution_context_has_node.assert_called_once()
-    mock_pattern_chitchat.has_action_step.assert_called_once_with(
-        ACTION_TRIGGER_CHITCHAT
-    )
+    mock_pattern_chitchat.has_action_step.assert_called_with(ACTION_TRIGGER_CHITCHAT)
     assert clean_commands == expected_clean_commands
 
 

@@ -1,7 +1,7 @@
 import importlib.resources
 import math
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Text, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple
 
 import structlog
 import tiktoken
@@ -18,7 +18,6 @@ from rasa.core.constants import (
     UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.policies.policy import Policy, PolicyPrediction, SupportedData
-from rasa.dialogue_understanding.patterns.chitchat import FLOW_PATTERN_CHITCHAT
 from rasa.dialogue_understanding.stack.frames import (
     ChitChatStackFrame,
     DialogueStackFrame,
@@ -38,10 +37,9 @@ from rasa.shared.constants import (
     OPENAI_PROVIDER,
     PROMPT_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
-    REQUIRED_SLOTS_KEY,
     TIMEOUT_CONFIG_KEY,
 )
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_TRIGGER_CHITCHAT
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -51,6 +49,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.policies.utils import filter_responses_for_intentless_policy
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import FileIOException, RasaCoreException
 from rasa.shared.nlu.constants import PREDICTED_CONFIDENCE_KEY
@@ -144,59 +143,6 @@ class Interaction:
 @dataclass
 class Conversation:
     interactions: List[Interaction] = field(default_factory=list)
-
-
-def collect_form_responses(forms: Forms) -> Set[Text]:
-    """Collect responses that belong the requested slots in forms.
-
-    Args:
-        forms: the forms from the domain
-    Returns:
-        all utterances used in forms
-    """
-    form_responses = set()
-    for _, form_info in forms.data.items():
-        for required_slot in form_info.get(REQUIRED_SLOTS_KEY, []):
-            form_responses.add(f"utter_ask_{required_slot}")
-    return form_responses
-
-
-def filter_responses(responses: Responses, forms: Forms, flows: FlowsList) -> Responses:
-    """Filters out responses that are unwanted for the intentless policy.
-
-    This includes utterances used in flows and forms.
-
-    Args:
-        responses: the responses from the domain
-        forms: the forms from the domain
-        flows: all flows
-    Returns:
-        The remaining, relevant responses for the intentless policy.
-    """
-    form_responses = collect_form_responses(forms)
-    flow_responses = flows.utterances
-    combined_responses = form_responses | flow_responses
-    filtered_responses = {
-        name: variants
-        for name, variants in responses.data.items()
-        if name not in combined_responses
-    }
-
-    pattern_chitchat = flows.flow_by_id(FLOW_PATTERN_CHITCHAT)
-
-    # The following condition is highly unlikely, but mypy requires the case
-    # of pattern_chitchat == None to be addressed
-    if not pattern_chitchat:
-        return Responses(data=filtered_responses)
-
-    # if action_trigger_chitchat, filter out "utter_free_chitchat_response"
-    has_action_trigger_chitchat = pattern_chitchat.has_action_step(
-        ACTION_TRIGGER_CHITCHAT
-    )
-    if has_action_trigger_chitchat:
-        filtered_responses.pop("utter_free_chitchat_response", None)
-
-    return Responses(data=filtered_responses)
 
 
 def action_from_response(
@@ -512,7 +458,9 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
         # Perform health checks of both LLM and embeddings client configs
         self._perform_health_checks(self.config, "intentless_policy.train")
 
-        responses = filter_responses(responses, forms, flows or FlowsList([]))
+        responses = filter_responses_for_intentless_policy(
+            responses, forms, flows or FlowsList([])
+        )
         telemetry.track_intentless_policy_train()
         response_texts = [r for r in extract_ai_response_examples(responses.data)]
 
@@ -947,7 +895,6 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
         **kwargs: Any,
     ) -> "IntentlessPolicy":
         """Loads a trained policy (see parent class for full docstring)."""
-
         # Perform health checks of both LLM and embeddings client configs
         cls._perform_health_checks(config, "intentless_policy.load")
 

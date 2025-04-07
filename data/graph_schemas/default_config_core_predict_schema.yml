@@ -37,6 +37,7 @@ nodes:
         tracker: __tracker__
         flows: flows_provider
         story_graph: story_graph_provider
+        domain: domain_provider
     uses: rasa.dialogue_understanding.processor.command_processor_component.CommandProcessorComponent
     constructor_name: load
     fn: execute_commands

@@ -34,6 +34,7 @@ from rasa.engine.recipes.recipe import Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.validation import (
+    _validate_intentless_policy_responses,
     validate_coexistance_routing_setup,
     validate_command_generator_exclusivity,
     validate_intent_based_router_position,
@@ -53,6 +54,10 @@ from rasa.shared.constants import (
 from rasa.shared.core.constants import ACTION_RESET_ROUTING
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
+from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.data import TrainingType
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.rasa import RasaFileImporter
@@ -2839,3 +2844,149 @@ def test_validate_api_type_key_used_correctly(
         assert expected_error_code in captured.out
     else:
         validate_model_client_configuration_setup_during_training_time(config)
+
+
+def test_validate_responses_for_intentless_policy(tmp_path: Path) -> None:
+    # Given: Domain with responses, e2e stories
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: LLMCommandGenerator
+                policies:
+                - name: FlowPolicy
+                - name: IntentlessPolicy
+            """
+        )
+    importer = RasaFileImporter(config_file=config_file_name)
+    config = importer.get_config()
+    domain_yaml = textwrap.dedent(
+        """
+        responses:
+            utter_bot:
+                - text: I'm a virtual assistant made with Rasa.
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
+
+    reader = YAMLStoryReader()
+    steps = reader.read_from_file("data/test_yaml_stories/stories.yml")
+
+    model_configuration = recipe.graph_config_for_recipe(config, {})
+
+    # When / Then - should not raise any errors
+    _validate_intentless_policy_responses(
+        FlowsList([]), domain, StoryGraph(steps), model_configuration
+    )
+
+
+def test_validate_responses_for_intentless_policy_responses_in_domain_no_stories(
+    tmp_path: Path,
+) -> None:
+    # Given: Domain with responses, no e2e stories
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: LLMCommandGenerator
+                policies:
+                - name: FlowPolicy
+                - name: IntentlessPolicy
+            """
+        )
+    importer = RasaFileImporter(config_file=config_file_name)
+    config = importer.get_config()
+    domain_yaml = textwrap.dedent(
+        """
+        responses:
+            utter_bot:
+                - text: I'm a virtual assistant made with Rasa.
+        """
+    )
+    domain = Domain.from_yaml(domain_yaml)
+    recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
+
+    model_configuration = recipe.graph_config_for_recipe(config, {})
+
+    # When / Then - should not raise any errors
+    _validate_intentless_policy_responses(
+        FlowsList([]), domain, StoryGraph([]), model_configuration
+    )
+
+
+def test_validate_responses_for_intentless_policy_no_responses_in_domain_but_stories(
+    tmp_path: Path,
+) -> None:
+    # Given: Domain without responses, e2e stories
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: LLMCommandGenerator
+                policies:
+                - name: FlowPolicy
+                - name: IntentlessPolicy
+            """
+        )
+    importer = RasaFileImporter(config_file=config_file_name)
+    config = importer.get_config()
+    domain = Domain.empty()
+    recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
+
+    reader = YAMLStoryReader()
+    steps = reader.read_from_file("data/test_yaml_stories/message_with_commands.yml")
+
+    model_configuration = recipe.graph_config_for_recipe(config, {})
+
+    # When / Then - should not raise any errors
+    _validate_intentless_policy_responses(
+        FlowsList([]), domain, StoryGraph(steps), model_configuration
+    )
+
+
+def test_validate_responses_for_intentless_policy_no_responses_in_domain_no_stories(
+    tmp_path: Path,
+) -> None:
+    # Given: Domain without responses, no e2e stories
+    config_file_name = tmp_path / "config.yml"
+    with open(config_file_name, "w") as file:
+        file.write(
+            """
+                recipe: default.v1
+                language: en
+                pipeline:
+                - name: LLMCommandGenerator
+                policies:
+                - name: FlowPolicy
+                - name: IntentlessPolicy
+            """
+        )
+    importer = RasaFileImporter(config_file=config_file_name)
+    config = importer.get_config()
+    domain = Domain.empty()
+    recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
+
+    model_configuration = recipe.graph_config_for_recipe(config, {})
+
+    # When / Then - should raise validation error
+    expected_event = "validation.intentless_policy.no_applicable_responses_found"
+    expected_log_level = "error"
+
+    with structlog.testing.capture_logs() as caplog:
+        with pytest.raises(SystemExit):
+            _validate_intentless_policy_responses(
+                FlowsList([]), domain, StoryGraph([]), model_configuration
+            )
+
+        logs = filter_logs(caplog, expected_event, expected_log_level, None)
+        assert len(logs) == 1

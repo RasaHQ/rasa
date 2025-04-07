@@ -99,6 +99,8 @@ UTTER_ASK_PREFIX = "utter_ask_"
 ACTION_ASK_PREFIX = "action_ask_"
 FLOW_PREFIX = "flow_"
 
+UTTER_FREE_CHITCHAT_RESPONSE = "utter_free_chitchat_response"
+
 ASSISTANT_ID_KEY = "assistant_id"
 ASSISTANT_ID_DEFAULT_VALUE = "placeholder_default"
 

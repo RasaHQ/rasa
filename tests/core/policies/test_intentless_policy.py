@@ -20,7 +20,7 @@ from rasa.core.policies.intentless_policy import (
     action_from_response,
     conversation_as_prompt,
     conversation_samples_from_trackers,
-    filter_responses,
+    filter_responses_for_intentless_policy,
     truncate_documents,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
@@ -621,7 +621,7 @@ def test_response_filtering_user_flows() -> None:
               - action: {utter_have_stars}
         """
     )
-    filtered_responses = filter_responses(
+    filtered_responses = filter_responses_for_intentless_policy(
         Responses(domain.responses), Forms(domain.forms), user_flows
     )
     assigned_responses = {
@@ -640,7 +640,7 @@ def test_response_filtering_default_flows() -> None:
     default_flows = FlowSyncImporter.load_default_pattern_flows()
     domain = FlowSyncImporter.load_default_pattern_flows_domain()
 
-    filtered_responses = filter_responses(
+    filtered_responses = filter_responses_for_intentless_policy(
         Responses(domain.responses), Forms(domain.forms), default_flows
     )
     assert len(domain.responses) > 0

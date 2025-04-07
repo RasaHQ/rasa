@@ -140,7 +140,7 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
 
         if commands:
             commands = clean_up_commands(
-                commands, tracker, flows, self._execution_context
+                commands, tracker, flows, self._execution_context, domain
             )
             log_llm(
                 logger=structlogger,

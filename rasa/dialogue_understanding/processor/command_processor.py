@@ -54,9 +54,11 @@ from rasa.shared.core.constants import (
     FLOW_HASHES_SLOT,
     SlotMappingType,
 )
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event, SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
+from rasa.shared.core.policies.utils import contains_intentless_policy_responses
 from rasa.shared.core.slot_mappings import SlotMapping
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -197,6 +199,7 @@ def execute_commands(
     all_flows: FlowsList,
     execution_context: ExecutionContext,
     story_graph: Optional[StoryGraph] = None,
+    domain: Optional[Domain] = None,
 ) -> List[Event]:
     """Executes a list of commands.
 
@@ -206,6 +209,7 @@ def execute_commands(
         all_flows: All flows.
         execution_context: Information about the single graph run.
         story_graph: StoryGraph object with stories available for training.
+        domain: The domain of the bot.
 
     Returns:
         A list of the events that were created.
@@ -214,7 +218,7 @@ def execute_commands(
     original_tracker = tracker.copy()
 
     commands = clean_up_commands(
-        commands, tracker, all_flows, execution_context, story_graph
+        commands, tracker, all_flows, execution_context, story_graph, domain
     )
 
     updated_flows = find_updated_flows(tracker, all_flows)
@@ -381,6 +385,7 @@ def clean_up_commands(
     all_flows: FlowsList,
     execution_context: ExecutionContext,
     story_graph: Optional[StoryGraph] = None,
+    domain: Optional[Domain] = None,
 ) -> List[Command]:
     """Clean up a list of commands.
 
@@ -396,10 +401,13 @@ def clean_up_commands(
         all_flows: All flows.
         execution_context: Information about a single graph run.
         story_graph: StoryGraph object with stories available for training.
+        domain: The domain of the bot.
 
     Returns:
     The cleaned up commands.
     """
+    domain = domain if domain else Domain.empty()
+
     slots_so_far, active_flow = filled_slots_for_active_flow(tracker, all_flows)
 
     clean_commands: List[Command] = []
@@ -465,7 +473,12 @@ def clean_up_commands(
         # handle chitchat command differently from other free-form answer commands
         elif isinstance(command, ChitChatAnswerCommand):
             clean_commands = clean_up_chitchat_command(
-                clean_commands, command, all_flows, execution_context, story_graph
+                clean_commands,
+                command,
+                all_flows,
+                execution_context,
+                domain,
+                story_graph,
             )
 
         elif isinstance(command, FreeFormAnswerCommand):
@@ -708,6 +721,7 @@ def clean_up_chitchat_command(
     command: ChitChatAnswerCommand,
     flows: FlowsList,
     execution_context: ExecutionContext,
+    domain: Domain,
     story_graph: Optional[StoryGraph] = None,
 ) -> List[Command]:
     """Clean up a chitchat answer command.
@@ -721,6 +735,8 @@ def clean_up_chitchat_command(
         flows: All flows.
         execution_context: Information about a single graph run.
         story_graph: StoryGraph object with stories available for training.
+        domain: The domain of the bot.
+
     Returns:
         The cleaned up commands.
     """
@@ -746,10 +762,9 @@ def clean_up_chitchat_command(
     )
     defines_intentless_policy = execution_context.has_node(IntentlessPolicy)
 
-    has_e2e_stories = True if (story_graph and story_graph.has_e2e_stories()) else False
-
     if (has_action_trigger_chitchat and not defines_intentless_policy) or (
-        defines_intentless_policy and not has_e2e_stories
+        defines_intentless_policy
+        and not contains_intentless_policy_responses(flows, domain, story_graph)
     ):
         resulting_commands.insert(
             0, CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)

@@ -315,6 +315,7 @@ async def _train_graph(
     )
     flows = file_importer.get_flows()
     domain = file_importer.get_domain()
+    story_graph = file_importer.get_stories()
     model_configuration = recipe.graph_config_for_recipe(
         config,
         kwargs,
@@ -330,7 +331,7 @@ async def _train_graph(
         config
     )
     rasa.engine.validation.validate_flow_component_dependencies(
-        flows, model_configuration
+        flows, domain, story_graph, model_configuration
     )
     rasa.engine.validation.validate_command_generator_setup(model_configuration)
 
