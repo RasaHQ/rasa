@@ -319,7 +319,7 @@ optional = true
 [tool.poetry.dependencies.pymongo]
 version = "~4.10.1"
 
-[tool.poetry.dev-dependencies.pytest-sanic]
+[tool.poetry.group.dev.dependencies.pytest-sanic]
 git = "https://github.com/RasaHQ/pytest-sanic"
 branch = "fix-variable-setting-on-sanic-instance-issue"
 

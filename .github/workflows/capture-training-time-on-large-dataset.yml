@@ -10,7 +10,6 @@ on:
 
 env:
   DEFAULT_PYTHON_VERSION: '3.9'
-  POETRY_VERSION: 1.8.2
   RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
 
 jobs:
