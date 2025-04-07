@@ -10,6 +10,18 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.12.5] - 2025-04-07
+                        
+Rasa Pro 3.12.5 (2025-04-07)                             
+### Bugfixes
+- [#2181](https://github.com/rasahq/rasa-private/issues/2181): Fix `ChitChatAnswerCommand` command replaced with `CannotHandleCommand` if there are no e2e stories defined.
+  Improve validation that `IntentlessPolicy` has applicable responses: either responses in the domain that are not part of any flow, or if there are e2e stories. This validation performed during the training time and during cleanup of the `ChitChatAnswerCommand` command.
+- [#2201](https://github.com/rasahq/rasa-private/issues/2201): - Fixes an issue with prompt rendering where minified JSON structures were displayed without properly escaping newlines, tabs, and quotes.
+  - Introduced a new Jinja `filter to_json_encoded_string` that escapes newlines (`\n`), tabs (`\t`), and quotes (`\"`) for safe JSON rendering.
+    `to_json_encoded_string` filter preserves other special characters (e.g., umlauts) without encoding them.
+  - Updated the default prompts for `gpt-4o` and `claude-sonnet-3.5`
+
+
 ## [3.12.4] - 2025-04-01
 
 Rasa Pro 3.12.4 (2025-04-01)
