@@ -2,6 +2,10 @@ import { SelectedStack, Stack, Event } from "../types";
 import { immutableJSONPatch} from 'immutable-json-patch'
 
 export const shouldShowTooltip = (text: string) => {
+  if (!text) {
+    return false;
+  }
+
   const textLength = text.length;
 
   if (textLength > 10 && textLength < 89) {
