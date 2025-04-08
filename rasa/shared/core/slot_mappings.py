@@ -115,6 +115,18 @@ class SlotMapping(BaseModel):
             )
             data_copy[KEY_RUN_ACTION_EVERY_TURN] = deprecated_action
 
+            structlogger.warning(
+                "slot_mapping.deprecated_action_key_replaced_with_run_action_every_turn",
+                slot_name=slot_name,
+                event_info=f"The `{KEY_ACTION}` key in slot mappings "
+                f"has been replaced with "
+                f"the `{KEY_RUN_ACTION_EVERY_TURN}` key. "
+                f"This will result in the custom action "
+                f"being executed at every conversation turn "
+                f"automatically. Remove the key "
+                f"to avoid this behavior.",
+            )
+
         run_action_every_turn = data_copy.pop(KEY_RUN_ACTION_EVERY_TURN, None)
 
         coexistence_system = data_copy.pop(KEY_COEXISTENCE_SYSTEM, None)
