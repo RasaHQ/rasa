@@ -5,13 +5,13 @@ pipeline:
     prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
       provider: ollama
-      model: llama3.2
+      model: llama3.2:3b-instruct-fp16
       api_base: "http://localhost:11434"
       timeout: 300
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
     nlu_entry:
-      sticky: "handles everything around health advice and hotel or restaurant bookings"
+      sticky: "handles only health advice and hotel or restaurant bookings"
       non_sticky: "handles chitchat"
   - name: WhitespaceTokenizer
   - name: CountVectorsFeaturizer
@@ -35,9 +35,16 @@ pipeline:
   - name: MultiStepLLMCommandGenerator
     llm:
       provider: ollama
-      model: llama3.2
+      model: llama3.2:3b-instruct-fp16
       api_base: "http://localhost:11434"
       timeout: 300
+      temperature: 0.0
+      top_p: 0.0
+    prompt_templates:
+      handle_flows:
+        file_path: rasa-private/data/test_config/providers/command_prompt.jinja2
+      fill_slots:
+        file_path: rasa-private/data/test_config/providers/command_prompt.jinja2
 
 policies:
   - name: RulePolicy
@@ -51,13 +58,13 @@ policies:
       source: data-repo/docs/
     llm:
       provider: ollama
-      model: llama3.2
+      model: llama3.2:3b-instruct-fp16
       api_base: "http://localhost:11434"
       timeout: 300
   - name: IntentlessPolicy
     llm:
       provider: ollama
-      model: llama3.2
+      model: llama3.2:3b-instruct-fp16
       api_base: "http://localhost:11434"
       timeout: 300
 

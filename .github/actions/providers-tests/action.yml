@@ -83,31 +83,36 @@ runs:
       shell: bash
 
     - name: Setup Python Environment
+      id: setup-python
       uses: ./rasa-private/.github/actions/setup-python-env
       with:
         PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
         WORKING_DIRECTORY: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
+        MATRIX_JOB: ${{ inputs.provider }}-${{ inputs.train-and-test }}
 
     - name: Install google-generative-ai package
-      if: ${{ inputs.provider == 'gemini' }}
+      working-directory: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
+      if: ${{ contains(inputs.provider, 'gemini') && steps.setup-python.outputs.cache-hit != 'true' }}
+      env:
+        PROVIDER: ${{ inputs.provider }}
       run: |
         : Install google-generative-ai package
-        pip install google-generativeai
+        source $VENV && pip install -r ./data/test_config/providers/"${PROVIDER}"/requirements.txt
       shell: bash
 
     - name: Install sentence-transformers package
       working-directory: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
-      if: ${{ inputs.provider == 'huggingface_local' }}
+      if: ${{ inputs.provider == 'huggingface_local' && steps.setup-python.outputs.cache-hit != 'true' }}
       run: |
         : Install sentence-transformers package
-        source $VENV && pip install sentence-transformers
+        source $VENV && pip install -r ./data/test_config/providers/huggingface_local/requirements.txt
       shell: bash
 
     - name: Configure AWS credentials
-      if: ${{ contains(inputs.provider, 'bedrock') }}
+      if: ${{ contains(inputs.provider, 'bedrock') || contains(inputs.provider, 'sagemaker') }}
       uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 #v3.0.1
       with:
-        role-to-assume: arn:aws:iam::329710836760:role/GitHubAction-BedrockFullAccess
+        role-to-assume: arn:aws:iam::307946638045:role/GitHubAction-BedrockAndSagemakerAccess
         aws-region: ${{ env.AWS_REGION_NAME }}
 
     - name: Install and start Ollama server
@@ -122,7 +127,7 @@ runs:
       if: ${{ inputs.provider == 'ollama' }}
       run: |
         : Pull Ollama LLM model
-        ollama pull llama3.2
+        ollama pull llama3.2:3b-instruct-fp16
       shell: bash
 
     - name: Ollama API health-check
@@ -130,7 +135,7 @@ runs:
       run: |
         : Ollama API health-check
         curl http://localhost:11434/api/generate -d '{
-          "model": "llama3.2",
+          "model": "llama3.2:3b-instruct-fp16",
           "prompt": "Why is the sky blue?"
         }'
       shell: bash
@@ -140,7 +145,7 @@ runs:
       run: |
         : Build vLLM Docker image
         mkdir vllm
-        git clone https://github.com/vllm-project/vllm.git vllm
+        git clone --depth=1 --branch v0.8.2 https://github.com/vllm-project/vllm.git vllm
         cd vllm
         docker buildx build -f Dockerfile.cpu \
         --cache-to type=gha \
@@ -151,10 +156,12 @@ runs:
 
     - name: Install Huggingface CLI
       working-directory: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
-      if: ${{ contains(inputs.provider, 'self-hosted') }}
+      if: ${{ (contains(inputs.provider, 'self-hosted') || contains(inputs.provider, 'huggingface')) && steps.setup-python.outputs.cache-hit != 'true' }}
+      env:
+        PROVIDER: ${{ inputs.provider }}
       run: |
         : Install Huggingface CLI
-        source $VENV && pip install "huggingface_hub[cli,hf_transfer]"
+        source $VENV && pip install -r ./data/test_config/providers/"${PROVIDER}"/requirements.txt
       shell: bash
     
     - name: Cache model to be used with self-hosted providers
@@ -163,13 +170,13 @@ runs:
       id: self-hosted-model-cache
       with:
         path: models
-        key: ${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ inputs.provider }}-${{ inputs.train-and-test }}-model-${{ hashFiles('data/test_config/providers/self-hosted-vllm/*', 'data/test_config/providers/self-hosted-llama-cpp/*') }}
+        key: ${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ inputs.provider }}-${{ inputs.train-and-test }}-model-${{ hashFiles('rasa-private/data/test_config/providers/self-hosted-vllm/*', 'rasa-private/data/test_config/providers/self-hosted-llama-cpp/*') }}
 
     - name: Download model to be used with vLLM
       if: ${{ inputs.provider == 'self-hosted-vllm' && steps.self-hosted-model-cache.outputs.cache-hit != 'true' }}
       uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
       env:
-        LLM_MODEL_NAME: ${{ env.LLM_MODEL_NAME || 'Qwen/Qwen2.5-0.5B-Instruct' }}
+        LLM_MODEL_NAME: ${{ env.LLM_MODEL_NAME || 'Qwen/Qwen2.5-Coder-1.5B-Instruct' }}
       with:
         timeout_minutes: 60
         max_attempts: 2
@@ -197,7 +204,7 @@ runs:
     - name: Run vLLM Docker container with model
       id: run-vllm-docker-container
       env:
-        LLM_MODEL_NAME: ${{ env.LLM_MODEL_NAME || 'Qwen/Qwen2.5-0.5B-Instruct' }}
+        LLM_MODEL_NAME: ${{ env.LLM_MODEL_NAME || 'Qwen/Qwen2.5-Coder-1.5B-Instruct' }}
       if: ${{ inputs.provider == 'self-hosted-vllm' }}
       run: |
         : Run vLLM Docker container with model
@@ -258,38 +265,40 @@ runs:
     # so need to wake it up before usage
     - name: Wake up Hugging Face inference endpoint
       if: ${{ inputs.provider == 'huggingface' }}
-      working-directory: rasa-private/data/test_config/providers
+      working-directory: rasa-private
       env:
         ENDPOINT_NAME: cmd-gen-codellama-13b-calm-d-bfz
         ENDPOINT_NAMESPACE: rasa
       run: |
         : Wake up Hugging Face inference endpoint
-        pip install huggingface_hub && ./wake-up-inference-endpoint.py
+        source $VENV && ./data/test_config/providers/wake-up-inference-endpoint.py
       shell: bash
 
     # As endpoint are scaled-to-zero upon inactivity for cost minimisation,
     # so need to wake them up before usage
     - name: Wake up multiple Hugging Face inference endpoints
       if: ${{ inputs.provider == 'huggingface-multiple-deployments-with-routing' }}
-      working-directory: rasa-private/data/test_config/providers
+      working-directory: rasa-private
       env:
         ENDPOINT_NAME: cmd-gen-codellama-13b-calm-d-bfz
         ENDPOINT_NAMESPACE: rasa
       run: |
-        : Wake up multiple Hugging Face inference endpoint
-        pip install huggingface_hub
-        ./wake-up-inference-endpoint.py & pid0=$!
-        export ENDPOINT_NAME=cmd-gen-codellama-13b-calm-d-rbo && ./wake-up-inference-endpoint.py & pid1=$!
-        export ENDPOINT_NAME=cmd-gen-codellama-13b-calm-d-kuz && ./wake-up-inference-endpoint.py & pid2=$!
+        : Wake up multiple Hugging Face inference endpoints
+        source $VENV
+        ./data/test_config/providers/wake-up-inference-endpoint.py & pid0=$!
+        export ENDPOINT_NAME=cmd-gen-codellama-13b-calm-d-rbo && ./data/test_config/providers/wake-up-inference-endpoint.py & pid1=$!
+        export ENDPOINT_NAME=cmd-gen-codellama-13b-calm-d-kuz && ./data/test_config/providers/wake-up-inference-endpoint.py & pid2=$!
         wait $pid0 && wait $pid1 && wait $pid2
       shell: bash
 
     - name: Install LiteLLM proxy with instrumentation
       working-directory: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
-      if: ${{ inputs.provider == 'litellm-proxy-multiple-deployments-with-routing' }}
+      if: ${{ inputs.provider == 'litellm-proxy-multiple-deployments-with-routing' && steps.setup-python.outputs.cache-hit != 'true' }}
+      env:
+        PROVIDER: ${{ inputs.provider }}
       run: |
         : Install LiteLLM proxy with instrumentation
-        source $VENV && pip install 'litellm[proxy]'
+        source $VENV && pip install -r ./data/test_config/providers/"${PROVIDER}"/requirements.txt
         echo "OTEL_TRACER_NAME=litellm-proxy-multiple-deployments-with-routing" >> $GITHUB_ENV
       shell: bash
 

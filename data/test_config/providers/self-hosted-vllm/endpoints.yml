@@ -5,10 +5,11 @@ nlg:
  type: rephrase
  llm:
    provider: self-hosted
-   model: Qwen/Qwen2.5-0.5B-Instruct
+   model: Qwen/Qwen2.5-Coder-1.5B-Instruct
    api_base: "http://localhost:8080/v1"
    timeout: 900
-   temperature: 0.2
+   temperature: 0.0
+   top_p: 0.01
 
 tracing:
  type: otlp

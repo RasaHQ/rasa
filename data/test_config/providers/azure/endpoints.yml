@@ -5,9 +5,9 @@ nlg:
  type: rephrase
  llm:
     provider: azure
-    deployment: test-gpt-35-turbo
+    deployment: gpt-35-turbo
     api_type: azure
-    api_base: https://devtribe-testing-canada-east.openai.azure.com/
+    api_base: https://devtribe-ci-canada-east.openai.azure.com/
     api_version: 2024-02-01
     timeout: 7
 

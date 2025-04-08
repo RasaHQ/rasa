@@ -33,7 +33,7 @@ model_groups:
     router:
       routing_strategy: usage-based-routing
       num_retries: 5
-      timeout: 30 
+      timeout: 60
       redis_host: ${REDIS_HOST}
       redis_port: ${REDIS_PORT}
       cache_responses: True
@@ -49,4 +49,6 @@ model_groups:
         model: text-embedding-ada-002
     router:
       routing_strategy: least-busy
+      num_retries: 5
+      timeout: 60
       cache_responses: True

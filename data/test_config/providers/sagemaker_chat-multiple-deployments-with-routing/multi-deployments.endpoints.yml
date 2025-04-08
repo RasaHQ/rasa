@@ -1,0 +1,47 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ llm:
+    model_group: sagemaker_chat_llm
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: e2e-tests-sagemaker_chat-multiple-deployments-with-routing
+
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: e2e-tests-sagemaker_chat-multiple-deployments-with-routing
+
+model_groups:
+  - id: sagemaker_chat_llm
+    models:
+    # Same LLM models across multiple regions
+      - provider: sagemaker_chat
+        model: meta-llama-3-2-3b-instruct
+        aws_region_name: ${AWS_REGION_NAME_1}
+        timeout: 7
+        num_retries: 5
+        temperature: 0.0
+        top_p: 0.01
+      - provider: sagemaker_chat
+        model: meta-llama-3-2-3b-instruct
+        aws_region_name: ${AWS_REGION_NAME_2}
+        timeout: 7
+        num_retries: 5
+        temperature: 0.0
+        top_p: 0.01
+    router:
+      routing_strategy: usage-based-routing
+      num_retries: 5
+      timeout: 30 
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
+      cache_responses: True

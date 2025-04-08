@@ -46,6 +46,7 @@ on:
           - gemini-multiple-deployments-with-routing
           - huggingface-multiple-deployments-with-routing
           - bedrock-multiple-deployments-with-routing
+          - sagemaker_chat-multiple-deployments-with-routing
           - litellm-proxy-multiple-deployments-with-routing
           - openai-with-custom-prompt-for-CompactLLMCommandGenerator
           - openai-with-custom-prompt-for-CustomLLMCommandGenerator

@@ -5,14 +5,14 @@ pipeline:
     prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
       provider: self-hosted
-      model: Qwen/Qwen2.5-0.5B-Instruct
+      model: Qwen/Qwen2.5-Coder-1.5B-Instruct
       api_base: "http://localhost:8080/v1"
       timeout: 900
       temperature: 0.0
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
     nlu_entry:
-      sticky: "handles everything around health advice and hotel or restaurant bookings"
+      sticky: "handles only health advice and hotel or restaurant bookings"
       non_sticky: "handles chitchat"
   - name: WhitespaceTokenizer
   - name: CountVectorsFeaturizer
@@ -36,12 +36,14 @@ pipeline:
   - name: CompactLLMCommandGenerator
     llm:
       provider: self-hosted
-      model: Qwen/Qwen2.5-0.5B-Instruct
+      model: Qwen/Qwen2.5-Coder-1.5B-Instruct
       api_base: "http://localhost:8080/v1"
       timeout: 900
       temperature: 0.0
+      top_p: 0.01
       cache:
         no-cache: true
+    prompt_template: rasa-private/data/test_config/providers/custom-compact-llm-command-generator-prompt.jinja2
 
 policies:
   - name: RulePolicy
@@ -56,14 +58,14 @@ policies:
       source: data-repo/docs/
     llm:
       provider: self-hosted
-      model: Qwen/Qwen2.5-0.5B-Instruct
+      model: Qwen/Qwen2.5-Coder-1.5B-Instruct
       api_base: "http://localhost:8080/v1"
       timeout: 900
       temperature: 0.2
   - name: IntentlessPolicy
     llm:
       provider: self-hosted
-      model: Qwen/Qwen2.5-0.5B-Instruct
+      model: Qwen/Qwen2.5-Coder-1.5B-Instruct
       api_base: "http://localhost:8080/v1"
       timeout: 900
       temperature: 0.2

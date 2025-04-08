@@ -5,15 +5,15 @@ pipeline:
     prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
       provider: azure
-      deployment: test-gpt-35-turbo
+      deployment: gpt-35-turbo
       api_type: azure
-      api_base: https://devtribe-testing-canada-east.openai.azure.com/
+      api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2024-02-01
       timeout: 7
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
     nlu_entry:
-      sticky: "handles everything around health advice and hotel or restaurant bookings"
+      sticky: "handles only health advice and hotel or restaurant bookings"
       non_sticky: "handles chitchat"
   - name: WhitespaceTokenizer
   - name: CountVectorsFeaturizer
@@ -37,9 +37,9 @@ pipeline:
   - name: CompactLLMCommandGenerator
     llm:
       provider: azure
-      deployment: test-gpt-35-turbo
+      deployment: gpt-35-turbo
       api_type: azure
-      api_base: https://devtribe-testing-canada-east.openai.azure.com/
+      api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2024-02-01
       timeout: 20
       temperature: 0.0
@@ -48,17 +48,17 @@ pipeline:
         no-cache: true
     embeddings:
       provider: azure
-      deployment: test-text-embedding-3-small
+      deployment: text-embedding-3-small
       api_type: azure
-      api_base: https://devtribe-testing-canada-east.openai.azure.com/
+      api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2023-05-15
       timeout: 7
     flow_retrieval:
       embeddings:
         provider: azure
-        deployment: test-text-embedding-3-small
+        deployment: text-embedding-3-small
         api_type: azure
-        api_base: https://devtribe-testing-canada-east.openai.azure.com/
+        api_base: https://devtribe-ci-canada-east.openai.azure.com/
         api_version: 2023-05-15
         timeout: 7
 
@@ -75,31 +75,31 @@ policies:
       source: data-repo/docs/
     embeddings:
       provider: azure
-      deployment: test-text-embedding-3-small
+      deployment: text-embedding-3-small
       api_type: azure
-      api_base: https://devtribe-testing-canada-east.openai.azure.com/
+      api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2023-05-15
       timeout: 7
     llm:
       provider: azure
-      deployment: test-gpt-35-turbo
+      deployment: gpt-35-turbo
       api_type: azure
-      api_base: https://devtribe-testing-canada-east.openai.azure.com/
+      api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2024-02-01
       timeout: 7
   - name: IntentlessPolicy
     llm:
       provider: azure
-      deployment: test-gpt-35-turbo
+      deployment: gpt-35-turbo
       api_type: azure
-      api_base: https://devtribe-testing-canada-east.openai.azure.com/
+      api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2024-02-01
       timeout: 7
     embeddings:
       provider: azure
-      deployment: test-text-embedding-3-small
+      deployment: text-embedding-3-small
       api_type: azure
-      api_base: https://devtribe-testing-canada-east.openai.azure.com/
+      api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2023-05-15
       timeout: 7
 

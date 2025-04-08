@@ -17,18 +17,18 @@ Analyze the current conversation, and based on the context, generate a list of a
 --
 
 ## Available Actions:
-* `set slot slot_name slot_value`: Slot setting. For example, `set slot transfer_money_recipient Freddy`. Can be used to correct and change previously set values
-* `start flow flow_name`: Starting a flow. For example, `start flow transfer_money` or `start flow list_contacts`
-* `cancel flow`: Cancelling the current flow
+* `set slot slot_name slot_value`: Slot setting. For example, `set slot transfer_money_recipient Freddy`. Can be used to correct and change previously set values.
+* `start flow flow_name`: Starting a flow. For example, `start flow check_balance` to respond to user queries about their account balance.
+* `cancel flow`: Cancelling the current flow.
 * `disambiguate flows flow_name1 flow_name2 ... flow_name_n`: Disambiguate which flow should be started when user input is ambiguous by listing the potential flows as options. For example, `disambiguate flows list_contacts add_contact remove_contact ...` if the user just wrote "contacts".
-* `provide info`: Responding to the user's questions by supplying relevant information, such as answering FAQs or explaining services
+* `provide info`: Responding to the user's questions by supplying relevant information, such as answering FAQs or explaining services.
 * `offtopic reply`: Responding to casual or social user messages that are unrelated to any flows, engaging in friendly conversation and addressing off-topic remarks.
-* `hand over`: Handing over to a human, in case the user seems frustrated or explicitly asks to speak to one
+* `hand over`: Handing over to a human, in case the user seems frustrated or explicitly asks to speak to one.
 
 --
 
 ## Available Flows and Slots
-Use the following structured date:
+Use the following structured data:
 ```json
 {
     "flows": [
@@ -80,6 +80,12 @@ You are currently not inside any flow.{% endif %}
 ---
 
 ## Task
-Create an action list with one action per line in response to the users last message: """{{ user_message }}""".
+Create an action list - from available actions ONLY and strictly adhering to the examples therein - with exactly one action per line in response to the users last message.
+
+### Further instructions
+Please respond ONLY with the requested action list and each action should be listed with the exact syntax as shown in the "Available Actions" section, as the output of this response will be directly fed into an action list processing program.
+
+### Users last message:
+"""{{ user_message }}""".
 
 Your action list:
