@@ -27,14 +27,21 @@ def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):
 
     required_files = [
         "actions/__init__.py",
-        "actions/actions.py",
-        "domain.yml",
+        "actions/action_template.py",
+        "actions/add_contact.py",
+        "actions/list_contacts.py",
+        "actions/remove_contact.py",
+        "data/flows/add_contact.yml",
+        "data/flows/list_contacts.yml",
+        "data/flows/remove_contact.yml",
+        "db/contacts.json",
+        "domain/add_contact.yml",
+        "domain/list_contacts.yml",
+        "domain/remove_contact.yml",
+        "domain/shared.yml",
         "config.yml",
         "credentials.yml",
         "endpoints.yml",
-        "data/nlu.yml",
-        "data/stories.yml",
-        "data/rules.yml",
     ]
     assert all((Path("workspace") / file).exists() for file in required_files)
 
@@ -124,4 +131,4 @@ def test_train_data_non_default_template(
     )  # avoid training an initial model
 
     # picking domain as it is present in all templates
-    assert (tmp_path / "domain.yml").exists()
+    assert (tmp_path / "domain").exists()

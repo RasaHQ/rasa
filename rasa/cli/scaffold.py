@@ -64,7 +64,7 @@ def add_subparser(
         "--template",
         type=ProjectTemplateName,
         choices=list(ProjectTemplateName),
-        default=ProjectTemplateName.DEFAULT,
+        default=ProjectTemplateName.CALM,
         help="Select the template to use for the project.",
     )
     scaffold_parser.set_defaults(func=run)
