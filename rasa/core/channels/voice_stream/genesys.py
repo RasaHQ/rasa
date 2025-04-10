@@ -1,4 +1,7 @@
 import asyncio
+import base64
+import hashlib
+import hmac
 import json
 from typing import Any, Awaitable, Callable, Dict, Optional, Text
 
@@ -45,6 +48,7 @@ in the documentation but observed in their example app
 https://github.com/GenesysCloudBlueprints/audioconnector-server-reference-implementation
 """
 MAXIMUM_BINARY_MESSAGE_SIZE = 64000  # 64KB
+HEADER_API_KEY = "X-Api-Key"
 logger = structlog.get_logger(__name__)
 
 
@@ -86,8 +90,31 @@ class GenesysInputChannel(VoiceInputChannel):
     def name(cls) -> str:
         return "genesys"
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self, api_key: Text, client_secret: Optional[Text], *args: Any, **kwargs: Any
+    ) -> None:
         super().__init__(*args, **kwargs)
+        self.api_key = api_key
+        self.client_secret = client_secret
+
+    @classmethod
+    def from_credentials(
+        cls, credentials: Optional[Dict[str, Any]]
+    ) -> VoiceInputChannel:
+        if not credentials:
+            raise ValueError("No credentials given for Genesys voice channel.")
+
+        if not credentials.get("api_key"):
+            raise ValueError("No API key given for Genesys voice channel (api_key).")
+
+        return cls(
+            api_key=credentials["api_key"],
+            client_secret=credentials.get("client_secret"),
+            server_url=credentials["server_url"],
+            asr_config=credentials["asr"],
+            tts_config=credentials["tts"],
+            monitor_silence=credentials.get("monitor_silence", False),
+        )
 
     def _ensure_channel_data_initialized(self) -> None:
         """Initialize Genesys-specific channel data if not already present.
@@ -273,6 +300,93 @@ class GenesysInputChannel(VoiceInputChannel):
         logger.debug("genesys.disconnect", message=message)
         _schedule_ws_task(ws.send(json.dumps(message)))
 
+    def _calculate_signature(self, request: Request) -> str:
+        """Calculate the signature using request data."""
+        org_id = request.headers.get("Audiohook-Organization-Id")
+        session_id = request.headers.get("Audiohook-Session-Id")
+        correlation_id = request.headers.get("Audiohook-Correlation-Id")
+        api_key = request.headers.get(HEADER_API_KEY)
+
+        # order of components is important!
+        components = [
+            ("@request-target", "/webhooks/genesys/websocket"),
+            ("audiohook-session-id", session_id),
+            ("audiohook-organization-id", org_id),
+            ("audiohook-correlation-id", correlation_id),
+            (HEADER_API_KEY.lower(), api_key),
+            ("@authority", self.server_url),
+        ]
+
+        # Create signature base string
+        signing_string = ""
+        for name, value in components:
+            signing_string += f'"{name}": {value}\n'
+
+        # Add @signature-params
+        signature_input = request.headers["Signature-Input"]
+        _, params_str = signature_input.split("=", 1)
+        signing_string += f'"@signature-params": {params_str}'
+
+        # Calculate the HMAC signature
+        key_bytes = base64.b64decode(self.client_secret)
+        signature = hmac.new(
+            key_bytes, signing_string.encode("utf-8"), hashlib.sha256
+        ).digest()
+        return base64.b64encode(signature).decode("utf-8")
+
+    async def _verify_signature(self, request: Request) -> bool:
+        """Verify the HTTP message signature from Genesys."""
+        if not self.client_secret:
+            logger.info(
+                "genesys.verify_signature.no_client_secret",
+                event_info="Signature verification skipped",
+            )
+            return True  # Skip verification if no client secret
+
+        signature = request.headers.get("Signature")
+        signature_input = request.headers.get("Signature-Input")
+        if not signature or not signature_input:
+            logger.error("genesys.signature.missing_signature_header")
+            return False
+
+        try:
+            actual_signature = signature.split("=", 1)[1].strip(':"')
+            expected_signature = self._calculate_signature(request)
+            return hmac.compare_digest(
+                expected_signature.encode("utf-8"), actual_signature.encode("utf-8")
+            )
+        except Exception as e:
+            logger.exception("genesys.signature.verification_error", error=e)
+            return False
+
+    def _ensure_required_headers(self, request: Request) -> bool:
+        """Ensure required headers are present in the request."""
+        required_headers = [
+            "Audiohook-Organization-Id",
+            "Audiohook-Correlation-Id",
+            "Audiohook-Session-Id",
+            HEADER_API_KEY,
+        ]
+
+        missing_headers = [
+            header for header in required_headers if header not in request.headers
+        ]
+
+        if missing_headers:
+            logger.error(
+                "genesys.missing_required_headers",
+                missing_headers=missing_headers,
+            )
+            return False
+        return True
+
+    def _ensure_api_key(self, request: Request) -> bool:
+        """Ensure the API key is present in the request."""
+        api_key = request.headers.get(HEADER_API_KEY)
+        if not hmac.compare_digest(str(self.api_key), str(api_key)):
+            return False
+        return True
+
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
@@ -289,23 +403,39 @@ class GenesysInputChannel(VoiceInputChannel):
                 "genesys.receive",
                 audiohook_session_id=request.headers.get("audiohook-session-id"),
             )
-            # validate required headers
-            required_headers = [
-                "audiohook-organization-id",
-                "audiohook-correlation-id",
-                "audiohook-session-id",
-                "x-api-key",
-            ]
 
-            for header in required_headers:
-                if header not in request.headers:
-                    await ws.close(1008, f"Missing required header: {header}")
-                    return
+            # verify signature
+            if not await self._verify_signature(request):
+                logger.error("genesys.receive.invalid_signature")
+                await ws.close(code=1008, reason="Invalid signature")
+                return
 
-            # TODO: validate API key header
+            # ensure required headers are present
+            if not self._ensure_required_headers(request):
+                await ws.close(code=1002, reason="Missing required headers")
+                return
+
+            # ensure API key is correct
+            if not self._ensure_api_key(request):
+                logger.error(
+                    "genesys.receive.invalid_api_key",
+                    invalid_api_key=request.headers.get(HEADER_API_KEY),
+                )
+                await ws.close(code=1008, reason="Invalid API key")
+                return
+
             # process audio streaming
             logger.info("genesys.receive", message="Starting audio streaming")
-            await self.run_audio_streaming(on_new_message, ws)
+            try:
+                await self.run_audio_streaming(on_new_message, ws)
+            except Exception as e:
+                logger.exception(
+                    "genesys.receive",
+                    message="Error during audio streaming",
+                    error=e,
+                )
+                await ws.close(code=1011, reason="Error during audio streaming")
+                raise
 
         return blueprint
 

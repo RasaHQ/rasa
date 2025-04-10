@@ -14,6 +14,7 @@ from rasa.core.channels.voice_ready.audiocodes import (
     AudiocodesInput,
     AudiocodesOutput,
     Conversation,
+    HttpUnauthorized,
 )
 from rasa.shared.exceptions import RasaException
 
@@ -289,7 +290,7 @@ async def test_background_task_completes(monkeypatch: MonkeyPatch) -> None:
             }
         ]
     }
-    headers = {"Authorization": "test_token"}
+    headers = {"Authorization": "Bearer test_token"}
 
     # Make request
     _, response = await test_client.post(url, json=data, headers=headers)
@@ -304,3 +305,63 @@ async def test_background_task_completes(monkeypatch: MonkeyPatch) -> None:
 
     # Verify task cleanup
     assert len(input_channel.background_tasks[conversation_id]) == 0
+
+
+async def test_invalid_token_raises_error() -> None:
+    """Test that requests with invalid tokens are rejected."""
+    input_channel = AudiocodesInput(
+        token="correct_token",
+        use_websocket=False,
+        keep_alive=120,
+        keep_alive_expiration_factor=1.5,
+    )
+
+    # Create Sanic test client
+    app = Sanic("test_app")
+    blueprint = input_channel.blueprint(AsyncMock())
+    app.blueprint(blueprint)
+    test_client = app.asgi_client
+
+    url_prefix = "rasa.core.channels.voice_ready.audiocodes"
+    url = f"{url_prefix}/webhook"
+
+    # Test with correct token
+    headers = {"Authorization": "Bearer correct_token"}
+    _, response = await test_client.get(url, headers=headers)
+
+    assert response.status == 200
+
+    # Test with wrong token
+    headers = {"Authorization": "wrong_token"}
+    _, response = await test_client.get(url, headers=headers)
+
+    assert response.status == 401
+
+    # Test with missing token
+    _, response = await test_client.get(url)
+
+    assert response.status == 401
+
+
+def test_check_token() -> None:
+    input_channel = AudiocodesInput(
+        token="correct_token",
+        use_websocket=False,
+        keep_alive=120,
+        keep_alive_expiration_factor=1.5,
+    )
+
+    # Test with correct token
+    # assert no exception is raised
+    try:
+        input_channel._check_token("correct_token")
+    except HttpUnauthorized:
+        pytest.fail("HttpUnauthorized raised unexpectedly!")
+
+    # Test with wrong token, Expect HttpUnauthorized exception
+    with pytest.raises(HttpUnauthorized):
+        input_channel._check_token("wrong_token")
+
+    # Test with missing token
+    with pytest.raises(HttpUnauthorized):
+        input_channel._check_token(None)

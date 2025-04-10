@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import hmac
 import json
 from typing import Any, Awaitable, Callable, Dict, Optional, Text
 
@@ -103,6 +104,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
 
     def __init__(
         self,
+        token: Optional[Text],
         server_url: str,
         asr_config: Dict,
         tts_config: Dict,
@@ -110,6 +112,22 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
     ):
         mark_as_beta_feature("Audiocodes (audiocodes_stream) Channel")
         super().__init__(server_url, asr_config, tts_config, monitor_silence)
+        self.token = token
+
+    @classmethod
+    def from_credentials(
+        cls, credentials: Optional[Dict[str, Any]]
+    ) -> VoiceInputChannel:
+        if not credentials:
+            raise ValueError("No credentials given for Audiocodes voice channel.")
+
+        return cls(
+            token=credentials.get("token"),
+            server_url=credentials["server_url"],
+            asr_config=credentials["asr"],
+            tts_config=credentials["tts"],
+            monitor_silence=credentials.get("monitor_silence", False),
+        )
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
         return RasaAudioBytes(base64.b64decode(input_bytes))
@@ -135,6 +153,13 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
                     )
                     if activity["name"] == "start":
                         return map_call_params(activity["parameters"])
+            elif data["type"] == "connection.validate":
+                # not part of call flow; only sent when integration is created
+                logger.info(
+                    "audiocodes_stream.collect_call_parameters.connection.validate",
+                    event_info="received request to validate integration",
+                )
+                self._send_validated(channel_websocket, data)
             else:
                 logger.warning("audiocodes_stream.unknown_message", data=data)
         return None
@@ -158,7 +183,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
                 elif activity["name"] == "playFinished":
                     logger.debug("audiocodes_stream.playFinished", data=activity)
                     if call_state.should_hangup:
-                        logger.info("audiocodes.hangup")
+                        logger.info("audiocodes_stream.hangup")
                         self._send_hangup(ws, data)
                         # the conversation should continue until
                         # we receive a end message from audiocodes
@@ -180,11 +205,10 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         elif data["type"] == "session.end":
             logger.debug("audiocodes_stream.end", data=data)
             return EndConversationAction()
-        elif data["type"] == "connection.validate":
-            # not part of call flow; only sent when integration is created
-            self._send_validated(ws, data)
         else:
-            logger.warning("audiocodes_stream.unknown_message", data=data)
+            logger.warning(
+                "audiocodes_stream.map_input_message.unknown_message", data=data
+            )
 
         return ContinueConversationAction()
 
@@ -254,6 +278,17 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
             self.tts_cache,
         )
 
+    def _is_token_valid(self, token: Optional[Text]) -> bool:
+        # If no token is set, always return True
+        if not self.token:
+            return True
+
+        # Token is required, but not provided
+        if not token:
+            return False
+
+        return hmac.compare_digest(str(self.token), str(token))
+
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
@@ -266,17 +301,26 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
 
         @blueprint.websocket("/websocket")  # type: ignore
         async def receive(request: Request, ws: Websocket) -> None:
-            # TODO: validate API key header
-            logger.info("audiocodes.receive", message="Starting audio streaming")
+            if not self._is_token_valid(request.token):
+                logger.error(
+                    "audiocodes_stream.invalid_token",
+                    invalid_token=request.token,
+                )
+                await ws.close(code=1008, reason="Invalid token")
+                return
+
+            logger.info(
+                "audiocodes_stream.receive", event_info="Started websocket connection"
+            )
             try:
                 await self.run_audio_streaming(on_new_message, ws)
             except Exception as e:
                 logger.exception(
-                    "audiocodes.receive",
+                    "audiocodes_stream.receive",
                     message="Error during audio streaming",
                     error=e,
                 )
-                # return 500 error
+                await ws.close(code=1011, reason="Error during audio streaming")
                 raise
 
         return blueprint

@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import hmac
 import json
 import uuid
 from collections import defaultdict
@@ -245,7 +246,12 @@ class AudiocodesInput(InputChannel):
 
     def _check_token(self, token: Optional[Text]) -> None:
         if not token:
+            structlogger.error("audiocodes.token_not_provided")
             raise HttpUnauthorized("Authentication token required.")
+
+        if not hmac.compare_digest(str(token), str(self.token)):
+            structlogger.error("audiocodes.invalid_token", invalid_token=token)
+            raise HttpUnauthorized("Invalid authentication token.")
 
     def _get_conversation(
         self, token: Optional[Text], conversation_id: Text
