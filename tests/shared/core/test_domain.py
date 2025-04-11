@@ -55,7 +55,7 @@ from rasa.shared.core.slots import (
     TextSlot,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.exceptions import YamlException, YamlSyntaxException
+from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
 from rasa.shared.utils.yaml import YamlValidationException, read_yaml
 from rasa.utils.common import EXPECTED_WARNINGS
 from tests.utilities import filter_logs
@@ -1785,15 +1785,42 @@ def test_is_valid_domain_doesnt_raise_with_invalid_domain(tmpdir: Path):
     assert not Domain.is_domain_file(domain_path)
 
 
-def test_is_valid_domain_doesnt_raise_with_invalid_yaml(tmpdir: Path):
+@pytest.mark.parametrize(
+    "domain_yaml, reason",
+    [
+        (
+            """
+            responses:
+                utter_greet:
+                    - text: Hi \u000b. How are you?.
+            """,
+            "unacceptable character #x000b: control characters are not allowed",
+        ),
+        (
+            """
+                responses:
+                    utter_greet:
+                        - text: Hi, how are you?.
+                    utter_greet:
+                        - text: Hi, how are you?.
+            """,
+            "found duplicate key",
+        ),
+    ],
+)
+def test_is_valid_domain_doesnt_raise_with_invalid_yaml(
+    domain_yaml: str, reason: str, tmpdir: Path
+):
     potential_domain_path = str(tmpdir / "domain.yml")
     rasa.shared.utils.io.write_text_file(
-        """
-       script:
-        - echo "Latest SDK version is ${RASA_SDK_VERSION}""",
+        domain_yaml,
         potential_domain_path,
     )
-    assert not Domain.is_domain_file(potential_domain_path)
+    with pytest.raises(RasaException) as e:
+        Domain.is_domain_file(potential_domain_path)
+    assert "Domain could not be loaded: " in str(e.value)
+    assert "Failed to read YAML." in str(e.value)
+    assert reason in str(e.value)
 
 
 def test_domain_with_empty_intent_mapping():
@@ -1867,16 +1894,21 @@ def test_domain_with_empty_required_slots():
 
 
 def test_domain_invalid_yml_in_folder():
-    """Check if invalid YAML files in a domain folder lead to the proper UserWarning."""
+    """Check if invalid YAML files in a domain folder raises an error."""
     expected_event = "domain.cannot_load_domain_file"
-    expected_log_level = "warning"
-    expected_log_message_parts = ["The file", "your file"]
+    expected_log_level = "error"
+    expected_log_message_parts = [
+        "The file",
+        "could not be loaded as domain file.",
+        "your file",
+    ]
     with structlog.testing.capture_logs() as caplog:
-        Domain.from_directory("data/test_domains/test_domain_from_directory/")
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, expected_log_message_parts
-        )
-        assert len(logs) == 1
+        with pytest.raises(RasaException):
+            Domain.from_directory("data/test_domains/test_domain_from_directory/")
+            logs = filter_logs(
+                caplog, expected_event, expected_log_level, expected_log_message_parts
+            )
+            assert len(logs) == 1
 
 
 def test_invalid_domain_dir_with_duplicates_intents_slots(recwarn: WarningsRecorder):

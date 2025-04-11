@@ -1678,6 +1678,14 @@ class Domain:
         """Write domain to a file."""
         as_yaml = self.as_yaml()
         rasa.shared.utils.io.write_text_file(as_yaml, filename)
+        # run the check again on the written domain to catch any errors
+        # that may have been missed in the user defined domain files
+        structlogger.info(
+            "domain.persist.domain_written_to_file",
+            event_info="The entire domain content has been written to file.",
+            filename=filename,
+        )
+        Domain.is_domain_file(filename)
 
     def as_yaml(self) -> Text:
         """Dump the `Domain` object as a YAML string.
@@ -1972,17 +1980,18 @@ class Domain:
 
         try:
             content = read_yaml_file(filename, expand_env_vars=cls.expand_env_vars)
-        except (RasaException, YamlSyntaxException):
-            structlogger.warning(
+        except (RasaException, YamlSyntaxException) as error:
+            structlogger.error(
                 "domain.cannot_load_domain_file",
                 file=filename,
+                error=error,
                 event_info=(
                     f"The file {filename} could not be loaded as domain file. "
                     f"You can use https://yamlchecker.com/ to validate "
                     f"the YAML syntax of your file."
                 ),
             )
-            return False
+            raise RasaException(f"Domain could not be loaded: {error}")
 
         return any(key in content for key in ALL_DOMAIN_KEYS)
 
