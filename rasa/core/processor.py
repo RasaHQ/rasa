@@ -1009,7 +1009,14 @@ class MessageProcessor:
 
     @staticmethod
     def _should_handle_message(tracker: DialogueStateTracker) -> bool:
-        return not tracker.is_paused() or (
+        return not tracker.is_paused() or MessageProcessor._last_user_intent_is_restart(
+            tracker
+        )
+
+    @staticmethod
+    def _last_user_intent_is_restart(tracker: DialogueStateTracker) -> bool:
+        """Check if the last user intent is a restart intent."""
+        return (
             tracker.latest_message is not None
             and tracker.latest_message.intent.get(INTENT_NAME_KEY)
             == USER_INTENT_RESTART
