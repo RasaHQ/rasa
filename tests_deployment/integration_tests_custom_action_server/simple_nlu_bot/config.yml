@@ -3,7 +3,27 @@ recipe: default.v1
 language: en
 
 pipeline:
-- name: KeywordIntentClassifier
+  - name: WhitespaceTokenizer
+    intent_tokenization_flag: true
+    intent_split_symbol: _and_
+    token_pattern: None
+  - name: LexicalSyntacticFeaturizer
+    features:
+      [["suffix2", "prefix2"], ["BOS", "EOS", "digit"], ["suffix2", "prefix2"]]
+  - name: CountVectorsFeaturizer
+    analyzer: word
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 4
+    lowercase: true
+  - name: CRFEntityExtractor
+  - name: LogisticRegressionClassifier
+    max_iter: 100
+    solver: lbfgs
+    tol: 0.0001
+    random_state: 42
+    ranking_length: 10
 
 policies:
 - name: RulePolicy

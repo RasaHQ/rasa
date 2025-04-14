@@ -11,3 +11,19 @@ rules:
   steps:
   - intent: greet
   - action: utter_greet
+
+- rule: cheer_up
+  condition:
+    - slot_was_set:
+        - mood: negative
+  steps:
+    - intent: negative_mood
+    - action: utter_cheer_up
+
+- rule: cheer_on
+  condition:
+    - slot_was_set:
+        - mood: positive
+  steps:
+    - intent: positive_mood
+    - action: utter_happy

@@ -10,3 +10,21 @@ nlu:
   examples: |
     - cu
     - good by
+
+- intent: positive_mood
+  examples: |
+    - I am [happy](mood)
+    - I am feeling [great](mood)
+    - I am [awesome](mood)
+    - I am [good](mood)
+    - I am [fantastic](mood)
+    - I am feeling [amazing](mood)
+
+- intent: negative_mood
+  examples: |
+    - I am so [sad](mood)
+    - I am feeling [bad](mood)
+    - I am [angry](mood)
+    - I am [mad](mood)
+    - I am [frustrated](mood)
+    - I am feeling [terrible](mood)

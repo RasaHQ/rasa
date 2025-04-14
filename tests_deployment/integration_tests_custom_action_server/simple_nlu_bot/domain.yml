@@ -3,13 +3,33 @@ version: "3.1"
 intents:
   - greet
   - goodbye
+  - positive_mood
+  - negative_mood
+
+entities:
+  - mood
+
+slots:
+  mood:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: mood
 
 responses:
   utter_greet:
   - text: "Hi"
 
+  utter_cheer_up:
+  - text: "Here is something to cheer you up:"
+    image: "https://i.imgur.com/nGF1K8f.jpg"
+
+  utter_happy:
+    - text: "Great, carry on!"
+
 actions:
   - action_goodbye
+  - action_validate_slot_mappings
 
 session_config:
   session_expiration_time: 60

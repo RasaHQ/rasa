@@ -648,12 +648,14 @@ class SlotFillingManager:
         output_channel: "OutputChannel",
         nlg: "NaturalLanguageGenerator",
         recreate_tracker: bool = False,
+        slot_events: Optional[List[Event]] = None,
     ) -> List[Event]:
         from rasa.core.actions.action import RemoteAction
         from rasa.shared.core.trackers import DialogueStateTracker
         from rasa.utils.endpoints import ClientResponseError
 
-        slot_events: List[Event] = []
+        validated_slot_events: List[Event] = []
+        slot_events = slot_events if slot_events is not None else []
         remote_action = RemoteAction(custom_action, self._action_endpoint)
         disallowed_types = set()
 
@@ -673,9 +675,9 @@ class SlotFillingManager:
             )
             for event in custom_events:
                 if isinstance(event, SlotSet):
-                    slot_events.append(event)
+                    validated_slot_events.append(event)
                 elif isinstance(event, BotUttered):
-                    slot_events.append(event)
+                    validated_slot_events.append(event)
                 else:
                     disallowed_types.add(event.type_name)
         except (RasaException, ClientResponseError) as e:
@@ -699,7 +701,7 @@ class SlotFillingManager:
                 f"updated with this event.",
             )
 
-        return slot_events
+        return validated_slot_events
 
     async def execute_validation_action(
         self,
@@ -722,7 +724,11 @@ class SlotFillingManager:
             return cast(List[Event], slot_events)
 
         validate_events = await self._run_custom_action(
-            ACTION_VALIDATE_SLOT_MAPPINGS, output_channel, nlg, recreate_tracker=True
+            ACTION_VALIDATE_SLOT_MAPPINGS,
+            output_channel,
+            nlg,
+            recreate_tracker=True,
+            slot_events=cast(List[Event], slot_events),
         )
         validated_slot_names = [
             event.key for event in validate_events if isinstance(event, SlotSet)
