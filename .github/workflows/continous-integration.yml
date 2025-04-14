@@ -35,9 +35,9 @@ concurrency:
 # - INTEGRATION_TESTS_PRO_LICENSE: license key for Pro. Used in integration tests. Expires in 2034.
 
 env:
-  AWS_REGION: us-east-1
-  RASA_PRO_DEV_REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-private-dev
-  RASA_SDK_DEV_REPOSITORY: 329710836760.dkr.ecr.us-east-1.amazonaws.com/rasa-sdk-dev
+  AWS_REGION: eu-west-1
+  RASA_PRO_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-private-dev
+  RASA_SDK_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-sdk-dev
   DEFAULT_PYTHON_VERSION: "3.9"
   NODE_VERSION_INSPECTOR_BUILD: 20
   SONAR_ORGANIZATION: rasahq
