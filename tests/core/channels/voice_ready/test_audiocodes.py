@@ -1,22 +1,32 @@
 import asyncio
+from dataclasses import asdict
 from datetime import datetime, timezone
-from typing import Any
-from unittest.mock import AsyncMock
+from typing import Any, Awaitable, Callable, Dict
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import structlog
 from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
-from sanic import Sanic
+from sanic import Request, Sanic
 
 from rasa.core import run, utils
-from rasa.core.channels.channel import UserMessage
+from rasa.core.channels.channel import (
+    CollectingOutputChannel,
+    OutputChannel,
+    UserMessage,
+)
 from rasa.core.channels.voice_ready.audiocodes import (
+    CHANNEL_NAME,
     AudiocodesInput,
     AudiocodesOutput,
     Conversation,
     HttpUnauthorized,
+    map_call_params,
 )
+from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.exceptions import RasaException
+from tests.utilities import filter_logs
 
 
 @pytest.mark.parametrize(
@@ -176,7 +186,9 @@ async def test_handle_startup() -> None:
     }
 
     # Execute
-    await conversation.handle_activities(activities, output_channel, on_new_message)
+    await conversation.handle_activities(
+        activities, CHANNEL_NAME, output_channel, on_new_message
+    )
 
     on_new_message.assert_called_once()
     user_msg = on_new_message.call_args[0][0]
@@ -365,3 +377,207 @@ def test_check_token() -> None:
     # Test with missing token
     with pytest.raises(HttpUnauthorized):
         input_channel._check_token(None)
+
+
+@pytest.fixture
+def audiocodes_activity_metadata() -> Dict[str, Any]:
+    return {
+        "vaigConversationId": "some id",
+        "caller": "some caller",
+        "callee": "some callee",
+        "callerDisplayName": "some caller display name",
+        "callerHost": "some caller host",
+        "calleeHost": "some callee host",
+    }
+
+
+@pytest.fixture
+def user_message_metadata(
+    audiocodes_activity_metadata: Dict[str, Any],
+) -> Dict[str, Any]:
+    return asdict(map_call_params(audiocodes_activity_metadata))
+
+
+@pytest.fixture
+def audiocodes_message_text() -> str:
+    return "Hello, world!"
+
+
+@pytest.fixture
+def audiocodes_message(
+    audiocodes_activity_metadata: Dict[str, Any], audiocodes_message_text: str
+) -> Dict[str, Any]:
+    return {
+        "activities": [
+            {
+                "id": "123",
+                "timestamp": "2023-10-01T12:00:00Z",
+                "type": "message",
+                "text": audiocodes_message_text,
+                "parameters": audiocodes_activity_metadata,
+            }
+        ]
+    }
+
+
+@pytest.fixture
+def conversation_id() -> str:
+    """Conversation ID fixture."""
+    return "123"
+
+
+@pytest.fixture
+def conversation(conversation_id: str) -> Conversation:
+    """Conversation fixture."""
+    return Conversation(
+        conversation_id=conversation_id,
+    )
+
+
+@pytest.fixture
+def on_new_message_mock() -> Callable[[UserMessage], Awaitable[Any]]:
+    # Mock the on_new_message function to simulate the behavior of the
+    # function that handles new messages in the conversation
+    _async_mock = AsyncMock()
+    return _async_mock
+
+
+@pytest.fixture
+def output_channel_mock() -> MagicMock:
+    """Mock of the OutputChannel class."""
+    return MagicMock(spec=OutputChannel)
+
+
+@pytest.fixture
+def audiocodes_token() -> str:
+    """Fixture for a mock token."""
+    return "123"
+
+
+@pytest.fixture
+def audiocodes_disconnect_request(
+    audiocodes_token: str,
+) -> Request:
+    """Fixture for a mock disconnect request."""
+    request = MagicMock(spec=Request)
+    request.token = audiocodes_token
+    request.json = {
+        "reason": "user_requested_to_disconnect",
+    }
+    return request
+
+
+@pytest.fixture
+def audiocodes_input(
+    audiocodes_token: str,
+) -> AudiocodesInput:
+    """Fixture for AudiocodesInput."""
+    return AudiocodesInput(
+        token=audiocodes_token,
+        use_websocket=True,
+        keep_alive=120,
+        keep_alive_expiration_factor=1.0,
+    )
+
+
+async def test_handle_activities_in_conversation(
+    audiocodes_message: Dict[str, Any],
+    audiocodes_message_text: str,
+    user_message_metadata: Dict[str, Any],
+    conversation: Conversation,
+    conversation_id: str,
+    on_new_message_mock: Callable[[UserMessage], Awaitable[Any]],
+    output_channel_mock: MagicMock,
+) -> None:
+    """Tests that handle_activities method correctly creates the UserMessage object"""
+    channel_name = "audiocodes"
+
+    await conversation.handle_activities(
+        message=audiocodes_message,
+        input_channel_name=channel_name,
+        output_channel=output_channel_mock,
+        on_new_message=on_new_message_mock,
+    )
+
+    # Check that the on_new_message function was called with the correct arguments
+    on_new_message_call_args = on_new_message_mock.call_args.args
+    assert len(on_new_message_call_args) == 1
+    assert isinstance(on_new_message_call_args[0], UserMessage)
+    assert on_new_message_call_args[0].text == audiocodes_message_text
+    assert on_new_message_call_args[0].input_channel == channel_name
+    assert on_new_message_call_args[0].output_channel == output_channel_mock
+    assert on_new_message_call_args[0].sender_id == conversation_id
+    assert on_new_message_call_args[0].metadata == user_message_metadata
+
+
+async def test_handle_activities_with_empty_input_channel_name(
+    audiocodes_message: Dict[str, Any],
+    audiocodes_message_text: str,
+    user_message_metadata: Dict[str, Any],
+    conversation: Conversation,
+    conversation_id: str,
+    on_new_message_mock: Callable[[UserMessage], Awaitable[Any]],
+    output_channel_mock: MagicMock,
+) -> None:
+    """Tests that handle_activities method correctly handles empty input channel name."""  # noqa: E501
+    channel_name = ""
+
+    with structlog.testing.capture_logs() as caplog:
+        await conversation.handle_activities(
+            message=audiocodes_message,
+            input_channel_name=channel_name,
+            output_channel=output_channel_mock,
+            on_new_message=on_new_message_mock,
+        )
+
+        msg = (
+            f"Audiocodes input channel name is empty for conversation {conversation_id}"
+        )
+
+        logs = filter_logs(
+            caplog,
+            "audiocodes.handle.activities.empty_input_channel_name",
+            "warning",
+            [msg],
+        )
+        assert len(logs) == 1
+
+    # Check that the on_new_message function was called with the correct arguments
+    on_new_message_call_args = on_new_message_mock.call_args.args
+    assert len(on_new_message_call_args) == 1
+    assert isinstance(on_new_message_call_args[0], UserMessage)
+    assert on_new_message_call_args[0].text == audiocodes_message_text
+    assert on_new_message_call_args[0].input_channel == channel_name
+    assert on_new_message_call_args[0].output_channel == output_channel_mock
+    assert on_new_message_call_args[0].sender_id == conversation_id
+    assert on_new_message_call_args[0].metadata == user_message_metadata
+
+
+async def test_handle_disconnect(
+    audiocodes_disconnect_request: Request,
+    conversation: Conversation,
+    conversation_id: str,
+    on_new_message_mock: Callable[[UserMessage], Awaitable[Any]],
+    audiocodes_input: AudiocodesInput,
+) -> None:
+    audiocodes_input.conversations[conversation_id] = conversation
+    """Tests that handle_disconnect method correctly handles disconnect requests."""
+    await audiocodes_input._handle_disconnect(
+        request=audiocodes_disconnect_request,
+        conversation_id=conversation_id,
+        on_new_message=on_new_message_mock,
+    )
+
+    # Check that the on_new_message function was called with the correct arguments
+    on_new_message_call_args = on_new_message_mock.call_args.args
+    assert len(on_new_message_call_args) == 1
+    assert isinstance(on_new_message_call_args[0], UserMessage)
+    assert on_new_message_call_args[0].text == f"{INTENT_MESSAGE_PREFIX}session_end"
+    assert on_new_message_call_args[0].input_channel == audiocodes_input.name()
+    assert isinstance(
+        on_new_message_call_args[0].output_channel, CollectingOutputChannel
+    )
+    assert on_new_message_call_args[0].sender_id == conversation_id
+    assert on_new_message_call_args[0].metadata == {
+        "reason": "user_requested_to_disconnect"
+    }

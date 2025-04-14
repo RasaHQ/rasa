@@ -115,11 +115,21 @@ class Conversation:
     async def handle_activities(
         self,
         message: Dict[Text, Any],
+        input_channel_name: str,
         output_channel: OutputChannel,
         on_new_message: Callable[[UserMessage], Awaitable[Any]],
     ) -> None:
         """Handle activities sent by Audiocodes."""
         structlogger.debug("audiocodes.handle.activities")
+        if input_channel_name == "":
+            structlogger.warning(
+                "audiocodes.handle.activities.empty_input_channel_name",
+                event_info=(
+                    f"Audiocodes input channel name is empty "
+                    f"for conversation {self.conversation_id}"
+                ),
+            )
+
         for activity in message["activities"]:
             text = None
             if activity[ACTIVITY_ID_KEY] in self.activity_ids:
@@ -143,6 +153,7 @@ class Conversation:
             metadata = self.get_metadata(activity)
             user_msg = UserMessage(
                 text=text,
+                input_channel=input_channel_name,
                 output_channel=output_channel,
                 sender_id=self.conversation_id,
                 metadata=metadata,
@@ -394,7 +405,12 @@ class AudiocodesInput(InputChannel):
             # start a background task to handle activities
             self._create_task(
                 conversation_id,
-                conversation.handle_activities(request.json, ac_output, on_new_message),
+                conversation.handle_activities(
+                    request.json,
+                    input_channel_name=self.name(),
+                    output_channel=ac_output,
+                    on_new_message=on_new_message,
+                ),
             )
             return response.json(response_json)
 
@@ -407,23 +423,9 @@ class AudiocodesInput(InputChannel):
             Example of payload:
             {"conversation": <conversation_id>, "reason": Optional[Text]}.
             """
-            self._get_conversation(request.token, conversation_id)
-            reason = {"reason": request.json.get("reason")}
-            await on_new_message(
-                UserMessage(
-                    text=f"{INTENT_MESSAGE_PREFIX}session_end",
-                    output_channel=None,
-                    sender_id=conversation_id,
-                    metadata=reason,
-                )
+            return await self._handle_disconnect(
+                request, conversation_id, on_new_message
             )
-            del self.conversations[conversation_id]
-            structlogger.debug(
-                "audiocodes.disconnect",
-                conversation=conversation_id,
-                request=request.json,
-            )
-            return response.json({})
 
         @ac_webhook.route("/conversation/<conversation_id>/keepalive", methods=["POST"])
         async def keepalive(request: Request, conversation_id: Text) -> HTTPResponse:
@@ -438,6 +440,32 @@ class AudiocodesInput(InputChannel):
 
         return ac_webhook
 
+    async def _handle_disconnect(
+        self,
+        request: Request,
+        conversation_id: Text,
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+    ) -> HTTPResponse:
+        """Triggered when the call is disconnected."""
+        self._get_conversation(request.token, conversation_id)
+        reason = {"reason": request.json.get("reason")}
+        await on_new_message(
+            UserMessage(
+                text=f"{INTENT_MESSAGE_PREFIX}session_end",
+                output_channel=None,
+                input_channel=self.name(),
+                sender_id=conversation_id,
+                metadata=reason,
+            )
+        )
+        del self.conversations[conversation_id]
+        structlogger.debug(
+            "audiocodes.disconnect",
+            conversation=conversation_id,
+            request=request.json,
+        )
+        return response.json({})
+
 
 class AudiocodesOutput(OutputChannel):
     @classmethod
@@ -445,6 +473,7 @@ class AudiocodesOutput(OutputChannel):
         return CHANNEL_NAME
 
     def __init__(self) -> None:
+        super().__init__()
         self.messages: List[Dict] = []
 
     async def add_message(self, message: Dict) -> None:
