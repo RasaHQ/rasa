@@ -76,6 +76,7 @@ from rasa.shared.core.constants import (
     SLOT_SILENCE_TIMEOUT,
     USER_INTENT_RESTART,
     USER_INTENT_SILENCE_TIMEOUT,
+    SetSlotExtractor,
 )
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -766,13 +767,26 @@ class MessageProcessor:
         if self.http_interpreter:
             parse_data = await self.http_interpreter.parse(message)
         else:
-            regex_reader = create_regex_pattern_reader(message, self.domain)
-
             processed_message = Message({TEXT: message.text})
-            if regex_reader:
-                processed_message = regex_reader.unpack_regex_message(
-                    message=processed_message, domain=self.domain
+
+            all_flows = await self.get_flows()
+            should_force_slot_command, slot_name = (
+                rasa.core.utils.should_force_slot_filling(tracker, all_flows)
+            )
+
+            if should_force_slot_command:
+                command = SetSlotCommand(
+                    name=slot_name,
+                    value=message.text,
+                    extractor=SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
                 )
+                processed_message.set(COMMANDS, [command.as_dict()], add_to_output=True)
+            else:
+                regex_reader = create_regex_pattern_reader(message, self.domain)
+                if regex_reader:
+                    processed_message = regex_reader.unpack_regex_message(
+                        message=processed_message, domain=self.domain
+                    )
 
             # Invalid use of slash syntax, sanitize the message before passing
             # it to the graph

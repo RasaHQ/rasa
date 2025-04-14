@@ -19,6 +19,7 @@ from rasa.core.constants import (
 )
 from rasa.core.lock_store import InMemoryLockStore, LockStore, RedisLockStore
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, TCP_PROTOCOL
+from rasa.shared.core.constants import SlotMappingType
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import (
     EndpointConfig,
@@ -30,6 +31,7 @@ from rasa.utils.io import write_yaml
 if TYPE_CHECKING:
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.shared.core.domain import Domain
+    from rasa.shared.core.flows.flows_list import FlowsList
 
 structlogger = structlog.get_logger()
 
@@ -364,3 +366,54 @@ def add_bot_utterance_metadata(
         ]
 
     return message
+
+
+def should_force_slot_filling(
+    tracker: Optional[DialogueStateTracker], flows: "FlowsList"
+) -> Tuple[bool, Optional[str]]:
+    """Check if the flow should force slot filling.
+
+    This is only valid when the flow is at a collect information step which
+    has set `force_slot_filling` to true and the slot has a valid `from_text` mapping.
+
+    Args:
+        tracker: The dialogue state tracker.
+        flows: The list of flows.
+
+    Returns:
+        A tuple of a boolean indicating if the flow should force slot filling
+        and the name of the slot if applicable.
+    """
+    from rasa.dialogue_understanding.processor.command_processor import (
+        get_current_collect_step,
+    )
+
+    if tracker is None:
+        structlogger.error(
+            "slot.force_slot_filling.error",
+            event_info="Tracker is None. Cannot force slot filling.",
+        )
+        return False, None
+
+    stack = tracker.stack
+    step = get_current_collect_step(stack, flows)
+    if step is None or not step.force_slot_filling:
+        return False, None
+
+    slot_name = step.collect
+    slot = tracker.slots.get(slot_name)
+
+    if not slot:
+        structlogger.debug(
+            "slot.force_slot_filling.error",
+            event_info=f"Slot '{slot_name}' not found in tracker. "
+            f"Cannot force slot filling. "
+            f"Please check if the slot is defined in the domain.",
+        )
+        return False, None
+
+    for slot_mapping in slot.mappings:
+        if slot_mapping.type == SlotMappingType.FROM_TEXT:
+            return True, slot_name
+
+    return False, None

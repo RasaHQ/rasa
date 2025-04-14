@@ -1,17 +1,6 @@
 version: "3.1"
 responses:
 
-  utter_ask_continue_previous_flow:
-    - text: "Confirm if you would like to continue with the initial topic: {{context.interrupted_flow_id}}?"
-      metadata:
-        rephrase: True
-        template: jinja
-      buttons:
-        - title: Continue with the previous topic.
-          payload: /SetSlots(continue_previous_flow=True)
-        - title: Switch to new topic.
-          payload: /SetSlots(continue_previous_flow=False)
-
   utter_ask_rephrase:
     - text: I’m sorry I am unable to understand you, could you please rephrase?
 
@@ -19,20 +8,6 @@ responses:
     - text: "Hello, are you still there?"
       metadata:
         rephrase: True
-
-  utter_block_digressions:
-    - text: "We can look into {{ context.interrupting_flow_id }} later. Let's focus on the current topic: {{ context.interrupted_flow_id }}."
-      metadata:
-        rephrase: True
-        template: jinja
-    - text: "Let's continue with the current topic: {{ context.interrupted_flow_id }}."
-      condition:
-        - type: slot
-          name: continue_previous_flow
-          value: True
-      metadata:
-        rephrase: True
-        template: jinja
 
   utter_boolean_slot_rejection:
     - text: "Sorry, the value you provided, `{{value}}`, is not valid. Please respond with a valid value."
@@ -56,12 +31,6 @@ responses:
 
   utter_clarification_options_rasa:
     - text: "I can help, but I need more information. Which of these would you like to do: {{context.clarification_options}}?"
-      metadata:
-        rephrase: True
-        template: jinja
-
-  utter_continue_interruption:
-    - text: "Let's continue with the chosen topic instead: {{ context.interrupting_flow_id }}."
       metadata:
         rephrase: True
         template: jinja
@@ -150,10 +119,6 @@ slots:
     type: float
     initial_value: 0.0
     max_value: 1000000
-  continue_previous_flow:
-    type: bool
-    mappings:
-      - type: from_llm
 
 flows:
   pattern_cancel_flow:
@@ -197,7 +162,6 @@ flows:
     steps:
       - action: action_clarify_flows
       - action: utter_clarification_options_rasa
-      - action: action_listen
 
   pattern_code_change:
     description: Conversation repair flow for cleaning the stack after an assistant update
@@ -246,31 +210,6 @@ flows:
               - action: utter_corrected_previous_input
                 next: END
           - else: END
-
-  pattern_handle_digressions:
-    description: Conversation repair flow for handling digressions
-    name: pattern handle digressions
-    steps:
-      - noop: true
-        id: branching
-        next:
-          - if: context.ask_confirm_digressions contains context.interrupting_flow_id
-            then: continue_previous_flow
-          - if: context.block_digressions contains context.interrupting_flow_id
-            then: block_digression
-          - else: continue_digression
-      - id: continue_previous_flow
-        collect: continue_previous_flow
-        next:
-          - if: slots.continue_previous_flow
-            then: block_digression
-          - else: continue_digression
-      - id: block_digression
-        action: action_block_digression
-        next: END
-      - id: continue_digression
-        action: action_continue_digression
-        next: END
 
   pattern_human_handoff:
     description: Conversation repair flow for switching users to a human agent if their request can't be handled

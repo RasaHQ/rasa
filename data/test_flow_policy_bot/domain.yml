@@ -10,6 +10,9 @@ slots:
     type: text
   bar_slot_a:
     type: text
+    mappings:
+      - type: from_text
+        not_intent: welcome
   bar_slot_b:
     type: text
   button_slot_a:

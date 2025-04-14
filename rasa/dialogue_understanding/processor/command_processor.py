@@ -18,9 +18,6 @@ from rasa.dialogue_understanding.commands import (
 from rasa.dialogue_understanding.commands.handle_code_change_command import (
     HandleCodeChangeCommand,
 )
-from rasa.dialogue_understanding.commands.handle_digressions_command import (
-    HandleDigressionsCommand,
-)
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.commands.utils import (
     create_validate_frames_from_slot_set_events,
@@ -454,21 +451,7 @@ def clean_up_commands(
                 )
                 continue
 
-            if should_add_handle_digressions_command(tracker, all_flows, top_flow_id):
-                handle_digression_command = HandleDigressionsCommand(flow=command.flow)
-                if handle_digression_command in clean_commands:
-                    structlogger.debug(
-                        "command_processor.clean_up_commands.skip_handle_digressions.command_already_present",
-                        command=handle_digression_command,
-                    )
-                    continue
-                clean_commands.append(handle_digression_command)
-                structlogger.debug(
-                    "command_processor.clean_up_commands.push_handle_digressions",
-                    command=command,
-                )
-            else:
-                clean_commands.append(command)
+            clean_commands.append(command)
 
         # handle chitchat command differently from other free-form answer commands
         elif isinstance(command, ChitChatAnswerCommand):
@@ -503,21 +486,9 @@ def clean_up_commands(
     # when coexistence is enabled, by default there will be a SetSlotCommand
     # for the ROUTE_TO_CALM_SLOT slot.
     if tracker.has_coexistence_routing_slot and len(clean_commands) > 2:
-        clean_commands = filter_cannot_handle_command_for_skipped_slots(clean_commands)
+        clean_commands = filter_cannot_handle_command(clean_commands)
     elif not tracker.has_coexistence_routing_slot and len(clean_commands) > 1:
-        clean_commands = filter_cannot_handle_command_for_skipped_slots(clean_commands)
-
-    # remove cancel flow when there is a handle digression command
-    # otherwise the cancel command will cancel the active flow which defined a specific
-    # behavior for the digression
-    if contains_command(clean_commands, HandleDigressionsCommand) and contains_command(
-        clean_commands, CancelFlowCommand
-    ):
-        clean_commands = [
-            command
-            for command in clean_commands
-            if not isinstance(command, CancelFlowCommand)
-        ]
+        clean_commands = filter_cannot_handle_command(clean_commands)
 
     clean_commands = ensure_max_number_of_command_type(
         clean_commands, RepeatBotMessagesCommand, 1
@@ -857,12 +828,12 @@ def should_slot_be_set(
     return True
 
 
-def filter_cannot_handle_command_for_skipped_slots(
+def filter_cannot_handle_command(
     clean_commands: List[Command],
 ) -> List[Command]:
-    """Filter out a 'cannot handle' command for skipped slots.
+    """Filter out a 'cannot handle' command.
 
-    This is used to filter out a 'cannot handle' command for skipped slots
+    This is used to filter out a 'cannot handle' command
     in case other commands are present.
 
     Returns:
@@ -871,34 +842,5 @@ def filter_cannot_handle_command_for_skipped_slots(
     return [
         command
         for command in clean_commands
-        if not (
-            isinstance(command, CannotHandleCommand)
-            and command.reason
-            and CANNOT_HANDLE_REASON == command.reason
-        )
+        if not isinstance(command, CannotHandleCommand)
     ]
-
-
-def should_add_handle_digressions_command(
-    tracker: DialogueStateTracker, all_flows: FlowsList, top_flow_id: str
-) -> bool:
-    """Check if a handle digressions command should be added to the commands.
-
-    The command should replace a StartFlow command only if we are at a collect step of
-    a flow and a new flow is predicted by the command generator to start.
-    """
-    current_flow = all_flows.flow_by_id(top_flow_id)
-    current_flow_condition = current_flow and (
-        current_flow.ask_confirm_digressions or current_flow.block_digressions
-    )
-
-    collect_info = get_current_collect_step(tracker.stack, all_flows)
-
-    if collect_info and (
-        collect_info.ask_confirm_digressions
-        or collect_info.block_digressions
-        or current_flow_condition
-    ):
-        return True
-
-    return False

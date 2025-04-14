@@ -1,17 +1,26 @@
+import uuid
 from typing import List, Optional, Text, Type
 from unittest.mock import Mock, patch
 
 import pytest
+from pytest import CaptureFixture
 
 from rasa.dialogue_understanding.commands import (
+    CancelFlowCommand,
+    CannotHandleCommand,
     Command,
     ErrorCommand,
+    KnowledgeAnswerCommand,
+    SetSlotCommand,
     StartFlowCommand,
 )
 from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
     ChitChatAnswerCommand,
 )
 from rasa.dialogue_understanding.generator.command_generator import CommandGenerator
+from rasa.dialogue_understanding.patterns.collect_information import (
+    CollectInformationPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.shared.constants import (
@@ -290,3 +299,116 @@ async def test_evaluate_and_predict_commands(
     assert isinstance(commands[0], expected_command_type)
     if isinstance(commands[0], ErrorCommand):
         assert commands[0].error_type == expected_error_type
+
+
+def test_command_generator_filter_commands_during_force_slot_filling() -> None:
+    generator = CommandGenerator({})
+
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            name: foo flow
+            description: foo flow
+            steps:
+            - id: collect_foo
+              collect: foo
+              force_slot_filling: true
+        """
+    )
+
+    slot_name = "foo"
+
+    tracker = DialogueStateTracker.from_events(uuid.uuid4().hex, [])
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(flow_id="my_flow", step_id="collect_foo"),
+                CollectInformationPatternFlowStackFrame(collect=slot_name),
+            ]
+        )
+    )
+
+    commands = generator._filter_commands_during_force_slot_filling(
+        [
+            SetSlotCommand(name="foo", value="foo_test"),
+            CancelFlowCommand(),
+            ChitChatAnswerCommand(),
+        ],
+        flows,
+        tracker,
+    )
+
+    assert len(commands) == 1
+    assert commands[0] == SetSlotCommand(name="foo", value="foo_test")
+
+
+def test_command_generator_filter_commands_during_force_slot_filling_cannot_handle():
+    generator = CommandGenerator({})
+
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            name: foo flow
+            description: foo flow
+            steps:
+            - id: collect_foo
+              collect: foo
+              force_slot_filling: true
+        """
+    )
+
+    slot_name = "foo"
+
+    tracker = DialogueStateTracker.from_events(uuid.uuid4().hex, [])
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(flow_id="my_flow", step_id="collect_foo"),
+                CollectInformationPatternFlowStackFrame(collect=slot_name),
+            ]
+        )
+    )
+
+    commands = generator._filter_commands_during_force_slot_filling(
+        [CannotHandleCommand()],
+        flows,
+        tracker,
+    )
+
+    assert len(commands) == 1
+    assert commands[0] == CannotHandleCommand()
+
+
+def test_command_generator_filter_commands_during_force_slot_filling_no_tracker(
+    capsys: CaptureFixture,
+) -> None:
+    generator = CommandGenerator({})
+
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            name: foo flow
+            description: foo flow
+            steps:
+            - id: collect_foo
+              collect: foo
+              force_slot_filling: true
+        """
+    )
+
+    given_commands = [KnowledgeAnswerCommand()]
+    commands = generator._filter_commands_during_force_slot_filling(
+        given_commands,
+        flows,
+        None,
+    )
+
+    assert commands == given_commands
+    captured = capsys.readouterr()
+    assert (
+        "command_generator.filter_commands_during_force_slot_filling.tracker_not_found"
+        in captured.out
+    )

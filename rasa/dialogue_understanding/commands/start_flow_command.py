@@ -11,11 +11,6 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
     CommandSyntaxVersion,
 )
-from rasa.dialogue_understanding.patterns.clarify import FLOW_PATTERN_CLARIFICATION
-from rasa.dialogue_understanding.patterns.continue_interrupted import (
-    ContinueInterruptedPatternFlowStackFrame,
-)
-from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
@@ -77,10 +72,6 @@ class StartFlowCommand(Command):
         applied_events: List[Event] = []
 
         if self.flow in user_flows_on_the_stack(stack):
-            top_frame = stack.top()
-            if top_frame is not None and top_frame.type() == FLOW_PATTERN_CLARIFICATION:
-                return self.change_flow_frame_position_in_the_stack(stack, tracker)
-
             structlogger.debug(
                 "command_executor.skip_command.already_started_flow", command=self
             )
@@ -149,35 +140,3 @@ class StartFlowCommand(Command):
             CommandSyntaxManager.get_syntax_version(),
             mapper[CommandSyntaxManager.get_default_syntax_version()],
         )
-
-    def change_flow_frame_position_in_the_stack(
-        self, stack: DialogueStack, tracker: DialogueStateTracker
-    ) -> List[Event]:
-        """Changes the position of the flow frame in the stack.
-
-        This is a special case when pattern clarification is the active flow and
-        the same flow is selected to start. In this case, the existing flow frame
-        should be moved up in the stack.
-        """
-        frames = stack.frames[:]
-
-        for idx, frame in enumerate(frames):
-            if isinstance(frame, UserFlowStackFrame) and frame.flow_id == self.flow:
-                structlogger.debug(
-                    "command_executor.change_flow_position_during_clarification",
-                    command=self,
-                    index=idx,
-                )
-                # pop the continue interrupted flow frame if it exists
-                next_frame = frames[idx + 1] if idx + 1 < len(frames) else None
-                if (
-                    isinstance(next_frame, ContinueInterruptedPatternFlowStackFrame)
-                    and next_frame.previous_flow_name == self.flow
-                ):
-                    stack.frames.pop(idx + 1)
-                # move up the existing flow from the stack
-                stack.frames.pop(idx)
-                stack.push(frame)
-                return tracker.create_stack_updated_events(stack)
-
-        return []

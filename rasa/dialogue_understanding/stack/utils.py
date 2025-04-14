@@ -4,9 +4,6 @@ from typing import List, Optional, Set, Tuple
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
-from rasa.dialogue_understanding.patterns.continue_interrupted import (
-    ContinueInterruptedPatternFlowStackFrame,
-)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
@@ -221,38 +218,3 @@ def get_collect_steps_excluding_ask_before_filling_for_active_flow(
         for step in active_flow.get_collect_steps()
         if not step.ask_before_filling
     )
-
-
-def remove_digression_from_stack(stack: DialogueStack, flow_id: str) -> DialogueStack:
-    """Remove a specific flow frame from the stack and other frames that reference it.
-
-    The main use-case is to prevent duplicate digressions from being added to the stack.
-
-    Args:
-        stack: The dialogue stack.
-        flow_id: The flow to remove.
-
-    Returns:
-        The updated dialogue stack.
-    """
-    updated_stack = stack.copy()
-    original_frames = updated_stack.frames[:]
-    found_digression_index = -1
-    for index, frame in enumerate(original_frames):
-        if isinstance(frame, BaseFlowStackFrame) and frame.flow_id == flow_id:
-            updated_stack.frames.pop(index)
-            found_digression_index = index
-
-        # we also need to remove the `ContinueInterruptedPatternFlowStackFrame`
-        elif (
-            isinstance(frame, ContinueInterruptedPatternFlowStackFrame)
-            and frame.previous_flow_name == flow_id
-            and found_digression_index + 1 == index
-        ):
-            # we know that this frame is always added after the digressing flow frame
-            # that was blocked previously by action_block_digressions,
-            # so this check would occur after the digressing flow was popped.
-            # Therefore, we need to update the index dynamically before popping.
-            updated_stack.frames.pop(index - 1)
-
-    return updated_stack

@@ -13,10 +13,6 @@ from pypred import Predicate
 import rasa.shared.utils.io
 from rasa.engine.language import Language
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
-from rasa.shared.core.constants import (
-    KEY_ASK_CONFIRM_DIGRESSIONS,
-    KEY_BLOCK_DIGRESSIONS,
-)
 from rasa.shared.core.flows.constants import (
     KEY_ALWAYS_INCLUDE_IN_PROMPT,
     KEY_DESCRIPTION,
@@ -52,7 +48,6 @@ from rasa.shared.core.flows.steps.constants import (
     START_STEP,
 )
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
-from rasa.shared.core.flows.utils import extract_digression_prop
 from rasa.shared.core.slots import Slot
 
 structlogger = structlog.get_logger()
@@ -94,10 +89,6 @@ class Flow:
     """The path to the file where the flow is stored."""
     persisted_slots: List[str] = field(default_factory=list)
     """The list of slots that should be persisted after the flow ends."""
-    ask_confirm_digressions: List[str] = field(default_factory=list)
-    """The flow ids for which the assistant should ask for confirmation."""
-    block_digressions: List[str] = field(default_factory=list)
-    """The flow ids that the assistant should block from digressing to."""
     run_pattern_completed: bool = True
     """Whether the pattern_completed flow should be run after the flow ends."""
 
@@ -138,10 +129,6 @@ class Flow:
             # data. When the model is trained, take the provided file_path.
             file_path=data.get(KEY_FILE_PATH) if KEY_FILE_PATH in data else file_path,
             persisted_slots=data.get(KEY_PERSISTED_SLOTS, []),
-            ask_confirm_digressions=extract_digression_prop(
-                KEY_ASK_CONFIRM_DIGRESSIONS, data
-            ),
-            block_digressions=extract_digression_prop(KEY_BLOCK_DIGRESSIONS, data),
             run_pattern_completed=data.get(KEY_RUN_PATTERN_COMPLETED, True),
             translation=extract_translations(
                 translation_data=data.get(KEY_TRANSLATION, {})
@@ -220,10 +207,6 @@ class Flow:
             data[KEY_FILE_PATH] = self.file_path
         if self.persisted_slots:
             data[KEY_PERSISTED_SLOTS] = self.persisted_slots
-        if self.ask_confirm_digressions:
-            data[KEY_ASK_CONFIRM_DIGRESSIONS] = self.ask_confirm_digressions
-        if self.block_digressions:
-            data[KEY_BLOCK_DIGRESSIONS] = self.block_digressions
         if self.run_pattern_completed is not None:
             data["run_pattern_completed"] = self.run_pattern_completed
         if self.translation:

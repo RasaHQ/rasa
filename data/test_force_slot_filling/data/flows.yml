@@ -6,10 +6,10 @@ flows:
     - collect: pizza_type
     - collect: quantity
     - collect: address
-      ask_confirm_digressions: true
+      force_slot_filling: true
     - collect: order_confirmation
       ask_before_filling: true
-      block_digressions: true
+      force_slot_filling: true
       next:
         - if: slots.order_confirmation
           then: "place_order"
@@ -32,8 +32,6 @@ flows:
           - else: "invalid_payment_option"
       - id: "use_card_details"
         collect: card_number
-        block_digressions:
-          - order_pizza
         next:
             - if: slots.card_number
               then: "take_payment"
@@ -60,8 +58,7 @@ flows:
     description: user asks to add a contact
     steps:
       - collect: contact_name
-        block_digressions: true
+        force_slot_filling: true
       - collect: contact_number
-        ask_confirm_digressions: true
       - action: utter_contact_added
         next: END

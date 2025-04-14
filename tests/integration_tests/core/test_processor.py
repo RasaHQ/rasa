@@ -14,7 +14,7 @@ from rasa.dialogue_understanding.commands import (
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.processor.command_processor import CANNOT_HANDLE_REASON
-from rasa.shared.core.events import BotUttered, SlotSet
+from rasa.shared.core.events import SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.io import read_file
@@ -422,7 +422,7 @@ async def test_processor_handle_message_calm_cannot_handle_command(
 )
 @patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
 @patch("rasa.shared.utils.health_check.health_check.try_instantiate_embedder")
-async def trained_handle_digressions_bot(
+async def trained_force_slot_filling_bot(
     mock_try_instantiate_llm_client: Mock,
     mock_try_instantiate_embedder: Mock,
     mock_save_local: Mock,
@@ -436,16 +436,16 @@ async def trained_handle_digressions_bot(
     mock_from_documents.return_value = Mock()
     mock_save_local.return_value = Mock()
     return await trained_async(
-        domain="data/test_handle_digressions/domain.yml",
-        config="data/test_handle_digressions/config.yml",
+        domain="data/test_force_slot_filling/domain.yml",
+        config="data/test_force_slot_filling/config.yml",
         training_files=[
-            "data/test_handle_digressions/data/flows.yml",
+            "data/test_force_slot_filling/data/",
         ],
     )
 
 
 async def mocked_filter_flows(*args, **kwargs) -> FlowsList:
-    return flows_from_str(read_file("data/test_handle_digressions/data/flows.yml"))
+    return flows_from_str(read_file("data/test_force_slot_filling/data/flows.yml"))
 
 
 @pytest.fixture
@@ -455,12 +455,12 @@ async def mocked_filter_flows(*args, **kwargs) -> FlowsList:
 )
 @patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
 @patch("rasa.shared.utils.health_check.health_check.try_instantiate_embedder")
-async def calm_handle_digressions_agent(
+async def calm_force_slot_filling_agent(
     mock_try_instantiate_llm_client: Mock,
     mock_try_instantiate_embedder: Mock,
     mock_flow_search_create_embedder: Mock,
     mock_load_local: AsyncMock,
-    trained_handle_digressions_bot: str,
+    trained_force_slot_filling_bot: str,
     monkeypatch: MonkeyPatch,
 ) -> Agent:
     mock_try_instantiate_llm_client.return_value = Mock()
@@ -471,306 +471,16 @@ async def calm_handle_digressions_agent(
         "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator.SingleStepLLMCommandGenerator.filter_flows",
         mocked_filter_flows,
     )
-    endpoint = EndpointConfig(actions_module="data.test_handle_digressions.actions")
+    endpoint = EndpointConfig(actions_module="data.test_force_slot_filling.actions")
     return Agent.load(
-        model_path=trained_handle_digressions_bot, action_endpoint=endpoint
+        model_path=trained_force_slot_filling_bot, action_endpoint=endpoint
     )
 
 
-async def test_processor_handle_digressions_confirm_digression(
-    calm_handle_digressions_agent: Agent,
-    monkeypatch: MonkeyPatch,
-):
-    """Test the mechanism that the processor uses to handle digressions.
-
-    The scenario is as follows:
-    1. User starts the order_pizza flow.
-    2. User digresses to check account balance.
-    3. Bot asks the user if to continue with the order_pizza original flow.
-    4. User decides to continue the order_pizza flow.
-    """
-    sender_id = uuid.uuid4().hex
-    processor = calm_handle_digressions_agent.processor
-
-    user_messages = [
-        "I would like to order 1 pepperoni pizza.",
-        "Before ordering can i check my account balance first?",
-        "/SetSlots(continue_previous_flow=True)",
-    ]
-
-    flows = ["order_pizza", "pattern_handle_digressions", "order_pizza"]
-
-    for i, user_msg in enumerate(user_messages):
-        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
-
-        tracker = await processor.get_tracker(sender_id)
-        assert tracker.latest_message is not None
-        assert tracker.latest_message.text == user_msg
-        assert tracker.active_flow == flows[i]
-    else:
-        actual_responses = []
-        for event in tracker.events:
-            if isinstance(event, BotUttered):
-                actual_responses.append(event.metadata.get("utter_action"))
-
-        assert actual_responses == [
-            "utter_ask_address",
-            "utter_ask_continue_previous_flow",
-            "utter_block_digressions",
-            "utter_ask_address",
-        ]
-
-
-async def test_processor_handle_digressions_continue_interruption(
-    calm_handle_digressions_agent: Agent,
-    monkeypatch: MonkeyPatch,
-):
-    """Test the mechanism that the processor uses to handle digressions.
-
-    The scenario is as follows:
-    1. User starts the order_pizza flow.
-    2. User digresses to check account balance.
-    3. Bot asks the user if to continue with the order_pizza original flow.
-    4. User decides to continue with the digression.
-    """
-    sender_id = uuid.uuid4().hex
-    processor = calm_handle_digressions_agent.processor
-
-    user_messages = [
-        "I would like to order 1 pepperoni pizza.",
-        "Before ordering can i check my account balance first?",
-        "/SetSlots(continue_previous_flow=False)",
-    ]
-
-    flows = ["order_pizza", "pattern_handle_digressions", "order_pizza"]
-
-    for i, user_msg in enumerate(user_messages):
-        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
-
-        tracker = await processor.get_tracker(sender_id)
-        assert tracker.latest_message is not None
-        assert tracker.latest_message.text == user_msg
-        assert tracker.active_flow == flows[i]
-    else:
-        actual_responses = []
-        for event in tracker.events:
-            if isinstance(event, BotUttered):
-                actual_responses.append(event.metadata.get("utter_action"))
-
-        assert actual_responses == [
-            "utter_ask_address",
-            "utter_ask_continue_previous_flow",
-            "utter_continue_interruption",
-            "utter_check_balance",
-            "utter_flow_continue_interrupted",
-            "utter_ask_address",
-        ]
-
-
-async def test_processor_handle_digressions_block_digression(
-    calm_handle_digressions_agent: Agent,
-    monkeypatch: MonkeyPatch,
-):
-    """Test the mechanism that the processor uses to handle digressions.
-
-    The scenario is as follows:
-    1. User starts the order_pizza flow.
-    2. User digresses to check account balance.
-    3. Bot informs the user that they will continue with the pizza order and
-    then return to the digression.
-    """
-    sender_id = uuid.uuid4().hex
-    processor = calm_handle_digressions_agent.processor
-
-    user_messages = [
-        "I would like to order 1 pepperoni pizza.",
-        "1 Clerkenwell Road",
-        "Before ordering can i check my account balance first?",
-        "/SetSlots(order_confirmation=True)",
-    ]
-
-    flows = ["order_pizza", "order_pizza", "order_pizza", None]
-
-    for i, user_msg in enumerate(user_messages):
-        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
-
-        tracker = await processor.get_tracker(sender_id)
-        assert tracker.latest_message is not None
-        assert tracker.latest_message.text == user_msg
-        assert tracker.active_flow == flows[i]
-    else:
-        actual_responses = []
-        for event in tracker.events:
-            if isinstance(event, BotUttered):
-                actual_responses.append(event.metadata.get("utter_action"))
-
-        assert actual_responses == [
-            "utter_ask_address",
-            "utter_ask_order_confirmation",
-            "utter_block_digressions",
-            "utter_ask_order_confirmation",
-            "utter_place_order",
-            "utter_flow_continue_interrupted",
-            "utter_check_balance",
-            "utter_can_do_something_else",
-        ]
-
-
-async def test_processor_handle_digressions_digression_is_not_blocked(
-    calm_handle_digressions_agent: Agent,
-    monkeypatch: MonkeyPatch,
-):
-    """Test the mechanism that the processor uses to handle digressions.
-
-    The scenario is as follows:
-    1. User starts the payment flow.
-    2. User digresses to check account balance.
-    3. Bot interrupts the payment flow because check account balance is not listed in
-    block_digressions of the card number collect step.
-    """
-    sender_id = uuid.uuid4().hex
-    processor = calm_handle_digressions_agent.processor
-
-    user_messages = [
-        "I would like to pay for my electricity bill",
-        "/SetSlots(payment_option=card)",
-        "Before ordering can i check my account balance first?",
-    ]
-
-    for i, user_msg in enumerate(user_messages):
-        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
-    else:
-        tracker = await processor.get_tracker(sender_id)
-        actual_responses = []
-        for event in tracker.events:
-            if isinstance(event, BotUttered):
-                actual_responses.append(event.metadata.get("utter_action"))
-
-        assert actual_responses == [
-            "utter_ask_payment_option",
-            "utter_ask_card_number",
-            "utter_continue_interruption",
-            "utter_check_balance",
-            "utter_flow_continue_interrupted",
-            "utter_ask_card_number",
-        ]
-
-
-async def test_processor_handle_digressions_trigger_clarification(
-    calm_handle_digressions_agent: Agent,
-    monkeypatch: MonkeyPatch,
-):
-    """Test the mechanism that the processor uses to handle digressions.
-
-    The scenario is as follows:
-    1. User starts the order_pizza flow.
-    2. User digresses the first time.
-    3. Bot informs the user that they will continue with the pizza order and
-    then return to the digression.
-    4. User digresses a second time and then chooses to continue with the pizza order.
-    5. Order pizza flow is completed and the bot triggers pattern clarification for the
-    user to choose from the pending 2 digressions.
-    6. User chooses to check account balance.
-    7. Bot triggers the check account balance flow, completes it and then proceeds
-    with the payment flow.
-    """
-    sender_id = uuid.uuid4().hex
-    processor = calm_handle_digressions_agent.processor
-
-    user_messages = [
-        "I would like to order 1 pepperoni pizza.",
-        "Oh can i pay my council tax bill first?",
-        "/SetSlots(continue_previous_flow=True)",
-        "1 Clerkenwell Road",
-        "Before ordering can i check my account balance first?",
-        "/SetSlots(order_confirmation=True)",
-        "check account balance",
-    ]
-
-    for i, user_msg in enumerate(user_messages):
-        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
-    else:
-        actual_responses = []
-        tracker = await processor.get_tracker(sender_id)
-        for event in tracker.events:
-            if isinstance(event, BotUttered):
-                actual_responses.append(event.metadata.get("utter_action"))
-
-        assert actual_responses == [
-            "utter_ask_address",
-            "utter_ask_continue_previous_flow",
-            "utter_block_digressions",
-            "utter_ask_address",
-            "utter_ask_order_confirmation",
-            "utter_block_digressions",
-            "utter_ask_order_confirmation",
-            "utter_place_order",
-            "utter_clarification_options_rasa",
-            "utter_check_balance",
-            "utter_flow_continue_interrupted",
-            "utter_ask_payment_option",
-        ]
-
-
-async def test_processor_handle_digressions_cancel_clarification_options(
-    calm_handle_digressions_agent: Agent,
-    monkeypatch: MonkeyPatch,
-):
-    """Test the mechanism that the processor uses to handle digressions.
-
-    The scenario is as follows:
-    1. User starts the order_pizza flow.
-    2. User digresses the first time.
-    3. Bot informs the user that they will continue with the pizza order and
-    then return to the digression.
-    4. User digresses a second time and then chooses to continue with the pizza order.
-    5. Order pizza flow is completed and the bot triggers pattern clarification for the
-    user to choose from the pending 2 digressions.
-    6. User chooses to cancel all options.
-    7. Bot cancels all pending digressions.
-    """
-    sender_id = uuid.uuid4().hex
-    processor = calm_handle_digressions_agent.processor
-
-    user_messages = [
-        "I would like to order 1 pepperoni pizza.",
-        "Oh can i pay my council tax bill first?",
-        "/SetSlots(continue_previous_flow=True)",
-        "1 Clerkenwell Road",
-        "Before ordering can i check my account balance first?",
-        "/SetSlots(order_confirmation=True)",
-        "Cancel all.",
-    ]
-
-    for i, user_msg in enumerate(user_messages):
-        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
-    else:
-        actual_responses = []
-        tracker = await processor.get_tracker(sender_id)
-        for event in tracker.events:
-            if isinstance(event, BotUttered):
-                actual_responses.append(event.metadata.get("utter_action"))
-
-        assert actual_responses == [
-            "utter_ask_address",
-            "utter_ask_continue_previous_flow",
-            "utter_block_digressions",
-            "utter_ask_address",
-            "utter_ask_order_confirmation",
-            "utter_block_digressions",
-            "utter_ask_order_confirmation",
-            "utter_place_order",
-            "utter_clarification_options_rasa",
-            "utter_flow_cancelled_rasa",
-            "utter_flow_cancelled_rasa",
-            "utter_can_do_something_else",
-        ]
-
-
 async def test_processor_fill_controlled_slot_run_action_every_turn_enabled(
-    calm_handle_digressions_agent: Agent,
+    calm_force_slot_filling_agent: Agent,
 ) -> None:
-    processor = calm_handle_digressions_agent.processor
+    processor = calm_force_slot_filling_agent.processor
     sender_id = uuid.uuid4().hex
 
     await processor.handle_message(
@@ -781,107 +491,85 @@ async def test_processor_fill_controlled_slot_run_action_every_turn_enabled(
     assert tracker.get_slot("action_slot") == 123
 
 
-async def test_processor_handle_multiple_digressions_continue_with_previous_flow_when_asked(  # noqa: E501
-    calm_handle_digressions_agent: Agent,
-    monkeypatch: MonkeyPatch,
+async def test_processor_force_slot_filling_from_text(
+    calm_force_slot_filling_agent: Agent,
 ) -> None:
-    """Test how the processor handles multiple duplicate digressions.
+    """Assistant should skip running the NLU graph.
 
-    The scenario is as follows:
-    1. User starts the add_contact flow.
-    2. User digresses the first time.
-    3. Bot informs the user that they will continue with the adding a contact and
-    then return to the digression.
-    4. User digresses a second time and then chooses to continue with
-    original flow: add_contact.
-    5. Add_contact flow is completed and the bot triggers pattern continue interrupted
-    for the checking balance digression.
-    6. Bot asks the user if they can do something else.
+    We test with the slot `address` which has the `force_slot_filling`
+    property enabled to True and the `from_text` mapping.
+    In this scenario, the NLU graph should not be run and the slot is filled
+    directly via the same mechanism as a deterministic button payload.
     """
+    processor = calm_force_slot_filling_agent.processor
     sender_id = uuid.uuid4().hex
-    processor = calm_handle_digressions_agent.processor
 
-    user_messages = [
-        "I want to add a contact",
-        "check balance",
-        "Loki",
-        "check balance",
-        "/SetSlots(continue_previous_flow=True)",
-        "0712345678",
+    user_messages = ["I would like to order 1 pepperoni pizza.", "1 Maple Avenue"]
+
+    response = await processor.handle_message(
+        UserMessage(user_messages[0], sender_id=sender_id)
+    )
+    assert response[0].get("text") == "What is the delivery address?"
+
+    response = await processor.handle_message(
+        UserMessage(user_messages[1], sender_id=sender_id)
+    )
+    assert (
+        response[0].get("text") == "You have put in a order for 1.0 pepperoni pizzas. "
+        "Please confirm these details are correct?"
+    )
+
+    tracker = await processor.get_tracker(sender_id)
+    assert tracker.get_slot("address") == "1 Maple Avenue"
+    assert tracker.latest_message.commands == [
+        SetSlotCommand(
+            name="address",
+            value="1 Maple Avenue",
+            extractor=SetSlotExtractor.COMMAND_PAYLOAD_READER.value,
+        ).as_dict(),
     ]
 
-    for i, user_msg in enumerate(user_messages):
-        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
-    else:
-        actual_responses = []
-        tracker = await processor.get_tracker(sender_id)
-        for event in tracker.events:
-            if isinstance(event, BotUttered):
-                actual_responses.append(event.metadata.get("utter_action"))
 
-        assert actual_responses == [
-            "utter_ask_contact_name",
-            "utter_block_digressions",
-            "utter_ask_contact_name",
-            "utter_ask_contact_number",
-            "utter_ask_continue_previous_flow",
-            "utter_block_digressions",
-            "utter_ask_contact_number",
-            "utter_contact_added",
-            "utter_flow_continue_interrupted",
-            "utter_check_balance",
-            "utter_can_do_something_else",
-        ]
-
-
-async def test_processor_handle_multiple_digressions_continue_with_digression_when_asked(  # noqa: E501
-    calm_handle_digressions_agent: Agent,
-    monkeypatch: MonkeyPatch,
+async def test_processor_force_slot_filling_non_from_text(
+    calm_force_slot_filling_agent: Agent,
 ) -> None:
-    """Test how the processor handles multiple duplicate digressions.
+    """Assistant should only fill slots and not process other commands.
 
-    The scenario is as follows:
-    1. User starts the add_contact flow.
-    2. User digresses the first time.
-    3. Bot informs the user that they will continue with the adding a contact and
-    then return to the digression.
-    4. User digresses a second time and then chooses to continue with
-    the digression: check_balance.
-    5. Bot triggers the check_balance flow, completes it and then proceeds w
-    ith the interrupted flow step: asking for contact_number.
-    6. User provides the contact number and the flow is completed.
+    We test with the slot `order_confirmation` which has the `force_slot_filling`
+    property enabled to True and a different slot mapping to `from_text` mapping.
+    In this scenario, any command other than `SetSlot` is filtered out
+    by the Command Generator.
     """
+    processor = calm_force_slot_filling_agent.processor
     sender_id = uuid.uuid4().hex
-    processor = calm_handle_digressions_agent.processor
 
     user_messages = [
-        "I want to add a contact",
-        "check balance",
-        "Loki",
-        "check balance",
-        "/SetSlots(continue_previous_flow=False)",
-        "0712345678",
+        "I would like to order 1 pepperoni pizza.",
+        "31 Blueberry Lane",
+        "Nevermind, cancel pizza order.",
     ]
 
-    for i, user_msg in enumerate(user_messages):
-        await processor.handle_message(UserMessage(user_msg, sender_id=sender_id))
-    else:
-        actual_responses = []
-        tracker = await processor.get_tracker(sender_id)
-        for event in tracker.events:
-            if isinstance(event, BotUttered):
-                actual_responses.append(event.metadata.get("utter_action"))
+    response = await processor.handle_message(
+        UserMessage(user_messages[0], sender_id=sender_id)
+    )
+    assert response[0].get("text") == "What is the delivery address?"
 
-        assert actual_responses == [
-            "utter_ask_contact_name",
-            "utter_block_digressions",
-            "utter_ask_contact_name",
-            "utter_ask_contact_number",
-            "utter_ask_continue_previous_flow",
-            "utter_continue_interruption",
-            "utter_check_balance",
-            "utter_flow_continue_interrupted",
-            "utter_ask_contact_number",
-            "utter_contact_added",
-            "utter_can_do_something_else",
-        ]
+    response = await processor.handle_message(
+        UserMessage(user_messages[1], sender_id=sender_id)
+    )
+    assert (
+        response[0].get("text") == "You have put in a order for 1.0 pepperoni pizzas. "
+        "Please confirm these details are correct?"
+    )
+
+    response = await processor.handle_message(
+        UserMessage(user_messages[2], sender_id=sender_id)
+    )
+    assert response[0].get("text") == "Your order has been cancelled."
+
+    tracker = await processor.get_tracker(sender_id)
+    assert tracker.latest_message.commands == [
+        SetSlotCommand(
+            name="order_confirmation", value=False, extractor=SetSlotExtractor.NLU.value
+        ).as_dict(),
+    ]

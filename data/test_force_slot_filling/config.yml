@@ -1,0 +1,36 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: "WhitespaceTokenizer"
+  # Flag to check whether to split intents
+  "intent_tokenization_flag": False
+  # Symbol on which intent should be split
+  "intent_split_symbol": "_"
+  # Regular expression to detect tokens
+  "token_pattern": None
+- name: "CountVectorsFeaturizer"
+  # Analyzer to use, either 'word', 'char', or 'char_wb'
+  "analyzer": "word"
+  # Set the lower and upper boundaries for the n-grams
+  "min_ngram": 1
+  "max_ngram": 1
+  # Set the out-of-vocabulary token
+  "OOV_token": "_oov_"
+  # Whether to use a shared vocab
+  "use_shared_vocab": False
+- name: LogisticRegressionClassifier
+  max_iter: 100
+  solver: lbfgs
+  tol: 0.0001
+  random_state: 42
+  ranking_length: 10
+- name: NLUCommandAdapter
+- name: SingleStepLLMCommandGenerator
+  llm:
+    model_name: gpt-4
+    request_timeout: 7
+    temperature: 0.0
+    top_p: 0.0
+
+policies:
+- name: FlowPolicy

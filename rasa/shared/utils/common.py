@@ -7,7 +7,17 @@ import os
 import pkgutil
 import sys
 from types import ModuleType
-from typing import Any, Callable, Collection, Dict, List, Optional, Sequence, Text, Type
+from typing import (
+    Any,
+    Callable,
+    Collection,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Text,
+    Type,
+)
 
 import rasa.shared.utils.io
 from rasa.exceptions import MissingDependencyException

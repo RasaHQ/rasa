@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple
 import structlog
 
 from rasa.dialogue_understanding.commands import (
+    CannotHandleCommand,
     Command,
     CorrectSlotsCommand,
     ErrorCommand,
@@ -107,6 +108,14 @@ class CommandGenerator:
             commands = self._check_commands_against_startable_flows(
                 commands, startable_flows
             )
+
+            # During force slot filling, keep only the command that sets the
+            # slot asked by the active collect step.
+            # Or return a CannotHandleCommand if no matching command is found.
+            commands = self._filter_commands_during_force_slot_filling(
+                commands, available_flows, tracker
+            )
+
             commands_dicts = [command.as_dict() for command in commands]
             message.set(COMMANDS, commands_dicts, add_to_output=True)
 
@@ -369,6 +378,64 @@ class CommandGenerator:
         return [
             Command.command_from_json(command) for command in message.get(COMMANDS, [])
         ]
+
+    @staticmethod
+    def _filter_commands_during_force_slot_filling(
+        commands: List[Command],
+        available_flows: FlowsList,
+        tracker: Optional[DialogueStateTracker] = None,
+    ) -> List[Command]:
+        """Filter commands during a collect step that has set `force_slot_filling`.
+
+        Args:
+            commands: The commands to filter.
+            available_flows: The available flows.
+            tracker: The tracker.
+
+        Returns:
+            The filtered commands.
+        """
+        from rasa.dialogue_understanding.processor.command_processor import (
+            get_current_collect_step,
+        )
+
+        if tracker is None:
+            structlogger.error(
+                "command_generator.filter_commands_during_force_slot_filling.tracker_not_found",
+            )
+            return commands
+
+        stack = tracker.stack
+        step = get_current_collect_step(stack, available_flows)
+
+        if step is None or not step.force_slot_filling:
+            return commands
+
+        # Retain only the command that sets the slot asked by
+        # the active collect step
+        filtered_commands: List[Command] = [
+            command
+            for command in commands
+            if (isinstance(command, SetSlotCommand) and command.name == step.collect)
+        ]
+
+        if not filtered_commands:
+            # If no commands were predicted, we need to return a CannotHandleCommand
+            structlogger.debug(
+                "command_generator.filter_commands_during_force_slot_filling.no_commands",
+                event_info=f"The command generator did not find any SetSlot "
+                f"command at the collect step for the slot '{step.collect}'. "
+                f"Returning a CannotHandleCommand instead.",
+            )
+            return [CannotHandleCommand()]
+
+        structlogger.debug(
+            "command_generator.filter_commands_during_force_slot_filling.filtered_commands",
+            slot_name=step.collect,
+            filtered_commands=filtered_commands,
+        )
+
+        return filtered_commands
 
 
 def gather_slot_names(commands: List[Command]) -> Set[str]:

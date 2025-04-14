@@ -11,8 +11,10 @@ flows:
     description: This is just another flow example
     name: "Bar flow"
     steps:
-      - collect: bar_slot_a
+      - id: collect_bar_slot_a
+        collect: bar_slot_a
         description: Bar slot a
+        force_slot_filling: true
       - collect: bar_slot_b
         description: Bar slot b
 

@@ -23,7 +23,6 @@ from rasa.core.policies.flows.flow_step_result import (
 )
 from rasa.dialogue_understanding.commands import CancelFlowCommand
 from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
-from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
@@ -51,7 +50,6 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 )
 from rasa.dialogue_understanding.stack.utils import (
     top_user_flow_frame,
-    user_flows_on_the_stack,
 )
 from rasa.shared.constants import RASA_PATTERN_HUMAN_HANDOFF
 from rasa.shared.core.constants import (
@@ -278,33 +276,6 @@ def trigger_pattern_continue_interrupted(
         )
 
     return events
-
-
-def trigger_pattern_clarification(
-    current_frame: DialogueStackFrame, stack: DialogueStack, flows: FlowsList
-) -> None:
-    """Trigger the pattern to clarify which topic to continue if needed."""
-    if not isinstance(current_frame, UserFlowStackFrame):
-        return None
-
-    if current_frame.frame_type in [
-        FlowStackFrameType.CALL,
-        FlowStackFrameType.INTERRUPT,
-    ]:
-        # we want to return to the flow that called
-        # the current flow or the flow that was interrupted
-        # by the current flow
-        return None
-
-    pending_flows = [
-        flows.flow_by_id(frame.flow_id)
-        for frame in stack.frames
-        if isinstance(frame, UserFlowStackFrame)
-        and frame.flow_id != current_frame.flow_id
-    ]
-
-    flow_names = [flow.readable_name() for flow in pending_flows if flow is not None]
-    stack.push(ClarifyPatternFlowStackFrame(names=flow_names))
 
 
 def trigger_pattern_completed(
@@ -675,15 +646,9 @@ def _run_end_step(
     structlogger.debug("flow.step.run.flow_end")
     current_frame = stack.pop()
     trigger_pattern_completed(current_frame, stack, flows)
-    resumed_events = []
-    if len(user_flows_on_the_stack(stack)) > 1:
-        # if there are more user flows on the stack,
-        # we need to trigger the pattern clarify
-        trigger_pattern_clarification(current_frame, stack, flows)
-    else:
-        resumed_events = trigger_pattern_continue_interrupted(
-            current_frame, stack, flows, tracker
-        )
+    resumed_events = trigger_pattern_continue_interrupted(
+        current_frame, stack, flows, tracker
+    )
     reset_events: List[Event] = reset_scoped_slots(current_frame, flow, tracker)
     return ContinueFlowWithNextStep(
         events=initial_events + reset_events + resumed_events, has_flow_ended=True

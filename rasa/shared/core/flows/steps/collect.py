@@ -1,15 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Set, Text
 
 from rasa.shared.constants import ACTION_ASK_PREFIX, UTTER_ASK_PREFIX
-from rasa.shared.core.constants import (
-    KEY_ASK_CONFIRM_DIGRESSIONS,
-    KEY_BLOCK_DIGRESSIONS,
-)
 from rasa.shared.core.flows.flow_step import FlowStep
-from rasa.shared.core.flows.utils import extract_digression_prop
 from rasa.shared.core.slots import SlotRejection
 
 
@@ -29,10 +24,8 @@ class CollectInformationFlowStep(FlowStep):
     """Whether to always ask the question even if the slot is already filled."""
     reset_after_flow_ends: bool = True
     """Whether to reset the slot value at the end of the flow."""
-    ask_confirm_digressions: List[str] = field(default_factory=list)
-    """The flow id digressions for which the assistant should ask for confirmation."""
-    block_digressions: List[str] = field(default_factory=list)
-    """The flow id digressions that should be blocked during the flow step."""
+    force_slot_filling: bool = False
+    """Whether to keep only the SetSlot command for the collected slot."""
 
     @classmethod
     def from_json(
@@ -60,10 +53,7 @@ class CollectInformationFlowStep(FlowStep):
                 SlotRejection.from_dict(rejection)
                 for rejection in data.get("rejections", [])
             ],
-            ask_confirm_digressions=extract_digression_prop(
-                KEY_ASK_CONFIRM_DIGRESSIONS, data
-            ),
-            block_digressions=extract_digression_prop(KEY_BLOCK_DIGRESSIONS, data),
+            force_slot_filling=data.get("force_slot_filling", False),
             **base.__dict__,
         )
 
@@ -79,10 +69,7 @@ class CollectInformationFlowStep(FlowStep):
         data["ask_before_filling"] = self.ask_before_filling
         data["reset_after_flow_ends"] = self.reset_after_flow_ends
         data["rejections"] = [rejection.as_dict() for rejection in self.rejections]
-        data["ask_confirm_digressions"] = self.ask_confirm_digressions
-        data["block_digressions"] = (
-            self.block_digressions if self.block_digressions else False
-        )
+        data["force_slot_filling"] = self.force_slot_filling
 
         return data
 

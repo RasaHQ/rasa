@@ -2801,3 +2801,74 @@ async def test_run_action_validates_corrected_slots(
 
     mock_validate_corrected_slots.assert_called()
     assert isinstance(tracker.stack.top(), ValidateSlotPatternFlowStackFrame)
+
+
+async def test_parse_message_with_from_text_slot_mapping(
+    flow_policy_bot_agent: Agent,
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+    slot_name = "bar_slot_a"
+
+    tracker = await processor.get_tracker(sender_id)
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(flow_id="bar", step_id="collect_bar_slot_a"),
+                CollectInformationPatternFlowStackFrame(collect=slot_name),
+            ]
+        )
+    )
+    await processor.save_tracker(tracker)
+
+    message_text = "You are a very nice assistant."
+
+    parse_data = await processor.parse_message(
+        UserMessage(
+            message_text,
+            sender_id=sender_id,
+        ),
+        tracker,
+    )
+    commands = parse_data.get(COMMANDS)
+    assert len(commands) == 1
+    assert (
+        commands[0]
+        == SetSlotCommand(
+            slot_name, message_text, SetSlotExtractor.COMMAND_PAYLOAD_READER.value
+        ).as_dict()
+    )
+
+
+async def test_parse_message_with_from_text_slot_mapping_no_tracker(
+    flow_policy_bot_agent: Agent,
+    capsys: CaptureFixture,
+) -> None:
+    processor = flow_policy_bot_agent.processor
+    sender_id = uuid.uuid4().hex
+    slot_name = "bar_slot_a"
+
+    tracker = await processor.get_tracker(sender_id)
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(flow_id="bar", step_id="collect_bar_slot_a"),
+                CollectInformationPatternFlowStackFrame(collect=slot_name),
+            ]
+        )
+    )
+    await processor.save_tracker(tracker)
+
+    message_text = "You are a very nice assistant."
+
+    parse_data = await processor.parse_message(
+        UserMessage(
+            message_text,
+            sender_id=sender_id,
+        ),
+    )
+    commands = parse_data.get(COMMANDS)
+    assert len(commands) == 0
+
+    captured = capsys.readouterr()
+    assert "Tracker is None. Cannot force slot filling." in captured.out

@@ -1,0 +1,21 @@
+nlu:
+  - intent: affirm
+    examples: |
+      - yes
+      - sure
+      - absolutely
+      - definitely
+      - of course
+      - sounds good
+      - confirmed
+
+  - intent: deny
+    examples: |
+      - no
+      - not really
+      - no way
+      - absolutely not
+      - not at all
+      - I don't think so
+      - declined
+      - cancel

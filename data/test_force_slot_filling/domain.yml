@@ -1,5 +1,9 @@
 version: "3.1"
 
+intents:
+  - affirm
+  - deny
+
 slots:
   pizza_type:
     type: text
@@ -7,8 +11,20 @@ slots:
     type: float
   address:
     type: text
+    mappings:
+      - type: from_text
+        not_intent:
+         - affirm
+         - deny
   order_confirmation:
     type: bool
+    mappings:
+      - type: from_intent
+        intent: affirm
+        value: true
+      - type: from_intent
+        intent: deny
+        value: false
   payment_option:
     type: text
   card_number:
