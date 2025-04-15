@@ -16,10 +16,10 @@ configs:
     content: |
       action_endpoint:
         url: "grpc://rasa-grpc-action-server:5055"
-  endpoints-grpc-ssl.yml:
+  endpoints-grpc-tls.yml:
     content: |
       action_endpoint:
-        url: "grpc://rasa-grpc-ssl-action-server:5055"
+        url: "grpc://rasa-grpc-tls-action-server:5055"
         cafile: "/certs/ca.pem"
   action-server-endpoints.yml:
     content: |
@@ -28,6 +28,7 @@ configs:
 services:
   rasa-pro-grpc:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    container_name: rasa-pro-grpc
     volumes:
       - "${BOT_PATH}:/app"
     configs:
@@ -48,10 +49,12 @@ services:
       timeout: 10s
     user: ${USER_ID}
     depends_on:
-      - rasa-grpc-action-server
+      rasa-grpc-action-server-healthcheck:
+        condition: service_healthy
 
   rasa-grpc-action-server:
     image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
+    container_name: rasa-grpc-action-server
     volumes:
       - "${BOT_PATH}/actions:/app/actions"
     configs:
@@ -64,20 +67,39 @@ services:
       <<: *license
     user: ${USER_ID}
 
+# We use a trick with sleep command to make the container keep running
+# while it keeps checking the health of the action server
+  rasa-grpc-action-server-healthcheck:
+    image: public.ecr.aws/f7b7r5o7/tools/grpc_health_probe:latest
+    container_name: rasa-grpc-action-server-healthcheck
+    # This is a trick to make the container keep running
+    entrypoint: ["bash", "-c"]
+    command: ["sleep 60"]
+    networks: [ 'rasa-pro-network' ]
+    depends_on:
+      - rasa-grpc-action-server
+    # This will check the health of the action server
+    healthcheck:
+      test: ["CMD-SHELL", "grpc_health_probe -addr=rasa-grpc-action-server:5055 -rpc-timeout 15s -connect-timeout 2s -gzip"]
+      interval: 5s
+      retries: 10
+      timeout: 10s
 
-  rasa-pro-grpc-ssl:
+
+  rasa-pro-grpc-tls:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    container_name: rasa-pro-grpc-tls
     volumes:
       - "${BOT_PATH}:/app"
       - "./certs/ca.pem:/certs/ca.pem"
     configs:
-      - source: endpoints-grpc-ssl.yml
-        target: /endpoints-grpc-ssl.yml
+      - source: endpoints-grpc-tls.yml
+        target: /endpoints-grpc-tls.yml
     entrypoint: ""
-    command: rasa run -p ${RASA_PORT} --enable-api --endpoints /endpoints-grpc-ssl.yml
+    command: rasa run -p ${RASA_PORT} --enable-api --endpoints /endpoints-grpc-tls.yml
     networks: [ 'rasa-pro-network' ]
     ports:
-      - "${RASA_GRPC_SSL_PORT}:${RASA_PORT}"
+      - "${RASA_GRPC_TLS_PORT}:${RASA_PORT}"
     environment:
       <<: *license
     healthcheck:
@@ -88,10 +110,12 @@ services:
       timeout: 10s
     user: ${USER_ID}
     depends_on:
-      - rasa-grpc-ssl-action-server
+      rasa-grpc-tls-action-server-healthcheck:
+        condition: service_healthy
 
-  rasa-grpc-ssl-action-server:
+  rasa-grpc-tls-action-server:
     image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
+    container_name: rasa-grpc-tls-action-server
     volumes:
       - "./certs/server.pem:/certs/server.pem"
       - "./certs/server-key.pem:/certs/server-key.pem"
@@ -105,6 +129,25 @@ services:
     environment:
       <<: *license
     user: ${USER_ID}
+
+
+# We use a trick with sleep command to make the container keep running
+# while it keeps checking the health of the action server
+  rasa-grpc-tls-action-server-healthcheck:
+    image: public.ecr.aws/f7b7r5o7/tools/grpc_health_probe:latest
+    container_name: rasa-grpc-tls-action-server-healthcheck
+    # This is a trick to make the container keep running
+    entrypoint: ["bash", "-c"]
+    command: ["sleep 60"]
+    networks: [ 'rasa-pro-network' ]
+    depends_on:
+      - rasa-grpc-tls-action-server
+    # This will check the health of the action server
+    healthcheck:
+      test: ["CMD-SHELL", "grpc_health_probe -addr=rasa-grpc-tls-action-server:5055 -rpc-timeout 15s -connect-timeout 2s -gzip -tls -tls-no-verify"]
+      interval: 5s
+      retries: 10
+      timeout: 10s
 
 
   rasa-pro-http:
@@ -129,10 +172,12 @@ services:
       timeout: 10s
     user: ${USER_ID}
     depends_on:
-      - rasa-http-action-server
+      rasa-http-action-server-healthcheck:
+        condition: service_healthy
 
   rasa-http-action-server:
     image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
+    container_name: rasa-http-action-server
     volumes:
       - "${BOT_PATH}/actions:/app/actions"
     configs:
@@ -144,6 +189,22 @@ services:
     environment:
       <<: *license
     user: ${USER_ID}
+
+# We use a trick with sleep command to make the container keep running
+# while it keeps checking the health of the action server
+  rasa-http-action-server-healthcheck:
+    image: curlimages/curl:8.12.1
+    container_name: rasa-http-action-server-healthcheck
+    entrypoint: ["sh", "-c"]
+    command: ["sleep 60"]
+    networks: [ 'rasa-pro-network' ]
+    depends_on:
+      - rasa-http-action-server
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://rasa-http-action-server:5055/health"]
+      interval: 5s
+      retries: 10
+      timeout: 10s
 
 
   rasa-pro-https:
@@ -169,10 +230,12 @@ services:
       timeout: 10s
     user: ${USER_ID}
     depends_on:
-      - rasa-https-action-server
+      rasa-https-action-server-healthcheck:
+        condition: service_healthy
 
   rasa-https-action-server:
     image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
+    container_name: rasa-https-action-server
     volumes:
       - "./certs/server.pem:/certs/server.pem"
       - "./certs/server-key.pem:/certs/server-key.pem"
@@ -187,5 +250,22 @@ services:
       <<: *license
     user: ${USER_ID}
 
+# We use a trick with sleep command to make the container keep running
+# while it keeps checking the health of the action server
+  rasa-https-action-server-healthcheck:
+    image: curlimages/curl:8.12.1
+    container_name: rasa-https-action-server-healthcheck
+    volumes:
+      - "./certs/ca.pem:/certs/ca.pem"
+    entrypoint: ["sh", "-c"]
+    command: ["sleep 60"]
+    networks: [ 'rasa-pro-network' ]
+    depends_on:
+      - rasa-https-action-server
+    healthcheck:
+      test: ["CMD", "curl", "-skf", "https://rasa-https-action-server:5055/health"]
+      interval: 5s
+      retries: 10
+      timeout: 10s
 
-networks: { rasa-pro-network: { } }
+networks: { rasa-pro-network: { name: rasa-pro-network } }

@@ -3,6 +3,24 @@ x-environment: &environment
   OPENAI_API_KEY: ${OPENAI_API_KEY}
 
 services:
+  action-server:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "./rasa-calm-demo-bot:/app"
+    networks: [ 'rasa-pro-network' ]
+    entrypoint: ""
+    command: rasa run actions -p 5055
+    ports:
+      - "5055:5055"
+    environment:
+      <<: *environment
+    user: ${USER_ID}
+    healthcheck:
+      test: curl localhost:5055 || exit 1
+      interval: 8s
+      retries: 10
+      timeout: 10s
+
   rasa-pro-assistant-faiss:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
@@ -18,7 +36,7 @@ services:
       <<: *environment
     depends_on:
       action-server:
-        condition: service_started
+        condition: service_healthy
     user: ${USER_ID}
     healthcheck:
       test: curl localhost:5005 || exit 1
@@ -26,19 +44,6 @@ services:
       retries: 10
       start_period: 15s
       timeout: 10s
-
-  action-server:
-    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
-    volumes:
-      - "./rasa-calm-demo-bot:/app"
-    networks: [ 'rasa-pro-network' ]
-    entrypoint: ""
-    command: rasa run actions -p 5055
-    ports:
-      - "5055:5055"
-    environment:
-      <<: *environment
-    user: ${USER_ID}
 
   rasa-pro-assistant-qdrant:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
@@ -53,6 +58,11 @@ services:
       - "5007:5007"
     environment:
       <<: *environment
+    depends_on:
+      action-server:
+        condition: service_healthy
+      qdrant-healthcheck:
+        condition: service_healthy
     user: ${USER_ID}
     healthcheck:
       test: curl localhost:5007 || exit 1
@@ -74,6 +84,22 @@ services:
       - 6335
     networks: [ 'rasa-pro-network' ]
 
+    # We use a trick with sleep command to make the container keep running
+    # while it keeps checking the health of the action server
+  qdrant-healthcheck:
+    image: curlimages/curl:8.12.1
+    container_name: qdrant-healthcheck
+    entrypoint: [ "sh", "-c" ]
+    command: [ "sleep 40" ]
+    networks: [ 'rasa-pro-network' ]
+    depends_on:
+      - qdrant
+    healthcheck:
+      test: [ "CMD", "curl", "-sf", "http://qdrant:6333/readyz" ]
+      interval: 5s
+      retries: 20
+      timeout: 5s
+
   rasa-pro-assistant-milvus:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
@@ -87,6 +113,11 @@ services:
       - "5006:5006"
     environment:
       <<: *environment
+    depends_on:
+      action-server:
+        condition: service_healthy
+      milvus-standalone:
+        condition: service_healthy
     user: ${USER_ID}
     healthcheck:
       test: curl localhost:5006 || exit 1
@@ -95,7 +126,7 @@ services:
       start_period: 15s
       timeout: 10s
 
-  etcd:
+  milvus-etcd:
     container_name: milvus-etcd
     image: quay.io/coreos/etcd:v3.5.5
     environment:
@@ -113,7 +144,7 @@ services:
       retries: 3
     networks: [ 'rasa-pro-network' ]
 
-  minio:
+  milvus-minio:
     container_name: milvus-minio
     image: minio/minio:RELEASE.2023-03-20T20-16-18Z
     environment:
@@ -132,27 +163,29 @@ services:
       retries: 3
     networks: [ 'rasa-pro-network' ]
 
-  standalone:
+  milvus-standalone:
     container_name: milvus-standalone
     image: milvusdb/milvus:v2.3.1
     command: [ "milvus", "run", "standalone" ]
     environment:
-      ETCD_ENDPOINTS: etcd:2379
-      MINIO_ADDRESS: minio:9000
+      ETCD_ENDPOINTS: milvus-etcd:2379
+      MINIO_ADDRESS: milvus-minio:9000
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9091/healthz" ]
-      interval: 30s
+      interval: 5s
       start_period: 90s
-      timeout: 20s
-      retries: 3
+      timeout: 10s
+      retries: 20
     ports:
       - "19530:19530"
       - "9091:9091"
     depends_on:
-      - "etcd"
-      - "minio"
+      milvus-etcd:
+        condition: service_healthy
+      milvus-minio:
+        condition: service_healthy
     networks: [ 'rasa-pro-network' ]
 
-networks: { rasa-pro-network: { } }
+networks: { rasa-pro-network: { name: rasa-pro-network} }

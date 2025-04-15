@@ -64,7 +64,7 @@ configs:
 
 
 services:
- prometheus:
+  prometheus:
     image: prom/prometheus:v2.50.1
     configs:
       - source: prometheus.yml
@@ -76,7 +76,7 @@ services:
     ports:
       - "9090:9090"
 
- rasa-pro-assistant:
+  rasa-pro-assistant:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
       - "./calm_bot:/app"
@@ -94,8 +94,8 @@ services:
     depends_on:
       otlp-collector:
         condition: service_started
-      action-server:
-        condition: service_started
+      action-server-healthcheck:
+        condition: service_healthy
     user: ${USER_ID}
     healthcheck:
       test: curl localhost:5005 || exit 1
@@ -104,10 +104,10 @@ services:
       start_period: 15s
       timeout: 10s
 
- otlp-collector:
+  otlp-collector:
    image: otel/opentelemetry-collector:0.96.0
-#   volumes:
-#     - ./certs:/etc/otelcol-tls # uncomment this line when using a tls connection
+  #   volumes:
+  #     - ./certs:/etc/otelcol-tls # uncomment this line when using a tls connection
    configs:
       - source: otlp-collector-config.yml
         target: /etc/otelcol/config.yaml
@@ -117,12 +117,29 @@ services:
      - "8888:8888" # Prometheus' metrics exposed by the collector
      - "8889:8889" # Prometheus exporter configured metrics
 
- action-server:
-  image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
-  volumes:
-    - ./calm_bot/actions:/app/actions
-  networks: [ 'rasa-pro-network' ]
-  ports:
-    - "5055:5055"
+  action-server:
+    image: ${RASA_SDK_REPOSITORY}:${RASA_SDK_IMAGE_TAG}
+    container_name: action-server
+    volumes:
+      - ./calm_bot/actions:/app/actions
+    networks: [ 'rasa-pro-network' ]
+    ports:
+      - "5055:5055"
 
-networks: { rasa-pro-network: { } }
+    # We use a trick with sleep command to make the container keep running
+    # while it keeps checking the health of the action server
+  action-server-healthcheck:
+    image: curlimages/curl:8.12.1
+    container_name: action-server-healthcheck
+    entrypoint: [ "sh", "-c" ]
+    command: [ "sleep 40" ]
+    networks: [ 'rasa-pro-network' ]
+    depends_on:
+      - action-server
+    healthcheck:
+      test: [ "CMD", "curl", "-sf", "http://action-server:5055/health" ]
+      interval: 5s
+      retries: 10
+      timeout: 10s
+
+networks: { rasa-pro-network: { name: rasa-pro-network} }

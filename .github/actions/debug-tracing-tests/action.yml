@@ -14,41 +14,87 @@ runs:
     shell: bash
 
   - name: Check otel-collector container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs otel-collector
+      docker compose -f "$COMPOSE_FILE_PATH" logs otel-collector
     shell: bash
   
   - name: Check jaeger container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs jaeger
+      docker compose -f "$COMPOSE_FILE_PATH" logs jaeger
     shell: bash
   
   - name: Check rasa-pro-jaeger container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-jaeger
+      docker compose -f "$COMPOSE_FILE_PATH" logs rasa-pro-jaeger
+    shell: bash
+
+  - name: Check rasa-pro-grpc-jaeger container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
+    run: |
+      docker compose -f "$COMPOSE_FILE_PATH" logs rasa-pro-grpc-jaeger
     shell: bash
   
   - name: Check rasa-pro-otlp container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-otlp
+      docker compose -f "$COMPOSE_FILE_PATH" logs rasa-pro-otlp
     shell: bash
 
   - name: Check rasa-pro-jaeger-no-action-server container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-jaeger-no-action-server
+      docker compose -f "$COMPOSE_FILE_PATH" logs rasa-pro-jaeger-no-action-server
     shell: bash
 
   - name: Check rasa-pro-otlp-no-action-server container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-otlp-no-action-server
+      docker compose -f "$COMPOSE_FILE_PATH" logs rasa-pro-otlp-no-action-server
     shell: bash
 
   - name: Check action-server-jaeger container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs action-server-jaeger
+      docker compose -f "$COMPOSE_FILE_PATH" logs action-server-jaeger
     shell: bash
 
   - name: Check action-server-otlp container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs action-server-otlp
+      docker compose -f "$COMPOSE_FILE_PATH" logs action-server-otlp
     shell: bash
+
+  - name: Check rasa-grpc-action-server-jaeger container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
+    run: |
+      docker compose -f "$COMPOSE_FILE_PATH" logs rasa-grpc-action-server-jaeger
+    shell: bash
+
+  - name: Check rasa-grpc-tls-action-server container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
+    run: |
+      docker compose -f "$COMPOSE_FILE_PATH" logs rasa-grpc-tls-action-server
+    shell: bash
+
+  - name: Check rasa-pro-grpc-tls-jaeger container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
+    run: |
+      docker compose -f "$COMPOSE_FILE_PATH" logs rasa-pro-grpc-tls-jaeger
+    shell: bash
+
+

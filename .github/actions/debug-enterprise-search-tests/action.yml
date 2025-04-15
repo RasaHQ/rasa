@@ -14,31 +14,44 @@ runs:
     shell: bash
 
   - name: Check rasa-pro container logs faiss
+    env:       
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-assistant-faiss
+      docker compose -f "$COMPOSE_FILE_PATH" logs rasa-pro-assistant-faiss
     shell: bash
 
   - name: Check rasa-pro container logs milvus
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-assistant-milvus
+      docker compose -f "$COMPOSE_FILE_PATH" logs rasa-pro-assistant-milvus
     shell: bash
 
   - name: Check rasa-pro container logs qdrant
+    env:
+      COMPOSE_FILE_PATH:
+        ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-assistant-qdrant
+      docker compose -f "$COMPOSE_FILE_PATH" logs rasa-pro-assistant-qdrant
     shell: bash
 
   - name: Check action server container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs action-server
+      docker compose -f "$COMPOSE_FILE_PATH" logs action-server
     shell: bash
 
   - name: Check qdrant container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs qdrant
+      docker compose -f "$COMPOSE_FILE_PATH" logs qdrant
     shell: bash
 
   - name: Check milvus container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
     run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs standalone
+      docker compose -f "$COMPOSE_FILE_PATH" logs milvus-standalone
     shell: bash
