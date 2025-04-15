@@ -10,6 +10,7 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+
 ## [3.12.5] - 2025-04-07
                         
 Rasa Pro 3.12.5 (2025-04-07)                             
@@ -204,6 +205,18 @@ Rasa Pro 3.12.0 (2025-03-19)
 
 ### Miscellaneous internal changes
 - [#1685](https://github.com/rasahq/rasa-private/issues/1685), [#1760](https://github.com/rasahq/rasa-private/issues/1760), [#1780](https://github.com/rasahq/rasa-private/issues/1780), [#1784](https://github.com/rasahq/rasa-private/issues/1784), [#1829](https://github.com/rasahq/rasa-private/issues/1829), [#1868](https://github.com/rasahq/rasa-private/issues/1868), [#1873](https://github.com/rasahq/rasa-private/issues/1873), [#1929](https://github.com/rasahq/rasa-private/issues/1929), [#1930](https://github.com/rasahq/rasa-private/issues/1930), [#1946](https://github.com/rasahq/rasa-private/issues/1946), [#1949](https://github.com/rasahq/rasa-private/issues/1949), [#1955](https://github.com/rasahq/rasa-private/issues/1955), [#1972](https://github.com/rasahq/rasa-private/issues/1972), [#1989](https://github.com/rasahq/rasa-private/issues/1989), [#1991](https://github.com/rasahq/rasa-private/issues/1991), [#1998](https://github.com/rasahq/rasa-private/issues/1998), [#2004](https://github.com/rasahq/rasa-private/issues/2004), [#2016](https://github.com/rasahq/rasa-private/issues/2016), [#2024](https://github.com/rasahq/rasa-private/issues/2024), [#2037](https://github.com/rasahq/rasa-private/issues/2037), [#2077](https://github.com/rasahq/rasa-private/issues/2077), [#2079](https://github.com/rasahq/rasa-private/issues/2079), [#2100](https://github.com/rasahq/rasa-private/issues/2100), [#2113](https://github.com/rasahq/rasa-private/issues/2113), [#2124](https://github.com/rasahq/rasa-private/issues/2124)
+
+
+## [3.11.7] - 2025-04-14
+                        
+Rasa Pro 3.11.7 (2025-04-14)                             
+### Bugfixes
+- [#2181](https://github.com/rasahq/rasa-private/issues/2181): Fix `ChitChatAnswerCommand` command replaced with `CannotHandleCommand` if there are no e2e stories defined.
+  Improve validation that `IntentlessPolicy` has applicable responses: either responses in the domain that are not part of any flow, or if there are e2e stories. This validation performed during the training time and during cleanup of the `ChitChatAnswerCommand` command.
+- [#2243](https://github.com/rasahq/rasa-private/issues/2243): Security patch for Audiocodes channel connector. Audiocodes channel was only checking for the existence of authentication token. It now does a constant-time string comparison of the authentication token in connection request with that provided in channel configruation.
+- [#2252](https://github.com/rasahq/rasa-private/issues/2252): Make sure training always fail when domain is invalid.
+- [#2254](https://github.com/rasahq/rasa-private/issues/2254): Add channel name to UserMessage created by the Audiocodes channel.
+
 
 ## [3.11.6] - 2025-04-02
 
