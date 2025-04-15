@@ -14,6 +14,7 @@ import structlog
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 from rasa import telemetry
+from rasa.exceptions import ModelNotFound
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
@@ -76,6 +77,12 @@ def get_validated_path(
     """
     if current and os.path.exists(current):
         return current
+
+    if parameter == "model":
+        raise ModelNotFound(
+            f"The provided model path '{current}' could not be found. "
+            "Provide an existing model path."
+        )
 
     # try to find a valid option among the defaults
     if isinstance(default, str) or isinstance(default, Path):

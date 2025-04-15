@@ -10,6 +10,7 @@ from _pytest.pytester import RunResult
 
 from rasa.cli.run import run as cli_run
 from rasa.core.persistor import RemoteStorageType
+from rasa.exceptions import ModelNotFound
 from rasa.shared.core.domain import Domain
 from tests.cli.conftest import RASA_EXE
 
@@ -29,11 +30,12 @@ def test_run_does_not_start(run_in_simple_project: Callable[..., RunResult]):
     os.remove("domain.yml")
 
     # the server should not start as no model is configured
+
     output = run_in_simple_project("run")
 
-    error = "No model found. You have three options to provide a model:"
+    error = "could not be found. Provide an existing model path."
 
-    assert any(error in line for line in output.outlines)
+    assert any(error in line for line in output.errlines)
 
 
 def test_run_help(
@@ -203,3 +205,26 @@ def test_cli_run_with_skip_yaml_validation(
     assert not Domain.validate_yaml
 
     mock_rasa_run.assert_called_once_with(**vars(args))
+
+
+def test_cli_run_with_invalid_model_path(
+    run_parser: argparse.ArgumentParser,
+    trained_simple_project: Path,
+) -> None:
+    """Tests whether the `rasa run` command raises an error when invoked
+    with an invalid model path.
+    """
+    # Parse the arguments with which Rasa inspect will be run
+    args = run_parser.parse_args(
+        [
+            "run",
+            "--endpoints",
+            f"{trained_simple_project}/endpoints.yml",
+            "--model",
+            f"{trained_simple_project}/models/invalid/path",
+        ]
+    )
+
+    # Run the rasa.cli.run.run function
+    with pytest.raises(ModelNotFound):
+        cli_run(args)

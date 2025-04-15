@@ -17,6 +17,7 @@ from ruamel.yaml import YAML
 
 import rasa.cli.utils
 import rasa.shared.utils.io
+from rasa.exceptions import ModelNotFound
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
@@ -139,6 +140,13 @@ def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.P
             caplog, expected_event, expected_log_level, [expected_log_message]
         )
         assert len(logs) == 1
+
+
+def test_validate_with_invalid_model_directory_is_invalid(tmp_path: pathlib.Path):
+    invalid_directory = "invalid/path"
+
+    with pytest.raises(ModelNotFound):
+        rasa.cli.utils.get_validated_path(invalid_directory, "model", str(tmp_path))
 
 
 @pytest.mark.parametrize(

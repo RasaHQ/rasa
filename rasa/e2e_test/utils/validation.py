@@ -7,6 +7,7 @@ import structlog
 import rasa.shared.utils.io
 from rasa.e2e_test.constants import SCHEMA_FILE_PATH
 from rasa.e2e_test.e2e_test_case import Fixture, Metadata
+from rasa.exceptions import ModelNotFound
 from rasa.shared.utils.yaml import read_schema_file
 
 if TYPE_CHECKING:
@@ -152,10 +153,9 @@ def validate_model_path(model_path: Optional[str], parameter: str, default: str)
         return model_path
 
     if model_path and not Path(model_path).exists():
-        rasa.shared.utils.io.raise_warning(
+        raise ModelNotFound(
             f"The provided model path '{model_path}' could not be found. "
-            f"Using default location '{default}' instead.",
-            UserWarning,
+            "Provide an existing model path."
         )
 
     elif model_path is None:

@@ -1,7 +1,7 @@
 import argparse
 import sys
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Text
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -26,11 +26,22 @@ from rasa.e2e_test.constants import (
 from rasa.e2e_test.e2e_test_case import TestCase
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.utils.io import read_test_cases
-from rasa.exceptions import RasaException
+from rasa.exceptions import ModelNotFound, RasaException
 from rasa.shared.core.domain import Domain
 from tests.e2e_test.test_e2e_test_runner import AsyncMock
 
 SAVED_STDOUT = sys.stdout
+
+
+@pytest.fixture
+def fake_model_path(
+    tmp_path: Path,
+) -> Text:
+    model = tmp_path / "fake_model.tar.gz"
+    model.touch()
+    model_path = str(model)
+
+    return model_path
 
 
 def test_rasa_test_e2e_help(run: Callable[..., RunResult]) -> None:
@@ -65,10 +76,11 @@ def test_execute_e2e_tests_fail_fast_true(
     monkeypatch: MonkeyPatch,
     capsys: Any,
     e2e_input_folder,
+    fake_model_path: Text,
 ) -> None:
     cli_args = argparse.Namespace()
     cli_args.endpoints = str(tmp_path / "endpoints.yml")
-    cli_args.model = str(tmp_path / "model.tar.gz")
+    cli_args.model = fake_model_path
     setattr(
         cli_args,
         "path-to-test-cases",
@@ -140,10 +152,11 @@ def test_execute_e2e_tests_fail_fast_false(
     monkeypatch: MonkeyPatch,
     capsys: Any,
     e2e_input_folder: Path,
+    fake_model_path: Text,
 ) -> None:
     cli_args = argparse.Namespace()
     cli_args.endpoints = str(tmp_path / "endpoints.yml")
-    cli_args.model = str(tmp_path / "model.tar.gz")
+    cli_args.model = fake_model_path
     setattr(
         cli_args,
         "path-to-test-cases",
@@ -266,10 +279,11 @@ def test_e2e_cli_add_e2e_test_arguments(monkeypatch: MonkeyPatch) -> None:
 def test_execute_e2e_tests_with_agent_not_ready(
     tmp_path: Path,
     e2e_input_folder: Path,
+    fake_model_path: Text,
 ) -> None:
     cli_args = argparse.Namespace()
     cli_args.endpoints = str(tmp_path / "endpoints.yml")
-    cli_args.model = str(tmp_path / "model.tar.gz")
+    cli_args.model = fake_model_path
     setattr(
         cli_args,
         "path-to-test-cases",
@@ -293,3 +307,24 @@ def test_execute_e2e_tests_with_agent_not_ready(
         assert logging_msg in [
             record["message"] for record in logs if "message" in record
         ]
+
+
+def test_execute_e2e_tests_with_invalid_model_path(
+    tmp_path: Path,
+    e2e_input_folder: Path,
+) -> None:
+    cli_args = argparse.Namespace()
+    cli_args.endpoints = str(tmp_path / "endpoints.yml")
+    cli_args.model = str(tmp_path / "model.tar.gz")
+    setattr(
+        cli_args,
+        "path-to-test-cases",
+        e2e_input_folder,
+    )
+    cli_args.fail_fast = False
+    cli_args.e2e_results = str(tmp_path / "e2e_results.yml")
+    cli_args.remote_storage = None
+    cli_args.coverage_report = False
+
+    with pytest.raises(ModelNotFound):
+        execute_e2e_tests(cli_args)

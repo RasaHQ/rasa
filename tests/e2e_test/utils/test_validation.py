@@ -15,6 +15,7 @@ from rasa.e2e_test.utils.validation import (
     validate_test_case_fixtures,
     validate_test_case_metadata,
 )
+from rasa.exceptions import ModelNotFound
 from rasa.shared.constants import DEFAULT_MODELS_PATH
 
 if typing.TYPE_CHECKING:
@@ -32,16 +33,9 @@ def test_validate_model_path(tmp_path: Path) -> None:
 def test_validate_model_path_path_not_exists(tmp_path: Path) -> None:
     model_path = tmp_path / "model.tar.gz"
     default = tmp_path / DEFAULT_MODELS_PATH
-    match_msg = (
-        f"The provided model path '{model_path!s}' could not be found. "
-        f"Using default location '{default!s}' instead."
-    )
-    if platform.system() == "Windows":
-        # Windows uses backslashes in paths
-        match_msg = match_msg.replace("\\", "\\\\")
 
-    with pytest.warns(UserWarning, match=match_msg):
-        assert validate_model_path(str(model_path), "model", default) == default
+    with pytest.raises(ModelNotFound):
+        validate_model_path(str(model_path), "model", default) == default
 
 
 def test_validate_model_path_with_none(tmp_path: Path) -> None:
