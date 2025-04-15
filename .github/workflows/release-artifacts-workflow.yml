@@ -269,7 +269,7 @@ jobs:
     # Push to the public PYPI release registry
     - name: Publish to public PyPI 📦
       if: always()
-      uses: pypa/gh-action-pypi-publish@67339c736fd9354cd4f8cb0b744f2b82a74b5c70
+      uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
       with:
         password: ${{ secrets.PYPI_TOKEN }}
         repository-url: "https://upload.pypi.org/legacy/"
@@ -281,7 +281,7 @@ jobs:
       run: |
           pip install keyring
           pip install keyrings.google-artifactregistry-auth
-          pip install twine
+          pip install twine --upgrade 
           gcloud artifacts print-settings python --project=rasa-releases --repository=rasa-pro-python --location=europe-west3 > ~/.pypirc
           twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/ ${{ format('{0}/dist/*', github.workspace) }}
 
