@@ -10,6 +10,47 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.12.6] - 2025-04-15
+                        
+Rasa Pro 3.12.6 (2025-04-15)                             
+### Deprecations and Removals
+- [#2229](https://github.com/rasahq/rasa-private/issues/2229): Remove the behaviour handling digressions as eligible flows that can be started while handling an active collect step.
+  These properties have been removed from the flow and collect step:
+  - `ask_confirm_digressions`
+  - `block_digressions`
+  Remove the new pattern `pattern_handle_digressions`.
+
+### Features
+- [#2229](https://github.com/rasahq/rasa-private/issues/2229): Introduce a new boolean property `force_slot_filling` for the `collect` flow step.
+  This property allows you to suppress incorrect predictions of the command generator
+  or user digressions that are not relevant to the current slot filling.
+  To enable this behavior, you should set the `force_slot_filling` property to `True` in the `collect` step of your flow configuration.
+  ```yaml
+  flows:
+      order_pizza:
+        name: order pizza
+        description: user asks for a pizza
+        steps:
+        - collect: pizza_type
+        - collect: quantity
+        - collect: address
+          force_slot_filling: true
+  ```
+  When `force_slot_filling` is set to `True`, the command generator will only process the `SetSlot` command for the specified slot.
+  By default, the property is set to `False`.
+
+### Bugfixes
+- [#2221](https://github.com/rasahq/rasa-private/issues/2221): Security patch for Audiocodes and Genesys Channel connector
+  Adds `api_key` (required) and `client_secret` (optional) properties to Genesys channel configuration
+  Adds `token` (optional) property to Audiocodes-Stream channel
+- [#2250](https://github.com/rasahq/rasa-private/issues/2250): Fix execution of custom validation action `action_validate_slot_mappings` by passing the extracted slot events to the tracker
+  used when running this action.
+- [#2253](https://github.com/rasahq/rasa-private/issues/2253): Make sure training always fail when domain is invalid.
+- [#2258](https://github.com/rasahq/rasa-private/issues/2258): Add channel name to UserMessage created by the Audiocodes channel.
+
+### Miscellaneous internal changes
+- [#2198](https://github.com/rasahq/rasa-private/issues/2198), [#2228](https://github.com/rasahq/rasa-private/issues/2228)
+
 
 ## [3.12.5] - 2025-04-07
                         
