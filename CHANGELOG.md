@@ -608,6 +608,17 @@ Rasa Pro 3.11.0 (2024-12-11)
 - [#1212](https://github.com/rasahq/rasa-private/issues/1212), [#1318](https://github.com/rasahq/rasa-private/issues/1318), [#1528](https://github.com/rasahq/rasa-private/issues/1528), [#1550](https://github.com/rasahq/rasa-private/issues/1550), [#1581](https://github.com/rasahq/rasa-private/issues/1581), [#1650](https://github.com/rasahq/rasa-private/issues/1650)
 
 
+## [3.10.19] - 2025-04-15
+                         
+Rasa Pro 3.10.19 (2025-04-15)                              
+### Bugfixes
+- [#2181](https://github.com/rasahq/rasa-private/issues/2181): Fix `ChitChatAnswerCommand` command replaced with `CannotHandleCommand` if there are no e2e stories defined.
+  Improve validation that `IntentlessPolicy` has applicable responses: either responses in the domain that are not part of any flow, or if there are e2e stories. This validation performed during the training time and during cleanup of the `ChitChatAnswerCommand` command.
+- [#2222](https://github.com/rasahq/rasa-private/issues/2222): Security patch for Audiocodes channel connector. Audiocodes channel was only checking for the existence of authentication token. It now does a constant-time string comparison of the authentication token in connection request with that provided in channel configruation.
+- [#2251](https://github.com/rasahq/rasa-private/issues/2251): Make sure training always fail when domain is invalid.
+- [#2254](https://github.com/rasahq/rasa-private/issues/2254): Add channel name to UserMessage created by the Audiocodes channel.
+
+
 ## [3.10.18] - 2025-04-02
 
 Rasa Pro 3.10.18 (2025-04-02)
