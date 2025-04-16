@@ -1116,6 +1116,42 @@ Rasa Pro 3.10.0 (2024-09-04)
 - [#1038](https://github.com/rasahq/rasa-private/issues/1038), [#1040](https://github.com/rasahq/rasa-private/issues/1040), [#1053](https://github.com/rasahq/rasa-private/issues/1053), [#1068](https://github.com/rasahq/rasa-private/issues/1068), [#1123](https://github.com/rasahq/rasa-private/issues/1123), [#1318](https://github.com/rasahq/rasa-private/issues/1318), [#713](https://github.com/rasahq/rasa-private/issues/713)
 
 
+## [3.9.20] - 2025-04-14
+                        
+Rasa Pro 3.9.20 (2025-04-14)                             
+### Bugfixes
+- [#1923](https://github.com/rasahq/rasa-private/issues/1923): Updated `Inspector` dependent packages (cross-spawn, mermaid, dom-purify, vite, braces, ws, axios and rollup) to address security vulnerabilities.
+- [#2027](https://github.com/rasahq/rasa-private/issues/2027): Modify Enterprise Search Citation Prompt Template to use `doc.text`
+- [#2222](https://github.com/rasahq/rasa-private/issues/2222): Security patch for Audiocodes channel connector. Audiocodes channel was only checking for the existence of authentication token. It now does a constant-time string comparison of the authentication token in connection request with that provided in channel configruation.
+
+
+## [3.9.19] - 2025-01-30
+
+Rasa Pro 3.9.19 (2025-01-30)                             
+### Improvements
+- [#1900](https://github.com/rasahq/rasa-private/issues/1900): Remove unnecessary deepcopy to improve performance in `undo_fallback_prediction` method of `FallbackClassifier`
+
+### Bugfixes
+- [#1816](https://github.com/rasahq/rasa-private/issues/1816): - Fixed an issue where the `pattern_continue_interrupted` was not correctly triggered when the flow digressed to a step containing a link.
+- [#1828](https://github.com/rasahq/rasa-private/issues/1828): Add the flow ID as a prefix to step ID to ensure uniqueness. This resolves a rare bug where steps in a child flow with a structure similar to those in a parent flow (using a "call" step) could result in duplicate step IDs. In this case duplicates previously caused incorrect next step selection.
+
+### Miscellaneous internal changes
+- [#1819](https://github.com/rasahq/rasa-private/issues/1819), [#1875](https://github.com/rasahq/rasa-private/issues/1875), [#1885](https://github.com/rasahq/rasa-private/issues/1885)
+
+
+## [3.9.18] - 2025-01-15
+
+Rasa Pro 3.9.18 (2025-01-15)                             
+### Bugfixes
+- [#1690](https://github.com/rasahq/rasa-private/issues/1690): Fix issue in e2e testing when customising `action_session_start` would lead to AttributeError, because the `output_channel` was not set. 
+  This is now fixed by setting the `output_channel` to `CollectingOutputChannel()`.
+- [#1706](https://github.com/rasahq/rasa-private/issues/1706): Pass flow human-readable name instead of flow id when the cancel pattern stack frame is pushed during flow policy
+  validation checks of collect steps.
+- [#1790](https://github.com/rasahq/rasa-private/issues/1790): Make `pattern_session_start` work with `rasa inspector` to allow the assistant proactively start the conversation with a user.
+- [#1823](https://github.com/rasahq/rasa-private/issues/1823): Fixes a critical security vulnerability with `jsonpickle` dependency by upgrading to the patched version.
+- [#1834](https://github.com/rasahq/rasa-private/issues/1834): Updated `minio` to address security vulnerability.
+
+
 ## [3.9.17] - 2024-12-05
 
 Rasa Pro 3.9.17 (2024-12-05)
