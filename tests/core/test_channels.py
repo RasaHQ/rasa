@@ -1,5 +1,6 @@
 # file deepcode ignore HardcodedNonCryptoSecret/test: Secrets are all just examples for tests. # noqa: E501
 
+import base64
 import logging
 from typing import Dict
 from unittest.mock import MagicMock, Mock, patch
@@ -10,13 +11,15 @@ from aiogram.exceptions import TelegramAPIError
 from aiohttp import ClientTimeout
 from aioresponses import aioresponses
 from pytest import LogCaptureFixture, MonkeyPatch
-from sanic import Sanic
+from sanic import Blueprint, Sanic
+from sanic.request import Request
+from sanic.response import json
 
 import rasa.core.channels.channel
 import rasa.core.run
 from rasa.core import utils
 from rasa.core.channels import RasaChatInput, console
-from rasa.core.channels.channel import UserMessage
+from rasa.core.channels.channel import UserMessage, requires_basic_auth
 from rasa.core.channels.rasa_chat import (
     CONVERSATION_ID_KEY,
     INTERACTIVE_LEARNING_PERMISSION,
@@ -741,3 +744,48 @@ def test_set_console_stream_reading_timeout(monkeypatch: MonkeyPatch):
     monkeypatch.setenv(console.STREAM_READING_TIMEOUT_ENV, str(100))
 
     assert console._get_stream_reading_timeout() == ClientTimeout(expected)
+
+
+async def test_requires_basic_auth() -> None:
+    app = Sanic("test_app")
+    blueprint = Blueprint("test_blueprint")
+
+    # Create a test endpoint with basic auth
+    @blueprint.route("/protected")
+    @requires_basic_auth("user", "pass")
+    async def protected(request: Request):
+        return json({"status": "ok"})
+
+    app.blueprint(blueprint)
+
+    # Test with correct credentials
+    auth = base64.b64encode(b"user:pass").decode()
+    headers = {"Authorization": f"Basic {auth}"}
+    _, response = await app.asgi_client.get("/protected", headers=headers)
+    assert response.status == 200
+    assert response.json == {"status": "ok"}
+
+    # Test with wrong credentials
+    auth = base64.b64encode(b"wrong:creds").decode()
+    headers = {"Authorization": f"Basic {auth}"}
+    _, response = await app.asgi_client.get("/protected", headers=headers)
+    assert response.status == 401
+
+    # Test with missing auth header
+    _, response = await app.asgi_client.get("/protected")
+    assert response.status == 401
+
+
+async def test_unprotected_route() -> None:
+    app = Sanic("test_app")
+    blueprint = Blueprint("test_blueprint")
+
+    # Test when auth is disabled (no username/password)
+    @blueprint.route("/unprotected")
+    async def unprotected(request: Request):
+        return json({"status": "ok"})
+
+    app.blueprint(blueprint)
+
+    _, response = await app.asgi_client.get("/unprotected")
+    assert response.status == 200

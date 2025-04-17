@@ -1,6 +1,9 @@
+import hmac
 import json
 import logging
 import uuid
+from base64 import b64encode
+from functools import wraps
 from typing import (
     Any,
     Awaitable,
@@ -15,6 +18,7 @@ from typing import (
 
 import jwt
 from sanic import Blueprint, Sanic
+from sanic.exceptions import Unauthorized
 from sanic.request import Request
 
 from rasa.cli import utils as cli_utils
@@ -454,3 +458,29 @@ class CollectingOutputChannel(OutputChannel):
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         await self._persist_message(self._message(recipient_id, custom=json_message))
+
+
+def requires_basic_auth(username: Optional[Text], password: Optional[Text]) -> Callable:
+    """Decorator to require basic auth for a route."""
+
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(request: Request, *args: Any, **kwargs: Any) -> Any:
+            if not username or not password:
+                return await func(request, *args, **kwargs)
+
+            auth = request.headers.get("Authorization")
+            if not auth or not auth.startswith("Basic "):
+                logger.error("Missing or invalid authorization header.")
+                raise Unauthorized("Missing or invalid authorization header.")  # type: ignore[no-untyped-call]
+
+            encoded = b64encode(f"{username}:{password}".encode()).decode()
+            if not hmac.compare_digest(auth[6:], encoded):
+                logger.error("Invalid username or password.")
+                raise Unauthorized("Invalid username or password.")  # type: ignore[no-untyped-call]
+
+            return await func(request, *args, **kwargs)
+
+        return wrapper
+
+    return decorator

@@ -5,8 +5,14 @@ from sanic import Blueprint, Websocket, response  # type: ignore[attr-defined]
 from sanic.request import Request
 from sanic.response import HTTPResponse
 
-from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.core.channels.channel import (
+    InputChannel,
+    OutputChannel,
+    UserMessage,
+    requires_basic_auth,
+)
 from rasa.core.channels.voice_ready.jambonz_protocol import (
+    CHANNEL_NAME,
     send_ws_hangup_message,
     send_ws_text_message,
     websocket_message_handler,
@@ -17,8 +23,6 @@ from rasa.shared.utils.common import mark_as_beta_feature
 from rasa.utils.io import remove_emojis
 
 structlogger = structlog.get_logger()
-
-CHANNEL_NAME = "jambonz"
 
 DEFAULT_HANGUP_DELAY_SECONDS = 1
 
@@ -32,12 +36,27 @@ class JambonzVoiceReadyInput(InputChannel):
 
     @classmethod
     def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
-        return cls()
+        if not credentials:
+            return cls()
 
-    def __init__(self) -> None:
+        username = credentials.get("username")
+        password = credentials.get("password")
+        if (username is None) != (password is None):
+            raise RasaException(
+                "In Jambonz channel, either both username and password "
+                "or neither should be provided. "
+            )
+
+        return cls(username, password)
+
+    def __init__(
+        self, username: Optional[Text] = None, password: Optional[Text] = None
+    ) -> None:
         """Initializes the JambonzVoiceReadyInput channel."""
         mark_as_beta_feature("Jambonz Channel")
         validate_voice_license_scope()
+        self.username = username
+        self.password = password
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
@@ -50,6 +69,7 @@ class JambonzVoiceReadyInput(InputChannel):
             return response.json({"status": "ok"})
 
         @jambonz_webhook.websocket("/websocket", subprotocols=["ws.jambonz.org"])  # type: ignore
+        @requires_basic_auth(self.username, self.password)
         async def websocket(request: Request, ws: Websocket) -> None:
             """Triggered on new websocket connection."""
             async for message in ws:

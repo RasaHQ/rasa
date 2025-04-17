@@ -10,6 +10,7 @@ from rasa.core.channels.channel import UserMessage
 from rasa.core.channels.voice_ready.utils import CallParameters
 
 structlogger = structlog.get_logger()
+CHANNEL_NAME = "jambonz"
 
 
 @dataclass
@@ -206,6 +207,7 @@ async def handle_new_session(
         output_channel=output_channel,
         sender_id=message.call_sid,
         metadata=asdict(message.call_params),
+        input_channel=CHANNEL_NAME,
     )
     await send_config_ack(message.message_id, ws)
     await on_new_message(user_msg)
@@ -238,6 +240,7 @@ async def handle_gather_completed(
         output_channel = JambonzWebsocketOutput(ws, transcript_result.call_sid)
         user_msg = UserMessage(
             text=most_likely_transcript.text,
+            input_channel=CHANNEL_NAME,
             output_channel=output_channel,
             sender_id=transcript_result.call_sid,
             metadata={},
@@ -288,6 +291,7 @@ async def handle_call_status(
         output_channel = JambonzWebsocketOutput(ws, call_status.call_sid)
         user_msg = UserMessage(
             text="/session_end",
+            input_channel=CHANNEL_NAME,
             output_channel=output_channel,
             sender_id=call_status.call_sid,
             metadata={},

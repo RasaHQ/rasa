@@ -1,9 +1,13 @@
+from typing import Any
+
 import pytest
 
+from rasa.core.channels.voice_ready.jambonz import JambonzVoiceReadyInput
 from rasa.core.channels.voice_ready.jambonz_protocol import (
     CallStatusChanged,
     NewSessionMessage,
 )
+from rasa.shared.exceptions import RasaException
 
 
 @pytest.fixture
@@ -128,3 +132,27 @@ def test_call_status_changed(call_status_message):
 
     assert call_status.call_sid == "74dd6db2-7cb3-45c1-a575-d0935c55a219"
     assert call_status.status == "completed"
+
+
+@pytest.mark.parametrize(
+    "credentials",
+    [
+        ({}),
+        ({"username": "thunder9000", "password": "hunter2"}),
+    ],
+)
+def test_from_credentials(credentials: Any) -> None:
+    input_channel = JambonzVoiceReadyInput.from_credentials(credentials)
+    assert input_channel.name() == "jambonz"
+
+
+@pytest.mark.parametrize(
+    "credentials",
+    [
+        ({"username": "yoda"}),
+        ({"password": "thforce"}),
+    ],
+)
+def test_from_credentials_invalid(credentials: Any) -> None:
+    with pytest.raises(RasaException):
+        JambonzVoiceReadyInput.from_credentials(credentials)
