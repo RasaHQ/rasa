@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hmac
 import json
 import logging
@@ -460,8 +462,50 @@ class CollectingOutputChannel(OutputChannel):
         await self._persist_message(self._message(recipient_id, custom=json_message))
 
 
-def requires_basic_auth(username: Optional[Text], password: Optional[Text]) -> Callable:
-    """Decorator to require basic auth for a route."""
+BASIC_AUTH_SCHEME = "Basic"
+
+
+def create_auth_requested_response_provider(
+    realm: str,
+) -> Callable[[Request, Any, Any], ResponseWithAuthRequested]:
+    def _provider(
+        request: Request, *args: Any, **kwargs: Any
+    ) -> ResponseWithAuthRequested:
+        return ResponseWithAuthRequested(scheme=BASIC_AUTH_SCHEME, realm=realm)
+
+    return _provider
+
+
+class ResponseWithAuthRequested(Unauthorized):
+    """Custom exception to request authentication."""
+
+    def __init__(self, scheme: str, realm: str) -> None:
+        super().__init__(
+            message="Authentication requested.", scheme=scheme, realm=realm
+        )  # type: ignore[no-untyped-call]
+
+
+def requires_basic_auth(
+    username: Optional[Text],
+    password: Optional[Text],
+    auth_request_provider: Optional[Callable[[Request, Any, Any], Unauthorized]] = None,
+) -> Callable:
+    """Decorator to require basic auth for a route.
+
+    Args:
+        username: The username to check against.
+        password: The password to check against.
+        auth_request_provider: Optional function to provide a custom
+            response when authentication is requested. This function should
+            return an instance of `Unauthorized` with the necessary
+            authentication headers.
+    Returns:
+        A decorator that checks for basic authentication.
+
+    Raises:
+        Unauthorized: If the authentication fails or if authentication is
+            requested without necessary credentials (headers).
+    """
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
@@ -469,13 +513,32 @@ def requires_basic_auth(username: Optional[Text], password: Optional[Text]) -> C
             if not username or not password:
                 return await func(request, *args, **kwargs)
 
-            auth = request.headers.get("Authorization")
-            if not auth or not auth.startswith("Basic "):
+            auth_header = request.headers.get("Authorization")
+
+            # Some systems will first send a request without an authorization header
+            # to check if the endpoint is available. In this case, we need to
+            # return am Unauthorized response with the necessary authorization header
+            # to indicate that the endpoint requires authorization.
+            if not auth_header and auth_request_provider:
+                # if the request does not contain an authorization header,
+                # we raise an exception to request authorization
+
+                exception = auth_request_provider(request, *args, **kwargs)
+                logger.debug(
+                    f"Responding with {exception.status_code} and "
+                    f"necessary auth headers {exception.headers}"
+                )
+                raise exception
+
+            if not auth_header or not auth_header.startswith("Basic "):
                 logger.error("Missing or invalid authorization header.")
                 raise Unauthorized("Missing or invalid authorization header.")  # type: ignore[no-untyped-call]
 
             encoded = b64encode(f"{username}:{password}".encode()).decode()
-            if not hmac.compare_digest(auth[6:], encoded):
+            username_password_digest: str = auth_header[len(BASIC_AUTH_SCHEME) :]
+            username_password_digest = username_password_digest.strip()
+
+            if not hmac.compare_digest(username_password_digest, encoded):
                 logger.error("Invalid username or password.")
                 raise Unauthorized("Invalid username or password.")  # type: ignore[no-untyped-call]
 

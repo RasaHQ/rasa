@@ -1,5 +1,5 @@
 import json
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -8,7 +8,20 @@ from rasa.core.channels.voice_stream.audiocodes import AudiocodesVoiceInputChann
 
 
 @pytest.fixture
-def input_channel() -> AudiocodesVoiceInputChannel:
+def mock_validate_voice_license_scope(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Mock the validate_voice_license_scope function."""
+    monkeypatch.setattr(
+        "rasa.core.channels.voice_stream.voice_channel.validate_voice_license_scope",
+        MagicMock(),
+    )
+
+
+@pytest.fixture
+def input_channel(
+    mock_validate_voice_license_scope: None,
+) -> AudiocodesVoiceInputChannel:
     """Returns a default initialized AudiocodesVoiceInputChannel."""
     server_url = "https://example.com"
     asr_config = {"name": "deepgram"}
@@ -24,7 +37,9 @@ def input_channel() -> AudiocodesVoiceInputChannel:
 
 
 @pytest.fixture
-def input_channel_no_token() -> AudiocodesVoiceInputChannel:
+def input_channel_no_token(
+    mock_validate_voice_license_scope: None,
+) -> AudiocodesVoiceInputChannel:
     """Returns a default initialized AudiocodesVoiceInputChannel without a token."""
     server_url = "https://example.com"
     asr_config = {"name": "deepgram"}

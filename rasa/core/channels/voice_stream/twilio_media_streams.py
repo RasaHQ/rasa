@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import base64
 import json
 import uuid
-from typing import Any, Awaitable, Callable, Dict, Optional, Text, Tuple
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Optional, Text, Tuple
 
 import structlog
 from sanic import (  # type: ignore[attr-defined]
@@ -12,7 +14,11 @@ from sanic import (  # type: ignore[attr-defined]
     response,
 )
 
-from rasa.core.channels import UserMessage
+from rasa.core.channels import InputChannel, UserMessage
+from rasa.core.channels.channel import (
+    create_auth_requested_response_provider,
+    requires_basic_auth,
+)
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import call_state
@@ -25,8 +31,22 @@ from rasa.core.channels.voice_stream.voice_channel import (
     VoiceInputChannel,
     VoiceOutputChannel,
 )
+from rasa.shared.exceptions import RasaException
+
+if TYPE_CHECKING:
+    from twilio.twiml.voice_response import VoiceResponse
 
 logger = structlog.get_logger(__name__)
+
+
+TWILIO_MEDIA_STREAMS_WEBHOOK_PATH = "webhooks/twilio_media_streams/webhook"
+TWILIO_MEDIA_STREAMS_WEBSOCKET_PATH = "webhooks/twilio_media_streams/websocket"
+
+
+CALL_SID_REQUEST_KEY = "CallSid"
+FROM_NUMBER_REQUEST_KEY = "From"
+TO_NUMBER_REQUEST_KEY = "To"
+DIRECTION_REQUEST_KEY = "Direction"
 
 
 def map_call_params(data: Dict[Text, Any]) -> CallParameters:
@@ -77,6 +97,40 @@ class TwilioMediaStreamsOutputChannel(VoiceOutputChannel):
 
 
 class TwilioMediaStreamsInputChannel(VoiceInputChannel):
+    def __init__(
+        self,
+        server_url: str,
+        asr_config: Dict,
+        tts_config: Dict,
+        monitor_silence: bool = False,
+        username: Optional[Text] = None,
+        password: Optional[Text] = None,
+    ):
+        super().__init__(server_url, asr_config, tts_config, monitor_silence)
+        self.username = username
+        self.password = password
+
+    @classmethod
+    def from_credentials(cls, credentials: Optional[Dict[str, Any]]) -> InputChannel:
+        credentials = credentials or {}
+
+        username = credentials.get("username")
+        password = credentials.get("password")
+        if (username is None) != (password is None):
+            raise RasaException(
+                "In TwilioMediaStreams channel, either both username and password "
+                "or neither should be provided. "
+            )
+
+        return cls(
+            credentials["server_url"],
+            credentials["asr"],
+            credentials["tts"],
+            credentials.get("monitor_silence", False),
+            username=username,
+            password=password,
+        )
+
     @classmethod
     def name(cls) -> str:
         return "twilio_media_streams"
@@ -130,16 +184,6 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
             self.tts_cache,
         )
 
-    def websocket_stream_url(self) -> str:
-        """Returns the websocket stream URL."""
-        # depending on the config value, the url might contain http as a
-        # protocol or not - we'll make sure both work
-        if self.server_url.startswith("http"):
-            base_url = self.server_url.replace("http", "ws")
-        else:
-            base_url = f"wss://{self.server_url}"
-        return f"{base_url}/webhooks/twilio_media_streams/websocket"
-
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
@@ -151,22 +195,20 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
             return response.json({"status": "ok"})
 
         @blueprint.route("/webhook", methods=["POST"])
+        @requires_basic_auth(
+            username=self.username,
+            password=self.password,
+            auth_request_provider=create_auth_requested_response_provider(
+                realm=TWILIO_MEDIA_STREAMS_WEBHOOK_PATH
+            ),
+        )
         async def receive(request: Request) -> HTTPResponse:
-            from twilio.twiml.voice_response import Connect, VoiceResponse
+            voice_response = self._build_twilio_response(request)
 
-            voice_response = VoiceResponse()
-            start = Connect()
-            stream = start.stream(url=self.websocket_stream_url())
-            # pass information about the call to the webhook - so we can
-            # store it in the input channel
-            stream.parameter(name="call_id", value=request.form.get("CallSid", None))
-            stream.parameter(name="user_phone", value=request.form.get("From", None))
-            stream.parameter(name="bot_phone", value=request.form.get("To", None))
-            stream.parameter(
-                name="direction", value=request.form.get("Direction", None)
+            logger.debug(
+                "twilio_media_streams.webhook.twilio_response",
+                twilio_response=str(voice_response),
             )
-
-            voice_response.append(start)
 
             return response.text(str(voice_response), content_type="text/xml")
 
@@ -175,3 +217,36 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
             await self.run_audio_streaming(on_new_message, ws)
 
         return blueprint
+
+    def _websocket_stream_url(self) -> str:
+        """Returns the websocket stream URL."""
+        # depending on the config value, the url might contain http as a
+        # protocol or not - we'll make sure both work
+        if self.server_url.startswith("http"):
+            base_url = self.server_url.replace("http", "ws")
+        else:
+            base_url = f"wss://{self.server_url}"
+        return f"{base_url}/{TWILIO_MEDIA_STREAMS_WEBSOCKET_PATH}"
+
+    def _build_twilio_response(self, request: Request) -> VoiceResponse:
+        from twilio.twiml.voice_response import Connect, VoiceResponse
+
+        voice_response = VoiceResponse()
+        start = Connect()
+        stream = start.stream(url=self._websocket_stream_url())
+        # pass information about the call to the webhook - so we can
+        # store it in the input channel
+        stream.parameter(
+            name="call_id", value=request.form.get(CALL_SID_REQUEST_KEY, None)
+        )
+        stream.parameter(
+            name="user_phone", value=request.form.get(FROM_NUMBER_REQUEST_KEY, None)
+        )
+        stream.parameter(
+            name="bot_phone", value=request.form.get(TO_NUMBER_REQUEST_KEY, None)
+        )
+        stream.parameter(
+            name="direction", value=request.form.get(DIRECTION_REQUEST_KEY, None)
+        )
+        voice_response.append(start)
+        return voice_response

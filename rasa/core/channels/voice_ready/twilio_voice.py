@@ -13,12 +13,17 @@ from rasa.core.channels.channel import (
     CollectingOutputChannel,
     InputChannel,
     UserMessage,
+    create_auth_requested_response_provider,
+    requires_basic_auth,
 )
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.shared.core.events import BotUttered
-from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.exceptions import InvalidConfigException, RasaException
 
 logger = structlog.get_logger(__name__)
+
+
+TWILIO_VOICE_PATH = "webhooks/twilio_voice/webhook"
 
 
 def map_call_params(form: RequestParameters) -> CallParameters:
@@ -120,6 +125,14 @@ class TwilioVoiceInput(InputChannel):
         """Load custom configurations."""
         credentials = credentials or {}
 
+        username = credentials.get("username")
+        password = credentials.get("password")
+        if (username is None) != (password is None):
+            raise RasaException(
+                "In TwilioVoice channel, either both username and password "
+                "or neither should be provided. "
+            )
+
         return cls(
             credentials.get(
                 "reprompt_fallback_phrase",
@@ -129,6 +142,8 @@ class TwilioVoiceInput(InputChannel):
             credentials.get("speech_timeout", "5"),
             credentials.get("speech_model", "default"),
             credentials.get("enhanced", "false"),
+            username=username,
+            password=password,
         )
 
     def __init__(
@@ -138,6 +153,8 @@ class TwilioVoiceInput(InputChannel):
         speech_timeout: Text = "5",
         speech_model: Text = "default",
         enhanced: Text = "false",
+        username: Optional[Text] = None,
+        password: Optional[Text] = None,
     ) -> None:
         """Creates a connection to Twilio voice.
 
@@ -153,6 +170,8 @@ class TwilioVoiceInput(InputChannel):
         self.speech_timeout = speech_timeout
         self.speech_model = speech_model
         self.enhanced = enhanced
+        self.username = username
+        self.password = password
 
         self._validate_configuration()
 
@@ -160,6 +179,9 @@ class TwilioVoiceInput(InputChannel):
         """Checks that the user configurations are valid."""
         if self.assistant_voice not in self.SUPPORTED_VOICES:
             self._raise_invalid_voice_exception()
+
+        if (self.username is None) != (self.password is None):
+            self._raise_invalid_credentials_exception()
 
         try:
             int(self.speech_timeout)
@@ -246,6 +268,13 @@ class TwilioVoiceInput(InputChannel):
             return response.json({"status": "ok"})
 
         @twilio_voice_webhook.route("/webhook", methods=["POST"])
+        @requires_basic_auth(
+            username=self.username,
+            password=self.password,
+            auth_request_provider=create_auth_requested_response_provider(
+                TWILIO_VOICE_PATH
+            ),
+        )
         async def receive(request: Request) -> HTTPResponse:
             sender_id = request.form.get("From")
             text = request.form.get("SpeechResult")
@@ -310,6 +339,11 @@ class TwilioVoiceInput(InputChannel):
                 twilio_response = self._build_twilio_voice_response(
                     [{"text": last_response_text}]
                 )
+
+            logger.debug(
+                "twilio_voice.webhook.twilio_response",
+                twilio_response=str(twilio_response),
+            )
             return response.text(str(twilio_response), content_type="text/xml")
 
         return twilio_voice_webhook
@@ -329,6 +363,13 @@ class TwilioVoiceInput(InputChannel):
             enhanced=self.enhanced,
         )
 
+        if not messages:
+            # In case bot has a greet message disabled
+            # or if the bot is not configured to send an initial message
+            # we need to send a voice response with speech settings
+            voice_response.append(gather)
+            return voice_response
+
         # Add pauses between messages.
         # Add a listener to the last message to listen for user response.
         for i, message in enumerate(messages):
@@ -346,6 +387,12 @@ class TwilioVoiceInput(InputChannel):
                 voice_response.pause(length=1)
 
         return voice_response
+
+    def _raise_invalid_credentials_exception(self) -> None:
+        raise InvalidConfigException(
+            "In TwilioVoice channel, either both username and password "
+            "or neither should be provided. "
+        )
 
 
 class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):

@@ -2,6 +2,7 @@ import base64
 import json
 from unittest.mock import AsyncMock
 
+import pytest
 from sanic.exceptions import WebsocketClosed
 
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
@@ -82,34 +83,59 @@ async def test_twilio_media_streams_output_channel_caching():
     check_mark_message(messages[-1][0][0], recipient_id)
 
 
-async def test_twilio_media_streams_output_channel_send_when_client_closed():
+@pytest.fixture
+def mock_websocket() -> AsyncMock:
+    """Mock websocket for testing."""
+    return AsyncMock()
+
+
+@pytest.fixture
+def tts_cache() -> TTSCache:
+    """Mock TTS cache for testing."""
+    return TTSCache(1)
+
+
+@pytest.fixture
+def tts_engine() -> AzureTTS:
+    """TTS engine for testing."""
+    return AzureTTS()
+
+
+async def test_twilio_media_streams_output_channel_send_when_client_closed(
+    mock_websocket: AsyncMock, tts_cache: TTSCache, tts_engine: AzureTTS
+):
     ensure_call_state_context()
-    websocket = AsyncMock()
-    websocket.send.side_effect = WebsocketClosed()
-    tts_cache = TTSCache(1)
-    tts_engine = AzureTTS()
+    mock_websocket.send.side_effect = WebsocketClosed()
+    output_channel = TwilioMediaStreamsOutputChannel(
+        mock_websocket, tts_engine, tts_cache
+    )
     recipient_id = "test_id"
-    output_channel = TwilioMediaStreamsOutputChannel(websocket, tts_engine, tts_cache)
     await output_channel.send_text_message(recipient_id, "Hi There.")
 
 
-def test_rasa_audio_bytes_to_channel_bytes():
+def test_rasa_audio_bytes_to_channel_bytes(
+    mock_websocket: AsyncMock, tts_cache: TTSCache, tts_engine: AzureTTS
+):
     rasa_audio_bytes = RasaAudioBytes(b"\00")
-    websocket = AsyncMock()
-    tts_cache = TTSCache(1)
-    tts_engine = AzureTTS()
-    output_channel = TwilioMediaStreamsOutputChannel(websocket, tts_engine, tts_cache)
+    output_channel = TwilioMediaStreamsOutputChannel(
+        mock_websocket, tts_engine, tts_cache
+    )
     channel_bytes = output_channel.rasa_audio_bytes_to_channel_bytes(rasa_audio_bytes)
     assert channel_bytes == base64.b64encode(rasa_audio_bytes)
 
 
-def test_channel_bytes_to_message():
+def test_channel_bytes_to_message(
+    mock_websocket: AsyncMock, tts_cache: TTSCache, tts_engine: AzureTTS
+):
     rasa_audio_bytes = RasaAudioBytes(b"\00")
-    websocket = AsyncMock()
-    tts_cache = TTSCache(1)
-    tts_engine = AzureTTS()
-    recipient_id = "test_id"
-    output_channel = TwilioMediaStreamsOutputChannel(websocket, tts_engine, tts_cache)
+    output_channel = TwilioMediaStreamsOutputChannel(
+        mock_websocket, tts_engine, tts_cache
+    )
     channel_bytes = output_channel.rasa_audio_bytes_to_channel_bytes(rasa_audio_bytes)
+    recipient_id = "test_id"
     message = output_channel.channel_bytes_to_message(recipient_id, channel_bytes)
     check_media_message(message, recipient_id)
+
+
+def test_twilio_media_streams_output_channel_name() -> None:
+    assert TwilioMediaStreamsOutputChannel.name() == "twilio_media_streams"
