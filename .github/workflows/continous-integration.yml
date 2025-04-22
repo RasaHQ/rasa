@@ -146,16 +146,14 @@ jobs:
         shell: bash
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 # v3.0.1
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
         with:
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
-        with:
-          mask-password: "true"
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
 
       - name: Set image tag
         run: |
@@ -191,12 +189,12 @@ jobs:
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     - name: Set up Node.js
-      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 #v4.0.2
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 #v4.4.0
       with:
         node-version: ${{ env.NODE_VERSION_INSPECTOR_BUILD }}
 
     - name: Cache node modules
-      uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
       id: yarn-cache
       with:
         path: "**/inspector/node_modules"
@@ -212,7 +210,7 @@ jobs:
         yarn build
 
     - name: Store build output
-      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
       with:
         name: inspector-build
         path: rasa/core/channels/inspector/dist
@@ -294,7 +292,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Tracing Integration Test Results
           path: integration-results-tracing.xml
@@ -361,7 +359,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Metric Integration Test Results
           path: integration-results-metric.xml
@@ -444,7 +442,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Custom Action Integration Test Results For NLU bot
           path: integration-results-custom-actions-with-nlu-bot-results.xml
@@ -523,7 +521,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Custom Action Integration Test Results For CALM Bot
           path: integration-results-custom-actions-with-calm-bot-results.xml
@@ -550,7 +548,7 @@ jobs:
 
       - name: Set up Python 3.9 🐍
         id: setup-python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
         with:
           python-version: '3.9'
 
@@ -561,7 +559,7 @@ jobs:
 
       # Install & configure poetry
       - name: Install Poetry ${{ env.POETRY_VERSION }}
-        uses: snok/install-poetry@93ada01c735cc8a383ce0ce2ae205a21c415379b # v1.3.4
+        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a # v1.4.1
         with:
           version: ${{ env.POETRY_VERSION }}
           virtualenvs-create: true
@@ -671,7 +669,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Enterprise Search Integration Test Results
           path: integration-results-enterprise-search.xml
@@ -734,7 +732,7 @@ jobs:
 
         - name: Save Test Results
           if: always()
-          uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+          uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
           with:
             name: Sequential Integration Test Results
             path: integration-results-sequential.xml
@@ -818,7 +816,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Non-Sequential Integration Test Results
           path: integration-results-non-sequential.xml
@@ -881,7 +879,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Tracker Store Integration Test Results
           path: integration-results-mongo-tracker-store.xml
@@ -939,7 +937,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Concurrent LockStore Integration Test Results
           path: integration-results-concurrent-lockstore.xml
@@ -992,7 +990,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
             name: Broker Integration Test Results
             path: integration-results-broker-integration.xml
@@ -1068,13 +1066,13 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Channel connector Integration Tests Test Results
           path: |
            integration-results-channel-connectors-with-calm-bot-results.xml
            integration-results-custom-broker-with-calm-bot-results.xml
-           
+
 
   unit-test:
     name: Run Unit Tests
@@ -1160,7 +1158,7 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}
           path: |
@@ -1168,7 +1166,7 @@ jobs:
 
       - name: Save Rasa server OpenAPI tests coverage report
         if: always() && matrix.test == 'test-other-unit-tests'
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: Rasa Server OpenAPI tests coverage report on python-${{ matrix.python-version }}
           path: swagger-coverage-report-rasa-pro.html
@@ -1225,12 +1223,12 @@ jobs:
 
       - name: Save Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
             name: unit-tests-results-test-anonymization-python-${{ matrix.python-version }}
             path: |
               ${{ github.workspace }}/unit-tests-results-test-anonymization-python-${{ matrix.python-version }}.xml
-              
+
 
   publish-test-results:
     runs-on: ubuntu-24.04
@@ -1248,24 +1246,24 @@ jobs:
              unit-test, test-anonymization ]
     steps:
       - name: Download test reports
-        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 #v4.1.4
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
         with:
           path: artifacts
 
       - name: Publish integration test results
         if: always()
-        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        uses: EnricoMi/publish-unit-test-result-action@afb2984f4d89672b2f9d9c13ae23d53779671984 # v2.19.0
         with:
           files: "artifacts/**/integration-results-*.xml"
           check_name: "Integration Test Results"
 
       - name: Publish unit-test results
         if: always()
-        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        uses: EnricoMi/publish-unit-test-result-action@afb2984f4d89672b2f9d9c13ae23d53779671984 # v2.19.0
         with:
           files: "artifacts/unit-tests-results-*.xml"
           check_name: "Unit Test Results"
-          
+
   publish-test-results-on-scheduled-runs:
     runs-on: ubuntu-24.04
     if: ${{ inputs.run_mode == 'false' }}
@@ -1278,14 +1276,14 @@ jobs:
 
       - name: Publish integration test results
         if: always()
-        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        uses: EnricoMi/publish-unit-test-result-action@afb2984f4d89672b2f9d9c13ae23d53779671984 # v2.19.0
         with:
           files: "artifacts/**/integration-results-*.xml"
           check_name: "Integration Test Results"
 
       - name: Publish unit-test results
         if: always()
-        uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
+        uses: EnricoMi/publish-unit-test-result-action@afb2984f4d89672b2f9d9c13ae23d53779671984 # v2.19.0
         with:
           files: "artifacts/**/unit-tests-results-*.xml"
           check_name: "Unit Test Results"
@@ -1301,17 +1299,17 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       - name: Download test reports
-        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 #v4.1.4
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
         with:
           path: ${{ github.workspace }}/artifacts
           pattern: "unit-tests-results-**"
           merge-multiple: true
 
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@bfd4e558cda28cda6b5defafb9232d191be8c203 # v4.2.1
+        uses: SonarSource/sonarqube-scan-action@aa494459d7c39c106cc77b166de8b4250a32bb97 # v5.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-          
-          
+
+

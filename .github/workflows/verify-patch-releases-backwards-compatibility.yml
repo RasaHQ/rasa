@@ -26,7 +26,7 @@ on:
           type: string
           required: true
           default: main
-  
+
   pull_request:
     types: opened
     branches:
@@ -74,7 +74,7 @@ jobs:
       - name: Install rasa-pro ${{ inputs.rasa_pro_old_version || 'oldest patch version' }}
         id: install-rasa-pro-older-version
         working-directory: rasa-private
-        env: 
+        env:
           RASA_OLD_VERSION: ${{ inputs.rasa_pro_old_version }}
         run: |
           python"${DEFAULT_PYTHON_VERSION}" -m venv ./venv
@@ -111,7 +111,7 @@ jobs:
             --fixed-model-name model-trained-on-rasa-pro-"${RASA_PRO_OLDER_VERSION}" \
             --debug
       - name: Upload trained model as GHA artifact
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: model-trained-on-rasa-pro-${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}
           path: models/model-trained-on-rasa-pro-${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}.tar.gz
@@ -193,7 +193,7 @@ jobs:
             --debug
       - name: Save E2E test results
         if: failure()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: E2E-test-result
           path: tests/e2e_results_failed.yml

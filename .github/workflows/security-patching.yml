@@ -30,7 +30,7 @@ jobs:
             fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
         with:
           python-version: '3.11'
 
@@ -52,8 +52,10 @@ jobs:
 
       - name: Alert Slack if get_tags step fails
         if: steps.get_branches.outcome == 'failure' || steps.tags.outcome == 'failure'
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
         with:
+          webhook: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "blocks": [
@@ -66,9 +68,6 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
       - name: Show tags
         run: |
@@ -93,19 +92,19 @@ jobs:
         run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@4574d27a4764455b42196d70a065bc6853246a25 # v3.4.0
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
         with:
           platforms: linux/amd64,linux/arm64
           # The latest version will lead to segmentation fault.
           image: tonistiigi/binfmt:qemu-v7.0.0-28
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca  # v3.9.0
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2  # v3.10.0
 
       # Authenticate with Gcloud.
       - name: Authenticate with gcloud for release registry 🎫
         id: 'auth-release'
-        uses: 'google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c' # v2.1.2
+        uses: 'google-github-actions/auth@71f986410dfbc7added4569d411d040a91dc6935 # v2.1.8
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_OIDC}}
           service_account: "github-actions-oidc-atom@rasa-releases.iam.gserviceaccount.com"
@@ -124,8 +123,10 @@ jobs:
 
       - name: Alert Slack if build fails
         if: steps.build.outcome == 'failure'
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
         with:
+          webhook: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "blocks": [
@@ -138,9 +139,6 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
       - name: Fail pushing the patch if the build is not a success
         if: steps.build.outcome == 'failure'
@@ -162,13 +160,13 @@ jobs:
 
       # - id: auth-security-reports
       #   name: Authenticate with gcloud for saving report 🎫
-      #   uses: 'google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c' # v2.1.2
+      #   uses: 'google-github-actions/auth@71f986410dfbc7added4569d411d040a91dc6935 # v2.1.8
       #   with:
       #     token_format: 'access_token'
       #     credentials_json: '${{ secrets.GCP_WRITE_PUBLIC_SECURITY_REPORTS_KEY }}'
 
       # - name: Set up Cloud SDK
-      #   uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+      #   uses: google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a # v2.1.4
 
       # - name: Upload scan report to GCS
       #   run: |

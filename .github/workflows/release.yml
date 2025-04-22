@@ -43,7 +43,7 @@ jobs:
         id: dev_or_rc_check
         run: |
           version="$INPUT_VERSION"
-          
+
           # Check if version contains 'dev' or 'rc'
           if [[ "$version" == *"dev"* || "$version" == *"rc"* ]]; then
             echo "Dev or RC release detected."
@@ -59,7 +59,7 @@ jobs:
         id: minor_release
         run: |
           version="$INPUT_VERSION"
-          
+
           # Check if version is in format number.number.number
           if ! [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Invalid version format. It should be in format 'number.number.number'."
@@ -99,7 +99,7 @@ jobs:
           release_branch="${version_parts[0]}.${version_parts[1]}.x"
           echo "base_branch=${version_parts[0]}.${version_parts[1]}.x" >> $GITHUB_ENV
           echo $base_branch
-          
+
           git checkout $release_branch
           git branch
 
@@ -160,7 +160,7 @@ jobs:
           INPUT_VERSION: ${{ github.event.inputs.version }}
 
       - name: Create pull request
-        uses: devops-infra/action-pull-request@e66e2ba93519dc63b9884a26e620e2fd0cffab2c
+        uses: devops-infra/action-pull-request@ff118b4a7c24bac5a3c95acef59e9edd1fc37890  #v0.6.0
         with:
           github_token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
           source_branch: ${{ env.SOURCE_BRANCH }}
@@ -184,7 +184,7 @@ jobs:
 
       - name: Load Poetry Cached Libraries ⬇
         id: cache-poetry
-        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: .venv
           key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}

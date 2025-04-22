@@ -49,7 +49,7 @@ on:
           - litellm-proxy-multiple-deployments-with-routing
           - openai-with-custom-prompt-for-CompactLLMCommandGenerator
           - openai-with-custom-prompt-for-CustomLLMCommandGenerator
-      
+
       rasa-pro-version:
         description: "Rasa-pro version to run test(s) against. Default: Current commit version"
         type: string
@@ -277,7 +277,7 @@ jobs:
           fetch-depth: 0
       - id: filter
         name: Check for changes in `rasa/shared/providers` folder
-        uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50  #v2.11.1
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36  # v3.0.2
         with:
           filters: .github/change_filters.yml
       - name: Check upgrades to LiteLLM dependency
@@ -352,9 +352,9 @@ jobs:
         run: |
           if [[ -e rasa-private/data/test_config/providers/${{ matrix.provider }}/${{ matrix.train-and-test }}-config.yml ]]; then
             echo "JOB_TO_BE_SKIPPED=false" >> "$GITHUB_ENV"
-          else 
+          else
               echo "JOB_TO_BE_SKIPPED=true" >> "$GITHUB_ENV"
-          fi 
+          fi
 
       - name: Set provider API key
         if: ${{ env.JOB_TO_BE_SKIPPED == 'false' }}
@@ -412,9 +412,9 @@ jobs:
         run: |
           if [[ -e rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ matrix.train-and-test }}-config.yml ]]; then
             echo "JOB_TO_BE_SKIPPED=false" >> "$GITHUB_ENV"
-          else 
+          else
               echo "JOB_TO_BE_SKIPPED=true" >> "$GITHUB_ENV"
-          fi 
+          fi
 
       - name: Set provider API key
         if: ${{ env.JOB_TO_BE_SKIPPED == 'false' }}

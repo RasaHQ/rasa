@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "rasa-pro"
-version = "3.12.6"
+version = "3.13.0.dev3"
 description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -329,6 +329,7 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "tests/test_telemetry.py" = [ "E501",]
 "tests/shared/core/test_domain.py" = [ "E501",]
+
 
 
 [tool.poetry.group.dev.dependencies]

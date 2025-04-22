@@ -50,7 +50,7 @@ on:
           - litellm-proxy-multiple-deployments-with-routing
           - openai-with-custom-prompt-for-CompactLLMCommandGenerator
           - openai-with-custom-prompt-for-CustomLLMCommandGenerator
-      
+
       data-repo:
         description: "Bot repository"
         type: choice
@@ -158,14 +158,14 @@ jobs:
           ref: ${{ env.TAG_VERSION }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@4574d27a4764455b42196d70a065bc6853246a25 # v3.4.0
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
         with:
           platforms: linux/amd64,linux/arm64
           # The latest version will lead to segmentation fault.
           image: tonistiigi/binfmt:qemu-v7.0.0-28
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca  # v3.9.0
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2  # v3.10.0
 
       - name: Read Poetry Version 🔢
         run: |
@@ -174,19 +174,19 @@ jobs:
 
       - name: Authenticate with Google Cloud
         id: auth
-        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+        uses: google-github-actions/auth@71f986410dfbc7added4569d411d040a91dc6935 # v2.1.8
         with:
            workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_OIDC}}
            service_account: "github-actions-oidc-atom@rasa-releases.iam.gserviceaccount.com"
 
       - name: Authenticate with Docker Hub
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0g
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+        uses: google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a # v2.1.4
 
       - name: Authenticate docker for release registry 🎫
         run: |
@@ -206,7 +206,7 @@ jobs:
            ./scripts/write_keys_file.sh
 
       - name: Build and push rasa-pro docker image to GCP and Docker Hub
-        run: |     
+        run: |
           # Build the multi-platform docker image and push to GCP and Docker Hub
           RASA_IMAGE_TAGS="-t ${{ env.GCP_IMAGE_TAG }} -t ${{ env.GCP_LATEST_IMAGE_TAG }} -t ${{ env.DOCKER_HUB_IMAGE_TAG }}" \
           RASA_BASE_REPOSITORY=${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa \
@@ -220,18 +220,18 @@ jobs:
   release-artifacts-pypi:
     name: Release Artifacts PyPI
     runs-on: ubuntu-24.04
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         ref: ${{ env.TAG_VERSION }}
-          
+
     - name: Set up Python 🐍
-      uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+      uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
       with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
-      
+
     - name: Read Poetry Version 🔢
       run: |
          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
@@ -239,13 +239,13 @@ jobs:
 
     - name: Authenticate with Google Cloud
       id: auth
-      uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+      uses: google-github-actions/auth@71f986410dfbc7added4569d411d040a91dc6935 # v2.1.8
       with:
          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_OIDC}}
          service_account: "github-actions-oidc-atom@rasa-releases.iam.gserviceaccount.com"
 
     - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+      uses: google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a # v2.1.4
 
     - name: Authenticate docker for release registry 🎫
       run: |
@@ -255,7 +255,7 @@ jobs:
       uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec #v9
       with:
           poetry-version: ${{ env.POETRY_VERSION }}
-        
+
     - name: Copy Segment write key to the package
       env:
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.RASA_PRO_SEGMENT_WRITE_KEY }}
@@ -281,7 +281,7 @@ jobs:
       run: |
           pip install keyring
           pip install keyrings.google-artifactregistry-auth
-          pip install twine --upgrade 
+          pip install twine --upgrade
           gcloud artifacts print-settings python --project=rasa-releases --repository=rasa-pro-python --location=europe-west3 > ~/.pypirc
           twine upload --verbose --repository-url https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/ ${{ format('{0}/dist/*', github.workspace) }}
 
@@ -295,7 +295,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ needs.release-artifacts-docker.outputs.tag_version }}
-      
+
       - name: Notify Sentry about the release
         if: success()
         env:
@@ -339,20 +339,22 @@ jobs:
     steps:
       - name: Notify Slack of successful release 💬
         if: ${{ needs.release-artifacts-docker.result == 'success' && needs.release-artifacts-pypi.result == 'success' }}
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
         with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           # Send notification to #release slack channel
-          channel-id: "C024Z61K9QU"
-          slack-message: ":rocket: New *Rasa Private* version `${{ needs.release-artifacts-docker.outputs.tag_version }}` has been released! More information can be found <https://github.com/RasaHQ/rasa-private/releases/tag/${{ needs.release-artifacts-docker.outputs.tag_version }}|here>."
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: "C024Z61K9QU"
+            text: ":rocket: New *Rasa Private* version `${{ needs.release-artifacts-docker.outputs.tag_version }}` has been released! More information can be found <https://github.com/RasaHQ/rasa-private/releases/tag/${{ needs.release-artifacts-docker.outputs.tag_version }}|here>."
 
       - name: Notify Slack of unsuccessful release ⛔️
         if: ${{ needs.release-artifacts-docker.result != 'success' || needs.release-artifacts-pypi.result != 'success' }}
-        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v 1.25.0
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
         with:
-           # Send notification to #devtribe slack channel
-           channel-id: "C061J0LGHU0"
-           slack-message: ":broken_heart: *Rasa Private* release version `${{ needs.release-artifacts-docker.outputs.tag_version }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
-        env:
-           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          # Send notification to #devtribe slack channel
+          payload: |
+            channel: "C061J0LGHU0"
+            text: ":broken_heart: *Rasa Private* release version `${{ needs.release-artifacts-docker.outputs.tag_version }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
