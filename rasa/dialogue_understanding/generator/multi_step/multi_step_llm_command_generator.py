@@ -52,6 +52,10 @@ from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.utils.constants import (
+    LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
+    LOG_COMPONENT_SOURCE_METHOD_INIT,
+)
 from rasa.shared.utils.io import deep_container_fingerprint, raise_deprecation_warning
 from rasa.shared.utils.llm import (
     allowed_values_for_slot,
@@ -330,6 +334,8 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         return get_prompt_template(
             config.get("prompt_templates", {}).get(key, {}).get(FILE_PATH_KEY),
             default_value,
+            log_source_component=MultiStepLLMCommandGenerator.__name__,
+            log_source_method=LOG_COMPONENT_SOURCE_METHOD_INIT,
         )
 
     @classmethod
@@ -786,17 +792,24 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
     @classmethod
     def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint for the graph."""
+        get_prompt_template_log_params = {
+            "log_source_component": MultiStepLLMCommandGenerator.__name__,
+            "log_source_method": LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
+        }
+
         handle_flows_template = get_prompt_template(
             config.get("prompt_templates", {})
             .get(HANDLE_FLOWS_KEY, {})
             .get(FILE_PATH_KEY),
             DEFAULT_HANDLE_FLOWS_TEMPLATE,
+            **get_prompt_template_log_params,
         )
         fill_slots_template = get_prompt_template(
             config.get("prompt_templates", {})
             .get(FILL_SLOTS_KEY, {})
             .get(FILE_PATH_KEY),
             DEFAULT_FILL_SLOTS_TEMPLATE,
+            **get_prompt_template_log_params,
         )
 
         llm_config = resolve_model_client_config(

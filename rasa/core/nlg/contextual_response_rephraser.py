@@ -27,6 +27,7 @@ from rasa.shared.nlu.constants import (
     PROMPTS,
 )
 from rasa.shared.providers.llm.llm_response import LLMResponse, measure_llm_latency
+from rasa.shared.utils.constants import LOG_COMPONENT_SOURCE_METHOD_INIT
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_GENERATE_MODEL_NAME,
@@ -105,6 +106,8 @@ class ContextualResponseRephraser(
         self.prompt_template = get_prompt_template(
             self.nlg_endpoint.kwargs.get(PROMPT_CONFIG_KEY),
             DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE,
+            log_source_component=ContextualResponseRephraser.__name__,
+            log_source_method=LOG_COMPONENT_SOURCE_METHOD_INIT,
         )
         self.rephrase_all = self.nlg_endpoint.kwargs.get(
             "rephrase_all", DEFAULT_REPHRASE_ALL

@@ -52,7 +52,6 @@ from rasa.shared.utils.llm import (
     USER,
     allowed_values_for_slot,
     embedder_factory,
-    get_prompt_template,
     resolve_model_client_config,
     tracker_as_readable_transcript,
 )
@@ -103,9 +102,7 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
             self.config.get(EMBEDDINGS_CONFIG_KEY), FlowRetrieval.__name__
         )
         self.vector_store: Optional[FAISS] = None
-        self.flow_document_template = get_prompt_template(
-            None, DEFAULT_FLOW_DOCUMENT_TEMPLATE
-        )
+        self.flow_document_template = DEFAULT_FLOW_DOCUMENT_TEMPLATE
         self._model_storage = model_storage
         self._resource = resource
 

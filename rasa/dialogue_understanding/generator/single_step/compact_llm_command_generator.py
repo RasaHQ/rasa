@@ -1,5 +1,5 @@
 import copy
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Literal, Optional, Text
 
 import structlog
 
@@ -58,6 +58,10 @@ from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import LLM_COMMANDS, LLM_PROMPT, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.utils.constants import (
+    LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
+    LOG_COMPONENT_SOURCE_METHOD_INIT,
+)
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     allowed_values_for_slot,
@@ -187,8 +191,8 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
         )
 
         # Get the prompt template from the config or the default prompt template.
-        self.prompt_template = self.resolve_component_prompt_template(
-            self.config, prompt_template
+        self.prompt_template = self._resolve_component_prompt_template(
+            self.config, prompt_template, log_context=LOG_COMPONENT_SOURCE_METHOD_INIT
         )
 
         # Set the command syntax version to v2
@@ -539,7 +543,9 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
         # and update the llm config with the resolved llm config.
         _config_copy = copy.deepcopy(config)
         _config_copy[LLM_CONFIG_KEY] = llm_config
-        prompt_template = cls.resolve_component_prompt_template(_config_copy)
+        prompt_template = cls._resolve_component_prompt_template(
+            _config_copy, log_context=LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON
+        )
 
         return deep_container_fingerprint(
             [prompt_template, llm_config, embedding_config]
@@ -555,20 +561,26 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
         return CommandSyntaxVersion.v2
 
     @staticmethod
-    def resolve_component_prompt_template(
-        config: Dict[str, Any], prompt_template: Optional[str] = None
+    def _resolve_component_prompt_template(
+        config: Dict[str, Any],
+        prompt_template: Optional[str] = None,
+        log_context: Optional[Literal["init", "fingerprint_addon"]] = None,
     ) -> Optional[str]:
         """Get the prompt template from the config or the default prompt template."""
         # Get the default prompt template based on the model name.
         default_command_prompt_template = get_default_prompt_template_based_on_model(
-            config.get(LLM_CONFIG_KEY, {}) or {},
-            MODEL_PROMPT_MAPPER,
-            DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
-            FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+            llm_config=config.get(LLM_CONFIG_KEY, {}) or {},
+            model_prompt_mapping=MODEL_PROMPT_MAPPER,
+            default_prompt_path=DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+            fallback_prompt_path=FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+            log_source_component=CompactLLMCommandGenerator.__name__,
+            log_source_method=log_context,
         )
 
         # Return the prompt template either from the config or the default prompt.
         return prompt_template or get_prompt_template(
             config.get(PROMPT_TEMPLATE_CONFIG_KEY),
             default_command_prompt_template,
+            log_source_component=CompactLLMCommandGenerator.__name__,
+            log_source_method=log_context,
         )

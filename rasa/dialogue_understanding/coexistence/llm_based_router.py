@@ -35,6 +35,10 @@ from rasa.shared.exceptions import FileIOException, InvalidConfigException
 from rasa.shared.nlu.constants import COMMANDS, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.constants import (
+    LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
+    LOG_COMPONENT_SOURCE_METHOD_INIT,
+)
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
@@ -107,6 +111,8 @@ class LLMBasedRouter(LLMHealthCheckMixin, GraphComponent):
             or get_prompt_template(
                 config.get(PROMPT_CONFIG_KEY),
                 DEFAULT_COMMAND_PROMPT_TEMPLATE,
+                log_source_component=LLMBasedRouter.__name__,
+                log_source_method=LOG_COMPONENT_SOURCE_METHOD_INIT,
             ).strip()
         )
 
@@ -318,6 +324,8 @@ class LLMBasedRouter(LLMHealthCheckMixin, GraphComponent):
         prompt_template = get_prompt_template(
             config.get(PROMPT_CONFIG_KEY),
             DEFAULT_COMMAND_PROMPT_TEMPLATE,
+            log_source_component=LLMBasedRouter.__name__,
+            log_source_method=LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
         )
 
         llm_config = resolve_model_client_config(

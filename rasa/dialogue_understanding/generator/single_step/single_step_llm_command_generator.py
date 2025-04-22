@@ -1,5 +1,5 @@
 import importlib.resources
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Literal, Optional, Text
 
 import structlog
 
@@ -25,8 +25,12 @@ from rasa.shared.constants import (
     PROMPT_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
 )
+from rasa.shared.utils.constants import LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON
 from rasa.shared.utils.io import deep_container_fingerprint
-from rasa.shared.utils.llm import get_prompt_template, resolve_model_client_config
+from rasa.shared.utils.llm import (
+    get_prompt_template,
+    resolve_model_client_config,
+)
 
 DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.generator.prompt_templates",
@@ -72,9 +76,6 @@ class SingleStepLLMCommandGenerator(CompactLLMCommandGenerator):
                     "Please use the config parameter 'prompt_template' instead. "
                 ),
             )
-        self.prompt_template = self.resolve_component_prompt_template(
-            config, prompt_template
-        )
 
         # Set the command syntax version to v1
         CommandSyntaxManager.set_syntax_version(
@@ -95,7 +96,9 @@ class SingleStepLLMCommandGenerator(CompactLLMCommandGenerator):
     @classmethod
     def fingerprint_addon(cls: Any, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint for the graph."""
-        prompt_template = cls.resolve_component_prompt_template(config)
+        prompt_template = cls._resolve_component_prompt_template(
+            config, log_context=LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON
+        )
         llm_config = resolve_model_client_config(
             config.get(LLM_CONFIG_KEY), SingleStepLLMCommandGenerator.__name__
         )
@@ -117,17 +120,29 @@ class SingleStepLLMCommandGenerator(CompactLLMCommandGenerator):
         return CommandSyntaxVersion.v1
 
     @staticmethod
-    def resolve_component_prompt_template(
-        config: Dict[str, Any], prompt_template: Optional[str] = None
+    def _resolve_component_prompt_template(
+        config: Dict[str, Any],
+        prompt_template: Optional[str] = None,
+        log_context: Optional[Literal["init", "fingerprint_addon"]] = None,
     ) -> Optional[str]:
         """Get the prompt template from the config or the default prompt template."""
-        # Get the default prompt template based on the model name.
-        config_prompt = (
+        # Case when model is being loaded
+        if prompt_template is not None:
+            return prompt_template
+
+        # The prompt can be configured in the config via the "prompt" (deprecated) or
+        # "prompt_template" properties
+        prompt_template_path = (
             config.get(PROMPT_CONFIG_KEY)
             or config.get(PROMPT_TEMPLATE_CONFIG_KEY)
             or None
         )
-        return prompt_template or get_prompt_template(
-            config_prompt,
+
+        # Try to load the template from the given path or fallback to the default for
+        # the component
+        return get_prompt_template(
+            prompt_template_path,
             DEFAULT_COMMAND_PROMPT_TEMPLATE,
+            log_source_component=SingleStepLLMCommandGenerator.__name__,
+            log_source_method=log_context,
         )

@@ -78,6 +78,10 @@ from rasa.shared.providers.embedding._langchain_embedding_client_adapter import 
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.llm.llm_response import LLMResponse, measure_llm_latency
 from rasa.shared.utils.cli import print_error_and_exit
+from rasa.shared.utils.constants import (
+    LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
+    LOG_COMPONENT_SOURCE_METHOD_INIT,
+)
 from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
     EmbeddingsHealthCheckMixin,
 )
@@ -254,10 +258,14 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         self.prompt_template = prompt_template or get_prompt_template(
             self.config.get(PROMPT_CONFIG_KEY),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
+            log_source_component=EnterpriseSearchPolicy.__name__,
+            log_source_method=LOG_COMPONENT_SOURCE_METHOD_INIT,
         )
         self.citation_prompt_template = get_prompt_template(
             self.config.get(PROMPT_CONFIG_KEY),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE,
+            log_source_component=EnterpriseSearchPolicy.__name__,
+            log_source_method=LOG_COMPONENT_SOURCE_METHOD_INIT,
         )
         # If citation is enabled, use the citation prompt template
         if self.citation_enabled:
@@ -843,6 +851,8 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         prompt_template = get_prompt_template(
             config.get(PROMPT_CONFIG_KEY),
             DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
+            log_source_component=EnterpriseSearchPolicy.__name__,
+            log_source_method=LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
         )
 
         llm_config = resolve_model_client_config(

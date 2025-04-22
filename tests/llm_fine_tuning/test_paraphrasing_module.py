@@ -154,8 +154,8 @@ def test_filter_rephrasings(
     autospec=True,
 )
 async def test_create_paraphrased_conversations_no_rephrases(
-    MockRephraser,
     MockValidator,
+    MockRephraser,
     mock_dependencies,
     conversations,
     flows,
@@ -163,6 +163,7 @@ async def test_create_paraphrased_conversations_no_rephrases(
 ):
     mock_rephraser, mock_validator, mock_storage_context = mock_dependencies
     MockRephraser.return_value = mock_rephraser
+    MockRephraser.__name__ = "MockRephraser"
     MockValidator.return_value = mock_validator
 
     result_conversations, result_config = await create_paraphrased_conversations(

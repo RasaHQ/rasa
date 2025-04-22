@@ -19,6 +19,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers.mappings import OPENAI_PROVIDER
+from rasa.shared.utils.constants import LOG_COMPONENT_SOURCE_METHOD_INIT
 from rasa.shared.utils.llm import (
     USER,
     get_prompt_template,
@@ -54,6 +55,8 @@ class ConversationRephraser:
         self.prompt_template = get_prompt_template(
             self.config.get(PROMPT_TEMPLATE_CONFIG_KEY),
             DEFAULT_REPHRASING_PROMPT_TEMPLATE,
+            log_source_component=ConversationRephraser.__name__,
+            log_source_method=LOG_COMPONENT_SOURCE_METHOD_INIT,
         )
 
     @staticmethod

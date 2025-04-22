@@ -1,5 +1,6 @@
 import importlib.resources
 import json
+import logging
 from copy import deepcopy
 from functools import wraps
 from typing import (
@@ -7,6 +8,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Literal,
     Optional,
     Text,
     Type,
@@ -59,6 +61,7 @@ from rasa.shared.providers.mappings import (
     get_embedding_client_from_provider,
     get_llm_client_from_provider,
 )
+from rasa.shared.utils.constants import LOG_COMPONENT_SOURCE_METHOD_INIT
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -654,35 +657,59 @@ def embedder_client_factory(
 
 
 def get_prompt_template(
-    jinja_file_path: Optional[Text], default_prompt_template: Text
+    jinja_file_path: Optional[Text],
+    default_prompt_template: Text,
+    *,
+    log_source_component: Optional[Text] = None,
+    log_source_method: Optional[Literal["init", "fingerprint_addon"]] = None,
 ) -> Text:
     """Returns the jinja template.
 
     Args:
-        jinja_file_path: the path to the jinja file
-        default_prompt_template: the default prompt template
+        jinja_file_path: The path to the jinja template file. If not provided, the
+            default template will be used.
+        default_prompt_template: The fallback prompt template to use if no file is
+            found or specified.
+        log_source_component: The name of the component emitting the log, used to
+            identify the source in structured logging.
+        log_source_method: The name of the method or function emitting the log for
+            better traceability.
 
     Returns:
         The prompt template.
     """
+
     try:
         if jinja_file_path is not None:
             prompt_template = rasa.shared.utils.io.read_file(jinja_file_path)
-            structlogger.info(
-                "utils.llm.get_prompt_template.custom_prompt_template_read_successfull",
+
+            log_level = (
+                logging.INFO
+                if log_source_method == LOG_COMPONENT_SOURCE_METHOD_INIT
+                else logging.DEBUG
+            )
+
+            structlogger.log(
+                log_level,
+                "utils.llm.get_prompt_template"
+                ".custom_prompt_template_read_successfully",
                 event_info=(
                     f"Custom prompt template read successfully from "
                     f"`{jinja_file_path}`."
                 ),
                 prompt_file_path=jinja_file_path,
+                log_source_component=log_source_component,
+                log_source_method=log_source_method,
             )
             return prompt_template
     except (FileIOException, FileNotFoundException):
         structlogger.warning(
-            "utils.llm.get_prompt_template.failed_to_read_custom_prompt_template",
+            "utils.llm.get_prompt_template" ".failed_to_read_custom_prompt_template",
             event_info=(
                 "Failed to read custom prompt template. Using default template instead."
             ),
+            log_source_component=log_source_component,
+            log_source_method=log_source_method,
         )
     return default_prompt_template
 
@@ -692,50 +719,66 @@ def get_default_prompt_template_based_on_model(
     model_prompt_mapping: Dict[str, Any],
     default_prompt_path: str,
     fallback_prompt_path: str,
+    *,
+    log_source_component: Optional[Text] = None,
+    log_source_method: Optional[Literal["init", "fingerprint_addon"]] = None,
 ) -> Text:
     """Returns the default prompt template based on the model name.
 
     Args:
         llm_config: The model config.
-        model_prompt_mapping: The mapping of model name to prompt template.
-        default_prompt_path: The default prompt path of the component.
-        fallback_prompt_path: The fallback prompt path for all other models
-            that do not have a mapping in the model_prompt_mapping.
+        model_prompt_mapping: The model name -> prompt template mapping.
+        default_prompt_path: The path to the default prompt template for the component.
+        fallback_prompt_path: The fallback prompt path for all other models that do not
+            have a mapping in the model_prompt_mapping.
+        log_source_component: The name of the component emitting the log, used to
+            identify the source in structured logging.
+        log_source_method: The name of the method or function emitting the log for
+            better traceability.
 
     Returns:
         The default prompt template.
     """
+    # Extract the provider and model name information from the configuration
     _llm_config = deepcopy(llm_config)
     if MODELS_CONFIG_KEY in _llm_config:
         _llm_config = _llm_config[MODELS_CONFIG_KEY][0]
     provider = _llm_config.get(PROVIDER_CONFIG_KEY)
     model = _llm_config.get(MODEL_CONFIG_KEY)
+
+    # If the model is not defined, we default to the default prompt template.
     if not model:
-        # If the model is not defined, we default to the default prompt template.
-        structlogger.info(
-            "utils.llm.get_default_prompt_template_based_on_model.using_default_prompt_template",
+        structlogger.debug(
+            "utils.llm.get_default_prompt_template_based_on_model"
+            ".using_default_prompt_template",
             event_info=(
                 f"Model not defined in the config. Default prompt template read from"
                 f" - `{default_prompt_path}`."
             ),
             default_prompt_path=default_prompt_path,
+            log_source_component=log_source_component,
+            log_source_method=log_source_method,
         )
         return importlib.resources.read_text(
             DEFAULT_PROMPT_PACKAGE_NAME, default_prompt_path
         )
 
-    model_name = model if provider and provider in model else f"{provider}/{model}"
-    if prompt_file_path := model_prompt_mapping.get(model_name):
-        # If the model is found in the mapping, we use the model-specific prompt
-        # template.
-        structlogger.info(
-            "utils.llm.get_default_prompt_template_based_on_model.using_model_specific_prompt_template",
+    full_model_name = model if provider and provider in model else f"{provider}/{model}"
+
+    # If the model is found in the mapping, we use the model-specific prompt
+    # template.
+    if prompt_file_path := model_prompt_mapping.get(full_model_name):
+        structlogger.debug(
+            "utils.llm.get_default_prompt_template_based_on_model"
+            ".using_model_specific_prompt_template",
             event_info=(
                 f"Using model-specific default prompt template. Default prompt "
                 f"template read from - `{prompt_file_path}`."
             ),
             default_prompt_path=prompt_file_path,
-            model_name=model_name,
+            model_name=full_model_name,
+            log_source_component=log_source_component,
+            log_source_method=log_source_method,
         )
         return importlib.resources.read_text(
             DEFAULT_PROMPT_PACKAGE_NAME, prompt_file_path
@@ -743,14 +786,17 @@ def get_default_prompt_template_based_on_model(
 
     # If the model is not found in the mapping, we default to the fallback prompt
     # template.
-    structlogger.info(
-        "utils.llm.get_default_prompt_template_based_on_model.using_fallback_prompt_template",
+    structlogger.debug(
+        "utils.llm.get_default_prompt_template_based_on_model"
+        ".using_fallback_prompt_template",
         event_info=(
             f"Model not found in the model prompt mapping. Fallback prompt template "
             f"read from - `{fallback_prompt_path}`."
         ),
         fallback_prompt_path=fallback_prompt_path,
-        model_name=model_name,
+        model_name=full_model_name,
+        log_source_component=log_source_component,
+        log_source_method=log_source_method,
     )
     return importlib.resources.read_text(
         DEFAULT_PROMPT_PACKAGE_NAME, fallback_prompt_path

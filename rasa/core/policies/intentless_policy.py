@@ -58,6 +58,7 @@ from rasa.shared.providers.embedding._langchain_embedding_client_adapter import 
     _LangchainEmbeddingClientAdapter,
 )
 from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.utils.constants import LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON
 from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
     EmbeddingsHealthCheckMixin,
 )
@@ -939,6 +940,8 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
         prompt_template = get_prompt_template(
             config.get(PROMPT_CONFIG_KEY),
             DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+            log_source_component=IntentlessPolicy.__name__,
+            log_source_method=LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
         )
 
         llm_config = resolve_model_client_config(
