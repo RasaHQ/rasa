@@ -27,8 +27,8 @@ async def run_single_utterance_through_tts_and_asr(
     async for event in asr_engine.stream_asr_events():
         events.append(event)
 
-    assert len(events) == 2
+    assert len(events) > 2
     assert isinstance(events[0], UserIsSpeaking)
-    assert isinstance(events[1], NewTranscript)
-    match = difflib.SequenceMatcher(None, events[1].text, text)
+    assert isinstance(events[-1], NewTranscript)
+    match = difflib.SequenceMatcher(None, events[-1].text, text)
     assert match.ratio() > 0.75

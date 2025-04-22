@@ -44,6 +44,15 @@ async def test_synthesis_error(bad_config):
             pass
 
 
+async def test_synthesis_bad_api_key(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv("AZURE_SPEECH_API_KEY", "bad key")
+    tts_engine = AzureTTS()
+    text = "Hello there!"
+    with pytest.raises(TTSError):
+        async for chunk in tts_engine.synthesize(text):
+            pass
+
+
 def test_azure_default_config():
     config = AzureTTS.get_default_config()
     assert config.language == "en-US"

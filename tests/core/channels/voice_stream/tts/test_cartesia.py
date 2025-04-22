@@ -6,7 +6,7 @@ import pytest
 from pytest import MonkeyPatch
 
 from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
-from rasa.core.channels.voice_stream.tts.cartesia import CartesiaTTS, CartesiaTTSConfig
+from rasa.core.channels.voice_stream.tts.cartesia import CartesiaTTS
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSError
 from rasa.shared.exceptions import ProviderClientValidationError
 from tests.core.channels.voice_stream.tts.test_tts import (
@@ -31,18 +31,28 @@ async def test_synthesis_with_asr():
     await run_single_utterance_through_tts_and_asr(text, asr_engine, tts_engine)
 
 
-@pytest.mark.parametrize(
-    "bad_config",
-    [
-        CartesiaTTSConfig.from_dict({"model_id": "nonexistent"}),
-        CartesiaTTSConfig.from_dict({"voice": "non_existent_voice"}),
-    ],
-)
-async def test_synthesis_error(bad_config):
+# TODO: Cartesia has stopped sending Status 400 for invalid requests
+# @pytest.mark.parametrize(
+#     "bad_config",
+#     [
+#         CartesiaTTSConfig.from_dict({"model_id": "nonexistent"}),
+#         CartesiaTTSConfig.from_dict({"voice": "non_existent_voice"}),
+#     ],
+# )
+# async def test_synthesis_error(bad_config):
+#     tts_engine = CartesiaTTS()
+#     text = "Hello there!"
+#     with pytest.raises(TTSError):
+#         async for chunk in tts_engine.synthesize(text, bad_config):
+#             pass
+
+
+async def test_synthesis_bad_api_key(monkeypatch: MonkeyPatch):
+    monkeypatch.setenv("CARTESIA_API_KEY", "bad_key")
     tts_engine = CartesiaTTS()
     text = "Hello there!"
     with pytest.raises(TTSError):
-        async for chunk in tts_engine.synthesize(text, bad_config):
+        async for chunk in tts_engine.synthesize(text):
             pass
 
 

@@ -54,13 +54,22 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
                     async for data in response.content.iter_chunked(1024):
                         yield self.engine_bytes_to_rasa_audio_bytes(data)
                     return
+                elif response.status == 401:
+                    structlogger.error(
+                        "azure.synthesize.rest.authentication_failed",
+                        status_code=response.status,
+                    )
+                    raise TTSError(
+                        f"Authentication failed. Please check your API key: {response.status}"  # noqa: E501
+                    )
                 else:
+                    response_text = await response.text()
                     structlogger.error(
                         "azure.synthesize.rest.failed",
                         status_code=response.status,
-                        msg=response.text(),
+                        msg=response_text,
                     )
-                    raise TTSError(f"TTS failed: {response.text()}")
+                    raise TTSError(f"TTS failed: {response_text}")
         except ClientConnectorError as e:
             raise TTSError(e)
         except TimeoutError as e:

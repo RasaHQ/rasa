@@ -1,5 +1,5 @@
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -10,38 +10,32 @@ from rasa.core.channels.voice_stream.audiocodes import AudiocodesVoiceInputChann
 @pytest.fixture
 def input_channel() -> AudiocodesVoiceInputChannel:
     """Returns a default initialized AudiocodesVoiceInputChannel."""
-    with patch(
-        "rasa.core.channels.voice_stream.voice_channel.validate_voice_license_scope"
-    ):
-        server_url = "https://example.com"
-        asr_config = {"name": "deepgram"}
-        tts_config = {"name": "azure"}
-        token = "test_token"
-        input_channel = AudiocodesVoiceInputChannel(
-            token=token,
-            server_url=server_url,
-            asr_config=asr_config,
-            tts_config=tts_config,
-        )
-        yield input_channel
+    server_url = "https://example.com"
+    asr_config = {"name": "deepgram"}
+    tts_config = {"name": "azure"}
+    token = "test_token"
+    input_channel = AudiocodesVoiceInputChannel(
+        token=token,
+        server_url=server_url,
+        asr_config=asr_config,
+        tts_config=tts_config,
+    )
+    return input_channel
 
 
 @pytest.fixture
 def input_channel_no_token() -> AudiocodesVoiceInputChannel:
     """Returns a default initialized AudiocodesVoiceInputChannel without a token."""
-    with patch(
-        "rasa.core.channels.voice_stream.voice_channel.validate_voice_license_scope"
-    ):
-        server_url = "https://example.com"
-        asr_config = {"name": "deepgram"}
-        tts_config = {"name": "azure"}
-        input_channel = AudiocodesVoiceInputChannel(
-            token=None,
-            server_url=server_url,
-            asr_config=asr_config,
-            tts_config=tts_config,
-        )
-        yield input_channel
+    server_url = "https://example.com"
+    asr_config = {"name": "deepgram"}
+    tts_config = {"name": "azure"}
+    input_channel = AudiocodesVoiceInputChannel(
+        token=None,
+        server_url=server_url,
+        asr_config=asr_config,
+        tts_config=tts_config,
+    )
+    return input_channel
 
 
 @pytest.fixture
@@ -56,34 +50,47 @@ def call_parameters() -> CallParameters:
 
 
 @pytest.fixture
-def valid_initiate_message():
+def start_activity_message():
     return {
-        "conversationId": "4a5b4b9d-dab7-42d0-a977-6740c9349588",
-        "type": "initiate",
-        "botName": "my_bot_name",
-        "caller": "+1234567890",
-        "expectAudioMessages": True,
-        "supportedMediaFormats": ["raw/lpcm16", "raw/mulaw"],
+        "conversation": "f010e998-4499-4ddb-80d4-fea137fd7b4d",
+        "type": "activities",
+        "activities": [
+            {
+                "id": "e54d4dfe-e1ff-4272-8c3d-4ec4f4294681",
+                "timestamp": "2024-12-04T15:07:55.145Z",
+                "language": "en-US",
+                "type": "event",
+                "name": "start",
+                "parameters": {
+                    "callee": "+493040739365",
+                    "calleeHost": "20.113.51.15",
+                    "caller": "+491604697810",
+                    "callerHost": "sip.telnyx.eu",
+                    "callerDisplayName": "+491604697810",
+                    "vaigConversationId": "f010e998-4499-4ddb-80d4-fea137fd7b4d",
+                },
+            }
+        ],
     }
 
 
 def test_channel_name(input_channel: AudiocodesVoiceInputChannel):
     """Tests that the channel name is properly set."""
-    assert input_channel.name() == "ac_voice"
+    assert input_channel.name() == "audiocodes_stream"
 
 
 async def test_collect_call_parameters(
-    input_channel: AudiocodesVoiceInputChannel, valid_initiate_message: dict
+    input_channel: AudiocodesVoiceInputChannel, start_activity_message: dict
 ):
     """Tests the collection of call parameters from the initiate message."""
     websocket = AsyncMock()
-    websocket.__aiter__.return_value = [json.dumps(valid_initiate_message)]
+    websocket.__aiter__.return_value = [json.dumps(start_activity_message)]
 
     call_parameters = await input_channel.collect_call_parameters(websocket)
-
+    activity_params = start_activity_message["activities"][0]["parameters"]
     assert call_parameters is not None
-    assert call_parameters.call_id == valid_initiate_message["conversationId"]
-    assert call_parameters.user_phone == valid_initiate_message["caller"]
+    assert call_parameters.call_id == activity_params["vaigConversationId"]
+    assert call_parameters.user_phone == activity_params["caller"]
 
 
 def test_is_token_valid(

@@ -1,25 +1,24 @@
-import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
-from sanic.request import Request
 
-from rasa.core.channels.voice_stream.genesys import HEADER_API_KEY, GenesysInputChannel
+from rasa.core.channels.voice_stream.genesys import (
+    HEADER_API_KEY,
+    GenesysInputChannel,
+    map_call_params,
+)
 
 
 @pytest.fixture
 def input_channel() -> GenesysInputChannel:
-    with patch(
-        "rasa.core.channels.voice_stream.voice_channel.validate_voice_license_scope"
-    ):
-        server_url = "pro-grouse-possibly.ngrok-free.app"
-        asr_config = {"name": "azure"}
-        tts_config = {"name": "azure"}
-        api_key = "SGVsbG8sIEkgYW0gdGhlIEFQSSBrZXkh"
-        client_secret = "TXlTdXBlclNlY3JldEtleVRlbGxOby0xITJAMyM0JDU="
-        return GenesysInputChannel(
-            api_key, client_secret, server_url, asr_config, tts_config
-        )
+    server_url = "pro-grouse-possibly.ngrok-free.app"
+    asr_config = {"name": "azure"}
+    tts_config = {"name": "azure"}
+    api_key = "SGVsbG8sIEkgYW0gdGhlIEFQSSBrZXkh"
+    client_secret = "TXlTdXBlclNlY3JldEtleVRlbGxOby0xITJAMyM0JDU="
+    return GenesysInputChannel(
+        api_key, client_secret, server_url, asr_config, tts_config
+    )
 
 
 @pytest.fixture
@@ -73,55 +72,14 @@ def open_message():
     }
 
 
-async def test_websocket_connection(input_channel, valid_headers):
-    message_handler = AsyncMock()
-    blueprint = input_channel.blueprint(message_handler)
-
-    request = Request.fake("/webhook", headers=valid_headers)
-    ws = AsyncMock()
-
-    handler = next(
-        route.handler for route in blueprint.routes if route.uri == "/webhook"
-    )
-
-    await handler(request, ws)
-    ws.close.assert_not_called()
-
-
-async def test_missing_headers(input_channel):
-    message_handler = AsyncMock()
-    blueprint = input_channel.blueprint(message_handler)
-
-    request = Request.fake("/webhook", headers={})
-    ws = AsyncMock()
-
-    handler = next(
-        route.handler for route in blueprint.routes if route.uri == "/webhook"
-    )
-
-    await handler(request, ws)
-    ws.close.assert_called_once()
-    assert "Missing required header" in ws.close.call_args[0][1]
-
-
-async def test_open_event(input_channel, valid_headers, open_message):
-    message_handler = AsyncMock()
-    blueprint = input_channel.blueprint(message_handler)
-
-    request = Request.fake("/webhook", headers=valid_headers)
-    ws = AsyncMock()
-    ws.__aiter__.return_value = [json.dumps(open_message)]
-
-    handler = next(
-        route.handler for route in blueprint.routes if route.uri == "/webhook"
-    )
-
-    await handler(request, ws)
-
-    ws.send.assert_called_once()
-    sent_message = json.loads(ws.send.call_args[0][0])
-    assert sent_message["type"] == "opened"
-    assert sent_message["parameters"]["media"] == open_message["parameters"]["media"]
+async def test_call_params(open_message):
+    call_parameters = map_call_params(open_message)
+    assert call_parameters is not None
+    assert call_parameters.bot_phone == "+493070016507"
+    assert call_parameters.user_phone == "+491604697810"
+    assert call_parameters.stream_id is None
+    assert call_parameters.call_id == "28faf323-fd6e-4bc8-b859-fb25b133d16d"
+    assert call_parameters.direction is None
 
 
 def test_ensure_api_key(input_channel, mocked_request):

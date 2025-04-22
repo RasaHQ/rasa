@@ -185,10 +185,11 @@ async def test_collect_call_parameters(input_channel: TwilioMediaStreamsInputCha
 async def test_map_media_input_message(
     input_channel: TwilioMediaStreamsInputChannel, audio_data_path: str
 ):
+    websocket = AsyncMock()
     media_messages = create_twilio_media_streams_media_messages(
         audio_data_path + "/01.wav", "test_id"
     )
-    action = input_channel.map_input_message(media_messages[0])
+    action = input_channel.map_input_message(media_messages[0], websocket)
     assert isinstance(action, NewAudioAction)
 
 
