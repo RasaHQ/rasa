@@ -40,7 +40,7 @@ export const Chat = ({ sx, events, ...props }: Props) => {
 
   // collect user and bot messages
   const messages: MessageContent[] = events
-    .filter((event: Event) => event.event === "user" || event.event === "bot")
+    .filter((event: Event) => event.event === "user" || event.event === "bot" || event.event === "session_ended")
     // @ts-expect-error 
     .flatMap((event: Event) => {
       if (event.event === "user") {
@@ -58,7 +58,28 @@ export const Chat = ({ sx, events, ...props }: Props) => {
             html: `<div>${commands.join("")}</div>`,
           },
         ];
-      } else {
+      } else if (event.event === "session_ended") {
+        return [
+          {
+            role: "system",
+            html: `<div>
+              session ended
+              <div style="margin-top: 8px;">
+                <button 
+                  onclick="(() => {
+                     window.restartConversation();
+                     return false;
+                   })()"
+                  style="background-color: transparent; border: 1px solid #ccc; border-radius: 4px; padding: 4px 12px; cursor: pointer; font-size: 14px;"
+                >
+                  Start a new conversation
+                </button>
+              </div>
+            </div>`,
+          }
+        ]
+      }
+       else {
         return [
           {
             role: event.event,

@@ -5,7 +5,7 @@ export interface Slot {
 }
 
 export interface Event {
-  event: "user" | "bot" | "flow_completed" | "flow_started" | "stack" | "restart";
+  event: "user" | "bot" | "flow_completed" | "flow_started" | "stack" | "restart" | "session_ended";
   text?: string;
   timestamp: string;
   update?: string;

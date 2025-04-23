@@ -2,6 +2,7 @@ import { Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
 import mermaid from "mermaid";
 import { useOurTheme } from "../theme";
 import { formatFlow } from "../helpers/formatters";
+import { restartConversation } from "../helpers/conversation";
 import { useEffect, useRef, useState } from "react";
 import { Flow, Slot, Stack } from "../types";
 import { NoActiveFlow } from "./NoActiveFlow";
@@ -51,11 +52,7 @@ export const DiagramFlow = ({ stackFrame, stepTrail, flows, slots }: Props) => {
   }, [text, flow, slots, stackFrame]);
 
   const handleRestartConversation = () => {
-    // unset the sender id from the query parameters
-    const url = new URL(window.location.href);
-    url.searchParams.delete("sender");
-    window.history.pushState(null, "", url.toString());
-    location.reload();
+    restartConversation();
   };
 
   const scrollSx = {
