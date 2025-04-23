@@ -67,6 +67,9 @@ This workflow runs on release branches, to verify compatibility between patch ve
 training model on an earlier `rasa-pro` patch version, and running inference with a newer `rasa-pro` 
 patch version using that same model, without having to re-train the model using newer patch version.
 
+### Rasa versions performance testing
+Automated performance evaluation of new Rasa-Pro versions' command generation against baseline of previous versions, for release testing and on changes to prompt templates, to check against performance degradations.
+
 ### Release Artifacts Workflow
 Workflow runs on a tag push to the `main` branch and `release branches`. 
 This workflow does the following:

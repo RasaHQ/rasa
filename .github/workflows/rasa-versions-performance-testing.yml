@@ -1,0 +1,88 @@
+name: Rasa versions performance testing
+
+on:
+    pull_request:
+        paths: ["rasa/dialogue_understanding/generator/prompt_templates/*.jinja2"]
+    push:
+        tags:
+            - '[0-9]+.[0-9]+.[0-9]*'
+    workflow_dispatch:
+        inputs:
+            calm-benchmarking-bot-branch-tag-or-commit:
+                description: "calm-benchmarking-bot's branch, tag or commit SHA to run DUT tests against"
+                type: string
+                default: main
+                required: true
+            calm-experiment-tracking-branch-tag-or-commit:
+                description: "calm-experiment-tracking repo's branch tag or commit SHA, which contains rasa config and endpoint files to use"
+                type: string
+                default: main
+                required: true
+            config_file:
+                description: "Config file on calm-experiment-tracking repo, to use for rasa model training"
+                type: string
+                required: true
+            endpoints_file:
+                description: "Endpoints file on calm-experiment-tracking repo, to use for rasa model training and running DUT tests"
+                type: string
+                required: true
+            tests_directory:
+                description: "Tests directory on calm-benchmarking-bot, containing the DUT tests to run"
+                type: string
+                default: main
+                required: true
+
+concurrency:
+    group: ${{ github.ref }}
+    cancel-in-progress: true
+
+env:
+  DEFAULT_PYTHON_VERSION: "3.11"
+  RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+  CALM_BENCHMARKING_BOT_READ_TOKEN: ${{ secrets.CALM_BENCH_CLONE }}
+  CALM_EXPERIMENT_TRACKING_READ_TOKEN: ${{ secrets.CALM_EXPERIMENT_TRACKING_READ_TOKEN }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST: true
+  RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS: true
+  LLM_API_HEALTH_CHECK: True
+  AWS_REGION_NAME: us-east-1
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: read
+
+jobs:
+    performance-test-gpt-4o:
+        name: Performance test on GPT-4o
+        runs-on: ubuntu-24.04
+        steps:
+            - name: Checkout `rasa-private` git repository 🕝
+              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+            - name: Setup and run DUT test
+              uses: ./.github/actions/rasa-versions-performance-testing
+              env:
+                LLM_MODEL_NAME: gpt-4o-2024-11-20
+              with:
+                calm-benchmarking-bot-branch-tag-or-commit: ${{ inputs.calm-benchmarking-bot-branch-tag-or-commit || 'ad8860e1df2b89658a324dd327950b26a09a9d8f' }}
+                calm-experiment-tracking-branch-tag-or-commit: ${{ inputs.calm-experiment-tracking-branch-tag-or-commit || 'main' }}
+                config_file: ${{ inputs.config_file || 'experiments/enterprise-search-discovery-project/baselines/calm-benchmarking-bot/gpt-4o/config.yml' }}
+                endpoints_file: ${{ inputs.endpoints_file || 'experiments/prompt-tuning-project/set_slot_experiments/gpt-4o/13_updated_slot_context_md_2_minified_json_4_reordered_prompt/endpoints.yml' }} # Use endpoints file without Qdrant vector store
+                tests_directory: ${{ inputs.tests_directory || 'dut/plain/v2' }}
+
+    performance-claude-sonnet-3-5:
+        name: Performance test on Claude Sonnet 3.5
+        runs-on: ubuntu-24.04
+        steps:
+            - name: Checkout `rasa-private` git repository 🕝
+              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+            - name: Setup and run DUT test
+              uses: ./.github/actions/rasa-versions-performance-testing
+              env:
+                LLM_MODEL_NAME: anthropic.claude-3-5-sonnet-20240620-v1
+              with:
+                calm-benchmarking-bot-branch-tag-or-commit: ${{ inputs.calm-benchmarking-bot-branch-tag-or-commit || '9551b9fe59b1396742e38badb09cb505fa2607c6' }}
+                calm-experiment-tracking-branch-tag-or-commit: ${{ inputs.calm-experiment-tracking-branch-tag-or-commit || 'main' }}
+                config_file: ${{ inputs.config_file || 'experiments/prompt-tuning-project/rc1_claude/8_updated_slot_context_md_2_minified_json_provide_general_info_reordered_prompt/config.yml' }}
+                endpoints_file: ${{ inputs.endpoints_file || 'experiments/prompt-tuning-project/rc1_claude/8_updated_slot_context_md_2_minified_json_provide_general_info_reordered_prompt/endpoints.yml' }}
+                tests_directory: ${{ inputs.tests_directory || 'dut/v2/test' }}
