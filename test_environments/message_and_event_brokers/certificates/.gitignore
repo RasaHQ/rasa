@@ -1,0 +1,6 @@
+./ca-cert.srl
+./ca-cert
+./ca-key
+./cert-request
+./signed-server-cert
+./server.keystore.jks

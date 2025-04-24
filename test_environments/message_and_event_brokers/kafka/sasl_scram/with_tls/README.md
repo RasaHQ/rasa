@@ -13,7 +13,7 @@ Test environments are location in directories:
 
 All certificates required for TLS are already generated. **They are not intended to be used in production.**
 <br>Certificates in this environment, are used to verify the identity of the Kafka broker to the clients.
-Pre-generated certificates are valid through `30/3/2024`. 
+Pre-generated certificates are valid through `16/4/2026`. 
 If you need to generate new certificates checkout the 
 [How to generate certificates for TLS bound to DNS localhost](#how-to-generate-certificates-for-tls-bound-to-dns-localhost) 
 section.

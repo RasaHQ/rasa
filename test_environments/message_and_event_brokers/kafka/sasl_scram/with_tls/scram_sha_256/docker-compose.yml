@@ -26,6 +26,13 @@ services:
       - ./zookeeper_server_jaas.conf:/etc/kafka/secrets/zookeeper_server_jaas.conf
       - ./zookeeper_client_jaas.conf:/etc/kafka/secrets/zookeeper_client_jaas.conf
 
+    healthcheck:
+      test: nc -z localhost 2181 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+
   kafka-broker:
     image: confluentinc/cp-kafka:7.3.2
     container_name: kafka-broker-sasl-scram-sha-256-tls
@@ -33,7 +40,8 @@ services:
       - "9098:9098"
       - "29098:29098"
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2188

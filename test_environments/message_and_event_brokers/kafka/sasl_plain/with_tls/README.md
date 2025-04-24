@@ -17,17 +17,10 @@ of the Kafka broker to which we are connecting is `rasa.com`.
 <br>If TLS certificate has SAN set to 0.0.0.0  then clients will accept the certificate 
 from any hostname or IP address. This is useful for testing purposes. DO NOT USE THIS IN PRODUCTION!!!
 
-### Supported Test Environments
-Test environments are located in directories:
-* `ssl_all_connections` - Broker certificate has SAN set to `0.0.0.0`
-* `ssl_localhost` - Broker certificate has SAN set to `localhost`
-
-All certificates required for TLS are already generated. **They are not intended to be used in production.**
-<br>Certificates in this environment are used to verify the identity of the Kafka broker to the clients.
-Pre-generated certificates are valid through `30/3/2024`. 
-If you need to generate new certificates checkout the README 
-files in directories `./ssl_all_connections` and `./ssl_localhost`.
-
+### Certificate
+Certificate required for TLS is already generated. **It should not be used in production.**
+<br>Certificate in this environment is used to verify the identity of the Kafka broker to the clients.
+Pre-generated certificates are valid through `16/4/2026 `.
 
 ## How to connect to Kafka broker
 To connect to the broker from the client use:
@@ -80,29 +73,3 @@ If the certificate is valid, the client can connect to the broker.
 
 More about TLS can be read here: https://www.cloudflare.com/learning/ssl/transport-layer-security-tls/
 
-## Troubleshooting
-
-To inspect content of the keystore, you can use the following command:
-```shell
-keytool -list -v -keystore server.keystore.jks -storepass 123456 -keypass 123456
-```
-
-To check if private key is password protected
-```shell
-openssl rsa -check -in ca-key -passin pass:123456
-```
-
-To check if CA certificate can unlock signed certificate
-```shell
-openssl verify -CAfile ca-cert signed-server-cert
-```
-
-To check if TLS connection is working
-```shell
-# for TLS 1.0
-openssl s_client -debug -connect localhost:29092 -tls1
-# for TLS 1.1
-openssl s_client -debug -connect localhost:29092 -tls1_1
-# for TLS 1.2
-openssl s_client -debug -connect localhost:29092 -tls1_2
-```
