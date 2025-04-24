@@ -211,7 +211,7 @@ jobs:
           RASA_IMAGE_TAGS="-t ${{ env.GCP_IMAGE_TAG }} -t ${{ env.GCP_LATEST_IMAGE_TAG }} -t ${{ env.DOCKER_HUB_IMAGE_TAG }}" \
           RASA_BASE_REPOSITORY=${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa \
           RASA_BASE_IMAGE_TAG=${{ env.TAG_VERSION }} \
-          make build-multi-platform-docker
+          make build-multi-platform-rasa-docker
         env:
           DOCKER_HUB_IMAGE_TAG: ${{ env.DOCKER_HUB_RASA_IMAGE_REPOSITORY }}:${{ env.TAG_VERSION }}
           GCP_LATEST_IMAGE_TAG: ${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa-pro:${{ env.TAG_VERSION }}-latest

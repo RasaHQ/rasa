@@ -3,13 +3,21 @@
 ## It is intended to be used by developers working on Rasa and Rasa CI.
 ## When adding a new command, please make sure to add a description for it.
 ## You can run `make help` to see all available commands.
-
 .PHONY: clean test lint init docs format formatter build-docker
+
+# If makefile_vars is not included, include it.
+# It is a good practice to check if common variables are included across all makefiles.
+ifndef MAKEFILE_VAR
+include ./makefile_vars
+endif
+
+ifndef DOCKER_BUILD_COMMAND
+include ./Makefile.docker
+endif
 
 JOBS ?= 1
 INTEGRATION_TEST_FOLDER = tests/integration_tests
 INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or broker or concurrent_lock_store or ((not sequential) and (not broker) and (not concurrent_lock_store))"
-PLATFORM ?= "linux/arm64"
 TRACING_INTEGRATION_TEST_FOLDER = $(INTEGRATION_TEST_FOLDER)/tracing
 METRICS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/tracing/test_metrics.py
 CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/actions/custom_actions
@@ -20,23 +28,21 @@ CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/channe
 TRACKER_STORE_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/tracker_stores
 CUSTOM_COMPONENT_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/custom_components
 INTEGRATION_TEST_DEPLOYMENT_PATH = $(PWD)/tests_deployment
-BASE_IMAGE_HASH ?= localdev
-BASE_BUILDER_IMAGE_HASH ?= localdev
-RASA_DEPS_IMAGE_HASH ?= localdev
-POETRY_VERSION ?= 2.1.2
+
 BOT_PATH ?=
 MODEL_NAME ?= model
-RASA_BASE_REPOSITORY ?= rasa-pro
-RASA_REPOSITORY ?= rasa-pro
-RASA_IMAGE_TAG ?= latest
-RASA_BASE_IMAGE_TAG ?= latest
 
 # find user's id
 USER_ID := $(shell id -u)
 
 
 help:  ## show help message
-	@grep -E '^[a-z.A-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@sed \
+		-e '/^[a-zA-Z0-9_\-]*:.*##/!d' \
+		-e 's/:.*##\s*/:/' \
+		-e 's/^\(.\+\):\(.*\)/$(shell tput setaf 6)\1$(shell tput sgr0):\2/' \
+		$(MAKEFILE_LIST) | column -c2 -t -s :
+#	@grep -E '^[a-z.A-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 clean:  ## Remove Python/build artifacts.
 	find . -name '*.pyc' -exec rm -f {} +
@@ -250,67 +256,6 @@ test-marker: clean ## Run marker tests
 
 release:  ## Prepare a release.
 	poetry run python scripts/release.py prepare --interactive
-
-DOCKER_BUILD_COMMAND = build
-
-
-BASE_DOCKER_IMAGE_TAG =base-$(RASA_BASE_IMAGE_TAG)
-BASE_BUILDER_DOCKER_IMAGE_TAG =base-builder-$(RASA_BASE_IMAGE_TAG)
-BASE_RASA_DEPS_DOCKER_IMAGE_TAG =rasa-deps-$(RASA_BASE_IMAGE_TAG)
-
-build-docker-base: ## Build base Docker image which contains dependencies necessary to create builder and Rasa images.
-	docker $(DOCKER_BUILD_COMMAND) . \
-		-t $(RASA_BASE_REPOSITORY)\:$(BASE_DOCKER_IMAGE_TAG) \
-		-f docker/Dockerfile.base \
-		--progress=plain \
-		--platform=$(PLATFORM)
-
-build-docker-builder:  ## Build Docker image which contains dependencies necessary to install Rasa's dependencies. Make sure to run build-docker-base before running this target.
-	docker $(DOCKER_BUILD_COMMAND) . \
-		-t $(RASA_BASE_REPOSITORY)\:$(BASE_BUILDER_DOCKER_IMAGE_TAG) \
-		-f docker/Dockerfile.base-builder \
-		--build-arg IMAGE_BASE_NAME=$(RASA_BASE_REPOSITORY) \
-		--build-arg BASE_IMAGE_HASH=$(BASE_DOCKER_IMAGE_TAG) \
-		--progress=plain \
-		--platform=$(PLATFORM)
-
-build-docker-rasa-deps:  ## Build Docker image which contains Rasa dependencies. Make sure to run build-docker-builder before running this target.
-	docker $(DOCKER_BUILD_COMMAND) . \
-		-t $(RASA_BASE_REPOSITORY)\:$(BASE_RASA_DEPS_DOCKER_IMAGE_TAG) \
-		-f docker/Dockerfile.rasa-deps \
-		--build-arg IMAGE_BASE_NAME=$(RASA_BASE_REPOSITORY) \
-		--build-arg BASE_BUILDER_IMAGE_HASH=$(BASE_BUILDER_DOCKER_IMAGE_TAG) \
-		--build-arg POETRY_VERSION=$(POETRY_VERSION) \
-		--progress=plain \
-		--platform=$(PLATFORM)
-
-## RASA_IMAGE_TAGS is a list of tags that will be applied to the Rasa Pro Docker image.
-## It enables us to tag the image with multiple tags without having to rebuild the image.
-## This is mainly used in release pipelines to tag the image for different registries.
-RASA_IMAGE_TAGS ?= -t $(RASA_REPOSITORY)\:$(RASA_IMAGE_TAG)
-
-build-docker-rasa-image:  ## Build Rasa Pro Docker image. Make sure to run build-docker-base, build-docker-builder and build-docker-rasa-deps before running this target.
-	docker $(DOCKER_BUILD_COMMAND) . \
-		$(RASA_IMAGE_TAGS) \
-		-f Dockerfile \
-		--build-arg IMAGE_BASE_NAME=$(RASA_BASE_REPOSITORY) \
-		--build-arg BASE_IMAGE_HASH=$(BASE_DOCKER_IMAGE_TAG) \
-		--build-arg RASA_DEPS_IMAGE_HASH=$(BASE_RASA_DEPS_DOCKER_IMAGE_TAG) \
-		--progress=plain \
-		--platform=$(PLATFORM)
-
-build-docker: build-docker-base build-docker-builder build-docker-rasa-deps build-docker-rasa-image## Build Rasa Pro Docker image.
-build-full-multi-platform-rasa-docker: PLATFORM = "linux/amd64,linux/arm64"
-build-full-multi-platform-rasa-docker: DOCKER_BUILD_COMMAND = buildx build --push
-build-full-multi-platform-rasa-docker: build-docker-base build-docker-builder build-docker-rasa-deps build-docker-rasa-image  ## Build Rasa Pro Docker image for multiple platforms.
-
-build-multi-platform-base-docker: PLATFORM = "linux/amd64,linux/arm64"
-build-multi-platform-base-docker: DOCKER_BUILD_COMMAND = buildx build --push
-build-multi-platform-base-docker: build-docker-base build-docker-builder build-docker-rasa-deps # Build base Docker image for multiple platforms.
-
-build-multi-platform-docker: PLATFORM = "linux/amd64,linux/arm64"
-build-multi-platform-docker: DOCKER_BUILD_COMMAND = buildx build --push
-build-multi-platform-docker: build-docker-rasa-image  ## Build Rasa Pro Docker image for multiple platforms.
 
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
 	cd $(INTEGRATION_TEST_DEPLOYMENT_PATH) && \

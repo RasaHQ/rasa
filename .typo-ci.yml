@@ -82,6 +82,7 @@ excluded_words:
   - backends
   - bot
   - bot's
+  - buildx
   - cdd
   - cmdline
   - conftest
@@ -117,6 +118,7 @@ excluded_words:
   - hallo
   - hftransformersnlp
   - hookimpl
+  - ifndef
   - initializer
   - instaclient
   - ish
@@ -131,6 +133,7 @@ excluded_words:
   - knowledgebasebot
   - linenos
   - llm
+  - localdev
   - luis
   - matmul
   - matplotlib

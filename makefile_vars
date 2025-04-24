@@ -1,0 +1,7 @@
+# This file contains common variables that are used in all makefiles
+
+# This variable is used to control inclusion of this file in makefile
+MAKEFILE_VAR = "makefile_vars included"
+
+RASA_REPOSITORY ?= rasa-pro
+RASA_IMAGE_TAG ?= latest
