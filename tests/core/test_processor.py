@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import freezegun
 import pytest
+import structlog
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
@@ -135,6 +136,7 @@ from tests.conftest import (
     with_model_id,
     with_model_ids,
 )
+from tests.utilities import filter_logs
 
 logger = logging.getLogger(__name__)
 
@@ -306,10 +308,8 @@ async def test_reminder_scheduled(
 async def test_reminder_lock(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
-    caplog: LogCaptureFixture,
 ):
-    caplog.clear()
-    with caplog.at_level(logging.DEBUG):
+    with structlog.testing.capture_logs() as caplog:
         sender_id = uuid.uuid4().hex
 
         reminder = ReminderScheduled("remind", datetime.datetime.now())
@@ -323,7 +323,12 @@ async def test_reminder_lock(
 
         await default_processor.handle_reminder(reminder, sender_id, default_channel)
 
-        assert f"Deleted lock for conversation '{sender_id}'." in caplog.text
+        logs = filter_logs(
+            caplog,
+            "lock_store._deleted_lock_for_conversation",
+            "debug",
+        )
+        assert len(logs) == 1
 
 
 async def test_trigger_external_latest_input_channel(

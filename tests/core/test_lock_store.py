@@ -1,31 +1,34 @@
 import asyncio
-import logging
+import datetime
 import sys
 import time
+from collections import deque
 from pathlib import Path
-from typing import Text
-from unittest.mock import Mock, patch
+from typing import Any, Dict, List, Text
+from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import pytest
-from _pytest.logging import LogCaptureFixture
+import structlog.testing
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.core.lock_store
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
-from rasa.core.lock import TicketLock
+from rasa.core.lock import Ticket, TicketLock
 from rasa.core.lock_store import (
     DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
     InMemoryLockStore,
     LockError,
     LockStore,
     RedisLockStore,
+    RedisLockStoreConfig,
 )
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
-from rasa.shared.exceptions import ConnectionException
+from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
+from tests.utilities import filter_logs
 
 
 class FakeRedisLockStore(RedisLockStore):
@@ -296,39 +299,182 @@ async def test_lock_lifetime_environment_variable(monkeypatch: MonkeyPatch):
     assert rasa.core.lock_store._get_lock_lifetime() == new_lock_lifetime
 
 
-@pytest.mark.parametrize("lock_store", [InMemoryLockStore(), FakeRedisLockStore()])
-async def test_acquire_lock_debug_message(
-    lock_store: LockStore, caplog: LogCaptureFixture
+@pytest.fixture
+def mock_strict_redis(
+    monkeypatch: MonkeyPatch,
+) -> MagicMock:
+    import redis
+
+    _redis_mock = MagicMock(spec=redis.StrictRedis)
+    _strict_redis_constructor = MagicMock(return_value=_redis_mock)
+    monkeypatch.setattr("redis.StrictRedis", _strict_redis_constructor)
+    return _redis_mock
+
+
+def create_ticket(number: int) -> Ticket:
+    """Creates a ticket for testing."""
+    return Ticket(
+        number=number,
+        expires=(
+            datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
+        ).timestamp(),
+    )
+
+
+def create_ticket_lock(conversation_id: str, tickets: List[Ticket]) -> TicketLock:
+    """Creates a TicketLock for testing."""
+    return TicketLock(
+        conversation_id=conversation_id,
+        tickets=deque(tickets),
+    )
+
+
+def create_serialized_lock(tickets: List[Ticket]) -> str:
+    """Serialized lock for testing."""
+
+    ticket_lock = create_ticket_lock(
+        conversation_id="test_acquire_lock_debug_message",
+        tickets=tickets,
+    )
+
+    return ticket_lock.dumps()
+
+
+async def test_redis_lock_store_waiting_lock(
+    mock_strict_redis: MagicMock,
 ):
+    """Tests Redis lock store that third lock acquisition will wait for the first two to finish."""  # noqa: E501
+    first_ticket = create_ticket(1)
+    second_ticket = create_ticket(2)
+
+    already_present_locks = create_serialized_lock([first_ticket, second_ticket])
+    lock_with_second_ticket = create_serialized_lock([second_ticket])
+    unlock_ticket = create_ticket(3)
+    serialized_unlocked_lock = create_serialized_lock([unlock_ticket])
+
+    mock_strict_redis.get.side_effect = [
+        # returned on get lock in issue_ticket
+        # when lock() receives information that there are already two locks
+        # for the same conversation ID, it will issue a ticket for lock with number
+        # which is latest_ticket.number + 1
+        already_present_locks,
+        # returned on first get lock in _acquire_lock,
+        # we simulate that first two locks are still being processed
+        already_present_locks,
+        already_present_locks,  # returned when updating lock
+        # we simulate that first lock was processed
+        lock_with_second_ticket,  # returned on second get lock _acquire_lock
+        lock_with_second_ticket,  # returned when updating lock
+        # we simulate that second lock was processed and that there is no one waiting
+        serialized_unlocked_lock,  # returned on third get lock in _acquire_lock
+        serialized_unlocked_lock,  # returned on finish_serving
+        serialized_unlocked_lock,  # returned on delete_lock
+    ]
+    redis_lock = RedisLockStore(RedisLockStoreConfig())
     conversation_id = "test_acquire_lock_debug_message"
     wait_time_in_seconds = 0.01
-
-    async def locking_task() -> None:
-        async with lock_store.lock(
+    with structlog.testing.capture_logs() as caplog:
+        async with redis_lock.lock(
             conversation_id, wait_time_in_seconds=wait_time_in_seconds
         ):
-            # Do a very short sleep so that the other tasks can try to acquire the lock
-            # in the meantime
-            await asyncio.sleep(0.0)
+            logs = filter_logs(
+                caplog,
+                "lock_store._retrying_lock_acquisition",
+                "debug",
+                [
+                    f"because 1 other item(s) for this "
+                    f"conversation ID have to be finished "
+                    f"processing first. Retrying in "
+                    f"{wait_time_in_seconds} seconds ..."
+                ],
+                log_contains_all_message_parts=True,
+            )
+            assert len(logs) == 1
 
-    with caplog.at_level(logging.DEBUG):
-        await asyncio.gather(
-            locking_task(),  # Gets served immediately
-            locking_task(),  # Gets served second
-            locking_task(),  # Gets served last
-        )
+            logs = filter_logs(
+                caplog,
+                "lock_store._retrying_lock_acquisition",
+                "debug",
+                [
+                    f"because 2 other item(s) for this "
+                    f"conversation ID have to be finished "
+                    f"processing first. Retrying in "
+                    f"{wait_time_in_seconds} seconds ..."
+                ],
+                log_contains_all_message_parts=True,
+            )
+            assert len(logs) == 1
 
-    assert any(
-        f"because 1 other item(s) for this conversation ID have to be finished "
-        f"processing first. Retrying in {wait_time_in_seconds} seconds ..." in message
-        for message in caplog.messages
+
+async def test_in_memory_lock_store_waiting_lock():
+    """Tests in-memory lock store that third lock acquisition will wait for the first two to finish."""  # noqa: E501
+    first_ticket = create_ticket(1)
+    second_ticket = create_ticket(2)
+
+    conversation_id = "test_acquire_lock_debug_message"
+    already_present_locks = create_ticket_lock(
+        conversation_id, [first_ticket, second_ticket]
     )
+    lock_with_second_ticket = create_ticket_lock(conversation_id, [second_ticket])
+    unlock_ticket = create_ticket(3)
+    serialized_unlocked_lock = create_ticket_lock(conversation_id, [unlock_ticket])
 
-    assert any(
-        f"because 2 other item(s) for this conversation ID have to be finished "
-        f"processing first. Retrying in {wait_time_in_seconds} seconds ..." in message
-        for message in caplog.messages
+    in_memory_lock_store = InMemoryLockStore()
+    in_memory_lock_store.get_lock = MagicMock(
+        side_effect=[
+            # returned on get lock in issue_ticket
+            # when lock() receives information
+            # that there are already two locks
+            # for the same conversation ID,
+            # it will issue a ticket for lock with number
+            # which is latest_ticket.number + 1
+            already_present_locks,
+            # returned on first get lock in _acquire_lock,
+            # we simulate that first two locks are still being processed
+            already_present_locks,
+            already_present_locks,  # returned when updating lock
+            # we simulate that first lock was processed
+            lock_with_second_ticket,  # returned on second get lock _acquire_lock
+            lock_with_second_ticket,  # returned when updating lock
+            # we simulate that second lock was processed
+            # and that there is no one waiting
+            serialized_unlocked_lock,  # returned on third get lock in _acquire_lock
+            serialized_unlocked_lock,  # returned on finish_serving
+            serialized_unlocked_lock,  # returned on delete_lock
+        ]
     )
+    wait_time_in_seconds = 0.01
+    with structlog.testing.capture_logs() as caplog:
+        async with in_memory_lock_store.lock(
+            conversation_id, wait_time_in_seconds=wait_time_in_seconds
+        ):
+            logs = filter_logs(
+                caplog,
+                "lock_store._retrying_lock_acquisition",
+                "debug",
+                [
+                    f"because 1 other item(s) for "
+                    f"this conversation ID have to be finished "
+                    f"processing first. Retrying "
+                    f"in {wait_time_in_seconds} seconds ..."
+                ],
+                log_contains_all_message_parts=True,
+            )
+            assert len(logs) == 1
+
+            logs = filter_logs(
+                caplog,
+                "lock_store._retrying_lock_acquisition",
+                "debug",
+                [
+                    f"because 2 other item(s) for this "
+                    f"conversation ID have to be finished "
+                    f"processing first. Retrying in "
+                    f"{wait_time_in_seconds} seconds ..."
+                ],
+                log_contains_all_message_parts=True,
+            )
+            assert len(logs) == 1
 
 
 async def test_redis_lock_store_timeout(monkeypatch: MonkeyPatch):
@@ -388,17 +534,170 @@ async def test_redis_lock_store_with_valid_prefix(monkeypatch: MonkeyPatch):
 
 def test_create_lock_store_from_endpoint_config(endpoints_path: Text):
     store = read_endpoint_config(endpoints_path, endpoint_type="lock_store")
-    tracker_store = RedisLockStore(
-        host="localhost",
-        port=6379,
-        db=0,
-        username="username",
-        password="password",
-        use_ssl=True,
-        ssl_keyfile="keyfile.key",
-        ssl_certfile="certfile.crt",
-        ssl_ca_certs="my-bundle.ca-bundle",
-        key_prefix="lock",
+    lock_store = RedisLockStore(
+        config=RedisLockStoreConfig(
+            host="localhost",
+            port=6379,
+            db=0,
+            username="username",
+            password="password",
+            use_ssl=True,
+            ssl_keyfile="keyfile.key",
+            ssl_certfile="certfile.crt",
+            ssl_ca_certs="my-bundle.ca-bundle",
+            key_prefix="lock",
+        ),
     )
 
-    assert isinstance(tracker_store, type(LockStore.create(store)))
+    assert isinstance(lock_store, type(LockStore.create(store)))
+
+
+@pytest.fixture
+def partial_redis_lock_store_config() -> Dict[str, Any]:
+    return {
+        "type": "redis",
+        "port": 6379,
+        "db": 0,
+        "username": "username",
+        "password": "password",
+        "use_ssl": True,
+        "ssl_keyfile": "keyfile.key",
+        "ssl_certfile": "certfile.crt",
+        "ssl_ca_certs": "my-bundle.ca-bundle",
+        "key_prefix": DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
+    }
+
+
+@pytest.fixture
+def mock_redis_lock_store(
+    monkeypatch: MonkeyPatch,
+) -> MagicMock:
+    """Mock RedisLockStore to avoid actual Redis connection."""
+    mock_store_instance = MagicMock(spec=RedisLockStore)
+    mock_constructor = MagicMock(return_value=mock_store_instance)
+    monkeypatch.setattr("rasa.core.lock_store.RedisLockStore", mock_constructor)
+    return mock_constructor
+
+
+def test_create_from_endpoint_config_with_host(
+    partial_redis_lock_store_config: Dict[str, Any],
+    mock_redis_lock_store: MagicMock,
+) -> None:
+    """Tests that the `host` field is correctly handled."""
+    partial_redis_lock_store_config["host"] = "redis://localhost:6379"
+    endpoint_config = EndpointConfig(**partial_redis_lock_store_config)
+    lock_store = LockStore.create(endpoint_config)
+
+    assert lock_store is mock_redis_lock_store.return_value
+    mock_redis_lock_store.assert_called_once_with(
+        RedisLockStoreConfig(**endpoint_config.to_dict())
+    )
+
+
+def test_create_from_endpoint_config_url_deprecated(
+    partial_redis_lock_store_config: Dict[str, Any],
+    mock_redis_lock_store: MagicMock,
+) -> None:
+    """Tests that the deprecated `url` field is correctly handled."""
+    partial_redis_lock_store_config["url"] = "redis://localhost:6379/0"
+    endpoint_config = EndpointConfig(**partial_redis_lock_store_config)
+    lock_store_config = RedisLockStoreConfig(**endpoint_config.to_dict())
+
+    with pytest.warns() as record:
+        lock_store = LockStore.create(endpoint_config)
+
+        assert isinstance(lock_store, RedisLockStore)
+
+        mock_redis_lock_store.assert_called_once_with(lock_store_config)
+
+        future_warnings = [
+            warning for warning in record if warning.category == FutureWarning
+        ]
+
+        assert len(future_warnings) == 1
+        assert (
+            "The 'url' property in the redis lock store "
+            "configuration is deprecated. Please use 'host' instead."
+        ) in str(future_warnings[0].message)
+
+
+def test_create_from_endpoint_config_host_and_url(
+    partial_redis_lock_store_config: Dict[str, Any],
+) -> None:
+    """Tests that an exception is raised when both `url` and `host` are provided"""
+    partial_redis_lock_store_config["url"] = "redis://localhost:6379/0"
+    partial_redis_lock_store_config["host"] = "localhost"
+    endpoint_config = EndpointConfig(**partial_redis_lock_store_config)
+
+    with pytest.raises(RasaException) as raised_exception:
+        LockStore.create(endpoint_config)
+        assert (
+            "You cannot specify both 'url' and 'host' in the Redis lock store "
+            "configuration. Please use only one of them."
+        ) in str(raised_exception.value)
+
+
+def test_redis_lock_store_config_filter_out_unused_arguments(
+    partial_redis_lock_store_config: Dict[str, Any],
+    mock_redis_lock_store: MagicMock,
+) -> None:
+    """Tests that unused arguments are filtered out when creating the config."""
+    partial_redis_lock_store_config["host"] = "redis://localhost:6379"
+    partial_redis_lock_store_config["unused_argument"] = "unused_value"
+    endpoint_config = EndpointConfig(**partial_redis_lock_store_config)
+
+    config = RedisLockStoreConfig(**endpoint_config.to_dict())
+
+    result = config.model_dump(
+        by_alias=True,
+    )
+
+    assert "unused_argument" not in result.keys()
+
+
+def test_redis_lock_store_config_serialization(
+    partial_redis_lock_store_config: Dict[str, Any],
+    mock_redis_lock_store: MagicMock,
+) -> None:
+    """Tests that the RedisLockStoreConfig is serialized correctly."""
+    partial_redis_lock_store_config["host"] = "redis://localhost:6379"
+    endpoint_config = EndpointConfig(**partial_redis_lock_store_config)
+
+    config = RedisLockStoreConfig(**endpoint_config.to_dict())
+
+    result = config.model_dump(by_alias=True)
+
+    assert str(result["host"]) == partial_redis_lock_store_config["host"]
+    assert result["port"] == partial_redis_lock_store_config["port"]
+    assert result["db"] == partial_redis_lock_store_config["db"]
+    assert result["username"] == partial_redis_lock_store_config["username"]
+    assert result["password"] == partial_redis_lock_store_config["password"]
+    assert result["ssl"] == partial_redis_lock_store_config["use_ssl"]
+    assert result["ssl_keyfile"] == partial_redis_lock_store_config["ssl_keyfile"]
+    assert result["ssl_certfile"] == partial_redis_lock_store_config["ssl_certfile"]
+    assert result["ssl_ca_certs"] == partial_redis_lock_store_config["ssl_ca_certs"]
+    assert result["key_prefix"] == partial_redis_lock_store_config["key_prefix"]
+
+
+def test_redis_lock_store_config_to_strict_redis(
+    partial_redis_lock_store_config: Dict[str, Any],
+    mock_redis_lock_store: MagicMock,
+) -> None:
+    """Tests that the RedisLockStoreConfig creates valid strict redis config."""
+    partial_redis_lock_store_config["host"] = "redis://localhost:6379"
+    endpoint_config = EndpointConfig(**partial_redis_lock_store_config)
+
+    config = RedisLockStoreConfig(**endpoint_config.to_dict())
+
+    result = config.to_strict_redis()
+
+    assert str(result["host"]) == partial_redis_lock_store_config["host"]
+    assert result["port"] == partial_redis_lock_store_config["port"]
+    assert result["db"] == partial_redis_lock_store_config["db"]
+    assert result["username"] == partial_redis_lock_store_config["username"]
+    assert result["password"] == partial_redis_lock_store_config["password"]
+    assert result["ssl"] == partial_redis_lock_store_config["use_ssl"]
+    assert result["ssl_keyfile"] == partial_redis_lock_store_config["ssl_keyfile"]
+    assert result["ssl_certfile"] == partial_redis_lock_store_config["ssl_certfile"]
+    assert result["ssl_ca_certs"] == partial_redis_lock_store_config["ssl_ca_certs"]
+    assert "key_prefix" not in result.keys()

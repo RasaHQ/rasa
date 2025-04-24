@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import multiprocessing.pool
 import os
 import time
@@ -8,7 +7,7 @@ from pathlib import Path
 from typing import Iterator
 
 import pytest
-from _pytest.logging import LogCaptureFixture
+import structlog.testing
 
 from rasa.core.channels import UserMessage
 from rasa.core.concurrent_lock_store import (
@@ -17,6 +16,7 @@ from rasa.core.concurrent_lock_store import (
 )
 from rasa.core.lock_store import LockStore
 from rasa.utils.endpoints import EndpointConfig
+from tests.utilities import filter_logs
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
@@ -201,7 +201,6 @@ def test_concurrent_get_lock(
 @pytest.mark.concurrent_lock_store
 def test_concurrent_delete_lock_success(
     concurrent_redis_lock_store: ConcurrentRedisLockStore,
-    caplog: LogCaptureFixture,
 ) -> None:
     conversation_id = "my id 4"
 
@@ -209,10 +208,11 @@ def test_concurrent_delete_lock_success(
     for _ in range(4):
         concurrent_redis_lock_store.issue_ticket(conversation_id, 20)
 
-    with caplog.at_level(logging.DEBUG):
+    with structlog.testing.capture_logs() as caplog:
         concurrent_redis_lock_store.delete_lock(conversation_id)
 
-    assert f"Deleted lock for conversation '{conversation_id}'." in caplog.text
+        logs = filter_logs(caplog, "lock_store._deleted_lock_for_conversation", "debug")
+        assert len(logs) == 1
 
     lock = concurrent_redis_lock_store.get_lock(conversation_id)
     assert lock is not None
@@ -222,17 +222,16 @@ def test_concurrent_delete_lock_success(
 @pytest.mark.concurrent_lock_store
 def test_concurrent_delete_lock_no_keys(
     concurrent_redis_lock_store: ConcurrentRedisLockStore,
-    caplog: LogCaptureFixture,
 ) -> None:
     conversation_id = "some id"
 
-    with caplog.at_level(logging.DEBUG):
+    with structlog.testing.capture_logs() as caplog:
         concurrent_redis_lock_store.delete_lock(conversation_id)
 
-    assert (
-        f"The lock store does not contain any key-value items "
-        f"for conversation '{conversation_id}'." in caplog.text
-    )
+        logs = filter_logs(
+            caplog, "concurrent_redis_lock_store.delete_lock_key_not_found", "debug"
+        )
+        assert len(logs) == 1
 
 
 @pytest.mark.concurrent_lock_store

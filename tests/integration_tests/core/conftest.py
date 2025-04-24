@@ -5,7 +5,7 @@ from typing import Iterator, Text
 import pytest
 import sqlalchemy as sa
 
-from rasa.core.lock_store import RedisLockStore
+from rasa.core.lock_store import RedisLockStore, RedisLockStoreConfig
 from rasa.core.tracker_store import RedisTrackerStore
 from rasa.shared.core.domain import Domain
 
@@ -26,7 +26,9 @@ def redis_lock_store() -> Iterator[RedisLockStore]:
     # tests conflicts with each others when databases are flushed
     pytest_worker_id = os.getenv("PYTEST_XDIST_WORKER", "gw0")
     redis_database = int(pytest_worker_id.replace("gw", ""))
-    lock_store = RedisLockStore(REDIS_HOST, REDIS_PORT, redis_database)
+    lock_store = RedisLockStore(
+        RedisLockStoreConfig(host=REDIS_HOST, port=REDIS_PORT, db=redis_database)
+    )
     try:
         yield lock_store
     finally:

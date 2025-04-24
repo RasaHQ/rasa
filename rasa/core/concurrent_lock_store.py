@@ -1,8 +1,9 @@
 import json
-import logging
 import time
 from collections import deque
 from typing import Deque, Optional, Text
+
+import structlog
 
 from rasa.core.lock import Ticket, TicketLock
 from rasa.core.lock_store import (
@@ -19,7 +20,7 @@ DEFAULT_PORT = 6379
 
 DEFAULT_HOSTNAME = "localhost"
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.getLogger(__name__)
 
 LAST_ISSUED_TICKET_NUMBER_SUFFIX = "last_issued_ticket_number"
 
@@ -105,7 +106,10 @@ class ConcurrentRedisLockStore(LockStore):
 
         self.key_prefix = DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX
         if key_prefix:
-            logger.debug(f"Setting non-default redis key prefix: '{key_prefix}'.")
+            structlogger.debug(
+                "concurrent_redis_lock_store._set_key_prefix.non_default_key_prefix",
+                event_info=f"Setting non-default redis key prefix: '{key_prefix}'.",
+            )
             self._set_key_prefix(key_prefix)
 
         super().__init__()
@@ -116,9 +120,13 @@ class ConcurrentRedisLockStore(LockStore):
                 key_prefix + ":" + DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX
             )
         else:
-            logger.warning(
-                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. "
-                f"Using default '{self.key_prefix}' instead."
+            structlogger.warning(
+                "concurrent_redis_lock_store._set_key_prefix.default_instead_of_invalid_key_prefix",
+                event_info=(
+                    f"Omitting provided non-alphanumeric "
+                    f"redis key prefix: '{key_prefix}'. "
+                    f"Using default '{self.key_prefix}' instead."
+                ),
             )
 
     def issue_ticket(
@@ -129,7 +137,10 @@ class ConcurrentRedisLockStore(LockStore):
         It's configured with `lock_lifetime` and associated with `conversation_id`.
         Creates a new lock if none is found.
         """
-        logger.debug(f"Issuing ticket for conversation '{conversation_id}'.")
+        structlogger.debug(
+            "concurrent_redis_lock_store.issue_ticket",
+            event_info=f"Issuing ticket for conversation '{conversation_id}'.",
+        )
         try:
             lock = self.get_or_create_lock(conversation_id)
             lock.remove_expired_tickets()
@@ -164,9 +175,12 @@ class ConcurrentRedisLockStore(LockStore):
         redis_keys = self.red.keys(pattern)
 
         if not redis_keys:
-            logger.debug(
-                f"The lock store does not contain any key-value "
-                f"items for conversation '{conversation_id}'."
+            structlogger.debug(
+                "concurrent_redis_lock_store.delete_lock_key_not_found",
+                event_info=(
+                    f"The lock store does not contain any key-value "
+                    f"items for conversation '{conversation_id}'."
+                ),
             )
             return None
 

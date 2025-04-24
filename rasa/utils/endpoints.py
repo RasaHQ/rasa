@@ -190,7 +190,13 @@ class EndpointConfig:
         sslcontext = None
         if self.cafile:
             try:
-                sslcontext = ssl.create_default_context(cafile=self.cafile)
+                # create a SSL context with the provided CA file
+                # and set the minimum TLS version to 1.2
+                # Purpose is set to SERVER_AUTH to verify the server's certificate
+                sslcontext = ssl.create_default_context(
+                    purpose=ssl.Purpose.SERVER_AUTH, cafile=self.cafile
+                )
+                sslcontext.minimum_version = ssl.TLSVersion.TLSv1_2
             except FileNotFoundError as e:
                 raise FileNotFoundException(
                     f"Failed to find certificate file, "
@@ -232,6 +238,21 @@ class EndpointConfig:
             self.token_name,
             **self.kwargs,
         )
+
+    def to_dict(self) -> Dict[Text, Any]:
+        """Convert the endpoint config to a dictionary."""
+        data = {
+            "url": self.url,
+            "params": self.params,
+            "headers": self.headers,
+            "basic_auth": self.basic_auth,
+            "token": self.token,
+            "token_name": self.token_name,
+            "cafile": self.cafile,
+            "actions_module": self.actions_module,
+        }
+        data.update(self.kwargs)
+        return data
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(self, type(other)):

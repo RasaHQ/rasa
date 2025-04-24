@@ -2,18 +2,27 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
 import os
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Dict, Optional, Text, Union
+from typing import Any, AsyncGenerator, Dict, Literal, Optional, Text, Union
+
+import structlog
+from pydantic import (
+    AnyUrl,
+    BaseModel,
+    Field,
+    NonNegativeInt,
+    model_validator,
+)
 
 import rasa.shared.utils.common
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock
 from rasa.shared.exceptions import ConnectionException, RasaException
+from rasa.shared.utils.io import raise_deprecation_warning
 from rasa.utils.endpoints import EndpointConfig
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.getLogger(__name__)
 
 
 def _get_lock_lifetime() -> int:
@@ -76,7 +85,10 @@ class LockStore:
 
         Creates a new lock if none is found.
         """
-        logger.debug(f"Issuing ticket for conversation '{conversation_id}'.")
+        structlogger.debug(
+            "lock_store.issue_ticket",
+            event_info=f"Issuing ticket for conversation '{conversation_id}'.",
+        )
         try:
             lock = self.get_or_create_lock(conversation_id)
             ticket = lock.issue_ticket(lock_lifetime)
@@ -109,7 +121,10 @@ class LockStore:
     async def _acquire_lock(
         self, conversation_id: Text, ticket: int, wait_time_in_seconds: float
     ) -> TicketLock:
-        logger.debug(f"Acquiring lock for conversation '{conversation_id}'.")
+        structlogger.debug(
+            "lock_store._acquiring_lock_for_conversation",
+            event_info=f"Acquiring lock for conversation '{conversation_id}'.",
+        )
         while True:
             # fetch lock in every iteration because lock might no longer exist
             lock = self.get_lock(conversation_id)
@@ -120,16 +135,22 @@ class LockStore:
 
             # acquire lock if it isn't locked
             if not lock.is_locked(ticket):
-                logger.debug(f"Acquired lock for conversation '{conversation_id}'.")
+                structlogger.debug(
+                    "lock_store._acquired_lock_for_conversation",
+                    event_info=f"Acquired lock for conversation '{conversation_id}'.",
+                )
                 return lock
 
             items_before_this = ticket - (lock.now_serving or 0)
 
-            logger.debug(
-                f"Failed to acquire lock for conversation ID '{conversation_id}' "
-                f"because {items_before_this} other item(s) for this "
-                f"conversation ID have to be finished processing first. "
-                f"Retrying in {wait_time_in_seconds} seconds ..."
+            structlogger.debug(
+                "lock_store._retrying_lock_acquisition",
+                event_info=(
+                    f"Failed to acquire lock for conversation ID '{conversation_id}' "
+                    f"because {items_before_this} other item(s) for this "
+                    f"conversation ID have to be finished processing first. "
+                    f"Retrying in {wait_time_in_seconds} seconds ..."
+                ),
             )
 
             # sleep and update lock
@@ -186,9 +207,99 @@ class LockStore:
     @staticmethod
     def _log_deletion(conversation_id: Text, deletion_successful: bool) -> None:
         if deletion_successful:
-            logger.debug(f"Deleted lock for conversation '{conversation_id}'.")
+            structlogger.debug(
+                "lock_store._deleted_lock_for_conversation",
+                event_info=f"Deleted lock for conversation '{conversation_id}'.",
+            )
         else:
-            logger.debug(f"Could not delete lock for conversation '{conversation_id}'.")
+            structlogger.debug(
+                "lock_store._failed_to_delete_lock_for_conversation",
+                event_info=(
+                    f"Could not delete lock for conversation '{conversation_id}'."
+                ),
+            )
+
+
+class RedisLockStoreConfig(BaseModel):
+    host: Union[AnyUrl, Literal["localhost"]] = Field(
+        default="localhost", description="The host of the redis server."
+    )
+    port: NonNegativeInt = Field(
+        default=6379, ge=0, le=65535, description="The port of the redis server."
+    )
+    db: NonNegativeInt = Field(
+        default=0,
+        ge=0,
+        description="The name of the database within Redis "
+        "which should be used by Rasa",
+    )
+    username: Optional[str] = Field(
+        default=None,
+        description="The username which should be used for "
+        "authentication with the Redis database.",
+    )
+    password: Optional[str] = Field(
+        default=None,
+        description="The username which should be used for "
+        "authentication with the Redis database.",
+    )
+    use_ssl: bool = Field(
+        default=False,
+        serialization_alias="ssl",
+        description="True if SSL should be used for the connection to Redis.",
+    )
+    ssl_certfile: Optional[str] = Field(
+        default=None,
+        description="Path to the SSL certificate file.",
+    )
+    ssl_keyfile: Optional[str] = Field(
+        default=None, description="Path to the SSL private key file."
+    )
+    ssl_ca_certs: Optional[str] = Field(
+        default=None, description="Path to the SSL CA certificate file."
+    )
+    key_prefix: Optional[str] = Field(
+        default=None,
+        description="Prefix to prepend to all keys "
+        "used by the lock store. Must be alphanumeric.",
+    )
+    socket_timeout: float = Field(
+        default=DEFAULT_SOCKET_TIMEOUT_IN_SECONDS,
+        description="Timeout in seconds after which an exception "
+        "will be raised in case Redis doesn't respond "
+        "within `socket_timeout` seconds.",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_url_and_host_properties(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if bool(data.get("url", None)) and bool(data.get("host", None)):
+                raise RasaException(
+                    "You cannot specify both 'url' and 'host' in the Redis lock store "
+                    "configuration. Please use only one of them."
+                )
+
+            if data.get("url", None):
+                raise_deprecation_warning(
+                    "The 'url' property in the redis lock store "
+                    "configuration is deprecated. Please use 'host' instead."
+                )
+                data["host"] = data.pop("url")
+        return data
+
+    @model_validator(mode="after")
+    def verify_username_password(self) -> RedisLockStoreConfig:
+        if bool(self.username) ^ bool(self.password):
+            raise ValueError(
+                f"Expected username and password. "
+                f"Found: username: {'<has value>' if self.username else '<N/A>'}, "
+                f"password: {'<has value>' if self.password else '<N/A>'}"
+            )
+        return self
+
+    def to_strict_redis(self) -> Dict[str, Any]:
+        return self.model_dump(by_alias=True, exclude={"key_prefix"})
 
 
 class RedisLockStore(LockStore):
@@ -196,57 +307,28 @@ class RedisLockStore(LockStore):
 
     def __init__(
         self,
-        host: Text = "localhost",
-        port: int = 6379,
-        db: int = 1,
-        username: Optional[Text] = None,
-        password: Optional[Text] = None,
-        use_ssl: bool = False,
-        ssl_certfile: Optional[Text] = None,
-        ssl_keyfile: Optional[Text] = None,
-        ssl_ca_certs: Optional[Text] = None,
-        key_prefix: Optional[Text] = None,
-        socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS,
+        config: RedisLockStoreConfig = RedisLockStoreConfig(),
     ) -> None:
         """Create a lock store which uses Redis for persistence.
 
         Args:
-            host: The host of the redis server.
-            port: The port of the redis server.
-            db: The name of the database within Redis which should be used by Rasa
-                Open Source.
-            username: The username which should be used for authentication with the
-                Redis database.
-            password: The password which should be used for authentication with the
-                Redis database.
-            use_ssl: `True` if SSL should be used for the connection to Redis.
-            ssl_certfile: Path to the SSL certificate file.
-            ssl_keyfile: Path to the SSL private key file.
-            ssl_ca_certs: Path to the SSL CA certificate file.
-            key_prefix: prefix to prepend to all keys used by the lock store. Must be
-                alphanumeric.
-            socket_timeout: Timeout in seconds after which an exception will be raised
-                in case Redis doesn't respond within `socket_timeout` seconds.
+            config: Redis lock store configuration.
         """
         import redis
 
-        self.red = redis.StrictRedis(
-            host=host,
-            port=int(port),
-            db=int(db),
-            username=username,
-            password=password,
-            ssl=use_ssl,
-            ssl_certfile=ssl_certfile,
-            ssl_keyfile=ssl_keyfile,
-            ssl_ca_certs=ssl_ca_certs,
-            socket_timeout=socket_timeout,
-        )
+        self.config = config
+        self.red = redis.StrictRedis(**self.config.to_strict_redis())
 
         self.key_prefix = DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
-        if key_prefix:
-            logger.debug(f"Setting non-default redis key prefix: '{key_prefix}'.")
-            self._set_key_prefix(key_prefix)
+        if self.config.key_prefix:
+            structlogger.debug(
+                "redis_lock_store._set_key_prefix.non_default_key_prefix",
+                event_info=(
+                    f"Setting non-default "
+                    f"redis key prefix: '{self.config.key_prefix}'.",
+                ),
+            )
+            self._set_key_prefix(self.config.key_prefix)
 
         super().__init__()
 
@@ -254,9 +336,13 @@ class RedisLockStore(LockStore):
         if isinstance(key_prefix, str) and key_prefix.isalnum():
             self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
         else:
-            logger.warning(
-                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. "
-                f"Using default '{self.key_prefix}' instead."
+            structlogger.warning(
+                "redis_lock_store._set_key_prefix.default_instead_of_invalid_key_prefix",
+                event_info=(
+                    f"Omitting provided non-alphanumeric "
+                    f"redis key prefix: '{key_prefix}'. "
+                    f"Using default '{self.key_prefix}' instead."
+                ),
             )
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
@@ -313,7 +399,9 @@ def _create_from_endpoint_config(
 
         lock_store: LockStore = InMemoryLockStore()
     elif endpoint_config.type == "redis":
-        lock_store = RedisLockStore(host=endpoint_config.url, **endpoint_config.kwargs)
+        config = RedisLockStoreConfig.model_validate(endpoint_config.to_dict())
+
+        lock_store = RedisLockStore(config)
     elif endpoint_config.type == "concurrent_redis":
         from rasa.core.concurrent_lock_store import ConcurrentRedisLockStore
 
@@ -321,7 +409,10 @@ def _create_from_endpoint_config(
     else:
         lock_store = _load_from_module_name_in_endpoint_config(endpoint_config)
 
-    logger.debug(f"Connected to lock store '{lock_store.__class__.__name__}'.")
+    structlogger.debug(
+        "lock_store._create_from_endpoint_config.lock_store_connected",
+        event_info=f"Connected to lock store '{lock_store.__class__.__name__}'.",
+    )
 
     return lock_store
 
