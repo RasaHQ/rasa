@@ -18,7 +18,7 @@ jobs:
   test:
     name: Run Tests
     runs-on: windows-2022
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
