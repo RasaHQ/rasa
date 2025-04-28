@@ -29,6 +29,25 @@ from rasa.shared.exceptions import RasaException
 from tests.utilities import filter_logs
 
 
+@pytest.fixture
+def message_with_no_user_input_event() -> Dict[str, Any]:
+    return {
+        "conversation": "f010e998-4499-4ddb-80d4-fea137fd7b4d",
+        "activities": [
+            {
+                "id": "e54d4dfe-e1ff-4272-8c3d-4ec4f4294681",
+                "timestamp": "2024-12-04T15:07:55.145Z",
+                "type": "event",
+                "name": "noUserInput",
+                "value": 1,
+                "parameters": {
+                    "vaigConversationId": "f010e998-4499-4ddb-80d4-fea137fd7b4d",
+                },
+            }
+        ],
+    }
+
+
 @pytest.mark.parametrize(
     "credentials",
     [
@@ -145,16 +164,15 @@ async def test_conversation_handle_event_invalid_payload(
     assert "audiocodes.handle.event.no_name_key" in captured.out
 
 
-async def test_conversation_handle_event_invalid_name(capsys: CaptureFixture) -> None:
+async def test_conversation_handle_event_invalid_name() -> None:
+    """Test that every event creates an intent in format /vaig_event_<name>"""
     conversation = Conversation(conversation_id="123")
     event_payload = {"name": "invalid"}
 
     text = conversation._handle_event(event_payload)
 
-    # assert that warning was raised and text is ""
-    assert text == ""
-    captured = capsys.readouterr()
-    assert "audiocodes.handle.event.unknown_event" in captured.out
+    # assert that an intent was created
+    assert text == "/vaig_event_invalid{}"
 
 
 async def test_handle_startup() -> None:
@@ -205,6 +223,30 @@ async def test_handle_startup() -> None:
         "user_name": "+491604697810",
         "user_phone": "+491604697810",
     }
+
+
+async def test_handle_no_user_input_event(
+    message_with_no_user_input_event: Dict[str, Any],
+) -> None:
+    """Test handling of noUserInput event from Audiocodes"""
+    # Setup
+    conversation = Conversation("test_id")
+    on_new_message = AsyncMock()
+    output_channel = AudiocodesOutput()
+
+    # Execute
+    await conversation.handle_activities(
+        message_with_no_user_input_event, CHANNEL_NAME, output_channel, on_new_message
+    )
+
+    # Verify
+    on_new_message.assert_called_once()
+    user_msg = on_new_message.call_args[0][0]
+    assert isinstance(user_msg, UserMessage)
+    assert (
+        user_msg.text
+        == '/vaig_event_noUserInput{"vaigConversationId": "f010e998-4499-4ddb-80d4-fea137fd7b4d", "value": 1}'  # noqa: E501
+    )
 
 
 async def test_on_activities_returns_immediately(monkeypatch: MonkeyPatch) -> None:

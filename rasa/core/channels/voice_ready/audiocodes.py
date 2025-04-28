@@ -96,10 +96,13 @@ class Conversation:
             event_params = {"value": event["value"]}
             text += json.dumps(event_params)
         else:
-            structlogger.warning(
-                "audiocodes.handle.event.unknown_event", event_payload=event
-            )
-            return ""
+            # handle other events described by Audiocodes
+            # https://techdocs.audiocodes.com/voice-ai-connect/#VAIG_Combined/inactivity-detection.htm?TocPath=Bot%2520integration%257CReceiving%2520notifications%257C_____3
+            text = f"{INTENT_MESSAGE_PREFIX}vaig_event_{event['name']}"
+            event_params = {**event.get("parameters", {})}
+            if "value" in event:
+                event_params["value"] = event["value"]
+            text += json.dumps(event_params)
 
         return text
 
