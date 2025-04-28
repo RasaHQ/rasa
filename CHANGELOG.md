@@ -10,6 +10,42 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.12.7] - 2025-04-28
+                        
+Rasa Pro 3.12.7 (2025-04-28)                             
+### Improvements
+- [#2293](https://github.com/rasahq/rasa-private/issues/2293): Adds two optional properties on Jambonz channel connector, `username` and `password` which can be used to enable Basic Access Authentication
+- [#2310](https://github.com/rasahq/rasa-private/issues/2310): Added support for basic authentication in Twilio channels (Voice Ready and Voice Streaming).
+  This allows users to authenticate their Twilio channels using basic authentication credentials, enhancing security and access control for voice communication.
+  To use this feature, set `username` and `password` in the Twilio channel configuration.
+  ```yaml title="credentials.yaml"
+  twilio_voice:
+      username: your_username
+      password: your_password
+      ...
+
+  twilio_media_streams:
+      username: your_username
+      password: your_password
+      ...
+  ```
+
+  At Twilio, configure the webhook URL to include the basic authentication credentials:
+  ```
+  # twilio voice webhook
+  https://<username>:<password>@yourdomain.com/webhooks/twilio_voice/webhook
+
+  # twilio media streams webhook
+  https://<username>:<password>@yourdomain.com/webhooks/twilio_media_streams/webhook
+  ```
+
+### Bugfixes
+- [#2285](https://github.com/rasahq/rasa-private/issues/2285): Fail rasa commands (`rasa run`, `rasa inspect`, `rasa shell`) when model file path doesn't exist instead of defaulting to the latest model file from the default directory `/models`.
+- [#2312](https://github.com/rasahq/rasa-private/issues/2312): Fix the behaviour of `action_hangup` on Voice Inspector (browser_audio channel). Display that the session has ended
+- [#2314](https://github.com/rasahq/rasa-private/issues/2314): Display a helpful error message in case of invalid API Key with Azure TTS
+- [#2323](https://github.com/rasahq/rasa-private/issues/2323): Fixes Audiocodes Channel's event to intent mapping. All audiocode events are now mapped to an intent in the format `vaig_event_<event>`. That is, if Audiocodes sends an event `noUserInput`, the assistant will receive the intent `/vaig_event_noUserInput`
+
+
 ## [3.12.6] - 2025-04-15
                         
 Rasa Pro 3.12.6 (2025-04-15)                             
