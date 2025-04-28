@@ -261,18 +261,26 @@ class DialogueUnderstandingTestStep(BaseModel):
         # Safely extract commands from the step.
         commands = []
         for command in step.get(KEY_COMMANDS, []):
+            parsed_commands = None
             try:
-                commands.extend(
-                    parse_commands(
-                        command,
-                        flows,
-                        clarify_options_optional=True,
-                        additional_commands=custom_command_classes,
-                        default_commands_to_remove=remove_default_commands,
-                    )
+                parsed_commands = parse_commands(
+                    command,
+                    flows,
+                    clarify_options_optional=True,
+                    additional_commands=custom_command_classes,
+                    default_commands_to_remove=remove_default_commands,
                 )
             except (IndexError, ValueError) as e:
                 raise ValueError(f"Failed to parse command '{command}': {e}") from e
+
+            if not parsed_commands:
+                raise ValueError(
+                    f"Failed to parse command '{command}': command parser returned "
+                    f"None. Please make sure that you are using the correct command "
+                    f"syntax and the command arguments are valid."
+                )
+
+            commands.extend(parsed_commands)
 
         # Construct the DialogueUnderstandingTestStep
         return DialogueUnderstandingTestStep(

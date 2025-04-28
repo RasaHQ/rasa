@@ -29,6 +29,7 @@ from rasa.shared.nlu.constants import (
     KEY_SYSTEM_PROMPT,
     KEY_USER_PROMPT,
 )
+from tests.utilities import flows_from_str
 
 
 @pytest.fixture
@@ -113,6 +114,30 @@ def sample_correct_bot_step() -> DialogueUnderstandingTestStep:
         metadata_name=None,
         commands=None,
         dialogue_understanding_output=None,
+    )
+
+
+@pytest.fixture
+def sample_flow_list() -> FlowsList:
+    return flows_from_str(
+        """
+            flows:
+              foo_flow:
+                description: This is a test flow.
+                steps:
+                - id: start_step
+                  collect: foo
+                - id: second_step
+                  collect: bar
+
+              bar_flow:
+                description: Another test flow.
+                steps:
+                - id: ask_abc
+                  collect: abc
+                - set_slots:
+                  - def: ghi
+            """
     )
 
 
@@ -621,3 +646,53 @@ class TestDialogueUnderstandingTestCase:
             steps=[sample_correct_user_step, sample_test_step],
         )
         assert test_case.failed_user_steps() == [sample_test_step]
+
+    def test_raise_error_on_parsing_start_flow_command_with_nonexisting_flow_arg(
+        self, sample_flow_list: FlowsList
+    ):
+        with pytest.raises(ValueError) as exc_info:
+            DialogueUnderstandingTestStep.from_dict(
+                step={"user": "hello", "commands": ["StartFlow(non_existing_flow)"]},
+                flows=sample_flow_list,
+            )
+        assert (
+            "Failed to parse command 'StartFlow(non_existing_flow)': command parser "
+            "returned None" in str(exc_info.value)
+        )
+
+    def test_do_not_raise_error_on_parsing_valid_start_flow_command(
+        self, sample_flow_list: FlowsList
+    ):
+        # assert no exception is raised
+        try:
+            DialogueUnderstandingTestStep.from_dict(
+                step={"user": "hello", "commands": ["StartFlow(foo_flow)"]},
+                flows=sample_flow_list,
+            )
+        except ValueError:
+            pytest.fail("ValueError raised unexpectedly.")
+
+    def test_raise_error_on_parsing_clarify_command_with_nonexisting_flow_arg(
+        self, sample_flow_list: FlowsList
+    ):
+        with pytest.raises(ValueError) as exc_info:
+            DialogueUnderstandingTestStep.from_dict(
+                step={"user": "hello", "commands": ["Clarify(non_existing_flow)"]},
+                flows=sample_flow_list,
+            )
+        assert (
+            "Failed to parse command 'Clarify(non_existing_flow)': command parser "
+            "returned None" in str(exc_info.value)
+        )
+
+    def test_do_raise_error_on_parsing_valid_clarify_command(
+        self, sample_flow_list: FlowsList
+    ):
+        # assert no exception is raised
+        try:
+            DialogueUnderstandingTestStep.from_dict(
+                step={"user": "hello", "commands": ["Clarify(foo_flow, bar_flow)"]},
+                flows=sample_flow_list,
+            )
+        except ValueError:
+            pytest.fail("ValueError raised unexpectedly.")
