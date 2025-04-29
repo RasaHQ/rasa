@@ -32,10 +32,7 @@ def plugin_manager() -> pluggy.PluginManager:
 
 def init_hooks(manager: pluggy.PluginManager) -> None:
     """Initialise hooks into rasa."""
-    import rasa.utils.licensing
     from rasa import hooks
-
-    rasa.utils.licensing.validate_license_from_env()
 
     manager.register(hooks)
 

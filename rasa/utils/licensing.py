@@ -15,7 +15,6 @@ from dotenv import dotenv_values
 from sanic import Sanic
 
 from rasa import telemetry
-from rasa.core import jobs
 from rasa.shared.utils.cli import print_error_and_exit
 
 if typing.TYPE_CHECKING:
@@ -506,6 +505,7 @@ async def _schedule_conversation_counting(
     app: Sanic, tracker_store: Optional["TrackerStore"], max_number_conversations: int
 ) -> None:
     """Schedule a job counting the number of conversations in the current month."""
+    from rasa.core import jobs
 
     async def conversation_counting_job(
         app: Sanic,

@@ -9,6 +9,7 @@ from rasa_sdk import __version__ as rasa_sdk_version
 
 import rasa.telemetry
 import rasa.utils.io
+import rasa.utils.licensing
 import rasa.utils.tensorflow.environment as tf_env
 from rasa import version
 from rasa.cli import (
@@ -105,11 +106,12 @@ def main(raw_arguments: Optional[List[str]] = None) -> None:
         raw_arguments: Arguments to parse. If not provided,
             arguments will be taken from the command line.
     """
+    rasa.utils.licensing.validate_license_from_env()
+
     warn_if_rasa_plus_package_installed()
     parse_last_positional_argument_as_model_path()
     arg_parser = create_argument_parser()
     cmdline_arguments = arg_parser.parse_args(raw_arguments)
-
     log_level = getattr(cmdline_arguments, "loglevel", None)
     logging_config_file = getattr(cmdline_arguments, "logging_config_file", None)
     configure_logging_and_warnings(
