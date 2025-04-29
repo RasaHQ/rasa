@@ -558,7 +558,7 @@ def test_validate_files_invalid_domain():
             assert "Please migrate to RulePolicy." in str(w[0].message)
 
 
-def test_validate_files_invalid_slot_mappings(tmp_path: Path):
+def test_validate_files_invalid_slot_mappings(tmp_path: Path, capsys: CaptureFixture):
     domain = tmp_path / "domain.yml"
     tested_slot = "duration"
     form_name = "booking_form"
@@ -593,12 +593,26 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path):
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_defaults.yml", str(domain), None
     )
-    with pytest.raises(SystemExit):
-        rasa.cli.utils.validate_files(
-            fail_on_warnings=False,
-            max_history=None,
-            importer=importer,
-        )
+
+    expected_event = "validator.verify_slot_mappings.not_in_forms_key"
+    expected_log_level = "warning"
+    expected_log_message = (
+        "Slot 'duration' has a mapping "
+        "condition for form 'booking_form', "
+        "but it's not present in 'booking_form' "
+        "form's 'required_slots'."
+    )
+
+    rasa.cli.utils.validate_files(
+        fail_on_warnings=False,
+        max_history=None,
+        importer=importer,
+    )
+
+    captured = capsys.readouterr()
+    assert expected_log_message in captured.out
+    assert expected_event in captured.out
+    assert expected_log_level in captured.out
 
 
 def test_validate_files_config_default_assistant_id(capsys: CaptureFixture):

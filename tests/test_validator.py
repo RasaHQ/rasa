@@ -651,7 +651,7 @@ def test_verify_slot_mappings_mapping_active_loop_not_in_forms(
     validator = Validator.from_importer(importer)
 
     expected_event = "validator.verify_slot_mappings.not_in_domain"
-    expected_log_level = "warning"
+    expected_log_level = "error"
     expected_log_message = (
         "Slot 'some_slot' has a mapping condition "
         "for form 'som_form' which is not "
@@ -711,7 +711,7 @@ def test_verify_slot_mappings_slot_with_mapping_conditions_not_in_form(
         "form's 'required_slots'."
     )
 
-    assert not validator.verify_slot_mappings()
+    assert validator.verify_slot_mappings()
 
     result = capsys.readouterr()
     assert expected_log_message in result.out

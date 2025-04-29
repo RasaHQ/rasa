@@ -531,7 +531,7 @@ class Validator:
                         condition_active_loop
                         and condition_active_loop not in self.domain.form_names
                     ):
-                        structlogger.warn(
+                        structlogger.error(
                             "validator.verify_slot_mappings.not_in_domain",
                             slot=slot.name,
                             form=condition_active_loop,
@@ -566,7 +566,6 @@ class Validator:
                                 f"The slot needs to be added to this key."
                             ),
                         )
-                        everything_is_alright = False
 
         return everything_is_alright
 
