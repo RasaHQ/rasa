@@ -51,6 +51,7 @@ export function App() {
       share: false,
       shouldReconnect: () => true,
     });
+    const token = new URLSearchParams(window.location.search).get("token");
 
   useEffect(() => {
     if (readyState === ReadyState.OPEN && rasaChatSessionId) {
@@ -83,7 +84,7 @@ export function App() {
 
   useEffect(() => {
     axios
-      .get("/flows")
+      .get("/flows", { params: { token } })
       .then((response) => setFlows(response.data))
       .catch((error) => {
         // don't show a new toast if it's already active
@@ -101,7 +102,7 @@ export function App() {
 
   function fetchStory() {
     axios
-      .get(`/conversations/${rasaChatSessionId}/story`)
+      .get(`/conversations/${rasaChatSessionId}/story`, { params: { token } })
       .then((response) => setStory(response.data))
       .catch((error) => {
         // don't show a new toast if it's already active

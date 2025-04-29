@@ -1,7 +1,7 @@
 import argparse
 import webbrowser
 from asyncio import AbstractEventLoop
-from typing import List, Text
+from typing import List, Optional, Text
 
 from sanic import Sanic
 
@@ -50,10 +50,14 @@ def add_subparser(
     remove_argument_from_parser(inspect_parser, "--enable-api")
 
 
-async def open_inspector_in_browser(server_url: Text, voice: bool = False) -> None:
+async def open_inspector_in_browser(
+    server_url: Text,
+    voice: bool = False,
+    token: Optional[Text] = None,
+) -> None:
     """Opens the rasa inspector in the default browser."""
     channel = "socketio" if not voice else "browser_audio"
-    webbrowser.open(f"{server_url}/webhooks/{channel}/inspect.html")
+    webbrowser.open(f"{server_url}/webhooks/{channel}/inspect.html?token={token}")
 
 
 def inspect(args: argparse.Namespace) -> None:
@@ -65,7 +69,7 @@ def inspect(args: argparse.Namespace) -> None:
     async def after_start_hook_open_inspector(_: Sanic, __: AbstractEventLoop) -> None:
         """Hook to open the browser on server start."""
         server_url = constants.DEFAULT_SERVER_FORMAT.format("http", args.port)
-        await open_inspector_in_browser(server_url, args.voice)
+        await open_inspector_in_browser(server_url, args.voice, args.auth_token)
 
     # the following arguments are not exposed to the user
     if args.voice:
