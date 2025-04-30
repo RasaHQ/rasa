@@ -29,7 +29,7 @@ jobs:
 
       - name: Remove docker images from all ECR repositories
         run: |
-          REPO_NAMES=("rasa-private-dev")
+          REPO_NAMES=("rasa/rasa-private-dev")
           SEARCH_STRING="pr${{ github.event.number }}"
           # Iterate through each repository
           for REPO_NAME in "${REPO_NAMES[@]}"
