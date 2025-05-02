@@ -7,7 +7,12 @@ from typing import Any, Dict, List, Union, cast
 import structlog
 from litellm import acompletion, completion, validate_environment
 
-from rasa.shared.constants import API_BASE_CONFIG_KEY, API_KEY, ROLE_USER
+from rasa.shared.constants import (
+    _VALIDATE_ENVIRONMENT_MISSING_KEYS_KEY,
+    API_BASE_CONFIG_KEY,
+    API_KEY,
+    ROLE_USER,
+)
 from rasa.shared.exceptions import (
     ProviderClientAPIException,
     ProviderClientValidationError,
@@ -20,8 +25,6 @@ from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
 from rasa.shared.utils.io import resolve_environment_variables, suppress_logs
 
 structlogger = structlog.get_logger()
-
-_VALIDATE_ENVIRONMENT_MISSING_KEYS_KEY = "missing_keys"
 
 # Suppress LiteLLM info and debug logs - Global level.
 logging.getLogger("LiteLLM").setLevel(logging.WARNING)

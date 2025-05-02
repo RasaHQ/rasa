@@ -7,15 +7,12 @@ from typing import Any, Dict, Optional
 import structlog
 
 from rasa.shared.constants import (
-    API_BASE_CONFIG_KEY,
     API_KEY,
-    API_VERSION_CONFIG_KEY,
     AZURE_API_BASE_ENV_VAR,
     AZURE_API_KEY_ENV_VAR,
     AZURE_API_TYPE_ENV_VAR,
     AZURE_API_VERSION_ENV_VAR,
     AZURE_OPENAI_PROVIDER,
-    DEPLOYMENT_CONFIG_KEY,
     OPENAI_API_BASE_ENV_VAR,
     OPENAI_API_KEY_ENV_VAR,
     OPENAI_API_TYPE_ENV_VAR,
@@ -26,6 +23,7 @@ from rasa.shared.providers._configs.azure_openai_client_config import (
     AzureEntraIDOAuthConfig,
     AzureOpenAIClientConfig,
 )
+from rasa.shared.providers._utils import validate_azure_client_setup
 from rasa.shared.providers.constants import (
     DEFAULT_AZURE_API_KEY_NAME,
     LITE_LLM_API_BASE_FIELD,
@@ -348,68 +346,8 @@ class AzureOpenAILLMClient(_BaseLiteLLMClient):
     def validate_client_setup(self) -> None:
         """Validates that all required configuration parameters are set."""
 
-        def generate_event_info_for_missing_setting(
-            setting: str,
-            setting_env_var: Optional[str] = None,
-            setting_config_key: Optional[str] = None,
-        ) -> str:
-            """Generate a part of the message with instructions on what to set
-            for the missing client setting.
-            """
-            info = "Set {setting} with {options}. "
-            options = ""
-            if setting_env_var is not None:
-                options += f"environment variable '{setting_env_var}'"
-            if setting_config_key is not None and setting_env_var is not None:
-                options += " or "
-            if setting_config_key is not None:
-                options += f"config key '{setting_config_key}'"
-
-            return info.format(setting=setting, options=options)
-
-        env_var_field = "env_var"
-        config_key_field = "config_key"
-        current_value_field = "current_value"
-        # All required settings for Azure OpenAI client
-        settings: Dict[str, Dict[str, Any]] = {
-            "API Base": {
-                current_value_field: self.api_base,
-                env_var_field: AZURE_API_BASE_ENV_VAR,
-                config_key_field: API_BASE_CONFIG_KEY,
-            },
-            "API Version": {
-                current_value_field: self.api_version,
-                env_var_field: AZURE_API_VERSION_ENV_VAR,
-                config_key_field: API_VERSION_CONFIG_KEY,
-            },
-            "Deployment Name": {
-                current_value_field: self.deployment,
-                env_var_field: None,
-                config_key_field: DEPLOYMENT_CONFIG_KEY,
-            },
-        }
-
-        missing_settings = [
-            setting_name
-            for setting_name, setting_info in settings.items()
-            if setting_info[current_value_field] is None
-        ]
-
-        if missing_settings:
-            event_info = f"Client settings not set: " f"{', '.join(missing_settings)}. "
-
-            for missing_setting in missing_settings:
-                if settings[missing_setting][current_value_field] is not None:
-                    continue
-                event_info += generate_event_info_for_missing_setting(
-                    missing_setting,
-                    settings[missing_setting][env_var_field],
-                    settings[missing_setting][config_key_field],
-                )
-
-            structlogger.error(
-                "azure_openai_llm_client.not_configured",
-                event_info=event_info,
-                missing_settings=missing_settings,
-            )
-            raise ProviderClientValidationError(event_info)
+        return validate_azure_client_setup(
+            api_base=self.api_base,
+            api_version=self.api_version,
+            deployment=self.deployment,
+        )

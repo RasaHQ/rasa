@@ -7,7 +7,13 @@ import structlog
 from litellm import Router
 from pytest import MonkeyPatch
 
-from rasa.shared.constants import SELF_HOSTED_VLLM_API_KEY_ENV_VAR
+from rasa.shared.constants import (
+    AZURE_API_BASE_ENV_VAR,
+    AZURE_API_KEY_ENV_VAR,
+    AZURE_API_VERSION_ENV_VAR,
+    OPENAI_API_KEY_ENV_VAR,
+    SELF_HOSTED_VLLM_API_KEY_ENV_VAR,
+)
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers.llm.litellm_router_llm_client import LiteLLMRouterLLMClient
 from rasa.shared.providers.llm.llm_client import LLMClient
@@ -17,7 +23,13 @@ from rasa.shared.providers.router.router_client import RouterClient
 
 class TestLiteLLMRouterLLMClient:
     @pytest.fixture
-    def client(self) -> LiteLLMRouterLLMClient:
+    def client(self, monkeypatch: MonkeyPatch) -> LiteLLMRouterLLMClient:
+        monkeypatch.setenv("COHERE_API_KEY", "dummy_key_cohere")
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "dummy_key_openai")
+        monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "dummy_key_azure")
+        monkeypatch.setenv(AZURE_API_BASE_ENV_VAR, "dummy_base_azure")
+        monkeypatch.setenv(AZURE_API_VERSION_ENV_VAR, "dummy_version_azure")
+
         config = {
             "id": "test-model-group-id",
             "models": [

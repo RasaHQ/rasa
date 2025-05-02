@@ -5,7 +5,7 @@ nlg:
  type: rephrase
  llm:
    provider: ollama
-   model: llama3.2:3b-instruct-fp16
+   model: llama3.2
    api_base: "http://localhost:11434"
    timeout: 300
 

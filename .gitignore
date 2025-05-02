@@ -111,3 +111,4 @@ e2e_tests/
 .codegpt
 infrastructure/**/*.pyc
 infrastructure/**/venv
+coverage.xml

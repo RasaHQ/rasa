@@ -5,10 +5,16 @@ from copy import deepcopy
 from typing import Any, Dict, List
 
 import structlog
-from litellm import Router
+from litellm import Router, validate_environment
 
 from rasa.shared.constants import (
+    _VALIDATE_ENVIRONMENT_MISSING_KEYS_KEY,
+    API_BASE_CONFIG_KEY,
     API_KEY,
+    API_VERSION_CONFIG_KEY,
+    AZURE_API_BASE_ENV_VAR,
+    AZURE_API_VERSION_ENV_VAR,
+    AZURE_OPENAI_PROVIDER,
     LITELLM_PARAMS_KEY,
     MODEL_CONFIG_KEY,
     MODEL_GROUP_ID_CONFIG_KEY,
@@ -23,6 +29,7 @@ from rasa.shared.providers._configs.azure_entra_id_config import AzureEntraIDOAu
 from rasa.shared.providers._configs.litellm_router_client_config import (
     LiteLLMRouterClientConfig,
 )
+from rasa.shared.providers._utils import validate_azure_client_setup
 from rasa.shared.utils.io import resolve_environment_variables
 
 structlogger = structlog.get_logger()
@@ -183,6 +190,7 @@ class _BaseLiteLLMRouterClient:
 
     def _create_router_client(self) -> Router:
         resolved_model_configurations = self._resolve_env_vars_in_model_configurations()
+        self._validate_model_configurations(resolved_model_configurations)
         return Router(model_list=resolved_model_configurations, **self.router_settings)
 
     def _has_oauth(self) -> bool:
@@ -214,3 +222,47 @@ class _BaseLiteLLMRouterClient:
                 )
             model_configuration_with_resolved_keys.append(resolved_model_configuration)
         return model_configuration_with_resolved_keys
+
+    def _validate_model_configurations(
+        self, resolved_model_configurations: List[Dict[str, Any]]
+    ) -> None:
+        """Validates the model configurations.
+        Args:
+            resolved_model_configurations: (List[Dict[str, Any]]) The list of model
+                configurations with resolved environment variables.
+        Raises:
+            ProviderClientValidationError: If the model configurations are invalid.
+        """
+        for model_configuration in resolved_model_configurations:
+            litellm_params = model_configuration.get(LITELLM_PARAMS_KEY, {})
+
+            model = litellm_params.get(MODEL_CONFIG_KEY)
+            provider, deployment = model.split("/", 1)
+            api_base = litellm_params.get(API_BASE_CONFIG_KEY)
+
+            if provider.lower() == AZURE_OPENAI_PROVIDER:
+                validate_azure_client_setup(
+                    api_base=api_base or os.getenv(AZURE_API_BASE_ENV_VAR),
+                    api_version=litellm_params.get(API_VERSION_CONFIG_KEY)
+                    or os.getenv(AZURE_API_VERSION_ENV_VAR),
+                    deployment=deployment,
+                )
+            else:
+                validation_info = validate_environment(
+                    model=model,
+                    api_key=litellm_params.get(API_KEY),
+                    api_base=api_base,
+                )
+                if missing_environment_variables := validation_info.get(
+                    _VALIDATE_ENVIRONMENT_MISSING_KEYS_KEY
+                ):
+                    event_info = (
+                        f"Environment variables: {missing_environment_variables} "
+                        f"not set. Required for API calls."
+                    )
+                    structlogger.error(
+                        "base_litellm_router_client.validate_environment_variables",
+                        event_info=event_info,
+                        missing_environment_variables=missing_environment_variables,
+                    )
+                    raise ProviderClientValidationError(event_info)

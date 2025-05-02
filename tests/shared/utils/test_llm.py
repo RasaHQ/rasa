@@ -7,7 +7,11 @@ import pytest
 from pytest import MonkeyPatch
 
 from rasa.shared.constants import (
+    AZURE_API_BASE_ENV_VAR,
+    AZURE_API_KEY_ENV_VAR,
+    AZURE_API_VERSION_ENV_VAR,
     MODEL_GROUP_CONFIG_KEY,
+    OPENAI_API_KEY_ENV_VAR,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
 )
@@ -284,7 +288,13 @@ def test_get_provider_from_config(config: dict, expected_provider: Optional[str]
 
 class TestLLMFactory:
     @pytest.fixture
-    def default_model_configuration(self) -> dict:
+    def default_model_configuration(self, monkeypatch: MonkeyPatch) -> Dict:
+        monkeypatch.setenv("COHERE_API_KEY", "dummy_key_cohere")
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "dummy_key_openai")
+        monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "dummy_key_azure")
+        monkeypatch.setenv(AZURE_API_BASE_ENV_VAR, "dummy_base_azure")
+        monkeypatch.setenv(AZURE_API_VERSION_ENV_VAR, "dummy_version_azure")
+
         return {
             "provider": "openai",
             "model": "gpt-4",
@@ -744,7 +754,13 @@ class TestLLMClientFactory:
 
 class TestLLMRouterFactory:
     @pytest.fixture
-    def default_model_configuration(self) -> dict:
+    def default_model_configuration(self, monkeypatch: MonkeyPatch) -> Dict:
+        monkeypatch.setenv("COHERE_API_KEY", "dummy_key_cohere")
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "dummy_key_openai")
+        monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "dummy_key_azure")
+        monkeypatch.setenv(AZURE_API_BASE_ENV_VAR, "dummy_base_azure")
+        monkeypatch.setenv(AZURE_API_VERSION_ENV_VAR, "dummy_version_azure")
+
         return {
             "provider": "openai",
             "model": "gpt-4",
@@ -752,7 +768,7 @@ class TestLLMRouterFactory:
             "num_retries": 5,
         }
 
-    def test_llm_router_factory(self, default_model_configuration: dict):
+    def test_llm_router_factory(self, default_model_configuration: Dict):
         router_config = {
             "id": "test-model-group-id",
             "models": [
@@ -922,15 +938,27 @@ class TestLLMRouterFactory:
         ],
     )
     def test_raises_error_if_configuration_is_invalid(
-        self, router_config: dict, default_model_configuration: dict
+        self,
+        router_config: Dict,
+        default_model_configuration: Dict,
+        monkeypatch: MonkeyPatch,
     ):
+        monkeypatch.delenv(AZURE_API_KEY_ENV_VAR, raising=False)
+        monkeypatch.delenv(AZURE_API_BASE_ENV_VAR, raising=False)
+        monkeypatch.delenv(AZURE_API_VERSION_ENV_VAR, raising=False)
+
         with pytest.raises((ValueError, ProviderClientValidationError)):
             llm_router_factory(router_config, default_model_configuration)
 
 
 class TestEmbedderFactory:
     @pytest.fixture
-    def default_model_configuration(self) -> dict:
+    def default_model_configuration(self, monkeypatch: MonkeyPatch) -> Dict:
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "dummy_openai")
+        monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "dummy_azure")
+        monkeypatch.setenv(AZURE_API_BASE_ENV_VAR, "dummy_base")
+        monkeypatch.setenv(AZURE_API_VERSION_ENV_VAR, "dummy_version")
+
         return {
             "provider": "openai",
             "model": "test-embeddings-3",
@@ -1431,7 +1459,12 @@ class TestEmbedderClientFactory:
 
 class TestEmbedderRouterFactory:
     @pytest.fixture
-    def default_model_configuration(self) -> dict:
+    def default_model_configuration(self, monkeypatch: MonkeyPatch) -> Dict:
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "dummy_openai")
+        monkeypatch.setenv(AZURE_API_KEY_ENV_VAR, "dummy_azure")
+        monkeypatch.setenv(AZURE_API_BASE_ENV_VAR, "dummy_base")
+        monkeypatch.setenv(AZURE_API_VERSION_ENV_VAR, "dummy_version")
+
         return {
             "provider": "openai",
             "model": "test-text-embedding",
@@ -1439,7 +1472,7 @@ class TestEmbedderRouterFactory:
             "num_retries": 5,
         }
 
-    def test_llm_router_factory(self, default_model_configuration: dict):
+    def test_llm_router_factory(self, default_model_configuration: Dict):
         router_config = {
             "id": "test-model-group-id",
             "models": [
@@ -1578,8 +1611,15 @@ class TestEmbedderRouterFactory:
         ],
     )
     def test_raises_error_if_configuration_is_invalid(
-        self, router_config: dict, default_model_configuration: dict
+        self,
+        router_config: Dict,
+        default_model_configuration: Dict,
+        monkeypatch: MonkeyPatch,
     ):
+        monkeypatch.delenv(AZURE_API_KEY_ENV_VAR, raising=False)
+        monkeypatch.delenv(AZURE_API_BASE_ENV_VAR, raising=False)
+        monkeypatch.delenv(AZURE_API_VERSION_ENV_VAR, raising=False)
+
         with pytest.raises((ValueError, ProviderClientValidationError)):
             llm_router_factory(router_config, default_model_configuration)
 

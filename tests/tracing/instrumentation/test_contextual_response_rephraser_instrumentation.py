@@ -11,7 +11,7 @@ from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR, OPENAI_API_KEY_E
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.utils.llm import DEFAULT_OPENAI_GENERATE_MODEL_NAME
+from rasa.shared.utils.llm import DEFAULT_OPENAI_GENERATE_MODEL_NAME, AvailableEndpoints
 from rasa.tracing.instrumentation import instrumentation
 from rasa.utils.endpoints import EndpointConfig
 from tests.tracing.instrumentation.conftest import (
@@ -20,11 +20,26 @@ from tests.tracing.instrumentation.conftest import (
     TestSpanExporter,
 )
 
-"""@pytest.fixture(autouse=True)
-def set_mock_openai_api_key(monkeypatch: MonkeyPatch):
-    monkeypatch.setenv(
-        OPENAI_API_KEY_ENV_VAR, "mock key in test_single_step_llm_command_generator"
-    )"""
+
+class IncompleteAvailableEndpoints:
+    @staticmethod
+    def get_instance():
+        return IncompleteAvailableEndpoints()
+
+    def __init__(self):
+        self.model_groups = [{"id": "no-llm-models-group", "models": [None]}]
+
+
+@pytest.fixture
+def mock_endpoints_for_rephraser(monkeypatch) -> IncompleteAvailableEndpoints:
+    """Fixture to mock the endpoints for the rephraser."""
+    mock = IncompleteAvailableEndpoints()
+
+    def mock_get_instance(*args, **kwargs):
+        return mock
+
+    monkeypatch.setattr(AvailableEndpoints, "get_instance", mock_get_instance)
+    return mock
 
 
 @pytest.fixture
@@ -129,18 +144,6 @@ def greet_tracker() -> DialogueStateTracker:
                 "llm_model_group_id": "None",
             },
         ),
-        (
-            {"model_group": "llm-model-group"},
-            None,
-            {
-                "llm_model": "None",
-                "llm_type": "None",
-                "llm_model_group_id": "llm-model-group",
-                "llm_temperature": "None",
-                "llm_request_timeout": "None",
-                "request_timeout": "None",
-            },
-        ),
     ],
 )
 async def test_tracing_contextual_response_rephraser_generate_llm_response(
@@ -153,8 +156,73 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response(
     monkeypatch: MonkeyPatch,
     mock_available_endpoints: MockAvailableEndpoints,
 ) -> None:
-    if mock_env_key is not None:
-        monkeypatch.setenv(mock_env_key, "mock key in test_tracing_rephraser")
+    monkeypatch.setenv(mock_env_key, "mock key in test_tracing_rephraser")
+
+    test_span_exported = TestSpanExporter(span_exporter)
+    ignore_substrings = ["health_check"]
+    component_class = MockContextualResponseRephraser
+    instrumentation.instrument(
+        tracer_provider,
+        contextual_response_rephraser_class=component_class,
+    )
+    previous_num_captured_spans = test_span_exported.get_previous_num_captured_spans(
+        ignore_substrings
+    )
+
+    endpoint_config = EndpointConfig.from_dict({"llm": llm_config})
+    mock_rephraser = component_class(
+        endpoint_config=endpoint_config, domain=domain_with_responses
+    )
+
+    await mock_rephraser._generate_llm_response("some text")
+
+    captured_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans(
+        ignore_substrings
+    )  # type: ignore
+
+    num_captured_spans = len(captured_spans) - previous_num_captured_spans
+    assert num_captured_spans == 1
+
+    captured_span = captured_spans[-1]
+
+    assert (
+        captured_span.name == "MockContextualResponseRephraser._generate_llm_response"
+    )
+
+    expected_attributes = {
+        "class_name": component_class.__name__,
+        # llm attributes
+        "llm_temperature": "0.3",
+        "llm_request_timeout": "5",
+        # embeddings attributes
+        "embeddings_model": "None",
+        "embeddings_type": "None",
+        "embeddings_model_group_id": "None",
+        # deprecated
+        "request_timeout": "5",
+        "embeddings": "{}",
+    }
+    expected_attributes.update(expected)
+    assert captured_span.attributes == expected_attributes
+
+
+async def test_tracing_contextual_response_rephraser_generate_llm_response_no_model_group(  # noqa: E501
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    domain_with_responses: Domain,
+    monkeypatch: MonkeyPatch,
+    mock_endpoints_for_rephraser: IncompleteAvailableEndpoints,
+) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "test_key")
+    llm_config = {"model_group": "no-llm-models-group"}
+    expected = {
+        "llm_model": "None",
+        "llm_type": "None",
+        "llm_model_group_id": "no-llm-models-group",
+        "llm_temperature": "None",
+        "llm_request_timeout": "None",
+        "request_timeout": "None",
+    }
 
     test_span_exported = TestSpanExporter(span_exporter)
     ignore_substrings = ["health_check"]
@@ -407,18 +475,6 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
                 "llm_model_group_id": "None",
             },
         ),
-        (
-            {"model_group": "llm-model-group"},
-            None,
-            {
-                "llm_model": "None",
-                "llm_type": "None",
-                "llm_model_group_id": "llm-model-group",
-                "llm_temperature": "None",
-                "llm_request_timeout": "None",
-                "request_timeout": "None",
-            },
-        ),
     ],
 )
 async def test_tracing_contextual_response_rephraser_create_history(
@@ -432,8 +488,72 @@ async def test_tracing_contextual_response_rephraser_create_history(
     monkeypatch: MonkeyPatch,
     mock_available_endpoints: MockAvailableEndpoints,
 ) -> None:
-    if mock_env_key is not None:
-        monkeypatch.setenv(mock_env_key, "mock key in test_tracing_rephraser")
+    monkeypatch.setenv(mock_env_key, "mock key in test_tracing_rephraser")
+    test_span_exported = TestSpanExporter(span_exporter)
+    ignore_substrings = ["health_check"]
+    component_class = MockContextualResponseRephraser
+    instrumentation.instrument(
+        tracer_provider,
+        contextual_response_rephraser_class=component_class,
+    )
+    previous_num_captured_spans = test_span_exported.get_previous_num_captured_spans(
+        ignore_substrings
+    )
+    endpoint_config = EndpointConfig.from_dict({"llm": llm_config})
+    mock_rephraser = component_class(
+        endpoint_config=endpoint_config, domain=domain_with_responses
+    )
+
+    await mock_rephraser._create_history(greet_tracker)
+
+    captured_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans(
+        ignore_substrings
+    )  # type: ignore
+
+    num_captured_spans = len(captured_spans) - previous_num_captured_spans
+    assert num_captured_spans == 1
+
+    captured_span = captured_spans[-1]
+
+    assert captured_span.name == "MockContextualResponseRephraser._create_history"
+    expected_attributes = {
+        "class_name": component_class.__name__,
+        # llm attributes
+        "llm_type": "openai",
+        "llm_temperature": "0.3",
+        "llm_request_timeout": "5",
+        # embeddings attributes
+        "embeddings_model": "None",
+        "embeddings_type": "None",
+        "embeddings_model_group_id": "None",
+        # deprecated
+        "request_timeout": "5",
+        "embeddings": "{}",
+    }
+    expected_attributes.update(expected)
+    assert captured_span.attributes == expected_attributes
+
+
+async def test_tracing_contextual_response_rephraser_create_history_no_model_group(
+    tracer_provider: TracerProvider,
+    span_exporter: InMemorySpanExporter,
+    domain_with_responses: Domain,
+    greet_tracker: DialogueStateTracker,
+    monkeypatch: MonkeyPatch,
+    mock_endpoints_for_rephraser: IncompleteAvailableEndpoints,
+) -> None:
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "test_key")
+
+    llm_config = {"model_group": "no-llm-models-group"}
+    expected = {
+        "llm_model": "None",
+        "llm_type": "None",
+        "llm_model_group_id": "no-llm-models-group",
+        "llm_temperature": "None",
+        "llm_request_timeout": "None",
+        "request_timeout": "None",
+    }
+
     test_span_exported = TestSpanExporter(span_exporter)
     ignore_substrings = ["health_check"]
     component_class = MockContextualResponseRephraser

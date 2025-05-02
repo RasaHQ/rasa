@@ -127,7 +127,7 @@ runs:
       if: ${{ inputs.provider == 'ollama' }}
       run: |
         : Pull Ollama LLM model
-        ollama pull llama3.2:3b-instruct-fp16
+        ollama pull llama3.2
       shell: bash
 
     - name: Ollama API health-check
@@ -135,7 +135,7 @@ runs:
       run: |
         : Ollama API health-check
         curl http://localhost:11434/api/generate -d '{
-          "model": "llama3.2:3b-instruct-fp16",
+          "model": "llama3.2",
           "prompt": "Why is the sky blue?"
         }'
       shell: bash
