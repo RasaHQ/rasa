@@ -38,6 +38,7 @@ from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 from rasa.shared.core.flows.nlu_trigger import NLUTriggers
 from rasa.shared.core.flows.steps import (
     ActionFlowStep,
+    CallFlowStep,
     CollectInformationFlowStep,
     EndFlowStep,
     StartFlowStep,
@@ -466,161 +467,156 @@ class Flow:
         and a set of visited step IDs to prevent revisiting steps.
         It calls `go_over_steps` to recursively explore and fill the paths list.
         """
-        flow_paths_list = FlowPathsList(self.id, paths=[])
-        steps: List[FlowStep] = self.steps
+        all_paths = FlowPathsList(self.id, paths=[])
+        start_step: FlowStep = self.first_step_in_flow()
         current_path: FlowPath = FlowPath(flow=self.id, nodes=[])
-        step_ids_visited: Set[str] = set()
+        visited_step_ids: Set[str] = set()
 
-        self._go_over_steps(steps, current_path, flow_paths_list, step_ids_visited)
-
-        if not flow_paths_list.is_path_part_of_list(current_path):
-            flow_paths_list.paths.append(copy.deepcopy(current_path))
+        self._go_over_steps(start_step, current_path, all_paths, visited_step_ids)
 
         structlogger.debug(
             "shared.core.flows.flow.extract_all_paths",
             comment="Extraction complete",
-            number_of_paths=len(flow_paths_list.paths),
+            number_of_paths=len(all_paths.paths),
             flow_name=self.name,
         )
-        return flow_paths_list
+        return all_paths
 
     def _go_over_steps(
         self,
-        steps_to_go: Union[str, List[FlowStep]],
+        current_step: FlowStep,
         current_path: FlowPath,
-        completed_paths: FlowPathsList,
-        step_ids_visited: Set[str],
+        all_paths: FlowPathsList,
+        visited_step_ids: Set[str],
     ) -> None:
         """Processes the flow steps recursively.
 
-        Either following direct step IDs or handling conditions, and adds complete
-        paths to the collected_paths.
-
         Args:
-            steps_to_go: Either a direct step ID or a list of steps to process.
+            current_step: The current step being processed.
             current_path: The current path being constructed.
-            completed_paths: The list where completed paths are added.
-            step_ids_visited: A set of step IDs that have been visited to avoid cycles.
+            all_paths: The list where completed paths are added.
+            visited_step_ids: A set of steps that have been visited to avoid cycles.
 
         Returns:
-            None: This function modifies collected_paths in place by appending new paths
+            None: This function modifies all_paths in place by appending new paths
             as they are found.
         """
-        # Case 1: If the steps_to_go is a custom_id string
-        # This happens when a "next" of, for example, a IfFlowStepLink is targeting
-        # a specific step by id
-        if isinstance(steps_to_go, str):
-            for i, step in enumerate(self.steps):
-                # We don't need to check for 'id' as a link can only happen to a
-                # custom id.
-                if step.custom_id == steps_to_go:
-                    self._go_over_steps(
-                        self.steps[i:], current_path, completed_paths, step_ids_visited
-                    )
-
-        # Case 2: If steps_to_go is a list of steps
-        else:
-            for i, step in enumerate(steps_to_go):
-                # 1. Check if the step is relevant for testable_paths extraction.
-                # We only create new path nodes for ActionFlowStep and
-                # CollectInformationFlowStep because these are externally visible
-                # changes in the assistant's behaviour (trackable in the e2e tests).
-                # For other flow steps, we only follow their links.
-                # We decided to ignore calls to other flows in our coverage analysis.
-                if not isinstance(step, (CollectInformationFlowStep, ActionFlowStep)):
-                    self._handle_links(
-                        step.next.links,
-                        current_path,
-                        completed_paths,
-                        step_ids_visited,
-                    )
-                    continue
-
-                # 2. Check if already visited this custom step id
-                # in order to keep track of loops
-                if step.custom_id is not None and step.custom_id in step_ids_visited:
-                    if not completed_paths.is_path_part_of_list(current_path):
-                        completed_paths.paths.append(copy.deepcopy(current_path))
-                    return  # Stop traversing this path if we've revisited a step
-                elif step.custom_id is not None:
-                    step_ids_visited.add(step.custom_id)
-
-                # 3. Append step info to the path
-                current_path.nodes.append(
-                    PathNode(
-                        flow=current_path.flow,
-                        step_id=step.id,
-                        lines=step.metadata["line_numbers"],
-                    )
+        # Check if the step is relevant for testable_paths extraction.
+        # We only create new path nodes for ActionFlowStep, CallFlowStep and
+        # CollectInformationFlowStep because these are externally visible
+        # changes in the assistant's behaviour (trackable in the e2e tests).
+        # For other flow steps, we only follow their links.
+        # We decided to ignore calls to other flows in our coverage analysis.
+        should_add_node = isinstance(
+            current_step, (CollectInformationFlowStep, ActionFlowStep, CallFlowStep)
+        )
+        if should_add_node:
+            # Add current step to the current path that is being constructed.
+            current_path.nodes.append(
+                PathNode(
+                    flow=current_path.flow,
+                    step_id=current_step.id,
+                    lines=current_step.metadata["line_numbers"],
                 )
+            )
 
-                # 4. Check if 'END' branch
-                if (
-                    len(step.next.links) == 1
-                    and isinstance(step.next.links[0], StaticFlowStepLink)
-                    and step.next.links[0].target == END_STEP
-                ):
-                    if not completed_paths.is_path_part_of_list(current_path):
-                        completed_paths.paths.append(copy.deepcopy(current_path))
-                    return
-                else:
-                    self._handle_links(
-                        step.next.links,
-                        current_path,
-                        completed_paths,
-                        step_ids_visited,
-                    )
+        if current_step.id in visited_step_ids or self.is_end_of_path(current_step):
+            # Found a cycle, or reached an end step, do not proceed further.
+            all_paths.paths.append(copy.deepcopy(current_path))
+            # Remove the last node from the path if it was added.
+            if should_add_node:
+                current_path.nodes.pop()
+            return
 
-    def _handle_links(
+        # Mark current step as visited in this path.
+        visited_step_ids.add(current_step.id)
+
+        # Iterate over all links of the current step.
+        for link in current_step.next.links:
+            self._handle_link(
+                current_path,
+                all_paths,
+                visited_step_ids,
+                link,
+            )
+
+        # Backtrack the current step and remove it from the path.
+        visited_step_ids.remove(current_step.id)
+
+        # Remove the last node from the path if it was added.
+        if should_add_node:
+            current_path.nodes.pop()
+
+    def _handle_link(
         self,
-        links: List[FlowStepLink],
-        path: FlowPath,
-        collected_paths: FlowPathsList,
-        step_ids_visited: set,
+        current_path: FlowPath,
+        all_paths: FlowPathsList,
+        visited_step_ids: Set[str],
+        link: FlowStepLink,
     ) -> None:
-        """Processes the next step in a flow.
-
-        Potentially recursively calling itself to handle conditional paths and
-        branching.
+        """Handles the next step in a flow.
 
         Args:
-            links: Links listed in the "next" attribute.
-            path: The current path taken in the flow.
-            collected_paths: A list of paths collected so far.
-            step_ids_visited: A set of step IDs that have already been visited
-                to avoid loops.
+            current_path: The current path being constructed.
+            all_paths: The list where completed paths are added.
+            visited_step_ids: A set of steps that have been visited to avoid cycles.
+            link: The link to be followed.
 
         Returns:
-            None: Modifies collected_paths in place by appending new paths
-            as they are completed.
+            None: This function modifies all_paths in place by appending new paths
+            as they are found.
         """
-        steps = self.steps
-
-        for link in links:
-            # Direct step id reference
-            if isinstance(link, StaticFlowStepLink):
-                # Find this id in the flow steps and restart from there
-                for i, step in enumerate(steps):
-                    if step.id == link.target_step_id:
-                        self._go_over_steps(
-                            steps[i:],
-                            copy.deepcopy(path),
-                            collected_paths,
-                            copy.deepcopy(step_ids_visited),
-                        )
-
-            # If conditions
-            elif isinstance(link, (IfFlowStepLink, ElseFlowStepLink)):
-                # Handling conditional paths
-                target_steps: Union[str, List[FlowStep]]
-                if isinstance(link.target_reference, FlowStepSequence):
-                    target_steps = link.target_reference.child_steps
-                else:
-                    target_steps = link.target_reference
-
+        # StaticFlowStepLink is a direct link to the next step.
+        if isinstance(link, StaticFlowStepLink):
+            # Find the step by its id and continue the path.
+            if step := self._get_step_by_step_id(link.target_step_id):
                 self._go_over_steps(
-                    target_steps,
-                    copy.deepcopy(path),
-                    collected_paths,
-                    copy.deepcopy(step_ids_visited),
+                    step,
+                    current_path,
+                    all_paths,
+                    visited_step_ids,
                 )
+                return
+        # IfFlowStepLink and ElseFlowStepLink are conditional links.
+        elif isinstance(link, (IfFlowStepLink, ElseFlowStepLink)):
+            if isinstance(link.target_reference, FlowStepSequence):
+                # If the target is a FlowStepSequence, we need to go over all
+                # child steps of the sequence.
+                for child_step in link.target_reference.child_steps:
+                    self._go_over_steps(
+                        child_step,
+                        current_path,
+                        all_paths,
+                        visited_step_ids,
+                    )
+                return
+            else:
+                # Find the step by its id and continue the path.
+                if step := self._get_step_by_step_id(link.target_reference):
+                    self._go_over_steps(
+                        step,
+                        current_path,
+                        all_paths,
+                        visited_step_ids,
+                    )
+                    return
+
+    def is_end_of_path(self, step: FlowStep) -> bool:
+        """Check if there is no path available from the current step."""
+        if (
+            len(step.next.links) == 1
+            and isinstance(step.next.links[0], StaticFlowStepLink)
+            and step.next.links[0].target == END_STEP
+        ):
+            return True
+        return False
+
+    def _get_step_by_step_id(
+        self,
+        step_id: Optional[str],
+    ) -> Optional[FlowStep]:
+        """Get a step by its id from a list of steps."""
+        for step in self.steps:
+            if step.id == step_id:
+                return step
+        return None

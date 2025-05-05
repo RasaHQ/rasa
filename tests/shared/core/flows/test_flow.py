@@ -809,6 +809,11 @@ def test_extract_all_paths(pizza_flows_file: str):
                 flow="order_pizza",
                 nodes=[
                     PathNode(
+                        step_id="order_pizza_0_call_fill_pizza_order",
+                        flow="order_pizza",
+                        lines="10-14",
+                    ),
+                    PathNode(
                         step_id="payment_options",
                         flow="order_pizza",
                         lines="15-22",
@@ -824,6 +829,11 @@ def test_extract_all_paths(pizza_flows_file: str):
             FlowPath(
                 flow="order_pizza",
                 nodes=[
+                    PathNode(
+                        step_id="order_pizza_0_call_fill_pizza_order",
+                        flow="order_pizza",
+                        lines="10-14",
+                    ),
                     PathNode(
                         step_id="payment_options",
                         flow="order_pizza",
@@ -841,9 +851,19 @@ def test_extract_all_paths(pizza_flows_file: str):
                 flow="order_pizza",
                 nodes=[
                     PathNode(
+                        step_id="order_pizza_0_call_fill_pizza_order",
+                        flow="order_pizza",
+                        lines="10-14",
+                    ),
+                    PathNode(
                         step_id="payment_options",
                         flow="order_pizza",
                         lines="15-22",
+                    ),
+                    PathNode(
+                        step_id="use_membership_points",
+                        flow="order_pizza",
+                        lines="32-37",
                     ),
                     PathNode(step_id="take_payment", flow="order_pizza", lines="29-31"),
                 ],
@@ -851,6 +871,32 @@ def test_extract_all_paths(pizza_flows_file: str):
             FlowPath(
                 flow="order_pizza",
                 nodes=[
+                    PathNode(
+                        step_id="order_pizza_0_call_fill_pizza_order",
+                        flow="order_pizza",
+                        lines="10-14",
+                    ),
+                    PathNode(
+                        step_id="payment_options",
+                        flow="order_pizza",
+                        lines="15-22",
+                    ),
+                    PathNode(
+                        step_id="use_membership_points",
+                        flow="order_pizza",
+                        lines="32-37",
+                    ),
+                    PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
+                ],
+            ),
+            FlowPath(
+                flow="order_pizza",
+                nodes=[
+                    PathNode(
+                        step_id="order_pizza_0_call_fill_pizza_order",
+                        flow="order_pizza",
+                        lines="10-14",
+                    ),
                     PathNode(
                         step_id="payment_options",
                         flow="order_pizza",
@@ -862,6 +908,11 @@ def test_extract_all_paths(pizza_flows_file: str):
             FlowPath(
                 flow="order_pizza",
                 nodes=[
+                    PathNode(
+                        step_id="order_pizza_0_call_fill_pizza_order",
+                        flow="order_pizza",
+                        lines="10-14",
+                    ),
                     PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
                 ],
             ),
@@ -917,6 +968,11 @@ def test_extract_all_paths_correct_order():
                         flow="correct_order",
                         lines="11-11",
                     ),
+                    PathNode(
+                        step_id="correct_order_1_call_fill_pizza_order",
+                        flow="correct_order",
+                        lines="12-12",
+                    ),
                 ],
             ),
         ],
@@ -934,19 +990,30 @@ def test_go_over_steps(pizza_flows_file: str):
     flows_list = YAMLFlowsReader.read_from_file(pizza_flows_file)
     order_pizza_flow = flows_list.flow_by_id("order_pizza")
     path = FlowPath(
-        flow="order_pizza", nodes=[PathNode(step_id="order_pizza", flow="order_pizza")]
+        flow="order_pizza",
+        nodes=[
+            PathNode(
+                step_id="order_pizza_0_call_fill_pizza_order",
+                flow="order_pizza",
+                lines="10-14",
+            )
+        ],
     )
     collected_paths = FlowPathsList("order_pizza", [])
-    step_ids_visited = set()
+    step_ids_visited = set(["order_pizza_0_call_fill_pizza_order"])
 
     order_pizza_flow._go_over_steps(
-        order_pizza_flow.steps, path, collected_paths, step_ids_visited
+        order_pizza_flow.steps[1], path, collected_paths, step_ids_visited
     )
 
     expected_path = FlowPath(
         flow="order_pizza",
         nodes=[
-            PathNode(step_id="order_pizza", flow="order_pizza", lines=None),
+            PathNode(
+                step_id="order_pizza_0_call_fill_pizza_order",
+                flow="order_pizza",
+                lines="10-14",
+            ),
             PathNode(
                 step_id="payment_options",
                 flow="order_pizza",
@@ -962,7 +1029,7 @@ def test_go_over_steps(pizza_flows_file: str):
     )
 
     assert len(collected_paths.paths) == 5
-    assert path == expected_path
+    assert collected_paths.paths[0] == expected_path
 
 
 def test_handle_next(pizza_flows_file: str):
@@ -972,8 +1039,8 @@ def test_handle_next(pizza_flows_file: str):
     collected_paths = FlowPathsList("order_pizza", [])
     step_ids_visited = set()
 
-    links = order_pizza_flow.steps[1].next.links
-    order_pizza_flow._handle_links(links, path, collected_paths, step_ids_visited)
+    for link in order_pizza_flow.steps[1].next.links:
+        order_pizza_flow._handle_link(path, collected_paths, step_ids_visited, link)
 
     expected_collected_paths = [
         FlowPath(
@@ -1001,7 +1068,23 @@ def test_handle_next(pizza_flows_file: str):
         FlowPath(
             flow="order_pizza",
             nodes=[
+                PathNode(
+                    step_id="use_membership_points",
+                    flow="order_pizza",
+                    lines="32-37",
+                ),
                 PathNode(step_id="take_payment", flow="order_pizza", lines="29-31"),
+            ],
+        ),
+        FlowPath(
+            flow="order_pizza",
+            nodes=[
+                PathNode(
+                    step_id="use_membership_points",
+                    flow="order_pizza",
+                    lines="32-37",
+                ),
+                PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
             ],
         ),
         FlowPath(
@@ -1012,7 +1095,7 @@ def test_handle_next(pizza_flows_file: str):
         ),
     ]
 
-    assert len(collected_paths.paths) == 4
+    assert len(collected_paths.paths) == 5
     assert collected_paths.paths == expected_collected_paths
 
 
