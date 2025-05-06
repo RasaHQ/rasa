@@ -5,7 +5,12 @@ from keycloak import KeycloakError
 from requests import ConnectionError, RequestException, Timeout
 
 from rasa.shared.exceptions import RasaException
-from rasa.studio.results_logger import StudioResult, with_studio_error_handler
+from rasa.studio.results_logger import (
+    StudioResult,
+    response_has_errors,
+    response_has_id,
+    with_studio_error_handler,
+)
 
 
 def test_handle_error_successful_execution():
@@ -109,9 +114,14 @@ def test_handle_error_exceptions(mock_studio_config, exception, expected_result)
 
 
 def test_response_has_errors():
-    from rasa.studio.results_logger import response_has_errors
-
     assert response_has_errors({"errors": [{"message": "Error"}]})
     assert not response_has_errors({"errors": []})
     assert not response_has_errors({"data": "Success"})
     assert not response_has_errors({"errors": None})
+
+
+def test_response_has_id():
+    assert response_has_id({"id": "12345"})
+    assert not response_has_id({"id": None})
+    assert not response_has_id({"id": 12345})
+    assert not response_has_id({})

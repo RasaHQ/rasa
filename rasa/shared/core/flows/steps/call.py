@@ -34,15 +34,13 @@ class CallFlowStep(FlowStep):
             **base.__dict__,
         )
 
-    def as_json(self) -> Dict[Text, Any]:
+    def as_json(self) -> Dict[Text, Any]:  # type: ignore[override]
         """Returns the flow step as a dictionary.
 
         Returns:
             The flow step as a dictionary.
         """
-        dump = super().as_json()
-        dump["call"] = self.call
-        return dump
+        return super().as_json(step_properties={"call": self.call})
 
     def steps_in_tree(
         self, should_resolve_calls: bool = True
@@ -62,3 +60,12 @@ class CallFlowStep(FlowStep):
     def default_id_postfix(self) -> str:
         """Returns the default id postfix of the flow step."""
         return f"call_{self.call}"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, type(self)):
+            return (
+                self.call == other.call
+                and self.called_flow_reference == other.called_flow_reference
+                and super().__eq__(other)
+            )
+        return False

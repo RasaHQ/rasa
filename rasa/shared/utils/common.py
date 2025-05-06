@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import functools
 import importlib
 import inspect
@@ -286,6 +287,47 @@ def merge_lists_of_dicts(
     }
     merged_dicts = merge_dicts(dict1, dict2, override_existing_values)
     return list(merged_dicts.values())
+
+
+def partial_merge_list(
+    self_list: List[Any],
+    other_list: List[Any],
+    is_same_item_fn: Callable[[Any, Any], bool],
+) -> List[Any]:
+    """Merges two lists based on a custom intersection logic."""
+    matched_other_indices = set()
+    result = []
+
+    for s_item in self_list:
+        match = next(
+            (
+                (i, o_item)
+                for i, o_item in enumerate(other_list)
+                if i not in matched_other_indices and is_same_item_fn(s_item, o_item)
+            ),
+            None,
+        )
+        if match:
+            i, o_item = match
+            result.append(copy.deepcopy(o_item))
+            matched_other_indices.add(i)
+        else:
+            result.append(copy.deepcopy(s_item))
+
+    return result
+
+
+def partial_merge_dict(
+    self_d: Dict[Text, Any], other_d: Dict[Text, Any]
+) -> Dict[Text, Any]:
+    """Merges two dictionaries based on a custom intersection logic."""
+    merged = {}
+    for k, v in self_d.items():
+        if k in other_d:
+            merged[k] = copy.deepcopy(other_d[k])
+        else:
+            merged[k] = copy.deepcopy(v)
+    return merged
 
 
 def warn_and_exit_if_module_path_contains_rasa_plus(

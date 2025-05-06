@@ -3,7 +3,7 @@ import base64
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, List, Set, Text, Union
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import questionary
@@ -15,7 +15,11 @@ import rasa.studio.upload
 from rasa.shared.exceptions import RasaException
 from rasa.studio.config import StudioConfig
 from rasa.studio.results_logger import StudioResult, with_studio_error_handler
-from rasa.studio.upload import make_request
+from rasa.studio.upload import (
+    build_get_assistant_by_name_request,
+    check_if_assistant_already_exists,
+    make_request,
+)
 from tests.studio.conftest import (
     CALM_ENDPOINTS_YAML,
     CALM_NLU_YAML,
@@ -30,48 +34,6 @@ from tests.studio.conftest import (
 @pytest.mark.parametrize(
     "args, endpoint, expected",
     [
-        (
-            argparse.Namespace(
-                domain="data/upload/domain.yml",
-                data="data/upload/data",
-                entities=["name"],
-                intents=["greet", "inform"],
-                config="data/upload/config.yml",
-            ),
-            "http://studio.amazonaws.com/api/graphql",
-            {
-                "query": (
-                    "mutation ImportFromEncodedYaml"
-                    "($input: ImportFromEncodedYamlInput!)"
-                    "{\n  importFromEncodedYaml(input: $input)\n}"
-                ),
-                "variables": {
-                    "input": {
-                        "assistantName": "test",
-                        "domain": (
-                            "dmVyc2lvbjogJzMuMScKaW50ZW50czoKLSBncmVldAotIGluZm9ybQplbn"
-                            "RpdGllczoKLSBuYW1lOgogICAgcm9sZXM6CiAgICAtIGZpcnN0X25hbWUK"
-                            "ICAgIC0gbGFzdF9uYW1lCi0gYWdlCg=="
-                        ),
-                        "nlu": (
-                            "dmVyc2lvbjogIjMuMSIKbmx1OgotIGludGVudDogZ3JlZXQKICBleGFtcGxlc"
-                            "zogfAogICAgLSBoZXkKICAgIC0gaGVsbG8KICAgIC0gaGkKICAgIC0gaGVsbG8"
-                            "gdGhlcmUKICAgIC0gZ29vZCBtb3JuaW5nCiAgICAtIGdvb2QgZXZlbmluZwogI"
-                            "CAgLSBtb2luCiAgICAtIGhleSB0aGVyZQogICAgLSBsZXQncyBnbwogICAgLSB"
-                            "oZXkgZHVkZQogICAgLSBnb29kbW9ybmluZwogICAgLSBnb29kZXZlbmluZwogI"
-                            "CAgLSBnb29kIGFmdGVybm9vbgotIGludGVudDogaW5mb3JtCiAgZXhhbXBsZXM"
-                            "6IHwKICAgIC0gbXkgbmFtZSBpcyBbVXJvc117ImVudGl0eSI6ICJuYW1lIiwgI"
-                            "nJvbGUiOiAiZmlyc3RfbmFtZSJ9CiAgICAtIEknbSBbSm9obl17ImVudGl0eSI"
-                            "6ICJuYW1lIiwgInJvbGUiOiAiZmlyc3RfbmFtZSJ9CiAgICAtIEhpLCBteSBma"
-                            "XJzdCBuYW1lIGlzIFtMdWlzXXsiZW50aXR5IjogIm5hbWUiLCAicm9sZSI6ICJ"
-                            "maXJzdF9uYW1lIn0KICAgIC0gTWlsaWNhCiAgICAtIEthcmluCiAgICAtIFN0Z"
-                            "XZlbgogICAgLSBJJ20gWzE4XShhZ2UpCiAgICAtIEkgYW0gWzMyXShhZ2UpIHl"
-                            "lYXJzIG9sZAogICAgLSA5Cg=="
-                        ),
-                    }
-                },
-            },
-        ),
         (
             argparse.Namespace(
                 assistant_name=["test"],
@@ -269,20 +231,10 @@ def test_handle_upload(
     assert mock.post.call_args[1]["json"] == expected
 
 
-@pytest.mark.parametrize(
-    "is_calm_bot, mock_fn_name, disable_verify",
-    [
-        (True, "upload_calm_assistant", True),
-        (True, "upload_calm_assistant", False),
-        (False, "upload_nlu_assistant", True),
-        (False, "upload_nlu_assistant", False),
-    ],
-)
+@pytest.mark.parametrize("disable_verify", [True, False])
 def test_handle_upload_no_domain_path_specified(
     monkeypatch: MonkeyPatch,
     tmp_path: Path,
-    is_calm_bot: bool,
-    mock_fn_name: str,
     disable_verify: bool,
 ) -> None:
     """Test the handle_upload function when no domain path is specified in the CLI."""
@@ -292,9 +244,9 @@ def test_handle_upload_no_domain_path_specified(
     args = argparse.Namespace(
         assistant_name=[assistant_name],
         # this is the default value when running the cmd without specifying -d flag
-        domain="domain.yml",
-        config="config.yml",
-        calm=is_calm_bot,
+        domain=None,
+        config=None,
+        calm=True,
     )
 
     domain_dir = tmp_path / "domain"
@@ -328,7 +280,7 @@ def test_handle_upload_no_domain_path_specified(
     monkeypatch.setattr(rasa.studio.upload, "KeycloakTokenReader", MagicMock())
 
     mock = MagicMock()
-    monkeypatch.setattr(rasa.studio.upload, mock_fn_name, mock)
+    monkeypatch.setattr(rasa.studio.upload, "upload_calm_assistant", mock)
 
     rasa.studio.upload.handle_upload(args)
 
@@ -336,7 +288,7 @@ def test_handle_upload_no_domain_path_specified(
         assistant_name=[assistant_name],
         domain=str(domain_dir),
         config=str(config_path),
-        calm=is_calm_bot,
+        calm=True,
     )
 
     mock.assert_called_once_with(expected_args, endpoint, verify=not disable_verify)
@@ -717,3 +669,59 @@ def test_get_selected_entities_and_intents(
 
     assert intents.sort() == expected_intents.sort()
     assert entities.sort() == expected_entities.sort()
+
+
+def test_check_if_assistant_already_exists(monkeypatch: MonkeyPatch):
+    mock_token = MagicMock()
+    monkeypatch.setattr(rasa.studio.upload, "KeycloakTokenReader", mock_token)
+
+    assistant_name = "test_assistant"
+    endpoint = "https://studio.example.com/graphql"
+    verify = True
+
+    # Mock response for when the assistant exists
+    mock_response_exists = MagicMock()
+    mock_response_exists.json.return_value = {
+        "data": {
+            "assistantByName": {"id": "123", "name": assistant_name, "mode": "test"}
+        }
+    }
+
+    # Mock response for when the assistant does not exist
+    mock_response_not_exists = MagicMock()
+    mock_response_not_exists.json.return_value = {"data": {"assistantByName": None}}
+
+    with patch("rasa.studio.upload.requests.post") as mock_post:
+        # Assistant exists
+        mock_post.return_value = mock_response_exists
+        assert (
+            check_if_assistant_already_exists(assistant_name, endpoint, verify) is True
+        )
+
+        # Assistant does not exist
+        mock_post.return_value = mock_response_not_exists
+        assert (
+            check_if_assistant_already_exists(assistant_name, endpoint, verify) is False
+        )
+
+
+def test_build_get_assistant_by_name_request():
+    assistant_name = "test_assistant"
+    expected_request = {
+        "query": (
+            "query AssistantByName($input: AssistantByNameInput!) {"
+            " assistantByName(input: $input) {"
+            " ... on Assistant { id name mode }"
+            " ... on AssistantByName_AssistantNotFound { _ }"
+            " }"
+            "}"
+        ),
+        "variables": {
+            "input": {
+                "assistantName": assistant_name,
+            }
+        },
+    }
+
+    result = build_get_assistant_by_name_request(assistant_name)
+    assert result == expected_request

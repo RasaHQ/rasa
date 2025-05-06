@@ -70,3 +70,9 @@ class FlowStepSequence:
     def empty(cls) -> FlowStepSequence:
         """Create an empty FlowStepSequence object."""
         return cls(child_steps=[])
+
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, FlowStepSequence)
+            and self.child_steps == other.child_steps
+        )

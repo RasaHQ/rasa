@@ -158,11 +158,7 @@ def handle_upload(args: argparse.Namespace) -> None:
     RasaYAMLReader.expand_env_vars = False
     YAMLFlowsReader.expand_env_vars = False
 
-    # check safely if args.calm is set and not fail if not
-    if hasattr(args, "calm") and args.calm:
-        upload_calm_assistant(args, endpoint, verify=verify)
-    else:
-        upload_nlu_assistant(args, endpoint, verify=verify)
+    upload_calm_assistant(args, endpoint, verify=verify)
 
 
 config_keys = [
@@ -226,6 +222,7 @@ def upload_calm_assistant(
             - endpoints: The path to the endpoints
             - config: The path to the config
         endpoint: The studio endpoint
+        verify: Whether to verify SSL
     Returns:
         None
     """
@@ -244,6 +241,7 @@ def upload_calm_assistant(
     # Prepare config and domain
     config = importer.get_config()
     assistant_name = _get_assistant_name(config)
+
     config_from_files = read_yaml_file(args.config, expand_env_vars=False)
     domain_from_files = importer.get_user_domain().as_dict()
 
@@ -563,3 +561,69 @@ def remove_quotes(node: Any) -> Any:
         return {k: remove_quotes(v) for k, v in node.items()}
     else:
         return node
+
+
+def check_if_assistant_already_exists(
+    assistant_name: str, endpoint: str, verify: bool = True
+) -> bool:
+    """Checks if the assistant already exists in Studio.
+
+    Args:
+        assistant_name: The name of the assistant
+        endpoint: The studio endpoint
+        verify: Whether to verify SSL
+
+    Returns:
+        bool: The upload confirmation
+    """
+    graphql_req = build_get_assistant_by_name_request(assistant_name)
+
+    structlogger.info(
+        "rasa.studio.upload.assistant_already_exists",
+        event_info="Checking if assistant already exists...",
+        assistant_name=assistant_name,
+    )
+
+    token = KeycloakTokenReader().get_token()
+    res = requests.post(
+        endpoint,
+        json=graphql_req,
+        headers={
+            "Authorization": f"{token.token_type} {token.access_token}",
+            "Content-Type": "application/json",
+        },
+        verify=verify,
+    )
+    response = res.json()["data"]["assistantByName"] or {}
+    if results_logger.response_has_id(response):
+        structlogger.info(
+            "rasa.studio.upload.assistant_already_exists",
+            event_info="Assistant already exists.",
+        )
+        return True
+
+    structlogger.info(
+        "rasa.studio.upload.assistant_already_exists", event_info="Assistant not found."
+    )
+    return False
+
+
+def build_get_assistant_by_name_request(
+    assistant_name: str,
+) -> Dict:
+    graphql_req = {
+        "query": (
+            "query AssistantByName($input: AssistantByNameInput!) {"
+            " assistantByName(input: $input) {"
+            " ... on Assistant { id name mode }"
+            " ... on AssistantByName_AssistantNotFound { _ }"
+            " }"
+            "}"
+        ),
+        "variables": {
+            "input": {
+                "assistantName": assistant_name,
+            }
+        },
+    }
+    return graphql_req

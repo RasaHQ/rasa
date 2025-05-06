@@ -242,11 +242,12 @@ class YamlFlowsWriter:
     """Class that writes flows information in YAML format."""
 
     @staticmethod
-    def dumps(flows: List[Flow]) -> Text:
+    def dumps(flows: List[Flow], should_remove_metadata: bool = False) -> Text:
         """Dump `Flow`s to YAML.
 
         Args:
             flows: The `Flow`s to dump.
+            should_remove_metadata: Flag whether to remove metadata from the flow steps.
 
         Returns:
             The dumped YAML.
@@ -254,19 +255,30 @@ class YamlFlowsWriter:
         dump = {}
         for flow in flows:
             dumped_flow = flow.as_json()
+            if should_remove_metadata:
+                # Remove metadata from the flow step
+                _remove_keys_recursively(dumped_flow, ["metadata"])
+
             del dumped_flow["id"]
             dump[flow.id] = dumped_flow
         return dump_obj_as_yaml_to_string({KEY_FLOWS: dump})
 
     @staticmethod
-    def dump(flows: List[Flow], filename: Union[Text, Path]) -> None:
+    def dump(
+        flows: List[Flow],
+        filename: Union[Text, Path],
+        should_remove_metadata: bool = False,
+    ) -> None:
         """Dump `Flow`s to YAML file.
 
         Args:
             flows: The `Flow`s to dump.
             filename: The path to the file to write to.
+            should_remove_metadata: Flag whether to remove metadata from the flow steps.
         """
-        rasa.shared.utils.io.write_text_file(YamlFlowsWriter.dumps(flows), filename)
+        rasa.shared.utils.io.write_text_file(
+            YamlFlowsWriter.dumps(flows, should_remove_metadata), filename
+        )
 
 
 def is_flows_file(file_path: Union[Text, Path]) -> bool:

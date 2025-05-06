@@ -100,18 +100,25 @@ class FlowStep:
         """Most steps allow linking to the next step. But some don't."""
         return True
 
-    def as_json(self) -> Dict[Text, Any]:
+    def as_json(
+        self, step_properties: Optional[Dict[Text, Any]] = None
+    ) -> Dict[Text, Any]:
         """Serialize the FlowStep object.
 
         Returns:
             The FlowStep as serialized data.
         """
-        data: Dict[Text, Any] = {"id": self.id}
+        data: Dict[Text, Any] = {}
+        if self.id != self.default_id:
+            data = {"id": self.id}
 
-        if dumped_next := self.next.as_json():
-            data["next"] = dumped_next
+        if step_properties:
+            data.update(step_properties)
+
         if self.description:
             data["description"] = self.description
+        if dumped_next := self.next.as_json():
+            data["next"] = dumped_next
         if self.metadata:
             data["metadata"] = self.metadata
         return data
@@ -142,6 +149,17 @@ class FlowStep:
     def utterances(self) -> Set[str]:
         """Return all the utterances used in this step."""
         return set()
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, FlowStep):
+            return False
+
+        return (
+            self.idx == other.idx
+            and self.description == other.description
+            and self.next == other.next
+            and self.flow_id == other.flow_id
+        )
 
 
 @dataclass

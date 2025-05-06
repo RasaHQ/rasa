@@ -31,15 +31,13 @@ class ActionFlowStep(FlowStep):
             **base.__dict__,
         )
 
-    def as_json(self) -> Dict[Text, Any]:
+    def as_json(self) -> Dict[Text, Any]:  # type: ignore[override]
         """Serialize the ActionFlowStep
 
         Returns:
             The ActionFlowStep object as serialized data.
         """
-        data = super().as_json()
-        data["action"] = self.action
-        return data
+        return super().as_json(step_properties={"action": self.action})
 
     @property
     def default_id_postfix(self) -> str:
@@ -55,3 +53,8 @@ class ActionFlowStep(FlowStep):
     def custom_action(self) -> Optional[str]:
         """Return all the custom actions used in this step."""
         return self.action if not self.action.startswith(UTTER_PREFIX) else None
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, type(self)):
+            return self.action == other.action and super().__eq__(other)
+        return False

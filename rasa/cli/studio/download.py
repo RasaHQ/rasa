@@ -8,7 +8,7 @@ from rasa.cli.arguments.default_arguments import (
 )
 from rasa.cli.arguments.train import add_data_param, add_domain_param
 from rasa.shared.constants import DEFAULT_CONFIG_PATH, DEFAULT_ENDPOINTS_PATH
-from rasa.studio.download import handle_download
+from rasa.studio.download.download import handle_download
 
 
 def add_subparser(

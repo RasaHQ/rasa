@@ -7,6 +7,10 @@ from rasa.shared.constants import ACTION_ASK_PREFIX, UTTER_ASK_PREFIX
 from rasa.shared.core.flows.flow_step import FlowStep
 from rasa.shared.core.slots import SlotRejection
 
+DEFAULT_ASK_BEFORE_FILLING = False
+DEFAULT_RESET_AFTER_FLOW_ENDS = True
+DEFAULT_FORCE_SLOT_FILLING = False
+
 
 @dataclass
 class CollectInformationFlowStep(FlowStep):
@@ -20,9 +24,9 @@ class CollectInformationFlowStep(FlowStep):
     """The action that the assistant uses to ask for the slot."""
     rejections: List[SlotRejection]
     """how the slot value is validated using predicate evaluation."""
-    ask_before_filling: bool = False
+    ask_before_filling: bool = DEFAULT_ASK_BEFORE_FILLING
     """Whether to always ask the question even if the slot is already filled."""
-    reset_after_flow_ends: bool = True
+    reset_after_flow_ends: bool = DEFAULT_RESET_AFTER_FLOW_ENDS
     """Whether to reset the slot value at the end of the flow."""
     force_slot_filling: bool = False
     """Whether to keep only the SetSlot command for the collected slot."""
@@ -43,7 +47,7 @@ class CollectInformationFlowStep(FlowStep):
         base = super().from_json(flow_id, data)
         return CollectInformationFlowStep(
             collect=data["collect"],
-            utter=data.get("utter", f"{UTTER_ASK_PREFIX}{data['collect']}"),
+            utter=data.get("utter", cls._default_utter(data["collect"])),
             # as of now it is not possible to define a different name for the
             # action, always use the default name 'action_ask_<slot_name>'
             collect_action=f"{ACTION_ASK_PREFIX}{data['collect']}",
@@ -57,21 +61,29 @@ class CollectInformationFlowStep(FlowStep):
             **base.__dict__,
         )
 
-    def as_json(self) -> Dict[str, Any]:
+    @staticmethod
+    def _default_utter(collect: str) -> str:
+        return f"{UTTER_ASK_PREFIX}{collect}"
+
+    def as_json(self) -> Dict[str, Any]:  # type: ignore[override]
         """Serialize the CollectInformationFlowStep object.
 
         Returns:
             the CollectInformationFlowStep object as serialized data
         """
-        data = super().as_json()
-        data["collect"] = self.collect
-        data["utter"] = self.utter
-        data["ask_before_filling"] = self.ask_before_filling
-        data["reset_after_flow_ends"] = self.reset_after_flow_ends
-        data["rejections"] = [rejection.as_dict() for rejection in self.rejections]
-        data["force_slot_filling"] = self.force_slot_filling
+        data: Dict[Text, Any] = {"collect": self.collect}
+        if self.utter != self._default_utter(self.collect):
+            data["utter"] = self.utter
+        if self.ask_before_filling != DEFAULT_ASK_BEFORE_FILLING:
+            data["ask_before_filling"] = self.ask_before_filling
+        if self.reset_after_flow_ends != DEFAULT_RESET_AFTER_FLOW_ENDS:
+            data["reset_after_flow_ends"] = self.reset_after_flow_ends
+        if self.rejections:
+            data["rejections"] = [rejection.as_dict() for rejection in self.rejections]
+        if self.force_slot_filling != DEFAULT_FORCE_SLOT_FILLING:
+            data["force_slot_filling"] = self.force_slot_filling
 
-        return data
+        return super().as_json(step_properties=data)
 
     @property
     def default_id_postfix(self) -> str:
@@ -82,3 +94,17 @@ class CollectInformationFlowStep(FlowStep):
     def utterances(self) -> Set[str]:
         """Return all the utterances used in this step."""
         return {self.utter} | {r.utter for r in self.rejections}
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, type(self)):
+            return (
+                self.collect == other.collect
+                and self.utter == other.utter
+                and self.collect_action == other.collect_action
+                and self.rejections == other.rejections
+                and self.ask_before_filling == other.ask_before_filling
+                and self.reset_after_flow_ends == other.reset_after_flow_ends
+                and self.force_slot_filling == other.force_slot_filling
+                and super().__eq__(other)
+            )
+        return False

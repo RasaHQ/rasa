@@ -28,6 +28,14 @@ class NLUTrigger:
         """
         return self.intent == intent and confidence >= self.confidence_threshold
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, NLUTrigger):
+            return (
+                self.intent == other.intent
+                and self.confidence_threshold == other.confidence_threshold
+            )
+        return False
+
 
 @dataclass
 class NLUTriggers:
@@ -115,3 +123,8 @@ class NLUTriggers:
             trigger_condition.is_triggered(intent, confidence)
             for trigger_condition in self.trigger_conditions
         )
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, NLUTriggers):
+            return self.trigger_conditions == other.trigger_conditions
+        return False

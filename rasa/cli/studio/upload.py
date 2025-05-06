@@ -54,9 +54,3 @@ def set_upload_arguments(parser: argparse.ArgumentParser) -> None:
         type=str,
         help="Name of intents to upload to Rasa Studio",
     )
-
-    parser.add_argument(
-        "--calm",
-        action="store_true",
-        help="If set, creates a new CALM assistant in Rasa Studio.",
-    )

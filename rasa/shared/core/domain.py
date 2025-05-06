@@ -134,6 +134,22 @@ ALL_DOMAIN_KEYS = [
 
 PREV_PREFIX = "prev_"
 
+MERGE_FUNC_MAPPING: Dict[Text, Callable[..., Any]] = {
+    KEY_ACTIONS: rasa.shared.utils.common.merge_lists_of_dicts,
+    KEY_RESPONSES: rasa.shared.utils.common.merge_dicts,
+    KEY_SLOTS: rasa.shared.utils.common.merge_dicts,
+    KEY_INTENTS: rasa.shared.utils.common.merge_lists_of_dicts,
+    KEY_ENTITIES: rasa.shared.utils.common.merge_lists_of_dicts,
+    KEY_E2E_ACTIONS: rasa.shared.utils.common.merge_lists,
+    KEY_FORMS: rasa.shared.utils.common.merge_dicts,
+}
+
+DICT_DATA_KEYS = [
+    key
+    for key, value in MERGE_FUNC_MAPPING.items()
+    if value == rasa.shared.utils.common.merge_dicts
+]
+
 # State is a dictionary with keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # representing the origin of a SubState;
 # the values are SubStates, that contain the information needed for featurization
@@ -466,17 +482,7 @@ class Domain:
 
         duplicates: Dict[Text, List[Text]] = {}
 
-        merge_func_mappings: Dict[Text, Callable[..., Any]] = {
-            KEY_INTENTS: rasa.shared.utils.common.merge_lists_of_dicts,
-            KEY_ENTITIES: rasa.shared.utils.common.merge_lists_of_dicts,
-            KEY_ACTIONS: rasa.shared.utils.common.merge_lists_of_dicts,
-            KEY_E2E_ACTIONS: rasa.shared.utils.common.merge_lists,
-            KEY_FORMS: rasa.shared.utils.common.merge_dicts,
-            KEY_RESPONSES: rasa.shared.utils.common.merge_dicts,
-            KEY_SLOTS: rasa.shared.utils.common.merge_dicts,
-        }
-
-        for key, merge_func in merge_func_mappings.items():
+        for key, merge_func in MERGE_FUNC_MAPPING.items():
             duplicates[key] = rasa.shared.utils.common.extract_duplicates(
                 combined.get(key, []), domain_dict.get(key, [])
             )
@@ -493,6 +499,74 @@ class Domain:
             combined.update({"duplicates": duplicates})
 
         return combined
+
+    def partial_merge(self, other: Domain) -> Domain:
+        """
+        Returns a new Domain with intersection-based merging:
+          - For each domain section only overwrite items that already exist in self.
+          - Brand-new items in `other` are ignored.
+
+        Args:
+            other: The domain to merge with.
+
+        Returns:
+            A new Domain object with the merged content.
+        """
+        updated_self = copy.deepcopy(self.as_dict())
+        other_dict = other.as_dict()
+
+        keys_to_merge = MERGE_FUNC_MAPPING.keys()
+        for key in keys_to_merge:
+            if key in DICT_DATA_KEYS:
+                # Merge dictionaries
+                self_val = updated_self.get(key, {})
+                other_val = other_dict.get(key, {})
+                updated_self[key] = rasa.shared.utils.common.partial_merge_dict(
+                    self_val, other_val
+                )
+            else:
+                # Merge lists
+                self_val = updated_self.get(key, [])
+                other_val = other_dict.get(key, [])
+                is_same_item_fn = SAME_ITEM_FUNCTIONS.get(key, default_is_same_item)
+                updated_self[key] = rasa.shared.utils.common.partial_merge_list(
+                    self_val, other_val, is_same_item_fn
+                )
+
+        return Domain.from_dict(updated_self)
+
+    def difference(self, other: Domain) -> Domain:
+        """
+        Returns a new Domain containing items in `self` that are NOT in `other`,
+        using simple equality checks for dict/list items.
+
+        Args:
+            other: The domain to compare with.
+
+        Returns:
+            A new Domain object with the difference content.
+        """
+        self_dict = self.as_dict()
+        other_dict = other.as_dict()
+
+        difference_dict = {}
+        for key in MERGE_FUNC_MAPPING.keys():
+            is_dict = key in DICT_DATA_KEYS
+            self_val = self_dict.get(key, {} if is_dict else [])
+            other_val = other_dict.get(key, {} if is_dict else [])
+
+            if is_dict and isinstance(self_val, dict) and isinstance(other_val, dict):
+                difference_dict[key] = {
+                    k: v
+                    for k, v in self_val.items()
+                    if k not in other_val or v != other_val[k]
+                }
+            else:
+                difference_dict[key] = [
+                    item for item in self_val if item not in other_val
+                ]  # type: ignore[assignment]
+
+        return Domain.from_dict(difference_dict)
 
     def _preprocess_domain_dict(
         self,
@@ -2120,6 +2194,11 @@ class Domain:
         """Remove all builtin slots from the domain."""
         self.slots = [slot for slot in self.slots if not slot.is_builtin]
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Domain):
+            return self.as_dict() == other.as_dict()
+        return False
+
 
 def warn_about_duplicates_found_during_domain_merging(
     duplicates: Dict[Text, List[Text]],
@@ -2178,3 +2257,78 @@ def _validate_forms(forms: Union[Dict, List]) -> None:
                 f"the keyword `{REQUIRED_SLOTS_KEY}` is required. "
                 f"Please see {DOCS_URL_FORMS} for more information."
             )
+
+
+def is_same_entity(e1: Any, e2: Any) -> bool:
+    """Check if two entities are the 'same' (string or dict).
+
+    Args:
+        e1: First entity to compare.
+        e2: Second entity to compare.
+
+    Returns:
+        True if the entities are the same, False otherwise.
+    """
+    if isinstance(e1, str) and isinstance(e2, str):
+        return e1 == e2
+
+    if isinstance(e1, dict) and isinstance(e2, dict):
+        return (
+            e1.get(ENTITY_ATTRIBUTE_TYPE) == e2.get(ENTITY_ATTRIBUTE_TYPE)
+            and e1.get(ENTITY_ATTRIBUTE_ROLE) == e2.get(ENTITY_ATTRIBUTE_ROLE)
+            and e1.get(ENTITY_ATTRIBUTE_GROUP) == e2.get(ENTITY_ATTRIBUTE_GROUP)
+        )
+
+    return False
+
+
+def is_same_intent(i1: Any, i2: Any) -> bool:
+    """Check if two intents are the 'same' (string or dict).
+
+    Args:
+        i1: First intent to compare.
+        i2: Second intent to compare.
+
+    Returns:
+        True if the intents are the same, False otherwise.
+    """
+    if isinstance(i1, str) and isinstance(i2, str):
+        return i1 == i2
+
+    if isinstance(i1, dict) and isinstance(i2, dict):
+        key1, key2 = next(iter(i1.keys())), next(iter((i2.keys())))
+        return key1 == key2
+
+    return False
+
+
+def is_same_action(a1: Any, a2: Any) -> bool:
+    """Check if two actions are the 'same' (string or dict).
+
+    Args:
+        a1: First action to compare.
+        a2: Second action to compare.
+
+    Returns:
+        True if the actions are the same, False otherwise.
+    """
+    if isinstance(a1, str) and isinstance(a2, str):
+        return a1 == a2
+
+    if isinstance(a1, dict) and isinstance(a2, dict):
+        key1, key2 = next(iter((a1.keys()))), next(iter((a2.keys())))
+        return key1 == key2
+
+    return False
+
+
+def default_is_same_item(a: Any, b: Any) -> bool:
+    """Fallback exact equality check if a key doesn't need special handling."""
+    return a == b
+
+
+SAME_ITEM_FUNCTIONS: Dict[Text, Callable[[Any, Any], bool]] = {
+    KEY_ENTITIES: is_same_entity,
+    KEY_INTENTS: is_same_intent,
+    KEY_ACTIONS: is_same_action,
+}

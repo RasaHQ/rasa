@@ -7,7 +7,8 @@ import pytest
 import questionary
 from pytest import MonkeyPatch
 
-import rasa.studio.download
+import rasa.studio.download.download
+from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.studio.config import StudioConfig
 from rasa.studio.constants import (
@@ -203,9 +204,11 @@ def test_download_handler_nlu_based_all_files(
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
     mock_handler = MagicMock()
     mock_handler.return_value = handler
-    monkeypatch.setattr(rasa.studio.download, "StudioDataHandler", mock_handler)
+    monkeypatch.setattr(
+        rasa.studio.download.download, "StudioDataHandler", mock_handler
+    )
     monkeypatch.setattr(questionary, "confirm", mock_questionary_confirm)
-    rasa.studio.download.handle_download(name_space)
+    rasa.studio.download.download.handle_download(name_space)
 
     importer = TrainingDataImporter.load_from_dict(
         domain_path=Path(temp_dir) / "domain.yml",
@@ -267,9 +270,11 @@ def test_download_handler_nlu_based_all_dirs(
 
     mock_handler = MagicMock()
     mock_handler.return_value = handler
-    monkeypatch.setattr(rasa.studio.download, "StudioDataHandler", mock_handler)
+    monkeypatch.setattr(
+        rasa.studio.download.download, "StudioDataHandler", mock_handler
+    )
 
-    rasa.studio.download.handle_download(name_space)
+    rasa.studio.download.download.handle_download(name_space)
     assert Path(temp_dir / "domain_folder" / STUDIO_DOMAIN_FILENAME).exists()
     assert Path(temp_dir / "data" / STUDIO_NLU_FILENAME).exists()
 
@@ -332,12 +337,13 @@ def test_download_handler_nlu_based_all_dir_overwrite(
 
     mock_handler = MagicMock()
     mock_handler.return_value = handler
-    monkeypatch.setattr(rasa.studio.download, "StudioDataHandler", mock_handler)
+    monkeypatch.setattr(
+        rasa.studio.download.download, "StudioDataHandler", mock_handler
+    )
     monkeypatch.setattr(questionary, "confirm", mock_questionary_confirm)
 
-    rasa.studio.download.handle_download(name_space)
+    rasa.studio.download.download.handle_download(name_space)
     # overwrite should not create files but add/replace content
-    assert not Path(temp_dir / "domain_folder" / STUDIO_DOMAIN_FILENAME).exists()
     assert not Path(temp_dir / "data" / STUDIO_NLU_FILENAME).exists()
 
     importer = TrainingDataImporter.load_from_dict(
@@ -371,9 +377,10 @@ def test_download_handler_nlu_based_all_files_overwrite(
     shutil.copy("data/download/config.yml", temp_dir)
     shutil.copy("data/download/endpoints.yml", temp_dir)
 
+    domain_file = temp_dir / "domain.yml"
     name_space = argparse.Namespace(
         assistant_name="test",
-        domain=temp_dir / "domain.yml",
+        domain=domain_file,
         data=[
             temp_dir / "nlu.yml",
         ],
@@ -397,23 +404,32 @@ def test_download_handler_nlu_based_all_files_overwrite(
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
     mock_handler = MagicMock()
     mock_handler.return_value = handler
-    monkeypatch.setattr(rasa.studio.download, "StudioDataHandler", mock_handler)
+    monkeypatch.setattr(
+        rasa.studio.download.download, "StudioDataHandler", mock_handler
+    )
     monkeypatch.setattr(questionary, "confirm", mock_questionary_confirm)
-    rasa.studio.download.handle_download(name_space)
+    rasa.studio.download.download.handle_download(name_space)
+
+    studio_domain_file = temp_dir / STUDIO_DOMAIN_FILENAME
+    assert studio_domain_file.exists()
+
+    studio_domain = Domain.from_file(str(studio_domain_file))
+    assert "new_entity" in studio_domain.entities
+    for intent in ["random_one", "new_intent"]:
+        assert intent in studio_domain.intents
+
+    domain = Domain.from_file(str(domain_file))
+    for intent in ["greet", "goodbye", "inform"]:
+        assert intent in domain.intents
+    for entity in ["first_name", "age"]:
+        assert entity in domain.entities
+
+    assert not Path(temp_dir / STUDIO_NLU_FILENAME).exists()
 
     importer = TrainingDataImporter.load_from_dict(
         domain_path=Path(temp_dir) / "domain.yml",
         training_data_paths=[Path(temp_dir) / "nlu.yml"],
     )
-    assert not Path(temp_dir / STUDIO_DOMAIN_FILENAME).exists()
-    assert not Path(temp_dir / STUDIO_NLU_FILENAME).exists()
-
-    domain = importer.get_domain()
-    for intent in ["greet", "goodbye", "inform", "random_one", "new_intent"]:
-        assert intent in domain.intents
-    for entity in ["first_name", "new_entity", "age"]:
-        assert entity in domain.entities
-
     nlu = importer.get_nlu_data()
     for intent in ["greet", "goodbye", "inform", "new_intent"]:
         assert intent in nlu.intents
@@ -460,9 +476,11 @@ def test_download_handler_modern_all_files(
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
     mock_handler = MagicMock()
     mock_handler.return_value = handler
-    monkeypatch.setattr(rasa.studio.download, "StudioDataHandler", mock_handler)
+    monkeypatch.setattr(
+        rasa.studio.download.download, "StudioDataHandler", mock_handler
+    )
     monkeypatch.setattr(questionary, "confirm", mock_questionary_confirm)
-    rasa.studio.download.handle_download(name_space)
+    rasa.studio.download.download.handle_download(name_space)
 
     importer = TrainingDataImporter.load_from_dict(
         domain_path=Path(temp_dir) / "domain.yml",
@@ -530,9 +548,11 @@ def test_download_handler_modern_all_dirs(
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
     mock_handler = MagicMock()
     mock_handler.return_value = handler
-    monkeypatch.setattr(rasa.studio.download, "StudioDataHandler", mock_handler)
+    monkeypatch.setattr(
+        rasa.studio.download.download, "StudioDataHandler", mock_handler
+    )
     monkeypatch.setattr(questionary, "confirm", mock_questionary_confirm)
-    rasa.studio.download.handle_download(name_space)
+    rasa.studio.download.download.handle_download(name_space)
 
     importer = TrainingDataImporter.load_from_dict(
         domain_path=Path(temp_dir) / "domain_folder" / STUDIO_DOMAIN_FILENAME,
@@ -568,14 +588,15 @@ def test_download_handler_modern_all_files_overwrite(
     monkeypatch: MonkeyPatch,
 ) -> None:
     temp_dir = Path(get_temp_dir_name())
-    shutil.copy("data/download/domain.yml", temp_dir)
+    domain_file_path = temp_dir / "domain.yml"
+    domain_file_path.write_text(test_sample_domain)
     shutil.copy("data/download/data_flows/flows.yml", temp_dir)
     shutil.copy("data/download/config.yml", temp_dir)
     shutil.copy("data/download/endpoints.yml", temp_dir)
 
     name_space = argparse.Namespace(
         assistant_name="test",
-        domain=temp_dir / "domain.yml",
+        domain=domain_file_path,
         data=[
             temp_dir / "flows.yml",
         ],
@@ -599,9 +620,11 @@ def test_download_handler_modern_all_files_overwrite(
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
     mock_handler = MagicMock()
     mock_handler.return_value = handler
-    monkeypatch.setattr(rasa.studio.download, "StudioDataHandler", mock_handler)
+    monkeypatch.setattr(
+        rasa.studio.download.download, "StudioDataHandler", mock_handler
+    )
     monkeypatch.setattr(questionary, "confirm", mock_questionary_confirm)
-    rasa.studio.download.handle_download(name_space)
+    rasa.studio.download.download.handle_download(name_space)
 
     importer = TrainingDataImporter.load_from_dict(
         domain_path=Path(temp_dir) / "domain.yml",
@@ -638,7 +661,10 @@ def test_download_handler_modern_all_dirs_overwrite(
     monkeypatch: MonkeyPatch,
 ) -> None:
     temp_dir = Path(get_temp_dir_name())
-    shutil.copytree("data/download/domain_folder", temp_dir / "domain_folder")
+    domain_dir = temp_dir / "domain_folder"
+    domain_dir.mkdir()
+    domain_file = domain_dir / "domain.yml"
+    domain_file.write_text(test_sample_domain)
     shutil.copytree("data/download/data_flows", temp_dir / "data_flows")
     shutil.copy("data/download/config.yml", temp_dir)
     shutil.copy("data/download/endpoints.yml", temp_dir)
@@ -669,9 +695,11 @@ def test_download_handler_modern_all_dirs_overwrite(
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
     mock_handler = MagicMock()
     mock_handler.return_value = handler
-    monkeypatch.setattr(rasa.studio.download, "StudioDataHandler", mock_handler)
+    monkeypatch.setattr(
+        rasa.studio.download.download, "StudioDataHandler", mock_handler
+    )
     monkeypatch.setattr(questionary, "confirm", mock_questionary_confirm)
-    rasa.studio.download.handle_download(name_space)
+    rasa.studio.download.download.handle_download(name_space)
 
     importer = TrainingDataImporter.load_from_dict(
         domain_path=Path(temp_dir) / "domain_folder",

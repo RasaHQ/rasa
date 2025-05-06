@@ -1,3 +1,4 @@
+import copy
 import os
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union
 
@@ -7,16 +8,25 @@ from rasa.dialogue_understanding.stack.utils import (
     previous_collect_steps_for_active_flow,
 )
 from rasa.engine.language import Language
-from rasa.shared.core.flows import Flow, FlowsList
+from rasa.shared.core.flows import Flow, FlowsList, FlowStep
+from rasa.shared.core.flows.flow import FlowLanguageTranslation
 from rasa.shared.core.flows.flow_path import FlowPath, FlowPathsList, PathNode
-from rasa.shared.core.flows.flow_step_links import FlowStepLinks, StaticFlowStepLink
+from rasa.shared.core.flows.flow_step_links import (
+    BranchingFlowStepLink,
+    FlowStepLinks,
+    StaticFlowStepLink,
+)
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
 from rasa.shared.core.flows.nlu_trigger import NLUTrigger, NLUTriggers
 from rasa.shared.core.flows.steps import (
     ActionFlowStep,
     CallFlowStep,
+    CollectInformationFlowStep,
     ContinueFlowStep,
     EndFlowStep,
+    InternalFlowStep,
+    LinkFlowStep,
+    SetSlotsFlowStep,
     StartFlowStep,
 )
 from rasa.shared.core.flows.steps.constants import (
@@ -24,6 +34,7 @@ from rasa.shared.core.flows.steps.constants import (
     END_STEP,
     START_STEP,
 )
+from rasa.shared.core.flows.steps.no_operation import NoOperationFlowStep
 from rasa.shared.core.flows.validation import DuplicatedFlowIdException
 from rasa.shared.core.flows.yaml_flows_io import (
     YAMLFlowsReader,
@@ -1252,7 +1263,6 @@ def test_flow_run_pattern_completed_undefined() -> None:
                 "always_include_in_prompt": True,
                 "file_path": "some/file/path",
                 "persisted_slots": [],
-                "run_pattern_completed": True,
             },
             {
                 "id": "flow_1",
@@ -1272,7 +1282,6 @@ def test_flow_run_pattern_completed_undefined() -> None:
                 ],
                 "always_include_in_prompt": True,
                 "file_path": "some/file/path",
-                "run_pattern_completed": True,
             },
         ),
         (
@@ -1311,7 +1320,6 @@ def test_flow_run_pattern_completed_undefined() -> None:
                 "id": "flow_1",
                 "steps": [],
                 "always_include_in_prompt": False,
-                "run_pattern_completed": True,
             },
         ),
     ],
@@ -1445,3 +1453,208 @@ def test_flow_readable_name_uses_localized_name(
 
     # If the language is not available, the readable name should be the flow name.
     assert flow_with_translated_names.readable_name(language_es) == FLOW_NAME_FOO
+
+
+@pytest.mark.parametrize(
+    "cls, constructor_kwargs, excluded_fields",
+    [
+        (
+            Flow,
+            {
+                "id": "flow_id_123",
+                "custom_name": "My Flow",
+                "description": "Flow for eq test",
+                "guard_condition": "slots.user_is_logged_in == True",
+                "persisted_slots": ["user_is_logged_in"],
+                "metadata": {"test_meta": True},
+            },
+            ["file_path", "metadata"],
+        ),
+        (
+            FlowLanguageTranslation,
+            {
+                "name": "MyLocalizedFlow",
+            },
+            [],
+        ),
+        (
+            FlowStep,
+            {
+                "custom_id": "my_flow_step",
+                "idx": 0,
+                "description": "Base flow step",
+                "metadata": {"some": "meta"},
+                "flow_id": "parent_flow",
+                "next": FlowStepLinks(links=[]),
+            },
+            ["custom_id", "metadata"],
+        ),
+        (
+            FlowStepLinks,
+            {
+                "links": [],
+            },
+            [],
+        ),
+        (
+            BranchingFlowStepLink,
+            {
+                "target_reference": "some_step_id",
+            },
+            [],
+        ),
+        (
+            StaticFlowStepLink,
+            {
+                "target_step_id": "next_step_in_flow",
+            },
+            [],
+        ),
+        (
+            FlowStepSequence,
+            {
+                "child_steps": [],
+            },
+            [],
+        ),
+        (
+            NLUTrigger,
+            {
+                "intent": "greet",
+                "confidence_threshold": 0.75,
+            },
+            [],
+        ),
+        (
+            NLUTriggers,
+            {
+                "trigger_conditions": [
+                    NLUTrigger(intent="greet", confidence_threshold=0.5),
+                    NLUTrigger(intent="bye", confidence_threshold=0.6),
+                ]
+            },
+            [],
+        ),
+        (
+            ActionFlowStep,
+            {
+                "custom_id": "action_step_1",
+                "idx": 1,
+                "description": "An action step",
+                "metadata": {},
+                "flow_id": "action_flow",
+                "next": FlowStepLinks(links=[]),
+                "action": "utter_hello",
+            },
+            ["custom_id", "metadata"],
+        ),
+        (
+            CallFlowStep,
+            {
+                "custom_id": "call_step_1",
+                "idx": 2,
+                "description": "A call step",
+                "metadata": {"extra": True},
+                "flow_id": "call_flow",
+                "next": FlowStepLinks(links=[]),
+                "call": "child_flow",
+            },
+            ["custom_id", "metadata"],
+        ),
+        (
+            CollectInformationFlowStep,
+            {
+                "custom_id": "collect_step_1",
+                "idx": 3,
+                "description": "A collect step",
+                "metadata": {},
+                "flow_id": "collect_flow",
+                "next": FlowStepLinks(links=[]),
+                "collect": "user_email",
+                "utter": "utter_ask_email",
+                "ask_before_filling": True,
+                "reset_after_flow_ends": False,
+                "rejections": [],
+                "collect_action": "action_ask_user_email",
+            },
+            ["custom_id", "metadata"],
+        ),
+        (
+            InternalFlowStep,
+            {
+                "custom_id": "internal_step",
+                "idx": 999,
+                "description": "Internal ephemeral step",
+                "metadata": {"secret": True},
+                "flow_id": "some_flow",
+                "next": FlowStepLinks(links=[]),
+            },
+            ["custom_id", "metadata"],
+        ),
+        (
+            LinkFlowStep,
+            {
+                "custom_id": "link_step_1",
+                "idx": 4,
+                "description": "Linking step",
+                "metadata": {},
+                "flow_id": "link_flow",
+                "next": FlowStepLinks(links=[]),
+                "link": "flow_destination",
+            },
+            ["custom_id", "metadata"],
+        ),
+        (
+            NoOperationFlowStep,
+            {
+                "custom_id": "noop_step",
+                "idx": 5,
+                "description": "No-op step",
+                "metadata": {"key": "val"},
+                "flow_id": "noop_flow",
+                "next": FlowStepLinks(links=[]),
+                "noop": "placeholder",
+            },
+            ["custom_id", "metadata"],
+        ),
+        (
+            SetSlotsFlowStep,
+            {
+                "custom_id": "set_slots_1",
+                "idx": 6,
+                "description": "Sets user slots",
+                "metadata": {},
+                "flow_id": "slot_flow",
+                "next": FlowStepLinks(links=[]),
+                "slots": [{"key": "age", "value": 42}],
+            },
+            ["custom_id", "metadata"],
+        ),
+    ],
+)
+def test_flow_classes_comparison(cls, constructor_kwargs, excluded_fields):
+    """Test equality of flow step classes."""
+    obj = cls(**constructor_kwargs)
+    fields_to_compare = set(obj.__dict__.keys()) - set(excluded_fields)
+
+    # Check equality of the object itself
+    assert obj == copy.deepcopy(obj)
+
+    # Mutate each field and check inequality.
+    for field in fields_to_compare:
+        mutated = copy.deepcopy(obj)
+        setattr(mutated, field, "DIFFERENT_VALUE")
+        assert mutated != obj, (
+            f"{cls.__name__}: changing '{field}' didn't affect equality – "
+            "remember to add it to __eq__ or exclude it explicitly."
+        )
+
+    # Check that excluded fields do not affect equality.
+    for field in excluded_fields:
+        mutated = copy.deepcopy(obj)
+        new_val = "DIFFERENT_VALUE"
+        setattr(mutated, field, new_val)
+        assert mutated == obj, (
+            f"{cls.__name__}: excluded field '{field}' affects equality – "
+            "remove it from __eq__ or the excluded list."
+        )

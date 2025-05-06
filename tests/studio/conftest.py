@@ -47,16 +47,15 @@ CALM_CUSTOMIZED_PATTERNS_YAML = dedent(
     """\
     flows:
       pattern_completed:
-        steps:
-        - id: action_listen
-          next: END
-          metadata:
-            line_numbers: 4-7
-          action: action_listen
         name: pattern_completed
         description: This is a pattern
         file_path: data/upload/customized_default_flows.yml
-        run_pattern_completed: true
+        steps:
+        - id: action_listen
+          action: action_listen
+          next: END
+          metadata:
+            line_numbers: 4-7
     """
 )
 

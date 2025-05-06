@@ -34,17 +34,20 @@ class NoOperationFlowStep(FlowStep):
             **base.__dict__,
         )
 
-    def as_json(self) -> Dict[Text, Any]:
+    def as_json(self) -> Dict[Text, Any]:  # type: ignore[override]
         """Serialize the NoOperationFlowStep object
 
         Returns:
             the NoOperationFlowStep object as serialized data.
         """
-        data = super().as_json()
-        data["noop"] = self.noop
-        return data
+        return super().as_json(step_properties={"noop": self.noop})
 
     @property
     def default_id_postfix(self) -> str:
         """Returns the default id postfix of the flow step."""
         return "noop"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, type(self)):
+            return self.noop == other.noop and super().__eq__(other)
+        return False

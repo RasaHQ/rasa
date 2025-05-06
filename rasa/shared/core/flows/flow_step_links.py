@@ -74,6 +74,11 @@ class FlowStepLinks:
             depth = max(depth, link.depth_in_tree())
         return depth
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, FlowStepLinks):
+            return self.links == other.links
+        return False
+
 
 class FlowStepLink:
     """A flow step link that links two steps in a single flow."""
@@ -192,6 +197,11 @@ class BranchingFlowStepLink(FlowStepLink):
                     depth = max(depth, step.next.depth_in_tree())
             return depth + 1
         return 1
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, BranchingFlowStepLink):
+            return self.target_reference == other.target_reference
+        return False
 
 
 @dataclass
@@ -324,3 +334,8 @@ class StaticFlowStepLink(FlowStepLink):
     def depth_in_tree(self) -> int:
         """Returns the depth in the tree."""
         return 0
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, StaticFlowStepLink):
+            return self.target_step_id == other.target_step_id
+        return False

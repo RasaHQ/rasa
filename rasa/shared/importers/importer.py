@@ -18,6 +18,7 @@ import importlib_resources
 
 import rasa.shared.constants
 import rasa.shared.core.constants
+import rasa.shared.data
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.shared.constants import CONFIG_ADDITIONAL_LANGUAGES_KEY, CONFIG_LANGUAGE_KEY
@@ -278,6 +279,13 @@ class TrainingDataImporter(ABC):
             `Domain`.
         """
         raise NotImplementedError
+
+    @staticmethod
+    def get_domain_files(
+        data_paths: Optional[Union[List[Text], Text]] = None,
+    ) -> List[Text]:
+        """Returns the domain file path (see parent class for full docstring)."""
+        return rasa.shared.data.get_data_files(data_paths, Domain.is_domain_file)
 
 
 class NluDataImporter(TrainingDataImporter):

@@ -37,17 +37,20 @@ class LinkFlowStep(FlowStep):
             **base.__dict__,
         )
 
-    def as_json(self) -> Dict[Text, Any]:
+    def as_json(self) -> Dict[Text, Any]:  # type: ignore[override]
         """Serialize the LinkFlowStep object
 
         Returns:
             the LinkFlowStep object as serialized data.
         """
-        data = super().as_json()
-        data["link"] = self.link
-        return data
+        return super().as_json(step_properties={"link": self.link})
 
     @property
     def default_id_postfix(self) -> str:
         """Returns the default id postfix of the flow step."""
         return f"link_{self.link}"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, type(self)):
+            return self.link == other.link and super().__eq__(other)
+        return False

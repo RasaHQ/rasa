@@ -153,7 +153,6 @@ def test_flow_step_always_has_an_id_even_if_not_set():
         flow_id="test_flow",
     )
     assert step.id == "test_flow_0_action_listen"
-    assert step.as_json().get("id") == "test_flow_0_action_listen"
 
 
 def test_flow_step_dump_uses_explicit_id():

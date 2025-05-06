@@ -141,7 +141,7 @@ def test_validate_after_changing_response_text_in_domain(
     validate(importer=importer)
 
     # Change NLG content but keep actions the same
-    domain_with_changed_nlg = old_domain.as_dict()
+    domain_with_changed_nlg = copy.deepcopy(old_domain.as_dict())
     domain_with_changed_nlg[KEY_RESPONSES]["utter_greet"].append({"text": "hi"})
     domain_with_changed_nlg = Domain.from_dict(domain_with_changed_nlg)
     importer.get_domain = lambda: domain_with_changed_nlg
@@ -169,7 +169,7 @@ def test_validate_after_adding_action_to_domain(
     validate(importer=importer)
 
     # Add another action - via the response key
-    domain_with_new_action = old_domain.as_dict()
+    domain_with_new_action = copy.deepcopy(old_domain.as_dict())
     domain_with_new_action[KEY_RESPONSES]["utter_new"] = [{"text": "hi"}]
     domain_with_new_action = Domain.from_dict(domain_with_new_action)
     importer.get_domain = lambda: domain_with_new_action

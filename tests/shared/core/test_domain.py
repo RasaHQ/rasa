@@ -36,10 +36,12 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import (
     ENTITY_ROLES_KEY,
     IGNORE_ENTITIES_KEY,
+    KEY_ACTIONS,
     KEY_E2E_ACTIONS,
     KEY_ENTITIES,
     KEY_FORMS,
     KEY_INTENTS,
+    KEY_RESPONSES,
     KEY_SLOTS,
     USE_ENTITIES_KEY,
     USED_ENTITIES_KEY,
@@ -2750,3 +2752,156 @@ def test_remove_builtin_slots():
     domain.remove_builtin_slots()
     assert len(domain.slots) == 1
     assert domain.slots[0].name == "foo"
+
+
+@pytest.fixture
+def local_domain() -> Dict[Text, Any]:
+    return {
+        KEY_INTENTS: ["greet", "goodbye"],
+        KEY_ENTITIES: [
+            "dob",
+            {"entity": "name", "value": "John", "role": "contact", "group": "test"},
+        ],
+        KEY_SLOTS: {
+            "date": {
+                "type": "text",
+                "influence_conversation": True,
+                "mappings": [{"type": "from_text"}],
+            },
+            "name": {
+                "type": "text",
+                "mappings": [{"type": "from_text"}],
+            },
+            "time": {
+                "type": "text",
+                "influence_conversation": False,
+                "mappings": [{"type": "from_text"}],
+            },
+        },
+        KEY_ACTIONS: ["action_hello", {"utter_greet": {"send_domain": False}}],
+        KEY_FORMS: {
+            "form": {"required_slots": ["date"]},
+            "some_form": {"required_slots": ["name"]},
+        },
+        KEY_RESPONSES: {
+            "utter_hello": [{"text": "Hello"}],
+            "utter_greet": [{"text": "Hi!"}],
+            "utter_goodbye": [{"text": "Bye!"}],
+        },
+        KEY_E2E_ACTIONS: ["Hello e2e"],
+    }
+
+
+@pytest.fixture
+def studio_domain() -> Dict[Text, Any]:
+    return {
+        KEY_INTENTS: ["greet", "default"],  # 'greet' overlaps, 'default' is new
+        KEY_ENTITIES: [
+            "dob",  # overlaps
+            "date",  # new
+            {
+                "entity": "name",
+                "value": "Jane",
+                "role": "contact",
+                "group": "test",
+            },  # updated
+        ],
+        KEY_SLOTS: {
+            "date": {
+                "type": "text",
+                "influence_conversation": True,
+                "mappings": [{"type": "from_text"}],
+            },  # overlaps
+            "time": {
+                "type": "text",
+                "influence_conversation": True,
+                "mappings": [{"type": "from_text"}],
+            },  # updated
+            "location": {
+                "type": "text",
+                "mappings": [{"type": "from_text"}],
+            },  # new
+        },
+        KEY_ACTIONS: [
+            "action_hello",  # overlaps
+            {"utter_greet": {"send_domain": True}},  # updated
+            "action_new",  # new
+        ],
+        KEY_FORMS: {
+            "form": {"required_slots": ["date"]},  # overlaps
+            "some_form": {"required_slots": ["name", "time"]},  # updated
+            "other_form": {"required_slots": ["location"]},  # new
+        },
+        KEY_RESPONSES: {
+            "utter_hello": [{"text": "Hello"}],  # overlaps
+            "utter_greet": [{"text": "Hi updated"}],  # updated
+            "utter_bye": [{"text": "See you"}],  # new
+        },
+        KEY_E2E_ACTIONS: ["Hello e2e", "new e2e"],  # overlaps + new
+    }
+
+
+def test_domain_partial_merge(
+    local_domain: Dict[Text, Any], studio_domain: Dict[Text, Any]
+):
+    """Ensures partial_merge only overwrites items already present, ignoring brand-new."""
+    domain1 = Domain.from_dict(local_domain)
+    domain2 = Domain.from_dict(studio_domain)
+    partially_merged = domain1.partial_merge(domain2)
+    merged_dict = partially_merged.as_dict()
+
+    assert set(merged_dict[KEY_INTENTS]) == set(local_domain[KEY_INTENTS])
+    assert merged_dict[KEY_ENTITIES] == [
+        local_domain[KEY_ENTITIES][0],
+        studio_domain[KEY_ENTITIES][2],
+    ]
+    assert merged_dict[KEY_SLOTS] == {
+        "date": local_domain[KEY_SLOTS]["date"],
+        "name": local_domain[KEY_SLOTS]["name"],
+        "time": studio_domain[KEY_SLOTS]["time"],
+    }
+    assert merged_dict[KEY_ACTIONS] == [
+        local_domain[KEY_ACTIONS][0],
+        studio_domain[KEY_ACTIONS][1],
+    ]
+    assert merged_dict[KEY_FORMS] == {
+        "form": local_domain[KEY_FORMS]["form"],
+        "some_form": studio_domain[KEY_FORMS]["some_form"],
+    }
+    assert merged_dict[KEY_RESPONSES] == {
+        "utter_hello": local_domain[KEY_RESPONSES]["utter_hello"],
+        "utter_greet": studio_domain[KEY_RESPONSES]["utter_greet"],
+        "utter_goodbye": local_domain[KEY_RESPONSES]["utter_goodbye"],
+    }
+    assert merged_dict[KEY_E2E_ACTIONS] == local_domain[KEY_E2E_ACTIONS]
+
+
+def test_domain_difference(
+    local_domain: Dict[Text, Any], studio_domain: Dict[Text, Any]
+):
+    """Ensures difference() picks items from `domain1` that are absent in `domain2`."""
+    domain1 = Domain.from_dict(local_domain)
+    domain2 = Domain.from_dict(studio_domain)
+
+    difference_domain = domain1.difference(domain2)
+    difference_dict = difference_domain.as_dict()
+
+    assert difference_dict[KEY_INTENTS] == [local_domain[KEY_INTENTS][1]]
+    assert difference_dict[KEY_ENTITIES] == [
+        local_domain[KEY_ENTITIES][1],
+    ]
+    assert difference_dict[KEY_SLOTS] == {
+        "name": local_domain[KEY_SLOTS]["name"],
+        "time": local_domain[KEY_SLOTS]["time"],
+    }
+    assert difference_dict[KEY_ACTIONS] == [
+        local_domain[KEY_ACTIONS][1],
+    ]
+    assert difference_dict[KEY_FORMS] == {
+        "some_form": local_domain[KEY_FORMS]["some_form"]
+    }
+    assert difference_dict[KEY_RESPONSES] == {
+        "utter_greet": local_domain[KEY_RESPONSES]["utter_greet"],
+        "utter_goodbye": local_domain[KEY_RESPONSES]["utter_goodbye"],
+    }
+    assert KEY_E2E_ACTIONS not in difference_dict

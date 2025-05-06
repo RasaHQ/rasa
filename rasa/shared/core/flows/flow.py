@@ -53,6 +53,8 @@ from rasa.shared.core.slots import Slot
 
 structlogger = structlog.get_logger()
 
+DEFAULT_RUN_PATTERN_COMPLETED = True
+
 
 class FlowLanguageTranslation(BaseModel):
     """Represents the translation of the flow properties in a specific language."""
@@ -61,7 +63,14 @@ class FlowLanguageTranslation(BaseModel):
     """The human-readable name of the flow."""
 
     class Config:
+        """Config for the FlowLanguageTranslation class."""
+
         extra = "ignore"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, FlowLanguageTranslation):
+            return self.name == other.name
+        return False
 
 
 @dataclass
@@ -90,8 +99,25 @@ class Flow:
     """The path to the file where the flow is stored."""
     persisted_slots: List[str] = field(default_factory=list)
     """The list of slots that should be persisted after the flow ends."""
-    run_pattern_completed: bool = True
+    run_pattern_completed: bool = DEFAULT_RUN_PATTERN_COMPLETED
     """Whether the pattern_completed flow should be run after the flow ends."""
+    metadata: Dict[Text, Any] = field(default_factory=dict)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Flow):
+            return (
+                self.id == other.id
+                and self.custom_name == other.custom_name
+                and self.description == other.description
+                and self.translation == other.translation
+                and self.guard_condition == other.guard_condition
+                and self.step_sequence == other.step_sequence
+                and self.nlu_triggers == other.nlu_triggers
+                and self.always_include_in_prompt == other.always_include_in_prompt
+                and self.persisted_slots == other.persisted_slots
+                and self.run_pattern_completed == other.run_pattern_completed
+            )
+        return False
 
     @staticmethod
     def from_json(
@@ -130,7 +156,9 @@ class Flow:
             # data. When the model is trained, take the provided file_path.
             file_path=data.get(KEY_FILE_PATH) if KEY_FILE_PATH in data else file_path,
             persisted_slots=data.get(KEY_PERSISTED_SLOTS, []),
-            run_pattern_completed=data.get(KEY_RUN_PATTERN_COMPLETED, True),
+            run_pattern_completed=data.get(
+                KEY_RUN_PATTERN_COMPLETED, DEFAULT_RUN_PATTERN_COMPLETED
+            ),
             translation=extract_translations(
                 translation_data=data.get(KEY_TRANSLATION, {})
             ),
@@ -192,7 +220,6 @@ class Flow:
         """
         data: Dict[Text, Any] = {
             KEY_ID: self.id,
-            KEY_STEPS: self.step_sequence.as_json(),
         }
         if self.custom_name is not None:
             data[KEY_NAME] = self.custom_name
@@ -208,13 +235,14 @@ class Flow:
             data[KEY_FILE_PATH] = self.file_path
         if self.persisted_slots:
             data[KEY_PERSISTED_SLOTS] = self.persisted_slots
-        if self.run_pattern_completed is not None:
-            data["run_pattern_completed"] = self.run_pattern_completed
+        if self.run_pattern_completed != DEFAULT_RUN_PATTERN_COMPLETED:
+            data[KEY_RUN_PATTERN_COMPLETED] = self.run_pattern_completed
         if self.translation:
             data[KEY_TRANSLATION] = {
                 language_code: translation.dict()
                 for language_code, translation in self.translation.items()
             }
+        data[KEY_STEPS] = self.step_sequence.as_json()
 
         return data
 
@@ -232,9 +260,9 @@ class Flow:
         return translation.name if translation else None
 
     def readable_name(self, language: Optional[Language] = None) -> str:
-        """
-        Returns the flow's name in the specified language if available; otherwise
-        falls back to the flow's name, and finally the flow's ID.
+        """Returns the flow's name in the specified language if available.
+
+        Otherwise falls back to the flow's name, and finally the flow's ID.
 
         Args:
             language: Preferred language code.

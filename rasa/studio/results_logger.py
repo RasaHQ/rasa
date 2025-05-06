@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from functools import wraps
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Text
 
 import structlog
 from keycloak.exceptions import KeycloakError
@@ -76,6 +76,11 @@ def response_has_errors(response: Dict) -> bool:
         and isinstance(response["errors"], list)
         and len(response["errors"]) > 0
     )
+
+
+def response_has_id(response: Dict[Text, Any]) -> bool:
+    response_id = response.get("id")
+    return isinstance(response_id, str) and bool(response_id)
 
 
 def _handle_rasa_exception(e: RasaException) -> StudioResult:

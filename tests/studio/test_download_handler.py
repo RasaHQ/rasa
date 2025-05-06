@@ -10,7 +10,9 @@ from requests import Response
 import rasa.studio.auth
 import rasa.studio.data_handler
 import rasa.studio.download
+import rasa.studio.download.download
 from rasa.studio.config import StudioConfig
+from rasa.studio.constants import STUDIO_DOMAIN_FILENAME
 from tests.studio.conftest import (
     CALM_CUSTOMIZED_PATTERNS_YAML,
     CALM_ENDPOINTS_YAML,
@@ -23,12 +25,16 @@ from tests.studio.conftest import (
 
 
 @pytest.mark.parametrize(
-    "overwrite, flow_yaml",
+    "overwrite, flow_yaml, domain_file",
     [
-        (True, get_flows_yaml("data/upload/calm/data/flows.yml")),
-        (False, get_flows_yaml("data/upload/calm/data/flows.yml")),
-        (True, CALM_CUSTOMIZED_PATTERNS_YAML),
-        (False, CALM_CUSTOMIZED_PATTERNS_YAML),
+        (
+            True,
+            get_flows_yaml("data/upload/calm/data/flows.yml"),
+            STUDIO_DOMAIN_FILENAME,
+        ),
+        (False, get_flows_yaml("data/upload/calm/data/flows.yml"), "domain.yml"),
+        (True, CALM_CUSTOMIZED_PATTERNS_YAML, STUDIO_DOMAIN_FILENAME),
+        (False, CALM_CUSTOMIZED_PATTERNS_YAML, "domain.yml"),
     ],
 )
 def test_handle_download(
@@ -36,6 +42,7 @@ def test_handle_download(
     tmp_path: Path,
     overwrite: bool,
     flow_yaml: str,
+    domain_file: str,
 ) -> None:
     domain_path = tmp_path / "domain.yml"
     domain_path.touch()
@@ -65,7 +72,7 @@ def test_handle_download(
         client_id="rasa-cli",
     )
     monkeypatch.setattr(
-        rasa.studio.download.StudioConfig,
+        rasa.studio.config.StudioConfig,
         "read_config",
         lambda *args: mock_config,
     )
@@ -79,7 +86,7 @@ def test_handle_download(
     )
 
     monkeypatch.setattr(
-        rasa.studio.download.questionary, "confirm", mock_questionary_text
+        rasa.studio.download.download.questionary, "confirm", mock_questionary_text
     )
 
     calm_domain_yaml = get_calm_domain_yaml("data/upload/calm/domain/")
@@ -104,9 +111,10 @@ def test_handle_download(
         rasa.studio.data_handler.requests, "post", MagicMock(return_value=stub_response)
     )
 
-    rasa.studio.download.handle_download(args)
+    rasa.studio.download.download.handle_download(args)
 
+    studio_domain = get_calm_domain_yaml(tmp_path / domain_file)
+    assert studio_domain == calm_domain_yaml
     assert data_path.read_text() == flow_yaml
-    assert domain_path.read_text() == calm_domain_yaml
     assert config_path.read_text() == calm_config_yaml
     assert endpoints_path.read_text() == CALM_ENDPOINTS_YAML

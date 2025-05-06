@@ -28,7 +28,7 @@ class InternalFlowStep(FlowStep):
             "or de-serialized."
         )
 
-    def as_json(self) -> Dict[Text, Any]:
+    def as_json(self) -> Dict[Text, Any]:  # type: ignore[override]
         """Serialize the InternalFlowStep object
 
         Returns:
@@ -43,3 +43,8 @@ class InternalFlowStep(FlowStep):
     def default_id_postfix(self) -> str:
         """Returns the default id postfix of the flow step."""
         raise ValueError("Internal flow steps do not need a default id")
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, type(self)):
+            return super().__eq__(other)
+        return False

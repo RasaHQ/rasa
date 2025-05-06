@@ -35,17 +35,21 @@ class SetSlotsFlowStep(FlowStep):
             **base.__dict__,
         )
 
-    def as_json(self) -> Dict[Text, Any]:
+    def as_json(self) -> Dict[Text, Any]:  # type: ignore[override]
         """Serialize the SetSlotsFlowStep object
 
         Returns:
             the SetSlotsFlowStep object as serialized data
         """
-        data = super().as_json()
-        data["set_slots"] = [{slot["key"]: slot["value"]} for slot in self.slots]
-        return data
+        set_slots = [{slot["key"]: slot["value"]} for slot in self.slots]
+        return super().as_json(step_properties={"set_slots": set_slots})
 
     @property
     def default_id_postfix(self) -> str:
         """Returns the default id postfix of the flow step."""
         return "set_slots"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, type(self)):
+            return self.slots == other.slots and super().__eq__(other)
+        return False
