@@ -29,25 +29,6 @@ from rasa.shared.exceptions import RasaException
 from tests.utilities import filter_logs
 
 
-@pytest.fixture
-def message_with_no_user_input_event() -> Dict[str, Any]:
-    return {
-        "conversation": "f010e998-4499-4ddb-80d4-fea137fd7b4d",
-        "activities": [
-            {
-                "id": "e54d4dfe-e1ff-4272-8c3d-4ec4f4294681",
-                "timestamp": "2024-12-04T15:07:55.145Z",
-                "type": "event",
-                "name": "noUserInput",
-                "value": 1,
-                "parameters": {
-                    "vaigConversationId": "f010e998-4499-4ddb-80d4-fea137fd7b4d",
-                },
-            }
-        ],
-    }
-
-
 @pytest.mark.parametrize(
     "credentials",
     [
@@ -156,10 +137,11 @@ async def test_conversation_handle_event_invalid_payload(
     conversation = Conversation(conversation_id="123")
     event_payload = {}
 
-    text = conversation._handle_event(event_payload)
+    text, metadata = conversation._handle_event(event_payload)
 
     # assert that warning was raised and text is ""
     assert text == ""
+    assert metadata == {}
     captured = capsys.readouterr()
     assert "audiocodes.handle.event.no_name_key" in captured.out
 
@@ -169,10 +151,11 @@ async def test_conversation_handle_event_invalid_name() -> None:
     conversation = Conversation(conversation_id="123")
     event_payload = {"name": "invalid"}
 
-    text = conversation._handle_event(event_payload)
+    text, metadata = conversation._handle_event(event_payload)
 
     # assert that an intent was created
-    assert text == "/vaig_event_invalid{}"
+    assert text == "/vaig_event_invalid"
+    assert metadata == {}
 
 
 async def test_handle_startup() -> None:
@@ -225,8 +208,50 @@ async def test_handle_startup() -> None:
     }
 
 
+@pytest.mark.parametrize(
+    "message, expected_intent, expected_metadata",
+    [
+        (
+            {
+                "conversation": "f010e998-4499-4ddb-80d4-fea137fd7b4d",
+                "activities": [
+                    {
+                        "id": "e54d4dfe-e1ff-4272-8c3d-4ec4f4294681",
+                        "timestamp": "2024-12-04T15:07:55.145Z",
+                        "type": "event",
+                        "name": "noUserInput",
+                        "value": 1,
+                        "parameters": {
+                            "vaigConversationId": "f010e998-4499-4ddb-80d4-fea137fd7b4d",  # noqa: E501
+                        },
+                    }
+                ],
+            },
+            "/vaig_event_noUserInput",
+            {"vaigConversationId": "f010e998-4499-4ddb-80d4-fea137fd7b4d", "value": 1},
+        ),
+        (
+            {
+                "conversation": "f010e998-4499-4ddb-80d4-fea137fd7b4d",
+                "activities": [
+                    {
+                        "id": "e54d4dfe-e1ff-4272-8c3d-4ec4f4294681",
+                        "timestamp": "2024-12-04T15:07:55.145Z",
+                        "type": "event",
+                        "name": "noUserInput",
+                        "value": 1,
+                    }
+                ],
+            },
+            "/vaig_event_noUserInput",
+            {"value": 1},
+        ),
+    ],
+)
 async def test_handle_no_user_input_event(
-    message_with_no_user_input_event: Dict[str, Any],
+    message: Dict[str, Any],
+    expected_intent: str,
+    expected_metadata: Dict[str, Any],
 ) -> None:
     """Test handling of noUserInput event from Audiocodes"""
     # Setup
@@ -236,17 +261,15 @@ async def test_handle_no_user_input_event(
 
     # Execute
     await conversation.handle_activities(
-        message_with_no_user_input_event, CHANNEL_NAME, output_channel, on_new_message
+        message, CHANNEL_NAME, output_channel, on_new_message
     )
 
     # Verify
     on_new_message.assert_called_once()
     user_msg = on_new_message.call_args[0][0]
     assert isinstance(user_msg, UserMessage)
-    assert (
-        user_msg.text
-        == '/vaig_event_noUserInput{"vaigConversationId": "f010e998-4499-4ddb-80d4-fea137fd7b4d", "value": 1}'  # noqa: E501
-    )
+    assert user_msg.text == expected_intent
+    assert user_msg.metadata == expected_metadata
 
 
 async def test_on_activities_returns_immediately(monkeypatch: MonkeyPatch) -> None:
@@ -525,7 +548,7 @@ def audiocodes_input(
 async def test_handle_activities_in_conversation(
     audiocodes_message: Dict[str, Any],
     audiocodes_message_text: str,
-    user_message_metadata: Dict[str, Any],
+    audiocodes_activity_metadata: Dict[str, Any],
     conversation: Conversation,
     conversation_id: str,
     on_new_message_mock: Callable[[UserMessage], Awaitable[Any]],
@@ -549,13 +572,13 @@ async def test_handle_activities_in_conversation(
     assert on_new_message_call_args[0].input_channel == channel_name
     assert on_new_message_call_args[0].output_channel == output_channel_mock
     assert on_new_message_call_args[0].sender_id == conversation_id
-    assert on_new_message_call_args[0].metadata == user_message_metadata
+    assert on_new_message_call_args[0].metadata == audiocodes_activity_metadata
 
 
 async def test_handle_activities_with_empty_input_channel_name(
     audiocodes_message: Dict[str, Any],
     audiocodes_message_text: str,
-    user_message_metadata: Dict[str, Any],
+    audiocodes_activity_metadata: Dict[str, Any],
     conversation: Conversation,
     conversation_id: str,
     on_new_message_mock: Callable[[UserMessage], Awaitable[Any]],
@@ -592,7 +615,7 @@ async def test_handle_activities_with_empty_input_channel_name(
     assert on_new_message_call_args[0].input_channel == channel_name
     assert on_new_message_call_args[0].output_channel == output_channel_mock
     assert on_new_message_call_args[0].sender_id == conversation_id
-    assert on_new_message_call_args[0].metadata == user_message_metadata
+    assert on_new_message_call_args[0].metadata == audiocodes_activity_metadata
 
 
 async def test_handle_disconnect(

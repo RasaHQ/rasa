@@ -6,7 +6,18 @@ import uuid
 from collections import defaultdict
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, Text, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Set,
+    Text,
+    Tuple,
+    Union,
+)
 
 import structlog
 from jsonschema import ValidationError, validate
@@ -76,35 +87,45 @@ class Conversation:
 
     @staticmethod
     def get_metadata(activity: Dict[Text, Any]) -> Optional[Dict[Text, Any]]:
-        """Get metadata from the activity."""
-        return asdict(map_call_params(activity["parameters"]))
+        """Get metadata from the activity.
+
+        ONLY used for activities NOT for events (see _handle_event)."""
+        return activity.get("parameters")
 
     @staticmethod
-    def _handle_event(event: Dict[Text, Any]) -> Text:
-        """Handle start and DTMF event and return the corresponding text."""
+    def _handle_event(event: Dict[Text, Any]) -> Tuple[Text, Dict[Text, Any]]:
+        """Handle events and return a tuple of text and metadata.
+
+        Args:
+            event: The event to handle.
+
+        Returns:
+            Tuple of text and metadata.
+            text is either /session_start or /vaig_event_<event_name>
+            metadata is a dictionary with the event parameters.
+        """
         structlogger.debug("audiocodes.handle.event", event_payload=event)
         if "name" not in event:
             structlogger.warning(
                 "audiocodes.handle.event.no_name_key", event_payload=event
             )
-            return ""
+            return "", {}
 
         if event["name"] == EVENT_START:
             text = f"{INTENT_MESSAGE_PREFIX}{USER_INTENT_SESSION_START}"
+            metadata = asdict(map_call_params(event.get("parameters", {})))
         elif event["name"] == EVENT_DTMF:
             text = f"{INTENT_MESSAGE_PREFIX}vaig_event_DTMF"
-            event_params = {"value": event["value"]}
-            text += json.dumps(event_params)
+            metadata = {"value": event["value"]}
         else:
             # handle other events described by Audiocodes
             # https://techdocs.audiocodes.com/voice-ai-connect/#VAIG_Combined/inactivity-detection.htm?TocPath=Bot%2520integration%257CReceiving%2520notifications%257C_____3
             text = f"{INTENT_MESSAGE_PREFIX}vaig_event_{event['name']}"
-            event_params = {**event.get("parameters", {})}
+            metadata = {**event.get("parameters", {})}
             if "value" in event:
-                event_params["value"] = event["value"]
-            text += json.dumps(event_params)
+                metadata["value"] = event["value"]
 
-        return text
+        return text, metadata
 
     def is_active_conversation(self, now: datetime, delta: timedelta) -> bool:
         """Check if the conversation is active."""
@@ -144,16 +165,18 @@ class Conversation:
             self.activity_ids.append(activity[ACTIVITY_ID_KEY])
             if activity["type"] == ACTIVITY_MESSAGE:
                 text = activity["text"]
+                metadata = self.get_metadata(activity)
             elif activity["type"] == ACTIVITY_EVENT:
-                text = self._handle_event(activity)
+                text, metadata = self._handle_event(activity)
             else:
                 structlogger.warning(
                     "audiocodes.handle.activities.unknown_activity_type",
                     activity=activity,
                 )
+                continue
+
             if not text:
                 continue
-            metadata = self.get_metadata(activity)
             user_msg = UserMessage(
                 text=text,
                 input_channel=input_channel_name,
