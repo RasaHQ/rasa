@@ -529,8 +529,12 @@ def test_train_core_without_nlu_pipeline():
     "config_path, expected_keys_to_configure",
     [
         (
-            Path("rasa/cli/project_templates/default/config.yml"),
+            Path("data/project_templates/nlu_based/config.yml"),
             {CONFIG_PIPELINE_KEY, CONFIG_POLICIES_KEY},
+        ),
+        (
+            Path("rasa/cli/project_templates/default/config.yml"),
+            set(),
         ),
         (CONFIG_FOLDER / "config_policies_empty.yml", {CONFIG_POLICIES_KEY}),
         (CONFIG_FOLDER / "config_pipeline_empty.yml", {CONFIG_PIPELINE_KEY}),

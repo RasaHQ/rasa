@@ -761,7 +761,7 @@ def test_training_logs_domain_correctly_when_using_domain_dir(
     """
     # Compute the absolute path to the default template project
     parent_path = Path(__file__).parent
-    default_template_path = parent_path / "../../rasa/cli/project_templates/default"
+    default_template_path = parent_path / "../../data/project_templates/nlu_based"
 
     # Create 'domain' directory inside the test directory
     domain_dir_path = os.path.join(testdir.tmpdir, "domain")

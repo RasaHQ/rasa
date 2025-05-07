@@ -9,7 +9,7 @@ import pytest
 from _pytest.pytester import RunResult
 from pytest import TempPathFactory, Testdir
 
-from rasa.cli import inspect, scaffold
+from rasa.cli import inspect
 from rasa.cli import run as cli_run
 from rasa.shared.constants import (
     CONFIG_LANGUAGE_KEY,
@@ -45,7 +45,9 @@ def run_with_stdin(testdir: Testdir) -> Callable[..., RunResult]:
 
 
 def create_simple_project_with_missing_assistant_id(path: Path):
-    scaffold.create_initial_project(str(path))
+    from rasa.utils.common import copy_directory
+
+    copy_directory(Path("data/project_templates/nlu_based/"), path)
 
     write_yaml(
         {

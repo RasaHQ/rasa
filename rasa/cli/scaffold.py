@@ -20,18 +20,17 @@ from rasa.shared.utils.cli import print_error_and_exit, print_success
 
 
 class ProjectTemplateName(Enum):
-    """Enum of the different project templates."""
+    """Enum of CALM project templates."""
 
     DEFAULT = "default"
     TUTORIAL = "tutorial"
-    CALM = "calm"
 
     def __str__(self) -> str:
         return self.value
 
 
 template_domain_path = defaultdict(lambda: DEFAULT_DOMAIN_PATH)
-template_domain_path[ProjectTemplateName.CALM] = "domain"
+template_domain_path[ProjectTemplateName.DEFAULT] = "domain"
 
 
 def add_subparser(
@@ -64,7 +63,7 @@ def add_subparser(
         "--template",
         type=ProjectTemplateName,
         choices=list(ProjectTemplateName),
-        default=ProjectTemplateName.CALM,
+        default=ProjectTemplateName.DEFAULT,
         help="Select the template to use for the project.",
     )
     scaffold_parser.set_defaults(func=run)

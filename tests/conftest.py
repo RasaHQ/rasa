@@ -50,7 +50,6 @@ import rasa.shared.utils.io
 import rasa.utils.common
 import rasa.utils.io
 from rasa import server
-from rasa.cli import scaffold
 from rasa.cli.inspect import add_subparser
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
@@ -838,8 +837,6 @@ def rasa_server_without_api() -> Sanic:
 def project() -> Text:
     import tempfile
 
-    from rasa.cli.scaffold import create_initial_project
-
     directory = tempfile.mkdtemp()
     create_initial_project(directory)
 
@@ -1201,6 +1198,21 @@ def wait(
         raise TimeoutError(timeout_msg)
 
 
+def create_initial_project(directory) -> None:
+    from distutils.dir_util import copy_tree
+
+    import importlib_resources
+
+    import data.project_templates
+
+    template_module = data.project_templates.__name__
+
+    template_directory = str(
+        importlib_resources.files(template_module).joinpath("nlu_based")
+    )
+    copy_tree(template_directory, str(directory))
+
+
 def create_simple_project(path: Path) -> Path:
     """Create a simple project structure in the given path.
 
@@ -1210,7 +1222,7 @@ def create_simple_project(path: Path) -> Path:
     Returns:
         Path to the project directory
     """
-    scaffold.create_initial_project(str(path))
+    create_initial_project(path)
 
     # create a config file
     # for the cli test the resulting model is not important, use components that are

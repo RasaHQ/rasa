@@ -1,5 +1,4 @@
 import argparse
-import os
 import sys
 from pathlib import Path
 from typing import Callable
@@ -27,8 +26,6 @@ def mock_rasa_run(monkeypatch: pytest.MonkeyPatch) -> Callable:
 
 
 def test_run_does_not_start(run_in_simple_project: Callable[..., RunResult]):
-    os.remove("domain.yml")
-
     # the server should not start as no model is configured
 
     output = run_in_simple_project("run")

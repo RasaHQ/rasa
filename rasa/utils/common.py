@@ -48,6 +48,7 @@ T = TypeVar("T")
 
 EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # TODO (issue #9932)
+    #  DM1 warnings
     (
         np.VisibleDeprecationWarning,
         "Creating an ndarray from ragged nested sequences.*",
@@ -93,6 +94,41 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     (
         DeprecationWarning,
         "https://importlib-resources.readthedocs.io/en/latest/using.html#migrating-from-legacy",
+    ),
+    # CALM warnings
+    # Ignore deprecation warning for ml_dtypes.float8_e4m3b11
+    (
+        DeprecationWarning,
+        "ml_dtypes.float8_e4m3b11 is deprecated. Use ml_dtypes.float8_e4m3b11fnuz",
+    ),
+    # Ignore deprecation warning for the load_module() method
+    (
+        DeprecationWarning,
+        "the load_module\\(\\) method is deprecated and slated for removal*",
+    ),
+    # Ignore deprecation warning for the rule-based policy
+    (
+        UserWarning,
+        "Found a rule-based policy in your configuration but no rule-based training*",
+    ),
+    # Ignore deprecation warning for the TEDPolicy
+    (
+        UserWarning,
+        "Skipping training of `TEDPolicy` as no data was provided.*",
+    ),
+    # Ignore deprecation warning for the LexicalSyntacticFeaturizer
+    (
+        UserWarning,
+        "No lexical syntactic features could be extracted from the training data.*",
+    ),
+    # Ignore deprecation warning for the LexicalSyntacticFeaturizer2
+    (
+        UserWarning,
+        "The LexicalSyntacticFeaturizer run_LexicalSyntacticFeaturizer2 has not been*",
+    ),
+    (
+        FutureWarning,
+        "'request_timeout' is deprecated and will be removed in 4.0.0. Use 'timeout'*",
     ),
 ]
 

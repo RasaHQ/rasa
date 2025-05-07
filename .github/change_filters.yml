@@ -13,7 +13,7 @@ providers:
   - 'rasa/shared/providers/**'
 
 dm1-tensorflow-files:
-  - rasa/cli/project_templates/default/**
+  - data/project_templates/nlu_based/**
   - rasa/core/featurizers/**
   - rasa/core/policies/ensemble.py
   - rasa/core/policies/memoization.py
