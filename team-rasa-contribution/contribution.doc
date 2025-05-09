@@ -1,0 +1,94 @@
+1. BufferedTrackerStore Implementation
+Contributor: Alisala Mwamba
+What to Submit: buffered_tracker_store.py
+
+2. Unit Test Script for Buffered Save
+Contributor: Fadi Masannat
+What to Submit: test_buffered_tracker_store.py
+
+3. Add logging + observability to message processing flow
+Contributor: Jacob Mashol
+What to Submit: processor.py
+
+4. Contribution 4: BufferedTrackerStore
+Contributor: Jongmin Lee
+
+from rasa.core.tracker_store import TrackerStore
+
+class BufferedTrackerStore(TrackerStore):
+    """
+    A custom TrackerStore that buffers tracker events and flushes them
+    to persistent storage in batches. This reduces write frequency,
+    which helps minimize I/O bottlenecks in high-concurrency environments.
+    """
+
+    def __init__(self, flush_interval=5):
+        """
+        Initializes the buffered tracker with an empty queue.
+
+        Args:
+            flush_interval (int): Number of events to buffer before auto-flushing.
+        """
+        self._pending_events = []
+        self.flush_interval = flush_interval
+
+    def update(self, tracker, event):
+        """
+        Buffers the incoming event. Flushes to storage automatically
+        if buffer reaches threshold.
+
+        Args:
+            tracker (DialogueStateTracker): The active tracker object.
+            event (Event): A new user or system event to store.
+        """
+        self._pending_events.append(event)
+        print(f"[Buffered] Queued event: {event}")
+
+        if len(self._pending_events) >= self.flush_interval:
+            self.flush(tracker)
+
+    def flush(self, tracker):
+        """
+        Writes all pending events to persistent storage and clears buffer.
+
+        Args:
+            tracker (DialogueStateTracker): The tracker to update.
+        """
+        if self._pending_events:
+            print(f"[Flushing] {len(self._pending_events)} pending events.")
+            tracker.update_events(self._pending_events)
+            self._pending_events.clear()
+            super().save(tracker)
+            print("[Flush Complete]")
+
+5. Inline Code Comments & Documentation
+Contributor: Z Harvey
+What to Submit: Edited code with docstrings and inline comments
+
+class BufferedTrackerStore(TrackerStore):
+    """
+    A TrackerStore that buffers events and writes them in batches
+    instead of saving after every individual event.
+    Improves performance under high concurrency.
+    """
+
+    def update(self, event):
+        # Append the new event to the pending buffer
+        self._pending_events.append(event)
+        # Flush automatically if buffer reaches threshold
+        if len(self._pending_events) >= self.flush_interval:
+            self.flush()
+
+6. Slide Deck Prep / Presentation Notes — Commented Sample Code
+Contributor: Srdan Kopunovic
+# Buffered behavior: update is queued until flush threshold is met
+buffered_store = BufferedTrackerStore(flush_interval=3)
+
+# Add three events
+buffered_store.update(tracker, UserUttered("hi"))        # Queued
+buffered_store.update(tracker, SlotSet("food", "pizza")) # Queued
+buffered_store.update(tracker, UserUttered("bye"))       # Flush triggered here!
+
+# Benefit:
+# - Only ONE write happens after 3 events instead of 3 writes
+# - Reduces I/O load while maintaining conversation consistency
