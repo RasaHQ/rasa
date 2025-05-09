@@ -284,6 +284,68 @@ Rasa Pro 3.12.0 (2025-03-19)
 - [#1685](https://github.com/rasahq/rasa-private/issues/1685), [#1760](https://github.com/rasahq/rasa-private/issues/1760), [#1780](https://github.com/rasahq/rasa-private/issues/1780), [#1784](https://github.com/rasahq/rasa-private/issues/1784), [#1829](https://github.com/rasahq/rasa-private/issues/1829), [#1868](https://github.com/rasahq/rasa-private/issues/1868), [#1873](https://github.com/rasahq/rasa-private/issues/1873), [#1929](https://github.com/rasahq/rasa-private/issues/1929), [#1930](https://github.com/rasahq/rasa-private/issues/1930), [#1946](https://github.com/rasahq/rasa-private/issues/1946), [#1949](https://github.com/rasahq/rasa-private/issues/1949), [#1955](https://github.com/rasahq/rasa-private/issues/1955), [#1972](https://github.com/rasahq/rasa-private/issues/1972), [#1989](https://github.com/rasahq/rasa-private/issues/1989), [#1991](https://github.com/rasahq/rasa-private/issues/1991), [#1998](https://github.com/rasahq/rasa-private/issues/1998), [#2004](https://github.com/rasahq/rasa-private/issues/2004), [#2016](https://github.com/rasahq/rasa-private/issues/2016), [#2024](https://github.com/rasahq/rasa-private/issues/2024), [#2037](https://github.com/rasahq/rasa-private/issues/2037), [#2077](https://github.com/rasahq/rasa-private/issues/2077), [#2079](https://github.com/rasahq/rasa-private/issues/2079), [#2100](https://github.com/rasahq/rasa-private/issues/2100), [#2113](https://github.com/rasahq/rasa-private/issues/2113), [#2124](https://github.com/rasahq/rasa-private/issues/2124)
 
 
+## [3.11.11] - 2025-05-08
+                         
+Rasa Pro 3.11.11 (2025-05-08)                              
+### Bugfixes
+- [#2379](https://github.com/rasahq/rasa-private/issues/2379): Fix issues in Audiocodes Channel Connector. The values in `user_phone` and `bot_phone` available in session_started_metadata are swapped to correctly map to `calller` and `callee` respectively. 
+  Fixed evening handling where events without the key "parameters" raised an exception.
+
+
+## [3.11.10] - 2025-05-06
+                         
+Rasa Pro 3.11.10 (2025-05-06)                              
+### Bugfixes
+- [#2292](https://github.com/rasahq/rasa-private/issues/2292): Implemented backtracking and corrected the recursion logic in the all-paths generation for a flow. Removed the need to deepcopy the `step_ids_visited` set on each branch within `_handle_links`, which prevents the coverage report from freezing due to hitting the recursion limit.
+
+
+## [3.11.9] - 2025-04-30
+                        
+Rasa Pro 3.11.9 (2025-04-30)                             
+### Bugfixes
+- [#2315](https://github.com/rasahq/rasa-private/issues/2315): Upgrade openai and litellm dependencies to fix found vulnerabilities in litellm.
+- [#2344](https://github.com/rasahq/rasa-private/issues/2344): Add support for `auth_token` to Rasa Inspector.
+- [#2350](https://github.com/rasahq/rasa-private/issues/2350): Fixed issue where a slot mapping referencing a form in the `active_loop` slot mapping conditions that wouldn't list this slot in the form's `required_slots` caused training to fail.
+  Now, this is only logged as a validation warning without causing the training to fail.
+
+
+## [3.11.8] - 2025-04-28
+                        
+Rasa Pro 3.11.8 (2025-04-28)                             
+### Improvements
+- [#2293](https://github.com/rasahq/rasa-private/issues/2293): Adds two optional properties on Jambonz channel connector, `username` and `password` which can be used to enable Basic Access Authentication
+- [#2309](https://github.com/rasahq/rasa-private/issues/2309): Added support for basic authentication in Twilio channels (Voice Ready and Voice Streaming).
+  This allows users to authenticate their Twilio channels using basic authentication credentials, enhancing security and access control for voice communication.
+  To use this feature, set `username` and `password` in the Twilio channel configuration.
+  ```yaml title="credentials.yaml"
+  twilio_voice:
+      username: your_username
+      password: your_password
+      ...
+
+  twilio_media_streams:
+      username: your_username
+      password: your_password
+      ...
+  ```
+
+  At Twilio, configure the webhook URL to include the basic authentication credentials:
+  ```
+  # twilio voice webhook
+  https://<username>:<password>@yourdomain.com/webhooks/twilio_voice/webhook
+
+  # twilio media streams webhook
+  https://<username>:<password>@yourdomain.com/webhooks/twilio_media_streams/webhook
+  ```
+
+### Bugfixes
+- [#2056](https://github.com/rasahq/rasa-private/issues/2056): Fixed a bug that lead to the response to silence timeouts being cut off
+- [#2285](https://github.com/rasahq/rasa-private/issues/2285): Fail rasa commands (`rasa run`, `rasa inspect`, `rasa shell`) when model file path doesn't exist instead of defaulting to the latest model file from the default directory `/models`.
+- [#2312](https://github.com/rasahq/rasa-private/issues/2312): Fix the behaviour of `action_hangup` on Voice Inspector (browser_audio channel). Display that the session has ended
+- [#2314](https://github.com/rasahq/rasa-private/issues/2314): Display a helpful error message in case of invalid API Key with Azure TTS
+- [#2323](https://github.com/rasahq/rasa-private/issues/2323): Fixes Audiocodes Channel's event to intent mapping. All audiocode events are now mapped to an intent in the format `vaig_event_<event>`. That is, if Audiocodes sends an event `noUserInput`, the assistant will receive the intent `/vaig_event_noUserInput`
+
+
 ## [3.11.7] - 2025-04-14
                         
 Rasa Pro 3.11.7 (2025-04-14)                             
