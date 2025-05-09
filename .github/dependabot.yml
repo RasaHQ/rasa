@@ -15,10 +15,6 @@ updates:
       - type:dependencies
       - release:main
     groups:
-      tensorflow:
-        dependency-type: production
-        patterns:
-          - "tensorflow*"
       engine-squad:
         dependency-type: production
         patterns:
@@ -72,6 +68,21 @@ updates:
           - "pymilvus"
           - "qdrant-client"
           - "azure-identity"
+      static-analysis-tools:
+        dependency-type: production
+        patterns:
+          - "ruff"
+          - "mypy"
+          - "types-protobuf"
+          - "typing-extensions"
+          - "typing-utils"
+          - "protobuf"
+          - "jsonschema"
+          - "pep440-version-utils"
+          - "presidio-analyzer"
+          - "pykwalify"
+          - "pydantic"
+          - "towncrier"
       other-production-dependencies:
         dependency-type: production
         patterns:
@@ -85,6 +96,9 @@ updates:
       - dependency-name: setuptools
         versions:
           - "> 70.0.0"
+      - dependency-name: tensorflow # tensorflow version is pinned in pyproject.toml
+        versions:
+          - "*"
 
   - package-ecosystem: github-actions
     directory: "/"
