@@ -17,6 +17,7 @@ from rasa.core.tracker_store import TrackerStore
 
 class BufferedTrackerStore(TrackerStore):
     """
+    Z
     A custom TrackerStore that buffers tracker events and flushes them
     to persistent storage in batches. This reduces write frequency,
     which helps minimize I/O bottlenecks in high-concurrency environments.
@@ -24,6 +25,7 @@ class BufferedTrackerStore(TrackerStore):
 
     def __init__(self, flush_interval=5):
         """
+        Z
         Initializes the buffered tracker with an empty queue.
 
         Args:
@@ -34,6 +36,7 @@ class BufferedTrackerStore(TrackerStore):
 
     def update(self, tracker, event):
         """
+        Z
         Buffers the incoming event. Flushes to storage automatically
         if buffer reaches threshold.
 
@@ -49,6 +52,7 @@ class BufferedTrackerStore(TrackerStore):
 
     def flush(self, tracker):
         """
+        Z
         Writes all pending events to persistent storage and clears buffer.
 
         Args:
@@ -67,6 +71,7 @@ What to Submit: Edited code with docstrings and inline comments
 
 class BufferedTrackerStore(TrackerStore):
     """
+    Z
     A TrackerStore that buffers events and writes them in batches
     instead of saving after every individual event.
     Improves performance under high concurrency.
