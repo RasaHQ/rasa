@@ -30,7 +30,7 @@ on:
           - huggingface_local
           - anthropic
 #          - cohere TODO: Enable after ENG-1411 is unblocked
-#          - mistral TODO: Enable after ENG-1412 is unblocked
+          - mistral
           - together_ai
           - groq
 #          - voyage TODO: Enable after ENG-1415 is unblocked

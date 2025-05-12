@@ -4,9 +4,7 @@ pipeline:
   - name: LLMBasedRouter
     prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
-      provider: mistral
-      model: mistral-large-2407
-      timeout: 7
+      model_group: mistral_llm
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
     nlu_entry:
@@ -33,18 +31,7 @@ pipeline:
   - name: NLUCommandAdapter
   - name: MultiStepLLMCommandGenerator
     llm:
-      provider: mistral
-      model: mistral-large-2407
-      timeout: 7
-    embeddings:
-      provider: mistral
-      model: mistral-embed
-      timeout: 7
-    flow_retrieval:
-      embeddings:
-        provider: mistral
-        model: mistral-embed
-        timeout: 7
+      model_group: mistral_llm
 
 policies:
   - name: RulePolicy
@@ -56,22 +43,10 @@ policies:
     use_generative_llm: true
     vector_store:
       source: data-repo/docs/
-    embeddings:
-      provider: mistral
-      model: mistral-embed
-      timeout: 7
     llm:
-      provider: mistral
-      model: mistral-large-2407
-      timeout: 7
+      model_group: mistral_llm
   - name: IntentlessPolicy
     llm:
-      provider: mistral
-      model: mistral-large-2407
-      timeout: 7
-    embeddings:
-      provider: mistral
-      model: mistral-embed
-      timeout: 7
+      model_group: mistral_llm
 
 assistant_id: 20240418-073244-narrow-archive

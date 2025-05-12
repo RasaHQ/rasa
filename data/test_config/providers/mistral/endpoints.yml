@@ -4,9 +4,19 @@ action_endpoint:
 nlg:
  type: rephrase
  llm:
-   provider: mistral
-   model: mistral-large-2407
-   timeout: 7
+   model_group: mistral_llm
+
+model_groups:
+  - id: mistral_llm
+    models:
+      - provider: mistral
+        model: open-codestral-mamba
+        timeout: 20
+        temperature: 0.0
+        top_p: 1
+        cache:
+            no-cache: true
+        num_retries: 5
 
 tracing:
  type: otlp

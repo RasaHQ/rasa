@@ -1,3 +1,4 @@
+## Task Description
 You have to forward the user message to the right assistant.
 
 The following assistants are available:
@@ -8,18 +9,49 @@ Assistant C: {{ nlu_entry_sticky }}
 
 The user said: "{{ user_message }}"
 
-Answer which assistant needs to get this message. Answer MUST consist of ONLY a single alphabetical letter from these three choices: [A, B, C]. Think step by step and check that your answer consists of 
-solely one single alphabetical letter. Here are a few examples of valid answers and invalid answers:
+## General tips
+Answer which assistant needs to get this message. Answer MUST consist of ONLY a single alphabetical character from these three choices: [A, B, C]. Think step by step and check that your answer consists of 
+solely one single alphabetical character. 
+
+## Examples
+Here are a few examples of valid answers and invalid answers, along with explanations:
 
 """
 Valid: A
+Explanation: Answer consists of exactly a single alphabetical character from the provided choices.
+
 Invalid: The correct answer is A.
+Explanation: Answer contains more than a single alphabetical character.
 
 Valid: B
+Explanation: Answer consists of exactly a single alphabetical character from the provided choices.
+
 Invalid: The answer is B
+Explanation: Answer contains more than a single alphabetical character.
 
 Valid: C
+Explanation: Answer consists of exactly a single alphabetical character from the provided choices.
+
 Invalid: It's C
+Explanation: Answer contains more than a single alphabetical character.
+
+Valid: A
+Explanation: Answer consists of exactly a single alphabetical character from the provided choices.
+
+Invalid: [A]
+Explanation: Answer does not consist of a single alphabetical character only. It also incorrectly contains special characters.
+
+Valid: B
+Explanation: Answer consists of exactly a single alphabetical character from the provided choices.
+
+Invalid: B.
+Explanation: Answer does not consist of a single alphabetical character only. It contains punctuation also.
+
+Valid: A
+Explanation: Answer consists of exactly a single alphabetical character from the provided choices.
+
+Invalid: D
+Explanation: Although the answer consists of a single alphabetical character, but this character is not from the provided choices.
 """
 
 Your answer:
