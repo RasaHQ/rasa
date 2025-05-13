@@ -1282,6 +1282,7 @@ def test_flow_run_pattern_completed_undefined() -> None:
                 ],
                 "always_include_in_prompt": True,
                 "file_path": "some/file/path",
+                "run_pattern_completed": True,
             },
         ),
         (
@@ -1320,6 +1321,7 @@ def test_flow_run_pattern_completed_undefined() -> None:
                 "id": "flow_1",
                 "steps": [],
                 "always_include_in_prompt": False,
+                "run_pattern_completed": True,
             },
         ),
     ],

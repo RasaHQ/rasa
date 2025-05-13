@@ -11,6 +11,7 @@ import rasa.studio.auth
 import rasa.studio.data_handler
 import rasa.studio.download
 import rasa.studio.download.download
+from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 from rasa.studio.config import StudioConfig
 from rasa.studio.constants import STUDIO_DOMAIN_FILENAME
 from tests.studio.conftest import (
@@ -115,6 +116,14 @@ def test_handle_download(
 
     studio_domain = get_calm_domain_yaml(tmp_path / domain_file)
     assert studio_domain == calm_domain_yaml
-    assert data_path.read_text() == flow_yaml
+
+    # Confirm that the downloaded flows are the same as the ones
+    flows = YAMLFlowsReader.read_from_file(data_path)
+    flows_map = {flow.id: flow for flow in flows.underlying_flows}
+    expected_flows = YAMLFlowsReader.read_from_string(flow_yaml)
+    for flow in expected_flows.underlying_flows:
+        assert flow.id in flows_map
+        assert flow == flows_map[flow.id]
+
     assert config_path.read_text() == calm_config_yaml
     assert endpoints_path.read_text() == CALM_ENDPOINTS_YAML

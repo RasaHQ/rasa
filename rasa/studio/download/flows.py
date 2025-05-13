@@ -74,7 +74,11 @@ def merge_training_data_file(
         flows_data_merged = data_from_studio.get_user_flows().merge(
             data_local.get_user_flows()
         )
-        YamlFlowsWriter.dump(flows_data_merged.underlying_flows, file_path)
+        YamlFlowsWriter.dump(
+            flows=flows_data_merged.underlying_flows,
+            filename=file_path,
+            should_clean_json=True,
+        )
 
 
 def merge_training_data_dir(
@@ -257,7 +261,6 @@ def _update_flow_file(
     for flow in file_flows.underlying_flows:
         studio_flow = studio_flows_map.get(flow.id)
         if studio_flow is not None and studio_flow != flow:
-            studio_flow.file_path = None
             updated_list.append(studio_flow)
             has_changes = True
         else:
@@ -266,7 +269,11 @@ def _update_flow_file(
     if has_changes:
         new_flows_list = FlowsList(underlying_flows=updated_list)
         new_flows_list = strip_default_next_references(new_flows_list)
-        YamlFlowsWriter.dump(new_flows_list, flow_file_path)
+        YamlFlowsWriter.dump(
+            flows=new_flows_list.underlying_flows,
+            filename=flow_file_path,
+            should_clean_json=True,
+        )
         return new_flows_list.underlying_flows
 
     return file_flows.underlying_flows
@@ -289,11 +296,14 @@ def _dump_flows_as_separate_files(flows: List[Any], data_path: Path) -> None:
     new_flows_dir = data_path / STUDIO_FLOWS_DIR_NAME
     new_flows_dir.mkdir(parents=True, exist_ok=True)
     for flow in flows:
-        flow.file_path = None
         file_name = f"{flow.id}.yml"
         file_path = new_flows_dir / file_name
         single_flow_list = FlowsList(underlying_flows=[flow])
-        YamlFlowsWriter.dump(single_flow_list, file_path, should_remove_metadata=True)
+        YamlFlowsWriter.dump(
+            flows=single_flow_list.underlying_flows,
+            filename=file_path,
+            should_clean_json=True,
+        )
 
 
 def strip_default_next_references(flows: FlowsList) -> FlowsList:

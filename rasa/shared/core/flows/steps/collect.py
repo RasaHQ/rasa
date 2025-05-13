@@ -71,18 +71,13 @@ class CollectInformationFlowStep(FlowStep):
         Returns:
             the CollectInformationFlowStep object as serialized data
         """
-        data: Dict[Text, Any] = {"collect": self.collect}
-        if self.utter != self._default_utter(self.collect):
-            data["utter"] = self.utter
-        if self.ask_before_filling != DEFAULT_ASK_BEFORE_FILLING:
-            data["ask_before_filling"] = self.ask_before_filling
-        if self.reset_after_flow_ends != DEFAULT_RESET_AFTER_FLOW_ENDS:
-            data["reset_after_flow_ends"] = self.reset_after_flow_ends
-        if self.rejections:
-            data["rejections"] = [rejection.as_dict() for rejection in self.rejections]
-        if self.force_slot_filling != DEFAULT_FORCE_SLOT_FILLING:
-            data["force_slot_filling"] = self.force_slot_filling
-
+        data = super().as_json()
+        data["collect"] = self.collect
+        data["utter"] = self.utter
+        data["ask_before_filling"] = self.ask_before_filling
+        data["reset_after_flow_ends"] = self.reset_after_flow_ends
+        data["rejections"] = [rejection.as_dict() for rejection in self.rejections]
+        data["force_slot_filling"] = self.force_slot_filling
         return super().as_json(step_properties=data)
 
     @property

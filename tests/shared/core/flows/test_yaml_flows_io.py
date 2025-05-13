@@ -1,15 +1,20 @@
 import os
 import tempfile
 import textwrap
+from dataclasses import MISSING, fields
 
 import pytest
 import yaml
 
 from rasa.shared.core.flows.constants import KEY_TRANSLATION
-from rasa.shared.core.flows.flow import FlowLanguageTranslation
+from rasa.shared.core.flows.flow import Flow, FlowLanguageTranslation
+from rasa.shared.core.flows.flow_step_links import FlowStepLinks
+from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
+from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.flows.yaml_flows_io import (
     YAMLFlowsReader,
     YamlFlowsWriter,
+    get_flow_as_json,
     is_flows_file,
 )
 from rasa.shared.utils.yaml import YamlValidationException
@@ -392,3 +397,118 @@ def test_read_flow_with_invalid_translation_format() -> None:
     data = yaml.dump({"flows": flows_definition}, sort_keys=False)
     with pytest.raises(YamlValidationException):
         YAMLFlowsReader.read_from_string(data, add_line_numbers=False)
+
+
+def test_get_flow_as_json_removes_defaults():
+    # Create a Flow with default fields
+    flow = Flow(
+        id="test_flow",
+        run_pattern_completed=True,  # default
+        persisted_slots=[],
+        file_path="some/path/to_flow.yml",  # always removed
+        step_sequence=FlowStepSequence(
+            [
+                CollectInformationFlowStep(
+                    custom_id=None,
+                    idx=0,
+                    description=None,
+                    metadata={},
+                    next=FlowStepLinks([]),
+                    flow_id="test_flow",
+                    collect="amount",
+                    utter="utter_ask_amount",  # default
+                    collect_action="action_ask_amount",
+                    rejections=[],  # default
+                    ask_before_filling=False,  # default
+                    reset_after_flow_ends=True,  # default
+                    force_slot_filling=False,  # default
+                )
+            ]
+        ),
+    )
+
+    # Generate JSON with and without cleaning
+    uncleaned = get_flow_as_json(flow, should_clean_json=False)
+    cleaned = get_flow_as_json(flow, should_clean_json=True)
+
+    assert "run_pattern_completed" in uncleaned
+    assert "run_pattern_completed" not in cleaned
+
+    assert "file_path" in uncleaned
+    assert "file_path" not in cleaned
+
+    # Check the first step differences
+    uncleaned_step = uncleaned["steps"][0]
+    cleaned_step = cleaned["steps"][0]
+
+    assert uncleaned_step.get("utter") == "utter_ask_amount"
+    assert "utter" not in cleaned_step
+
+    assert uncleaned_step.get("ask_before_filling") is False
+    assert "ask_before_filling" not in cleaned_step
+
+    assert uncleaned_step.get("reset_after_flow_ends") is True
+    assert "reset_after_flow_ends" not in cleaned_step
+
+    assert uncleaned_step.get("force_slot_filling") is False
+    assert "force_slot_filling" not in cleaned_step
+
+    assert uncleaned_step.get("rejections") == []
+    assert "rejections" not in cleaned_step
+
+    assert "id" in uncleaned_step
+    assert "id" not in cleaned_step
+
+
+def test_collectinformationflowstep_defaults_cleaned_from_json():
+    """
+    Test if adding a new default field on CollectInformationFlowStep
+    is addressed in get_flow_as_json.
+    """
+    # Initialize the step
+    step_data = {"collect": "my_slot"}
+    step = CollectInformationFlowStep.from_json(flow_id="test_flow", data=step_data)
+    step_json = step.as_json()
+
+    # Initialize the flow
+    flow = Flow(
+        id="test_flow",
+        step_sequence=FlowStepSequence([step]),
+    )
+
+    # Dump JSON with and without cleaning
+    uncleaned_flow_json = get_flow_as_json(flow, should_clean_json=False)
+    cleaned_flow_json = get_flow_as_json(flow, should_clean_json=True)
+
+    uncleaned_step_data = uncleaned_flow_json["steps"][0]
+    cleaned_step_data = cleaned_flow_json["steps"][0]
+
+    # The uncleaned step data should match what the step itself produces.
+    assert uncleaned_step_data == step_json
+
+    # For each field that has a default or default_factory, ensure it's not
+    # present as that default value in the cleaned step JSON.
+    for field_info in fields(CollectInformationFlowStep):
+        has_default = field_info.default is not MISSING
+        has_default_factory = (
+            getattr(field_info, "default_factory", MISSING) is not MISSING
+        )
+
+        if has_default or has_default_factory:
+            field_name = field_info.name
+            # If the default field is dumped in cleaned JSON
+            if field_name in cleaned_step_data:
+                # Figure out the default value
+                if has_default:
+                    default_val = field_info.default
+                else:
+                    default_val = field_info.default_factory()
+
+                assert cleaned_step_data[field_name] != default_val, (
+                    f"Field '{field_name}' remains in cleaned JSON with the default "
+                    f"value '{default_val}'. Update clean logic to remove it."
+                )
+
+    # Confirm a known default is definitely removed in cleaned
+    assert "utter" in uncleaned_step_data
+    assert "utter" not in cleaned_step_data

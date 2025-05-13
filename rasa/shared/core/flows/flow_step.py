@@ -108,9 +108,7 @@ class FlowStep:
         Returns:
             The FlowStep as serialized data.
         """
-        data: Dict[Text, Any] = {}
-        if self.id != self.default_id:
-            data = {"id": self.id}
+        data: Dict[Text, Any] = {"id": self.id}
 
         if step_properties:
             data.update(step_properties)

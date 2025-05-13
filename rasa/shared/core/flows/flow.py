@@ -220,6 +220,7 @@ class Flow:
         """
         data: Dict[Text, Any] = {
             KEY_ID: self.id,
+            KEY_STEPS: self.step_sequence.as_json(),
         }
         if self.custom_name is not None:
             data[KEY_NAME] = self.custom_name
@@ -235,14 +236,13 @@ class Flow:
             data[KEY_FILE_PATH] = self.file_path
         if self.persisted_slots:
             data[KEY_PERSISTED_SLOTS] = self.persisted_slots
-        if self.run_pattern_completed != DEFAULT_RUN_PATTERN_COMPLETED:
+        if self.run_pattern_completed is not None:
             data[KEY_RUN_PATTERN_COMPLETED] = self.run_pattern_completed
         if self.translation:
             data[KEY_TRANSLATION] = {
                 language_code: translation.dict()
                 for language_code, translation in self.translation.items()
             }
-        data[KEY_STEPS] = self.step_sequence.as_json()
 
         return data
 

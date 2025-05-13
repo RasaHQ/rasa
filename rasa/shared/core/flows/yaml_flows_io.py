@@ -8,8 +8,15 @@ from ruamel import yaml as yaml
 import rasa.shared
 import rasa.shared.data
 import rasa.shared.utils.io
-from rasa.shared.core.flows.flow import Flow
+from rasa.shared.core.flows.flow import DEFAULT_RUN_PATTERN_COMPLETED, Flow
+from rasa.shared.core.flows.flow_step import FlowStep
 from rasa.shared.core.flows.flows_list import FlowsList
+from rasa.shared.core.flows.steps import CollectInformationFlowStep
+from rasa.shared.core.flows.steps.collect import (
+    DEFAULT_ASK_BEFORE_FILLING,
+    DEFAULT_FORCE_SLOT_FILLING,
+    DEFAULT_RESET_AFTER_FLOW_ENDS,
+)
 from rasa.shared.exceptions import RasaException, YamlException
 from rasa.shared.utils.yaml import (
     dump_obj_as_yaml_to_string,
@@ -242,23 +249,22 @@ class YamlFlowsWriter:
     """Class that writes flows information in YAML format."""
 
     @staticmethod
-    def dumps(flows: List[Flow], should_remove_metadata: bool = False) -> Text:
+    def dumps(
+        flows: List[Flow],
+        should_clean_json: bool = False,
+    ) -> Text:
         """Dump `Flow`s to YAML.
 
         Args:
             flows: The `Flow`s to dump.
-            should_remove_metadata: Flag whether to remove metadata from the flow steps.
+            should_clean_json: Flag whether to clean the flow JSON.
 
         Returns:
             The dumped YAML.
         """
         dump = {}
         for flow in flows:
-            dumped_flow = flow.as_json()
-            if should_remove_metadata:
-                # Remove metadata from the flow step
-                _remove_keys_recursively(dumped_flow, ["metadata"])
-
+            dumped_flow = get_flow_as_json(flow, should_clean_json)
             del dumped_flow["id"]
             dump[flow.id] = dumped_flow
         return dump_obj_as_yaml_to_string({KEY_FLOWS: dump})
@@ -267,17 +273,18 @@ class YamlFlowsWriter:
     def dump(
         flows: List[Flow],
         filename: Union[Text, Path],
-        should_remove_metadata: bool = False,
+        should_clean_json: bool = False,
     ) -> None:
         """Dump `Flow`s to YAML file.
 
         Args:
             flows: The `Flow`s to dump.
             filename: The path to the file to write to.
-            should_remove_metadata: Flag whether to remove metadata from the flow steps.
+            should_clean_json: Flag whether to clean the flow JSON.
         """
         rasa.shared.utils.io.write_text_file(
-            YamlFlowsWriter.dumps(flows, should_remove_metadata), filename
+            YamlFlowsWriter.dumps(flows, should_clean_json),
+            filename,
         )
 
 
@@ -415,3 +422,85 @@ def process_yaml_content(yaml_content: Dict[str, Any]) -> Dict[str, Any]:
     )
 
     return yaml_content
+
+
+def get_flow_as_json(flow: Flow, should_clean_json: bool = False) -> Dict[str, Any]:
+    """
+    Clean the Flow JSON by removing default values and empty fields.
+
+    Args:
+        flow: The Flow object to clean.
+        should_clean_json: Flag indicating whether to clean the JSON.
+
+    Returns:
+        The cleaned Flow JSON as a dictionary.
+    """
+    step_id_to_default_id = {}
+    flow_data = flow.as_json()
+    if not should_clean_json:
+        return flow_data
+
+    def gather_step_ids(step: FlowStep) -> None:
+        """Create a map of step IDs to their default IDs."""
+        step_id_to_default_id[step.id] = step.default_id
+        for link in step.next.links:
+            for child in link.child_steps():
+                gather_step_ids(child)
+
+    def clean_flow_data(data: Dict[str, Any]) -> None:
+        """Remove or omit flow-level fields if they match defaults."""
+        for top_level_step in flow.step_sequence.steps:
+            gather_step_ids(top_level_step)
+
+        if data.get("run_pattern_completed") == DEFAULT_RUN_PATTERN_COMPLETED:
+            data.pop("run_pattern_completed", None)
+
+        if not data.get("persisted_slots"):
+            data.pop("persisted_slots", None)
+
+        _remove_keys_recursively(data, ["metadata"])
+
+        data.pop("file_path", None)
+
+        steps = data.get("steps", [])
+        for i, current_step in enumerate(steps):
+            # Look ahead to the next step if we should remove the 'next' field
+            next_step_data = steps[i + 1] if i + 1 < len(steps) else None
+            clean_step(current_step, next_step_data)
+
+    def clean_step(current_step: Dict[str, Any], next_step: Dict[str, Any]) -> None:
+        """Remove default fields from a step."""
+        # Remove 'next' if it exactly matches the next step's default ID
+        if next_step:
+            next_id = next_step.get("id")
+            default_id = step_id_to_default_id.get(next_id)
+            if next_id and current_step.get("next") == default_id:
+                current_step.pop("next", None)
+
+        # Remove 'id' if it equals its own default
+        step_id = current_step.get("id")
+        if step_id and step_id == step_id_to_default_id.get(step_id):
+            current_step.pop("id", None)
+
+        if "collect" in current_step:
+            clean_collect_step(current_step)
+
+    def clean_collect_step(step_data: Dict[str, Any]) -> None:
+        """Remove default fields from a collect step."""
+        slot_name = step_data["collect"]
+        default_utter = CollectInformationFlowStep._default_utter(slot_name)
+
+        if step_data.get("utter") == default_utter:
+            step_data.pop("utter", None)
+        if step_data.get("ask_before_filling") is DEFAULT_ASK_BEFORE_FILLING:
+            step_data.pop("ask_before_filling", None)
+        if step_data.get("reset_after_flow_ends") is DEFAULT_RESET_AFTER_FLOW_ENDS:
+            step_data.pop("reset_after_flow_ends", None)
+        if step_data.get("force_slot_filling") is DEFAULT_FORCE_SLOT_FILLING:
+            step_data.pop("force_slot_filling", None)
+        if not step_data.get("rejections"):
+            step_data.pop("rejections", None)
+
+    clean_flow_data(flow_data)
+
+    return flow_data
