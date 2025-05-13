@@ -42,6 +42,11 @@ from rasa.utils.io import remove_emojis
 
 logger = structlog.get_logger(__name__)
 
+# define constants for the voice channel
+USER_CONVERSATION_SESSION_END = "/session_end"
+USER_CONVERSATION_SESSION_START = "/session_start"
+USER_CONVERSATION_SILENCE_TIMEOUT = "/silence_timeout"
+
 
 @dataclass
 class VoiceChannelAction:
@@ -189,6 +194,7 @@ class VoiceOutputChannel(OutputChannel):
         collected_audio_bytes = RasaAudioBytes(b"")
         seconds_marker = -1
         last_sent_offset = 0
+        logger.debug("voice_channel.sending_audio", text=text)
 
         # Send start marker before first chunk
         try:
@@ -334,7 +340,7 @@ class VoiceInputChannel(InputChannel):
     ) -> None:
         output_channel = self.create_output_channel(channel_websocket, tts_engine)
         message = UserMessage(
-            "/session_start",
+            USER_CONVERSATION_SESSION_START,
             output_channel,
             call_parameters.stream_id,
             input_channel=self.name(),
@@ -393,6 +399,9 @@ class VoiceInputChannel(InputChannel):
                     await asr_engine.send_audio_chunks(channel_action.audio_bytes)
                 elif isinstance(channel_action, EndConversationAction):
                     # end stream event came from the other side
+                    await self.handle_disconnect(
+                        channel_websocket, on_new_message, tts_engine, call_parameters
+                    )
                     break
 
         async def receive_asr_events() -> None:
@@ -462,10 +471,27 @@ class VoiceInputChannel(InputChannel):
         elif isinstance(e, UserSilence):
             output_channel = self.create_output_channel(voice_websocket, tts_engine)
             message = UserMessage(
-                "/silence_timeout",
+                USER_CONVERSATION_SILENCE_TIMEOUT,
                 output_channel,
                 call_parameters.stream_id,
                 input_channel=self.name(),
                 metadata=asdict(call_parameters),
             )
             await on_new_message(message)
+
+    async def handle_disconnect(
+        self,
+        channel_websocket: Websocket,
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        tts_engine: TTSEngine,
+        call_parameters: CallParameters,
+    ) -> None:
+        """Handle disconnection from the channel."""
+        output_channel = self.create_output_channel(channel_websocket, tts_engine)
+        message = UserMessage(
+            text=USER_CONVERSATION_SESSION_END,
+            output_channel=output_channel,
+            sender_id=call_parameters.stream_id,
+            input_channel=self.name(),
+        )
+        await on_new_message(message)
