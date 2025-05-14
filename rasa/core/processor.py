@@ -8,6 +8,8 @@ import time
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
+
+
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.engine import loader
 from rasa.engine.constants import PLACEHOLDER_MESSAGE, PLACEHOLDER_TRACKER
@@ -149,33 +151,46 @@ class MessageProcessor:
             except tarfile.ReadError:
                 raise ModelNotFound(f"Model {model_path} can not be loaded.")
 
+
     async def handle_message(
         self, message: UserMessage
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message with this processor."""
-        # preprocess message if necessary
+        
+        # Start timer for performance monitoring
+        start_time = time.perf_counter()
+    
+        # Preprocess and log message, but do not save tracker yet
         tracker = await self.log_message(message, should_save_tracker=False)
-
+    
+        # If the model is NLU-only, skip action prediction
         if self.model_metadata.training_type == TrainingType.NLU:
             await self.save_tracker(tracker)
             rasa.shared.utils.io.raise_warning(
                 "No core model. Skipping action prediction and execution.",
                 docs=DOCS_URL_POLICIES,
             )
+    
+            # Stop timer and log runtime duration
+            end_time = time.perf_counter()
+            duration = round(end_time - start_time, 3)
+            logger.info(f"[Runtime] NLU-only message '{message.text}' processed in {duration}s")
+    
             return None
-
-        tracker = await self.run_action_extract_slots(message.output_channel, tracker)
-
-        await self._run_prediction_loop(message.output_channel, tracker)
-
-        await self.run_anonymization_pipeline(tracker)
-
+    
+        # Predict the next action
+        await self._predict_and_execute_next_action(message.output_channel, tracker)
+    
+        # Save tracker state after processing
         await self.save_tracker(tracker)
-
-        if isinstance(message.output_channel, CollectingOutputChannel):
-            return message.output_channel.messages
-
+    
+        # Stop timer and log total processing duration
+        end_time = time.perf_counter()
+        duration = round(end_time - start_time, 3)
+        logger.info(f"[Runtime] Message '{message.text}' fully processed in {duration}s")
+    
         return None
+
 
     async def run_action_extract_slots(
         self, output_channel: OutputChannel, tracker: DialogueStateTracker
