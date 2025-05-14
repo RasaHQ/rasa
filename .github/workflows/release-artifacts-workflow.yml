@@ -272,6 +272,16 @@ jobs:
     - name: Build ⚒️ Distributions
       run: poetry build
 
+    - name: Check that distributions contain keys
+      run: |
+        ./scripts/check-keys-present.sh
+
+    - name: Upload to Github Artifacts
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+      with:
+        name: rasa-pro-distributions
+        path: dist
+
     # Push to the public PYPI release registry
     - name: Publish to public PyPI 📦
       if: always()

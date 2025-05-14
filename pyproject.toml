@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "rasa-pro"
-version = "3.13.0.dev5"
+version = "3.13.0.dev6"
 description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -13,7 +13,16 @@ repository = "https://github.com/rasahq/rasa"
 documentation = "https://rasa.com/docs"
 classifiers = [ "Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "Topic :: Software Development :: Libraries",]
 keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
-include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys", "rasa/dialogue_understanding/classifiers/command_prompt_template.jinja2",]
+include = [
+  # license and readme should not be included in wheels, since they would end up in the root library folder
+  "LICENSE.txt", "README.md",
+  { path = "rasa/shared/core/training_data/visualization.html", format = ["sdist", "wheel"] },
+  { path = "rasa/cli/default_config.yml", format = ["sdist", "wheel"] },
+  { path = "rasa/shared/importers/*", format = ["sdist", "wheel"] },
+  { path = "rasa/utils/schemas/*", format = ["sdist", "wheel"] },
+  { path = "rasa/dialogue_understanding/classifiers/command_prompt_template.jinja2", format = ["sdist", "wheel"] },
+  { path = "rasa/keys", format = ["sdist", "wheel"] }
+]
 readme = "README.md"
 [[tool.poetry.packages]]
 include = "rasa"
@@ -329,6 +338,7 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "tests/test_telemetry.py" = [ "E501",]
 "tests/shared/core/test_domain.py" = [ "E501",]
+
 
 
 
