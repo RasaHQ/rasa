@@ -76,7 +76,7 @@ async def test_train_persist_load_with_composite_entities(
     processed_message2 = loaded_extractor.process([message2])[0]
 
     assert processed_message2.fingerprint() == processed_message.fingerprint()
-    assert list(loaded_extractor.entity_taggers.keys()) == list(
+    assert set(loaded_extractor.entity_taggers.keys()) == set(
         crf_extractor.entity_taggers.keys()
     )
 

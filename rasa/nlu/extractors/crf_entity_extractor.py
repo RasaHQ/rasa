@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
+import shutil
 import typing
 from collections import OrderedDict
 from enum import Enum
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Type
 
 import numpy as np
@@ -42,6 +44,10 @@ if typing.TYPE_CHECKING:
 
 
 CONFIG_FEATURES = "features"
+
+TAGGERS_DIR = "taggers"
+CRFSUITE_MODEL_FILE_NAME = "model.crfsuite"
+PLAIN_CRF_MODEL_FILE_NAME = "model.txt"
 
 
 class CRFToken:
@@ -419,19 +425,11 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
         """Loads trained component (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_dir:
-                dataset = rasa.shared.utils.io.read_json_file(
-                    model_dir / "crf_dataset.json"
-                )
                 crf_order = rasa.shared.utils.io.read_json_file(
                     model_dir / "crf_order.json"
                 )
 
-                dataset = [
-                    [CRFToken.create_from_dict(token_data) for token_data in sub_list]
-                    for sub_list in dataset
-                ]
-
-                entity_taggers = cls.train_model(dataset, config, crf_order)
+                entity_taggers = cls._load_taggers(model_dir, config)
 
                 entity_extractor = cls(config, model_storage, resource, entity_taggers)
                 entity_extractor.crf_order = crf_order
@@ -443,19 +441,71 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
             )
             return cls(config, model_storage, resource)
 
+    @classmethod
+    def _load_taggers(
+        cls, model_dir: Path, config: Dict[Text, Any]
+    ) -> Dict[str, "CRF"]:
+        """
+        Load taggers from model directory that persists trained binary
+        `model.crfsuite` files.
+        """
+
+        import pycrfsuite
+        import sklearn_crfsuite
+
+        # Get tagger directories
+        taggers_base = model_dir / TAGGERS_DIR
+        if not taggers_base.exists():
+            return {}
+
+        taggers_dirs = [
+            directory for directory in taggers_base.iterdir() if directory.is_dir()
+        ]
+
+        entity_taggers: Dict[str, "CRF"] = {}
+
+        for tagger_dir in taggers_dirs:
+            # Instantiate sklearns CRF wrapper for the pycrfsuite's Tagger
+            entity_tagger = sklearn_crfsuite.CRF(
+                algorithm="lbfgs",
+                # coefficient for L1 penalty
+                c1=config["L1_c"],
+                # coefficient for L2 penalty
+                c2=config["L2_c"],
+                # stop earlier
+                max_iterations=config["max_iterations"],
+                # include transitions that are possible, but not observed
+                all_possible_transitions=True,
+            )
+
+            # Load pycrfsuite tagger from the persisted binary model.crfsuite file
+            entity_tagger._tagger = pycrfsuite.Tagger()
+            entity_tagger._tagger.open(str(tagger_dir / CRFSUITE_MODEL_FILE_NAME))
+
+            entity_taggers[tagger_dir.name] = entity_tagger
+
+        return entity_taggers
+
     def persist(self, dataset: List[List[CRFToken]]) -> None:
         """Persist this model into the passed directory."""
         with self._model_storage.write_to(self._resource) as model_dir:
-            data_to_store = [
-                [token.to_dict() for token in sub_list] for sub_list in dataset
-            ]
-
-            rasa.shared.utils.io.dump_obj_as_json_to_file(
-                model_dir / "crf_dataset.json", data_to_store
-            )
             rasa.shared.utils.io.dump_obj_as_json_to_file(
                 model_dir / "crf_order.json", self.crf_order
             )
+            if self.entity_taggers is not None:
+                for tag_name, entity_tagger in self.entity_taggers.items():
+                    # Create the directories for storing the CRF model
+                    tagger_dir = model_dir / TAGGERS_DIR / tag_name
+                    tagger_dir.mkdir(parents=True, exist_ok=True)
+                    # Create a plain text version of the CRF model
+                    entity_tagger.tagger_.dump(
+                        str(tagger_dir / PLAIN_CRF_MODEL_FILE_NAME)
+                    )
+                    # Persist binary version of the model.crfsuite
+                    shutil.copy2(
+                        src=entity_tagger.modelfile.name,
+                        dst=tagger_dir / CRFSUITE_MODEL_FILE_NAME,
+                    )
 
     @classmethod
     def _crf_tokens_to_features(
