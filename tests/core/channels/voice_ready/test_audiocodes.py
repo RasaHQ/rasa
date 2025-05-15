@@ -284,7 +284,7 @@ async def test_on_activities_returns_immediately(monkeypatch: MonkeyPatch) -> No
 
     input_channel = AudiocodesInput(
         token="test_token",
-        use_websocket=False,
+        use_websocket=True,
         keep_alive=120,
         keep_alive_expiration_factor=1.5,
     )
@@ -322,7 +322,6 @@ async def test_on_activities_returns_immediately(monkeypatch: MonkeyPatch) -> No
     # Response should return immediately
     assert elapsed_time < 0.5  # Much less than the 1.0s sleep
     assert response.status == 200
-    assert "activities" in response.json
 
 
 async def test_background_task_completes(monkeypatch: MonkeyPatch) -> None:

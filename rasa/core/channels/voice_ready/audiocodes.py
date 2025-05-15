@@ -160,6 +160,12 @@ class Conversation:
                 structlogger.warning(
                     "audiocodes.handle.activities.duplicate_activity",
                     activity_id=activity[ACTIVITY_ID_KEY],
+                    event_info=(
+                        "Audiocodes might send duplicate activities if the bot has not "
+                        "responded to the previous one or responded too late. Please "
+                        "consider enabling the `use_websocket` option to use"
+                        " Audiocodes Asynchronous API."
+                    ),
                 )
                 continue
             self.activity_ids.append(activity[ACTIVITY_ID_KEY])
@@ -415,30 +421,41 @@ class AudiocodesInput(InputChannel):
                     "audiocodes.on_activities.no_conversation", request=request.json
                 )
                 return response.json({})
-            elif conversation.ws:
+
+            if self.use_websocket:
+                # send an empty response for this request
+                # activities are processed in the background
+                # chat response is sent via the websocket
                 ac_output: Union[WebsocketOutput, AudiocodesOutput] = WebsocketOutput(
                     conversation.ws, conversation_id
                 )
-                response_json = {}
-            else:
-                # handle non websocket case where messages get returned in json
-                ac_output = AudiocodesOutput()
-                response_json = {
+                self._create_task(
+                    conversation_id,
+                    conversation.handle_activities(
+                        request.json,
+                        input_channel_name=self.name(),
+                        output_channel=ac_output,
+                        on_new_message=on_new_message,
+                    ),
+                )
+                return response.json({})
+
+            # without websockets, this becomes a blocking call
+            # and the response is sent back to the Audiocodes server
+            # after the activities are processed
+            ac_output = AudiocodesOutput()
+            await conversation.handle_activities(
+                request.json,
+                input_channel_name=self.name(),
+                output_channel=ac_output,
+                on_new_message=on_new_message,
+            )
+            return response.json(
+                {
                     "conversation": conversation_id,
                     "activities": ac_output.messages,
                 }
-
-            # start a background task to handle activities
-            self._create_task(
-                conversation_id,
-                conversation.handle_activities(
-                    request.json,
-                    input_channel_name=self.name(),
-                    output_channel=ac_output,
-                    on_new_message=on_new_message,
-                ),
             )
-            return response.json(response_json)
 
         @ac_webhook.route(
             "/conversation/<conversation_id>/disconnect", methods=["POST"]
