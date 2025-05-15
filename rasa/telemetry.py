@@ -915,7 +915,7 @@ def initialize_error_reporting() -> None:
             OSError,
         ],
         in_app_include=["rasa"],  # only submit errors in this package
-        with_locals=False,  # don't submit local variables
+        include_local_variables=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",
         default_integrations=False,
         environment="development" if in_continuous_integration() else "production",
