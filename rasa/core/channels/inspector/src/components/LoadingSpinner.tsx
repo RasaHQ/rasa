@@ -1,6 +1,6 @@
 import { Center, Spinner, Text, Button, useColorModeValue } from "@chakra-ui/react";
 import { useOurTheme } from "../theme";
-import {createAudioConnection} from "../helpers/audiostream.ts";
+import {createAudioConnection} from "../helpers/audio/audiostream.ts";
 
 export const LoadingSpinner = () => {
   const { rasaSpace } = useOurTheme();
