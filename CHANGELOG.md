@@ -10,6 +10,52 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.12.12] - 2025-05-15
+                         
+Rasa Pro 3.12.12 (2025-05-15)                              
+### Improvements
+- [#2380](https://github.com/rasahq/rasa-private/issues/2380): Improved `CRFEntityExtractor` persistence and loading methods to improve model loading times.
+
+### Bugfixes
+- [#2454](https://github.com/rasahq/rasa-private/issues/2454): Bumps aiohttp to 3.10.x, sentry-sdk to 2.8.x. Also bumps the locked versions for urllib3 and h11
+
+
+## [3.12.11] - 2025-05-14
+
+Rasa Pro 3.12.11 (2025-05-14)
+
+No significant changes.
+
+
+## [3.12.10] - 2025-05-08
+
+Rasa Pro 3.12.10 (2025-05-08)
+### Bugfixes
+- [#2379](https://github.com/rasahq/rasa-private/issues/2379): Fix issues in Audiocodes Channel Connector. The values in `user_phone` and `bot_phone` available in session_started_metadata are swapped to correctly map to `calller` and `callee` respectively.
+  Fixed evening handling where events without the key "parameters" raised an exception.
+- [#2411](https://github.com/rasahq/rasa-private/issues/2411): Filtered out only `None` values from the response payload to avoid removing valid empty values.
+
+
+## [3.12.9] - 2025-05-06
+
+Rasa Pro 3.12.9 (2025-05-06)
+### Bugfixes
+- [#2292](https://github.com/rasahq/rasa-private/issues/2292): Implemented backtracking and corrected the recursion logic in the all-paths generation for a flow. Removed the need to deepcopy the `step_ids_visited` set on each branch within `_handle_links`, which prevents the coverage report from freezing due to hitting the recursion limit.
+- [#2384](https://github.com/rasahq/rasa-private/issues/2384): Upgrade openai and litellm dependencies to fix found vulnerabilities in litellm.
+
+
+## [3.12.8] - 2025-04-30
+
+Rasa Pro 3.12.8 (2025-04-30)
+### Bugfixes
+- [#2276](https://github.com/rasahq/rasa-private/issues/2276): Reduced redundant log entries when reading prompt templates by contextualizing them.
+  Added source component and method metadata to logs, and changed prompt-loading logs
+  triggered from `fingerprint_addon` to use `DEBUG` level.
+- [#2344](https://github.com/rasahq/rasa-private/issues/2344): Add support for `auth_token` to Rasa Inspector.
+- [#2350](https://github.com/rasahq/rasa-private/issues/2350): Fixed issue where a slot mapping referencing a form in the `active_loop` slot mapping conditions that wouldn't list this slot in the form's `required_slots` caused training to fail.
+  Now, this is only logged as a validation warning without causing the training to fail.
+
+
 ## [3.12.7] - 2025-04-28
                         
 Rasa Pro 3.12.7 (2025-04-28)                             
