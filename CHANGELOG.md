@@ -330,6 +330,22 @@ Rasa Pro 3.12.0 (2025-03-19)
 - [#1685](https://github.com/rasahq/rasa-private/issues/1685), [#1760](https://github.com/rasahq/rasa-private/issues/1760), [#1780](https://github.com/rasahq/rasa-private/issues/1780), [#1784](https://github.com/rasahq/rasa-private/issues/1784), [#1829](https://github.com/rasahq/rasa-private/issues/1829), [#1868](https://github.com/rasahq/rasa-private/issues/1868), [#1873](https://github.com/rasahq/rasa-private/issues/1873), [#1929](https://github.com/rasahq/rasa-private/issues/1929), [#1930](https://github.com/rasahq/rasa-private/issues/1930), [#1946](https://github.com/rasahq/rasa-private/issues/1946), [#1949](https://github.com/rasahq/rasa-private/issues/1949), [#1955](https://github.com/rasahq/rasa-private/issues/1955), [#1972](https://github.com/rasahq/rasa-private/issues/1972), [#1989](https://github.com/rasahq/rasa-private/issues/1989), [#1991](https://github.com/rasahq/rasa-private/issues/1991), [#1998](https://github.com/rasahq/rasa-private/issues/1998), [#2004](https://github.com/rasahq/rasa-private/issues/2004), [#2016](https://github.com/rasahq/rasa-private/issues/2016), [#2024](https://github.com/rasahq/rasa-private/issues/2024), [#2037](https://github.com/rasahq/rasa-private/issues/2037), [#2077](https://github.com/rasahq/rasa-private/issues/2077), [#2079](https://github.com/rasahq/rasa-private/issues/2079), [#2100](https://github.com/rasahq/rasa-private/issues/2100), [#2113](https://github.com/rasahq/rasa-private/issues/2113), [#2124](https://github.com/rasahq/rasa-private/issues/2124)
 
 
+## [3.11.13] - 2025-05-15
+                         
+Rasa Pro 3.11.13 (2025-05-15)                              
+### Improvements
+- [#2380](https://github.com/rasahq/rasa-private/issues/2380): Improved `CRFEntityExtractor` persistence and loading methods to improve model loading times.
+
+### Bugfixes
+- [#2454](https://github.com/rasahq/rasa-private/issues/2454): Bumps aiohttp to 3.10.x, sentry-sdk to 2.8.x. Also bumps the locked versions for urllib3 and h11
+
+
+## [3.11.12] - 2025-05-14
+
+Rasa Pro 3.11.12 (2025-05-14)
+
+No significant changes.
+
 ## [3.11.11] - 2025-05-08
                          
 Rasa Pro 3.11.11 (2025-05-08)                              
