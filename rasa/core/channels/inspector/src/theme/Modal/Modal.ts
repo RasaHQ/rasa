@@ -1,30 +1,30 @@
-import type { ComponentStyleConfig } from "@chakra-ui/theme";
-import { mode } from "@chakra-ui/theme-tools";
+import type { ComponentStyleConfig } from '@chakra-ui/theme'
+import { mode } from '@chakra-ui/theme-tools'
 
 export const Modal: ComponentStyleConfig = {
   baseStyle: (props) => {
-    const { theme } = props;
+    const { theme } = props
 
     return {
       dialog: {
         borderRadius: theme.rasaRadii.large,
         fontSize: theme.rasaFontSizes.md,
-        width: "75%",
-        height: "85%",
-        margin: "auto",
+        width: '75%',
+        height: '85%',
+        margin: 'auto',
       },
       dialogContainer: {
         zIndex: theme.zIndices.modal,
-        "> section": {
-          maxW: "100%",
+        '> section': {
+          maxW: '100%',
         },
       },
       overlay: {
         zIndex: theme.zIndices.modalOverlay,
       },
       header: {
-        borderBottom: "1px solid",
-        borderColor: mode("neutral.300", "neutral.300")(props),
+        borderBottom: '1px solid',
+        borderColor: mode('neutral.300', 'neutral.300')(props),
         px: theme.rasaSpace[2],
         pt: theme.rasaSpace[2],
         pb: theme.rasaSpace[1.5],
@@ -36,12 +36,12 @@ export const Modal: ComponentStyleConfig = {
       body: {
         px: theme.rasaSpace[2],
         py: theme.rasaSpace[1.5],
-        overflow: "auto",
+        overflow: 'auto',
       },
       closeButton: {
         right: theme.rasaSpace[1],
         top: theme.rasaSpace[1],
       },
-    };
+    }
   },
-};
+}

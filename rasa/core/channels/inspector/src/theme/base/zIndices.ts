@@ -1,6 +1,6 @@
 export const rasaZIndices = {
   hide: -1,
-  auto: "auto",
+  auto: 'auto',
   base: 0,
   docked: 1,
   dropdown: 2,
@@ -14,6 +14,6 @@ export const rasaZIndices = {
   modalOverlay: 100,
   modal: 101,
   alwaysOnTop: 9999,
-};
+}
 
-export type RasaZIndices = typeof rasaZIndices;
+export type RasaZIndices = typeof rasaZIndices

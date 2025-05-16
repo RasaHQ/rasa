@@ -12,15 +12,15 @@ import {
   useColorModeValue,
   Flex,
   Tooltip,
-} from "@chakra-ui/react";
-import { useOurTheme } from "../theme";
-import { Stack } from "../types";
-import { shouldShowTooltip } from "../helpers/utils";
+} from '@chakra-ui/react'
+import { useOurTheme } from '../theme'
+import { Stack } from '../types'
+import { shouldShowTooltip } from '../helpers/utils'
 
 interface Props extends FlexProps {
-  stack: Stack[];
-  active?: Stack;
-  onItemClick?: (stack: Stack) => void;
+  stack: Stack[]
+  active?: Stack
+  onItemClick?: (stack: Stack) => void
 }
 
 function StackRow({
@@ -29,32 +29,34 @@ function StackRow({
   selectable,
   onItemClick,
 }: {
-  stack: Stack;
-  highlighted?: boolean;
-  selectable?: boolean;
-  onItemClick?: (stack: Stack) => void;
+  stack: Stack
+  highlighted?: boolean
+  selectable?: boolean
+  onItemClick?: (stack: Stack) => void
 }) {
   // use pointy hand cursor when hovering over a row
   const clickableTrSx = {
     _hover: {
-      cursor: "pointer",
+      cursor: 'pointer',
     },
-  };
+  }
 
   const highlightedTrSx = {
     td: {
-      bg: useColorModeValue("warning.50", "warning.50"),
+      bg: useColorModeValue('warning.50', 'warning.50'),
     },
     _last: {
       td: {
-        border: "none",
+        border: 'none',
       },
     },
-  };
+  }
 
   return (
     <Tr
-      sx={highlighted ? highlightedTrSx : selectable ? clickableTrSx : undefined}
+      sx={
+        highlighted ? highlightedTrSx : selectable ? clickableTrSx : undefined
+      }
       onClick={() => onItemClick?.(stack)}
     >
       <Td>
@@ -72,7 +74,7 @@ function StackRow({
         )}
       </Td>
     </Tr>
-  );
+  )
 }
 
 export const DialogueStack = ({
@@ -82,20 +84,20 @@ export const DialogueStack = ({
   onItemClick,
   ...props
 }: Props) => {
-  const { rasaSpace } = useOurTheme();
+  const { rasaSpace } = useOurTheme()
 
   const containerSx = {
     ...sx,
     pr: 0,
     pb: 0,
-    flexDirection: "column",
-  };
+    flexDirection: 'column',
+  }
   const overflowBox = {
-    height: "100%",
-    overflow: "auto",
+    height: '100%',
+    overflow: 'auto',
     pr: rasaSpace[1],
     pb: rasaSpace[0.5],
-  };
+  }
 
   return (
     <Flex sx={containerSx} {...props}>
@@ -126,11 +128,18 @@ export const DialogueStack = ({
                   />
                 ))}
             {stack.length === 0 && (
-              <StackRow stack={{ frame_id: "-", flow_id: "-", step_id: "-", ended: false }} />
+              <StackRow
+                stack={{
+                  frame_id: '-',
+                  flow_id: '-',
+                  step_id: '-',
+                  ended: false,
+                }}
+              />
             )}
           </Tbody>
         </Table>
       </Box>
     </Flex>
-  );
-};
+  )
+}

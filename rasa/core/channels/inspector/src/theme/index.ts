@@ -4,61 +4,61 @@ import {
   useTheme,
   ChakraTheme,
   type ThemeConfig,
-} from "@chakra-ui/react";
-import { breakpoints, Breakpoints } from "./base/breakpoints";
-import { rasaColors, RasaColors } from "./base/colors";
-import { rasaRadii, RasaRadii } from "./base/radii";
-import { rasaShadows, RasaShadows } from "./base/shadows";
-import { rasaSizes, RasaSizes } from "./base/sizes";
-import { rasaSpace, RasaSpace } from "./base/space";
-import { rasaZIndices, RasaZIndices } from "./base/zIndices";
-import { styles } from "./base/styles";
+} from '@chakra-ui/react'
+import { breakpoints, Breakpoints } from './base/breakpoints'
+import { rasaColors, RasaColors } from './base/colors'
+import { rasaRadii, RasaRadii } from './base/radii'
+import { rasaShadows, RasaShadows } from './base/shadows'
+import { rasaSizes, RasaSizes } from './base/sizes'
+import { rasaSpace, RasaSpace } from './base/space'
+import { rasaZIndices, RasaZIndices } from './base/zIndices'
+import { styles } from './base/styles'
 import {
   fonts,
   rasaFontSizes,
   rasaFontWeights,
   RasaFontSizes,
   RasaFontWeights,
-} from "./base/typography";
+} from './base/typography'
 
 // Custom components
-import { Button } from "./Button/Button";
-import { Heading } from "./Heading/Heading";
-import { Input } from "./Input/Input";
-import { Link } from "./Link/Link";
-import { Table } from "./Table/Table";
-import { Modal } from "./Modal/Modal";
-import { Tooltip } from "./Tooltip/Tooltip";
+import { Button } from './Button/Button'
+import { Heading } from './Heading/Heading'
+import { Input } from './Input/Input'
+import { Link } from './Link/Link'
+import { Table } from './Table/Table'
+import { Modal } from './Modal/Modal'
+import { Tooltip } from './Tooltip/Tooltip'
 
 export interface CustomTheme {
   // default types
-  config: ThemeConfig;
-  semanticTokens: ChakraTheme["semanticTokens"];
-  direction: ChakraTheme["direction"];
-  transition: ChakraTheme["transition"];
+  config: ThemeConfig
+  semanticTokens: ChakraTheme['semanticTokens']
+  direction: ChakraTheme['direction']
+  transition: ChakraTheme['transition']
 
   // we merge & override
-  styles: ChakraTheme["styles"];
-  fonts: RasaFontSizes;
-  breakpoints: Breakpoints;
+  styles: ChakraTheme['styles']
+  fonts: RasaFontSizes
+  breakpoints: Breakpoints
 
   // we also merge & override, but use custom color names
-  colors: RasaColors;
+  colors: RasaColors
 
   // custom key & types
-  rasaFontSizes: RasaFontSizes;
-  rasaFontWeights: RasaFontWeights;
-  rasaRadii: RasaRadii;
-  rasaSpace: RasaSpace;
-  rasaShadows: RasaShadows;
-  rasaSizes: RasaSizes;
-  zIndices: ChakraTheme["zIndices"] & RasaZIndices;
+  rasaFontSizes: RasaFontSizes
+  rasaFontWeights: RasaFontWeights
+  rasaRadii: RasaRadii
+  rasaSpace: RasaSpace
+  rasaShadows: RasaShadows
+  rasaSizes: RasaSizes
+  zIndices: ChakraTheme['zIndices'] & RasaZIndices
 }
 
 const config: ThemeConfig = {
-  initialColorMode: "light",
+  initialColorMode: 'light',
   useSystemColorMode: false,
-};
+}
 
 // Extend theme deep merges with the default Chakra theme.
 // We try to keep many defaults in tact to support
@@ -93,9 +93,9 @@ export const theme = extendTheme(
     rasaSizes,
     zIndices: rasaZIndices,
   },
-  withDefaultColorScheme({ colorScheme: "rasaPurple" })
-);
+  withDefaultColorScheme({ colorScheme: 'rasaPurple' }),
+)
 
 export const useOurTheme = () => {
-  return useTheme<CustomTheme>();
-};
+  return useTheme<CustomTheme>()
+}

@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "jest",
     "test:watch": "jest --watch",
-    "build:watch": "vite build --watch"
+    "build:watch": "vite build --watch",
+    "format": "prettier 'src/**/*.{js,jsx,ts,tsx,json,css,md}' --write"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.2.4",
@@ -45,6 +46,7 @@
     "eslint-plugin-react-refresh": "0.4.3",
     "jest": "29.7.0",
     "jest-environment-jsdom": "29.7.0",
+    "prettier": "^3.5.3",
     "ts-jest": "29.1.1",
     "ts-node": "10.9.1",
     "typescript": "5.0.2",

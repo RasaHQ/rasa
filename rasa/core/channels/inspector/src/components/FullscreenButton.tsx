@@ -9,15 +9,15 @@ import {
   ModalOverlay,
   Tooltip,
   useDisclosure,
-} from "@chakra-ui/react";
-import { ExpandIcon } from "./ExpandIcon";
+} from '@chakra-ui/react'
+import { ExpandIcon } from './ExpandIcon'
 
-interface Props extends Omit<IconButtonProps, "aria-label"> {
-  title: string;
+interface Props extends Omit<IconButtonProps, 'aria-label'> {
+  title: string
 }
 
 export const FullscreenButton = ({ title, children, ...props }: Props) => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen, onOpen, onClose } = useDisclosure()
 
   return (
     <>
@@ -41,5 +41,5 @@ export const FullscreenButton = ({ title, children, ...props }: Props) => {
         </ModalContent>
       </Modal>
     </>
-  );
-};
+  )
+}

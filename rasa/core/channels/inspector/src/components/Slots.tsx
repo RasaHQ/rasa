@@ -11,24 +11,24 @@ import {
   Flex,
   useColorModeValue,
   Tooltip,
-} from "@chakra-ui/react";
-import { useOurTheme } from "../theme";
-import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
-import { Slot } from "../types";
-import { shouldShowTooltip } from "../helpers/utils";
+} from '@chakra-ui/react'
+import { useOurTheme } from '../theme'
+import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { Slot } from '../types'
+import { shouldShowTooltip } from '../helpers/utils'
 
 interface Props extends FlexProps {
-  slots: Slot[];
+  slots: Slot[]
 }
 
 export const SlotTable = ({ slots }: { slots: Slot[] }) => {
-  const { rasaFontSizes } = useOurTheme();
+  const { rasaFontSizes } = useOurTheme()
 
   const highlighterSx = {
-    background: useColorModeValue("neutral.50", "neutral.50"),
+    background: useColorModeValue('neutral.50', 'neutral.50'),
     fontSize: rasaFontSizes.sm,
-    letterSpacing: "0",
-  };
+    letterSpacing: '0',
+  }
 
   return (
     <Table width="100%" layout="fixed">
@@ -59,27 +59,27 @@ export const SlotTable = ({ slots }: { slots: Slot[] }) => {
         ))}
       </Tbody>
     </Table>
-  );
-};
+  )
+}
 
 export const Slots = ({ sx, slots, ...props }: Props) => {
-  const { rasaSpace } = useOurTheme();
+  const { rasaSpace } = useOurTheme()
 
   const containerSx = {
     ...sx,
     pr: 0,
     pb: 0,
-    position: "relative",
-    flexDirection: "column",
-  };
+    position: 'relative',
+    flexDirection: 'column',
+  }
   const overflowBox = {
-    height: "100%",
-    overflow: "auto",
+    height: '100%',
+    overflow: 'auto',
     pr: rasaSpace[1],
     pb: rasaSpace[0.5],
-  };
+  }
 
-  const displaySlots = slots.length ? slots : [{ name: "-", value: "-" }];
+  const displaySlots = slots.length ? slots : [{ name: '-', value: '-' }]
 
   return (
     <Flex sx={containerSx} {...props}>
@@ -87,5 +87,5 @@ export const Slots = ({ sx, slots, ...props }: Props) => {
         <SlotTable slots={displaySlots} />
       </Box>
     </Flex>
-  );
-};
+  )
+}

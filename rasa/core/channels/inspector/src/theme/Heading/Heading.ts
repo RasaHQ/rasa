@@ -1,14 +1,14 @@
-import { StyleConfig } from "@chakra-ui/theme-tools";
+import { StyleConfig } from '@chakra-ui/theme-tools'
 
 export const Heading: StyleConfig = {
   baseStyle: {
-    fontWeight: "bold",
-    letterSpacing: "wide",
+    fontWeight: 'bold',
+    letterSpacing: 'wide',
   },
   sizes: {
     sm: ({ theme }) => ({
       fontSize: theme.rasaFontSizes.sm,
-      lineHeight: "short",
+      lineHeight: 'short',
       margin: 0,
     }),
     md: ({ theme }) => ({
@@ -21,11 +21,11 @@ export const Heading: StyleConfig = {
     }),
     xl: ({ theme }) => ({
       fontSize: theme.rasaFontSizes.xl,
-      lineHeight: "100%",
+      lineHeight: '100%',
       margin: 0,
     }),
   },
   defaultProps: {
-    size: "md",
+    size: 'md',
   },
-};
+}

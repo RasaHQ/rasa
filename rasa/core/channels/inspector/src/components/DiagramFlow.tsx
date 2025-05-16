@@ -1,23 +1,23 @@
-import { Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
-import mermaid from "mermaid";
-import { useOurTheme } from "../theme";
-import { formatFlow } from "../helpers/formatters";
-import { restartConversation } from "../helpers/conversation";
-import { useEffect, useRef, useState } from "react";
-import { Flow, Slot, Stack } from "../types";
-import { NoActiveFlow } from "./NoActiveFlow";
+import { Box, Button, Flex, Heading, Text } from '@chakra-ui/react'
+import mermaid from 'mermaid'
+import { useOurTheme } from '../theme'
+import { formatFlow } from '../helpers/formatters'
+import { restartConversation } from '../helpers/conversation'
+import { useEffect, useRef, useState } from 'react'
+import { Flow, Slot, Stack } from '../types'
+import { NoActiveFlow } from './NoActiveFlow'
 
 interface Props {
-  stackFrame?: Stack;
-  flows: Flow[];
-  slots: Slot[];
-  stepTrail?: string[];
+  stackFrame?: Stack
+  flows: Flow[]
+  slots: Slot[]
+  stepTrail?: string[]
 }
 
 export const DiagramFlow = ({ stackFrame, stepTrail, flows, slots }: Props) => {
-  const { rasaSpace } = useOurTheme();
-  const mermaidRef = useRef<HTMLPreElement>(null);
-  const [text, setText] = useState<string>("");
+  const { rasaSpace } = useOurTheme()
+  const mermaidRef = useRef<HTMLPreElement>(null)
+  const [text, setText] = useState<string>('')
   const flow = flows.find(({ id }) => id === stackFrame?.flow_id)
 
   const config = {
@@ -26,47 +26,47 @@ export const DiagramFlow = ({ stackFrame, stepTrail, flows, slots }: Props) => {
     flowchart: {
       useMaxWidth: false,
     },
-  };
+  }
 
   useEffect(() => {
-    mermaid.mermaidAPI.initialize(config);
-  }, []);
+    mermaid.mermaidAPI.initialize(config)
+  }, [])
 
   useEffect(() => {
-    if (!text) return;
+    if (!text) return
     // mermaid needs to be reloaded every time the text changes but a data-processed
     // attribute prevents it. We need to remove it each time `text` changes
-    mermaidRef.current?.removeAttribute("data-processed");
-    mermaid.contentLoaded();
+    mermaidRef.current?.removeAttribute('data-processed')
+    mermaid.contentLoaded()
 
     setTimeout(() => {
-      const active = document.querySelectorAll(".active")[0];
+      const active = document.querySelectorAll('.active')[0]
       if (active) {
-        active.scrollIntoView({ behavior: "smooth"});
+        active.scrollIntoView({ behavior: 'smooth' })
       }
-    }, 0);
-  }, [text]);
+    }, 0)
+  }, [text])
 
   useEffect(() => {
-    setText(formatFlow(slots, stackFrame, flow, stepTrail));
-  }, [text, flow, slots, stackFrame]);
+    setText(formatFlow(slots, stackFrame, flow, stepTrail))
+  }, [text, flow, slots, stackFrame])
 
   const handleRestartConversation = () => {
-    restartConversation();
-  };
+    restartConversation()
+  }
 
   const scrollSx = {
-    height: "100%",
-    overflow: "auto",
-    width: "100%",
-    textAlign: "center",
-    flexDirection: "column",
-  };
+    height: '100%',
+    overflow: 'auto',
+    width: '100%',
+    textAlign: 'center',
+    flexDirection: 'column',
+  }
   const preSx = {
     svg: {
-      margin: "0 auto",
+      margin: '0 auto',
     },
-  };
+  }
 
   return (
     <Flex direction="column" height="100%">
@@ -74,7 +74,7 @@ export const DiagramFlow = ({ stackFrame, stepTrail, flows, slots }: Props) => {
         Flow
         {flow ? (
           <Text as="span" fontWeight="normal">
-            {":"} {flow.id}
+            {':'} {flow.id}
           </Text>
         ) : null}
       </Heading>
@@ -101,5 +101,5 @@ export const DiagramFlow = ({ stackFrame, stepTrail, flows, slots }: Props) => {
         </Button>
       </Flex>
     </Flex>
-  );
-};
+  )
+}

@@ -1,18 +1,18 @@
-import { StyleConfig } from "@chakra-ui/theme-tools";
-import { mode } from "@chakra-ui/theme-tools";
+import { StyleConfig } from '@chakra-ui/theme-tools'
+import { mode } from '@chakra-ui/theme-tools'
 
 export const Input: StyleConfig = {
   baseStyle: (props) => ({
     field: {
-      "::-webkit-calendar-picker-indicator": {
-        display: "none",
+      '::-webkit-calendar-picker-indicator': {
+        display: 'none',
       },
-      ":disabled": {
-        cursor: "not-allowed",
-        opacity: "1 !important",
+      ':disabled': {
+        cursor: 'not-allowed',
+        opacity: '1 !important',
         backgroundColor: mode(
           props.theme.colors.neutral[300],
-          props.theme.colors.neutral[300]
+          props.theme.colors.neutral[300],
         )(props),
       },
     },
@@ -24,4 +24,4 @@ export const Input: StyleConfig = {
       },
     }),
   },
-};
+}

@@ -1,4 +1,4 @@
-import { Box, BoxProps } from "@chakra-ui/react";
+import { Box, BoxProps } from '@chakra-ui/react'
 
 export const RasaLogo = (props: BoxProps) => {
   return (
@@ -28,8 +28,8 @@ export const RasaLogo = (props: BoxProps) => {
         clipRule="evenodd"
       ></path>
     </Box>
-  );
-};
+  )
+}
 
 export const RasaLogoDark = (props: BoxProps) => {
   return (
@@ -59,5 +59,5 @@ export const RasaLogoDark = (props: BoxProps) => {
         clipRule="evenodd"
       ></path>
     </Box>
-  );
-};
+  )
+}

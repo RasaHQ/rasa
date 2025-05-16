@@ -5,6 +5,7 @@ module.exports = {
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:react-hooks/recommended",
+    "plugin:prettier/recommended",
   ],
   ignorePatterns: [
     "dist",
@@ -16,10 +17,15 @@ module.exports = {
   ],
   parser: "@typescript-eslint/parser",
   plugins: ["react-refresh"],
-  rules: {
-    "react-refresh/only-export-components": [
-      "warn",
-      { allowConstantExport: true },
-    ],
-  },
+  overrides: [
+    {
+      files: ["*.ts", "*.tsx", "*.js", "*.jsx"],
+      rules: {
+        "react-refresh/only-export-components": [
+          "warn",
+          { allowConstantExport: true },
+        ],
+      },
+    },
+  ],
 };

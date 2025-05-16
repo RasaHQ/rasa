@@ -1,11 +1,11 @@
-import { Box, BoxProps } from "@chakra-ui/react";
+import { Box, BoxProps } from '@chakra-ui/react'
 
 interface Props extends BoxProps {
-  size?: number;
+  size?: number
 }
 
 export const SaraDiagrams = (props: Props) => {
-  const { size = 440, ...otherProps } = props;
+  const { size = 440, ...otherProps } = props
 
   return (
     <Box
@@ -35,5 +35,5 @@ export const SaraDiagrams = (props: Props) => {
         />
       </defs>
     </Box>
-  );
-};
+  )
+}
