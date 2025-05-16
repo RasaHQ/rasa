@@ -768,6 +768,69 @@ Rasa Pro 3.11.0 (2024-12-11)
 - [#1212](https://github.com/rasahq/rasa-private/issues/1212), [#1318](https://github.com/rasahq/rasa-private/issues/1318), [#1528](https://github.com/rasahq/rasa-private/issues/1528), [#1550](https://github.com/rasahq/rasa-private/issues/1550), [#1581](https://github.com/rasahq/rasa-private/issues/1581), [#1650](https://github.com/rasahq/rasa-private/issues/1650)
 
 
+## [3.10.25] - 2025-05-15
+                         
+Rasa Pro 3.10.25 (2025-05-15)                              
+### Improvements
+- [#2380](https://github.com/rasahq/rasa-private/issues/2380): Improved `CRFEntityExtractor` persistence and loading methods to improve model loading times.
+
+### Bugfixes
+- [#2454](https://github.com/rasahq/rasa-private/issues/2454): Bumps aiohttp to 3.10.x, sentry-sdk to 2.8.x. Also bumps the locked versions for urllib3 and h11
+
+
+## [3.10.24] - 2025-05-14
+
+Rasa Pro 3.10.24 (2025-05-14)
+
+No significant changes.
+
+
+## [3.10.23] - 2025-05-06
+
+Rasa Pro 3.10.23 (2025-05-06)
+### Bugfixes
+- [#2292](https://github.com/rasahq/rasa-private/issues/2292): Implemented backtracking and corrected the recursion logic in the all-paths generation for a flow. Removed the need to deepcopy the `step_ids_visited` set on each branch within `_handle_links`, which prevents the coverage report from freezing due to hitting the recursion limit.
+
+
+## [3.10.22] - 2025-04-30
+
+Rasa Pro 3.10.22 (2025-04-30)
+### Bugfixes
+- [#2344](https://github.com/rasahq/rasa-private/issues/2344): Add support for `auth_token` to Rasa Inspector.
+
+
+## [3.10.21] - 2025-04-29
+
+Rasa Pro 3.10.21 (2025-04-29)
+### Bugfixes
+- [#2350](https://github.com/rasahq/rasa-private/issues/2350): Fixed issue where a slot mapping referencing a form in the `active_loop` slot mapping conditions that wouldn't list this slot in the form's `required_slots` caused training to fail.
+  Now, this is only logged as a validation warning without causing the training to fail.
+
+## [3.10.20] - 2025-04-28
+
+Rasa Pro 3.10.20 (2025-04-28)
+### Improvements
+- [#2308](https://github.com/rasahq/rasa-private/issues/2308): Added support for basic authentication in Twilio voice channel.
+  This allows users to authenticate their Twilio voice channel using basic authentication credentials, enhancing security and access control for voice communication.
+  To use this feature, set `username` and `password` in the Twilio channel configuration.
+  ```yaml title="credentials.yaml"
+  twilio_voice:
+      username: your_username
+      password: your_password
+      ...
+  ```
+
+  At Twilio, configure the webhook URL to include the basic authentication credentials:
+  ```
+  # twilio voice webhook
+  https://<username>:<password>@yourdomain.com/webhooks/twilio_voice/webhook
+  ```
+
+### Bugfixes
+- [#2285](https://github.com/rasahq/rasa-private/issues/2285): Fail rasa commands (`rasa run`, `rasa inspect`, `rasa shell`) when model file path doesn't exist instead of defaulting to the latest model file from the default directory `/models`.
+- [#2313](https://github.com/rasahq/rasa-private/issues/2313): Upgrade openai and litellm dependencies to fix found vulnerabilities in litellm.
+
+
 ## [3.10.19] - 2025-04-15
                          
 Rasa Pro 3.10.19 (2025-04-15)                              
