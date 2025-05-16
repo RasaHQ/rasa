@@ -350,7 +350,7 @@ services:
 # We use a trick with sleep command to make the container keep running
 # while it keeps checking the health of the action server
   rasa-grpc-action-server-jaeger-healthcheck:
-    image: public.ecr.aws/f7b7r5o7/tools/grpc_health_probe:latest
+    image: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/f7b7r5o7/tools/grpc_health_probe:latest
     container_name: rasa-grpc-action-server-jaeger-healthcheck
     # This is a trick to make the container keep running
     entrypoint: ["bash", "-c"]
@@ -415,7 +415,7 @@ services:
 # We use a trick with sleep command to make the container keep running
 # while it keeps checking the health of the action server
   rasa-grpc-tls-action-server-healthcheck:
-    image: public.ecr.aws/f7b7r5o7/tools/grpc_health_probe:latest
+    image: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/f7b7r5o7/tools/grpc_health_probe:latest
     container_name: rasa-grpc-tls-action-server-healthcheck
     # This is a trick to make the container keep running
     entrypoint: ["bash", "-c"]

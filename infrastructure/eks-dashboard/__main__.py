@@ -16,7 +16,7 @@ dashboard_version = "6.0.8" # app version 2.7.0
 dashboard_namespace = "kubernetes-dashboard"
 
 # Retrieve the exported values from the base infrastructure
-stack_ref = pulumi.StackReference("rasa/rasa-pro-eks-base/rasa-pro-eks-base")
+stack_ref = pulumi.StackReference("rasa/rasa-pro-eks-base/ci")
 eks_cluster_name = stack_ref.get_output("eks_cluster_name")
 vpc_id = stack_ref.get_output("vpc_id")
 

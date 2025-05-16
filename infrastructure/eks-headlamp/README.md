@@ -31,14 +31,21 @@ The Pulumi script performs the following steps:
 
 A typical `pulumi up` will show resources like:
 
-```console
-+  pulumi:pulumi:Stack    rasa-pro-headlamp-dev       created
-+  kubernetes:helm.sh/v3:Chart    headlamp           created
-+  kubernetes:networking.k8s.io/v1:Ingress    rasa-pro-headlamp-ingress   created
-+  aws:route53:Record    headlamp-dns          created
-+  pulumi:providers:kubernetes    headlamp-k8s-provider  created
+```
+     Type                                                              Name                            Status
+ +   pulumi:pulumi:Stack                                               eks-headlamp-ci                 created (55s)       
+ +   ├─ kubernetes:helm.sh/v3:Chart                                    headlamp                        created (55s)       
+ +   │  ├─ kubernetes:apps/v1:Deployment                               kube-system/headlamp            created (51s)       
+ +   │  ├─ kubernetes:core/v1:ServiceAccount                           kube-system/headlamp            created (0.00s)     
+ +   │  ├─ kubernetes:rbac.authorization.k8s.io/v1:ClusterRoleBinding  headlamp-admin                  created (0.00s)     
+ +   │  ├─ kubernetes:core/v1:Secret                                   kube-system/oidc                created (0.00s)     
+ +   │  └─ kubernetes:core/v1:Service                                  kube-system/headlamp            created (12s)       
+ +   ├─ aws:route53:Record                                             headlamp-dns                    created (36s)       
+ +   ├─ pulumi:providers:kubernetes                                    rasa-pro-headlamp-k8s-provider  created (0.00s)     
+ +   └─ kubernetes:networking.k8s.io/v1:Ingress                        rasa-pro-headlamp-ingress       created (4s)        
+
+ + 10 created
 ```  
-*(Your resource names may vary based on configuration.)*
 
 ## Prerequisites
 
@@ -56,14 +63,14 @@ A typical `pulumi up` will show resources like:
 
 Update these variables at the top of the Pulumi script or via `pulumi config`:
 
-| Variable               | Description                                  | Example                        |
-|------------------------|----------------------------------------------|--------------------------------|
-| `project_name`         | Prefix for all resources                     | `rasa-pro`                     |
-| `headlamp_namespace`   | Kubernetes namespace for Headlamp            | `kube-system`                  |
-| `headlamp_version`     | Helm chart version for Headlamp              | `0.30.0`                       |
-| `certificate_arn`      | ACM certificate ARN for TLS                  | `arn:aws:acm:...:certificate/...` |
+| Variable               | Description                                  | Example                          |
+|------------------------|----------------------------------------------|----------------------------------|
+| `project_name`         | Prefix for all resources                     | `rasa-pro`                       |
+| `headlamp_namespace`   | Kubernetes namespace for Headlamp            | `kube-system`                    |
+| `headlamp_version`     | Helm chart version for Headlamp              | `0.30.0`                         |
+| `certificate_arn`      | ACM certificate ARN for TLS                  | `arn:aws:acm:...:certificate/...`|
 | `hosted_zone_id`       | Route 53 hosted zone ID                      | `Your hosted zone ID`            |
-| `domain_name`          | Root domain for DNS record                   | `rasapro.rasa-dev.io`          |
+| `domain_name`          | Root domain for DNS record                   | `rasapro.rasa-dev.io`            |
 
 ## Deployment
 

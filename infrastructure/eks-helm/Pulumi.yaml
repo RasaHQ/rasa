@@ -1,0 +1,11 @@
+name: rasa-pro-eks-helm
+description: Deploy Rasa Pro Helm chart on EKS cluster from base infra
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python

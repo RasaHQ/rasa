@@ -38,6 +38,8 @@ env:
   AWS_REGION: eu-west-1
   RASA_PRO_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-private-dev
   RASA_SDK_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-sdk-dev
+  RASA_PRO_HELM_REPO: oci://europe-west3-docker.pkg.dev/rasa-releases/helm-charts/rasa
+  RASA_PRO_HELM_VERSION: 1.2.0
   DEFAULT_PYTHON_VERSION: "3.9"
   NODE_VERSION_INSPECTOR_BUILD: 20
   SONAR_ORGANIZATION: rasahq
@@ -80,7 +82,6 @@ jobs:
         run: |
           ./scripts/conflict-finder.sh
         shell: bash
-
 
   quality:
     name: Code Quality
@@ -140,11 +141,13 @@ jobs:
         if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
         run: make lint-changelog
 
-
   rasa-private-dev-docker-image:
     name: rasa-private dev docker image
     runs-on: ubuntu-24.04
     if: ${{ inputs.run_mode != 'false' }}
+    outputs:
+      rasa_image_tag: ${{ steps.set-tag.outputs.rasa_image_tag }}
+      stack_name: ${{ steps.set-tag.outputs.stack_name }}
     env:
       PLATFORM: linux/amd64
 
@@ -168,11 +171,16 @@ jobs:
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
 
       - name: Set image tag
+        id: set-tag
         run: |
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
             echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
+            echo "rasa_image_tag=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_OUTPUT
+            echo "stack_name=pr-${{ github.event.number }}" >> $GITHUB_OUTPUT
           else
             echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+            echo "rasa_image_tag=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+            echo "stack_name=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
           fi
 
       - name: Build Rasa Private Dev Docker Image
@@ -186,6 +194,134 @@ jobs:
       - name: Tag, and push image to Amazon ECR
         run: |
           docker push ${{ env.RASA_PRO_DEV_REPOSITORY }}:${{ env.RASA_IMAGE_TAG }}
+      
+      # Leverage GitHub Actions artifact upload/download to share Docker images between jobs,
+      # reducing dependency on ECR and minimizing AWS costs
+      - name: Save docker image
+        run: docker save ${{ env.RASA_PRO_DEV_REPOSITORY }}:${{ env.RASA_IMAGE_TAG }} | gzip > image-${{ env.RASA_IMAGE_TAG }}.tar.gz
+
+      - name: Upload image as artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: docker-image-${{ env.RASA_IMAGE_TAG }}.tar.gz
+          path: image-${{ env.RASA_IMAGE_TAG }}.tar.gz
+          retention-days: 5
+  
+  # This job is stable but still a work in progress.
+  # It is not a blocker for merging and will eventually be moved to a separate workflow.
+  rasa-private-dev-train-the-model:
+    name: Train the model and upload to S3
+    needs: rasa-private-dev-docker-image
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Download image artifact
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
+        with:
+          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
+      
+      - name: Load Docker image
+        run: |
+          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
+      
+      - name: Rasa Train
+        run: |
+          make run-channel-connectors-integration-containers
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          MODEL_NAME: model-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload the model to S3
+        run: |
+          aws s3 cp $MODEL_FILE_PATH s3://rasa-pro-ci-trained-models/ \
+          --region eu-west-1 \
+          --endpoint-url https://s3.eu-west-1.amazonaws.com
+        env:
+          MODEL_FILE_PATH: tests_deployment/integration_tests_channel_connectors/calm-demo-bot/models/model-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
+         
+  # This job is stable but still a work in progress.
+  # It is not a blocker for merging and will eventually be moved to a separate workflow.
+  deploy-rasa-private-helm-chart:
+    name: Deploy rasa private helm chart
+    runs-on: ubuntu-24.04
+    needs: [rasa-private-dev-docker-image, rasa-private-dev-train-the-model]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python 3.9 🐍
+        id: setup-python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Install Dependencies
+        working-directory: ./infrastructure/eks-helm
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 # v3.0.1
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}  
+
+      - name: Set up kubeconfig
+        run: |
+          aws eks update-kubeconfig --name rasa-pro-cluster --region ${{ env.AWS_REGION }}
+
+      - name: Pulumi Up (Deploy)
+        uses: pulumi/actions@ae8c5623fbcf1b4781618a60e69d423f9a6b9c92 #v5.1.1
+        with:
+          command: up
+          refresh: true
+          stack-name: rasa/${{ needs.rasa-private-dev-docker-image.outputs.stack_name }}
+          work-dir: ./infrastructure/eks-helm
+          upsert: true
+        env:
+          DOMAIN_NAME: rasapro.rasa-dev.io
+          PROJECT_NAME: rasa-pro-${{ needs.rasa-private-dev-docker-image.outputs.stack_name }}
+          PR_NAME: ${{ needs.rasa-private-dev-docker-image.outputs.stack_name }}
+          RASA_PRO_HELM_REPO: ${{ env.RASA_PRO_HELM_REPO }}
+          RASA_PRO_HELM_VERSION: ${{ env.RASA_PRO_HELM_VERSION }}
+          RASA_PRO_VERSION: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_PRO_DEV_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_PRO_LICENSE: ${{ secrets.HELM_DEPLOY_RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.HELM_DEPLOY_OPENAI_API_KEY }}
+          CERTIFICATE_ARN: ${{ secrets.HELM_DEPLOY_CERTIFICATE_ARN }}
+          HOSTED_ZONE_ID: ${{ secrets.HELM_DEPLOY_HOSTED_ZONE_ID }}
+          PULUMI_ACCESS_TOKEN: ${{ secrets.HELM_DEPLOY_PULUMI_ACCESS_TOKEN }}
+          # Variables for pulling the model from s3 bucket
+          MODEL_FILE_NAME: model-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
+          AWS_MODEL_S3_BUCKET: "rasa-pro-ci-trained-models"
+          AWS_MODEL_S3_ENDPOINT_URL: "https://s3.eu-west-1.amazonaws.com"
+          AWS_DEFAULT_REGION: ${{ env.AWS_REGION}}
+          AWS_MODEL_S3_ACCESS_KEY_ID: ${{ secrets.AWS_MODEL_S3_ACCESS_KEY_ID }}
+          AWS_MODEL_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_MODEL_S3_SECRET_ACCESS_KEY }}
+          
+      - name: Add deployment details as comment
+        uses: marocchino/sticky-pull-request-comment@52423e01640425a022ef5fd42c6fb5f633a02728 #v2.9.1
+        with:
+          header: deployment
+          recreate: true
+          message: |
+            PR Deployment is ready!
+            Helm chart version: ${{ env.RASA_PRO_HELM_VERSION }}
+            URL: https://${{ needs.rasa-private-dev-docker-image.outputs.stack_name }}.rasapro.rasa-dev.io/version
 
   check_inspector_build:
     name: Check Inspector Build
@@ -245,27 +381,20 @@ jobs:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Configure image tag
-        run: |
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
-          else
-            echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          fi
-
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
             PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
-      - name: Pull rasa-private dev image
-        uses: ./.github/actions/pull-from-ecr
+      - name: Download image artifact
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
         with:
-          AWS_REGION: ${{ env.AWS_REGION }}
-          AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-          IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
-          REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
+      
+      - name: Load Docker image
+        run: |
+          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
 
       - name: Pull rasa-sdk dev image
         uses: ./.github/actions/pull-from-ecr
@@ -275,10 +404,16 @@ jobs:
           IMAGE_TAG: latest
           REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Tracing integration testing - Run docker containers
         env:
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
         run: |
@@ -318,34 +453,26 @@ jobs:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-    #   # Tag in format: pr_number-shortSHA or branch_name-shortSHA
-      - name: Configure image tag
-        run: |
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
-          else
-            echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          fi
-
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
             PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
             POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
-      - name: Pull rasa-private dev image
-        uses: ./.github/actions/pull-from-ecr
+      - name: Download image artifact
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
         with:
-          AWS_REGION: ${{ env.AWS_REGION }}
-          AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-          IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
-          REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
+      
+      - name: Load Docker image
+        run: |
+          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
 
       - name: Metric Integration Testing - Run docker containers
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_SDK_REPOSITORY: rasa/rasa-sdk
           RASA_SDK_IMAGE_TAG: latest
@@ -393,14 +520,6 @@ jobs:
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
         shell: bash
 
-      - name: Configure image tag
-        run: |
-            if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-              echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
-            else
-              echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-            fi
-
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
@@ -410,13 +529,24 @@ jobs:
       - name: Docker version
         run: docker --version && docker compose version
 
-      - name: Pull rasa-private dev image
-        uses: ./.github/actions/pull-from-ecr
+      - name: Download image artifact
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
         with:
-            IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
-            AWS_REGION: ${{ env.AWS_REGION }}
-            AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-            REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
+      
+      - name: Load Docker image
+        run: |
+          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
 
       - name: Custom Actions Integration Testing - Run docker containers
         run: |
@@ -424,7 +554,7 @@ jobs:
         env:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
@@ -442,7 +572,7 @@ jobs:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_custom_action_server/docker-compose.yml
           ENV_FILE_PATH: tests_deployment/integration_tests_custom_action_server/env-file
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
           BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_nlu_bot"
@@ -470,14 +600,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      #   # Tag in format: pr_number-shortSHA or branch_name-shortSHA
-      - name: Configure image tag
+      - name: Read Poetry Version 🔢
         run: |
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
-          else
-            echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          fi
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
 
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
@@ -488,13 +614,24 @@ jobs:
       - name: Docker version
         run: docker --version && docker compose version
 
-      - name: Pull rasa-private dev image
-        uses: ./.github/actions/pull-from-ecr
+      - name: Download image artifact
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
         with:
-          IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
-          AWS_REGION: ${{ env.AWS_REGION }}
-          AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-          REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
+      
+      - name: Load Docker image
+        run: |
+          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
 
       - name: Custom Actions Integration Testing - Run docker containers
         run: |
@@ -503,7 +640,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
@@ -521,7 +658,7 @@ jobs:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_custom_action_server/docker-compose.yml
           ENV_FILE_PATH: tests_deployment/integration_tests_custom_action_server/env-file
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
           BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_calm_bot"
@@ -548,15 +685,6 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      #   # Tag in format: pr_number-shortSHA or branch_name-shortSHA
-      - name: Configure image tag
-        run: |
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
-          else
-            echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          fi
 
       - name: Set up Python 3.9 🐍
         id: setup-python
@@ -585,13 +713,14 @@ jobs:
         run: |
           make install
 
-      - name: Pull rasa-private dev image
-        uses: ./.github/actions/pull-from-ecr
+      - name: Download image artifact
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
         with:
-          IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
-          AWS_REGION: ${{ env.AWS_REGION }}
-          AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-          REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
+      
+      - name: Load Docker image
+        run: |
+          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
 
       - name: Enterprise Search Integration Testing - Train bot Faiss
         run: |
@@ -600,7 +729,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
           CONFIG: "config-faiss.yml"
           ENDPOINTS: "endpoints-faiss.yml"
           MODEL_NAME: "model-faiss"
@@ -612,7 +741,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
           CONFIG: "config-milvus.yml"
           ENDPOINTS: "endpoints-milvus.yml"
           MODEL_NAME: "model-milvus"
@@ -624,7 +753,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
           CONFIG: "config-qdrant.yml"
           ENDPOINTS: "endpoints-qdrant.yml"
           MODEL_NAME: "model-qdrant"
@@ -636,7 +765,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
           CONFIG: "config-qdrant.yml"
           ENDPOINTS: "endpoints-qdrant.yml"
           DOCKER_COMPOSE: "docker-compose.yml"
@@ -1020,15 +1149,6 @@ jobs:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      #   # Tag in format: pr_number-shortSHA or branch_name-shortSHA
-      - name: Configure image tag
-        run: |
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            echo "RASA_IMAGE_TAG=pr${{ github.event.number }}-$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))" >> $GITHUB_ENV
-          else
-            echo "RASA_IMAGE_TAG=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          fi
-
       - name: Prepare the job for integration tests
         uses: ./.github/actions/test-prerequisites
         with:
@@ -1038,13 +1158,14 @@ jobs:
       - name: Docker version
         run: docker --version && docker compose version
 
-      - name: Pull rasa-private dev image
-        uses: ./.github/actions/pull-from-ecr
+      - name: Download image artifact
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
         with:
-          IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
-          AWS_REGION: ${{ env.AWS_REGION }}
-          AWS_ARN_ROLE_TO_ASSUME: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-          REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
+      
+      - name: Load Docker image
+        run: |
+          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
 
       - name: Channel connector Integration Tests - Run docker containers
         run: |
@@ -1053,7 +1174,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ env.RASA_IMAGE_TAG }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
 
       - name: Channel connector Integration Tests -  Test Code with Services 🩺
         run: |
@@ -1084,7 +1205,6 @@ jobs:
           path: |
            integration-results-channel-connectors-with-calm-bot-results.xml
            integration-results-custom-broker-with-calm-bot-results.xml
-
 
   unit-test:
     name: Run Unit Tests
@@ -1300,7 +1420,6 @@ jobs:
           files: "artifacts/**/unit-tests-results-*.xml"
           check_name: "Unit Test Results"
 
-
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-24.04
@@ -1308,6 +1427,7 @@ jobs:
     if: '!cancelled()'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
       - name: Download test reports
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
         with:
@@ -1321,5 +1441,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+  clean-docker-image-artifact:
+    name: Clean docker image artifact
+    if: success()
+    runs-on: ubuntu-24.04
+    needs: 
+      - rasa-private-dev-docker-image
+      - rasa-private-dev-train-the-model
+      - deploy-rasa-private-helm-chart
+      - tracing-integration-test
+      - metric-integration-test
+      - custom-action-integration-test-with-nlu-bot
+      - custom-action-integration-test-with-calm-bot
+      - enterprise-search-integration-tests
+      - channel_connector_integration_tests
 
-
+    steps:
+      - uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # v5.1.0
+        with:
+          failOnError: false
+          name: |
+            docker-image-*

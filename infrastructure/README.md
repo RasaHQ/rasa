@@ -5,7 +5,7 @@ The infrastructure setup is divided into three separate Pulumi projects (micro-s
 - **eks-base**
 - **eks-lb-controller**
 - **eks-dashboard**
-- **eks-rasa-pro-helm**
+- **eks-helm**
 
 ## 1. eks-base
 
@@ -38,9 +38,9 @@ EKS has an **Amazon CloudWatch Observability** add-on, which automatically takes
 ## 3. eks-dashboard
 The **EKS Dashboard** stack is responsible for deploying Kubernetes Dashboard.  It creates all necessary Kubernetes resources - including a namespace, service account with admin privileges, token secret, cluster role binding, and an ingress configured with an AWS Application Load Balancer (ALB). Additionally, it creates a DNS record in AWS Route53 to expose the dashboard externally.
 
-## 4. eks-rasa-pro-helm
+## 4. eks-helm
 
-The **eks-rasa-pro-helm** stack is responsible for deploying the **Rasa Pro application container** using the **Rasa Pro Helm chart** into the EKS stack created in **eks-base**, with the **load balancing resources & Fargate profile** created in the **eks-lb-controller** stack.
+The **eks-helm** stack is responsible for deploying the **Rasa Pro application container** using the **Rasa Pro Helm chart** into the EKS stack created in **eks-base**, with the **load balancing resources & Fargate profile** created in the **eks-lb-controller** stack.
 
 The official **Rasa Pro Helm chart** is maintained [here](#).
 
