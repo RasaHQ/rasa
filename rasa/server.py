@@ -522,12 +522,15 @@ def configure_cors(
     )
 
 
-def add_root_route(app: Sanic) -> None:
+def add_root_route(app: Sanic, is_inspector_enabled: bool = False) -> None:
     """Add '/' route to return hello."""
 
     @app.get("/")
     async def hello(request: Request) -> HTTPResponse:
         """Check if the server is running and responds with the version."""
+        if not is_inspector_enabled:
+            return response.text("Hello from Rasa: " + rasa.__version__)
+
         html_content = f"""
         <html>
             <body>
@@ -688,6 +691,7 @@ def create_app(
     jwt_private_key: Optional[Text] = None,
     jwt_method: Text = "HS256",
     endpoints: Optional[AvailableEndpoints] = None,
+    is_inspector_enabled: bool = False,
 ) -> Sanic:
     """Class representing a Rasa HTTP server."""
     app = Sanic("rasa_server")
@@ -733,7 +737,7 @@ def create_app(
     ) -> HTTPResponse:
         return response.json(exception.error_info, status=exception.status)
 
-    add_root_route(app)
+    add_root_route(app, is_inspector_enabled)
 
     @app.get("/version")
     async def version(request: Request) -> HTTPResponse:

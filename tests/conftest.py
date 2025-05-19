@@ -833,6 +833,20 @@ def rasa_server_without_api() -> Sanic:
     return app
 
 
+@pytest.fixture
+def rasa_server_without_api_and_without_inspector() -> Sanic:
+    app = rasa.core.run._create_app_without_api(is_inspector_enabled=False)
+    channel.register([RestInput()], app, "/webhooks/")
+    return app
+
+
+@pytest.fixture
+def rasa_server_without_api_and_with_inspector() -> Sanic:
+    app = rasa.core.run._create_app_without_api(is_inspector_enabled=True)
+    channel.register([RestInput()], app, "/webhooks/")
+    return app
+
+
 @pytest.fixture(scope="session")
 def project() -> Text:
     import tempfile

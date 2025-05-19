@@ -120,6 +120,20 @@ def rasa_app_without_api(rasa_server_without_api: Sanic) -> SanicASGITestClient:
 
 
 @pytest.fixture
+def rasa_app_without_api_and_without_inspector(
+    rasa_server_without_api_and_without_inspector: Sanic,
+) -> SanicASGITestClient:
+    return rasa_server_without_api_and_without_inspector.asgi_client
+
+
+@pytest.fixture
+def rasa_app_without_api_and_with_inspector(
+    rasa_server_without_api_and_with_inspector: Sanic,
+) -> SanicASGITestClient:
+    return rasa_server_without_api_and_with_inspector.asgi_client
+
+
+@pytest.fixture
 def rasa_app(rasa_server: Sanic) -> SanicASGITestClient:
     return rasa_server.asgi_client
 
@@ -168,6 +182,30 @@ async def test_root(rasa_non_trained_app: SanicASGITestClient):
     _, response = await rasa_non_trained_app.get("/")
     assert response.status == HTTPStatus.OK
     assert "Hello from Rasa:" in response.text
+
+
+async def test_root_with_enabled_inspector(
+    rasa_app_without_api_and_with_inspector: SanicASGITestClient,
+):
+    _, response = await rasa_app_without_api_and_with_inspector.get("/")
+    assert response.status == HTTPStatus.OK
+    assert "Hello from Rasa:" in response.text
+    assert (
+        '<a href="./webhooks/inspector/inspect.html">Go to the inspector</a>'
+        in response.text
+    )
+
+
+async def test_root_without_enabled_inspector(
+    rasa_app_without_api_and_without_inspector: SanicASGITestClient,
+):
+    _, response = await rasa_app_without_api_and_without_inspector.get("/")
+    assert response.status == HTTPStatus.OK
+    assert "Hello from Rasa:" in response.text
+    assert (
+        '<a href="./webhooks/inspector/inspect.html">Go to the inspector</a>'
+        not in response.text
+    )
 
 
 async def test_root_without_enable_api(rasa_app_without_api: SanicASGITestClient):

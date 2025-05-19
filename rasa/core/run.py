@@ -86,13 +86,15 @@ def _create_single_channel(channel: Text, credentials: Dict[Text, Any]) -> Any:
             )
 
 
-def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None) -> Sanic:
+def _create_app_without_api(
+    cors: Optional[Union[Text, List[Text]]] = None, is_inspector_enabled: bool = False
+) -> Sanic:
     app = Sanic("rasa_core_no_api", configure_logging=False)
 
     # Reset Sanic warnings filter that allows the triggering of Sanic warnings
     warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"sanic.*")
 
-    server.add_root_route(app)
+    server.add_root_route(app, is_inspector_enabled)
     server.configure_cors(app, cors)
     return app
 
@@ -127,6 +129,7 @@ def configure_app(
     server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
     use_uvloop: Optional[bool] = True,
     keep_alive_timeout: int = constants.DEFAULT_KEEP_ALIVE_TIMEOUT,
+    is_inspector_enabled: bool = False,
 ) -> Sanic:
     """Run the agent."""
     rasa.core.utils.configure_file_logging(
@@ -144,6 +147,7 @@ def configure_app(
                 jwt_private_key=jwt_private_key,
                 jwt_method=jwt_method,
                 endpoints=endpoints,
+                is_inspector_enabled=is_inspector_enabled,
             )
         )
     else:
@@ -259,6 +263,7 @@ def serve_application(
         syslog_protocol=syslog_protocol,
         request_timeout=request_timeout,
         server_listeners=server_listeners,
+        is_inspector_enabled=inspect,
     )
 
     ssl_context = server.create_ssl_context(

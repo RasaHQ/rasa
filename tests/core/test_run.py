@@ -2,7 +2,7 @@ import warnings
 from asyncio import AbstractEventLoop
 from pathlib import Path
 from typing import Text
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from sanic import Sanic
@@ -10,6 +10,7 @@ from sanic import Sanic
 import rasa.shared.core.domain
 from rasa.core import run
 from rasa.core.brokers.sql import SQLEventBroker
+from rasa.core.run import serve_application
 from rasa.core.utils import AvailableEndpoints
 
 CREDENTIALS_FILE = "data/test_moodbot/credentials.yml"
@@ -87,3 +88,27 @@ async def test_close_resources(loop: AbstractEventLoop):
     with warnings.catch_warnings() as record:
         await run.close_resources(app, loop)
         assert record is None
+
+
+@pytest.mark.parametrize("inspect", [False, True])
+def test_is_inspector_enabled_param_initialisation(
+    inspect: bool,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Tests that the inspector is enabled or disabled based on the parameter inspect"""
+    mock_app = MagicMock(spec=Sanic)
+    mock_configure_app = MagicMock(return_value=mock_app)
+    monkeypatch.setattr("rasa.core.run.configure_app", mock_configure_app)
+    mock_create_http_input_channels = MagicMock()
+    monkeypatch.setattr(
+        "rasa.core.run.create_http_input_channels", mock_create_http_input_channels
+    )
+    mock_telemetry_track_server_start = MagicMock()
+    monkeypatch.setattr(
+        "rasa.core.run.telemetry.track_server_start", mock_telemetry_track_server_start
+    )
+    serve_application(inspect=inspect)
+
+    configure_app_call_args = mock_configure_app.call_args
+    assert configure_app_call_args.kwargs.get("is_inspector_enabled") == inspect
+    mock_app.run.assert_called_once()
