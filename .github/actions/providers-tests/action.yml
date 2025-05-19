@@ -261,36 +261,6 @@ runs:
         llama-server --model models/meta-llama-3.1-8b-instruct-q4_0.gguf -v --no-webui &
       shell: bash
 
-    # As endpoint is scaled-to-zero upon inactivity for cost minimisation,
-    # so need to wake it up before usage
-    - name: Wake up Hugging Face inference endpoint
-      if: ${{ inputs.provider == 'huggingface' }}
-      working-directory: rasa-private
-      env:
-        ENDPOINT_NAME: cmd-gen-codellama-13b-calm-d-bfz
-        ENDPOINT_NAMESPACE: rasa
-      run: |
-        : Wake up Hugging Face inference endpoint
-        source $VENV && ./data/test_config/providers/wake-up-inference-endpoint.py
-      shell: bash
-
-    # As endpoint are scaled-to-zero upon inactivity for cost minimisation,
-    # so need to wake them up before usage
-    - name: Wake up multiple Hugging Face inference endpoints
-      if: ${{ inputs.provider == 'huggingface-multiple-deployments-with-routing' }}
-      working-directory: rasa-private
-      env:
-        ENDPOINT_NAME: cmd-gen-codellama-13b-calm-d-bfz
-        ENDPOINT_NAMESPACE: rasa
-      run: |
-        : Wake up multiple Hugging Face inference endpoints
-        source $VENV
-        ./data/test_config/providers/wake-up-inference-endpoint.py & pid0=$!
-        export ENDPOINT_NAME=cmd-gen-codellama-13b-calm-d-rbo && ./data/test_config/providers/wake-up-inference-endpoint.py & pid1=$!
-        export ENDPOINT_NAME=cmd-gen-codellama-13b-calm-d-kuz && ./data/test_config/providers/wake-up-inference-endpoint.py & pid2=$!
-        wait $pid0 && wait $pid1 && wait $pid2
-      shell: bash
-
     - name: Install LiteLLM proxy with instrumentation
       working-directory: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
       if: ${{ inputs.provider == 'litellm-proxy-multiple-deployments-with-routing' && steps.setup-python.outputs.cache-hit != 'true' }}

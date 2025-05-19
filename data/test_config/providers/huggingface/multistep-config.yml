@@ -5,8 +5,7 @@ pipeline:
     prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
       provider: huggingface
-      model: rasa/cmd_gen_codellama_13b_calm_demo
-      api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+      model: together/meta-llama/Llama-3.3-70B-Instruct
       timeout: 30
       num_retries: 10
     calm_entry:
@@ -36,8 +35,7 @@ pipeline:
   - name: MultiStepLLMCommandGenerator
     llm:
       provider: huggingface
-      model: rasa/cmd_gen_codellama_13b_calm_demo
-      api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+      model: together/meta-llama/Llama-3.3-70B-Instruct
       timeout: 30
       num_retries: 10
 
@@ -53,15 +51,13 @@ policies:
       source: data-repo/docs/
     llm:
       provider: huggingface
-      model: rasa/cmd_gen_codellama_13b_calm_demo
-      api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+      model: together/meta-llama/Llama-3.3-70B-Instruct
       timeout: 30
       num_retries: 10
   - name: IntentlessPolicy
     llm:
       provider: huggingface
-      model: rasa/cmd_gen_codellama_13b_calm_demo
-      api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+      model: together/meta-llama/Llama-3.3-70B-Instruct
       timeout: 30
       num_retries: 10
 

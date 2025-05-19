@@ -5,8 +5,7 @@ pipeline:
 - name: SingleStepLLMCommandGenerator
   llm:
     provider: huggingface
-    model: rasa/cmd_gen_codellama_13b_calm_demo
-    api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+    model: together/meta-llama/Llama-3.3-70B-Instruct
 
 policies:
 - name: FlowPolicy

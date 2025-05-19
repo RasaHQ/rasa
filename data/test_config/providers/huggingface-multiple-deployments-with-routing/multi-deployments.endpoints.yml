@@ -25,14 +25,12 @@ model_groups:
     models:
     # Same LLM models across multiple inference endpoints
       - provider: huggingface
-        model: rasa/cmd_gen_codellama_13b_calm_demo
-        api_base: https://vguojsa987r65sjk.us-east-1.aws.endpoints.huggingface.cloud
+        model: huggingface/meta-llama/Llama-3.3-70B-Instruct
         api_key: ${HUGGINGFACE_API_KEY}
         timeout: 7
         num_retries: 5
       - provider: huggingface
-        model: rasa/cmd_gen_codellama_13b_calm_demo
-        api_base: https://d0pkjit021damv73.us-east-1.aws.endpoints.huggingface.cloud
+        model: together/meta-llama/Llama-3.3-70B-Instruct
         api_key: ${HUGGINGFACE_API_KEY}
         timeout: 7
         num_retries: 5

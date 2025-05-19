@@ -10,8 +10,7 @@ model_groups:
   - id: huggingface_llm
     models:
       - provider: huggingface
-        model: rasa/cmd_gen_codellama_13b_calm_demo
-        api_base: https://tli2t3mifcp9pjf8.us-east-1.aws.endpoints.huggingface.cloud
+        model: huggingface/meta-llama/Llama-3.3-70B-Instruct
         api_key: ${HUGGINGFACE_API_KEY}
         timeout: 20
         temperature: 0.0

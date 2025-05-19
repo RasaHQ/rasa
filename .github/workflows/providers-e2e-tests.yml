@@ -43,7 +43,7 @@ on:
           - azure-multiple-deployments-with-latency-based-routing
           - azure-multiple-deployments-with-cost-based-routing
           - gemini-multiple-deployments-with-routing
-          - huggingface-multiple-deployments-with-routing
+          # - huggingface-multiple-deployments-with-routing # Disabled as HF inference provider monthly credits exceeded
           - bedrock-multiple-deployments-with-routing
           - sagemaker_chat-multiple-deployments-with-routing
           - litellm-proxy-multiple-deployments-with-routing
@@ -153,7 +153,7 @@ on:
         type: string
         required: true
   pull_request:
-    branches: main
+    branches: [main]
     paths: [pyproject.toml, rasa/shared/providers/**]
 
 env:
@@ -333,7 +333,7 @@ jobs:
             azure-multiple-deployments-with-latency-based-routing,
             azure-multiple-deployments-with-cost-based-routing,
             gemini-multiple-deployments-with-routing,
-            huggingface-multiple-deployments-with-routing,
+            # huggingface-multiple-deployments-with-routing, Disabled as HF inference provider monthly credits exceeded
             bedrock-multiple-deployments-with-routing,
             sagemaker_chat-multiple-deployments-with-routing,
             litellm-proxy-multiple-deployments-with-routing,

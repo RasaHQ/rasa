@@ -44,7 +44,7 @@ on:
           - azure-multiple-deployments-with-latency-based-routing
           - azure-multiple-deployments-with-cost-based-routing
           - gemini-multiple-deployments-with-routing
-          - huggingface-multiple-deployments-with-routing
+          # - huggingface-multiple-deployments-with-routing # Disabled as HF inference provider monthly credits exceeded
           - bedrock-multiple-deployments-with-routing
           - sagemaker_chat-multiple-deployments-with-routing
           - litellm-proxy-multiple-deployments-with-routing
