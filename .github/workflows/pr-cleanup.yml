@@ -50,7 +50,9 @@ jobs:
 
   pulumi-destroy:
     # Skip any PR created by dependabot to avoid permission issues
-    if: (github.actor != 'dependabot[bot]')
+    # Skip this job from merge queue
+    # Skip from Backport PRs
+    if: github.event_name != 'merge_group' && !startsWith(github.event.pull_request.title, 'Backport' && github.actor != 'dependabot[bot]')
     name: Destroy pulumi resources
     runs-on: ubuntu-24.04
     steps:
