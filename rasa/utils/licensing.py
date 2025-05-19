@@ -18,8 +18,7 @@ from rasa import telemetry
 from rasa.shared.utils.cli import print_error_and_exit
 
 if typing.TYPE_CHECKING:
-    from rasa.core.tracker_store import TrackerStore
-
+    from rasa.core.tracker_stores.tracker_store import TrackerStore
 
 LICENSE_ENV_VAR = "RASA_PRO_LICENSE"
 ALGORITHM = "RS256"

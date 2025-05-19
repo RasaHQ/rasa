@@ -1,5 +1,6 @@
 import logging
 import sys
+import uuid
 from pathlib import Path
 from typing import Any, Text, Tuple
 from unittest.mock import MagicMock, call
@@ -7,13 +8,13 @@ from unittest.mock import MagicMock, call
 import pytest
 from pytest import LogCaptureFixture, MonkeyPatch
 
-from rasa.core.auth_retry_tracker_store import (
+from rasa.core.brokers.broker import EventBroker
+from rasa.core.secrets_manager.secret_manager import EndpointResolver
+from rasa.core.tracker_stores.auth_retry_tracker_store import (
     DEFAULT_RETRIES,
     AuthRetryTrackerStore,
 )
-from rasa.core.brokers.broker import EventBroker
-from rasa.core.secrets_manager.secret_manager import EndpointResolver
-from rasa.core.tracker_store import AwaitableTrackerStore
+from rasa.core.tracker_stores.tracker_store import AwaitableTrackerStore, TrackerStore
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -30,12 +31,7 @@ else:
 
 @pytest.fixture
 def moodbot_domain() -> Domain:
-    domain_path = (
-        Path(__file__).parent.parent.parent
-        / "data"
-        / "test_domains"
-        / "auth_retry_domain.yml"
-    )
+    domain_path = Path("data/test_domains/auth_retry_domain.yml")
     return Domain.load(domain_path)
 
 
@@ -180,12 +176,7 @@ def test_auth_retry_tracker_store_domain_setter() -> None:
     )
     assert auth_retry_tracker_store.domain.is_empty()
 
-    domain_path = (
-        Path(__file__).parent.parent.parent
-        / "data"
-        / "test_domains"
-        / "auth_retry_domain.yml"
-    )
+    domain_path = Path("data/test_domains/auth_retry_domain.yml")
     new_domain = Domain.load(domain_path)
     auth_retry_tracker_store.domain = new_domain
 
@@ -209,7 +200,7 @@ def set_mock_create_tracker_store(
     mock_create_tracker_store: MagicMock, monkeypatch: MonkeyPatch
 ) -> None:
     monkeypatch.setattr(
-        "rasa.core.auth_retry_tracker_store.create_tracker_store",
+        "rasa.core.tracker_stores.auth_retry_tracker_store.create_tracker_store",
         mock_create_tracker_store,
     )
 
@@ -581,3 +572,17 @@ async def test_auth_retry_tracker_store_keys_unsuccessful_after_max_retries(
 
     log_msg = f"Failed to retrieve keys after {retries} retries."
     assert log_msg in caplog.text
+
+
+async def test_wrapper_tracker_stores_delete(monkeypatch: MonkeyPatch) -> None:
+    mocked_inner_tracker_store = MagicMock(spec=TrackerStore)
+    monkeypatch.setattr(
+        "rasa.core.tracker_stores.auth_retry_tracker_store.AuthRetryTrackerStore.recreate_tracker_store",
+        lambda *args, **kwargs: mocked_inner_tracker_store,
+    )
+    tracker_store = AuthRetryTrackerStore(mocked_inner_tracker_store, EndpointConfig())
+
+    mocked_inner_tracker_store.delete = AsyncMock()
+    sender_id = uuid.uuid4().hex
+    await tracker_store.delete(sender_id)
+    mocked_inner_tracker_store.delete.assert_called_once_with(sender_id)

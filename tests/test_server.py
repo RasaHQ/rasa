@@ -45,7 +45,7 @@ from rasa.core.channels import (
     channel,
 )
 from rasa.core.channels.slack import SlackBot
-from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.model_training import TrainingResult
 from rasa.nlu.test import CVEvaluationResult

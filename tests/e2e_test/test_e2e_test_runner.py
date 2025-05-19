@@ -16,7 +16,7 @@ from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
 from rasa.core.utils import AvailableEndpoints
 from rasa.e2e_test.e2e_test_case import (
     ActualStepOutput,

@@ -3,7 +3,7 @@ from typing import Iterable, Optional, Text
 
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.secrets_manager.secret_manager import EndpointResolver
-from rasa.core.tracker_store import TrackerStore, create_tracker_store
+from rasa.core.tracker_stores.tracker_store import TrackerStore, create_tracker_store
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
@@ -119,3 +119,7 @@ class AuthRetryTrackerStore(TrackerStore):
         """Recreate tracker store with updated credentials."""
         endpoint_config = EndpointResolver.update_config(self.endpoint_config)
         return create_tracker_store(endpoint_config, domain, event_broker)
+
+    async def delete(self, sender_id: Text) -> None:
+        """Delete tracker for the given sender_id."""
+        await self._tracker_store.delete(sender_id)

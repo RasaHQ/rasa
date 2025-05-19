@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import structlog
@@ -10,7 +10,6 @@ from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.llm.openai_llm_client import (
     OpenAILLMClient,
 )
-from tests.core.test_auth_retry_tracker_store import AsyncMock
 
 
 class TestOpenAILLMClient:

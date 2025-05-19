@@ -6,10 +6,8 @@ import sqlalchemy as sa
 import structlog
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.core.tracker_store import (
-    RedisTrackerStore,
-    SQLTrackerStore,
-)
+from rasa.core.tracker_stores.redis_tracker_store import RedisTrackerStore
+from rasa.core.tracker_stores.sql_tracker_store import SQLTrackerStore
 from rasa.shared.core.events import Event
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.utilities import filter_logs

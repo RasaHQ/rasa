@@ -1,5 +1,5 @@
 from typing import Any, List, Optional
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -25,7 +25,6 @@ from rasa.shared.nlu.constants import (
     PREDICTED_COMMANDS,
     PROMPTS,
 )
-from tests.core.test_auth_retry_tracker_store import AsyncMock
 
 
 def mock_du_test_runner_init(self: Any, *args: Any, **kwargs: Any) -> None:

@@ -8,7 +8,8 @@ from rasa.core.evaluation.marker_tracker_loader import (
     STRATEGY_SAMPLE_N,
     MarkerTrackerLoader,
 )
-from rasa.core.tracker_store import InMemoryTrackerStore, SQLTrackerStore, TrackerStore
+from rasa.core.tracker_stores.sql_tracker_store import SQLTrackerStore
+from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SessionStarted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker

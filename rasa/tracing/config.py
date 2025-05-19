@@ -23,7 +23,7 @@ from rasa.core.actions.custom_action_executor import (
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.agent import Agent
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import TrackerStore
+from rasa.core.tracker_stores.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import (
     Command,
     FreeFormAnswerCommand,

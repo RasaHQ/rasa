@@ -8,7 +8,7 @@ import pytest
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
-from rasa.core.tracker_store import SQLTrackerStore
+from rasa.core.tracker_stores.sql_tracker_store import SQLTrackerStore
 from rasa.exceptions import (
     NoConversationsInTrackerStoreError,
     NoEventsToMigrateError,

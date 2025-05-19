@@ -18,7 +18,7 @@ from rasa.shared.exceptions import RasaException
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.exporter import Exporter
-    from rasa.core.tracker_store import TrackerStore
+    from rasa.core.tracker_stores.tracker_store import TrackerStore
     from rasa.core.utils import AvailableEndpoints
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ def _get_tracker_store(endpoints: "AvailableEndpoints") -> "TrackerStore":
             f"Exiting. "
         )
 
-    from rasa.core.tracker_store import TrackerStore
+    from rasa.core.tracker_stores.tracker_store import TrackerStore
 
     return TrackerStore.create(endpoints.tracker_store)
 

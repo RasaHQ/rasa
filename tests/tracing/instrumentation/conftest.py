@@ -45,7 +45,7 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import TrackerStore
+from rasa.core.tracker_stores.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command, StartFlowCommand
 from rasa.dialogue_understanding.generator import (
     CompactLLMCommandGenerator,

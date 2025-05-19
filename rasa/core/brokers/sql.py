@@ -46,7 +46,7 @@ class SQLEventBroker(EventBroker):
         """Initializes `SQLBrokerEvent`."""
         import sqlalchemy.orm
 
-        from rasa.core.tracker_store import SQLTrackerStore
+        from rasa.core.tracker_stores.sql_tracker_store import SQLTrackerStore
 
         engine_url = SQLTrackerStore.get_db_url(
             dialect, host, port, db, username, password

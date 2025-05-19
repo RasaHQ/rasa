@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, List, Tuple
 import pytest
 from dotenv import load_dotenv
 
-from rasa.core.tracker_store import MongoTrackerStore
+from rasa.core.tracker_stores.mongo_tracker_store import MongoTrackerStore
 
 if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain

@@ -20,11 +20,10 @@ from rasa.core.actions.action import ActionExtractSlots
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.core.tracker_store import (
+from rasa.core.tracker_stores.redis_tracker_store import RedisTrackerStore, TrackerStore
+from rasa.core.tracker_stores.sql_tracker_store import SQLTrackerStore
+from rasa.core.tracker_stores.tracker_store import (
     InMemoryTrackerStore,
-    RedisTrackerStore,
-    SQLTrackerStore,
-    TrackerStore,
 )
 from rasa.core.training import load_data
 from rasa.dialogue_understanding.patterns.completed import (

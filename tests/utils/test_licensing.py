@@ -5,7 +5,7 @@ import pytest
 from freezegun import freeze_time
 from pytest import MonkeyPatch
 
-from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SessionStarted
 from rasa.shared.core.trackers import DialogueStateTracker

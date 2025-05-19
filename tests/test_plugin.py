@@ -7,7 +7,7 @@ from pluggy import PluginManager
 from pytest import MonkeyPatch
 
 from rasa.core.brokers.broker import EventBroker
-from rasa.core.tracker_store import TrackerStore
+from rasa.core.tracker_stores.tracker_store import TrackerStore
 from rasa.plugin import plugin_manager
 from rasa.shared.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig

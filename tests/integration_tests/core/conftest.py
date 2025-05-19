@@ -6,7 +6,7 @@ import pytest
 import sqlalchemy as sa
 
 from rasa.core.lock_store import RedisLockStore, RedisLockStoreConfig
-from rasa.core.tracker_store import RedisTrackerStore
+from rasa.core.tracker_stores.redis_tracker_store import RedisTrackerStore
 from rasa.shared.core.domain import Domain
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")

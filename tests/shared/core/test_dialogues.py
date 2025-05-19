@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.domain import Domain
 from tests.core.utilities import tracker_from_dialogue

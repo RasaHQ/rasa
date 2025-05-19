@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, Union
 import structlog
 
 import rasa.core.actions.action
-import rasa.core.tracker_store
+import rasa.core.tracker_stores.tracker_store
 import rasa.core.utils
 import rasa.shared.core.trackers
 import rasa.shared.utils.io
@@ -126,7 +126,7 @@ class MessageProcessor:
     def __init__(
         self,
         model_path: Union[Text, Path],
-        tracker_store: rasa.core.tracker_store.TrackerStore,
+        tracker_store: rasa.core.tracker_stores.tracker_store.TrackerStore,
         lock_store: LockStore,
         generator: NaturalLanguageGenerator,
         action_endpoint: Optional[EndpointConfig] = None,

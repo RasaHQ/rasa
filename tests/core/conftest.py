@@ -12,7 +12,7 @@ from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import MongoTrackerStore
+from rasa.core.tracker_stores.mongo_tracker_store import MongoTrackerStore
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, ReminderScheduled, UserUttered
 from rasa.shared.core.slots import Slot

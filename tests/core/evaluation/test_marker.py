@@ -23,7 +23,7 @@ from rasa.core.evaluation.marker_base import (
     OperatorMarker,
 )
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
-from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, SessionStarted, SlotSet, UserUttered

@@ -16,7 +16,7 @@ from rasa.cli.e2e_test import (
     execute_e2e_tests,
 )
 from rasa.core.agent import Agent
-from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
 from rasa.e2e_test.constants import (
     DEFAULT_E2E_INPUT_TESTS_PATH,
     DEFAULT_E2E_OUTPUT_TESTS_PATH,

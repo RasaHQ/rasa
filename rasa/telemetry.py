@@ -64,7 +64,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.channels.channel import InputChannel
-    from rasa.core.tracker_store import TrackerStore
+    from rasa.core.tracker_stores.tracker_store import TrackerStore
     from rasa.core.utils import AvailableEndpoints
     from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase
     from rasa.shared.importers.importer import TrainingDataImporter

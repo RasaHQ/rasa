@@ -22,7 +22,7 @@ from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGene
 from rasa.core.persistor import StorageType
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import (
+from rasa.core.tracker_stores.tracker_store import (
     FailSafeTrackerStore,
     InMemoryTrackerStore,
     TrackerStore,
@@ -215,7 +215,7 @@ async def load_agent(
         The instantiated `Agent` or `None`.
     """
     from rasa.core.brokers.broker import EventBroker
-    from rasa.core.tracker_store import TrackerStore
+    from rasa.core.tracker_stores.tracker_store import TrackerStore
 
     tracker_store = None
     lock_store = None

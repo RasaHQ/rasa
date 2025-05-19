@@ -55,7 +55,7 @@ from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import RestInput, channel
 from rasa.core.exporter import Exporter
-from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
+from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
 )

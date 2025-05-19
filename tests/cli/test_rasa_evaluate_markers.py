@@ -7,7 +7,7 @@ from _pytest.pytester import RunResult
 
 import rasa.cli.evaluate
 from rasa.cli.evaluate import STATS_OVERALL_SUFFIX, STATS_SESSION_SUFFIX
-from rasa.core.tracker_store import SQLTrackerStore
+from rasa.core.tracker_stores.sql_tracker_store import SQLTrackerStore
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker

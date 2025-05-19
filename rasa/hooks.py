@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from rasa.anonymization.anonymization_pipeline import AnonymizationPipeline
     from rasa.cli import SubParsersAction
     from rasa.core.brokers.broker import EventBroker
-    from rasa.core.tracker_store import TrackerStore
+    from rasa.core.tracker_stores.tracker_store import TrackerStore
     from rasa.shared.core.domain import Domain
     from rasa.utils.endpoints import EndpointConfig
 
@@ -80,7 +80,7 @@ def create_tracker_store(
     domain: "Domain",
     event_broker: Optional["EventBroker"],
 ) -> "TrackerStore":
-    from rasa.core.auth_retry_tracker_store import AuthRetryTrackerStore
+    from rasa.core.tracker_stores.auth_retry_tracker_store import AuthRetryTrackerStore
     from rasa.utils.endpoints import EndpointConfig
 
     if isinstance(endpoint_config, EndpointConfig):

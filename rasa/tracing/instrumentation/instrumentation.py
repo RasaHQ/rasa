@@ -38,7 +38,7 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.flows.flow_step_result import FlowActionPrediction
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import TrackerStore
+from rasa.core.tracker_stores.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.generator import (
     CompactLLMCommandGenerator,

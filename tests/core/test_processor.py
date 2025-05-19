@@ -46,7 +46,7 @@ from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
 from rasa.core.policies.flow_policy import FlowPolicy
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
 from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.commands import (
     ChitChatAnswerCommand,

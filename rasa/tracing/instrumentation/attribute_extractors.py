@@ -16,7 +16,7 @@ from rasa.core.channels import UserMessage
 from rasa.core.lock_store import LOCK_LIFETIME, LockStore
 from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import TrackerStore
+from rasa.core.tracker_stores.tracker_store import TrackerStore
 from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.generator import LLMBasedCommandGenerator
 from rasa.dialogue_understanding.generator.constants import FLOW_RETRIEVAL_KEY
