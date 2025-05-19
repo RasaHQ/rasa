@@ -187,4 +187,4 @@ if not pulumi.runtime.is_dry_run():
         records=[ingress_hostname],
         opts=pulumi.ResourceOptions(depends_on=[rasa_pro_ingress])
     )
-    pulumi.export("rasa_pro_url", project_name + "." + domain_name)
+    pulumi.export("rasa_pro_url", pr_name + "." + domain_name)

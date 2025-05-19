@@ -67,14 +67,21 @@ jobs:
             echo "STACK_NAME=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
           fi
 
-      - name: Pulumi Destroy
-        uses: pulumi/actions@ae8c5623fbcf1b4781618a60e69d423f9a6b9c92 #v5.1.1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 # v3.0.1
         with:
-          command: destroy
-          refresh: true
-          remove: true
-          stack-name: rasa/rasa-pro-${{ env.STACK_NAME }}
-          work-dir: ./infrastructure/eks-helm
-          upsert: true
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}  
+
+      - name: Set up kubeconfig
+        run: |
+          aws eks update-kubeconfig --name rasa-pro-cluster --region ${{ env.AWS_REGION }}
+
+      
+      - uses: pulumi/actions@ae8c5623fbcf1b4781618a60e69d423f9a6b9c92 #v5.1.1
+      - name: Destroy resources and remove the stack
+        run: |
+          pulumi destroy -s rasa/rasa-pro-eks-helm/${{ env.STACK_NAME }} --yes
+          pulumi stack rm rasa/rasa-pro-eks-helm/${{ env.STACK_NAME }} --yes
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.HELM_DEPLOY_PULUMI_ACCESS_TOKEN }}
