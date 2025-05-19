@@ -10,6 +10,21 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.12.13] - 2025-05-19
+                         
+Rasa Pro 3.12.13 (2025-05-19)                              
+### Bugfixes
+- [#1827](https://github.com/rasahq/rasa-private/issues/1827): The `Clarify` (syntax used by `SingleStepLLMCommandGenerator`) / `disambiguate flows` (syntax used by `CompactLLMCommandGenerator`) command will now parse flow names with dashes.
+- [#2425](https://github.com/rasahq/rasa-private/issues/2425): Fix remote model download when models are stored in a path, not in the root of the remote storage.
+  Add new training CLI param `--remote-root-only` that can be used by the model service to store the model in the root of the remote storage.
+  Propagate this parameter to the persistor's `persist` method.
+  Simplify persistor code when retrieving models by downloading the model to the target path directly rather than copying the downloaded model to the target path. 
+  This also improved testability.
+- [#2447](https://github.com/rasahq/rasa-private/issues/2447): When inspector is not used, root server path should output: `Hello from Rasa: <version>.`.
+  When inspector is used, root server path should output HTML page with a link to the path on which inspector can be reached.
+- [#2467](https://github.com/rasahq/rasa-private/issues/2467): Change the default value of `minimize_num_calls` in the config of LLM-based command generators to `True`.
+
+
 ## [3.12.12] - 2025-05-15
                          
 Rasa Pro 3.12.12 (2025-05-15)                              
