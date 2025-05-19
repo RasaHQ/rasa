@@ -527,7 +527,7 @@ class LLMBasedCommandGenerator(
         either contain a StartFlowCommand or a SetSlot command
         for the current collect step.
         """
-        return self.config.get(KEY_MINIMIZE_NUM_CALLS, False) and (
+        return self.config.get(KEY_MINIMIZE_NUM_CALLS, True) and (
             self._prior_commands_contain_start_flow(prior_commands)
             or self._prior_commands_contain_set_slot_for_active_collect_step(
                 prior_commands, flows, tracker

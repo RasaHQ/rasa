@@ -996,7 +996,7 @@ class TestMultiStepLLMCommandGenerator:
         mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True, slots={})
         mock_domain = Domain.empty()
         command_generator = MultiStepLLMCommandGenerator.create(
-            config={"flow_retrieval": {"active": False}},
+            config={"flow_retrieval": {"active": False}, KEY_MINIMIZE_NUM_CALLS: False},
             resource=Mock(),
             model_storage=Mock(),
             execution_context=Mock(),
@@ -1431,6 +1431,7 @@ class TestMultiStepLLMCommandGenerator:
         self, command_generator: MultiStepLLMCommandGenerator, monkeypatch: MonkeyPatch
     ):
         """Test that predict_commands adds commands to the prior set commands on the Message object."""  # noqa: E501
+        command_generator.config[KEY_MINIMIZE_NUM_CALLS] = False
         command = StartFlowCommand("some_flow").as_dict()
 
         test_message = Message.build(text="some message")
@@ -1492,7 +1493,6 @@ class TestMultiStepLLMCommandGenerator:
         assert len(test_message.get(COMMANDS)) == 1
         assert test_message.get(COMMANDS) == [command]
 
-        command_generator.config[KEY_MINIMIZE_NUM_CALLS] = True
         mock_predict_commands = AsyncMock()
         monkeypatch.setattr(
             command_generator,
@@ -1781,6 +1781,7 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         mock_predict_commands_for_newly_started_flows: AsyncMock,
     ):
         # Given
+        multi_step_llm_command_generator.config[KEY_MINIMIZE_NUM_CALLS] = False
         filtered_flows = test_flows_with_defaults.user_flows.exclude_link_only_flows()
         mock_message = Message()
         mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True, slots={})
@@ -1809,6 +1810,7 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         mock_predict_commands_for_newly_started_flows: AsyncMock,
     ):
         # Given
+        multi_step_llm_command_generator.config[KEY_MINIMIZE_NUM_CALLS] = False
         filtered_flows = test_flows_with_defaults.user_flows.exclude_link_only_flows()
         mock_message = Message()
         mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True, slots={})
@@ -1839,6 +1841,7 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         mock_predict_commands_for_newly_started_flows: AsyncMock,
     ):
         # Given
+        multi_step_llm_command_generator.config[KEY_MINIMIZE_NUM_CALLS] = False
         filtered_flows = test_flows_with_defaults.user_flows.exclude_link_only_flows()
         mock_message = Message()
         mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True, slots={})
@@ -1869,6 +1872,7 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         mock_predict_commands_for_newly_started_flows: AsyncMock,
     ):
         # Given
+        multi_step_llm_command_generator.config[KEY_MINIMIZE_NUM_CALLS] = False
         filtered_flows = test_flows_with_defaults.user_flows.exclude_link_only_flows()
         mock_message = Message()
         mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True, slots={})
@@ -1901,6 +1905,7 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         mock_predict_commands_for_newly_started_flows: AsyncMock,
     ):
         # Given
+        multi_step_llm_command_generator.config[KEY_MINIMIZE_NUM_CALLS] = False
         filtered_flows = test_flows_with_defaults.user_flows.exclude_link_only_flows()
         mock_message = Message()
         mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True, slots={})
@@ -1933,6 +1938,7 @@ class TestMultiStepLLMCommandGeneratorPredictCommandsErrorHandling:
         mock_predict_commands_for_newly_started_flows: AsyncMock,
     ):
         # Given
+        multi_step_llm_command_generator.config[KEY_MINIMIZE_NUM_CALLS] = False
         filtered_flows = test_flows_with_defaults.user_flows.exclude_link_only_flows()
         mock_message = Message()
         mock_tracker = Mock(spec=DialogueStateTracker, has_active_flow=True, slots={})

@@ -63,6 +63,11 @@ class TestLLMBasedCommandGenerator:
                 steps:
                 - id: first_step
                   action: action_listen
+              foo:
+                name: another test flow
+                description: another test flow
+                steps:
+                - action: action_listen
             """
         )
 

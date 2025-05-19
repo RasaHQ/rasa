@@ -1577,6 +1577,8 @@ class TestSingleStepLLMCommandGenerator:
         self, command_generator: SingleStepLLMCommandGenerator, monkeypatch: MonkeyPatch
     ):
         """Test that predict_commands adds commands to the prior set commands on the Message object."""  # noqa: E501
+        command_generator.config[KEY_MINIMIZE_NUM_CALLS] = False
+
         command = StartFlowCommand("some_flow").as_dict()
 
         test_message = Message.build(text="some message")
@@ -1637,7 +1639,6 @@ class TestSingleStepLLMCommandGenerator:
         assert len(test_message.get(COMMANDS)) == 1
         assert test_message.get(COMMANDS) == [command]
 
-        command_generator.config[KEY_MINIMIZE_NUM_CALLS] = True
         mock_predict_commands = AsyncMock()
         monkeypatch.setattr(
             command_generator,
