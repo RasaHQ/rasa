@@ -278,6 +278,7 @@ def start_training_process(
                 "--keep-local-model-copy",
                 "--remote-storage",
                 config.SERVER_MODEL_REMOTE_STORAGE,
+                "--remote-root-only",
             ]
         )
 

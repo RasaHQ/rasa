@@ -142,7 +142,7 @@ def test_train_model_and_push_to_aws_remote_storage_without_remote_storage_env_v
     """Test to load model from AWS remote storage.
 
     Location of the model in the remote storage is not provided,
-    it is consists of the output and model name in format output/model_name.tar.gz.
+    it consists of the output and model name in format output/model_name.tar.gz.
     """
     model_name = "dummy-model"
     empty_agent.remote_storage = RemoteStorageType.AWS

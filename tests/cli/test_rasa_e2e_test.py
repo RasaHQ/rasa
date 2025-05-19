@@ -266,11 +266,22 @@ def test_e2e_cli_add_e2e_test_arguments(monkeypatch: MonkeyPatch) -> None:
             call(
                 "--remote-storage",
                 help="Remote storage which should be used to store/load "
-                "the model.Supported storages are: ['aws', 'gcs', 'azure']. "
+                "the model. Supported storages are: ['aws', 'gcs', 'azure']. "
                 "You can also provide your own "
                 "implementation of the `Persistor` interface.",
                 required=False,
                 type=parse_remote_storage_arg,
+            ),
+            call(
+                "--coverage-report",
+                action="store_true",
+                help="Generate a coverage report on flow paths and commands "
+                "covered in e2e tests.",
+            ),
+            call(
+                "--coverage-output-path",
+                default="e2e_coverage_results",
+                help="Directory where to save coverage report to.",
             ),
         ],
     )

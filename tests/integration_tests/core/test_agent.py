@@ -2,7 +2,6 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Text
-from unittest.mock import patch
 
 import boto3
 import pytest
@@ -11,7 +10,7 @@ from pytest import MonkeyPatch
 
 from rasa.core.agent import Agent
 from rasa.core.persistor import AWSPersistor, RemoteStorageType
-from rasa.shared.exceptions import RasaException
+from rasa.env import REMOTE_STORAGE_PATH_ENV
 
 
 @pytest.fixture
@@ -73,10 +72,10 @@ def aws_environment_variables(
 
 
 @pytest.mark.parametrize(
-    "remote_storage_path, expected_model_name",
+    "remote_storage_path",
     [
-        ("", "model1.pkl"),  # Case without sub-path
-        ("some/sub/path", "some/sub/path/model1.pkl"),  # Case with sub-path
+        "",  # Case without sub-path
+        "some/sub/path",  # Case with sub-path
     ],
 )
 @mock_aws
@@ -88,9 +87,11 @@ def test_load_model_from_aws_remote_storage_sub_path(
     trained_rasa_model: Text,
     empty_agent: Agent,
     remote_storage_path: Text,
-    expected_model_name: Text,
 ) -> None:
     """Test to load model from AWS remote storage."""
+    empty_agent.remote_storage = RemoteStorageType.AWS
+    monkeypatch.setenv(REMOTE_STORAGE_PATH_ENV, remote_storage_path)
+
     model_name = Path(trained_rasa_model).name
     conn = boto3.resource("s3", region_name=region_name)
     # We need to create the bucket in Moto's 'virtual' AWS account
@@ -98,7 +99,9 @@ def test_load_model_from_aws_remote_storage_sub_path(
     conn.create_bucket(Bucket=bucket_name)
     # upload model file to bucket
     with open(trained_rasa_model, "rb") as f:
-        conn.meta.client.upload_fileobj(f, bucket_name, model_name)
+        conn.meta.client.upload_fileobj(
+            f, bucket_name, os.path.join(remote_storage_path, model_name)
+        )
 
     def mock_aws_persistor(name: Text) -> AWSPersistor:
         aws_persistor = AWSPersistor(bucket_name, region_name=region_name)
@@ -107,11 +110,7 @@ def test_load_model_from_aws_remote_storage_sub_path(
         return aws_persistor
 
     monkeypatch.setattr("rasa.core.persistor.get_persistor", mock_aws_persistor)
-    empty_agent.remote_storage = RemoteStorageType.AWS
-    with patch.dict(os.environ, {"REMOTE_STORAGE_PATH": remote_storage_path}):
-        try:
-            empty_agent.load_model_from_remote_storage(model_name)
-            assert empty_agent.processor.model_filename == model_name
-
-        except RasaException as exc:
-            assert False, f"Test to load model from remote storage failed: {exc}"
+    empty_agent.load_model_from_remote_storage(
+        os.path.join(remote_storage_path, model_name)
+    )
+    assert empty_agent.processor.model_filename == model_name

@@ -78,6 +78,7 @@ def test_pass_arguments_to_rasa_train(
     monkeypatch.setattr(rasa.api, "train", mock.method)
 
     # If the `Namespace` object does not have all required fields this will throw
+    args.remote_root_only = False
     train.run_training(args)
 
     # Assert `train` was actually called

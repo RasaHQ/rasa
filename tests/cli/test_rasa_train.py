@@ -662,6 +662,7 @@ def test_train_validate_nlg_config_valid(monkeypatch: MonkeyPatch) -> None:
         finetune=None,
         remote_storage=None,
         keep_local_model_copy=False,
+        remote_root_only=False,
     )
 
     # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
@@ -679,6 +680,7 @@ def test_train_validate_nlg_config_invalid() -> None:
         data=["data/test_moodbot/data"],
         endpoints="data/test_nlg/endpoint_with_invalid_nlg.yml",
         remote_storage=None,
+        remote_root_only=False,
     )
 
     # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
@@ -790,6 +792,7 @@ def test_training_logs_domain_correctly_when_using_domain_dir(
         finetune=None,
         remote_storage=None,
         keep_local_model_copy=False,
+        remote_root_only=False,
     )
 
     expected_debug_log = {

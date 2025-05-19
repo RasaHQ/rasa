@@ -81,6 +81,7 @@ def train(
     remote_storage: Optional[StorageType] = None,
     file_importer: Optional["TrainingDataImporter"] = None,
     keep_local_model_copy: bool = False,
+    remote_root_only: bool = False,
 ) -> "TrainingResult":
     """Runs Rasa Core and NLU training in `async` loop.
 
@@ -108,6 +109,8 @@ def train(
             If it is not provided, a new instance will be created.
         keep_local_model_copy: If `True` the model will be stored locally even if
             remote storage is configured.
+        remote_root_only: If `True`, the model will be stored in the root of the
+            remote model storage.
 
     Returns:
         An instance of `TrainingResult`.
@@ -131,6 +134,7 @@ def train(
             remote_storage=remote_storage,
             file_importer=file_importer,
             keep_local_model_copy=keep_local_model_copy,
+            remote_root_only=remote_root_only,
         )
     )
 

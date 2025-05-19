@@ -155,6 +155,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         remote_storage=args.remote_storage,
         file_importer=training_data_importer,
         keep_local_model_copy=args.keep_local_model_copy,
+        remote_root_only=args.remote_root_only,
     )
     if training_result.code != 0 and can_exit:
         display_research_study_prompt()

@@ -532,8 +532,7 @@ def size_of_model(model_name: str) -> Optional[int]:
             model_name=model_file_name,
         )
         return fetch_size_of_remote_model(
-            model_file_name,
-            config.SERVER_MODEL_REMOTE_STORAGE,
+            model_file_name, config.SERVER_MODEL_REMOTE_STORAGE, model_path
         )
     raise ModelNotFound("Model not found.")
 

@@ -160,6 +160,7 @@ async def train(
     remote_storage: Optional[StorageType] = None,
     file_importer: Optional[TrainingDataImporter] = None,
     keep_local_model_copy: bool = False,
+    remote_root_only: bool = False,
 ) -> TrainingResult:
     """Trains a Rasa model (Core and NLU).
 
@@ -187,6 +188,8 @@ async def train(
             If it is not provided, a new instance will be created.
         keep_local_model_copy: If `True` the model will be stored locally even if
             remote storage is configured.
+        remote_root_only: If `True`, the model will be stored in the root of the
+            remote model storage.
 
     Returns:
         An instance of `TrainingResult`.
@@ -269,6 +272,7 @@ async def train(
             dry_run=dry_run,
             remote_storage=remote_storage,
             keep_local_model_copy=keep_local_model_copy,
+            remote_root_only=remote_root_only,
             **(core_additional_arguments or {}),
             **(nlu_additional_arguments or {}),
         )
@@ -284,6 +288,7 @@ async def _train_graph(
     dry_run: bool = False,
     remote_storage: Optional[StorageType] = None,
     keep_local_model_copy: bool = False,
+    remote_root_only: bool = False,
     **kwargs: Any,
 ) -> TrainingResult:
     if model_to_finetune:
@@ -363,7 +368,9 @@ async def _train_graph(
             is_finetuning=is_finetuning,
         )
         if remote_storage:
-            push_model_to_remote_storage(full_model_path, remote_storage)
+            push_model_to_remote_storage(
+                full_model_path, remote_storage, remote_root_only
+            )
             if not keep_local_model_copy:
                 full_model_path.unlink()
             structlogger.info(
@@ -581,14 +588,16 @@ async def train_nlu(
     ).model
 
 
-def push_model_to_remote_storage(model_path: Path, remote_storage: StorageType) -> None:
+def push_model_to_remote_storage(
+    model_path: Path, remote_storage: StorageType, remote_root_only: bool = False
+) -> None:
     """Push model to remote storage."""
     from rasa.core.persistor import get_persistor
 
     persistor = get_persistor(remote_storage)
 
     if persistor is not None:
-        persistor.persist(str(model_path))
+        persistor.persist(str(model_path), remote_root_only)
 
     else:
         raise RasaException(

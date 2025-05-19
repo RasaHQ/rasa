@@ -7,6 +7,7 @@ from rasa.cli.arguments.default_arguments import (
     add_endpoint_param,
     add_nlu_data_param,
     add_out_param,
+    add_remote_root_only_param,
     add_remote_storage_param,
     add_stories_param,
 )
@@ -41,6 +42,7 @@ def set_train_arguments(parser: argparse.ArgumentParser) -> None:
         parser, help_text="Configuration file for the connectors as a yml file."
     )
     add_remote_storage_param(parser)
+    add_remote_root_only_param(parser)
 
 
 def set_train_core_arguments(parser: argparse.ArgumentParser) -> None:

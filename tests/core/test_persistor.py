@@ -62,13 +62,11 @@ def test_retrieve_tar_archive_with_s3_namespace(
 ) -> None:
     mock_s3_connection.create_bucket(Bucket=bucket_name)
 
-    with patch.object(persistor.AWSPersistor, "_copy") as copy:
-        with patch.object(persistor.AWSPersistor, "_retrieve_tar") as retrieve:
-            persistor.AWSPersistor(bucket_name, region_name="foo").retrieve(
-                model, destination
-            )
-        copy.assert_called_once_with("model.tar.gz", destination)
-        retrieve.assert_called_once_with(model)
+    with patch.object(persistor.AWSPersistor, "_retrieve_tar") as retrieve:
+        persistor.AWSPersistor(bucket_name, region_name="foo").retrieve(
+            model, destination
+        )
+    retrieve.assert_called_once_with(model, destination)
 
 
 # noinspection PyPep8Naming
@@ -125,31 +123,89 @@ def test_s3_private_retrieve_tar(
     model_path.touch()
     awsPersistor.persist(str(model_path))
 
+    target_path = tmp_path / "downloads"
+    target_path.mkdir(parents=True, exist_ok=True)
+
     with patch.object(awsPersistor.bucket, "download_fileobj") as download_fileobj:
         # noinspection PyProtectedMember
-        awsPersistor._retrieve_tar(model)
+        awsPersistor._retrieve_tar(model, str(target_path))
     retrieveArgs = download_fileobj.call_args[0]
     assert retrieveArgs[0] == model
-    assert retrieveArgs[1].name == "model.tar.gz"
+    assert retrieveArgs[1].name == str(target_path / "model.tar.gz")
 
 
 # noinspection PyPep8Naming
 def test_s3_tar_size(
-    bucket_name: Text, model: Text, mock_s3_connection: Any, tmp_path: Path
+    bucket_name: Text,
+    model: Text,
+    mock_s3_connection: Any,
+    tmp_path: Path,
 ) -> None:
     mock_s3_connection.create_bucket(Bucket=bucket_name)
     # Ensure the S3 persistor writes to a filename `model.tar.gz`, whilst
     # passing the fully namespaced path to boto3
-    awsPersistor = persistor.AWSPersistor(bucket_name, region_name="foo")
+    aws_persistor = persistor.AWSPersistor(bucket_name, region_name="foo")
     model_path = tmp_path / model
 
     # put some data of know size into the model file
     with model_path.open("wb") as f:
         f.write(b"0" * 42 * 1024)  # 42kb
-    awsPersistor.persist(str(model_path))
+    aws_persistor.persist(str(model_path), remote_root_only=True)
 
-    size = awsPersistor.size_of_persisted_model(model)
+    size = aws_persistor.size_of_persisted_model(model)
     assert size == 42 * 1024
+
+
+@pytest.mark.parametrize("model_path", ["model.tar.gz", "models/model.tar.gz"])
+def test_s3_retrieve_tar(
+    bucket_name: str,
+    model_path: str,
+    mock_s3_connection: Any,
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    mock_s3_connection.create_bucket(Bucket=bucket_name)
+    # Ensure the S3 persistor writes to a filename `model.tar.gz`, whilst
+    # passing the fully namespaced path to boto3
+    aws_persistor = persistor.AWSPersistor(bucket_name, region_name="foo")
+    model_path = tmp_path / model_path
+    model_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # put some data of know size into the model file
+    with model_path.open("wb") as f:
+        f.write(b"0" * 42 * 1024)  # 42kb
+    aws_persistor.persist(str(model_path))
+
+    result = aws_persistor.retrieve(str(model_path), str(tmp_path))
+    assert result == str(model_path)
+    assert Path(result).exists()
+
+
+@pytest.mark.parametrize("model_path", ["model.tar.gz", "models/model.tar.gz"])
+def test_s3_store_model_at_root_and_retrieve_tar(
+    bucket_name: str,
+    model_path: str,
+    mock_s3_connection: Any,
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    mock_s3_connection.create_bucket(Bucket=bucket_name)
+    # Ensure the S3 persistor writes to a filename `model.tar.gz`, whilst
+    # passing the fully namespaced path to boto3
+    aws_persistor = persistor.AWSPersistor(bucket_name, region_name="foo")
+    model_path = tmp_path / model_path
+    model_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # put some data of know size into the model file
+    with model_path.open("wb") as f:
+        f.write(b"0" * 42 * 1024)  # 42kb
+
+    # persist model at the root of the bucket
+    aws_persistor.persist(str(model_path), remote_root_only=True)
+
+    result = aws_persistor.retrieve(os.path.basename(model_path), str(tmp_path))
+    assert result == str(tmp_path / "model.tar.gz")
+    assert Path(result).exists()
 
 
 class TestPersistor(Persistor):
@@ -178,7 +234,7 @@ def test_retrieve_tar_archive(model: Text, archive: Text) -> None:
     with patch.object(TestPersistor, "_copy") as f:
         with patch.object(TestPersistor, "_retrieve_tar") as f:
             TestPersistor().retrieve(model, "dst")
-        f.assert_called_once_with(archive)
+            f.assert_called_once_with(archive, "dst")
 
 
 @pytest.mark.parametrize(
@@ -201,11 +257,9 @@ def test_create_file_key_with_remote_path(
 def test_retrieve_tar_archive_with_gcs_namespace(
     mock_client: Mock, bucket_name: Text, model: Text, destination: Text
 ) -> None:
-    with patch.object(persistor.GCSPersistor, "_copy") as copy:
-        with patch.object(persistor.GCSPersistor, "_retrieve_tar") as retrieve:
-            persistor.GCSPersistor(bucket_name).retrieve(model, destination)
-        copy.assert_called_once_with("model.tar.gz", destination)
-        retrieve.assert_called_once_with(model)
+    with patch.object(persistor.GCSPersistor, "_retrieve_tar") as retrieve:
+        persistor.GCSPersistor(bucket_name).retrieve(model, destination)
+    retrieve.assert_called_once_with(model, destination)
     mock_client.assert_called_once()
 
 
@@ -257,11 +311,9 @@ def test_retrieve_tar_archive_with_azure_namespace(
 ) -> None:
     azure_persistor = persistor.AzurePersistor("foo", "bar", "3333")
 
-    with patch.object(persistor.AzurePersistor, "_copy") as copy:
-        with patch.object(azure_persistor, "_retrieve_tar") as retrieve:
-            azure_persistor.retrieve(model, destination)
-        copy.assert_called_once_with("model.tar.gz", destination)
-        retrieve.assert_called_once_with(model)
+    with patch.object(azure_persistor, "_retrieve_tar") as retrieve:
+        azure_persistor.retrieve(model, destination)
+    retrieve.assert_called_once_with(model, destination)
     mock_client.assert_called_once()
 
 

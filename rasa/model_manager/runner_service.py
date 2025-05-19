@@ -166,13 +166,13 @@ def fetch_remote_model_to_dir(
 ) -> str:
     """Fetch the model from remote storage.
 
-    Returns the path to the model diretory.
+    Returns the path to the model directory.
     """
     from rasa.core.persistor import get_persistor
 
     persistor = get_persistor(storage_type)
 
-    # we now there must be a persistor, because the config is set
+    # we know there must be a persistor, because the config is set
     # this is here to please the type checker for the call below
     assert persistor is not None
 
@@ -182,7 +182,9 @@ def fetch_remote_model_to_dir(
         raise ModelNotFound() from e
 
 
-def fetch_size_of_remote_model(model_name: str, storage_type: str) -> int:
+def fetch_size_of_remote_model(
+    model_name: str, storage_type: str, model_path: str
+) -> int:
     """Fetch the size of the model from remote storage."""
     from rasa.core.persistor import get_persistor
 
@@ -192,7 +194,9 @@ def fetch_size_of_remote_model(model_name: str, storage_type: str) -> int:
     # this is here to please the type checker for the call below
     assert persistor is not None
 
-    return persistor.size_of_persisted_model(model_name=model_name)
+    return persistor.size_of_persisted_model(
+        model_name=model_name, target_path=model_path
+    )
 
 
 def start_bot_process(

@@ -121,10 +121,12 @@ def get_persistor(storage: StorageType) -> Optional[Persistor]:
 class Persistor(abc.ABC):
     """Store models in cloud and fetch them when needed."""
 
-    def persist(self, trained_model: str) -> None:
+    def persist(self, trained_model: str, remote_root_only: bool = False) -> None:
         """Uploads a trained model persisted in the `target_dir` to cloud storage."""
         absolute_file_key = self._create_file_key(trained_model)
-        file_key = Path(absolute_file_key).name
+        file_key = (
+            Path(absolute_file_key).name if remote_root_only else absolute_file_key
+        )
         self._persist_tar(file_key, trained_model)
 
     def retrieve(self, model_name: Text, target_path: Text) -> Text:
@@ -143,30 +145,32 @@ class Persistor(abc.ABC):
             # ensure backward compatibility
             tar_name = self._tar_name(model_name)
         tar_name = self._create_file_key(tar_name)
-        target_filename = os.path.basename(tar_name)
-        self._retrieve_tar(target_filename)
-        self._copy(os.path.basename(tar_name), target_path)
+        self._retrieve_tar(tar_name, target_path)
 
         if os.path.isdir(target_path):
             return os.path.join(target_path, model_name)
 
         return target_path
 
-    def size_of_persisted_model(self, model_name: Text) -> int:
+    def size_of_persisted_model(
+        self, model_name: Text, target_path: Optional[str] = None
+    ) -> int:
         """Returns the size of the model that has been persisted to cloud storage.
 
         Args:
             model_name: The name of the model to retrieve.
+            target_path: The path to which the model should be saved.
         """
         tar_name = model_name
         if not model_name.endswith(MODEL_ARCHIVE_EXTENSION):
             # ensure backward compatibility
             tar_name = self._tar_name(model_name)
         tar_name = self._create_file_key(tar_name)
-        target_filename = os.path.basename(tar_name)
-        return self._retrieve_tar_size(target_filename)
+        return self._retrieve_tar_size(tar_name, target_path)
 
-    def _retrieve_tar_size(self, filename: Text) -> int:
+    def _retrieve_tar_size(
+        self, filename: Text, target_path: Optional[str] = None
+    ) -> int:
         """Returns the size of the model that has been persisted to cloud storage."""
         structlogger.warning(
             "persistor.retrieve_tar_size.not_implemented",
@@ -179,11 +183,11 @@ class Persistor(abc.ABC):
                 "size directly from the cloud storage."
             ),
         )
-        self._retrieve_tar(filename)
+        self._retrieve_tar(filename, target_path)
         return os.path.getsize(os.path.basename(filename))
 
     @abc.abstractmethod
-    def _retrieve_tar(self, filename: Text) -> None:
+    def _retrieve_tar(self, filename: str, target_path: Optional[str] = None) -> None:
         """Downloads a model previously persisted to cloud storage."""
         raise NotImplementedError
 
@@ -302,7 +306,9 @@ class AWSPersistor(Persistor):
         with open(tar_path, "rb") as f:
             self.s3.Object(self.bucket_name, file_key).put(Body=f)
 
-    def _retrieve_tar_size(self, model_path: Text) -> int:
+    def _retrieve_tar_size(
+        self, model_path: Text, target_path: Optional[str] = None
+    ) -> int:
         """Returns the size of the model that has been persisted to s3."""
         try:
             obj = self.s3.Object(self.bucket_name, model_path)
@@ -310,7 +316,9 @@ class AWSPersistor(Persistor):
         except Exception:
             raise ModelNotFound()
 
-    def _retrieve_tar(self, target_filename: str) -> None:
+    def _retrieve_tar(
+        self, target_filename: str, target_path: Optional[str] = None
+    ) -> None:
         """Downloads a model that has previously been persisted to s3."""
         from botocore import exceptions
 
@@ -320,8 +328,14 @@ class AWSPersistor(Persistor):
             f"in the bucket."
         )
 
+        tar_name = (
+            os.path.join(target_path, os.path.basename(target_filename))
+            if target_path
+            else os.path.basename(target_filename)
+        )
+
         try:
-            with open(target_filename, "wb") as f:
+            with open(tar_name, "wb") as f:
                 self.bucket.download_fileobj(target_filename, f)
 
             structlogger.debug(
@@ -425,7 +439,9 @@ class GCSPersistor(Persistor):
         blob = self.bucket.blob(file_key)
         blob.upload_from_filename(tar_path)
 
-    def _retrieve_tar_size(self, target_filename: Text) -> int:
+    def _retrieve_tar_size(
+        self, target_filename: Text, target_path: Optional[str] = None
+    ) -> int:
         """Returns the size of the model that has been persisted to GCS."""
         try:
             blob = self.bucket.blob(target_filename)
@@ -433,13 +449,22 @@ class GCSPersistor(Persistor):
         except Exception:
             raise ModelNotFound()
 
-    def _retrieve_tar(self, target_filename: Text) -> None:
+    def _retrieve_tar(
+        self, target_filename: str, target_path: Optional[str] = None
+    ) -> None:
         """Downloads a model that has previously been persisted to GCS."""
         from google.api_core import exceptions
 
         blob = self.bucket.blob(target_filename)
+
+        destination = (
+            os.path.join(target_path, os.path.basename(target_filename))
+            if target_path
+            else target_filename
+        )
+
         try:
-            blob.download_to_filename(target_filename)
+            blob.download_to_filename(destination)
 
             structlogger.debug(
                 "gcs_persistor.retrieve_tar.object_found", object_key=target_filename
@@ -500,7 +525,9 @@ class AzurePersistor(Persistor):
         with open(tar_path, "rb") as data:
             self._container_client().upload_blob(name=file_key, data=data)
 
-    def _retrieve_tar_size(self, target_filename: Text) -> int:
+    def _retrieve_tar_size(
+        self, target_filename: Text, target_path: Optional[str] = None
+    ) -> int:
         """Returns the size of the model that has been persisted to Azure."""
         try:
             blob_client = self._container_client().get_blob_client(target_filename)
@@ -509,12 +536,20 @@ class AzurePersistor(Persistor):
         except Exception:
             raise ModelNotFound()
 
-    def _retrieve_tar(self, target_filename: Text) -> None:
+    def _retrieve_tar(
+        self, target_filename: Text, target_path: Optional[str] = None
+    ) -> None:
         """Downloads a model that has previously been persisted to Azure."""
         from azure.core.exceptions import AzureError
 
+        destination = (
+            os.path.join(target_path, os.path.basename(target_filename))
+            if target_path
+            else target_filename
+        )
+
         try:
-            with open(target_filename, "wb") as model_file:
+            with open(destination, "wb") as model_file:
                 blob_client = self._container_client().get_blob_client(target_filename)
                 download_stream = blob_client.download_blob()
                 model_file.write(download_stream.readall())

@@ -172,11 +172,23 @@ def add_remote_storage_param(
 ) -> None:
     parser.add_argument(
         "--remote-storage",
-        help="Remote storage which should be used to store/load the model."
+        help="Remote storage which should be used to store/load the model. "
         f"Supported storages are: {RemoteStorageType.list()}. "
         "You can also provide your own implementation of the `Persistor` interface.",
         required=required,
         type=parse_remote_storage_arg,
+    )
+
+
+def add_remote_root_only_param(
+    parser: argparse.ArgumentParser, required: bool = False
+) -> None:
+    parser.add_argument(
+        "--remote-root-only",
+        action="store_true",
+        help="If set, models will be stored only at the root directory "
+        "of the remote storage.",
+        required=required,
     )
 
 
