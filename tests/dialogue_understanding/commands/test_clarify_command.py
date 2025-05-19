@@ -1,3 +1,5 @@
+import re
+
 import jsonpatch
 import pytest
 
@@ -151,7 +153,7 @@ def test_to_dsl_v2_command_syntax():
 
 
 def test_regex_pattern_default():
-    assert ClarifyCommand.regex_pattern() == r"Clarify\(([\"\'a-zA-Z0-9_, ]*)\)"
+    assert ClarifyCommand.regex_pattern() == r"Clarify\(([\"\'a-zA-Z0-9_, -]*)\)"
 
 
 def test_regex_pattern_v2_command_syntax():
@@ -160,8 +162,28 @@ def test_regex_pattern_v2_command_syntax():
 
     assert (
         ClarifyCommand.regex_pattern()
-        == r"""^[\s\W\d]*disambiguate flows (["'a-zA-Z0-9_, ]*)['"`]*$"""
+        == r"""^[\s\W\d]*disambiguate flows (["'a-zA-Z0-9_, -]*)['"`]*$"""
     )
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
+def test_regex_pattern_v1_with_special_characters():
+    pattern = ClarifyCommand.regex_pattern()
+    test_string = "Clarify('foo-bar', 'foo bar', 'foo_bar')"
+    match = re.match(pattern, test_string)
+    assert match and match.group(1) == "'foo-bar', 'foo bar', 'foo_bar'"
+
+
+def test_regex_pattern_v2_with_special_characters():
+    # Set the syntax version to v2 to test the new regex pattern.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v2)
+
+    pattern = ClarifyCommand.regex_pattern()
+    test_string = "disambiguate flows 'foo-bar', 'foo bar', 'foo_bar'"
+    match = re.match(pattern, test_string)
+    assert match and match.group(1) == "'foo-bar', 'foo bar', 'foo_bar'"
 
     # Reset the syntax version to default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()
