@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 from pymongo.errors import OperationFailure
 from pytest import MonkeyPatch
+from structlog.testing import capture_logs
 
 from rasa.core.agent import Agent
 from rasa.core.tracker_stores.tracker_store import TrackerStore
@@ -26,6 +27,7 @@ from tests.core.tracker_stores.conftest import (
     create_tracker_with_partially_saved_events,
     prepare_token_serialisation,
 )
+from tests.utilities import filter_logs
 
 
 def test_mongo_tracker_store_raise_exception(domain: Domain, monkeypatch: MonkeyPatch):
@@ -235,3 +237,47 @@ async def test_mongo_tracker_store_retrieve_with_events_from_previous_sessions()
     actual = await tracker_store.retrieve_full_tracker(conversation_id)
 
     assert len(actual.events) == len(tracker.events)
+
+
+async def test_mongo_tracker_store_delete_tracker(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+) -> None:
+    # Given
+    tracker_store = MockedMongoTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+    await tracker_store.save(tracker_with_restarted_event)
+
+    # When
+    with capture_logs() as caplog:
+        await tracker_store.delete(sender_id)
+        logs = filter_logs(
+            caplog,
+            event="mongo_tracker_store.delete.deleted_tracker",
+            log_level="info",
+        )
+
+        assert len(logs) == 1
+
+    # Then
+    retrieved_tracker = await tracker_store.retrieve(sender_id)
+    assert retrieved_tracker is None
+
+
+async def test_mongo_tracker_store_delete_no_tracker(
+    domain: Domain,
+) -> None:
+    with capture_logs() as caplog:
+        tracker_store = MockedMongoTrackerStore(domain)
+        sender_id = uuid.uuid4().hex
+        await tracker_store.delete(sender_id)
+        logs = filter_logs(
+            caplog,
+            event="mongo_tracker_store.delete.no_tracker_for_sender_id",
+            log_level="info",
+            log_message_parts=[
+                f"Could not find tracker for conversation ID '{sender_id}'."
+            ],
+        )
+
+        assert len(logs) == 1

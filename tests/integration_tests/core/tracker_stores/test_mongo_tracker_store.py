@@ -127,3 +127,35 @@ async def test_mongo_tracker_store_retrieve(
     # `action_session_start` event because the MongoTrackerStore filters
     # only the events after `session_started` event
     assert list(tracker.events) == events_after_restart[1:]
+
+
+@pytest.mark.parametrize(
+    "host_uri", ["mongodb://localhost:27000", get_mongodb_tls_host_uri()]
+)
+async def test_mongo_tracker_store_delete(
+    domain: "Domain",
+    tracker_with_restarted_event: "DialogueStateTracker",
+    mongodb_credentials: Tuple[str, str, str],
+    host_uri: str,
+) -> None:
+    """Verify that the MongoTrackerStore can delete a tracker."""
+    # Given
+    db_name, username, password = mongodb_credentials
+
+    mongo_tracker_store = MongoTrackerStore(
+        domain,
+        host=host_uri,
+        db=db_name,
+        username=username,
+        password=password,
+        auth_source=db_name,
+    )
+    sender_id = tracker_with_restarted_event.sender_id
+    await mongo_tracker_store.save(tracker_with_restarted_event)
+
+    # When
+    await mongo_tracker_store.delete(sender_id)
+
+    # Then
+    tracker = await mongo_tracker_store.retrieve(sender_id)
+    assert tracker is None
