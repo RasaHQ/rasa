@@ -1,3 +1,4 @@
+import uuid
 import warnings
 from typing import List
 from unittest.mock import Mock
@@ -5,6 +6,7 @@ from unittest.mock import Mock
 import fakeredis
 import pytest
 from pytest import MonkeyPatch
+from structlog.testing import capture_logs
 
 from rasa.core.tracker_stores.redis_tracker_store import (
     DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX,
@@ -32,6 +34,7 @@ from rasa.shared.core.events import (
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ConnectionException
 from rasa.utils.endpoints import read_endpoint_config
+from tests.utilities import filter_logs
 
 
 def test_create_tracker_store_from_endpoint_config(
@@ -301,3 +304,47 @@ def test_create_tracker_store_from_endpoints_file_redis_tracker_store(
 
     assert check_if_tracker_store_async(tracker_store) is True
     assert isinstance(tracker_store, RedisTrackerStore)
+
+
+async def test_redis_tracker_store_delete_tracker(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
+) -> None:
+    # Given
+    tracker_store = MockedRedisTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+    await tracker_store.save(tracker_with_restarted_event)
+
+    # When
+    with capture_logs() as caplog:
+        await tracker_store.delete(sender_id)
+        logs = filter_logs(
+            caplog,
+            event="redis_tracker_store.delete.deleted_tracker",
+            log_level="info",
+        )
+
+        assert len(logs) == 1
+    # Then
+    tracker = await tracker_store.retrieve(sender_id)
+    assert tracker is None
+
+
+async def test_redis_tracker_store_delete_no_tracker(
+    domain: Domain,
+) -> None:
+    with capture_logs() as caplog:
+        tracker_store = MockedRedisTrackerStore(domain)
+        sender_id = uuid.uuid4().hex
+        await tracker_store.delete(sender_id)
+        logs = filter_logs(
+            caplog,
+            event="redis_tracker_store.delete.no_tracker_for_sender_id",
+            log_level="info",
+            log_message_parts=[
+                f"Could not find tracker for conversation ID '{sender_id}'."
+            ],
+        )
+
+        assert len(logs) == 1

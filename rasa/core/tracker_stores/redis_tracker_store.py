@@ -101,8 +101,23 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
         )
 
     async def delete(self, sender_id: Text) -> None:
-        """Delete tracker for the given sender_id."""
-        pass
+        """Delete tracker for the given sender_id.
+
+        Args:
+            sender_id: Sender id of the tracker to be deleted.
+        """
+        if not await self.exists(sender_id):
+            structlogger.info(
+                "redis_tracker_store.delete.no_tracker_for_sender_id",
+                event_info=f"Could not find tracker for conversation ID '{sender_id}'.",
+            )
+            return None
+
+        self.red.delete(self.key_prefix + sender_id)
+        structlogger.info(
+            "redis_tracker_store.delete.deleted_tracker",
+            sender_id=sender_id,
+        )
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieves tracker for the latest conversation session.

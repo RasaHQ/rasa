@@ -76,8 +76,7 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
         Args:
             sender_id: Sender id of the tracker to be deleted.
         """
-        stored = self.conversations.find_one({"sender_id": sender_id})
-        if not stored:
+        if not await self.exists(sender_id):
             structlogger.info(
                 "mongo_tracker_store.delete.no_tracker_for_sender_id",
                 event_info=f"Could not find tracker for conversation ID '{sender_id}'.",

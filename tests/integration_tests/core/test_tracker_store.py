@@ -209,31 +209,6 @@ async def test_postgres_tracker_store_retrieve(
     tracker_store.engine.dispose()
 
 
-async def test_redis_tracker_store_retrieve_full_tracker(
-    tracker_with_restarted_event: DialogueStateTracker,
-    redis_tracker_store: RedisTrackerStore,
-) -> None:
-    sender_id = tracker_with_restarted_event.sender_id
-
-    await redis_tracker_store.save(tracker_with_restarted_event)
-
-    tracker = await redis_tracker_store.retrieve_full_tracker(sender_id)
-    assert tracker == tracker_with_restarted_event
-
-
-async def test_redis_tracker_store_retrieve(
-    redis_tracker_store: RedisTrackerStore,
-    tracker_with_restarted_event: DialogueStateTracker,
-    events_after_restart: List[Event],
-) -> None:
-    sender_id = tracker_with_restarted_event.sender_id
-
-    await redis_tracker_store.save(tracker_with_restarted_event)
-
-    tracker = await redis_tracker_store.retrieve(sender_id)
-    assert list(tracker.events) == events_after_restart
-
-
 @pytest.mark.sequential
 @pytest.mark.timeout(10, func_only=True)
 async def test_postgres_tracker_store_delete(
@@ -265,3 +240,44 @@ async def test_postgres_tracker_store_delete(
     assert tracker is None
 
     tracker_store.engine.dispose()
+
+
+async def test_redis_tracker_store_retrieve_full_tracker(
+    tracker_with_restarted_event: DialogueStateTracker,
+    redis_tracker_store: RedisTrackerStore,
+) -> None:
+    sender_id = tracker_with_restarted_event.sender_id
+
+    await redis_tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await redis_tracker_store.retrieve_full_tracker(sender_id)
+    assert tracker == tracker_with_restarted_event
+
+
+async def test_redis_tracker_store_retrieve(
+    redis_tracker_store: RedisTrackerStore,
+    tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
+) -> None:
+    sender_id = tracker_with_restarted_event.sender_id
+
+    await redis_tracker_store.save(tracker_with_restarted_event)
+
+    tracker = await redis_tracker_store.retrieve(sender_id)
+    assert list(tracker.events) == events_after_restart
+
+
+async def test_redis_tracker_store_delete(
+    redis_tracker_store: RedisTrackerStore,
+    tracker_with_restarted_event: DialogueStateTracker,
+) -> None:
+    # Given
+    sender_id = tracker_with_restarted_event.sender_id
+    await redis_tracker_store.save(tracker_with_restarted_event)
+
+    # When
+    await redis_tracker_store.delete(sender_id)
+
+    # Then
+    tracker = await redis_tracker_store.retrieve(sender_id)
+    assert tracker is None
