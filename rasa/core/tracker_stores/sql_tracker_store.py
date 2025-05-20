@@ -385,7 +385,25 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
 
     async def delete(self, sender_id: Text) -> None:
         """Delete tracker for the given sender_id."""
-        pass
+        if not await self.exists(sender_id):
+            structlogger.info(
+                "sql_tracker_store.delete.no_tracker_for_sender_id",
+                event_info=f"Could not find tracker for conversation ID '{sender_id}'.",
+            )
+            return None
+
+        with self.session_scope() as session:
+            statement = sa.delete(self.SQLEvent).where(
+                self.SQLEvent.sender_id == sender_id
+            )
+            result = session.execute(statement)
+            session.commit()
+
+        structlogger.info(
+            "sql_tracker_store.delete.deleted_tracker",
+            sender_id=sender_id,
+            num_rows=result.rowcount,
+        )
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieves tracker for the latest conversation session."""

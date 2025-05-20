@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 import sqlalchemy as sa
 import structlog
-from _pytest.monkeypatch import MonkeyPatch
+from pytest import MonkeyPatch
 
 from rasa.core.tracker_stores.redis_tracker_store import RedisTrackerStore
 from rasa.core.tracker_stores.sql_tracker_store import SQLTrackerStore
@@ -232,3 +232,36 @@ async def test_redis_tracker_store_retrieve(
 
     tracker = await redis_tracker_store.retrieve(sender_id)
     assert list(tracker.events) == events_after_restart
+
+
+@pytest.mark.sequential
+@pytest.mark.timeout(10, func_only=True)
+async def test_postgres_tracker_store_delete(
+    tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
+    postgres_login_db_connection: sa.engine.Connection,
+    postgres_login_db_name: str,
+    postgres_db_name: str,
+) -> None:
+    # Given
+    sender_id = tracker_with_restarted_event.sender_id
+    postgres_login_db_connection.execute(sa.text(f"CREATE DATABASE {postgres_db_name}"))
+    tracker_store = SQLTrackerStore(
+        dialect="postgresql",
+        host=POSTGRES_HOST,
+        port=POSTGRES_PORT,
+        username=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        db=postgres_db_name,
+        login_db=postgres_login_db_name,
+    )
+    await tracker_store.save(tracker_with_restarted_event)
+
+    # When
+    await tracker_store.delete(sender_id)
+
+    # Then
+    tracker = await tracker_store.retrieve(sender_id)
+    assert tracker is None
+
+    tracker_store.engine.dispose()

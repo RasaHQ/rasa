@@ -585,3 +585,51 @@ async def test_sql_tracker_store_retrieve_with_events_from_previous_sessions() -
     actual = await tracker_store.retrieve_full_tracker(conversation_id)
 
     assert len(actual.events) == len(tracker.events)
+
+
+async def test_sql_tracker_store_delete_tracker() -> None:
+    # Given
+    tracker_store = SQLTrackerStore(Domain.empty(), **{"host": "sqlite:///"})
+
+    conversation_id = uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hi"),
+        ],
+    )
+    await tracker_store.save(tracker)
+
+    # When
+    with capture_logs() as caplog:
+        await tracker_store.delete(conversation_id)
+        logs = filter_logs(
+            caplog,
+            event="sql_tracker_store.delete.deleted_tracker",
+            log_level="info",
+        )
+
+        assert len(logs) == 1
+
+    # Then
+    retrieved_tracker = await tracker_store.retrieve(conversation_id)
+    assert retrieved_tracker is None
+
+
+async def test_sql_tracker_store_delete_no_tracker() -> None:
+    with capture_logs() as caplog:
+        tracker_store = SQLTrackerStore(Domain.empty(), **{"host": "sqlite:///"})
+        conversation_id = uuid.uuid4().hex
+        await tracker_store.delete(conversation_id)
+        logs = filter_logs(
+            caplog,
+            event="sql_tracker_store.delete.no_tracker_for_sender_id",
+            log_level="info",
+            log_message_parts=[
+                f"Could not find tracker for conversation ID '{conversation_id}'."
+            ],
+        )
+
+        assert len(logs) == 1
