@@ -567,3 +567,25 @@ print-otel-collector-logs: ## Print OTEL collector logs on console
 
 stop-otel-collector: ## Stop OTEL collector
 	docker compose -f data/test_config/providers/otel-docker-compose.yml down --remove-orphans
+
+DYNAMO_DOCKER_COMPOSE_FILE_PATH = $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_tracker_stores/dynamo_tracker_store/docker-compose.dynamo.yml
+
+RUN_DYNAMO_CONTAINER_COMMAND = docker compose \
+		-f $(DYNAMO_DOCKER_COMPOSE_FILE_PATH) \
+		up --wait
+
+STOP_DYNAMO_CONTAINER_COMMAND = docker compose \
+		-f $(DYNAMO_DOCKER_COMPOSE_FILE_PATH) \
+		down
+
+run-dynamo-container: ## Run the Dynamo container.
+	$(RUN_DYNAMO_CONTAINER_COMMAND)
+
+stop-dynamo-container: ## Stop the Dynamo container.
+	$(STOP_DYNAMO_CONTAINER_COMMAND)
+
+test-dynamo-tracker-store:  ## Run the dynamo tracker store integration tests. Make sure to run run-dynamo-container before running this target.
+	poetry run \
+		pytest $(TRACKER_STORE_INTEGRATION_TEST_PATH)/test_dynamo_tracker_store.py \
+			-n $(JOBS) \
+			--junitxml=integration-results-dynamo-tracker-store.xml

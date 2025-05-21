@@ -1,0 +1,15 @@
+services:
+  dynamodb-local:
+    command: "-jar DynamoDBLocal.jar -inMemory -cors *"
+    image: "amazon/dynamodb-local:2.6.1"
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: [
+          "CMD-SHELL",
+          'if [ "$(curl -s -o /dev/null -I -w ''%{http_code}'' http://localhost:8000)" == "400" ]; then exit 0; else exit 1; fi',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5

@@ -129,7 +129,7 @@ class TrackerStore:
 
         import pymongo.errors
         import sqlalchemy.exc
-        from botocore.exceptions import BotoCoreError
+        from botocore.exceptions import BotoCoreError, ClientError
 
         try:
             _tracker_store = plugin_manager().hook.create_tracker_store(
@@ -147,6 +147,7 @@ class TrackerStore:
             return tracker_store
         except (
             BotoCoreError,
+            ClientError,
             pymongo.errors.ConnectionFailure,
             sqlalchemy.exc.OperationalError,
             ConnectionError,

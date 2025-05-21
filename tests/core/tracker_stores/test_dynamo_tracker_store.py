@@ -1,5 +1,8 @@
+import os
 import uuid
+from typing import Any
 
+import boto3
 import pytest
 from moto import mock_aws
 from pytest import MonkeyPatch
@@ -16,14 +19,32 @@ from tests.core.tracker_stores.conftest import get_or_create_tracker_store
 from tests.utilities import filter_logs
 
 
-# noinspection PyPep8Naming
-@mock_aws
-def test_dynamo_get_or_create(test_domain: Domain) -> None:
-    get_or_create_tracker_store(DynamoTrackerStore(test_domain))
+@pytest.fixture
+def aws_credentials():
+    """Mocked AWS Credentials for moto."""
+    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+    os.environ["AWS_SECURITY_TOKEN"] = "testing"
+    os.environ["AWS_SESSION_TOKEN"] = "testing"
+    os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
 
 
-@mock_aws
-async def test_dynamo_tracker_floats(test_domain: Domain) -> None:
+@pytest.fixture
+def mock_dynamodb(aws_credentials):
+    """
+    Return a mocked S3 client
+    """
+    with mock_aws():
+        yield boto3.client("dynamodb", region_name="us-east-1")
+
+
+@pytest.mark.asyncio
+async def test_dynamo_get_or_create(test_domain: Domain, mock_dynamodb: Any) -> None:
+    await get_or_create_tracker_store(DynamoTrackerStore(test_domain))
+
+
+@pytest.mark.asyncio
+async def test_dynamo_tracker_floats(test_domain: Domain, mock_dynamodb: Any) -> None:
     conversation_id = uuid.uuid4().hex
 
     tracker_store = DynamoTrackerStore(test_domain)
@@ -43,10 +64,10 @@ async def test_dynamo_tracker_floats(test_domain: Domain) -> None:
     assert retrieved_timestamp == timestamp
 
 
-@mock_aws
 def test_dynamo_tracker_create_table_multiple_sanic_workers_error(
     test_domain: Domain,
     monkeypatch: MonkeyPatch,
+    mock_dynamodb: Any,
 ) -> None:
     monkeypatch.setenv(ENV_SANIC_WORKERS, "2")
 
@@ -71,3 +92,47 @@ def test_dynamo_tracker_store_connection_error(domain: Domain):
 
     with pytest.raises(ConnectionException):
         TrackerStore.create(store, domain)
+
+
+@pytest.mark.asyncio
+async def test_dynamo_tracker_store_delete(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    # Given
+    conversation_id = uuid.uuid4().hex
+    tracker_store = DynamoTrackerStore(test_domain)
+    await tracker_store.get_or_create_tracker(
+        conversation_id,
+    )
+
+    # When
+    with capture_logs() as caplog:
+        await tracker_store.delete(conversation_id)
+
+        logs = filter_logs(
+            caplog,
+            event="dynamo_tracker_store.delete.deleted_tracker",
+            log_level="info",
+        )
+        assert len(logs) == 1
+        assert logs[0].get("sender_id") == conversation_id
+
+    retrieved_tracker = await tracker_store.retrieve(conversation_id)
+    assert retrieved_tracker is None
+
+
+async def test_dynamo_tracker_store_delete_no_tracker(mock_dynamodb: Any) -> None:
+    with capture_logs() as caplog:
+        tracker_store = DynamoTrackerStore(Domain.empty())
+        conversation_id = uuid.uuid4().hex
+        await tracker_store.delete(conversation_id)
+        logs = filter_logs(
+            caplog,
+            event="dynamo_tracker_store.delete.no_tracker_for_sender_id",
+            log_level="info",
+            log_message_parts=[
+                f"Could not find tracker for conversation ID '{conversation_id}'."
+            ],
+        )
+
+        assert len(logs) == 1

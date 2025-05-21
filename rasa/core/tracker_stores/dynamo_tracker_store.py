@@ -113,7 +113,21 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
 
     async def delete(self, sender_id: Text) -> None:
         """Delete tracker for the given sender_id."""
-        pass
+        if not await self.exists(sender_id):
+            structlogger.info(
+                "dynamo_tracker_store.delete.no_tracker_for_sender_id",
+                event_info=f"Could not find tracker for conversation ID '{sender_id}'.",
+            )
+            return None
+
+        self.db.delete_item(
+            Key={"sender_id": sender_id},
+            ConditionExpression="attribute_exists(sender_id)",
+        )
+        structlogger.info(
+            "dynamo_tracker_store.delete.deleted_tracker",
+            sender_id=sender_id,
+        )
 
     @staticmethod
     def serialise_tracker(
@@ -161,27 +175,33 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
         if not dialogues:
             return None
 
-        if fetch_all_sessions:
-            events_with_floats = []
-            for dialogue in dialogues:
-                if dialogue.get("events"):
-                    events = rasa.utils.json_utils.replace_decimals_with_floats(
-                        dialogue["events"]
-                    )
-                    events_with_floats += events
-        else:
-            events = dialogues[0].get("events", [])
-            # `float`s are stored as `Decimal` objects - we need to convert them back
-            events_with_floats = rasa.utils.json_utils.replace_decimals_with_floats(
-                events
-            )
+        events_with_floats = []
+        for dialogue in dialogues:
+            if dialogue.get("events"):
+                events = rasa.utils.json_utils.replace_decimals_with_floats(
+                    dialogue["events"]
+                )
+                events_with_floats += events
 
         if self.domain is None:
             slots = []
         else:
             slots = self.domain.slots
 
-        return DialogueStateTracker.from_dict(sender_id, events_with_floats, slots)
+        tracker = DialogueStateTracker.from_dict(sender_id, events_with_floats, slots)
+
+        if fetch_all_sessions:
+            return tracker
+
+        # only return the last session
+        multiple_tracker_sessions = (
+            rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
+        )
+
+        if len(multiple_tracker_sessions) <= 1:
+            return tracker
+
+        return multiple_tracker_sessions[-1]
 
     async def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the `DynamoTrackerStore`."""

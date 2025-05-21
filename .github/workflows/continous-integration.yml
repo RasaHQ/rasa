@@ -966,8 +966,8 @@ jobs:
           name: Non-Sequential Integration Test Results
           path: integration-results-non-sequential.xml
 
-  tracker-store-integration-test:
-    name: Run Tracker Store Integration Tests
+  mongo-tracker-store-integration-test:
+    name: Run Mongo Tracker Store Integration Tests
     runs-on: ubuntu-24.04-8core
     if: ${{ inputs.run_mode != 'false' }}
     timeout-minutes: 60
@@ -1011,11 +1011,19 @@ jobs:
           make prepare-tests-ubuntu
           make test-mongodb-tracker-store
 
-      - name: Show container logs
+      - name: Show mongo-with-tls container logs
         if: always()
         uses: ./.github/actions/debug-tracker-store-tests
         with:
-          MONGODB_COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracker_stores/mongo_db_tracker_store/docker-compose.mongodb.yml
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracker_stores/mongo_db_tracker_store/docker-compose.mongodb.yml
+          CONTAINER_NAME: mongodb-with-tls
+
+      - name: Show mongo-without-tls container logs
+        if: always()
+        uses: ./.github/actions/debug-tracker-store-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracker_stores/mongo_db_tracker_store/docker-compose.mongodb.yml
+          CONTAINER_NAME: mongodb-without-tls
 
       - name: Stop containers for tracker store integration testing
         if: always()
@@ -1028,6 +1036,66 @@ jobs:
         with:
           name: Tracker Store Integration Test Results
           path: integration-results-mongo-tracker-store.xml
+
+  dynamo-tracker-store-integration-test:
+    name: Run Dynamo Tracker Store Integration Tests
+    runs-on: ubuntu-24.04
+    if: ${{ inputs.run_mode != 'false' }}
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies (Linux) 📦
+        run: |
+          make install
+        shell: bash
+
+      - name: Run containers for tracker store integration testing
+        run: |
+          make run-dynamo-container
+
+      - name: Test Code with Services 🩺
+        env:
+          JOBS: 1
+          PYTHONIOENCODING: "utf-8"
+          INTEGRATION_TESTS_STUDIO_LICENSE: ${{ secrets.INTEGRATION_TESTS_STUDIO_LICENSE }}
+          INTEGRATION_TESTS_PRO_LICENSE: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE }}
+          INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES: ${{ secrets.INTEGRATION_TESTS_PRO_LICENSE_ALL_FEATURES }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AWS_ENDPOINT_URL: "http://0.0.0.0:8000"
+          AWS_ACCESS_KEY_ID: "testing"
+          AWS_SECRET_ACCESS_KEY: "testing"
+        run: |
+          make prepare-tests-ubuntu
+          make test-dynamo-tracker-store
+
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-tracker-store-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_tracker_stores/dynamo_tracker_store/docker-compose.dynamo.yml
+          CONTAINER_NAME: dynamodb-local
+
+      - name: Stop containers for tracker store integration testing
+        if: always()
+        run: |
+          make stop-dynamo-container
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: Dynamo Tracker Store Integration Test Results
+          path: integration-results-dynamo-tracker-store.xml
 
   concurrent-lockstore-integration-test:
     name: Run Concurrent LockStore Integration Tests

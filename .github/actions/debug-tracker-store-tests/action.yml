@@ -2,8 +2,11 @@ name: Debug tracker store test containers
 description: Encapsulates steps for tracker store test debugging
 
 inputs:
-  MONGODB_COMPOSE_FILE_PATH:
-    description: 'MongoDB tracker store tests docker compose path'
+  COMPOSE_FILE_PATH:
+    description: 'tracker store tests docker compose path'
+    required: true
+  CONTAINER_NAME:
+    description: 'Container name to check'
     required: true
 
 runs:
@@ -13,12 +16,10 @@ runs:
     run: sudo docker ps -a
     shell: bash
 
-  - name: Check mongodb-with-tls container logs
+  - name: Check container logs
+    env:
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
+      CONTAINER_NAME: ${{ inputs.CONTAINER_NAME }}
     run: |
-      docker compose -f ${{ inputs.MONGODB_COMPOSE_FILE_PATH }} logs mongodb-with-tls
-    shell: bash
-  
-  - name: Check mongodb-without-tls container logs
-    run: |
-      docker compose -f ${{ inputs.MONGODB_COMPOSE_FILE_PATH }} logs mongodb-without-tls
+      docker compose -f "$COMPOSE_FILE_PATH" logs "$CONTAINER_NAME"
     shell: bash
