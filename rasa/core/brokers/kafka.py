@@ -94,6 +94,10 @@ class KafkaEventBroker(EventBroker):
         self.queue_size = kwargs.get("queue_size")
         self.ssl_check_hostname = "https" if ssl_check_hostname else None
 
+        # PII management attributes
+        self.stream_pii = kwargs.get("stream_pii", True)
+        self.anonymization_topics = kwargs.get("anonymization_topics", [])
+
         # Async producer implementation followed from confluent-kafka asyncio example:
         # https://github.com/confluentinc/confluent-kafka-python/blob/master/examples/asyncio_example.py#L88  # noqa: E501
         self._loop = asyncio.get_event_loop()

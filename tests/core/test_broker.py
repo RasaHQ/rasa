@@ -269,6 +269,8 @@ async def test_kafka_broker_from_config():
     assert actual.sasl_mechanism == expected.sasl_mechanism
     assert actual.topic == expected.topic
     assert actual.partition_by_sender == expected.partition_by_sender
+    assert actual.stream_pii is True
+    assert actual.anonymization_topics == []
 
 
 @pytest.mark.parametrize(
@@ -464,3 +466,31 @@ def test_kafka_event_broker_handle_message_size_too_large(
         "Skipping message for event type 'user' because of Kafka message size limit"
         in error_event["metadata"]["error_msg"]
     )
+
+
+async def test_kafka_broker_from_config_with_pii_attributes():
+    endpoints_path = "data/test_endpoints/event_brokers/kafka_pii_endpoint.yml"
+    cfg = read_endpoint_config(endpoints_path, "event_broker")
+
+    actual = await KafkaEventBroker.from_endpoint_config(cfg)
+
+    expected = KafkaEventBroker(
+        "localhost",
+        sasl_username="username",
+        sasl_password="password",
+        sasl_mechanism="PLAIN",
+        topic="topic",
+        partition_by_sender=True,
+        security_protocol="SASL_PLAINTEXT",
+        stream_pii=False,
+        anonymization_topics=["anonymized"],
+    )
+
+    assert actual.url == expected.url
+    assert actual.sasl_username == expected.sasl_username
+    assert actual.sasl_password == expected.sasl_password
+    assert actual.sasl_mechanism == expected.sasl_mechanism
+    assert actual.topic == expected.topic
+    assert actual.partition_by_sender == expected.partition_by_sender
+    assert actual.stream_pii == expected.stream_pii
+    assert actual.anonymization_topics == expected.anonymization_topics
