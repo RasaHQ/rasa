@@ -1,0 +1,11 @@
+event_broker:
+  type: pika
+  url: localhost
+  username: username
+  password: password
+  queues:
+    - queue-1
+  exchange_name: exchange
+  stream_pii: false
+  anonymization_queues:
+    - anonymized_queue_1

@@ -93,6 +93,10 @@ class PikaEventBroker(EventBroker):
         self._connection: Optional[aio_pika.abc.AbstractRobustConnection] = None
         self._exchange: Optional[aio_pika.RobustExchange] = None
 
+        # PII related attributes
+        self.stream_pii = kwargs.get("stream_pii", True)
+        self.anonymization_queues = kwargs.get("anonymization_queues", [])
+
     @staticmethod
     def _get_queues_from_args(
         queues_arg: Union[List[Text], Tuple[Text, ...], Text, None],

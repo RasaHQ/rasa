@@ -36,10 +36,7 @@ TEST_EVENTS = [
 
 async def test_pika_broker_from_config(monkeypatch: MonkeyPatch):
     # patch PikaEventBroker so it doesn't try to connect to RabbitMQ on init
-    async def connect(self) -> None:
-        pass
-
-    monkeypatch.setattr(PikaEventBroker, "connect", connect)
+    monkeypatch.setattr(PikaEventBroker, "connect", AsyncMock())
 
     cfg = read_endpoint_config(
         "data/test_endpoints/event_brokers/pika_endpoint.yml", "event_broker"
@@ -51,6 +48,26 @@ async def test_pika_broker_from_config(monkeypatch: MonkeyPatch):
     assert actual.username == "username"
     assert actual.queues == ["queue-1"]
     assert actual.exchange_name == "exchange"
+    assert actual.stream_pii is True
+    assert actual.anonymization_queues == []
+
+
+async def test_pika_broker_from_config_with_pii(monkeypatch: MonkeyPatch):
+    # Mock RabbitMQ connection
+    monkeypatch.setattr(PikaEventBroker, "connect", AsyncMock())
+
+    cfg = read_endpoint_config(
+        "data/test_endpoints/event_brokers/pika_with_pii_endpoint.yml", "event_broker"
+    )
+    actual = await EventBroker.create(cfg)
+
+    assert isinstance(actual, PikaEventBroker)
+    assert actual.host == "localhost"
+    assert actual.username == "username"
+    assert actual.queues == ["queue-1"]
+    assert actual.exchange_name == "exchange"
+    assert actual.stream_pii is False
+    assert actual.anonymization_queues == ["anonymized_queue_1"]
 
 
 def test_pika_message_property_app_id_without_env_set(monkeypatch: MonkeyPatch):
@@ -350,10 +367,11 @@ def test_warning_if_unsupported_ssl_env_variables(monkeypatch: MonkeyPatch):
 
 async def test_pika_connection_error(monkeypatch: MonkeyPatch):
     # patch PikaEventBroker to raise an AMQP connection error
-    async def connect(self) -> None:
-        raise aio_pika.exceptions.ProbableAuthenticationError("Oups")
+    mock_connection = AsyncMock(
+        side_effect=aio_pika.exceptions.ProbableAuthenticationError("Oups")
+    )
+    monkeypatch.setattr(PikaEventBroker, "connect", mock_connection)
 
-    monkeypatch.setattr(PikaEventBroker, "connect", connect)
     cfg = EndpointConfig.from_dict(
         {
             "type": "pika",
@@ -367,6 +385,8 @@ async def test_pika_connection_error(monkeypatch: MonkeyPatch):
     )
     with pytest.raises(ConnectionException):
         await EventBroker.create(cfg)
+
+    mock_connection.assert_called_once()
 
 
 async def test_sql_connection_error(monkeypatch: MonkeyPatch):
