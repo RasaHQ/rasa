@@ -198,6 +198,9 @@ class AvailableEndpoints:
         model_groups = read_property_config_from_endpoints_file(
             endpoint_file, property_name="model_groups"
         )
+        privacy = read_property_config_from_endpoints_file(
+            endpoint_file, property_name="privacy"
+        )
 
         return cls(
             nlg,
@@ -209,6 +212,7 @@ class AvailableEndpoints:
             event_broker,
             vector_store,
             model_groups,
+            privacy,
         )
 
     def __init__(
@@ -222,6 +226,7 @@ class AvailableEndpoints:
         event_broker: Optional[EndpointConfig] = None,
         vector_store: Optional[EndpointConfig] = None,
         model_groups: Optional[List[Dict[str, Any]]] = None,
+        privacy: Optional[Dict[Text, Any]] = None,
     ) -> None:
         """Create an `AvailableEndpoints` object."""
         self.model = model
@@ -233,6 +238,7 @@ class AvailableEndpoints:
         self.event_broker = event_broker
         self.vector_store = vector_store
         self.model_groups = model_groups
+        self.privacy = privacy
 
     @classmethod
     def get_instance(
