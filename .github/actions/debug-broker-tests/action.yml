@@ -9,17 +9,23 @@ inputs:
 runs:
   using: 'composite'
   steps:
-  - name: Check zookeeper logs
-    run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs zookeeper
-    shell: bash
+    - name: Check zookeeper logs
+      env:
+        COMPOSE_FILE: ${{ inputs.COMPOSE_FILE_PATH }}
+      run: |
+        docker compose -f "$COMPOSE_FILE" logs zookeeper
+      shell: bash
 
-  - name: Check kafka container logs
-    run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs kafka
-    shell: bash
+    - name: Check kafka container logs
+      env:
+        COMPOSE_FILE: ${{ inputs.COMPOSE_FILE_PATH }}
+      run: |
+        docker compose -f "$COMPOSE_FILE" logs kafka
+      shell: bash
 
-  - name: Check rabbitmq container logs
-    run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rabbitmq
-    shell: bash
+    - name: Check rabbitmq container logs
+      env:
+        COMPOSE_FILE: ${{ inputs.COMPOSE_FILE_PATH }}
+      run: |
+        docker compose -f "$COMPOSE_FILE" logs rabbitmq
+      shell: bash

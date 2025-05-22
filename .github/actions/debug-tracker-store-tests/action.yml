@@ -12,14 +12,15 @@ inputs:
 runs:
   using: 'composite'
   steps:
-  - name: List containers
-    run: sudo docker ps -a
-    shell: bash
+    - name: List containers
+      run: sudo docker ps -a
+      shell: bash
 
-  - name: Check container logs
-    env:
-      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
-      CONTAINER_NAME: ${{ inputs.CONTAINER_NAME }}
-    run: |
-      docker compose -f "$COMPOSE_FILE_PATH" logs "$CONTAINER_NAME"
-    shell: bash
+    - name: Check container logs
+      env:
+        COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
+        CONTAINER_NAME: ${{ inputs.CONTAINER_NAME }}
+      run: |
+        docker compose -f "$COMPOSE_FILE_PATH" logs "$CONTAINER_NAME"
+      shell: bash
+      

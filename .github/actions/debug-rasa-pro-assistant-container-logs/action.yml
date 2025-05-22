@@ -9,16 +9,20 @@ inputs:
 runs:
   using: 'composite'
   steps:
-  - name: List containers
-    run: sudo docker ps -a
-    shell: bash
+    - name: List containers
+      run: sudo docker ps -a
+      shell: bash
 
-  - name: Check rasa-pro container logs
-    run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-assistant
-    shell: bash
+    - name: Check rasa-pro container logs
+      env:
+        COMPOSE_FILE: ${{ inputs.COMPOSE_FILE_PATH }}
+      run: |
+        docker compose -f "$COMPOSE_FILE" logs rasa-pro-assistant
+      shell: bash
 
-  - name: Check postgres container logs  
-    run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs postgres
-    shell: bash
+    - name: Check postgres container logs  
+      env:
+        COMPOSE_FILE: ${{ inputs.COMPOSE_FILE_PATH }}
+      run: |
+        docker compose -f "$COMPOSE_FILE" logs postgres
+      shell: bash

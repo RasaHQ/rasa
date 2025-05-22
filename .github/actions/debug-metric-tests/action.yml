@@ -9,26 +9,34 @@ inputs:
 runs:
   using: 'composite'
   steps:
-  - name: List containers
-    run: sudo docker ps -a
-    shell: bash
+    - name: List containers
+      run: sudo docker ps -a
+      shell: bash
 
-  - name: Check otlp-collector container logs
-    run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs otlp-collector
-    shell: bash
-  
-  - name: Check prometheus container logs
-    run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs prometheus
-    shell: bash
-  
-  - name: Check rasa-pro-assistent container logs
-    run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs rasa-pro-assistant
-    shell: bash
-  
-  - name: Check action-server container logs
-    run: |
-      docker compose -f ${{ inputs.COMPOSE_FILE_PATH }} logs action-server
-    shell: bash
+    - name: Check otlp-collector container logs
+      env:
+        COMPOSE_FILE: ${{ inputs.COMPOSE_FILE_PATH }}
+      run: |
+        docker compose -f "$COMPOSE_FILE" logs otlp-collector
+      shell: bash
+
+    - name: Check prometheus container logs
+      env:
+        COMPOSE_FILE: ${{ inputs.COMPOSE_FILE_PATH }}
+      run: |
+        docker compose -f "$COMPOSE_FILE" logs prometheus
+      shell: bash
+
+    - name: Check rasa-pro-assistant container logs
+      env:
+        COMPOSE_FILE: ${{ inputs.COMPOSE_FILE_PATH }}
+      run: |
+        docker compose -f "$COMPOSE_FILE" logs rasa-pro-assistant
+      shell: bash
+
+    - name: Check action-server container logs
+      env:
+        COMPOSE_FILE: ${{ inputs.COMPOSE_FILE_PATH }}
+      run: |
+        docker compose -f "$COMPOSE_FILE" logs action-server
+      shell: bash

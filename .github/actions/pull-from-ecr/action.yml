@@ -22,20 +22,23 @@ inputs:
 runs:
   using: 'composite'
   steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
-        with:
-          role-to-assume: ${{ inputs.AWS_ARN_ROLE_TO_ASSUME }}
-          aws-region: ${{ inputs.AWS_REGION }}
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 # v4.1.0
+      with:
+        role-to-assume: ${{ inputs.AWS_ARN_ROLE_TO_ASSUME }}
+        aws-region: ${{ inputs.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
-        with:
-          mask-password: "true"
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+      with:
+        mask-password: "true"
 
-      - name: Pull dev rasa-private image from Amazon ECR
-        id: check_image
-        run: |
-          docker pull ${{ inputs.REPOSITORY }}:${{ inputs.IMAGE_TAG }}
-        shell: bash
+    - name: Pull dev rasa-private image from Amazon ECR
+      id: check_image
+      env:
+        IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
+        REPOSITORY: ${{ inputs.REPOSITORY }}
+      run: |
+        docker pull "$REPOSITORY:$IMAGE_TAG"
+      shell: bash
