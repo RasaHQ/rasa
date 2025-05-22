@@ -299,6 +299,19 @@ class TrackerStore:
             )
             return None
 
+        if (
+            hasattr(self.event_broker, "stream_pii")
+            and not self.event_broker.stream_pii
+        ):
+            # If the event broker is configured to not stream un-anonymized events,
+            # skip streaming
+            structlogger.debug(
+                "tracker_store.stream_events.no_streaming",
+                event_info="Un-anonymized events will not be published "
+                "to the event broker.",
+            )
+            return None
+
         old_tracker = await self.retrieve(tracker.sender_id)
         new_events = TrackerEventDiffEngine.event_difference(old_tracker, tracker)
 

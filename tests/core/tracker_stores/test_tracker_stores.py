@@ -5,12 +5,14 @@ from typing import List, Optional, Text, Tuple, Type
 from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
+from pytest import FixtureRequest, MonkeyPatch
 from structlog.testing import capture_logs
 
 import rasa.core.tracker_stores.sql_tracker_store
 import rasa.core.tracker_stores.tracker_store
 from rasa.core.agent import Agent
+from rasa.core.brokers.broker import EventBroker
+from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.tracker_stores.sql_tracker_store import SQLTrackerStore
 from rasa.core.tracker_stores.tracker_store import (
     AwaitableTrackerStore,
@@ -476,3 +478,83 @@ async def test_wrapper_tracker_stores_delete(
     sender_id = uuid.uuid4().hex
     await tracker_store.delete(sender_id)
     mocked_inner_tracker_store.delete.assert_called_once_with(sender_id)
+
+
+@pytest.fixture(
+    params=[
+        "data/test_endpoints/event_brokers/kafka_pii_endpoint.yml",
+        "data/test_endpoints/event_brokers/pika_with_pii_endpoint.yml",
+    ]
+)
+async def mock_event_broker_no_pii(
+    request: FixtureRequest, monkeypatch: MonkeyPatch
+) -> EventBroker:
+    """Fixture to create an event broker with stream_pii set to False."""
+    if "pika" in request.param:
+        # Mock RabbitMQ connection
+        monkeypatch.setattr(PikaEventBroker, "connect", AsyncMock())
+    cfg = read_endpoint_config(request.param, "event_broker")
+    return await EventBroker.create(cfg)
+
+
+async def test_tracker_store_stream_events_no_pii(
+    mock_event_broker_no_pii: EventBroker,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Tests that the tracker store streams events without PII."""
+    tracker_store = InMemoryTrackerStore(Domain.empty(), mock_event_broker_no_pii)
+    mock_stream_new_events = AsyncMock()
+    monkeypatch.setattr(tracker_store, "_stream_new_events", mock_stream_new_events)
+    tracker = DialogueStateTracker.from_events(
+        "test_no_pii", [ActionExecuted("action_listen")]
+    )
+
+    with capture_logs() as caplog:
+        await tracker_store.stream_events(tracker)
+        logs = filter_logs(
+            caplog,
+            event="tracker_store.stream_events.no_streaming",
+            log_level="debug",
+            log_message_parts=[
+                "Un-anonymized events will not be published to the event broker."
+            ],
+        )
+        assert len(logs) == 1
+
+    mock_stream_new_events.assert_not_called()
+
+
+@pytest.fixture(
+    params=[
+        "data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml",
+        "data/test_endpoints/event_brokers/pika_endpoint.yml",
+    ]
+)
+async def mock_event_broker(
+    request: FixtureRequest, monkeypatch: MonkeyPatch
+) -> EventBroker:
+    """Fixture to create an event broker with stream_pii set to True."""
+    if "pika" in request.param:
+        # Mock RabbitMQ connection
+        monkeypatch.setattr(PikaEventBroker, "connect", AsyncMock())
+    cfg = read_endpoint_config(request.param, "event_broker")
+    return await EventBroker.create(cfg)
+
+
+async def test_tracker_store_stream_events_with_pii(
+    mock_event_broker: EventBroker,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Tests that the tracker store streams events with PII."""
+    # Given
+    tracker_store = InMemoryTrackerStore(Domain.empty(), mock_event_broker)
+    mock_stream_new_events = AsyncMock()
+    monkeypatch.setattr(tracker_store, "_stream_new_events", mock_stream_new_events)
+    tracker = DialogueStateTracker.from_events(
+        "test_with_pii", [ActionExecuted("action_listen")]
+    )
+
+    # When
+    await tracker_store.stream_events(tracker)
+    # Then
+    mock_stream_new_events.assert_called_once()
