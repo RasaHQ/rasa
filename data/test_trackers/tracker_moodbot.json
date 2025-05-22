@@ -82,7 +82,7 @@
       "text": "/greet",
       "input_channel": null,
       "message_id": null,
-      "metadata": {}
+      "anonymized_at": null
     },
     {
       "timestamp": 1517821726.200373,
@@ -133,7 +133,7 @@
       "text": "/mood_great",
       "input_channel": null,
       "message_id": null,
-      "metadata": {}
+      "anonymized_at": null
     },
     {
       "timestamp": 1517821726.209908,

@@ -107,6 +107,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
 
+INVALID_DATETIME_ERROR_MESSAGE = "`anonymized_at` must be a datetime object."
+
 
 def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"]:
     """Convert a list of dictionaries to a list of corresponding events.
@@ -498,6 +500,23 @@ class UserUttered(Event):
         if parse_data:
             self.parse_data.update(**parse_data)
 
+        self._anonymized_at: Optional[datetime] = None
+
+    @property
+    def anonymized_at(self) -> Optional[datetime]:
+        """Returns the time when the event was anonymized in the tracker store.
+
+        If the event was not anonymized, it returns None.
+        """
+        return self._anonymized_at
+
+    @anonymized_at.setter
+    def anonymized_at(self, value: Optional[datetime]) -> None:
+        """Sets the time when the event was anonymized in the tracker store."""
+        if value is not None and not isinstance(value, datetime):
+            raise ValueError(INVALID_DATETIME_ERROR_MESSAGE)
+        self._anonymized_at = value
+
     @staticmethod
     def _from_parse_data(
         text: Text,
@@ -614,6 +633,7 @@ class UserUttered(Event):
                 "input_channel": getattr(self, "input_channel", None),
                 "message_id": getattr(self, "message_id", None),
                 "metadata": self.metadata,
+                "anonymized_at": self.anonymized_at,
             }
         )
         return _dict
@@ -911,7 +931,23 @@ class BotUttered(SkipEventInMDStoryMixin):
         """
         self.text = text
         self.data = data or {}
+        self._anonymized_at: Optional[datetime] = None
         super().__init__(timestamp, metadata)
+
+    @property
+    def anonymized_at(self) -> Optional[datetime]:
+        """Returns the time when the event was anonymized in the tracker store.
+
+        If the event was not anonymized, it returns None.
+        """
+        return self._anonymized_at
+
+    @anonymized_at.setter
+    def anonymized_at(self, value: Optional[datetime]) -> None:
+        """Sets the time when the event was anonymized in the tracker store."""
+        if value is not None and not isinstance(value, datetime):
+            raise ValueError(INVALID_DATETIME_ERROR_MESSAGE)
+        self._anonymized_at = value
 
     def __members(self) -> Tuple[Optional[Text], Text, Text]:
         data_no_nones = {k: v for k, v in self.data.items() if v is not None}
@@ -999,7 +1035,14 @@ class BotUttered(SkipEventInMDStoryMixin):
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
         d = super().as_dict()
-        d.update({"text": self.text, "data": self.data, "metadata": self.metadata})
+        d.update(
+            {
+                "text": self.text,
+                "data": self.data,
+                "metadata": self.metadata,
+                "anonymized_at": self.anonymized_at,
+            }
+        )
         return d
 
     @classmethod
@@ -1046,7 +1089,23 @@ class SlotSet(Event):
         self.key = key
         self.value = value
         self._filled_by = filled_by
+        self._anonymized_at: Optional[datetime] = None
         super().__init__(timestamp, metadata)
+
+    @property
+    def anonymized_at(self) -> Optional[datetime]:
+        """Returns the time when the event was anonymized in the tracker store.
+
+        If the event was not anonymized, it returns None.
+        """
+        return self._anonymized_at
+
+    @anonymized_at.setter
+    def anonymized_at(self, value: Optional[datetime]) -> None:
+        """Sets the time when the event was anonymized in the tracker store."""
+        if value is not None and not isinstance(value, datetime):
+            raise ValueError(INVALID_DATETIME_ERROR_MESSAGE)
+        self._anonymized_at = value
 
     def __repr__(self) -> Text:
         """Returns text representation of event."""
@@ -1092,7 +1151,14 @@ class SlotSet(Event):
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
         d = super().as_dict()
-        d.update({"name": self.key, "value": self.value, "filled_by": self.filled_by})
+        d.update(
+            {
+                "name": self.key,
+                "value": self.value,
+                "filled_by": self.filled_by,
+                "anonymized_at": self.anonymized_at,
+            }
+        )
         return d
 
     @classmethod

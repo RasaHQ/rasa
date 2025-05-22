@@ -728,6 +728,7 @@ async def test_custom_action_session_start_with_metadata(
             "value": metadata,
             "metadata": {"assistant_id": "placeholder_default", "model_id": model_id},
             "filled_by": None,
+            "anonymized_at": None,
         }
     ]
 

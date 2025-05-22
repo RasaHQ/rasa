@@ -1,6 +1,6 @@
 import copy
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Text, Type
 
 import pytest
@@ -29,6 +29,7 @@ from rasa.shared.core.constants import (
     SetSlotExtractor,
 )
 from rasa.shared.core.events import (
+    INVALID_DATETIME_ERROR_MESSAGE,
     ActionExecuted,
     ActionExecutionRejected,
     ActionReverted,
@@ -976,3 +977,42 @@ def test_slot_set_apply_to(expected_filled_by: Optional[str]) -> None:
     event.apply_to(tracker)
 
     assert tracker.slots.get("my_slot").filled_by == expected_filled_by
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        UserUttered("How are you?", intent={"name": "greet", "confidence": 0.9}),
+        SlotSet("my_slot", "value"),
+        BotUttered("Hello!"),
+    ],
+)
+def test_supported_events_anonymized_at_setter(event: Event) -> None:
+    """Test that anonymized_at is set correctly for supported events.
+
+    The supported events are user, bot and slot events.
+    """
+    assert event.anonymized_at is None
+
+    event.anonymized_at = datetime.now(tz=timezone.utc)
+    assert event.anonymized_at is not None
+    assert isinstance(event.anonymized_at, datetime)
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        UserUttered("How are you?", intent={"name": "greet", "confidence": 0.9}),
+        SlotSet("my_slot", "value"),
+        BotUttered("Hello!"),
+    ],
+)
+def test_supported_events_anonymized_at_setter_invalid_value(event: Event) -> None:
+    """Test that anonymized_at is set correctly for supported events.
+
+    The supported events are user, bot and slot events.
+    """
+    assert event.anonymized_at is None
+
+    with pytest.raises(ValueError, match=INVALID_DATETIME_ERROR_MESSAGE):
+        event.anonymized_at = time.time()
