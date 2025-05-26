@@ -197,7 +197,10 @@ PROVIDER_CONFIG_KEY = "provider"
 REQUEST_TIMEOUT_CONFIG_KEY = "request_timeout"  # deprecated
 TIMEOUT_CONFIG_KEY = "timeout"
 
+LOGIT_BIAS_CONFIG_KEY = "logit_bias"
+MAX_RETRIES_CONFIG_KEY = "max_retries"
 TEMPERATURE_CONFIG_KEY = "temperature"
+MAX_COMPLETION_TOKENS_CONFIG_KEY = "max_completion_tokens"
 MAX_TOKENS_CONFIG_KEY = "max_tokens"
 
 DEPLOYMENT_NAME_CONFIG_KEY = "deployment_name"

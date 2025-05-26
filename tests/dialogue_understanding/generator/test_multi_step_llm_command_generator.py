@@ -53,10 +53,15 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
     EMBEDDINGS_CONFIG_KEY,
     LLM_CONFIG_KEY,
+    MAX_COMPLETION_TOKENS_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
+    PROVIDER_CONFIG_KEY,
     RASA_PATTERN_CANNOT_HANDLE_NOT_SUPPORTED,
     ROUTE_TO_CALM_SLOT,
+    TEMPERATURE_CONFIG_KEY,
+    TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import SetSlotExtractor
 from rasa.shared.core.domain import Domain
@@ -192,11 +197,11 @@ class TestMultiStepLLMCommandGenerator:
         """Test predict_commands_for_handling_flows calls llm correctly."""
         # Given
         expected_llm_config = {
-            "model": "gpt-4-0613",
-            "provider": "openai",
-            "timeout": 7,
-            "temperature": 0.0,
-            "max_tokens": 256,
+            MODEL_CONFIG_KEY: "gpt-4-0613",
+            PROVIDER_CONFIG_KEY: "openai",
+            TIMEOUT_CONFIG_KEY: 7,
+            TEMPERATURE_CONFIG_KEY: 0.0,
+            MAX_COMPLETION_TOKENS_CONFIG_KEY: 256,
         }
 
         mock_llm_client = AsyncMock()

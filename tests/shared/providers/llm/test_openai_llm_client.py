@@ -44,11 +44,11 @@ class TestOpenAILLMClient:
                     "model": "test_model",
                     "api_type": "openai",
                     "temperature": 0.2,
-                    "max_tokens": 1000,
+                    "max_completion_tokens": 1000,
                 },
                 "test_model",
                 None,
-                {"temperature": 0.2, "max_tokens": 1000},
+                {"temperature": 0.2, "max_completion_tokens": 1000},
             ),
             # Use deprecated aliases for provider
             (
@@ -111,6 +111,19 @@ class TestOpenAILLMClient:
                 "test_model",
                 None,
                 {},
+            ),
+            # Deprecated alias for max tokens
+            (
+                {
+                    "provider": "openai",
+                    "model": "test_model",
+                    "api_type": "openai",
+                    "temperature": 0.2,
+                    "max_tokens": 1000,
+                },
+                "test_model",
+                None,
+                {"temperature": 0.2, "max_completion_tokens": 1000},
             ),
         ],
     )

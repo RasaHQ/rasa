@@ -137,12 +137,12 @@ class TestAzureOpenAILLMClient:
                     "api_base": "https://my.api.base.com/my_model",
                     "api_version": "2023-01-01",
                     "temperature": 0.2,
-                    "max_tokens": 1000,
+                    "max_completion_tokens": 1000,
                 },
                 "test_deployment_name",
                 "https://my.api.base.com/my_model",
                 "2023-01-01",
-                {"temperature": 0.2, "max_tokens": 1000},
+                {"temperature": 0.2, "max_completion_tokens": 1000},
             ),
             # Use deprecated aliases for keys
             (
@@ -152,11 +152,12 @@ class TestAzureOpenAILLMClient:
                     "openai_api_type": "azure",
                     "openai_api_base": "https://my.api.base.com/my_model",
                     "openai_api_version": "2023-01-01",
+                    "max_tokens": 256,
                 },
                 "test_deployment_name",
                 "https://my.api.base.com/my_model",
                 "2023-01-01",
-                {},
+                {"max_completion_tokens": 256},
             ),
             (
                 {
@@ -165,11 +166,12 @@ class TestAzureOpenAILLMClient:
                     "openai_api_type": "azure",
                     "openai_api_base": "https://my.api.base.com/my_model",
                     "openai_api_version": "2023-01-01",
+                    "max_tokens": 256,
                 },
                 "test_deployment_name",
                 "https://my.api.base.com/my_model",
                 "2023-01-01",
-                {},
+                {"max_completion_tokens": 256},
             ),
             (
                 {

@@ -30,7 +30,15 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, ROUTE_TO_CALM_SLOT
+from rasa.shared.constants import (
+    MAX_COMPLETION_TOKENS_CONFIG_KEY,
+    MODEL_CONFIG_KEY,
+    OPENAI_API_KEY_ENV_VAR,
+    PROVIDER_CONFIG_KEY,
+    ROUTE_TO_CALM_SLOT,
+    TEMPERATURE_CONFIG_KEY,
+    TIMEOUT_CONFIG_KEY,
+)
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps.collect import (
@@ -446,11 +454,11 @@ class TestLLMBasedCommandGenerator:
 
         # Given
         expected_llm_config = {
-            "model": "gpt-4-0613",
-            "provider": "openai",
-            "timeout": 7,
-            "temperature": 0.0,
-            "max_tokens": 256,
+            MODEL_CONFIG_KEY: "gpt-4-0613",
+            PROVIDER_CONFIG_KEY: "openai",
+            TIMEOUT_CONFIG_KEY: 7,
+            TEMPERATURE_CONFIG_KEY: 0.0,
+            MAX_COMPLETION_TOKENS_CONFIG_KEY: 256,
         }
 
         mock_raw_response = AsyncMock()

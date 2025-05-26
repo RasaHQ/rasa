@@ -31,12 +31,14 @@ from rasa.graph_components.providers.responses_provider import Responses
 from rasa.shared.constants import (
     EMBEDDINGS_CONFIG_KEY,
     LLM_CONFIG_KEY,
+    MAX_COMPLETION_TOKENS_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_GROUP_ID_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
     OPENAI_PROVIDER,
     PROMPT_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
+    TEMPERATURE_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
@@ -111,14 +113,14 @@ NLU_ABSTENTION_THRESHOLD = "nlu_abstention_threshold"
 DEFAULT_LLM_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
     MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME,
-    "temperature": 0.0,
-    "max_tokens": DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
+    TEMPERATURE_CONFIG_KEY: 0.0,
+    MAX_COMPLETION_TOKENS_CONFIG_KEY: DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
     TIMEOUT_CONFIG_KEY: 5,
 }
 
 DEFAULT_EMBEDDINGS_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
-    "model": DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
+    MODEL_CONFIG_KEY: DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 
 DEFAULT_INTENTLESS_PROMPT_TEMPLATE = importlib.resources.open_text(
@@ -344,8 +346,6 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
             # ensures that the policy will not override a deterministic policy
             # which utilizes the nlu predictions confidence (e.g. Memoization).
             NLU_ABSTENTION_THRESHOLD: 0.9,
-            LLM_CONFIG_KEY: DEFAULT_LLM_CONFIG,
-            EMBEDDINGS_CONFIG_KEY: DEFAULT_EMBEDDINGS_CONFIG,
             PROMPT_CONFIG_KEY: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
         }
 
@@ -381,13 +381,19 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
         super().__init__(config, model_storage, resource, execution_context, featurizer)
 
         # Resolve LLM config
-        self.config[LLM_CONFIG_KEY] = resolve_model_client_config(
-            self.config.get(LLM_CONFIG_KEY), IntentlessPolicy.__name__
+        self.config[LLM_CONFIG_KEY] = combine_custom_and_default_config(
+            resolve_model_client_config(
+                self.config.get(LLM_CONFIG_KEY), IntentlessPolicy.__name__
+            ),
+            DEFAULT_LLM_CONFIG,
         )
 
         # Resolve embeddings config
-        self.config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
-            self.config.get(EMBEDDINGS_CONFIG_KEY), IntentlessPolicy.__name__
+        self.config[EMBEDDINGS_CONFIG_KEY] = combine_custom_and_default_config(
+            resolve_model_client_config(
+                self.config.get(EMBEDDINGS_CONFIG_KEY), IntentlessPolicy.__name__
+            ),
+            DEFAULT_EMBEDDINGS_CONFIG,
         )
 
         self.nlu_abstention_threshold: float = self.config[NLU_ABSTENTION_THRESHOLD]

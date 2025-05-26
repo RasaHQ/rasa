@@ -46,12 +46,15 @@ from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
 from rasa.shared.constants import (
     EMBEDDINGS_CONFIG_KEY,
+    MAX_COMPLETION_TOKENS_CONFIG_KEY,
+    MAX_RETRIES_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_GROUP_ID_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
     OPENAI_PROVIDER,
     PROMPT_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
+    TEMPERATURE_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import (
@@ -135,14 +138,14 @@ DEFAULT_LLM_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
     MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME,
     TIMEOUT_CONFIG_KEY: 10,
-    "temperature": 0.0,
-    "max_tokens": 256,
-    "max_retries": 1,
+    TEMPERATURE_CONFIG_KEY: 0.0,
+    MAX_COMPLETION_TOKENS_CONFIG_KEY: 256,
+    MAX_RETRIES_CONFIG_KEY: 1,
 }
 
 DEFAULT_EMBEDDINGS_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
-    "model": DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
+    MODEL_CONFIG_KEY: DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 
 ENTERPRISE_SEARCH_PROMPT_FILE_NAME = "enterprise_search_policy_prompt.jinja2"

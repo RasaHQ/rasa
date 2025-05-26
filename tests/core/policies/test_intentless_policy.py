@@ -12,7 +12,9 @@ from pytest import MonkeyPatch
 import rasa.shared.utils.io
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.policies.intentless_policy import (
+    DEFAULT_EMBEDDINGS_CONFIG,
     DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+    DEFAULT_LLM_CONFIG,
     INTENTLESS_CONFIG_FILE_NAME,
     Conversation,
     IntentlessPolicy,
@@ -48,7 +50,10 @@ from rasa.shared.importers.importer import FlowSyncImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
-from rasa.shared.utils.llm import tracker_as_readable_transcript
+from rasa.shared.utils.llm import (
+    combine_custom_and_default_config,
+    tracker_as_readable_transcript,
+)
 from tests.utilities import flows_from_str
 
 UTTER_GREET_ACTION = "utter_greet"
@@ -949,53 +954,49 @@ def test_should_abstain_in_coexistence(
         (
             {
                 LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
-                EMBEDDINGS_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "test-embeddings",
+                },
             },
-            {"provider": "openai", "model": "gpt-4"},
-            {"provider": "openai", "model": "gpt-4"},
+            combine_custom_and_default_config(
+                {"provider": "openai", "model": "gpt-4"},
+                DEFAULT_LLM_CONFIG,
+            ),
+            combine_custom_and_default_config(
+                {"provider": "openai", "model": "test-embeddings"},
+                DEFAULT_EMBEDDINGS_CONFIG,
+            ),
         ),
         (
             {
                 "user_input": {"max_characters": -1},
             },
-            None,
-            None,
+            DEFAULT_LLM_CONFIG,
+            DEFAULT_EMBEDDINGS_CONFIG,
         ),
         (
             {
                 LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
-                EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_embedding"},
             },
             {
                 "id": "openai_gpt-4",
-                "models": [{"provider": "openai", "model": "gpt-4"}],
+                "models": [
+                    combine_custom_and_default_config(
+                        {"provider": "openai", "model": "gpt-4"}, DEFAULT_LLM_CONFIG
+                    )
+                ],
             },
             {
-                "id": "openai_gpt-4",
-                "models": [{"provider": "openai", "model": "gpt-4"}],
+                "id": "openai_embedding",
+                "models": [
+                    combine_custom_and_default_config(
+                        {"provider": "openai", "model": "text-embedding-ada-002"},
+                        DEFAULT_EMBEDDINGS_CONFIG,
+                    )
+                ],
             },
-        ),
-        (
-            {
-                LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
-                EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
-            },
-            {"provider": "openai", "model": "gpt-4"},
-            {
-                "id": "openai_gpt-4",
-                "models": [{"provider": "openai", "model": "gpt-4"}],
-            },
-        ),
-        (
-            {
-                LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "openai_gpt-4"},
-                EMBEDDINGS_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
-            },
-            {
-                "id": "openai_gpt-4",
-                "models": [{"provider": "openai", "model": "gpt-4"}],
-            },
-            {"provider": "openai", "model": "gpt-4"},
         ),
     ],
 )
@@ -1075,11 +1076,21 @@ def test_intentless_policy_persist_config(
     # Ensure the config is resolved
     assert component.config[LLM_CONFIG_KEY] == {
         "id": "model_group_id",
-        "models": [{"provider": "openai", "model": "gpt-4"}],
+        "models": [
+            combine_custom_and_default_config(
+                {"provider": "openai", "model": "gpt-4"},
+                DEFAULT_LLM_CONFIG,
+            )
+        ],
     }
     assert component.config[EMBEDDINGS_CONFIG_KEY] == {
         "id": "model_group_id",
-        "models": [{"provider": "openai", "model": "gpt-4"}],
+        "models": [
+            combine_custom_and_default_config(
+                {"provider": "openai", "model": "gpt-4"},
+                DEFAULT_EMBEDDINGS_CONFIG,
+            )
+        ],
     }
 
     # Persist the generator
@@ -1093,11 +1104,21 @@ def test_intentless_policy_persist_config(
 
     assert persisted_config[LLM_CONFIG_KEY] == {
         "id": "model_group_id",
-        "models": [{"provider": "openai", "model": "gpt-4"}],
+        "models": [
+            combine_custom_and_default_config(
+                {"provider": "openai", "model": "gpt-4"},
+                DEFAULT_LLM_CONFIG,
+            )
+        ],
     }
     assert persisted_config[EMBEDDINGS_CONFIG_KEY] == {
         "id": "model_group_id",
-        "models": [{"provider": "openai", "model": "gpt-4"}],
+        "models": [
+            combine_custom_and_default_config(
+                {"provider": "openai", "model": "gpt-4"},
+                DEFAULT_EMBEDDINGS_CONFIG,
+            )
+        ],
     }
 
 

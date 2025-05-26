@@ -84,12 +84,15 @@ class _BaseLiteLLMClient:
     @property
     def _completion_fn_args(self) -> dict:
         return {
-            **self._litellm_extra_parameters,
-            "model": self._litellm_model_name,
             # Since all providers covered by LiteLLM use the OpenAI format, but
             # not all support every OpenAI parameter, raise an exception if
             # provider/model uses unsupported parameter
             "drop_params": False,
+            # All other parameters set through config, can override drop_params
+            **self._litellm_extra_parameters,
+            # Model name is constructed in the LiteLLM format from the provided config
+            # Non-overridable to ensure consistency
+            "model": self._litellm_model_name,
         }
 
     def validate_client_setup(self) -> None:

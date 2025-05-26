@@ -23,11 +23,14 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
+    LOGIT_BIAS_CONFIG_KEY,
+    MAX_COMPLETION_TOKENS_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     OPENAI_PROVIDER,
     PROMPT_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
     ROUTE_TO_CALM_SLOT,
+    TEMPERATURE_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -66,9 +69,11 @@ DEFAULT_LLM_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
     MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME,
     TIMEOUT_CONFIG_KEY: 7,
-    "temperature": 0.0,
-    "max_tokens": 1,
-    "logit_bias": {str(token_id): 100 for token_id in A_TO_C_TOKEN_IDS_CHATGPT},
+    TEMPERATURE_CONFIG_KEY: 0.0,
+    MAX_COMPLETION_TOKENS_CONFIG_KEY: 1,
+    LOGIT_BIAS_CONFIG_KEY: {
+        str(token_id): 100 for token_id in A_TO_C_TOKEN_IDS_CHATGPT
+    },
 }
 
 structlogger = structlog.get_logger()

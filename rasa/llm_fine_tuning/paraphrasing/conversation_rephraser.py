@@ -11,10 +11,12 @@ from rasa.llm_fine_tuning.paraphrasing.rephrased_user_message import (
 )
 from rasa.shared.constants import (
     LLM_CONFIG_KEY,
+    MAX_COMPLETION_TOKENS_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
+    TEMPERATURE_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.exceptions import ProviderClientAPIException
@@ -39,8 +41,8 @@ DEFAULT_LLM_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
     MODEL_CONFIG_KEY: "gpt-4o-mini",
     TIMEOUT_CONFIG_KEY: 7,
-    "temperature": 0.0,
-    "max_tokens": 4096,
+    TEMPERATURE_CONFIG_KEY: 0.0,
+    MAX_COMPLETION_TOKENS_CONFIG_KEY: 4096,
 }
 
 structlogger = structlog.get_logger()

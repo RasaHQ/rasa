@@ -70,7 +70,10 @@ class _BaseLiteLLMEmbeddingClient:
     def _embedding_fn_args(self) -> Dict[str, Any]:
         """Returns the arguments to be passed to the embedding function."""
         return {
+            # Parameters set through config, can override drop_params
             **self._litellm_extra_parameters,
+            # Model name is constructed in the LiteLLM format from the provided config
+            # Non-overridable to ensure consistency
             "model": self._litellm_model_name,
         }
 

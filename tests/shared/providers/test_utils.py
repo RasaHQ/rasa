@@ -7,6 +7,7 @@ from rasa.shared.constants import (
     AWS_SECRET_ACCESS_KEY_CONFIG_KEY,
     AWS_SECRET_ACCESS_KEY_ENV_VAR,
     AWS_SESSION_TOKEN_CONFIG_KEY,
+    AWS_SESSION_TOKEN_ENV_VAR,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
 from rasa.shared.providers._configs.utils import resolve_aliases
@@ -117,6 +118,14 @@ def test_validate_aws_setup_for_litellm_clients(
     should_raise_error: bool,
     monkeypatch: pytest.MonkeyPatch,
 ):
+    # Explicitly clear all relevant AWS-related env vars before setting new ones
+    for env_var in [
+        AWS_ACCESS_KEY_ID_ENV_VAR,
+        AWS_SECRET_ACCESS_KEY_ENV_VAR,
+        AWS_SESSION_TOKEN_ENV_VAR,
+    ]:
+        monkeypatch.delenv(env_var, raising=False)
+
     litellm_model_name = "bedrock/anthropic.claude-test"
     for env_var, value in available_env_vars.items():
         monkeypatch.setenv(env_var, value)
