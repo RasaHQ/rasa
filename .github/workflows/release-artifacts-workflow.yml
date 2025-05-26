@@ -24,6 +24,7 @@ on:
           - all
           - openai
           - azure
+          - azure-oauth
           - bedrock
           - gemini
           - huggingface

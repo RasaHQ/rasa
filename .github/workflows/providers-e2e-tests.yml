@@ -23,6 +23,7 @@ on:
           - all
           - openai
           - azure
+          - azure-oauth
           - bedrock
           - gemini
           - huggingface
@@ -227,6 +228,21 @@ env:
   AZURE_API_VERSION_TXT_EMBEDDING_ADA_FR: "2023-05-15"
   AZURE_API_KEY_FR: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING }}
 
+    # Deployment 3
+  AZURE_DEPLOYMENT_GPT3_5_TURBO_CI_FR: "gpt-35-turbo"
+  AZURE_API_BASE_GPT3_5_TURBO_CI_FR: "https://devtribe-ci-france.openai.azure.com/"
+  AZURE_API_VERSION_GPT3_5_TURBO_CI_FR: "2024-02-01"
+  AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_CI_FR: "text-embedding-ada-002"
+  AZURE_API_BASE_TXT_EMBEDDING_ADA_CI_FR: "https://devtribe-ci-france.openai.azure.com/"
+  AZURE_API_VERSION_TXT_EMBEDDING_ADA_CI_FR: "2023-05-15"
+  AZURE_API_KEY_CI_FR: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_CI_FRANCE }}
+
+    # Azure Oauth
+  AZURE_CLIENT_ID: ${{ secrets.DEVTRIBE_CI_OAUTH_CLIENT_ID }}
+#  AZURE_OBJECT_ID: ${{ secrets.AZURE_OBJECT_ID }} # this was not added to the 1pass list so skipping temporarily
+  AZURE_TENANT_ID: ${{ secrets.DEVTRIBE_CI_OAUTH_TENANT_ID }}
+  AZURE_CLIENT_SECRET: ${{ secrets.DEVTRIBE_CI_OAUTH_CLIENT_SECRET }}
+
   # AWS Bedrock regions, for multi-LLM-routing testing
   AWS_REGION_NAME_1: us-east-1
   AWS_REGION_NAME_2: eu-central-1
@@ -313,6 +329,7 @@ jobs:
         provider: [
             openai,
             azure,
+            azure-oauth,
             bedrock,
             gemini,
             huggingface,

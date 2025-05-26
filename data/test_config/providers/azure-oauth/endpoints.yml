@@ -1,0 +1,46 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+nlg:
+ type: rephrase
+ llm:
+   model_group: azure_llm
+
+model_groups:
+  - id: azure_llm
+    models:
+      - provider: azure
+        deployment: ${AZURE_DEPLOYMENT_GPT3_5_TURBO_CI_FR}
+        api_base: ${AZURE_API_BASE_GPT3_5_TURBO_CI_FR}
+        api_key: ${AZURE_API_KEY_CI_FR}
+        api_version: ${AZURE_API_VERSION_GPT3_5_TURBO_CI_FR}
+        timeout: 20
+        temperature: 0.0
+        top_p: 0.0
+        cache:
+          no-cache: true
+        num_retries: 5
+
+  - id: azure_embeddings
+    models:
+      - provider: azure
+        deployment: ${AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_CI_FR}
+        api_base: ${AZURE_API_BASE_TXT_EMBEDDING_ADA_CI_FR}
+        api_key: ${AZURE_API_KEY_CI_FR}
+        api_version: ${AZURE_API_VERSION_TXT_EMBEDDING_ADA_CI_FR}
+        timeout: 20
+        num_retries: 5
+
+tracing:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: e2e-tests-azure
+ 
+metrics:
+ type: otlp
+ endpoint: localhost:4317
+ insecure: true
+ host: localhost
+ service_name: e2e-tests-azure
