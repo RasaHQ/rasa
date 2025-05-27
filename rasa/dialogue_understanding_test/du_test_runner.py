@@ -34,6 +34,7 @@ from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import PREDICTED_COMMANDS, PROMPTS
+from rasa.shared.utils.llm import create_tracker_for_user_step
 from rasa.utils.endpoints import EndpointConfig
 
 structlogger = structlog.get_logger()
@@ -179,8 +180,9 @@ class DialogueUnderstandingTestRunner:
             # create and save the tracker at the time just
             # before the user message was sent
             step_sender_id = f"{sender_id}_{user_step_index}"
-            await self._create_tracker_for_user_step(
+            await create_tracker_for_user_step(
                 step_sender_id,
+                self.agent,
                 test_case_tracker,
                 user_uttered_event_indices[user_step_index],
             )
@@ -288,26 +290,6 @@ class DialogueUnderstandingTestRunner:
             return None
 
         return user_uttered_event
-
-    async def _create_tracker_for_user_step(
-        self,
-        step_sender_id: str,
-        test_case_tracker: DialogueStateTracker,
-        index_user_uttered_event: int,
-    ) -> None:
-        """Creates a tracker for the user step."""
-        tracker = test_case_tracker.copy()
-        # modify the sender id so that the test case tracker is not overwritten
-        tracker.sender_id = step_sender_id
-
-        if tracker.events:
-            # get timestamp of the event just before the user uttered event
-            timestamp = tracker.events[index_user_uttered_event - 1].timestamp
-            # revert the tracker to the event just before the user uttered event
-            tracker = tracker.travel_back_in_time(timestamp)
-
-        # store the tracker with the unique sender id
-        await self.agent.tracker_store.save(tracker)
 
     async def _send_user_message(
         self,

@@ -1,8 +1,10 @@
+from itertools import cycle
 from typing import List
 from unittest.mock import MagicMock
 
 import pytest
 
+from rasa.core.agent import Agent
 from rasa.dialogue_understanding.commands import SetSlotCommand, StartFlowCommand
 from rasa.e2e_test.e2e_test_case import TestCase
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
@@ -11,7 +13,6 @@ from rasa.llm_fine_tuning.llm_data_preparation_module import (
     _construct_new_conversations,
     _convert_conversation_into_llm_data,
     _create_data_point,
-    _update_prompt,
     convert_to_fine_tuning_data,
 )
 
@@ -234,58 +235,6 @@ def test_construct_new_conversations_edge_cases(
         assert new_conversation == expected_converstaion
 
 
-def test_update_prompt(conversation: Conversation):
-    prompt = """
-    Here is what happened previously in the conversation:
-    USER: I want to send money to John
-    AI: How much money do you want to send?
-    USER: $50
-    AI: Do you want to send $50 to John?
-    USER: yes
-    ===
-    The user just said '''yes'''.
-    """
-    original_user_steps = [
-        step for step in conversation.iterate_over_annotated_user_steps()
-    ]
-    rephrased_user_steps = [
-        "Transfer money to John",
-        "I owe him $50",
-        "Yes, that is correct",
-    ]
-
-    updated_prompt = _update_prompt(prompt, original_user_steps, rephrased_user_steps)
-
-    assert (
-        updated_prompt
-        == """
-    Here is what happened previously in the conversation:
-    USER: Transfer money to John
-    AI: How much money do you want to send?
-    USER: I owe him $50
-    AI: Do you want to send $50 to John?
-    USER: Yes, that is correct
-    ===
-    The user just said '''Yes, that is correct'''.
-    """
-    )
-
-
-def test_update_prompt_returns_none(conversation: Conversation):
-    prompt = "prompt"
-    original_user_steps = [
-        step for step in conversation.iterate_over_annotated_user_steps()
-    ]
-    rephrased_user_steps = [
-        "Transfer money to John",
-        "Yes, that is correct",
-    ]
-
-    updated_prompt = _update_prompt(prompt, original_user_steps, rephrased_user_steps)
-
-    assert updated_prompt is None
-
-
 def test_create_data_point(conversation: Conversation):
     step = conversation.steps[0]
     prompt = """
@@ -333,27 +282,48 @@ def test_create_data_point_output_contains_multiple_commands(
     assert data_point.rephrased_user_utterance == rephrased_user_message
 
 
-def test_convert_conversation_into_llm_data(conversation: Conversation):
-    data = _convert_conversation_into_llm_data(conversation)
+@pytest.mark.asyncio
+async def test_convert_conversation_into_llm_data(
+    conversation: Conversation, compact_agent: Agent
+):
+    data = await _convert_conversation_into_llm_data(conversation, compact_agent)
 
     assert len(data) == 9  # 3 original steps + 6 rephrased steps
-    assert isinstance(data[0], LLMDataExample)
-    assert data[0].prompt.strip().startswith("Here is what happened previously")
-    assert data[0].original_user_utterance == "I want to send money to John"
-    assert data[0].rephrased_user_utterance is None
-    assert data[1].prompt.strip().startswith("Here is what happened previously")
-    assert data[1].original_user_utterance == "I want to send money to John"
-    assert data[1].rephrased_user_utterance == "Send money to John"
-    assert data[2].prompt.strip().startswith("Here is what happened previously")
-    assert data[2].original_user_utterance == "I want to send money to John"
-    assert data[2].rephrased_user_utterance == "Transfer money to John"
+    # 3 original steps
+    for data_point, conversation_step in zip(
+        data[:3], conversation.iterate_over_annotated_user_steps()
+    ):
+        assert data_point.prompt.strip().startswith("Here is what happened previously")
+        assert (
+            data_point.original_user_utterance
+            == conversation_step.original_test_step.text
+        )
+        assert data_point.rephrased_user_utterance is None
+
+    # 6 rephrased steps
+    for data_point, conversation_step in zip(
+        data[3:], cycle(conversation.iterate_over_annotated_user_steps())
+    ):
+        assert data_point.rephrased_user_utterance is not None
+        assert data_point.rephrased_user_utterance in data_point.prompt
+        if (
+            conversation_step.original_test_step.text
+            in data_point.rephrased_user_utterance
+        ):
+            continue
+        assert conversation_step.original_test_step.text not in data_point.prompt
 
 
-def test_convert_to_fine_tuning_data(conversation: Conversation):
+@pytest.mark.asyncio
+async def test_convert_to_fine_tuning_data(
+    conversation: Conversation, compact_agent: Agent
+):
     storage_context = MagicMock()
     conversations = [conversation]
 
-    llm_data = convert_to_fine_tuning_data(conversations, storage_context)
+    llm_data = await convert_to_fine_tuning_data(
+        conversations, storage_context, compact_agent
+    )
 
     assert len(llm_data) == 9  # 3 original steps + 6 rephrased steps
     assert storage_context.write_llm_data.called

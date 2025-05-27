@@ -208,10 +208,7 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
         sys.exit(0)
 
     flows = asyncio.run(e2e_test_runner.agent.processor.get_flows())
-    llm_command_generator_config = _get_llm_command_generator_config(e2e_test_runner)
-    llm_command_generator: Type[LLMBasedCommandGenerator] = _get_llm_command_generator(
-        e2e_test_runner
-    )
+    _validate_llm_command_generator_present(e2e_test_runner)
 
     # set up storage context
     storage_context = create_storage_context(StorageType.FILE, output_dir)
@@ -242,11 +239,11 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
             rephrase_config,
             args.num_rephrases,
             flows,
-            llm_command_generator,
-            llm_command_generator_config,
+            e2e_test_runner.agent,
             storage_context,
         )
     )
+
     statistics["num_passing_rephrased_user_messages"] = sum(
         [conversation.get_number_of_rephrases(True) for conversation in conversations]
     )
@@ -257,7 +254,11 @@ def prepare_llm_fine_tuning_data(args: argparse.Namespace) -> None:
 
     # 3. create fine-tuning dataset
     log_start_of_module("LLM Data Preparation")
-    llm_fine_tuning_data = convert_to_fine_tuning_data(conversations, storage_context)
+    llm_fine_tuning_data = asyncio.run(
+        convert_to_fine_tuning_data(
+            conversations, storage_context, e2e_test_runner.agent
+        )
+    )
     statistics["num_ft_data_points"] = len(llm_fine_tuning_data)
     log_end_of_module("LLM Data Preparation", statistics)
 
@@ -311,9 +312,9 @@ def _get_llm_command_generator_config(e2e_test_runner: E2ETestRunner) -> Dict[st
     sys.exit(1)
 
 
-def _get_llm_command_generator(
+def _validate_llm_command_generator_present(
     e2e_test_runner: E2ETestRunner,
-) -> Type[LLMBasedCommandGenerator]:
+) -> None:
     train_schema = e2e_test_runner.agent.processor.model_metadata.train_schema  # type: ignore
 
     for _, node in train_schema.nodes.items():
@@ -322,7 +323,7 @@ def _get_llm_command_generator(
         ) and not node.matches_type(
             MultiStepLLMCommandGenerator, include_subtypes=True
         ):
-            return cast(Type[LLMBasedCommandGenerator], node.uses)
+            return
 
     rasa.shared.utils.cli.print_error(
         "The provided model is not trained using 'SingleStepLLMCommandGenerator' or "

@@ -121,30 +121,6 @@ def test_get_dialogue_understanding_output_with_user_uttered_events(
     assert result.latency == latency
 
 
-@pytest.mark.asyncio
-async def test_create_tracker_for_user_step(
-    mock_du_test_runner: DialogueUnderstandingTestRunner,
-):
-    test_runner = DialogueUnderstandingTestRunner()
-    test_runner.agent = AsyncMock()
-
-    mock_tracker = MagicMock(DialogueStateTracker)
-    mock_tracker.copy.return_value = mock_tracker
-    mock_tracker.events = [MagicMock(Event, timestamp=i) for i in range(5)]
-
-    step_sender_id = "test_sender_id"
-    index_user_uttered_event = 3
-
-    await test_runner._create_tracker_for_user_step(
-        step_sender_id, mock_tracker, index_user_uttered_event
-    )
-
-    assert mock_tracker.sender_id == step_sender_id
-    mock_tracker.travel_back_in_time.assert_called_once_with(
-        mock_tracker.events[index_user_uttered_event - 1].timestamp
-    )
-
-
 @pytest.mark.parametrize(
     "events, index, expected_result",
     (

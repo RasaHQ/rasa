@@ -95,12 +95,16 @@ def test_annotate_e2e_tests(mock_asyncio_run: Mock):
 
 
 def test_generate_conversation(test_step: TestStep, test_turn: ActualStepOutput):
+    sender_id = "test_annotation_module"
+
+    tracker = DialogueStateTracker.from_events(
+        sender_id, [UserUttered("I want to transfer money")] * 2
+    )
+
     test_turns = {0: test_step, 1: test_turn}
     test_case = TestCase("test_case_name", steps=[test_step, test_step])
 
-    mock_tracker = MagicMock(spec=DialogueStateTracker)
-
-    result = generate_conversation(test_turns, test_case, mock_tracker)
+    result = generate_conversation(test_turns, test_case, tracker)
 
     assert result is not None
     assert isinstance(result, Conversation)
@@ -116,11 +120,12 @@ def test_generate_conversation_using_assertions(
     test_turns = {0: test_turn, 1: test_turn}
     test_case = TestCase("test_case_name", steps=[test_step, test_step])
 
-    mock_tracker = MagicMock(spec=DialogueStateTracker)
-
-    result = generate_conversation(
-        test_turns, test_case, mock_tracker, assertions_used=True
+    sender_id = "test_annotation_module"
+    tracker = DialogueStateTracker.from_events(
+        sender_id, [UserUttered("I want to transfer money")] * 2
     )
+
+    result = generate_conversation(test_turns, test_case, tracker, assertions_used=True)
 
     assert result is not None
     assert isinstance(result, Conversation)

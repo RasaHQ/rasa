@@ -1,11 +1,9 @@
-from typing import Any, Dict, List, Tuple, Type
+from typing import Any, Dict, List, Tuple
 
 import structlog
 from tqdm import tqdm
 
-from rasa.dialogue_understanding.generator.llm_based_command_generator import (
-    LLMBasedCommandGenerator,
-)
+from rasa.core.agent import Agent
 from rasa.llm_fine_tuning.conversations import Conversation
 from rasa.llm_fine_tuning.paraphrasing.conversation_rephraser import (
     ConversationRephraser,
@@ -28,8 +26,7 @@ async def create_paraphrased_conversations(
     rephrase_config: Dict[str, Any],
     num_rephrases: int,
     flows: FlowsList,
-    llm_command_generator: Type[LLMBasedCommandGenerator],
-    llm_command_generator_config: Dict[str, Any],
+    agent: Agent,
     storage_context: StorageContext,
 ) -> Tuple[List[Conversation], Dict[str, Any]]:
     """Create paraphrased conversations.
@@ -42,7 +39,7 @@ async def create_paraphrased_conversations(
         rephrase_config: The path to the rephrase configuration file.
         num_rephrases: The number of rephrases to produce per user message.
         flows: All flows.
-        llm_command_generator_config: The configuration of the trained model.
+        agent: The Rasa agent.
         storage_context: The storage context.
 
     Returns:
@@ -50,7 +47,7 @@ async def create_paraphrased_conversations(
         rephrasing.
     """
     rephraser = ConversationRephraser(rephrase_config)
-    validator = RephraseValidator(llm_command_generator_config, flows)
+    validator = RephraseValidator(flows)
 
     if num_rephrases <= 0:
         structlogger.info(
@@ -64,18 +61,19 @@ async def create_paraphrased_conversations(
     rephrased_conversations: List[Conversation] = []
     for i in tqdm(range(len(conversations))):
         current_conversation = conversations[i]
-
         try:
             # rephrase all user messages even if rephrase=False is set
             # to not confuse the LLM and get valid output
             rephrasings = await rephraser.rephrase_conversation(
-                conversations[i], num_rephrases
+                current_conversation, num_rephrases
             )
             # filter out the rephrasings for user messages that have rephrase=False set
-            rephrasings = _filter_rephrasings(rephrasings, conversations[i])
+            rephrasings = _filter_rephrasings(rephrasings, current_conversation)
             # check if the rephrasings are still producing the same commands
             rephrasings = await validator.validate_rephrasings(
-                rephrasings, current_conversation, llm_command_generator
+                agent,
+                rephrasings,
+                current_conversation,
             )
         except ProviderClientAPIException as e:
             structlogger.error(

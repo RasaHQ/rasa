@@ -165,3 +165,7 @@ class ProviderClientAPIException(RasaException):
 
 class ProviderClientValidationError(RasaException):
     """Raised for errors that occur during validation of the API client."""
+
+
+class FinetuningDataPreparationException(RasaException):
+    """Raised when there is an error in data preparation for fine-tuning."""

@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import List, Optional
 
 import structlog
@@ -24,6 +23,7 @@ from rasa.shared.core.constants import SlotMappingType
 from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import COMMANDS, ENTITIES, INTENT
+from rasa.shared.utils.llm import generate_sender_id
 
 structlogger = structlog.get_logger()
 
@@ -52,7 +52,7 @@ class TestCaseTrackerSimulator:
         self.test_case = test_case
         self.output_channel = output_channel or CollectingOutputChannel()
 
-        self.sender_id = self._generate_sender_id()
+        self.sender_id = generate_sender_id(self.test_case.name)
 
     async def simulate_test_case(
         self,
@@ -149,10 +149,6 @@ class TestCaseTrackerSimulator:
             sender_id=self.sender_id,
             user_uttered_event_indices=user_uttered_event_indices,
         )
-
-    def _generate_sender_id(self) -> str:
-        # add timestamp suffix to ensure sender_id is unique
-        return f"{self.test_case.name}_{datetime.now()}"
 
     @staticmethod
     async def _get_latest_user_uttered_event_index(

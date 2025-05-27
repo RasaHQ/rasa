@@ -1,6 +1,5 @@
-from datetime import datetime
 from typing import Any, Dict, List
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -298,22 +297,6 @@ async def test_set_up_fixtures_no_fixtures(
 
     # Check that the tracker was not saved
     agent.tracker_store.save.assert_not_called()
-
-
-def test_generate_sender_id():
-    test_case = DialogueUnderstandingTestCase(
-        name="test_case",
-        steps=[DialogueUnderstandingTestStep(actor=ACTOR_USER, text="Hello")],
-    )
-
-    agent = MagicMock()
-
-    with patch(
-        "rasa.dialogue_understanding_test.test_case_simulation.test_case_tracker_simulator.datetime"
-    ) as mock_datetime:
-        mock_datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)
-        tracker_simulator = TestCaseTrackerSimulator(agent, test_case)
-        assert tracker_simulator.sender_id == "test_case_2023-01-01 12:00:00"
 
 
 @pytest.mark.parametrize(

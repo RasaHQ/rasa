@@ -4,6 +4,7 @@ from typing import Any, Dict, Iterator, List, Optional, Union
 from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.e2e_test.e2e_test_case import TestCase, TestStep
 from rasa.shared.core.constants import USER
+from rasa.shared.core.trackers import DialogueStateTracker
 
 
 @dataclass
@@ -14,6 +15,7 @@ class ConversationStep:
     failed_rephrasings: List[str] = field(default_factory=list)
     passed_rephrasings: List[str] = field(default_factory=list)
     rephrase: bool = True
+    tracker_event_index: Optional[int] = None
 
     def as_dict(self) -> Dict[str, Any]:
         data = {
@@ -40,6 +42,7 @@ class Conversation:
     original_e2e_test_case: TestCase
     steps: List[Union[TestStep, ConversationStep]]
     transcript: str
+    tracker: Optional[DialogueStateTracker] = None
 
     def iterate_over_annotated_user_steps(
         self, rephrase: Optional[bool] = None

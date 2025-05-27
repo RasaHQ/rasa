@@ -10,7 +10,9 @@ from rasa.e2e_test.e2e_test_runner import TEST_TURNS_TYPE, E2ETestRunner
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.storage import StorageContext
 from rasa.shared.core.constants import USER
+from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import FinetuningDataPreparationException
 from rasa.shared.nlu.constants import LLM_COMMANDS, LLM_PROMPT
 from rasa.shared.utils.llm import tracker_as_readable_transcript
 
@@ -37,7 +39,7 @@ def annotate_e2e_tests(
     storage_context: StorageContext,
 ) -> List[Conversation]:
     with set_preparing_fine_tuning_data():
-        converations = asyncio.run(
+        conversations = asyncio.run(
             e2e_test_runner.run_tests_for_fine_tuning(
                 test_suite.test_cases,
                 test_suite.fixtures,
@@ -46,10 +48,11 @@ def annotate_e2e_tests(
         )
 
     storage_context.write_conversations(
-        converations, ANNOTATION_MODULE_STORAGE_LOCATION
+        conversations,
+        ANNOTATION_MODULE_STORAGE_LOCATION,
     )
 
-    return converations
+    return conversations
 
 
 def _get_previous_actual_step_output(
@@ -80,25 +83,45 @@ def generate_conversation(
         Conversation.
     """
     steps = []
+    tracker_event_indices = [
+        i for i, event in enumerate(tracker.events) if isinstance(event, UserUttered)
+    ]
+
+    if len(test_case.steps) != len(tracker_event_indices):
+        raise FinetuningDataPreparationException(
+            "Number of test case steps and tracker events do not match."
+        )
 
     if assertions_used:
         # we only have user steps, extract the bot response from the bot uttered
         # events of the test turn
-        for i, original_step in enumerate(test_case.steps):
+        for i, (original_step, tracker_event_index) in enumerate(
+            zip(test_case.steps, tracker_event_indices)
+        ):
             previous_turn = _get_previous_actual_step_output(test_turns, i)
             steps.append(
                 _convert_to_conversation_step(
-                    original_step, test_turns[i], test_case.name, previous_turn
+                    original_step,
+                    test_turns[i],
+                    test_case.name,
+                    previous_turn,
+                    tracker_event_index,
                 )
             )
             steps.extend(_create_bot_test_steps(test_turns[i]))
     else:
-        for i, original_step in enumerate(test_case.steps):
+        for i, (original_step, tracker_event_index) in enumerate(
+            zip(test_case.steps, tracker_event_indices)
+        ):
             if original_step.actor == USER:
                 previous_turn = _get_previous_actual_step_output(test_turns, i)
                 steps.append(
                     _convert_to_conversation_step(
-                        original_step, test_turns[i], test_case.name, previous_turn
+                        original_step,
+                        test_turns[i],
+                        test_case.name,
+                        previous_turn,
+                        tracker_event_index,
                     )
                 )
             else:
@@ -120,7 +143,7 @@ def generate_conversation(
 
     transcript = tracker_as_readable_transcript(tracker, max_turns=None)
 
-    return Conversation(test_case.name, test_case, steps, transcript)
+    return Conversation(test_case.name, test_case, steps, transcript, tracker)
 
 
 def _create_bot_test_steps(current_turn: ActualStepOutput) -> List[TestStep]:
@@ -140,6 +163,7 @@ def _convert_to_conversation_step(
     current_turn: ActualStepOutput,
     test_case_name: str,
     previous_turn: Optional[ActualStepOutput],
+    tracker_event_index: Optional[int] = None,
 ) -> Union[TestStep, ConversationStep]:
     if not current_step.text == current_turn.text or not isinstance(
         current_turn, ActualStepOutput
@@ -169,7 +193,13 @@ def _convert_to_conversation_step(
     commands = [Command.command_from_json(data) for data in llm_commands]
     rephrase = _should_be_rephrased(current_turn.text, previous_turn, test_case_name)
 
-    return ConversationStep(current_step, commands, llm_prompt, rephrase=rephrase)
+    return ConversationStep(
+        current_step,
+        commands,
+        llm_prompt,
+        rephrase=rephrase,
+        tracker_event_index=tracker_event_index,
+    )
 
 
 def _should_be_rephrased(

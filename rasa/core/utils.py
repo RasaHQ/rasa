@@ -250,6 +250,10 @@ class AvailableEndpoints:
             cls._instance = cls.read_endpoints(endpoint_file)
         return cls._instance
 
+    @classmethod
+    def reset_instance(cls) -> None:
+        cls._instance = None
+
 
 def read_endpoints_from_path(
     endpoints_path: Optional[Union[Path, Text]] = None,

@@ -1,9 +1,11 @@
-import asyncio
-from typing import List
+from typing import List, Text
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
+from rasa.core.agent import Agent
+from rasa.core.channels import UserMessage
+from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     ChitChatAnswerCommand,
@@ -19,31 +21,20 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
     CommandSyntaxVersion,
 )
-from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
-    CompactLLMCommandGenerator,
-)
-from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator import (  # noqa: E501
-    SingleStepLLMCommandGenerator,
-)
 from rasa.e2e_test.e2e_test_case import TestCase
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.paraphrasing.rephrase_validator import RephraseValidator
 from rasa.llm_fine_tuning.paraphrasing.rephrased_user_message import (
     RephrasedUserMessage,
 )
-from rasa.shared.exceptions import ProviderClientAPIException
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import BotUttered, UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
 from tests.utilities import flows_from_str
 
 
 @pytest.fixture
 def validator() -> RephraseValidator:
-    config = {
-        "type": "openai",
-        "model_name": "gpt-3.5-turbo",
-        "request_timeout": 7,
-        "temperature": 0.0,
-        "max_tokens": 4096,
-    }
     flows = flows_from_str(
         """
         flows:
@@ -60,11 +51,28 @@ def validator() -> RephraseValidator:
             - collect: end_date
         """
     )
-    return RephraseValidator(config, flows)
+    return RephraseValidator(flows)
 
 
 @pytest.fixture
-def conversation() -> Conversation:
+def sender_id() -> Text:
+    return "unit_test_rephrase_validator"
+
+
+@pytest.fixture
+def tracker(sender_id: Text) -> DialogueStateTracker:
+    events = [
+        UserUttered("I want to send money to John"),
+        BotUttered("How much money do you want to send?"),
+    ]
+    tracker = DialogueStateTracker.from_events(
+        sender_id=sender_id, evts=events, slots=[]
+    )
+    return tracker
+
+
+@pytest.fixture
+def conversation(tracker: DialogueStateTracker) -> Conversation:
     test_case = TestCase.from_dict(
         {
             "test_case": "transfer_money",
@@ -89,10 +97,12 @@ def conversation() -> Conversation:
                 ===
                 The user just said '''I want to send money to John'''.
                 """,
+                tracker_event_index=0,
             ),
             test_case.steps[1],
         ],
         "transcript",
+        tracker,
     )
 
 
@@ -106,32 +116,16 @@ def rephrased_user_messages() -> List[RephrasedUserMessage]:
     ]
 
 
-@patch("rasa.llm_fine_tuning.paraphrasing.rephrase_validator.llm_factory")
-def test_invoke_llm_failure(mock_llm_factory: Mock, validator: RephraseValidator):
-    # Mock the LLM to raise an exception
-    mock_llm = MagicMock()
-    mock_llm.apredict.side_effect = Exception("API error")
-    mock_llm_factory.return_value = mock_llm
-
-    # Call the private method _invoke_llm and assert it handles exception
-    prompt = "test prompt"
-    with pytest.raises(ProviderClientAPIException):
-        result = asyncio.run(validator._invoke_llm(prompt, {}))
-
-        # Assertions
-        assert result is None
-
-
-def test_validate_rephrasings_passing(
+@pytest.mark.asyncio
+async def test_validate_rephrasings_passing(
+    compact_agent: Agent,
     validator: RephraseValidator,
     conversation: Conversation,
     rephrased_user_messages: List[RephrasedUserMessage],
 ):
     with patch.object(validator, "_validate_rephrase_is_passing", return_value=True):
-        validated_rephrasings = asyncio.run(
-            validator.validate_rephrasings(
-                rephrased_user_messages, conversation, CompactLLMCommandGenerator
-            )
+        validated_rephrasings = await validator.validate_rephrasings(
+            compact_agent, rephrased_user_messages, conversation
         )
 
         assert len(validated_rephrasings[0].passed_rephrasings) == 2
@@ -140,16 +134,16 @@ def test_validate_rephrasings_passing(
         assert len(validated_rephrasings[0].failed_rephrasings) == 0
 
 
-def test_validate_rephrasings_failing(
+@pytest.mark.asyncio
+async def test_validate_rephrasings_failing(
+    compact_agent: Agent,
     validator: RephraseValidator,
     conversation: Conversation,
     rephrased_user_messages: List[RephrasedUserMessage],
 ):
     with patch.object(validator, "_validate_rephrase_is_passing", return_value=False):
-        validated_rephrasings = asyncio.run(
-            validator.validate_rephrasings(
-                rephrased_user_messages, conversation, CompactLLMCommandGenerator
-            )
+        validated_rephrasings = await validator.validate_rephrasings(
+            compact_agent, rephrased_user_messages, conversation
         )
 
         assert len(validated_rephrasings[0].failed_rephrasings) == 2
@@ -159,32 +153,37 @@ def test_validate_rephrasings_failing(
 
 
 @patch(
-    "rasa.llm_fine_tuning.paraphrasing.rephrase_validator.RephraseValidator."
-    "_invoke_llm"
+    "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator.SingleStepLLMCommandGenerator."
+    "invoke_llm"
 )
-def test_rephrase_is_passing(
+@pytest.mark.asyncio
+async def test_rephrase_is_passing(
     mock_invoke_llm: Mock,
+    single_step_agent: Agent,
     validator: RephraseValidator,
     conversation: Conversation,
 ):
     mock_invoke_llm.return_value = "StartFlow(transfer_money)"
 
     rephrase = "I want to transfer some money to John"
-    passing = asyncio.run(
-        validator._validate_rephrase_is_passing(
-            rephrase, conversation.steps[0], SingleStepLLMCommandGenerator
-        )
+    passing = await validator._validate_rephrase_is_passing(
+        single_step_agent,
+        rephrase,
+        conversation.steps[0],
+        conversation.name,
+        conversation.tracker,
     )
 
     assert passing is True
 
 
+@pytest.mark.asyncio
 @patch(
-    "rasa.llm_fine_tuning.paraphrasing.rephrase_validator.RephraseValidator."
-    "_invoke_llm"
+    "rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator.CompactLLMCommandGenerator.invoke_llm"
 )
-def test_rephrase_is_passing_using_compact_llm_command_generator(
+async def test_rephrase_is_passing_using_compact_llm_command_generator(
     mock_invoke_llm: Mock,
+    compact_agent: Agent,
     validator: RephraseValidator,
     conversation: Conversation,
 ):
@@ -196,10 +195,12 @@ def test_rephrase_is_passing_using_compact_llm_command_generator(
     mock_invoke_llm.return_value = "start flow transfer_money"
 
     rephrase = "I want to transfer some money to John"
-    passing = asyncio.run(
-        validator._validate_rephrase_is_passing(
-            rephrase, conversation.steps[0], CompactLLMCommandGenerator
-        )
+    passing = await validator._validate_rephrase_is_passing(
+        compact_agent,
+        rephrase,
+        conversation.steps[0],
+        conversation.name,
+        conversation.tracker,
     )
 
     assert passing is True
@@ -209,21 +210,24 @@ def test_rephrase_is_passing_using_compact_llm_command_generator(
 
 
 @patch(
-    "rasa.llm_fine_tuning.paraphrasing.rephrase_validator.RephraseValidator."
-    "_invoke_llm"
+    "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator.SingleStepLLMCommandGenerator.invoke_llm"
 )
-def test_rephrase_is_not_passing(
+@pytest.mark.asyncio
+async def test_rephrase_is_not_passing(
     mock_invoke_llm: Mock,
+    single_step_agent: Agent,
     validator: RephraseValidator,
     conversation: Conversation,
 ):
     mock_invoke_llm.return_value = "SetSlot('recipient', 'John')"
 
     rephrase = "I want to transfer some money to John"
-    passing = asyncio.run(
-        validator._validate_rephrase_is_passing(
-            rephrase, conversation.steps[0], SingleStepLLMCommandGenerator
-        )
+    passing = await validator._validate_rephrase_is_passing(
+        single_step_agent,
+        rephrase,
+        conversation.steps[0],
+        conversation.name,
+        conversation.tracker,
     )
 
     assert passing is False
@@ -267,25 +271,34 @@ def test_commands_match(
     assert validator._check_commands_match(expected_commands, actual_commands) is match
 
 
-def test_update_prompt(validator: RephraseValidator):
-    original = "I want to send money to John"
-    rephrased = "SOME REPHRASE TEXT"
-    prompt = """
-        Here is what happened previously in the conversation:
-        USER: I want to send money to John
-        AI: How much money do you want to send?
-        ===
-        The user just said '''I want to send money to John'''.
-        """
+@pytest.mark.asyncio
+async def test_send_rephrased_message_to_agent():
+    rephrase = "I'd like to send money to John."
+    step = MagicMock()
+    step.tracker_event_index = None
 
-    updated_prompt = validator._update_prompt(rephrased, original, prompt)
-    assert (
-        updated_prompt
-        == """
-        Here is what happened previously in the conversation:
-        USER: SOME REPHRASE TEXT
-        AI: How much money do you want to send?
-        ===
-        The user just said '''SOME REPHRASE TEXT'''.
-        """
+    previous_tracker = DialogueStateTracker("old_sender_id", slots=[])
+
+    # minimal agent with in-memory tracker store
+    domain = Domain.empty()
+    agent = Agent(domain=domain)
+    agent.tracker_store = InMemoryTrackerStore(domain)
+
+    async def _fake_handle(msg: UserMessage):
+        t = DialogueStateTracker(msg.sender_id, slots=[])
+        t.update(UserUttered(msg.text))
+        await agent.tracker_store.save(t)
+
+    agent.handle_message = _fake_handle
+    test_case_name = "test_send_rephrased_message_to_agent"
+
+    returned_tracker = await RephraseValidator._send_rephrased_message_to_agent(
+        rephrase,
+        step,
+        test_case_name=test_case_name,
+        agent=agent,
+        tracker=previous_tracker,
     )
+
+    assert test_case_name in returned_tracker.sender_id
+    assert returned_tracker.latest_message.text == rephrase

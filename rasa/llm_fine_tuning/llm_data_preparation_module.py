@@ -1,13 +1,23 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import structlog
 from tqdm import tqdm
 
+from rasa.core.agent import Agent
+from rasa.core.channels import UserMessage
 from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
+from rasa.dialogue_understanding.utils import set_record_commands_and_prompts
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.storage import StorageContext
-from rasa.llm_fine_tuning.utils import commands_as_string
+from rasa.llm_fine_tuning.utils import (
+    commands_as_string,
+    make_mock_invoke_llm,
+    patch_invoke_llm_in_generators,
+)
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import KEY_USER_PROMPT, PROMPTS
+from rasa.shared.utils.llm import generate_sender_id
 
 LLM_DATA_PREPARATION_MODULE_STORAGE_LOCATION = "3_llm_finetune_data/llm_ft_data.jsonl"
 
@@ -47,40 +57,8 @@ def _create_data_point(
     )
 
 
-def _update_prompt(
-    prompt: str,
-    original_user_steps: List[ConversationStep],
-    rephrased_user_steps: List[str],
-) -> Optional[str]:
-    if len(original_user_steps) != len(rephrased_user_steps):
-        structlogger.debug(
-            "llm_fine_tuning.llm_data_preparation_module.failed_to_update_prompt",
-            original_user_steps=[
-                step.original_test_step.text for step in original_user_steps
-            ],
-            rephrased_user_steps=rephrased_user_steps,
-        )
-        return None
-
-    updated_prompt = prompt
-    for user_step, rephrased_message in zip(original_user_steps, rephrased_user_steps):
-        # replace all occurrences of the original user message with the rephrased user
-        # message in the conversation history mentioned in the prompt
-        updated_prompt = updated_prompt.replace(
-            f"USER: {user_step.original_test_step.text}", f"USER: {rephrased_message}"
-        )
-
-    # replace the latest user message mentioned in the prompt
-    updated_prompt = updated_prompt.replace(
-        f"'''{original_user_steps[-1].original_test_step.text}'''",
-        f"'''{rephrased_user_steps[-1]}'''",
-    )
-
-    return updated_prompt
-
-
-def _convert_conversation_into_llm_data(
-    conversation: Conversation,
+async def _convert_conversation_into_llm_data(
+    conversation: Conversation, agent: Agent
 ) -> List[LLMDataExample]:
     data = []
 
@@ -95,18 +73,52 @@ def _convert_conversation_into_llm_data(
         # create data point for the original e2e test case
         data.append(_create_data_point(step.llm_prompt, step, conversation))
 
-        # create data points using the rephrasings, e.g. 'new_conversations'
-        for rephrased_user_steps in new_conversations:
-            # +1 to include the current user turn
-            prompt = _update_prompt(
-                step.llm_prompt,
-                original_user_steps[: i + 1],
-                rephrased_user_steps[: i + 1],
+    test_case_name = conversation.name
+
+    # create data points using the rephrasings, e.g. 'new_conversations'
+    for rephrased_user_steps in new_conversations:
+        sender_id = generate_sender_id(test_case_name)
+        # create a new tracker to be able to simulate the conversation from start
+        await agent.tracker_store.save(DialogueStateTracker(sender_id, slots=[]))
+        # simulate the conversation to get the prompts
+        for i, step in enumerate(original_user_steps):
+            rephrased_user_message = rephrased_user_steps[i]
+            user_message = UserMessage(rephrased_user_message, sender_id=sender_id)
+
+            expected_commands = "\n".join(
+                [command.to_dsl() for command in step.llm_commands]
             )
-            if prompt:
+            fake_invoke_function = make_mock_invoke_llm(expected_commands)
+
+            with (
+                set_record_commands_and_prompts(),
+                patch_invoke_llm_in_generators(fake_invoke_function),
+            ):
+                await agent.handle_message(user_message)
+
+            rephrased_tracker = await agent.tracker_store.retrieve(sender_id)
+            if rephrased_tracker is None:
+                # if tracker doesn't exist, we can't create a data point
+                continue
+
+            latest_message = rephrased_tracker.latest_message
+            if latest_message is None:
+                # if there is no latest message, we don't create a data point
+                continue
+
+            # tell the type checker what we expect to find under "prompts"
+            prompts = cast(
+                Optional[List[Dict[str, Any]]], latest_message.parse_data.get(PROMPTS)
+            )
+
+            if prompts:
+                # as we only use single step or compact command generator,
+                # there is always exactly one prompt
+                prompt = prompts[0]
+                user_prompt: Optional[str] = prompt.get(KEY_USER_PROMPT)
                 data.append(
                     _create_data_point(
-                        prompt, step, conversation, rephrased_user_steps[i]
+                        user_prompt, step, conversation, rephrased_user_message
                     )
                 )
 
@@ -149,7 +161,7 @@ def _construct_new_conversations(conversation: Conversation) -> List[List[str]]:
                 current_conversation.append(step.original_test_step.text)
                 continue
 
-            # some user steps might have less rephrasings than others
+            # some user steps might have fewer rephrasings than others
             # loop over the rephrasings
             index = i % len(step.passed_rephrasings)
             current_conversation.append(step.passed_rephrasings[index])
@@ -165,13 +177,18 @@ def _construct_new_conversations(conversation: Conversation) -> List[List[str]]:
     return new_conversations
 
 
-def convert_to_fine_tuning_data(
-    conversations: List[Conversation], storage_context: StorageContext
+async def convert_to_fine_tuning_data(
+    conversations: List[Conversation],
+    storage_context: StorageContext,
+    agent: Agent,
 ) -> List[LLMDataExample]:
     llm_data = []
 
     for i in tqdm(range(len(conversations))):
-        llm_data.extend(_convert_conversation_into_llm_data(conversations[i]))
+        conversation_llm_data = await _convert_conversation_into_llm_data(
+            conversations[i], agent
+        )
+        llm_data.extend(conversation_llm_data)
 
     storage_context.write_llm_data(
         llm_data, LLM_DATA_PREPARATION_MODULE_STORAGE_LOCATION

@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, Text
 from unittest import mock
@@ -6,6 +7,7 @@ from unittest.mock import patch
 import pytest
 from pytest import MonkeyPatch
 
+from rasa.core.agent import Agent
 from rasa.shared.constants import (
     AZURE_API_BASE_ENV_VAR,
     AZURE_API_KEY_ENV_VAR,
@@ -16,7 +18,12 @@ from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import BotUttered, Restarted, SessionStarted, UserUttered
+from rasa.shared.core.events import (
+    BotUttered,
+    Restarted,
+    SessionStarted,
+    UserUttered,
+)
 from rasa.shared.core.slots import (
     BooleanSlot,
     CategoricalSlot,
@@ -53,10 +60,12 @@ from rasa.shared.utils.llm import (
     ERROR_PLACEHOLDER,
     allowed_values_for_slot,
     combine_custom_and_default_config,
+    create_tracker_for_user_step,
     embedder_client_factory,
     embedder_factory,
     embedder_router_factory,
     ensure_cache,
+    generate_sender_id,
     get_prompt_template,
     get_provider_from_config,
     llm_client_factory,
@@ -2689,3 +2698,32 @@ def test_resolve_llm_config_return_same_config(llm_config: Optional[Dict[str, An
 def patch_structlogger():
     with patch("rasa.shared.utils.llm.structlogger.info") as mock:
         yield mock
+
+
+def test_generate_sender_id():
+    test_case_name = "test_case"
+    with patch("rasa.shared.utils.llm.datetime") as mock_datetime:
+        mock_datetime.now.return_value = datetime(2023, 1, 1, 12, 0, 0)
+        sender_id = generate_sender_id(test_case_name)
+        assert sender_id == "test_case_2023-01-01 12:00:00"
+
+
+@pytest.mark.asyncio
+async def test_create_tracker_for_user_step():
+    step_sender_id = "test_sender_id"
+    agent = Agent()
+    tracker = DialogueStateTracker.from_events(
+        step_sender_id, evts=[UserUttered(f"test {i}") for i in range(5)]
+    )
+    agent.tracker_store.save(tracker)
+
+    index_user_uttered_event = 3
+
+    await create_tracker_for_user_step(
+        step_sender_id, agent, tracker, index_user_uttered_event
+    )
+
+    new_tracker = await agent.tracker_store.retrieve(step_sender_id)
+    assert new_tracker.sender_id == step_sender_id
+    assert len(new_tracker.events) == 3
+    assert new_tracker.latest_message.text == f"test {index_user_uttered_event - 1}"

@@ -2,6 +2,7 @@ import importlib.resources
 import json
 import logging
 from copy import deepcopy
+from datetime import datetime
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -64,6 +65,7 @@ from rasa.shared.providers.mappings import (
 from rasa.shared.utils.constants import LOG_COMPONENT_SOURCE_METHOD_INIT
 
 if TYPE_CHECKING:
+    from rasa.core.agent import Agent
     from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -886,3 +888,29 @@ def resolve_model_client_config(
         )
 
     return model_group[0]
+
+
+def generate_sender_id(test_case_name: str) -> str:
+    # add timestamp suffix to ensure sender_id is unique
+    return f"{test_case_name}_{datetime.now()}"
+
+
+async def create_tracker_for_user_step(
+    step_sender_id: str,
+    agent: "Agent",
+    test_case_tracker: "DialogueStateTracker",
+    index_user_uttered_event: int,
+) -> None:
+    """Creates a tracker for the user step."""
+    tracker = test_case_tracker.copy()
+    # modify the sender id so that the original tracker is not overwritten
+    tracker.sender_id = step_sender_id
+
+    if tracker.events:
+        # get the timestamp of the event just before the user uttered event
+        timestamp = tracker.events[index_user_uttered_event - 1].timestamp
+        # revert the tracker to the event just before the user uttered event
+        tracker = tracker.travel_back_in_time(timestamp)
+
+    # store the tracker with the unique sender id
+    await agent.tracker_store.save(tracker)
