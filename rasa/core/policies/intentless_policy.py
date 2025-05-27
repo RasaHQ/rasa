@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple
 
 import structlog
 import tiktoken
+from deprecated import deprecated  # type: ignore[import]
 from jinja2 import Template
 from langchain.docstore.document import Document
 from langchain.schema.embeddings import Embeddings
@@ -43,12 +44,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
-from rasa.shared.core.events import (
-    ActionExecuted,
-    BotUttered,
-    Event,
-    UserUttered,
-)
+from rasa.shared.core.events import ActionExecuted, BotUttered, Event, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.policies.utils import filter_responses_for_intentless_policy
@@ -65,7 +61,7 @@ from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
     EmbeddingsHealthCheckMixin,
 )
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
-from rasa.shared.utils.io import deep_container_fingerprint
+from rasa.shared.utils.io import deep_container_fingerprint, raise_deprecation_warning
 from rasa.shared.utils.llm import (
     AI,
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
@@ -325,6 +321,9 @@ def conversation_as_prompt(conversation: Conversation) -> str:
 @DefaultV1Recipe.register(
     DefaultV1Recipe.ComponentType.POLICY_WITH_END_TO_END_SUPPORT, is_trainable=True
 )
+@deprecated(
+    reason=("The IntentlessPolicy is deprecated and will be removed in Rasa `4.0.0`.")
+)
 class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
     """Policy which uses a language model to generate the next action.
 
@@ -378,6 +377,9 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
         prompt_template: Optional[Text] = None,
     ) -> None:
         """Constructs a new Policy object."""
+        raise_deprecation_warning(
+            message=("Support for `IntentlessPolicy` will be removed in Rasa `4.0.0`.")
+        )
         super().__init__(config, model_storage, resource, execution_context, featurizer)
 
         # Resolve LLM config
