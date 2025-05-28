@@ -797,6 +797,25 @@ def create_app(
                 f"An unexpected error occurred. Error: {e}",
             )
 
+    @app.delete("/conversations/<conversation_id:path>/tracker")
+    @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app)
+    @ensure_conversation_exists()
+    async def delete_tracker(request: Request, conversation_id: Text) -> HTTPResponse:
+        """Delete a conversation's tracker."""
+        try:
+            async with app.ctx.agent.lock_store.lock(conversation_id):
+                await app.ctx.agent.tracker_store.delete(conversation_id)
+                logger.info(f"Tracker for conversation '{conversation_id}' deleted.")
+            return response.empty(status=HTTPStatus.NO_CONTENT)
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            raise ErrorResponse(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "ConversationError",
+                f"An unexpected error occurred. Error: {e}",
+            )
+
     @app.post("/conversations/<conversation_id:path>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)

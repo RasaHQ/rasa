@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 import os
 import sys
 import textwrap
@@ -21,6 +22,7 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 from aioresponses import aioresponses
+from pytest import LogCaptureFixture
 from ruamel.yaml import StringIO
 from sanic import Sanic
 from sanic_testing.testing import SanicASGITestClient
@@ -1651,6 +1653,7 @@ def test_list_routes(empty_agent: Agent):
         "version",
         "status",
         "retrieve_tracker",
+        "delete_tracker",
         "append_events",
         "replace_events",
         "retrieve_story",
@@ -2607,6 +2610,77 @@ async def test_retrieve_tracker_with_customized_action_session_start(
 
     assert tracker_events[3].get("event") == "action"
     assert tracker_events[3].get("name") == "action_listen"
+
+
+async def test_delete_tracker(
+    rasa_app: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+    caplog: LogCaptureFixture,
+) -> None:
+    conversation_id = "test_id"
+    tracker_store = InMemoryTrackerStore(Domain.empty())
+    tracker = DialogueStateTracker.from_events(conversation_id, [])
+
+    await tracker_store.save(tracker)
+
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(
+        rasa_app.sanic_app.ctx.agent.processor, "tracker_store", tracker_store
+    )
+
+    with caplog.at_level(logging.INFO):
+        _, response = await rasa_app.delete(f"/conversations/{conversation_id}/tracker")
+
+        assert response.status == HTTPStatus.NO_CONTENT
+        assert f"Tracker for conversation '{conversation_id}' deleted." in caplog.text
+
+
+async def test_delete_no_tracker(
+    rasa_app: SanicASGITestClient,
+    caplog: LogCaptureFixture,
+) -> None:
+    with caplog.at_level(logging.INFO):
+        _, response = await rasa_app.delete("/conversations/non_existent_id}/tracker")
+
+        assert response.status == HTTPStatus.NOT_FOUND
+        assert "Conversation ID not found." in caplog.text
+
+
+async def test_delete_tracker_server_error(
+    rasa_app: SanicASGITestClient,
+    monkeypatch: MonkeyPatch,
+    caplog: LogCaptureFixture,
+) -> None:
+    """Test that delete tracker endpoint returns 500 when an unexpected error occurs."""
+    # Given
+    conversation_id = "test_id"
+    tracker_store = InMemoryTrackerStore(Domain.empty())
+    tracker = DialogueStateTracker.from_events(conversation_id, [])
+
+    await tracker_store.save(tracker)
+
+    monkeypatch.setattr(rasa_app.sanic_app.ctx.agent, "tracker_store", tracker_store)
+    monkeypatch.setattr(
+        rasa_app.sanic_app.ctx.agent.processor, "tracker_store", tracker_store
+    )
+
+    # Simulate a server error by raising an exception in the delete method
+    error = "Database connection failed"
+    mock_delete = AsyncMock(side_effect=RuntimeError(error))
+    monkeypatch.setattr(
+        rasa_app.sanic_app.ctx.agent.tracker_store, "delete", mock_delete
+    )
+
+    # When
+    with caplog.at_level(logging.DEBUG):
+        _, response = await rasa_app.delete(f"/conversations/{conversation_id}/tracker")
+
+    # Then
+    assert response.status == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert response.json["reason"] == "ConversationError"
+    assert "An unexpected error occurred" in response.json["message"]
+    assert error in response.json["message"]
+    assert error in caplog.text
 
 
 @pytest.fixture
