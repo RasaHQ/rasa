@@ -1,0 +1,78 @@
+{
+  "type": "object",
+  "required": [
+    "rules"
+  ],
+  "properties": {
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "slot": {
+            "type": "string"
+          },
+          "anonymization": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "redact",
+                  "mask"
+                ]
+              },
+              "redaction_char": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1
+              },
+              "keep_left": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "keep_right": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "slot",
+          "anonymization"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "tracker_store_settings": {
+      "type": "object",
+      "properties": {
+        "deletion": {
+          "$ref": "#/$defs/trigger_settings"
+        },
+        "anonymization": {
+          "$ref": "#/$defs/trigger_settings"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "trigger_settings": {
+      "type": "object",
+      "properties": {
+        "min_after_session_end": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "cron": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,10 @@
+PRIVACY_CONFIG_SCHEMA = "privacy/privacy_config_schema.json"
+REDACTION_CHAR_KEY = "redaction_char"
+KEEP_LEFT_KEY = "keep_left"
+KEEP_RIGHT_KEY = "keep_right"
+DELETION_KEY = "deletion"
+ANONYMIZATION_KEY = "anonymization"
+TRACKER_STORE_SETTINGS = "tracker_store_settings"
+SLOT_KEY = "slot"
+
+USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME = "USER_CHAT_INACTIVITY_IN_MINUTES"

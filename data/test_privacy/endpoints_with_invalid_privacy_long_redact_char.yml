@@ -1,0 +1,15 @@
+privacy:
+  tracker_store_settings:
+    deletion:
+      min_after_session_end: 3000
+      cron: "30 0 * * *"
+    anonymization:
+      min_after_session_end: 120
+      cron: "30 1 * * *"
+
+  rules:
+    - slot: credit_card_number
+      anonymization:
+          type: redact
+          redaction_char: "##"
+          keep_right: 4

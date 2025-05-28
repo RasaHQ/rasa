@@ -1025,6 +1025,17 @@ def validate_yaml_with_jsonschema(
     except (YAMLError, DuplicateKeyError) as e:
         raise YamlSyntaxException(underlying_yaml_exception=e)
 
+    validate_data_with_jsonschema(source_data, schema_content, humanize_error)
+
+
+def validate_data_with_jsonschema(
+    source_data: Any,
+    schema_content: Any,
+    humanize_error: Callable[
+        [jsonschema.ValidationError], str
+    ] = default_error_humanizer,
+) -> None:
+    """Validate Python object against the provided jsonschema content."""
     try:
         jsonschema.validate(source_data, schema_content)
     except jsonschema.ValidationError as error:
