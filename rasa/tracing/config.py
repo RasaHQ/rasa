@@ -24,14 +24,12 @@ from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecut
 from rasa.core.agent import Agent
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_stores.tracker_store import TrackerStore
-from rasa.dialogue_understanding.commands import (
-    Command,
-    FreeFormAnswerCommand,
-)
+from rasa.dialogue_understanding.commands import Command, FreeFormAnswerCommand
 from rasa.dialogue_understanding.generator import (
     CompactLLMCommandGenerator,
     LLMCommandGenerator,
     MultiStepLLMCommandGenerator,
+    SearchReadyLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
@@ -112,6 +110,7 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         grpc_custom_action_executor_class=GRPCCustomActionExecutor,
         single_step_llm_command_generator_class=SingleStepLLMCommandGenerator,
         compact_llm_command_generator_class=CompactLLMCommandGenerator,
+        search_ready_llm_command_generator_class=SearchReadyLLMCommandGenerator,
         multi_step_llm_command_generator_class=MultiStepLLMCommandGenerator,
         custom_action_executor_subclasses=custom_action_executor_subclasses,
         flow_retrieval_class=FlowRetrieval,

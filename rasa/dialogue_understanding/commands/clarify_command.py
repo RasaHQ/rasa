@@ -102,6 +102,7 @@ class ClarifyCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: f"Clarify({', '.join(self.options)})",
             CommandSyntaxVersion.v2: f"disambiguate flows {' '.join(self.options)}",
+            CommandSyntaxVersion.v3: f"disambiguate flows {' '.join(self.options)}",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -119,6 +120,9 @@ class ClarifyCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: r"Clarify\(([\"\'a-zA-Z0-9_, -]*)\)",
             CommandSyntaxVersion.v2: (
+                r"""^[\s\W\d]*disambiguate flows (["'a-zA-Z0-9_, -]*)['"`]*$"""
+            ),
+            CommandSyntaxVersion.v3: (
                 r"""^[\s\W\d]*disambiguate flows (["'a-zA-Z0-9_, -]*)['"`]*$"""
             ),
         }

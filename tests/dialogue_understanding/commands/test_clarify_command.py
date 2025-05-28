@@ -230,3 +230,27 @@ def test_clarify_command_uses_localized_flow_name(monkeypatch: pytest.MonkeyPatc
     patch = jsonpatch.JsonPatch.from_string(dialogue_stack_event.update)
     dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
     assert dialogue_stack_dump[0]["names"] == [german_flow_name]
+
+
+def test_to_dsl_v3_command_syntax():
+    # Set the syntax version to v3 to test the DSL.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v3)
+
+    command = ClarifyCommand(options=["foo", "bar", "baz"])
+    assert command.to_dsl() == "disambiguate flows foo bar baz"
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
+def test_regex_pattern_v3_command_syntax():
+    # Set the syntax version to v3 to test the new regex pattern.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v3)
+
+    assert (
+        ClarifyCommand.regex_pattern()
+        == r"""^[\s\W\d]*disambiguate flows (["'a-zA-Z0-9_, -]*)['"`]*$"""
+    )
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()

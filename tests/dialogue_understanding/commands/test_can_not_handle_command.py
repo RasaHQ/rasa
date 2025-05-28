@@ -128,3 +128,24 @@ def test_parse(input_action):
     assert isinstance(parsed_command, CannotHandleCommand)
 
     CommandSyntaxManager.reset_syntax_version()
+
+
+def test_to_dsl_v3_command_syntax():
+    # Set the syntax version to v3 to test the DSL.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v3)
+
+    command = CannotHandleCommand("test_reason")
+    assert command.to_dsl() == "cannot handle"
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
+def test_regex_pattern_v3_command_syntax():
+    # Set the syntax version to v3 to test the new regex pattern.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v3)
+
+    assert CannotHandleCommand.regex_pattern() == r"""^[\s\W\d]*cannot handle['"`]*$"""
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()

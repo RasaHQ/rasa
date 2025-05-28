@@ -73,6 +73,7 @@ class HumanHandoffCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: "HumanHandoff()",
             CommandSyntaxVersion.v2: "hand over",
+            CommandSyntaxVersion.v3: "hand over",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -89,6 +90,7 @@ class HumanHandoffCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: r"HumanHandoff\(\)",
             CommandSyntaxVersion.v2: r"""^[\s\W\d]*hand over['"`]*$""",
+            CommandSyntaxVersion.v3: r"""^[\s\W\d]*hand over['"`]*$""",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

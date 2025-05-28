@@ -81,6 +81,7 @@ class CannotHandleCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: "CannotHandle()",
             CommandSyntaxVersion.v2: "cannot handle",
+            CommandSyntaxVersion.v3: "cannot handle",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -100,6 +101,7 @@ class CannotHandleCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: r"CannotHandle\(\)",
             CommandSyntaxVersion.v2: r"""^[\s\W\d]*cannot handle['"`]*$""",
+            CommandSyntaxVersion.v3: r"""^[\s\W\d]*cannot handle['"`]*$""",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

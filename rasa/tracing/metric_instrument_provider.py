@@ -23,6 +23,10 @@ from rasa.tracing.constants import (
     MULTI_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME,
     RASA_CLIENT_REQUEST_DURATION_METRIC_NAME,
+    SEARCH_READY_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
+    SEARCH_READY_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
+    SEARCH_READY_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
+    SEARCH_READY_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     SINGLE_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     SINGLE_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     SINGLE_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
@@ -48,6 +52,7 @@ class MetricInstrumentProvider(metaclass=Singleton):
             **self._create_llm_command_generator_instruments(meter),
             **self._create_single_step_llm_command_generator_instruments(meter),
             **self._create_compact_llm_command_generator_instruments(meter),
+            **self._create_search_ready_llm_command_generator_instruments(meter),
             **self._create_multi_step_llm_command_generator_instruments(meter),
             **self._create_llm_response_duration_instruments(meter),
             **self._create_client_request_instruments(meter),
@@ -160,6 +165,41 @@ class MetricInstrumentProvider(metaclass=Singleton):
             COMPACT_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME: compact_llm_command_generator_memory_usage,  # noqa: E501
             COMPACT_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME: compact_llm_command_generator_prompt_token_usage,  # noqa: E501
             COMPACT_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME: compact_llm_response_duration_llm_command_generator,  # noqa: E501
+        }
+
+    @staticmethod
+    def _create_search_ready_llm_command_generator_instruments(
+        meter: Meter,
+    ) -> Dict[str, Any]:
+        search_ready_llm_command_generator_cpu_usage = meter.create_histogram(
+            name=SEARCH_READY_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
+            description="CPU percentage for SearchReadyLLMCommandGenerator",
+            unit=LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+        )
+
+        search_ready_llm_command_generator_memory_usage = meter.create_histogram(
+            name=SEARCH_READY_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
+            description="RAM memory usage for SearchReadyLLMCommandGenerator",
+            unit=LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+        )
+
+        search_ready_llm_command_generator_prompt_token_usage = meter.create_histogram(
+            name=SEARCH_READY_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+            description="SearchReadyLLMCommandGenerator prompt token length",
+            unit="1",
+        )
+
+        search_ready_llm_response_duration_command_generator = meter.create_histogram(
+            name=SEARCH_READY_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
+            description="The duration of SearchReadyLLMCommandGenerator's LLM call",
+            unit=DURATION_UNIT_NAME,
+        )
+
+        return {
+            SEARCH_READY_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME: search_ready_llm_command_generator_cpu_usage,  # noqa: E501
+            SEARCH_READY_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME: search_ready_llm_command_generator_memory_usage,  # noqa: E501
+            SEARCH_READY_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME: search_ready_llm_command_generator_prompt_token_usage,  # noqa: E501
+            SEARCH_READY_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME: search_ready_llm_response_duration_command_generator,  # noqa: E501
         }
 
     @staticmethod

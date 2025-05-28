@@ -82,6 +82,7 @@ class SkipQuestionCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: "SkipQuestion()",
             CommandSyntaxVersion.v2: "skip question",
+            CommandSyntaxVersion.v3: "skip question",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -98,6 +99,7 @@ class SkipQuestionCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: r"SkipQuestion\(\)",
             CommandSyntaxVersion.v2: r"""^[\s\W\d]*skip question['"`]*$""",
+            CommandSyntaxVersion.v3: r"""^[\s\W\d]*skip question['"`]*$""",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

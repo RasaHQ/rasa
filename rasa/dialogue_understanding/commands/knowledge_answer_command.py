@@ -66,6 +66,7 @@ class KnowledgeAnswerCommand(FreeFormAnswerCommand):
         mapper = {
             CommandSyntaxVersion.v1: "SearchAndReply()",
             CommandSyntaxVersion.v2: "provide info",
+            CommandSyntaxVersion.v3: "search and reply",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -82,6 +83,7 @@ class KnowledgeAnswerCommand(FreeFormAnswerCommand):
         mapper = {
             CommandSyntaxVersion.v1: r"SearchAndReply\(\)",
             CommandSyntaxVersion.v2: r"""^[\s\W\d]*provide info['"`]*$""",
+            CommandSyntaxVersion.v3: r"""^[\s\W\d]*search and reply['"`]*$""",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

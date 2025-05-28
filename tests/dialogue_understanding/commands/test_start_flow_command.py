@@ -281,3 +281,27 @@ def test_from_dsl():
 def test_is_instance_of_prompt_command():
     # Check if the command adheres to the PromptCommand protocol.
     assert isinstance(StartFlowCommand([]), PromptCommand) is True
+
+
+def test_to_dsl_v3_command_syntax():
+    # Set the syntax version to v3 to test the DSL.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v3)
+
+    command = StartFlowCommand("foo")
+    assert command.to_dsl() == "start flow foo"
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
+def test_regex_pattern_v3_command_syntax():
+    # Set the syntax version to v3 to test the new regex pattern.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v3)
+
+    assert (
+        StartFlowCommand.regex_pattern()
+        == r"""^[\s\W\d]*start flow ['"`]?([a-zA-Z0-9_-]+)['"`]*"""
+    )
+
+    # Reset the syntax version to the default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()

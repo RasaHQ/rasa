@@ -9,6 +9,7 @@ from rasa.dialogue_understanding.generator import (
     CompactLLMCommandGenerator,
     LLMCommandGenerator,
     MultiStepLLMCommandGenerator,
+    SearchReadyLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
 )
 from rasa.tracing.constants import (
@@ -31,6 +32,10 @@ from rasa.tracing.constants import (
     RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME,
     RASA_CLIENT_REQUEST_DURATION_METRIC_NAME,
     REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
+    SEARCH_READY_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
+    SEARCH_READY_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
+    SEARCH_READY_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
+    SEARCH_READY_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     SINGLE_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     SINGLE_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     SINGLE_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
@@ -205,6 +210,36 @@ def record_compact_llm_command_generator_metrics(
     )
 
 
+def record_search_ready_llm_command_generator_metrics(
+    attributes: Dict[str, Any],
+) -> None:
+    """
+    Record measurements for SearchReadyLLMCommandGenerator specific metrics.
+
+    The recording is done by the opentelemetry.metrics.Histogram instruments.
+    These instruments are registered to the MetricInstrumentProvider internal singleton.
+
+    :param attributes: Extracted tracing attributes
+    :return: None
+    """
+    instrument_provider = MetricInstrumentProvider()
+
+    if not instrument_provider.instruments:
+        return None
+
+    record_llm_based_command_generator_cpu_usage(
+        instrument_provider, SEARCH_READY_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME
+    )
+    record_llm_based_command_generator_memory_usage(
+        instrument_provider, SEARCH_READY_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME
+    )
+    record_llm_based_command_generator_prompt_token(
+        instrument_provider,
+        attributes,
+        SEARCH_READY_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    )
+
+
 def record_multi_step_llm_command_generator_metrics(attributes: Dict[str, Any]) -> None:
     """
     Record measurements for MultiStepLLMCommandGenerator specific metrics.
@@ -274,6 +309,11 @@ def record_callable_duration_metrics(
     if type(self) == CompactLLMCommandGenerator:
         metric_instrument = instrument_provider.get_instrument(
             COMPACT_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME
+        )
+
+    if type(self) == SearchReadyLLMCommandGenerator:
+        metric_instrument = instrument_provider.get_instrument(
+            SEARCH_READY_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME
         )
 
     if type(self) == MultiStepLLMCommandGenerator:

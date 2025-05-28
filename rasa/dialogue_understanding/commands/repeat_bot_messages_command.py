@@ -67,6 +67,7 @@ class RepeatBotMessagesCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: "RepeatLastBotMessages()",
             CommandSyntaxVersion.v2: "repeat message",
+            CommandSyntaxVersion.v3: "repeat message",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -83,6 +84,7 @@ class RepeatBotMessagesCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: r"RepeatLastBotMessages\(\)",
             CommandSyntaxVersion.v2: r"""^[\s\W\d]*repeat message['"`]*$""",
+            CommandSyntaxVersion.v3: r"""^[\s\W\d]*repeat message['"`]*$""",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

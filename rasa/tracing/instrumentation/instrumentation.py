@@ -44,6 +44,7 @@ from rasa.dialogue_understanding.generator import (
     CompactLLMCommandGenerator,
     LLMCommandGenerator,
     MultiStepLLMCommandGenerator,
+    SearchReadyLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
@@ -69,6 +70,7 @@ from rasa.tracing.instrumentation.metrics import (
     record_llm_command_generator_metrics,
     record_multi_step_llm_command_generator_metrics,
     record_request_size_in_bytes,
+    record_search_ready_llm_command_generator_metrics,
     record_single_step_llm_command_generator_metrics,
 )
 from rasa.utils.endpoints import EndpointConfig, concat_url
@@ -291,6 +293,9 @@ SingleStepLLMCommandGeneratorType = TypeVar(
 CompactLLMCommandGeneratorType = TypeVar(
     "CompactLLMCommandGeneratorType", bound=CompactLLMCommandGenerator
 )
+SearchReadyLLMCommandGeneratorType = TypeVar(
+    "SearchReadyLLMCommandGeneratorType", bound=SearchReadyLLMCommandGenerator
+)
 MultiStepLLMCommandGeneratorType = TypeVar(
     "MultiStepLLMCommandGeneratorType", bound=MultiStepLLMCommandGenerator
 )
@@ -325,6 +330,9 @@ def instrument(
     ] = None,
     compact_llm_command_generator_class: Optional[
         Type[CompactLLMCommandGeneratorType]
+    ] = None,
+    search_ready_llm_command_generator_class: Optional[
+        Type[SearchReadyLLMCommandGeneratorType]
     ] = None,
     multi_step_llm_command_generator_class: Optional[
         Type[MultiStepLLMCommandGeneratorType]
@@ -378,6 +386,9 @@ def instrument(
         be instrumented.
     :param compact_llm_command_generator_class: The `CompactLLMCommandGenerator`
         to be instrumented. If `None` is given, no `CompactLLMCommandGenerator` will
+        be instrumented.
+    :param search_ready_llm_command_generator_class: The`SearchReadyLLMCommandGenerator`
+        to be instrumented. If `None` is given, no `SearchReadyLLMCommandGenerator` will
         be instrumented.
     :param multi_step_llm_command_generator_class: The `MultiStepLLMCommandGenerator`
         to be instrumented. If `None` is given, no `MultiStepLLMCommandGenerator` will
@@ -527,6 +538,37 @@ def instrument(
         )
         mark_class_as_instrumented(compact_llm_command_generator_class)
 
+    if (
+        search_ready_llm_command_generator_class is not None
+        and not class_is_instrumented(search_ready_llm_command_generator_class)
+    ):
+        _instrument_method(
+            tracer_provider.get_tracer(
+                search_ready_llm_command_generator_class.__module__
+            ),
+            search_ready_llm_command_generator_class,
+            "invoke_llm",
+            attribute_extractors.extract_attrs_for_llm_based_command_generator,
+            metrics_recorder=record_search_ready_llm_command_generator_metrics,
+        )
+        _instrument_method(
+            tracer_provider.get_tracer(
+                search_ready_llm_command_generator_class.__module__
+            ),
+            search_ready_llm_command_generator_class,
+            "_check_commands_against_startable_flows",
+            attribute_extractors.extract_attrs_for_check_commands_against_startable_flows,
+        )
+        _instrument_perform_health_check_method_for_component(
+            tracer_provider.get_tracer(
+                search_ready_llm_command_generator_class.__module__
+            ),
+            search_ready_llm_command_generator_class,
+            "perform_llm_health_check",
+            attribute_extractors.extract_attrs_for_performing_health_check,
+        )
+        mark_class_as_instrumented(search_ready_llm_command_generator_class)
+
     if multi_step_llm_command_generator_class is not None and not class_is_instrumented(
         multi_step_llm_command_generator_class
     ):
@@ -562,6 +604,7 @@ def instrument(
                 llm_command_generator_class,
                 single_step_llm_command_generator_class,
                 compact_llm_command_generator_class,
+                search_ready_llm_command_generator_class,
                 multi_step_llm_command_generator_class,
             )
         )

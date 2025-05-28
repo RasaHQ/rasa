@@ -117,6 +117,7 @@ class StartFlowCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: f"StartFlow({self.flow})",
             CommandSyntaxVersion.v2: f"start flow {self.flow}",
+            CommandSyntaxVersion.v3: f"start flow {self.flow}",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -133,6 +134,9 @@ class StartFlowCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: r"StartFlow\(['\"]?([a-zA-Z0-9_-]+)['\"]?\)",
             CommandSyntaxVersion.v2: (
+                r"""^[\s\W\d]*start flow ['"`]?([a-zA-Z0-9_-]+)['"`]*"""
+            ),
+            CommandSyntaxVersion.v3: (
                 r"""^[\s\W\d]*start flow ['"`]?([a-zA-Z0-9_-]+)['"`]*"""
             ),
         }

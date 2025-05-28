@@ -134,6 +134,7 @@ class CancelFlowCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: "CancelFlow()",
             CommandSyntaxVersion.v2: "cancel flow",
+            CommandSyntaxVersion.v3: "cancel flow",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -150,6 +151,7 @@ class CancelFlowCommand(Command):
         mapper = {
             CommandSyntaxVersion.v1: r"CancelFlow\(\)",
             CommandSyntaxVersion.v2: r"""^[\s\W\d]*cancel flow['"`]*$""",
+            CommandSyntaxVersion.v3: r"""^[\s\W\d]*cancel flow['"`]*$""",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

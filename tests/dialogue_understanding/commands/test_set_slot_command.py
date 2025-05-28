@@ -557,3 +557,27 @@ def test_run_command_sets_builtin_slot_even_when_not_asked_for() -> None:
     # because it is marked as built-in (i.e. slot.is_builtin is True),
     # the command should not skip setting its value.
     assert events == [SlotSet("foo", "new_value", filled_by=SetSlotExtractor.LLM.value)]
+
+
+def test_to_dsl_v3_command_syntax():
+    # Set the syntax version to v3 to test the DSL.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v3)
+
+    command = SetSlotCommand("foo", "bar")
+    assert command.to_dsl() == "set slot foo bar"
+
+    # Reset the syntax version to the default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
+def test_regex_pattern_v3_command_syntax():
+    # Set the syntax version to v3 to test the new regex pattern.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v3)
+
+    assert (
+        SetSlotCommand.regex_pattern()
+        == r"""^[\s\W\d]*set slot ['"`]?([a-zA-Z_][a-zA-Z0-9_-]*)['"`]? ['"`]?(.+?)['"`]*$"""  # noqa: E501
+    )
+
+    # Reset the syntax version to the default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()

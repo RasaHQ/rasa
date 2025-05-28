@@ -97,7 +97,9 @@ class SingleStepLLMCommandGenerator(CompactLLMCommandGenerator):
     def fingerprint_addon(cls: Any, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint for the graph."""
         prompt_template = cls._resolve_component_prompt_template(
-            config, log_context=LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON
+            config,
+            log_context=LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
+            log_source_component=cls.__name__,
         )
         llm_config = resolve_model_client_config(
             config.get(LLM_CONFIG_KEY), SingleStepLLMCommandGenerator.__name__
@@ -119,11 +121,13 @@ class SingleStepLLMCommandGenerator(CompactLLMCommandGenerator):
     def get_component_command_syntax_version() -> CommandSyntaxVersion:
         return CommandSyntaxVersion.v1
 
-    @staticmethod
+    @classmethod
     def _resolve_component_prompt_template(
+        cls: Any,
         config: Dict[str, Any],
         prompt_template: Optional[str] = None,
         log_context: Optional[Literal["init", "fingerprint_addon"]] = None,
+        log_source_component: Optional[str] = "SingleStepLLMCommandGenerator",
     ) -> Optional[str]:
         """Get the prompt template from the config or the default prompt template."""
         # Case when model is being loaded
@@ -143,6 +147,6 @@ class SingleStepLLMCommandGenerator(CompactLLMCommandGenerator):
         return get_prompt_template(
             prompt_template_path,
             DEFAULT_COMMAND_PROMPT_TEMPLATE,
-            log_source_component=SingleStepLLMCommandGenerator.__name__,
+            log_source_component=log_source_component,
             log_source_method=log_context,
         )

@@ -192,7 +192,10 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
 
         # Get the prompt template from the config or the default prompt template.
         self.prompt_template = self._resolve_component_prompt_template(
-            self.config, prompt_template, log_context=LOG_COMPONENT_SOURCE_METHOD_INIT
+            self.config,
+            prompt_template,
+            log_context=LOG_COMPONENT_SOURCE_METHOD_INIT,
+            log_source_component=self.__class__.__name__,
         )
 
         # Set the command syntax version to v2
@@ -532,7 +535,7 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
         """Add a fingerprint for the graph."""
         # Get the default prompt template based on the model name
         llm_config = resolve_model_client_config(
-            config.get(LLM_CONFIG_KEY), CompactLLMCommandGenerator.__name__
+            config.get(LLM_CONFIG_KEY), cls.__name__
         )
         embedding_config = resolve_model_client_config(
             config.get(FLOW_RETRIEVAL_KEY, {}).get(EMBEDDINGS_CONFIG_KEY),
@@ -544,12 +547,29 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
         _config_copy = copy.deepcopy(config)
         _config_copy[LLM_CONFIG_KEY] = llm_config
         prompt_template = cls._resolve_component_prompt_template(
-            _config_copy, log_context=LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON
+            _config_copy,
+            log_context=LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
+            log_source_component=cls.__name__,
         )
 
         return deep_container_fingerprint(
             [prompt_template, llm_config, embedding_config]
         )
+
+    @staticmethod
+    def get_default_prompt_template_file_name() -> str:
+        """Get the default prompt template file name for the command generator."""
+        return DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME
+
+    @staticmethod
+    def get_fallback_prompt_template_file_name() -> str:
+        """Get the fallback prompt template file name for the command generator."""
+        return FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME
+
+    @staticmethod
+    def get_model_prompt_mapper() -> Dict[str, str]:
+        """Get the model prompt mapper for the command generator."""
+        return MODEL_PROMPT_MAPPER
 
     @staticmethod
     def get_default_llm_config() -> Dict[str, Any]:
@@ -560,20 +580,22 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
     def get_component_command_syntax_version() -> CommandSyntaxVersion:
         return CommandSyntaxVersion.v2
 
-    @staticmethod
+    @classmethod
     def _resolve_component_prompt_template(
+        cls,
         config: Dict[str, Any],
         prompt_template: Optional[str] = None,
         log_context: Optional[Literal["init", "fingerprint_addon"]] = None,
+        log_source_component: Optional[str] = "CompactLLMCommandGenerator",
     ) -> Optional[str]:
         """Get the prompt template from the config or the default prompt template."""
         # Get the default prompt template based on the model name.
         default_command_prompt_template = get_default_prompt_template_based_on_model(
             llm_config=config.get(LLM_CONFIG_KEY, {}) or {},
-            model_prompt_mapping=MODEL_PROMPT_MAPPER,
-            default_prompt_path=DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
-            fallback_prompt_path=FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
-            log_source_component=CompactLLMCommandGenerator.__name__,
+            model_prompt_mapping=cls.get_model_prompt_mapper(),
+            default_prompt_path=cls.get_default_prompt_template_file_name(),
+            fallback_prompt_path=cls.get_fallback_prompt_template_file_name(),
+            log_source_component=log_source_component,
             log_source_method=log_context,
         )
 
@@ -581,6 +603,6 @@ class CompactLLMCommandGenerator(LLMBasedCommandGenerator):
         return prompt_template or get_prompt_template(
             config.get(PROMPT_TEMPLATE_CONFIG_KEY),
             default_command_prompt_template,
-            log_source_component=CompactLLMCommandGenerator.__name__,
+            log_source_component=log_source_component,
             log_source_method=log_context,
         )

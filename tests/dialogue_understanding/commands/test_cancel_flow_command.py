@@ -263,3 +263,24 @@ def test_cancel_flow_command_uses_localized_flow_name(monkeypatch: pytest.Monkey
     patch = jsonpatch.JsonPatch.from_string(dialogue_stack_event.update)
     dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
     assert dialogue_stack_dump[-1]["canceled_name"] == german_flow_name
+
+
+def test_to_dsl_v3_command_syntax():
+    # Set the syntax version to v3 to test the DSL.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v3)
+
+    command = CancelFlowCommand()
+    assert command.to_dsl() == "cancel flow"
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
+def test_regex_pattern_v3_command_syntax():
+    # Set the syntax version to v3 to test the new regex pattern.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v3)
+
+    assert CancelFlowCommand.regex_pattern() == r"""^[\s\W\d]*cancel flow['"`]*$"""
+
+    # Reset the syntax version to default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()

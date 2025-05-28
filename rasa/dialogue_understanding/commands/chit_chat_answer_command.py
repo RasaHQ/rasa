@@ -66,6 +66,7 @@ class ChitChatAnswerCommand(FreeFormAnswerCommand):
         mapper = {
             CommandSyntaxVersion.v1: "ChitChat()",
             CommandSyntaxVersion.v2: "offtopic reply",
+            CommandSyntaxVersion.v3: "offtopic reply",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),
@@ -82,6 +83,7 @@ class ChitChatAnswerCommand(FreeFormAnswerCommand):
         mapper = {
             CommandSyntaxVersion.v1: r"ChitChat\(\)",
             CommandSyntaxVersion.v2: r"""^[\s\W\d]*offtopic reply['"`]*$""",
+            CommandSyntaxVersion.v3: r"""^[\s\W\d]*offtopic reply['"`]*$""",
         }
         return mapper.get(
             CommandSyntaxManager.get_syntax_version(),

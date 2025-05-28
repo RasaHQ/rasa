@@ -1129,6 +1129,7 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
         LLMBasedCommandGenerator,
         LLMCommandGenerator,
         MultiStepLLMCommandGenerator,
+        SearchReadyLLMCommandGenerator,
         SingleStepLLMCommandGenerator,
     )
     from rasa.dialogue_understanding.generator.constants import (
@@ -1156,6 +1157,7 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
                 SingleStepLLMCommandGenerator.__name__,
                 MultiStepLLMCommandGenerator.__name__,
                 CompactLLMCommandGenerator.__name__,
+                SearchReadyLLMCommandGenerator.__name__,
             ]:
                 return component
         return None
@@ -1167,6 +1169,7 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
             SingleStepLLMCommandGenerator.__name__: SingleStepLLMCommandGenerator,
             MultiStepLLMCommandGenerator.__name__: MultiStepLLMCommandGenerator,
             CompactLLMCommandGenerator.__name__: CompactLLMCommandGenerator,
+            SearchReadyLLMCommandGenerator.__name__: SearchReadyLLMCommandGenerator,
         }
         llm_config = component.get(LLM_CONFIG_KEY, {})
         # Config at this stage is not yet resolved, so read from `model_group`

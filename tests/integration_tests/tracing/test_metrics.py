@@ -19,6 +19,7 @@ from rasa.dialogue_understanding.generator import (
     CompactLLMCommandGenerator,
     LLMCommandGenerator,
     MultiStepLLMCommandGenerator,
+    SearchReadyLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
 )
 from rasa.engine.graph import ExecutionContext
@@ -38,6 +39,7 @@ from rasa.tracing.constants import (
     LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     RASA_CLIENT_REQUEST_DURATION_METRIC_NAME,
+    SEARCH_READY_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     SINGLE_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
 )
 from rasa.tracing.instrumentation import instrumentation
@@ -141,6 +143,28 @@ def setup_test_compact_llm_command_generator(
 
     return CompactLLMCommandGenerator(
         {}, default_model_storage, Resource("test_compact_llm_command_generator")
+    )
+
+
+def setup_test_search_ready_llm_command_generator(
+    monkeypatch: MonkeyPatch,
+    **kwargs: Any,
+) -> SearchReadyLLMCommandGenerator:
+    async def mock_search_ready_llm_command_generate(
+        self: Any, prompt: str
+    ) -> Optional[str]:
+        return ""
+
+    monkeypatch.setattr(
+        SearchReadyLLMCommandGenerator,
+        "invoke_llm",
+        mock_search_ready_llm_command_generate,
+    )
+
+    default_model_storage = kwargs.get("default_model_storage")
+
+    return SearchReadyLLMCommandGenerator(
+        {}, default_model_storage, Resource("test_search_ready_llm_command_generator")
     )
 
 
@@ -350,6 +374,17 @@ def setup_test_endpoint_config(
             14,
             COMPACT_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
             "The duration of CompactLLMCommandGenerator's LLM call",
+        ),
+        (
+            "search_ready_llm_command_generator_class",
+            SearchReadyLLMCommandGenerator,
+            setup_test_search_ready_llm_command_generator,
+            ["default_model_storage"],
+            "invoke_llm",
+            ["prompt"],
+            17,
+            SEARCH_READY_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
+            "The duration of SearchReadyLLMCommandGenerator's LLM call",
         ),
     ],
 )

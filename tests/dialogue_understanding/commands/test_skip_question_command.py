@@ -116,3 +116,24 @@ def test_regex_pattern_v2_command_syntax():
 def test_is_instance_of_prompt_command():
     # Check if the command adheres to the PromptCommand protocol.
     assert isinstance(SkipQuestionCommand(), PromptCommand) is True
+
+
+def test_to_dsl_v3_command_syntax():
+    # Set the syntax version to v3 to test the DSL.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v3)
+
+    command = SkipQuestionCommand()
+    assert command.to_dsl() == "skip question"
+
+    # Reset the syntax version to the default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
+
+
+def test_regex_pattern_v3_command_syntax():
+    # Set the syntax version to v3 to test the new regex pattern.
+    CommandSyntaxManager.set_syntax_version(CommandSyntaxVersion.v3)
+
+    assert SkipQuestionCommand.regex_pattern() == r"""^[\s\W\d]*skip question['"`]*$"""
+
+    # Reset the syntax version to the default, otherwise it will affect other tests.
+    CommandSyntaxManager.reset_syntax_version()
