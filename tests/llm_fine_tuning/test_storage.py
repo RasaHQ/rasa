@@ -93,6 +93,41 @@ def test_write_llm_data(tmpdir: str):
     assert loaded_data == llm_data[0].as_dict()
 
 
+def test_write_llm_data_writes_unicode(tmpdir: str):
+    # Arrange
+    umlauts = "ä, ö, ü"
+    llm_data = [
+        LLMDataExample(
+            "prompt",
+            [StartFlowCommand("flow1")],
+            f"original test name with umlauts {umlauts}",
+            f"original user utterance with umlauts {umlauts}",
+            f"rephrased user utterance with umlauts {umlauts}",
+        )
+    ]
+    output_dir = tmpdir
+    storage_location = "3_llm_finetune_data/llm_ft_data.jsonl"
+    file_storage = FileStorageStrategy(output_dir)
+
+    expected_file_path = f"{output_dir}/{storage_location}"
+
+    # Act
+    file_storage.write_llm_data(llm_data, storage_location)
+
+    # Assert
+    loaded_data = rasa.shared.utils.io.read_json_file(expected_file_path)
+
+    assert loaded_data == llm_data[0].as_dict()
+
+    with open(expected_file_path, encoding="utf-8") as f:
+        text = f.read()
+
+    # The characters themselves must be there …
+    assert "ä" in text and "ö" in text and "ü" in text
+    # … and the escaped versions must NOT be there.
+    assert r"\u00e4" not in text and r"\u00f6" not in text and r"\u00fc" not in text
+
+
 def test_write_formatted_finetuning_data_alpaca_format(tmpdir: str):
     # Arrange
     formatted_data = [
@@ -147,6 +182,52 @@ def test_write_formatted_finetuning_data_sharegpt_format(tmpdir: str):
     expected_data = [example.as_dict() for example in formatted_data]
 
     assert loaded_data == expected_data
+
+
+def test_write_formatted_finetuning_data_writes_unicode(tmp_path):
+    # -----------------------------------------------------------------------
+    # Arrange
+    umlauts = "ä, ö, ü"
+    formatted_data = [
+        ConversationalDataFormat(
+            [
+                ConversationalMessageDataFormat("system", f"intro {umlauts}"),
+                ConversationalMessageDataFormat("user", f"question {umlauts}"),
+                ConversationalMessageDataFormat("assistant", "answer"),
+            ]
+        )
+    ]
+
+    storage_location = "4_train_test_split"
+    file_name = "ft_splits/train.jsonl"
+
+    # FileStorageStrategy is assumed to create directories as needed
+    file_storage = FileStorageStrategy(output_dir=str(tmp_path))
+
+    expected_file_path = tmp_path / storage_location / file_name
+
+    # -----------------------------------------------------------------------
+    # Act
+    file_storage.write_formatted_finetuning_data(
+        formatted_data, storage_location, file_name
+    )
+
+    # -----------------------------------------------------------------------
+    # Assert 1 – JSON round-trip works
+    loaded_jsonl = rasa.shared.utils.io.read_jsonl_file(str(expected_file_path))
+    expected_jsonl = [ex.as_dict() for ex in formatted_data]
+    assert loaded_jsonl == expected_jsonl  # still identical objects
+
+    # -----------------------------------------------------------------------
+    # Assert 2 – file really contains readable UTF-8 characters
+    raw_text = expected_file_path.read_text(encoding="utf-8")
+
+    # characters themselves must be there …
+    assert "ä" in raw_text and "ö" in raw_text and "ü" in raw_text
+    # … and the escaped ASCII versions must not be there.
+    assert r"\u00e4" not in raw_text
+    assert r"\u00f6" not in raw_text
+    assert r"\u00fc" not in raw_text
 
 
 @pytest.mark.parametrize(

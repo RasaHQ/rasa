@@ -96,9 +96,9 @@ class FileStorageStrategy(StorageStrategy):
         file_path = self._get_file_path(storage_location)
         self._create_output_dir(file_path)
 
-        with open(str(file_path), "w") as outfile:
+        with open(str(file_path), "w", encoding="utf-8") as outfile:
             for example in llm_data:
-                json.dump(example.as_dict(), outfile)
+                json.dump(example.as_dict(), outfile, ensure_ascii=False)
                 outfile.write("\n")
 
     def write_formatted_finetuning_data(
@@ -110,9 +110,9 @@ class FileStorageStrategy(StorageStrategy):
         file_path = self._get_file_path(module_storage_location, file_name)
         self._create_output_dir(file_path)
 
-        with open(str(file_path), "w") as file:
+        with open(str(file_path), "w", encoding="utf-8") as file:
             for example in formatted_data:
-                json.dump(example.as_dict(), file)
+                json.dump(example.as_dict(), file, ensure_ascii=False)
                 file.write("\n")
 
     def write_e2e_test_suite_to_yaml_file(
