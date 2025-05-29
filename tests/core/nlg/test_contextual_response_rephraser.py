@@ -90,6 +90,62 @@ def greet_tracker() -> DialogueStateTracker:
     )
 
 
+@pytest.fixture
+def greet_tracker_consecutive_utts_by_same_speaker() -> DialogueStateTracker:
+    return DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            BotUttered("Hello"),  # turn 1
+            UserUttered("Hi there"),  # turn 2
+            UserUttered("Hello, are you still there?"),  # turn 2
+            BotUttered("Hi"),  # turn 3
+            BotUttered("How can I help you today?"),  # turn 3
+            BotUttered("Do you have any questions?"),  # turn 3
+            UserUttered("Yes, I want to know my balance."),  # turn 4
+            BotUttered("Okay, please let me know your account number"),  # turn 5
+            UserUttered("Sure, my account number is 123456"),  # turn 6
+            UserUttered("Do you need any more info?"),  # turn 6
+            BotUttered(
+                "No, that's fine. Please wait so I can retrieve your current balance."
+            ),  # turn 7
+        ],
+    )
+
+
+@pytest.fixture
+def greet_tracker_last_msg_by_user() -> DialogueStateTracker:
+    return DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            BotUttered("Hello, I'm a Rasa bot!"),
+            UserUttered("Hi there"),
+        ],
+    )
+
+
+@pytest.fixture
+def greet_tracker_last_msg_by_bot() -> DialogueStateTracker:
+    return DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            BotUttered("Hello, I'm a Rasa bot!"),
+            UserUttered("Hi there"),
+            BotUttered("How can I help you today?"),
+        ],
+    )
+
+
+@pytest.fixture
+def greet_tracker_no_msg_by_user() -> DialogueStateTracker:
+    return DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            BotUttered("Hello, I'm a Rasa bot!"),
+            BotUttered("Hi, are you there?"),
+        ],
+    )
+
+
 @pytest.fixture(autouse=True)
 def set_mock_openai_api_key(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in rephraser")
@@ -291,6 +347,7 @@ async def test_rephraser_default_template(
                 "its meaning. Use simple English.\n\n"
                 "Context / previous conversation with the user:\n"
                 "User said hello\n\n"
+                "Last user message:\n"
                 "USER: Hello\n\n"
                 "Suggested "
                 "AI Response: Hey there! How can I help you?\n\n"
@@ -326,6 +383,7 @@ async def test_rephraser_default_template(
             "its meaning. Use simple English.\n\n"
             "Context / previous conversation with the user:\n"
             "User said hello\n\n"
+            "Last user message:\n"
             "USER: Hello\n\n"
             "Suggested "
             "AI Response: Hey there! How can I help you?\n\n"
@@ -344,16 +402,18 @@ async def test_rephraser_default_template(
             "its meaning. Use simple English.\n\n"
             "Context / previous conversation with the user:\n"
             "User said hello\n\n"
+            "Last user message:\n"
             "USER: Hello\n\n"
             "Suggested "
             "AI Response: Hey there! How can I help you?\n\n"
             "Rephrased AI Response:",
         ),
         (
-            # set summairze history to false and max turns to 0
+            # set summarize history to false and max turns to 0
             {
                 "summarize_history": False,
                 "max_historical_turns": 0,
+                "count_multiple_utterances_as_single_turn": False,
             },
             "The following is a conversation with\n"
             "an AI assistant. The assistant is helpful, creative, "
@@ -362,16 +422,19 @@ async def test_rephraser_default_template(
             "to the original message and retaining\n"
             "its meaning. Use simple English.\n\n"
             "Context / previous conversation with the user:\n"
-            "USER: Hello\n\n\n\n"
+            "USER: Hello\n\n"
+            "Last user message:\n"
+            "USER: Hello\n\n"
             "Suggested "
             "AI Response: Hey there! How can I help you?\n\n"
             "Rephrased AI Response:",
         ),
         (
-            # set summairze history to false and max turns to 20
+            # set summarize history to false and max turns to 20
             {
                 "summarize_history": False,
                 "max_historical_turns": 20,
+                "count_multiple_utterances_as_single_turn": False,
             },
             "The following is a conversation with\n"
             "an AI assistant. The assistant is helpful, creative, "
@@ -382,16 +445,19 @@ async def test_rephraser_default_template(
             "Context / previous conversation with the user:\n"
             "AI: I'm a Rasa bot!\n"
             "AI: How can I help you today?\n"
-            "USER: Hello\n\n\n\n"
+            "USER: Hello\n\n"
+            "Last user message:\n"
+            "USER: Hello\n\n"
             "Suggested "
             "AI Response: Hey there! How can I help you?\n\n"
             "Rephrased AI Response:",
         ),
         (
-            # set summairze history to false and max turns to 2
+            # set summarize history to false and max turns to 2
             {
                 "summarize_history": False,
                 "max_historical_turns": 2,
+                "count_multiple_utterances_as_single_turn": False,
             },
             "The following is a conversation with\n"
             "an AI assistant. The assistant is helpful, creative, "
@@ -401,7 +467,9 @@ async def test_rephraser_default_template(
             "its meaning. Use simple English.\n\n"
             "Context / previous conversation with the user:\n"
             "AI: How can I help you today?\n"
-            "USER: Hello\n\n\n\n"
+            "USER: Hello\n\n"
+            "Last user message:\n"
+            "USER: Hello\n\n"
             "Suggested "
             "AI Response: Hey there! How can I help you?\n\n"
             "Rephrased AI Response:",
@@ -620,6 +688,132 @@ async def test_rephraser_prompt_is_stored_in_the_tracker(
     assert KEY_LATENCY in prompts[0][KEY_LLM_RESPONSE_METADATA]
     del prompts[0][KEY_LLM_RESPONSE_METADATA][KEY_LATENCY]
     assert prompts[0][KEY_LLM_RESPONSE_METADATA] == llm_response_dict
+
+
+@pytest.mark.parametrize(
+    "summarize_history, count_multiple_utterances_as_single_turn, max_historical_turns",
+    [(True, True, 5), (True, False, 5), (False, True, 5), (False, False, 5)],
+)
+async def test_rephraser_prompt_conv_history_amended_by_turn_wrapper(
+    default_channel,
+    greet_tracker_consecutive_utts_by_same_speaker,
+    domain: Domain,
+    llm_response_object: LLMResponse,
+    patch_default_language: None,
+    monkeypatch: MonkeyPatch,
+    count_multiple_utterances_as_single_turn,
+    summarize_history,
+    max_historical_turns,
+):
+    # MockedContextualResponseRephraser to mock LLM response, but not to set history
+    class MockedContextualResponseRephraser(ContextualResponseRephraser):
+        async def _generate_llm_response(self, prompt: str) -> Optional[LLMResponse]:
+            llm_response_object.choices = ["hello foobar"]
+            return llm_response_object
+
+    monkeypatch.setattr(
+        ContextualResponseRephraser,
+        "does_response_allow_rephrasing",
+        MagicMock(return_value=True),
+    )
+
+    endpoint_config = EndpointConfig.from_dict({})
+    rephraser = MockedContextualResponseRephraser(
+        endpoint_config=endpoint_config, domain=domain
+    )
+    rephraser.summarize_history = summarize_history
+    rephraser.count_multiple_utterances_as_single_turn = (
+        count_multiple_utterances_as_single_turn
+    )
+    rephraser.max_historical_turns = max_historical_turns
+
+    with set_record_commands_and_prompts():
+        events = await ActionBotResponse("utter_default").run(
+            default_channel,
+            rephraser,
+            greet_tracker_consecutive_utts_by_same_speaker,
+            domain,
+        )
+    prompts = events[0].metadata[PROMPTS]
+
+    assert prompts[0][KEY_COMPONENT_NAME] == MockedContextualResponseRephraser.__name__
+    assert prompts[0][KEY_PROMPT_NAME] == "rephrase_prompt"
+    assert KEY_USER_PROMPT in prompts[0]
+
+    if (
+        summarize_history
+        and count_multiple_utterances_as_single_turn
+        or not summarize_history
+        and count_multiple_utterances_as_single_turn
+    ):
+        assert (
+            "Context / previous conversation with the user:\n"
+            "AI: Hi How can I help you today? Do you have any questions?\n"
+            "USER: Yes, I want to know my balance.\n"
+            "AI: Okay, please let me know your account number\n"
+            "USER: Sure, my account number is 123456 Do you need any more info?\n"
+            "AI: No, that's fine. Please wait so I can retrieve your current balance."
+            in prompts[0][KEY_USER_PROMPT]
+        )
+    elif (
+        summarize_history
+        and not count_multiple_utterances_as_single_turn
+        or not summarize_history
+        and not count_multiple_utterances_as_single_turn
+    ):
+        assert (
+            "Context / previous conversation with the user:\n"
+            "USER: Yes, I want to know my balance.\n"
+            "AI: Okay, please let me know your account number\n"
+            "USER: Sure, my account number is 123456\n"
+            "USER: Do you need any more info?\n"
+            "AI: No, that's fine. Please wait so I can retrieve your current balance."
+            in prompts[0][KEY_USER_PROMPT]
+        )
+
+
+@pytest.mark.parametrize(
+    "tracker_fixture, expect_user_msg",
+    [
+        ("greet_tracker_last_msg_by_user", True),
+        ("greet_tracker_last_msg_by_bot", True),
+        ("greet_tracker_no_msg_by_user", False),
+    ],
+)
+async def test_rephraser_last_user_utt_in_prompt(
+    default_channel,
+    tracker_fixture,
+    domain: Domain,
+    patch_default_language: None,
+    monkeypatch: MonkeyPatch,
+    request,
+    expect_user_msg,
+):
+    tracker = request.getfixturevalue(tracker_fixture)
+    monkeypatch.setattr(
+        ContextualResponseRephraser,
+        "does_response_allow_rephrasing",
+        MagicMock(return_value=True),
+    )
+
+    endpoint_config = EndpointConfig.from_dict({})
+    rephraser = MockedContextualResponseRephraser(
+        endpoint_config=endpoint_config, domain=domain
+    )
+    with set_record_commands_and_prompts():
+        events = await ActionBotResponse("utter_default").run(
+            default_channel, rephraser, tracker, domain
+        )
+    prompts = events[0].metadata[PROMPTS]
+
+    assert prompts[0][KEY_COMPONENT_NAME] == MockedContextualResponseRephraser.__name__
+    assert prompts[0][KEY_PROMPT_NAME] == "rephrase_prompt"
+    assert KEY_USER_PROMPT in prompts[0]
+    print("**** KEY_USER_PROMPT", prompts[0][KEY_USER_PROMPT])
+    if expect_user_msg:
+        assert "Last user message:\nUSER: " in prompts[0][KEY_USER_PROMPT]
+    else:
+        assert "Last user message:\nUSER: " not in prompts[0][KEY_USER_PROMPT]
 
 
 def test_get_language_label_with_language(

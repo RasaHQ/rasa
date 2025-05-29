@@ -5,7 +5,10 @@ from jinja2 import Template
 
 from rasa import telemetry
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
-from rasa.core.nlg.summarize import summarize_conversation
+from rasa.core.nlg.summarize import (
+    _count_multiple_utterances_as_single_turn,
+    summarize_conversation,
+)
 from rasa.shared.constants import (
     LLM_CONFIG_KEY,
     MAX_COMPLETION_TOKENS_CONFIG_KEY,
@@ -55,6 +58,7 @@ RESPONSE_SUMMARISE_CONVERSATION_KEY = "summarize_conversation"
 DEFAULT_REPHRASE_ALL = False
 DEFAULT_SUMMARIZE_HISTORY = True
 DEFAULT_MAX_HISTORICAL_TURNS = 5
+DEFAULT_COUNT_MULTIPLE_UTTERANCES_AS_SINGLE_TURN = True
 
 DEFAULT_LLM_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
@@ -72,6 +76,7 @@ its meaning. Use simple {{language}}.
 Context / previous conversation with the user:
 {{history}}
 
+Last user message:
 {{current_input}}
 
 Suggested AI Response: {{suggested_response}}
@@ -122,6 +127,11 @@ class ContextualResponseRephraser(
         )
         self.max_historical_turns = self.nlg_endpoint.kwargs.get(
             "max_historical_turns", DEFAULT_MAX_HISTORICAL_TURNS
+        )
+
+        self.count_multiple_utterances_as_single_turn = self.nlg_endpoint.kwargs.get(
+            "count_multiple_utterances_as_single_turn",
+            DEFAULT_COUNT_MULTIPLE_UTTERANCES_AS_SINGLE_TURN,
         )
 
         self.llm_config = resolve_model_client_config(
@@ -260,8 +270,16 @@ class ContextualResponseRephraser(
         Returns:
         The history for the prompt.
         """
+        # Count multiple utterances by bot/user as single turn in conversation history
+        turns_wrapper = (
+            _count_multiple_utterances_as_single_turn
+            if self.count_multiple_utterances_as_single_turn
+            else None
+        )
         llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
-        return await summarize_conversation(tracker, llm, max_turns=5)
+        return await summarize_conversation(
+            tracker, llm, max_turns=5, turns_wrapper=turns_wrapper
+        )
 
     async def rephrase(
         self,
@@ -283,19 +301,26 @@ class ContextualResponseRephraser(
 
         prompt_template_text = self._template_for_response_rephrasing(response)
 
-        # Retrieve inputs for the dynamic prompt
-        latest_message = self._last_message_if_human(tracker)
-        current_input = f"{USER}: {latest_message}" if latest_message else ""
+        # Last user message (=current input) should always be in prompt if available
+        last_message_by_user = getattr(tracker.latest_message, "text", "")
+        current_input = (
+            f"{USER}: {last_message_by_user}" if last_message_by_user else ""
+        )
 
         # Only summarise conversation history if flagged
         if self.summarize_history:
             history = await self._create_history(tracker)
         else:
-            # make sure the transcript/history contains the last user utterance
+            # Count multiple utterances by bot/user as single turn
+            turns_wrapper = (
+                _count_multiple_utterances_as_single_turn
+                if self.count_multiple_utterances_as_single_turn
+                else None
+            )
             max_turns = max(self.max_historical_turns, 1)
-            history = tracker_as_readable_transcript(tracker, max_turns=max_turns)
-            # the history already contains the current input
-            current_input = ""
+            history = tracker_as_readable_transcript(
+                tracker, max_turns=max_turns, turns_wrapper=turns_wrapper
+            )
 
         prompt = Template(prompt_template_text).render(
             history=history,

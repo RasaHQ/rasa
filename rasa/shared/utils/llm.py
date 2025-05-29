@@ -9,6 +9,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    List,
     Literal,
     Optional,
     Text,
@@ -193,6 +194,7 @@ def tracker_as_readable_transcript(
     human_prefix: str = USER,
     ai_prefix: str = AI,
     max_turns: Optional[int] = 20,
+    turns_wrapper: Optional[Callable[[List[str]], List[str]]] = None,
 ) -> str:
     """Creates a readable dialogue from a tracker.
 
@@ -201,6 +203,7 @@ def tracker_as_readable_transcript(
         human_prefix: the prefix to use for human utterances
         ai_prefix: the prefix to use for ai utterances
         max_turns: the maximum number of turns to include in the transcript
+        turns_wrapper: optional function to wrap the turns in a custom way
 
     Example:
         >>> tracker = Tracker(
@@ -237,8 +240,11 @@ def tracker_as_readable_transcript(
         elif isinstance(event, BotUttered):
             transcript.append(f"{ai_prefix}: {sanitize_message_for_prompt(event.text)}")
 
-    if max_turns:
-        transcript = transcript[-max_turns:]
+    # turns_wrapper to count multiple utterances by bot/user as single turn
+    if turns_wrapper:
+        transcript = turns_wrapper(transcript)
+    # otherwise, just take the last `max_turns` lines of the transcript
+    transcript = transcript[-max_turns if max_turns is not None else None :]
 
     return "\n".join(transcript)
 
@@ -680,7 +686,6 @@ def get_prompt_template(
     Returns:
         The prompt template.
     """
-
     try:
         if jinja_file_path is not None:
             prompt_template = rasa.shared.utils.io.read_file(jinja_file_path)
