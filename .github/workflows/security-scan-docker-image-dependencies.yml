@@ -1,4 +1,4 @@
-name: Scan Rasa Private App Dependencies
+name: Scan Rasa Pro Dependencies
 
 on:
     schedule:
@@ -6,18 +6,12 @@ on:
       - cron: '0 8 * * MON'
     workflow_dispatch:
 
-env:
-  # Registry used to store Docker images used for release purposes
-  RELEASE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro"
-  REPORT_BUCKET: "rasa-container-scan-reports"
-
-permissions:
-  id-token: write # This is required for requesting the JWT
-  contents: read # This is required for actions/checkout
-
 jobs:
-  scan_and_alert:
+  get_latest_tag:
     runs-on: ubuntu-24.04
+
+    outputs:
+      tag: ${{ steps.find-tag.outputs.tag }}
 
     steps:
     - name: Checkout repository to check tags
@@ -29,58 +23,12 @@ jobs:
         git fetch --depth=1 origin "+refs/tags/*:refs/tags/*"
         echo "tag=$(git tag | sort -r -V | grep -E "^[0-9]+.[0-9]+.[0-9]+$" | head -n1)" >> $GITHUB_OUTPUT
 
-    - id: 'auth-release'
-      name: Authenticate with gcloud for release registry 🎫
-      uses: google-github-actions/auth@71f986410dfbc7added4569d411d040a91dc6935 # v2.1.8
-      with:
-        workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_OIDC}}
-        service_account: "github-actions-oidc-atom@rasa-releases.iam.gserviceaccount.com"
-
-    - name: Authenticate docker for release registry 🎫
-      run: |
-          # Set up docker to authenticate via gcloud command-line tool.
-          gcloud auth configure-docker europe-west3-docker.pkg.dev
-
-    - name: Scan image for language dependency vulnerabilities
-      id: trivy
-      uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5 #v0.30.0
-      continue-on-error: true
-      with:
-        exit-code: '1'
-        format: 'table'
-        severity: 'MEDIUM,HIGH,CRITICAL'
-        ignore-unfixed: true
-        security-checks: 'vuln'
-        image-ref: '${{env.RELEASE_REGISTRY}}:${{ steps.find-tag.outputs.tag }}'
-        vuln-type: 'library'
-        scan-type: 'image'
-        output: scan-result.txt
-
-    - id: auth-security-reports
-      name: Authenticate with gcloud for saving report 🎫
-      uses: google-github-actions/auth@71f986410dfbc7added4569d411d040a91dc6935 # v2.1.8
-      with:
-        token_format: 'access_token'
-        credentials_json: '${{ secrets.GCP_WRITE_PUBLIC_SECURITY_REPORTS_KEY }}'
-
-    - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a # v2.1.4
-
-    - name: Get current date
-      id: date
-      run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
-
-    - name: Upload scan report to GCS
-      run: |
-        gsutil -h "Content-Type:text/plain; charset=utf-8" -h "Cache-Control:public, max-age=0, no-transform" cp scan-result.txt gs://${{ env.REPORT_BUCKET }}/rasa-private-dependency-report-${{ steps.find-tag.outputs.tag }}-${{ steps.date.outputs.date }}.txt
-
-    - name: Notify Slack of findings
-      if: steps.trivy.outcome == 'failure'
-      uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
-      with:
-        method: chat.postMessage
-        token: ${{ secrets.SLACK_BOT_TOKEN }}
-        # Send notification to #dev-tribe-alerts slack channel
-        payload: |
-          channel: "C070ELPSLBB"
-          text: "Dependency vulnerabilities have been found in the Docker image for Rasa Private ${{ steps.find-tag.outputs.tag }} that could impact customer deployments. Please schedule these for resolution depending on their severity:\n - Critical: This sprint. \n - High: Next sprint. \n - Medium or Low: Add to backlog. \n <https://storage.googleapis.com/${{ env.REPORT_BUCKET }}/rasa-private-dependency-report-${{ steps.find-tag.outputs.tag }}-${{ steps.date.outputs.date }}.txt|View Scan Report>"
+  scan_and_alert:
+    needs: get_latest_tag
+    uses: RasaHQ/infrasec-workflows/.github/workflows/scan-docker-image-dependencies.yml@main
+    secrets: inherit
+    with:
+      image_name: europe-west3-docker.pkg.dev/rasa-releases/rasa-pro/rasa-pro
+      image_tag: ${{ needs.get_latest_tag.outputs.tag }}
+      slack_channel_id: "C070ELPSLBB"
+      product_name: "Rasa Pro"
