@@ -13,17 +13,44 @@ repository = "https://github.com/rasahq/rasa"
 documentation = "https://rasa.com/docs"
 classifiers = [ "Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "Topic :: Software Development :: Libraries",]
 keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
-include = [
-  # license and readme should not be included in wheels, since they would end up in the root library folder
-  "LICENSE.txt", "README.md",
-  { path = "rasa/shared/core/training_data/visualization.html", format = ["sdist", "wheel"] },
-  { path = "rasa/cli/default_config.yml", format = ["sdist", "wheel"] },
-  { path = "rasa/shared/importers/*", format = ["sdist", "wheel"] },
-  { path = "rasa/utils/schemas/*", format = ["sdist", "wheel"] },
-  { path = "rasa/dialogue_understanding/classifiers/command_prompt_template.jinja2", format = ["sdist", "wheel"] },
-  { path = "rasa/keys", format = ["sdist", "wheel"] }
-]
 readme = "README.md"
+
+[[tool.poetry.include]]
+path = "LICENSE.txt"
+# license should not be included in wheels,
+# since it would end up in the root library folder
+format = "sdist"
+
+[[tool.poetry.include]]
+path = "README.md"
+# readme should not be included in wheels,
+# since it would end up in the root library folder
+format = "sdist"
+
+[[tool.poetry.include]]
+path = "rasa/shared/core/training_data/visualization.html"
+format = ["sdist", "wheel"]
+
+[[tool.poetry.include]]
+path = "rasa/cli/default_config.yml"
+format = ["sdist", "wheel"]
+
+[[tool.poetry.include]]
+path = "rasa/shared/importers/*"
+format = ["sdist", "wheel"]
+
+[[tool.poetry.include]]
+path = "rasa/utils/schemas/*"
+format = ["sdist", "wheel"]
+
+[[tool.poetry.include]]
+path = "rasa/dialogue_understanding/classifiers/command_prompt_template.jinja2"
+format = ["sdist", "wheel"]
+
+[[tool.poetry.include]]
+path = "rasa/keys"
+format = ["sdist", "wheel"]
+
 [[tool.poetry.packages]]
 include = "rasa"
 
