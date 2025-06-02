@@ -372,6 +372,30 @@ Rasa Pro 3.12.0 (2025-03-19)
 - [#1685](https://github.com/rasahq/rasa-private/issues/1685), [#1760](https://github.com/rasahq/rasa-private/issues/1760), [#1780](https://github.com/rasahq/rasa-private/issues/1780), [#1784](https://github.com/rasahq/rasa-private/issues/1784), [#1829](https://github.com/rasahq/rasa-private/issues/1829), [#1868](https://github.com/rasahq/rasa-private/issues/1868), [#1873](https://github.com/rasahq/rasa-private/issues/1873), [#1929](https://github.com/rasahq/rasa-private/issues/1929), [#1930](https://github.com/rasahq/rasa-private/issues/1930), [#1946](https://github.com/rasahq/rasa-private/issues/1946), [#1949](https://github.com/rasahq/rasa-private/issues/1949), [#1955](https://github.com/rasahq/rasa-private/issues/1955), [#1972](https://github.com/rasahq/rasa-private/issues/1972), [#1989](https://github.com/rasahq/rasa-private/issues/1989), [#1991](https://github.com/rasahq/rasa-private/issues/1991), [#1998](https://github.com/rasahq/rasa-private/issues/1998), [#2004](https://github.com/rasahq/rasa-private/issues/2004), [#2016](https://github.com/rasahq/rasa-private/issues/2016), [#2024](https://github.com/rasahq/rasa-private/issues/2024), [#2037](https://github.com/rasahq/rasa-private/issues/2037), [#2077](https://github.com/rasahq/rasa-private/issues/2077), [#2079](https://github.com/rasahq/rasa-private/issues/2079), [#2100](https://github.com/rasahq/rasa-private/issues/2100), [#2113](https://github.com/rasahq/rasa-private/issues/2113), [#2124](https://github.com/rasahq/rasa-private/issues/2124)
 
 
+## [3.11.14] - 2025-06-02
+
+Rasa Pro 3.11.14 (2025-06-02)                              
+### Improvements
+- [#2349](https://github.com/rasahq/rasa-private/issues/2349): - Updates the parameter name from `max_tokens`, which is deprecated by OpenAI, to `max_completion_tokens`. The old `max_tokens` is not supported for the `o` models.
+  - Exposes LiteLLM's `drop_params` parameter for LLM configurations.
+- [#2545](https://github.com/rasahq/rasa-private/issues/2545): 
+
+### Bugfixes
+- [#1827](https://github.com/rasahq/rasa-private/issues/1827): The `Clarify` command now parses flow names with dashes.
+- [#1910](https://github.com/rasahq/rasa-private/issues/1910): Add turn_wrapper to count multiple utterances by bot/user as single turn rather than individual turns.
+  Always include last user utterance in rephraser prompt's conversation history.
+- [#1936](https://github.com/rasahq/rasa-private/issues/1936): Remove `StoryGraphProvider` from the prediction graph in case `IntentlessPolicy` is not present to reduce the loading
+  time of the bot in cases where the `IntentlessPolicy` is not used and a lot of stories are present.
+- [#2349](https://github.com/rasahq/rasa-private/issues/2349): - Fixes default config initialization for the `IntentlessPolicy`.
+- [#2425](https://github.com/rasahq/rasa-private/issues/2425): Fix remote model download when models are stored in a path, not in the root of the remote storage.
+  Add new training CLI param `--remote-root-only` that can be used by the model service to store the model in the root of the remote storage.
+  Propagate this parameter to the persistor's `persist` method.
+  Simplify persistor code when retrieving models by downloading the model to the target path directly rather than copying the downloaded model to the target path. 
+  This also improved testability.
+- [#2447](https://github.com/rasahq/rasa-private/issues/2447): When inspector is not used, root server path should output: `Hello from Rasa: <version>.`.
+  When inspector is used, root server path should output HTML page with a link to the path on which inspector can be reached.
+
+
 ## [3.11.13] - 2025-05-15
                          
 Rasa Pro 3.11.13 (2025-05-15)                              
