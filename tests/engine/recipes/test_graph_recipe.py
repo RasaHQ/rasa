@@ -36,7 +36,7 @@ def test_recipe_for_name():
         (
             GRAPH_CONFIG,
             "data/graph_schemas/default_config_train_schema.yml",
-            "data/graph_schemas/default_config_predict_schema.yml",
+            "data/graph_schemas/graph_config_predict_schema.yml",
             TrainingType.END_TO_END,
         ),
         (

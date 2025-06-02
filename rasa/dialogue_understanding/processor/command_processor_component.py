@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Optional, Text
 
 import rasa.dialogue_understanding.processor.command_processor
 from rasa.engine.graph import ExecutionContext, GraphComponent
@@ -37,8 +37,8 @@ class CommandProcessorComponent(GraphComponent):
         self,
         tracker: DialogueStateTracker,
         flows: FlowsList,
-        story_graph: StoryGraph,
         domain: Domain,
+        story_graph: Optional[StoryGraph] = None,
     ) -> List[Event]:
         """Execute commands to update tracker state."""
         return rasa.dialogue_understanding.processor.command_processor.execute_commands(

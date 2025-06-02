@@ -396,7 +396,9 @@ class DefaultV1Recipe(Recipe):
         return preprocessors
 
     def _get_needs_from_args(
-        self, component: Type[GraphComponent], fn_name: str
+        self,
+        component: Type[GraphComponent],
+        fn_name: str,
     ) -> Dict[str, str]:
         """Get the needed arguments from the method on the component.
 
@@ -434,6 +436,7 @@ class DefaultV1Recipe(Recipe):
         parameters = {
             name
             for name, param in sig.parameters.items()
+            # only consider parameters which are positional or keyword
             if param.kind == param.POSITIONAL_OR_KEYWORD
         }
 
@@ -752,7 +755,27 @@ class DefaultV1Recipe(Recipe):
                 predict_config, predict_nodes, train_nodes, preprocessors
             )
 
+        # The `story_graph_provider` is only needed if the intentless policy is used.
+        # If it is not used, we can remove it from the nodes as it slows down the
+        # loading time if users have a large number of stories.
+        if not self._intentless_policy_used(predict_nodes):
+            # Removes the `story_graph_provider` from the nodes
+            predict_nodes.pop("story_graph_provider", None)
+            if "command_processor" in predict_nodes:
+                # Removes story_graph from the command processor inputs
+                predict_nodes["command_processor"].needs.pop("story_graph", None)
+
         return predict_nodes
+
+    @staticmethod
+    def _intentless_policy_used(nodes: Dict[Text, SchemaNode]) -> bool:
+        """Checks if the intentless policy is used in the nodes."""
+        from rasa.core import IntentlessPolicy
+
+        for schema_node in nodes.values():
+            if schema_node.matches_type(IntentlessPolicy):
+                return True
+        return False
 
     def _add_nlu_predict_nodes(
         self,
@@ -924,7 +947,8 @@ class DefaultV1Recipe(Recipe):
         predict_nodes["command_processor"] = SchemaNode(
             **DEFAULT_PREDICT_KWARGS,
             needs=self._get_needs_from_args(
-                CommandProcessorComponent, "execute_commands"
+                CommandProcessorComponent,
+                "execute_commands",
             ),
             uses=CommandProcessorComponent,
             fn="execute_commands",

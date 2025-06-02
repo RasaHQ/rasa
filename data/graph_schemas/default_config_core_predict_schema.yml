@@ -1,18 +1,7 @@
 nodes:
   domain_provider:
-    needs: {}
-    uses: rasa.graph_components.providers.domain_provider.DomainProvider
-    constructor_name: load
-    fn: provide_inference
-    config: {}
-    eager: true
-    is_target: false
-    is_input: false
-    resource:
-      name: domain_provider
-  story_graph_provider:
     needs: { }
-    uses: rasa.graph_components.providers.story_graph_provider.StoryGraphProvider
+    uses: rasa.graph_components.providers.domain_provider.DomainProvider
     constructor_name: load
     fn: provide_inference
     config: { }
@@ -20,13 +9,13 @@ nodes:
     is_target: false
     is_input: false
     resource:
-      name: story_graph_provider
+      name: domain_provider
   flows_provider:
-    needs: {}
+    needs: { }
     uses: rasa.graph_components.providers.flows_provider.FlowsProvider
     constructor_name: load
     fn: provide_inference
-    config: {}
+    config: { }
     eager: true
     is_target: false
     is_input: false
@@ -34,10 +23,9 @@ nodes:
       name: flows_provider
   command_processor:
     needs:
-        tracker: __tracker__
-        flows: flows_provider
-        story_graph: story_graph_provider
-        domain: domain_provider
+      tracker: __tracker__
+      flows: flows_provider
+      domain: domain_provider
     uses: rasa.dialogue_understanding.processor.command_processor_component.CommandProcessorComponent
     constructor_name: load
     fn: execute_commands
@@ -45,7 +33,7 @@ nodes:
     eager: true
     is_target: false
     is_input: false
-    resource: 
+    resource:
       name: command_processor
   run_MemoizationPolicy0:
     needs:
@@ -55,7 +43,7 @@ nodes:
     uses: rasa.core.policies.memoization.MemoizationPolicy
     constructor_name: load
     fn: predict_action_probabilities
-    config: {}
+    config: { }
     eager: true
     is_target: false
     is_input: false
@@ -69,7 +57,7 @@ nodes:
     uses: rasa.core.policies.rule_policy.RulePolicy
     constructor_name: load
     fn: predict_action_probabilities
-    config: {}
+    config: { }
     eager: true
     is_target: false
     is_input: false
@@ -93,11 +81,11 @@ nodes:
     resource:
       name: train_TEDPolicy2
   rule_only_data_provider:
-    needs: {}
+    needs: { }
     uses: rasa.graph_components.providers.rule_only_provider.RuleOnlyDataProvider
     constructor_name: load
     fn: provide
-    config: {}
+    config: { }
     eager: true
     is_target: false
     is_input: false
@@ -113,7 +101,7 @@ nodes:
     uses: rasa.core.policies.ensemble.DefaultPolicyPredictionEnsemble
     constructor_name: load
     fn: combine_predictions_from_kwargs
-    config: {}
+    config: { }
     eager: true
     is_target: false
     is_input: false
@@ -124,7 +112,7 @@ nodes:
     uses: rasa.graph_components.converters.nlu_message_converter.NLUMessageConverter
     constructor_name: load
     fn: convert_user_message
-    config: {}
+    config: { }
     eager: true
     is_target: false
     is_input: false
@@ -136,7 +124,7 @@ nodes:
     uses: rasa.nlu.classifiers.regex_message_handler.RegexMessageHandler
     constructor_name: load
     fn: process
-    config: {}
+    config: { }
     eager: True
     is_target: False
     is_input: False
