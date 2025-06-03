@@ -28,6 +28,7 @@ CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/channe
 TRACKER_STORE_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/tracker_stores
 CUSTOM_COMPONENT_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/custom_components
 INTEGRATION_TEST_DEPLOYMENT_PATH = $(PWD)/tests_deployment
+TRANSFORMERS_OFFLINE ?= 1
 
 BOT_PATH ?=
 MODEL_NAME ?= model
@@ -62,6 +63,10 @@ install-mitie:  ## Install mitie.
 
 install-full: install-mitie  ## Install rasa with all extras (transformers, tensorflow_text, spacy, jieba).
 	poetry install -E full
+
+install-pii:  ## Install rasa-pro with PII optional dependencies.
+	poetry run python -m pip install -U pip
+	poetry install -E pii
 
 format: ## Apply ruff formatting to code.
 	poetry run ruff format rasa tests
@@ -241,7 +246,7 @@ test-gh-actions:  ## Run all tests for GitHub Actions
 test-marker: clean ## Run marker tests
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
-	TRANSFORMERS_OFFLINE=1 \
+	TRANSFORMERS_OFFLINE=$(TRANSFORMERS_OFFLINE) \
 	OMP_NUM_THREADS=1 \
 	TF_CPP_MIN_LOG_LEVEL=2 \
 	poetry run \

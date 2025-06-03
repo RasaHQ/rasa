@@ -232,6 +232,14 @@ demoji = "^1.1.0"
 azure-identity = "~1.19.0"
 langcodes = "^3.5.0"
 
+[[tool.poetry.dependencies.gliner]]
+version = "~0.2.20"
+optional = true
+
+[[tool.poetry.dependencies.onnxruntime]]
+version = "1.19.2" # pinned to avoid breaking changes in versions >= 1.20.0 with Python 3.9
+optional = true
+
 [[tool.poetry.dependencies.tensorflow-io-gcs-filesystem]]
 version = "==0.31" # newer versions don't provide wheels for Windows
 markers = "sys_platform == 'win32'"
@@ -263,6 +271,7 @@ transformers = [ "transformers", "sentencepiece",]
 full = [ "spacy", "transformers", "sentencepiece", "jieba", "gitpython",]
 gh-release-notes = [ "github3.py",]
 metal = [ "tensorflow-metal",]
+pii = ["gliner", "onnxruntime"]
 
 [tool.poetry.scripts]
 rasa = "rasa.__main__:main"
@@ -340,7 +349,7 @@ version = "~3.2.0"
 optional = true
 
 [tool.poetry.dependencies.transformers]
-version = "~4.36.2"
+version = "~4.38.2"
 optional = true
 
 [tool.poetry.dependencies.sentencepiece]
@@ -365,6 +374,7 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "tests/test_telemetry.py" = [ "E501",]
 "tests/shared/core/test_domain.py" = [ "E501",]
+
 
 
 

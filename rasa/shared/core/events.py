@@ -633,7 +633,9 @@ class UserUttered(Event):
                 "input_channel": getattr(self, "input_channel", None),
                 "message_id": getattr(self, "message_id", None),
                 "metadata": self.metadata,
-                "anonymized_at": self.anonymized_at,
+                "anonymized_at": self.anonymized_at.timestamp()
+                if self.anonymized_at
+                else None,
             }
         )
         return _dict
@@ -1040,7 +1042,9 @@ class BotUttered(SkipEventInMDStoryMixin):
                 "text": self.text,
                 "data": self.data,
                 "metadata": self.metadata,
-                "anonymized_at": self.anonymized_at,
+                "anonymized_at": self.anonymized_at.timestamp()
+                if self.anonymized_at
+                else None,
             }
         )
         return d
@@ -1156,7 +1160,9 @@ class SlotSet(Event):
                 "name": self.key,
                 "value": self.value,
                 "filled_by": self.filled_by,
-                "anonymized_at": self.anonymized_at,
+                "anonymized_at": self.anonymized_at.timestamp()
+                if self.anonymized_at
+                else None,
             }
         )
         return d

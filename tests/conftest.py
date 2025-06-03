@@ -132,7 +132,10 @@ collect_ignore_glob = ["docs/*.py"]
 # Defines how tests are parallelized in the CI
 PATH_PYTEST_MARKER_MAPPINGS = {
     "acceptance": [Path("tests", "acceptance_tests").absolute()],
-    "category_anonymization": [Path("tests", "anonymization").absolute()],
+    "category_anonymization": [
+        Path("tests", "anonymization").absolute(),
+        Path("tests", "privacy").absolute(),
+    ],
     "category_large_data_tests": [
         Path("tests", "anonymization", "large_data_tests").absolute()
     ],

@@ -29,6 +29,8 @@ updates:
           - "faiss-cpu"
           - "tiktoken"
           - "matplotlib"
+          - "gliner"
+          - "onnxruntime"
       atom-squad:
         dependency-type: production
         patterns:
