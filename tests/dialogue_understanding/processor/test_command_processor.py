@@ -650,12 +650,30 @@ def test_clean_up_commands_with_start_flow(
             [],
             [ChitChatAnswerCommand()],
         ),
+        # no trigger, no policy, domain not provided, no stories
+        (
+            [ChitChatAnswerCommand()],
+            False,
+            False,
+            None,
+            [],
+            [ChitChatAnswerCommand()],
+        ),
         # no trigger, no responses in domain, but policy and stories
         (
             [ChitChatAnswerCommand()],
             False,
             True,
             Domain.empty(),
+            [StoryStep(block_name="smth", events=[UserUttered(text="Hi")])],
+            [ChitChatAnswerCommand()],
+        ),
+        # no trigger, domain not provided, but policy and stories
+        (
+            [ChitChatAnswerCommand()],
+            False,
+            True,
+            None,
             [StoryStep(block_name="smth", events=[UserUttered(text="Hi")])],
             [ChitChatAnswerCommand()],
         ),
@@ -682,6 +700,15 @@ def test_clean_up_commands_with_start_flow(
             [],
             [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
         ),
+        # no trigger, policy, domain not provided, no stories
+        (
+            [ChitChatAnswerCommand()],
+            False,
+            True,
+            None,
+            [],
+            [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
+        ),
         # trigger, policy, no responses in domain and no stories
         (
             [ChitChatAnswerCommand()],
@@ -691,12 +718,30 @@ def test_clean_up_commands_with_start_flow(
             [],
             [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
         ),
+        # trigger, policy, domain not provided, no stories
+        (
+            [ChitChatAnswerCommand()],
+            True,
+            True,
+            None,
+            [],
+            [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
+        ),
         # trigger, no policy, no responses in domain and no stories
         (
             [ChitChatAnswerCommand()],
             True,
             False,
             Domain.empty(),
+            [],
+            [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
+        ),
+        # trigger, no policy, domain not provided, no stories
+        (
+            [ChitChatAnswerCommand()],
+            True,
+            False,
+            None,
             [],
             [CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)],
         ),
@@ -735,7 +780,7 @@ def test_clean_up_chitchat_commands(
 
     # When
     clean_commands = clean_up_commands(
-        commands, tracker, flows, execution_context, story_graph
+        commands, tracker, flows, execution_context, story_graph, domain
     )
 
     # Then

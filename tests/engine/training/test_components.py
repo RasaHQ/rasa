@@ -2,6 +2,11 @@ import dataclasses
 import uuid
 from typing import Text
 
+import pytest
+
+from rasa.dialogue_understanding.processor.command_processor_component import (
+    CommandProcessorComponent,
+)
 from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import ExecutionContext, GraphNode, GraphSchema, SchemaNode
 from rasa.engine.storage.resource import Resource
@@ -12,6 +17,9 @@ from rasa.engine.training.components import (
     FingerprintStatus,
     PrecomputedValueProvider,
 )
+from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.training_data.structures import StoryGraph
 from tests.engine.graph_components_test_classes import CacheableText
 
 
@@ -190,3 +198,44 @@ async def test_fingerprint_component_miss(
     assert returned_output.output_fingerprint is None
     assert returned_output.fingerprint() != returned_output.output_fingerprint
     assert returned_output.fingerprint() != returned_output.fingerprint()
+
+
+@pytest.mark.asyncio
+async def test_command_processor_execute_commands_without_domain(
+    default_model_storage: ModelStorage,
+):
+    command_processor_graph_node = GraphNode(
+        node_name="command_processor",
+        component_class=CommandProcessorComponent,
+        constructor_name="create",
+        component_config={
+            "graph_component_class": CommandProcessorComponent,
+        },
+        fn_name="execute_commands",
+        inputs={
+            "tracker": "__tracker__",
+            "flows": "flows_provider",
+            "story_graph": "story_graph_provider",
+        },
+        eager=False,
+        model_storage=default_model_storage,
+        resource=None,
+        execution_context=ExecutionContext(GraphSchema({}), "1"),
+    )
+
+    tracker = DialogueStateTracker(sender_id="test_sender", slots={})
+
+    flows = FlowsList([])
+
+    story_graph = StoryGraph([])
+
+    # assert that no exception should be raised when domain is not provided
+    try:
+        result = await command_processor_graph_node.__call__(
+            ("__tracker__", tracker),
+            ("flows_provider", flows),
+            ("story_graph_provider", story_graph),
+        )
+        assert result[0] == "command_processor"
+    except Exception as e:
+        assert False, f"CommandProcessorComponent raised an exception: {e}"

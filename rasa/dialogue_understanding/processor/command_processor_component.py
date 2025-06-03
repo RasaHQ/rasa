@@ -37,7 +37,7 @@ class CommandProcessorComponent(GraphComponent):
         self,
         tracker: DialogueStateTracker,
         flows: FlowsList,
-        domain: Domain,
+        domain: Optional[Domain] = None,
         story_graph: Optional[StoryGraph] = None,
     ) -> List[Event]:
         """Execute commands to update tracker state."""
