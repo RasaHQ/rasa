@@ -10,6 +10,16 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.12.16] - 2025-06-03
+                         
+Rasa Pro 3.12.16 (2025-06-03)                              
+### Bugfixes
+- [#2576](https://github.com/rasahq/rasa-private/issues/2576): Make `domain` an optional argument in `CommandProcessorComponent`. This change addresses a potential `TypeError` that could occur when loading a model trained without providing domain as a required argument. By making domain optional, models trained with older configurations or without a domain component will now load correctly without errors.
+
+### Miscellaneous internal changes
+- [#2553](https://github.com/rasahq/rasa-private/issues/2553)
+
+
 ## [3.12.15] - 2025-06-02
                          
 Rasa Pro 3.12.15 (2025-06-02)                              
@@ -370,6 +380,14 @@ Rasa Pro 3.12.0 (2025-03-19)
 
 ### Miscellaneous internal changes
 - [#1685](https://github.com/rasahq/rasa-private/issues/1685), [#1760](https://github.com/rasahq/rasa-private/issues/1760), [#1780](https://github.com/rasahq/rasa-private/issues/1780), [#1784](https://github.com/rasahq/rasa-private/issues/1784), [#1829](https://github.com/rasahq/rasa-private/issues/1829), [#1868](https://github.com/rasahq/rasa-private/issues/1868), [#1873](https://github.com/rasahq/rasa-private/issues/1873), [#1929](https://github.com/rasahq/rasa-private/issues/1929), [#1930](https://github.com/rasahq/rasa-private/issues/1930), [#1946](https://github.com/rasahq/rasa-private/issues/1946), [#1949](https://github.com/rasahq/rasa-private/issues/1949), [#1955](https://github.com/rasahq/rasa-private/issues/1955), [#1972](https://github.com/rasahq/rasa-private/issues/1972), [#1989](https://github.com/rasahq/rasa-private/issues/1989), [#1991](https://github.com/rasahq/rasa-private/issues/1991), [#1998](https://github.com/rasahq/rasa-private/issues/1998), [#2004](https://github.com/rasahq/rasa-private/issues/2004), [#2016](https://github.com/rasahq/rasa-private/issues/2016), [#2024](https://github.com/rasahq/rasa-private/issues/2024), [#2037](https://github.com/rasahq/rasa-private/issues/2037), [#2077](https://github.com/rasahq/rasa-private/issues/2077), [#2079](https://github.com/rasahq/rasa-private/issues/2079), [#2100](https://github.com/rasahq/rasa-private/issues/2100), [#2113](https://github.com/rasahq/rasa-private/issues/2113), [#2124](https://github.com/rasahq/rasa-private/issues/2124)
+
+
+## [3.11.15] - 2025-06-03
+                         
+Rasa Pro 3.11.15 (2025-06-03)                              
+
+### Bugfixes
+- [#2576](https://github.com/rasahq/rasa-private/issues/2576): Make `domain` an optional argument in `CommandProcessorComponent`. This change addresses a potential `TypeError` that could occur when loading a model trained without providing domain as a required argument. By making domain optional, models trained with older configurations or without a domain component will now load correctly without errors.
 
 
 ## [3.11.14] - 2025-06-02
@@ -832,6 +850,13 @@ Rasa Pro 3.11.0 (2024-12-11)
 
 ### Miscellaneous internal changes
 - [#1212](https://github.com/rasahq/rasa-private/issues/1212), [#1318](https://github.com/rasahq/rasa-private/issues/1318), [#1528](https://github.com/rasahq/rasa-private/issues/1528), [#1550](https://github.com/rasahq/rasa-private/issues/1550), [#1581](https://github.com/rasahq/rasa-private/issues/1581), [#1650](https://github.com/rasahq/rasa-private/issues/1650)
+
+
+## [3.10.27] - 2025-06-03
+                         
+Rasa Pro 3.10.27 (2025-06-03)                              
+### Bugfixes
+- [#2576](https://github.com/rasahq/rasa-private/issues/2576): Make `domain` an optional argument in `CommandProcessorComponent`. This change addresses a potential `TypeError` that could occur when loading a model trained without providing domain as a required argument. By making domain optional, models trained with older configurations or without a domain component will now load correctly without errors.
 
 
 ## [3.10.26] - 2025-06-02
