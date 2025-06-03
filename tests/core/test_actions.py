@@ -3139,6 +3139,18 @@ async def test_action_send_text_propagates_metadata_to_bot_uttered(
     assert events == [BotUttered(bot_message, metadata=action_metadata)]
 
 
+async def test_action_send_text_with_disabled_utterance_creation(
+    default_channel, template_nlg, template_sender_tracker, domain: Domain
+):
+    metadata = {"message": {"text": "foobar"}}
+    events = await ActionSendText().run(
+        default_channel, template_nlg, template_sender_tracker, domain, metadata, False
+    )
+    # assert metadata remains unmodified through the bot utterance creation
+    assert metadata == {"message": {"text": "foobar"}}
+    assert events == []
+
+
 def test_default_actions_and_names_consistency():
     names_of_default_actions = {action.name() for action in default_actions()}
     names_of_executable_actions_in_constants = set(DEFAULT_ACTION_NAMES) - {

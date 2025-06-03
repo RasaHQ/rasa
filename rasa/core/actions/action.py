@@ -1147,12 +1147,15 @@ class ActionSendText(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
         metadata: Optional[Dict[Text, Any]] = None,
+        create_bot_uttered_event: bool = True,
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
         fallback = {"text": ""}
         metadata_copy = copy.deepcopy(metadata) if metadata else {}
         message = metadata_copy.get("message", fallback)
-        return [create_bot_utterance(message, tracker.current_language)]
+        if create_bot_uttered_event:
+            return [create_bot_utterance(message, tracker.current_language)]
+        return []
 
 
 class ActionExtractSlots(Action):
