@@ -834,6 +834,22 @@ Rasa Pro 3.11.0 (2024-12-11)
 - [#1212](https://github.com/rasahq/rasa-private/issues/1212), [#1318](https://github.com/rasahq/rasa-private/issues/1318), [#1528](https://github.com/rasahq/rasa-private/issues/1528), [#1550](https://github.com/rasahq/rasa-private/issues/1550), [#1581](https://github.com/rasahq/rasa-private/issues/1581), [#1650](https://github.com/rasahq/rasa-private/issues/1650)
 
 
+## [3.10.26] - 2025-06-02
+
+Rasa Pro 3.10.26 (2025-06-02)                              
+### Improvements
+- [#2349](https://github.com/rasahq/rasa-private/issues/2349): - Updates the parameter name from `max_tokens`, which is deprecated by OpenAI, to `max_completion_tokens`. The old `max_tokens` is not supported for the `o` models.
+  - Exposes LiteLLM's `drop_params` parameter for LLM configurations.
+
+### Bugfixes
+- [#1827](https://github.com/rasahq/rasa-private/issues/1827): The `Clarify` command now parses flow names with dashes.
+- [#1910](https://github.com/rasahq/rasa-private/issues/1910): Add turn_wrapper to count multiple utterances by bot/user as single turn rather than individual turns.
+  Always include last user utterance in rephraser prompt's conversation history.
+- [#1936](https://github.com/rasahq/rasa-private/issues/1936): Remove `StoryGraphProvider` from the prediction graph in case `IntentlessPolicy` is not present to reduce the loading
+  time of the bot in cases where the `IntentlessPolicy` is not used and a lot of stories are present.
+- [#2349](https://github.com/rasahq/rasa-private/issues/2349): - Fixes default config initialization for the `IntentlessPolicy`.
+
+
 ## [3.10.25] - 2025-05-15
                          
 Rasa Pro 3.10.25 (2025-05-15)                              
