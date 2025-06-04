@@ -15,7 +15,7 @@ import rasa.utils.common
 import rasa.utils.io
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import x as arguments
-from rasa.core.utils import AvailableEndpoints
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.shared.constants import (
     DEFAULT_CREDENTIALS_PATH,
     DEFAULT_ENDPOINTS_PATH,

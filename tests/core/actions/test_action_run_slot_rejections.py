@@ -4,7 +4,6 @@ from typing import Any, Dict, Optional, Text
 import pytest
 from pytest import CaptureFixture, MonkeyPatch
 
-from rasa.core import ContextualResponseRephraser
 from rasa.core.actions.action_run_slot_rejections import (
     ActionRunSlotRejections,
     coerce_slot_value,
@@ -18,6 +17,7 @@ from rasa.core.constants import (
     UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
+from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR, REFILL_UTTER, REJECTIONS
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain

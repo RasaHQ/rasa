@@ -109,7 +109,7 @@ def run(args: argparse.Namespace) -> None:
     # configured
 
     import rasa.model
-    from rasa.core.utils import AvailableEndpoints
+    from rasa.core.available_endpoints import AvailableEndpoints
 
     # start server if remote storage is configured
     if args.remote_storage is not None:

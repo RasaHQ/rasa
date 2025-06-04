@@ -16,9 +16,9 @@ from rasa.cli.arguments.default_arguments import (
     add_remote_storage_param,
 )
 from rasa.core.agent import Agent
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.processor import MessageProcessor
-from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.generator import LLMBasedCommandGenerator
 from rasa.dialogue_understanding.generator.command_parser import DEFAULT_COMMANDS

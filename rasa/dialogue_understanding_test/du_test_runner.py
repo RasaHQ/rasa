@@ -5,10 +5,10 @@ from typing import Any, Dict, List, Optional, Text
 import structlog
 from tqdm import tqdm
 
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.persistor import StorageType
-from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.commands import Command
 from rasa.dialogue_understanding.utils import set_record_commands_and_prompts
 from rasa.dialogue_understanding_test.du_test_case import (

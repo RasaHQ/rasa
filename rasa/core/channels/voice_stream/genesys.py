@@ -99,7 +99,8 @@ class GenesysInputChannel(VoiceInputChannel):
 
     @classmethod
     def from_credentials(
-        cls, credentials: Optional[Dict[str, Any]]
+        cls,
+        credentials: Optional[Dict[str, Any]],
     ) -> VoiceInputChannel:
         if not credentials:
             raise ValueError("No credentials given for Genesys voice channel.")

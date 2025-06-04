@@ -6,10 +6,10 @@ import rasa.cli.arguments.evaluate as arguments
 import rasa.shared.utils.cli
 from rasa import telemetry
 from rasa.cli import SubParsersAction
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.evaluation.marker_base import Marker, OperatorMarker
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
 from rasa.core.tracker_stores.tracker_store import TrackerStore
-from rasa.core.utils import AvailableEndpoints
 from rasa.shared.core.domain import Domain
 
 STATS_OVERALL_SUFFIX = "-overall.csv"

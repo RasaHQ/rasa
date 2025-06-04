@@ -12,7 +12,6 @@ from pytest import CaptureFixture, LogCaptureFixture, MonkeyPatch
 
 import rasa.core
 import rasa.shared.utils.common
-from rasa.core import ContextualResponseRephraser
 from rasa.core.actions import action
 from rasa.core.actions.action import (
     ActionBack,
@@ -44,6 +43,7 @@ from rasa.core.constants import (
     UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.enterprise_search_policy import (
     SEARCH_QUERY_METADATA_KEY,

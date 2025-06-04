@@ -18,8 +18,8 @@ from rasa.cli.arguments.default_arguments import (
     add_model_param,
     add_remote_storage_param,
 )
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.exceptions import AgentNotReady
-from rasa.core.utils import AvailableEndpoints
 from rasa.e2e_test.aggregate_test_stats_calculator import (
     AggregateTestStatsCalculator,
 )

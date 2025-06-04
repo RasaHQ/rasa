@@ -19,11 +19,11 @@ import rasa.shared.utils.common
 import rasa.utils.io
 from rasa.core import jobs
 from rasa.core.agent import Agent, load_agent
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.channels.channel import UserMessage
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.persistor import Persistor, RemoteStorageType
-from rasa.core.utils import AvailableEndpoints
 from rasa.exceptions import ModelNotFound
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.core.constants import LANGUAGE_SLOT

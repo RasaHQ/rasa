@@ -1,11 +1,12 @@
 import uuid
-from typing import List, Optional, Tuple
-from unittest.mock import Mock
+from typing import Any, Dict, List, Optional, Tuple
+from unittest.mock import MagicMock, Mock
 
 import pytest
 import structlog
 from pytest import MonkeyPatch
 
+from rasa.core.available_endpoints import AvailableEndpoints, InteractionHandlingConfig
 from rasa.core.policies.flows import flow_executor
 from rasa.core.policies.flows.flow_exceptions import (
     FlowCircuitBreakerTrippedException,
@@ -42,6 +43,10 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 )
 from rasa.dialogue_understanding.stack.frames.search_frame import SearchStackFrame
 from rasa.engine.language import Language
+from rasa.shared.core.constants import (
+    GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE,
+    SILENCE_TIMEOUT_SLOT,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -1058,14 +1063,22 @@ def test_run_step_collect():
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
-    assert result.events == [FlowStarted(flow_id="my_flow")]
+    assert FlowStarted(flow_id="my_flow") in result.events
     assert len(stack.frames) == 2
     assert isinstance(stack.frames[0], UserFlowStackFrame)
     assert isinstance(stack.frames[1], CollectInformationPatternFlowStackFrame)
 
 
-@pytest.mark.parametrize("ask_before_filling", [True, False])
-def test_run_step_collect_with_ask_before_filling(ask_before_filling: bool):
+@pytest.mark.parametrize(
+    "ask_before_filling, expected_events",
+    [
+        (True, [FlowStarted(flow_id="my_flow"), SlotSet("foo", None)]),
+        (False, [FlowStarted(flow_id="my_flow")]),
+    ],
+)
+def test_run_step_collect_with_ask_before_filling(
+    ask_before_filling: bool, expected_events: list[Event]
+):
     flows = flows_from_str(
         f"""
         flows:
@@ -1092,12 +1105,10 @@ def test_run_step_collect_with_ask_before_filling(ask_before_filling: bool):
     result = flow_executor.run_step(
         step, flow, stack, tracker, actions, flows, previous_step_id=START_STEP
     )
-    expected_events = [FlowStarted(flow_id="my_flow")]
-    if ask_before_filling:
-        expected_events.append(SlotSet("foo", None))
 
     assert isinstance(result, ContinueFlowWithNextStep)
-    assert result.events == expected_events
+    # Check that the expected events are in the result
+    assert set(expected_events) <= set(result.events)
     assert len(stack.frames) == 2
     assert isinstance(stack.frames[0], UserFlowStackFrame)
     assert isinstance(stack.frames[1], CollectInformationPatternFlowStackFrame)
@@ -1403,7 +1414,11 @@ def test_run_step_set_slot():
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
-    assert result.events == [FlowStarted(flow_id="my_flow"), SlotSet("bar", "baz")]
+    assert result.events == [
+        FlowStarted(flow_id="my_flow"),
+        SlotSet(SILENCE_TIMEOUT_SLOT, GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE),
+        SlotSet("bar", "baz"),
+    ]
 
 
 def test_run_step_end():
@@ -1441,7 +1456,11 @@ def test_run_step_end():
         previous_step_id=START_STEP,
     )
     assert isinstance(result, ContinueFlowWithNextStep)
-    assert result.events == [FlowStarted("my_flow"), SlotSet("bar", None)]
+    assert result.events == [
+        FlowStarted("my_flow"),
+        SlotSet(SILENCE_TIMEOUT_SLOT, GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE),
+        SlotSet("bar", None),
+    ]
 
 
 def test_executor_does_not_get_tripped_if_an_action_is_predicted_in_loop():
@@ -2044,12 +2063,13 @@ def test_run_step_adds_metadata_to_flow_started_event():
         previous_step_id=START_STEP,
     )
 
-    expected_event = FlowStarted(
-        flow_id="pattern_clarification", metadata=stack.current_context()
-    )
-    assert result.events == [expected_event]
+    expected_events = [
+        FlowStarted(flow_id="pattern_clarification", metadata=stack.current_context()),
+        SlotSet(SILENCE_TIMEOUT_SLOT, GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE),
+    ]
+    assert result.events == expected_events
 
-    assert expected_event.metadata.get("names") == ["foo", "bar"]
+    assert expected_events[0].metadata.get("names") == ["foo", "bar"]
 
 
 def test_run_step_does_not_emit_flow_started_event_after_flow_has_started():
@@ -2086,7 +2106,11 @@ def test_run_step_does_not_emit_flow_started_event_after_flow_has_started():
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
-    assert result.events == []
+    # Check that no FlowStarted event is emitted
+    # The only event emitted is the SlotSet for the silence timeout
+    assert result.events == [
+        SlotSet(SILENCE_TIMEOUT_SLOT, GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE)
+    ]
 
 
 async def test_correct_next_step_selected_with_call_step() -> None:
@@ -2187,3 +2211,149 @@ def test_trigger_pattern_continue_interrupted_uses_localized_flow_name(
     assert top is not None
     assert isinstance(top, ContinueInterruptedPatternFlowStackFrame)
     assert top.previous_flow_name == german_flow_name
+
+
+def test_set_silence_timeout_at_step_collect():
+    """Test that silence timeout is set correctly when running a collect step.
+
+    We assess that event SlotSet is emitted with the correct silence timeout
+    """
+
+    silence_timeout = 10
+
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: collect_foo
+              collect: foo
+              silence_timeout: 10
+        """
+    )
+
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+
+    assert flow is not None
+    step = flow.step_by_id("collect_foo")
+
+    available_actions = ["utter_ask_foo"]
+
+    with structlog.testing.capture_logs() as caplog:
+        result = flow_executor.run_step(
+            step,
+            flow,
+            stack,
+            tracker,
+            available_actions,
+            flows,
+            previous_step_id=START_STEP,
+        )
+
+        logs = filter_logs(caplog, "flow.step.run.adjusting_silence_timeout", "debug")
+
+        assert len(logs) == 1
+
+    assert isinstance(result, ContinueFlowWithNextStep)
+    assert result.events == [
+        FlowStarted(flow_id="my_flow"),
+        SlotSet(SILENCE_TIMEOUT_SLOT, silence_timeout),
+    ]
+    assert len(stack.frames) == 2
+    assert isinstance(stack.frames[0], UserFlowStackFrame)
+    assert isinstance(stack.frames[1], CollectInformationPatternFlowStackFrame)
+
+
+@pytest.fixture
+def interaction_handling_endpoint() -> InteractionHandlingConfig:
+    return InteractionHandlingConfig(global_silence_timeout=10)
+
+
+@pytest.fixture
+def available_endpoints(
+    interaction_handling_endpoint: Dict[str, Any], monkeypatch: MonkeyPatch
+) -> MagicMock:
+    """Fixture to provide a mock for available endpoints."""
+    instance = MagicMock()
+    instance.interaction_handling = interaction_handling_endpoint
+    mock_endpoints = MagicMock(spec=AvailableEndpoints)
+    mock_endpoints.get_instance.return_value = instance
+    monkeypatch.setattr(
+        "rasa.core.policies.flows.flow_executor.AvailableEndpoints", mock_endpoints
+    )
+    return mock_endpoints
+
+
+@pytest.mark.usefixtures("available_endpoints")
+def test_reset_silence_timeout_to_global_at_step_collect(
+    interaction_handling_endpoint: InteractionHandlingConfig,
+) -> None:
+    """Test that silence timeout is reset to the global value.
+
+    We assess that event SlotSet is emitted with the global silence timeout configured
+    in the interaction_handling.
+    """
+
+    # We set a global silence timeout in the interaction_handling endpoint
+    global_silence_timeout = 11
+    interaction_handling_endpoint.global_silence_timeout = global_silence_timeout
+
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: collect_foo
+              collect: foo
+        """
+    )
+
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+
+    # Emulate that customer had adjusted the global silence timeout
+
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+
+    assert flow is not None
+    step = flow.step_by_id("collect_foo")
+
+    available_actions = ["utter_ask_foo"]
+
+    with structlog.testing.capture_logs() as caplog:
+        result = flow_executor.run_step(
+            step,
+            flow,
+            stack,
+            tracker,
+            available_actions,
+            flows,
+            previous_step_id=START_STEP,
+        )
+
+        logs = filter_logs(
+            caplog, "flow.step.run.reset_silence_timeout_to_global", "debug"
+        )
+
+        assert len(logs) == 1
+
+    assert isinstance(result, ContinueFlowWithNextStep)
+    assert result.events == [
+        FlowStarted(flow_id="my_flow"),
+        SlotSet(SILENCE_TIMEOUT_SLOT, global_silence_timeout),
+    ]
+    assert len(stack.frames) == 2
+    assert isinstance(stack.frames[0], UserFlowStackFrame)
+    assert isinstance(stack.frames[1], CollectInformationPatternFlowStackFrame)

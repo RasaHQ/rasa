@@ -9,6 +9,7 @@ from jinja2 import Template
 from pydantic import ValidationError
 
 import rasa.shared.utils.io
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.constants import (
     POLICY_MAX_HISTORY,
     POLICY_PRIORITY,
@@ -23,7 +24,6 @@ from rasa.core.information_retrieval import (
 )
 from rasa.core.information_retrieval.faiss import FAISS_Store
 from rasa.core.policies.policy import Policy, PolicyPrediction
-from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
 )

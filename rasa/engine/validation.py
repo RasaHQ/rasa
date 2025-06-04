@@ -23,9 +23,10 @@ import structlog
 import typing_utils
 
 import rasa.utils.common
-from rasa.core import ContextualResponseRephraser, IntentlessPolicy
+from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
+from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.core.policies.policy import PolicyPrediction
-from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.coexistence.constants import (
     CALM_ENTRY,
     NLU_ENTRY,

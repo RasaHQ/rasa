@@ -33,6 +33,7 @@ from rasa.core.actions.action import (
 )
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.agent import Agent, load_agent
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
@@ -47,7 +48,6 @@ from rasa.core.policies.flow_policy import FlowPolicy
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
-from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.commands import (
     ChitChatAnswerCommand,
     Command,

@@ -38,7 +38,7 @@ def run(
     """
     import rasa.core.run
     import rasa.shared.utils.common
-    from rasa.core.utils import AvailableEndpoints
+    from rasa.core.available_endpoints import AvailableEndpoints
     from rasa.shared.constants import DOCS_BASE_URL
     from rasa.shared.utils.cli import print_warning
 

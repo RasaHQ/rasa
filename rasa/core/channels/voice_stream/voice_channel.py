@@ -31,8 +31,10 @@ from rasa.core.channels.voice_stream.tts.azure import AzureTTS
 from rasa.core.channels.voice_stream.tts.cartesia import CartesiaTTS
 from rasa.core.channels.voice_stream.tts.tts_cache import TTSCache
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
-from rasa.core.channels.voice_stream.util import generate_silence
-from rasa.shared.core.constants import SLOT_SILENCE_TIMEOUT
+from rasa.core.channels.voice_stream.util import (
+    generate_silence,
+)
+from rasa.shared.core.constants import SILENCE_TIMEOUT_SLOT
 from rasa.shared.utils.cli import print_error_and_exit
 from rasa.shared.utils.common import (
     class_from_module_path,
@@ -171,8 +173,12 @@ class VoiceOutputChannel(OutputChannel):
     def update_silence_timeout(self) -> None:
         """Updates the silence timeout for the session."""
         if self.tracker_state:
-            call_state.silence_timeout = (  # type: ignore[attr-defined]
-                self.tracker_state["slots"][SLOT_SILENCE_TIMEOUT]
+            call_state.silence_timeout = self.tracker_state["slots"][  # type: ignore[attr-defined]
+                SILENCE_TIMEOUT_SLOT
+            ]
+            logger.debug(
+                "voice_channel.silence_timeout_updated",
+                silence_timeout=call_state.silence_timeout,
             )
 
     async def send_text_with_buttons(
@@ -294,6 +300,14 @@ class VoiceInputChannel(InputChannel):
         self.monitor_silence = monitor_silence
         self.tts_cache = TTSCache(tts_config.get("cache_size", 1000))
 
+        logger.info(
+            "voice_channel.initialized",
+            server_url=self.server_url,
+            asr_config=self.asr_config,
+            tts_config=self.tts_config,
+            monitor_silence=self.monitor_silence,
+        )
+
     async def monitor_silence_timeout(self, asr_event_queue: asyncio.Queue) -> None:
         timeout = call_state.silence_timeout
         if not timeout:
@@ -314,7 +328,10 @@ class VoiceInputChannel(InputChannel):
             call_state.silence_timeout_watcher = None  # type: ignore[attr-defined]
 
     @classmethod
-    def from_credentials(cls, credentials: Optional[Dict[str, Any]]) -> InputChannel:
+    def from_credentials(
+        cls,
+        credentials: Optional[Dict[str, Any]],
+    ) -> InputChannel:
         credentials = credentials or {}
         return cls(
             credentials["server_url"],
@@ -340,9 +357,9 @@ class VoiceInputChannel(InputChannel):
     ) -> None:
         output_channel = self.create_output_channel(channel_websocket, tts_engine)
         message = UserMessage(
-            USER_CONVERSATION_SESSION_START,
-            output_channel,
-            call_parameters.stream_id,
+            text=USER_CONVERSATION_SESSION_START,
+            output_channel=output_channel,
+            sender_id=call_parameters.stream_id,
             input_channel=self.name(),
             metadata=asdict(call_parameters),
         )
@@ -377,17 +394,17 @@ class VoiceInputChannel(InputChannel):
 
         async def consume_audio_bytes() -> None:
             async for message in channel_websocket:
-                is_bot_speaking_before = call_state.is_bot_speaking
+                was_bot_speaking_before = call_state.is_bot_speaking
                 channel_action = self.map_input_message(message, channel_websocket)
                 is_bot_speaking_after = call_state.is_bot_speaking
 
-                if not is_bot_speaking_before and is_bot_speaking_after:
+                if not was_bot_speaking_before and is_bot_speaking_after:
                     logger.debug("voice_channel.bot_started_speaking")
                     # relevant when the bot speaks multiple messages in one turn
                     self._cancel_silence_timeout_watcher()
 
                 # we just stopped speaking, starting a watcher for silence timeout
-                if is_bot_speaking_before and not is_bot_speaking_after:
+                if was_bot_speaking_before and not is_bot_speaking_after:
                     logger.debug("voice_channel.bot_stopped_speaking")
                     self._cancel_silence_timeout_watcher()
                     call_state.silence_timeout_watcher = (  # type: ignore[attr-defined]
@@ -458,9 +475,9 @@ class VoiceInputChannel(InputChannel):
             call_state.is_user_speaking = False  # type: ignore[attr-defined]
             output_channel = self.create_output_channel(voice_websocket, tts_engine)
             message = UserMessage(
-                e.text,
-                output_channel,
-                call_parameters.stream_id,
+                text=e.text,
+                output_channel=output_channel,
+                sender_id=call_parameters.stream_id,
                 input_channel=self.name(),
                 metadata=asdict(call_parameters),
             )
@@ -471,9 +488,9 @@ class VoiceInputChannel(InputChannel):
         elif isinstance(e, UserSilence):
             output_channel = self.create_output_channel(voice_websocket, tts_engine)
             message = UserMessage(
-                USER_CONVERSATION_SILENCE_TIMEOUT,
-                output_channel,
-                call_parameters.stream_id,
+                text=USER_CONVERSATION_SILENCE_TIMEOUT,
+                output_channel=output_channel,
+                sender_id=call_parameters.stream_id,
                 input_channel=self.name(),
                 metadata=asdict(call_parameters),
             )

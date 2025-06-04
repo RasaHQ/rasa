@@ -770,7 +770,7 @@ class DefaultV1Recipe(Recipe):
     @staticmethod
     def _intentless_policy_used(nodes: Dict[Text, SchemaNode]) -> bool:
         """Checks if the intentless policy is used in the nodes."""
-        from rasa.core import IntentlessPolicy
+        from rasa.core.policies.intentless_policy import IntentlessPolicy
 
         for schema_node in nodes.values():
             if schema_node.matches_type(IntentlessPolicy):

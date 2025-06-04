@@ -11,8 +11,10 @@ from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from pytest import LogCaptureFixture, MonkeyPatch
 
-from rasa.core import EnterpriseSearchPolicy
-from rasa.core.policies.enterprise_search_policy import DEFAULT_EMBEDDINGS_CONFIG
+from rasa.core.policies.enterprise_search_policy import (
+    DEFAULT_EMBEDDINGS_CONFIG,
+    EnterpriseSearchPolicy,
+)
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage

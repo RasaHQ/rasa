@@ -11,8 +11,8 @@ from moto import mock_aws
 from pytest import CaptureFixture, MonkeyPatch
 
 from rasa.core.agent import Agent, load_agent
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.persistor import AWSPersistor, RemoteStorageType
-from rasa.core.utils import AvailableEndpoints
 from rasa.e2e_test.e2e_test_case import Fixture, TestCase, TestStep
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from tests.conftest import TrainedAsync

@@ -32,6 +32,7 @@ from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 import rasa.shared.core.slot_mappings
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.shared.constants import (
     DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
@@ -48,6 +49,7 @@ from rasa.shared.core.constants import (
     ACTION_SHOULD_SEND_DOMAIN,
     KEY_MAPPING_TYPE,
     KNOWLEDGE_BASE_SLOT_NAMES,
+    SILENCE_TIMEOUT_SLOT,
     SLOT_MAPPINGS,
     SlotMappingType,
 )
@@ -306,6 +308,11 @@ class Domain:
         responses = data.get(KEY_RESPONSES, {})
 
         domain_slots = data.get(KEY_SLOTS, {})
+        for slot_name, slot in domain_slots.items():
+            if slot_name == SILENCE_TIMEOUT_SLOT:
+                slot["initial_value"] = (
+                    AvailableEndpoints.get_instance().interaction_handling.global_silence_timeout
+                )
         slots = cls.collect_slots(domain_slots)
         domain_actions = data.get(KEY_ACTIONS, [])
         actions = cls._collect_action_names(domain_actions)

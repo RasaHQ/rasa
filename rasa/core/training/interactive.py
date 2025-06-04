@@ -47,8 +47,8 @@ import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa import telemetry
 from rasa.core import run, utils
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
-from rasa.core.utils import AvailableEndpoints
 from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     DOCS_URL_NLU_BASED_POLICIES,

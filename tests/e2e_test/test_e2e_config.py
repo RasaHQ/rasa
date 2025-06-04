@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 from pytest import MonkeyPatch
 
-from rasa.core.utils import AvailableEndpoints
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.e2e_test.constants import DEFAULT_E2E_TESTING_MODEL, KEY_LLM_JUDGE
 from rasa.e2e_test.e2e_config import (
     BaseModelConfig,

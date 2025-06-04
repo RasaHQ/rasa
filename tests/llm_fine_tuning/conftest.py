@@ -7,7 +7,7 @@ from pytest import TempPathFactory
 
 import rasa.shared.utils.io
 from rasa.core.agent import Agent
-from rasa.core.utils import AvailableEndpoints
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from tests.conftest import TrainedAsync
 

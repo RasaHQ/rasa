@@ -9,6 +9,7 @@ from structlog.contextvars import (
     bound_contextvars,
 )
 
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.policies.flows.flow_exceptions import (
     FlowCircuitBreakerTrippedException,
@@ -24,6 +25,7 @@ from rasa.core.policies.flows.flow_step_result import (
 from rasa.dialogue_understanding.commands import CancelFlowCommand
 from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.collect_information import (
+    FLOW_PATTERN_COLLECT_INFORMATION,
     CollectInformationPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.patterns.completed import (
@@ -54,6 +56,7 @@ from rasa.dialogue_understanding.stack.utils import (
 from rasa.shared.constants import RASA_PATTERN_HUMAN_HANDOFF
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
+    SILENCE_TIMEOUT_SLOT,
 )
 from rasa.shared.core.events import (
     Event,
@@ -224,19 +227,6 @@ def update_top_flow_step_id(updated_id: str, stack: DialogueStack) -> DialogueSt
 def events_from_set_slots_step(step: SetSlotsFlowStep) -> List[Event]:
     """Create events from a set slots step."""
     return [SlotSet(slot["key"], slot["value"]) for slot in step.slots]
-
-
-def events_for_collect_step_execution(
-    step: CollectInformationFlowStep, tracker: DialogueStateTracker
-) -> List[Event]:
-    """Create the events needed to prepare for the execution of a collect step."""
-    # reset the slots that always need to be explicitly collected
-    slot = tracker.slots.get(step.collect, None)
-
-    if slot and step.ask_before_filling:
-        return [SlotSet(step.collect, None)]
-    else:
-        return []
 
 
 def trigger_pattern_continue_interrupted(
@@ -600,6 +590,12 @@ def run_step(
         # the START_STEP meta step
         initial_events.append(FlowStarted(flow.id, metadata=stack.current_context()))
 
+    # FLow does not start with collect step or we are not in collect information pattern
+    if _first_step_is_not_collect(
+        step, previous_step_id
+    ) and not _in_collect_information_pattern(flow):
+        _append_global_silence_timeout_event(initial_events, tracker)
+
     if isinstance(step, CollectInformationFlowStep):
         return _run_collect_information_step(
             available_actions,
@@ -629,10 +625,30 @@ def run_step(
         return ContinueFlowWithNextStep(events=initial_events)
 
     elif isinstance(step, EndFlowStep):
+        # If pattern collect information flow is ending,
+        # we need to reset the silence timeout slot to its global value.
+        if flow.id == FLOW_PATTERN_COLLECT_INFORMATION:
+            _append_global_silence_timeout_event(initial_events, tracker)
+
         return _run_end_step(flow, flows, initial_events, stack, tracker)
 
     else:
         raise FlowException(f"Unknown flow step type {type(step)}")
+
+
+def _first_step_is_not_collect(
+    step: FlowStep,
+    previous_step_id: str,
+) -> bool:
+    """Check if the first step is not a collect information step."""
+    return (previous_step_id == START_STEP) and not isinstance(
+        step, CollectInformationFlowStep
+    )
+
+
+def _in_collect_information_pattern(flow: Flow) -> bool:
+    """Check if the current flow is a collect information pattern."""
+    return flow.id == FLOW_PATTERN_COLLECT_INFORMATION
 
 
 def _run_end_step(
@@ -745,5 +761,69 @@ def _run_collect_information_step(
         step.collect, stack, step.rejections, step.utter, step.collect_action
     )
 
-    events: List[Event] = events_for_collect_step_execution(step, tracker)
+    events: List[Event] = _events_for_collect_step_execution(step, tracker)
     return ContinueFlowWithNextStep(events=initial_events + events)
+
+
+def _events_for_collect_step_execution(
+    step: CollectInformationFlowStep, tracker: DialogueStateTracker
+) -> List[Event]:
+    """Create the events needed to prepare for the execution of a collect step."""
+    # reset the slots that always need to be explicitly collected
+
+    events = _silence_timeout_events_for_collect_step(step, tracker)
+
+    slot = tracker.slots.get(step.collect, None)
+    if slot and step.ask_before_filling:
+        events.append(SlotSet(step.collect, None))
+
+    return events
+
+
+def _silence_timeout_events_for_collect_step(
+    step: CollectInformationFlowStep, tracker: DialogueStateTracker
+) -> List[Event]:
+    events: List[Event] = []
+
+    silence_timeout = (
+        AvailableEndpoints.get_instance().interaction_handling.global_silence_timeout
+    )
+
+    if step.silence_timeout:
+        structlogger.debug(
+            "flow.step.run.adjusting_silence_timeout",
+            duration=step.silence_timeout,
+            collect=step.collect,
+        )
+
+        silence_timeout = step.silence_timeout
+    else:
+        structlogger.debug(
+            "flow.step.run.reset_silence_timeout_to_global",
+            duration=silence_timeout,
+            collect=step.collect,
+        )
+
+    current_silence_timeout = tracker.get_slot(SILENCE_TIMEOUT_SLOT)
+
+    if current_silence_timeout != silence_timeout:
+        events.append(SlotSet(SILENCE_TIMEOUT_SLOT, silence_timeout))
+
+    return events
+
+
+def _append_global_silence_timeout_event(
+    events: List[Event], tracker: DialogueStateTracker
+) -> None:
+    current_silence_timeout = tracker.get_slot(SILENCE_TIMEOUT_SLOT)
+    global_silence_timeout = (
+        AvailableEndpoints.get_instance().interaction_handling.global_silence_timeout
+    )
+
+    if current_silence_timeout != global_silence_timeout:
+        events.append(
+            SlotSet(
+                SILENCE_TIMEOUT_SLOT,
+                AvailableEndpoints.get_instance().interaction_handling.global_silence_timeout,
+            )
+        )

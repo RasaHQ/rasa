@@ -30,11 +30,11 @@ from rasa import server, telemetry
 from rasa.constants import ENV_SANIC_BACKLOG
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.development_inspector import DevelopmentInspectProxy
 from rasa.core.persistor import StorageType
-from rasa.core.utils import AvailableEndpoints
 from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import read_config_file
@@ -45,7 +45,7 @@ logger = logging.getLogger()  # get the root logger
 
 def create_http_input_channels(
     channel: Optional[Text], credentials_file: Optional[Text]
-) -> List["InputChannel"]:
+) -> List[InputChannel]:
     """Instantiate the chosen input channel."""
     if credentials_file:
         all_credentials = read_config_file(credentials_file)
@@ -59,22 +59,45 @@ def create_http_input_channels(
                 "To connect to all given channels, omit the '--connector' "
                 "argument.".format(channel)
             )
-        return [_create_single_channel(channel, all_credentials.get(channel))]
+        return [
+            _create_single_channel(
+                channel,
+                all_credentials.get(channel),
+            )
+        ]
     else:
         return [_create_single_channel(c, k) for c, k in all_credentials.items()]
 
 
-def _create_single_channel(channel: Text, credentials: Dict[Text, Any]) -> Any:
+def _create_single_channel(
+    channel: Text,
+    credentials: Optional[Dict[Text, Any]],
+) -> Any:
+    """Create a single input channel based on the channel name and credentials.
+
+    Args:
+        channel: The name of the input channel to create.
+        credentials: The credentials for the input channel.
+
+    Returns:
+        An instance of the input channel class.
+
+    Raises:
+        RasaException: If the channel class cannot be found or instantiated.
+    """
     from rasa.core.channels import BUILTIN_CHANNELS
 
     if channel in BUILTIN_CHANNELS:
-        return BUILTIN_CHANNELS[channel].from_credentials(credentials)
+        channel_class = BUILTIN_CHANNELS[channel]
+
+        return channel_class.from_credentials(credentials)
     else:
         # try to load channel based on class name
         try:
             input_channel_class = rasa.shared.utils.common.class_from_module_path(
                 channel
             )
+
             return input_channel_class.from_credentials(credentials)
         except (AttributeError, ImportError):
             raise RasaException(
@@ -108,7 +131,7 @@ def _is_apple_silicon_system() -> bool:
 
 
 def configure_app(
-    input_channels: Optional[List["InputChannel"]] = None,
+    input_channels: Optional[List[InputChannel]] = None,
     cors: Optional[Union[Text, List[Text], None]] = None,
     auth_token: Optional[Text] = None,
     enable_api: bool = True,

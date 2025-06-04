@@ -3,9 +3,9 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
-from rasa.core import IntentlessPolicy
 from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
+from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.dialogue_understanding.generator.command_parser import parse_commands
 from rasa.dialogue_understanding_test.command_comparison import are_command_lists_equal

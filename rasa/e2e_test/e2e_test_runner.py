@@ -13,11 +13,11 @@ import structlog
 from tqdm import tqdm
 
 import rasa.shared.utils.io
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.persistor import StorageType
-from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding_test.du_test_case import DialogueUnderstandingTestCase
 from rasa.e2e_test.constants import TEST_CASE_NAME, TEST_FILE_NAME
 from rasa.e2e_test.e2e_config import create_llm_judge_config

@@ -13,6 +13,7 @@ from aiohttp import ClientError
 
 import rasa.shared.utils.io
 from rasa.core import jobs
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.exceptions import AgentNotReady
@@ -27,7 +28,6 @@ from rasa.core.tracker_stores.tracker_store import (
     InMemoryTrackerStore,
     TrackerStore,
 )
-from rasa.core.utils import AvailableEndpoints
 from rasa.exceptions import ModelNotFound
 from rasa.nlu.utils import is_url
 from rasa.shared.constants import DEFAULT_SENDER_ID

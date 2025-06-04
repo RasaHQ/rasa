@@ -22,7 +22,7 @@ from typing import (
 import structlog
 
 import rasa.shared.utils.io
-from rasa.core.utils import AvailableEndpoints
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.shared.constants import (
     DEFAULT_PROMPT_PACKAGE_NAME,
     MODEL_CONFIG_KEY,

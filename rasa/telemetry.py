@@ -62,10 +62,10 @@ from rasa.utils import common as rasa_utils
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
+    from rasa.core.available_endpoints import AvailableEndpoints
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.channels.channel import InputChannel
     from rasa.core.tracker_stores.tracker_store import TrackerStore
-    from rasa.core.utils import AvailableEndpoints
     from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -1356,7 +1356,7 @@ def track_server_start(
         number_of_workers: number of used Sanic workers
         is_api_enabled: whether the rasa API server is enabled
     """
-    from rasa.core.utils import AvailableEndpoints
+    from rasa.core.available_endpoints import AvailableEndpoints
 
     def project_fingerprint_and_assistant_id_from_model(
         _model_directory: Optional[Text],

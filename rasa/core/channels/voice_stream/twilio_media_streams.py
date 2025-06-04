@@ -14,7 +14,7 @@ from sanic import (  # type: ignore[attr-defined]
     response,
 )
 
-from rasa.core.channels import InputChannel, UserMessage
+from rasa.core.channels import UserMessage
 from rasa.core.channels.channel import (
     create_auth_requested_response_provider,
     requires_basic_auth,
@@ -106,12 +106,20 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
         username: Optional[Text] = None,
         password: Optional[Text] = None,
     ):
-        super().__init__(server_url, asr_config, tts_config, monitor_silence)
+        super().__init__(
+            server_url=server_url,
+            asr_config=asr_config,
+            tts_config=tts_config,
+            monitor_silence=monitor_silence,
+        )
         self.username = username
         self.password = password
 
     @classmethod
-    def from_credentials(cls, credentials: Optional[Dict[str, Any]]) -> InputChannel:
+    def from_credentials(
+        cls,
+        credentials: Optional[Dict[str, Any]],
+    ) -> VoiceInputChannel:
         credentials = credentials or {}
 
         username = credentials.get("username")

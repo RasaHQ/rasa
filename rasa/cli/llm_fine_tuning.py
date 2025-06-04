@@ -20,8 +20,8 @@ from rasa.cli.e2e_test import (
     read_test_cases,
     validate_model_path,
 )
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.exceptions import AgentNotReady
-from rasa.core.utils import AvailableEndpoints
 from rasa.dialogue_understanding.generator.llm_based_command_generator import (
     LLMBasedCommandGenerator,
 )

@@ -9,9 +9,9 @@ from sanic import Sanic
 
 import rasa.shared.core.domain
 from rasa.core import run
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.run import serve_application
-from rasa.core.utils import AvailableEndpoints
 
 CREDENTIALS_FILE = "data/test_moodbot/credentials.yml"
 

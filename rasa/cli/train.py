@@ -11,7 +11,7 @@ import rasa.cli.utils
 import rasa.core.utils
 import rasa.utils.common
 from rasa.cli import SubParsersAction
-from rasa.core import ContextualResponseRephraser
+from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.core.train import do_compare_training
 from rasa.engine.validation import validate_api_type_config_key_usage

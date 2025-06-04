@@ -103,7 +103,7 @@ class UserMessage:
 
 
 def register(
-    input_channels: List["InputChannel"], app: Sanic, route: Optional[Text]
+    input_channels: List[InputChannel], app: Sanic, route: Optional[Text]
 ) -> None:
     """Registers input channel blueprints with Sanic."""
 
@@ -129,7 +129,7 @@ class InputChannel:
         return cls.__name__
 
     @classmethod
-    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> "InputChannel":
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         return cls()
 
     def url_prefix(self) -> Text:

@@ -111,12 +111,18 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         monitor_silence: bool = False,
     ):
         mark_as_beta_feature("Audiocodes (audiocodes_stream) Channel")
-        super().__init__(server_url, asr_config, tts_config, monitor_silence)
+        super().__init__(
+            server_url=server_url,
+            asr_config=asr_config,
+            tts_config=tts_config,
+            monitor_silence=monitor_silence,
+        )
         self.token = token
 
     @classmethod
     def from_credentials(
-        cls, credentials: Optional[Dict[str, Any]]
+        cls,
+        credentials: Optional[Dict[str, Any]],
     ) -> VoiceInputChannel:
         if not credentials:
             raise ValueError("No credentials given for Audiocodes voice channel.")

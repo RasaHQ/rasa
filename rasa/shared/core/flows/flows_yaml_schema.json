@@ -244,6 +244,9 @@
                                         }
                                     }
                                 }
+                            },
+                            "silence_timeout": {
+                                "type": "number"
                             }
                         }
                     }

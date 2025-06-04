@@ -72,8 +72,8 @@ from rasa.shared.core.constants import (
     ACTION_SESSION_START_NAME,
     FOLLOWUP_ACTION,
     SESSION_START_METADATA_SLOT,
+    SILENCE_TIMEOUT_SLOT,
     SLOT_CONSECUTIVE_SILENCE_TIMEOUTS,
-    SLOT_SILENCE_TIMEOUT,
     USER_INTENT_RESTART,
     USER_INTENT_SILENCE_TIMEOUT,
     SetSlotExtractor,
@@ -109,7 +109,7 @@ from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
-    from rasa.core.utils import AvailableEndpoints
+    from rasa.core.available_endpoints import AvailableEndpoints
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
@@ -819,28 +819,8 @@ class MessageProcessor:
         )
 
         self._check_for_unseen_features(parse_data)
-        # resetting timeouts variables whenever something that is not a timeout occurs
-        if (
-            parse_data.get(INTENT, {}).get(INTENT_NAME_KEY)
-            != USER_INTENT_SILENCE_TIMEOUT
-            and tracker
-        ):
-            if (
-                SLOT_CONSECUTIVE_SILENCE_TIMEOUTS in tracker.slots
-                and tracker.slots[SLOT_CONSECUTIVE_SILENCE_TIMEOUTS].value != 0.0
-            ):
-                tracker.update(SlotSet(SLOT_CONSECUTIVE_SILENCE_TIMEOUTS, 0.0))
-            if (
-                SLOT_SILENCE_TIMEOUT in tracker.slots
-                and tracker.slots[SLOT_SILENCE_TIMEOUT].value
-                != tracker.slots[SLOT_SILENCE_TIMEOUT].initial_value
-            ):
-                tracker.update(
-                    SlotSet(
-                        SLOT_SILENCE_TIMEOUT,
-                        tracker.slots[SLOT_SILENCE_TIMEOUT].initial_value,
-                    )
-                )
+
+        self._initialise_consecutive_silence_timeout_slots(parse_data, tracker)
 
         return parse_data
 
@@ -1577,3 +1557,31 @@ class MessageProcessor:
         )
 
         return tracker, validate_frames
+
+    @staticmethod
+    def _initialise_consecutive_silence_timeout_slots(
+        parse_data: Dict[str, Any],
+        tracker: DialogueStateTracker,
+    ) -> None:
+        # resetting timeouts variables whenever something that is not a timeout occurs
+        if (
+            parse_data.get(INTENT, {}).get(INTENT_NAME_KEY)
+            != USER_INTENT_SILENCE_TIMEOUT
+            and tracker
+        ):
+            if (
+                SLOT_CONSECUTIVE_SILENCE_TIMEOUTS in tracker.slots
+                and tracker.slots[SLOT_CONSECUTIVE_SILENCE_TIMEOUTS].value != 0.0
+            ):
+                tracker.update(SlotSet(SLOT_CONSECUTIVE_SILENCE_TIMEOUTS, 0.0))
+            if (
+                SILENCE_TIMEOUT_SLOT in tracker.slots
+                and tracker.slots[SILENCE_TIMEOUT_SLOT].value
+                != tracker.slots[SILENCE_TIMEOUT_SLOT].initial_value
+            ):
+                tracker.update(
+                    SlotSet(
+                        SILENCE_TIMEOUT_SLOT,
+                        tracker.slots[SILENCE_TIMEOUT_SLOT].initial_value,
+                    )
+                )
