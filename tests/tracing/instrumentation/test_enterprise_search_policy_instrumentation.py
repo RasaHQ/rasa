@@ -54,7 +54,9 @@ def mock_create_from_endpoint_config() -> Mock:
         yield mock_function
 
 
-async def test_tracing_enterprise_search_policy_generate_llm_answer_default_config(
+@patch("rasa.core.policies.enterprise_search_policy.llm_factory")
+async def test_tracing_enterprise_search_policy_invoke_llm_default_config(
+    mock_llm_factory: Mock,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -79,7 +81,9 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_default_conf
     )
     mock_llm_client = Mock()
     mock_llm_client.acompletion = AsyncMock(return_value=llm_response_object)
-    await policy._generate_llm_answer(llm=mock_llm_client, prompt="")
+    mock_llm_factory.return_value = mock_llm_client
+
+    await policy._invoke_llm("")
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -87,7 +91,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_default_conf
     assert num_captured_spans == 1
 
     captured_span = captured_spans[-1]
-    assert captured_span.name == "EnterpriseSearchPolicy._generate_llm_answer"
+    assert captured_span.name == "EnterpriseSearchPolicy._invoke_llm"
 
     assert captured_span.attributes == {
         "class_name": "EnterpriseSearchPolicy",
@@ -174,7 +178,9 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_default_conf
         ),
     ],
 )
-async def test_tracing_enterprise_search_policy_generate_llm_answer_custom_config(
+@patch("rasa.core.policies.enterprise_search_policy.llm_factory")
+async def test_tracing_enterprise_search_policy_invoke_llm_custom_config(
+    mock_llm_factory: Mock,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -211,14 +217,16 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_custom_confi
         )
         mock_llm_client = Mock()
         mock_llm_client.acompletion = AsyncMock(return_value=llm_response_object)
-        await policy._generate_llm_answer(llm=mock_llm_client, prompt="")
+        mock_llm_factory.return_value = mock_llm_client
+
+        await policy._invoke_llm("")
         captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
         num_captured_spans = len(captured_spans) - previous_num_captured_spans
         assert num_captured_spans == 1
 
         captured_span = captured_spans[-1]
-        assert captured_span.name == "EnterpriseSearchPolicy._generate_llm_answer"
+        assert captured_span.name == "EnterpriseSearchPolicy._invoke_llm"
 
         expected_attributes = {
             "class_name": component_class.__name__,
@@ -227,7 +235,9 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_custom_confi
         assert captured_span.attributes == expected_attributes
 
 
-async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_tokens(
+@patch("rasa.core.policies.enterprise_search_policy.llm_factory")
+async def test_tracing_enterprise_search_policy_invoke_llm_len_prompt_tokens(
+    mock_llm_factory: Mock,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -261,9 +271,8 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
         )
         mock_llm_client = Mock()
         mock_llm_client.acompletion = AsyncMock(return_value=llm_response_object)
-        await policy._generate_llm_answer(
-            llm=mock_llm_client, prompt="This is a test prompt."
-        )
+        mock_llm_factory.return_value = Mock()
+        await policy._invoke_llm("This is a test prompt.")
 
         captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -271,7 +280,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
         assert num_captured_spans == 1
 
         captured_span = captured_spans[-1]
-        assert captured_span.name == "EnterpriseSearchPolicy._generate_llm_answer"
+        assert captured_span.name == "EnterpriseSearchPolicy._invoke_llm"
 
         assert captured_span.attributes == {
             "class_name": "EnterpriseSearchPolicy",
@@ -292,7 +301,9 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
         }
 
 
-async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_tokens_non_openai(  # noqa: E501
+@patch("rasa.core.policies.enterprise_search_policy.llm_factory")
+async def test_tracing_enterprise_search_policy_invoke_llm_len_prompt_tokens_non_openai(
+    mock_llm_factory: Mock,
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     previous_num_captured_spans: int,
@@ -332,9 +343,8 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
         with caplog.at_level(logging.WARNING):
             mock_llm_client = Mock()
             mock_llm_client.acompletion = AsyncMock(return_value=llm_response_object)
-            await policy._generate_llm_answer(
-                llm=mock_llm_client, prompt="This is a test prompt."
-            )
+            mock_llm_factory.return_value = mock_llm_client
+            await policy._invoke_llm("This is a test prompt.")
             assert (
                 "Tracing prompt tokens is only supported for OpenAI models. Skipping."
                 in caplog.text
@@ -346,7 +356,7 @@ async def test_tracing_enterprise_search_policy_generate_llm_answer_len_prompt_t
         assert num_captured_spans == 1
 
         captured_span = captured_spans[-1]
-        assert captured_span.name == "EnterpriseSearchPolicy._generate_llm_answer"
+        assert captured_span.name == "EnterpriseSearchPolicy._invoke_llm"
 
         assert captured_span.attributes["len_prompt_tokens"] == "None"
 

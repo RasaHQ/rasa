@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+import structlog
 from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.llms.fake import FakeListLLM
 from pytest import MonkeyPatch
@@ -17,6 +18,10 @@ from rasa.core.information_retrieval import (
     SearchResultList,
 )
 from rasa.core.policies.enterprise_search_policy import (
+    CHECK_RELEVANCY_PROPERTY,
+    DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
+    DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE,
+    DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_RELEVANCY_CHECK_AND_CITATION_TEMPLATE,
     ENTERPRISE_SEARCH_CONFIG_FILE_NAME,
     SEARCH_QUERY_METADATA_KEY,
     SEARCH_RESULTS_METADATA_KEY,
@@ -41,6 +46,7 @@ from rasa.shared.constants import (
     LLM_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
+    RASA_PATTERN_CANNOT_HANDLE_NO_RELEVANT_ANSWER,
     ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.domain import Domain
@@ -55,6 +61,8 @@ from rasa.shared.nlu.constants import (
     PROMPTS,
 )
 from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.utils.llm import get_prompt_template
+from tests.utilities import filter_logs
 
 
 @pytest.fixture
@@ -142,6 +150,16 @@ def mock_create_prediction_cannot_handle():
 
 
 @pytest.fixture
+def mock_is_llm_response_relevant():
+    with patch.object(
+        EnterpriseSearchPolicy,
+        "_is_llm_response_relevant",
+        return_value=MagicMock(),
+    ) as mock_is_llm_response_relevant:
+        yield mock_is_llm_response_relevant
+
+
+@pytest.fixture
 def search_results() -> SearchResultList:
     return SearchResultList(
         results=[
@@ -161,15 +179,10 @@ def search_results() -> SearchResultList:
 @pytest.mark.parametrize(
     "config,prompt_starts_with,prompt_contains",
     [
+        # Use of deprecated 'prompt' key
         (
             {"prompt": "data/prompt_templates/test_prompt.jinja2"},
             "Identify the user's message intent",
-            "",
-        ),
-        (
-            {},
-            "Given the following information, please provide an answer based on"
-            " the provided documents",
             "",
         ),
         (
@@ -181,10 +194,62 @@ def search_results() -> SearchResultList:
             "",
         ),
         (
+            {
+                "prompt": "data/prompt_templates/test_prompt.jinja2",
+                "check_relevancy": True,
+            },
+            "Identify the user's message intent",
+            "",
+        ),
+        # Use of `prompt_template' config key
+        (
+            {"prompt_template": "data/prompt_templates/test_prompt.jinja2"},
+            "Identify the user's message intent",
+            "",
+        ),
+        (
+            {
+                "prompt_template": "data/prompt_templates/test_prompt.jinja2",
+                "citation_enabled": True,
+            },
+            "Identify the user's message intent",
+            "",
+        ),
+        (
+            {
+                "prompt_template": "data/prompt_templates/test_prompt.jinja2",
+                "check_relevancy": True,
+            },
+            "Identify the user's message intent",
+            "",
+        ),
+        # Use of default prompts based on the citation and relevancy check
+        (
+            {},
+            "Given the following information, please provide an answer based on"
+            " the provided documents",
+            "",
+        ),
+        (
             {"citation_enabled": True},
             "Given the following information, please provide an answer based on"
             " the provided documents",
             "Citing Sources",
+        ),
+        (
+            {"check_relevancy": True},
+            "Given the following information, please provide an answer based on",
+            "[NO_RELEVANT_ANSWER_FOUND]",
+        ),
+        (
+            {"check_relevancy": True, "citation_enabled": True},
+            "Given the following information, please provide an answer based on",
+            "[NO_RELEVANT_ANSWER_FOUND]",
+        ),
+        (
+            {"check_relevancy": True, "citation_enabled": False},
+            "Given the following information, please provide an answer based on",
+            "[NO_RELEVANT_ANSWER_FOUND]",
         ),
     ],
 )
@@ -227,6 +292,45 @@ async def test_enterprise_search_policy_prompt(
             )
     assert loaded.prompt_template.startswith(prompt_starts_with)
     assert prompt_contains in loaded.prompt_template
+
+
+async def test_enterprise_search_policy_warning_is_raised_if_both_prompt_and_prompt_template_key_are_used(  # noqa: E501
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test that the prompt is set correctly based on the config."""
+    # Given
+    monkeypatch.setenv(
+        OPENAI_API_KEY_ENV_VAR, "mock key in test_enterprise_search_policy"
+    )
+    expected_event = (
+        "enterprise_search_policy.init"
+        ".both_deprecated_and_non_deprecated_config_keys_used_at_the_same_time"
+    )
+    expected_log_level = "warning"
+    prompt_starts_with = "This is the second test prompt."
+
+    # When
+    with structlog.testing.capture_logs() as caplog:
+        policy = EnterpriseSearchPolicy(
+            config={
+                "prompt_template": "data/prompt_templates/test_prompt_2.jinja2",
+                "prompt": "data/prompt_templates/test_prompt.jinja2",
+                "vector_store": {"type": "milvus"},
+            },
+            model_storage=default_model_storage,
+            resource=Resource("enterprise_search_policy"),
+            execution_context=default_execution_context,
+            vector_store=vector_store,
+        )
+        logs = filter_logs(caplog, expected_event, expected_log_level)
+
+    # Then
+    assert len(logs) == 1
+    # 'prompt_template' should have resolving priority
+    assert policy.prompt_template.startswith(prompt_starts_with)
 
 
 @pytest.mark.parametrize(
@@ -633,10 +737,10 @@ async def test_enterprise_search_policy_none_llm_answer(
         mock_llm = MagicMock()
         mock_llm_factory.return_value = mock_llm.return_value
 
-        # mock self._generate_llm_answer(llm, prompt) to return None
+        # mock self._invoke_llm(llm, prompt) to return None
         with patch.object(
             mocked_enterprise_search_policy,
-            "_generate_llm_answer",
+            "_invoke_llm",
             return_value=None,
         ):
             await mocked_enterprise_search_policy.predict_action_probabilities(
@@ -729,6 +833,9 @@ def test_enterprise_search_policy_citation_enabled(
     default_execution_context: ExecutionContext,
     vector_store: InformationRetrieval,
 ) -> None:
+    expected_template = get_prompt_template(
+        None, DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE
+    )
     policy = EnterpriseSearchPolicy(
         config={**{"vector_store": {"type": "milvus"}, "citation_enabled": True}},
         model_storage=default_model_storage,
@@ -738,17 +845,17 @@ def test_enterprise_search_policy_citation_enabled(
     )
 
     assert policy.citation_enabled is True
-    assert policy.prompt_template == policy.citation_prompt_template
+    assert policy.prompt_template == expected_template
 
 
 def test_enterprise_search_policy_citation_disabled(
     default_enterprise_search_policy: EnterpriseSearchPolicy,
 ) -> None:
-    assert default_enterprise_search_policy.citation_enabled is False
-    assert (
-        default_enterprise_search_policy.prompt_template
-        != default_enterprise_search_policy.citation_prompt_template
+    citation_prompt_template = get_prompt_template(
+        None, DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE
     )
+    assert default_enterprise_search_policy.citation_enabled is False
+    assert default_enterprise_search_policy.prompt_template != citation_prompt_template
 
 
 def test_enterprise_search_policy_post_process_citations_same_order(
@@ -1020,6 +1127,83 @@ Sources:
     )
 
 
+def test_enterprise_search_policy_check_relevancy_enabled_but_generative_search_is_disabled(  # noqa: E501
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+) -> None:
+    # Given
+    expected_event = (
+        "enterprise_search_policy.init"
+        ".relevancy_check_enabled_with_disabled_generative_search"
+    )
+    expected_log_level = "warning"
+    expected_log_message_parts = [
+        f"The config parameter '{CHECK_RELEVANCY_PROPERTY}' is set to"
+        "'True', but the generative search is disabled"
+    ]
+    expected_prompt_template = get_prompt_template(
+        None,
+        DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_RELEVANCY_CHECK_AND_CITATION_TEMPLATE,
+    )
+
+    # When
+    with structlog.testing.capture_logs() as caplog:
+        policy = EnterpriseSearchPolicy(
+            config={
+                **{
+                    "vector_store": {"type": "milvus"},
+                    "check_relevancy": True,
+                    "use_generative_llm": False,
+                }
+            },
+            model_storage=default_model_storage,
+            resource=Resource("enterprise_search_policy"),
+            execution_context=default_execution_context,
+            vector_store=vector_store,
+        )
+        logs = filter_logs(
+            caplog, expected_event, expected_log_level, expected_log_message_parts
+        )
+
+    # Then
+    assert policy.relevancy_check_enabled is True
+    assert policy.use_llm is False
+    assert policy.prompt_template == expected_prompt_template
+    assert len(logs) == 1
+
+
+def test_enterprise_search_policy_check_relevancy_enabled(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+) -> None:
+    expected_prompt_template = get_prompt_template(
+        None,
+        DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_RELEVANCY_CHECK_AND_CITATION_TEMPLATE,
+    )
+    policy = EnterpriseSearchPolicy(
+        config={**{"vector_store": {"type": "milvus"}, "check_relevancy": True}},
+        model_storage=default_model_storage,
+        resource=Resource("enterprise_search_policy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+
+    assert policy.relevancy_check_enabled is True
+    assert policy.prompt_template == expected_prompt_template
+
+
+def test_enterprise_search_policy_check_relevancy_disabled(
+    default_enterprise_search_policy: EnterpriseSearchPolicy,
+) -> None:
+    expected_prompt_template = get_prompt_template(
+        None, DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE
+    )
+    assert default_enterprise_search_policy.relevancy_check_enabled is False
+    assert default_enterprise_search_policy.prompt_template == expected_prompt_template
+
+
 async def test_enterprise_search_policy_tracker_state_is_passed(
     mocked_enterprise_search_policy: EnterpriseSearchPolicy,
     enterprise_search_tracker: DialogueStateTracker,
@@ -1141,12 +1325,11 @@ async def test_enterprise_search_policy_response_with_use_llm_true(
             "search",
             return_value=search_results,
         ):
-            # mock self._generate_llm_answer(llm, prompt) to
-            # return LLM generated response
+            # mock self._invoke_llm(prompt) to return LLM generated response
             llm_response_object.choices = ["LLM generated response"]
             with patch.object(
                 policy,
-                "_generate_llm_answer",
+                "_invoke_llm",
                 return_value=llm_response_object,
             ):
                 prediction = await policy.predict_action_probabilities(
@@ -1623,3 +1806,154 @@ def test_render_prompt_includes_doc_text(
 
     for doc in documents:
         assert doc.text in rendered_prompt
+
+
+@pytest.mark.parametrize(
+    "relevancy_check_enabled, citation_enabled, llm_answer, expected_text, expect_cannot_handle",  # noqa: E501
+    [
+        # Relevancy check enabled, generated answer
+        (
+            True,
+            True,
+            "Generated answer",
+            "Generated answer - Relevancy - Citations",
+            False,
+        ),
+        (True, False, "Generated answer", "Generated answer - Relevancy", False),
+        # Relevancy check enabled but answer not relevant
+        (True, True, "[NO_RELEVANT_ANSWER_FOUND]", None, True),
+        (True, False, "[NO_RELEVANT_ANSWER_FOUND]", None, True),
+        # Relevancy check disabled, generated answer
+        (False, True, "Generated answer", "Generated answer - Citations", False),
+        (False, False, "Generated answer", "Generated answer", False),
+    ],
+)
+@patch("rasa.shared.utils.llm.llm_factory")
+@patch.object(
+    EnterpriseSearchPolicy,
+    "_invoke_llm",
+)
+@patch.object(
+    EnterpriseSearchPolicy,
+    "post_process_citations",
+)
+async def test_enterprise_search_policy_prediction_varied_configs(
+    mock_post_process_citations: MagicMock,
+    mock_invoke_llm: MagicMock,
+    mock_llm_factory: MagicMock,
+    mocked_enterprise_search_policy: EnterpriseSearchPolicy,
+    enterprise_search_tracker: DialogueStateTracker,
+    mock_create_prediction_cannot_handle: MagicMock,
+    relevancy_check_enabled: bool,
+    citation_enabled: bool,
+    llm_answer: str,
+    expected_text: Optional[str],
+    expect_cannot_handle: bool,
+) -> None:
+    def simulate_citation_output() -> Optional[str]:
+        """
+        Simulate the output of the citation step depending on:
+        - whether the citation step is enabled or not,
+        - whether the relevancy check is enabled or not,
+        """
+
+        if llm_answer == "[NO_RELEVANT_ANSWER_FOUND]" or not citation_enabled:
+            return None
+        return mock_invoke_llm.return_value.choices[0] + " - Citations"
+
+    def llm_answer_generation_output() -> Optional[str]:
+        """
+        Simulate the output of the LLM answer generation step depending on
+        whether the relevancy check is enabled or not
+        """
+
+        if llm_answer == "[NO_RELEVANT_ANSWER_FOUND]" or not relevancy_check_enabled:
+            return llm_answer
+        return f"{llm_answer} - Relevancy"
+
+    # Given
+    mock_llm_factory.return_value = MagicMock()
+
+    mocked_enterprise_search_policy.relevancy_check_enabled = relevancy_check_enabled
+    mocked_enterprise_search_policy.citation_enabled = citation_enabled
+
+    mock_invoke_llm.return_value = LLMResponse(
+        id="test_response",
+        choices=[llm_answer_generation_output()],
+        created=123,
+    )
+    mock_post_process_citations.return_value = simulate_citation_output()
+
+    domain = Domain.empty()
+    tracker = enterprise_search_tracker
+
+    # When
+    prediction = await mocked_enterprise_search_policy.predict_action_probabilities(
+        tracker=tracker,
+        domain=domain,
+        endpoints=None,
+    )
+
+    # Then
+    mock_invoke_llm.assert_called_once()
+
+    if expect_cannot_handle:
+        mock_create_prediction_cannot_handle.assert_called_once_with(
+            domain,
+            tracker,
+            RASA_PATTERN_CANNOT_HANDLE_NO_RELEVANT_ANSWER,
+        )
+        mock_post_process_citations.assert_not_called()
+    else:
+        mock_create_prediction_cannot_handle.assert_not_called()
+        if citation_enabled:
+            mock_post_process_citations.assert_called_once()
+        else:
+            mock_post_process_citations.assert_not_called()
+
+        assert prediction.action_metadata["message"]["text"] == expected_text
+
+
+@pytest.mark.parametrize(
+    "config, prompt_starts_with, prompt_contains",
+    [
+        (
+            {},
+            "Given the following information, please provide an answer based on"
+            " the provided documents",
+            "",
+        ),
+        (
+            {"citation_enabled": True},
+            "Given the following information, please provide an answer based on"
+            " the provided documents",
+            "Citing Sources",
+        ),
+        (
+            {"check_relevancy": True},
+            "Given the following information, please provide an answer based on",
+            "[NO_RELEVANT_ANSWER_FOUND]",
+        ),
+        (
+            {"check_relevancy": True, "citation_enabled": True},
+            "Given the following information, please provide an answer based on",
+            "[NO_RELEVANT_ANSWER_FOUND]",
+        ),
+        (
+            {"check_relevancy": True, "citation_enabled": False},
+            "Given the following information, please provide an answer based on",
+            "[NO_RELEVANT_ANSWER_FOUND]",
+        ),
+    ],
+)
+def test_get_system_default_prompt_based_on_config(
+    config: Dict[str, Any],
+    prompt_starts_with: str,
+    prompt_contains: str,
+):
+    # When
+    prompt = EnterpriseSearchPolicy.get_system_default_prompt_based_on_config(config)
+
+    # Then
+    assert prompt.startswith(prompt_starts_with)
+    assert prompt_contains in prompt

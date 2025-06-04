@@ -27,6 +27,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.domain import Domain
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.tracing.constants import (
     COMPACT_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_METRIC_NAME,
@@ -194,13 +195,17 @@ def setup_test_enterprise_search_policy(
     monkeypatch: MonkeyPatch,
     **kwargs: Any,
 ) -> EnterpriseSearchPolicy:
-    def mock_enterprise_search_generate(
-        self: Any, llm: Any, prompt: str
-    ) -> Optional[str]:
-        return ""
+    def mock_enterprise_search_invoke_llm(
+        self: Any, prompt: str
+    ) -> Optional[LLMResponse]:
+        return LLMResponse(
+            id="mock_response",
+            choices=[""],
+            created=123,
+        )
 
     monkeypatch.setattr(
-        EnterpriseSearchPolicy, "_generate_llm_answer", mock_enterprise_search_generate
+        EnterpriseSearchPolicy, "_invoke_llm", mock_enterprise_search_invoke_llm
     )
 
     default_model_storage = kwargs.get("default_model_storage")
@@ -302,8 +307,8 @@ def setup_test_endpoint_config(
             EnterpriseSearchPolicy,
             setup_test_enterprise_search_policy,
             ["default_model_storage", "default_execution_context"],
-            "_generate_llm_answer",
-            ["llm", "prompt"],
+            "_invoke_llm",
+            ["prompt"],
             # the first 3 metrics in the list belong to LLMCommandGenerator
             3,
             ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,

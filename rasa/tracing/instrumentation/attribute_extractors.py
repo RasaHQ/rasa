@@ -767,8 +767,8 @@ def extract_attrs_for_intentless_policy_generate_llm_answer(
     return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
 
 
-def extract_attrs_for_enterprise_search_generate_llm_answer(
-    self: "EnterpriseSearchPolicy", llm: "BaseLLM", prompt: str
+def extract_attrs_for_enterprise_search_invoke_llm(
+    self: "EnterpriseSearchPolicy", prompt: str
 ) -> Dict[str, Any]:
     from rasa.core.policies.enterprise_search_policy import (
         DEFAULT_EMBEDDINGS_CONFIG,

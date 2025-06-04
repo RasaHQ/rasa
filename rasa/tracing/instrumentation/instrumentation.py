@@ -890,8 +890,8 @@ def _instrument_enterprise_search_policy(
     _instrument_method(
         tracer,
         policy_class,
-        "_generate_llm_answer",
-        attribute_extractors.extract_attrs_for_enterprise_search_generate_llm_answer,
+        "_invoke_llm",
+        attribute_extractors.extract_attrs_for_enterprise_search_invoke_llm,
     )
     _instrument_perform_health_check_method_for_component(
         tracer_provider.get_tracer(policy_class.__module__),

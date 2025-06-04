@@ -1,7 +1,7 @@
 import importlib.resources
 import json
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Text
 
 import dotenv
 import structlog
@@ -53,7 +53,9 @@ from rasa.shared.constants import (
     MODEL_NAME_CONFIG_KEY,
     OPENAI_PROVIDER,
     PROMPT_CONFIG_KEY,
+    PROMPT_TEMPLATE_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
+    RASA_PATTERN_CANNOT_HANDLE_NO_RELEVANT_ANSWER,
     TEMPERATURE_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
 )
@@ -78,7 +80,6 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
     _LangchainEmbeddingClientAdapter,
 )
-from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.llm.llm_response import LLMResponse, measure_llm_latency
 from rasa.shared.utils.cli import print_error_and_exit
 from rasa.shared.utils.constants import (
@@ -113,7 +114,7 @@ if TYPE_CHECKING:
 
 from rasa.utils.log_utils import log_llm
 
-logger = structlog.get_logger()
+structlogger = structlog.get_logger()
 
 dotenv.load_dotenv("./.env")
 
@@ -124,6 +125,7 @@ VECTOR_STORE_THRESHOLD_PROPERTY = "threshold"
 TRACE_TOKENS_PROPERTY = "trace_prompt_tokens"
 CITATION_ENABLED_PROPERTY = "citation_enabled"
 USE_LLM_PROPERTY = "use_generative_llm"
+CHECK_RELEVANCY_PROPERTY = "check_relevancy"
 MAX_MESSAGES_IN_QUERY_KEY = "max_messages_in_query"
 
 DEFAULT_VECTOR_STORE_TYPE = "faiss"
@@ -133,6 +135,10 @@ DEFAULT_VECTOR_STORE = {
     SOURCE_PROPERTY: "./docs",
     VECTOR_STORE_THRESHOLD_PROPERTY: DEFAULT_VECTOR_STORE_THRESHOLD,
 }
+
+DEFAULT_CHECK_RELEVANCY_PROPERTY = False
+DEFAULT_USE_LLM_PROPERTY = True
+DEFAULT_CITATION_ENABLED_PROPERTY = False
 
 DEFAULT_LLM_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
@@ -160,6 +166,18 @@ DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE = importlib.resources.read_text(
 
 DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE = importlib.resources.read_text(
     "rasa.core.policies", "enterprise_search_prompt_with_citation_template.jinja2"
+)
+
+DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_RELEVANCY_CHECK_AND_CITATION_TEMPLATE = (
+    importlib.resources.read_text(
+        "rasa.core.policies",
+        "enterprise_search_prompt_with_relevancy_check_and_citation_template.jinja2",
+    )
+)
+
+# TODO: Update this pattern once the experiments are done
+_ENTERPRISE_SEARCH_ANSWER_NOT_RELEVANT_PATTERN = re.compile(
+    r"\[NO_RELEVANT_ANSWER_FOUND\]"
 )
 
 
@@ -220,6 +238,11 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         """Constructs a new Policy object."""
         super().__init__(config, model_storage, resource, execution_context, featurizer)
 
+        # Check for deprecated keys and issue a warning if those are used
+        self._check_config_keys_and_warn_if_deprecated()
+        # Check for mutual exclusivity of extractive and generative search
+        self._check_and_warn_mutual_exclusivity_of_extractive_and_generative_search()
+
         # Resolve LLM config
         self.config[LLM_CONFIG_KEY] = resolve_model_client_config(
             self.config.get(LLM_CONFIG_KEY), EnterpriseSearchPolicy.__name__
@@ -233,6 +256,9 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         self.vector_store = vector_store
         self.vector_store_config = self.config.get(
             VECTOR_STORE_PROPERTY, DEFAULT_VECTOR_STORE
+        )
+        self.vector_search_threshold = self.vector_store_config.get(
+            VECTOR_STORE_THRESHOLD_PROPERTY, DEFAULT_VECTOR_STORE_THRESHOLD
         )
 
         # Embeddings configuration for encoding the search query
@@ -249,30 +275,77 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         # Maximum number of messages to include in the search query
         self.max_messages_in_query = self.config.get(MAX_MESSAGES_IN_QUERY_KEY, 2)
 
-        # boolean to enable/disable tracing of prompt tokens
+        # Boolean to enable/disable tracing of prompt tokens
         self.trace_prompt_tokens = self.config.get(TRACE_TOKENS_PROPERTY, False)
 
-        # boolean to enable/disable the use of LLM for response generation
-        self.use_llm = self.config.get(USE_LLM_PROPERTY, True)
+        # Boolean to enable/disable the use of LLM for response generation
+        self.use_llm = self.config.get(USE_LLM_PROPERTY, DEFAULT_USE_LLM_PROPERTY)
 
-        # boolean to enable/disable citation generation
-        self.citation_enabled = self.config.get(CITATION_ENABLED_PROPERTY, False)
+        # Boolean to enable/disable citation generation. This flag enables citation
+        # logic, but it only takes effect if `use_llm` is True.
+        self.citation_enabled = self.config.get(
+            CITATION_ENABLED_PROPERTY, DEFAULT_CITATION_ENABLED_PROPERTY
+        )
 
-        self.prompt_template = prompt_template or get_prompt_template(
-            self.config.get(PROMPT_CONFIG_KEY),
-            DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
-            log_source_component=EnterpriseSearchPolicy.__name__,
-            log_source_method=LOG_COMPONENT_SOURCE_METHOD_INIT,
+        # Boolean to enable/disable the use of relevancy check alongside answer
+        # generation. This flag enables citation logic, but it only takes effect if
+        # `use_llm` is True.
+        self.relevancy_check_enabled = self.config.get(
+            CHECK_RELEVANCY_PROPERTY, DEFAULT_CHECK_RELEVANCY_PROPERTY
         )
-        self.citation_prompt_template = get_prompt_template(
-            self.config.get(PROMPT_CONFIG_KEY),
-            DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE,
-            log_source_component=EnterpriseSearchPolicy.__name__,
-            log_source_method=LOG_COMPONENT_SOURCE_METHOD_INIT,
+
+        # Resolve the prompt template. The prompt will only be used if the 'use_llm' is
+        # set to True.
+        self.prompt_template = prompt_template or self._resolve_prompt_template(
+            self.config, LOG_COMPONENT_SOURCE_METHOD_INIT
         )
-        # If citation is enabled, use the citation prompt template
-        if self.citation_enabled:
-            self.prompt_template = self.citation_prompt_template
+
+    def _check_config_keys_and_warn_if_deprecated(self) -> None:
+        """Checks and warns about deprecated config parameters."""
+        if (
+            PROMPT_CONFIG_KEY in self.config
+            and PROMPT_TEMPLATE_CONFIG_KEY in self.config
+        ):
+            structlogger.warning(
+                "enterprise_search_policy.init"
+                ".both_deprecated_and_non_deprecated_config_keys_used_at_the_same_time",
+                event_info=(
+                    f"Both '{PROMPT_CONFIG_KEY}' and '{PROMPT_TEMPLATE_CONFIG_KEY}' "
+                    f"are present in the config. '{PROMPT_CONFIG_KEY}' will be ignored "
+                    f"in favor of {PROMPT_TEMPLATE_CONFIG_KEY}."
+                ),
+            )
+
+        # 'prompt' config key is deprecated in favor of 'prompt_template'
+        if PROMPT_CONFIG_KEY in self.config:
+            structlogger.warning(
+                "enterprise_search_policy.init.deprecated_config_key",
+                event_info=(
+                    f"The config parameter '{PROMPT_CONFIG_KEY}' is deprecated "
+                    "and will be removed in Rasa 4.0.0. "
+                    f"Please use the config parameter '{PROMPT_TEMPLATE_CONFIG_KEY}'"
+                    f"instead. "
+                ),
+            )
+
+    def _check_and_warn_mutual_exclusivity_of_extractive_and_generative_search(
+        self,
+    ) -> None:
+        if self.config.get(
+            CHECK_RELEVANCY_PROPERTY, DEFAULT_CHECK_RELEVANCY_PROPERTY
+        ) and not self.config.get(USE_LLM_PROPERTY, DEFAULT_USE_LLM_PROPERTY):
+            structlogger.warning(
+                "enterprise_search_policy.init"
+                ".relevancy_check_enabled_with_disabled_generative_search",
+                event_info=(
+                    f"The config parameter '{CHECK_RELEVANCY_PROPERTY}' is set to"
+                    f"'True', but the generative search is disabled (config"
+                    f"parameter '{USE_LLM_PROPERTY}' is set to 'False'). As a result, "
+                    "the relevancy check for the generative search will be disabled. "
+                    f"To use this check, set the config parameter '{USE_LLM_PROPERTY}' "
+                    f"to `True`."
+                ),
+            )
 
     @classmethod
     def _create_plain_embedder(cls, config: Dict[Text, Any]) -> "Embeddings":
@@ -366,7 +439,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         try:
             embeddings = self._create_plain_embedder(self.config)
         except (ValidationError, Exception) as e:
-            logger.error(
+            structlogger.error(
                 "enterprise_search_policy.train.embedder_instantiation_failed",
                 message="Unable to instantiate the embedding client.",
                 error=e,
@@ -377,7 +450,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             )
 
         if store_type == DEFAULT_VECTOR_STORE_TYPE:
-            logger.info("enterprise_search_policy.train.faiss")
+            structlogger.info("enterprise_search_policy.train.faiss")
             with self._model_storage.write_to(self._resource) as path:
                 self.vector_store = FAISS_Store(
                     docs_folder=self.vector_store_config.get(SOURCE_PROPERTY),
@@ -386,7 +459,9 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                     create_index=True,
                 )
         else:
-            logger.info("enterprise_search_policy.train.custom", store_type=store_type)
+            structlogger.info(
+                "enterprise_search_policy.train.custom", store_type=store_type
+            )
 
         # telemetry call to track training completion
         track_enterprise_search_policy_train_completed(
@@ -454,7 +529,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         config = endpoints.vector_store if endpoints else None
         store_type = self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY)
         if config is None and store_type != DEFAULT_VECTOR_STORE_TYPE:
-            logger.error(
+            structlogger.error(
                 "enterprise_search_policy._connect_vector_store_or_raise.no_config"
             )
             raise VectorStoreConfigurationError(
@@ -464,7 +539,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         try:
             self.vector_store.connect(config)  # type: ignore
         except Exception as e:
-            logger.error(
+            structlogger.error(
                 "enterprise_search_policy._connect_vector_store_or_raise.connect_error",
                 error=e,
                 config=config,
@@ -490,14 +565,14 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                 transcript.append(sanitize_message_for_prompt(event.text))
 
         search_query = " ".join(transcript[-history:][::-1])
-        logger.debug("search_query", search_query=search_query)
+        structlogger.debug("search_query", search_query=search_query)
         return search_query
 
     async def predict_action_probabilities(  # type: ignore[override]
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        endpoints: Optional[AvailableEndpoints],
+        endpoints: Optional[AvailableEndpoints] = None,
         rule_only_data: Optional[Dict[Text, Any]] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
@@ -516,23 +591,20 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
              The prediction.
         """
         logger_key = "enterprise_search_policy.predict_action_probabilities"
-        vector_search_threshold = self.vector_store_config.get(
-            VECTOR_STORE_THRESHOLD_PROPERTY, DEFAULT_VECTOR_STORE_THRESHOLD
-        )
-        llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
+
         if not self.supports_current_stack_frame(
             tracker, False, False
         ) or self.should_abstain_in_coexistence(tracker, True):
             return self._prediction(self._default_predictions(domain))
 
         if not self.vector_store:
-            logger.error(f"{logger_key}.no_vector_store")
+            structlogger.error(f"{logger_key}.no_vector_store")
             return self._create_prediction_internal_error(domain, tracker)
 
         try:
             self._connect_vector_store_or_raise(endpoints)
         except (VectorStoreConfigurationError, VectorStoreConnectionError) as e:
-            logger.error(f"{logger_key}.connection_error", error=e)
+            structlogger.error(f"{logger_key}.connection_error", error=e)
             return self._create_prediction_internal_error(domain, tracker)
 
         search_query = self._prepare_search_query(
@@ -544,20 +616,19 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             documents = await self.vector_store.search(
                 query=search_query,
                 tracker_state=tracker_state,
-                threshold=vector_search_threshold,
+                threshold=self.vector_search_threshold,
             )
         except InformationRetrievalException as e:
-            logger.error(f"{logger_key}.search_error", error=e)
+            structlogger.error(f"{logger_key}.search_error", error=e)
             return self._create_prediction_internal_error(domain, tracker)
 
         if not documents.results:
-            logger.info(f"{logger_key}.no_documents")
+            structlogger.info(f"{logger_key}.no_documents")
             return self._create_prediction_cannot_handle(domain, tracker)
 
         if self.use_llm:
             prompt = self._render_prompt(tracker, documents.results)
-            llm_response = await self._generate_llm_answer(llm, prompt)
-            llm_response = LLMResponse.ensure_llm_response(llm_response)
+            llm_response = await self._invoke_llm(prompt)
 
             self._add_prompt_and_llm_response_to_latest_message(
                 tracker=tracker,
@@ -567,24 +638,35 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             )
 
             if llm_response is None or not llm_response.choices:
-                logger.debug(f"{logger_key}.no_llm_response")
+                structlogger.debug(f"{logger_key}.no_llm_response")
                 response = None
             else:
                 llm_answer = llm_response.choices[0]
 
+                if self.relevancy_check_enabled:
+                    if not self._is_llm_response_relevant(llm_answer):
+                        structlogger.debug(f"{logger_key}.answer_not_relevant")
+                        return self._create_prediction_cannot_handle(
+                            domain,
+                            tracker,
+                            RASA_PATTERN_CANNOT_HANDLE_NO_RELEVANT_ANSWER,
+                        )
+
                 if self.citation_enabled:
                     llm_answer = self.post_process_citations(llm_answer)
 
-                logger.debug(f"{logger_key}.llm_answer", llm_answer=llm_answer)
+                structlogger.debug(
+                    f"{logger_key}.llm_answer", prompt=prompt, llm_answer=llm_answer
+                )
                 response = llm_answer
         else:
             response = documents.results[0].metadata.get("answer", None)
             if not response:
-                logger.error(
+                structlogger.error(
                     f"{logger_key}.answer_key_missing_in_metadata",
                     search_results=documents.results,
                 )
-            logger.debug(
+            structlogger.debug(
                 "enterprise_search_policy.predict_action_probabilities.no_llm",
                 search_results=documents,
             )
@@ -639,11 +721,12 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             ),
             "docs": documents,
             "slots": self._prepare_slots_for_template(tracker),
+            "check_relevancy": self.relevancy_check_enabled,
             "citation_enabled": self.citation_enabled,
         }
         prompt = Template(self.prompt_template).render(**inputs)
         log_llm(
-            logger=logger,
+            logger=structlogger,
             log_module="EnterpriseSearchPolicy",
             log_event="enterprise_search_policy._render_prompt.prompt_rendered",
             prompt=prompt,
@@ -651,9 +734,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         return prompt
 
     @measure_llm_latency
-    async def _generate_llm_answer(
-        self, llm: LLMClient, prompt: Text
-    ) -> Optional[LLMResponse]:
+    async def _invoke_llm(self, prompt: Text) -> Optional[LLMResponse]:
         """Fetches an LLM completion for the provided prompt.
 
         Args:
@@ -663,16 +744,22 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         Returns:
             An LLMResponse object, or None if the call fails.
         """
+        llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
         try:
-            return await llm.acompletion(prompt)
+            response = await llm.acompletion(prompt)
+            return LLMResponse.ensure_llm_response(response)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
-            logger.error(
+            structlogger.error(
                 "enterprise_search_policy._generate_llm_answer.llm_error",
                 error=e,
             )
             return None
+
+    def _is_llm_response_relevant(self, llm_answer: str) -> bool:
+        """Checks if the LLM response is relevant by parsing it."""
+        return not _ENTERPRISE_SEARCH_ANSWER_NOT_RELEVANT_PATTERN.search(llm_answer)
 
     def _create_prediction(
         self,
@@ -708,10 +795,18 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         )
 
     def _create_prediction_cannot_handle(
-        self, domain: Domain, tracker: DialogueStateTracker
+        self,
+        domain: Domain,
+        tracker: DialogueStateTracker,
+        reason: Optional[str] = None,
     ) -> PolicyPrediction:
+        cannot_handle_stack_frame = (
+            CannotHandlePatternFlowStackFrame(reason)
+            if reason is not None
+            else CannotHandlePatternFlowStackFrame()
+        )
         return self._create_prediction_for_pattern(
-            domain, tracker, CannotHandlePatternFlowStackFrame()
+            domain, tracker, cannot_handle_stack_frame
         )
 
     def _create_prediction_for_pattern(
@@ -780,7 +875,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                     path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
                 )
         except (FileNotFoundError, FileIOException) as e:
-            logger.warning(
+            structlogger.warning(
                 "enterprise_search_policy.load.failed", error=e, resource=resource.name
             )
 
@@ -790,7 +885,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
 
         embeddings = cls._create_plain_embedder(config)
 
-        logger.info("enterprise_search_policy.load", config=config)
+        structlogger.info("enterprise_search_policy.load", config=config)
         if store_type == DEFAULT_VECTOR_STORE_TYPE:
             # if a vector store is not specified,
             # default to using FAISS with the index stored in the model
@@ -849,14 +944,11 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
     @classmethod
     def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint of enterprise search policy for the graph."""
-        local_knowledge_data = cls._get_local_knowledge_data(config)
-
-        prompt_template = get_prompt_template(
-            config.get(PROMPT_CONFIG_KEY),
-            DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
-            log_source_component=EnterpriseSearchPolicy.__name__,
-            log_source_method=LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
+        prompt_template = cls._resolve_prompt_template(
+            config, LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON
         )
+
+        local_knowledge_data = cls._get_local_knowledge_data(config)
 
         llm_config = resolve_model_client_config(
             config.get(LLM_CONFIG_KEY), EnterpriseSearchPolicy.__name__
@@ -881,7 +973,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         Returns:
             The post-processed LLM answer.
         """
-        logger.debug(
+        structlogger.debug(
             "enterprise_search_policy.post_process_citations", llm_answer=llm_answer
         )
 
@@ -982,3 +1074,111 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             log_source_method,
             EnterpriseSearchPolicy.__name__,
         )
+
+    @classmethod
+    def get_system_default_prompt_based_on_config(cls, config: Dict[str, Any]) -> str:
+        """
+        Resolves the default prompt template for Enterprise Search Policy based on
+        the component's configuration.
+
+        - The old prompt is selected when both citation and relevancy check are either
+          disabled or not set in the configuration.
+        - The citation prompt is used when citation is enabled and relevancy check is
+          either disabled or not set in the configuration.
+        - The relevancy check prompt is only used when relevancy check is enabled.
+
+        Args:
+            config: The component's configuration.
+
+        Returns:
+            The resolved jinja prompt template as a string.
+        """
+
+        # Get the feature flags
+        citation_enabled = config.get(
+            CITATION_ENABLED_PROPERTY, DEFAULT_CITATION_ENABLED_PROPERTY
+        )
+        relevancy_check_enabled = config.get(
+            CHECK_RELEVANCY_PROPERTY, DEFAULT_CHECK_RELEVANCY_PROPERTY
+        )
+
+        # Based on the enabled features (citation, relevancy check) fetch the
+        # appropriate default prompt
+        default_prompt = cls._select_default_prompt_template_based_on_features(
+            relevancy_check_enabled, citation_enabled
+        )
+
+        return default_prompt
+
+    @classmethod
+    def _resolve_prompt_template(
+        cls,
+        config: dict,
+        log_source_method: Literal["init", "fingerprint"],
+    ) -> str:
+        """
+        Resolves the prompt template to use for the Enterprise Search Policy's
+        generative search.
+
+        Checks if a custom template is provided via component's configuration. If not,
+        it selects the appropriate default template based on the enabled features
+        (citation and relevancy check).
+
+        Args:
+            config: The component's configuration.
+            log_source_method: The name of the method or function emitting the log for
+                better traceability.
+        Returns:
+            The resolved jinja prompt template as a string.
+        """
+
+        # Read the template path from the configuration if available.
+        # The deprecated 'prompt' has a lower priority compared to 'prompt_template'
+        config_defined_prompt = (
+            config.get(PROMPT_TEMPLATE_CONFIG_KEY)
+            or config.get(PROMPT_CONFIG_KEY)
+            or None
+        )
+        # Select the default prompt based on the features set in the config.
+        default_prompt = cls.get_system_default_prompt_based_on_config(config)
+
+        return get_prompt_template(
+            config_defined_prompt,
+            default_prompt,
+            log_source_component=EnterpriseSearchPolicy.__name__,
+            log_source_method=log_source_method,
+        )
+
+    @classmethod
+    def _select_default_prompt_template_based_on_features(
+        cls,
+        relevancy_check_enabled: bool,
+        citation_enabled: bool,
+    ) -> str:
+        """
+        Returns the appropriate default prompt template based on the feature flags.
+
+        The selection follows this priority:
+        1. If relevancy check is enabled, return the prompt that includes both relevancy
+           and citation blocks.
+        2. If only citation is enabled, return the prompt with citation blocks.
+        3. Otherwise, fall back to the legacy default prompt template.
+
+        Args:
+            relevancy_check_enabled: Whether the LLM-generated answer should undergo
+                relevancy evaluation.
+            citation_enabled: Whether citations should be included in the generated
+                answer.
+
+        Returns:
+            The default prompt template corresponding to the enabled features.
+        """
+        if relevancy_check_enabled:
+            # ES prompt that has relevancy check and citations blocks
+            return DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_RELEVANCY_CHECK_AND_CITATION_TEMPLATE  # noqa: E501
+        elif citation_enabled:
+            # ES prompt with citation's block - backward compatibility
+            return DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE
+        else:
+            # Legacy ES prompt - backward compatibility
+            return DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE

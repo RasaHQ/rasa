@@ -93,6 +93,11 @@ responses:
       metadata:
         rephrase: True
 
+  utter_no_relevant_answer_found:
+    - text: I am afraid, I don't know the answer.
+      metadata:
+        rephrase: True
+
   utter_skip_question_answer:
     - text: I'm here to provide you with the best assistance, and in order to do so, I kindly request that we complete this step together. Your input is essential for a seamless experience!
       metadata:
@@ -135,17 +140,23 @@ flows:
     steps:
       - noop: true
         next:
-          # chitchat fallback
+          # Chitchat fallback
           - if: "'{{context.reason}}' = 'cannot_handle_chitchat'"
             then:
               - action: utter_cannot_handle
                 next: "END"
-          # fallback for things that are not supported
+          # Fallback for things that are not supported
           - if: "'{{context.reason}}' = 'cannot_handle_not_supported'"
             then:
               - action: utter_cannot_handle
                 next: END
-          # default
+          # Fallback when no relevant answer to the user query has been found.
+          # This is used by the EnterpriseSearchPolicy.
+          - if: "'{{context.reason}}' = 'cannot_handle_no_relevant_answer'"
+            then:
+              - action: utter_no_relevant_answer_found
+                next: END
+          # Default
           - else:
               - action: utter_ask_rephrase
                 next: END
