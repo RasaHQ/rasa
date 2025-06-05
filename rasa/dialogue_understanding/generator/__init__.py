@@ -8,11 +8,13 @@ from rasa.dialogue_understanding.generator.llm_command_generator import (
 from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
     MultiStepLLMCommandGenerator,
 )
+from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
+    CompactLLMCommandGenerator,
+)
 from rasa.dialogue_understanding.generator.single_step.search_ready_llm_command_generator import (  # noqa: E501
     SearchReadyLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator import (  # noqa: E501
-    CompactLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
 )
 

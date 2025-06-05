@@ -611,7 +611,7 @@ async def test_tracing_compact_llm_command_generator_training_and_inference_heal
         for span in captured_spans
         if span.name == "MockCompactLLMCommandGenerator.perform_llm_health_check"
         and span.attributes.get("health_check_trigger_method")
-        == "compact_llm_command_generator.load"
+        == "llm_based_command_generator.load"
         and span.attributes.get("health_check_trigger_component")
         == "MockCompactLLMCommandGenerator"
     )

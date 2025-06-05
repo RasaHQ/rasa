@@ -613,7 +613,7 @@ async def test_tracing_single_step_llm_command_generator_training_and_inference_
         for span in captured_spans
         if span.name == "MockSingleStepLLMCommandGenerator.perform_llm_health_check"
         and span.attributes.get("health_check_trigger_method")
-        == "compact_llm_command_generator.load"
+        == "llm_based_command_generator.load"
         and span.attributes.get("health_check_trigger_component")
         == "MockSingleStepLLMCommandGenerator"
     )

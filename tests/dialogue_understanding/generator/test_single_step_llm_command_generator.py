@@ -1398,7 +1398,7 @@ class TestSingleStepLLMCommandGenerator:
         # Case 1: No prompt in the config.
         loaded = SingleStepLLMCommandGenerator.load({}, model_storage, resource, Mock())
         assert loaded.prompt_template == "This is a custom prompt"
-        assert loaded.config["prompt"] is None
+        assert loaded.config["prompt_template"] is None
 
         # Case 2: Specifying a invalid prompt path in the config.
         loaded = SingleStepLLMCommandGenerator.load(

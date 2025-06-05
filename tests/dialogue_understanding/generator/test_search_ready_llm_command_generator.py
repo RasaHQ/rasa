@@ -31,6 +31,9 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxVersion,
 )
 from rasa.dialogue_understanding.constants import KEY_MINIMIZE_NUM_CALLS
+from rasa.dialogue_understanding.generator.command_parser_validator import (
+    CommandParserValidatorSingleton,
+)
 from rasa.dialogue_understanding.generator.constants import (
     FLOW_RETRIEVAL_ACTIVE_KEY,
     FLOW_RETRIEVAL_FLOW_THRESHOLD,
@@ -39,9 +42,6 @@ from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
-from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
-    CommandParserValidatorSingleton,
-)
 from rasa.dialogue_understanding.generator.single_step.search_ready_llm_command_generator import (  # noqa: E501
     SearchReadyLLMCommandGenerator,
 )
