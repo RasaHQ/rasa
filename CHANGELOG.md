@@ -10,6 +10,13 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.12.17] - 2025-06-05
+                         
+Rasa Pro 3.12.17 (2025-06-05)                              
+### Bugfixes
+- [#2598](https://github.com/rasahq/rasa-private/issues/2598): Fix an issue where the SetSlot and Clarify command value was parsed incorrectly if a newline character immediately followed the value argument in the LLM output.
+
+
 ## [3.12.16] - 2025-06-03
                          
 Rasa Pro 3.12.16 (2025-06-03)                              
