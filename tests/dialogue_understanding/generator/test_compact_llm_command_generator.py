@@ -754,8 +754,7 @@ class TestCompactLLMCommandGenerator:
         self,
         command_generator: CompactLLMCommandGenerator,
     ):
-        """
-        Test that render_template renders the template strings with valid JSON
+        """Test that render_template renders the template strings with valid JSON
         (newline, tabs and quotes are escaped)
         """
         # Given
@@ -915,6 +914,66 @@ class TestCompactLLMCommandGenerator:
                     SetSlotCommand(name="document_type", value="national id"),
                 ],
             ),
+            ('""set slot name value\n', [SetSlotCommand(name="name", value="value")]),
+            ("''set slot name value \n", [SetSlotCommand(name="name", value="value")]),
+            (
+                "`set slot name value]\n" "`",
+                [SetSlotCommand(name="name", value="value")],
+            ),
+            ("'`set slot name value`'", [SetSlotCommand(name="name", value="value")]),
+            ("'set slot name value'", [SetSlotCommand(name="name", value="value")]),
+            (
+                "*+```set slot name value  \n\n\n ",
+                [SetSlotCommand(name="name", value="value")],
+            ),
+            (
+                "```\nset slot is_available True\n```",
+                [SetSlotCommand(name="is_available", value="True")],
+            ),
+            (
+                "```plaintext\nset slot confirm_slot_correction true"
+                '\nset slot is_available True"]\n```',
+                [
+                    SetSlotCommand(name="confirm_slot_correction", value="True"),
+                    SetSlotCommand(name="is_available", value="True"),
+                ],
+            ),
+            (
+                "```plaintext\nstart flow some_flow\nset slot new_card_issue card_activation\n```",  # noqa: E501
+                [
+                    StartFlowCommand(flow="some_flow"),
+                    SetSlotCommand(name="new_card_issue", value="card_activation"),
+                ],
+            ),
+            (
+                "```plaintext\nstart flow some_flow\nset slot new_card_issue card_activation\n\n```",  # noqa: E501
+                [
+                    StartFlowCommand(flow="some_flow"),
+                    SetSlotCommand(name="new_card_issue", value="card_activation"),
+                ],
+            ),
+            (
+                "```plaintext\nstart flow some_flow\nset slot 'new_card_issue' 'card_activation'\n\n```",  # noqa: E501
+                [
+                    StartFlowCommand(flow="some_flow"),
+                    SetSlotCommand(name="new_card_issue", value="card_activation"),
+                ],
+            ),
+            (
+                '```plaintext\nstart flow some_flow\nset slot "new_card_issue" "card_activation"\n\n```',  # noqa: E501
+                [
+                    StartFlowCommand(flow="some_flow"),
+                    SetSlotCommand(name="new_card_issue", value="card_activation"),
+                ],
+            ),
+            (
+                'set slot student_name John\n\n\n\nset slot another_flow send_notification\n\n\nset slot some_flow 02_benefits_learning_days"]\n',  # noqa: E501
+                [
+                    SetSlotCommand(name="student_name", value="John"),
+                    SetSlotCommand(name="another_flow", value="send_notification"),
+                    SetSlotCommand(name="some_flow", value="02_benefits_learning_days"),
+                ],
+            ),
             # Start flow
             ("set slot flow_name some_flow", [StartFlowCommand(flow="some_flow")]),
             ("start flow some_flow", [StartFlowCommand(flow="some_flow")]),
@@ -1071,6 +1130,34 @@ class TestCompactLLMCommandGenerator:
                 "```plaintext\ndisambiguate flows some_flow 02_benefits_learning_days```",  # noqa: E501
                 [ClarifyCommand(options=["02_benefits_learning_days", "some_flow"])],
             ),
+            (
+                "```plaintext\nstart flow some_flow\ndisambiguate flows another_flow send_notification\n```",  # noqa: E501
+                [
+                    StartFlowCommand(flow="some_flow"),
+                    ClarifyCommand(options=["another_flow", "send_notification"]),
+                ],
+            ),
+            (
+                "```plaintext\nstart flow some_flow\ndisambiguate flows another_flow send_notification\n\n```",  # noqa: E501
+                [
+                    StartFlowCommand(flow="some_flow"),
+                    ClarifyCommand(options=["another_flow", "send_notification"]),
+                ],
+            ),
+            (
+                "```plaintext\nstart flow some_flow\ndisambiguate flows 'another_flow' 'send_notification'\n\n```",  # noqa: E501
+                [
+                    StartFlowCommand(flow="some_flow"),
+                    ClarifyCommand(options=["another_flow", "send_notification"]),
+                ],
+            ),
+            (
+                '```plaintext\nstart flow some_flow\ndisambiguate flows "another_flow" "send_notification"\n\n```',  # noqa: E501
+                [
+                    StartFlowCommand(flow="some_flow"),
+                    ClarifyCommand(options=["another_flow", "send_notification"]),
+                ],
+            ),
             # RepeatBotMessagesCommand
             ("repeat message", [RepeatBotMessagesCommand()]),
             (" - repeat message", [RepeatBotMessagesCommand()]),
@@ -1120,6 +1207,11 @@ class TestCompactLLMCommandGenerator:
                 steps:
                 - id: some_id
                   collect: some_slot
+              send_notification:
+                description: some bar
+                steps:
+                - id: other_id
+                  collect: some_other_slot
             """
         )
         parsed_commands = CompactLLMCommandGenerator.parse_commands(

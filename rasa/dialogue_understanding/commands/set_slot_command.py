@@ -191,10 +191,10 @@ class SetSlotCommand(Command):
                 r"""SetSlot\(['"]?([a-zA-Z_][a-zA-Z0-9_-]*)['"]?, ?['"]?(.*)['"]?\)"""
             ),
             CommandSyntaxVersion.v2: (
-                r"""^[\s\W\d]*set slot ['"`]?([a-zA-Z_][a-zA-Z0-9_-]*)['"`]? ['"`]?(.+?)['"`]*$"""  # noqa: E501
+                r"""^[\s\W\d]*set slot ['"`]?([a-zA-Z_][a-zA-Z0-9_-]*)['"`]? ['"`]?(.+?)[\W]*$"""  # noqa: E501
             ),
             CommandSyntaxVersion.v3: (
-                r"""^[\s\W\d]*set slot ['"`]?([a-zA-Z_][a-zA-Z0-9_-]*)['"`]? ['"`]?(.+?)['"`]*$"""  # noqa: E501
+                r"""^[\s\W\d]*set slot ['"`]?([a-zA-Z_][a-zA-Z0-9_-]*)['"`]? ['"`]?(.+?)[\W]*$"""  # noqa: E501
             ),
         }
         return mapper.get(
