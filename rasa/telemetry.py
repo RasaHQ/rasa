@@ -1824,6 +1824,7 @@ def track_enterprise_search_policy_train_completed(
     llm_model: Optional[str],
     llm_model_group_id: Optional[str],
     citation_enabled: Optional[bool],
+    relevancy_check_enabled: Optional[bool],
 ) -> None:
     """Track when a user completes training Enterprise Search policy."""
     _track(
@@ -1837,6 +1838,7 @@ def track_enterprise_search_policy_train_completed(
             "llm_model": llm_model,
             "llm_model_group_id": llm_model_group_id,
             "citation_enabled": citation_enabled,
+            "relevancy_check_enabled": relevancy_check_enabled,
         },
     )
 
@@ -1851,6 +1853,7 @@ def track_enterprise_search_policy_predict(
     llm_model: Optional[str],
     llm_model_group_id: Optional[str],
     citation_enabled: Optional[bool],
+    relevancy_check_enabled: Optional[bool],
 ) -> None:
     """Track when a user predicts the next action using Enterprise Search policy."""
     _track(
@@ -1864,6 +1867,7 @@ def track_enterprise_search_policy_predict(
             "llm_model": llm_model,
             "llm_model_group_id": llm_model_group_id,
             "citation_enabled": citation_enabled,
+            "relevancy_check_enabled": relevancy_check_enabled,
         },
     )
 

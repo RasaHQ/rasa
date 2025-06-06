@@ -18,7 +18,10 @@ from rasa.tracing.constants import (
     COMPACT_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     COMPACT_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_METRIC_NAME,
+    ENTERPRISE_SEARCH_POLICY_CPU_USAGE_METRIC_NAME,
     ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
+    ENTERPRISE_SEARCH_POLICY_MEMORY_USAGE_METRIC_NAME,
+    ENTERPRISE_SEARCH_POLICY_PROMPT_TOKEN_USAGE_METRIC_NAME,
     INTENTLESS_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
     LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
@@ -45,7 +48,7 @@ from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
 from rasa.utils.endpoints import EndpointConfig
 
 
-def record_llm_based_command_generator_cpu_usage(
+def record_llm_based_component_cpu_usage(
     metric_instrument_provider: MetricInstrumentProvider,
     metric_name: str,
 ) -> None:
@@ -65,8 +68,10 @@ def record_llm_based_command_generator_cpu_usage(
     cpu_usage = psutil.cpu_percent()
     metric_instrument.record(amount=cpu_usage)
 
+    return None
 
-def record_llm_based_command_generator_memory_usage(
+
+def record_llm_based_component_memory_usage(
     metric_instrument_provider: MetricInstrumentProvider,
     metric_name: str,
 ) -> None:
@@ -86,8 +91,10 @@ def record_llm_based_command_generator_memory_usage(
     memory_usage = psutil.virtual_memory().percent
     metric_instrument.record(amount=memory_usage)
 
+    return None
 
-def record_llm_based_command_generator_prompt_token(
+
+def record_llm_based_component_prompt_token(
     metric_instrument_provider: MetricInstrumentProvider,
     attributes: Dict[str, Any],
     metric_name: str,
@@ -121,6 +128,8 @@ def record_llm_based_command_generator_prompt_token(
         amount=prompt_tokens_len,
     )
 
+    return None
+
 
 def record_llm_command_generator_metrics(attributes: Dict[str, Any]) -> None:
     """
@@ -137,17 +146,18 @@ def record_llm_command_generator_metrics(attributes: Dict[str, Any]) -> None:
     if not instrument_provider.instruments:
         return None
 
-    record_llm_based_command_generator_cpu_usage(
+    record_llm_based_component_cpu_usage(
         instrument_provider, LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME
     )
-    record_llm_based_command_generator_memory_usage(
+    record_llm_based_component_memory_usage(
         instrument_provider, LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME
     )
-    record_llm_based_command_generator_prompt_token(
+    record_llm_based_component_prompt_token(
         instrument_provider,
         attributes,
         LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     )
+    return None
 
 
 def record_single_step_llm_command_generator_metrics(
@@ -167,17 +177,18 @@ def record_single_step_llm_command_generator_metrics(
     if not instrument_provider.instruments:
         return None
 
-    record_llm_based_command_generator_cpu_usage(
+    record_llm_based_component_cpu_usage(
         instrument_provider, SINGLE_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME
     )
-    record_llm_based_command_generator_memory_usage(
+    record_llm_based_component_memory_usage(
         instrument_provider, SINGLE_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME
     )
-    record_llm_based_command_generator_prompt_token(
+    record_llm_based_component_prompt_token(
         instrument_provider,
         attributes,
         SINGLE_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     )
+    return None
 
 
 def record_compact_llm_command_generator_metrics(
@@ -197,17 +208,18 @@ def record_compact_llm_command_generator_metrics(
     if not instrument_provider.instruments:
         return None
 
-    record_llm_based_command_generator_cpu_usage(
+    record_llm_based_component_cpu_usage(
         instrument_provider, COMPACT_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME
     )
-    record_llm_based_command_generator_memory_usage(
+    record_llm_based_component_memory_usage(
         instrument_provider, COMPACT_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME
     )
-    record_llm_based_command_generator_prompt_token(
+    record_llm_based_component_prompt_token(
         instrument_provider,
         attributes,
         COMPACT_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     )
+    return None
 
 
 def record_search_ready_llm_command_generator_metrics(
@@ -227,17 +239,18 @@ def record_search_ready_llm_command_generator_metrics(
     if not instrument_provider.instruments:
         return None
 
-    record_llm_based_command_generator_cpu_usage(
+    record_llm_based_component_cpu_usage(
         instrument_provider, SEARCH_READY_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME
     )
-    record_llm_based_command_generator_memory_usage(
+    record_llm_based_component_memory_usage(
         instrument_provider, SEARCH_READY_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME
     )
-    record_llm_based_command_generator_prompt_token(
+    record_llm_based_component_prompt_token(
         instrument_provider,
         attributes,
         SEARCH_READY_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     )
+    return None
 
 
 def record_multi_step_llm_command_generator_metrics(attributes: Dict[str, Any]) -> None:
@@ -255,17 +268,47 @@ def record_multi_step_llm_command_generator_metrics(attributes: Dict[str, Any]) 
     if not instrument_provider.instruments:
         return None
 
-    record_llm_based_command_generator_cpu_usage(
+    record_llm_based_component_cpu_usage(
         instrument_provider, MULTI_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME
     )
-    record_llm_based_command_generator_memory_usage(
+    record_llm_based_component_memory_usage(
         instrument_provider, MULTI_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME
     )
-    record_llm_based_command_generator_prompt_token(
+    record_llm_based_component_prompt_token(
         instrument_provider,
         attributes,
         MULTI_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     )
+    return None
+
+
+def record_enterprise_search_policy_metrics(attributes: Dict[str, Any]) -> None:
+    """
+    Record measurements for EnterpriseSearchPolicy specific metrics.
+
+    The recording is done by the opentelemetry.metrics.Histogram instruments.
+    These instruments are registered to the MetricInstrumentProvider internal singleton.
+
+    :param attributes: Extracted tracing attributes
+    :return: None
+    """
+    instrument_provider = MetricInstrumentProvider()
+
+    if not instrument_provider.instruments:
+        return None
+
+    record_llm_based_component_cpu_usage(
+        instrument_provider, ENTERPRISE_SEARCH_POLICY_CPU_USAGE_METRIC_NAME
+    )
+    record_llm_based_component_memory_usage(
+        instrument_provider, ENTERPRISE_SEARCH_POLICY_MEMORY_USAGE_METRIC_NAME
+    )
+    record_llm_based_component_prompt_token(
+        instrument_provider,
+        attributes,
+        ENTERPRISE_SEARCH_POLICY_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    )
+    return None
 
 
 def record_callable_duration_metrics(

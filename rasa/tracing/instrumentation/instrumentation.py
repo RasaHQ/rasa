@@ -67,6 +67,7 @@ from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
 from rasa.tracing.instrumentation.metrics import (
     record_callable_duration_metrics,
     record_compact_llm_command_generator_metrics,
+    record_enterprise_search_policy_metrics,
     record_llm_command_generator_metrics,
     record_multi_step_llm_command_generator_metrics,
     record_request_size_in_bytes,
@@ -892,6 +893,13 @@ def _instrument_enterprise_search_policy(
         policy_class,
         "_invoke_llm",
         attribute_extractors.extract_attrs_for_enterprise_search_invoke_llm,
+        metrics_recorder=record_enterprise_search_policy_metrics,
+    )
+    _instrument_method(
+        tracer,
+        policy_class,
+        "_parse_llm_relevancy_check_response",
+        attribute_extractors.extract_attrs_for_enterprise_search_parse_llm_relevancy_check_response,
     )
     _instrument_perform_health_check_method_for_component(
         tracer_provider.get_tracer(policy_class.__module__),

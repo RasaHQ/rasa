@@ -77,6 +77,7 @@ ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA = {
     "llm_model": LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
     "llm_model_group_id": None,
     "citation_enabled": True,
+    "relevancy_check_enabled": True,
 }
 
 
@@ -1410,6 +1411,7 @@ def test_track_enterprise_search_policy_train_completed(
         LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
         None,  # model group id for router
         True,
+        True,
     )
     mock_track.assert_called_once_with(
         TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
@@ -1432,6 +1434,7 @@ def test_track_enterprise_search_policy_predict(
         LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["provider"],
         LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
         None,
+        True,
         True,
     )
 

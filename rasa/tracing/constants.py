@@ -68,7 +68,13 @@ MULTI_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME = (
 MULTI_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME = (
     "multi_step_llm_command_generator_llm_response_duration"
 )
-
+ENTERPRISE_SEARCH_POLICY_CPU_USAGE_METRIC_NAME = "enterprise_search_policy_cpu_usage"
+ENTERPRISE_SEARCH_POLICY_MEMORY_USAGE_METRIC_NAME = (
+    "enterprise_search_policy_memory_usage"
+)
+ENTERPRISE_SEARCH_POLICY_PROMPT_TOKEN_USAGE_METRIC_NAME = (
+    "enterprise_search_policy_prompt_token_usage"
+)
 ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME = (
     "enterprise_search_policy_llm_response_duration"
 )

@@ -784,6 +784,14 @@ def extract_attrs_for_enterprise_search_invoke_llm(
     return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
 
 
+def extract_attrs_for_enterprise_search_parse_llm_relevancy_check_response(
+    self: "EnterpriseSearchPolicy", llm_answer: str
+) -> Dict[str, Any]:
+    return {
+        "llm_answer": llm_answer,
+    }
+
+
 def extract_current_context_attribute(stack: DialogueStack) -> Dict[str, Any]:
     """Utility function to extract the current context from the dialogue stack."""
     current_context = stack.current_context()

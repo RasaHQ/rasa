@@ -9,6 +9,9 @@ from rasa.tracing.constants import (
     COMPACT_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     COMPACT_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     COMPACT_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    ENTERPRISE_SEARCH_POLICY_CPU_USAGE_METRIC_NAME,
+    ENTERPRISE_SEARCH_POLICY_MEMORY_USAGE_METRIC_NAME,
+    ENTERPRISE_SEARCH_POLICY_PROMPT_TOKEN_USAGE_METRIC_NAME,
     LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
     LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
@@ -27,9 +30,9 @@ from rasa.tracing.constants import (
     SINGLE_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
 )
 from rasa.tracing.instrumentation.metrics import (
-    record_llm_based_command_generator_cpu_usage,
-    record_llm_based_command_generator_memory_usage,
-    record_llm_based_command_generator_prompt_token,
+    record_llm_based_component_cpu_usage,
+    record_llm_based_component_memory_usage,
+    record_llm_based_component_prompt_token,
     record_request_size_in_bytes,
 )
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
@@ -59,7 +62,7 @@ def test_record_llm_command_generator_cpu_usage(
     in_memory_metric_reader: InMemoryMetricReader,
 ) -> None:
     # act
-    record_llm_based_command_generator_cpu_usage(
+    record_llm_based_component_cpu_usage(
         MetricInstrumentProvider(), LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME
     )
 
@@ -85,7 +88,7 @@ def test_record_llm_command_generator_memory_usage(
     in_memory_metric_reader: InMemoryMetricReader,
 ) -> None:
     # act
-    record_llm_based_command_generator_memory_usage(
+    record_llm_based_component_memory_usage(
         MetricInstrumentProvider(), LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME
     )
 
@@ -117,7 +120,7 @@ def test_record_llm_command_generator_prompt_token_exists(
     prompt_token_len = 500
 
     # act
-    record_llm_based_command_generator_prompt_token(
+    record_llm_based_component_prompt_token(
         MetricInstrumentProvider(),
         attributes={PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME: prompt_token_len},
         metric_name=LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
@@ -152,7 +155,7 @@ def test_record_multi_step_llm_command_generator_cpu_usage(
     in_memory_metric_reader: InMemoryMetricReader,
 ) -> None:
     # act
-    record_llm_based_command_generator_cpu_usage(
+    record_llm_based_component_cpu_usage(
         MetricInstrumentProvider(),
         MULTI_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     )
@@ -184,7 +187,7 @@ def test_record_multi_step_llm_command_generator_memory_usage(
     in_memory_metric_reader: InMemoryMetricReader,
 ) -> None:
     # act
-    record_llm_based_command_generator_memory_usage(
+    record_llm_based_component_memory_usage(
         MetricInstrumentProvider(),
         MULTI_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     )
@@ -223,7 +226,7 @@ def test_record_multi_step_llm_command_generator_prompt_token_exists(
     prompt_token_len = 500
 
     # act
-    record_llm_based_command_generator_prompt_token(
+    record_llm_based_component_prompt_token(
         MetricInstrumentProvider(),
         attributes={PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME: prompt_token_len},
         metric_name=MULTI_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
@@ -264,7 +267,7 @@ def test_record_single_step_llm_command_generator_cpu_usage(
     in_memory_metric_reader: InMemoryMetricReader,
 ) -> None:
     # act
-    record_llm_based_command_generator_cpu_usage(
+    record_llm_based_component_cpu_usage(
         MetricInstrumentProvider(),
         SINGLE_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     )
@@ -299,7 +302,7 @@ def test_record_single_step_llm_command_generator_memory_usage(
     in_memory_metric_reader: InMemoryMetricReader,
 ) -> None:
     # act
-    record_llm_based_command_generator_memory_usage(
+    record_llm_based_component_memory_usage(
         MetricInstrumentProvider(),
         SINGLE_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     )
@@ -339,7 +342,7 @@ def test_record_single_step_llm_command_generator_prompt_token_exists(
     prompt_token_len = 500
 
     # act
-    record_llm_based_command_generator_prompt_token(
+    record_llm_based_component_prompt_token(
         MetricInstrumentProvider(),
         attributes={PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME: prompt_token_len},
         metric_name=SINGLE_STEP_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
@@ -381,7 +384,7 @@ def test_record_compact_llm_command_generator_cpu_usage(
     in_memory_metric_reader: InMemoryMetricReader,
 ) -> None:
     # act
-    record_llm_based_command_generator_cpu_usage(
+    record_llm_based_component_cpu_usage(
         MetricInstrumentProvider(),
         COMPACT_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     )
@@ -412,7 +415,7 @@ def test_record_compact_llm_command_generator_memory_usage(
     in_memory_metric_reader: InMemoryMetricReader,
 ) -> None:
     # act
-    record_llm_based_command_generator_memory_usage(
+    record_llm_based_component_memory_usage(
         MetricInstrumentProvider(),
         COMPACT_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     )
@@ -448,7 +451,7 @@ def test_record_compact_llm_command_generator_prompt_token_exists(
     prompt_token_len = 500
 
     # act
-    record_llm_based_command_generator_prompt_token(
+    record_llm_based_component_prompt_token(
         MetricInstrumentProvider(),
         attributes={PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME: prompt_token_len},
         metric_name=COMPACT_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
@@ -489,7 +492,7 @@ def test_record_search_ready_llm_command_generator_cpu_usage(
     in_memory_metric_reader: InMemoryMetricReader,
 ) -> None:
     # act
-    record_llm_based_command_generator_cpu_usage(
+    record_llm_based_component_cpu_usage(
         MetricInstrumentProvider(),
         SEARCH_READY_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     )
@@ -526,7 +529,7 @@ def test_record_search_ready_llm_command_generator_memory_usage(
     in_memory_metric_reader: InMemoryMetricReader,
 ) -> None:
     # act
-    record_llm_based_command_generator_memory_usage(
+    record_llm_based_component_memory_usage(
         MetricInstrumentProvider(),
         SEARCH_READY_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     )
@@ -567,7 +570,7 @@ def test_record_search_ready_llm_command_generator_prompt_token_exists(
     prompt_token_len = 500
 
     # act
-    record_llm_based_command_generator_prompt_token(
+    record_llm_based_component_prompt_token(
         MetricInstrumentProvider(),
         attributes={PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME: prompt_token_len},
         metric_name=SEARCH_READY_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
@@ -605,6 +608,121 @@ def test_record_search_ready_llm_command_generator_prompt_token_exists(
     )
 
 
+def test_record_enterprise_search_policy_cpu_usage(
+    test_meter_provider: MeterProvider,
+    in_memory_metric_reader: InMemoryMetricReader,
+) -> None:
+    # act
+    record_llm_based_component_cpu_usage(
+        MetricInstrumentProvider(),
+        ENTERPRISE_SEARCH_POLICY_CPU_USAGE_METRIC_NAME,
+    )
+
+    # assert
+    metrics_data = in_memory_metric_reader.get_metrics_data()
+    metrics_data = json.loads(metrics_data.to_json())
+
+    resource_metrics = metrics_data.get("resource_metrics")[0]
+    scope_metrics = resource_metrics.get("scope_metrics")[0]
+
+    # the first 14 metrics in the list were added by the unit tests above representing
+    # the CPU, memory usage and prompt token length of the:
+    # - LLMCommandGenerator,
+    # - MultiStepLLMCommandGenerator,
+    # - SingleStepLLMCommandGenerator,
+    # - CompactLLMCommandGenerator,
+    # - SearchReadyLLMCommandGenerator
+    metrics = scope_metrics.get("metrics")[15]
+    assert metrics.get("name") == ENTERPRISE_SEARCH_POLICY_CPU_USAGE_METRIC_NAME
+    assert metrics.get("description") == "CPU percentage for EnterpriseSearchPolicy"
+    assert metrics.get("unit") == LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME
+
+    data_points = metrics.get("data", {}).get("data_points")[0]
+    assert data_points.get("count") == 1
+    assert 0 < data_points.get("min") <= 100
+    assert 0 <= data_points.get("max") <= 100
+
+
+def test_record_enterprise_search_policy_memory_usage(
+    test_meter_provider: MeterProvider,
+    in_memory_metric_reader: InMemoryMetricReader,
+) -> None:
+    # act
+    record_llm_based_component_memory_usage(
+        MetricInstrumentProvider(),
+        ENTERPRISE_SEARCH_POLICY_MEMORY_USAGE_METRIC_NAME,
+    )
+
+    # assert
+    metrics_data = in_memory_metric_reader.get_metrics_data()
+    metrics_data = json.loads(metrics_data.to_json())
+
+    resource_metrics = metrics_data.get("resource_metrics")[0]
+    scope_metrics = resource_metrics.get("scope_metrics")[0]
+
+    # the first 15 metrics in the list were added by the unit tests above representing
+    # the CPU, memory usage and prompt token length of the:
+    # - LLMCommandGenerator,
+    # - MultiStepLLMCommandGenerator,
+    # - SingleStepLLMCommandGenerator,
+    # - CompactLLMCommandGenerator,
+    # - SearchReadyLLMCommandGenerator
+    metrics = scope_metrics.get("metrics")[16]
+    assert metrics.get("name") == ENTERPRISE_SEARCH_POLICY_MEMORY_USAGE_METRIC_NAME
+    assert metrics.get("description") == "RAM memory usage for EnterpriseSearchPolicy"
+    assert metrics.get("unit") == LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME
+
+    data_points = metrics.get("data", {}).get("data_points")[0]
+    assert data_points.get("count") == 1
+    assert 0 < data_points.get("min") <= 100
+    assert 0 <= data_points.get("max") <= 100
+
+
+def test_record_enterprise_search_policy_prompt_token_usage(
+    test_meter_provider: MeterProvider,
+    in_memory_metric_reader: InMemoryMetricReader,
+) -> None:
+    # arrange
+    prompt_token_len = 500
+
+    # act
+    record_llm_based_component_prompt_token(
+        MetricInstrumentProvider(),
+        attributes={PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME: prompt_token_len},
+        metric_name=ENTERPRISE_SEARCH_POLICY_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    )
+
+    # assert
+    metrics_data = in_memory_metric_reader.get_metrics_data()
+    metrics_data = json.loads(metrics_data.to_json())
+
+    resource_metrics = metrics_data.get("resource_metrics")[0]
+    scope_metrics = resource_metrics.get("scope_metrics")[0]
+
+    # the first 16 metrics in the list were added by the unit tests above representing
+    # the CPU, memory usage and prompt token length of the:
+    # - LLMCommandGenerator,
+    # - MultiStepLLMCommandGenerator,
+    # - SingleStepLLMCommandGenerator,
+    # - CompactLLMCommandGenerator,
+    # - SearchReadyLLMCommandGenerator
+    metrics = scope_metrics.get("metrics")[17]
+    assert (
+        metrics.get("name") == ENTERPRISE_SEARCH_POLICY_PROMPT_TOKEN_USAGE_METRIC_NAME
+    )
+    assert metrics.get("description") == "EnterpriseSearchPolicy prompt token length"
+    assert metrics.get("unit") == "1"
+
+    data_points = metrics.get("data", {}).get("data_points")[0]
+    assert data_points.get("count") == 1
+    assert (
+        data_points.get("sum")
+        == data_points.get("min")
+        == data_points.get("max")
+        == prompt_token_len
+    )
+
+
 def test_record_request_size_in_bytes(
     test_meter_provider: MeterProvider,
     in_memory_metric_reader: InMemoryMetricReader,
@@ -627,11 +745,12 @@ def test_record_request_size_in_bytes(
     resource_metrics = metrics_data.get("resource_metrics")[0]
     scope_metrics = resource_metrics.get("scope_metrics")[0]
 
-    # the first 15 metrics in the list were added by the unit tests above representing
+    # the first 17 metrics in the list were added by the unit tests above representing
     # the CPU, memory usage and prompt token length of the LLMCommandGenerator, the
     # MultiStepLLMCommandGenerator, the SingleStepLLMCommandGenerator, the
-    # CompactLLMCommandGenerator and the SearchReadyLLMCommandGenerator.
-    metrics = scope_metrics.get("metrics")[15]
+    # CompactLLMCommandGenerator, the SearchReadyLLMCommandGenerator, and the
+    # EnterpriseSearchPolicy
+    metrics = scope_metrics.get("metrics")[18]
     assert metrics.get("name") == RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME
     assert metrics.get("description") == "The rasa client request's body size"
     assert metrics.get("unit") == "byte"

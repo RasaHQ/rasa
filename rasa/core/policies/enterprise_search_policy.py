@@ -1,3 +1,4 @@
+import dataclasses
 import importlib.resources
 import json
 import re
@@ -187,6 +188,12 @@ class VectorStoreConnectionError(RasaException):
 
 class VectorStoreConfigurationError(RasaException):
     """Exception raised for errors in vector store configuration."""
+
+
+@dataclasses.dataclass
+class _RelevancyCheckResponse:
+    answer: Optional[str]
+    relevant: bool
 
 
 @DefaultV1Recipe.register(
@@ -477,6 +484,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
             llm_model_group_id=self.llm_config.get(MODEL_GROUP_ID_CONFIG_KEY),
             citation_enabled=self.citation_enabled,
+            relevancy_check_enabled=self.relevancy_check_enabled,
         )
         self.persist()
         return self._resource
@@ -644,7 +652,10 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                 llm_answer = llm_response.choices[0]
 
                 if self.relevancy_check_enabled:
-                    if not self._is_llm_response_relevant(llm_answer):
+                    relevancy_response = self._parse_llm_relevancy_check_response(
+                        llm_answer
+                    )
+                    if not relevancy_response.relevant:
                         structlogger.debug(f"{logger_key}.answer_not_relevant")
                         return self._create_prediction_cannot_handle(
                             domain,
@@ -698,6 +709,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             or self.llm_config.get(MODEL_NAME_CONFIG_KEY),
             llm_model_group_id=self.llm_config.get(MODEL_GROUP_ID_CONFIG_KEY),
             citation_enabled=self.citation_enabled,
+            relevancy_check_enabled=self.relevancy_check_enabled,
         )
         return self._create_prediction(
             domain=domain, tracker=tracker, action_metadata=action_metadata
@@ -757,9 +769,18 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             )
             return None
 
-    def _is_llm_response_relevant(self, llm_answer: str) -> bool:
+    def _parse_llm_relevancy_check_response(
+        self, llm_answer: str
+    ) -> _RelevancyCheckResponse:
         """Checks if the LLM response is relevant by parsing it."""
-        return not _ENTERPRISE_SEARCH_ANSWER_NOT_RELEVANT_PATTERN.search(llm_answer)
+        answer_relevant = not _ENTERPRISE_SEARCH_ANSWER_NOT_RELEVANT_PATTERN.search(
+            llm_answer
+        )
+        structlogger.debug("")
+        return _RelevancyCheckResponse(
+            answer=llm_answer if answer_relevant else None,
+            relevant=answer_relevant,
+        )
 
     def _create_prediction(
         self,
@@ -801,7 +822,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         reason: Optional[str] = None,
     ) -> PolicyPrediction:
         cannot_handle_stack_frame = (
-            CannotHandlePatternFlowStackFrame(reason)
+            CannotHandlePatternFlowStackFrame(reason=reason)
             if reason is not None
             else CannotHandlePatternFlowStackFrame()
         )

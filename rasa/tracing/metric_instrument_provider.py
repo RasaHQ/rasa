@@ -10,7 +10,10 @@ from rasa.tracing.constants import (
     COMPACT_LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
     CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_METRIC_NAME,
     DURATION_UNIT_NAME,
+    ENTERPRISE_SEARCH_POLICY_CPU_USAGE_METRIC_NAME,
     ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
+    ENTERPRISE_SEARCH_POLICY_MEMORY_USAGE_METRIC_NAME,
+    ENTERPRISE_SEARCH_POLICY_PROMPT_TOKEN_USAGE_METRIC_NAME,
     INTENTLESS_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
     LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
     LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
@@ -54,6 +57,7 @@ class MetricInstrumentProvider(metaclass=Singleton):
             **self._create_compact_llm_command_generator_instruments(meter),
             **self._create_search_ready_llm_command_generator_instruments(meter),
             **self._create_multi_step_llm_command_generator_instruments(meter),
+            **self._create_enterprise_search_policy_instruments(meter),
             **self._create_llm_response_duration_instruments(meter),
             **self._create_client_request_instruments(meter),
         }
@@ -238,13 +242,42 @@ class MetricInstrumentProvider(metaclass=Singleton):
         }
 
     @staticmethod
-    def _create_llm_response_duration_instruments(meter: Meter) -> Dict[str, Any]:
-        llm_response_duration_enterprise_search = meter.create_histogram(
+    def _create_enterprise_search_policy_instruments(
+        meter: Meter,
+    ) -> Dict[str, Any]:
+        enterprise_search_policy_cpu_usage = meter.create_histogram(
+            name=ENTERPRISE_SEARCH_POLICY_CPU_USAGE_METRIC_NAME,
+            description="CPU percentage for EnterpriseSearchPolicy",
+            unit=LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+        )
+
+        enterprise_search_policy_memory_usage = meter.create_histogram(
+            name=ENTERPRISE_SEARCH_POLICY_MEMORY_USAGE_METRIC_NAME,
+            description="RAM memory usage for EnterpriseSearchPolicy",
+            unit=LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+        )
+
+        enterprise_search_policy_prompt_token_usage = meter.create_histogram(
+            name=ENTERPRISE_SEARCH_POLICY_PROMPT_TOKEN_USAGE_METRIC_NAME,
+            description="EnterpriseSearchPolicy prompt token length",
+            unit="1",
+        )
+
+        enterprise_search_policy_llm_response_duration = meter.create_histogram(
             name=ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
             description="The duration of EnterpriseSearchPolicy's LLM call",
             unit=DURATION_UNIT_NAME,
         )
 
+        return {
+            ENTERPRISE_SEARCH_POLICY_CPU_USAGE_METRIC_NAME: enterprise_search_policy_cpu_usage,  # noqa: E501
+            ENTERPRISE_SEARCH_POLICY_MEMORY_USAGE_METRIC_NAME: enterprise_search_policy_memory_usage,  # noqa: E501
+            ENTERPRISE_SEARCH_POLICY_PROMPT_TOKEN_USAGE_METRIC_NAME: enterprise_search_policy_prompt_token_usage,  # noqa: E501
+            ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME: enterprise_search_policy_llm_response_duration,  # noqa: E501
+        }
+
+    @staticmethod
+    def _create_llm_response_duration_instruments(meter: Meter) -> Dict[str, Any]:
         llm_response_duration_intentless = meter.create_histogram(
             name=INTENTLESS_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
             description="The duration of IntentlessPolicy's LLM call",
@@ -258,7 +291,6 @@ class MetricInstrumentProvider(metaclass=Singleton):
         )
 
         return {
-            ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME: llm_response_duration_enterprise_search,  # noqa: E501
             INTENTLESS_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME: llm_response_duration_intentless,  # noqa: E501
             CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_METRIC_NAME: llm_response_duration_contextual_nlg,  # noqa: E501
         }
