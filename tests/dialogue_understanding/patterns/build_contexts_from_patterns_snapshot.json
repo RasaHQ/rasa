@@ -1,0 +1,214 @@
+{
+    "frame_id": {
+        "patterns": [
+            "pattern_cancel_flow",
+            "pattern_cannot_handle",
+            "pattern_chitchat",
+            "pattern_clarification",
+            "pattern_code_change",
+            "pattern_collect_information",
+            "pattern_completed",
+            "pattern_continue_interrupted",
+            "pattern_correction",
+            "pattern_human_handoff",
+            "pattern_internal_error",
+            "pattern_repeat_bot_messages",
+            "pattern_restart",
+            "pattern_search",
+            "pattern_session_start",
+            "pattern_skip_question",
+            "pattern_user_silence",
+            "pattern_validate_slot"
+        ],
+        "type": "text"
+    },
+    "flow_id": {
+        "patterns": [
+            "pattern_cancel_flow",
+            "pattern_cannot_handle",
+            "pattern_chitchat",
+            "pattern_clarification",
+            "pattern_code_change",
+            "pattern_collect_information",
+            "pattern_completed",
+            "pattern_continue_interrupted",
+            "pattern_correction",
+            "pattern_human_handoff",
+            "pattern_internal_error",
+            "pattern_repeat_bot_messages",
+            "pattern_restart",
+            "pattern_search",
+            "pattern_session_start",
+            "pattern_skip_question",
+            "pattern_user_silence",
+            "pattern_validate_slot"
+        ],
+        "type": "text"
+    },
+    "step_id": {
+        "patterns": [
+            "pattern_cancel_flow",
+            "pattern_cannot_handle",
+            "pattern_chitchat",
+            "pattern_clarification",
+            "pattern_code_change",
+            "pattern_collect_information",
+            "pattern_completed",
+            "pattern_continue_interrupted",
+            "pattern_correction",
+            "pattern_human_handoff",
+            "pattern_internal_error",
+            "pattern_repeat_bot_messages",
+            "pattern_restart",
+            "pattern_search",
+            "pattern_session_start",
+            "pattern_skip_question",
+            "pattern_user_silence",
+            "pattern_validate_slot"
+        ],
+        "type": "text"
+    },
+    "error_type": {
+        "patterns": [
+            "pattern_internal_error"
+        ],
+        "type": "text"
+    },
+    "info": {
+        "patterns": [
+            "pattern_internal_error"
+        ],
+        "type": "any"
+    },
+    "names": {
+        "patterns": [
+            "pattern_clarification"
+        ],
+        "type": "categorical",
+        "values": [
+            "FLOW_NAME"
+        ]
+    },
+    "clarification_options": {
+        "patterns": [
+            "pattern_clarification"
+        ],
+        "type": "text"
+    },
+    "previous_flow_name": {
+        "patterns": [
+            "pattern_completed",
+            "pattern_continue_interrupted"
+        ],
+        "type": "categorical",
+        "values": [
+            "FLOW_NAME"
+        ]
+    },
+    "canceled_name": {
+        "patterns": [
+            "pattern_cancel_flow"
+        ],
+        "type": "categorical",
+        "values": [
+            "FLOW_NAME"
+        ]
+    },
+    "canceled_frames": {
+        "patterns": [
+            "pattern_cancel_flow"
+        ],
+        "type": "any"
+    },
+    "validate": {
+        "patterns": [
+            "pattern_validate_slot"
+        ],
+        "type": "text"
+    },
+    "refill_utter": {
+        "patterns": [
+            "pattern_validate_slot"
+        ],
+        "type": "text"
+    },
+    "refill_action": {
+        "patterns": [
+            "pattern_validate_slot"
+        ],
+        "type": "text"
+    },
+    "rejections": {
+        "patterns": [
+            "pattern_collect_information",
+            "pattern_validate_slot"
+        ],
+        "type": "any"
+    },
+    "collect": {
+        "patterns": [
+            "pattern_collect_information"
+        ],
+        "type": "categorical",
+        "values": [
+            "SLOT_NAME"
+        ]
+    },
+    "utter": {
+        "patterns": [
+            "pattern_collect_information"
+        ],
+        "type": "categorical",
+        "values": [
+            "RESPONSE_NAME"
+        ]
+    },
+    "collect_action": {
+        "patterns": [
+            "pattern_collect_information"
+        ],
+        "type": "categorical",
+        "values": [
+            "ACTION_NAME"
+        ]
+    },
+    "is_reset_only": {
+        "patterns": [
+            "pattern_correction"
+        ],
+        "type": "bool"
+    },
+    "corrected_slots": {
+        "patterns": [
+            "pattern_correction"
+        ],
+        "type": "any"
+    },
+    "reset_flow_id": {
+        "patterns": [
+            "pattern_correction"
+        ],
+        "type": "categorical",
+        "values": [
+            "FLOW_ID"
+        ]
+    },
+    "reset_step_id": {
+        "patterns": [
+            "pattern_correction"
+        ],
+        "type": "text"
+    },
+    "new_slot_values": {
+        "patterns": [
+            "pattern_correction"
+        ],
+        "type": "text"
+    },
+    "reason": {
+        "patterns": [
+            "pattern_cannot_handle"
+        ],
+        "type": "text"
+    }
+}

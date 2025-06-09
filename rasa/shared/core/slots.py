@@ -311,6 +311,34 @@ class Slot(ABC):
         """Indicates if the slot requires validation."""
         return True if self.validation else False
 
+    def to_dict(
+        self,
+        *,
+        include_private: bool = False,
+    ) -> Dict[str, Any]:
+        """Return a dictionary with attributes of this slot instance.
+
+        Args:
+            include_private: If `True`, private attributes are included.
+
+        Returns:
+            A plain `dict` that can be JSON-serialised.
+        """
+        result: Dict[str, Any] = {}
+
+        for attr, value in vars(self).items():
+            if not include_private and attr.startswith("_"):
+                continue
+
+            if attr == "mappings":
+                result[attr] = [mapping.as_dict() for mapping in value]
+                continue
+
+            result[attr] = value
+
+        result.setdefault("type", self.type_name)
+        return result
+
 
 class FloatSlot(Slot):
     """A slot storing a float value."""

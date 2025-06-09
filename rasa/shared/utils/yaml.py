@@ -21,6 +21,7 @@ from ruamel.yaml import YAML, RoundTripRepresenter, YAMLError
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from ruamel.yaml.constructor import BaseConstructor, DuplicateKeyError, ScalarNode
 from ruamel.yaml.loader import SafeLoader
+from ruamel.yaml.scalarstring import LiteralScalarString
 
 from rasa.shared.constants import (
     ASSERTIONS_SCHEMA_EXTENSIONS_FILE,
@@ -794,6 +795,25 @@ def write_yaml(
         should_preserve_key_order: Whether to force preserve key order in `data`.
         transform: A function to transform the data before writing it to the file.
     """
+
+    def multiline_str_representer(self: Any, value: str) -> Any:
+        """Dump multi-line strings as readable YAML block scalars where possible."""
+        if "\n" in value:
+            # First line after the newline decides: paragraph vs. snippet
+            first_line = value.split("\n", 1)[1]
+
+            # If the first line after the newline is not indented, treat the value
+            # as plain text. Indented text is likely pre-formatted YAML/JSON/etc.
+            if not first_line.startswith((" ", "\t")):
+                return self.represent_scalar(
+                    "tag:yaml.org,2002:str",
+                    LiteralScalarString(value),
+                    style="|",
+                )
+
+        # Fallback: keep default YAML scalar style (plain/quoted)
+        return self.represent_scalar("tag:yaml.org,2002:str", value)
+
     _enable_ordered_dict_yaml_dumping()
 
     if should_preserve_key_order:
@@ -808,6 +828,7 @@ def write_yaml(
         type(None),
         lambda self, _: self.represent_scalar("tag:yaml.org,2002:null", "null"),
     )
+    dumper.representer.add_representer(str, multiline_str_representer)
 
     if isinstance(target, StringIO):
         dumper.dump(data, target, transform=transform)

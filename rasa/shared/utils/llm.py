@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import importlib.resources
 import json
 import logging
@@ -20,14 +22,20 @@ from typing import (
 )
 
 import structlog
+from pydantic import BaseModel, Field
 
 import rasa.shared.utils.io
 from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.shared.constants import (
+    CONFIG_NAME_KEY,
+    CONFIG_PIPELINE_KEY,
+    CONFIG_POLICIES_KEY,
     DEFAULT_PROMPT_PACKAGE_NAME,
+    LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     MODEL_GROUP_ID_CONFIG_KEY,
+    MODEL_GROUPS_CONFIG_KEY,
     MODELS_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
@@ -63,6 +71,7 @@ from rasa.shared.providers.mappings import (
     get_embedding_client_from_provider,
     get_llm_client_from_provider,
 )
+from rasa.shared.utils.common import all_subclasses
 from rasa.shared.utils.constants import LOG_COMPONENT_SOURCE_METHOD_INIT
 
 if TYPE_CHECKING:
@@ -108,6 +117,18 @@ _CombineConfigs_F = TypeVar(
     "_CombineConfigs_F",
     bound=Callable[[Dict[str, Any], Dict[str, Any]], Dict[str, Any]],
 )
+
+
+class SystemPrompts(BaseModel):
+    command_generator: str = Field(
+        ..., description="Prompt used by the LLM command generator."
+    )
+    enterprise_search: str = Field(
+        ..., description="Prompt for standard enterprise search requests."
+    )
+    contextual_response_rephraser: str = Field(
+        ..., description="Prompt used for re-phrasing assistant responses."
+    )
 
 
 def _compute_hash_for_cache_from_configs(
@@ -821,7 +842,9 @@ def allowed_values_for_slot(slot: Slot) -> Union[str, None]:
 
 
 def resolve_model_client_config(
-    model_config: Optional[Dict[str, Any]], component_name: Optional[str] = None
+    model_config: Optional[Dict[str, Any]],
+    component_name: Optional[str] = None,
+    model_groups: Optional[List[Dict[str, Any]]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Resolve the model group in the model config.
 
@@ -835,6 +858,7 @@ def resolve_model_client_config(
         model_config: The model config to be resolved.
         component_name: The name of the component.
         component_name: The method of the component.
+        model_groups: Model groups from endpoints.yml.
 
     Returns:
         The resolved llm config.
@@ -861,7 +885,12 @@ def resolve_model_client_config(
 
     model_group_id = model_config.get(MODEL_GROUP_CONFIG_KEY)
 
-    endpoints = AvailableEndpoints.get_instance()
+    # If `model_groups` is provided, use it to initialise `AvailableEndpoints`,
+    # since `get_instance()` reads from the local endpoints file instead.
+    if model_groups:
+        endpoints = AvailableEndpoints(model_groups=model_groups)
+    else:
+        endpoints = AvailableEndpoints.get_instance()
     if endpoints.model_groups is None:
         _raise_invalid_config_exception(
             reason=(
@@ -919,3 +948,96 @@ async def create_tracker_for_user_step(
 
     # store the tracker with the unique sender id
     await agent.tracker_store.save(tracker)
+
+
+def _get_llm_command_generator_config(
+    config: Dict[Text, Any],
+) -> Optional[Dict[Text, Any]]:
+    """Get the llm command generator config from config.yml.
+
+    Args:
+        config: The config.yml file data.
+
+    Returns:
+        The llm command generator config.
+    """
+    from rasa.dialogue_understanding.generator import LLMBasedCommandGenerator
+
+    # Collect all LLM based Command Generator class names.
+    command_generator_subclasses = all_subclasses(LLMBasedCommandGenerator)
+    command_generator_class_names = [
+        command_generator.__name__ for command_generator in command_generator_subclasses
+    ]
+
+    # Read the LLM config of the Command Generator from the config.yml file.
+    pipelines = config.get(CONFIG_PIPELINE_KEY, [])
+    for pipeline in pipelines:
+        if pipeline.get(CONFIG_NAME_KEY) in command_generator_class_names:
+            return pipeline.get(LLM_CONFIG_KEY)
+
+    return None
+
+
+def _get_command_generator_prompt(
+    config: Dict[Text, Any], endpoints: Dict[Text, Any]
+) -> Text:
+    """Get the command generator prompt based on the config."""
+    from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
+        DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+        FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+        MODEL_PROMPT_MAPPER,
+    )
+
+    model_config = _get_llm_command_generator_config(config)
+    llm_config = resolve_model_client_config(
+        model_config=model_config,
+        model_groups=endpoints.get(MODEL_GROUPS_CONFIG_KEY),
+    )
+    return get_default_prompt_template_based_on_model(
+        llm_config=llm_config,
+        model_prompt_mapping=MODEL_PROMPT_MAPPER,
+        default_prompt_path=DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+        fallback_prompt_path=FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+    )
+
+
+def _get_enterprise_search_prompt(config: Dict[Text, Any]) -> Text:
+    """Get the enterprise search prompt based on the config."""
+    from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
+
+    def get_enterprise_search_config() -> Dict[Text, Any]:
+        policies = config.get(CONFIG_POLICIES_KEY, [])
+        for policy in policies:
+            if policy.get(CONFIG_NAME_KEY) == EnterpriseSearchPolicy.__name__:
+                return policy
+
+        return {}
+
+    enterprise_search_config = get_enterprise_search_config()
+    return EnterpriseSearchPolicy.get_system_default_prompt_based_on_config(
+        enterprise_search_config
+    )
+
+
+def get_system_default_prompts(
+    config: Dict[Text, Any], endpoints: Dict[Text, Any]
+) -> SystemPrompts:
+    """
+    Returns the system default prompts for the component.
+
+    Args:
+        config: The config.yml file data.
+        endpoints: The endpoints.yml file data.
+
+    Returns:
+        SystemPrompts: A Pydantic model containing all default prompts.
+    """
+    from rasa.core.nlg.contextual_response_rephraser import (
+        DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE,
+    )
+
+    return SystemPrompts(
+        command_generator=_get_command_generator_prompt(config, endpoints),
+        enterprise_search=_get_enterprise_search_prompt(config),
+        contextual_response_rephraser=DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE,
+    )

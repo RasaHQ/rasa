@@ -7,12 +7,16 @@ from typing import Any, Callable, Dict, Optional, Union
 import dotenv
 import psutil
 import structlog
+from ruamel.yaml import YAMLError
 from sanic import Blueprint, Sanic, response
 from sanic.exceptions import NotFound
 from sanic.request import Request
 from sanic.response import json
 from socketio import AsyncServer
 
+import rasa
+from rasa.cli.project_templates.defaults import get_rasa_defaults
+from rasa.cli.scaffold import ProjectTemplateName, scaffold_path
 from rasa.constants import MODEL_ARCHIVE_EXTENSION
 from rasa.exceptions import ModelNotFound
 from rasa.model_manager import config
@@ -45,6 +49,10 @@ from rasa.model_manager.warm_rasa_process import (
     initialize_warm_rasa_process,
     shutdown_warm_rasa_processes,
 )
+from rasa.server import ErrorResponse
+from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
+from rasa.studio.upload import build_calm_import_parts
 
 dotenv.load_dotenv()
 
@@ -475,6 +483,86 @@ def internal_blueprint() -> Blueprint:
             )
         except ModelNotFound:
             return response.raw(b"", status=404)
+
+    @bp.post("/defaults")
+    async def get_defaults(request: Request) -> response.HTTPResponse:
+        """Returns the system defaults like prompts, patterns, etc."""
+        body = request.json or {}
+        config_yaml = body.get("config")
+        if config_yaml is None:
+            exc = ErrorResponse(
+                HTTPStatus.BAD_REQUEST,
+                "BadRequest",
+                "Missing `config` key in request body.",
+            )
+            return response.json(exc.error_info, status=exc.status)
+
+        endpoints_yaml = body.get("endpoints")
+        if endpoints_yaml is None:
+            exc = ErrorResponse(
+                HTTPStatus.BAD_REQUEST,
+                "BadRequest",
+                "Missing `endpoints` key in request body.",
+            )
+            return response.json(exc.error_info, status=exc.status)
+
+        try:
+            defaults = get_rasa_defaults(config_yaml, endpoints_yaml)
+        except (YAMLError, InvalidConfigException) as e:
+            exc = ErrorResponse(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "InitDataError",
+                f"Failed to load defaults. Error: {e!s}",
+            )
+            return response.json(exc.error_info, status=exc.status)
+        return response.json(defaults.model_dump(exclude_none=True))
+
+    @bp.get("/project_template")
+    async def get_project_template(request: Request) -> response.HTTPResponse:
+        """Return initial project template data."""
+        template = request.args.get("template", ProjectTemplateName.DEFAULT.value)
+
+        try:
+            template_enum = ProjectTemplateName(template)
+        except ValueError:
+            valid_templates = ", ".join([t.value for t in ProjectTemplateName])
+            exc = ErrorResponse(
+                HTTPStatus.BAD_REQUEST,
+                "BadRequest",
+                f"Unknown template '{template}'. Valid templates: "
+                f"{valid_templates}",
+            )
+            return response.json(exc.error_info, status=exc.status)
+
+        template_dir = scaffold_path(template_enum)
+        if not os.path.isdir(template_dir):
+            exc = ErrorResponse(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "InitDataError",
+                f"Template directory '{template_dir}' not found.",
+            )
+            return response.json(exc.error_info, status=exc.status)
+
+        assistant_name, parts = build_calm_import_parts(
+            data_path=f"{template_dir}/data",
+            domain_path=f"{template_dir}/domain",
+            config_path=f"{template_dir}/config.yml",
+            endpoints_path=f"{template_dir}/endpoints.yml",
+            assistant_name=template_enum.value,
+        )
+
+        defaults = get_rasa_defaults(
+            config_yaml=dump_obj_as_yaml_to_string(parts.config),
+            endpoints_yaml=dump_obj_as_yaml_to_string(parts.endpoints),
+        )
+        return response.json(
+            {
+                **parts.model_dump(exclude_none=True),
+                "assistantName": assistant_name,
+                "defaults": defaults.model_dump(exclude_none=True),
+                "version": rasa.__version__,
+            }
+        )
 
     return bp
 

@@ -61,7 +61,7 @@ CALM_CUSTOMIZED_PATTERNS_YAML = dedent(
 
 CALM_NLU_YAML = dedent(
     """\
-    version: "3.1"
+    version: '3.1'
     nlu:
     - intent: health_advice
       examples: |

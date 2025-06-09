@@ -5,6 +5,7 @@ import subprocess
 import uuid
 from http import HTTPStatus
 from pathlib import Path
+from typing import Text
 from unittest.mock import MagicMock
 
 import pytest
@@ -12,6 +13,9 @@ from pytest import MonkeyPatch
 from sanic import Sanic
 from sanic_testing.testing import SanicASGITestClient
 
+import rasa
+from rasa.cli.project_templates.defaults import RasaDefaults
+from rasa.cli.scaffold import ProjectTemplateName, scaffold_path
 from rasa.model_manager import config
 from rasa.model_manager.model_api import (
     external_blueprint,
@@ -22,6 +26,7 @@ from rasa.model_manager.model_api import (
 from rasa.model_manager.runner_service import BotSession
 from rasa.model_manager.trainer_service import TrainingSession, TrainingSessionStatus
 from rasa.model_manager.utils import models_base_path
+from rasa.studio.upload import CALMImportParts
 
 
 @pytest.fixture
@@ -438,3 +443,80 @@ async def test_get_model_not_found(client: SanicASGITestClient) -> None:
     _, response = await client.get("/models/non_existent_model")
     assert response.status == 404
     assert response.json == {"message": "Model not found"}
+
+
+@pytest.fixture()
+def config_yaml() -> Text:
+    calm_dir = Path(scaffold_path(ProjectTemplateName.DEFAULT))
+    return (calm_dir / "config.yml").read_text(encoding="utf-8")
+
+
+@pytest.fixture()
+def endpoints_yaml() -> Text:
+    calm_dir = Path(scaffold_path(ProjectTemplateName.DEFAULT))
+    return (calm_dir / "endpoints.yml").read_text(encoding="utf-8")
+
+
+async def test_defaults_happy_path(
+    client: SanicASGITestClient, config_yaml: Text, endpoints_yaml: Text
+):
+    body = {"config": config_yaml, "endpoints": endpoints_yaml}
+    _, response = await client.post("/defaults", json=body)
+
+    assert response.status == HTTPStatus.OK
+
+    payload = response.json
+    for field in RasaDefaults.model_fields:
+        assert field in payload
+        assert payload[field]
+
+
+async def test_defaults_missing_config(
+    client: SanicASGITestClient, endpoints_yaml: Text
+):
+    body = {"endpoints": endpoints_yaml}
+    _, response = await client.post("/defaults", json=body)
+
+    assert response.status == HTTPStatus.BAD_REQUEST
+    assert "Missing `config` key" in response.json["message"]
+
+
+async def test_defaults_missing_endpoints(
+    client: SanicASGITestClient, config_yaml: Text
+):
+    body = {"config": config_yaml}
+    _, response = await client.post("/defaults", json=body)
+
+    assert response.status == HTTPStatus.BAD_REQUEST
+    assert "Missing `endpoints` key" in response.json["message"]
+
+
+async def test_defaults_invalid_yaml(client: SanicASGITestClient):
+    body = {"config": "::: this is not yaml :::", "endpoints": "{}"}
+    _, response = await client.post("/defaults", json=body)
+
+    assert response.status == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert "Failed to load defaults" in response.json["message"]
+
+
+async def test_project_template_happy_path(client: SanicASGITestClient) -> None:
+    _, response = await client.get("/project_template")  # default = calm
+
+    assert response.status == HTTPStatus.OK
+
+    payload = response.json
+    expected = {
+        "assistantName",
+        "defaults",
+        "version",
+        *CALMImportParts.model_fields.keys(),
+    }
+    assert expected == set(payload)
+    assert payload["assistantName"] == ProjectTemplateName.DEFAULT.value
+    assert payload["version"] == rasa.__version__
+
+
+async def test_project_template_unknown_template(client: SanicASGITestClient) -> None:
+    _, response = await client.get("/project_template?template=does_not_exist")
+    assert response.status == HTTPStatus.BAD_REQUEST
+    assert "Unknown template" in response.json["message"]

@@ -8,6 +8,21 @@ import pytest
 from pytest import MonkeyPatch
 
 from rasa.core.agent import Agent
+from rasa.core.nlg.contextual_response_rephraser import (
+    DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE,
+)
+from rasa.core.policies.enterprise_search_policy import (
+    DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
+    DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE,
+    DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_RELEVANCY_CHECK_AND_CITATION_TEMPLATE,
+)
+from rasa.dialogue_understanding.generator import LLMBasedCommandGenerator
+from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
+    DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+    FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+    MODEL_PROMPT_MAPPER,
+    get_default_prompt_template_based_on_model,
+)
 from rasa.shared.constants import (
     AZURE_API_BASE_ENV_VAR,
     AZURE_API_KEY_ENV_VAR,
@@ -56,8 +71,12 @@ from rasa.shared.providers.llm.litellm_router_llm_client import LiteLLMRouterLLM
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.llm.openai_llm_client import OpenAILLMClient
 from rasa.shared.providers.router.router_client import RouterClient
+from rasa.shared.utils.common import all_subclasses
 from rasa.shared.utils.llm import (
     ERROR_PLACEHOLDER,
+    SystemPrompts,
+    _get_enterprise_search_prompt,
+    _get_llm_command_generator_config,
     allowed_values_for_slot,
     combine_custom_and_default_config,
     create_tracker_for_user_step,
@@ -68,6 +87,7 @@ from rasa.shared.utils.llm import (
     generate_sender_id,
     get_prompt_template,
     get_provider_from_config,
+    get_system_default_prompts,
     llm_client_factory,
     llm_factory,
     llm_router_factory,
@@ -75,6 +95,7 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
 )
+from rasa.shared.utils.yaml import read_yaml
 
 
 def test_tracker_as_readable_transcript_handles_empty_tracker():
@@ -2727,3 +2748,94 @@ async def test_create_tracker_for_user_step():
     assert new_tracker.sender_id == step_sender_id
     assert len(new_tracker.events) == 3
     assert new_tracker.latest_message.text == f"test {index_user_uttered_event - 1}"
+
+
+def test_returns_expected_llm_config():
+    subclasses = all_subclasses(LLMBasedCommandGenerator)
+    yaml_str = f"""
+    pipeline:
+      - name: {subclasses.pop().__name__}
+        llm:
+          model_name: "gpt-4"
+          temperature: 0.1
+    """
+    config = read_yaml(yaml_str)
+    cfg = _get_llm_command_generator_config(config)
+
+    assert cfg == {"model_name": "gpt-4", "temperature": 0.1}
+
+
+def test_returns_none_if_no_matching_component():
+    yaml_str = """
+    pipeline:
+      - name: "SomeOtherComponent"
+        random_key: "random_value"
+    """
+    config = read_yaml(yaml_str)
+    cfg = _get_llm_command_generator_config(config)
+
+    assert cfg is None
+
+
+def test_get_system_default_prompts_returns_expected_values():
+    root_path = Path(__file__).parent.parent.parent.parent
+    default_template_path = root_path / "rasa" / "cli" / "project_templates" / "default"
+
+    config_yaml = (default_template_path / "config.yml").read_text()
+    endpoints_yaml = (default_template_path / "endpoints.yml").read_text()
+
+    prompts = get_system_default_prompts(
+        config=read_yaml(config_yaml), endpoints=read_yaml(endpoints_yaml)
+    )
+
+    assert isinstance(prompts, SystemPrompts)
+
+    # Assert Command Generator prompt
+    llm_config = resolve_model_client_config(model_config={})
+    expected_cmd_prompt = get_default_prompt_template_based_on_model(
+        llm_config=llm_config,
+        model_prompt_mapping=MODEL_PROMPT_MAPPER,
+        default_prompt_path=DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+        fallback_prompt_path=FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+    )
+    assert prompts.command_generator == expected_cmd_prompt
+
+    # Assert Enterprise Search prompt
+    enterprise_search_prompt_path = (
+        root_path
+        / "rasa"
+        / "core"
+        / "policies"
+        / "enterprise_search_prompt_template.jinja2"
+    )
+    enterprise_search_prompt = enterprise_search_prompt_path.read_text()
+    assert prompts.enterprise_search == enterprise_search_prompt
+
+    # Assert Response Rephraser prompt
+    assert (
+        prompts.contextual_response_rephraser
+        == DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE
+    )
+
+
+@pytest.mark.parametrize(
+    "config, expected_prompt",
+    [
+        ({}, DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE),
+        (
+            {
+                "policies": [
+                    {"name": "EnterpriseSearchPolicy", "citation_enabled": True}
+                ]
+            },
+            DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE,
+        ),
+        (
+            {"policies": [{"name": "EnterpriseSearchPolicy", "check_relevancy": True}]},
+            DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_RELEVANCY_CHECK_AND_CITATION_TEMPLATE,
+        ),
+    ],
+)
+def test_get_enterprise_search_prompt_returns_correct_template(config, expected_prompt):
+    prompt = _get_enterprise_search_prompt(config)
+    assert prompt == expected_prompt

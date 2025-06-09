@@ -2,11 +2,12 @@ import argparse
 import base64
 import re
 import sys
-from typing import Any, Dict, Iterable, List, Set, Text, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Set, Text, Tuple, Union
 
 import questionary
 import requests
 import structlog
+from pydantic import BaseModel, Field
 
 import rasa.cli.telemetry
 import rasa.cli.utils
@@ -32,6 +33,7 @@ from rasa.shared.nlu.training_data.formats.rasa_yaml import (
 )
 from rasa.shared.utils.yaml import (
     dump_obj_as_yaml_to_string,
+    read_yaml,
     read_yaml_file,
 )
 from rasa.studio import results_logger
@@ -62,6 +64,16 @@ DOMAIN_KEYS = [
     "forms",
     "session_config",
 ]
+
+
+class CALMImportParts(BaseModel):
+    """All pieces that will be uploaded to Rasa Studio."""
+
+    flows: Dict[str, Any]
+    domain: Dict[str, Any]
+    config: Dict[str, Any]
+    endpoints: Dict[str, Any]
+    nlu: Dict[str, Any] = Field(default_factory=dict)
 
 
 def _get_selected_entities_and_intents(
@@ -208,79 +220,93 @@ def _get_assistant_name(config: Dict[Text, Any]) -> str:
     return assistant_name
 
 
-@with_studio_error_handler
-def upload_calm_assistant(
-    args: argparse.Namespace, endpoint: str, verify: bool = True
-) -> StudioResult:
-    """Validates and uploads the CALM assistant data to Rasa Studio.
+def build_calm_import_parts(
+    data_path: Union[Text, List[Text]],
+    domain_path: Text,
+    config_path: Text,
+    endpoints_path: Optional[Text] = None,
+    assistant_name: Optional[Text] = None,
+) -> Tuple[str, CALMImportParts]:
+    """Builds the parts of the assistant to be uploaded to Studio.
 
     Args:
-        args: The command line arguments
-            - data: The path to the training data
-            - domain: The path to the domain
-            - flows: The path to the flows
-            - endpoints: The path to the endpoints
-            - config: The path to the config
-        endpoint: The studio endpoint
-        verify: Whether to verify SSL
+        data_path: The path to the training data
+        domain_path: The path to the domain
+        config_path: The path to the config
+        endpoints_path: The path to the endpoints
+        assistant_name: The name of the assistant
+
     Returns:
-        None
+        The assistant name and the parts to be uploaded
     """
-    run_validation(args)
-
-    structlogger.info(
-        "rasa.studio.upload.loading_data", event_info="Parsing CALM assistant data..."
-    )
-
     importer = TrainingDataImporter.load_from_dict(
-        domain_path=args.domain,
-        config_path=args.config,
+        domain_path=domain_path,
+        config_path=config_path,
         expand_env_vars=False,
     )
 
-    # Prepare config and domain
-    config = importer.get_config()
-    assistant_name = _get_assistant_name(config)
+    config = read_yaml_file(config_path, expand_env_vars=False)
+    assistant_name = assistant_name or _get_assistant_name(config)
 
-    config_from_files = read_yaml_file(args.config, expand_env_vars=False)
     domain_from_files = importer.get_user_domain().as_dict()
-
-    # Extract domain and config values
     domain = extract_values(domain_from_files, DOMAIN_KEYS)
 
-    # Prepare flows
     flow_importer = FlowSyncImporter.load_from_dict(
-        training_data_paths=args.data, expand_env_vars=False
+        training_data_paths=data_path, expand_env_vars=False
     )
-    flows = list(flow_importer.get_user_flows())
 
-    # We instantiate the TrainingDataImporter again on purpose to avoid
-    # adding patterns to domain's actions. More info https://t.ly/W8uuc
+    flows = list(flow_importer.get_user_flows())
+    flows_yaml = YamlFlowsWriter().dumps(flows)
+    flows = read_yaml(flows_yaml, expand_env_vars=False)
+
     nlu_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=args.data, expand_env_vars=False
+        training_data_paths=data_path, expand_env_vars=False
     )
     nlu_data = nlu_importer.get_nlu_data()
     nlu_examples = nlu_data.filter_training_examples(
         lambda ex: ex.get("intent") in nlu_data.intents
     )
     nlu_examples_yaml = RasaYAMLWriter().dumps(nlu_examples)
+    nlu = read_yaml(nlu_examples_yaml, expand_env_vars=False)
 
-    # Prepare endpoints
-    endpoints_from_files = read_yaml_file(args.endpoints, expand_env_vars=False)
-    endpoints_str = dump_obj_as_yaml_to_string(
-        endpoints_from_files, transform=remove_quotes
+    endpoints = read_yaml_file(endpoints_path, expand_env_vars=False)
+    parts = CALMImportParts(
+        flows=flows,
+        domain=domain,
+        config=config,
+        endpoints=endpoints,
+        nlu=nlu,
     )
 
-    # Build GraphQL request
+    return assistant_name, parts
+
+
+@with_studio_error_handler
+def upload_calm_assistant(
+    args: argparse.Namespace, endpoint: str, verify: bool = True
+) -> StudioResult:
+    def yaml_or_empty(part: Dict[Text, Any]) -> str:
+        return dump_obj_as_yaml_to_string(part) if part else ""
+
+    run_validation(args)
+    structlogger.info(
+        "rasa.studio.upload.loading_data", event_info="Parsing CALM assistant data..."
+    )
+    assistant_name, parts = build_calm_import_parts(
+        data_path=args.data,
+        domain_path=args.domain,
+        config_path=args.config,
+        endpoints_path=args.endpoints,
+    )
+
     graphql_req = build_import_request(
         assistant_name,
-        flows_yaml=YamlFlowsWriter().dumps(flows),
-        domain_yaml=dump_obj_as_yaml_to_string(domain),
-        config_yaml=dump_obj_as_yaml_to_string(config_from_files),
-        endpoints=endpoints_str,
-        nlu_yaml=nlu_examples_yaml,
+        flows_yaml=yaml_or_empty(parts.flows),
+        domain_yaml=yaml_or_empty(parts.domain),
+        config_yaml=yaml_or_empty(parts.config),
+        endpoints=yaml_or_empty(parts.endpoints),
+        nlu_yaml=yaml_or_empty(parts.nlu),
     )
-
     structlogger.info(
         "rasa.studio.upload.calm", event_info="Uploading to Rasa Studio..."
     )
@@ -427,12 +453,12 @@ def build_import_request(
     endpoints: str,
     nlu_yaml: str = "",
 ) -> Dict:
-    # b64encode expects bytes and returns bytes so we need to decode to string
-    base64_domain = base64.b64encode(domain_yaml.encode("utf-8")).decode("utf-8")
-    base64_flows = base64.b64encode(flows_yaml.encode("utf-8")).decode("utf-8")
-    base64_config = base64.b64encode(config_yaml.encode("utf-8")).decode("utf-8")
-    base64_nlu = base64.b64encode(nlu_yaml.encode("utf-8")).decode("utf-8")
-    base64_endpoints = base64.b64encode(endpoints.encode("utf-8")).decode("utf-8")
+    # b64encode expects bytes and returns bytes, so we need to decode to string
+    base64_domain = convert_string_to_base64(domain_yaml)
+    base64_flows = convert_string_to_base64(flows_yaml)
+    base64_config = convert_string_to_base64(config_yaml)
+    base64_nlu = convert_string_to_base64(nlu_yaml)
+    base64_endpoints = convert_string_to_base64(endpoints)
 
     graphql_req = {
         "query": (
@@ -452,6 +478,18 @@ def build_import_request(
     }
 
     return graphql_req
+
+
+def convert_string_to_base64(string: str) -> str:
+    """Converts a string to base64.
+
+    Args:
+        string: The string to convert
+
+    Returns:
+        The base64 encoded string
+    """
+    return base64.b64encode(string.encode("utf-8")).decode("utf-8")
 
 
 def build_request(

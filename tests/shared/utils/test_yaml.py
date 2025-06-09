@@ -1,6 +1,8 @@
 import os
 import random
+import re
 import textwrap
+from io import StringIO
 from pathlib import Path
 from threading import Thread
 from typing import Any, Dict, Text
@@ -37,6 +39,7 @@ from rasa.shared.utils.yaml import (
     validate_yaml_content_using_schema,
     validate_yaml_data_using_schema_with_assertions,
     validate_yaml_with_jsonschema,
+    write_yaml,
 )
 
 python_module_path = "rasa.shared.utils.yaml"
@@ -1469,3 +1472,24 @@ def test_yaml_validation_longer_yaml_cases(
         expected_error_line,
         expected_error_message,
     )
+
+
+def test_multiline_string_is_dumped_as_block_scalar() -> None:
+    data = {"multi": "hello\nworld"}
+    buffer = StringIO()
+    write_yaml(data, buffer)
+    dumped = buffer.getvalue()
+
+    assert re.search(r"^multi:\s+\|", dumped, flags=re.MULTILINE)
+    assert "hello" in dumped and "world" in dumped
+    assert re.search(r"\n  world", dumped)
+
+
+def test_single_line_string_is_left_as_plain_scalar() -> None:
+    data = {"single": "hello world"}
+    buffer = StringIO()
+    write_yaml(data, buffer)
+    dumped = buffer.getvalue()
+
+    assert "single: |" not in dumped
+    assert re.search(r"^single:\s+hello world$", dumped, flags=re.MULTILINE)

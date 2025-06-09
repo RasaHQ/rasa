@@ -75,7 +75,9 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
 from rasa.shared.exceptions import RasaException, YamlException
-from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import (
+    TrainingDataImporter,
+)
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.shared.utils.yaml import validate_training_data
