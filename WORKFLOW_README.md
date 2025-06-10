@@ -62,10 +62,11 @@ This workflow runs DM1 tests (that use Tensorflow), on:
 
 Purpose of this dedicated workflow is to reduce GHA costs, by not running DM1/Tensorflow tests on all CI runs.
 
-### Verify patch releases are not model breaking
-This workflow runs on release branches, to verify compatibility between patch versions, by
-training model on an earlier `rasa-pro` patch version, and running inference with a newer `rasa-pro` 
-patch version using that same model, without having to re-train the model using newer patch version.
+### Verify minor and patch releases are backwards compatible
+This workflow runs on release branches, to verify compatibility between minor and patch versions, by
+training model on an earlier `rasa-pro` version and starting a user session, then continuing the active user session with newer `rasa-pro` version; to verify that:
+1. Newer versions can run inference via old model without retraining.
+2. Newer versions can load active sessions from previous version, and continue conversation in them. 
 
 ### Rasa versions performance testing
 Automated performance evaluation of new Rasa-Pro versions' command generation against baseline of previous versions, for release testing and on changes to prompt templates, to check against performance degradations.

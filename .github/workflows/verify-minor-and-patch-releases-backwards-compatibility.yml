@@ -1,0 +1,237 @@
+name: Verify minor and patch releases are backwards compatible
+run-name: Verify backwards compatibility between rasa-pro "${{ inputs.rasa_pro_new_version || github.ref_name }}" and ${{ inputs.rasa_pro_old_version || 'oldest patch version' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      rasa_pro_new_version:
+        description: Newer version of rasa-pro. Latest current version by default.
+        type: string
+        required: false
+      rasa_pro_old_version:
+        description: Older version of rasa-pro, to check backwards-compatibility of newer version against. Oldest patch version by default.
+        type: string
+        required: false
+      command_generator:
+        description: Command generator to use for model training and inference.
+        type: choice
+        required: true
+        default: compact
+        options:
+          - compact
+          - singlestep
+          - multistep
+      rasa-calm-demo-branch:
+          description: Branch (or tag) to checkout for rasa-calm-demo git repo
+          type: string
+          required: true
+          default: main
+
+  pull_request:
+    types: opened
+    branches:
+      - '[0-9]+.[0-9]+.x'
+
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEFAULT_PYTHON_VERSION: "3.11"
+  RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  RASA_PRO_BETA_E2E_ASSERTIONS: true
+  RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS: true
+  RASA_CALM_DEMO_READ_TOKEN: ${{ secrets.RASA_CALM_DEMO_READ }}
+  LLM_API_HEALTH_CHECK: true
+  ACTIVE_SESSION_USERNAME: TestUser_UpgradePathTestingWithActiveUserSessions
+
+jobs:
+  verify_releases_compatibility_with_active_user_session:
+    runs-on: ubuntu-24.04
+    services:
+      redis:
+        image: redis:6
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - name: Checkout rasa-private git repository 🕝
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: rasa-private
+      - name: Checkout rasa-calm-demo git repository 🕝
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: RasaHQ/rasa-calm-demo
+          ref: ${{ inputs.rasa-calm-demo-branch || 'main' }}
+          path: rasa-calm-demo
+          token: ${{ env.RASA_CALM_DEMO_READ_TOKEN }}
+      - name: Set up Python 🐍
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+            python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+      - name: Install Poetry ${{ env.POETRY_VERSION }}
+        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a # v1.4.1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      - name: Install rasa-pro ${{ inputs.rasa_pro_old_version || 'oldest patch version' }}
+        id: install-rasa-pro-older-version
+        working-directory: rasa-private
+        env:
+          RASA_OLD_VERSION: ${{ inputs.rasa_pro_old_version }}
+        run: |
+          # Setup Python environment (including UV)
+          python"${DEFAULT_PYTHON_VERSION}" -m venv ./venv
+          source ./venv/bin/activate
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+
+          # User specified an older supported version of Rasa, then install that for testing
+          if [[ -n "${RASA_OLD_VERSION}" ]]; then
+            uv pip install rasa-pro=="${RASA_OLD_VERSION}" --prerelease=allow --extra-index-url=https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/simple
+            echo "RASA_PRO_OLDER_VERSION=${RASA_OLD_VERSION}" >> "${GITHUB_OUTPUT}"
+          else # Otherwise install oldest supported version
+            latest_version="$(poetry version | awk '{print $2}')"
+            IFS='.' read -r -a version_parts <<< "${latest_version}"
+            third_number="${version_parts[2]}"
+
+            # Check if current version is a new minor release
+            if [[ "$third_number" -eq 0 ]]; then
+              echo "Minor release detected."
+              # Get previous minor version
+              oldest_version="${version_parts[0]}.$(("${version_parts[1]}"-1)).0"
+            else # Otherwise get oldest patch version
+              echo "Patch release detected."
+              oldest_version="${latest_version%.*}.0"
+            fi
+            
+            uv pip install rasa-pro=="${oldest_version}" --prerelease=allow --extra-index-url=https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/simple
+            echo "RASA_PRO_OLDER_VERSION=${oldest_version}" >> "${GITHUB_OUTPUT}"
+          fi
+          rasa --version
+          echo "PATH=${PATH}" >> "${GITHUB_ENV}"
+      - name: Train model with version ${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}
+        env:
+          COMMAND_GENERATOR: ${{ inputs.command_generator || 'compact' }}
+          RASA_PRO_OLDER_VERSION: ${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}
+        run: |
+          rm -rf rasa-private/.rasa rasa-private/models \
+            && rasa train \
+            --config rasa-private/data/test_backwards_compatibility/"${COMMAND_GENERATOR}"-config.yml \
+            --endpoints rasa-private/data/test_backwards_compatibility/endpoints.yml \
+            --domain rasa-calm-demo/domain \
+            --data rasa-calm-demo/data \
+            --fixed-model-name model-trained-on-rasa-pro-"${RASA_PRO_OLDER_VERSION}" \
+            --debug
+      - name: Run duckling server
+        working-directory: rasa-calm-demo
+        run: |
+          make run-duckling
+      - name: Run action server with version ${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}
+        id: run-action-server
+        env:
+          RASA_DUCKLING_HTTP_URL: ${{ secrets.DUCKLING_URL }}
+          RASA_PRO_BETA_INTENTLESS: true
+        working-directory: rasa-calm-demo
+        run: rasa run actions --endpoints ../rasa-private/data/test_backwards_compatibility/endpoints.yml --debug 2>&1 | tee rasa-action-server-log.txt &
+      - name: Start Rasa server with version ${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}
+        working-directory: rasa-calm-demo
+        env:
+          MODEL_PATH: ../models/model-trained-on-rasa-pro-${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}.tar.gz
+        run: rasa run --enable-api --endpoints ../rasa-private/data/test_backwards_compatibility/endpoints.yml --model "${MODEL_PATH}" --debug 2>&1 | tee rasa-server-log.txt &
+      - name: Check Rasa v${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }} server is healthy
+        id: rasa-old-server-healthcheck
+        run: curl -v --retry 7 --retry-all-errors http://localhost:5005/
+      - name: Verify Rasa server old version is ${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}
+        env:
+          RASA_OLDER_VERSION: ${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}
+        run: test "$(curl -s http://localhost:5005/version | jq -r '.version')" = "${RASA_OLDER_VERSION}"
+      - name: Start user session with version ${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}
+        run: |
+          curl -s 'http://localhost:5005/webhooks/rest/webhook' \
+           --header 'Content-Type: application/json' \
+           --data-raw '{
+            "sender": "${ACTIVE_SESSION_USERNAME}",
+            "message": "add contact"
+          }' | tee start-session-response
+          grep -i "What's the handle of the user you want to add?" start-session-response
+      - name: Save Rasa v${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }} server log
+        if: ${{ always() && steps.rasa-old-server-healthcheck.conclusion == 'failure' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: rasa-${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}-server-log
+          path: rasa-calm-demo/rasa-server-log.txt
+          if-no-files-found: error
+      - name: Save Rasa v${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }} action server log
+        if: ${{ always() && steps.rasa-old-server-healthcheck.conclusion == 'failure' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: rasa-${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}-action-server-log
+          path: rasa-calm-demo/rasa-action-server-log.txt
+          if-no-files-found: error
+      - name: Install rasa-pro ${{ inputs.rasa_pro_new_version || 'latest current patch version' }}
+        env:
+          RASA_PRO_NEW_VERSION: ${{ inputs.rasa_pro_new_version }}
+        working-directory: rasa-private
+        run: |
+          python"${DEFAULT_PYTHON_VERSION}" -m venv ./venv
+          source ./venv/bin/activate
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          if [[ -n "${RASA_PRO_NEW_VERSION}" ]]; then
+            uv pip install rasa-pro=="${RASA_PRO_NEW_VERSION}" --prerelease=allow --extra-index-url=https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/simple
+          else
+            make install-full
+          fi
+          rasa --version
+          echo "PATH=${PATH}" >> "${GITHUB_ENV}"
+          echo "RASA_NEW_VERSION=$(rasa --version | grep 'Rasa Pro Version' | tr -d ' ' | awk -F ':' '{print $2}')" >> $GITHUB_ENV
+      - name: Kill version ${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }} Rasa processes
+        run: killall rasa
+      - name: Run action server with version ${{ env.RASA_NEW_VERSION }}
+        env:
+          RASA_DUCKLING_HTTP_URL: ${{ secrets.DUCKLING_URL }}
+          RASA_PRO_BETA_INTENTLESS: true
+        working-directory: rasa-calm-demo
+        run: rasa run actions --endpoints ../rasa-private/data/test_backwards_compatibility/endpoints.yml &
+      - name: Start Rasa server with version ${{ env.RASA_NEW_VERSION }}
+        working-directory: rasa-calm-demo
+        run: rasa run --enable-api --endpoints ../rasa-private/data/test_backwards_compatibility/endpoints.yml --model ../models --debug 2>&1 | tee rasa-server-${{ env.RASA_NEW_VERSION }}-log.txt &
+      - name: Check Rasa v ${{ env.RASA_NEW_VERSION }} server is healthy
+        id: rasa-new-server-healthcheck
+        run: curl -v --retry 7 --retry-all-errors http://localhost:5005/
+      - name: Verify Rasa server new version is ${{ env.RASA_NEW_VERSION }}
+        run: test "$(curl -s http://localhost:5005/version | jq -r '.version')" = "${RASA_NEW_VERSION}"
+      - name: Continue active user session with version ${{ env.RASA_NEW_VERSION }}
+        run: |
+          curl -s 'http://localhost:5005/webhooks/rest/webhook' \
+           --header 'Content-Type: application/json' \
+           --data-raw '{
+            "sender": "${ACTIVE_SESSION_USERNAME}",
+            "message": "@Bart"
+          }' | tee continue-session-response
+          grep "What's the name of the user you want to add?" continue-session-response
+      - name: Save Rasa v${{ env.RASA_NEW_VERSION }} server log
+        if: ${{ always() && steps.rasa-new-server-healthcheck.conclusion == 'failure' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: rasa-version-${{ env.RASA_NEW_VERSION }}-server-log
+          path: rasa-calm-demo/rasa-server-${{ env.RASA_NEW_VERSION }}-log.txt
+          if-no-files-found: error
+      - name: Save Rasa v${{ env.RASA_NEW_VERSION }} action server log
+        if: ${{ always() && steps.rasa-new-server-healthcheck.conclusion == 'failure' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: rasa-${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}-action-server-log
+          path: rasa-calm-demo/rasa-action-server-log.txt
+          if-no-files-found: error

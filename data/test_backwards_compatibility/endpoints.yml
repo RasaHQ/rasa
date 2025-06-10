@@ -1,0 +1,24 @@
+action_endpoint:
+  url: "http://localhost:5055/webhook"
+
+model_groups:
+  - id: openai_llm
+    models:
+      - provider: openai
+        model: gpt-4o-2024-11-20
+        timeout: 20
+        temperature: 0.0
+        top_p: 0.0
+        cache:
+          no-cache: true
+  - id: openai_embeddings
+    models:
+      - provider: openai
+        model: text-embedding-3-small
+
+tracker_store:
+    type: redis
+    url: localhost
+    port: 6379
+    db: 0
+    use_ssl: false
