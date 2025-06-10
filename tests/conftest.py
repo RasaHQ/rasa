@@ -136,9 +136,6 @@ PATH_PYTEST_MARKER_MAPPINGS = {
         Path("tests", "anonymization").absolute(),
         Path("tests", "privacy").absolute(),
     ],
-    "category_large_data_tests": [
-        Path("tests", "anonymization", "large_data_tests").absolute()
-    ],
     "category_cli": [Path("tests", "cli").absolute()],
     "category_policies": [
         Path("tests", "core", "test_policies.py").absolute(),

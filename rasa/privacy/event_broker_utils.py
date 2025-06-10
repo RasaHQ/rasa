@@ -12,11 +12,11 @@ structlogger = structlog.get_logger(__name__)
 
 
 async def create_event_brokers(
-    event_broker_endpoint: EndpointConfig,
+    event_broker_endpoint: Optional[EndpointConfig],
     event_loop: Optional["AbstractEventLoop"] = None,
 ) -> List[EventBroker]:
     """Create EventBroker objects for each anonymization topic or queue."""
-    if event_broker_endpoint.type is None:
+    if event_broker_endpoint is None or event_broker_endpoint.type is None:
         structlogger.debug(
             "rasa.privacy_filtering.create_event_broker.no_event_broker_type",
         )

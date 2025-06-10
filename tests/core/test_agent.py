@@ -85,6 +85,7 @@ async def test_agent_train(default_agent: Agent):
 
     assert default_agent.processor
     assert default_agent.processor.graph_runner
+    assert default_agent.privacy_manager is None
 
 
 @pytest.mark.parametrize(

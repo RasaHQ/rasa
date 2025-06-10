@@ -31,8 +31,10 @@ class PrivacyFilter:
         self.labels = GLINER_LABELS
         self.model = self._load_gliner_model()
 
-    def anonymize(self, events: List[Event]) -> List[Event]:
-        """Anonymise sensitive information in the events of the current turn.
+    def anonymize(
+        self, events: List[Event], prior_sensitive_slot_events: List[Event]
+    ) -> List[Event]:
+        """Anonymize sensitive information in the events of the current turn.
 
         The order of priority for PII detection is:
         - firstly, the slot-based approach i.e. identify any defined slots in
@@ -44,7 +46,9 @@ class PrivacyFilter:
          SlotSet events that fill from_text slots.
         """
         anonymized_events: List[Event] = []
-        anonymized_slots = self._anonymize_sensitive_slots(events)
+        anonymized_slots = self._anonymize_sensitive_slots(
+            (events + prior_sensitive_slot_events)
+        )
 
         for event in events:
             anonymized_event = self._anonymize_event(event, anonymized_slots)
@@ -69,9 +73,9 @@ class PrivacyFilter:
         except ImportError:
             structlogger.warning(
                 "rasa.privacy.privacy_filter.gliner_import_error",
-                event_info="Optional GLiNER library is not installed. Please install it"
-                "if you wish to use additional PII detection to the slot "
-                "based approach.",
+                event_info="Optional GLiNER library is not installed. "
+                "Please install it if you wish to use additional "
+                "PII detection to the slot based approach.",
             )
             return None
 
@@ -109,7 +113,7 @@ class PrivacyFilter:
             for slot_event in processed_events
             if isinstance(slot_event, SlotSet)
             and slot_event.key in self.anonymization_rules
-            and slot_event.value
+            and bool(slot_event.value)
         ]
 
     def _anonymize_sensitive_slot_event(
@@ -204,6 +208,12 @@ class PrivacyFilter:
 
         user_event.parse_data = anonymized_parse_data  # type: ignore[assignment]
         user_event.text = self._anonymize_edge_cases(user_event.text, anonymized_slots)
+        # cover the edge case anonymization for the parse data text field
+        parse_data_text = user_event.parse_data.get(TEXT_KEY, "")
+        user_event.parse_data[TEXT_KEY] = self._anonymize_edge_cases(  # type: ignore[literal-required]
+            parse_data_text, anonymized_slots
+        )
+
         user_event.anonymized_at = datetime.datetime.now(datetime.timezone.utc)
 
         return user_event
@@ -270,6 +280,13 @@ class PrivacyFilter:
         """Mask the given slot value using the slot name."""
         return f"[{slot_name.upper()}]"
 
+    @staticmethod
+    def _strip_square_brackets(string: str) -> str:
+        """Strip square brackets from the start and end of the string if present."""
+        if len(string) >= 2 and string[0] == "[" and string[-1] == "]":
+            return string[1:-1]
+        return string
+
     def _anonymize_edge_cases(
         self, text: str, anonymized_slots: Dict[str, SlotSet]
     ) -> str:
@@ -295,7 +312,10 @@ class PrivacyFilter:
 
         entities = self.model.predict_entities(text, self.labels, threshold=0.85)
 
-        all_anonymized_slot_values = [slot.value for slot in anonymized_slots.values()]
+        all_anonymized_slot_values = [
+            self._strip_square_brackets(str(slot.value))
+            for slot in anonymized_slots.values()
+        ]
 
         for entity in entities:
             structlogger.debug(

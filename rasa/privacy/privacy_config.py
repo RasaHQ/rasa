@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
@@ -22,7 +23,10 @@ from rasa.privacy.constants import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.io import read_json_file
-from rasa.shared.utils.yaml import validate_data_with_jsonschema
+from rasa.shared.utils.yaml import (
+    YamlValidationException,
+    validate_data_with_jsonschema,
+)
 
 if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
@@ -71,51 +75,40 @@ class AnonymizationMethod(BaseModel):
         )
 
 
-class DeletionPolicy(BaseModel):
+class PrivacyPolicy(BaseModel):
+    """Parent class for configuring privacy policies."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    min_after_session_end: int
+    """Minimum time in minutes after session end before the policy is executed."""
+    cron: CronTrigger
+    """Cron trigger for periodic execution of the privacy policy."""
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> PrivacyPolicy:
+        """Create an AnonymizationPolicy object from parsed data."""
+        min_after_session_end = data.get("min_after_session_end", 1)
+        validate_min_after_session_end(min_after_session_end)
+
+        cron_expression = get_cron_trigger(data.get("cron"))
+
+        return cls(
+            min_after_session_end=min_after_session_end,
+            cron=cron_expression,
+        )
+
+
+class DeletionPolicy(PrivacyPolicy):
     """Class for configuring periodic deletion in the tracker store."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    min_after_session_end: int
-    """Minimum time in minutes after session end before deletion is allowed."""
-    cron: CronTrigger
-    """Cron trigger for periodic deletion."""
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> DeletionPolicy:
-        """Create an AnonymizationPolicy object from parsed data."""
-        min_after_session_end = data.get("min_after_session_end", 1)
-        validate_min_after_session_end(min_after_session_end)
-
-        cron_expression = get_cron_trigger(data.get("cron"))
-
-        return cls(
-            min_after_session_end=min_after_session_end,
-            cron=cron_expression,
-        )
+    type: str = "deletion"
 
 
-class AnonymizationPolicy(BaseModel):
+class AnonymizationPolicy(PrivacyPolicy):
     """Class for configuring periodic anonymization in the tracker store."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    min_after_session_end: int
-    """Minimum time in minutes after session end before anonymization is allowed."""
-    cron: CronTrigger
-    """Cron trigger for periodic anonymization."""
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> AnonymizationPolicy:
-        """Create an AnonymizationPolicy object from parsed data."""
-        min_after_session_end = data.get("min_after_session_end", 1)
-        validate_min_after_session_end(min_after_session_end)
-        cron_expression = get_cron_trigger(data.get("cron"))
-
-        return cls(
-            min_after_session_end=min_after_session_end,
-            cron=cron_expression,
-        )
+    type: str = "anonymization"
 
 
 class TrackerStoreSettings(BaseModel):
@@ -191,7 +184,22 @@ def validate_privacy_config(data: Dict[str, Any]) -> None:
         importlib_resources.files(PACKAGE_NAME).joinpath(PRIVACY_CONFIG_SCHEMA)
     )
     schema_content = read_json_file(schema_file)
-    validate_data_with_jsonschema(data, schema_content)
+    try:
+        validate_data_with_jsonschema(data, schema_content)
+    except YamlValidationException as exception:
+        validation_errors = (
+            [error.message for error in exception.validation_errors]
+            if exception.validation_errors
+            else []
+        )
+        exception_message = exception.message
+        structlogger.error(
+            "privacy_config.invalid_privacy_config",
+            validation_errors=validation_errors,
+            event_info=f"Invalid privacy config: {exception_message}. "
+            f"Please check the configuration file.",
+        )
+        sys.exit(1)
 
 
 def get_cron_trigger(cron_expression: str) -> CronTrigger:
@@ -249,6 +257,8 @@ def validate_policies(
             "Cron expressions for the deletion and anonymization policies "
             "must be different."
         )
+
+    return None
 
 
 def validate_sensitive_slots(sensitive_slots: List[str], domain: "Domain") -> None:

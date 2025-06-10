@@ -20,6 +20,7 @@ from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 from pytest import CaptureFixture
+from structlog.testing import capture_logs
 
 import rasa.shared.utils.io
 import tests.utilities
@@ -74,6 +75,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.exceptions import ActionLimitReached
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.plugin import plugin_manager
+from rasa.privacy.privacy_manager import BackgroundPrivacyManager
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
@@ -2878,3 +2880,33 @@ async def test_parse_message_with_from_text_slot_mapping_no_tracker(
 
     captured = capsys.readouterr()
     assert "Tracker is None. Cannot force slot filling." in captured.out
+
+
+async def test_processor_trigger_anonymization(
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    mock_privacy_manager = MagicMock(spec=BackgroundPrivacyManager)
+    mock_run = Mock(return_value=None)
+    mock_privacy_manager.run = mock_run
+    monkeypatch.setattr(default_processor, "privacy_manager", mock_privacy_manager)
+
+    tracker = DialogueStateTracker.from_events(
+        "test_trigger_anonymization",
+        evts=[UserUttered("Hello"), ActionExecuted(ACTION_LISTEN_NAME)],
+    )
+
+    with capture_logs() as caplog:
+        default_processor.trigger_anonymization(tracker)
+        logs = filter_logs(
+            caplog,
+            "rasa.core.processor.trigger_anonymization",
+            "info",
+            [
+                "Triggering anonymization for publishing "
+                "anonymized events to the event broker"
+            ],
+        )
+        assert len(logs) == 1
+
+    mock_run.assert_called_once_with(tracker)

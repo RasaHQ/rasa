@@ -110,6 +110,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
     from rasa.core.available_endpoints import AvailableEndpoints
+    from rasa.privacy.privacy_manager import BackgroundPrivacyManager
 
 logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
@@ -135,6 +136,7 @@ class MessageProcessor:
         on_circuit_break: Optional[LambdaType] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
         endpoints: Optional["AvailableEndpoints"] = None,
+        privacy_manager: Optional["BackgroundPrivacyManager"] = None,
     ) -> None:
         """Initializes a `MessageProcessor`."""
         self.nlg = generator
@@ -164,6 +166,9 @@ class MessageProcessor:
         self.model_path = Path(model_path)
         self.domain = self.model_metadata.domain
         self.http_interpreter = http_interpreter
+        self.privacy_manager = privacy_manager
+        if self.privacy_manager is not None:
+            self.privacy_manager.validate_sensitive_slots_in_domain(self.domain)
 
     @staticmethod
     def _load_model(
@@ -217,10 +222,27 @@ class MessageProcessor:
 
         await self.save_tracker(tracker)
 
+        self.trigger_anonymization(tracker)
+
         if isinstance(message.output_channel, CollectingOutputChannel):
             return message.output_channel.messages
 
         return None
+
+    def trigger_anonymization(self, tracker: DialogueStateTracker) -> None:
+        if self.privacy_manager is None:
+            structlogger.debug(
+                "processor.trigger_anonymization.skipping.pii_management_not_enabled",
+            )
+            return None
+
+        structlogger.info(
+            "rasa.core.processor.trigger_anonymization",
+            sender_id=tracker.sender_id,
+            event_info="Triggering anonymization for publishing anonymized "
+            "events to the event broker.",
+        )
+        return self.privacy_manager.run(tracker)
 
     async def run_action_extract_slots(
         self,

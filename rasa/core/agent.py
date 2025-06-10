@@ -30,6 +30,7 @@ from rasa.core.tracker_stores.tracker_store import (
 )
 from rasa.exceptions import ModelNotFound
 from rasa.nlu.utils import is_url
+from rasa.privacy.privacy_manager import BackgroundPrivacyManager
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
@@ -222,6 +223,7 @@ async def load_agent(
     generator = None
     action_endpoint = None
     http_interpreter = None
+    privacy_manager = None
 
     if endpoints:
         broker = await EventBroker.create(endpoints.event_broker, loop=loop)
@@ -234,6 +236,11 @@ async def load_agent(
         model_server = endpoints.model if endpoints.model else model_server
         if endpoints.nlu:
             http_interpreter = RasaNLUHttpInterpreter(endpoints.nlu)
+        if endpoints.privacy:
+            privacy_manager = await BackgroundPrivacyManager.create_instance(
+                endpoints=endpoints,
+                event_loop=loop,
+            )
 
     agent = Agent(
         generator=generator,
@@ -244,6 +251,7 @@ async def load_agent(
         remote_storage=remote_storage,
         http_interpreter=http_interpreter,
         endpoints=endpoints,
+        privacy_manager=privacy_manager,
     )
 
     try:
@@ -306,6 +314,7 @@ class Agent:
         remote_storage: Optional[StorageType] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
         endpoints: Optional[AvailableEndpoints] = None,
+        privacy_manager: Optional[BackgroundPrivacyManager] = None,
     ):
         """Initializes an `Agent`."""
         self.domain = domain
@@ -321,6 +330,7 @@ class Agent:
         self._set_fingerprint(fingerprint)
         self.model_server = model_server
         self.remote_storage = remote_storage
+        self.privacy_manager = privacy_manager
 
     @classmethod
     def load(
@@ -336,6 +346,7 @@ class Agent:
         remote_storage: Optional[StorageType] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
         endpoints: Optional[AvailableEndpoints] = None,
+        privacy_manager: Optional[BackgroundPrivacyManager] = None,
     ) -> Agent:
         """Constructs a new agent and loads the processor and model."""
         agent = Agent(
@@ -349,6 +360,7 @@ class Agent:
             remote_storage=remote_storage,
             http_interpreter=http_interpreter,
             endpoints=endpoints,
+            privacy_manager=privacy_manager,
         )
         agent.load_model(model_path=model_path, fingerprint=fingerprint)
         return agent
@@ -365,6 +377,7 @@ class Agent:
             generator=self.nlg,
             http_interpreter=self.http_interpreter,
             endpoints=self.endpoints,
+            privacy_manager=self.privacy_manager,
         )
         self.domain = self.processor.domain
 

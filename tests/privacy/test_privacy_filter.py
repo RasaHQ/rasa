@@ -38,9 +38,21 @@ def anonymization_rules() -> Dict[str, AnonymizationMethod]:
 
 
 @pytest.fixture(scope="session")
-def privacy_filter(
+def privacy_filter_with_loaded_gliner(
     anonymization_rules: Dict[str, AnonymizationMethod],
 ) -> PrivacyFilter:
+    return PrivacyFilter(anonymization_rules)
+
+
+@pytest.fixture
+def privacy_filter_with_unloaded_gliner(
+    anonymization_rules: Dict[str, AnonymizationMethod],
+    monkeypatch: MonkeyPatch,
+) -> PrivacyFilter:
+    """Fixture for PrivacyFilter with GLiNER not loaded."""
+    monkeypatch.setattr(
+        "gliner.GLiNER.from_pretrained", MagicMock(side_effect=ImportError)
+    )
     return PrivacyFilter(anonymization_rules)
 
 
@@ -83,12 +95,12 @@ def tracker_events() -> List[Event]:
 
 @freezegun.freeze_time("2023-10-01T12:00:00+00:00")
 def test_privacy_filter_anonymize(
-    privacy_filter: PrivacyFilter,
+    privacy_filter_with_loaded_gliner: PrivacyFilter,
     tracker_events: List[Event],
 ) -> None:
     """Test anonymization of tracker events."""
     # When
-    anonymized_events = privacy_filter.anonymize(tracker_events)
+    anonymized_events = privacy_filter_with_loaded_gliner.anonymize(tracker_events, [])
 
     # Then
     assert len(anonymized_events) == len(tracker_events)
@@ -180,14 +192,13 @@ def test_privacy_filter_anonymize(
 
 
 def test_privacy_filter_loads_model(
+    privacy_filter_with_loaded_gliner: PrivacyFilter,
     anonymization_rules: Dict[str, AnonymizationMethod],
 ) -> None:
     """Test that the PrivacyFilter loads the anonymization model correctly."""
-    privacy_filter = PrivacyFilter(anonymization_rules)
-
-    assert privacy_filter.model is not None
-    assert privacy_filter.anonymization_rules == anonymization_rules
-    assert privacy_filter.labels == GLINER_LABELS
+    assert privacy_filter_with_loaded_gliner.model is not None
+    assert privacy_filter_with_loaded_gliner.anonymization_rules == anonymization_rules
+    assert privacy_filter_with_loaded_gliner.labels == GLINER_LABELS
 
 
 def test_privacy_filter_no_model_loaded(
@@ -204,7 +215,7 @@ def test_privacy_filter_no_model_loaded(
             "rasa.privacy.privacy_filter.gliner_import_error",
             "warning",
             [
-                "Optional GLiNER library is not installed. Please install it"
+                "Optional GLiNER library is not installed. Please install it "
                 "if you wish to use additional PII detection to the slot "
                 "based approach."
             ],
@@ -217,11 +228,13 @@ def test_privacy_filter_no_model_loaded(
 
 
 def test_privacy_filter_find_sensitive_slots(
-    privacy_filter: PrivacyFilter,
+    privacy_filter_with_loaded_gliner: PrivacyFilter,
     tracker_events: List[Event],
 ) -> None:
     """Test finding sensitive slots in tracker events."""
-    sensitive_slots = privacy_filter._find_sensitive_slots(tracker_events)
+    sensitive_slots = privacy_filter_with_loaded_gliner._find_sensitive_slots(
+        tracker_events
+    )
 
     assert len(sensitive_slots) == 4
     assert sensitive_slots[0].key == "name"
@@ -231,9 +244,9 @@ def test_privacy_filter_find_sensitive_slots(
 
 
 def test_privacy_filter_find_sensitive_slots_no_sensitive_data(
-    privacy_filter: PrivacyFilter,
+    privacy_filter_with_unloaded_gliner: PrivacyFilter,
 ) -> None:
-    sensitive_slots = privacy_filter._find_sensitive_slots(
+    sensitive_slots = privacy_filter_with_unloaded_gliner._find_sensitive_slots(
         [
             SessionStarted(),
             SlotSet("session_started_metadata", {"user_id": "12345"}),
@@ -245,12 +258,14 @@ def test_privacy_filter_find_sensitive_slots_no_sensitive_data(
 
 
 def test_privacy_filter_anonymize_sensitive_slot_event(
-    privacy_filter: PrivacyFilter,
+    privacy_filter_with_unloaded_gliner: PrivacyFilter,
     tracker_events: List[Event],
 ) -> None:
     """Test anonymizing a sensitive slot event."""
-    anonymized_event = privacy_filter._anonymize_sensitive_slot_event(
-        SlotSet("name", "John Doe")
+    anonymized_event = (
+        privacy_filter_with_unloaded_gliner._anonymize_sensitive_slot_event(
+            SlotSet("name", "John Doe")
+        )
     )
     assert anonymized_event.key == "name"
     assert anonymized_event.value == "[NAME]"
@@ -264,12 +279,12 @@ def test_privacy_filter_anonymize_sensitive_slot_event(
     ],
 )
 def test_privacy_filter_anonymize_value(
-    privacy_filter: PrivacyFilter,
+    privacy_filter_with_unloaded_gliner: PrivacyFilter,
     slot_event: SlotSet,
     expected_value: str,
 ) -> None:
     """Test anonymizing a value."""
-    anonymized_value = privacy_filter._anonymize_value(slot_event)
+    anonymized_value = privacy_filter_with_unloaded_gliner._anonymize_value(slot_event)
     assert anonymized_value == expected_value
 
 
@@ -285,34 +300,46 @@ def test_privacy_filter_anonymize_value(
     ],
 )
 def test_privacy_filter_anonymize_edge_cases_new_entities(
-    privacy_filter: PrivacyFilter, input_text: str, expected_anonymization: str
+    privacy_filter_with_loaded_gliner: PrivacyFilter,
+    input_text: str,
+    expected_anonymization: str,
 ) -> None:
-    anonymized_slots = privacy_filter._anonymize_sensitive_slots(events=[])
-    output_text = privacy_filter._anonymize_edge_cases(input_text, anonymized_slots)
+    anonymized_slots = privacy_filter_with_loaded_gliner._anonymize_sensitive_slots(
+        events=[]
+    )
+    output_text = privacy_filter_with_loaded_gliner._anonymize_edge_cases(
+        input_text, anonymized_slots
+    )
     assert expected_anonymization in output_text
     assert input_text != output_text
 
 
 def test_privacy_filter_anonymize_edge_cases_no_changes(
-    privacy_filter: PrivacyFilter,
+    privacy_filter_with_loaded_gliner: PrivacyFilter,
 ) -> None:
     input_text = "This text does not contain any sensitive information."
-    anonymized_slots = privacy_filter._anonymize_sensitive_slots(events=[])
-    output_text = privacy_filter._anonymize_edge_cases(input_text, anonymized_slots)
+    anonymized_slots = privacy_filter_with_loaded_gliner._anonymize_sensitive_slots(
+        events=[]
+    )
+    output_text = privacy_filter_with_loaded_gliner._anonymize_edge_cases(
+        input_text, anonymized_slots
+    )
     assert output_text == input_text
 
 
 def test_privacy_filter_anonymize_edge_cases_no_double_anonymization(
-    privacy_filter: PrivacyFilter,
+    privacy_filter_with_loaded_gliner: PrivacyFilter,
 ) -> None:
     input_text = "[NAME]'s email is dr**************om."
-    anonymized_slots = privacy_filter._anonymize_sensitive_slots(
+    anonymized_slots = privacy_filter_with_loaded_gliner._anonymize_sensitive_slots(
         events=[
             SlotSet("email", "dr.watson@test.com"),
             SlotSet("name", "Watson"),
         ]
     )
-    output_text = privacy_filter._anonymize_edge_cases(input_text, anonymized_slots)
+    output_text = privacy_filter_with_loaded_gliner._anonymize_edge_cases(
+        input_text, anonymized_slots
+    )
 
     assert (
         output_text == input_text
@@ -320,15 +347,13 @@ def test_privacy_filter_anonymize_edge_cases_no_double_anonymization(
 
 
 def test_privacy_filter_anonymize_edge_cases_no_model_loaded(
-    monkeypatch: MonkeyPatch, anonymization_rules: Dict[str, AnonymizationMethod]
+    privacy_filter_with_unloaded_gliner: PrivacyFilter,
 ) -> None:
-    monkeypatch.setattr(
-        "gliner.GLiNER.from_pretrained", MagicMock(side_effect=ImportError)
-    )
-    privacy_filter = PrivacyFilter(anonymization_rules)
     input_text = "This text does not contain any sensitive information."
     with capture_logs() as caplog:
-        output = privacy_filter._anonymize_edge_cases(input_text, anonymized_slots={})
+        output = privacy_filter_with_unloaded_gliner._anonymize_edge_cases(
+            input_text, anonymized_slots={}
+        )
         log = filter_logs(
             caplog,
             "rasa.privacy.privacy_filter.gliner_model_not_loaded",
@@ -390,26 +415,26 @@ def test_privacy_filter_anonymize_edge_cases_no_model_loaded(
 def test_privacy_filter_anonymize_event_supported_events(
     event: Event,
     expected_event: Event,
-    privacy_filter: PrivacyFilter,
+    privacy_filter_with_unloaded_gliner: PrivacyFilter,
 ) -> None:
     """Test anonymization of various supported events."""
     anonymized_slots = {
         "address:123 Main St, Springfield": SlotSet("address", "[ADDRESS]"),
         "phone_number:+1234567890": SlotSet("phone_number", "********890"),
     }
-    anonymized_event = privacy_filter._anonymize_event(
+    anonymized_event = privacy_filter_with_unloaded_gliner._anonymize_event(
         event, anonymized_slots=anonymized_slots
     )
     assert anonymized_event == expected_event
 
 
 def test_privacy_filter_anonymize_event_unsupported_events(
-    privacy_filter: PrivacyFilter,
+    privacy_filter_with_unloaded_gliner: PrivacyFilter,
     tracker_events: List[Event],
 ) -> None:
     """Test anonymization of unsupported events."""
     unsupported_event = ActionExecuted("action_listen")
-    anonymized_event = privacy_filter._anonymize_event(
+    anonymized_event = privacy_filter_with_unloaded_gliner._anonymize_event(
         unsupported_event, anonymized_slots={}
     )
     assert anonymized_event == unsupported_event
@@ -423,7 +448,7 @@ def test_privacy_filter_anonymize_event_unsupported_events(
     ],
 )
 def test_privacy_filter_anonymize_event_no_text(
-    privacy_filter: PrivacyFilter,
+    privacy_filter_with_unloaded_gliner: PrivacyFilter,
     no_text_event: Event,
     event_type: str,
     monkeypatch: MonkeyPatch,
@@ -431,11 +456,13 @@ def test_privacy_filter_anonymize_event_no_text(
     """Test anonymization of events with no text."""
     mock_anonymize_edge_cases = Mock()
     monkeypatch.setattr(
-        privacy_filter, "_anonymize_edge_cases", mock_anonymize_edge_cases
+        privacy_filter_with_unloaded_gliner,
+        "_anonymize_edge_cases",
+        mock_anonymize_edge_cases,
     )
 
     with capture_logs() as caplog:
-        anonymized_event = privacy_filter._anonymize_event(
+        anonymized_event = privacy_filter_with_unloaded_gliner._anonymize_event(
             no_text_event, anonymized_slots={}
         )
         log = filter_logs(
@@ -460,16 +487,20 @@ def test_privacy_filter_anonymize_event_no_text(
     ],
 )
 def test_privacy_filter_anonymize_sensitive_slot_event_empty_value(
-    privacy_filter: PrivacyFilter,
+    privacy_filter_with_unloaded_gliner: PrivacyFilter,
     slot_value: Any,
     monkeypatch: MonkeyPatch,
 ) -> None:
     """Test anonymizing a sensitive slot event with no value."""
     mock_anonymize_value = Mock()
-    monkeypatch.setattr(privacy_filter, "_anonymize_value", mock_anonymize_value)
+    monkeypatch.setattr(
+        privacy_filter_with_unloaded_gliner, "_anonymize_value", mock_anonymize_value
+    )
 
-    anonymized_event = privacy_filter._anonymize_sensitive_slot_event(
-        SlotSet("name", slot_value)
+    anonymized_event = (
+        privacy_filter_with_unloaded_gliner._anonymize_sensitive_slot_event(
+            SlotSet("name", slot_value)
+        )
     )
     assert anonymized_event.key == "name"
     assert (

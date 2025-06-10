@@ -72,7 +72,15 @@
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "dependentRequired": {
+        "min_after_session_end": [
+          "cron"
+        ],
+        "cron": [
+          "min_after_session_end"
+        ]
+      }
     }
   }
 }

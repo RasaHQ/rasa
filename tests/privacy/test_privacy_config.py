@@ -20,7 +20,6 @@ from rasa.privacy.privacy_config import (
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.shared.core.domain import Domain
 from rasa.shared.exceptions import RasaException
-from rasa.shared.utils.yaml import YamlValidationException
 from rasa.utils.endpoints import read_property_config_from_endpoints_file
 from tests.utilities import filter_logs
 
@@ -67,10 +66,17 @@ def test_validate_privacy_config_invalid_input(
     invalid_privacy_dict = read_property_config_from_endpoints_file(
         invalid_privacy_path, property_name="privacy"
     )
-    with pytest.raises(YamlValidationException) as exc_info:
-        validate_privacy_config(invalid_privacy_dict)
+    with capture_logs() as caplog:
+        with pytest.raises(SystemExit):
+            validate_privacy_config(invalid_privacy_dict)
 
-    assert error_message == exc_info.value.validation_errors[0].message
+        log = filter_logs(
+            caplog,
+            "privacy_config.invalid_privacy_config",
+            "error",
+        )
+        assert len(log) == 1
+        assert log[0]["validation_errors"] == [error_message]
 
 
 @pytest.mark.parametrize(
@@ -290,12 +296,17 @@ def test_validate_policies_invalid_identical_cron() -> None:
 
 
 def test_privacy_config_from_dict_empty() -> None:
-    with pytest.raises(YamlValidationException) as exc_info:
-        PrivacyConfig.from_dict({})
+    with capture_logs() as caplog:
+        with pytest.raises(SystemExit):
+            PrivacyConfig.from_dict({})
 
-    assert (
-        "'rules' is a required property" == exc_info.value.validation_errors[0].message
-    )
+        log = filter_logs(
+            caplog,
+            "privacy_config.invalid_privacy_config",
+            "error",
+        )
+        assert len(log) == 1
+        assert log[0]["validation_errors"] == ["'rules' is a required property"]
 
 
 def test_privacy_config_from_dict_no_tracker_settings() -> None:
@@ -318,24 +329,30 @@ def test_privacy_config_from_dict_no_tracker_settings() -> None:
 
 
 def test_privacy_config_from_dict_invalid_method_type() -> None:
-    with pytest.raises(RasaException) as exc_info:
-        PrivacyConfig.from_dict(
-            {
-                "rules": [
-                    {
-                        "slot": "national_insurance_number",
-                        "anonymization": {
-                            "type": "hash",
+    with capture_logs() as caplog:
+        with pytest.raises(SystemExit):
+            PrivacyConfig.from_dict(
+                {
+                    "rules": [
+                        {
+                            "slot": "national_insurance_number",
+                            "anonymization": {
+                                "type": "hash",
+                            },
                         },
-                    },
-                ]
-            }
-        )
+                    ]
+                }
+            )
 
-    assert (
-        "'hash' is not one of ['redact', 'mask']"
-        == exc_info.value.validation_errors[0].message
-    )
+        log = filter_logs(
+            caplog,
+            "privacy_config.invalid_privacy_config",
+            "error",
+        )
+        assert len(log) == 1
+        assert log[0]["validation_errors"] == [
+            "'hash' is not one of ['redact', 'mask']"
+        ]
 
 
 def test_privacy_config_optional_deletion_policy() -> None:
@@ -350,7 +367,6 @@ def test_privacy_config_optional_deletion_policy() -> None:
                 },
             ],
             "tracker_store_settings": {
-                "deletion": {},
                 "anonymization": {
                     "cron": "0 2 * * *",
                     "min_after_session_end": 60,
@@ -379,7 +395,6 @@ def test_privacy_config_optional_anonymization_policy() -> None:
                     "cron": "0 0 * * *",
                     "min_after_session_end": 120,
                 },
-                "anonymization": {},
             },
         }
     )

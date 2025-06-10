@@ -1,12 +1,13 @@
 import asyncio
 import logging
+from typing import Optional
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pytz import UnknownTimeZoneError, utc
 
 import rasa.shared.utils.io
 
-__scheduler = None
+__scheduler: Optional[AsyncIOScheduler] = None
 
 logger = logging.getLogger(__name__)
 

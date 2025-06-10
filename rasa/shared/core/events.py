@@ -8,7 +8,7 @@ import re
 import time
 import uuid
 from abc import ABC
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -455,6 +455,7 @@ class UserUttered(Event):
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
         use_text_for_featurization: Optional[bool] = None,
+        anonymized_at: Optional[float] = None,
     ) -> None:
         """Creates event for incoming user message.
 
@@ -469,6 +470,7 @@ class UserUttered(Event):
             message_id: Unique ID for message.
             use_text_for_featurization: `True` if the message's text was used to predict
                 next action. `False` if the message's intent was used.
+            anonymized_at: When the event was anonymized in the tracker store.
 
         """
         self.text = text
@@ -502,7 +504,11 @@ class UserUttered(Event):
         if parse_data:
             self.parse_data.update(**parse_data)
 
-        self._anonymized_at: Optional[datetime] = None
+        self._anonymized_at: Optional[datetime] = (
+            datetime.fromtimestamp(anonymized_at, tz=timezone.utc)
+            if anonymized_at is not None
+            else None
+        )
 
     @property
     def anonymized_at(self) -> Optional[datetime]:
@@ -527,6 +533,7 @@ class UserUttered(Event):
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
+        anonymized_at: Optional[float] = None,
     ) -> "UserUttered":
         return UserUttered(
             text,
@@ -537,6 +544,7 @@ class UserUttered(Event):
             input_channel,
             message_id,
             metadata,
+            anonymized_at,
         )
 
     def __hash__(self) -> int:
@@ -697,6 +705,7 @@ class UserUttered(Event):
                     parameters.get("input_channel"),
                     parameters.get("message_id"),
                     parameters.get("metadata"),
+                    parameters.get("anonymized_at"),
                 )
             ]
         except KeyError as e:
@@ -924,6 +933,7 @@ class BotUttered(SkipEventInMDStoryMixin):
         data: Optional[Dict] = None,
         metadata: Optional[Dict[Text, Any]] = None,
         timestamp: Optional[float] = None,
+        anonymized_at: Optional[float] = None,
     ) -> None:
         """Creates event for a bot response.
 
@@ -932,10 +942,15 @@ class BotUttered(SkipEventInMDStoryMixin):
             data: Additional data for more complex utterances (e.g. buttons).
             timestamp: When the event was created.
             metadata: Additional event metadata.
+            anonymized_at: When the event was anonymized in the tracker store.
         """
         self.text = text
         self.data = data or {}
-        self._anonymized_at: Optional[datetime] = None
+        self._anonymized_at: Optional[datetime] = (
+            datetime.fromtimestamp(anonymized_at, tz=timezone.utc)
+            if anonymized_at is not None
+            else None
+        )
         super().__init__(timestamp, metadata)
 
     @property
@@ -1059,6 +1074,7 @@ class BotUttered(SkipEventInMDStoryMixin):
                 parameters.get("data"),
                 parameters.get("metadata"),
                 parameters.get("timestamp"),
+                parameters.get("anonymized_at"),
             )
         except KeyError as e:
             raise ValueError(f"Failed to parse bot uttered event. {e}")
@@ -1083,6 +1099,7 @@ class SlotSet(Event):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict[Text, Any]] = None,
         filled_by: Optional[str] = None,
+        anonymized_at: Optional[float] = None,
     ) -> None:
         """Creates event to set slot.
 
@@ -1095,7 +1112,11 @@ class SlotSet(Event):
         self.key = key
         self.value = value
         self._filled_by = filled_by
-        self._anonymized_at: Optional[datetime] = None
+        self._anonymized_at: Optional[datetime] = (
+            datetime.fromtimestamp(anonymized_at, tz=timezone.utc)
+            if anonymized_at is not None
+            else None
+        )
         super().__init__(timestamp, metadata)
 
     @property
@@ -1178,6 +1199,7 @@ class SlotSet(Event):
                 parameters.get("timestamp"),
                 parameters.get("metadata"),
                 filled_by=parameters.get("filled_by"),
+                anonymized_at=parameters.get("anonymized_at"),
             )
         except KeyError as e:
             raise ValueError(f"Failed to parse set slot event. {e}")

@@ -369,3 +369,7 @@ async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
     event_broker = current_agent.tracker_store.event_broker
     if event_broker:
         await event_broker.close()
+
+    privacy_manager = current_agent.privacy_manager
+    if privacy_manager:
+        privacy_manager.stop()

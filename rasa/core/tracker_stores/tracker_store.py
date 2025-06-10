@@ -671,7 +671,7 @@ def _create_from_endpoint_config(
 
     structlogger.debug(
         "tracker_store.create_tracker_store_from_endpoint_config",
-        eventi_info=f"Connected to {tracker_store.__class__.__name__}.",
+        event_info=f"Connected to {tracker_store.__class__.__name__}.",
     )
 
     return tracker_store
