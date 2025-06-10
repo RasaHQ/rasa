@@ -105,7 +105,6 @@ def run_rejections(
             structlogger.error(
                 "run.predicate.error",
                 predicate=condition,
-                document=document,
                 error=str(e),
             )
             violation = True

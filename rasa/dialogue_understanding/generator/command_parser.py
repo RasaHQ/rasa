@@ -81,7 +81,7 @@ def _get_additional_parsing_logic(
 
 def validate_custom_commands(command_classes: List[Type[PromptCommand]]) -> None:
     clz_not_inheriting_from_command_clz = [
-        command_clz
+        command_clz.__name__
         for command_clz in command_classes
         if not issubclass(command_clz, Command)
     ]
@@ -99,7 +99,7 @@ def validate_custom_commands(command_classes: List[Type[PromptCommand]]) -> None
         sys.exit(1)
 
     clz_not_adhering_to_prompt_command_protocol = [
-        command_clz
+        command_clz.__name__
         for command_clz in command_classes
         if not isinstance(command_clz, PromptCommand)
     ]

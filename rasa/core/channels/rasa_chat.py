@@ -107,10 +107,8 @@ class RasaChatInput(RestInput):
                 return req.json[CONVERSATION_ID_KEY]
             else:
                 logger.error(
-                    "User '{}' does not have permissions to send messages to "
-                    "conversation '{}'.".format(
-                        jwt_payload[JWT_USERNAME_KEY], req.json[CONVERSATION_ID_KEY]
-                    )
+                    "User does not have permissions to send messages to "
+                    "conversation '{}'.".format(req.json[CONVERSATION_ID_KEY])
                 )
                 raise SanicException(status_code=401)
 

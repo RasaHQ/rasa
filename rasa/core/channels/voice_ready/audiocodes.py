@@ -193,16 +193,9 @@ class Conversation:
             try:
                 await on_new_message(user_msg)
             except Exception as e:  # skipcq: PYL-W0703
-                if isinstance(user_msg.text, dict):
-                    anonymized_info = json.dumps(user_msg.text)
-                elif isinstance(user_msg.text, str):
-                    anonymized_info = user_msg.text
-                else:
-                    anonymized_info = INFO_UNKNOWN
-
                 structlogger.exception(
                     "audiocodes.handle.activities.failure",
-                    user_message=copy.deepcopy(anonymized_info),
+                    sender_id=self.conversation_id,
                     error=e,
                     exc_info=True,
                 )

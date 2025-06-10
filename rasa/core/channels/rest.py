@@ -1,5 +1,4 @@
 import asyncio
-import copy
 import inspect
 import json
 import logging
@@ -166,11 +165,13 @@ class RestInput(InputChannel):
                 )
             except CancelledError:
                 structlogger.error(
-                    "rest.message.received.timeout", text=copy.deepcopy(text)
+                    "rest.message.received.timeout",
+                    event_info="Message processing was cancelled.",
                 )
-            except Exception:
+            except Exception as e:
                 structlogger.exception(
-                    "rest.message.received.failure", text=copy.deepcopy(text)
+                    "rest.message.received.failure",
+                    event_info=f"Message processing failed. Error: {e}",
                 )
 
             return response.json(collector.messages)

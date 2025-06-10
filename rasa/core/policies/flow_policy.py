@@ -150,12 +150,12 @@ class FlowPolicy(Policy):
         except FlowCircuitBreakerTrippedException as e:
             structlogger.error(
                 "flow.circuit_breaker",
-                dialogue_stack=e.dialogue_stack,
                 number_of_steps_taken=e.number_of_steps_taken,
                 event_info=(
                     "The flow circuit breaker tripped. "
                     "There appears to be an infinite loop in the flows."
                 ),
+                error=str(e),
             )
             # end the current flow and start the internal error flow
             updated_stack = tracker.stack

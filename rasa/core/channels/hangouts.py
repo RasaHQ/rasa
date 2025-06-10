@@ -1,4 +1,3 @@
-import copy
 import logging
 from asyncio import CancelledError
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text, Union
@@ -314,13 +313,17 @@ class HangoutsInput(InputChannel):
                         metadata={"room": room_name},
                     )
                 )
-            except CancelledError:
+            except CancelledError as e:
                 structlogger.error(
-                    "hangouts.message.blueprint.timeout", text=copy.deepcopy(text)
+                    "hangouts.message.blueprint.timeout",
+                    event_info=f"Message processing was cancelled. Error: {e}",
                 )
-            except Exception:
+            except Exception as e:
                 structlogger.exception(
-                    "hangouts.message.blueprint.failure", text=copy.deepcopy(text)
+                    "hangouts.message.blueprint.failure",
+                    event_info=(
+                        f"An error occurred while processing the message. Error: {e}",
+                    ),
                 )
 
             return response.json(collector.messages)

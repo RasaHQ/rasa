@@ -132,7 +132,7 @@ def validate_state_of_commands(commands: List[Command]) -> None:
     if sum(isinstance(c, CancelFlowCommand) for c in commands) > 1:
         structlogger.error(
             "command_processor.validate_state_of_commands.multiple_cancel_flow_commands",
-            commands=commands,
+            commands=[command.__class__.__name__ for command in commands],
         )
         raise ValueError("There can only be one cancel flow command.")
 
@@ -143,7 +143,7 @@ def validate_state_of_commands(commands: List[Command]) -> None:
     if free_form_answer_commands != commands[: len(free_form_answer_commands)]:
         structlogger.error(
             "command_processor.validate_state_of_commands.free_form_answer_commands_not_at_beginning",
-            commands=commands,
+            commands=[command.__class__.__name__ for command in commands],
         )
         raise ValueError(
             "Free form answer commands must be at start of the predicted command list."
@@ -153,7 +153,7 @@ def validate_state_of_commands(commands: List[Command]) -> None:
     if sum(isinstance(c, CorrectSlotsCommand) for c in commands) > 1:
         structlogger.error(
             "command_processor.validate_state_of_commands.multiple_correct_slots_commands",
-            commands=commands,
+            commands=[command.__class__.__name__ for command in commands],
         )
         raise ValueError("There can only be one correct slots command.")
 

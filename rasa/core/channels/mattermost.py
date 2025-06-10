@@ -28,7 +28,7 @@ class MattermostBot(OutputChannel):
         if r.status_code == 200:
             return r.headers["Token"]
         else:
-            logger.error(f"Failed to login mattermost user {user}. Response: {r}")
+            logger.error(f"Failed to login mattermost user. Response: {r}")
             return None
 
     def __init__(

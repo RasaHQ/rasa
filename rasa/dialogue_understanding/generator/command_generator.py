@@ -321,7 +321,10 @@ class CommandGenerator:
         if commands and len(checked_commands) != len(commands):
             structlogger.info(
                 "command_generator.check_commands_against_startable_flows.startable_commands",
-                commands=checked_commands,
+                commands=[
+                    checked_command.__class__.__name__
+                    for checked_command in checked_commands
+                ],
             )
 
         return checked_commands
@@ -357,7 +360,6 @@ class CommandGenerator:
             "command_generator.evaluate_message.error",
             event_info="Invalid message",
             errors=[e.as_dict() for e in errors],
-            message=message.get(TEXT),
         )
         return errors
 

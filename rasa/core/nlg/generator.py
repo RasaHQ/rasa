@@ -292,7 +292,6 @@ def _evaluate_predicate(constraint: str, filled_slots: Dict[Text, Any]) -> bool:
         structlogger.error(
             "rasa.core.nlg.generator.evaluate_conditional_response_predicate.error",
             predicate=constraint,
-            document=document,
             error=str(e),
         )
         return False

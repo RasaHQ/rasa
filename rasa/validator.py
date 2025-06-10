@@ -1014,11 +1014,6 @@ class Validator:
             for sv in slot_value
         ]
         if not all(slot_values_validity):
-            invalid_slot_values = [
-                sv
-                for (sv, slot_value_valid) in zip(slot_value, slot_values_validity)
-                if not slot_value_valid
-            ]
             structlogger.error(
                 "validator.verify_predicates.link.invalid_condition",
                 step=step_id,
@@ -1027,8 +1022,7 @@ class Validator:
                 event_info=(
                     f"Detected invalid condition '{link_condition}' "
                     f"at step '{step_id}' for flow id '{flow_id}'. "
-                    f"Values {invalid_slot_values} are not valid values "
-                    f"for slot {slot_name}. "
+                    f"The condition contains invalid values for slot {slot_name}. "
                     f"Please make sure that all conditions are valid."
                 ),
             )
@@ -1998,7 +1992,7 @@ class Validator:
                         "validator.validate_conditional_response_variation_predicates.invalid_slot",
                         utter=utter_name,
                         event_info=(
-                            f"Detected invalid slot '{slot_namespace[1]}' in "
+                            f"Detected invalid slot '{slot_namespace[0]}' in "
                             f"condition '{condition}' for response variation "
                             f"'{utter_name}'. Please make sure that all slots "
                             f"are specified in the domain file."

@@ -406,8 +406,7 @@ class Flow:
             structlogger.error(
                 "command_generator.validate_flow_starting_conditions.error",
                 predicate=self.guard_condition,
-                context=context,
-                slots=slots,
+                flow_id=self.id,
                 error=str(e),
             )
             return False

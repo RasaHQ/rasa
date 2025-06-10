@@ -143,7 +143,8 @@ class IntentBasedRouter(GraphComponent):
         if route_session_to_calm is None:
             commands = self._generate_command_using_intent(message, flows, tracker)
             structlogger.info(
-                "intent_based_router.predicated_commands", commands=commands
+                "intent_based_router.predicated_commands",
+                commands=commands,  # doesn't contain PII
             )
             return commands
         elif route_session_to_calm is True:

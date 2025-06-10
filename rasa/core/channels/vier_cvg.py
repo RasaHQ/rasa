@@ -129,9 +129,8 @@ class CVGOutput(OutputChannel):
                 )
 
             logger.info(
-                "Creating incoming UserMessage: {text=%s, output_channel=%s, sender_id=%s, metadata=%s}"  # noqa: E501
+                "Creating incoming UserMessage: {output_channel=%s, sender_id=%s, metadata=%s}"  # noqa: E501
                 % (
-                    user_message.text,
                     user_message.output_channel,
                     user_message.sender_id,
                     user_message.metadata,

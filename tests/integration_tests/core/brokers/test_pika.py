@@ -82,7 +82,6 @@ async def test_pika_event_broker_publish_after_restart(
 
         assert cap_logs[-1]["log_level"] == "error"
         assert "pika.events.publish" in cap_logs[-1]["event"]
-        assert cap_logs[-1]["rasa_event"] == event
 
     # reconnect with the same broker
     rabbitmq_container.restart()
@@ -98,7 +97,6 @@ async def test_pika_event_broker_publish_after_restart(
 
         assert cap_logs[-1]["log_level"] == "debug"
         assert "pika.events.publish" in cap_logs[-1]["event"]
-        assert cap_logs[-1]["rasa_event"] == after_restart_event
         assert cap_logs[-1]["rabbitmq_exchange"] == RABBITMQ_EXCHANGE
 
     await broker.close()

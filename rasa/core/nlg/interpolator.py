@@ -1,4 +1,3 @@
-import copy
 import logging
 import re
 from typing import Any, Dict, List, Text, Union
@@ -70,9 +69,9 @@ def interpolate_format_template(response: Text, values: Dict[Text, Text]) -> Tex
         )
         structlogger.exception(
             "interpolator.interpolate.text",
-            response=copy.deepcopy(response),
             placeholder_key=e.args[0],
             event_info=event_info,
+            error=str(e),
         )
         return response
 
@@ -98,9 +97,9 @@ def interpolate_jinja_template(response: Text, values: Dict[Text, Any]) -> Text:
         )
         structlogger.exception(
             "interpolator.interpolate.text",
-            response=copy.deepcopy(response),
             placeholder_key=e.args[0],
             event_info=event_info,
+            error=str(e),
         )
         return response
 

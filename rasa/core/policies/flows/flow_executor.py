@@ -126,7 +126,6 @@ def is_condition_satisfied(
         structlogger.error(
             "flow.predicate.error",
             predicate=predicate,
-            document=document,
             error=str(e),
         )
         return False
@@ -180,7 +179,7 @@ def select_next_step_id(
             "flow.link.failed_to_select_branch",
             current=current,
             links=next_step.links,
-            tracker=tracker,
+            sender_id=tracker.sender_id,
         )
         return None
 
@@ -194,7 +193,7 @@ def select_next_step_id(
         structlogger.error(
             "flow.step.failed_to_select_next_step",
             step=current,
-            tracker=tracker,
+            sender_id=tracker.sender_id,
         )
         return None
 

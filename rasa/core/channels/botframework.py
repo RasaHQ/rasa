@@ -115,8 +115,8 @@ class BotFramework(OutputChannel):
 
         if not send_response.ok:
             logger.error(
-                "Error trying to send botframework messge. Response: %s",
-                send_response.text,
+                "Error trying to send botframework messge. "
+                f"Error: {send_response.reason}"
             )
 
     async def send_text_message(

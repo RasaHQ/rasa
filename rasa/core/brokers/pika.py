@@ -316,9 +316,8 @@ class PikaEventBroker(EventBroker):
         except Exception as e:
             structlogger.error(
                 "pika.events.publish.failed",
-                event_info="Logging a reduced version of the failed Pika event",
+                event_info=f"Failed to publish Pika event. Error: {e}",
                 host=self.host,
-                rasa_event=reduced_event,
             )
             if self.should_keep_unpublished_messages:
                 self._unpublished_events.append(event)
