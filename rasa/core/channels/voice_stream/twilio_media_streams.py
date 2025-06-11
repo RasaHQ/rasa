@@ -102,7 +102,6 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
         server_url: str,
         asr_config: Dict,
         tts_config: Dict,
-        monitor_silence: bool = False,
         username: Optional[Text] = None,
         password: Optional[Text] = None,
     ):
@@ -110,7 +109,6 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
             server_url=server_url,
             asr_config=asr_config,
             tts_config=tts_config,
-            monitor_silence=monitor_silence,
         )
         self.username = username
         self.password = password
@@ -134,7 +132,6 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
             credentials["server_url"],
             credentials["asr"],
             credentials["tts"],
-            credentials.get("monitor_silence", False),
             username=username,
             password=password,
         )

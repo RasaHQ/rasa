@@ -114,7 +114,6 @@ class GenesysInputChannel(VoiceInputChannel):
             server_url=credentials["server_url"],
             asr_config=credentials["asr"],
             tts_config=credentials["tts"],
-            monitor_silence=credentials.get("monitor_silence", False),
         )
 
     def _ensure_channel_data_initialized(self) -> None:

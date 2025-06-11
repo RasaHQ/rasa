@@ -291,13 +291,11 @@ class VoiceInputChannel(InputChannel):
         server_url: str,
         asr_config: Dict,
         tts_config: Dict,
-        monitor_silence: bool = False,
     ):
         validate_voice_license_scope()
         self.server_url = server_url
         self.asr_config = asr_config
         self.tts_config = tts_config
-        self.monitor_silence = monitor_silence
         self.tts_cache = TTSCache(tts_config.get("cache_size", 1000))
 
         logger.info(
@@ -305,14 +303,11 @@ class VoiceInputChannel(InputChannel):
             server_url=self.server_url,
             asr_config=self.asr_config,
             tts_config=self.tts_config,
-            monitor_silence=self.monitor_silence,
         )
 
     async def monitor_silence_timeout(self, asr_event_queue: asyncio.Queue) -> None:
         timeout = call_state.silence_timeout
         if not timeout:
-            return
-        if not self.monitor_silence:
             return
         logger.debug("voice_channel.silence_timeout_watch_started", timeout=timeout)
         await asyncio.sleep(timeout)
@@ -337,7 +332,6 @@ class VoiceInputChannel(InputChannel):
             credentials["server_url"],
             credentials["asr"],
             credentials["tts"],
-            credentials.get("monitor_silence", False),
         )
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:

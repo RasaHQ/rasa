@@ -68,7 +68,6 @@ def call_parameters() -> CallParameters:
                 "server_url": "https://example.com",
                 "asr": {"name": "deepgram"},
                 "tts": {"name": "azure"},
-                "monitor_silence": False,
                 "username": None,
                 "password": None,
             },
@@ -78,13 +77,11 @@ def call_parameters() -> CallParameters:
                 "server_url": "https://example.com",
                 "asr": {"name": "deepgram"},
                 "tts": {"name": "azure"},
-                "monitor_silence": True,
             },
             {
                 "server_url": "https://example.com",
                 "asr": {"name": "deepgram"},
                 "tts": {"name": "azure"},
-                "monitor_silence": True,
                 "username": None,
                 "password": None,
             },
@@ -94,7 +91,6 @@ def call_parameters() -> CallParameters:
                 "server_url": "https://example.com",
                 "asr": {"name": "deepgram"},
                 "tts": {"name": "azure"},
-                "monitor_silence": True,
                 "username": "test_user",
                 "password": "test_password",
             },
@@ -102,7 +98,6 @@ def call_parameters() -> CallParameters:
                 "server_url": "https://example.com",
                 "asr": {"name": "deepgram"},
                 "tts": {"name": "azure"},
-                "monitor_silence": True,
                 "username": "test_user",
                 "password": "test_password",
             },
@@ -119,7 +114,6 @@ def test_twilio_voice_valid_credentials(
     assert input_channel.server_url == expected["server_url"]
     assert input_channel.asr_config == expected["asr"]
     assert input_channel.tts_config == expected["tts"]
-    assert input_channel.monitor_silence == expected["monitor_silence"]
     assert input_channel.username == expected["username"]
     assert input_channel.password == expected["password"]
 

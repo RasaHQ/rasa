@@ -108,14 +108,12 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         server_url: str,
         asr_config: Dict,
         tts_config: Dict,
-        monitor_silence: bool = False,
     ):
         mark_as_beta_feature("Audiocodes (audiocodes_stream) Channel")
         super().__init__(
             server_url=server_url,
             asr_config=asr_config,
             tts_config=tts_config,
-            monitor_silence=monitor_silence,
         )
         self.token = token
 
@@ -132,7 +130,6 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
             server_url=credentials["server_url"],
             asr_config=credentials["asr"],
             tts_config=credentials["tts"],
-            monitor_silence=credentials.get("monitor_silence", False),
         )
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
