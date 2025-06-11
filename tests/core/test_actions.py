@@ -3142,12 +3142,12 @@ async def test_action_send_text_propagates_metadata_to_bot_uttered(
 async def test_action_send_text_with_disabled_utterance_creation(
     default_channel, template_nlg, template_sender_tracker, domain: Domain
 ):
-    metadata = {"message": {"text": "foobar"}}
+    metadata = {"message": {"text": "foobar"}, "should_send_text": False}
     events = await ActionSendText().run(
-        default_channel, template_nlg, template_sender_tracker, domain, metadata, False
+        default_channel, template_nlg, template_sender_tracker, domain, metadata
     )
     # assert metadata remains unmodified through the bot utterance creation
-    assert metadata == {"message": {"text": "foobar"}}
+    assert metadata == {"message": {"text": "foobar"}, "should_send_text": False}
     assert events == []
 
 
