@@ -25,7 +25,7 @@ class ActionRepeatBotMessages(Action):
         """Return the name of the action."""
         return ACTION_REPEAT_BOT_MESSAGES
 
-    def _get_last_bot_events(self, tracker: DialogueStateTracker) -> List[Event]:
+    def _get_last_bot_events(self, tracker: DialogueStateTracker) -> List[BotUttered]:
         """Get the last consecutive bot events before the most recent user message.
 
         This function scans the dialogue history in reverse to find the last sequence of
@@ -48,33 +48,21 @@ class ActionRepeatBotMessages(Action):
             The elif condition doesn't break when it sees User3 event.
             But it does at User2 event.
         """
-        # Skip action if we are in a collect information step whose
-        # default behavior is to repeat anyways
-        top_frame = tracker.stack.top(
-            lambda frame: isinstance(frame, RepeatBotMessagesPatternFlowStackFrame)
-            or isinstance(frame, UserSilencePatternFlowStackFrame)
-        )
-        if isinstance(top_frame, CollectInformationPatternFlowStackFrame):
-            return []
         # filter user and bot events
-        filtered = [
+        user_and_bot_events = [
             e for e in tracker.events if isinstance(e, (BotUttered, UserUttered))
         ]
-        bot_events: List[Event] = []
+        last_bot_events: List[BotUttered] = []
 
         # find the last BotUttered events
-        for e in reversed(filtered):
-            if isinstance(e, BotUttered):
-                # insert instead of append because the list is reversed
-                bot_events.insert(0, e)
-
-            # stop if a UserUttered event is found
-            # only if we have collected some bot events already
-            # this condition skips the first N UserUttered events
-            elif bot_events:
+        for e in reversed(user_and_bot_events):
+            # stop when seeing a user event after having seen bot events already
+            if isinstance(e, UserUttered) and len(last_bot_events) > 0:
                 break
+            elif isinstance(e, BotUttered):
+                last_bot_events.append(e)
 
-        return bot_events
+        return list(reversed(last_bot_events))
 
     async def run(
         self,
@@ -85,5 +73,13 @@ class ActionRepeatBotMessages(Action):
         metadata: Optional[Dict[str, Any]] = None,
     ) -> List[Event]:
         """Send the last bot messages to the channel again"""
-        bot_events = self._get_last_bot_events(tracker)
+        top_frame = tracker.stack.top(
+            lambda frame: isinstance(frame, RepeatBotMessagesPatternFlowStackFrame)
+            or isinstance(frame, UserSilencePatternFlowStackFrame)
+        )
+
+        bot_events: List[Event] = list(self._get_last_bot_events(tracker))
+        # drop the last bot event in a collect step as that part will be repeated anyway
+        if isinstance(top_frame, CollectInformationPatternFlowStackFrame):
+            bot_events = bot_events[:-1]
         return bot_events
