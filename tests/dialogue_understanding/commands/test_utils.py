@@ -5,6 +5,7 @@ import pytest
 from rasa.dialogue_understanding.commands.utils import (
     clean_extracted_value,
     extract_cleaned_options,
+    find_default_flows_collecting_slot,
     initialize_pattern_validate_slot,
     is_none_value,
 )
@@ -19,6 +20,7 @@ from rasa.shared.core.slots import (
     StrictCategoricalSlot,
     TextSlot,
 )
+from tests.utilities import flows_from_str
 
 
 @pytest.mark.parametrize(
@@ -144,3 +146,31 @@ def test_initialize_pattern_validate_slot_without_validation():
     validate_frame = initialize_pattern_validate_slot(slot)
     # Then
     assert validate_frame is None
+
+
+@pytest.mark.parametrize(
+    "slot_name, expected",
+    [
+        ("bar", ["pattern_completed"]),
+        ("random_slot", []),
+    ],
+)
+def test_find_default_flows_collecting_slot(
+    slot_name: str, expected: List[str]
+) -> None:
+    all_flows = flows_from_str(
+        """
+        flows:
+          flow1:
+            description: "Flow 1"
+            steps:
+              - collect: foo
+          pattern_completed:
+            description: "Pattern Completed"
+            steps:
+              - collect: bar
+        """
+    )
+
+    predicted_flows = find_default_flows_collecting_slot(slot_name, all_flows)
+    assert predicted_flows == expected

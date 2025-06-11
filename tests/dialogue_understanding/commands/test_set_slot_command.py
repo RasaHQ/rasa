@@ -15,7 +15,11 @@ from rasa.dialogue_understanding.commands.set_slot_command import (
     get_flows_predicted_to_start_from_tracker,
 )
 from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
+from rasa.dialogue_understanding.patterns.completed import (
+    CompletedPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
@@ -581,3 +585,43 @@ def test_regex_pattern_v3_command_syntax():
 
     # Reset the syntax version to the default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()
+
+
+def test_run_command_can_set_slots_before_asking_with_patterns():
+    # Test that a slot can be set before asking for it in a pattern flow.
+    # Given
+    slots = [TextSlot(name="bar", mappings=[])]
+
+    all_flows = flows_from_str(
+        """
+        flows:
+          flow1:
+            description: "Flow 1"
+            steps:
+              - collect: foo
+          pattern_completed:
+            description: "Pattern Completed"
+            steps:
+              - collect: bar
+        """
+    )
+
+    tracker = DialogueStateTracker.from_events("test", evts=[], slots=slots)
+    stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(flow_id="flow1", step_id="regular", frame_id="some-id"),
+            CompletedPatternFlowStackFrame(
+                frame_id="some-id2",
+                step_id="pattern_completed_0_collect_bar",
+                previous_flow_name="flow1",
+            ),
+        ]
+    )
+    tracker.update_stack(stack)
+    command = SetSlotCommand(name="bar", value="barbar")
+
+    # When
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+
+    # Then
+    assert events == [SlotSet("bar", "barbar")]

@@ -7,18 +7,18 @@ from rasa.dialogue_understanding.patterns.validate_slot import (
 )
 from rasa.shared.constants import ACTION_ASK_PREFIX, UTTER_ASK_PREFIX
 from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import DialogueStateTracker
 
 if TYPE_CHECKING:
     from rasa.dialogue_understanding.commands import StartFlowCommand
-    from rasa.shared.core.flows import FlowsList
 
 structlogger = structlog.get_logger()
 
 
 def start_flow_by_name(
-    flow_name: str, flows: "FlowsList"
+    flow_name: str, flows: FlowsList
 ) -> Optional["StartFlowCommand"]:
     from rasa.dialogue_understanding.commands import StartFlowCommand
 
@@ -126,3 +126,27 @@ def create_validate_frames_from_slot_set_events(
             validate_frames.append(frame)
 
     return tracker, validate_frames
+
+
+def find_default_flows_collecting_slot(
+    slot_name: str, all_flows: FlowsList
+) -> List[str]:
+    """Find default flows that have collect steps matching the specified slot name.
+
+    Args:
+        slot_name: The name of the slot to search for.
+        all_flows: All flows in the assistant.
+
+    Returns:
+        List of flow IDs for default flows that collect the specified slot
+        without asking before filling.
+    """
+    return [
+        flow.id
+        for flow in all_flows.underlying_flows
+        if flow.is_rasa_default_flow
+        and any(
+            step.collect == slot_name and not step.ask_before_filling
+            for step in flow.get_collect_steps()
+        )
+    ]

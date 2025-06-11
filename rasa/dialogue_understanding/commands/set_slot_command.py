@@ -13,6 +13,7 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
 )
 from rasa.dialogue_understanding.commands.utils import (
     clean_extracted_value,
+    find_default_flows_collecting_slot,
     get_nullable_slot_value,
 )
 from rasa.dialogue_understanding.patterns.collect_information import (
@@ -136,6 +137,11 @@ class SetSlotCommand(Command):
         ):
             # Get the other predicted flows from the most recent message on the tracker.
             predicted_flows = get_flows_predicted_to_start_from_tracker(tracker)
+            if not predicted_flows:
+                # If no predicted flows, check for default flows collecting the slot.
+                predicted_flows = find_default_flows_collecting_slot(
+                    self.name, all_flows
+                )
             use_slot_fill = any(
                 step.collect == self.name and not step.ask_before_filling
                 for flow in all_flows.underlying_flows
