@@ -7,6 +7,7 @@ you have to install Poetry first. Please follow
 [the official guide](https://python-poetry.org/docs/#installation) to see all possible options.
 
 To update an existing poetry version to the [version](.github/poetry_version.txt), currently used in rasa, run:
+
 ```shell
     poetry self update <version>
 ```
@@ -21,6 +22,7 @@ This is how it can be done:
 pyenv install 3.10.10
 pyenv local 3.10.10  # Activate Python 3.10.10 for the current project
 ```
+
 *Note*: If you have trouble installing a specific version of python on your system
 it might be worth trying other supported versions.
 
@@ -50,7 +52,6 @@ make install
 *Note for macOS users*: under macOS Big Sur we've seen some compiler issues for
 dependencies. Using `export SYSTEM_VERSION_COMPAT=1` before the installation helped.
 
-
 #### Installing optional dependencies
 
 In order to install rasa's optional dependencies, you need to run:
@@ -63,24 +64,28 @@ make install-full
 (issue described in depth [here](https://github.com/huggingface/tokenizers/issues/1050)).
 
 In order to resolve it, you must follow these steps to install a Rust compiler:
+
 ```bash
 brew install rustup
 rustup-init
 ```
 
 After initialising the Rust compiler, you should restart the console and check its installation:
+
 ```bash
 rustc --version
 ```
 
 In case the PATH variable had not been automatically setup, run:
+
 ```bash
 export PATH="$HOME/.cargo/bin:$PATH"
 ```
 
 #### Installing from published Python package
 
-We have a private package registry running at **europe-west3-docker.pkg.dev/rasa-releases/** which hosts python packages as well
+We have a private package registry running at **europe-west3-docker.pkg.dev/rasa-releases/** which hosts python packages
+as well
 as docker containers. To install the latest version of `rasa-pro` from the registry, you can run:
 
 ```bash
@@ -98,21 +103,26 @@ uv pip install rasa-pro --extra-index-url=https://europe-west3-python.pkg.dev/ra
 To be able to pull the docker image via `docker pull europe-west3-docker.pkg.dev/rasa-releases/rasa/rasa`,
 you’ll need to authenticate using the `gcloud auth` command: `gcloud auth configure-docker europe-west3-docker.pkg.dev`.
 
-More information is available in our [public documentation](https://rasa.com/docs/rasa-pro/installation/python/installation).
-
+More information is available in
+our [public documentation](https://rasa.com/docs/rasa-pro/installation/python/installation).
 
 ### Dependency Management
 
-To ensure we keep our `pip` installation reasonably fast (max 5 minutes), please follow these best practices when adding or updating dependencies:
-- do not use the [caret specification](https://python-poetry.org/docs/dependency-specification/#caret-requirements); instead use the [tilde](https://python-poetry.org/docs/dependency-specification/#tilde-requirements) `~` or [inequality](https://python-poetry.org/docs/dependency-specification/#inequality-requirements) specification
+To ensure we keep our `pip` installation reasonably fast (max 5 minutes), please follow these best practices when adding
+or updating dependencies:
+
+- do not use the [caret specification](https://python-poetry.org/docs/dependency-specification/#caret-requirements);
+  instead use the [tilde](https://python-poetry.org/docs/dependency-specification/#tilde-requirements) `~`
+  or [inequality](https://python-poetry.org/docs/dependency-specification/#inequality-requirements) specification
 - specify the micro version for the dependency, for example `3.11.3` instead of `3.11`
 - always update the lower bound to the latest version the dependency is being upgraded to
-- apply a strict upper bound to prevent `pip` taking a long time to resolve dependencies when newer versions had been released that we haven't caught up to
-
+- apply a strict upper bound to prevent `pip` taking a long time to resolve dependencies when newer versions had been
+  released that we haven't caught up to
 
 ### Running the Tests
 
-In order to run the tests, make sure that you have set locally the environment variable `RASA_PRO_LICENSE` to a valid license available in 1Password.
+In order to run the tests, make sure that you have set locally the environment variable `RASA_PRO_LICENSE` to a valid
+license available in 1Password.
 You should ensure to install the development requirements:
 
 ```bash
@@ -133,7 +143,6 @@ JOBS=[n] make test
 ```
 
 Where `[n]` is the number of jobs desired. If omitted, `[n]` will be automatically chosen by pytest.
-
 
 ### Running the Integration Tests
 
@@ -163,12 +172,13 @@ Note that the rasa image build requires a few base images, which must be built p
 The Dockerfiles for these base images are located in the `docker` subdirectory.
 
 You must also set the following environment variables to build the rasa image locally:
-- `TARGET_IMAGE_REGISTRY`, e.g. you can either use `rasa` or the private registry `europe-west3-docker.pkg.dev/rasa-releases/rasa-docker`.
+
+- `TARGET_IMAGE_REGISTRY`, e.g. you can either use `rasa` or the private registry
+  `europe-west3-docker.pkg.dev/rasa-releases/rasa-docker`.
 - `IMAGE_TAG`, e.g. `localdev`, `latest` or PR ID.
 - `BASE_IMAGE_HASH`, e.g. `localdev`
 - `BASE_MITIE_IMAGE_HASH`, e.g. `localdev`
 - `BASE_BUILDER_IMAGE_HASH`, e.g. `localdev`
-
 
 ### Resolving merge conflicts
 
@@ -211,6 +221,7 @@ This will add a hook to the repository, which reformats files on every commit.
 
 If you want to set it up manually, install `ruff` via `poetry install`.
 To reformat files execute
+
 ```
 make formatter
 ```
@@ -219,6 +230,7 @@ make formatter
 
 If you want to check types on the codebase, install `mypy` using `poetry install`.
 To check the types execute
+
 ```
 make types
 ```
@@ -231,7 +243,8 @@ This workflow is triggered by the `backport-to-<release-branch>` label applied t
 Current available target branches are `main` and maintained release branches.
 
 When a PR gets labelled `backport-to-<release-branch>`, a PR is opened by the `backport-github-action` as soon as the
-source PR gets closed (by merging). If you want to close the PR without merging changes, make sure to remove the `backport-to-<release-branch>` label.
+source PR gets closed (by merging). If you want to close the PR without merging changes, make sure to remove the
+`backport-to-<release-branch>` label.
 
 The PR author which the action assigns to the backporting PR has to resolve any conflicts before approving and merging.
 Release PRs should also be labelled with `backport-to-main` to backport the `CHANGELOG.md` updates to `main`.
@@ -242,105 +255,135 @@ Here are some guidelines to follow when backporting changes and resolving confli
 a) for conflicts in `version.py`: accept only the version from the latest release branch. Do not merge version changes
 from earlier release branches into `main` because this could cause issues when trying to make the next minor release.
 
-b) for conflicts in `pyproject.toml`: if related to the `rasa-pro` version, accept only the latest release branch; 
-if related to other dependencies, accept `main` or whichever is the higher upgrade (main usually has the updated 
-dependencies because we only do housekeeping on `main`, apart from vulnerability updates). Be mindful of dependencies that
+b) for conflicts in `pyproject.toml`: if related to the `rasa-pro` version, accept only the latest release branch;
+if related to other dependencies, accept `main` or whichever is the higher upgrade (main usually has the updated
+dependencies because we only do housekeeping on `main`, apart from vulnerability updates). Be mindful of dependencies
+that
 are removed from `main` but still exist in former release branches (for example `langchain`).
 
 c) for conflicts in `poetry.lock`: accept changes which were already present on the target branch, then run
 `poetry lock --no-update` so that the lock file contains your changes from `pyproject.toml` too.
 
-d) for conflicts in `CHANGELOG.md`: Manually place the changelog in their allocated section (e.g. 3.8.10 will go under the 
+d) for conflicts in `CHANGELOG.md`: Manually place the changelog in their allocated section (e.g. 3.8.10 will go under
+the
 3.8 section with the other releases, rather than go at the top of the file)
 
 If the backporting workflow fails, you are encouraged to cherry-pick the commits manually and create a PR to
-the target branch. Alternatively, you can install the backporting CLI tool as described [here](https://github.com/sorenlouv/backport?tab=readme-ov-file#install).
+the target branch. Alternatively, you can install the backporting CLI tool as
+described [here](https://github.com/sorenlouv/backport?tab=readme-ov-file#install).
 
 ## Releases
-Rasa has implemented robust policies governing version naming, as well as release pace for major, minor, and patch releases.
+
+Rasa has implemented robust policies governing version naming, as well as release pace for major, minor, and patch
+releases.
 
 The values for a given version number (MAJOR.MINOR.PATCH) are incremented as follows:
+
 - MAJOR version for incompatible API changes or other breaking changes.
 - MINOR version for functionality added in a backward compatible manner.
 - PATCH version for backward compatible bug fixes.
 
 The following table describes the version types and their expected *release cadence*:
 
-| Version Type |                                                                  Description                                                                  |  Target Cadence |
+| Version Type | Description                                                                                                                                   | Target Cadence  |
 |--------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
 | Major        | For significant changes, or when any backward-incompatible changes are introduced to the API or data model.                                   | Every 1 - 2 yrs |
 | Minor        | For when new backward-compatible functionality is introduced, a minor feature is introduced, or when a set of smaller features is rolled out. | +/- Quarterly   |
 | Patch        | For backward-compatible bug fixes that fix incorrect behavior.                                                                                | As needed       |
 
-While this table represents our target release frequency, we reserve the right to modify it based on changing market conditions and technical requirements.
+While this table represents our target release frequency, we reserve the right to modify it based on changing market
+conditions and technical requirements.
 
 ### Maintenance Policy
+
 Our End of Life policy defines how long a given release is considered supported, as well as how long a release is
 considered to be still in active development or maintenance.
 
-The maintenance duration and end of life for every release are shown on our website as part of the [Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/).
+The maintenance duration and end of life for every release are shown on our website as part of
+the [Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/).
 
 ### Cutting a Major / Minor release
+
 #### A week before release day
 
-**Post a message on the engineering Slack channel**, letting the team know you'll be the one cutting the upcoming
-release, as well as:
-    1. Reminding everyone to go over their issues and PRs and prioritise reviews and merges
-    2. Reminding everyone of the scheduled date for the release
+**Post a message on the engineering Slack channel** (`#dev-tribe`), letting the team know you'll be the one cutting the
+upcoming release, as well as:
+
+1. Reminding everyone to go over their issues and PRs and prioritise reviews and merges.
+2. Reminding everyone of the scheduled date for the release.
 
 #### A day before release day
 
-1. **Evaluate the status of any PR merging that's happening. Follow up with people on their
+**Evaluate the status of any PR merging that's happening. Follow up with people on their
 bugs and fixes.** If the release introduces new bugs or regressions that can't be fixed in time, we should discuss on
-Slack about this and take a decision on how to move forward. If the issue is not ready to be merged in time, we remove the issue / PR from the release and notify the PR owner and the product manager on Slack about it. The PR / issue owners are responsible for
-communicating any issues which might be release relevant. Postponing the release should be considered as an edge case scenario.
+Slack about this and take a decision on how to move forward. If the issue is not ready to be merged in time,
+we remove the issue / PR from the release and notify the PR owner and the product manager on Slack about it.
+The PR / issue owners are responsible for communicating any issues which might be release relevant.
+Postponing the release should be considered as an edge case scenario.
 
 #### Release day! 🚀
 
-1. **At the start of the day, post a small message on slack announcing release day!** Communicate you'll be handling
-the release, and the time you're aiming to start releasing (again, no later than 4pm, as issues may arise and
-cause delays). This message should be posted early in the morning and before moving forward with any of the steps of the release,
-   in order to give enough time to people to check their PRs and issues. That way they can plan any remaining work. A template of the slack message can be found [here](https://rasa-hq.slack.com/archives/C36SS4N8M/p1613032208137500?thread_ts=1612876410.068400&cid=C36SS4N8M).
-   The release time should be communicated transparently so that others can plan potentially necessary steps accordingly. If there are bigger changes this should be communicated.
-2. Once everything in the release is taken care of, post a small message on Slack communicating you are about to
-start the release process (in case anything is missing).
+1. **At the start of the day, post a small message on Slack (`#dev-tribe`) announcing release day!**
+   Communicate you'll be handling the release, and the time you're aiming to start releasing
+   (no later than 4pm, as issues may arise and cause delays). This message should be posted early in the morning and
+   before moving forward with any of the steps of the release,
+   in order to give enough time to people to check their PRs and issues. That way they can plan any remaining work. A
+   template of the Slack message can be
+   found [here](https://rasa-hq.slack.com/archives/C36SS4N8M/p1613032208137500?thread_ts=1612876410.068400&cid=C36SS4N8M).
+   The release time should be communicated transparently so that others can plan potentially necessary steps
+   accordingly. If there are bigger changes this should be communicated.
+2. Once everything in the release is taken care of, post a small message on Slack (`#dev-tribe`) communicating you are
+   about to start the release process (in case anything is missing).
 3. **You may now do the release by following the instructions outlined in the
-[Rasa Pro README](#steps-to-release-a-new-version) !**
+   [Rasa Pro README](#steps-to-release-a-new-major-minor-version) !**
 
-### Steps to release a new version
-Releasing a new version is quite simple, as the packages are build and distributed by GitHub Actions.
+#### Steps to release a new Major / Minor version
+
+Releasing a new Major / Minor version is quite simple, as the packages are build and distributed by GitHub Actions.
 
 *Release steps*:
-1. Make sure all dependencies are up to date (**especially Rasa SDK**)
-    - For Rasa SDK, except in the case of a patch release, that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
-    - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
-2. If this is a minor / major release: Make sure all fixes from currently supported minor versions have been merged from their respective release branches (e.g. 3.8.x) back into main.
+
+1. Make sure all dependencies are up to date (**especially Rasa SDK**):
+    - For Rasa SDK first create a
+      [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version)
+      (make sure the version numbers between the new Rasa and Rasa SDK releases match).
+    - Once the tag with the new Rasa SDK release is pushed and the package appears
+      on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the Rasa repository can be resolved (see below).
+2. Make sure all fixes from currently supported minor versions have been merged from
+   their respective release branches (e.g. 3.8.x) back into main.
 3. In case of a minor release, create a new branch that corresponds to the new release, e.g.
    ```bash
     git checkout -b 3.8.x
     git push origin 3.8.x
     ```
-4. Switch to the branch you want to cut the release from (`main` in case of a major, the `<major>.<minor>.x` branch for minors and patches)
-    - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
-    - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
-5. Run `make release`
-6. Create a PR against the release branch (e.g. `3.8.x`)
-7. Once your PR is merged, [this](https://github.com/RasaHQ/rasa-private/actions/workflows/tag-release.yml) workflow runs and an automatic tag is created and pushed to remote.
-   (If this fails for some reason, then run the following manually on the release branch) :
+4. Switch to the branch you want to cut the release from (`main` in case of a major, the `<major>.<minor>.x` branch for
+   minors).
+    - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates
+      a new `poetry.lock` file with all dependencies resolved.
+    - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be
+      automatically picked up by the following step.
+5. Run `make release`.
+6. Create a PR against the release branch (e.g. `3.8.x`).
+7. Once your PR is merged, [this workflow](https://github.com/RasaHQ/rasa-private/actions/workflows/release.yml)
+   runs and an automatic tag is created and pushed to remote.
+   If this fails for some reason, then run the following manually on the release branch:
     ```bash
     git checkout 3.8.x
     git pull origin 3.8.x
     git tag 3.8.0 -m "next release"
     git push origin 3.8.0 --tags
     ```
-    GitHub will build this tag and publish the build artifacts.
-8. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`release` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
-9. If however an error occurs in the build, then we should see a failure message automatically posted in the company's Slack (`dev-tribe` channel) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919)
-   (In this case do the following checks):
-    - Check the workflows in [Github Actions](https://github.com/RasaHQ/rasa-private/actions) and make sure that the merged PR of the current release is completed successfully. To easily find your PR you can use the filters `event: push` and `branch: <version number>` (example on release 2.4 you can see [here](https://github.com/RasaHQ/rasa/actions/runs/643344876))
-    - If the workflow is not completed, then try to re run the workflow in case that solves the problem
-    - If the problem persists, check also the log files and try to find the root cause of the issue
-    - If you still cannot resolve the error, contact the infrastructure team by providing any helpful information from your investigation
+   GitHub will build this tag and publish the build artifacts.
+8. After this you should check the
+   [Release artifacts workflow](https://github.com/RasaHQ/rasa-private/actions/workflows/release-artifacts-workflow.yml)
+   with the relevant tag name. Keep an eye on it to make sure it is successful as sometimes retries might be required.
+9. After all the steps are completed and if everything goes well then we should see a message automatically posted in
+   the company's Slack (`#release`) like
+   this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600).
+10. If however an error occurs in the build, then we should see a failure message automatically posted in the company's
+    Slack (`#dev-tribe`) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919). Follow the
+    steps in
+    [Troubleshooting a release](#troubleshooting-a-release) to debug the issue.
 
 ### Cutting a Patch release
 
@@ -348,46 +391,94 @@ Patch releases are simpler to cut, since they are meant to contain only bugfixes
 
 **The only things you need to do to cut a patch release are:**
 
-1. Notify the engineering team on Slack that you are planning to cut a patch, in case someone has an important fix
-to add.
+1. Notify the engineering team on Slack (`#dev-tribe`) that you are planning to cut a patch, in case someone has an
+   important fix to add.
 2. Make sure the bugfix(es) are in the release branch you will use (p.e if you are cutting a `3.8.2` patch, you will
-need your fixes to be on the `3.8.x` release branch). All patch releases must come from a `.x` branch!
+   need your fixes to be on the `3.8.x` release branch). All patch releases must come from a `.x` branch!
 3. Once you're ready to release the Rasa Pro patch, checkout the branch, run `make release` and follow the
-steps + get the PR merged.
-4. Once the PR is in, wait for the [tag release workflow](https://github.com/RasaHQ/rasa-private/actions/workflows/tag-release.yml) to create the tag.
-   (If this fails for some reason, then run the following manually on the release branch) :
+   steps and get the PR merged. Make sure the PR has the label `backport-to-main` to automatically backport the
+   fix to `main` as well.
+4. Once the PR is in, wait for
+   the [tag release workflow](https://github.com/RasaHQ/rasa-private/actions/workflows/release.yml) to create the
+   tag.
+   If this fails for some reason, then run the following manually on the release branch:
     ```bash
     git checkout 3.8.x
     git pull origin 3.8.x
-    git tag 3.8.0 -m "next release"
-    git push origin 3.8.0 --tags
+    git tag 3.8.12 -m "next release"
+    git push origin 3.8.12 --tags
     ```
-5. After this you should see the CI workflow "Continuous Integration" in the Actions tab with the relevant tag name. Keep an eye on it to make sure it is successful as sometimes retries might be required. 
-6. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`release` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
-7. If however an error occurs in the build, then we should see a failure message automatically posted in the company's Slack (`dev-tribe` channel) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919)
-
-Make sure to merge the branch `3.7.x` after your PR with `main`. This needs to be done manually until Roberto is added (see [ATO-2091](https://rasahq.atlassian.net/browse/ATO-2091))
+   GitHub will build this tag and publish the build artifacts.
+5. After this you should check the
+   [Release artifacts workflow](https://github.com/RasaHQ/rasa-private/actions/workflows/release-artifacts-workflow.yml)
+   with the relevant tag name. Keep an eye on it to make sure it is successful as sometimes retries might be required.
+6. After all the steps are completed and if everything goes well then we should see a message automatically posted in
+   the company's Slack (`#release`) like
+   this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600).
+7. If however an error occurs in the build, then we should see a failure message automatically posted in the company's
+   Slack (`#dev-tribe`) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919). Follow the
+   steps in [Troubleshooting a release](#troubleshooting-a-release) to debug the issue.
 
 ### Cutting a Pre release version
 
-A Pre release version is an alpha, beta, dev or rc version. For more details on which version you require refer to the [Rasa Software Release Lifecycle](https://www.notion.so/rasa/Rasa-Software-Release-Lifecycle-eb704d75f87646a9a9aca1f3fbe71fb3#6e26ac9a15b64f91bb94d6bfea9306a0)
+A Pre release version is an alpha, beta, dev or rc version. For more details on which version you require and what
+level of testing is needed refer to
+the [Rasa Software Release Lifecycle](https://www.notion.so/rasa/Rasa-Software-Release-Lifecycle-eb704d75f87646a9a9aca1f3fbe71fb3#6e26ac9a15b64f91bb94d6bfea9306a0).
 
-1. Make sure you are using the right branch for the release, for instance pre releases are always made from either the main or a feature branch (especially for a dev release)
-2. Once you're ready to release, checkout the branch, run `make release` and follow the
-steps.
-3. Only in case of a pre release, the release branch created will be prefixed with 'prepare-release-pre-'
-4. Note that when releasing from a feature branch the 'prepare-release-pre' branch will not be created automatically and has to be done manually. This is done to ensure all major/minor/patch releases only happens from the correct branches.
-   (In this case the version updates will be added to the same branch as a commit, and you will have to manually create a `prepare-release-pre-' branch and push to remote)
-5. Only in case of a pre release, we currently skip all test runs and docker image builds on a 'prepare-release-pre-' PR. This was done to speed up the pre release process.
-6. Once your PR gets merged, the [tag release workflow](https://github.com/RasaHQ/rasa-private/actions/workflows/tag-release.yml) will create the tag.
-7. After this you should see the CI workflow "Continuous Integration" in the Actions tab with the relevant tag name. Keep an eye on it to make sure it is successful as sometimes retries might be required. 
-8. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`release` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
-9. If however an error occurs in the build, then we should see a failure message automatically posted in the company's Slack (`dev-tribe` channel) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919)
+1. Make sure you are using the right branch for the release, for instance pre releases are always made from either the
+   main or a feature branch (especially for a dev release).
+2. Once you're ready to release, checkout the branch, run `make release` and follow the steps.
+3. Only in case of a pre-release, the release branch created will be prefixed with `prepare-release-pre-`.
+4. Note that when releasing from a feature branch the `prepare-release-pre` branch will not be created automatically and
+   has to be done manually. This is done to ensure all major/minor/patch releases only happens from the correct
+   branches.
+   (In this case the version updates will be added to the same branch as a commit, and you will have to manually create
+   a `prepare-release-pre-` branch and push to remote.)
+5. Once your PR gets merged,
+   the [tag release workflow](https://github.com/RasaHQ/rasa-private/actions/workflows/release.yml) will create the
+   tag.
+   If this fails for some reason, then run the following manually on the release branch:
+    ```bash
+    git checkout <feature branch>
+    git pull origin <feature branch>
+    git tag 3.8.0.dev1 -m "next dev release"
+    git push origin 3.8.0.dev1 --tags
+    ```
+   GitHub will build this tag and publish the build artifacts.
 
+**Note** : If a dev release from a feature branch is done as a commit instead of opening a pre-release PR, the tag will
+not be automatically pushed. You need to create the tag manually. This is because of [this
+condition](https://github.com/RasaHQ/rasa-private/blob/main/.github/workflows/release.yml#L172) that waits for the PR
+to be merged.
+
+7. After this you should check the
+   [Release artifacts workflow](https://github.com/RasaHQ/rasa-private/actions/workflows/release-artifacts-workflow.yml)
+   with the relevant tag name. Keep an eye on it to make sure it is successful as sometimes retries might be required.
+8. After all the steps are completed and if everything goes well then we should see a message automatically posted in
+   the company's Slack (`#release`) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600).
+9. If however an error occurs in the build, then we should see a failure message automatically posted in the company's
+   Slack (`#dev-tribe`) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919).Follow the
+   steps in [Troubleshooting a release](#troubleshooting-a-release) to debug the issue.
+
+**Note**: Pre release versions don't need to be backported to `main` as they are not considered stable releases.
+
+### Troubleshooting a release
+
+In case a release failed, and you see a failure message on Slack, you can follow these steps to troubleshoot the issue:
+
+- Check the workflows in [Github Actions](https://github.com/RasaHQ/rasa-private/actions) and make sure that the
+  merged PR of the current release is completed successfully. To easily find your PR you can use the filters
+  `event: push` and `branch: <version number>` (example on release 2.4 you can
+  see [here](https://github.com/RasaHQ/rasa/actions/runs/643344876)).
+- If the workflow is not completed, then try to re-run the workflow in case that solves the problem.
+- If the problem persists, check also the log files and try to find the root cause of the issue.
+- If you still cannot resolve the error, contact the infrastructure team by providing any helpful information from
+  your investigation.
 
 ### Actively maintained versions
 
-Please refer to the [Rasa Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/) page.
+Please refer to
+the [Rasa Product Release and Maintenance Policy](https://rasa.com/rasa-product-release-and-maintenance-policy/) page.
 
 ### Active workflows on the CI
 
@@ -401,4 +492,5 @@ Please refer to the [WORKFLOW_README FILE](https://github.com/RasaHQ/rasa-privat
   docker system prune --all
   ```
 
-  For more information on this command, please see the [Official Docker Documentation](https://docs.docker.com/engine/reference/commandline/system_prune/).
+  For more information on this command, please see
+  the [Official Docker Documentation](https://docs.docker.com/engine/reference/commandline/system_prune/).
