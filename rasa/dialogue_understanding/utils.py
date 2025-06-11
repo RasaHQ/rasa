@@ -1,7 +1,9 @@
 from contextlib import contextmanager
 from typing import Any, Dict, Generator, List, Optional, Text
 
-from rasa.dialogue_understanding.commands import Command
+import structlog
+
+from rasa.dialogue_understanding.commands import Command, NoopCommand, SetSlotCommand
 from rasa.dialogue_understanding.constants import (
     RASA_RECORD_COMMANDS_AND_PROMPTS_ENV_VAR_NAME,
 )
@@ -16,7 +18,6 @@ from rasa.shared.nlu.constants import (
     KEY_USER_PROMPT,
     PREDICTED_COMMANDS,
     PROMPTS,
-    SET_SLOT_COMMAND,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.llm.llm_response import LLMResponse
@@ -25,6 +26,8 @@ from rasa.utils.common import get_bool_env_variable
 record_commands_and_prompts = get_bool_env_variable(
     RASA_RECORD_COMMANDS_AND_PROMPTS_ENV_VAR_NAME, False
 )
+
+structlogger = structlog.get_logger()
 
 
 @contextmanager
@@ -144,21 +147,74 @@ def _handle_via_nlu_in_coexistence(
     if not tracker:
         return False
 
+    commands = message.get(COMMANDS, [])
+
+    # If coexistence routing slot is not active, this setup doesn't
+    # support dual routing -> default to CALM
     if not tracker.has_coexistence_routing_slot:
+        structlogger.debug(
+            "utils.handle_via_nlu_in_coexistence"
+            ".tracker_missing_route_session_to_calm_slot",
+            event_info=(
+                f"Tracker doesn't have the '{ROUTE_TO_CALM_SLOT}' slot."
+                f"Routing to CALM."
+            ),
+            route_session_to_calm=commands,
+        )
         return False
 
+    # Check if the routing decision is stored in the tracker slot
+    # If slot is true -> route to CALM
+    # If slot is false -> route to DM1
     value = tracker.get_slot(ROUTE_TO_CALM_SLOT)
     if value is not None:
+        structlogger.debug(
+            "utils.handle_via_nlu_in_coexistence"
+            ".tracker_route_session_to_calm_slot_value",
+            event_info=(
+                f"Tracker slot '{ROUTE_TO_CALM_SLOT}' set to '{value}'. "
+                f"Routing to "
+                f"{'CALM' if value else 'NLU system'}."
+            ),
+            route_session_to_calm_value_in_tracker=value,
+        )
         return not value
 
-    # routing slot has been reset so we need to check
-    # the command issued by the Router component
-    if message.get(COMMANDS):
-        for command in message.get(COMMANDS):
-            if (
-                command.get("command") == SET_SLOT_COMMAND
-                and command.get("name") == ROUTE_TO_CALM_SLOT
-            ):
-                return not command.get("value")
+    # Non-sticky routing to DM1 is only allowed if NoopCommand is the sole predicted
+    # command. In that case, route to DM1
+    if len(commands) == 1 and commands[0].get("command") == NoopCommand.command():
+        structlogger.debug(
+            "utils.handle_via_nlu_in_coexistence.noop_command_detected",
+            event_info="NoopCommand found. Routing to NLU system non-sticky.",
+            commands=commands,
+        )
+        return True
 
+    # If the slot was reset (e.g. new session), try to infer routing from
+    # attached commands. Look for a SetSlotCommand targeting the ROUTE_TO_CALM_SLOT
+    for command in message.get(COMMANDS, []):
+        # If slot is true -> route to CALM
+        # If slot is false -> route to DM1
+        if (
+            command.get("command") == SetSlotCommand.command()
+            and command.get("name") == ROUTE_TO_CALM_SLOT
+        ):
+            structlogger.debug(
+                "utils.handle_via_nlu_in_coexistence.set_slot_command_detected",
+                event_info=(
+                    f"SetSlotCommand setting the '{ROUTE_TO_CALM_SLOT}' to "
+                    f"'{command.get('value')}'. "
+                    f"Routing to "
+                    f"{'CALM' if command.get('value') else 'NLU system'}."
+                ),
+                commands=commands,
+            )
+            return not command.get("value")
+
+    # If no routing info is available -> default to CALM
+    structlogger.debug(
+        "utils.handle_via_nlu_in_coexistence.no_routing_info_available",
+        event_info="No routing info available. Routing to CALM.",
+        commands=commands,
+    )
     return False

@@ -11,6 +11,7 @@ from rasa.dialogue_understanding.commands import (
     Command,
     ErrorCommand,
     KnowledgeAnswerCommand,
+    NoopCommand,
     SetSlotCommand,
     StartFlowCommand,
 )
@@ -26,9 +27,11 @@ from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
+    ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import Flow, FlowsList
+from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
     COMMANDS,
@@ -412,3 +415,62 @@ def test_command_generator_filter_commands_during_force_slot_filling_no_tracker(
         "command_generator.filter_commands_during_force_slot_filling.tracker_not_found"
         in captured.out
     )
+
+
+@pytest.mark.parametrize(
+    "router_commands, should_abstain",
+    [
+        ([SetSlotCommand(ROUTE_TO_CALM_SLOT, False)], True),
+        ([NoopCommand()], True),
+        ([], False),
+        # not actually set by router
+        ([SetSlotCommand(ROUTE_TO_CALM_SLOT, True)], False),
+    ],
+)
+async def test_if_command_generator_should_abstain_in_coexistence(
+    router_commands: List[Command],
+    should_abstain: bool,
+):
+    """
+    This test tests if the command generator should abstain from predicting
+    additional commands in the coexistence setup, where router (e.g IntentBasedRouter
+    or LLMBasedRouter) generated some commands.
+    """
+    # Given
+    generator = WackyCommandGenerator({})
+
+    # In coexistence boolean slot ROUTE_TO_CALM_SLOT needs to be defined, otherwise
+    # it's routed to CALM by default
+    tracker = DialogueStateTracker.from_events(
+        sender_id=uuid.uuid4().hex,
+        evts=[],
+        slots=[BooleanSlot(ROUTE_TO_CALM_SLOT, mappings=[])],
+    )
+
+    # Simulate a message that already has a set of commands predicted by a router
+    message = Message.build("What is your purpose?")
+    message.set(
+        prop=COMMANDS,
+        info=[command.as_dict() for command in router_commands],
+        add_to_output=True,
+    )
+
+    # When
+    await generator.process(
+        messages=[message],
+        flows=FlowsList(underlying_flows=[]),
+        tracker=tracker,
+    )
+
+    # Then
+    message_command_ids = [command.get("command") for command in message.get(COMMANDS)]
+    if should_abstain:
+        # The commands should be the same as given router commands
+        assert len(message_command_ids) == len(router_commands)
+        for command in router_commands:
+            assert command.command() in message_command_ids
+    else:
+        # The wacky command generator should predict a new command and overwrite other
+        # commands
+        assert len(message_command_ids) == 1
+        assert ChitChatAnswerCommand().command() in message_command_ids

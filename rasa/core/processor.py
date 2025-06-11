@@ -34,6 +34,9 @@ from rasa.dialogue_understanding.commands import (
     CannotHandleCommand,
     Command,
     NoopCommand,
+    RestartCommand,
+    SessionEndCommand,
+    SessionStartCommand,
     SetSlotCommand,
 )
 from rasa.dialogue_understanding.commands.utils import (
@@ -882,18 +885,60 @@ class MessageProcessor:
                 tracker.has_coexistence_routing_slot
                 and tracker.get_slot(ROUTE_TO_CALM_SLOT) is None
             ):
-                # if we are currently not routing to either CALM or dm1
-                # we make a sticky routing to CALM if there are any commands
-                # from the trigger intent parsing
-                # or a sticky routing to dm1 if there are no commands
+                # If we are currently not routing to either CALM or DM1:
+                # - Sticky route to CALM if there are any commands
+                #   from the trigger intent parsing
+                # - Sticky route to DM1 if there are no commands present
+                route_to_calm_slot_value = self._determine_route_to_calm_slot_value(
+                    nlu_adapted_commands
+                )
                 commands += [
                     SetSlotCommand(
-                        ROUTE_TO_CALM_SLOT, len(nlu_adapted_commands) > 0
+                        ROUTE_TO_CALM_SLOT, route_to_calm_slot_value
                     ).as_dict()
                 ]
 
         parse_data[COMMANDS] = commands
         return parse_data
+
+    def _determine_route_to_calm_slot_value(
+        self, nlu_adapted_commands: List[Dict[str, Any]]
+    ) -> Optional[bool]:
+        """Determines what value should be assigned to `ROUTE_TO_CALM_SLOT`.
+
+        Returns:
+            - True: If any command other than:
+                - SessionStartCommand
+                - SessionEndCommand
+                - RestartCommand
+              is present.
+            - None: If only ignored system commands are present.
+            - False If no commands at all.
+        """
+        system_commands_to_ignore = [
+            SessionStartCommand.command(),
+            SessionEndCommand.command(),
+            RestartCommand.command(),
+        ]
+
+        # Exclude the system commands, as it doesn't originate from the user's
+        # input intent and shouldn't influence the decision for setting
+        # ROUTE_TO_CALM_SLOT.
+        intent_triggered_commands = [
+            command
+            for command in nlu_adapted_commands
+            if command.get("command") not in system_commands_to_ignore
+        ]
+
+        if len(intent_triggered_commands) > 0:
+            # There are commands other than system commands present - route to CALM
+            return True
+        elif len(nlu_adapted_commands) > 0:
+            # Only system command is present — defer routing decision
+            return None
+        else:
+            # No commands at all — route to DM1
+            return False
 
     def _update_full_retrieval_intent(self, parse_data: Dict[Text, Any]) -> None:
         """Update the parse data with the full retrieval intent.

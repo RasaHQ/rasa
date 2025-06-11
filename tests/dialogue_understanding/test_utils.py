@@ -1,19 +1,30 @@
+import uuid
 from typing import Dict, List, Optional, Tuple
 
 import pytest
 
-from rasa.dialogue_understanding.commands import StartFlowCommand
+from rasa.dialogue_understanding.commands import (
+    Command,
+    NoopCommand,
+    SetSlotCommand,
+    StartFlowCommand,
+)
 from rasa.dialogue_understanding.generator import (
     MultiStepLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.dialogue_understanding.utils import (
+    _handle_via_nlu_in_coexistence,
     add_commands_to_message_parse_data,
     add_prompt_to_message_parse_data,
     set_record_commands_and_prompts,
 )
+from rasa.shared.constants import ROUTE_TO_CALM_SLOT
+from rasa.shared.core.slots import BooleanSlot
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
+    COMMANDS,
     KEY_COMPONENT_NAME,
     KEY_LLM_RESPONSE_METADATA,
     KEY_PROMPT_NAME,
@@ -184,3 +195,82 @@ def test_add_prompt_to_message_parse_data(
 
     # Then
     assert message.get(PROMPTS) == expected_prompts
+
+
+@pytest.mark.parametrize(
+    "tracker_defined,"
+    "tracker_has_coexistence_slot,"
+    "tracker_route_to_calm_slot_value,"
+    "message_commands,"
+    "expected_output",
+    [
+        # No tracker at all
+        (False, None, None, None, False),
+        # Tracker without coexistence slot
+        (True, False, None, None, False),
+        # Tracker has coexistence slot and slot is True
+        # -> route to CALM
+        # -> return False
+        (True, True, True, None, False),
+        # Tracker has coexistence slot and slot is False
+        # -> route to NLU
+        # -> return True
+        (True, True, False, None, True),
+        # Tracker slot is None, but SetSlotCommand in message sets slot to True
+        # -> route to CALM
+        # -> return False
+        (True, True, None, [SetSlotCommand(ROUTE_TO_CALM_SLOT, True)], False),
+        # Tracker slot is None, but SetSlotCommand in message sets slot to False
+        # -> route to NLU
+        # -> return True
+        (True, True, None, [SetSlotCommand(ROUTE_TO_CALM_SLOT, False)], True),
+        # Tracker slot is None, NoopCommand found in message
+        # -> route to NLU
+        # -> return True
+        (True, True, None, [NoopCommand()], True),
+        # Tracker slot is None and no usable commands
+        # -> default to CALM
+        # -> return False
+        (True, True, None, [], False),
+    ],
+)
+def test_handle_via_nlu_in_coexistence(
+    tracker_defined: bool,
+    tracker_has_coexistence_slot: Optional[bool],
+    tracker_route_to_calm_slot_value: Optional[bool],
+    message_commands: List[Command],
+    expected_output: bool,
+):
+    # Given
+
+    # Setup tracker
+    if not tracker_defined:
+        tracker = None
+    else:
+        if tracker_has_coexistence_slot:
+            slots = [
+                BooleanSlot(
+                    ROUTE_TO_CALM_SLOT,
+                    mappings=[],
+                    initial_value=tracker_route_to_calm_slot_value,
+                )
+            ]
+        else:
+            slots = []
+
+        tracker = DialogueStateTracker.from_events(uuid.uuid4().hex, [], slots=slots)
+
+    # Simulate a message that already has a set of commands predicted by a router
+    message = Message.build("What is your purpose?")
+    if message_commands:
+        message.set(
+            prop=COMMANDS,
+            info=[command.as_dict() for command in message_commands],
+            add_to_output=True,
+        )
+
+    # When
+    result = _handle_via_nlu_in_coexistence(tracker, message)
+
+    # Then
+    assert result is expected_output

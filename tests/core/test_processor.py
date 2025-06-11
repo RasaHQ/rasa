@@ -53,6 +53,9 @@ from rasa.dialogue_understanding.commands import (
     ChitChatAnswerCommand,
     Command,
     ErrorCommand,
+    RestartCommand,
+    SessionEndCommand,
+    SessionStartCommand,
     SetSlotCommand,
     StartFlowCommand,
 )
@@ -2910,3 +2913,101 @@ async def test_processor_trigger_anonymization(
         assert len(logs) == 1
 
     mock_run.assert_called_once_with(tracker)
+
+
+@pytest.mark.parametrize(
+    "nlu_adapted_commands, expected_value_of_route_session_to_calm",
+    [
+        # No commands
+        # -> route to DM1
+        ([], False),
+        # Only system command
+        # -> defer routing
+        ([SessionStartCommand()], None),
+        ([SessionEndCommand()], None),
+        ([RestartCommand()], None),
+        # One intent-triggered command -> route to CALM
+        ([ChitChatAnswerCommand()], True),
+        # Mix of system and intent commands -> route to CALM
+        ([SessionStartCommand(), ChitChatAnswerCommand()], True),
+    ],
+)
+def test_determine_route_to_calm_slot_value(
+    nlu_adapted_commands: list,
+    expected_value_of_route_session_to_calm: bool,
+    flow_policy_bot_agent: Agent,
+):
+    # Given
+    processor = flow_policy_bot_agent.processor
+    nlu_adapted_commands = [command.as_dict() for command in nlu_adapted_commands]
+    # When
+    route_session_to_calm = processor._determine_route_to_calm_slot_value(
+        nlu_adapted_commands
+    )
+    # Then
+    assert route_session_to_calm == expected_value_of_route_session_to_calm
+
+
+@pytest.mark.parametrize(
+    "predicted_commands, expected_route_session_to_calm_slot_value",
+    [
+        # No commands at all
+        # -> should route to DM1 (False)
+        ([], False),
+        # Only SessionStartCommand
+        # -> should route is None
+        ([SessionStartCommand()], None),
+        # Only system commands
+        # -> should route is None
+        ([SessionStartCommand()], None),
+        ([SessionEndCommand()], None),
+        ([RestartCommand()], None),
+        # Contains an intent command
+        # -> should route to CALM (True)
+        ([SessionStartCommand(), ChitChatAnswerCommand()], True),
+    ],
+)
+@pytest.mark.asyncio
+@patch.object(target=MessageProcessor, attribute="_nlu_to_commands")
+async def test_parse_message_with_commands_and_intents_sets_the_coexistence_routing_slot(  # noqa: E501
+    mock_nlu_to_commands: Mock,
+    predicted_commands: list,
+    expected_route_session_to_calm_slot_value: Optional[bool],
+    flow_policy_bot_agent: Agent,
+):
+    # Given
+    processor = flow_policy_bot_agent.processor
+
+    # In coexistence boolean slot ROUTE_TO_CALM_SLOT needs to be defined, otherwise
+    # it's routed to CALM by default
+    tracker = DialogueStateTracker.from_events(
+        sender_id=uuid.uuid4().hex,
+        evts=[],
+        slots=[BooleanSlot(name=ROUTE_TO_CALM_SLOT, mappings=[], initial_value=None)],
+    )
+
+    message = Message.build("What is your purpose?")
+    # Simulate `_nlu_to_commands`
+    mock_nlu_to_commands.return_value = [
+        command.as_dict() for command in predicted_commands
+    ]
+
+    # When
+    parse_data = await processor._parse_message_with_commands_and_intents(
+        message, tracker
+    )
+
+    # Then
+    slot_commands = [
+        c for c in parse_data[COMMANDS] if c.get("command") == SetSlotCommand.command()
+    ]
+
+    if expected_route_session_to_calm_slot_value is None:
+        # slot should be set to None explicitly
+        assert len(slot_commands) == 1
+        assert slot_commands[0]["name"] == ROUTE_TO_CALM_SLOT
+        assert slot_commands[0]["value"] is None
+    else:
+        assert len(slot_commands) == 1
+        assert slot_commands[0]["name"] == ROUTE_TO_CALM_SLOT
+        assert slot_commands[0]["value"] == expected_route_session_to_calm_slot_value
