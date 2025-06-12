@@ -207,13 +207,9 @@ pep440-version-utils = "~1.1.0"
 hvac = "^1.2.1"
 rich = "^13.4.2"
 cvg-python-sdk = "^0.5.1"
-presidio-analyzer = "^2.2.33, <2.2.34"
-presidio-anonymizer = "^2.2.354"
-faker = "^26.0.0"
 python-keycloak = "^3.12.0"
 tiktoken = "~0.7.0"
 faiss-cpu = "^1.7.4"
-pycountry = "^22.3.5"
 pymilvus = ">=2.4.1,<2.4.2" # pinned because 2.4.2 introduces milvus-lite dependency that fails on windows
 qdrant-client = "~1.9.1"
 psutil = "^5.9.5"
@@ -374,7 +370,6 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "tests/test_telemetry.py" = [ "E501",]
 "tests/shared/core/test_domain.py" = [ "E501",]
-
 
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.3.5,<0.4.0"

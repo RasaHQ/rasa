@@ -15,6 +15,7 @@ import time
 import uuid
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Coroutine,
@@ -42,7 +43,6 @@ from pytest import (
 )
 from sanic import Sanic
 from sanic.request import Request
-from spacy import Language
 from swagger_coverage_py.reporter import CoverageReporter
 
 import rasa.core.run
@@ -120,6 +120,9 @@ from tests.license_env import (
     UNSCOPED_LICENSE_ENV,
     VALID_LICENSE_ENV,
 )
+
+if TYPE_CHECKING:
+    from spacy import Language
 
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separately installable pytest-cli plugin.
@@ -875,7 +878,7 @@ def spacy_model(spacy_nlp_component: SpacyNLP) -> SpacyModel:
 
 
 @pytest.fixture(scope="session")
-def spacy_nlp(spacy_model: SpacyModel) -> Language:
+def spacy_nlp(spacy_model: SpacyModel) -> "Language":
     return spacy_model.model
 
 

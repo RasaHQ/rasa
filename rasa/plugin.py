@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import functools
 import sys
-from typing import TYPE_CHECKING, Any, List, Optional, Text, Union
+from typing import TYPE_CHECKING, List, Optional, Text, Union
 
 import pluggy
 
@@ -67,16 +67,6 @@ def create_tracker_store(  # type: ignore[empty-body]
     event_broker: Optional["EventBroker"],
 ) -> "TrackerStore":
     """Hook specification for wrapping with AuthRetryTrackerStore."""
-
-
-@hookspec(firstresult=True)  # type: ignore[misc]
-def init_anonymization_pipeline(endpoints_file: Optional[Text]) -> None:
-    """Hook specification for initialising the anonymization pipeline."""
-
-
-@hookspec(firstresult=True)  # type: ignore[misc]
-def get_anonymization_pipeline() -> Optional[Any]:
-    """Hook specification for getting the anonymization pipeline."""
 
 
 @hookspec  # type: ignore[misc]

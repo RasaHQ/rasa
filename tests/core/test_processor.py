@@ -77,7 +77,6 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
 from rasa.exceptions import ActionLimitReached
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.plugin import plugin_manager
 from rasa.privacy.privacy_manager import BackgroundPrivacyManager
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
@@ -2030,50 +2029,6 @@ async def test_processor_fetch_full_tracker_with_initial_session_existing_tracke
     tracker = await default_processor.fetch_full_tracker_with_initial_session(sender_id)
     assert tracker.sender_id == sender_id
     assert all([event in expected_events for event in tracker.events])
-
-
-async def test_run_anonymization_pipeline_no_pipeline(
-    monkeypatch: MonkeyPatch,
-    default_agent: Agent,
-) -> None:
-    processor = default_agent.processor
-    sender_id = uuid.uuid4().hex
-    tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
-
-    manager = plugin_manager()
-    monkeypatch.setattr(
-        manager.hook, "get_anonymization_pipeline", MagicMock(return_value=None)
-    )
-    event_diff = MagicMock()
-    monkeypatch.setattr(
-        "rasa.shared.core.trackers.TrackerEventDiffEngine.event_difference", event_diff
-    )
-    await processor.run_anonymization_pipeline(tracker)
-
-    event_diff.assert_not_called()
-
-
-async def test_run_anonymization_pipeline_mocked_pipeline(
-    monkeypatch: MonkeyPatch,
-    default_agent: Agent,
-) -> None:
-    processor = default_agent.processor
-    sender_id = uuid.uuid4().hex
-    tracker = await processor.tracker_store.get_or_create_tracker(sender_id)
-
-    manager = plugin_manager()
-    monkeypatch.setattr(
-        manager.hook,
-        "get_anonymization_pipeline",
-        MagicMock(return_value="mock_pipeline"),
-    )
-    event_diff = MagicMock()
-    monkeypatch.setattr(
-        "rasa.shared.core.trackers.TrackerEventDiffEngine.event_difference", event_diff
-    )
-    await processor.run_anonymization_pipeline(tracker)
-
-    event_diff.assert_called_once()
 
 
 async def test_run_command_processor_starting_a_flow(

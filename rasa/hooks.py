@@ -9,7 +9,6 @@ import pluggy
 #  across the codebase.
 
 if TYPE_CHECKING:
-    from rasa.anonymization.anonymization_pipeline import AnonymizationPipeline
     from rasa.cli import SubParsersAction
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.tracker_stores.tracker_store import TrackerStore
@@ -88,30 +87,3 @@ def create_tracker_store(
             endpoint_config=endpoint_config, domain=domain, event_broker=event_broker
         )
     return endpoint_config
-
-
-@hookimpl  # type: ignore[misc]
-def init_anonymization_pipeline(endpoints_file: Optional[Text]) -> None:
-    """Hook implementation for initializing the anonymization pipeline."""
-    from rasa.anonymization.anonymization_pipeline import load_anonymization_pipeline
-
-    load_anonymization_pipeline(endpoints_file)
-
-
-@hookimpl  # type: ignore[misc]
-def get_anonymization_pipeline() -> Optional["AnonymizationPipeline"]:
-    """Hook implementation for getting the anonymization pipeline."""
-    from rasa.anonymization.anonymization_pipeline import AnonymizationPipelineProvider
-
-    return AnonymizationPipelineProvider().get_anonymization_pipeline()
-
-
-@hookimpl  # type: ignore[misc]
-def after_server_stop() -> None:
-    """Hook implementation for stopping the anonymization pipeline."""
-    from rasa.anonymization.anonymization_pipeline import AnonymizationPipelineProvider
-
-    anon_pipeline = AnonymizationPipelineProvider().get_anonymization_pipeline()
-
-    if anon_pipeline is not None:
-        anon_pipeline.stop()

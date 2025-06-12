@@ -23,7 +23,6 @@ import structlog
 from terminaltables import SingleTable
 
 import rasa
-import rasa.anonymization.utils
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa import model
@@ -1748,7 +1747,6 @@ def identify_endpoint_config_traits(
 
     traits = append_tracing_trait(traits, endpoints_file)
     traits = append_metrics_trait(traits, endpoints_file)
-    traits = append_anonymization_trait(traits, endpoints_file)
 
     _identify(traits, context)
 
@@ -1782,27 +1780,6 @@ def append_metrics_trait(
     )
     traits[METRICS_BACKEND] = (
         metrics_config.type if metrics_config is not None else None
-    )
-
-    return traits
-
-
-def append_anonymization_trait(
-    traits: Dict[str, Any], endpoints_file: Optional[str]
-) -> Dict[str, Any]:
-    """Append the anonymization trait to the traits dictionary."""
-    from rasa.anonymization.anonymisation_rule_yaml_reader import (
-        KEY_ANONYMIZATION_RULES,
-    )
-
-    anonymization_config = rasa.anonymization.utils.read_endpoint_config(
-        endpoints_file, KEY_ANONYMIZATION_RULES
-    )
-
-    traits[KEY_ANONYMIZATION_RULES] = (
-        rasa.anonymization.utils.extract_anonymization_traits(
-            anonymization_config, KEY_ANONYMIZATION_RULES
-        )
     )
 
     return traits

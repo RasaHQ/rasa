@@ -143,9 +143,6 @@ def main(raw_arguments: Optional[List[str]] = None) -> None:
             if not is_studio_command:
                 plugin_manager().hook.init_telemetry(endpoints_file=endpoints_file)
                 plugin_manager().hook.init_managers(endpoints_file=endpoints_file)
-                plugin_manager().hook.init_anonymization_pipeline(
-                    endpoints_file=endpoints_file
-                )
 
             cmdline_arguments.func(cmdline_arguments)
         elif hasattr(cmdline_arguments, "version"):

@@ -3,14 +3,13 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import structlog
 from structlog.dev import ConsoleRenderer
 from structlog.typing import EventDict, WrappedLogger
 from structlog_sentry import SentryProcessor
 
-from rasa.plugin import plugin_manager
 from rasa.shared.constants import (
     DEFAULT_LOG_LEVEL,
     DEFAULT_LOG_LEVEL_LLM,
@@ -35,48 +34,6 @@ class HumanConsoleRenderer(ConsoleRenderer):
         return super().__call__(logger, name, event_dict)
 
 
-def _anonymizer(
-    _: structlog.BoundLogger, __: str, event_dict: Dict[str, Any]
-) -> Dict[str, Any]:
-    """Anonymizes event dict."""
-    anonymizable_keys = [
-        "text",
-        "response_text",
-        "user_text",
-        "slots",
-        "parse_data_text",
-        "parse_data_entities",
-        "prediction_events",
-        "tracker_latest_message",
-        "prefilled_slots",
-        "message",
-        "response",
-        "slot_candidates",
-        "rasa_event",
-        "rasa_events",
-        "tracker_states",
-        "current_states",
-        "old_states",
-        "current_states",
-        "successes",
-        "current_entity",
-        "next_entity",
-        "states",
-        "entity",
-        "token_text",
-        "user_message",
-        "json_message",
-    ]
-    anonymization_pipeline = plugin_manager().hook.get_anonymization_pipeline()
-
-    if anonymization_pipeline:
-        for key in anonymizable_keys:
-            if key in event_dict:
-                anonymized_value = anonymization_pipeline.log_run(event_dict[key])
-                event_dict[key] = anonymized_value
-    return event_dict
-
-
 def configure_structlog(
     log_level: Optional[int] = None,
     include_time: bool = False,
@@ -95,7 +52,6 @@ def configure_structlog(
     )
 
     shared_processors = [
-        _anonymizer,
         # Processors that have nothing to do with output,
         # e.g., add timestamps or log level names.
         # If log level is too low, abort pipeline and throw away log entry.

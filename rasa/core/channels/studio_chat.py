@@ -187,7 +187,6 @@ class StudioChatInput(SocketIOInput):
                 output_channel = self.get_output_channel()
 
                 await processor._run_prediction_loop(output_channel, tracker)
-                await processor.run_anonymization_pipeline(tracker)
                 await self.agent.tracker_store.save(tracker)
 
         await self.on_tracker_updated(tracker)

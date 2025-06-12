@@ -16,7 +16,6 @@ import rasa.api
 import rasa.constants
 import rasa.utils.licensing
 from rasa import telemetry
-from rasa.anonymization.anonymisation_rule_yaml_reader import KEY_ANONYMIZATION_RULES
 from rasa.cli.inspect import inspect
 from rasa.dialogue_understanding.generator.constants import (
     DEFAULT_LLM_CONFIG as LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG,
@@ -617,18 +616,6 @@ def test_segment_gets_called_for_identify(
         assert "userId" in b
         assert b["traits"][TRACING_BACKEND] == tracing_backend
         assert b["traits"][METRICS_BACKEND] == metrics_backend
-        assert b["traits"][KEY_ANONYMIZATION_RULES] == {
-            "enabled": True,
-            "metadata": {
-                "language": "en",
-                "model_provider": "spacy",
-                "model_name": "en_core_web_lg",
-            },
-            "number_of_rule_lists": 1,
-            "number_of_rules": 2,
-            "substitutions": {"mask": 2, "faker": 0, "text": 0, "not_defined": 0},
-            "entities": ["CREDIT_CARD", "IBAN_CODE"],
-        }
         assert (
             b["context"]["license_hash"]
             == hashlib.sha256(valid_license.encode("utf-8")).hexdigest()
@@ -677,7 +664,6 @@ def test_identify_sets_default_traits(
         assert "userId" in b
         assert b["traits"][TRACING_BACKEND] is None
         assert b["traits"][METRICS_BACKEND] is None
-        assert b["traits"][KEY_ANONYMIZATION_RULES] == {"enabled": False}
         assert (
             b["context"]["license_hash"]
             == hashlib.sha256(valid_license.encode("utf-8")).hexdigest()

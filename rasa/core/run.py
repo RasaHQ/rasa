@@ -35,7 +35,6 @@ from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.development_inspector import DevelopmentInspectProxy
 from rasa.core.persistor import StorageType
-from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.yaml import read_config_file
 from rasa.utils import licensing
@@ -212,10 +211,6 @@ def configure_app(
 
             logger.info("Killing Sanic server now.")
             running_app.stop()  # kill the sanic server
-
-    @app.after_server_stop
-    async def after_server_stop(running_app: Sanic) -> None:
-        plugin_manager().hook.after_server_stop()
 
     if server_listeners:
         for listener, event in server_listeners:

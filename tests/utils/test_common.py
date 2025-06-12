@@ -18,16 +18,11 @@ from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.shared.exceptions import RasaException
 from rasa.utils.common import (
     RepeatedLogFilter,
-    configure_library_logging,
     configure_logging_and_warnings,
     configure_logging_from_file,
     find_unavailable_packages,
     get_bool_env_variable,
 )
-
-FAKER_LOGGER = logging.getLogger("faker")
-PRESIDIO_ANALYZER_LOGGER = logging.getLogger("presidio_analyzer")
-PRESIDIO_ANONYMIZER_LOGGER = logging.getLogger("presidio_anonymizer")
 
 
 @pytest.fixture(autouse=True)
@@ -431,25 +426,3 @@ def test_get_bool_env_variable_with_invalid_value(
 
     with pytest.raises(RasaException):
         get_bool_env_variable(env_name, default_value)
-
-
-def test_cli_missing_log_level_default_used_anonymization() -> None:
-    """Test CLI without log level parameter or env var uses default."""
-    configure_library_logging()
-
-    # Default log level for libraries is currently ERROR
-    assert FAKER_LOGGER.level == logging.ERROR
-    assert PRESIDIO_ANALYZER_LOGGER.level == logging.ERROR
-    assert PRESIDIO_ANONYMIZER_LOGGER.level == logging.ERROR
-
-
-@mock.patch.dict(
-    os.environ, {"LOG_LEVEL_FAKER": "WARNING", "LOG_LEVEL_PRESIDIO": "INFO"}
-)
-def test_cli_missing_log_level_env_var_used_anonymization() -> None:
-    """Test CLI without log level uses env var for PII libraries."""
-    configure_library_logging()
-
-    assert FAKER_LOGGER.level == logging.WARNING
-    assert PRESIDIO_ANALYZER_LOGGER.level == logging.INFO
-    assert PRESIDIO_ANONYMIZER_LOGGER.level == logging.INFO

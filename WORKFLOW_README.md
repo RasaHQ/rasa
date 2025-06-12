@@ -20,11 +20,6 @@ This workflow runs all unit tests on OS Windows. It is scheduled to run once eve
 If this workflow fails a Slack notification is sent to the channel `#atom-squad-alerts`.
 This workflow can also be run as a [workflow dispatch](#glossary) event.
 
-### Run Tests On Main
-This runs PII language and model provider specific tests on every merge to `main` and `release branches`. This workflow can also be 
-run as a [workflow dispatch](#glossary) event. 
-If this workflow fails a Slack notification is sent to the channel `#atom-squad-alerts`.
-
 ### E2E Test on Bot with CALM supported providers
 This workflow runs a E2E test(s) on a bot, using the various CALM supported LLM 
 and Embeddings providers, to verify CALM's integration/compatibility with the 
