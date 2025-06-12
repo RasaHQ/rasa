@@ -53,7 +53,8 @@ class FlowStackFrameType(str, Enum):
             typ: The string to create the `FlowStackFrameType` from.
 
         Returns:
-            The created `FlowStackFrameType`."""
+        The created `FlowStackFrameType`.
+        """
         if typ is None:
             return FlowStackFrameType.REGULAR
         elif typ == FlowStackFrameType.INTERRUPT.value:
@@ -107,7 +108,8 @@ class BaseFlowStackFrame(DialogueStackFrame):
             all_flows: All flows in the assistant.
 
         Returns:
-            The current flow."""
+        The current flow.
+        """
         flow = all_flows.flow_by_id(self.flow_id)
         if not flow:
             # we shouldn't ever end up with a frame that belongs to a non
@@ -122,9 +124,20 @@ class BaseFlowStackFrame(DialogueStackFrame):
             all_flows: All flows in the assistant.
 
         Returns:
-            The current flow step."""
+            The current flow step.
+        """
         flow = self.flow(all_flows)
-        step = flow.step_by_id(self.step_id)
+
+        step_id = self.step_id
+        # in 3.11.4 we added the flow_id as a prefix to the step_id
+        # this causes issues when loading old dialogues as the prefix is missing
+        # (see https://rasahq.atlassian.net/jira/software/c/projects/ENG/boards/43?selectedIssue=ENG-1939)
+        # so we try to find the step by adding the flow prefix to old step_ids as well
+        # TODO: remove this in 4.0.0
+        alternative_step_id = f"{self.flow_id}_{self.step_id}"
+
+        step = flow.step_by_id(step_id) or flow.step_by_id(alternative_step_id)
+
         if not step:
             # we shouldn't ever end up with a frame that belongs to a non
             # existing step, but if we do, we should raise an error

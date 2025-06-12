@@ -66,12 +66,23 @@ def test_flow_get_flow_non_existent_id():
         frame.flow(all_flows)
 
 
-def test_flow_get_step():
-    frame = UserFlowStackFrame(frame_id="test", flow_id="foo", step_id="my_step")
+@pytest.mark.parametrize(
+    "frame_step_id,flow_step_id",
+    (
+        # Format of step IDS <=3.11.3
+        ("0_collect_step", "0_collect_step"),
+        # Format of step IDS >=3.11.4
+        ("foo_0_collect_step", "foo_0_collect_step"),
+        # Transition from <=3.11.3 to >=3.11.4
+        ("0_collect_step", "foo_0_collect_step"),
+    ),
+)
+def test_flow_get_step(frame_step_id: str, flow_step_id: str):
+    frame = UserFlowStackFrame(frame_id="test", flow_id="foo", step_id=frame_step_id)
     step = ActionFlowStep(
         idx=1,
         action="action_listen",
-        custom_id="my_step",
+        custom_id=flow_step_id,
         description=None,
         metadata={},
         next=FlowStepLinks(links=[]),
