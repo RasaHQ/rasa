@@ -73,13 +73,12 @@ def test_merge_flows_with_overwrite_file(
     studio_flows_list = FlowsList([flow_a, flow_b])
     mock_studio_data_importer.get_user_flows.return_value = studio_flows_list
 
-    data_paths = [local_file]
     mapper = RasaPrimitiveStorageMapper(
-        domain_path=None, training_data_paths=data_paths
+        domain_path=None, training_data_paths=[local_file]
     )
 
     merge_flows_with_overwrite(
-        data_paths=data_paths,
+        data_path=local_file,
         handler=mock_studio_data_handler,
         data_from_studio=mock_studio_data_importer,
         data_local=mock_local_data_importer,
@@ -116,11 +115,10 @@ def test_merge_flows_with_overwrite_dir(
     studio_flows_list = FlowsList([flow_x, flow_y])
     mock_studio_data_importer.get_user_flows.return_value = studio_flows_list
 
-    data_paths = [data_dir]
-    mapper = RasaPrimitiveStorageMapper(None, data_paths)
+    mapper = RasaPrimitiveStorageMapper(None, [data_dir])
 
     merge_flows_with_overwrite(
-        data_paths=data_paths,
+        data_path=data_dir,
         handler=mock_studio_data_handler,
         data_from_studio=mock_studio_data_importer,
         data_local=mock_local_data_importer,
@@ -163,11 +161,10 @@ def test_merge_flows_with_overwrite_dir_no_leftover(
     mock_local_data_importer.get_user_flows.return_value = local_flows
     mock_studio_data_importer.get_user_flows.return_value = local_flows
 
-    data_paths = [data_dir]
-    mapper = RasaPrimitiveStorageMapper(None, data_paths)
+    mapper = RasaPrimitiveStorageMapper(None, [data_dir])
 
     merge_flows_with_overwrite(
-        data_paths=data_paths,
+        data_path=data_dir,
         handler=mock_studio_data_handler,
         data_from_studio=mock_studio_data_importer,
         data_local=mock_local_data_importer,
@@ -208,11 +205,10 @@ def test_merge_flows_with_overwrite_dir_has_leftover(
     studio_flows_list = FlowsList([local_flow_two, flow_three, flow_four])
     mock_studio_data_importer.get_user_flows.return_value = studio_flows_list
 
-    data_paths = [data_dir]
-    mapper = RasaPrimitiveStorageMapper(None, data_paths)
+    mapper = RasaPrimitiveStorageMapper(None, [data_dir])
 
     merge_flows_with_overwrite(
-        data_paths=data_paths,
+        data_path=data_dir,
         handler=mock_studio_data_handler,
         data_from_studio=mock_studio_data_importer,
         data_local=mock_local_data_importer,

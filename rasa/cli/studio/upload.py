@@ -54,3 +54,11 @@ def set_upload_arguments(parser: argparse.ArgumentParser) -> None:
         type=str,
         help="Name of intents to upload to Rasa Studio",
     )
+
+    parser.add_argument(
+        "assistant_name",
+        default=None,
+        nargs="?",
+        type=str,
+        help="Name of the assistant on Rasa Studio",
+    )

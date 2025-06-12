@@ -181,9 +181,7 @@ def test_download_handler_nlu_based_all_files(
     name_space = argparse.Namespace(
         assistant_name="test",
         domain=temp_dir / "domain.yml",
-        data=[
-            temp_dir / "nlu.yml",
-        ],
+        data=[temp_dir / "nlu.yml"],
         overwrite=False,
         config=temp_dir / "config.yml",
         endpoints=temp_dir / "endpoints.yml",
@@ -244,9 +242,7 @@ def test_download_handler_nlu_based_all_dirs(
     name_space = argparse.Namespace(
         assistant_name="test",
         domain=temp_dir / "domain_folder",
-        data=[
-            temp_dir / "data",
-        ],
+        data=[temp_dir / "data"],
         overwrite=False,
         config=temp_dir / "config.yml",
         endpoints=temp_dir / "endpoints.yml",
@@ -312,9 +308,7 @@ def test_download_handler_nlu_based_all_dir_overwrite(
     name_space = argparse.Namespace(
         assistant_name="test",
         domain=temp_dir / "domain_folder",
-        data=[
-            temp_dir / "data",
-        ],
+        data=[temp_dir / "data"],
         overwrite=True,
         config=temp_dir / "config.yml",
         endpoints=temp_dir / "endpoints.yml",
@@ -381,9 +375,7 @@ def test_download_handler_nlu_based_all_files_overwrite(
     name_space = argparse.Namespace(
         assistant_name="test",
         domain=domain_file,
-        data=[
-            temp_dir / "nlu.yml",
-        ],
+        data=[temp_dir / "nlu.yml"],
         overwrite=True,
         config=temp_dir / "config.yml",
         endpoints=temp_dir / "endpoints.yml",
@@ -453,9 +445,7 @@ def test_download_handler_modern_all_files(
     name_space = argparse.Namespace(
         assistant_name="test",
         domain=temp_dir / "domain.yml",
-        data=[
-            temp_dir / "flows.yml",
-        ],
+        data=[temp_dir / "flows.yml"],
         overwrite=False,
         config=temp_dir / "config.yml",
         endpoints=temp_dir / "endpoints.yml",
@@ -525,9 +515,7 @@ def test_download_handler_modern_all_dirs(
     name_space = argparse.Namespace(
         assistant_name="test",
         domain=temp_dir / "domain_folder",
-        data=[
-            temp_dir / "data_flows",
-        ],
+        data=[temp_dir / "data_flows"],
         overwrite=False,
         config=temp_dir / "config.yml",
         endpoints=temp_dir / "endpoints.yml",
@@ -597,9 +585,7 @@ def test_download_handler_modern_all_files_overwrite(
     name_space = argparse.Namespace(
         assistant_name="test",
         domain=domain_file_path,
-        data=[
-            temp_dir / "flows.yml",
-        ],
+        data=[temp_dir / "flows.yml"],
         overwrite=True,
         config=temp_dir / "config.yml",
         endpoints=temp_dir / "endpoints.yml",
@@ -672,9 +658,7 @@ def test_download_handler_modern_all_dirs_overwrite(
     name_space = argparse.Namespace(
         assistant_name="test",
         domain=temp_dir / "domain_folder",
-        data=[
-            temp_dir / "data_flows",
-        ],
+        data=[temp_dir / "data_flows"],
         overwrite=True,
         config=temp_dir / "config.yml",
         endpoints=temp_dir / "endpoints.yml",

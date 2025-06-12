@@ -18,7 +18,7 @@ STUDIO_FLOWS_DIR_NAME = "studio_flows"
 
 
 def merge_flows_with_overwrite(
-    data_paths: List[Path],
+    data_path: Path,
     handler: Any,
     data_from_studio: TrainingDataImporter,
     data_local: TrainingDataImporter,
@@ -28,17 +28,12 @@ def merge_flows_with_overwrite(
     Merges flows data from a file or directory when overwrite is enabled.
 
     Args:
-        data_paths: List of paths to the training data.
+        data_path: List of paths to the training data.
         handler: The StudioDataHandler instance.
         data_from_studio: The TrainingDataImporter instance for Studio data.
         data_local: The TrainingDataImporter instance for local data.
         mapper: The RasaPrimitiveStorageMapper instance for mapping.
     """
-    if len(data_paths) != 1:
-        # TODO: Handle multiple data paths.
-        raise NotImplementedError("Multiple data paths are not supported yet.")
-
-    data_path = data_paths[0]
     if data_path.is_file():
         merge_training_data_file(handler, data_from_studio, data_local, data_path)
     elif data_path.is_dir():
@@ -132,7 +127,8 @@ def merge_nlu_in_directory(
         )
         nlu_data = nlu_data.merge(local_nlu.get_nlu_data())
 
-    pretty_write_nlu_yaml(read_yaml(nlu_data.nlu_as_yaml()), nlu_file_path)
+    if nlu_yaml := nlu_data.nlu_as_yaml():
+        pretty_write_nlu_yaml(read_yaml(nlu_yaml), nlu_file_path)
 
 
 def get_nlu_path(
@@ -211,14 +207,16 @@ def merge_flows_in_directory(
     local_flow_paths: Set[Path] = _get_local_flow_paths(local_flows, mapper)
 
     # Track updated flows and update local files with Studio flow data.
-    all_updated_flows: List[Flow] = []
+    all_updated_flows_ids: List[Text] = []
     for flow_file_path in local_flow_paths:
-        updated_file_flows = _update_flow_file(flow_file_path, studio_flow_map)
-        all_updated_flows.extend(updated_file_flows)
+        updated_flows_ids = _update_flow_file(flow_file_path, studio_flow_map)
+        all_updated_flows_ids.extend(updated_flows_ids)
 
     # Identify new Studio flows and save them as separate files in the directory.
     new_flows = [
-        flow for flow in studio_flow_map.values() if flow not in all_updated_flows
+        flow
+        for flow_id, flow in studio_flow_map.items()
+        if flow_id not in all_updated_flows_ids
     ]
     _dump_flows_as_separate_files(new_flows, data_path)
 
@@ -243,7 +241,7 @@ def _get_local_flow_paths(
 
 def _update_flow_file(
     flow_file_path: Path, studio_flows_map: Dict[Text, Any]
-) -> List[Flow]:
+) -> List[Text]:
     """
     Reads a flow file, updates outdated flows, and replaces them with studio versions.
 
@@ -252,31 +250,25 @@ def _update_flow_file(
         studio_flows_map: A dictionary mapping flow IDs to their updated versions.
 
     Returns:
-        A list of flows from the updated flow file.
+        A list of Flows IDs from the updated flow file.
     """
     file_flows = YAMLFlowsReader.read_from_file(flow_file_path, False)
-    updated_list: List[Any] = []
-    has_changes = False
 
-    for flow in file_flows.underlying_flows:
-        studio_flow = studio_flows_map.get(flow.id)
-        if studio_flow is not None and studio_flow != flow:
-            updated_list.append(studio_flow)
-            has_changes = True
-        else:
-            updated_list.append(flow)
+    # Build a list of flows, replacing any outdated flow with its studio version
+    updated_flows = [
+        studio_flows_map.get(flow.id, flow) or flow
+        for flow in file_flows.underlying_flows
+    ]
 
-    if has_changes:
-        new_flows_list = FlowsList(underlying_flows=updated_list)
-        new_flows_list = strip_default_next_references(new_flows_list)
+    # If the updated flows differ from the original file flows, write them back
+    if updated_flows != file_flows.underlying_flows:
         YamlFlowsWriter.dump(
-            flows=new_flows_list.underlying_flows,
+            flows=updated_flows,
             filename=flow_file_path,
             should_clean_json=True,
         )
-        return new_flows_list.underlying_flows
 
-    return file_flows.underlying_flows
+    return [flow.id for flow in updated_flows]
 
 
 def _dump_flows_as_separate_files(flows: List[Any], data_path: Path) -> None:

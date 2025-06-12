@@ -246,6 +246,7 @@ def build_calm_import_parts(
     )
 
     config = read_yaml_file(config_path, expand_env_vars=False)
+    endpoints = read_yaml_file(endpoints_path, expand_env_vars=False)
     assistant_name = assistant_name or _get_assistant_name(config)
 
     domain_from_files = importer.get_user_domain().as_dict()
@@ -269,7 +270,6 @@ def build_calm_import_parts(
     nlu_examples_yaml = RasaYAMLWriter().dumps(nlu_examples)
     nlu = read_yaml(nlu_examples_yaml, expand_env_vars=False)
 
-    endpoints = read_yaml_file(endpoints_path, expand_env_vars=False)
     parts = CALMImportParts(
         flows=flows,
         domain=domain,
@@ -285,8 +285,8 @@ def build_calm_import_parts(
 def upload_calm_assistant(
     args: argparse.Namespace, endpoint: str, verify: bool = True
 ) -> StudioResult:
-    def yaml_or_empty(part: Dict[Text, Any]) -> str:
-        return dump_obj_as_yaml_to_string(part) if part else ""
+    def yaml_or_empty(part: Dict[Text, Any]) -> Optional[str]:
+        return dump_obj_as_yaml_to_string(part) if part else None
 
     run_validation(args)
     structlogger.info(
@@ -419,7 +419,6 @@ def make_request(endpoint: str, graphql_req: Dict, verify: bool = True) -> Studi
         },
         verify=verify,
     )
-
     if results_logger.response_has_errors(res.json()):
         track_upload_to_studio_failed(res.json())
         return StudioResult.error(res.json())
@@ -447,34 +446,47 @@ def _add_missing_entities(
 
 def build_import_request(
     assistant_name: str,
-    flows_yaml: str,
-    domain_yaml: str,
-    config_yaml: str,
-    endpoints: str,
-    nlu_yaml: str = "",
+    flows_yaml: Optional[str] = None,
+    domain_yaml: Optional[str] = None,
+    config_yaml: Optional[str] = None,
+    endpoints: Optional[str] = None,
+    nlu_yaml: Optional[str] = None,
 ) -> Dict:
-    # b64encode expects bytes and returns bytes, so we need to decode to string
-    base64_domain = convert_string_to_base64(domain_yaml)
-    base64_flows = convert_string_to_base64(flows_yaml)
-    base64_config = convert_string_to_base64(config_yaml)
-    base64_nlu = convert_string_to_base64(nlu_yaml)
-    base64_endpoints = convert_string_to_base64(endpoints)
+    """Builds the GraphQL request for uploading a modern assistant.
+
+    Args:
+        assistant_name: The name of the assistant
+        flows_yaml: The YAML representation of the flows
+        domain_yaml: The YAML representation of the domain
+        config_yaml: The YAML representation of the config
+        endpoints: The YAML representation of the endpoints
+        nlu_yaml: The YAML representation of the NLU data
+
+    Returns:
+        A dictionary representing the GraphQL request for uploading the assistant.
+    """
+    inputs_map = {
+        "domain": domain_yaml,
+        "flows": flows_yaml,
+        "config": config_yaml,
+        "endpoints": endpoints,
+        "nlu": nlu_yaml,
+    }
+
+    payload = {
+        field: convert_string_to_base64(value)
+        for field, value in inputs_map.items()
+        if value is not None
+    }
+
+    variables_input = {"assistantName": assistant_name, **payload}
 
     graphql_req = {
         "query": (
             "mutation UploadModernAssistant($input: UploadModernAssistantInput!)"
             "{\n  uploadModernAssistant(input: $input)\n}"
         ),
-        "variables": {
-            "input": {
-                "assistantName": assistant_name,
-                "domain": base64_domain,
-                "flows": base64_flows,
-                "nlu": base64_nlu,
-                "config": base64_config,
-                "endpoints": base64_endpoints,
-            }
-        },
+        "variables": {"input": variables_input},
     }
 
     return graphql_req

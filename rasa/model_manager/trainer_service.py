@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 import structlog
 from pydantic import BaseModel, ConfigDict
 
-from rasa.constants import MODEL_ARCHIVE_EXTENSION
+from rasa.constants import MODEL_ARCHIVE_EXTENSION, RASA_DIR_NAME
 from rasa.model_manager import config
 from rasa.model_manager.utils import (
     ensure_base_directory_exists,
@@ -171,7 +171,7 @@ def seed_training_directory_with_rasa_cache(
             training_base_path=training_base_path,
         )
         # copy the cache to the training directory
-        shutil.copytree(src=cache_path, dst=subpath(training_base_path, ".rasa"))
+        shutil.copytree(src=cache_path, dst=subpath(training_base_path, RASA_DIR_NAME))
 
 
 def persist_rasa_cache(assistant_id: str, training_base_path: str) -> None:
@@ -184,12 +184,12 @@ def persist_rasa_cache(assistant_id: str, training_base_path: str) -> None:
     cache_path = cache_for_assistant_path(assistant_id)
 
     # if the training failed and didn't create a cache, skip this step
-    if not os.path.exists(subpath(training_base_path, ".rasa")):
+    if not os.path.exists(subpath(training_base_path, RASA_DIR_NAME)):
         return
 
     # clean up the cache directory first
     shutil.rmtree(cache_path, ignore_errors=True)
-    shutil.copytree(src=subpath(training_base_path, ".rasa"), dst=cache_path)
+    shutil.copytree(src=subpath(training_base_path, RASA_DIR_NAME), dst=cache_path)
 
 
 def write_training_data_to_files(

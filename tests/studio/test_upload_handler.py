@@ -36,7 +36,7 @@ from tests.studio.conftest import (
     [
         (
             argparse.Namespace(
-                assistant_name=["test"],
+                assistant_name="test",
                 calm=True,
                 domain=Path("data/upload/calm/domain/"),
                 data=[Path("data/upload/calm/data/")],
@@ -71,7 +71,7 @@ from tests.studio.conftest import (
         # tests that customized patterns are uploaded only when they are present
         (
             argparse.Namespace(
-                assistant_name=["test"],
+                assistant_name="test",
                 calm=True,
                 domain=Path("data/upload/calm/domain/domain.yml"),
                 data=[
@@ -100,7 +100,6 @@ from tests.studio.conftest import (
                                 Path("data/upload/customized_default_flows.yml")
                             )
                         ),
-                        "nlu": encode_yaml(""),
                         "config": encode_yaml(
                             get_calm_config_yaml(Path("data/upload/calm/config.yml"))
                         ),
@@ -112,7 +111,7 @@ from tests.studio.conftest import (
         # test when endpoints.yml contain an environment variable
         (
             argparse.Namespace(
-                assistant_name=["test"],
+                assistant_name="test",
                 calm=True,
                 domain=Path("data/upload/calm/domain/"),
                 data=[Path("data/upload/calm/data/")],
@@ -149,7 +148,7 @@ from tests.studio.conftest import (
         # test with domain as directory
         (
             argparse.Namespace(
-                assistant_name=["test"],
+                assistant_name="test",
                 calm=True,
                 domain=Path("data/upload/simple_bot_with_domain_directory/domain"),
                 data=[Path("data/upload/simple_bot_with_domain_directory/data/")],
@@ -180,7 +179,6 @@ from tests.studio.conftest import (
                                 )
                             )
                         ),
-                        "nlu": encode_yaml(""),
                         "config": encode_yaml(
                             get_calm_config_yaml(Path("data/upload/calm/config.yml"))
                         ),
@@ -421,7 +419,7 @@ def test_build_import_request_no_nlu() -> None:
     assert graphql_req["variables"]["input"]["assistantName"] == assistant_name
     assert graphql_req["variables"]["input"]["config"] == base64_config
     assert graphql_req["variables"]["input"]["endpoints"] == base64_endpoints
-    assert graphql_req["variables"]["input"]["nlu"] == empty_string
+    assert "nlu" not in graphql_req["variables"]["input"]
 
 
 @pytest.fixture
@@ -725,3 +723,29 @@ def test_build_get_assistant_by_name_request():
 
     result = build_get_assistant_by_name_request(assistant_name)
     assert result == expected_request
+
+
+def test_build_import_request_skips_none_values() -> None:
+    assistant_name = "test_assistant"
+    sample_flows = "flows:"
+    sample_domain = "responses:"
+    req = rasa.studio.upload.build_import_request(
+        assistant_name=assistant_name,
+        flows_yaml=sample_flows,
+        domain_yaml=sample_domain,
+        config_yaml=None,
+        endpoints=None,
+        nlu_yaml=None,
+    )
+
+    payload = req["variables"]["input"]
+
+    # mandatory fields are present and encoded
+    assert payload["assistantName"] == assistant_name
+    assert payload["flows"] == encode_yaml(sample_flows)
+    assert payload["domain"] == encode_yaml(sample_domain)
+
+    # all fields that were passed as None must be absent
+    assert "config" not in payload
+    assert "endpoints" not in payload
+    assert "nlu" not in payload

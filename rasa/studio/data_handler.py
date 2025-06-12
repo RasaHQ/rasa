@@ -320,14 +320,14 @@ def create_new_flows_from_diff(
 
 
 def import_data_from_studio(
-    handler: StudioDataHandler, domain_path: Path, data_paths: List[Path]
+    handler: StudioDataHandler, domain_path: Path, data_path: Path
 ) -> Tuple[TrainingDataImporter, TrainingDataImporter]:
     """Construct TrainingDataImporter from Studio data and original data.
 
     Args:
         handler (StudioDataHandler): handler with data from studio
         domain_path (Path): Path to a domain file
-        data_paths (List[Path]): List of paths to training data files
+        data_path (List[Path]): List of paths to training data files
 
     Returns:
         Tuple[TrainingDataImporter, TrainingDataImporter]:
@@ -335,7 +335,7 @@ def import_data_from_studio(
     """
     tmp_dir = get_temp_dir_name()
     data_original = TrainingDataImporter.load_from_dict(
-        domain_path=domain_path, training_data_paths=data_paths
+        domain_path=str(domain_path), training_data_paths=[str(data_path)]
     )
 
     data_paths = []

@@ -1,6 +1,6 @@
 import argparse
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import questionary
 import structlog
@@ -46,7 +46,7 @@ def handle_download(args: argparse.Namespace) -> None:
     )
     handler.request_all_data()
 
-    domain_path, data_paths = _prepare_data_and_domain_paths(args)
+    domain_path, data_path = _prepare_data_and_domain_paths(args)
 
     # Handle config and endpoints.
     config_path, write_config = _handle_file_overwrite(
@@ -78,12 +78,12 @@ def handle_download(args: argparse.Namespace) -> None:
         structlogger.info("studio.download.config_endpoints", event_info=message)
 
     if not args.overwrite:
-        _handle_download_no_overwrite(handler, domain_path, data_paths)
+        _handle_download_no_overwrite(handler, domain_path, data_path)
     else:
-        _handle_download_with_overwrite(handler, domain_path, data_paths)
+        _handle_download_with_overwrite(handler, domain_path, data_path)
 
 
-def _prepare_data_and_domain_paths(args: argparse.Namespace) -> Tuple[Path, List[Path]]:
+def _prepare_data_and_domain_paths(args: argparse.Namespace) -> Tuple[Path, Path]:
     """Prepars the domain and data paths based on the provided arguments.
 
     Args:
@@ -115,28 +115,15 @@ def _prepare_data_and_domain_paths(args: argparse.Namespace) -> Tuple[Path, List
             domain_path = domain_path / STUDIO_DOMAIN_FILENAME
             domain_path.touch()
 
-    # Prepare data paths.
-    data_paths: List[Path] = []
-    for f in args.data:
-        data_path = rasa.cli.utils.get_validated_path(
-            f, "data", DEFAULT_DATA_PATH, none_is_valid=True
-        )
+    data_path = rasa.cli.utils.get_validated_path(
+        args.data[0], "data", DEFAULT_DATA_PATH, none_is_valid=True
+    )
 
-        if data_path is None:
-            data_path = Path(f)
-            data_path.mkdir(parents=True, exist_ok=True)
-        else:
-            data_path = Path(data_path)
+    data_path = Path(data_path or args.data[0])
+    if not (data_path.is_file() or data_path.is_dir()):
+        data_path.mkdir(parents=True, exist_ok=True)
 
-        if data_path.is_file() or data_path.is_dir():
-            data_paths.append(data_path)
-        else:
-            data_path.mkdir(parents=True, exist_ok=True)
-            data_paths.append(data_path)
-
-    # Remove duplicates while preserving order.
-    data_paths = list(dict.fromkeys(data_paths))
-    return domain_path, data_paths
+    return domain_path, data_path
 
 
 def _handle_file_overwrite(
@@ -177,7 +164,7 @@ def _handle_file_overwrite(
 
 
 def _handle_download_no_overwrite(
-    handler: StudioDataHandler, domain_path: Path, data_paths: List[Path]
+    handler: StudioDataHandler, domain_path: Path, data_path: Path
 ) -> None:
     """Handles downloading without overwriting existing files.
 
@@ -187,10 +174,10 @@ def _handle_download_no_overwrite(
         data_paths: The paths to the data files or directories.
     """
     data_from_studio, data_local = import_data_from_studio(
-        handler, domain_path, data_paths
+        handler, domain_path, data_path
     )
     _merge_domain_no_overwrite(domain_path, data_from_studio, data_local)
-    _merge_data_no_overwrite(data_paths, handler, data_from_studio, data_local)
+    _merge_data_no_overwrite(data_path, handler, data_from_studio, data_local)
 
 
 def _merge_domain_no_overwrite(
@@ -264,7 +251,7 @@ def _merge_file_domain(
 
 
 def _merge_data_no_overwrite(
-    data_paths: List[Path],
+    data_path: Path,
     handler: StudioDataHandler,
     data_from_studio: TrainingDataImporter,
     data_local: TrainingDataImporter,
@@ -272,38 +259,29 @@ def _merge_data_no_overwrite(
     """Merges NLU and flow data without overwriting existing data.
 
     Args:
-        data_paths: The paths to the data files or directories.
+        data_path: The paths to the data files or directories.
         handler: The StudioDataHandler instance.
         data_from_studio: The Studio data importer.
         data_local: The local data importer.
     """
-    if not data_paths:
+    if not data_path:
         structlogger.warning(
             "studio.download.merge_data_no_overwrite.no_path",
             event_info="No data paths provided. Skipping data merge.",
         )
         return
 
-    if len(data_paths) == 1:
-        data_path = data_paths[0]
-        if data_path.is_file():
-            _merge_file_data_no_overwrite(
-                data_path, handler, data_from_studio, data_local
-            )
-        elif data_path.is_dir():
-            _merge_dir_data_no_overwrite(
-                data_path, handler, data_from_studio, data_local
-            )
-        else:
-            structlogger.warning(
-                "studio.download.merge_data_no_overwrite.invalid_path",
-                event_info=(
-                    f"Provided path '{data_path}' is neither a file nor a directory."
-                ),
-            )
+    if data_path.is_file():
+        _merge_file_data_no_overwrite(data_path, handler, data_from_studio, data_local)
+    elif data_path.is_dir():
+        _merge_dir_data_no_overwrite(data_path, handler, data_from_studio, data_local)
     else:
-        # TODO: Handle multiple data paths.
-        raise NotImplementedError("Multiple data paths are not supported yet.")
+        structlogger.warning(
+            "studio.download.merge_data_no_overwrite.invalid_path",
+            event_info=(
+                f"Provided path '{data_path}' is neither a file nor a directory."
+            ),
+        )
 
 
 def _merge_file_data_no_overwrite(
@@ -353,25 +331,23 @@ def _merge_dir_data_no_overwrite(
 
 
 def _handle_download_with_overwrite(
-    handler: StudioDataHandler, domain_path: Path, data_paths: List[Path]
+    handler: StudioDataHandler, domain_path: Path, data_path: Path
 ) -> None:
     """Handles downloading and merging data when the user opts for overwrite.
 
     Args:
         handler: The StudioDataHandler instance.
         domain_path: The path to the domain file or directory.
-        data_paths: The paths to the data files or directories.
+        data_path: The paths to the data files or directories.
     """
     data_from_studio, data_local = import_data_from_studio(
-        handler, domain_path, data_paths
+        handler, domain_path, data_path
     )
     mapper = RasaPrimitiveStorageMapper(
-        domain_path=domain_path, training_data_paths=data_paths
+        domain_path=domain_path, training_data_paths=[data_path]
     )
     merge_domain_with_overwrite(data_from_studio, data_local, domain_path)
-    merge_flows_with_overwrite(
-        data_paths, handler, data_from_studio, data_local, mapper
-    )
+    merge_flows_with_overwrite(data_path, handler, data_from_studio, data_local, mapper)
 
 
 def _persist_nlu_diff(
@@ -432,8 +408,9 @@ def pretty_write_nlu_yaml(data: Dict, file: Path) -> None:
         file: The file to write to.
     """
     dumper = yaml.YAML()
-    for item in data["nlu"]:
-        if item.get("examples"):
-            item["examples"] = LiteralScalarString(item["examples"])
+    if nlu_data := data.get("nlu"):
+        for item in nlu_data:
+            if item.get("examples"):
+                item["examples"] = LiteralScalarString(item["examples"])
     with file.open("w", encoding="utf-8") as outfile:
         dumper.dump(data, outfile)

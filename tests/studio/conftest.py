@@ -5,6 +5,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
+import rasa.studio.link
+import rasa.studio.pull
+import rasa.studio.push
+import rasa.studio.upload
+from rasa.constants import RASA_DIR_NAME
 from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
 from rasa.shared.importers.importer import FlowSyncImporter, TrainingDataImporter
 from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string, read_yaml_file
@@ -119,3 +124,47 @@ def get_flows_yaml(flows_path: Path) -> str:
 
 def mock_questionary_text(question, default=""):
     return MagicMock(ask=lambda: "test")
+
+
+@pytest.fixture()
+def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Create a temp Rasa project that is already linked to Studio."""
+    monkeypatch.chdir(tmp_path)
+
+    # Link the project as with `rasa studio link`
+    (tmp_path / RASA_DIR_NAME).mkdir()
+    (tmp_path / RASA_DIR_NAME / "studio.yml").write_text("assistant_name: linked_bot\n")
+
+    # Initialize the project with default files
+    (tmp_path / "config.yml").write_text("pipeline: []")
+    (tmp_path / "endpoints.yml").write_text("nlg:")
+    (tmp_path / "domain.yml").write_text("version: '3.1'")
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    (data_dir / "nlu.yml").write_text("version: '3.1'\nnlu: []")
+
+    # Mock the read_assistant_name function with project_root as project root
+    def read_from_root(*args, **kwargs):
+        return rasa.studio.link.read_assistant_name
+
+    monkeypatch.setattr(rasa.studio.pull, "read_assistant_name", read_from_root)
+    monkeypatch.setattr(rasa.studio.push, "read_assistant_name", read_from_root)
+
+    # Mock the StudioConfig and is_auth_working to simulate Studio connection
+    monkeypatch.setattr(
+        rasa.studio.link,
+        "StudioConfig",
+        MagicMock(
+            read_config=lambda: StudioConfig(
+                authentication_server_url="http://auth",
+                studio_url="http://studio/graphql",
+                realm_name="realm",
+                client_id="cli",
+            )
+        ),
+    )
+    monkeypatch.setattr(rasa.studio.link, "is_auth_working", lambda *_: True)
+
+    # Disable validation to avoid unnecessary checks during tests
+    monkeypatch.setattr(rasa.studio.push, "run_validation", lambda *_: None)
+    return tmp_path

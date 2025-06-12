@@ -104,7 +104,7 @@ def get_validated_path(
                 parameter=parameter,
                 event_info=(f"Parameter '{parameter}' was not set. {shared_info}"),
             )
-        else:
+        elif current not in default_options:
             structlogger.warn(
                 "cli.get_validated_path.path_does_not_exists",
                 path=current,

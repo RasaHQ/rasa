@@ -5,10 +5,15 @@ from urllib.parse import ParseResult, urlparse
 import questionary
 
 import rasa.cli.studio.download
+import rasa.cli.studio.link
+import rasa.cli.studio.pull
+import rasa.cli.studio.push
 import rasa.cli.studio.train
 import rasa.cli.studio.upload
 import rasa.shared.utils.cli
 from rasa.cli import SubParsersAction
+from rasa.cli.utils import get_validated_path
+from rasa.shared.constants import DEFAULT_DOMAIN_PATH, DEFAULT_DOMAIN_PATHS
 from rasa.studio.auth import StudioAuth
 from rasa.studio.config import StudioConfig
 
@@ -32,6 +37,13 @@ def add_subparser(
     rasa.cli.studio.train.add_subparser(studio_subparsers, parents)
     rasa.cli.studio.upload.add_subparser(studio_subparsers, parents)
     rasa.cli.studio.download.add_subparser(studio_subparsers, parents)
+
+    domain = get_validated_path(
+        DEFAULT_DOMAIN_PATH, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
+    )
+    rasa.cli.studio.link.add_subparser(studio_subparsers, parents, domain)
+    rasa.cli.studio.push.add_subparser(studio_subparsers, parents, domain)
+    rasa.cli.studio.pull.add_subparser(studio_subparsers, parents, domain)
 
     _add_config_subparser(studio_subparsers, parents)
     _add_login_subparser(studio_subparsers, parents)

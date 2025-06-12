@@ -8,6 +8,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 
 from rasa.cli import scaffold
+from rasa.constants import RASA_DIR_NAME
 from rasa.shared.constants import (
     CONFIG_LANGUAGE_KEY,
     CONFIG_PIPELINE_KEY,
@@ -110,7 +111,7 @@ def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, tmp_path: Path):
     )
     # Cache dir is auto patched to be a temp directory, this makes it
     # go back to local project folder so we can test it is created correctly.
-    with enable_cache(Path(".rasa", "cache")):
+    with enable_cache(Path(RASA_DIR_NAME, "cache")):
         mock_stdin([])
         # file deepcode ignore PT/test: Test function, seems unlikely to be
         # exploitable in any real sense.

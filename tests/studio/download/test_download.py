@@ -34,7 +34,7 @@ def mock_args(tmp_path: Path) -> MagicMock:
     args.domain = None  # means "use default domain path"
     data_dir = tmp_path / "data_dir"
     data_dir.mkdir(parents=True, exist_ok=True)
-    args.data = [str(data_dir)]
+    args.data = str(data_dir)
     args.overwrite = False
     args.config = None
     args.endpoints = None
@@ -52,10 +52,10 @@ def mock_studio_data_handler() -> MagicMock:
 
 def test_prepare_data_and_domain_paths_no_domain(mock_args: MagicMock):
     """Test domain and data paths are prepared correctly when no domain is provided."""
-    domain_path, data_paths = _prepare_data_and_domain_paths(mock_args)
+    domain_path, data_path = _prepare_data_and_domain_paths(mock_args)
     assert domain_path.exists()
     assert domain_path.is_file()
-    assert data_paths[0].is_dir()
+    assert data_path.is_dir()
 
 
 def test_handle_download_no_overwrite_dir(
@@ -126,7 +126,7 @@ def test_handle_download_with_overwrite(
         "rasa.studio.download.download.import_data_from_studio", mock_import_data
     )
 
-    _handle_download_with_overwrite(mock_studio_data_handler, domain_file, [data_file])
+    _handle_download_with_overwrite(mock_studio_data_handler, domain_file, data_file)
 
     # Leftover domain should not exist
     leftover_path = tmp_path / STUDIO_DOMAIN_FILENAME
@@ -294,9 +294,8 @@ def test_merge_file_domain(tmp_path: Path):
 
 
 def test_merge_data_no_overwrite_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    data_file = tmp_path / "data.yml"
-    data_file.touch()
-    data_paths = [data_file]
+    data_path = tmp_path / "data.yml"
+    data_path.touch()
 
     handler = MagicMock()
     data_from_studio = MagicMock(spec=TrainingDataImporter)
@@ -312,16 +311,15 @@ def test_merge_data_no_overwrite_file(tmp_path: Path, monkeypatch: pytest.Monkey
         "rasa.studio.download.download._merge_dir_data_no_overwrite", mock_dir
     )
 
-    _merge_data_no_overwrite(data_paths, handler, data_from_studio, data_local)
+    _merge_data_no_overwrite(data_path, handler, data_from_studio, data_local)
 
     mock_file.assert_called_once()
     mock_dir.assert_not_called()
 
 
 def test_merge_data_no_overwrite_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    data_dir = tmp_path / "data_dir"
-    data_dir.mkdir()
-    data_paths = [data_dir]
+    data_path = tmp_path / "data_dir"
+    data_path.mkdir()
 
     handler = MagicMock()
     data_from_studio = MagicMock(spec=TrainingDataImporter)
@@ -337,7 +335,7 @@ def test_merge_data_no_overwrite_dir(tmp_path: Path, monkeypatch: pytest.MonkeyP
         "rasa.studio.download.download._merge_dir_data_no_overwrite", mock_dir
     )
 
-    _merge_data_no_overwrite(data_paths, handler, data_from_studio, data_local)
+    _merge_data_no_overwrite(data_path, handler, data_from_studio, data_local)
 
     mock_dir.assert_called_once()
     mock_file.assert_not_called()

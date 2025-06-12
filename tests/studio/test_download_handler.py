@@ -60,7 +60,7 @@ def test_handle_download(
 
     args = argparse.Namespace(
         domain=str(domain_path),
-        data=[str(data_path)],
+        data=[data_path],
         config=str(config_path),
         endpoints=str(endpoints_path),
         assistant_name="calm",
