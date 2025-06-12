@@ -158,23 +158,33 @@ jobs:
           RASA_OLDER_VERSION: ${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}
         run: test "$(curl -s http://localhost:5005/version | jq -r '.version')" = "${RASA_OLDER_VERSION}"
       - name: Start user session with version ${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}
+        id: start-user-session-on-older-version
         run: |
           curl -s 'http://localhost:5005/webhooks/rest/webhook' \
            --header 'Content-Type: application/json' \
            --data-raw '{
-            "sender": "${ACTIVE_SESSION_USERNAME}",
+            "sender": "'$ACTIVE_SESSION_USERNAME'",
             "message": "add contact"
           }' | tee start-session-response
           grep -i "What's the handle of the user you want to add?" start-session-response
+      - name: Show tracker state of Rasa version ${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}
+        run: curl -s "http://localhost:5005/conversations/${ACTIVE_SESSION_USERNAME}/tracker?include_events=ALL" | jq | tee tracker-log.json
       - name: Save Rasa v${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }} server log
-        if: ${{ always() && steps.rasa-old-server-healthcheck.conclusion == 'failure' }}
+        if: ${{ always() && (steps.rasa-old-server-healthcheck.conclusion == 'failure' || steps.start-user-session-on-older-version.conclusion == 'failure') }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: rasa-${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}-server-log
           path: rasa-calm-demo/rasa-server-log.txt
           if-no-files-found: error
+      - name: Save Rasa v${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }} tracker log
+        if: ${{ always() && (steps.rasa-old-server-healthcheck.conclusion == 'failure' || steps.start-user-session-on-older-version.conclusion == 'failure') }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: rasa-version-${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}-tracker-log
+          path: tracker-log.json
+          if-no-files-found: error
       - name: Save Rasa v${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }} action server log
-        if: ${{ always() && steps.rasa-old-server-healthcheck.conclusion == 'failure' }}
+        if: ${{ always() && (steps.rasa-old-server-healthcheck.conclusion == 'failure' || steps.start-user-session-on-older-version.conclusion == 'failure') }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: rasa-${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}-action-server-log
@@ -203,7 +213,7 @@ jobs:
           RASA_DUCKLING_HTTP_URL: ${{ secrets.DUCKLING_URL }}
           RASA_PRO_BETA_INTENTLESS: true
         working-directory: rasa-calm-demo
-        run: rasa run actions --endpoints ../rasa-private/data/test_backwards_compatibility/endpoints.yml &
+        run: rasa run actions --endpoints ../rasa-private/data/test_backwards_compatibility/endpoints.yml --debug 2>&1 | tee rasa-${{ env.RASA_NEW_VERSION }}-action-server-log &
       - name: Start Rasa server with version ${{ env.RASA_NEW_VERSION }}
         working-directory: rasa-calm-demo
         run: rasa run --enable-api --endpoints ../rasa-private/data/test_backwards_compatibility/endpoints.yml --model ../models --debug 2>&1 | tee rasa-server-${{ env.RASA_NEW_VERSION }}-log.txt &
@@ -213,25 +223,35 @@ jobs:
       - name: Verify Rasa server new version is ${{ env.RASA_NEW_VERSION }}
         run: test "$(curl -s http://localhost:5005/version | jq -r '.version')" = "${RASA_NEW_VERSION}"
       - name: Continue active user session with version ${{ env.RASA_NEW_VERSION }}
+        id: continue-user-session-on-newer-version
         run: |
           curl -s 'http://localhost:5005/webhooks/rest/webhook' \
            --header 'Content-Type: application/json' \
            --data-raw '{
-            "sender": "${ACTIVE_SESSION_USERNAME}",
+            "sender": "'$ACTIVE_SESSION_USERNAME'",
             "message": "@Bart"
           }' | tee continue-session-response
           grep "What's the name of the user you want to add?" continue-session-response
+      - name: Show tracker state of Rasa version ${{ env.RASA_NEW_VERSION }}
+        run: curl -s "http://localhost:5005/conversations/${ACTIVE_SESSION_USERNAME}/tracker?include_events=ALL" | jq | tee rasa-tracker-${{ env.RASA_NEW_VERSION }}-log.json
       - name: Save Rasa v${{ env.RASA_NEW_VERSION }} server log
-        if: ${{ always() && steps.rasa-new-server-healthcheck.conclusion == 'failure' }}
+        if: ${{ always() && (steps.rasa-new-server-healthcheck.conclusion == 'failure' || steps.continue-user-session-on-newer-version.conclusion == 'failure') }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: rasa-version-${{ env.RASA_NEW_VERSION }}-server-log
           path: rasa-calm-demo/rasa-server-${{ env.RASA_NEW_VERSION }}-log.txt
           if-no-files-found: error
-      - name: Save Rasa v${{ env.RASA_NEW_VERSION }} action server log
-        if: ${{ always() && steps.rasa-new-server-healthcheck.conclusion == 'failure' }}
+      - name: Save Rasa v${{ env.RASA_NEW_VERSION }} tracker log
+        if: ${{ always() && (steps.rasa-new-server-healthcheck.conclusion == 'failure' || steps.continue-user-session-on-newer-version.conclusion == 'failure') }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: rasa-${{ steps.install-rasa-pro-older-version.outputs.RASA_PRO_OLDER_VERSION }}-action-server-log
-          path: rasa-calm-demo/rasa-action-server-log.txt
+          name: rasa-version-${{ env.RASA_NEW_VERSION }}-tracker-log
+          path: rasa-tracker-${{ env.RASA_NEW_VERSION }}-log.json
+          if-no-files-found: error
+      - name: Save Rasa v${{ env.RASA_NEW_VERSION }} action server log
+        if: ${{ always() && (steps.rasa-new-server-healthcheck.conclusion == 'failure' || steps.continue-user-session-on-newer-version.conclusion == 'failure') }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: rasa-${{ env.RASA_NEW_VERSION }}-action-server-log
+          path: rasa-calm-demo/rasa-${{ env.RASA_NEW_VERSION }}-action-server-log.txt
           if-no-files-found: error
