@@ -1,0 +1,14 @@
+flows:
+  tax_payment:
+    description: user wants to make a one off tax payment
+    name: tax payment
+    steps:
+      - collect: full_name
+        description: "The user's full name"
+      - collect: national_insurance_number
+        description: "The user's National Insurance Number"
+      - collect: credit_card_number
+        description: "The user's credit card number"
+      - action: utter_submit_payment
+      - collect: feedback
+        description: "The user's feedback on the service"

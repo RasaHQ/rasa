@@ -1,0 +1,69 @@
+name: Debug PII integration test containers
+description: Encapsulates steps for PII test debugging
+
+inputs:
+  COMPOSE_FILE_PATH:
+    description: 'PII docker compose path'
+    required: true
+  RASA_REPOSITORY:
+    description: 'Rasa repository path'
+    required: true
+  RASA_IMAGE_TAG:
+    description: 'Rasa image tag'
+    required: true
+  BOT_PATH:
+    description: 'Path to the bot directory'
+    required: true
+
+runs:
+  using: 'composite'
+
+  steps:
+  - name: List containers
+    run: sudo docker ps -a
+    shell: bash
+
+  - name: Check rasa-pro-http-anonymization container logs
+    env:
+      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
+      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
+      BOT_PATH: ${{ inputs.BOT_PATH }}
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
+    run: |
+      docker compose -f "$COMPOSE_FILE_PATH" \
+        logs rasa-pro-http-anonymization
+    shell: bash
+
+  - name: Check rasa-pro-http-deletion container logs
+    env:
+      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
+      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
+      BOT_PATH: ${{ inputs.BOT_PATH }}
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
+    run: |
+      docker compose -f "$COMPOSE_FILE_PATH" \
+        logs rasa-pro-http-deletion
+    shell: bash
+
+  - name: Check kafka_broker container logs
+    env:
+      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
+      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
+      BOT_PATH: ${{ inputs.BOT_PATH }}
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
+    run: |
+      docker compose -f "$COMPOSE_FILE_PATH" \
+        logs kafka_broker
+    shell: bash
+
+  - name: Check init_kafka container logs
+    env:
+      RASA_REPOSITORY: ${{ inputs.RASA_REPOSITORY }}
+      RASA_IMAGE_TAG: ${{ inputs.RASA_IMAGE_TAG }}
+      BOT_PATH: ${{ inputs.BOT_PATH }}
+      COMPOSE_FILE_PATH: ${{ inputs.COMPOSE_FILE_PATH }}
+    run: |
+      docker compose -f "$COMPOSE_FILE_PATH" \
+        logs init_kafka
+    shell: bash
+

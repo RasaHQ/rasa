@@ -1,0 +1,2 @@
+RASA_REPOSITORY = rasa-pro
+RASA_IMAGE_TAG = latest

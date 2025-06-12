@@ -1,0 +1,192 @@
+x-license: &license
+  RASA_PRO_LICENSE: ${RASA_PRO_LICENSE}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
+x-pii-config: &pii-env-vars
+  USER_CHAT_INACTIVITY_IN_MINUTES: 0
+
+configs:
+  endpoints-anonymization.yml:
+    content: |
+      action_endpoint:
+        actions_module: "actions"
+      tracker_store:
+        type: sql
+        db: "anonymization_db"
+      event_broker:
+        type: kafka
+        url: "kafka_broker:29092"
+        partition_by_sender: true
+        topic: rasa
+        client_id: kafka-python-rasa
+        security_protocol: PLAINTEXT
+        stream_pii: false
+        anonymization_topics:
+         - anonymization
+      model_groups:
+      - id: openai-gpt-4o
+        models:
+        - provider: openai
+          model: gpt-4o-2024-11-20
+          request_timeout: 7
+          max_tokens: 256
+      privacy:
+        tracker_store_settings:
+          anonymization:
+            min_after_session_end: 1
+            cron: "*/1 * * * *"
+        rules:
+          - slot: full_name
+            anonymization:
+              type: mask
+          - slot: national_insurance_number
+            anonymization:
+               type: mask
+          - slot: credit_card_number
+            anonymization:
+              type: redact
+              keep_right: 4
+  endpoints-deletion.yml:
+    content: |
+      action_endpoint:
+        actions_module: "actions"
+      tracker_store:
+        type: sql
+        db: "deletion_db"
+      model_groups:
+      - id: openai-gpt-4o
+        models:
+        - provider: openai
+          model: gpt-4o-2024-11-20
+          request_timeout: 7
+          max_tokens: 256
+      privacy:
+        tracker_store_settings:
+          deletion:
+            min_after_session_end: 1
+            cron: "*/1 * * * *"
+        rules:
+          - slot: full_name
+            anonymization:
+              type: mask
+          - slot: national_insurance_number
+            anonymization:
+               type: mask
+          - slot: credit_card_number
+            anonymization:
+              type: redact
+              keep_right: 4
+
+services:
+  kafka_broker:
+    image: confluentinc/cp-kafka:7.8.0
+    container_name: kafka_broker
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_INTERNAL://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka_broker:29092
+      KAFKA_PROCESS_ROLES: controller,broker
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka_broker:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      CLUSTER_ID: "Y2hhcHRnLXNpbXBsZS1jbHVzdGVy"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    healthcheck:
+      test: nc -z localhost 9092 || exit 1
+      interval: 30s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    networks:
+      - pii-integration-testing
+
+  init_kafka:
+    image: confluentinc/cp-kafka:7.8.0
+    container_name: init_kafka
+    environment:
+      KAFKA_TOPIC: "rasa"
+      ANONYMIZATION_TOPIC: "anonymization"
+    depends_on:
+      kafka_broker:
+        condition: service_healthy
+    entrypoint: [ '/bin/sh', '-c' ]
+    networks:
+      - pii-integration-testing
+    command: |
+      "
+      # blocks until kafka is reachable
+      kafka-topics --bootstrap-server kafka_broker:29092 --list
+
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server kafka_broker:29092 --create --if-not-exists --topic $$KAFKA_TOPIC
+      kafka-topics --bootstrap-server kafka_broker:29092 --create --if-not-exists --topic $$ANONYMIZATION_TOPIC
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server kafka_broker:29092 --list
+      "
+
+  rasa-pro-http-anonymization:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "${BOT_PATH}:/app"
+    configs:
+      - source: endpoints-anonymization.yml
+        target: /endpoints-anonymization.yml
+    entrypoint: ""
+    command: rasa run -p 5005 --enable-api --endpoints /endpoints-anonymization.yml
+    networks:
+      - pii-integration-testing
+    depends_on:
+      kafka_broker:
+        condition: service_healthy
+      init_kafka:
+        condition: service_completed_successfully
+    ports:
+      - "5005:5005"
+    environment:
+      <<: [*license, *pii-env-vars]
+    healthcheck:
+      test: curl localhost:5005 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+
+  rasa-pro-http-deletion:
+    image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
+    volumes:
+      - "${BOT_PATH}:/app"
+    configs:
+      - source: endpoints-deletion.yml
+        target: /endpoints-deletion.yml
+    entrypoint: ""
+    command: rasa run -p 5006 --enable-api --endpoints /endpoints-deletion.yml
+    networks:
+      - pii-integration-testing
+    depends_on:
+      kafka_broker:
+        condition: service_healthy
+      init_kafka:
+        condition: service_completed_successfully
+    ports:
+      - "5006:5006"
+    environment:
+      <<: [*license, *pii-env-vars]
+    healthcheck:
+      test: curl localhost:5006 || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 15s
+      timeout: 10s
+    user: ${USER_ID}
+
+networks:
+  pii-integration-testing:
+    name: pii-integration-testing

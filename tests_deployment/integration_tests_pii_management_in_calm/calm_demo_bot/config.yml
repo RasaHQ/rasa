@@ -1,0 +1,12 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: NLUCommandAdapter
+- name: CompactLLMCommandGenerator
+  llm:
+    model_group: openai-gpt-4o
+
+policies:
+- name: FlowPolicy
+
+assistant_id: tax-advisor-pii-bot

@@ -1278,6 +1278,99 @@ jobs:
            integration-results-channel-connectors-with-calm-bot-results.xml
            integration-results-custom-broker-with-calm-bot-results.xml
 
+  check-pii-management-changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      pii-management: ${{ steps.filter.outputs.pii-management }}
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - id: filter
+        name: Check for changes in DM1/Tensorflow related files
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36  # v3.0.2
+        with:
+          filters: .github/change_filters.yml
+
+  pii-management-in-calm-integration-tests:
+    name: PII Management in CALM Bot Integration Tests
+    needs: [rasa-private-dev-docker-image, check-pii-management-changes]
+    if: ${{ inputs.run_mode != 'false' && (needs.check-pii-management-changes.outputs.pii-management == 'true') }}
+    runs-on: ubuntu-24.04-4core
+    env:
+      RASA_SDK_IMAGE_TAG: latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Download image artifact
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
+        with:
+          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
+
+      - name: Load Docker image
+        run: |
+          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
+
+      - name: PII Integration Testing - Run docker containers
+        run: |
+          make run-pii-calm-containers
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
+
+      - name: PII Management in CALM Testing -  Test Code with Services 🩺
+        run: |
+          make test-pii-integration-with-calm-bot
+        env:
+          PYTHONIOENCODING: "utf-8"
+          RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
+
+      - name: Show container logs
+        if: always()
+        uses: ./.github/actions/debug-pii-management-tests
+        with:
+          COMPOSE_FILE_PATH: tests_deployment/integration_tests_pii_management_in_calm/docker-compose.yml
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          BOT_PATH: "./tests_deployment/integration_tests_pii_management_in_calm/calm_demo_bot"
+
+      - name: PII Integration Testing - Stop docker containers
+        if: always()
+        run: |
+          make stop-pii-calm-containers
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: PII Management in CALM Bot Integration Tests
+          path: pii-management-in-calm-integration-results.xml
+
   unit-test:
     name: Run Unit Tests
     runs-on: ubuntu-24.04-4core

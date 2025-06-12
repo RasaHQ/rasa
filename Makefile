@@ -27,6 +27,7 @@ ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/enterprise_
 CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/channels
 TRACKER_STORE_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/tracker_stores
 CUSTOM_COMPONENT_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/custom_components
+CALM_PII_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/privacy
 INTEGRATION_TEST_DEPLOYMENT_PATH = $(PWD)/tests_deployment
 TRANSFORMERS_OFFLINE ?= 1
 
@@ -165,6 +166,7 @@ ifeq (,$(wildcard $(INTEGRATION_TEST_DEPLOYMENT_PATH)/.env))
 			--ignore $(TRACKER_STORE_INTEGRATION_TEST_PATH) \
 			--ignore $(CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH) \
 			--ignore $(CUSTOM_COMPONENT_INTEGRATION_TEST_PATH) \
+			--ignore $(CALM_PII_INTEGRATION_TEST_PATH) \
 			--junitxml=report_integration.xml
 else
 	set -o allexport; \
@@ -594,3 +596,57 @@ test-dynamo-tracker-store:  ## Run the dynamo tracker store integration tests. M
 		pytest $(TRACKER_STORE_INTEGRATION_TEST_PATH)/test_dynamo_tracker_store.py \
 			-n $(JOBS) \
 			--junitxml=integration-results-dynamo-tracker-store.xml
+
+TRAIN_PII_BOT_COMMAND = docker run --rm \
+		-u $(USER_ID) \
+		--name $(CONTAINER_NAME) \
+		$(DOCKER_ENV_VARS) \
+		-v $(BOT_PATH)\:/app \
+		$(RASA_REPOSITORY):$(RASA_IMAGE_TAG) \
+		train --fixed-model-name $(MODEL_NAME)
+
+PII_INTEGRATION_TESTS_DEPLOYMENT_PATH = $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_pii_management_in_calm
+PII_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH = $(PII_INTEGRATION_TESTS_DEPLOYMENT_PATH)/docker-compose.yml
+PII_INTEGRATION_TESTS_ENV_FILE = $(PII_INTEGRATION_TESTS_DEPLOYMENT_PATH)/env-file
+PII_CALM_BOT_DIRECTORY = calm_demo_bot
+train-pii-calm-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=$(RASA_PRO_LICENSE) -e OPENAI_API_KEY=$(OPENAI_API_KEY) -e HF_TOKEN=$(HF_TOKEN)
+train-pii-calm-bot: CONTAINER_NAME = rasa-pro-training-calm-bot-$(RASA_IMAGE_TAG)
+train-pii-calm-bot: BOT_PATH = $(PII_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(PII_CALM_BOT_DIRECTORY)
+train-pii-calm-bot: ## Train the CALM bot for PII integration tests.
+	$(TRAIN_PII_BOT_COMMAND)
+
+RUN_PII_CONTAINERS_COMMAND = USER_ID=$(USER_ID) \
+	BOT_PATH=$(BOT_PATH) \
+	docker compose \
+		-f $(PII_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
+		--env-file $(PII_INTEGRATION_TESTS_ENV_FILE) \
+		up --wait
+
+run-pii-calm-containers: BOT_PATH = "./$(PII_CALM_BOT_DIRECTORY)" ## Run the PII integration test containers.
+run-pii-calm-containers: train-pii-calm-bot
+	$(RUN_PII_CONTAINERS_COMMAND)
+
+STOP_PII_CONTAINERS_COMMAND = USER_ID=$(USER_ID) \
+	BOT_PATH=$(BOT_PATH) \
+	GLINER_LOCAL_PATH=$(GLINER_LOCAL_PATH) \
+	docker compose \
+		-f $(PII_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
+		--env-file $(PII_INTEGRATION_TESTS_ENV_FILE) \
+		down
+
+stop-pii-calm-containers: BOT_PATH = "./$(PII_CALM_BOT_DIRECTORY)" ## Stop the PII integration test containers.
+stop-pii-calm-containers: GLINER_LOCAL_PATH="./$(GLINER_MODELS_DIRECTORY)"
+stop-pii-calm-containers: ## Stop the PII integration test containers for CALM bot.
+	$(STOP_PII_CONTAINERS_COMMAND)
+
+
+TEST_PII_INTEGRATION_COMMAND = poetry run \
+		pytest $(INTEGRATION_TEST_PATH) \
+		-n $(JOBS) \
+		--junitxml=$(RESULTS_FILE)
+
+# Run the PII integration tests with CALM bot
+test-pii-integration-with-calm-bot: INTEGRATION_TEST_PATH = $(CALM_PII_INTEGRATION_TEST_PATH)
+test-pii-integration-with-calm-bot: RESULTS_FILE = pii-management-in-calm-integration-results.xml
+test-pii-integration-with-calm-bot:  ## Run the pii integration tests with CALM bot.
+	$(TEST_PII_INTEGRATION_COMMAND)

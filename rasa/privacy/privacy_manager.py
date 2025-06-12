@@ -288,7 +288,7 @@ class BackgroundPrivacyManager:
 
             if not full_tracker:
                 structlogger.debug(
-                    "rasa.privacy_manager.no_tracker_found_for_key",
+                    "rasa.privacy_manager.no_tracker_found_for_sender_id",
                     sender_id=key,
                 )
                 continue
@@ -336,7 +336,7 @@ class BackgroundPrivacyManager:
 
             if not full_tracker:
                 structlogger.debug(
-                    "rasa.privacy_manager.no_tracker_found_for_key",
+                    "rasa.privacy_manager.no_tracker_found_for_sender_id",
                     key=key,
                 )
                 continue

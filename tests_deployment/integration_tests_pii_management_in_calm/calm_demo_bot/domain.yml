@@ -1,0 +1,36 @@
+version: "3.1"
+
+slots:
+  full_name:
+    type: text
+
+  national_insurance_number:
+    type: text
+
+  credit_card_number:
+    type: text
+
+  feedback:
+    type: text
+    mappings:
+      - type: from_text
+
+responses:
+  utter_ask_full_name:
+    - text: "What is your full name?"
+
+  utter_ask_national_insurance_number:
+    - text: "What is your National Insurance Number?"
+
+  utter_ask_credit_card_number:
+    - text: "What is your credit card number?"
+
+  utter_submit_payment:
+    - text: "Your payment has been submitted successfully with the following details:\n\nFull Name: {full_name}\nNational Insurance Number: {national_insurance_number}\nCredit Card Number: {credit_card_number}"
+
+  utter_ask_feedback:
+    - text: "Please provide your feedback on the service."
+
+
+actions:
+  - validate_full_name
