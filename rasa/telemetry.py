@@ -33,6 +33,7 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ID,
 )
 from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.privacy.privacy_config import AnonymizationType, PrivacyConfig
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     CONFIG_LANGUAGE_KEY,
@@ -148,6 +149,7 @@ TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT = (
 TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT = "Enterprise Search Policy Predicted"
 TELEMETRY_VALIDATION_ERROR_LOG_EVENT = "Validation Error Logged"
 TELEMETRY_UPLOAD_TO_STUDIO_FAILED_EVENT = "Upload to Studio Failed"
+TELEMETRY_PRIVACY_ENABLED_EVENT = "PII Management in CALM Enabled"
 
 # licensing events
 TELEMETRY_CONVERSATION_COUNT = "Conversation Count"
@@ -1930,3 +1932,74 @@ def track_upload_to_studio_failed(response_json: Dict[str, Any]) -> None:
         TELEMETRY_UPLOAD_TO_STUDIO_FAILED_EVENT,
         {"studio_response_json": response_json},
     )
+
+
+def _extract_privacy_enabled_event_properties(
+    privacy_config: "PrivacyConfig",
+    stream_pii: bool,
+) -> Dict[str, Any]:
+    """Extract properties when PII management is enabled."""
+    number_of_total_rules = len(privacy_config.anonymization_rules)
+    count_of_redact = sum(
+        1
+        for rule in privacy_config.anonymization_rules.values()
+        if rule.method_type == AnonymizationType.REDACT
+    )
+    count_of_mask = sum(
+        1
+        for rule in privacy_config.anonymization_rules.values()
+        if rule.method_type == AnonymizationType.MASK
+    )
+
+    tracker_store_anonymization_enabled = (
+        privacy_config.tracker_store_settings is not None
+        and privacy_config.tracker_store_settings.anonymization_policy is not None
+    )
+    anonymization_cron_trigger = (
+        privacy_config.tracker_store_settings.anonymization_policy.cron  # type: ignore[union-attr]
+        if tracker_store_anonymization_enabled
+        else None
+    )
+
+    tracker_store_deletion_enabled = (
+        privacy_config.tracker_store_settings is not None
+        and privacy_config.tracker_store_settings.deletion_policy is not None
+    )
+
+    deletion_cron_trigger = (
+        privacy_config.tracker_store_settings.deletion_policy.cron  # type: ignore[union-attr]
+        if tracker_store_deletion_enabled
+        else None
+    )
+
+    return {
+        "num_total_rules": number_of_total_rules,
+        "redact_count": count_of_redact,
+        "mask_count": count_of_mask,
+        "stream_pii": stream_pii,
+        "tracker_store_anonymization_enabled": tracker_store_anonymization_enabled,
+        "tracker_store_deletion_enabled": tracker_store_deletion_enabled,
+        "anonymization_cron_trigger": str(anonymization_cron_trigger),
+        "deletion_cron_trigger": str(deletion_cron_trigger),
+    }
+
+
+def _extract_stream_pii(event_broker: Optional["EventBroker"]) -> bool:
+    """Extract whether un-anonymized PII streaming is enabled for the event broker."""
+    return (
+        event_broker.stream_pii
+        if event_broker is not None and hasattr(event_broker, "stream_pii")
+        else False
+    )
+
+
+@ensure_telemetry_enabled
+def track_privacy_enabled(
+    privacy_config: "PrivacyConfig", event_broker: Optional["EventBroker"]
+) -> None:
+    """Track when PII management capability is enabled"""
+    stream_pii = _extract_stream_pii(event_broker)
+    privacy_properties = _extract_privacy_enabled_event_properties(
+        privacy_config, stream_pii
+    )
+    _track(TELEMETRY_PRIVACY_ENABLED_EVENT, privacy_properties)

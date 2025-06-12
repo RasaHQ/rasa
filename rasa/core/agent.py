@@ -35,6 +35,7 @@ from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.exceptions import RasaException
+from rasa.telemetry import track_privacy_enabled
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
 
@@ -241,6 +242,7 @@ async def load_agent(
                 endpoints=endpoints,
                 event_loop=loop,
             )
+            track_privacy_enabled(privacy_manager.config, broker)
 
     agent = Agent(
         generator=generator,

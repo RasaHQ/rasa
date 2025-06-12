@@ -4,7 +4,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Text
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Text
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
@@ -17,6 +17,7 @@ import rasa.constants
 import rasa.utils.licensing
 from rasa import telemetry
 from rasa.cli.inspect import inspect
+from rasa.core.brokers.kafka import KafkaEventBroker
 from rasa.dialogue_understanding.generator.constants import (
     DEFAULT_LLM_CONFIG as LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG,
 )
@@ -24,6 +25,7 @@ from rasa.dialogue_understanding.generator.flow_retrieval import (
     DEFAULT_EMBEDDINGS_CONFIG,
 )
 from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase, TestSuite
+from rasa.privacy.privacy_config import PrivacyConfig
 from rasa.shared.constants import (
     CONFIG_LANGUAGE_KEY,
     CONFIG_PIPELINE_KEY,
@@ -53,6 +55,7 @@ from rasa.telemetry import (
     TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_STARTED_EVENT,
     TELEMETRY_ID,
     TELEMETRY_INSPECT_STARTED_EVENT,
+    TELEMETRY_PRIVACY_ENABLED_EVENT,
     TELEMETRY_SERVER_STARTED_EVENT,
     TELEMETRY_UPLOAD_TO_STUDIO_FAILED_EVENT,
     TELEMETRY_WRITE_KEY_ENVIRONMENT_VARIABLE,
@@ -63,7 +66,11 @@ from rasa.telemetry import (
     _get_llm_command_generator_config,
 )
 from rasa.utils import licensing
+from rasa.utils.endpoints import read_property_config_from_endpoints_file
 from rasa.utils.licensing import LICENSE_ENV_VAR
+
+if TYPE_CHECKING:
+    from rasa.core.brokers.broker import EventBroker
 
 TELEMETRY_TEST_USER = "083642a3e448423ca652134f00e7fc76"  # just some random static id
 TELEMETRY_TEST_KEY = "5640e893c1324090bff26f655456caf3"  # just some random static id
@@ -1656,3 +1663,45 @@ def test_track_server_started(
     assert mock_call.args[1]["number_of_workers"] == 4
     assert mock_call.args[1]["assistant_id"] == "placeholder_default"
     assert mock_call.args[1]["project"] is not None
+
+
+@pytest.mark.parametrize(
+    "event_broker, expected_stream_pii",
+    [
+        (None, False),
+        (KafkaEventBroker(url="localhost:9092", stream_pii=True), True),
+        (KafkaEventBroker(url="localhost:9092", stream_pii=False), False),
+        (KafkaEventBroker(url="localhost:9092"), True),
+    ],
+)
+@patch("rasa.telemetry._track")
+def test_track_privacy_enabled(
+    mock_track: MagicMock,
+    monkeypatch: MonkeyPatch,
+    event_broker: Optional["EventBroker"],
+    expected_stream_pii: bool,
+):
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+    privacy_config_data = read_property_config_from_endpoints_file(
+        "data/test_privacy/endpoints_with_valid_privacy.yml", property_name="privacy"
+    )
+    privacy_config = PrivacyConfig.from_dict(privacy_config_data)
+    telemetry.track_privacy_enabled(privacy_config, event_broker)
+
+    assert mock_track.call_count == 1
+    mock_call = mock_track.mock_calls[0]
+    assert mock_call.args[0] == TELEMETRY_PRIVACY_ENABLED_EVENT
+    assert mock_call.args[1]["num_total_rules"] == 1
+    assert mock_call.args[1]["redact_count"] == 1
+    assert mock_call.args[1]["mask_count"] == 0
+    assert mock_call.args[1]["stream_pii"] is expected_stream_pii
+    assert mock_call.args[1]["tracker_store_anonymization_enabled"] is True
+    assert mock_call.args[1]["tracker_store_deletion_enabled"] is True
+    assert (
+        mock_call.args[1]["anonymization_cron_trigger"]
+        == "cron[month='*', day='*', day_of_week='6', hour='1', minute='30']"
+    )
+    assert (
+        mock_call.args[1]["deletion_cron_trigger"]
+        == "cron[month='*', day='*', day_of_week='0', hour='0', minute='30']"
+    )
