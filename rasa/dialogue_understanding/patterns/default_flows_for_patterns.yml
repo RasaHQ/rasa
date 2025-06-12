@@ -94,7 +94,7 @@ responses:
         rephrase: True
 
   utter_no_relevant_answer_found:
-    - text: I am afraid, I don't know the answer.
+    - text: I’m sorry, I can’t help with that.
       metadata:
         rephrase: True
 
