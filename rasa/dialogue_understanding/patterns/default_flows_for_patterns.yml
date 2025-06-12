@@ -134,25 +134,24 @@ flows:
       - action: utter_flow_cancelled_rasa
 
   pattern_cannot_handle:
-    description: |
-      Conversation repair flow for addressing failed command generation scenarios
-    name: pattern cannot handle
+    description: Conversation repair flow for addressing failed command generation scenarios
+    name: pattern_cannot_handle
     steps:
       - noop: true
         next:
           # Chitchat fallback
-          - if: "'{{context.reason}}' = 'cannot_handle_chitchat'"
+          - if: context.reason is "cannot_handle_chitchat"
             then:
               - action: utter_cannot_handle
                 next: "END"
           # Fallback for things that are not supported
-          - if: "'{{context.reason}}' = 'cannot_handle_not_supported'"
+          - if: context.reason is "cannot_handle_not_supported"
             then:
               - action: utter_cannot_handle
                 next: END
           # Fallback when no relevant answer to the user query has been found.
           # This is used by the EnterpriseSearchPolicy.
-          - if: "'{{context.reason}}' = 'cannot_handle_no_relevant_answer'"
+          - if: context.reason is "cannot_handle_no_relevant_answer"
             then:
               - action: utter_no_relevant_answer_found
                 next: END
@@ -230,15 +229,15 @@ flows:
 
   pattern_internal_error:
     description: Conversation repair flow for informing users about internal errors
-    name: pattern internal error
+    name: pattern_internal_error
     steps:
       - noop: true
         next:
-          - if: "'{{context.error_type}}' = 'rasa_internal_error_user_input_too_long'"
+          - if: context.error_type is "rasa_internal_error_user_input_too_long"
             then:
               - action: utter_user_input_too_long_error_rasa
                 next: END
-          - if: "'{{context.error_type}}' = 'rasa_internal_error_user_input_empty'"
+          - if: context.error_type is "rasa_internal_error_user_input_empty"
             then:
               - action: utter_user_input_empty_error_rasa
                 next: END
@@ -292,23 +291,25 @@ flows:
       - noop: true
         next:
           - if: "slots.consecutive_silence_timeouts = 0.0"
-            then:
-              - set_slots:
-                  - consecutive_silence_timeouts: 1.0
-              - action: action_repeat_bot_messages
-                next: END
+            then: set_slots_consecutive_silence_timeouts
           - if: "slots.consecutive_silence_timeouts = 1.0"
-            then:
-              - set_slots:
-                  - consecutive_silence_timeouts: 2.0
-              - action: utter_ask_still_there
-                next: END
+            then: set_slots_consecutive_silence_timeouts_2
           - if: "slots.consecutive_silence_timeouts > 1.0"
-            then:
-              - action: utter_inform_hangup
-              - action: action_hangup
-                next: END
+            then: message_utter_inform_hangup
           - else: END
+      - id: set_slots_consecutive_silence_timeouts
+        set_slots:
+          - consecutive_silence_timeouts: 1.0
+      - action: action_repeat_bot_messages
+        next: END
+      - id: set_slots_consecutive_silence_timeouts_2
+        set_slots:
+          - consecutive_silence_timeouts: 2.0
+      - action: utter_ask_still_there
+        next: END
+      - id: message_utter_inform_hangup
+        action: utter_inform_hangup
+      - action: action_hangup
 
   pattern_validate_slot:
     description: Flow for running validations on slots
