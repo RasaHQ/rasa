@@ -176,6 +176,60 @@ def test_run_command_can_set_slots_before_asking():
     assert events == [SlotSet("bar", "barbar")]
 
 
+@pytest.mark.parametrize("step", ["link", "call"])
+def test_run_command_can_set_slots_before_asking_with_linked_and_called_flows(
+    step: str,
+):
+    slots = [TextSlot(name="bar", mappings=[])]
+
+    all_flows = flows_from_str(
+        f"""
+        flows:
+          foo:
+            description: flow foo
+            name: foo flow
+            steps:
+            - id: first_step
+              action: action_listen
+            - {step}: bar
+          bar:
+            description: flow bar
+            name: bar flow
+            steps:
+            - id: first_step
+              collect: bar
+        """
+    )
+
+    tracker = DialogueStateTracker.from_events("test", evts=[], slots=slots)
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "frame_type": "regular",
+                    "flow_id": "foo",
+                    "step_id": "first_step",
+                    "frame_id": "some-frame-id",
+                },
+                {
+                    "type": "flow",
+                    "frame_type": step,
+                    "flow_id": "bar",
+                    "step_id": "second_step",
+                    "frame_id": "some-other-frame-id",
+                },
+            ],
+        )
+    )
+    command = SetSlotCommand(name="bar", value="barbar")
+
+    # CAN be set, because the collect information step does not require the slot
+    # to be asked before it can be filled
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+    assert events == [SlotSet("bar", "barbar")]
+
+
 def test_run_command_can_set_slot_that_was_already_asked_in_the_past():
     slots = [TextSlot(name="foo", mappings=[])]
 

@@ -94,6 +94,76 @@ def test_run_command_on_tracker():
     assert dialogue_stack_dump[1]["canceled_frames"] == ["some-frame-id"]
 
 
+@pytest.mark.parametrize("step", ["link", "call"])
+def test_run_command_on_tracker_with_linked_and_called_flows(step: str):
+    all_flows = flows_from_str(
+        f"""
+        flows:
+          foo:
+            description: flow foo
+            name: foo flow
+            steps:
+            - id: first_step
+              action: action_listen
+            - {step}: bar
+          bar:
+            description: flow bar
+            name: bar flow
+            steps:
+            - id: first_step
+              action: action_listen
+        """
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[],
+    )
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "frame_type": "regular",
+                    "flow_id": "foo",
+                    "step_id": "first_step",
+                    "frame_id": "some-frame-id",
+                },
+                {
+                    "type": "flow",
+                    "frame_type": step,
+                    "flow_id": "bar",
+                    "step_id": "second_step",
+                    "frame_id": "some-other-frame-id",
+                },
+            ]
+        )
+    )
+    command = CancelFlowCommand()
+
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+    assert len(events) == 2
+
+    # the first event should be a flow canceled event
+    flow_cancelled_event = events[0]
+    assert flow_cancelled_event == FlowCancelled("bar", "second_step")
+
+    dialogue_stack_event = events[1]
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
+
+    patch = jsonpatch.JsonPatch.from_string(dialogue_stack_event.update)
+    dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
+
+    # flow should still be on the stack and a cancel flow should have been added
+    assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 3
+
+    assert dialogue_stack_dump[2]["type"] == "pattern_cancel_flow"
+    assert dialogue_stack_dump[2]["flow_id"] == "pattern_cancel_flow"
+    assert dialogue_stack_dump[2]["step_id"] == "START"
+    assert dialogue_stack_dump[2]["canceled_name"] == "bar flow"
+    assert dialogue_stack_dump[2]["canceled_frames"][0] == "some-other-frame-id"
+
+
 def test_select_canceled_frames_cancels_patterns():
     stack = DialogueStack(
         frames=[

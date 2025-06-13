@@ -209,7 +209,9 @@ def get_collect_steps_excluding_ask_before_filling_for_active_flow(
         All collect steps that are part of the current active flow,
         excluding the collect steps that have to be asked before filling.
     """
-    active_frame = top_user_flow_frame(dialogue_stack)
+    active_frame = top_user_flow_frame(
+        dialogue_stack, ignore_call_and_link_frames=False
+    )
     if active_frame is None:
         return set()
     active_flow = active_frame.flow(all_flows)

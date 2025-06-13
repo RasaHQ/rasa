@@ -95,7 +95,9 @@ class CancelFlowCommand(Command):
         original_stack = original_tracker.stack
 
         applied_events: List[Event] = []
-        user_frame = top_user_flow_frame(original_stack)
+        user_frame = top_user_flow_frame(
+            original_stack, ignore_call_and_link_frames=False
+        )
         current_flow = user_frame.flow(all_flows) if user_frame else None
 
         if not current_flow:
