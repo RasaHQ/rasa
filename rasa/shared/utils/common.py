@@ -384,7 +384,7 @@ def display_research_study_prompt() -> None:
 {separator}
 Want to help shape the future of Rasa Pro?
 Share your feedback in a short conversation with our team.
-Sign up at: https://calendly.com/alvaro-rasa/rasa-pro-installation
+Sign up at: https://rasa.com/book-feedback-call
 {separator}
 """
     print_success(message)

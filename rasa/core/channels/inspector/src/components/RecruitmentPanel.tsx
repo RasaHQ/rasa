@@ -45,7 +45,7 @@ export const RecruitmentPanel: React.FC<RecruitmentPanelProps> = ({
         </Text>
         <Button
           as="a"
-          href="https://calendly.com/alvaro-rasa/rasa-pro-installation"
+          href="https://rasa.com/book-feedback-call"
           target="_blank"
           rel="noopener noreferrer"
           color="#7622D2"

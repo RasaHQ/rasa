@@ -6,11 +6,11 @@ A rapid prototyping tool for enterprise developer personas working in Rasa Pro b
 
 ### Prerequisites
 
-- **Node.js**: Version **greater than 18.x.x and less than 20.x.x**.  
-   - [How to install Node.js](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs)  
+- **Node.js**: Version **greater than 18.x.x and less than 20.x.x**.
+   - [How to install Node.js](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs)
    - Recommended: Use [nvm](https://github.com/nvm-sh/nvm) for version management.
 - `yarn` version 1.x - Check how to install `yarn` [here](https://classic.yarnpkg.com/lang/en/docs/install/).
-- a running version of `rasa-plus`
+- a running version of `rasa`
 - a running action server (optional)
 
 ### Installation
