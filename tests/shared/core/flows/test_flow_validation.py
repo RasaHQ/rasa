@@ -2,7 +2,7 @@ import textwrap
 
 import pytest
 
-from rasa.shared.constants import RASA_PATTERN_HUMAN_HANDOFF
+from rasa.shared.constants import RASA_PATTERN_CHITCHAT, RASA_PATTERN_HUMAN_HANDOFF
 from rasa.shared.core.flows import Flow
 from rasa.shared.core.flows.steps import LinkFlowStep
 from rasa.shared.core.flows.steps.constants import (
@@ -416,6 +416,18 @@ def test_validation_pass_for_a_link_to_pattern_human_handoff():
     assert len(flows.underlying_flows) == 1
 
 
+def test_validation_fails_for_a_link_to_pattern_chitchat():
+    flow_config = """
+        flows:
+          foo:
+            description: foo flow
+            steps:
+              - link: pattern_chitchat
+        """
+    with pytest.raises(ReferenceToPatternException):
+        flows_from_str_including_defaults(flow_config)
+
+
 def test_validation_fails_for_a_linked_pattern():
     flow_config = """
         flows:
@@ -595,7 +607,9 @@ def test_validation_linking_to_a_pattern_human_handoff():
     assert flows.underlying_flows[0].steps[1].link == RASA_PATTERN_HUMAN_HANDOFF
 
 
-@pytest.mark.parametrize("linked_flow", ["pattern_chitchat", "pattern_internal_error"])
+@pytest.mark.parametrize(
+    "linked_flow", ["pattern_correction", "pattern_internal_error"]
+)
 def test_validation_fails_pattern_linking_to_a_pattern(linked_flow: str):
     flow_config = f"""
         flows:
@@ -623,6 +637,21 @@ def test_validation_pattern_linking_to_a_pattern_human_handoff():
     flows = flows_from_str_including_defaults(flow_config)
     assert isinstance(flows.underlying_flows[0].steps[1], LinkFlowStep)
     assert flows.underlying_flows[0].steps[1].link == RASA_PATTERN_HUMAN_HANDOFF
+
+
+def test_validation_pattern_linking_to_a_pattern_chitchat():
+    flow_config = f"""
+        flows:
+          pattern_test_pattern:
+            description: test pattern
+            steps:
+              - action: welcome
+              - link: {RASA_PATTERN_CHITCHAT}
+        """
+
+    flows = flows_from_str_including_defaults(flow_config)
+    assert isinstance(flows.underlying_flows[0].steps[1], LinkFlowStep)
+    assert flows.underlying_flows[0].steps[1].link == RASA_PATTERN_CHITCHAT
 
 
 def test_validate_slot_persistence_configuration_duplicate():

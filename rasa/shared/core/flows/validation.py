@@ -8,6 +8,7 @@ from typing import List, Optional, Set, Text
 
 from rasa.shared.constants import (
     RASA_DEFAULT_FLOW_PATTERN_PREFIX,
+    RASA_PATTERN_CHITCHAT,
     RASA_PATTERN_HUMAN_HANDOFF,
     RASA_PATTERN_INTERNAL_ERROR,
 )
@@ -186,8 +187,10 @@ class ReferenceToPatternException(RasaException):
             return message + "Patterns can not be used as a target for a call step."
         else:
             return message + (
-                "All patterns, except for 'pattern_human_handoff', can "
-                "not be used as a target for a link step."
+                "Patterns cannot be used as a target in link steps, except for "
+                "'pattern_human_handoff', which may be linked from both user-defined "
+                "flows and other patterns. 'pattern_chitchat' may only be linked "
+                "from other patterns."
             )
 
 
@@ -597,7 +600,13 @@ def validate_patterns_are_not_called_or_linked(flows: "FlowsList") -> None:
             if (
                 isinstance(step, LinkFlowStep)
                 and step.link.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX)
+                # Allow linking to human-handoff from both patterns
+                # and user-defined flows
                 and step.link != RASA_PATTERN_HUMAN_HANDOFF
+                # Allow linking to 'pattern_chitchat' only from other patterns
+                and not (
+                    flow.is_rasa_default_flow and step.link == RASA_PATTERN_CHITCHAT
+                )
             ):
                 raise ReferenceToPatternException(
                     step.link, flow.id, step.id, call_step=False
@@ -617,7 +626,8 @@ def validate_patterns_are_not_calling_or_linking_other_flows(
     """Validates that patterns do not contain call or link steps.
 
     Link steps to user flows are allowed for all patterns but 'pattern_internal_error'.
-    Link steps to other patterns, except for 'pattern_human_handoff', are forbidden.
+    Link steps to other patterns, except for 'pattern_human_handoff' and
+    'pattern_chitchat' are forbidden.
     """
     for flow in flows.underlying_flows:
         if not flow.is_rasa_default_flow:
@@ -626,6 +636,9 @@ def validate_patterns_are_not_calling_or_linking_other_flows(
             if isinstance(step, LinkFlowStep):
                 if step.link == RASA_PATTERN_HUMAN_HANDOFF:
                     # links to 'pattern_human_handoff' are allowed
+                    continue
+                if step.link == RASA_PATTERN_CHITCHAT:
+                    # links to 'pattern_chitchat' are allowed
                     continue
                 if step.link.startswith(RASA_DEFAULT_FLOW_PATTERN_PREFIX):
                     # all other patterns are allowed to link to user flows, but not
