@@ -5,7 +5,7 @@ on:
         paths: ["rasa/dialogue_understanding/generator/prompt_templates/*.jinja2"]
     push:
         tags:
-            - '[0-9]+.[0-9]+.[0-9]*'
+            - '[0-9]+.[0-9]+.[0-9]+'
     workflow_dispatch:
         inputs:
             calm-benchmarking-bot-branch-tag-or-commit:
@@ -66,7 +66,7 @@ jobs:
               with:
                 calm-benchmarking-bot-branch-tag-or-commit: ${{ inputs.calm-benchmarking-bot-branch-tag-or-commit || 'ad8860e1df2b89658a324dd327950b26a09a9d8f' }}
                 calm-experiment-tracking-branch-tag-or-commit: ${{ inputs.calm-experiment-tracking-branch-tag-or-commit || 'main' }}
-                config_file: ${{ inputs.config_file || 'experiments/enterprise-search-discovery-project/baselines/calm-benchmarking-bot/gpt-4o/config.yml' }}
+                config_file: ${{ inputs.config_file || 'experiments/prompt-tuning-project/set_slot_experiments/gpt-4o/13_updated_slot_context_md_2_minified_json_4_reordered_prompt/config.yml' }}
                 endpoints_file: ${{ inputs.endpoints_file || 'experiments/prompt-tuning-project/set_slot_experiments/gpt-4o/13_updated_slot_context_md_2_minified_json_4_reordered_prompt/endpoints.yml' }} # Use endpoints file without Qdrant vector store
                 tests_directory: ${{ inputs.tests_directory || 'dut/plain/v2' }}
 
