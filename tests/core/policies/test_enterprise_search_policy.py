@@ -22,6 +22,7 @@ from rasa.core.policies.enterprise_search_policy import (
     DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
     DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE,
     DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_RELEVANCY_CHECK_AND_CITATION_TEMPLATE,
+    DEFAULT_USE_LLM_PROPERTY,
     ENTERPRISE_SEARCH_CONFIG_FILE_NAME,
     SEARCH_QUERY_METADATA_KEY,
     SEARCH_RESULTS_METADATA_KEY,
@@ -1957,3 +1958,65 @@ def test_get_system_default_prompt_based_on_config(
     # Then
     assert prompt.startswith(prompt_starts_with)
     assert prompt_contains in prompt
+
+
+@pytest.mark.parametrize(
+    "use_generative_llm_config, expected_parse_as_faq_pairs",
+    [
+        ({USE_LLM_PROPERTY: True}, False),
+        ({USE_LLM_PROPERTY: False}, True),
+        ({}, not DEFAULT_USE_LLM_PROPERTY),
+    ],
+)
+@patch("rasa.core.policies.enterprise_search_policy" ".FAISS_Store")
+@patch(
+    "rasa.core.policies.enterprise_search_policy"
+    ".EnterpriseSearchPolicy._perform_health_checks"
+)
+@patch(
+    "rasa.core.policies.enterprise_search_policy"
+    ".track_enterprise_search_policy_train_started"
+)
+@patch(
+    "rasa.core.policies.enterprise_search_policy"
+    ".track_enterprise_search_policy_train_completed"
+)
+@patch(
+    "rasa.core.policies.enterprise_search_policy"
+    ".EnterpriseSearchPolicy._create_plain_embedder"
+)
+def test_train_and_load_calls_faiss_store_with_parsed_faq_when_use_generative_llm_is_disabled(  # noqa: E501
+    mock_create_plain_embedder: Mock,
+    mock_track_enterprise_search_policy_train_completed: Mock,
+    mock_track_enterprise_search_policy_train_started: Mock,
+    mock_perform_llm_health_check: Mock,
+    mock_faiss_store,
+    default_model_storage: ModelStorage,
+    resource: Resource,
+    use_generative_llm_config: dict,
+    expected_parse_as_faq_pairs: bool,
+):
+    # Given
+    mock_create_plain_embedder.return_value = Mock()
+    config = {
+        "vector_store": {"type": "faiss", "source": "my_faq_docs"},
+        **use_generative_llm_config,
+    }
+    policy = EnterpriseSearchPolicy(
+        config=config,
+        model_storage=default_model_storage,
+        resource=resource,
+        execution_context=Mock(),
+    )
+
+    # When trained + loaded
+    resource = policy.train(Mock(), Mock(), Mock(), Mock(), Mock())
+    EnterpriseSearchPolicy.load(config, default_model_storage, resource, Mock())
+
+    # Then
+    # Once during training and once during loading
+    assert mock_faiss_store.call_count == 2
+
+    for call_args in mock_faiss_store.call_args_list:
+        kwargs = call_args.kwargs
+        assert kwargs["parse_as_faq_pairs"] is expected_parse_as_faq_pairs

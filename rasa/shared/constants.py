@@ -345,3 +345,13 @@ ROLE_SYSTEM = "system"
 # Used for key values in ValidateSlotPatternFlowStackFrame
 REFILL_UTTER = "refill_utter"
 REJECTIONS = "rejections"
+
+# Constants for extractive search FAQ parsing (QA pairs from input documents)
+FAQ_DOCUMENT_METADATA_TITLE = "title"
+FAQ_DOCUMENT_METADATA_ANSWER = "answer"
+FAQ_DOCUMENT_METADATA_TYPE = "type"
+DOCUMENT_TYPE_FAQ = "faq"
+FAQ_INPUT_DATA_QUESTION_LINE_PREFIX = "Q:"
+FAQ_INPUT_DATA_ANSWER_LINE_PREFIX = "A:"
+FAQ_DOCUMENT_ENTRY_SEPARATOR = "\n\n"
+FAQ_DOCUMENT_LINE_SEPARATOR = "\n"

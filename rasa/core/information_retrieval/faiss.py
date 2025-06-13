@@ -12,6 +12,7 @@ from rasa.core.information_retrieval import (
     InformationRetrievalException,
     SearchResultList,
 )
+from rasa.core.information_retrieval.ingestion.faq_parser import _format_faq_documents
 from rasa.utils.endpoints import EndpointConfig
 from rasa.utils.ml_utils import persist_faiss_vector_store
 
@@ -31,10 +32,12 @@ class FAISS_Store(InformationRetrieval):
         index_path: str,
         docs_folder: Optional[str],
         create_index: Optional[bool] = False,
+        parse_as_faq_pairs: Optional[bool] = False,
     ):
         """Initializes the FAISS Store."""
         self.chunk_size = 1000
         self.chunk_overlap = 20
+        self.parse_as_faq_pairs = parse_as_faq_pairs
 
         path = Path(index_path) / "documents_faiss"
         if create_index:
@@ -86,21 +89,25 @@ class FAISS_Store(InformationRetrieval):
         if not docs_folder:
             raise ValueError("parameter `docs_folder` needs to be specified")
 
-        docs = self.load_documents(docs_folder)
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=self.chunk_size,
-            chunk_overlap=self.chunk_overlap,
-            length_function=len,
-        )
-        doc_chunks = splitter.split_documents(docs)
+        documents = self.load_documents(docs_folder)
+
+        if not self.parse_as_faq_pairs:
+            splitter = RecursiveCharacterTextSplitter(
+                chunk_size=self.chunk_size,
+                chunk_overlap=self.chunk_overlap,
+                length_function=len,
+            )
+            parsed_documents = splitter.split_documents(documents)
+        else:
+            parsed_documents = _format_faq_documents(documents)
 
         logger.info(
             "information_retrieval.faiss_store._create_document_index",
-            len_chunks=len(doc_chunks),
+            len_chunks=len(parsed_documents),
         )
-        if doc_chunks:
-            texts = [chunk.page_content for chunk in doc_chunks]
-            metadatas = [chunk.metadata for chunk in doc_chunks]
+        if parsed_documents:
+            texts = [document.page_content for document in parsed_documents]
+            metadatas = [document.metadata for document in parsed_documents]
             return FAISS.from_texts(texts, embedding, metadatas=metadatas, ids=None)
         else:
             raise ValueError(f"No documents found at '{docs_folder}'.")

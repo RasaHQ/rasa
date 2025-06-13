@@ -464,6 +464,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                     embeddings=embeddings,
                     index_path=path,
                     create_index=True,
+                    parse_as_faq_pairs=not self.use_llm,
                 )
         else:
             structlogger.info(
@@ -917,6 +918,9 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                     index_path=path,
                     docs_folder=None,
                     create_index=False,
+                    parse_as_faq_pairs=not config.get(
+                        USE_LLM_PROPERTY, DEFAULT_USE_LLM_PROPERTY
+                    ),
                 )
         else:
             vector_store = create_from_endpoint_config(
