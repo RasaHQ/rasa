@@ -97,7 +97,7 @@ class BrowserAudioInputChannel(VoiceInputChannel):
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
-        """Defines a Sanic bluelogger.debug."""
+        """Defines a Sanic blueprint"""
         blueprint = Blueprint("browser_audio", __name__)
 
         @blueprint.route("/", methods=["GET"])

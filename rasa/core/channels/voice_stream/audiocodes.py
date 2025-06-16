@@ -295,7 +295,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
-        """Defines a Sanic bluelogger.debug."""
+        """Defines a Sanic blueprint"""
         blueprint = Blueprint("audiocodes_stream", __name__)
 
         @blueprint.route("/", methods=["GET"])

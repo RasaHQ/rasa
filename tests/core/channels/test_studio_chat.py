@@ -18,7 +18,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 @pytest.fixture
 def studio_input() -> StudioChatInput:
     sio = AsyncMock()
-    output_channel = StudioChatInput()
+    output_channel = StudioChatInput("", {}, {})
     output_channel.sio = sio
     return output_channel
 
@@ -169,3 +169,39 @@ async def test_studio_chat_handle_partial_tracker_update(
     assert len(retrieved_tracker.events) > 0
     assert isinstance(retrieved_tracker.events[-1], ActionExecuted)
     assert retrieved_tracker.events[-1].action_name == ACTION_LISTEN_NAME
+
+
+def test_studio_chat_from_old_credentials() -> None:
+    """Test that the StudioChatInput can be created without voice credentials."""
+    credentials = {
+        "user_message_evt": "user_message",
+        "bot_message_evt": "bot_message",
+        "session_persistence": True,
+    }
+    input_channel = StudioChatInput.from_credentials(credentials)
+
+    assert isinstance(input_channel, StudioChatInput)
+    assert input_channel.user_message_evt == "user_message"
+    assert input_channel.bot_message_evt == "bot_message"
+    assert input_channel.session_persistence is True
+
+
+def test_studio_chat_from_new_credentials() -> None:
+    """Test that the StudioChatInput can be created from credentials."""
+    credentials = {
+        "user_message_evt": "user_message",
+        "bot_message_evt": "bot_message",
+        "session_persistence": True,
+        "server_url": "localhost",
+        "asr": {"name": "test_asr"},
+        "tts": {"name": "test_tts"},
+    }
+    input_channel = StudioChatInput.from_credentials(credentials)
+
+    assert isinstance(input_channel, StudioChatInput)
+    assert input_channel.user_message_evt == "user_message"
+    assert input_channel.bot_message_evt == "bot_message"
+    assert input_channel.session_persistence is True
+    assert input_channel.server_url == "localhost"
+    assert input_channel.asr_config == {"name": "test_asr"}
+    assert input_channel.tts_config == {"name": "test_tts"}

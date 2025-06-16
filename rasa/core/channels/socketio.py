@@ -191,6 +191,60 @@ class SocketIOInput(InputChannel):
             return None
         return SocketIOOutput(self.sio, self.bot_message_evt)
 
+    async def handle_session_request(
+        self, sid: Text, data: Optional[Dict] = None
+    ) -> None:
+        """Handles session requests from the client."""
+        if data is None:
+            data = {}
+        if "session_id" not in data or data["session_id"] is None:
+            data["session_id"] = uuid.uuid4().hex
+        if self.session_persistence:
+            if inspect.iscoroutinefunction(self.sio.enter_room):  # type: ignore[union-attr]
+                await self.sio.enter_room(sid, data["session_id"])  # type: ignore[union-attr]
+            else:
+                # for backwards compatibility with python-socketio < 5.10.
+                # previously, this function was NOT async.
+                self.sio.enter_room(sid, data["session_id"])  # type: ignore[union-attr]
+        await self.sio.emit("session_confirm", data["session_id"], room=sid)  # type: ignore[union-attr]
+        logger.debug(f"User {sid} connected to socketIO endpoint.")
+
+    async def handle_user_message(
+        self,
+        sid: Text,
+        data: Dict,
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+    ) -> None:
+        """Handles user messages received from the client."""
+        output_channel = SocketIOOutput(self.sio, self.bot_message_evt)
+
+        if self.session_persistence:
+            if not data.get("session_id"):
+                rasa.shared.utils.io.raise_warning(
+                    "A message without a valid session_id "
+                    "was received. This message will be "
+                    "ignored. Make sure to set a proper "
+                    "session id using the "
+                    "`session_request` socketIO event."
+                )
+                return
+            sender_id = data["session_id"]
+        else:
+            sender_id = sid
+
+        metadata = data.get(self.metadata_key, {})
+        if isinstance(metadata, Text):
+            metadata = json.loads(metadata)
+
+        message = UserMessage(
+            data.get("message", ""),
+            output_channel,
+            sender_id,
+            input_channel=self.name(),
+            metadata=metadata,
+        )
+        await on_new_message(message)
+
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> SocketBlueprint:
@@ -233,49 +287,10 @@ class SocketIOInput(InputChannel):
 
         @sio.on("session_request", namespace=self.namespace)
         async def session_request(sid: Text, data: Optional[Dict]) -> None:
-            if data is None:
-                data = {}
-            if "session_id" not in data or data["session_id"] is None:
-                data["session_id"] = uuid.uuid4().hex
-            if self.session_persistence:
-                if inspect.iscoroutinefunction(sio.enter_room):
-                    await sio.enter_room(sid, data["session_id"])
-                else:
-                    # for backwards compatibility with python-socketio < 5.10.
-                    # previously, this function was NOT async.
-                    sio.enter_room(sid, data["session_id"])
-            await sio.emit("session_confirm", data["session_id"], room=sid)
-            logger.debug(f"User {sid} connected to socketIO endpoint.")
+            await self.handle_session_request(sid, data)
 
         @sio.on(self.user_message_evt, namespace=self.namespace)
         async def handle_message(sid: Text, data: Dict) -> None:
-            output_channel = SocketIOOutput(sio, self.bot_message_evt)
-
-            if self.session_persistence:
-                if not data.get("session_id"):
-                    rasa.shared.utils.io.raise_warning(
-                        "A message without a valid session_id "
-                        "was received. This message will be "
-                        "ignored. Make sure to set a proper "
-                        "session id using the "
-                        "`session_request` socketIO event."
-                    )
-                    return
-                sender_id = data["session_id"]
-            else:
-                sender_id = sid
-
-            metadata = data.get(self.metadata_key, {})
-            if isinstance(metadata, Text):
-                metadata = json.loads(metadata)
-
-            message = UserMessage(
-                data.get("message", ""),
-                output_channel,
-                sender_id,
-                input_channel=self.name(),
-                metadata=metadata,
-            )
-            await on_new_message(message)
+            await self.handle_user_message(sid, data, on_new_message)
 
         return socketio_webhook

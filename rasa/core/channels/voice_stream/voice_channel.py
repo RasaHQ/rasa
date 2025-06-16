@@ -286,13 +286,18 @@ class VoiceOutputChannel(OutputChannel):
 
 
 class VoiceInputChannel(InputChannel):
+    # All children of this class require a voice license to be used.
+    requires_voice_license = True
+
     def __init__(
         self,
         server_url: str,
         asr_config: Dict,
         tts_config: Dict,
     ):
-        validate_voice_license_scope()
+        if self.requires_voice_license:
+            validate_voice_license_scope()
+
         self.server_url = server_url
         self.asr_config = asr_config
         self.tts_config = tts_config
