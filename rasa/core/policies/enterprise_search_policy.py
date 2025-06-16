@@ -95,6 +95,7 @@ from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
     DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
+    check_prompt_config_keys_and_warn_if_deprecated,
     embedder_factory,
     get_prompt_template,
     llm_factory,
@@ -246,7 +247,9 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         super().__init__(config, model_storage, resource, execution_context, featurizer)
 
         # Check for deprecated keys and issue a warning if those are used
-        self._check_config_keys_and_warn_if_deprecated()
+        check_prompt_config_keys_and_warn_if_deprecated(
+            config, "enterprise_search_policy"
+        )
         # Check for mutual exclusivity of extractive and generative search
         self._check_and_warn_mutual_exclusivity_of_extractive_and_generative_search()
 
@@ -306,34 +309,6 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         self.prompt_template = prompt_template or self._resolve_prompt_template(
             self.config, LOG_COMPONENT_SOURCE_METHOD_INIT
         )
-
-    def _check_config_keys_and_warn_if_deprecated(self) -> None:
-        """Checks and warns about deprecated config parameters."""
-        if (
-            PROMPT_CONFIG_KEY in self.config
-            and PROMPT_TEMPLATE_CONFIG_KEY in self.config
-        ):
-            structlogger.warning(
-                "enterprise_search_policy.init"
-                ".both_deprecated_and_non_deprecated_config_keys_used_at_the_same_time",
-                event_info=(
-                    f"Both '{PROMPT_CONFIG_KEY}' and '{PROMPT_TEMPLATE_CONFIG_KEY}' "
-                    f"are present in the config. '{PROMPT_CONFIG_KEY}' will be ignored "
-                    f"in favor of {PROMPT_TEMPLATE_CONFIG_KEY}."
-                ),
-            )
-
-        # 'prompt' config key is deprecated in favor of 'prompt_template'
-        if PROMPT_CONFIG_KEY in self.config:
-            structlogger.warning(
-                "enterprise_search_policy.init.deprecated_config_key",
-                event_info=(
-                    f"The config parameter '{PROMPT_CONFIG_KEY}' is deprecated "
-                    "and will be removed in Rasa 4.0.0. "
-                    f"Please use the config parameter '{PROMPT_TEMPLATE_CONFIG_KEY}'"
-                    f"instead. "
-                ),
-            )
 
     def _check_and_warn_mutual_exclusivity_of_extractive_and_generative_search(
         self,

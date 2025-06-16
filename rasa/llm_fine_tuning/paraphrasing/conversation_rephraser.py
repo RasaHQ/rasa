@@ -22,11 +22,7 @@ from rasa.shared.constants import (
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers.mappings import OPENAI_PROVIDER
 from rasa.shared.utils.constants import LOG_COMPONENT_SOURCE_METHOD_INIT
-from rasa.shared.utils.llm import (
-    USER,
-    get_prompt_template,
-    llm_factory,
-)
+from rasa.shared.utils.llm import USER, get_prompt_template, llm_factory
 
 SEPARATOR = "\n\n"
 BACKUP_SEPARATOR = "\nUSER:"

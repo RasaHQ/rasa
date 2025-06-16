@@ -16,7 +16,10 @@ from rasa.shared.constants import (
     PROMPT_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
 )
-from rasa.shared.utils.llm import get_prompt_template
+from rasa.shared.utils.llm import (
+    check_prompt_config_keys_and_warn_if_deprecated,
+    get_prompt_template,
+)
 
 DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
     "rasa.dialogue_understanding.generator.prompt_templates",
@@ -52,16 +55,10 @@ class SingleStepLLMCommandGenerator(SingleStepBasedLLMCommandGenerator):
             **kwargs,
         )
 
-        # Set the prompt template
-        if config.get(PROMPT_CONFIG_KEY):
-            structlogger.warning(
-                "single_step_llm_command_generator.init",
-                event_info=(
-                    "The config parameter 'prompt' is deprecated "
-                    "and will be removed in Rasa 4.0.0. "
-                    "Please use the config parameter 'prompt_template' instead. "
-                ),
-            )
+        # Warn if the prompt config key is used to set the prompt template
+        check_prompt_config_keys_and_warn_if_deprecated(
+            config, "single_step_llm_command_generator"
+        )
 
     @staticmethod
     def get_component_command_syntax_version() -> CommandSyntaxVersion:

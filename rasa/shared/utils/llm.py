@@ -37,6 +37,8 @@ from rasa.shared.constants import (
     MODEL_GROUP_ID_CONFIG_KEY,
     MODEL_GROUPS_CONFIG_KEY,
     MODELS_CONFIG_KEY,
+    PROMPT_CONFIG_KEY,
+    PROMPT_TEMPLATE_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY,
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
@@ -948,6 +950,34 @@ async def create_tracker_for_user_step(
 
     # store the tracker with the unique sender id
     await agent.tracker_store.save(tracker)
+
+
+def check_prompt_config_keys_and_warn_if_deprecated(
+    config: dict, component_source: str
+) -> None:
+    """Checks and warns about deprecated config parameters."""
+    if PROMPT_CONFIG_KEY in config and PROMPT_TEMPLATE_CONFIG_KEY in config:
+        structlogger.warning(
+            f"{component_source}.init"
+            ".both_deprecated_and_non_deprecated_config_keys_used_at_the_same_time",
+            event_info=(
+                f"Both '{PROMPT_CONFIG_KEY}' and '{PROMPT_TEMPLATE_CONFIG_KEY}' "
+                f"are present in the config. '{PROMPT_CONFIG_KEY}' will be ignored "
+                f"in favor of {PROMPT_TEMPLATE_CONFIG_KEY}."
+            ),
+        )
+
+    # 'prompt' config key is deprecated in favor of 'prompt_template'
+    if PROMPT_CONFIG_KEY in config:
+        structlogger.warning(
+            f"{component_source}.init.deprecated_config_key",
+            event_info=(
+                f"The config parameter '{PROMPT_CONFIG_KEY}' is deprecated "
+                "and will be removed in Rasa 4.0.0. "
+                f"Please use the config parameter '{PROMPT_TEMPLATE_CONFIG_KEY}'"
+                f" instead. "
+            ),
+        )
 
 
 def _get_llm_command_generator_config(

@@ -13,7 +13,7 @@ import rasa.shared.utils.io
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.policies.intentless_policy import (
     DEFAULT_EMBEDDINGS_CONFIG,
-    DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+    DEFAULT_INTENTLESS_PROMPT_TEMPLATE_FILE_NAME,
     DEFAULT_LLM_CONFIG,
     INTENTLESS_CONFIG_FILE_NAME,
     Conversation,
@@ -38,6 +38,7 @@ from rasa.shared.constants import (
     MODEL_GROUP_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
     PROMPT_CONFIG_KEY,
+    PROMPT_TEMPLATE_CONFIG_KEY,
     ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.domain import ActionNotFoundException, Domain
@@ -677,7 +678,7 @@ async def test_intentless_policy_prompt_init_custom(
         ):
             config = {
                 **IntentlessPolicy.get_default_config(),
-                PROMPT_CONFIG_KEY: "data/prompt_templates/test_prompt.jinja2",
+                PROMPT_TEMPLATE_CONFIG_KEY: "data/prompt_templates/test_prompt.jinja2",
             }
             intentless_policy = IntentlessPolicy.create(
                 config,
@@ -707,6 +708,35 @@ async def test_intentless_policy_prompt_init_custom(
                 default_execution_context,
             )
             assert loaded.prompt_template.startswith("Identify the user's message")
+
+
+async def test_intentless_policy_prompt_template_init_custom(
+    fake_llm_client: LLMClient,
+    fake_embedding_client: EmbeddingClient,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+) -> None:
+    with patch(
+        "rasa.core.policies.intentless_policy.llm_factory",
+        Mock(return_value=fake_llm_client),
+    ):
+        with patch(
+            "rasa.core.policies.intentless_policy.embedder_factory",
+            Mock(return_value=fake_embedding_client),
+        ):
+            config = {
+                **IntentlessPolicy.get_default_config(),
+                PROMPT_TEMPLATE_CONFIG_KEY: "data/prompt_templates/test_prompt.jinja2",
+            }
+            intentless_policy = IntentlessPolicy.create(
+                config,
+                default_model_storage,
+                Resource("intentless_policy"),
+                default_execution_context,
+            )
+            assert intentless_policy.prompt_template.startswith(
+                "Identify the user's message"
+            )
 
 
 async def test_intentless_policy_prompt_init_default(
@@ -769,7 +799,7 @@ async def test_intentless_policy_fingerprint_addon_diff_in_prompt_template(
 
     config = {
         **IntentlessPolicy.get_default_config(),
-        PROMPT_CONFIG_KEY: str(prompt_file),
+        PROMPT_TEMPLATE_CONFIG_KEY: str(prompt_file),
     }
     print(config)
     with patch(
@@ -809,7 +839,7 @@ async def test_intentless_policy_fingerprint_addon_no_diff_in_prompt_template(
 
     config = {
         **IntentlessPolicy.get_default_config(),
-        PROMPT_CONFIG_KEY: str(prompt_file),
+        PROMPT_TEMPLATE_CONFIG_KEY: str(prompt_file),
     }
     with patch(
         "rasa.core.policies.intentless_policy.llm_factory",
@@ -1032,7 +1062,7 @@ def test_intentless_policy_init_with_different_llm_configs(
     monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
 
     config["nlu_abstention_threshold"] = 0.5
-    config[PROMPT_CONFIG_KEY] = DEFAULT_INTENTLESS_PROMPT_TEMPLATE
+    config[PROMPT_TEMPLATE_CONFIG_KEY] = DEFAULT_INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
 
     generator = IntentlessPolicy(
         config, default_model_storage, resource, default_execution_context
@@ -1067,7 +1097,7 @@ def test_intentless_policy_persist_config(
         LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
         EMBEDDINGS_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
         "nlu_abstention_threshold": 0.5,
-        PROMPT_CONFIG_KEY: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+        PROMPT_TEMPLATE_CONFIG_KEY: DEFAULT_INTENTLESS_PROMPT_TEMPLATE_FILE_NAME,
     }
     component = IntentlessPolicy(
         config, default_model_storage, resource, default_execution_context
@@ -1215,7 +1245,7 @@ async def test_intentless_policy_fingerprint_addon_with_different_model_configs(
     generator = IntentlessPolicy(
         {
             "nlu_abstention_threshold": 0.5,
-            PROMPT_CONFIG_KEY: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+            PROMPT_TEMPLATE_CONFIG_KEY: DEFAULT_INTENTLESS_PROMPT_TEMPLATE_FILE_NAME,
         },
         default_model_storage,
         Resource("intentlesspolicy"),
@@ -1254,3 +1284,73 @@ async def test_intentless_policy_fingerprint_addon_with_different_model_configs(
         assert fingerprint_1 != fingerprint_2
     else:
         assert fingerprint_1 == fingerprint_2
+
+
+async def test_deprecation_warning_with_prompt(
+    fake_llm_client: LLMClient,
+    fake_embedding_client: EmbeddingClient,
+    monkeypatch: MonkeyPatch,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+):
+    monkeypatch.setattr(
+        "rasa.core.policies.intentless_policy.llm_factory",
+        Mock(return_value=fake_llm_client),
+    )
+
+    monkeypatch.setattr(
+        "rasa.core.policies.intentless_policy.embedder_factory",
+        Mock(return_value=fake_embedding_client),
+    )
+    # When
+    with patch("rasa.shared.utils.llm.structlogger.warning") as mock_warning:
+        IntentlessPolicy.create(
+            {
+                **IntentlessPolicy.get_default_config(),
+                PROMPT_CONFIG_KEY: "data/prompt_templates/test_prompt.jinja2",
+            },
+            default_model_storage,
+            Resource("intentless_policy"),
+            default_execution_context,
+        )
+    assert mock_warning.call_count == 2
+    mock_warning.assert_any_call(
+        "intentless_policy.init.deprecated_config_key",
+        event_info=(
+            "The config parameter 'prompt' is deprecated "
+            "and will be removed in Rasa 4.0.0. "
+            "Please use the config parameter 'prompt_template' instead. "
+        ),
+    )
+
+
+async def test_deprecation_warning_not_thrown_with_prompt_template(
+    fake_llm_client: LLMClient,
+    fake_embedding_client: EmbeddingClient,
+    monkeypatch: MonkeyPatch,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+):
+    monkeypatch.setattr(
+        "rasa.core.policies.intentless_policy.llm_factory",
+        Mock(return_value=fake_llm_client),
+    )
+
+    monkeypatch.setattr(
+        "rasa.core.policies.intentless_policy.embedder_factory",
+        Mock(return_value=fake_embedding_client),
+    )
+    # When
+    with patch(
+        "rasa.core.policies.intentless_policy.structlogger.warning"
+    ) as mock_warning:
+        IntentlessPolicy.create(
+            {
+                **IntentlessPolicy.get_default_config(),
+                PROMPT_TEMPLATE_CONFIG_KEY: "data/prompt_templates/test_prompt.jinja2",
+            },
+            default_model_storage,
+            Resource("intentless_policy"),
+            default_execution_context,
+        )
+    mock_warning.assert_not_called()

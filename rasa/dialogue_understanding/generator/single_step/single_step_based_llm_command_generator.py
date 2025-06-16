@@ -113,7 +113,7 @@ class SingleStepBasedLLMCommandGenerator(LLMBasedCommandGenerator, ABC):
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            PROMPT_TEMPLATE_CONFIG_KEY: None,
+            PROMPT_TEMPLATE_CONFIG_KEY: None,  # TODO: remove in Rasa 4.0.0
             USER_INPUT_CONFIG_KEY: None,
             LLM_CONFIG_KEY: None,
             FLOW_RETRIEVAL_KEY: FlowRetrieval.get_default_config(),

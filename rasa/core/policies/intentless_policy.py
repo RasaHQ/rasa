@@ -38,6 +38,7 @@ from rasa.shared.constants import (
     MODEL_NAME_CONFIG_KEY,
     OPENAI_PROVIDER,
     PROMPT_CONFIG_KEY,
+    PROMPT_TEMPLATE_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
     TEMPERATURE_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
@@ -56,7 +57,10 @@ from rasa.shared.providers.embedding._langchain_embedding_client_adapter import 
     _LangchainEmbeddingClientAdapter,
 )
 from rasa.shared.providers.llm.llm_client import LLMClient
-from rasa.shared.utils.constants import LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON
+from rasa.shared.utils.constants import (
+    LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
+    LOG_COMPONENT_SOURCE_METHOD_INIT,
+)
 from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
     EmbeddingsHealthCheckMixin,
 )
@@ -68,6 +72,7 @@ from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
     DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
     USER,
+    check_prompt_config_keys_and_warn_if_deprecated,
     combine_custom_and_default_config,
     embedder_factory,
     get_prompt_template,
@@ -119,9 +124,12 @@ DEFAULT_EMBEDDINGS_CONFIG = {
     MODEL_CONFIG_KEY: DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
 }
 
-DEFAULT_INTENTLESS_PROMPT_TEMPLATE = importlib.resources.open_text(
+DEFAULT_INTENTLESS_PROMPT_TEMPLATE_FILE_NAME = importlib.resources.open_text(
     "rasa.core.policies", "intentless_prompt_template.jinja2"
 ).name
+DEFAULT_INTENTLESS_PROMPT_TEMPLATE = importlib.resources.read_text(
+    "rasa.core.policies", "intentless_prompt_template.jinja2"
+)
 
 INTENTLESS_PROMPT_TEMPLATE_FILE_NAME = "intentless_policy_prompt.jinja2"
 INTENTLESS_CONFIG_FILE_NAME = "config.json"
@@ -345,7 +353,7 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
             # ensures that the policy will not override a deterministic policy
             # which utilizes the nlu predictions confidence (e.g. Memoization).
             NLU_ABSTENTION_THRESHOLD: 0.9,
-            PROMPT_CONFIG_KEY: DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+            PROMPT_TEMPLATE_CONFIG_KEY: None,  # TODO: remove in Rasa 4.0.0
         }
 
     @staticmethod
@@ -402,10 +410,42 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
         self.response_index = responses_docsearch
         self.conversation_samples_index = samples_docsearch
         self.embedder = self._create_plain_embedder(config)
-        self.prompt_template = prompt_template or rasa.shared.utils.io.read_file(
-            self.config[PROMPT_CONFIG_KEY]
+
+        # Warn if the prompt config key is used to set the prompt template
+        check_prompt_config_keys_and_warn_if_deprecated(config, "intentless_policy")
+
+        self.prompt_template = prompt_template or self._resolve_prompt_template(
+            config, LOG_COMPONENT_SOURCE_METHOD_INIT
         )
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
+
+    @classmethod
+    def _resolve_prompt_template(
+        cls: Any,
+        config: dict,
+        log_source_method: str,
+    ) -> str:
+        """Resolves the prompt template from the config.
+
+        Args:
+            config: The config to resolve the prompt template from.
+            log_source_method: The method from which the prompt template is resolved.
+
+        Returns:
+            The resolved prompt template.
+        """
+        # Prefer prompt template over prompt config key.
+        prompt_template_file = (
+            config.get(PROMPT_TEMPLATE_CONFIG_KEY)
+            or config.get(PROMPT_CONFIG_KEY)
+            or DEFAULT_INTENTLESS_PROMPT_TEMPLATE_FILE_NAME
+        )
+        return get_prompt_template(
+            prompt_template_file,
+            DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
+            log_source_component=IntentlessPolicy.__name__,
+            log_source_method=log_source_method,
+        )
 
     @classmethod
     def _create_plain_embedder(cls, config: Dict[Text, Any]) -> Embeddings:
@@ -945,11 +985,8 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
     @classmethod
     def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint of intentless policy for the graph."""
-        prompt_template = get_prompt_template(
-            config.get(PROMPT_CONFIG_KEY),
-            DEFAULT_INTENTLESS_PROMPT_TEMPLATE,
-            log_source_component=IntentlessPolicy.__name__,
-            log_source_method=LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
+        prompt_template = cls._resolve_prompt_template(
+            config, LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON
         )
 
         llm_config = resolve_model_client_config(

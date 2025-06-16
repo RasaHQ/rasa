@@ -27,6 +27,8 @@ from rasa.shared.constants import (
     LLM_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
+    PROMPT_CONFIG_KEY,
+    PROMPT_TEMPLATE_CONFIG_KEY,
     ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.slots import BooleanSlot
@@ -64,7 +66,30 @@ class TestLLMBasedRouter:
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test llm_based_router")
         llm_based_router = LLMBasedRouter(
             {
-                "prompt": "data/test_prompt_templates/test_prompt.jinja2",
+                PROMPT_TEMPLATE_CONFIG_KEY: "data/test_prompt_templates/test_prompt.jinja2",  # noqa: E501
+                CALM_ENTRY: {STICKY: "handles transactions"},
+            },
+            model_storage,
+            resource,
+        )
+        assert llm_based_router.prompt_template.startswith("This is a test prompt.")
+
+        resource = llm_based_router.train(TrainingData())
+        loaded = LLMBasedRouter.load(
+            {CALM_ENTRY: {STICKY: "handles transactions"}},
+            model_storage,
+            resource,
+            None,
+        )
+        assert loaded.prompt_template.startswith("This is a test prompt.")
+
+    def test_llm_based_router_prompt_template_init_custom(
+        self, model_storage: ModelStorage, resource: Resource, monkeypatch: MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test llm_based_router")
+        llm_based_router = LLMBasedRouter(
+            {
+                PROMPT_TEMPLATE_CONFIG_KEY: "data/test_prompt_templates/test_prompt.jinja2",  # noqa: E501
                 CALM_ENTRY: {STICKY: "handles transactions"},
             },
             model_storage,
@@ -470,7 +495,7 @@ class TestLLMBasedRouter:
         prompt_file.write_text("This is a test prompt")
 
         config = {
-            "prompt": str(prompt_file),
+            PROMPT_TEMPLATE_CONFIG_KEY: str(prompt_file),
             CALM_ENTRY: {STICKY: "handles transactions"},
         }
         generator = LLMBasedRouter(config, model_storage, Resource("llmcmdgen"))
@@ -491,7 +516,7 @@ class TestLLMBasedRouter:
         prompt_file.write_text("This is a test prompt")
 
         config = {
-            "prompt": str(prompt_file),
+            PROMPT_TEMPLATE_CONFIG_KEY: str(prompt_file),
             CALM_ENTRY: {STICKY: "handles transactions"},
         }
         generator = LLMBasedRouter(config, model_storage, Resource("llmcmdgen"))
@@ -514,3 +539,25 @@ class TestLLMBasedRouter:
         fingerprint_2 = generator.fingerprint_addon({})
         assert fingerprint_1 is not None
         assert fingerprint_1 == fingerprint_2
+
+    async def test_deprecation_warning_with_prompt(
+        self, resource: Resource, model_storage: ModelStorage
+    ):
+        # When
+        with patch("rasa.shared.utils.llm.structlogger.warning") as mock_warning:
+            LLMBasedRouter(
+                {
+                    PROMPT_CONFIG_KEY: "data/test_prompt_templates/test_prompt.jinja2",
+                    CALM_ENTRY: {STICKY: "handles transactions"},
+                },
+                model_storage,
+                resource,
+            )
+        mock_warning.assert_any_call(
+            "llm_based_router.init.deprecated_config_key",
+            event_info=(
+                "The config parameter 'prompt' is deprecated "
+                "and will be removed in Rasa 4.0.0. "
+                "Please use the config parameter 'prompt_template' instead. "
+            ),
+        )

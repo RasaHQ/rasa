@@ -53,6 +53,8 @@ from rasa.shared.constants import (
     EMBEDDINGS_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
+    PROMPT_CONFIG_KEY,
+    PROMPT_TEMPLATE_CONFIG_KEY,
     ROUTE_TO_CALM_SLOT,
 )
 from rasa.shared.core.constants import SetSlotExtractor
@@ -111,7 +113,7 @@ class TestSingleStepLLMCommandGenerator:
         """Create an SingleStepLLMCommandGenerator."""
         return SingleStepLLMCommandGenerator.create(
             config={
-                "prompt_template": PROMPT_TEMPLATE_WITH_CURRENT_SLOT_INFORMATION_PATH
+                PROMPT_TEMPLATE_CONFIG_KEY: PROMPT_TEMPLATE_WITH_CURRENT_SLOT_INFORMATION_PATH  # noqa: E501
             },
             resource=Mock(),
             model_storage=Mock(),
@@ -157,22 +159,20 @@ class TestSingleStepLLMCommandGenerator:
             ],
         )
 
-    async def test_deprecation_warning_with_prompt(self, model_storage):
+    async def test_deprecation_warning_with_prompt(self, model_storage: ModelStorage):
         # Given
         resource = Resource("llmcmdgen")
-        config = {"prompt": "data/test_prompt_templates/test_prompt.jinja2"}
+        config = {PROMPT_CONFIG_KEY: "data/test_prompt_templates/test_prompt.jinja2"}
 
         # When
-        with patch(
-            "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator.structlogger.warning"
-        ) as mock_warning:
+        with patch("rasa.shared.utils.llm.structlogger.warning") as mock_warning:
             SingleStepLLMCommandGenerator(
                 config,
                 model_storage,
                 resource,
             )
-        mock_warning.assert_called_once_with(
-            "single_step_llm_command_generator.init",
+        mock_warning.assert_any_call(
+            "single_step_llm_command_generator.init.deprecated_config_key",
             event_info=(
                 "The config parameter 'prompt' is deprecated "
                 "and will be removed in Rasa 4.0.0. "
@@ -180,11 +180,11 @@ class TestSingleStepLLMCommandGenerator:
             ),
         )
 
-    async def test_prompt_template_handling(self, model_storage):
+    async def test_prompt_template_handling(self, model_storage: ModelStorage):
         # Given
         resource = Resource("llmcmdgen")
         expected_template = "data/test_prompt_templates/test_prompt.jinja2"
-        config = {"prompt_template": expected_template}
+        config = {PROMPT_TEMPLATE_CONFIG_KEY: expected_template}
 
         # When
         generator = SingleStepLLMCommandGenerator(
@@ -197,7 +197,7 @@ class TestSingleStepLLMCommandGenerator:
         assert generator.prompt_template.startswith("This is a test prompt.")
 
     async def test_default_template_when_no_prompt_template_provided(
-        self, model_storage
+        self, model_storage: ModelStorage
     ):
         # Given
         resource = Resource("llmcmdgen")
@@ -222,7 +222,7 @@ class TestSingleStepLLMCommandGenerator:
         # When
         generator = SingleStepLLMCommandGenerator(
             {
-                "prompt": "data/test_prompt_templates/test_prompt.jinja2",
+                PROMPT_TEMPLATE_CONFIG_KEY: "data/test_prompt_templates/test_prompt.jinja2",  # noqa: E501
                 FLOW_RETRIEVAL_KEY: {FLOW_RETRIEVAL_ACTIVE_KEY: False},
             },
             model_storage,
@@ -973,7 +973,7 @@ class TestSingleStepLLMCommandGenerator:
         prompt_file = prompt_dir / "llm_command_generator_prompt.jinja2"
         prompt_file.write_text("This is a test prompt")
 
-        config = {"prompt": str(prompt_file)}
+        config = {PROMPT_TEMPLATE_CONFIG_KEY: str(prompt_file)}
         generator = SingleStepLLMCommandGenerator(
             config, model_storage, Resource("llmcmdgen")
         )
@@ -993,7 +993,7 @@ class TestSingleStepLLMCommandGenerator:
         prompt_file = prompt_dir / "llm_command_generator_prompt.jinja2"
         prompt_file.write_text("This is a test prompt")
 
-        config = {"prompt": str(prompt_file)}
+        config = {PROMPT_TEMPLATE_CONFIG_KEY: str(prompt_file)}
         generator = SingleStepLLMCommandGenerator(
             config, model_storage, Resource("llmcmdgen")
         )
@@ -1341,7 +1341,7 @@ class TestSingleStepLLMCommandGenerator:
         # Given
         resource = Resource("llmcmdgen")
         config = {
-            "prompt": os.path.join(
+            PROMPT_TEMPLATE_CONFIG_KEY: os.path.join(
                 "data", "test_prompt_templates", "test_prompt.jinja2"
             )
         }
@@ -1387,7 +1387,7 @@ class TestSingleStepLLMCommandGenerator:
         prompt_file.write_text("This is a custom prompt")
 
         # Add the prompt file path to the config.
-        config = {"prompt": str(prompt_file)}
+        config = {PROMPT_TEMPLATE_CONFIG_KEY: str(prompt_file)}
 
         # Persist the prompt file to the model storage.
         resource = Resource("llmcmdgen")
@@ -1398,17 +1398,17 @@ class TestSingleStepLLMCommandGenerator:
         # Case 1: No prompt in the config.
         loaded = SingleStepLLMCommandGenerator.load({}, model_storage, resource, Mock())
         assert loaded.prompt_template == "This is a custom prompt"
-        assert loaded.config["prompt_template"] is None
+        assert loaded.config[PROMPT_TEMPLATE_CONFIG_KEY] is None
 
         # Case 2: Specifying a invalid prompt path in the config.
         loaded = SingleStepLLMCommandGenerator.load(
-            {"prompt": "test_prompt.jinja2"},
+            {PROMPT_TEMPLATE_CONFIG_KEY: "test_prompt.jinja2"},
             model_storage,
             resource,
             Mock(),
         )
         assert loaded.prompt_template == "This is a custom prompt"
-        assert loaded.config["prompt"] == "test_prompt.jinja2"
+        assert loaded.config[PROMPT_TEMPLATE_CONFIG_KEY] == "test_prompt.jinja2"
 
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval")
     def test_train_with_no_flows(

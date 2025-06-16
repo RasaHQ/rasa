@@ -17,6 +17,7 @@ from rasa.shared.constants import (
     MODEL_NAME_CONFIG_KEY,
     OPENAI_PROVIDER,
     PROMPT_CONFIG_KEY,
+    PROMPT_TEMPLATE_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
     TEMPERATURE_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
@@ -38,6 +39,7 @@ from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_GENERATE_MODEL_NAME,
     DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
     USER,
+    check_prompt_config_keys_and_warn_if_deprecated,
     combine_custom_and_default_config,
     get_prompt_template,
     llm_factory,
@@ -110,8 +112,15 @@ class ContextualResponseRephraser(
         super().__init__(domain.responses)
 
         self.nlg_endpoint = endpoint_config
+
+        # Warn if the prompt config key is used to set the prompt template
+        check_prompt_config_keys_and_warn_if_deprecated(
+            self.nlg_endpoint.kwargs, "contextual_response_rephraser"
+        )
+
         self.prompt_template = get_prompt_template(
-            self.nlg_endpoint.kwargs.get(PROMPT_CONFIG_KEY),
+            self.nlg_endpoint.kwargs.get(PROMPT_TEMPLATE_CONFIG_KEY)
+            or self.nlg_endpoint.kwargs.get(PROMPT_CONFIG_KEY),
             DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE,
             log_source_component=ContextualResponseRephraser.__name__,
             log_source_method=LOG_COMPONENT_SOURCE_METHOD_INIT,

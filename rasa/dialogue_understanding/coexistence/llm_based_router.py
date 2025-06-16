@@ -15,9 +15,7 @@ from rasa.dialogue_understanding.coexistence.constants import (
 )
 from rasa.dialogue_understanding.commands import Command, SetSlotCommand
 from rasa.dialogue_understanding.commands.noop_command import NoopCommand
-from rasa.dialogue_understanding.generator.constants import (
-    LLM_CONFIG_KEY,
-)
+from rasa.dialogue_understanding.generator.constants import LLM_CONFIG_KEY
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -28,6 +26,7 @@ from rasa.shared.constants import (
     MODEL_CONFIG_KEY,
     OPENAI_PROVIDER,
     PROMPT_CONFIG_KEY,
+    PROMPT_TEMPLATE_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
     ROUTE_TO_CALM_SLOT,
     TEMPERATURE_CONFIG_KEY,
@@ -46,6 +45,7 @@ from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheck
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    check_prompt_config_keys_and_warn_if_deprecated,
     get_prompt_template,
     llm_factory,
     resolve_model_client_config,
@@ -90,7 +90,7 @@ class LLMBasedRouter(LLMHealthCheckMixin, GraphComponent):
     def get_default_config() -> Dict[str, Any]:
         """The component's default config (see parent class for full docstring)."""
         return {
-            PROMPT_CONFIG_KEY: None,
+            PROMPT_TEMPLATE_CONFIG_KEY: None,  # TODO: remove in Rasa 4.0.0
             CALM_ENTRY: {STICKY: None},
             NLU_ENTRY: {
                 NON_STICKY: "handles chitchat",
@@ -111,10 +111,13 @@ class LLMBasedRouter(LLMHealthCheckMixin, GraphComponent):
             self.config.get(LLM_CONFIG_KEY), LLMBasedRouter.__name__
         )
 
+        # Warn if the prompt config key is used to set the prompt template
+        check_prompt_config_keys_and_warn_if_deprecated(config, "llm_based_router")
+
         self.prompt_template = (
             prompt_template
             or get_prompt_template(
-                config.get(PROMPT_CONFIG_KEY),
+                config.get(PROMPT_TEMPLATE_CONFIG_KEY) or config.get(PROMPT_CONFIG_KEY),
                 DEFAULT_COMMAND_PROMPT_TEMPLATE,
                 log_source_component=LLMBasedRouter.__name__,
                 log_source_method=LOG_COMPONENT_SOURCE_METHOD_INIT,
@@ -327,7 +330,7 @@ class LLMBasedRouter(LLMHealthCheckMixin, GraphComponent):
     def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint of llm based router for the graph."""
         prompt_template = get_prompt_template(
-            config.get(PROMPT_CONFIG_KEY),
+            config.get(PROMPT_TEMPLATE_CONFIG_KEY) or config.get(PROMPT_CONFIG_KEY),
             DEFAULT_COMMAND_PROMPT_TEMPLATE,
             log_source_component=LLMBasedRouter.__name__,
             log_source_method=LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,

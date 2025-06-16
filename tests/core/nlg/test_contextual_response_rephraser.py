@@ -1,5 +1,5 @@
 from typing import Any, Dict, Optional
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from jinja2 import Template
@@ -15,6 +15,8 @@ from rasa.shared.constants import (
     LLM_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
+    PROMPT_CONFIG_KEY,
+    PROMPT_TEMPLATE_CONFIG_KEY,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, UserUttered
@@ -512,7 +514,7 @@ async def test_contextual_response_rephraser_prompt_init_custom(
 ) -> None:
     rephraser = ContextualResponseRephraser(
         EndpointConfig.from_dict(
-            {"prompt": "data/prompt_templates/test_prompt.jinja2"}
+            {PROMPT_TEMPLATE_CONFIG_KEY: "data/prompt_templates/test_prompt.jinja2"}
         ),
         domain_with_responses,
     )
@@ -526,6 +528,27 @@ async def test_contextual_response_rephraser_prompt_init_default(
         EndpointConfig.from_dict({}), domain_with_responses
     )
     assert rephraser.prompt_template.startswith("The following is a conversation")
+
+
+async def test_deprecation_warning_with_prompt(
+    domain_with_responses: Domain,
+) -> None:
+    # When
+    with patch("rasa.shared.utils.llm.structlogger.warning") as mock_warning:
+        ContextualResponseRephraser(
+            EndpointConfig.from_dict(
+                {PROMPT_CONFIG_KEY: "data/prompt_templates/test_prompt.jinja2"}
+            ),
+            domain_with_responses,
+        )
+    mock_warning.assert_any_call(
+        "contextual_response_rephraser.init.deprecated_config_key",
+        event_info=(
+            "The config parameter 'prompt' is deprecated "
+            "and will be removed in Rasa 4.0.0. "
+            "Please use the config parameter 'prompt_template' instead. "
+        ),
+    )
 
 
 @pytest.mark.parametrize(
