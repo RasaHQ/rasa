@@ -212,7 +212,7 @@ class SingleStepBasedLLMCommandGenerator(LLMBasedCommandGenerator, ABC):
                 event_info=(
                     "ProviderClientAPIException occurred while predicting commands."
                 ),
-                commands=commands,
+                commands=commands,  # no PII
             )
 
         if not commands and not prior_commands:

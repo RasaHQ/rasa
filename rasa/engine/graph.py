@@ -500,9 +500,9 @@ class GraphNode:
                 structlogger.warning(
                     "graph.node.input_not_resolved",
                     node_name=self._node_name,
-                    input_name=i,
+                    input_name=i,  # no PII
                     event_info=(
-                        "Node input was not resolved, there is no putput. "
+                        "Node input was not resolved, there is no output. "
                         "Another component should have provided this as an output."
                     ),
                 )

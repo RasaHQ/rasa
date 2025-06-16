@@ -177,7 +177,7 @@ class Conversation:
             else:
                 structlogger.warning(
                     "audiocodes.handle.activities.unknown_activity_type",
-                    activity=activity,
+                    activity_type=activity["type"],
                 )
                 continue
 

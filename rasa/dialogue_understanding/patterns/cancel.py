@@ -90,7 +90,7 @@ class ActionCancelFlow(action.Action):
             return []
 
         if not isinstance(top, CancelPatternFlowStackFrame):
-            structlogger.warning("action.cancel_flow.no_cancel_frame", top=top)
+            structlogger.warning("action.cancel_flow.no_cancel_frame")
             return []
 
         for canceled_frame_id in top.canceled_frames:
@@ -105,7 +105,6 @@ class ActionCancelFlow(action.Action):
             else:
                 structlogger.warning(
                     "action.cancel_flow.frame_not_found",
-                    dialogue_stack=stack,
                     frame_id=canceled_frame_id,
                 )
 

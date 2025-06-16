@@ -114,7 +114,8 @@ class ActionCorrectFlowSlot(action.Action):
 
         if not isinstance(top, CorrectionPatternFlowStackFrame):
             structlogger.warning(
-                "action.correct_flow_slot.no_correction_frame", top=top
+                "action.correct_flow_slot.no_correction_frame",
+                top=top,  # no PII
             )
             return []
 
@@ -246,7 +247,6 @@ def reset_stack_on_tracker_to_prior_state(
             "action.correct_flow_slot.no_target_frame_found",
             reset_step_id=reset_step_id,
             reset_flow_id=reset_flow_id,
-            stack_to_reset_to=stack_to_reset_to,
         )
         return tracker.stack
 

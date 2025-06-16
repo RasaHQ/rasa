@@ -190,9 +190,9 @@ class NLUCommandAdapter(GraphComponent, CommandGenerator):
         if len(commands) > 1:
             structlogger.warning(
                 "nlu_command_adapter.predict_commands",
-                messag=f"Two many flows found that are triggered by the "
+                message=f"Too many flows found that are triggered by the "
                 f"intent '{message.get(INTENT)['name']}'. Take the first one.",
-                commands=commands,
+                commands=[command.__class__.__name__ for command in commands],
             )
             commands = [commands[0]]
 

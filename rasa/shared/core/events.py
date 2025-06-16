@@ -126,9 +126,7 @@ def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"
             if event:
                 deserialised.append(event)
             else:
-                structlogger.warning(
-                    "event.deserialization.failed", rasa_event=copy.deepcopy(event)
-                )
+                structlogger.warning("event.deserialization.failed")
 
     return deserialised
 

@@ -231,7 +231,7 @@ class TrackerStream:
                 else:
                     structlogger.warning(
                         "development_inspector.tracker_stream.unknown_action",
-                        message=message,
+                        message=message,  # no pii
                     )
         finally:
             self._connected_clients.remove(ws)

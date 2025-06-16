@@ -1,4 +1,3 @@
-import copy
 import re
 from typing import List, Optional
 
@@ -35,9 +34,7 @@ class CommandPayloadReader:
 
         matches = CommandPayloadReader.find_matches(user_text)
         if not matches:
-            structlogger.warning(
-                "message.parsing.failed", user_text=copy.deepcopy(user_text)
-            )
+            structlogger.warning("message.parsing.failed")
             return message
 
         return CommandPayloadReader.extract_commands_from_pattern_matches(
@@ -110,7 +107,6 @@ class CommandPayloadReader:
         if user_text.count("=") > MAX_NUMBER_OF_SLOTS:
             structlogger.warning(
                 "too.many.slots",
-                user_text=copy.deepcopy(user_text),
                 slot_limit=10,
             )
             return True

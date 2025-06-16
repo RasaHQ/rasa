@@ -348,7 +348,6 @@ def get_current_collect_step(
         # but no flow that triggered it. this should never happen.
         structlogger.warning(
             "command_processor.get_current_collect_step.no_flow_on_stack",
-            stack=dialogue_stack,
         )
         return None
 
@@ -358,7 +357,7 @@ def get_current_collect_step(
         # step from it
         structlogger.warning(
             "command_processor.get_current_collect_step.no_step_for_frame",
-            frame=frame_that_triggered_collect_infos,
+            frame=frame_that_triggered_collect_infos.frame_id,
         )
         return None
 
@@ -724,7 +723,7 @@ def clean_up_chitchat_command(
         )
         structlogger.warn(
             "command_processor.clean_up_chitchat_command.pattern_chitchat_not_found",
-            command=resulting_commands[0],
+            command=resulting_commands[0],  # no PII
         )
         return resulting_commands
 
@@ -742,7 +741,7 @@ def clean_up_chitchat_command(
         )
         structlogger.warn(
             "command_processor.clean_up_chitchat_command.replace_chitchat_answer_with_cannot_handle",
-            command=resulting_commands[0],
+            command=resulting_commands[0],  # no PII
             pattern_chitchat_uses_action_trigger_chitchat=has_action_trigger_chitchat,
             defined_intentless_policy_in_config=defines_intentless_policy,
         )

@@ -274,9 +274,7 @@ class CorrectSlotsCommand(Command):
             # we shouldn't end up here as a correction shouldn't be triggered
             # if we are not in any flow. but just in case we do, we
             # just skip the command.
-            structlogger.warning(
-                "command_executor.correct_slots.no_active_flow", command=self
-            )
+            structlogger.warning("command_executor.correct_slots.no_active_flow")
             return []
 
         structlogger.debug("command_executor.correct_slots", command=self)
