@@ -11,9 +11,6 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event, SlotSet, UserUttered
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.utils.constants import (
-    RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS_ENV_VAR_NAME,
-)
 
 
 def test_response_variation_filter_get_response_variation_id_interpolated_crv() -> None:
@@ -463,9 +460,6 @@ def test_response_variation_filter_evaluate_pypred_predicates(
 ) -> None:
     """Test that the correct response variation id is retrieved when using pypred predicates."""  # noqa: E501
     # Arrange
-    monkeypatch.setenv(
-        RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS_ENV_VAR_NAME, "true"
-    )
     utter_action = "utter_greet"
 
     output_channel = "default"
@@ -535,9 +529,6 @@ def test_response_variation_filter_evaluate_pypred_predicates_mixed_formats(
 ) -> None:
     """Test that the correct response variation id is retrieved when using different formats."""  # noqa: E501
     # Arrange
-    monkeypatch.setenv(
-        RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS_ENV_VAR_NAME, "true"
-    )
     utter_action = "utter_greet"
 
     output_channel = "default"

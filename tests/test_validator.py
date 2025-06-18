@@ -21,9 +21,6 @@ from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.utils.constants import (
-    RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS_ENV_VAR_NAME,
-)
 from rasa.telemetry import (
     TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE,
     TELEMETRY_VALIDATION_ERROR_LOG_EVENT,
@@ -3246,9 +3243,6 @@ def test_validate_conditional_response_variation_predicates_raises_errors(
     log: str,
     monkeypatch: MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv(
-        RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS_ENV_VAR_NAME, "true"
-    )
     test_domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"

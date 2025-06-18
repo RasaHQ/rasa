@@ -8,11 +8,6 @@ from typing import Any, Dict, List, Text, Union
 
 from pykwalify.errors import SchemaError
 
-from rasa.shared.utils.constants import (
-    RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS_ENV_VAR_NAME,
-)
-from rasa.utils.beta import ensure_beta_feature_is_enabled
-
 
 def require_response_keys(
     responses: List[Dict[Text, Any]], _: Dict, __: Text
@@ -31,10 +26,6 @@ def require_response_keys(
 
         conditions = response.get("condition", [])
         if isinstance(conditions, str):
-            ensure_beta_feature_is_enabled(
-                "predicates in response conditions",
-                RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS_ENV_VAR_NAME,
-            )
             continue
 
         for condition in conditions:
