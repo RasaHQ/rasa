@@ -214,18 +214,18 @@ def execute_commands(
     commands: List[Command] = get_commands_from_tracker(tracker)
     original_tracker = tracker.copy()
 
-    commands = clean_up_commands(
-        commands, tracker, all_flows, execution_context, story_graph, domain
-    )
-
     updated_flows = find_updated_flows(tracker, all_flows)
     if updated_flows:
-        # Override commands
+        # if there are updated flows, we need to handle the code change
         structlogger.debug(
             "command_processor.execute_commands.running_flows_were_updated",
             updated_flow_ids=updated_flows,
         )
         commands = [HandleCodeChangeCommand()]
+    else:
+        commands = clean_up_commands(
+            commands, tracker, all_flows, execution_context, story_graph, domain
+        )
 
     # store current flow hashes if they changed
     new_hashes = calculate_flow_fingerprints(all_flows)

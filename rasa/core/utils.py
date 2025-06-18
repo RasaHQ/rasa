@@ -318,13 +318,22 @@ def should_force_slot_filling(
         and the name of the slot if applicable.
     """
     from rasa.dialogue_understanding.processor.command_processor import (
+        find_updated_flows,
         get_current_collect_step,
     )
 
     if tracker is None:
-        structlogger.error(
-            "slot.force_slot_filling.error",
+        structlogger.debug(
+            "slot.force_slot_filling.no_found_tracker",
             event_info="Tracker is None. Cannot force slot filling.",
+        )
+        return False, None
+
+    updated_flows = find_updated_flows(tracker, flows)
+    if updated_flows:
+        structlogger.debug(
+            "slot.force_slot_filling.running_flows_were_updated",
+            updated_flow_ids=updated_flows,
         )
         return False, None
 

@@ -16,6 +16,9 @@ from rasa.dialogue_understanding.commands.error_command import ErrorCommand
 from rasa.dialogue_understanding.commands.free_form_answer_command import (
     FreeFormAnswerCommand,
 )
+from rasa.dialogue_understanding.commands.handle_code_change_command import (
+    HandleCodeChangeCommand,
+)
 from rasa.dialogue_understanding.commands.human_handoff_command import (
     HumanHandoffCommand,
 )
@@ -49,6 +52,7 @@ __all__ = [
     "SetSlotCommand",
     "StartFlowCommand",
     "HumanHandoffCommand",
+    "HandleCodeChangeCommand",
     "CorrectSlotsCommand",
     "CorrectedSlot",
     "ErrorCommand",

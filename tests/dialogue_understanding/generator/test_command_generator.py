@@ -10,6 +10,7 @@ from rasa.dialogue_understanding.commands import (
     CannotHandleCommand,
     Command,
     ErrorCommand,
+    HandleCodeChangeCommand,
     KnowledgeAnswerCommand,
     NoopCommand,
     SetSlotCommand,
@@ -22,6 +23,9 @@ from rasa.dialogue_understanding.generator.command_generator import CommandGener
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.processor.command_processor import (
+    calculate_flow_fingerprints,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.shared.constants import (
@@ -29,7 +33,9 @@ from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     ROUTE_TO_CALM_SLOT,
 )
+from rasa.shared.core.constants import FLOW_HASHES_SLOT
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import SlotSet
 from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -317,6 +323,22 @@ def test_command_generator_filter_commands_during_force_slot_filling() -> None:
             - id: collect_foo
               collect: foo
               force_slot_filling: true
+          pattern_collect_information:
+              description: Flow for collecting information from users
+              name: pattern collect information
+              steps:
+              - id: start
+                action: action_run_slot_rejections
+              - action: validate_{{context.collect}}
+                next:
+                - if: "slots.{{context.collect}} is not null"
+                  then: END
+                - else: ask_collect
+              - id: ask_collect
+                action: "{{context.utter}}"
+              - action: "{{context.collect_action}}"
+              - action: action_listen
+                next: start
         """
     )
 
@@ -346,6 +368,116 @@ def test_command_generator_filter_commands_during_force_slot_filling() -> None:
     assert commands[0] == SetSlotCommand(name="foo", value="foo_test")
 
 
+def test_command_generator_handles_code_change_during_rolling_deployments() -> None:
+    """Test that the command generator handles code change during rolling deployments.
+
+    For example, if a bot is stopped and restarted after a flow change and
+    subsequent retraining,the command generator should trigger
+    HandleCodeChangeCommand for active trackers running the affected flow(s).
+    """
+    generator = CommandGenerator({})
+
+    slot_name = "foo"
+    flows = flows_from_str(
+        f"""
+        flows:
+          my_flow:
+            name: foo flow
+            description: foo flow
+            steps:
+            - id: collect_foo
+              collect: {slot_name}
+        """
+    )
+
+    # simulate a change in the flow by setting a fake flow hash
+    tracker = DialogueStateTracker.from_events(
+        uuid.uuid4().hex,
+        [
+            SlotSet(
+                key=FLOW_HASHES_SLOT,
+                value={"my_flow": "1234567890abcdef1234567890abcdef"},
+            )
+        ],
+    )
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(flow_id="my_flow", step_id="collect_foo"),
+            ]
+        )
+    )
+
+    commands = generator._filter_commands_during_force_slot_filling(
+        [
+            SetSlotCommand(name=slot_name, value="foo_test"),
+        ],
+        flows,
+        tracker,
+    )
+
+    assert len(commands) == 1
+    assert commands[0] == HandleCodeChangeCommand()
+
+
+def test_command_generator_handles_rolling_deployments_for_unchanged_active_flow() -> (
+    None
+):
+    """Test that the command generator handles rolling deployments for unchanged active flow.
+
+    For example, if a bot is stopped and restarted after another flow change and
+    subsequent retraining, the command generator should continue with the
+    unchanged active flow without triggering pattern_code_change.
+    """  # noqa: E501
+    generator = CommandGenerator({})
+
+    slot_name = "foo"
+    flows = flows_from_str(
+        f"""
+        flows:
+          my_flow:
+            name: foo flow
+            description: foo flow
+            steps:
+            - id: collect_foo
+              collect: {slot_name}
+          flow_bar:
+            name: bar flow
+            description: bar flow
+            steps:
+            - id: collect_bar
+              collect: bar
+        """
+    )
+
+    flow_hashes = calculate_flow_fingerprints(flows)
+
+    # simulate a change in the flow that is not active by setting a fake flow hash
+    flow_hashes["flow_bar"] = "1234567890abcdef1234567890abcdef"
+
+    tracker = DialogueStateTracker.from_events(
+        uuid.uuid4().hex, [SlotSet(key=FLOW_HASHES_SLOT, value=flow_hashes)]
+    )
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(flow_id="my_flow", step_id="collect_foo"),
+            ]
+        )
+    )
+
+    commands = generator._filter_commands_during_force_slot_filling(
+        [
+            SetSlotCommand(name=slot_name, value="foo_test"),
+        ],
+        flows,
+        tracker,
+    )
+
+    assert len(commands) == 1
+    assert commands[0] == SetSlotCommand(name="foo", value="foo_test")
+
+
 def test_command_generator_filter_commands_during_force_slot_filling_cannot_handle():
     generator = CommandGenerator({})
 
@@ -359,6 +491,22 @@ def test_command_generator_filter_commands_during_force_slot_filling_cannot_hand
             - id: collect_foo
               collect: foo
               force_slot_filling: true
+          pattern_collect_information:
+              description: Flow for collecting information from users
+              name: pattern collect information
+              steps:
+              - id: start
+                action: action_run_slot_rejections
+              - action: validate_{{context.collect}}
+                next:
+                - if: "slots.{{context.collect}} is not null"
+                  then: END
+                - else: ask_collect
+              - id: ask_collect
+                action: "{{context.utter}}"
+              - action: "{{context.collect_action}}"
+              - action: action_listen
+                next: start
         """
     )
 

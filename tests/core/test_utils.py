@@ -1,9 +1,11 @@
 import os
+import uuid
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Optional, Text, Union
 
 import pytest
+from structlog.testing import capture_logs
 
 import rasa.core.lock_store
 import rasa.utils.io
@@ -12,10 +14,20 @@ from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core import utils
 from rasa.core.lock_store import InMemoryLockStore, LockStore, RedisLockStore
 from rasa.core.policies.policy import PolicyPrediction
+from rasa.core.utils import should_force_slot_filling
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
+from rasa.shared.core.constants import FLOW_HASHES_SLOT
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import SlotSet
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import write_endpoint_config_to_yaml
-from tests.utilities import clear_available_endpoints_class_instance
+from tests.utilities import (
+    clear_available_endpoints_class_instance,
+    filter_logs,
+    flows_from_str,
+)
 
 
 class CustomRedisLockStore(RedisLockStore):
@@ -241,3 +253,52 @@ def assert_predicted_action(
     assert prediction_action_name == expected_action_name
     assert prediction.is_end_to_end_prediction == is_end_to_end_prediction
     assert prediction.is_no_user_prediction == is_no_user_prediction
+
+
+def test_should_force_slot_filling_during_code_change() -> None:
+    """Test that the slot filling is not forced when code changes."""
+    slot_name = "foo"
+    flow_name = "my_flow"
+    flows = flows_from_str(
+        f"""
+        flows:
+          {flow_name}:
+            name: foo flow
+            description: foo flow
+            steps:
+            - id: collect_foo
+              collect: {slot_name}
+              force_slot_filling: true
+        """
+    )
+
+    # simulate a change in the flow by setting a fake flow hash
+    tracker = DialogueStateTracker.from_events(
+        uuid.uuid4().hex,
+        [
+            SlotSet(
+                key=FLOW_HASHES_SLOT,
+                value={flow_name: "1234567890abcdef1234567890abcdef"},
+            )
+        ],
+    )
+    tracker.update_stack(
+        DialogueStack(
+            frames=[
+                UserFlowStackFrame(flow_id="my_flow", step_id="collect_foo"),
+            ]
+        )
+    )
+    with capture_logs() as caplog:
+        should_the_slot_be_filled, slot_name = should_force_slot_filling(tracker, flows)
+        log = filter_logs(
+            caplog,
+            "slot.force_slot_filling.running_flows_were_updated",
+            "debug",
+        )
+
+        assert len(log) == 1
+        assert log[0].get("updated_flow_ids") == {flow_name}
+
+    assert should_the_slot_be_filled is False
+    assert slot_name is None

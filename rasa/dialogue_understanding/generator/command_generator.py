@@ -8,6 +8,7 @@ from rasa.dialogue_understanding.commands import (
     Command,
     CorrectSlotsCommand,
     ErrorCommand,
+    HandleCodeChangeCommand,
     SetSlotCommand,
     StartFlowCommand,
 )
@@ -398,14 +399,23 @@ class CommandGenerator:
             The filtered commands.
         """
         from rasa.dialogue_understanding.processor.command_processor import (
+            find_updated_flows,
             get_current_collect_step,
         )
 
         if tracker is None:
-            structlogger.error(
+            structlogger.debug(
                 "command_generator.filter_commands_during_force_slot_filling.tracker_not_found",
             )
             return commands
+
+        updated_flows = find_updated_flows(tracker, available_flows)
+        if updated_flows:
+            structlogger.debug(
+                "command_generator.filter_commands_during_force_slot_filling.running_flows_were_updated",
+                updated_flow_ids=updated_flows,
+            )
+            return [HandleCodeChangeCommand()]
 
         stack = tracker.stack
         step = get_current_collect_step(stack, available_flows)
