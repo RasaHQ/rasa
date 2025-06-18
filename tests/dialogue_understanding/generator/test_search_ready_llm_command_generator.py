@@ -91,8 +91,8 @@ EXPECTED_RENDERED_PROMPT_WITH_CURRENT_SLOT_INFORMATION = "./tests/dialogue_under
 TEST_PROMPT_TEMPLATE_DIR = "./tests/dialogue_understanding/generator/prompt_templates"
 
 # Load the prompt templates for testing from the test directory.
-command_prompt_v2_claude_3_5_sonnet_20240620_template = rasa.shared.utils.io.read_file(
-    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
+command_prompt_v3_claude_3_5_sonnet_20240620_template = rasa.shared.utils.io.read_file(
+    f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
 )
 command_prompt_v3_fallback_other_models_template = rasa.shared.utils.io.read_file(
     f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
@@ -758,8 +758,7 @@ class TestSearchReadyLLMCommandGenerator:
         self,
         command_generator: SearchReadyLLMCommandGenerator,
     ):
-        """
-        Test that render_template renders the template strings with valid JSON
+        """Test that render_template renders the template strings with valid JSON
         (newline, tabs and quotes are escaped)
         """
         # Given
@@ -1623,10 +1622,10 @@ class TestSearchReadyLLMCommandGenerator:
             > 0
         )
         assert """{"flows":[""" in loaded.prompt_template  # minified JSON
-        assert "`provide info`" in loaded.prompt_template  # correct DSL
+        assert "`search and reply`" in loaded.prompt_template  # correct DSL
         assert (
             loaded.prompt_template
-            == command_prompt_v2_claude_3_5_sonnet_20240620_template
+            == command_prompt_v3_claude_3_5_sonnet_20240620_template
         )
 
     @patch(
@@ -1683,10 +1682,10 @@ class TestSearchReadyLLMCommandGenerator:
             > 0
         )
         assert """{"flows":[""" in loaded.prompt_template  # minified JSON
-        assert "`provide info`" in loaded.prompt_template  # correct DSL
+        assert "`search and reply`" in loaded.prompt_template  # correct DSL
         assert (
             loaded.prompt_template
-            == command_prompt_v2_claude_3_5_sonnet_20240620_template
+            == command_prompt_v3_claude_3_5_sonnet_20240620_template
         )
 
     @patch(
@@ -2250,11 +2249,11 @@ class TestSearchReadyLLMCommandGenerator:
         )
         assert (
             model_prompt_mapper.get("anthropic/claude-3-5-sonnet-20240620")
-            == "command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
+            == "command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
         )
         assert (
             model_prompt_mapper.get("bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0")
-            == "command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
+            == "command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
         )
 
     def test_command_syntax_version(self):

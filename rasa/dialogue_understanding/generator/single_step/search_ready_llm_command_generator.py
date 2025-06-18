@@ -59,10 +59,10 @@ MODEL_PROMPT_MAPPER = {
     ),
     f"{AWS_BEDROCK_PROVIDER}/anthropic."
     f"{MODEL_NAME_CLAUDE_3_5_SONNET_20240620}-v1:0": (
-        "command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
+        "command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
     ),
     f"{ANTHROPIC_PROVIDER}/{MODEL_NAME_CLAUDE_3_5_SONNET_20240620}": (
-        "command_prompt_v2_claude_3_5_sonnet_20240620_template.jinja2"
+        "command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
     ),
 }
 
