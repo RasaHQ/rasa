@@ -16,6 +16,11 @@ from rasa.exceptions import (
     NoEventsToMigrateError,
     PublishingError,
 )
+from rasa.shared.core.events import (
+    BotUttered,
+    SlotSet,
+    UserUttered,
+)
 from rasa.shared.core.trackers import EventVerbosity
 
 logger = logging.getLogger(__name__)
@@ -43,6 +48,7 @@ class Exporter:
         tracker_store: TrackerStore,
         event_broker: EventBroker,
         endpoints_path: Text,
+        is_pii_enabled: bool = False,
         requested_conversation_ids: Optional[Text] = None,
         minimum_timestamp: Optional[float] = None,
         maximum_timestamp: Optional[float] = None,
@@ -52,6 +58,7 @@ class Exporter:
         self.tracker_store = tracker_store
 
         self.event_broker = event_broker
+        self.is_pii_enabled = is_pii_enabled
         self.requested_conversation_ids = requested_conversation_ids
         self.minimum_timestamp = minimum_timestamp
         self.maximum_timestamp = maximum_timestamp
@@ -72,10 +79,12 @@ class Exporter:
         current_timestamp = None
 
         headers = self._get_message_headers()
+        warned_sender_ids: Set[Text] = set()
 
         async for event in self._fetch_events_within_time_range():
             # noinspection PyBroadException
             try:
+                self._check_anonymization_status(event, warned_sender_ids)
                 self._publish_with_message_headers(event, headers)
                 published_events += 1
                 current_timestamp = event["timestamp"]
@@ -282,3 +291,30 @@ class Exporter:
             events_with_conversation_id.append(event)
 
         return events_with_conversation_id
+
+    def _check_anonymization_status(
+        self, event: Dict[Text, Any], warned_sender_ids: Set[Text]
+    ) -> None:
+        """Check if the tracker store contains unanonymized events.
+
+        If it does, print a warning that these events will be published as is.
+
+        Args:
+            event: The event to check for anonymization status
+            warned_sender_ids: Set of sender IDs that have already been warned about
+        """
+        sender_id = event["sender_id"]
+        if (
+            self.is_pii_enabled
+            and sender_id not in warned_sender_ids
+            and event["event"]
+            in (UserUttered.type_name, BotUttered.type_name, SlotSet.type_name)
+            and not event.get("anonymized_at", None)
+        ):
+            rasa.shared.utils.cli.print_warning(
+                f"Retrieved un-anonymized event for sender_id {sender_id}. "
+                f"All events after this timestamp {event['timestamp']} "
+                "are not anonymized for this tracker. Proceeding with "
+                "publishing plaintext values for all events following this.",
+            )
+            warned_sender_ids.add(sender_id)

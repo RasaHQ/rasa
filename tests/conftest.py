@@ -13,6 +13,7 @@ import textwrap
 import threading
 import time
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -23,6 +24,7 @@ from typing import (
     Generator,
     Iterator,
     List,
+    Literal,
     Optional,
     Text,
 )
@@ -89,9 +91,11 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import Domain, SessionConfig
 from rasa.shared.core.events import (
     ActionExecuted,
+    BotUttered,
     Event,
     Restarted,
     SessionStarted,
+    SlotSet,
     UserUttered,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -967,11 +971,50 @@ def write_endpoint_config_to_yaml(
     return endpoints_path
 
 
-def random_user_uttered_event(timestamp: Optional[float] = None) -> UserUttered:
-    return UserUttered(
-        uuid.uuid4().hex,
-        timestamp=timestamp if timestamp is not None else random.random(),
-    )
+def random_event(
+    timestamp: Optional[float] = None,
+    is_event_anonymized: bool = False,
+    event_type: Literal["bot", "slot", "action", "user"] = "user",
+) -> Event:
+    """Generate a random event for testing purposes.
+
+    Args:
+        timestamp: Event timestamp. If None, uses current time.
+        is_event_anonymized: Whether to mark the event as anonymized.
+        event_type: Type of event to create.
+            Can be one of "bot", "slot", "action", or "user".
+            Defaults to "user".
+
+    Returns:
+        A randomly generated event of the specified type.
+    """
+    event_timestamp = timestamp if timestamp is not None else time.time()
+
+    event_factories = {
+        "bot": lambda: BotUttered(
+            text=uuid.uuid4().hex,
+            timestamp=event_timestamp,
+        ),
+        "slot": lambda: SlotSet(
+            key=uuid.uuid4().hex,
+            value=uuid.uuid4().hex,
+            timestamp=event_timestamp,
+        ),
+        "action": lambda: ActionExecuted(
+            action_name="utter_greet",
+            timestamp=event_timestamp,
+        ),
+        "user": lambda: UserUttered(
+            text=uuid.uuid4().hex,
+            timestamp=event_timestamp,
+        ),
+    }
+
+    event = event_factories[event_type]()
+
+    if is_event_anonymized:
+        event.anonymized_at = datetime.now(tz=timezone.utc)
+    return event
 
 
 def pytest_runtest_setup(item: Function) -> None:

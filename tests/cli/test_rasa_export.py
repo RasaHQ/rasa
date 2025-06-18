@@ -4,6 +4,7 @@ from typing import Callable, List, Optional, Text, Tuple
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 
@@ -17,7 +18,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from tests.cli.conftest import RASA_EXE
 from tests.conftest import (
     MockExporter,
-    random_user_uttered_event,
+    random_event,
     write_endpoint_config_to_yaml,
 )
 from tests.utilities import clear_available_endpoints_class_instance
@@ -196,17 +197,31 @@ def test_get_continuation_command(
 
 
 def prepare_namespace_and_mocked_tracker_store_with_events(
-    temporary_path: Path, monkeypatch: MonkeyPatch
+    temporary_path: Path,
+    monkeypatch: MonkeyPatch,
+    is_pii_enabled: bool = False,
+    is_event_anonymized: bool = False,
+    request_extra_ids: bool = False,
 ) -> Tuple[List[UserUttered], argparse.Namespace]:
-    endpoints_path = write_endpoint_config_to_yaml(
-        temporary_path,
-        {"event_broker": {"type": "pika"}, "tracker_store": {"type": "sql"}},
-    )
+    config = {
+        "event_broker": {"type": "pika"},
+        "tracker_store": {"type": "sql"},
+    }
+    if is_pii_enabled:
+        config["privacy"] = {
+            "tracker_store_settings": {"anonymization": {"min_after_session_end": 120}},
+            "rules": [{"slot": "slot_a", "anonymization": {"type": "mask"}}],
+        }
+    endpoints_path = write_endpoint_config_to_yaml(temporary_path, config)
+    clear_available_endpoints_class_instance()
 
     # export these conversation IDs
-    all_conversation_ids = ["id-1", "id-2", "id-3"]
+    all_conversation_ids = ["id-1", "id-2", "id-3", "id-4", "id-5"]
 
     requested_conversation_ids = ["id-1", "id-2"]
+
+    if request_extra_ids:
+        requested_conversation_ids.extend(["id-4", "id-5"])
 
     # create namespace with a set of cmdline arguments
     namespace = argparse.Namespace(
@@ -218,11 +233,20 @@ def prepare_namespace_and_mocked_tracker_store_with_events(
     )
 
     # prepare events from different senders and different timestamps
-    events = [random_user_uttered_event(timestamp) for timestamp in [1, 2, 3, 4, 11, 5]]
+    events = [
+        random_event(timestamp, is_event_anonymized)
+        for timestamp in [1, 2, 3, 4, 11, 5]
+    ]
+    events.append(random_event(6, is_event_anonymized, "bot"))
+    events.append(random_event(7, is_event_anonymized, "slot"))
+    events.append(random_event(8, is_event_anonymized, "action"))
+
     events_for_conversation_id = {
         all_conversation_ids[0]: [events[0], events[1]],
         all_conversation_ids[1]: [events[2], events[3], events[4]],
         all_conversation_ids[2]: [events[5]],
+        all_conversation_ids[3]: [events[6], events[7]],
+        all_conversation_ids[4]: [events[8]],
     }
 
     async def _get_tracker(conversation_id: Text) -> DialogueStateTracker:
@@ -301,3 +325,75 @@ def test_export_trackers_publishing_exceptions(
 
     with pytest.raises(SystemExit):
         export.export_trackers(namespace)
+
+
+def test_rasa_export_unanonymized_events_warning_log(
+    tmp_path: Path, monkeypatch: MonkeyPatch, capsys: CaptureFixture
+):
+    _, namespace = prepare_namespace_and_mocked_tracker_store_with_events(
+        tmp_path,
+        monkeypatch,
+        is_pii_enabled=True,
+        request_extra_ids=True,
+    )
+
+    # mock event broker
+    event_broker = Mock()
+
+    async def _get_event_broker(_: rasa_core_utils.AvailableEndpoints) -> EventBroker:
+        return event_broker
+
+    async def close():
+        pass
+
+    event_broker.close = close
+    monkeypatch.setattr(export, "_get_event_broker", _get_event_broker)
+
+    # run the export function
+    export.export_trackers(namespace)
+
+    output = capsys.readouterr().out
+    message = "Retrieved un-anonymized event for sender_id"
+
+    assert f"{message} id-1" in output
+    assert f"{message} id-2" in output
+    assert f"{message} id-4" in output
+
+    # id-5 is not a user, bot, or slot event, so it should not be logged
+    assert f"{message} id-5" not in output
+
+
+@pytest.mark.parametrize(
+    "is_enabled, is_event_anonymized",
+    [(True, True), (False, False)],
+)
+def test_rasa_export_no_unanonymized_events_warning_log(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    capsys: CaptureFixture,
+    is_enabled: bool,
+    is_event_anonymized: bool,
+):
+    _, namespace = prepare_namespace_and_mocked_tracker_store_with_events(
+        tmp_path,
+        monkeypatch,
+        is_pii_enabled=is_enabled,
+        is_event_anonymized=is_event_anonymized,
+    )
+
+    # mock event broker
+    event_broker = Mock()
+
+    async def _get_event_broker(_: rasa_core_utils.AvailableEndpoints) -> EventBroker:
+        return event_broker
+
+    async def close():
+        pass
+
+    event_broker.close = close
+    monkeypatch.setattr(export, "_get_event_broker", _get_event_broker)
+
+    # run the export function
+    export.export_trackers(namespace)
+
+    assert "Retrieved un-anonymized event for sender_id" not in capsys.readouterr().out

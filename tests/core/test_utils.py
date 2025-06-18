@@ -157,7 +157,7 @@ def test_lock_store_is_multi_worker_compatible(
 def test_read_endpoints_from_path(tmp_path: Path):
     # write valid config to file
     privacy_config = {
-        "tracker_store_settings": {"retention": {"min_after_session_end": 120}},
+        "tracker_store_settings": {"anonymization": {"min_after_session_end": 120}},
         "rules": [{"slot": "slot_a", "anonymization": {"type": "mask"}}],
     }
     endpoints_path = write_endpoint_config_to_yaml(

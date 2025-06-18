@@ -18,7 +18,7 @@ from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, Event, SessionStarted
 from rasa.shared.core.trackers import DialogueStateTracker
-from tests.conftest import MockExporter, random_user_uttered_event
+from tests.conftest import MockExporter, random_event
 
 
 @pytest.mark.parametrize(
@@ -72,9 +72,9 @@ async def test_fetch_events_within_time_range():
     conversation_ids = ["some-id", "another-id"]
 
     # prepare events from different senders and different timestamps
-    event_1 = random_user_uttered_event(1)
-    event_2 = random_user_uttered_event(3)
-    event_3 = random_user_uttered_event(2)
+    event_1 = random_event(1)
+    event_2 = random_event(3)
+    event_3 = random_event(2)
     events = {conversation_ids[0]: [event_1, event_2], conversation_ids[1]: [event_3]}
 
     def _get_tracker(conversation_id: Text) -> DialogueStateTracker:
@@ -155,10 +155,10 @@ async def test_fetch_events_within_time_range_with_session_events(tmp_path: Path
 
     events = {
         conversation_id: [
-            random_user_uttered_event(1),
+            random_event(1),
             SessionStarted(2),
             ActionExecuted(timestamp=3, action_name=ACTION_SESSION_START_NAME),
-            random_user_uttered_event(4),
+            random_event(4),
         ]
     }
     tracker_store = await mock_tracker_store(events, tmp_path)
@@ -177,9 +177,9 @@ async def test_sort_and_select_events_by_timestamp(tmp_path: Path):
 
     conversations = {
         conversation_id: [
-            random_user_uttered_event(3),
-            random_user_uttered_event(2),
-            random_user_uttered_event(1),
+            random_event(3),
+            random_event(2),
+            random_event(1),
         ]
     }
     tracker_store = await mock_tracker_store(conversations, tmp_path)
@@ -220,7 +220,7 @@ async def test_sort_and_select_events_by_timestamp_error(tmp_path: Path):
 
     conversations = {
         conversation_id: [
-            random_user_uttered_event(3),
+            random_event(3),
         ]
     }
     tracker_store = await mock_tracker_store(conversations, tmp_path)
@@ -287,7 +287,7 @@ async def test_publishing_error():
 
     exporter = MockExporter(event_broker=event_broker)
 
-    user_event = random_user_uttered_event(1).as_dict()
+    user_event = random_event(1).as_dict()
     user_event["sender_id"] = uuid.uuid4().hex
 
     async def _mocked_fetch() -> AsyncIterator[Dict[Text, Any]]:

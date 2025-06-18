@@ -184,6 +184,7 @@ async def _export_trackers(args: argparse.Namespace) -> None:
     event_broker = await _get_event_broker(endpoints)
     _prepare_event_broker(event_broker)
     requested_conversation_ids = _get_requested_conversation_ids(args.conversation_ids)
+    is_pii_enabled = True if endpoints.privacy else False
 
     from rasa.core.exporter import Exporter
 
@@ -191,6 +192,7 @@ async def _export_trackers(args: argparse.Namespace) -> None:
         tracker_store,
         event_broker,
         args.endpoints,
+        is_pii_enabled,
         requested_conversation_ids,
         args.minimum_timestamp,
         args.maximum_timestamp,
