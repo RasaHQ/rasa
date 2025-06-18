@@ -52,8 +52,9 @@ policies:
     constrain_similarities: true
   - name: FlowPolicy
   - name: EnterpriseSearchPolicy
-    citation_enabled: true
     use_generative_llm: true
+    citation_enabled: true
+    check_relevancy: true
     vector_store:
       source: data-repo/docs/
     llm:

@@ -42,8 +42,9 @@ policies:
     llm:
       model_group: openai_llm
     max_messages_in_query: 4
-    citation_enabled: true
     use_generative_llm: true
+    citation_enabled: true
+    check_relevancy: true
     vector_store:
       source: rasa-calm-demo/docs/
     embeddings:

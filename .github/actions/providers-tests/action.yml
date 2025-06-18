@@ -40,10 +40,10 @@ inputs:
     required: true
     default: "e2e/e2e_tests_with_assertions/test/happy_path/user_checks_balance.yml"
 
-  llm-judge-model:
-    description: "Judge model to be used by generative assertions."
+  search-ready-tests:
+    description: "Path to test file(s)"
     required: true
-    default: gpt-4o-mini
+    default: "e2e_tests_with_assertions/knowledge_relevancy_check/chitchat_during_flow.yml"
 
 runs:
   using: composite
@@ -68,19 +68,6 @@ runs:
       with:
         ref: ${{ env.RASA_PRO_VERSION }}
         path: rasa-pro
-
-    - name: Setup LLM-judge model
-      if: ${{ env.RASA_PRO_VERSION == '' }}
-      working-directory: data-repo
-      env:
-        LLM_JUDGE_MODEL: ${{ inputs.llm-judge-model }}
-      run: |
-        : Setup LLM-judge model
-        echo "llm_judge:
-                llm:
-                  provider: openai
-                  model: ${{ env.LLM_JUDGE_MODEL }}" > conftest.yml
-      shell: bash
 
     - name: Setup Python Environment
       id: setup-python
@@ -478,12 +465,50 @@ runs:
             2>&1 \
             | tee e2e-tests-log.txt
 
+    - name: Run e2e test (Search Ready Command Generator)
+      uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
+      if: ${{ inputs.train-and-test == 'search-ready' && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST }}
+      env:
+        RASA_DUCKLING_HTTP_URL: ${{ env.DUCKLING_URL }}
+        RASA_PRO_BETA_INTENTLESS: true
+        TESTS: ${{ inputs.search-ready-tests }}
+        PROVIDER: ${{ inputs.provider }}
+        COMMAND_GENERATOR: ${{ inputs.train-and-test }}
+      with:
+        timeout_minutes: 60
+        max_attempts: 2
+        retry_wait_seconds: 300
+        shell: bash
+        command: |
+          : Run e2e test on SearchReadyLLMCommandGenerator model
+          set -Eeuxov pipefail
+          if [[ ! -d tests ]]; then
+            mkdir tests;
+          fi
+          rasa test e2e "${GITHUB_WORKSPACE}"/data-repo/${{ env.TESTS }} \
+            --e2e-results \
+            --debug \
+            --endpoints "${GITHUB_WORKSPACE}"/rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ env.ENDPOINTS_FILE_NAME }}.yml \
+            --model models/${{ env.COMMAND_GENERATOR }}-${{ env.PROVIDER }}-model.tar.gz \
+            2>&1 \
+            | tee e2e-tests-log.txt
+
     - name: Verify correct JSON default prompts used by CompactLLMCommandGenerator
       if: ${{ inputs.train-and-test == 'compact' && !contains(inputs.provider, 'custom') && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST  }}
       run: |
         : Verify correct JSON default prompts used by CompactLLMCommandGenerator
         grep -i '## Task Description' e2e-tests-log.txt
         grep -iF 'Use the following structured data:\n```json' e2e-tests-log.txt
+      shell: bash
+
+    - name: Verify correct default prompt with 'search and reply' command used by SearchReadyLLMCommandGenerator
+      if: ${{ inputs.train-and-test == 'search-ready' && !contains(inputs.provider, 'custom') && !env.RASA_PRO_BETA_DIALOGUE_UNDERSTANDING_TEST  }}
+      run: |
+        : Verify correct default prompt with 'search and reply' command used by SearchReadyLLMCommandGenerator
+        grep -i '## Task Description' e2e-tests-log.txt
+        grep -i '## Decision Rule Table' e2e-tests-log.txt
+        grep -iF 'Use the following structured data:\n```json' e2e-tests-log.txt
+        grep -iF '* `search and reply`: Provide a response from the knowledge base to address' e2e-tests-log.txt
       shell: bash
 
     - name: Run Dialogue Understanding Tests
@@ -522,7 +547,7 @@ runs:
           && (grep -i 'Sending a test LLM API request for the component - LLMBasedRouter.' e2e-tests-log.txt || grep -iv 'LLMBasedRouter.' rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ env.COMMAND_GENERATOR }}-config.yml) \
           && grep -i 'Sending a test LLM API request for the component - EnterpriseSearchPolicy' e2e-tests-log.txt \
           && grep -i 'Sending a test LLM API request for the component - IntentlessPolicy' e2e-tests-log.txt \
-          && (grep -i 'Sending a test LLM API request for the component - MultiStepLLMCommandGenerator' e2e-tests-log.txt || grep -i 'Sending a test LLM API request for the component - SingleStepLLMCommandGenerator' e2e-tests-log.txt || grep -i 'Sending a test LLM API request for the component - CompactLLMCommandGenerator' e2e-tests-log.txt || grep -i 'Sending a test LLM API request for the component - CustomCompactLLMCommandGenerator' e2e-tests-log.txt) \
+          && (grep -i 'Sending a test LLM API request for the component - MultiStepLLMCommandGenerator' e2e-tests-log.txt || grep -i 'Sending a test LLM API request for the component - SingleStepLLMCommandGenerator' e2e-tests-log.txt || grep -i 'Sending a test LLM API request for the component - CompactLLMCommandGenerator' e2e-tests-log.txt || grep -i 'Sending a test LLM API request for the component - CustomCompactLLMCommandGenerator' e2e-tests-log.txt || grep -i 'Sending a test LLM API request for the component - SearchReadyLLMCommandGenerator' e2e-tests-log.txt) \
           && grep -i 'Sending a test Embeddings API request for the component - FlowRetrieval' e2e-tests-log.txt \
           && grep -i 'Sending a test Embeddings API request for the component - EnterpriseSearchPolicy' e2e-tests-log.txt \
           && grep -i 'Sending a test Embeddings API request for the component - IntentlessPolicy' e2e-tests-log.txt \

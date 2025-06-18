@@ -1,0 +1,62 @@
+recipe: default.v1
+language: en
+pipeline:
+  - name: LLMBasedRouter
+    prompt: rasa-private/data/test_config/providers/router_template.jinja2
+    llm:
+      model_group: azure_llm
+    calm_entry:
+      sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
+    nlu_entry:
+      sticky: "handles only health advice and hotel or restaurant bookings"
+      non_sticky: "handles chitchat"
+  - name: WhitespaceTokenizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 4
+  - name: LogisticRegressionClassifier
+    max_iter: 100
+    solver: lbfgs
+    tol: 0.0001
+    random_state: 42
+    ranking_length: 10
+  - name: CRFEntityExtractor
+  - name: DucklingEntityExtractor
+    url: "http://localhost:8000"
+    dimensions: ["time", "number"]
+    timezone: "Europe/Berlin"
+    timeout: 3
+  - name: NLUCommandAdapter
+  - name: SearchReadyLLMCommandGenerator
+    llm:
+      model_group: azure_llm
+    # TODO: Enable once bug ENG-1565 is resolved
+    # flow_retrieval:
+    #   embeddings:
+    #     model_group: azure_embeddings
+
+policies:
+  - name: RulePolicy
+  - name: TEDPolicy
+    constrain_similarities: true
+  - name: FlowPolicy
+  - name: EnterpriseSearchPolicy
+    max_messages_in_query: 4
+    use_generative_llm: true
+    citation_enabled: true
+    check_relevancy: true
+    vector_store:
+      source: data-repo/docs/
+    embeddings:
+      model_group: azure_embeddings
+    llm:
+      model_group: azure_llm
+  - name: IntentlessPolicy
+    llm:
+      model_group: azure_llm
+    embeddings:
+      model_group: azure_embeddings
+
+assistant_id: 20240418-073244-narrow-archive

@@ -72,7 +72,7 @@ on:
         default: "main"
 
       command-generator:
-        description: "Command-generator(s) to use: single-step, multi-step, compact or all"
+        description: "Command-generator(s) to use: single-step, multi-step, compact, search-ready or all"
         type: choice
         required: true
         default: all
@@ -80,6 +80,7 @@ on:
           - single-step
           - multi-step
           - compact
+          - search-ready
           - all
 
       single-step-e2e-test-with-assertions:
@@ -101,11 +102,11 @@ on:
         required: true
         default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
 
-      llm-judge-model:
-        description: "Judge model to be used by assertions. Ignored for < v3.12"
+      search-ready-e2e-test-with-assertions:
+        description: "Path to test file, to be run with search-ready-LLM-Generator trained model"
         type: string
         required: true
-        default: gpt-4o-mini
+        default: "e2e_tests_with_assertions/knowledge_relevancy_check/chitchat_during_flow.yml"
 
       send-results-notification-to-slack:
         description: "Send results notifications to Slack's #dev-tribe-alerts channel"
@@ -134,7 +135,7 @@ on:
         type: string
         required: true
       command-generator:
-        description: "Command-generator(s) to use: single-step, multi-step, compact or all (1 job for each)"
+        description: "Command-generator(s) to use: single-step, multi-step, compact, search-ready or all (1 job for each)"
         type: string
         required: true
       single-step-e2e-test-with-assertions:
@@ -149,8 +150,8 @@ on:
         description: "Path to test file"
         type: string
         required: true
-      llm-judge-model:
-        description: "Judge model to be used by assertions."
+      search-ready-e2e-test-with-assertions:
+        description: "Path to test file"
         type: string
         required: true
   pull_request:
@@ -162,7 +163,7 @@ env:
   RASA_PRO_BETA_STUB_CUSTOM_ACTION: true
   LOG_LEVEL_LLM: DEBUG
   COMMAND_GENERATOR: ${{ inputs.command-generator || 'all' }}
-  COMMAND_GENERATOR_MATRIX: '{"single-step": ["singlestep"], "multi-step": ["multistep"], "compact": ["compact"], "all": ["singlestep", "multistep", "compact"]}'
+  COMMAND_GENERATOR_MATRIX: '{"single-step": ["singlestep"], "multi-step": ["multistep"], "compact": ["compact"], "search-ready": ["search-ready"], "all": ["singlestep", "multistep", "compact", "search-ready"]}'
   ENDPOINTS_FILE_NAME: endpoints
   REDIS_HOST: localhost
   REDIS_PORT: 6379
@@ -393,7 +394,7 @@ jobs:
           single-step-tests: ${{ inputs.single-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }} # TODO: Use test that invokes enterprise-search, when flakiness is resolved
           multi-step-tests: ${{ inputs.multi-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }}
           compact-tests: ${{ inputs.compact-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }}
-          llm-judge-model: ${{ inputs.llm-judge-model || 'gpt-4o-mini' }}
+          search-ready-tests: ${{ inputs.search-ready-e2e-test-with-assertions || 'e2e_tests_with_assertions/knowledge_relevancy_check/chitchat_during_flow.yml' }}
 
   e2e_test_on_single_provider:
     name: Run e2e Test
@@ -455,4 +456,4 @@ jobs:
           single-step-tests: ${{ inputs.single-step-e2e-test-with-assertions }}
           multi-step-tests: ${{ inputs.multi-step-e2e-test-with-assertions }}
           compact-tests: ${{ inputs.compact-e2e-test-with-assertions }}
-          llm-judge-model: ${{ inputs.llm-judge-model }}
+          search-ready-tests: ${{ inputs.search-ready-e2e-test-with-assertions }}

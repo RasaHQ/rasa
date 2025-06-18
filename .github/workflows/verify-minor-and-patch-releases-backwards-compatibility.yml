@@ -21,6 +21,7 @@ on:
           - compact
           - singlestep
           - multistep
+          - search-ready
       rasa-calm-demo-branch:
           description: Branch (or tag) to checkout for rasa-calm-demo git repo
           type: string
