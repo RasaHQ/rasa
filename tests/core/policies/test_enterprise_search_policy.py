@@ -243,18 +243,21 @@ def search_results() -> SearchResultList:
         ),
         (
             {"check_relevancy": True},
-            "Given the following information, please provide an answer based on",
-            "[NO_RELEVANT_ANSWER_FOUND]",
+            "Based on the provided documents and the recent conversation context, "
+            "answer the following question.",
+            "[NO_RAG_ANSWER]",
         ),
         (
             {"check_relevancy": True, "citation_enabled": True},
-            "Given the following information, please provide an answer based on",
-            "[NO_RELEVANT_ANSWER_FOUND]",
+            "Based on the provided documents and the recent conversation context, "
+            "answer the following question.",
+            "[NO_RAG_ANSWER]",
         ),
         (
             {"check_relevancy": True, "citation_enabled": False},
-            "Given the following information, please provide an answer based on",
-            "[NO_RELEVANT_ANSWER_FOUND]",
+            "Based on the provided documents and the recent conversation context, "
+            "answer the following question.",
+            "[NO_RAG_ANSWER]",
         ),
     ],
 )
@@ -1785,8 +1788,8 @@ def test_render_prompt_includes_doc_text(
         ),
         (True, False, "Generated answer", "Generated answer - Relevancy", False),
         # Relevancy check enabled but answer not relevant
-        (True, True, "[NO_RELEVANT_ANSWER_FOUND]", None, True),
-        (True, False, "[NO_RELEVANT_ANSWER_FOUND]", None, True),
+        (True, True, "[NO_RAG_ANSWER]", None, True),
+        (True, False, "[NO_RAG_ANSWER]", None, True),
         # Relevancy check disabled, generated answer
         (False, True, "Generated answer", "Generated answer - Citations", False),
         (False, False, "Generated answer", "Generated answer", False),
@@ -1815,22 +1818,18 @@ async def test_enterprise_search_policy_prediction_varied_configs(
     expect_cannot_handle: bool,
 ) -> None:
     def simulate_citation_output() -> Optional[str]:
-        """
-        Simulate the output of the citation step depending on:
+        """Simulate the output of the citation step depending on:
         - whether the citation step is enabled or not,
         - whether the relevancy check is enabled or not,
         """
-
         if llm_answer == "[NO_RELEVANT_ANSWER_FOUND]" or not citation_enabled:
             return None
         return mock_invoke_llm.return_value.choices[0] + " - Citations"
 
     def llm_answer_generation_output() -> Optional[str]:
-        """
-        Simulate the output of the LLM answer generation step depending on
+        """Simulate the output of the LLM answer generation step depending on
         whether the relevancy check is enabled or not
         """
-
         if llm_answer == "[NO_RELEVANT_ANSWER_FOUND]" or not relevancy_check_enabled:
             return llm_answer
         return f"{llm_answer} - Relevancy"
@@ -1885,42 +1884,49 @@ async def test_enterprise_search_policy_prediction_varied_configs(
             {},
             "Given the following information, please provide an answer based on"
             " the provided documents",
-            "",
+            [],
         ),
         (
             {"citation_enabled": True},
             "Given the following information, please provide an answer based on"
             " the provided documents",
-            "Citing Sources",
+            ["Citing Sources"],
         ),
         (
             {"check_relevancy": True},
-            "Given the following information, please provide an answer based on",
-            "[NO_RELEVANT_ANSWER_FOUND]",
+            "Based on the provided documents and the recent conversation context, "
+            "answer the following question.",
+            ["[NO_RAG_ANSWER]"],
         ),
         (
             {"check_relevancy": True, "citation_enabled": True},
-            "Given the following information, please provide an answer based on",
-            "[NO_RELEVANT_ANSWER_FOUND]",
+            "Based on the provided documents and the recent conversation context, "
+            "answer the following question.",
+            [
+                "[NO_RAG_ANSWER]",
+                "Citing Sources",
+            ],
         ),
         (
             {"check_relevancy": True, "citation_enabled": False},
-            "Given the following information, please provide an answer based on",
-            "[NO_RELEVANT_ANSWER_FOUND]",
+            "Based on the provided documents and the recent conversation context, "
+            "answer the following question.",
+            ["[NO_RAG_ANSWER]"],
         ),
     ],
 )
 def test_get_system_default_prompt_based_on_config(
     config: Dict[str, Any],
     prompt_starts_with: str,
-    prompt_contains: str,
+    prompt_contains: List[str],
 ):
     # When
     prompt = EnterpriseSearchPolicy.get_system_default_prompt_based_on_config(config)
 
     # Then
     assert prompt.startswith(prompt_starts_with)
-    assert prompt_contains in prompt
+    for prompt_contains_str in prompt_contains:
+        assert prompt_contains_str in prompt
 
 
 @pytest.mark.parametrize(

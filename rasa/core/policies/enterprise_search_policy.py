@@ -135,10 +135,7 @@ DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_RELEVANCY_CHECK_AND_CITATION_TEMPLATE = (
     )
 )
 
-# TODO: Update this pattern once the experiments are done
-_ENTERPRISE_SEARCH_ANSWER_NOT_RELEVANT_PATTERN = re.compile(
-    r"\[NO_RELEVANT_ANSWER_FOUND\]"
-)
+_ENTERPRISE_SEARCH_ANSWER_NOT_RELEVANT_PATTERN = re.compile(r"\[NO_RAG_ANSWER\]")
 
 
 class VectorStoreConnectionError(RasaException):
