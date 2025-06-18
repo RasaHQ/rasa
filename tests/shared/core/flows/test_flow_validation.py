@@ -1,4 +1,5 @@
 import textwrap
+from typing import Callable
 
 import pytest
 
@@ -639,7 +640,13 @@ def test_validation_pattern_linking_to_a_pattern_human_handoff():
     assert flows.underlying_flows[0].steps[1].link == RASA_PATTERN_HUMAN_HANDOFF
 
 
-def test_validation_pattern_linking_to_a_pattern_chitchat():
+@pytest.mark.parametrize(
+    "flow_from_str_fn", [flows_from_str_including_defaults, flows_from_str]
+)
+def test_validation_pattern_linking_to_a_pattern_chitchat(
+    flow_from_str_fn: Callable,
+):
+    # Given
     flow_config = f"""
         flows:
           pattern_test_pattern:
@@ -648,8 +655,9 @@ def test_validation_pattern_linking_to_a_pattern_chitchat():
               - action: welcome
               - link: {RASA_PATTERN_CHITCHAT}
         """
-
-    flows = flows_from_str_including_defaults(flow_config)
+    # When
+    flows = flow_from_str_fn(flow_config)
+    # Then
     assert isinstance(flows.underlying_flows[0].steps[1], LinkFlowStep)
     assert flows.underlying_flows[0].steps[1].link == RASA_PATTERN_CHITCHAT
 

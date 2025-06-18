@@ -581,11 +581,18 @@ def validate_linked_flows_exists(flows: "FlowsList") -> None:
                 continue
 
             # It might be that the flows do not contain the default rasa patterns, but
-            # only the user flows. Manually check for `pattern_human_handoff` as this
-            # pattern can be linked to and it is part of the default patterns of rasa.
+            # only the user flows. Manually check for `pattern_human_handoff` and
+            # 'pattern_chitchat' as these patterns can be linked to and are part of the
+            # default patterns of rasa.
             if (
                 flows.flow_by_id(step.link) is None
+                # Allow linking to human-handoff from both patterns
+                # and user-defined flows
                 and step.link != RASA_PATTERN_HUMAN_HANDOFF
+                # Allow linking to 'pattern_chitchat' only from other patterns
+                and not (
+                    flow.is_rasa_default_flow and step.link == RASA_PATTERN_CHITCHAT
+                )
             ):
                 raise UnresolvedFlowException(step.link, flow.id, step.id)
 
