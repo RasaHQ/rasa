@@ -2,7 +2,7 @@ import dataclasses
 import importlib.resources
 import json
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Text
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text
 
 import dotenv
 import structlog
@@ -12,9 +12,6 @@ from pydantic import ValidationError
 import rasa.shared.utils.io
 from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.constants import (
-    POLICY_MAX_HISTORY,
-    POLICY_PRIORITY,
-    SEARCH_POLICY_PRIORITY,
     UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.information_retrieval import (
@@ -24,6 +21,14 @@ from rasa.core.information_retrieval import (
     create_from_endpoint_config,
 )
 from rasa.core.information_retrieval.faiss import FAISS_Store
+from rasa.core.policies.enterprise_search_policy_config import (
+    DEFAULT_EMBEDDINGS_CONFIG,
+    DEFAULT_ENTERPRISE_SEARCH_CONFIG,
+    DEFAULT_LLM_CONFIG,
+    DEFAULT_VECTOR_STORE_TYPE,
+    SOURCE_PROPERTY,
+    EnterpriseSearchPolicyConfig,
+)
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.dialogue_understanding.generator.constants import (
     LLM_CONFIG_KEY,
@@ -47,18 +52,11 @@ from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
 from rasa.shared.constants import (
     EMBEDDINGS_CONFIG_KEY,
-    MAX_COMPLETION_TOKENS_CONFIG_KEY,
-    MAX_RETRIES_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_GROUP_ID_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
-    OPENAI_PROVIDER,
-    PROMPT_CONFIG_KEY,
-    PROMPT_TEMPLATE_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
     RASA_PATTERN_CANNOT_HANDLE_NO_RELEVANT_ANSWER,
-    TEMPERATURE_CONFIG_KEY,
-    TIMEOUT_CONFIG_KEY,
 )
 from rasa.shared.core.constants import (
     ACTION_CANCEL_FLOW,
@@ -93,13 +91,9 @@ from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
-    DEFAULT_OPENAI_CHAT_MODEL_NAME,
-    DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
-    check_prompt_config_keys_and_warn_if_deprecated,
     embedder_factory,
     get_prompt_template,
     llm_factory,
-    resolve_model_client_config,
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
 )
@@ -119,42 +113,6 @@ from rasa.utils.log_utils import log_llm
 structlogger = structlog.get_logger()
 
 dotenv.load_dotenv("./.env")
-
-SOURCE_PROPERTY = "source"
-VECTOR_STORE_TYPE_PROPERTY = "type"
-VECTOR_STORE_PROPERTY = "vector_store"
-VECTOR_STORE_THRESHOLD_PROPERTY = "threshold"
-TRACE_TOKENS_PROPERTY = "trace_prompt_tokens"
-CITATION_ENABLED_PROPERTY = "citation_enabled"
-USE_LLM_PROPERTY = "use_generative_llm"
-CHECK_RELEVANCY_PROPERTY = "check_relevancy"
-MAX_MESSAGES_IN_QUERY_KEY = "max_messages_in_query"
-
-DEFAULT_VECTOR_STORE_TYPE = "faiss"
-DEFAULT_VECTOR_STORE_THRESHOLD = 0.0
-DEFAULT_VECTOR_STORE = {
-    VECTOR_STORE_TYPE_PROPERTY: DEFAULT_VECTOR_STORE_TYPE,
-    SOURCE_PROPERTY: "./docs",
-    VECTOR_STORE_THRESHOLD_PROPERTY: DEFAULT_VECTOR_STORE_THRESHOLD,
-}
-
-DEFAULT_CHECK_RELEVANCY_PROPERTY = False
-DEFAULT_USE_LLM_PROPERTY = True
-DEFAULT_CITATION_ENABLED_PROPERTY = False
-
-DEFAULT_LLM_CONFIG = {
-    PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
-    MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME,
-    TIMEOUT_CONFIG_KEY: 10,
-    TEMPERATURE_CONFIG_KEY: 0.0,
-    MAX_COMPLETION_TOKENS_CONFIG_KEY: 256,
-    MAX_RETRIES_CONFIG_KEY: 1,
-}
-
-DEFAULT_EMBEDDINGS_CONFIG = {
-    PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
-    MODEL_CONFIG_KEY: DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
-}
 
 ENTERPRISE_SEARCH_PROMPT_FILE_NAME = "enterprise_search_policy_prompt.jinja2"
 ENTERPRISE_SEARCH_CONFIG_FILE_NAME = "config.json"
@@ -228,10 +186,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
     @staticmethod
     def get_default_config() -> Dict[str, Any]:
         """Returns the default config of the policy."""
-        return {
-            POLICY_PRIORITY: SEARCH_POLICY_PRIORITY,
-            VECTOR_STORE_PROPERTY: DEFAULT_VECTOR_STORE,
-        }
+        return DEFAULT_ENTERPRISE_SEARCH_CONFIG
 
     def __init__(
         self,
@@ -246,105 +201,71 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         """Constructs a new Policy object."""
         super().__init__(config, model_storage, resource, execution_context, featurizer)
 
-        # Check for deprecated keys and issue a warning if those are used
-        check_prompt_config_keys_and_warn_if_deprecated(
-            config, "enterprise_search_policy"
-        )
-        # Check for mutual exclusivity of extractive and generative search
-        self._check_and_warn_mutual_exclusivity_of_extractive_and_generative_search()
-
-        # Resolve LLM config
-        self.config[LLM_CONFIG_KEY] = resolve_model_client_config(
-            self.config.get(LLM_CONFIG_KEY), EnterpriseSearchPolicy.__name__
-        )
-        # Resolve embeddings config
-        self.config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
-            self.config.get(EMBEDDINGS_CONFIG_KEY), EnterpriseSearchPolicy.__name__
-        )
+        parsed_config = EnterpriseSearchPolicyConfig.from_dict(config)
 
         # Vector store object and configuration
         self.vector_store = vector_store
-        self.vector_store_config = self.config.get(
-            VECTOR_STORE_PROPERTY, DEFAULT_VECTOR_STORE
-        )
-        self.vector_search_threshold = self.vector_store_config.get(
-            VECTOR_STORE_THRESHOLD_PROPERTY, DEFAULT_VECTOR_STORE_THRESHOLD
-        )
+        self.vector_store_config = parsed_config.vector_store_config
+        self.vector_search_threshold = parsed_config.vector_store_threshold
+        self.vector_store_type = parsed_config.vector_store_type
 
-        # Embeddings configuration for encoding the search query
-        self.embeddings_config = (
-            self.config[EMBEDDINGS_CONFIG_KEY] or DEFAULT_EMBEDDINGS_CONFIG
-        )
+        # Resolved embeddings configuration for encoding the search query
+        self.embeddings_config = parsed_config.embeddings_config
 
-        # LLM Configuration for response generation
-        self.llm_config = self.config[LLM_CONFIG_KEY] or DEFAULT_LLM_CONFIG
+        # Resolved LLM Configuration for response generation
+        self.llm_config = parsed_config.llm_config
 
         # Maximum number of turns to include in the prompt
-        self.max_history = self.config.get(POLICY_MAX_HISTORY)
+        self.max_history = parsed_config.max_history
 
         # Maximum number of messages to include in the search query
-        self.max_messages_in_query = self.config.get(MAX_MESSAGES_IN_QUERY_KEY, 2)
+        self.max_messages_in_query = parsed_config.max_messages_in_query
 
         # Boolean to enable/disable tracing of prompt tokens
-        self.trace_prompt_tokens = self.config.get(TRACE_TOKENS_PROPERTY, False)
+        self.trace_prompt_tokens = parsed_config.trace_prompt_tokens
 
         # Boolean to enable/disable the use of LLM for response generation
-        self.use_llm = self.config.get(USE_LLM_PROPERTY, DEFAULT_USE_LLM_PROPERTY)
+        self.use_llm = parsed_config.use_generative_llm
 
         # Boolean to enable/disable citation generation. This flag enables citation
         # logic, but it only takes effect if `use_llm` is True.
-        self.citation_enabled = self.config.get(
-            CITATION_ENABLED_PROPERTY, DEFAULT_CITATION_ENABLED_PROPERTY
-        )
+        self.citation_enabled = parsed_config.enable_citation
 
         # Boolean to enable/disable the use of relevancy check alongside answer
         # generation. This flag enables citation logic, but it only takes effect if
         # `use_llm` is True.
-        self.relevancy_check_enabled = self.config.get(
-            CHECK_RELEVANCY_PROPERTY, DEFAULT_CHECK_RELEVANCY_PROPERTY
-        )
+        self.relevancy_check_enabled = parsed_config.check_relevancy
 
         # Resolve the prompt template. The prompt will only be used if the 'use_llm' is
         # set to True.
-        self.prompt_template = prompt_template or self._resolve_prompt_template(
-            self.config, LOG_COMPONENT_SOURCE_METHOD_INIT
+        self.prompt_template = prompt_template or get_prompt_template(
+            jinja_file_path=parsed_config.prompt_template,
+            default_prompt_template=self._select_default_prompt_template_based_on_features(
+                parsed_config.check_relevancy, parsed_config.enable_citation
+            ),
+            log_source_component=EnterpriseSearchPolicy.__name__,
+            log_source_method=LOG_COMPONENT_SOURCE_METHOD_INIT,
         )
-
-    def _check_and_warn_mutual_exclusivity_of_extractive_and_generative_search(
-        self,
-    ) -> None:
-        if self.config.get(
-            CHECK_RELEVANCY_PROPERTY, DEFAULT_CHECK_RELEVANCY_PROPERTY
-        ) and not self.config.get(USE_LLM_PROPERTY, DEFAULT_USE_LLM_PROPERTY):
-            structlogger.warning(
-                "enterprise_search_policy.init"
-                ".relevancy_check_enabled_with_disabled_generative_search",
-                event_info=(
-                    f"The config parameter '{CHECK_RELEVANCY_PROPERTY}' is set to"
-                    f"'True', but the generative search is disabled (config"
-                    f"parameter '{USE_LLM_PROPERTY}' is set to 'False'). As a result, "
-                    "the relevancy check for the generative search will be disabled. "
-                    f"To use this check, set the config parameter '{USE_LLM_PROPERTY}' "
-                    f"to `True`."
-                ),
-            )
 
     @classmethod
-    def _create_plain_embedder(cls, config: Dict[Text, Any]) -> "Embeddings":
+    def _create_plain_embedder(cls, embeddings_config: Dict[Text, Any]) -> "Embeddings":
         """Creates an embedder based on the given configuration.
 
+        Args:
+            embeddings_config: A resolved embeddings configuration. Resolved means the
+            configuration is either:
+                - A reference to a model group that has already been expanded into
+                  its corresponding configuration using the information from
+                  `endpoints.yml`, or
+                - A full configuration for the embedder defined directly (i.e. not
+                  relying on model groups or indirections).
+
         Returns:
-        The embedder.
+            The embedder.
         """
         # Copy the config so original config is not modified
-        config = config.copy()
-        # Resolve config and instantiate the embedding client
-        config[EMBEDDINGS_CONFIG_KEY] = resolve_model_client_config(
-            config.get(EMBEDDINGS_CONFIG_KEY), EnterpriseSearchPolicy.__name__
-        )
-        client = embedder_factory(
-            config.get(EMBEDDINGS_CONFIG_KEY), DEFAULT_EMBEDDINGS_CONFIG
-        )
+        embeddings_config = embeddings_config.copy()
+        client = embedder_factory(embeddings_config, DEFAULT_EMBEDDINGS_CONFIG)
         # Wrap the embedding client in the adapter
         return _LangchainEmbeddingClientAdapter(client)
 
@@ -410,16 +331,16 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             can load the policy from the resource.
         """
         # Perform health checks for both LLM and embeddings client configs
-        self._perform_health_checks(self.config, "enterprise_search_policy.train")
-
-        store_type = self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY)
+        self._perform_health_checks(
+            self.llm_config, self.embeddings_config, "enterprise_search_policy.train"
+        )
 
         # telemetry call to track training start
         track_enterprise_search_policy_train_started()
 
         # validate embedding configuration
         try:
-            embeddings = self._create_plain_embedder(self.config)
+            embeddings = self._create_plain_embedder(self.embeddings_config)
         except (ValidationError, Exception) as e:
             structlogger.error(
                 "enterprise_search_policy.train.embedder_instantiation_failed",
@@ -431,7 +352,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                 f"required environment variables. Error: {e}"
             )
 
-        if store_type == DEFAULT_VECTOR_STORE_TYPE:
+        if self.vector_store_type == DEFAULT_VECTOR_STORE_TYPE:
             structlogger.info("enterprise_search_policy.train.faiss")
             with self._model_storage.write_to(self._resource) as path:
                 self.vector_store = FAISS_Store(
@@ -443,12 +364,13 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                 )
         else:
             structlogger.info(
-                "enterprise_search_policy.train.custom", store_type=store_type
+                "enterprise_search_policy.train.custom",
+                store_type=self.vector_store_type,
             )
 
         # telemetry call to track training completion
         track_enterprise_search_policy_train_completed(
-            vector_store_type=store_type,
+            vector_store_type=self.vector_store_type,
             embeddings_type=self.embeddings_config.get(PROVIDER_CONFIG_KEY),
             embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
             or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
@@ -471,8 +393,11 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             rasa.shared.utils.io.write_text_file(
                 self.prompt_template, path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
             )
+            config = self.config.copy()
+            config[LLM_CONFIG_KEY] = self.llm_config
+            config[EMBEDDINGS_CONFIG_KEY] = self.embeddings_config
             rasa.shared.utils.io.dump_obj_as_json_to_file(
-                path / ENTERPRISE_SEARCH_CONFIG_FILE_NAME, self.config
+                path / ENTERPRISE_SEARCH_CONFIG_FILE_NAME, config
             )
 
     def _prepare_slots_for_template(
@@ -511,8 +436,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             endpoints: Endpoints configuration.
         """
         config = endpoints.vector_store if endpoints else None
-        store_type = self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY)
-        if config is None and store_type != DEFAULT_VECTOR_STORE_TYPE:
+        if config is None and self.vector_store_type != DEFAULT_VECTOR_STORE_TYPE:
             structlogger.error(
                 "enterprise_search_policy._connect_vector_store_or_raise.no_config"
             )
@@ -673,7 +597,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
 
         # telemetry call to track policy prediction
         track_enterprise_search_policy_predict(
-            vector_store_type=self.vector_store_config.get(VECTOR_STORE_TYPE_PROPERTY),
+            vector_store_type=self.vector_store_type,
             embeddings_type=self.embeddings_config.get(PROVIDER_CONFIG_KEY),
             embeddings_model=self.embeddings_config.get(MODEL_CONFIG_KEY)
             or self.embeddings_config.get(MODEL_NAME_CONFIG_KEY),
@@ -732,7 +656,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         Returns:
             An LLMResponse object, or None if the call fails.
         """
-        llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
+        llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
         try:
             response = await llm.acompletion(prompt)
             return LLMResponse.ensure_llm_response(response)
@@ -862,46 +786,26 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         **kwargs: Any,
     ) -> "EnterpriseSearchPolicy":
         """Loads a trained policy (see parent class for full docstring)."""
+        parsed_config = EnterpriseSearchPolicyConfig.from_dict(config)
+
         # Perform health checks for both LLM and embeddings client configs
-        cls._perform_health_checks(config, "enterprise_search_policy.load")
-
-        prompt_template = None
-        try:
-            with model_storage.read_from(resource) as path:
-                prompt_template = rasa.shared.utils.io.read_file(
-                    path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
-                )
-        except (FileNotFoundError, FileIOException) as e:
-            structlogger.warning(
-                "enterprise_search_policy.load.failed", error=e, resource=resource.name
-            )
-
-        store_type = config.get(VECTOR_STORE_PROPERTY, {}).get(
-            VECTOR_STORE_TYPE_PROPERTY
+        cls._perform_health_checks(
+            parsed_config.llm_config,
+            parsed_config.embeddings_config,
+            "enterprise_search_policy.load",
         )
 
-        embeddings = cls._create_plain_embedder(config)
+        prompt_template = cls._load_prompt_template(model_storage, resource)
+        embeddings = cls._create_plain_embedder(parsed_config.embeddings_config)
+        vector_store = cls._load_vector_store(
+            embeddings,
+            parsed_config.vector_store_type,
+            parsed_config.use_generative_llm,
+            model_storage,
+            resource,
+        )
 
         structlogger.info("enterprise_search_policy.load", config=config)
-        if store_type == DEFAULT_VECTOR_STORE_TYPE:
-            # if a vector store is not specified,
-            # default to using FAISS with the index stored in the model
-            # TODO figure out a way to get path without context manager
-            with model_storage.read_from(resource) as path:
-                vector_store = FAISS_Store(
-                    embeddings=embeddings,
-                    index_path=path,
-                    docs_folder=None,
-                    create_index=False,
-                    parse_as_faq_pairs=not config.get(
-                        USE_LLM_PROPERTY, DEFAULT_USE_LLM_PROPERTY
-                    ),
-                )
-        else:
-            vector_store = create_from_endpoint_config(
-                config_type=store_type,
-                embeddings=embeddings,
-            )  # type: ignore
 
         return cls(
             config,
@@ -913,22 +817,57 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         )
 
     @classmethod
-    def _get_local_knowledge_data(cls, config: Dict[str, Any]) -> Optional[List[str]]:
+    def _load_prompt_template(
+        cls, model_storage: ModelStorage, resource: Resource
+    ) -> Optional[str]:
+        try:
+            with model_storage.read_from(resource) as path:
+                return rasa.shared.utils.io.read_file(
+                    path / ENTERPRISE_SEARCH_PROMPT_FILE_NAME
+                )
+        except (FileNotFoundError, FileIOException) as e:
+            structlogger.warning(
+                "enterprise_search_policy.load.failed", error=e, resource=resource.name
+            )
+        return None
+
+    @classmethod
+    def _load_vector_store(
+        cls,
+        embeddings: "Embeddings",
+        store_type: str,
+        use_generative_llm: bool,
+        model_storage: ModelStorage,
+        resource: Resource,
+    ) -> InformationRetrieval:
+        if store_type == DEFAULT_VECTOR_STORE_TYPE:
+            # if a vector store is not specified,
+            # default to using FAISS with the index stored in the model
+            # TODO figure out a way to get path without context manager
+            with model_storage.read_from(resource) as path:
+                return FAISS_Store(
+                    embeddings=embeddings,
+                    index_path=path,
+                    docs_folder=None,
+                    create_index=False,
+                    parse_as_faq_pairs=not use_generative_llm,
+                )
+        else:
+            return create_from_endpoint_config(
+                config_type=store_type,
+                embeddings=embeddings,
+            )
+
+    @classmethod
+    def _get_local_knowledge_data(
+        cls, store_type: str, source: Optional[str] = None
+    ) -> Optional[List[str]]:
         """This is required only for local knowledge base types.
 
         e.g. FAISS, to ensure that the graph component is retrained when the knowledge
         base is updated.
         """
-        merged_config = {**cls.get_default_config(), **config}
-
-        store_type = merged_config.get(VECTOR_STORE_PROPERTY, {}).get(
-            VECTOR_STORE_TYPE_PROPERTY
-        )
-        if store_type != DEFAULT_VECTOR_STORE_TYPE:
-            return None
-
-        source = merged_config.get(VECTOR_STORE_PROPERTY, {}).get(SOURCE_PROPERTY)
-        if not source:
+        if store_type != DEFAULT_VECTOR_STORE_TYPE or not source:
             return None
 
         docs = FAISS_Store.load_documents(source)
@@ -944,18 +883,28 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
     @classmethod
     def fingerprint_addon(cls, config: Dict[str, Any]) -> Optional[str]:
         """Add a fingerprint of enterprise search policy for the graph."""
-        prompt_template = cls._resolve_prompt_template(
-            config, LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON
+        parsed_config = EnterpriseSearchPolicyConfig.from_dict(config)
+
+        # Resolve the prompt template
+        default_prompt_template = cls._select_default_prompt_template_based_on_features(
+            parsed_config.check_relevancy, parsed_config.enable_citation
+        )
+        prompt_template = get_prompt_template(
+            jinja_file_path=parsed_config.prompt_template,
+            default_prompt_template=default_prompt_template,
+            log_source_component=EnterpriseSearchPolicy.__name__,
+            log_source_method=LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
         )
 
-        local_knowledge_data = cls._get_local_knowledge_data(config)
+        # Fetch the local knowledge data in case FAISS is used
+        local_knowledge_data = cls._get_local_knowledge_data(
+            parsed_config.vector_store_type, parsed_config.vector_store_source
+        )
 
-        llm_config = resolve_model_client_config(
-            config.get(LLM_CONFIG_KEY), EnterpriseSearchPolicy.__name__
-        )
-        embedding_config = resolve_model_client_config(
-            config.get(EMBEDDINGS_CONFIG_KEY), EnterpriseSearchPolicy.__name__
-        )
+        # Get the resolved LLM and embeddings configurations
+        llm_config = parsed_config.llm_config
+        embedding_config = parsed_config.embeddings_config
+
         return deep_container_fingerprint(
             [prompt_template, local_knowledge_data, llm_config, embedding_config]
         )
@@ -1053,20 +1002,31 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
 
     @classmethod
     def _perform_health_checks(
-        cls, config: Dict[Text, Any], log_source_method: str
+        cls,
+        llm_config: Dict[Text, Any],
+        embeddings_config: Dict[Text, Any],
+        log_source_method: str,
     ) -> None:
-        # Perform health check of the LLM client config
-        llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY, {}))
+        """
+        Perform the health checks using resolved LLM and embeddings configurations.
+        Resolved means the configuration is either:
+        - A reference to a model group that has already been expanded into
+          its corresponding configuration using the information from
+          `endpoints.yml`, or
+        - A full configuration for the embedder defined directly (i.e. not
+          relying on model groups or indirections).
+
+        Args:
+            llm_config: A resolved LLM configuration.
+            embeddings_config: A resolved embeddings configuration.
+            log_source_method: The method health checks has been called from.
+
+        """
         cls.perform_llm_health_check(
             llm_config,
             DEFAULT_LLM_CONFIG,
             log_source_method,
             EnterpriseSearchPolicy.__name__,
-        )
-
-        # Perform health check of the embeddings client config
-        embeddings_config = resolve_model_client_config(
-            config.get(EMBEDDINGS_CONFIG_KEY, {})
         )
         cls.perform_embeddings_health_check(
             embeddings_config,
@@ -1093,61 +1053,15 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         Returns:
             The resolved jinja prompt template as a string.
         """
-
         # Get the feature flags
-        citation_enabled = config.get(
-            CITATION_ENABLED_PROPERTY, DEFAULT_CITATION_ENABLED_PROPERTY
-        )
-        relevancy_check_enabled = config.get(
-            CHECK_RELEVANCY_PROPERTY, DEFAULT_CHECK_RELEVANCY_PROPERTY
-        )
-
+        parsed_config = EnterpriseSearchPolicyConfig.from_dict(config)
         # Based on the enabled features (citation, relevancy check) fetch the
         # appropriate default prompt
         default_prompt = cls._select_default_prompt_template_based_on_features(
-            relevancy_check_enabled, citation_enabled
+            parsed_config.check_relevancy, parsed_config.enable_citation
         )
 
         return default_prompt
-
-    @classmethod
-    def _resolve_prompt_template(
-        cls,
-        config: dict,
-        log_source_method: Literal["init", "fingerprint"],
-    ) -> str:
-        """
-        Resolves the prompt template to use for the Enterprise Search Policy's
-        generative search.
-
-        Checks if a custom template is provided via component's configuration. If not,
-        it selects the appropriate default template based on the enabled features
-        (citation and relevancy check).
-
-        Args:
-            config: The component's configuration.
-            log_source_method: The name of the method or function emitting the log for
-                better traceability.
-        Returns:
-            The resolved jinja prompt template as a string.
-        """
-
-        # Read the template path from the configuration if available.
-        # The deprecated 'prompt' has a lower priority compared to 'prompt_template'
-        config_defined_prompt = (
-            config.get(PROMPT_TEMPLATE_CONFIG_KEY)
-            or config.get(PROMPT_CONFIG_KEY)
-            or None
-        )
-        # Select the default prompt based on the features set in the config.
-        default_prompt = cls.get_system_default_prompt_based_on_config(config)
-
-        return get_prompt_template(
-            config_defined_prompt,
-            default_prompt,
-            log_source_component=EnterpriseSearchPolicy.__name__,
-            log_source_method=log_source_method,
-        )
 
     @classmethod
     def _select_default_prompt_template_based_on_features(

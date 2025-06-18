@@ -11,7 +11,7 @@ from rasa.shared.constants import (
     PROVIDER_CONFIG_KEY,
     RASA_PROVIDER,
 )
-from rasa.shared.providers._configs.utils import (
+from rasa.shared.utils.configs import (
     validate_required_keys,
 )
 

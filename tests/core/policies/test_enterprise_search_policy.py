@@ -18,17 +18,21 @@ from rasa.core.information_retrieval import (
     SearchResultList,
 )
 from rasa.core.policies.enterprise_search_policy import (
-    CHECK_RELEVANCY_PROPERTY,
     DEFAULT_ENTERPRISE_SEARCH_PROMPT_TEMPLATE,
     DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_CITATION_TEMPLATE,
     DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_RELEVANCY_CHECK_AND_CITATION_TEMPLATE,
-    DEFAULT_USE_LLM_PROPERTY,
     ENTERPRISE_SEARCH_CONFIG_FILE_NAME,
     SEARCH_QUERY_METADATA_KEY,
     SEARCH_RESULTS_METADATA_KEY,
-    USE_LLM_PROPERTY,
     EnterpriseSearchPolicy,
     VectorStoreConfigurationError,
+)
+from rasa.core.policies.enterprise_search_policy_config import (
+    CHECK_RELEVANCY_PROPERTY,
+    DEFAULT_EMBEDDINGS_CONFIG,
+    DEFAULT_LLM_CONFIG,
+    DEFAULT_USE_LLM_PROPERTY,
+    USE_LLM_PROPERTY,
 )
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
@@ -295,45 +299,6 @@ async def test_enterprise_search_policy_prompt(
     assert prompt_contains in loaded.prompt_template
 
 
-async def test_enterprise_search_policy_warning_is_raised_if_both_prompt_and_prompt_template_key_are_used(  # noqa: E501
-    default_model_storage: ModelStorage,
-    default_execution_context: ExecutionContext,
-    vector_store: InformationRetrieval,
-    monkeypatch: MonkeyPatch,
-) -> None:
-    """Test that the prompt is set correctly based on the config."""
-    # Given
-    monkeypatch.setenv(
-        OPENAI_API_KEY_ENV_VAR, "mock key in test_enterprise_search_policy"
-    )
-    expected_event = (
-        "enterprise_search_policy.init"
-        ".both_deprecated_and_non_deprecated_config_keys_used_at_the_same_time"
-    )
-    expected_log_level = "warning"
-    prompt_starts_with = "This is the second test prompt."
-
-    # When
-    with structlog.testing.capture_logs() as caplog:
-        policy = EnterpriseSearchPolicy(
-            config={
-                "prompt_template": "data/prompt_templates/test_prompt_2.jinja2",
-                "prompt": "data/prompt_templates/test_prompt.jinja2",
-                "vector_store": {"type": "milvus"},
-            },
-            model_storage=default_model_storage,
-            resource=Resource("enterprise_search_policy"),
-            execution_context=default_execution_context,
-            vector_store=vector_store,
-        )
-        logs = filter_logs(caplog, expected_event, expected_log_level)
-
-    # Then
-    assert len(logs) == 1
-    # 'prompt_template' should have resolving priority
-    assert policy.prompt_template.startswith(prompt_starts_with)
-
-
 @pytest.mark.parametrize(
     "frame",
     [
@@ -489,7 +454,7 @@ def test_enterprise_search_policy_fingerprint_addon_not_faiss_vector_store(
         execution_context=default_execution_context,
         vector_store=vector_store,
     )
-    assert policy._get_local_knowledge_data(config) is None
+    assert policy._get_local_knowledge_data(store_type="milvus", source=None) is None
 
 
 def test_enterprise_search_policy_fingerprint_addon_no_source_given(
@@ -497,9 +462,6 @@ def test_enterprise_search_policy_fingerprint_addon_no_source_given(
     default_execution_context: ExecutionContext,
     vector_store: InformationRetrieval,
 ) -> None:
-    # missing source property
-    config = {"vector_store": {"type": "faiss"}}
-
     policy = EnterpriseSearchPolicy(
         config={},
         model_storage=default_model_storage,
@@ -507,7 +469,8 @@ def test_enterprise_search_policy_fingerprint_addon_no_source_given(
         execution_context=default_execution_context,
         vector_store=vector_store,
     )
-    assert policy._get_local_knowledge_data(config) is None
+    # Missing source property
+    assert policy._get_local_knowledge_data(store_type="faiss") is None
 
 
 def test_enterprise_search_policy_fingerprint_addon_faiss_no_file(
@@ -1135,7 +1098,7 @@ def test_enterprise_search_policy_check_relevancy_enabled_but_generative_search_
 ) -> None:
     # Given
     expected_event = (
-        "enterprise_search_policy.init"
+        "enterprise_search_policy"
         ".relevancy_check_enabled_with_disabled_generative_search"
     )
     expected_log_level = "warning"
@@ -1391,8 +1354,8 @@ def test_should_abstain_in_coexistence(
             {
                 "user_input": {"max_characters": -1},
             },
-            None,
-            None,
+            DEFAULT_LLM_CONFIG,
+            DEFAULT_EMBEDDINGS_CONFIG,
         ),
         (
             {
@@ -1463,11 +1426,11 @@ def test_enterprise_search_policy_init_with_different_llm_configs(
     mock_endpoints = MockAvailableEndpoints()
     monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
 
-    generator = EnterpriseSearchPolicy(
+    policy = EnterpriseSearchPolicy(
         config, default_model_storage, resource, default_execution_context
     )
-    assert generator.config.get(LLM_CONFIG_KEY) == expected_llm_config
-    assert generator.config.get(EMBEDDINGS_CONFIG_KEY) == expected_embedding_config
+    assert policy.llm_config == expected_llm_config
+    assert policy.embeddings_config == expected_embedding_config
 
 
 def test_enterprise_search_policy_persist_config(
@@ -1501,11 +1464,11 @@ def test_enterprise_search_policy_persist_config(
     )
 
     # Ensure the config is resolved
-    assert component.config[LLM_CONFIG_KEY] == {
+    assert component.llm_config == {
         "id": "model_group_id",
         "models": [{"provider": "openai", "model": "gpt-4"}],
     }
-    assert component.config[EMBEDDINGS_CONFIG_KEY] == {
+    assert component.embeddings_config == {
         "id": "model_group_id",
         "models": [{"provider": "openai", "model": "gpt-4"}],
     }

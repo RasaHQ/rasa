@@ -21,7 +21,7 @@ from rasa.shared.constants import (
     REQUEST_TIMEOUT_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
 )
-from rasa.shared.providers._configs.utils import (
+from rasa.shared.utils.configs import (
     raise_deprecation_warnings,
     resolve_aliases,
     validate_required_keys,

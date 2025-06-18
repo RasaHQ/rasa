@@ -64,7 +64,10 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, SET_SLOT_COMMAND
-from rasa.shared.utils.llm import combine_custom_and_default_config
+from rasa.shared.utils.llm import (
+    combine_custom_and_default_config,
+    resolve_model_client_config,
+)
 from rasa.tracing.constants import (
     PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME,
     REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
@@ -335,9 +338,8 @@ def extract_llm_config(
     else:
         config = self.config
 
-    llm_property = combine_custom_and_default_config(
-        config.get(LLM_CONFIG_KEY), default_llm_config
-    )
+    llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY))
+    llm_property = combine_custom_and_default_config(llm_config, default_llm_config)
 
     if isinstance(self, LLMBasedCommandGenerator):
         flow_retrieval_config = config.get(FLOW_RETRIEVAL_KEY, {}) or {}
@@ -346,8 +348,11 @@ def extract_llm_config(
             default_embeddings_config,
         )
     else:
+        embeddings_config = resolve_model_client_config(
+            config.get(EMBEDDINGS_CONFIG_KEY)
+        )
         embeddings_property = combine_custom_and_default_config(
-            config.get(EMBEDDINGS_CONFIG_KEY), default_embeddings_config
+            embeddings_config, default_embeddings_config
         )
 
     attributes = {

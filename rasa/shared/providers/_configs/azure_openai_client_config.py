@@ -46,13 +46,13 @@ from rasa.shared.providers._configs.oauth_config import (
     OAUTH_TYPE_FIELD,
     OAuth,
 )
-from rasa.shared.providers._configs.utils import (
+from rasa.shared.utils.common import class_from_module_path
+from rasa.shared.utils.configs import (
     raise_deprecation_warnings,
     resolve_aliases,
     validate_forbidden_keys,
     validate_required_keys,
 )
-from rasa.shared.utils.common import class_from_module_path
 
 structlogger = structlog.get_logger()
 
