@@ -663,7 +663,7 @@ def initialize_error_reporting() -> None:
     from the `rasa` package.
     """
     import sentry_sdk
-    from sentry_sdk import configure_scope
+    from sentry_sdk import get_current_scope
     from sentry_sdk.integrations.atexit import AtexitIntegration
     from sentry_sdk.integrations.dedupe import DedupeIntegration
     from sentry_sdk.integrations.excepthook import ExcepthookIntegration
@@ -702,7 +702,7 @@ def initialize_error_reporting() -> None:
             OSError,
         ],
         in_app_include=["rasa"],  # only submit errors in this package
-        with_locals=False,  # don't submit local variables
+        include_local_variables=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",
         default_integrations=False,
         environment="development" if in_continuous_integration() else "production",
@@ -711,18 +711,18 @@ def initialize_error_reporting() -> None:
     if not telemetry_id:
         return
 
-    with configure_scope() as scope:
-        # sentry added these more recently, just a protection in a case where a
-        # user has installed an older version of sentry
-        if hasattr(scope, "set_user"):
-            scope.set_user({"id": telemetry_id})
+    scope = get_current_scope()
+    # sentry added these more recently, just a protection in a case where a
+    # user has installed an older version of sentry
+    if hasattr(scope, "set_user"):
+        scope.set_user({"id": telemetry_id})
 
-        default_context = _default_context_fields()
-        if hasattr(scope, "set_context"):
-            if "os" in default_context:
-                # os is a nested dict, hence we report it separately
-                scope.set_context("Operating System", default_context.pop("os"))
-            scope.set_context("Environment", default_context)
+    default_context = _default_context_fields()
+    if hasattr(scope, "set_context"):
+        if "os" in default_context:
+            # os is a nested dict, hence we report it separately
+            scope.set_context("Operating System", default_context.pop("os"))
+        scope.set_context("Environment", default_context)
 
 
 @contextlib.contextmanager
