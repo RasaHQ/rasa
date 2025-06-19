@@ -10,7 +10,7 @@ from rasa.studio.constants import STUDIO_DOMAIN_FILENAME
 logger = logging.getLogger(__name__)
 
 
-def merge_domain_with_overwrite(
+def merge_domain(
     data_from_studio: TrainingDataImporter,
     data_local: TrainingDataImporter,
     domain_path: Path,

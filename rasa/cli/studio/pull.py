@@ -4,15 +4,16 @@ from typing import List, Text
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments.default_arguments import (
     add_config_param,
+    add_data_param,
+    add_domain_param,
     add_endpoint_param,
 )
-from rasa.cli.studio.upload import add_data_param, add_domain_param
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_ENDPOINTS_PATH,
 )
-from rasa.studio.pull import (
+from rasa.studio.pull.pull import (
     handle_pull,
     handle_pull_config,
     handle_pull_endpoints,

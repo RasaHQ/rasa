@@ -34,7 +34,7 @@ def handle_train(args: argparse.Namespace) -> Optional[str]:
     from rasa.api import train as train_all
 
     handler = StudioDataHandler(
-        studio_config=StudioConfig.read_config(), assistant_name=args.assistant_name[0]
+        studio_config=StudioConfig.read_config(), assistant_name=args.assistant_name
     )
     if args.entities or args.intents:
         handler.request_data(args.intents, args.entities)

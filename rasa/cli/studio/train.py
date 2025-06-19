@@ -36,7 +36,6 @@ def set_studio_train_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "assistant_name",
         default=None,
-        nargs=1,
         type=str,
         help="Name of the assistant on Rasa Studio",
     )

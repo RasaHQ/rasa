@@ -10,10 +10,11 @@ from requests import Response
 import rasa.studio.auth
 import rasa.studio.data_handler
 import rasa.studio.download
-import rasa.studio.download.download
+from rasa.shared.constants import DEFAULT_DATA_PATH
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 from rasa.studio.config import StudioConfig
-from rasa.studio.constants import STUDIO_DOMAIN_FILENAME
+from rasa.studio.constants import DOMAIN_FILENAME
+from rasa.studio.pull.data import STUDIO_FLOWS_DIR_NAME
 from tests.studio.conftest import (
     CALM_CUSTOMIZED_PATTERNS_YAML,
     CALM_ENDPOINTS_YAML,
@@ -21,51 +22,25 @@ from tests.studio.conftest import (
     get_calm_config_yaml,
     get_calm_domain_yaml,
     get_flows_yaml,
-    mock_questionary_text,
 )
 
 
 @pytest.mark.parametrize(
-    "overwrite, flow_yaml, domain_file",
+    "flow_yaml, domain_file",
     [
         (
-            True,
             get_flows_yaml("data/upload/calm/data/flows.yml"),
-            STUDIO_DOMAIN_FILENAME,
+            DOMAIN_FILENAME,
         ),
-        (False, get_flows_yaml("data/upload/calm/data/flows.yml"), "domain.yml"),
-        (True, CALM_CUSTOMIZED_PATTERNS_YAML, STUDIO_DOMAIN_FILENAME),
-        (False, CALM_CUSTOMIZED_PATTERNS_YAML, "domain.yml"),
+        (CALM_CUSTOMIZED_PATTERNS_YAML, DOMAIN_FILENAME),
     ],
 )
 def test_handle_download(
     monkeypatch: MonkeyPatch,
     tmp_path: Path,
-    overwrite: bool,
     flow_yaml: str,
     domain_file: str,
 ) -> None:
-    domain_path = tmp_path / "domain.yml"
-    domain_path.touch()
-
-    data_path = tmp_path / "flows.yml"
-    data_path.touch()
-    assert data_path.read_text() == ""
-
-    config_path = tmp_path / "config.yml"
-    config_path.touch()
-
-    endpoints_path = tmp_path / "endpoints.yml"
-    endpoints_path.touch()
-
-    args = argparse.Namespace(
-        domain=str(domain_path),
-        data=[data_path],
-        config=str(config_path),
-        endpoints=str(endpoints_path),
-        assistant_name="calm",
-        overwrite=overwrite,
-    )
     mock_config = StudioConfig(
         authentication_server_url="http://studio.amazonaws.com",
         studio_url="http://studio.amazonaws.com/api/graphql",
@@ -73,7 +48,7 @@ def test_handle_download(
         client_id="rasa-cli",
     )
     monkeypatch.setattr(
-        rasa.studio.config.StudioConfig,
+        StudioConfig,
         "read_config",
         lambda *args: mock_config,
     )
@@ -84,10 +59,6 @@ def test_handle_download(
     )
     monkeypatch.setattr(
         rasa.studio.auth.KeycloakTokenReader, "get_token", lambda *args: mock_token
-    )
-
-    monkeypatch.setattr(
-        rasa.studio.download.download.questionary, "confirm", mock_questionary_text
     )
 
     calm_domain_yaml = get_calm_domain_yaml("data/upload/calm/domain/")
@@ -112,18 +83,23 @@ def test_handle_download(
         rasa.studio.data_handler.requests, "post", MagicMock(return_value=stub_response)
     )
 
-    rasa.studio.download.download.handle_download(args)
+    assistant_name = "calm"
+    args = argparse.Namespace(assistant_name=assistant_name)
+    monkeypatch.chdir(tmp_path)
+    rasa.studio.download.handle_download(args)
 
-    studio_domain = get_calm_domain_yaml(tmp_path / domain_file)
-    assert studio_domain == calm_domain_yaml
+    downloaded_assistant = tmp_path / assistant_name
+    assert (downloaded_assistant / DOMAIN_FILENAME).read_text() == calm_domain_yaml
+    assert (downloaded_assistant / "config.yml").read_text() == calm_config_yaml
+    assert (downloaded_assistant / "endpoints.yml").read_text() == CALM_ENDPOINTS_YAML
 
-    # Confirm that the downloaded flows are the same as the ones
-    flows = YAMLFlowsReader.read_from_file(data_path)
-    flows_map = {flow.id: flow for flow in flows.underlying_flows}
-    expected_flows = YAMLFlowsReader.read_from_string(flow_yaml)
-    for flow in expected_flows.underlying_flows:
-        assert flow.id in flows_map
-        assert flow == flows_map[flow.id]
+    flows_dir = downloaded_assistant / DEFAULT_DATA_PATH / STUDIO_FLOWS_DIR_NAME
+    assert flows_dir.exists()
 
-    assert config_path.read_text() == calm_config_yaml
-    assert endpoints_path.read_text() == CALM_ENDPOINTS_YAML
+    flows_list = YAMLFlowsReader.read_from_string(flow_yaml)
+    for flow in flows_list.underlying_flows:
+        flow_file = flows_dir / f"{flow.id}.yml"
+        assert flow_file.exists()
+
+        downloaded_flow = YAMLFlowsReader.read_from_file(flow_file).underlying_flows[0]
+        assert flow == downloaded_flow

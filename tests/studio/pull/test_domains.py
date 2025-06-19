@@ -5,7 +5,7 @@ import pytest
 
 from rasa.shared.core.domain import Domain
 from rasa.studio.constants import STUDIO_DOMAIN_FILENAME
-from rasa.studio.download.domains import merge_domain_with_overwrite
+from rasa.studio.pull.domains import merge_domain
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ def mock_data_importer() -> MagicMock:
     return importer
 
 
-def test_merge_domain_with_overwrite_file(
+def test_merge_domain_file(
     tmp_path: Path,
     mock_data_importer: MagicMock,
     simple_domain: Domain,
@@ -56,7 +56,7 @@ def test_merge_domain_with_overwrite_file(
     data_from_studio = MagicMock()
     data_from_studio.get_user_domain.return_value = bigger_domain
 
-    merge_domain_with_overwrite(
+    merge_domain(
         data_from_studio=data_from_studio,
         data_local=mock_data_importer,
         domain_path=domain_file,
@@ -75,7 +75,7 @@ def test_merge_domain_with_overwrite_file(
     assert "action_hello" not in merged_domain.action_names_or_texts
 
 
-def test_merge_domain_with_overwrite_file_no_leftover(
+def test_merge_domain_file_no_leftover(
     tmp_path: Path, mock_data_importer: MagicMock, simple_domain: Domain
 ):
     """If local and studio domains match, there should be no leftover domain."""
@@ -85,7 +85,7 @@ def test_merge_domain_with_overwrite_file_no_leftover(
     data_from_studio = MagicMock()
     data_from_studio.get_user_domain.return_value = simple_domain
 
-    merge_domain_with_overwrite(
+    merge_domain(
         data_from_studio=data_from_studio,
         data_local=mock_data_importer,
         domain_path=domain_file,
@@ -95,7 +95,7 @@ def test_merge_domain_with_overwrite_file_no_leftover(
     assert not leftover_path.exists()
 
 
-def test_merge_domain_with_overwrite_file_has_leftover(
+def test_merge_domain_file_has_leftover(
     tmp_path: Path,
     mock_data_importer: MagicMock,
     simple_domain: Domain,
@@ -108,7 +108,7 @@ def test_merge_domain_with_overwrite_file_has_leftover(
     data_from_studio = MagicMock()
     data_from_studio.get_user_domain.return_value = bigger_domain
 
-    merge_domain_with_overwrite(
+    merge_domain(
         data_from_studio=data_from_studio,
         data_local=mock_data_importer,
         domain_path=domain_file,
@@ -131,7 +131,7 @@ def test_merge_domain_with_overwrite_file_has_leftover(
     assert "action_hello" in leftover_domain.action_names_or_texts
 
 
-def test_merge_domain_with_overwrite_dir(
+def test_merge_domain_dir(
     tmp_path: Path,
     mock_data_importer: MagicMock,
     simple_domain: Domain,
@@ -149,7 +149,7 @@ def test_merge_domain_with_overwrite_dir(
     studio_importer = MagicMock()
     studio_importer.get_user_domain.return_value = bigger_domain
 
-    merge_domain_with_overwrite(
+    merge_domain(
         data_from_studio=studio_importer,
         data_local=mock_data_importer,
         domain_path=domain_dir,
@@ -168,7 +168,7 @@ def test_merge_domain_with_overwrite_dir(
     assert "action_hello" not in merged_domain.action_names_or_texts
 
 
-def test_merge_domain_with_overwrite_dir_no_leftover(
+def test_merge_domain_dir_no_leftover(
     tmp_path: Path,
     mock_data_importer: MagicMock,
     simple_domain: Domain,
@@ -185,7 +185,7 @@ def test_merge_domain_with_overwrite_dir_no_leftover(
     studio_importer = MagicMock()
     studio_importer.get_user_domain.return_value = simple_domain
 
-    merge_domain_with_overwrite(
+    merge_domain(
         data_from_studio=studio_importer,
         data_local=mock_data_importer,
         domain_path=domain_dir,
@@ -195,7 +195,7 @@ def test_merge_domain_with_overwrite_dir_no_leftover(
     assert not leftover_path.exists()
 
 
-def test_merge_domain_with_overwrite_dir_has_leftover(
+def test_merge_domain_dir_has_leftover(
     tmp_path: Path,
     mock_data_importer: MagicMock,
     simple_domain: Domain,
@@ -213,7 +213,7 @@ def test_merge_domain_with_overwrite_dir_has_leftover(
     studio_importer = MagicMock()
     studio_importer.get_user_domain.return_value = bigger_domain
 
-    merge_domain_with_overwrite(
+    merge_domain(
         data_from_studio=studio_importer,
         data_local=mock_data_importer,
         domain_path=domain_dir,

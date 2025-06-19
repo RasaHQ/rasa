@@ -50,7 +50,7 @@ def _mock_studio_ready(monkeypatch: pytest.MonkeyPatch):
 def test_link_creates_file(linked_project: Path, monkeypatch: pytest.MonkeyPatch):
     _mock_studio_ready(monkeypatch)
 
-    args = Namespace(assistant_name=["my_bot"])
+    args = Namespace(assistant_name="my_bot")
     rasa.studio.link.handle_link(args)
 
     link_file = linked_project / RASA_DIR_NAME / "studio.yml"
@@ -68,7 +68,7 @@ def test_link_refuses_overwrite(linked_project: Path, monkeypatch: pytest.Monkey
 
     monkeypatch.setattr(questionary, "confirm", lambda *_: MagicMock(ask=lambda: False))
 
-    args = Namespace(assistant_name=["new_bot"])
+    args = Namespace(assistant_name="new_bot")
     with pytest.raises(SystemExit):
         rasa.studio.link.handle_link(args)
 
@@ -122,7 +122,7 @@ def test_handle_link_creates_assistant_when_missing(
         rasa.studio.link, "check_if_assistant_already_exists", lambda *_: False
     )
 
-    args = Namespace(assistant_name=["brand_new_bot"])
+    args = Namespace(assistant_name="brand_new_bot")
     rasa.studio.link.handle_link(args)
 
     mock_upload.assert_called_once()
@@ -144,7 +144,7 @@ def test_ensure_assistant_exists_nothing_to_do(monkeypatch):
     confirm_mock = MagicMock()
     monkeypatch.setattr(questionary, "confirm", confirm_mock)
 
-    args = Namespace(assistant_name=["my_bot"])
+    args = Namespace(assistant_name="my_bot")
     rasa.studio.link._ensure_assistant_exists("my_bot", _studio_config(), args)
 
     upload_mock.assert_not_called()
@@ -160,7 +160,7 @@ def test_ensure_assistant_exists_creates_when_confirmed(monkeypatch):
     upload_mock = MagicMock()
     monkeypatch.setattr(rasa.studio.link, "handle_upload", upload_mock)
 
-    args = Namespace(assistant_name=["placeholder"])
+    args = Namespace(assistant_name="placeholder")
     rasa.studio.link._ensure_assistant_exists("brand_new_bot", _studio_config(), args)
 
     upload_mock.assert_called_once()
@@ -176,7 +176,7 @@ def test_ensure_assistant_exists_skips_when_declined(monkeypatch):
     upload_mock = MagicMock()
     monkeypatch.setattr(rasa.studio.link, "handle_upload", upload_mock)
 
-    args = Namespace(assistant_name=["whatever"])
+    args = Namespace(assistant_name="whatever")
     rasa.studio.link._ensure_assistant_exists("new_bot", _studio_config(), args)
 
     upload_mock.assert_not_called()
@@ -199,6 +199,6 @@ def test_handle_link_aborts_when_assistant_missing_and_user_declines_creation(
     upload_mock = MagicMock()
     monkeypatch.setattr(rasa.studio.link, "handle_upload", upload_mock)
 
-    args = Namespace(assistant_name=["non_existent_bot"])
+    args = Namespace(assistant_name="non_existent_bot")
     with pytest.raises(SystemExit):
         rasa.studio.link.handle_link(args)

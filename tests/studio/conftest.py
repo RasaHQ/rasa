@@ -1,4 +1,5 @@
 import base64
+import textwrap
 from pathlib import Path
 from textwrap import dedent
 from unittest.mock import MagicMock
@@ -6,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 
 import rasa.studio.link
-import rasa.studio.pull
+import rasa.studio.pull.pull
 import rasa.studio.push
 import rasa.studio.upload
 from rasa.constants import RASA_DIR_NAME
@@ -15,6 +16,7 @@ from rasa.shared.importers.importer import FlowSyncImporter, TrainingDataImporte
 from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string, read_yaml_file
 from rasa.studio.auth import StudioAuth
 from rasa.studio.config import StudioConfig
+from rasa.studio.data_handler import StudioDataHandler
 from rasa.studio.upload import DOMAIN_KEYS, extract_values
 
 
@@ -142,12 +144,39 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     (data_dir / "nlu.yml").write_text("version: '3.1'\nnlu: []")
+    flows_dir = data_dir / "flows"
+    flows_dir.mkdir()
+    add_contact_flow_yaml = textwrap.dedent(
+        """
+        flows:
+          add_contact:
+            name: Add a Contact
+            description: Flow to add a contact to your contact list
+            steps:
+              - action: utter_add_contact
+                next: END
+        """
+    ).lstrip()
+    (flows_dir / "add_contact.yml").write_text(add_contact_flow_yaml)
+    list_contacts_flow_yaml = textwrap.dedent(
+        """
+        flows:
+          list_contacts:
+            name: "list your contacts"
+            description: "show your contact list"
+            steps:
+             - action: list_contacts
+             - action: utter_no_contacts
+               next: END
+        """
+    ).lstrip()
+    (flows_dir / "list_contacts.yml").write_text(list_contacts_flow_yaml)
 
     # Mock the read_assistant_name function with project_root as project root
     def read_from_root(*args, **kwargs):
         return rasa.studio.link.read_assistant_name
 
-    monkeypatch.setattr(rasa.studio.pull, "read_assistant_name", read_from_root)
+    monkeypatch.setattr(rasa.studio.pull.pull, "read_assistant_name", read_from_root)
     monkeypatch.setattr(rasa.studio.push, "read_assistant_name", read_from_root)
 
     # Mock the StudioConfig and is_auth_working to simulate Studio connection
@@ -168,3 +197,74 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     # Disable validation to avoid unnecessary checks during tests
     monkeypatch.setattr(rasa.studio.push, "run_validation", lambda *_: None)
     return tmp_path
+
+
+@pytest.fixture
+def mock_args(tmp_path: Path) -> MagicMock:
+    args = MagicMock()
+    args.domain = None
+    data_dir = tmp_path / "data_dir"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    args.data = [str(data_dir)]
+    args.overwrite = False
+    args.config = None
+    args.endpoints = None
+    args.assistant_name = "my_assistant"
+    return args
+
+
+@pytest.fixture
+def mock_studio_handler(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
+    """
+    Provide a fully-stubbed StudioDataHandler."""
+    handler = MagicMock(spec=StudioDataHandler)
+
+    handler.request_all_data.return_value = None
+    handler.get_config = MagicMock()
+    handler.get_config.return_value = "language: en\npipeline: []\n"
+    handler.get_endpoints = MagicMock()
+    handler.get_endpoints.return_value = (
+        "action_endpoint:\n  url: http://localhost:5055\n"
+    )
+    handler.domain = textwrap.dedent(
+        """
+        version: '3.0'
+        responses:
+          utter_greet:
+          - text: Hello!
+        """
+    ).lstrip()
+
+    handler.has_nlu.return_value = False
+
+    handler.has_flows.return_value = True
+    handler.flows = textwrap.dedent(
+        """
+        flows:
+          add_contact:
+            name: Add a Contact
+            description: Flow to add a contact to your contact list
+            steps:
+              - action: utter_add_contact
+                next: END
+          list_contacts:
+            name: "list your contacts"
+            description: "show your contact list"
+            steps:
+             - action: list_contacts
+             - action: utter_no_contacts
+               next: END
+        """
+    ).lstrip()
+
+    monkeypatch.setattr(
+        "rasa.studio.download.StudioDataHandler",
+        MagicMock(return_value=handler),
+    )
+
+    monkeypatch.setattr(
+        "rasa.studio.download.questionary.confirm",
+        MagicMock(return_value=MagicMock(ask=lambda: True)),
+    )
+
+    return handler

@@ -4,11 +4,12 @@ from typing import List
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments.default_arguments import (
     add_config_param,
+    add_data_param,
+    add_domain_param,
     add_endpoint_param,
 )
-from rasa.cli.arguments.train import add_data_param, add_domain_param
 from rasa.shared.constants import DEFAULT_CONFIG_PATH, DEFAULT_ENDPOINTS_PATH
-from rasa.studio.download.download import handle_download
+from rasa.studio.download import handle_download
 
 
 def add_subparser(
@@ -49,13 +50,6 @@ def set_studio_download_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "assistant_name",
         default=None,
-        nargs=1,
         type=str,
         help="Name of the assistant on Rasa Studio",
-    )
-
-    parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="Overwrite local data with data from Rasa Studio",
     )

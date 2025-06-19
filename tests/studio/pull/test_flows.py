@@ -10,7 +10,8 @@ from rasa.shared.core.flows.steps import ActionFlowStep
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader, YamlFlowsWriter
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.studio.constants import STUDIO_FLOWS_FILENAME
-from rasa.studio.download.flows import STUDIO_FLOWS_DIR_NAME, merge_flows_with_overwrite
+from rasa.studio.pull.data import STUDIO_FLOWS_DIR_NAME
+from rasa.studio.pull.pull import merge_data
 from rasa.utils.mapper import RasaPrimitiveStorageMapper
 
 
@@ -54,22 +55,40 @@ def flow_step_sequence() -> FlowStepSequence:
     return FlowStepSequence(child_steps=[step])
 
 
-def test_merge_flows_with_overwrite_file(
+def test_merge_flows_file(
     tmp_path: Path,
     mock_studio_data_handler: MagicMock,
     mock_studio_data_importer: MagicMock,
     mock_local_data_importer: MagicMock,
 ):
     """If data_path is a file, we do a full merge of studio and local data."""
+    step = ActionFlowStep(
+        idx=1,
+        action="action_listen",
+        custom_id="my_step",
+        description=None,
+        metadata={},
+        next=FlowStepLinks(links=[]),
+        flow_id="foo",
+    )
+
     # Create a local data file with flow_A
-    flow_a = Flow(id="flow_A", description="Flow A")
+    flow_a = Flow(
+        id="flow_A",
+        description="Flow A",
+        step_sequence=FlowStepSequence(child_steps=[step]),
+    )
     local_flows_list = FlowsList([flow_a])
     local_file = tmp_path / "training_data.yml"
     _write_single_file_flows(local_file, local_flows_list)
     mock_local_data_importer.get_user_flows.return_value = local_flows_list
 
     # Create a studio data file with flow_B
-    flow_b = Flow(id="flow_B", description="Flow B")
+    flow_b = Flow(
+        id="flow_B",
+        description="Flow B",
+        step_sequence=FlowStepSequence(child_steps=[step]),
+    )
     studio_flows_list = FlowsList([flow_a, flow_b])
     mock_studio_data_importer.get_user_flows.return_value = studio_flows_list
 
@@ -77,7 +96,7 @@ def test_merge_flows_with_overwrite_file(
         domain_path=None, training_data_paths=[local_file]
     )
 
-    merge_flows_with_overwrite(
+    merge_data(
         data_path=local_file,
         handler=mock_studio_data_handler,
         data_from_studio=mock_studio_data_importer,
@@ -85,14 +104,19 @@ def test_merge_flows_with_overwrite_file(
         mapper=mapper,
     )
 
-    # Now local_file should contain both flow_A and flow_B
+    # Local flow should remain in the same file
     updated_flows = _read_single_file_flows(local_file)
-    assert len(updated_flows.underlying_flows) == 2
-    assert updated_flows.flow_by_id("flow_A") is not None
-    assert updated_flows.flow_by_id("flow_B") is not None
+    assert len(updated_flows.underlying_flows) == 1
+    assert updated_flows.underlying_flows[0].id == "flow_A"
+
+    # New Studio flow should be added to a separate file
+    studio_flows_file = tmp_path / "flows" / "flow_B.yml"
+    assert studio_flows_file.exists()
+    updated_flows_b = _read_single_file_flows(studio_flows_file)
+    assert len(updated_flows_b.underlying_flows) == 1
 
 
-def test_merge_flows_with_overwrite_dir(
+def test_merge_flows_dir(
     tmp_path: Path,
     mock_studio_data_handler: MagicMock,
     mock_studio_data_importer: MagicMock,
@@ -117,7 +141,7 @@ def test_merge_flows_with_overwrite_dir(
 
     mapper = RasaPrimitiveStorageMapper(None, [data_dir])
 
-    merge_flows_with_overwrite(
+    merge_data(
         data_path=data_dir,
         handler=mock_studio_data_handler,
         data_from_studio=mock_studio_data_importer,
@@ -141,7 +165,7 @@ def test_merge_flows_with_overwrite_dir(
     assert new_flows_y.flow_by_id("flow_Y") is not None
 
 
-def test_merge_flows_with_overwrite_dir_no_leftover(
+def test_merge_flows_dir_no_leftover(
     tmp_path: Path,
     mock_studio_data_handler: MagicMock,
     mock_studio_data_importer: MagicMock,
@@ -163,7 +187,7 @@ def test_merge_flows_with_overwrite_dir_no_leftover(
 
     mapper = RasaPrimitiveStorageMapper(None, [data_dir])
 
-    merge_flows_with_overwrite(
+    merge_data(
         data_path=data_dir,
         handler=mock_studio_data_handler,
         data_from_studio=mock_studio_data_importer,
@@ -176,7 +200,7 @@ def test_merge_flows_with_overwrite_dir_no_leftover(
     assert not studio_flows_dir.exists()
 
 
-def test_merge_flows_with_overwrite_dir_has_leftover(
+def test_merge_flows_dir_has_leftover(
     tmp_path: Path,
     mock_studio_data_handler: MagicMock,
     mock_studio_data_importer: MagicMock,
@@ -207,7 +231,7 @@ def test_merge_flows_with_overwrite_dir_has_leftover(
 
     mapper = RasaPrimitiveStorageMapper(None, [data_dir])
 
-    merge_flows_with_overwrite(
+    merge_data(
         data_path=data_dir,
         handler=mock_studio_data_handler,
         data_from_studio=mock_studio_data_importer,

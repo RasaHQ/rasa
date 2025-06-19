@@ -167,7 +167,7 @@ def handle_link(args: argparse.Namespace) -> None:
     Args:
         args: The command line arguments.
     """
-    assistant_name: Text = args.assistant_name[0]
+    assistant_name: Text = args.assistant_name
     studio_cfg = get_studio_config()
     assistant_exists = _ensure_assistant_exists(assistant_name, studio_cfg, args)
     if not assistant_exists:

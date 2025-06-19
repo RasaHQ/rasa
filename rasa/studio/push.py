@@ -48,6 +48,11 @@ def _send_to_studio(
     if not result.was_successful:
         rasa.shared.utils.cli.print_error_and_exit(result.message)
 
+    structlogger.info(
+        "studio.push.success",
+        event_info=f"Pushed data to assistant '{assistant_name}'.",
+        assistant_name=assistant_name,
+    )
     rasa.shared.utils.cli.print_success(f"Pushed data to assistant '{assistant_name}'.")
 
 

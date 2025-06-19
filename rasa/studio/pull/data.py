@@ -3,101 +3,16 @@ from pathlib import Path
 from typing import Any, Dict, List, Set, Text
 
 from rasa.shared.core.flows import Flow
-from rasa.shared.core.flows.flow_step_links import StaticFlowStepLink
 from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader, YamlFlowsWriter
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.yaml import read_yaml
 from rasa.studio.constants import STUDIO_NLU_FILENAME
-from rasa.studio.data_handler import StudioDataHandler
 from rasa.utils.mapper import RasaPrimitiveStorageMapper
 
 logger = logging.getLogger(__name__)
 
-STUDIO_FLOWS_DIR_NAME = "studio_flows"
-
-
-def merge_flows_with_overwrite(
-    data_path: Path,
-    handler: Any,
-    data_from_studio: TrainingDataImporter,
-    data_local: TrainingDataImporter,
-    mapper: RasaPrimitiveStorageMapper,
-) -> None:
-    """
-    Merges flows data from a file or directory when overwrite is enabled.
-
-    Args:
-        data_path: List of paths to the training data.
-        handler: The StudioDataHandler instance.
-        data_from_studio: The TrainingDataImporter instance for Studio data.
-        data_local: The TrainingDataImporter instance for local data.
-        mapper: The RasaPrimitiveStorageMapper instance for mapping.
-    """
-    if data_path.is_file():
-        merge_training_data_file(handler, data_from_studio, data_local, data_path)
-    elif data_path.is_dir():
-        merge_training_data_dir(
-            handler, data_from_studio, data_local, data_path, mapper
-        )
-    else:
-        raise ValueError("Provided data path is neither a file nor a directory.")
-
-
-def merge_training_data_file(
-    handler: StudioDataHandler,
-    data_from_studio: TrainingDataImporter,
-    data_local: TrainingDataImporter,
-    file_path: Path,
-) -> None:
-    """
-    Merges NLU and flows data when training data is stored in a single file.
-
-    Args:
-        handler: The StudioDataHandler instance.
-        data_from_studio: The TrainingDataImporter instance for Studio data.
-        data_local: The TrainingDataImporter instance for local data.
-        file_path: The path to the training data file.
-    """
-    if handler.has_nlu():
-        nlu_data_merged = data_from_studio.get_nlu_data().merge(
-            data_local.get_nlu_data()
-        )
-        nlu_data_merged.persist_nlu(file_path)
-
-    if handler.has_flows():
-        flows_data_merged = data_from_studio.get_user_flows().merge(
-            data_local.get_user_flows()
-        )
-        YamlFlowsWriter.dump(
-            flows=flows_data_merged.underlying_flows,
-            filename=file_path,
-            should_clean_json=True,
-        )
-
-
-def merge_training_data_dir(
-    handler: StudioDataHandler,
-    data_from_studio: TrainingDataImporter,
-    data_local: TrainingDataImporter,
-    data_path: Path,
-    mapper: RasaPrimitiveStorageMapper,
-) -> None:
-    """
-    Merges NLU and flows data when training data is stored in a directory.
-
-    Args:
-        handler: The StudioDataHandler instance.
-        data_from_studio: The TrainingDataImporter instance for Studio data.
-        data_local: The TrainingDataImporter instance for local data.
-        data_path: The path to the training data directory.
-        mapper: The RasaPrimitiveStorageMapper instance for mapping.
-    """
-    if handler.has_nlu():
-        merge_nlu_in_directory(data_from_studio, data_local, data_path, mapper)
-
-    if handler.has_flows():
-        merge_flows_in_directory(data_from_studio, data_path, mapper)
+STUDIO_FLOWS_DIR_NAME = "flows"
 
 
 def merge_nlu_in_directory(
@@ -116,7 +31,7 @@ def merge_nlu_in_directory(
         data_path: The path to the training data directory.
         mapper: The RasaPrimitiveStorageMapper instance for mapping.
     """
-    from rasa.studio.download.download import pretty_write_nlu_yaml
+    from rasa.studio.download import pretty_write_nlu_yaml
 
     nlu_data = data_from_studio.get_nlu_data()
     nlu_file_path = get_nlu_path(data_path, data_local, mapper)
@@ -152,29 +67,6 @@ def get_nlu_path(
             nlu_paths.add(p)
 
     return _select_path(nlu_paths, "nlu", base_path, STUDIO_NLU_FILENAME)
-
-
-def get_flows_path(
-    base_path: Path,
-    data_local: TrainingDataImporter,
-    mapper: RasaPrimitiveStorageMapper,
-) -> Path:
-    """Determines where flows data should be stored.
-
-    Args:
-        base_path: The base path for the training data.
-        data_local: The TrainingDataImporter instance for local data.
-        mapper: The RasaPrimitiveStorageMapper instance for mapping.
-
-    Returns:
-        The path where flows data should be stored.
-    """
-    flow_paths = set()
-    for flow in data_local.get_user_flows().underlying_flows:
-        for p in mapper.get_file(flow.id, "flows").get("training", []):
-            flow_paths.add(p)
-
-    return _select_path(flow_paths, "flows", base_path, "flows.yml")
 
 
 def merge_flows_in_directory(
@@ -296,27 +188,6 @@ def _dump_flows_as_separate_files(flows: List[Any], data_path: Path) -> None:
             filename=file_path,
             should_clean_json=True,
         )
-
-
-def strip_default_next_references(flows: FlowsList) -> FlowsList:
-    """Strips default next references from flows.
-
-    Args:
-        flows: The FlowsList instance containing the flows.
-
-    Returns:
-        An updated FlowsList instance with default next references removed.
-    """
-    default_step_ids = [step.default_id for flow in flows for step in flow.steps]
-    for flow in flows:
-        for step in flow.steps:
-            if (
-                step.next.links
-                and isinstance(step.next.links[0], StaticFlowStepLink)
-                and step.next.links[0].target in default_step_ids
-            ):
-                step.next.links = []
-    return flows
 
 
 def _select_path(

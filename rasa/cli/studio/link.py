@@ -2,7 +2,7 @@ import argparse
 from typing import List, Text
 
 from rasa.cli import SubParsersAction
-from rasa.cli.studio.upload import (
+from rasa.cli.arguments.default_arguments import (
     add_config_param,
     add_data_param,
     add_domain_param,
@@ -37,7 +37,6 @@ def add_subparser(
 
     link_parser.add_argument(
         "assistant_name",
-        nargs=1,
         type=str,
         help="Name of the assistant in Rasa Studio.",
     )

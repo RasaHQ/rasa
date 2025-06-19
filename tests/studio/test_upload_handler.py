@@ -240,7 +240,7 @@ def test_handle_upload_no_domain_path_specified(
     assistant_name = "test"
     endpoint = "http://studio.amazonaws.com/api/graphql"
     args = argparse.Namespace(
-        assistant_name=[assistant_name],
+        assistant_name=assistant_name,
         # this is the default value when running the cmd without specifying -d flag
         domain=None,
         config=None,
@@ -283,7 +283,7 @@ def test_handle_upload_no_domain_path_specified(
     rasa.studio.upload.handle_upload(args)
 
     expected_args = argparse.Namespace(
-        assistant_name=[assistant_name],
+        assistant_name=assistant_name,
         domain=str(domain_dir),
         config=str(config_path),
         calm=True,
