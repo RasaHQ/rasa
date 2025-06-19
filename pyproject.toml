@@ -371,8 +371,6 @@ convention = "google"
 "tests/test_telemetry.py" = [ "E501",]
 "tests/shared/core/test_domain.py" = [ "E501",]
 
-
-
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.3.5,<0.4.0"
 docker = "~7.1.0"

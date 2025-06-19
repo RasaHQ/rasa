@@ -10,6 +10,29 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.12.19] - 2025-06-18
+                         
+Rasa Pro 3.12.19 (2025-06-18)                              
+### Bugfixes
+- [#2599](https://github.com/rasahq/rasa-private/issues/2599): Fix issues where linked flows could not be cancelled and slots collected within linked flows could not be prefilled.
+- [#2685](https://github.com/rasahq/rasa-private/issues/2685): Fix `InvalidFlowStepIdException` thrown when a bot is restarted with a retrained model which contains an update to the step order in a given active flow.
+  Once retrained and restarted, the bot will now correctly handle the updated step order by triggering `pattern_code_change`.
+
+
+## [3.12.18] - 2025-06-12
+                         
+Rasa Pro 3.12.18 (2025-06-12)                              
+### Bugfixes
+- [#1939](https://github.com/rasahq/rasa-private/issues/1939): Ensure that old step ID formats (without the flow ID prefix) can be loaded without raising an
+  `InvalidFlowStepIdException` in newer Rasa versions that expect the flow ID prefix.
+- [#2608](https://github.com/rasahq/rasa-private/issues/2608): - Fix an issue where running `rasa inspect` would always set the `route_session_to_calm`
+    slot to `True`, even when no user-triggered commands were present. This caused
+    incorrect routing to CALM, bypassing the logic of the router.
+  - Fix a regression in non-sticky routing where sessions intended for the NLU were
+    incorrectly routed to CALM when the router predicted `NoopCommand()`.
+- [#2616](https://github.com/rasahq/rasa-private/issues/2616): Enable slot prefilling in patterns.
+
+
 ## [3.12.17] - 2025-06-05
                          
 Rasa Pro 3.12.17 (2025-06-05)                              
