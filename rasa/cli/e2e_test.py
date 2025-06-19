@@ -51,7 +51,6 @@ from rasa.e2e_test.utils.io import (
 from rasa.e2e_test.utils.validation import validate_model_path
 from rasa.exceptions import RasaException
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
-from rasa.utils.beta import ensure_beta_feature_is_enabled
 from rasa.utils.endpoints import EndpointConfig
 
 RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME = "RASA_PRO_BETA_FINE_TUNING_RECIPE"
@@ -155,12 +154,6 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
     Args:
         args: Commandline arguments.
     """
-    if args.coverage_report:
-        ensure_beta_feature_is_enabled(
-            "LLM fine-tuning recipe",
-            env_flag=RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME,
-        )
-
     args.endpoints = rasa.cli.utils.get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
