@@ -808,7 +808,456 @@ def test_get_trigger_intents(nlu_trigger_config, actual_intents):
     assert intents == set(actual_intents)
 
 
-def test_extract_all_paths(pizza_flows_file: str):
+def test_extract_all_paths_called_flow_test(pizza_flows_file: str):
+    flows_list = YAMLFlowsReader.read_from_file(pizza_flows_file)
+    flow = flows_list.flow_by_id("called_flow_test")
+    paths = flow.extract_all_paths()
+
+    expected_paths = FlowPathsList(
+        "called_flow_test",
+        [
+            FlowPath(  # 01
+                flow="called_flow_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_flow_test_0_call_called_flow_1",
+                        flow="called_flow_test",
+                        lines="10-14",
+                    ),
+                    PathNode(
+                        step_id="called_flow_1_0_collect_node_a",
+                        flow="called_flow_test",
+                        lines="26-30",
+                    ),
+                    PathNode(
+                        step_id="node_b",
+                        flow="called_flow_test",
+                        lines="31-32",
+                    ),
+                    PathNode(
+                        step_id="node_d",
+                        flow="called_flow_test",
+                        lines="33-38",
+                    ),
+                    PathNode(
+                        step_id="node_e",
+                        flow="called_flow_test",
+                        lines="45-47",
+                    ),
+                    PathNode(
+                        step_id="take_payment",
+                        flow="called_flow_test",
+                        lines="15-17",
+                    ),
+                ],
+            ),
+            FlowPath(  # 02
+                flow="called_flow_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_flow_test_0_call_called_flow_1",
+                        flow="called_flow_test",
+                        lines="10-14",
+                    ),
+                    PathNode(
+                        step_id="called_flow_1_0_collect_node_a",
+                        flow="called_flow_test",
+                        lines="26-30",
+                    ),
+                    PathNode(
+                        step_id="node_b",
+                        flow="called_flow_test",
+                        lines="31-32",
+                    ),
+                    PathNode(
+                        step_id="node_d",
+                        flow="called_flow_test",
+                        lines="33-38",
+                    ),
+                    PathNode(
+                        step_id="node_e",
+                        flow="called_flow_test",
+                        lines="45-47",
+                    ),
+                    PathNode(
+                        step_id="cancel_order",
+                        flow="called_flow_test",
+                        lines="18-21",
+                    ),
+                ],
+            ),
+            FlowPath(  # 03
+                flow="called_flow_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_flow_test_0_call_called_flow_1",
+                        flow="called_flow_test",
+                        lines="10-14",
+                    ),
+                    PathNode(
+                        step_id="called_flow_1_0_collect_node_a",
+                        flow="called_flow_test",
+                        lines="26-30",
+                    ),
+                    PathNode(
+                        step_id="node_b",
+                        flow="called_flow_test",
+                        lines="31-32",
+                    ),
+                    PathNode(
+                        step_id="node_d",
+                        flow="called_flow_test",
+                        lines="33-38",
+                    ),
+                    PathNode(
+                        step_id="node_c",
+                        flow="called_flow_test",
+                        lines="39-44",
+                    ),
+                    PathNode(
+                        step_id="called_flow_2_0_collect_department",
+                        flow="called_flow_test",
+                        lines="52-56",
+                    ),
+                    PathNode(
+                        step_id="show_vacancies",
+                        flow="called_flow_test",
+                        lines="57-59",
+                    ),
+                    PathNode(
+                        step_id="node_e",
+                        flow="called_flow_test",
+                        lines="45-47",
+                    ),
+                    PathNode(
+                        step_id="take_payment",
+                        flow="called_flow_test",
+                        lines="15-17",
+                    ),
+                ],
+            ),
+            FlowPath(  # 04
+                flow="called_flow_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_flow_test_0_call_called_flow_1",
+                        flow="called_flow_test",
+                        lines="10-14",
+                    ),
+                    PathNode(
+                        step_id="called_flow_1_0_collect_node_a",
+                        flow="called_flow_test",
+                        lines="26-30",
+                    ),
+                    PathNode(
+                        step_id="node_b",
+                        flow="called_flow_test",
+                        lines="31-32",
+                    ),
+                    PathNode(
+                        step_id="node_d",
+                        flow="called_flow_test",
+                        lines="33-38",
+                    ),
+                    PathNode(
+                        step_id="node_c",
+                        flow="called_flow_test",
+                        lines="39-44",
+                    ),
+                    PathNode(
+                        step_id="called_flow_2_0_collect_department",
+                        flow="called_flow_test",
+                        lines="52-56",
+                    ),
+                    PathNode(
+                        step_id="show_vacancies",
+                        flow="called_flow_test",
+                        lines="57-59",
+                    ),
+                    PathNode(
+                        step_id="node_e",
+                        flow="called_flow_test",
+                        lines="45-47",
+                    ),
+                    PathNode(
+                        step_id="cancel_order",
+                        flow="called_flow_test",
+                        lines="18-21",
+                    ),
+                ],
+            ),
+            FlowPath(  # 05
+                flow="called_flow_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_flow_test_0_call_called_flow_1",
+                        flow="called_flow_test",
+                        lines="10-14",
+                    ),
+                    PathNode(
+                        step_id="called_flow_1_0_collect_node_a",
+                        flow="called_flow_test",
+                        lines="26-30",
+                    ),
+                    PathNode(
+                        step_id="node_b",
+                        flow="called_flow_test",
+                        lines="31-32",
+                    ),
+                    PathNode(
+                        step_id="node_d",
+                        flow="called_flow_test",
+                        lines="33-38",
+                    ),
+                    PathNode(
+                        step_id="node_c",
+                        flow="called_flow_test",
+                        lines="39-44",
+                    ),
+                    PathNode(
+                        step_id="called_flow_2_0_collect_department",
+                        flow="called_flow_test",
+                        lines="52-56",
+                    ),
+                    PathNode(
+                        step_id="show_vacancies_error",
+                        flow="called_flow_test",
+                        lines="60-63",
+                    ),
+                    PathNode(
+                        step_id="node_e",
+                        flow="called_flow_test",
+                        lines="45-47",
+                    ),
+                    PathNode(
+                        step_id="take_payment",
+                        flow="called_flow_test",
+                        lines="15-17",
+                    ),
+                ],
+            ),
+            FlowPath(  # 06
+                flow="called_flow_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_flow_test_0_call_called_flow_1",
+                        flow="called_flow_test",
+                        lines="10-14",
+                    ),
+                    PathNode(
+                        step_id="called_flow_1_0_collect_node_a",
+                        flow="called_flow_test",
+                        lines="26-30",
+                    ),
+                    PathNode(
+                        step_id="node_b",
+                        flow="called_flow_test",
+                        lines="31-32",
+                    ),
+                    PathNode(
+                        step_id="node_d",
+                        flow="called_flow_test",
+                        lines="33-38",
+                    ),
+                    PathNode(
+                        step_id="node_c",
+                        flow="called_flow_test",
+                        lines="39-44",
+                    ),
+                    PathNode(
+                        step_id="called_flow_2_0_collect_department",
+                        flow="called_flow_test",
+                        lines="52-56",
+                    ),
+                    PathNode(
+                        step_id="show_vacancies_error",
+                        flow="called_flow_test",
+                        lines="60-63",
+                    ),
+                    PathNode(
+                        step_id="node_e",
+                        flow="called_flow_test",
+                        lines="45-47",
+                    ),
+                    PathNode(
+                        step_id="cancel_order",
+                        flow="called_flow_test",
+                        lines="18-21'",
+                    ),
+                ],
+            ),
+            FlowPath(  # 07
+                flow="called_flow_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_flow_test_0_call_called_flow_1",
+                        flow="called_flow_test",
+                        lines="10-14",
+                    ),
+                    PathNode(
+                        step_id="called_flow_1_0_collect_node_a",
+                        flow="called_flow_test",
+                        lines="26-30",
+                    ),
+                    PathNode(
+                        step_id="node_c",
+                        flow="called_flow_test",
+                        lines="39-44",
+                    ),
+                    PathNode(
+                        step_id="called_flow_2_0_collect_department",
+                        flow="called_flow_test",
+                        lines="52-56",
+                    ),
+                    PathNode(
+                        step_id="show_vacancies",
+                        flow="called_flow_test",
+                        lines="57-59",
+                    ),
+                    PathNode(
+                        step_id="node_e",
+                        flow="called_flow_test",
+                        lines="45-47",
+                    ),
+                    PathNode(
+                        step_id="take_payment",
+                        flow="called_flow_test",
+                        lines="15-17",
+                    ),
+                ],
+            ),
+            FlowPath(  # 08
+                flow="called_flow_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_flow_test_0_call_called_flow_1",
+                        flow="called_flow_test",
+                        lines="10-14",
+                    ),
+                    PathNode(
+                        step_id="called_flow_1_0_collect_node_a",
+                        flow="called_flow_test",
+                        lines="26-30",
+                    ),
+                    PathNode(
+                        step_id="node_c",
+                        flow="called_flow_test",
+                        lines="39-44",
+                    ),
+                    PathNode(
+                        step_id="called_flow_2_0_collect_department",
+                        flow="called_flow_test",
+                        lines="52-56",
+                    ),
+                    PathNode(
+                        step_id="show_vacancies",
+                        flow="called_flow_test",
+                        lines="57-59",
+                    ),
+                    PathNode(
+                        step_id="node_e",
+                        flow="called_flow_test",
+                        lines="45-47",
+                    ),
+                    PathNode(
+                        step_id="cancel_order",
+                        flow="called_flow_test",
+                        lines="18-21",
+                    ),
+                ],
+            ),
+            FlowPath(  # 09
+                flow="called_flow_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_flow_test_0_call_called_flow_1",
+                        flow="called_flow_test",
+                        lines="10-14",
+                    ),
+                    PathNode(
+                        step_id="called_flow_1_0_collect_node_a",
+                        flow="called_flow_test",
+                        lines="26-30",
+                    ),
+                    PathNode(
+                        step_id="node_c",
+                        flow="called_flow_test",
+                        lines="39-44",
+                    ),
+                    PathNode(
+                        step_id="called_flow_2_0_collect_department",
+                        flow="called_flow_test",
+                        lines="52-56",
+                    ),
+                    PathNode(
+                        step_id="show_vacancies_error",
+                        flow="called_flow_test",
+                        lines="60-63",
+                    ),
+                    PathNode(
+                        step_id="node_e",
+                        flow="called_flow_test",
+                        lines="45-47",
+                    ),
+                    PathNode(
+                        step_id="take_payment",
+                        flow="called_flow_test",
+                        lines="15-17",
+                    ),
+                ],
+            ),
+            FlowPath(  # 10
+                flow="called_flow_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_flow_test_0_call_called_flow_1",
+                        flow="called_flow_test",
+                        lines="10-14",
+                    ),
+                    PathNode(
+                        step_id="called_flow_1_0_collect_node_a",
+                        flow="called_flow_test",
+                        lines="26-30",
+                    ),
+                    PathNode(
+                        step_id="node_c",
+                        flow="called_flow_test",
+                        lines="39-44",
+                    ),
+                    PathNode(
+                        step_id="called_flow_2_0_collect_department",
+                        flow="called_flow_test",
+                        lines="52-56",
+                    ),
+                    PathNode(
+                        step_id="show_vacancies_error",
+                        flow="called_flow_test",
+                        lines="60-63",
+                    ),
+                    PathNode(
+                        step_id="node_e",
+                        flow="called_flow_test",
+                        lines="45-47",
+                    ),
+                    PathNode(
+                        step_id="cancel_order",
+                        flow="called_flow_test",
+                        lines="18-21",
+                    ),
+                ],
+            ),
+        ],
+    )
+
+    assert len(paths.paths) == len(
+        expected_paths.paths
+    ), f"Expected {len(expected_paths.paths)} paths, but got {len(paths.paths)}"
+
+    for path in expected_paths.paths:
+        assert path in paths.paths, f"Expected path {path} not found in extracted paths"
+
+
+def test_extract_all_paths_order_pizza(pizza_flows_file: str):
     flows_list = YAMLFlowsReader.read_from_file(pizza_flows_file)
     flow = flows_list.flow_by_id("order_pizza")
     paths = flow.extract_all_paths()
@@ -816,115 +1265,949 @@ def test_extract_all_paths(pizza_flows_file: str):
     expected_paths = FlowPathsList(
         "order_pizza",
         [
-            FlowPath(
+            FlowPath(  # 01
                 flow="order_pizza",
                 nodes=[
                     PathNode(
-                        step_id="order_pizza_0_call_fill_pizza_order",
+                        step_id="greet_user",
                         flow="order_pizza",
-                        lines="10-14",
+                        lines="72-73",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_1_call_get_user_address",
+                        flow="order_pizza",
+                        lines="74-74",
+                    ),
+                    PathNode(
+                        step_id="ask_delivery_address",
+                        flow="order_pizza",
+                        lines="111-113",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_2_call_fill_pizza_order",
+                        flow="order_pizza",
+                        lines="75-79",
+                    ),
+                    PathNode(
+                        step_id="get_pizza_name",
+                        flow="order_pizza",
+                        lines="118-119",
+                    ),
+                    PathNode(
+                        step_id="get_confirmation_order",
+                        flow="order_pizza",
+                        lines="120-124",
                     ),
                     PathNode(
                         step_id="payment_options",
                         flow="order_pizza",
-                        lines="15-22",
+                        lines="80-87",
                     ),
                     PathNode(
                         step_id="use_card_details",
                         flow="order_pizza",
-                        lines="23-28",
+                        lines="88-93",
                     ),
-                    PathNode(step_id="take_payment", flow="order_pizza", lines="29-31"),
+                    PathNode(
+                        step_id="take_payment",
+                        flow="order_pizza",
+                        lines="94-96",
+                    ),
                 ],
             ),
-            FlowPath(
+            FlowPath(  # 02
                 flow="order_pizza",
                 nodes=[
                     PathNode(
-                        step_id="order_pizza_0_call_fill_pizza_order",
+                        step_id="greet_user",
                         flow="order_pizza",
-                        lines="10-14",
+                        lines="72-73",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_1_call_get_user_address",
+                        flow="order_pizza",
+                        lines="74-74",
+                    ),
+                    PathNode(
+                        step_id="ask_delivery_address",
+                        flow="order_pizza",
+                        lines="111-113",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_2_call_fill_pizza_order",
+                        flow="order_pizza",
+                        lines="75-79",
+                    ),
+                    PathNode(
+                        step_id="get_pizza_name",
+                        flow="order_pizza",
+                        lines="118-119",
+                    ),
+                    PathNode(
+                        step_id="get_confirmation_order",
+                        flow="order_pizza",
+                        lines="120-124",
                     ),
                     PathNode(
                         step_id="payment_options",
                         flow="order_pizza",
-                        lines="15-22",
+                        lines="80-87",
                     ),
                     PathNode(
                         step_id="use_card_details",
                         flow="order_pizza",
-                        lines="23-28",
+                        lines="88-93",
                     ),
-                    PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
+                    PathNode(
+                        step_id="cancel_order",
+                        flow="order_pizza",
+                        lines="103-106",
+                    ),
                 ],
             ),
-            FlowPath(
+            FlowPath(  # 03
                 flow="order_pizza",
                 nodes=[
                     PathNode(
-                        step_id="order_pizza_0_call_fill_pizza_order",
+                        step_id="greet_user",
                         flow="order_pizza",
-                        lines="10-14",
+                        lines="72-73",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_1_call_get_user_address",
+                        flow="order_pizza",
+                        lines="74-74",
+                    ),
+                    PathNode(
+                        step_id="ask_delivery_address",
+                        flow="order_pizza",
+                        lines="111-113",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_2_call_fill_pizza_order",
+                        flow="order_pizza",
+                        lines="75-79",
+                    ),
+                    PathNode(
+                        step_id="get_pizza_name",
+                        flow="order_pizza",
+                        lines="118-119",
+                    ),
+                    PathNode(
+                        step_id="get_confirmation_order",
+                        flow="order_pizza",
+                        lines="120-124",
                     ),
                     PathNode(
                         step_id="payment_options",
                         flow="order_pizza",
-                        lines="15-22",
+                        lines="80-87",
                     ),
                     PathNode(
                         step_id="use_membership_points",
                         flow="order_pizza",
-                        lines="32-37",
+                        lines="97-102",
                     ),
-                    PathNode(step_id="take_payment", flow="order_pizza", lines="29-31"),
+                    PathNode(
+                        step_id="start_authentication",
+                        flow="order_pizza",
+                        lines="129-134",
+                    ),
+                    PathNode(
+                        step_id="authenticate_user_0_action_authenticate_user",
+                        flow="order_pizza",
+                        lines="146-146",
+                    ),
+                    PathNode(
+                        step_id="authenticate_user_1_collect_is_user_logged_in",
+                        flow="order_pizza",
+                        lines="147-148",
+                    ),
+                    PathNode(
+                        step_id="check_membership_status",
+                        flow="order_pizza",
+                        lines="135-137",
+                    ),
+                    PathNode(
+                        step_id="take_payment",
+                        flow="order_pizza",
+                        lines="94-96",
+                    ),
                 ],
             ),
-            FlowPath(
+            FlowPath(  # 04
                 flow="order_pizza",
                 nodes=[
                     PathNode(
-                        step_id="order_pizza_0_call_fill_pizza_order",
+                        step_id="greet_user",
                         flow="order_pizza",
-                        lines="10-14",
+                        lines="72-73",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_1_call_get_user_address",
+                        flow="order_pizza",
+                        lines="74-74",
+                    ),
+                    PathNode(
+                        step_id="ask_delivery_address",
+                        flow="order_pizza",
+                        lines="111-113",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_2_call_fill_pizza_order",
+                        flow="order_pizza",
+                        lines="75-79",
+                    ),
+                    PathNode(
+                        step_id="get_pizza_name",
+                        flow="order_pizza",
+                        lines="118-119",
+                    ),
+                    PathNode(
+                        step_id="get_confirmation_order",
+                        flow="order_pizza",
+                        lines="120-124",
                     ),
                     PathNode(
                         step_id="payment_options",
                         flow="order_pizza",
-                        lines="15-22",
+                        lines="80-87",
                     ),
                     PathNode(
                         step_id="use_membership_points",
                         flow="order_pizza",
-                        lines="32-37",
+                        lines="97-102",
                     ),
-                    PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
+                    PathNode(
+                        step_id="start_authentication",
+                        flow="order_pizza",
+                        lines="129-134",
+                    ),
+                    PathNode(
+                        step_id="authenticate_user_0_action_authenticate_user",
+                        flow="order_pizza",
+                        lines="146-146",
+                    ),
+                    PathNode(
+                        step_id="authenticate_user_1_collect_is_user_logged_in",
+                        flow="order_pizza",
+                        lines="147-148",
+                    ),
+                    PathNode(
+                        step_id="check_membership_status",
+                        flow="order_pizza",
+                        lines="135-137",
+                    ),
+                    PathNode(
+                        step_id="cancel_order",
+                        flow="order_pizza",
+                        lines="103-106",
+                    ),
                 ],
             ),
-            FlowPath(
+            FlowPath(  # 05
                 flow="order_pizza",
                 nodes=[
                     PathNode(
-                        step_id="order_pizza_0_call_fill_pizza_order",
+                        step_id="greet_user",
                         flow="order_pizza",
-                        lines="10-14",
+                        lines="72-73",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_1_call_get_user_address",
+                        flow="order_pizza",
+                        lines="74-74",
+                    ),
+                    PathNode(
+                        step_id="ask_delivery_address",
+                        flow="order_pizza",
+                        lines="111-113",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_2_call_fill_pizza_order",
+                        flow="order_pizza",
+                        lines="75-79",
+                    ),
+                    PathNode(
+                        step_id="get_pizza_name",
+                        flow="order_pizza",
+                        lines="118-119",
+                    ),
+                    PathNode(
+                        step_id="get_confirmation_order",
+                        flow="order_pizza",
+                        lines="120-124",
                     ),
                     PathNode(
                         step_id="payment_options",
                         flow="order_pizza",
-                        lines="15-22",
+                        lines="80-87",
                     ),
-                    PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
+                    PathNode(
+                        step_id="use_membership_points",
+                        flow="order_pizza",
+                        lines="97-102",
+                    ),
+                    PathNode(
+                        step_id="start_authentication",
+                        flow="order_pizza",
+                        lines="129-134",
+                    ),
+                    PathNode(
+                        step_id="authenticate_user_0_action_authenticate_user",
+                        flow="order_pizza",
+                        lines="146-146",
+                    ),
+                    PathNode(
+                        step_id="authenticate_user_1_collect_is_user_logged_in",
+                        flow="order_pizza",
+                        lines="147-148",
+                    ),
+                    PathNode(
+                        step_id="user_not_logged_in",
+                        flow="order_pizza",
+                        lines="138-141",
+                    ),
+                    PathNode(
+                        step_id="take_payment",
+                        flow="order_pizza",
+                        lines="94-96",
+                    ),
                 ],
             ),
-            FlowPath(
+            FlowPath(  # 06
                 flow="order_pizza",
                 nodes=[
                     PathNode(
-                        step_id="order_pizza_0_call_fill_pizza_order",
+                        step_id="greet_user",
                         flow="order_pizza",
-                        lines="10-14",
+                        lines="72-73",
                     ),
-                    PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
+                    PathNode(
+                        step_id="order_pizza_1_call_get_user_address",
+                        flow="order_pizza",
+                        lines="74-74",
+                    ),
+                    PathNode(
+                        step_id="ask_delivery_address",
+                        flow="order_pizza",
+                        lines="111-113",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_2_call_fill_pizza_order",
+                        flow="order_pizza",
+                        lines="75-79",
+                    ),
+                    PathNode(
+                        step_id="get_pizza_name",
+                        flow="order_pizza",
+                        lines="118-119",
+                    ),
+                    PathNode(
+                        step_id="get_confirmation_order",
+                        flow="order_pizza",
+                        lines="120-124",
+                    ),
+                    PathNode(
+                        step_id="payment_options",
+                        flow="order_pizza",
+                        lines="80-87",
+                    ),
+                    PathNode(
+                        step_id="use_membership_points",
+                        flow="order_pizza",
+                        lines="97-102",
+                    ),
+                    PathNode(
+                        step_id="start_authentication",
+                        flow="order_pizza",
+                        lines="129-134'",
+                    ),
+                    PathNode(
+                        step_id="authenticate_user_0_action_authenticate_user",
+                        flow="order_pizza",
+                        lines="146-146'",
+                    ),
+                    PathNode(
+                        step_id="authenticate_user_1_collect_is_user_logged_in",
+                        flow="order_pizza",
+                        lines="147-148'",
+                    ),
+                    PathNode(
+                        step_id="user_not_logged_in",
+                        flow="order_pizza",
+                        lines="138-141'",
+                    ),
+                    PathNode(
+                        step_id="cancel_order",
+                        flow="order_pizza",
+                        lines="103-106'",
+                    ),
+                ],
+            ),
+            FlowPath(  # 07
+                flow="order_pizza",
+                nodes=[
+                    PathNode(
+                        step_id="greet_user",
+                        flow="order_pizza",
+                        lines="72-73",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_1_call_get_user_address",
+                        flow="order_pizza",
+                        lines="74-74",
+                    ),
+                    PathNode(
+                        step_id="ask_delivery_address",
+                        flow="order_pizza",
+                        lines="111-113",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_2_call_fill_pizza_order",
+                        flow="order_pizza",
+                        lines="75-79",
+                    ),
+                    PathNode(
+                        step_id="get_pizza_name",
+                        flow="order_pizza",
+                        lines="118-119",
+                    ),
+                    PathNode(
+                        step_id="get_confirmation_order",
+                        flow="order_pizza",
+                        lines="120-124",
+                    ),
+                    PathNode(
+                        step_id="payment_options",
+                        flow="order_pizza",
+                        lines="80-87",
+                    ),
+                    PathNode(
+                        step_id="cancel_order",
+                        flow="order_pizza",
+                        lines="103-106",
+                    ),
+                ],
+            ),
+            FlowPath(  # 08
+                flow="order_pizza",
+                nodes=[
+                    PathNode(
+                        step_id="greet_user",
+                        flow="order_pizza",
+                        lines="72-73",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_1_call_get_user_address",
+                        flow="order_pizza",
+                        lines="74-74",
+                    ),
+                    PathNode(
+                        step_id="ask_delivery_address",
+                        flow="order_pizza",
+                        lines="111-113",
+                    ),
+                    PathNode(
+                        step_id="order_pizza_2_call_fill_pizza_order",
+                        flow="order_pizza",
+                        lines="75-79",
+                    ),
+                    PathNode(
+                        step_id="get_pizza_name",
+                        flow="order_pizza",
+                        lines="118-119",
+                    ),
+                    PathNode(
+                        step_id="get_confirmation_order",
+                        flow="order_pizza",
+                        lines="120-124",
+                    ),
+                    PathNode(
+                        step_id="cancel_order",
+                        flow="order_pizza",
+                        lines="103-106",
+                    ),
+                ],
+            ),
+        ],
+    )
+
+    assert len(paths.paths) == len(
+        expected_paths.paths
+    ), f"Expected {len(expected_paths.paths)} paths, but got {len(paths.paths)}"
+
+    for path in expected_paths.paths:
+        assert path in paths.paths, f"Expected path {path} not found in extracted paths"
+
+
+def test_extract_all_paths_linked_flow_test(pizza_flows_file: str):
+    flows_list = YAMLFlowsReader.read_from_file(pizza_flows_file)
+    flow = flows_list.flow_by_id("linked_flow_test")
+    paths = flow.extract_all_paths()
+
+    expected_paths = FlowPathsList(
+        "linked_flow_test",
+        [
+            FlowPath(  # 01
+                flow="linked_flow_test",
+                nodes=[
+                    PathNode(
+                        step_id="linked_flow_test_0_utter_greeting",
+                        flow="linked_flow_test",
+                        lines="157-161",
+                    ),
+                    PathNode(
+                        step_id="take_payment", flow="linked_flow_test", lines="162-164"
+                    ),
+                    PathNode(
+                        step_id="get_feedback_payment",
+                        flow="linked_flow_test",
+                        lines="168-169",
+                    ),
+                    PathNode(
+                        step_id="get_feedback_payment_0_collect_user_rating_payment_process",
+                        flow="linked_flow_test",
+                        lines="177-181",
+                    ),
+                    PathNode(
+                        step_id="ask_for_suggestions_payment_process",
+                        flow="linked_flow_test",
+                        lines="182-184",
+                    ),
+                ],
+            ),
+            FlowPath(  # 02
+                flow="linked_flow_test",
+                nodes=[
+                    PathNode(
+                        step_id="linked_flow_test_0_utter_greeting",
+                        flow="linked_flow_test",
+                        lines="157-161",
+                    ),
+                    PathNode(
+                        step_id="take_payment", flow="linked_flow_test", lines="162-164"
+                    ),
+                    PathNode(
+                        step_id="get_feedback_payment",
+                        flow="linked_flow_test",
+                        lines="168-169",
+                    ),
+                    PathNode(
+                        step_id="get_feedback_payment_0_collect_user_rating_payment_process",
+                        flow="linked_flow_test",
+                        lines="177-181",
+                    ),
+                    PathNode(
+                        step_id="thank_user_for_rating",
+                        flow="linked_flow_test",
+                        lines="185-188",
+                    ),
+                ],
+            ),
+            FlowPath(  # 03
+                flow="linked_flow_test",
+                nodes=[
+                    PathNode(
+                        step_id="linked_flow_test_0_utter_greeting",
+                        flow="linked_flow_test",
+                        lines="157-161",
+                    ),
+                    PathNode(
+                        step_id="cancel_order", flow="linked_flow_test", lines="165-167"
+                    ),
+                    PathNode(
+                        step_id="get_feedback_cancellation",
+                        flow="linked_flow_test",
+                        lines="170-172",
+                    ),
+                    PathNode(
+                        step_id="get_feedback_cancellation_0_collect_user_rating_cancellation_process",
+                        flow="linked_flow_test",
+                        lines="193-197",
+                    ),
+                    PathNode(
+                        step_id="ask_for_suggestions_cancellation_process",
+                        flow="linked_flow_test",
+                        lines="198-200",
+                    ),
+                ],
+            ),
+            FlowPath(  # 04
+                flow="linked_flow_test",
+                nodes=[
+                    PathNode(
+                        step_id="linked_flow_test_0_utter_greeting",
+                        flow="linked_flow_test",
+                        lines="157-161",
+                    ),
+                    PathNode(
+                        step_id="cancel_order", flow="linked_flow_test", lines="165-167"
+                    ),
+                    PathNode(
+                        step_id="get_feedback_cancellation",
+                        flow="linked_flow_test",
+                        lines="170-172",
+                    ),
+                    PathNode(
+                        step_id="get_feedback_cancellation_0_collect_user_rating_cancellation_process",
+                        flow="linked_flow_test",
+                        lines="193-197",
+                    ),
+                    PathNode(
+                        step_id="thank_user_for_rating",
+                        flow="linked_flow_test",
+                        lines="201-204",
+                    ),
+                ],
+            ),
+        ],
+    )
+
+    assert len(paths.paths) == len(
+        expected_paths.paths
+    ), f"Expected {len(expected_paths.paths)} paths, but got {len(paths.paths)}"
+
+    for path in expected_paths.paths:
+        assert path in paths.paths, f"Expected path {path} not found in extracted paths"
+
+
+def test_extract_all_paths_called_linked_flow_interaction_test(pizza_flows_file: str):
+    flows_list = YAMLFlowsReader.read_from_file(pizza_flows_file)
+    flow = flows_list.flow_by_id("called_and_linked_flow_interaction_test")
+    paths = flow.extract_all_paths()
+
+    expected_paths = FlowPathsList(
+        "called_and_linked_flow_interaction_test",
+        [
+            FlowPath(  # 01
+                flow="called_and_linked_flow_interaction_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_and_linked_flow_interaction_test_0_utter_greeting",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="214-214",
+                    ),
+                    PathNode(
+                        step_id="called_and_linked_flow_interaction_test_1_call_get_user_details",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="215-215",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_0_collect_user_name",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="222-222",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_1_collect_user_email",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="223-223",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_2_call_get_user_address",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="224-230",
+                    ),
+                    PathNode(
+                        step_id="ask_delivery_address",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="111-113",
+                    ),
+                    PathNode(
+                        step_id="take_payment",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="231-232",
+                    ),
+                    PathNode(
+                        step_id="get_feedback_payment_0_collect_user_rating_payment_process",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="178-182",
+                    ),
+                    PathNode(
+                        step_id="ask_for_suggestions_payment_process",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="183-185",
+                    ),
+                ],
+            ),
+            FlowPath(  # 02
+                flow="called_and_linked_flow_interaction_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_and_linked_flow_interaction_test_0_utter_greeting",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="214-214",
+                    ),
+                    PathNode(
+                        step_id="called_and_linked_flow_interaction_test_1_call_get_user_details",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="215-215",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_0_collect_user_name",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="222-222",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_1_collect_user_email",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="223-223",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_2_call_get_user_address",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="224-230",
+                    ),
+                    PathNode(
+                        step_id="ask_delivery_address",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="111-113",
+                    ),
+                    PathNode(
+                        step_id="take_payment",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="231-232",
+                    ),
+                    PathNode(
+                        step_id="get_feedback_payment_0_collect_user_rating_payment_process",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="178-182",
+                    ),
+                    PathNode(
+                        step_id="thank_user_for_rating",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="186-189",
+                    ),
+                ],
+            ),
+            FlowPath(  # 03
+                flow="called_and_linked_flow_interaction_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_and_linked_flow_interaction_test_0_utter_greeting",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="214-214",
+                    ),
+                    PathNode(
+                        step_id="called_and_linked_flow_interaction_test_1_call_get_user_details",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="215-215",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_0_collect_user_name",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="222-222",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_1_collect_user_email",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="223-223",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_2_call_get_user_address",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="224-230",
+                    ),
+                    PathNode(
+                        step_id="ask_delivery_address",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="111-113",
+                    ),
+                    PathNode(
+                        step_id="pickup_options",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="233-234",
+                    ),
+                    PathNode(
+                        step_id="arrange_pickup_0_call_fill_pizza_order",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="243-243",
+                    ),
+                    PathNode(
+                        step_id="get_pizza_name",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="118-119",
+                    ),
+                    PathNode(
+                        step_id="get_confirmation_order",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="120-124",
+                    ),
+                    PathNode(
+                        step_id="arrange_pickup_1_collect_pickup_time",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="244-248",
+                    ),
+                    PathNode(
+                        step_id="assign_morning_delivery_slot",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="249-251",
+                    ),
+                ],
+            ),
+            FlowPath(  # 04
+                flow="called_and_linked_flow_interaction_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_and_linked_flow_interaction_test_0_utter_greeting",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="214-214",
+                    ),
+                    PathNode(
+                        step_id="called_and_linked_flow_interaction_test_1_call_get_user_details",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="215-215",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_0_collect_user_name",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="222-222",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_1_collect_user_email",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="223-223",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_2_call_get_user_address",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="224-230",
+                    ),
+                    PathNode(
+                        step_id="ask_delivery_address",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="111-113",
+                    ),
+                    PathNode(
+                        step_id="pickup_options",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="233-234",
+                    ),
+                    PathNode(
+                        step_id="arrange_pickup_0_call_fill_pizza_order",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="243-243",
+                    ),
+                    PathNode(
+                        step_id="get_pizza_name",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="118-119",
+                    ),
+                    PathNode(
+                        step_id="get_confirmation_order",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="120-124",
+                    ),
+                    PathNode(
+                        step_id="arrange_pickup_1_collect_pickup_time",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="244-248",
+                    ),
+                    PathNode(
+                        step_id="assign_evening_delivery_slot",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="252-254",
+                    ),
+                ],
+            ),
+            FlowPath(  # 05
+                flow="called_and_linked_flow_interaction_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_and_linked_flow_interaction_test_0_utter_greeting",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="214-214",
+                    ),
+                    PathNode(
+                        step_id="called_and_linked_flow_interaction_test_1_call_get_user_details",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="215-215",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_0_collect_user_name",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="222-222",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_1_collect_user_email",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="223-223",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_2_call_get_user_address",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="224-230",
+                    ),
+                    PathNode(
+                        step_id="ask_delivery_address",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="111-113",
+                    ),
+                    PathNode(
+                        step_id="cancel_order",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="235-236",
+                    ),
+                    PathNode(
+                        step_id="get_feedback_cancellation_0_collect_user_rating_cancellation_process",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="194-198",
+                    ),
+                    PathNode(
+                        step_id="ask_for_suggestions_cancellation_process",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="199-201",
+                    ),
+                ],
+            ),
+            FlowPath(  # 06
+                flow="called_and_linked_flow_interaction_test",
+                nodes=[
+                    PathNode(
+                        step_id="called_and_linked_flow_interaction_test_0_utter_greeting",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="214-214",
+                    ),
+                    PathNode(
+                        step_id="called_and_linked_flow_interaction_test_1_call_get_user_details",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="215-215",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_0_collect_user_name",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="222-222",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_1_collect_user_email",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="223-223",
+                    ),
+                    PathNode(
+                        step_id="get_user_details_2_call_get_user_address",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="224-230",
+                    ),
+                    PathNode(
+                        step_id="ask_delivery_address",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="111-113",
+                    ),
+                    PathNode(
+                        step_id="cancel_order",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="235-236",
+                    ),
+                    PathNode(
+                        step_id="get_feedback_cancellation_0_collect_user_rating_cancellation_process",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="194-198",
+                    ),
+                    PathNode(
+                        step_id="thank_user_for_rating",
+                        flow="called_and_linked_flow_interaction_test",
+                        lines="202-205",
+                    ),
                 ],
             ),
         ],
@@ -1026,20 +2309,29 @@ def test_go_over_steps(pizza_flows_file: str):
                 lines="10-14",
             ),
             PathNode(
-                step_id="payment_options",
+                step_id="order_pizza_1_call_get_user_address",
                 flow="order_pizza",
-                lines="15-22",
+                lines="74-74",
             ),
             PathNode(
-                step_id="use_card_details",
-                flow="order_pizza",
-                lines="23-28",
+                step_id="ask_delivery_address", flow="order_pizza", lines="111-113"
             ),
-            PathNode(step_id="take_payment", flow="order_pizza", lines="29-31"),
+            PathNode(
+                step_id="order_pizza_2_call_fill_pizza_order",
+                flow="order_pizza",
+                lines="75-79",
+            ),
+            PathNode(step_id="get_pizza_name", flow="order_pizza", lines="118-119"),
+            PathNode(
+                step_id="get_confirmation_order", flow="order_pizza", lines="120-124"
+            ),
+            PathNode(step_id="payment_options", flow="order_pizza", lines="80-87"),
+            PathNode(step_id="use_card_details", flow="order_pizza", lines="88-93"),
+            PathNode(step_id="take_payment", flow="order_pizza", lines="94-96"),
         ],
     )
 
-    assert len(collected_paths.paths) == 5
+    assert len(collected_paths.paths) == 8
     assert collected_paths.paths[0] == expected_path
 
 
@@ -1058,55 +2350,230 @@ def test_handle_next(pizza_flows_file: str):
             flow="order_pizza",
             nodes=[
                 PathNode(
-                    step_id="use_card_details",
+                    step_id="order_pizza_2_call_fill_pizza_order",
                     flow="order_pizza",
-                    lines="23-28",
+                    lines="75-79",
                 ),
-                PathNode(step_id="take_payment", flow="order_pizza", lines="29-31"),
+                PathNode(step_id="get_pizza_name", flow="order_pizza", lines="118-119"),
+                PathNode(
+                    step_id="get_confirmation_order",
+                    flow="order_pizza",
+                    lines="120-124",
+                ),
+                PathNode(step_id="payment_options", flow="order_pizza", lines="80-87"),
+                PathNode(step_id="use_card_details", flow="order_pizza", lines="88-93"),
+                PathNode(step_id="take_payment", flow="order_pizza", lines="94-96"),
             ],
         ),
         FlowPath(
             flow="order_pizza",
             nodes=[
                 PathNode(
-                    step_id="use_card_details",
+                    step_id="order_pizza_2_call_fill_pizza_order",
                     flow="order_pizza",
-                    lines="23-28",
+                    lines="75-79",
                 ),
-                PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
+                PathNode(step_id="get_pizza_name", flow="order_pizza", lines="118-119"),
+                PathNode(
+                    step_id="get_confirmation_order",
+                    flow="order_pizza",
+                    lines="120-124",
+                ),
+                PathNode(step_id="payment_options", flow="order_pizza", lines="80-87"),
+                PathNode(step_id="use_card_details", flow="order_pizza", lines="88-93"),
+                PathNode(step_id="cancel_order", flow="order_pizza", lines="103-106"),
             ],
         ),
         FlowPath(
             flow="order_pizza",
             nodes=[
                 PathNode(
-                    step_id="use_membership_points",
+                    step_id="order_pizza_2_call_fill_pizza_order",
                     flow="order_pizza",
-                    lines="32-37",
+                    lines="75-79",
                 ),
-                PathNode(step_id="take_payment", flow="order_pizza", lines="29-31"),
+                PathNode(step_id="get_pizza_name", flow="order_pizza", lines="118-119"),
+                PathNode(
+                    step_id="get_confirmation_order",
+                    flow="order_pizza",
+                    lines="120-124",
+                ),
+                PathNode(step_id="payment_options", flow="order_pizza", lines="80-87"),
+                PathNode(
+                    step_id="use_membership_points", flow="order_pizza", lines="97-102"
+                ),
+                PathNode(
+                    step_id="start_authentication", flow="order_pizza", lines="129-134"
+                ),
+                PathNode(
+                    step_id="authenticate_user_0_action_authenticate_user",
+                    flow="order_pizza",
+                    lines="146-146",
+                ),
+                PathNode(
+                    step_id="authenticate_user_1_collect_is_user_logged_in",
+                    flow="order_pizza",
+                    lines="147-148",
+                ),
+                PathNode(
+                    step_id="check_membership_status",
+                    flow="order_pizza",
+                    lines="135-137",
+                ),
+                PathNode(step_id="take_payment", flow="order_pizza", lines="94-96"),
             ],
         ),
         FlowPath(
             flow="order_pizza",
             nodes=[
                 PathNode(
-                    step_id="use_membership_points",
+                    step_id="order_pizza_2_call_fill_pizza_order",
                     flow="order_pizza",
-                    lines="32-37",
+                    lines="75-79",
                 ),
-                PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
+                PathNode(step_id="get_pizza_name", flow="order_pizza", lines="118-119"),
+                PathNode(
+                    step_id="get_confirmation_order",
+                    flow="order_pizza",
+                    lines="120-124",
+                ),
+                PathNode(step_id="payment_options", flow="order_pizza", lines="80-87"),
+                PathNode(
+                    step_id="use_membership_points", flow="order_pizza", lines="97-102"
+                ),
+                PathNode(
+                    step_id="start_authentication", flow="order_pizza", lines="129-134"
+                ),
+                PathNode(
+                    step_id="authenticate_user_0_action_authenticate_user",
+                    flow="order_pizza",
+                    lines="146-146",
+                ),
+                PathNode(
+                    step_id="authenticate_user_1_collect_is_user_logged_in",
+                    flow="order_pizza",
+                    lines="147-148",
+                ),
+                PathNode(
+                    step_id="check_membership_status",
+                    flow="order_pizza",
+                    lines="135-137",
+                ),
+                PathNode(step_id="cancel_order", flow="order_pizza", lines="103-106"),
             ],
         ),
         FlowPath(
             flow="order_pizza",
             nodes=[
-                PathNode(step_id="cancel_order", flow="order_pizza", lines="38-41"),
+                PathNode(
+                    step_id="order_pizza_2_call_fill_pizza_order",
+                    flow="order_pizza",
+                    lines="75-79",
+                ),
+                PathNode(step_id="get_pizza_name", flow="order_pizza", lines="118-119"),
+                PathNode(
+                    step_id="get_confirmation_order",
+                    flow="order_pizza",
+                    lines="120-124",
+                ),
+                PathNode(step_id="payment_options", flow="order_pizza", lines="80-87"),
+                PathNode(
+                    step_id="use_membership_points", flow="order_pizza", lines="97-102"
+                ),
+                PathNode(
+                    step_id="start_authentication", flow="order_pizza", lines="129-134"
+                ),
+                PathNode(
+                    step_id="authenticate_user_0_action_authenticate_user",
+                    flow="order_pizza",
+                    lines="146-146",
+                ),
+                PathNode(
+                    step_id="authenticate_user_1_collect_is_user_logged_in",
+                    flow="order_pizza",
+                    lines="147-148",
+                ),
+                PathNode(
+                    step_id="user_not_logged_in", flow="order_pizza", lines="138-141"
+                ),
+                PathNode(step_id="take_payment", flow="order_pizza", lines="94-96"),
+            ],
+        ),
+        FlowPath(
+            flow="order_pizza",
+            nodes=[
+                PathNode(
+                    step_id="order_pizza_2_call_fill_pizza_order",
+                    flow="order_pizza",
+                    lines="75-79",
+                ),
+                PathNode(step_id="get_pizza_name", flow="order_pizza", lines="118-119"),
+                PathNode(
+                    step_id="get_confirmation_order",
+                    flow="order_pizza",
+                    lines="120-124",
+                ),
+                PathNode(step_id="payment_options", flow="order_pizza", lines="80-87"),
+                PathNode(
+                    step_id="use_membership_points", flow="order_pizza", lines="97-102"
+                ),
+                PathNode(
+                    step_id="start_authentication", flow="order_pizza", lines="129-134"
+                ),
+                PathNode(
+                    step_id="authenticate_user_0_action_authenticate_user",
+                    flow="order_pizza",
+                    lines="146-146",
+                ),
+                PathNode(
+                    step_id="authenticate_user_1_collect_is_user_logged_in",
+                    flow="order_pizza",
+                    lines="147-148",
+                ),
+                PathNode(
+                    step_id="user_not_logged_in", flow="order_pizza", lines="138-141"
+                ),
+                PathNode(step_id="cancel_order", flow="order_pizza", lines="103-106"),
+            ],
+        ),
+        FlowPath(
+            flow="order_pizza",
+            nodes=[
+                PathNode(
+                    step_id="order_pizza_2_call_fill_pizza_order",
+                    flow="order_pizza",
+                    lines="75-79",
+                ),
+                PathNode(step_id="get_pizza_name", flow="order_pizza", lines="118-119"),
+                PathNode(
+                    step_id="get_confirmation_order",
+                    flow="order_pizza",
+                    lines="120-124",
+                ),
+                PathNode(step_id="payment_options", flow="order_pizza", lines="80-87"),
+                PathNode(step_id="cancel_order", flow="order_pizza", lines="103-106"),
+            ],
+        ),
+        FlowPath(
+            flow="order_pizza",
+            nodes=[
+                PathNode(
+                    step_id="order_pizza_2_call_fill_pizza_order",
+                    flow="order_pizza",
+                    lines="75-79",
+                ),
+                PathNode(step_id="get_pizza_name", flow="order_pizza", lines="118-119"),
+                PathNode(
+                    step_id="get_confirmation_order",
+                    flow="order_pizza",
+                    lines="120-124",
+                ),
+                PathNode(step_id="cancel_order", flow="order_pizza", lines="103-106"),
             ],
         ),
     ]
 
-    assert len(collected_paths.paths) == 5
+    assert len(collected_paths.paths) == 8
     assert collected_paths.paths == expected_collected_paths
 
 
@@ -1604,7 +3071,7 @@ def test_flow_readable_name_uses_localized_name(
                 "next": FlowStepLinks(links=[]),
                 "link": "flow_destination",
             },
-            ["custom_id", "metadata"],
+            ["custom_id", "metadata", "linked_flow_reference"],
         ),
         (
             NoOperationFlowStep,

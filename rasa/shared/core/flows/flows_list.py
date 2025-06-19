@@ -36,6 +36,7 @@ class FlowsList:
     def __post_init__(self) -> None:
         """Initializes the FlowsList object."""
         self._resolve_called_flows()
+        self._resolve_linked_flows()
 
     def __iter__(self) -> Generator[Flow, None, None]:
         """Iterates over the flows."""
@@ -103,7 +104,10 @@ class FlowsList:
         )
 
     def _resolve_called_flows(self) -> None:
-        """Resolves the called flows."""
+        """Resolves the called flows.
+
+        `Resolving` here means connecting the step to the actual `Flow` object.
+        """
         from rasa.shared.core.flows.steps import CallFlowStep
 
         for flow in self.underlying_flows:
@@ -111,6 +115,19 @@ class FlowsList:
                 if isinstance(step, CallFlowStep) and not step.called_flow_reference:
                     # only resolve the reference, if it isn't already resolved
                     step.called_flow_reference = self.flow_by_id(step.call)
+
+    def _resolve_linked_flows(self) -> None:
+        """Resolves the linked flows.
+
+        `Resolving` here means connecting the step to the actual `Flow` object.
+        """
+        from rasa.shared.core.flows.steps import LinkFlowStep
+
+        for flow in self.underlying_flows:
+            for step in flow.steps:
+                if isinstance(step, LinkFlowStep) and not step.linked_flow_reference:
+                    # only resolve the reference, if it isn't already resolved
+                    step.linked_flow_reference = self.flow_by_id(step.link)
 
     def as_json_list(self) -> List[Dict[Text, Any]]:
         """Serialize the FlowsList object to list format and not to the original dict.

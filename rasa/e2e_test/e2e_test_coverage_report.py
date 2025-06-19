@@ -21,7 +21,7 @@ from rasa.shared.core.flows.flow_path import FlowPath, FlowPathsList, PathNode
 FLOW_NAME_COL_NAME = "Flow Name"
 NUM_STEPS_COL_NAME = "Num Steps"
 MISSING_STEPS_COL_NAME = "Missing Steps"
-LINE_NUMBERS_COL_NAME = "Line Numbers"
+LINE_NUMBERS_COL_NAME = "Line Numbers for Missing Steps"
 COVERAGE_COL_NAME = "Coverage"
 
 FLOWS_KEY = "flows"

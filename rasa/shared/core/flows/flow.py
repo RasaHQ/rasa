@@ -4,7 +4,7 @@ import copy
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Text, Union
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union
 
 import structlog
 from pydantic import BaseModel
@@ -15,10 +15,12 @@ from rasa.engine.language import Language
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.flows.constants import (
     KEY_ALWAYS_INCLUDE_IN_PROMPT,
+    KEY_CALLED_FLOW,
     KEY_DESCRIPTION,
     KEY_FILE_PATH,
     KEY_ID,
     KEY_IF,
+    KEY_LINKED_FLOW,
     KEY_NAME,
     KEY_NLU_TRIGGER,
     KEY_PERSISTED_SLOTS,
@@ -41,6 +43,7 @@ from rasa.shared.core.flows.steps import (
     CallFlowStep,
     CollectInformationFlowStep,
     EndFlowStep,
+    LinkFlowStep,
     StartFlowStep,
 )
 from rasa.shared.core.flows.steps.constants import (
@@ -63,7 +66,7 @@ class FlowLanguageTranslation(BaseModel):
     """The human-readable name of the flow."""
 
     class Config:
-        """Config for the FlowLanguageTranslation class."""
+        """Configuration for the FlowLanguageTranslation model."""
 
         extra = "ignore"
 
@@ -262,7 +265,7 @@ class Flow:
     def readable_name(self, language: Optional[Language] = None) -> str:
         """Returns the flow's name in the specified language if available.
 
-        Otherwise falls back to the flow's name, and finally the flow's ID.
+        Otherwise, falls back to the flow's name, and finally the flow's ID.
 
         Args:
             language: Preferred language code.
@@ -515,6 +518,9 @@ class Flow:
         current_path: FlowPath,
         all_paths: FlowPathsList,
         visited_step_ids: Set[str],
+        call_stack: Optional[
+            List[Tuple[Optional[FlowStep], Optional[Flow], str]]
+        ] = None,
     ) -> None:
         """Processes the flow steps recursively.
 
@@ -523,19 +529,25 @@ class Flow:
             current_path: The current path being constructed.
             all_paths: The list where completed paths are added.
             visited_step_ids: A set of steps that have been visited to avoid cycles.
+            call_stack: Tuple list of (flow, path, flow_type) to track path when \
+                calling flows through call and link steps.
 
         Returns:
             None: This function modifies all_paths in place by appending new paths
             as they are found.
         """
+        if call_stack is None:
+            call_stack = []
+
         # Check if the step is relevant for testable_paths extraction.
-        # We only create new path nodes for ActionFlowStep, CallFlowStep and
-        # CollectInformationFlowStep because these are externally visible
-        # changes in the assistant's behaviour (trackable in the e2e tests).
+        # We only create new path nodes for CollectInformationFlowStep,
+        # ActionFlowStep, CallFlowStep and LinkFlowStep,
+        # because these are externally visible changes
+        # in the assistant's behaviour (trackable in the e2e tests).
         # For other flow steps, we only follow their links.
-        # We decided to ignore calls to other flows in our coverage analysis.
         should_add_node = isinstance(
-            current_step, (CollectInformationFlowStep, ActionFlowStep, CallFlowStep)
+            current_step,
+            (CollectInformationFlowStep, ActionFlowStep, CallFlowStep, LinkFlowStep),
         )
         if should_add_node:
             # Add current step to the current path that is being constructed.
@@ -547,16 +559,107 @@ class Flow:
                 )
             )
 
+        # Check if the current step has already been visited or
+        # if the end of the path has been reached.
+        # If so, and we’re not within a called flow, we terminate the current path.
+        # This also applies for when we're inside a linked flow and reach its end.
+        # If we're inside a called flow and reach its end,
+        # continue with the next steps in its parent flow.
         if current_step.id in visited_step_ids or self.is_end_of_path(current_step):
-            # Found a cycle, or reached an end step, do not proceed further.
-            all_paths.paths.append(copy.deepcopy(current_path))
-            # Remove the last node from the path if it was added.
+            # Shallow copy is sufficient, since we only pop from the list and
+            # don't mutate the objects inside the tuples.
+            # The state of FlowStep and Flow does not change during the traversal.
+            call_stack_copy = call_stack.copy()
+            # parent_flow_type could be any of: None, i.e. main flow,
+            # KEY_CALLED_FLOW(=called_flow) or KEY_LINKED_FLOW(=linked_flow)
+            parent_step, parent_flow, parent_flow_type = (
+                call_stack_copy.pop() if call_stack_copy else (None, None, None)
+            )
+
+            # Check if within a called flow.
+            # If within linked flow, stop the traversal as this takes precedence.
+            if parent_step and parent_flow_type == KEY_CALLED_FLOW:
+                # As we have reached the END step of a called flow, we need to
+                # continue with the next links of the parent step.
+                if parent_flow is not None:
+                    for link in parent_step.next.links:
+                        parent_flow._handle_link(
+                            current_path,
+                            all_paths,
+                            visited_step_ids,
+                            link,
+                            call_stack_copy,
+                        )
+
+            else:
+                # Found a cycle, or reached an end step, do not proceed further.
+                all_paths.paths.append(copy.deepcopy(current_path))
+
+            # Backtrack: remove the last node after reaching a terminal step.
+            # Ensures the path is correctly backtracked, after a path ends or
+            # a cycle is detected.
             if should_add_node:
                 current_path.nodes.pop()
             return
 
         # Mark current step as visited in this path.
         visited_step_ids.add(current_step.id)
+
+        # If the current step is a call step, we need to resolve the call
+        # and continue with the steps of the called flow.
+        if isinstance(current_step, CallFlowStep):
+            # Get the steps of the called flow and continue with them.
+            called_flow = current_step.called_flow_reference
+            if called_flow and (
+                start_step_in_called_flow := called_flow.first_step_in_flow()
+            ):
+                call_stack.append((current_step, self, KEY_CALLED_FLOW))
+                called_flow._go_over_steps(
+                    start_step_in_called_flow,
+                    current_path,
+                    all_paths,
+                    visited_step_ids,
+                    call_stack,
+                )
+
+                # After processing the steps of the called (child) flow,
+                # remove them from the visited steps
+                # to allow the calling (parent) flow to revisit them later.
+                visited_step_ids.remove(current_step.id)
+                call_stack.pop()
+
+                # Backtrack: remove the last node
+                # after returning from a called (child) flow.
+                # Ensures the parent flow can continue exploring other branches.
+                if should_add_node:
+                    current_path.nodes.pop()
+            return
+
+        # If the current step is a LinkFlowStep, step into the linked flow,
+        # process its links, and do not return from that flow anymore.
+        if isinstance(current_step, LinkFlowStep):
+            # Get the steps of the linked flow and continue with them.
+            linked_flow = current_step.linked_flow_reference
+            if linked_flow and (
+                start_step_in_linked_flow := linked_flow.first_step_in_flow()
+            ):
+                call_stack.append((current_step, self, KEY_LINKED_FLOW))
+                linked_flow._go_over_steps(
+                    start_step_in_linked_flow,
+                    current_path,
+                    all_paths,
+                    visited_step_ids,
+                    call_stack,
+                )
+                visited_step_ids.remove(current_step.id)
+                call_stack.pop()
+
+                # Backtrack: remove the last node
+                # after returning from a linked (child) flow.
+                # Ensures the parent can continue after the linked flow is processed.
+                if should_add_node:
+                    current_path.nodes.pop()
+            return
 
         # Iterate over all links of the current step.
         for link in current_step.next.links:
@@ -565,12 +668,15 @@ class Flow:
                 all_paths,
                 visited_step_ids,
                 link,
+                call_stack,
             )
 
         # Backtrack the current step and remove it from the path.
         visited_step_ids.remove(current_step.id)
 
-        # Remove the last node from the path if it was added.
+        # Backtrack: remove the last node
+        # after processing all links of the current step.
+        # Ensures the next recursion can start once all links are explored.
         if should_add_node:
             current_path.nodes.pop()
 
@@ -580,6 +686,9 @@ class Flow:
         all_paths: FlowPathsList,
         visited_step_ids: Set[str],
         link: FlowStepLink,
+        call_stack: Optional[
+            List[Tuple[Optional[FlowStep], Optional[Flow], str]]
+        ] = None,
     ) -> None:
         """Handles the next step in a flow.
 
@@ -588,6 +697,8 @@ class Flow:
             all_paths: The list where completed paths are added.
             visited_step_ids: A set of steps that have been visited to avoid cycles.
             link: The link to be followed.
+            call_stack: Tuple list of (flow, path, flow_type) to track path when \
+                calling flows through call and link steps..
 
         Returns:
             None: This function modifies all_paths in place by appending new paths
@@ -602,6 +713,7 @@ class Flow:
                     current_path,
                     all_paths,
                     visited_step_ids,
+                    call_stack,
                 )
                 return
         # IfFlowStepLink and ElseFlowStepLink are conditional links.
@@ -615,6 +727,7 @@ class Flow:
                         current_path,
                         all_paths,
                         visited_step_ids,
+                        call_stack,
                     )
                 return
             else:
@@ -625,6 +738,7 @@ class Flow:
                         current_path,
                         all_paths,
                         visited_step_ids,
+                        call_stack,
                     )
                     return
 

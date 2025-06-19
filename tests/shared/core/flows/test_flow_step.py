@@ -64,7 +64,6 @@ def flow_with_all_steps() -> Flow:
         ("set_slots_step", SetSlotsFlowStep),
         ("collect_step", CollectInformationFlowStep),
         ("noop_step", NoOperationFlowStep),
-        ("link_step", LinkFlowStep),
     ],
 )
 def test_flow_step_serialization(
@@ -94,6 +93,21 @@ def test_flow_step_serialization_for_call_step(flow_with_all_steps: Flow):
     step_from_data.idx = step.idx
     assert isinstance(step_from_data, CallFlowStep)
     assert step.call == step_from_data.call
+
+
+def test_flow_step_serialization_for_link_step(flow_with_all_steps: Flow):
+    # need to test the link step separately, as it contains a reference to
+    # another flow, which is not serializable and therefore won't
+    # be part of the serialized data.
+    step = flow_with_all_steps.step_by_id("link_step")
+    assert isinstance(step, LinkFlowStep)
+    step_data = step.as_json()
+    step_from_data = LinkFlowStep.from_json("test_flow", step_data)
+    # overwriting idx of the re-serialized class as this is normally only happening
+    # when reading entire flows
+    step_from_data.idx = step.idx
+    assert isinstance(step_from_data, LinkFlowStep)
+    assert step.link == step_from_data.link
 
 
 def test_action_flow_step_attributes(flow_with_all_steps: Flow):

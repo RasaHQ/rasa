@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Text
+from typing import TYPE_CHECKING, Any, Dict, Text
 
-from rasa.shared.core.flows.flow_step import FlowStep
+from rasa.shared.core.flows.flow_step import FlowStep, Optional
+
+if TYPE_CHECKING:
+    from rasa.shared.core.flows.flow import Flow
 
 
 @dataclass
@@ -12,6 +15,8 @@ class LinkFlowStep(FlowStep):
 
     link: Text
     """The id of the flow that should be started subsequently."""
+    linked_flow_reference: Optional["Flow"] = None
+    """The flow that is linked to by this step."""
 
     def does_allow_for_next_step(self) -> bool:
         """Returns whether this step allows for following steps.

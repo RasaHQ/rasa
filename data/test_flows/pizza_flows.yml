@@ -1,4 +1,66 @@
 flows:
+  called_flow_test:
+    name: called flow test
+    description: test flow with called flows and branching
+    nlu_trigger:
+      - intent:
+          name: request_pizza
+          confidence_threshold: 0.5
+    steps:
+      - call: called_flow_1
+        next:
+          - if: slots.confirmation_order
+            then: take_payment
+          - else: cancel_order
+      - id: take_payment
+        action: utter_execute_payment
+        next: END
+      - id: cancel_order
+        action: utter_cancel_order
+        next: END
+
+  called_flow_1:
+    name: called flow 1
+    description: test called flow 1
+    steps:
+      - collect: node_a
+        next:
+          - if: slots.membership_points and slots.confirmation_order
+            then: node_b
+          - else: node_c
+      - id: node_b
+        collect: node_b
+      - id: node_d
+        collect: node_d
+        next:
+          - if: slots.membership_points and slots.confirmation_order
+            then: node_e
+          - else: node_c
+      - id: node_c
+        call: called_flow_2
+        next:
+          - if: slots.department
+            then: node_e
+          - else: END
+      - id: node_e
+        collect: node_e
+
+  called_flow_2:
+    name: called flow 2
+    description: test called flow 2
+    steps:
+      - collect: department
+        next:
+          - if: slots.department
+            then: show_vacancies
+          - else: show_vacancies_error
+      - id: show_vacancies
+        action: action_show_vacancies
+        next: END
+      - id: show_vacancies_error
+        action: utter_show_vacancies_error
+        next: END
+
   order_pizza:
     name: order pizza
     description: user asks for a pizza
@@ -7,6 +69,9 @@ flows:
         name: request_pizza
         confidence_threshold: 0.5
     steps:
+    - id: greet_user
+      action: utter_greeting
+    - call: get_user_address
     - call: fill_pizza_order
       next:
         - if: slots.confirmation_order
@@ -15,9 +80,9 @@ flows:
     - id: payment_options
       collect: payment_option
       next:
-        - if: slots.payment_option is 'card'
+        - if: slots.payment_option == 'card'
           then: use_card_details
-        - if: slots.payment_option is 'membership_points'
+        - if: slots.payment_option == 'membership_points'
           then: use_membership_points
         - else: cancel_order
     - id: use_card_details
@@ -39,29 +104,155 @@ flows:
       action: utter_cancel_order
       next: END
 
+  get_user_address:
+    name: get user address
+    description: user is asked to provide delivery address
+    steps:
+      - id: ask_delivery_address
+        collect: delivery_address
+
   fill_pizza_order:
     name: fill pizza order
     description: user is asked to fill out pizza order details
     steps:
-      - collect: pizza
-      - collect: num_pizza
-      - collect: address
-      - collect: confirmation_order
+      - id: get_pizza_name
+        collect: pizza_name
+      - id: get_confirmation_order
+        collect: confirmation_order
         reset_after_flow_ends: False
         ask_before_filling: True
 
   use_membership_points:
-    if: False
     name: use membership points
     description: user asks to use membership or loyalty points
     steps:
-      - call: authenticate_user
+      - id: start_authentication
+        call: authenticate_user
         next:
           - if: slots.is_user_logged_in
-            then:
-              - action: action_check_points
-                next: END
-          - else: END
+            then: check_membership_status
+          - else: user_not_logged_in
+      - id: check_membership_status
+        action: action_check_membership_status
+        next: END
+      - id: user_not_logged_in
+        action: utter_user_not_logged_in
+        next: END
+
+  authenticate_user:
+    name: authenticate user
+    description: user is asked to authenticate
+    steps:
+      - action: action_authenticate_user
+      - collect: is_user_logged_in
+
+  linked_flow_test:
+    name: linked flow test
+    description: test flow with linked flows
+    nlu_trigger:
+      - intent:
+          name: request_pizza
+          confidence_threshold: 0.5
+    steps:
+      - action: utter_greeting
+        next:
+          - if: slots.confirmation_order
+            then: take_payment
+          - else: cancel_order
+      - id: take_payment
+        action: utter_execute_payment
+        next: get_feedback_payment
+      - id: cancel_order
+        action: utter_cancel_order
+        next: get_feedback_cancellation
+      - id: get_feedback_payment
+        link: get_feedback_payment
+      - id: get_feedback_cancellation
+        link: get_feedback_cancellation
+      - action: utter_goodbye
+
+  get_feedback_payment:
+    name: ask for feedback on payment process
+    description: ask user for feedback on payment process
+    steps:
+      - collect: user_rating_payment_process
+        next:
+          - if: slots.user_rating
+            then: ask_for_suggestions_payment_process
+          - else: thank_user_for_rating
+      - id: ask_for_suggestions_payment_process
+        collect: user_suggestions
+        next: END
+      - id: thank_user_for_rating
+        action: general_thank_you
+        next: END
+
+  get_feedback_cancellation:
+    name: ask for feedback on cancellation process
+    description: ask user for feedback on cancellation process
+    steps:
+      - collect: user_rating_cancellation_process
+        next:
+          - if: slots.user_rating
+            then: ask_for_suggestions_cancellation_process
+          - else: thank_user_for_rating
+      - id: ask_for_suggestions_cancellation_process
+        collect: user_suggestions
+        next: END
+      - id: thank_user_for_rating
+        collect: general_thank_you
+        next: END
+
+  called_and_linked_flow_interaction_test:
+    name: test nested and branching call and link flows
+    description: test flow with call flow that calls a linked flow
+    nlu_trigger:
+      - intent:
+          name: request_pizza
+          confidence_threshold: 0.5
+    steps:
+      - action: utter_greeting
+      - call: get_user_details
+      - action: utter_goodbye_from_main_flow
+
+  get_user_details:
+    name: get user details
+    description: user is asked to provide their details
+    steps:
+      - collect: user_name
+      - collect: user_email
+      - call: get_user_address
+        next:
+          - if: slots.confirmation_order
+            then: take_payment
+          - if: not slots.delivery_address
+            then: pickup_options
+          - else: cancel_order
+      - id: take_payment
+        link: get_feedback_payment
+      - id: pickup_options
+        link: arrange_pickup
+      - id: cancel_order
+        link: get_feedback_cancellation
+      - action: utter_goodbye_from_called_flow
+
+  arrange_pickup:
+    name: discuss pickup options
+    description: offer user pickup options
+    steps:
+      - call: fill_pizza_order
+      - collect: pickup_time
+        next:
+          - if: slots.pickup_time == "morning"
+            then: assign_morning_delivery_slot
+          - else: assign_evening_delivery_slot
+      - id: assign_morning_delivery_slot
+        action: utter_morning_collection
+        next: END
+      - id: assign_evening_delivery_slot
+        action: utter_evening_collection
+        next: END
+      - action: utter_goodbye_from_linked_flow
 
   correct_order:
     name: correct_order
