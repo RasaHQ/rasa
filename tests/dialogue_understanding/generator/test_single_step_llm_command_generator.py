@@ -719,7 +719,7 @@ class TestSingleStepLLMCommandGenerator:
             """
         )
         with open(EXPECTED_PROMPT_PATH, "r", encoding="unicode_escape") as f:
-            expected_template = f.readlines()
+            expected_template = f.read()
         # When
         rendered_template = command_generator.render_template(
             message=test_message,
@@ -728,10 +728,7 @@ class TestSingleStepLLMCommandGenerator:
             all_flows=test_flows,
         )
         # Then
-        for rendered_line, expected_line in zip(
-            rendered_template.splitlines(True), expected_template
-        ):
-            assert rendered_line == expected_line
+        assert rendered_template == expected_template
 
     def test_render_template_with_current_slot_info(
         self,

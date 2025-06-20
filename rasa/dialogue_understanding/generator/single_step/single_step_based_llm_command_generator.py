@@ -61,7 +61,6 @@ from rasa.shared.utils.llm import (
     sanitize_message_for_prompt,
     tracker_as_readable_transcript,
 )
-from rasa.utils.beta import BetaNotEnabledException, ensure_beta_feature_is_enabled
 from rasa.utils.log_utils import log_llm
 
 structlogger = structlog.get_logger()
@@ -106,7 +105,6 @@ class SingleStepBasedLLMCommandGenerator(LLMBasedCommandGenerator, ABC):
         )
 
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
-        self.repeat_command_enabled = self.is_repeat_command_enabled()
 
     ### Implementations of LLMBasedCommandGenerator parent
     @staticmethod
@@ -414,23 +412,9 @@ class SingleStepBasedLLMCommandGenerator(LLMBasedCommandGenerator, ABC):
             "current_slot_type": current_slot_type,
             "current_slot_allowed_values": current_slot_allowed_values,
             "user_message": latest_user_message,
-            "is_repeat_command_enabled": self.repeat_command_enabled,
         }
 
         return self.compile_template(self.prompt_template).render(**inputs)
-
-    def is_repeat_command_enabled(self) -> bool:
-        """Check for feature flag"""
-        RASA_PRO_BETA_REPEAT_COMMAND_ENV_VAR_NAME = "RASA_PRO_BETA_REPEAT_COMMAND"
-        try:
-            ensure_beta_feature_is_enabled(
-                "Repeat Command",
-                env_flag=RASA_PRO_BETA_REPEAT_COMMAND_ENV_VAR_NAME,
-            )
-        except BetaNotEnabledException:
-            return False
-
-        return True
 
     @classmethod
     def fingerprint_addon(cls: Any, config: Dict[str, Any]) -> Optional[str]:
