@@ -1,7 +1,7 @@
 recipe: default.v1
 language: en
 pipeline:
-- name: SingleStepLLMCommandGenerator
+- name: CompactLLMCommandGenerator
   llm:
     model_group: rasa_command_generation_model
   flow_retrieval:
