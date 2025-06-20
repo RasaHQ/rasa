@@ -310,6 +310,10 @@ class VoiceInputChannel(InputChannel):
             tts_config=self.tts_config,
         )
 
+    def get_sender_id(self, call_parameters: CallParameters) -> str:
+        """Get the sender ID for the channel."""
+        return call_parameters.call_id
+
     async def monitor_silence_timeout(self, asr_event_queue: asyncio.Queue) -> None:
         timeout = call_state.silence_timeout
         if not timeout:
@@ -358,7 +362,7 @@ class VoiceInputChannel(InputChannel):
         message = UserMessage(
             text=USER_CONVERSATION_SESSION_START,
             output_channel=output_channel,
-            sender_id=call_parameters.stream_id,
+            sender_id=self.get_sender_id(call_parameters),
             input_channel=self.name(),
             metadata=asdict(call_parameters),
         )
@@ -476,7 +480,7 @@ class VoiceInputChannel(InputChannel):
             message = UserMessage(
                 text=e.text,
                 output_channel=output_channel,
-                sender_id=call_parameters.stream_id,
+                sender_id=self.get_sender_id(call_parameters),
                 input_channel=self.name(),
                 metadata=asdict(call_parameters),
             )
@@ -489,7 +493,7 @@ class VoiceInputChannel(InputChannel):
             message = UserMessage(
                 text=USER_CONVERSATION_SILENCE_TIMEOUT,
                 output_channel=output_channel,
-                sender_id=call_parameters.stream_id,
+                sender_id=self.get_sender_id(call_parameters),
                 input_channel=self.name(),
                 metadata=asdict(call_parameters),
             )
@@ -507,7 +511,7 @@ class VoiceInputChannel(InputChannel):
         message = UserMessage(
             text=USER_CONVERSATION_SESSION_END,
             output_channel=output_channel,
-            sender_id=call_parameters.stream_id,
+            sender_id=self.get_sender_id(call_parameters),
             input_channel=self.name(),
         )
         await on_new_message(message)

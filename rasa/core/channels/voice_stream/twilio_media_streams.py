@@ -140,6 +140,13 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
     def name(cls) -> str:
         return "twilio_media_streams"
 
+    def get_sender_id(self, call_parameters: CallParameters) -> str:
+        """Get the sender ID for the channel.
+
+        Twilio Media Streams uses the Stream ID as Sender ID because
+        it is required in OutputChannel.send_text_message to send messages."""
+        return call_parameters.stream_id  # type: ignore[return-value]
+
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
         return RasaAudioBytes(base64.b64decode(input_bytes))
 
