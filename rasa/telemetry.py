@@ -663,7 +663,7 @@ def initialize_error_reporting() -> None:
     from the `rasa` package.
     """
     import sentry_sdk
-    from sentry_sdk import get_current_scope
+    from sentry_sdk import Scope
     from sentry_sdk.integrations.atexit import AtexitIntegration
     from sentry_sdk.integrations.dedupe import DedupeIntegration
     from sentry_sdk.integrations.excepthook import ExcepthookIntegration
@@ -711,7 +711,7 @@ def initialize_error_reporting() -> None:
     if not telemetry_id:
         return
 
-    scope = get_current_scope()
+    scope = Scope.get_current_scope()
     # sentry added these more recently, just a protection in a case where a
     # user has installed an older version of sentry
     if hasattr(scope, "set_user"):
