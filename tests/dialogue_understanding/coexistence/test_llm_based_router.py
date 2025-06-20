@@ -309,7 +309,7 @@ class TestLLMBasedRouter:
                     {
                         "id": "openai_embedding",
                         "models": [
-                            {"provider": "openai", "model": "text-embedding-ada-002"}
+                            {"provider": "openai", "model": "text-embedding-3-large"}
                         ],
                     },
                 ]
@@ -401,7 +401,9 @@ class TestLLMBasedRouter:
                 [
                     {
                         "id": "openai_gpt",
-                        "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                        "models": [
+                            {"provider": "openai", "model": "gpt-4o-2024-11-20"}
+                        ],
                     },
                 ],
                 True,
@@ -424,7 +426,9 @@ class TestLLMBasedRouter:
                 [
                     {
                         "id": "openai_gpt-2",
-                        "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                        "models": [
+                            {"provider": "openai", "model": "gpt-4o-2024-11-20"}
+                        ],
                     },
                 ],
                 True,

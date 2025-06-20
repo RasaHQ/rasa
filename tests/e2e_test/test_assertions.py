@@ -936,14 +936,14 @@ def test_generative_response_answer_relevance_assertion_run_llm_evaluation_succe
     assert mock_embed.call_args_list == [
         call(
             input=[user_question],
-            model="openai/text-embedding-ada-002",
+            model="openai/text-embedding-3-large",
             api_base=None,
             api_type="openai",
             api_version=None,
         ),
         call(
             input=[generated_question],
-            model="openai/text-embedding-ada-002",
+            model="openai/text-embedding-3-large",
             api_base=None,
             api_type="openai",
             api_version=None,
@@ -1074,14 +1074,14 @@ def test_generative_response_is_relevant_run_llm_evaluation_failure(
     assert mock_embed.call_args_list == [
         call(
             input=[user_question],
-            model="openai/text-embedding-ada-002",
+            model="openai/text-embedding-3-large",
             api_base=None,
             api_type=OPENAI_PROVIDER,
             api_version=None,
         ),
         call(
             input=[generated_question],
-            model="openai/text-embedding-ada-002",
+            model="openai/text-embedding-3-large",
             api_base=None,
             api_type=OPENAI_PROVIDER,
             api_version=None,
@@ -1194,14 +1194,14 @@ def test_generative_response_answer_relevance_assertion_run_assertion_with_utter
     assert mock_embed.call_args_list == [
         call(
             input=[user_question],
-            model="openai/text-embedding-ada-002",
+            model="openai/text-embedding-3-large",
             api_base=None,
             api_type="openai",
             api_version=None,
         ),
         call(
             input=[generated_question],
-            model="openai/text-embedding-ada-002",
+            model="openai/text-embedding-3-large",
             api_base=None,
             api_type="openai",
             api_version=None,
@@ -1443,7 +1443,7 @@ def test_generative_response_answer_relevance_assertion_run_multiple_responses_s
     assert mock_embed.call_args_list == [
         call(
             input=[user_question],
-            model="openai/text-embedding-ada-002",
+            model="openai/text-embedding-3-large",
             api_base=None,
             api_type="openai",
             api_version=None,
@@ -1453,7 +1453,7 @@ def test_generative_response_answer_relevance_assertion_run_multiple_responses_s
                 "Are international transfers free with the domestic service?",
                 "Are international transfers free with the premium service?",
             ],
-            model="openai/text-embedding-ada-002",
+            model="openai/text-embedding-3-large",
             api_base=None,
             api_type="openai",
             api_version=None,

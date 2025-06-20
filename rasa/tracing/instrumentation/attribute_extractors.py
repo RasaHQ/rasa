@@ -826,7 +826,16 @@ def compute_prompt_tokens_length(
         )
         model_name = f"{model_name}-0613"
 
-    encoding = tiktoken.encoding_for_model(model_name)
+    try:
+        encoding = tiktoken.encoding_for_model(model_name)
+    except KeyError:
+        # Fallback for unknown models
+        logger.warning(
+            f"Unknown model name '{model_name}', "
+            f"using 'cl100k_base' encoding as fallback."
+        )
+        encoding = tiktoken.get_encoding("cl100k_base")
+
     return len(encoding.encode(prompt))
 
 

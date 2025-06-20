@@ -21,7 +21,6 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
-    LOGIT_BIAS_CONFIG_KEY,
     MAX_COMPLETION_TOKENS_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     OPENAI_PROVIDER,
@@ -58,22 +57,12 @@ DEFAULT_COMMAND_PROMPT_TEMPLATE = importlib.resources.read_text(
 )
 LLM_BASED_ROUTER_CONFIG_FILE_NAME = "config.json"
 
-# Token ids for gpt 3.5 and gpt 4 corresponding to space + capitalized Letter
-A_TO_C_TOKEN_IDS_CHATGPT = [
-    362,  # " A"
-    426,  # " B"
-    356,  # " C"
-]
-
 DEFAULT_LLM_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
     MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME,
     TIMEOUT_CONFIG_KEY: 7,
     TEMPERATURE_CONFIG_KEY: 0.0,
     MAX_COMPLETION_TOKENS_CONFIG_KEY: 1,
-    LOGIT_BIAS_CONFIG_KEY: {
-        str(token_id): 100 for token_id in A_TO_C_TOKEN_IDS_CHATGPT
-    },
 }
 
 structlogger = structlog.get_logger()
@@ -174,7 +163,6 @@ class LLMBasedRouter(LLMHealthCheckMixin, GraphComponent):
         **kwargs: Any,
     ) -> "LLMBasedRouter":
         """Loads trained component (see parent class for full docstring)."""
-
         # Perform health check on the resolved LLM client config
         llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY, {}))
         cls.perform_llm_health_check(

@@ -25,10 +25,10 @@ model_groups:
     models:
     # Same LLM models across multiple deployments
       - provider: litellm_proxy
-        api_base: ${LITELLM_PROXY_1} 
+        api_base: ${LITELLM_PROXY_1}
         model: gpt-3.5-turbo
       - provider: litellm_proxy
-        api_base: ${LITELLM_PROXY_2} 
+        api_base: ${LITELLM_PROXY_2}
         model: gpt-3.5-turbo
     router:
       routing_strategy: usage-based-routing
@@ -43,10 +43,10 @@ model_groups:
       # Same Embedding models across multiple deployments
       - provider: litellm_proxy
         api_base: ${LITELLM_PROXY_1}
-        model: text-embedding-ada-002
+        model: text-embedding-3-large
       - provider: litellm_proxy
         api_base: ${LITELLM_PROXY_2}
-        model: text-embedding-ada-002
+        model: text-embedding-3-large
     router:
       routing_strategy: least-busy
       num_retries: 5

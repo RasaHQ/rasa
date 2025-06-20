@@ -87,13 +87,15 @@ USER = "USER"
 
 AI = "AI"
 
-DEFAULT_OPENAI_GENERATE_MODEL_NAME = "gpt-3.5-turbo"
+DEFAULT_OPENAI_GENERATE_MODEL_NAME = "gpt-4o-2024-11-20"
 
-DEFAULT_OPENAI_CHAT_MODEL_NAME = "gpt-3.5-turbo"
+DEFAULT_OPENAI_CHAT_MODEL_NAME = "gpt-4o-2024-11-20"
+
+DEFAULT_ENTERPRISE_SEARCH_POLICY_MODEL_NAME = "gpt-4.1-mini-2025-04-14"
 
 DEFAULT_OPENAI_CHAT_MODEL_NAME_ADVANCED = "gpt-4-0613"
 
-DEFAULT_OPENAI_EMBEDDING_MODEL_NAME = "text-embedding-ada-002"
+DEFAULT_OPENAI_EMBEDDING_MODEL_NAME = "text-embedding-3-large"
 
 DEFAULT_OPENAI_TEMPERATURE = 0.7
 
@@ -1052,8 +1054,7 @@ def _get_enterprise_search_prompt(config: Dict[Text, Any]) -> Text:
 def get_system_default_prompts(
     config: Dict[Text, Any], endpoints: Dict[Text, Any]
 ) -> SystemPrompts:
-    """
-    Returns the system default prompts for the component.
+    """Returns the system default prompts for the component.
 
     Args:
         config: The config.yml file data.

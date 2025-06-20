@@ -1,16 +1,17 @@
 import logging
+import os
+from argparse import ArgumentParser
+from pathlib import Path
+from typing import List
+
+import yaml
+from langchain.document_loaders import DirectoryLoader, TextLoader
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.schema import Document
+from langchain.schema.embeddings import Embeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores.milvus import Milvus
 from langchain.vectorstores.qdrant import Qdrant
-from langchain.document_loaders import DirectoryLoader, TextLoader
-from langchain.embeddings import OpenAIEmbeddings, HuggingFaceEmbeddings
-from pathlib import Path
-from langchain.schema import Document
-from langchain.schema.embeddings import Embeddings
-from typing import List
-import yaml
-from argparse import ArgumentParser
-import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -137,7 +138,7 @@ def validate_embeddings_type(embeddings_type: str):
         raise SystemExit(f"Embeddings type '{embeddings_type}' not supported.")
     elif embeddings_type.lower() == "openai":
         # check if OPENAI_API_KEY is set
-        if not "OPENAI_API_KEY" in os.environ:
+        if "OPENAI_API_KEY" not in os.environ:
             raise SystemExit("OPENAI_API_KEY environment variable not set.")
 
 
@@ -182,7 +183,7 @@ def main():
 
     # create embeddings
     logger.info(f"Creating embeddings with type {embeddings_type}")
-    embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 
     # create milvus collection
     if destination.lower() == "milvus":

@@ -43,7 +43,7 @@ on:
         description: "Model from LLM provider (for `azure` provider, use `llm-deployment` input instead). Default: model from `data/test_config/providers/<provider>/*endpoint|config*.yml`"
         type: string
         required: false
-      
+
       embeddings-model-name:
         description: "Embeddings model from provider (for `azure` provider, fill `embeddings-deployment` input instead). Default: model from `data/test_config/providers/<provider>/*endpoint|config*.yml`"
         type: string
@@ -84,7 +84,7 @@ on:
         type: string
         required: true
         default: "main"
-        
+
 env:
   DEFAULT_PYTHON_VERSION: "3.11"
   RASA_PRO_BETA_E2E_ASSERTIONS: true
@@ -128,7 +128,7 @@ env:
   AZURE_DEPLOYMENT_GPT3_5_TURBO: "test-gpt-35-turbo"
   AZURE_API_BASE_GPT3_5_TURBO: "https://engine-testing.openai.azure.com/"
   AZURE_API_VERSION_GPT3_5_TURBO: "2024-02-01"
-  AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA: "test-text-embedding-ada-002"
+  AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA: "test-text-embedding-3-large"
   AZURE_API_BASE_TXT_EMBEDDING_ADA: "https://engine-testing.openai.azure.com/"
   AZURE_API_VERSION_TXT_EMBEDDING_ADA: "2023-05-15"
   AZURE_API_KEY_TRAINING: ${{ secrets.AZURE_OPENAI_API_KEY_ENGINE_TESTING }}
@@ -137,7 +137,7 @@ env:
   AZURE_DEPLOYMENT_GPT3_5_TURBO_CA: "test-gpt-35-turbo"
   AZURE_API_BASE_GPT3_5_TURBO_CA: "https://devtribe-testing-canada-east.openai.azure.com/"
   AZURE_API_VERSION_GPT3_5_TURBO_CA: "2024-02-01"
-  AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_CA: "test-text-embedding-ada-002"
+  AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_CA: "test-text-embedding-3-large"
   AZURE_API_BASE_TXT_EMBEDDING_ADA_CA: "https://devtribe-testing-canada-east.openai.azure.com"
   AZURE_API_VERSION_TXT_EMBEDDING_ADA_CA: "2023-05-15"
   AZURE_API_KEY_CA: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING_CANADA_EAST }}
@@ -146,7 +146,7 @@ env:
   AZURE_DEPLOYMENT_GPT3_5_TURBO_FR: "test-gpt-35-turbo"
   AZURE_API_BASE_GPT3_5_TURBO_FR: "https://devtribe-testing.openai.azure.com/"
   AZURE_API_VERSION_GPT3_5_TURBO_FR: "2024-02-01"
-  AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_FR: "test-text-embedding-ada-002"
+  AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_FR: "test-text-embedding-3-large"
   AZURE_API_BASE_TXT_EMBEDDING_ADA_FR: "https://devtribe-testing.openai.azure.com/"
   AZURE_API_VERSION_TXT_EMBEDDING_ADA_FR: "2023-05-15"
   AZURE_API_KEY_FR: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING }}
@@ -173,7 +173,7 @@ jobs:
       - uses: ./.github/actions/lint-action
         with:
           workflow_path: .github/workflows/providers-e2e-tests-with-custom-model-or-config.yml
-  
+
   e2e_test_with_user_provided_config_and_endpoint_files:
     name: Run e2e Test
     needs: lint_action

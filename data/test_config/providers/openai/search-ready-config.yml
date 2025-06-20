@@ -3,7 +3,7 @@ language: en
 pipeline:
   - name: LLMBasedRouter
     llm:
-      model: gpt-4-0613
+      model: gpt-4o-2024-11-20
     prompt: rasa-private/data/test_config/providers/router_template.jinja2
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
@@ -48,7 +48,7 @@ policies:
   - name: FlowPolicy
   - name: EnterpriseSearchPolicy
     llm:
-      model: gpt-4o-2024-11-20
+      model: gpt-4.1-mini-2025-04-14
     max_messages_in_query: 4
     use_generative_llm: true
     citation_enabled: true

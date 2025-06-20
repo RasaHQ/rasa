@@ -1421,7 +1421,7 @@ def test_enterprise_search_policy_init_with_different_llm_configs(
                 {
                     "id": "openai_embedding",
                     "models": [
-                        {"provider": "openai", "model": "text-embedding-ada-002"}
+                        {"provider": "openai", "model": "text-embedding-3-large"}
                     ],
                 },
             ]
@@ -1527,7 +1527,9 @@ def test_enterprise_search_policy_persist_config(
             [
                 {
                     "id": "openai_gpt",
-                    "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                    "models": [
+                        {"provider": "openai", "model": "gpt-4.1-mini-2025-04-14"}
+                    ],
                 },
             ],
             True,
@@ -1550,7 +1552,9 @@ def test_enterprise_search_policy_persist_config(
             [
                 {
                     "id": "openai_gpt-2",
-                    "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                    "models": [
+                        {"provider": "openai", "model": "gpt-4.1-mini-2025-04-14"}
+                    ],
                 },
             ],
             True,

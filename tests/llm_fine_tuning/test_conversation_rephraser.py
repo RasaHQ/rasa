@@ -24,7 +24,7 @@ def rephraser() -> ConversationRephraser:
     config = {
         "llm": {
             "type": "openai",
-            "model_name": "gpt-3.5-turbo",
+            "model_name": "gpt-4o-mini",
             "request_timeout": 7,
             "temperature": 0.0,
             "max_tokens": 4096,

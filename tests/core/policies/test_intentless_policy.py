@@ -1022,7 +1022,7 @@ def test_should_abstain_in_coexistence(
                 "id": "openai_embedding",
                 "models": [
                     combine_custom_and_default_config(
-                        {"provider": "openai", "model": "text-embedding-ada-002"},
+                        {"provider": "openai", "model": "text-embedding-3-large"},
                         DEFAULT_EMBEDDINGS_CONFIG,
                     )
                 ],
@@ -1053,7 +1053,7 @@ def test_intentless_policy_init_with_different_llm_configs(
                 {
                     "id": "openai_embedding",
                     "models": [
-                        {"provider": "openai", "model": "text-embedding-ada-002"}
+                        {"provider": "openai", "model": "text-embedding-3-large"}
                     ],
                 },
             ]
@@ -1174,7 +1174,7 @@ def test_intentless_policy_persist_config(
             [
                 {
                     "id": "openai_gpt",
-                    "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                    "models": [{"provider": "openai", "model": "gpt-4o-2024-11-20"}],
                 },
             ],
             True,
@@ -1191,7 +1191,7 @@ def test_intentless_policy_persist_config(
             [
                 {
                     "id": "openai_gpt-2",
-                    "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                    "models": [{"provider": "openai", "model": "gpt-4o-2024-11-20"}],
                 },
             ],
             True,

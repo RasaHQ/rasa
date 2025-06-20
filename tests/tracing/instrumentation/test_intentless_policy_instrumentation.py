@@ -359,12 +359,12 @@ async def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
         "len_prompt_tokens": "6",
         # llm attributes
         "llm_type": "openai",
-        "llm_model": "gpt-3.5-turbo",
+        "llm_model": "gpt-4o-2024-11-20",
         "llm_model_group_id": "None",
         "llm_temperature": "0.0",
         "llm_request_timeout": "5",
         # embeddings attributes
-        "embeddings_model": "text-embedding-ada-002",
+        "embeddings_model": "text-embedding-3-large",
         "embeddings_type": "openai",
         "embeddings_model_group_id": "None",
         # deprecated
@@ -372,7 +372,7 @@ async def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
         "embeddings": json.dumps(
             {
                 "provider": "openai",
-                "model": "text-embedding-ada-002",
+                "model": "text-embedding-3-large",
                 "api_base": None,
                 "api_version": None,
                 "api_type": "openai",

@@ -30,7 +30,7 @@ from rasa.shared.utils.configs import (
     validate_required_keys,
 )
 from rasa.shared.utils.llm import (
-    DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    DEFAULT_ENTERPRISE_SEARCH_POLICY_MODEL_NAME,
     DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
     resolve_model_client_config,
 )
@@ -65,7 +65,7 @@ DEFAULT_MAX_MESSAGES_IN_QUERY = 2
 
 DEFAULT_LLM_CONFIG = {
     PROVIDER_CONFIG_KEY: OPENAI_PROVIDER,
-    MODEL_CONFIG_KEY: DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    MODEL_CONFIG_KEY: DEFAULT_ENTERPRISE_SEARCH_POLICY_MODEL_NAME,
     TIMEOUT_CONFIG_KEY: 10,
     TEMPERATURE_CONFIG_KEY: 0.0,
     MAX_COMPLETION_TOKENS_CONFIG_KEY: 256,
@@ -168,8 +168,7 @@ class EnterpriseSearchPolicyConfig:
 
     @classmethod
     def from_dict(cls, config: dict) -> EnterpriseSearchPolicyConfig:
-        """
-        Initializes a dataclass from the passed config.
+        """Initializes a dataclass from the passed config.
 
         Args:
             config: (dict) The config from which to initialize.

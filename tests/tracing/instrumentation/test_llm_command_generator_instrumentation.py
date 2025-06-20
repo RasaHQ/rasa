@@ -156,7 +156,7 @@ async def test_tracing_llm_command_generator_default_attrs(
         "llm_temperature": "0.0",
         "llm_request_timeout": "7",
         # embeddings attributes
-        "embeddings_model": "text-embedding-ada-002",
+        "embeddings_model": "text-embedding-3-large",
         "embeddings_type": "openai",
         "embeddings_model_group_id": "None",
         # deprecated
@@ -164,7 +164,7 @@ async def test_tracing_llm_command_generator_default_attrs(
         "embeddings": json.dumps(
             {
                 "provider": "openai",
-                "model": "text-embedding-ada-002",
+                "model": "text-embedding-3-large",
                 "api_base": None,
                 "api_version": None,
                 "api_type": "openai",
@@ -259,7 +259,7 @@ async def test_tracing_llm_command_generator_azure_attrs(
                     "temperature": 0.7,
                 },
                 "flow_retrieval": {
-                    "embeddings": {"model": "text-embedding-ada-002"},
+                    "embeddings": {"model": "text-embedding-3-large"},
                 },
             },
             {
@@ -270,7 +270,7 @@ async def test_tracing_llm_command_generator_azure_attrs(
                 "llm_temperature": "0.7",
                 "llm_request_timeout": "10",
                 # embeddings attributes
-                "embeddings_model": "text-embedding-ada-002",
+                "embeddings_model": "text-embedding-3-large",
                 "embeddings_type": "openai",
                 "embeddings_model_group_id": "None",
                 # deprecated
@@ -278,7 +278,7 @@ async def test_tracing_llm_command_generator_azure_attrs(
                 "embeddings": json.dumps(
                     {
                         "provider": "openai",
-                        "model": "text-embedding-ada-002",
+                        "model": "text-embedding-3-large",
                         "api_base": None,
                         "api_version": None,
                         "api_type": "openai",
@@ -440,7 +440,7 @@ async def test_tracing_llm_command_generator_prompt_tokens(
         "llm_temperature": "0.0",
         "llm_request_timeout": "7",
         # embeddings attributes
-        "embeddings_model": "text-embedding-ada-002",
+        "embeddings_model": "text-embedding-3-large",
         "embeddings_type": "openai",
         "embeddings_model_group_id": "None",
         # deprecated
@@ -448,7 +448,7 @@ async def test_tracing_llm_command_generator_prompt_tokens(
         "embeddings": json.dumps(
             {
                 "provider": "openai",
-                "model": "text-embedding-ada-002",
+                "model": "text-embedding-3-large",
                 "api_base": None,
                 "api_version": None,
                 "api_type": "openai",

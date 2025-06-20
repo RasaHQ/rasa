@@ -1930,7 +1930,7 @@ class TestCompactLLMCommandGenerator:
                 {
                     "id": "openai_embedding",
                     "models": [
-                        {"model": "text-embedding-ada-002", "provider": "openai"}
+                        {"model": "text-embedding-3-large", "provider": "openai"}
                     ],
                 },
             ),
@@ -1940,7 +1940,7 @@ class TestCompactLLMCommandGenerator:
                     FLOW_RETRIEVAL_KEY: {
                         EMBEDDINGS_CONFIG_KEY: {
                             "provider": "openai",
-                            "model": "text-embedding-ada-002",
+                            "model": "text-embedding-3-large",
                         }
                     },
                 },
@@ -1948,7 +1948,7 @@ class TestCompactLLMCommandGenerator:
                     "id": "openai_gpt-4",
                     "models": [{"provider": "openai", "model": "gpt-4"}],
                 },
-                {"provider": "openai", "model": "text-embedding-ada-002"},
+                {"provider": "openai", "model": "text-embedding-3-large"},
             ),
         ],
     )
@@ -1975,7 +1975,7 @@ class TestCompactLLMCommandGenerator:
                     {
                         "id": "openai_embedding",
                         "models": [
-                            {"provider": "openai", "model": "text-embedding-ada-002"}
+                            {"provider": "openai", "model": "text-embedding-3-large"}
                         ],
                     },
                 ]

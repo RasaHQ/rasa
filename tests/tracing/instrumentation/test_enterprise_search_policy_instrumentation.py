@@ -97,12 +97,12 @@ async def test_tracing_enterprise_search_policy_invoke_llm_default_config(
         "class_name": "EnterpriseSearchPolicy",
         # llm attributes
         "llm_type": "openai",
-        "llm_model": "gpt-3.5-turbo",
+        "llm_model": "gpt-4.1-mini-2025-04-14",
         "llm_model_group_id": "None",
         "llm_temperature": "0.0",
         "llm_request_timeout": "10",
         # embeddings attributes
-        "embeddings_model": "text-embedding-ada-002",
+        "embeddings_model": "text-embedding-3-large",
         "embeddings_type": "openai",
         "embeddings_model_group_id": "None",
         # deprecated
@@ -121,7 +121,7 @@ async def test_tracing_enterprise_search_policy_invoke_llm_default_config(
                     "request_timeout": 15,
                     "temperature": 0.7,
                 },
-                "embeddings": {"model": "text-embedding-ada-002"},
+                "embeddings": {"model": "text-embedding-3-large"},
             },
             {
                 # "class_name": "EnterpriseSearchPolicy",
@@ -132,14 +132,14 @@ async def test_tracing_enterprise_search_policy_invoke_llm_default_config(
                 "llm_temperature": "0.7",
                 "llm_request_timeout": "15",
                 # embeddings attributes
-                "embeddings_model": "text-embedding-ada-002",
+                "embeddings_model": "text-embedding-3-large",
                 "embeddings_type": "openai",
                 "embeddings_model_group_id": "None",
                 # deprecated
                 "request_timeout": "15",
                 "embeddings": json.dumps(
                     {
-                        "model": "text-embedding-ada-002",
+                        "model": "text-embedding-3-large",
                         "provider": "openai",
                         # all of this is automatically filled by
                         # configuration parser
@@ -287,12 +287,12 @@ async def test_tracing_enterprise_search_policy_invoke_llm_len_prompt_tokens(
             "len_prompt_tokens": "6",
             # llm attributes
             "llm_type": "openai",
-            "llm_model": "gpt-3.5-turbo",
+            "llm_model": "gpt-4.1-mini-2025-04-14",
             "llm_model_group_id": "None",
             "llm_temperature": "0.0",
             "llm_request_timeout": "10",
             # embeddings attributes
-            "embeddings_model": "text-embedding-ada-002",
+            "embeddings_model": "text-embedding-3-large",
             "embeddings_type": "openai",
             "embeddings_model_group_id": "None",
             # deprecated
