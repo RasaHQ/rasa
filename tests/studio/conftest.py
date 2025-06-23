@@ -2,6 +2,7 @@ import base64
 import textwrap
 from pathlib import Path
 from textwrap import dedent
+from typing import Dict, Text
 from unittest.mock import MagicMock
 
 import pytest
@@ -214,7 +215,9 @@ def mock_args(tmp_path: Path) -> MagicMock:
 
 
 @pytest.fixture
-def mock_studio_handler(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
+def mock_studio_handler(
+    system_prompts: Dict[Text, Text], monkeypatch: pytest.MonkeyPatch
+) -> MagicMock:
     """
     Provide a fully-stubbed StudioDataHandler."""
     handler = MagicMock(spec=StudioDataHandler)
@@ -256,6 +259,9 @@ def mock_studio_handler(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
                next: END
         """
     ).lstrip()
+
+    handler.get_prompts = MagicMock()
+    handler.get_prompts.return_value = system_prompts
 
     monkeypatch.setattr(
         "rasa.studio.download.StudioDataHandler",

@@ -1026,7 +1026,7 @@ def _get_command_generator_prompt(
         model_groups=endpoints.get(MODEL_GROUPS_CONFIG_KEY),
     )
     return get_default_prompt_template_based_on_model(
-        llm_config=llm_config,
+        llm_config=llm_config or {},
         model_prompt_mapping=MODEL_PROMPT_MAPPER,
         default_prompt_path=DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
         fallback_prompt_path=FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME,

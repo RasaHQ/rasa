@@ -109,7 +109,13 @@ from rasa.shared.providers.embedding.embedding_response import EmbeddingResponse
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.utils.llm import get_system_default_prompts
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
+from rasa.studio.prompts import (
+    COMMAND_GENERATOR_NAME,
+    CONTEXTUAL_RESPONSE_REPHRASER_NAME,
+    ENTERPRISE_SEARCH_NAME,
+)
 from rasa.utils.endpoints import EndpointConfig
 from tests.license_env import (
     BLOCKED_LICENSE_ENV,
@@ -1720,3 +1726,13 @@ def reset_command_syntax_version():
     """Reset the syntax version only after all tests in this module have run."""
     yield  # Let all tests run first
     CommandSyntaxManager.reset_syntax_version()  # Reset after all tests finish
+
+
+@pytest.fixture
+def system_prompts() -> Dict[Text, Text]:
+    system_prompts = get_system_default_prompts(config={}, endpoints={})
+    return {
+        CONTEXTUAL_RESPONSE_REPHRASER_NAME: system_prompts.contextual_response_rephraser,  # noqa: E501
+        COMMAND_GENERATOR_NAME: system_prompts.command_generator,
+        ENTERPRISE_SEARCH_NAME: system_prompts.enterprise_search,
+    }

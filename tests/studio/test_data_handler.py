@@ -1482,7 +1482,7 @@ def test_build_request_simple(handler: StudioDataHandler) -> None:
             "query ExportAsEncodedYaml($input: ExportAsEncodedYamlInput!)"
             " { exportAsEncodedYaml(input: $input) "
             "{ ... on ExportModernAsEncodedYamlOutput "
-            "{ nlu flows domain endpoints config }"
+            "{ nlu flows domain endpoints config prompts }"
             " ... on ExportClassicAsEncodedYamlOutput "
             "{ nlu domain }}}"
         ),
@@ -1497,7 +1497,7 @@ def test_build_request(handler: StudioDataHandler) -> None:
             "query ExportAsEncodedYaml($input: ExportAsEncodedYamlInput!)"
             " { exportAsEncodedYaml(input: $input) "
             "{ ... on ExportModernAsEncodedYamlOutput "
-            "{ nlu flows domain endpoints config }"
+            "{ nlu flows domain endpoints config prompts }"
             " ... on ExportClassicAsEncodedYamlOutput "
             "{ nlu domain }}}"
         ),

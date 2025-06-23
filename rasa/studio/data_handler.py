@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -50,7 +51,7 @@ class StudioDataHandler:
                 "query ExportAsEncodedYaml($input: ExportAsEncodedYamlInput!) "
                 "{ exportAsEncodedYaml(input: $input) "
                 "{ ... on ExportModernAsEncodedYamlOutput "
-                "{ nlu flows domain endpoints config } "
+                "{ nlu flows domain endpoints config prompts } "
                 "... on ExportClassicAsEncodedYamlOutput "
                 "{ nlu domain }}}"
             ),
@@ -161,6 +162,9 @@ class StudioDataHandler:
     def get_endpoints(self) -> Optional[str]:
         return self.endpoints
 
+    def get_prompts(self) -> Optional[dict]:
+        return self.prompts
+
     def _validate_response(self, response: dict) -> bool:
         """Validates the response from Rasa Studio.
 
@@ -199,6 +203,9 @@ class StudioDataHandler:
         self.flows = self._decode_response(return_data.get("flows"))
         self.config = self._decode_response(return_data.get("config"))
         self.endpoints = self._decode_response(return_data.get("endpoints"))
+
+        prompts_string = self._decode_response(return_data.get("prompts"))
+        self.prompts = json.loads(prompts_string) if prompts_string else None
 
         if not self.has_nlu() and not self.has_flows():
             raise RasaException("No nlu or flows data in Studio response.")

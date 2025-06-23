@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
@@ -171,6 +172,7 @@ def test_download_handler_nlu_based(
     tmp_path: Path,
     test_sample_nlu: str,
     test_sample_domain_nlu_only: str,
+    system_prompts: Dict[str, str],
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.chdir(tmp_path)
@@ -189,11 +191,13 @@ def test_download_handler_nlu_based(
     )
     handler.nlu = test_sample_nlu
     handler.domain = test_sample_domain_nlu_only
-    handler.get_config = MagicMock(return_value="dummy config content")
-    handler.get_endpoints = MagicMock(return_value="dummy endpoints content")
+    handler.get_config = MagicMock(return_value="language: en\npipeline: []\n")
+    handler.get_endpoints = MagicMock(
+        return_value="action_endpoint:\n  url: http://localhost:5055\n"
+    )
+    handler.get_prompts = MagicMock(return_value=system_prompts)
     monkeypatch.setattr(questionary, "confirm", mock_questionary_confirm)
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
-
     mock_handler = MagicMock()
     mock_handler.return_value = handler
     monkeypatch.setattr(rasa.studio.download, "StudioDataHandler", mock_handler)
@@ -233,6 +237,7 @@ def test_download_handler_modern(
     tmp_path: Path,
     test_sample_flows: str,
     test_sample_domain: str,
+    system_prompts: Dict[str, str],
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.chdir(tmp_path)
@@ -250,8 +255,11 @@ def test_download_handler_modern(
     )
     handler.flows = test_sample_flows
     handler.domain = test_sample_domain
-    handler.get_config = MagicMock(return_value="dummy config content")
-    handler.get_endpoints = MagicMock(return_value="dummy endpoints content")
+    handler.get_config = MagicMock(return_value="language: en\npipeline: []\n")
+    handler.get_endpoints = MagicMock(
+        return_value="action_endpoint:\n  url: http://localhost:5055\n"
+    )
+    handler.get_prompts = MagicMock(return_value=system_prompts)
     handler.request_all_data = MagicMock()  # type: ignore[method-assign]
     mock_handler = MagicMock()
     mock_handler.return_value = handler

@@ -23,6 +23,7 @@ from rasa.shared.utils.yaml import read_yaml, write_yaml
 from rasa.studio.config import StudioConfig
 from rasa.studio.constants import DOMAIN_FILENAME
 from rasa.studio.data_handler import StudioDataHandler
+from rasa.studio.prompts import handle_prompts
 from rasa.studio.pull.data import _dump_flows_as_separate_files
 
 structlogger = structlog.get_logger()
@@ -46,6 +47,8 @@ def handle_download(args: argparse.Namespace) -> None:
     _handle_endpoints(handler, target_root)
     _handle_domain(handler, target_root)
     _handle_data(handler, target_root)
+    handle_prompts(handler, target_root)
+
     structlogger.info(
         "studio.download.success",
         event_info=f"Downloaded assistant '{assistant_name}' from Studio.",
