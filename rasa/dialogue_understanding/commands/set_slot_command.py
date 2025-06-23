@@ -100,14 +100,14 @@ class SetSlotCommand(Command):
         slot = tracker.slots.get(self.name)
         if slot is None:
             structlogger.debug(
-                "command_executor.skip_command.slot_not_in_domain", command=self
+                "set_slot_command.skip_command.slot_not_in_domain", command=self
             )
             return []
 
         if slot.has_same_coerced_value(self.value):
             # value hasn't changed, skip this one
             structlogger.debug(
-                "command_executor.skip_command.slot_already_set", command=self
+                "set_slot_command.skip_command.slot_already_set", command=self
             )
             return []
 
@@ -150,11 +150,11 @@ class SetSlotCommand(Command):
             )
             if not use_slot_fill:
                 structlogger.debug(
-                    "command_executor.skip_command.slot_not_asked_for", command=self
+                    "set_slot_command.skip_command.slot_not_asked_for", command=self
                 )
                 return []
 
-        structlogger.debug("command_executor.set_slot", command=self)
+        structlogger.debug("set_slot_command.set_slot", command=self)
         return [
             SlotSet(self.name, slot.coerce_value(self.value), filled_by=self.extractor)
         ]

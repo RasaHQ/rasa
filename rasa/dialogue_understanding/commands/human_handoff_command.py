@@ -57,9 +57,7 @@ class HumanHandoffCommand(Command):
         """
         stack = tracker.stack
         stack.push(HumanHandoffPatternFlowStackFrame())
-        structlogger.debug(
-            "command_executor.human_handoff.pushed_to_stack", command=self
-        )
+        structlogger.debug("human_handoff_command.pushed_to_stack", command=self)
         return tracker.create_stack_updated_events(stack)
 
     def __hash__(self) -> int:

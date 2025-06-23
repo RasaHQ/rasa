@@ -58,7 +58,7 @@ class ErrorCommand(Command):
             The events to apply to the tracker.
         """
         stack = tracker.stack
-        structlogger.debug("command_executor.error", command=self)
+        structlogger.debug("error_command.error", command=self)
         stack.push(
             InternalErrorPatternFlowStackFrame(
                 error_type=self.error_type, info=self.info

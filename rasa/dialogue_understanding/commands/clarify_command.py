@@ -65,14 +65,14 @@ class ClarifyCommand(Command):
         clean_options = [flow.id for flow in flows if flow is not None]
         if len(clean_options) != len(self.options):
             structlogger.debug(
-                "command_executor.altered_command.dropped_clarification_options",
+                "clarify_command.altered_command.dropped_clarification_options",
                 command=self,
                 original_options=self.options,
                 cleaned_options=clean_options,
             )
         if len(clean_options) == 0:
             structlogger.debug(
-                "command_executor.skip_command.empty_clarification", command=self
+                "clarify_command.skip_command.empty_clarification", command=self
             )
             return []
 

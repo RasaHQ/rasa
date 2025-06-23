@@ -73,12 +73,12 @@ class StartFlowCommand(Command):
 
         if self.flow in user_flows_on_the_stack(stack):
             structlogger.debug(
-                "command_executor.skip_command.already_started_flow", command=self
+                "start_flow_command.skip_command.already_started_flow", command=self
             )
             return []
         elif self.flow not in all_flows.flow_ids:
             structlogger.debug(
-                "command_executor.skip_command.start_invalid_flow_id", command=self
+                "start_flow_command.skip_command.start_invalid_flow_id", command=self
             )
             return []
 
@@ -99,7 +99,7 @@ class StartFlowCommand(Command):
                     )
                 )
 
-        structlogger.debug("command_executor.start_flow", command=self)
+        structlogger.debug("start_flow_command.start_flow", command=self)
         stack.push(UserFlowStackFrame(flow_id=self.flow, frame_type=frame_type))
         return applied_events + tracker.create_stack_updated_events(stack)
 

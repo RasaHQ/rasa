@@ -102,7 +102,7 @@ class CancelFlowCommand(Command):
 
         if not current_flow:
             structlogger.debug(
-                "command_executor.skip_cancel_flow.no_active_flow", command=self
+                "cancel_command.skip_cancel_flow.no_active_flow", command=self
             )
             return []
 

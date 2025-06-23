@@ -144,7 +144,8 @@ class CorrectSlotsCommand(Command):
                 }
             else:
                 structlogger.debug(
-                    "command_executor.skip_correction.slot_already_set", command=self
+                    "correct_slots_command.skip_correction.slot_already_set",
+                    command=self,
                 )
         return proposed_slots
 
@@ -236,7 +237,7 @@ class CorrectSlotsCommand(Command):
             # previously set, and we also don't want to reset the slots, do
             # not correct the slots.
             structlogger.debug(
-                "command_executor.skip_correction",
+                "correct_slots_command.skip_correction",
                 is_reset_only=is_reset_only,
             )
             return None
@@ -274,10 +275,10 @@ class CorrectSlotsCommand(Command):
             # we shouldn't end up here as a correction shouldn't be triggered
             # if we are not in any flow. but just in case we do, we
             # just skip the command.
-            structlogger.warning("command_executor.correct_slots.no_active_flow")
+            structlogger.warning("correct_slots_command.no_active_flow")
             return []
 
-        structlogger.debug("command_executor.correct_slots", command=self)
+        structlogger.debug("correct_slots_command", command=self)
         proposed_slots = self.corrected_slots_dict(tracker)
 
         correction_frame = self.create_correction_frame(

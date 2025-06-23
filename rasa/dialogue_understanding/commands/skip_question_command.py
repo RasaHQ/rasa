@@ -63,9 +63,7 @@ class SkipQuestionCommand(Command):
         current_flow = user_frame.flow(all_flows) if user_frame else None
 
         if not current_flow:
-            structlogger.debug(
-                "command_executor.skip_question.no_active_flow", command=self
-            )
+            structlogger.debug("skip_question_command.no_active_flow", command=self)
             return []
 
         stack.push(SkipQuestionPatternFlowStackFrame())

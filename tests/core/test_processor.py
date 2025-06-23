@@ -2505,7 +2505,7 @@ async def test_parse_message_with_set_slot_command_payload_for_disallowed_slot(
     assert tracker.get_slot("secret_slot") is None
 
     captured = capsys.readouterr()
-    assert "command_executor.skip_command.slot_not_asked_for" in captured.out
+    assert "set_slot_command.skip_command.slot_not_asked_for" in captured.out
 
 
 @pytest.mark.parametrize(
