@@ -1,0 +1,166 @@
+import audioop
+import json
+import uuid
+from typing import Any, Awaitable, Callable, Dict, Optional, Text, Tuple
+
+import structlog
+from sanic import (  # type: ignore[attr-defined]
+    Blueprint,
+    HTTPResponse,
+    Request,
+    Websocket,
+    response,
+)
+
+from rasa.core.channels import UserMessage
+from rasa.core.channels.voice_ready.utils import CallParameters
+from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
+from rasa.core.channels.voice_stream.call_state import call_state
+from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
+from rasa.core.channels.voice_stream.voice_channel import (
+    ContinueConversationAction,
+    EndConversationAction,
+    NewAudioAction,
+    VoiceChannelAction,
+    VoiceInputChannel,
+    VoiceOutputChannel,
+)
+
+logger = structlog.get_logger()
+
+
+def map_call_params(data: Dict[Text, str]) -> CallParameters:
+    """Map the twilio stream parameters to the CallParameters dataclass."""
+    call_sid = data.get("callSid", "None")
+    from_number = data.get("from", "Unknown")
+    to_number = data.get("to")
+    return CallParameters(
+        call_id=call_sid,
+        user_phone=from_number,
+        bot_phone=to_number,
+        stream_id=call_sid,
+    )
+
+
+class JambonzStreamOutputChannel(VoiceOutputChannel):
+    @classmethod
+    def name(cls) -> str:
+        return "jambonz_stream"
+
+    async def send_audio_bytes(
+        self, recipient_id: str, audio_bytes: RasaAudioBytes
+    ) -> None:
+        """Overridden to send binary websocket messages for Jambonz.
+
+        Converts 8kHz μ-law to 8kHz L16 PCM for Jambonz streaming.
+        """
+        pcm = audioop.ulaw2lin(audio_bytes, 2)
+        await self.voice_websocket.send(pcm)
+
+    def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
+        """Create a marker message to track audio stream position."""
+        marker_id = uuid.uuid4().hex
+        return json.dumps({"type": "mark", "data": {"name": marker_id}}), marker_id
+
+
+class JambonzStreamInputChannel(VoiceInputChannel):
+    @classmethod
+    def name(cls) -> str:
+        return "jambonz_stream"
+
+    def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
+        """Convert Jambonz audio bytes (L16 PCM) to Rasa audio bytes (μ-law)."""
+        ulaw = audioop.lin2ulaw(input_bytes, 2)
+        return RasaAudioBytes(ulaw)
+
+    async def collect_call_parameters(
+        self, channel_websocket: Websocket
+    ) -> Optional[CallParameters]:
+        # Wait for initial metadata message
+        message = await channel_websocket.recv()
+        logger.debug("jambonz.collect_call_parameters", message=message)
+        metadata = json.loads(message)
+        return map_call_params(metadata)
+
+    def map_input_message(self, message: Any, ws: Websocket) -> VoiceChannelAction:
+        # Handle binary audio frames
+        if isinstance(message, bytes):
+            channel_bytes = message
+            audio_bytes = self.channel_bytes_to_rasa_audio_bytes(channel_bytes)
+            return NewAudioAction(audio_bytes)
+
+        # Handle JSON messages
+        data = json.loads(message)
+        if data["type"] == "mark":
+            if data["data"]["name"] == call_state.latest_bot_audio_id:
+                # Just finished streaming last audio bytes
+                call_state.is_bot_speaking = False  # type: ignore[attr-defined]
+                if call_state.should_hangup:
+                    logger.debug(
+                        "jambonz.hangup", marker=call_state.latest_bot_audio_id
+                    )
+                    return EndConversationAction()
+            else:
+                call_state.is_bot_speaking = True  # type: ignore[attr-defined]
+        elif data["event"] == "dtmf":
+            # TODO: handle DTMF input
+            logger.debug("jambonz.dtmf.received", dtmf=data["dtmf"])
+        else:
+            logger.warning("jambonz.unexpected_message", message=data)
+
+        return ContinueConversationAction()
+
+    def create_output_channel(
+        self, voice_websocket: Websocket, tts_engine: TTSEngine
+    ) -> VoiceOutputChannel:
+        return JambonzStreamOutputChannel(
+            voice_websocket,
+            tts_engine,
+            self.tts_cache,
+        )
+
+    def blueprint(
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
+    ) -> Blueprint:
+        blueprint = Blueprint("jambonz_stream", __name__)
+
+        @blueprint.route("/", methods=["GET"])
+        async def health(_: Request) -> HTTPResponse:
+            return response.json({"status": "ok"})
+
+        @blueprint.route("/call_status", methods=["POST"])
+        async def call_status(request: Request) -> HTTPResponse:
+            """Handle call status updates from Jambonz."""
+            data = request.json
+            logger.debug("jambonz.call_status.received", data=data)
+            return response.json({"status": "ok"})
+
+        @blueprint.route("/webhook", methods=["POST"])
+        async def webhook(request: Request) -> HTTPResponse:
+            """Handle incoming webhook requests from Jambonz."""
+            data = request.json
+            logger.debug("jambonz.webhook.received", data=data)
+            return response.json(
+                [
+                    {
+                        "verb": "listen",
+                        "url": f"wss://{self.server_url}/webhooks/jambonz_stream/websocket",
+                        "sampleRate": 8000,
+                        "passDtmf": True,
+                        "bidirectionalAudio": {
+                            "enabled": True,
+                            "streaming": True,
+                            "sampleRate": 8000,
+                        },
+                    }
+                ]
+            )
+
+        @blueprint.websocket("/websocket", subprotocols=["audio.jambonz.org"])  # type: ignore[misc]
+        async def handle_message(request: Request, ws: Websocket) -> None:
+            try:
+                await self.run_audio_streaming(on_new_message, ws)
+            except Exception as e:
+                logger.error("jambonz.handle_message.error", error=e)
+
+        return blueprint
