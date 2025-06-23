@@ -3,6 +3,8 @@ import os
 from dataclasses import dataclass
 from typing import Any, AsyncIterator, Dict, Optional
 
+import structlog
+
 from rasa.core.channels.voice_stream.asr.asr_engine import ASREngine, ASREngineConfig
 from rasa.core.channels.voice_stream.asr.asr_event import (
     ASREvent,
@@ -12,6 +14,8 @@ from rasa.core.channels.voice_stream.asr.asr_event import (
 from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
 from rasa.shared.constants import AZURE_SPEECH_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ConnectionException
+
+logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -61,6 +65,11 @@ class AzureASR(ASREngine[AzureASRConfig]):
             and self.config.speech_endpoint is None
         ):
             self.config.speech_region = "eastus"
+            logger.warning(
+                "voice_channel.asr.azure.no_region",
+                message="No speech region configured, using 'eastus' as default",
+                region="eastus",
+            )
         speech_config = speechsdk.SpeechConfig(
             subscription=os.environ[AZURE_SPEECH_API_KEY_ENV_VAR],
             region=self.config.speech_region,
