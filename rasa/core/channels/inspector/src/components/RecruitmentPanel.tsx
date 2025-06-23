@@ -45,7 +45,7 @@ export const RecruitmentPanel: React.FC<RecruitmentPanelProps> = ({
         </Text>
         <Button
           as="a"
-          href="https://rasa.com/book-feedback-call"
+          href="https://feedback.rasa.com"
           target="_blank"
           rel="noopener noreferrer"
           color="#7622D2"
