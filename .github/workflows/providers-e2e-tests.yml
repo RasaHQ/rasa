@@ -50,6 +50,7 @@ on:
           - litellm-proxy-multiple-deployments-with-routing
           - openai-with-custom-prompt-for-CompactLLMCommandGenerator
           - openai-with-custom-prompt-for-CustomLLMCommandGenerator
+          - openai-with-custom-prompt-for-CustomSearchReadyLLMCommandGenerator
 
       rasa-pro-version:
         description: "Rasa-pro version to run test(s) against. Default: Current commit version"
@@ -355,7 +356,8 @@ jobs:
             sagemaker_chat-multiple-deployments-with-routing,
             litellm-proxy-multiple-deployments-with-routing,
             openai-with-custom-prompt-for-CompactLLMCommandGenerator,
-            openai-with-custom-prompt-for-CustomLLMCommandGenerator
+            openai-with-custom-prompt-for-CustomLLMCommandGenerator,
+            openai-with-custom-prompt-for-CustomSearchReadyLLMCommandGenerator
           ] # TODO: Enable testing all the providers
         train-and-test: ${{ fromJson(needs.job_setup.outputs.COMMAND_GENERATOR_MATRIX)[needs.job_setup.outputs.COMMAND_GENERATOR] }}
     steps:

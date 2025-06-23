@@ -51,6 +51,7 @@ on:
           - litellm-proxy-multiple-deployments-with-routing
           - openai-with-custom-prompt-for-CompactLLMCommandGenerator
           - openai-with-custom-prompt-for-CustomLLMCommandGenerator
+          - openai-with-custom-prompt-for-CustomSearchReadyLLMCommandGenerator
 
       data-repo:
         description: "Bot repository"
