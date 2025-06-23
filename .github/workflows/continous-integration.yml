@@ -518,13 +518,13 @@ jobs:
           name: Metric Integration Test Results
           path: integration-results-metric.xml
 
-  custom-action-integration-test-with-nlu-bot:
-    name: Custom Action Integration Tests With NLU bot
+  custom-action-integration-tests:
+    name: Custom Action Integration Tests With NLU bot and CALM bot
     if: ${{ inputs.run_mode != 'false' }}
     needs: rasa-private-dev-docker-image
+    runs-on: ubuntu-24.04-4core
     env:
       RASA_SDK_IMAGE_TAG: latest
-    runs-on: ubuntu-24.04-4core
 
     steps:
       - name: Check out code
@@ -563,7 +563,17 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
 
-      - name: Custom Actions Integration Testing - Run docker containers
+      - name: Custom Actions Integration Testing NLU - Train docker containers
+        run: |
+          make train-action-server-nlu-bot
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
+
+      - name: Custom Actions Integration Testing NLU - Run docker containers
         run: |
           make run-action-server-nlu-containers
         env:
@@ -573,14 +583,14 @@ jobs:
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
-      - name: Custom Actions Testing - Test Code with Services 🩺
+      - name: Custom Actions Testing NLU - Test Code with Services 🩺
         run: |
           make test-custom-action-integration-with-nlu-bot
         env:
           PYTHONIOENCODING: "utf-8"
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
 
-      - name: Show container logs
+      - name: Show container logs NLU
         if: always()
         uses: ./.github/actions/debug-custom-action-tests
         with:
@@ -592,63 +602,23 @@ jobs:
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
           BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_nlu_bot"
 
-      - name: Custom Action Integration Testing - Stop docker containers
+      - name: Custom Action Integration Testing NLU - Stop docker containers
         if: always()
         run: |
           make stop-action-server-nlu-containers
 
-      - name: Save Test Results
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
-        with:
-          name: Custom Action Integration Test Results For NLU bot
-          path: integration-results-custom-actions-with-nlu-bot-results.xml
-
-  custom-action-integration-test-with-calm-bot:
-    name: Custom Action Integration Tests With CALM bot
-    if: ${{ inputs.run_mode != 'false' }}
-    needs: rasa-private-dev-docker-image
-    runs-on: ubuntu-24.04-4core
-    env:
-      RASA_SDK_IMAGE_TAG: latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Read Poetry Version 🔢
+      - name: Custom Actions Integration Testing CALM - Train docker containers
         run: |
-          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-        shell: bash
+          make train-action-server-calm-bot
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
+          RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
-      - name: Prepare the job for integration tests
-        uses: ./.github/actions/test-prerequisites
-        with:
-          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
-          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
-
-      - name: Docker version
-        run: docker --version && docker compose version
-
-      - name: Download image artifact
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
-        with:
-          name: docker-image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz
-      
-      - name: Load Docker image
-        run: |
-          gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
-      
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
-        with:
-          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
-
-      - name: Custom Actions Integration Testing - Run docker containers
+      - name: Custom Actions Integration Testing CALM - Run docker containers
         run: |
           make run-action-server-calm-containers
         env:
@@ -659,14 +629,14 @@ jobs:
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
-      - name: Custom Actions Testing -  Test Code with Services 🩺
+      - name: Custom Actions Testing CALM -  Test Code with Services 🩺
         run: |
           make test-custom-action-integration-with-calm-bot
         env:
           PYTHONIOENCODING: "utf-8"
           RASA_TELEMETRY_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_DEV_KEY }}
 
-      - name: Show container logs
+      - name: Show container logs CALM
         if: always()
         uses: ./.github/actions/debug-custom-action-tests
         with:
@@ -678,17 +648,19 @@ jobs:
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
           BOT_PATH: "./tests_deployment/integration_tests_custom_action_server/simple_calm_bot"
 
-      - name: Custom Action Integration Testing - Stop docker containers
+      - name: Custom Action Integration Testing CALM - Stop docker containers
         if: always()
         run: |
           make stop-action-server-calm-containers
 
-      - name: Save Test Results
+      - name: Save Test Results NLU and CALM
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: Custom Action Integration Test Results For CALM Bot
-          path: integration-results-custom-actions-with-calm-bot-results.xml
+          name: Custom Action Integration Test Results For NLU bot
+          path:
+           integration-results-custom-actions-with-nlu-bot-results.xml
+           integration-results-custom-actions-with-calm-bot-results.xml
 
   enterprise-search-integration-tests:
     name: Run Enterprise Search Integration Tests
@@ -1569,8 +1541,7 @@ jobs:
     needs: [ tracing-integration-test,
              metric-integration-test,
              enterprise-search-integration-tests,
-             custom-action-integration-test-with-nlu-bot,
-             custom-action-integration-test-with-calm-bot,
+             custom-action-integration-tests,
              sequential-integration-test,
              non-sequential-integration-test,
              concurrent-lockstore-integration-test,
@@ -1652,8 +1623,7 @@ jobs:
       - deploy-rasa-private-helm-chart
       - tracing-integration-test
       - metric-integration-test
-      - custom-action-integration-test-with-nlu-bot
-      - custom-action-integration-test-with-calm-bot
+      - custom-action-integration-tests
       - enterprise-search-integration-tests
       - channel_connector_integration_tests
 

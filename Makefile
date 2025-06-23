@@ -397,14 +397,14 @@ RUN_ACTION_SERVER_CONTAINERS_COMMAND = USER_ID=$(USER_ID) \
 		up --wait
 
 # This target is mutually exclusive with run-action-server-calm-containers
-run-action-server-nlu-containers: BOT_PATH = "./$(NLU_BOT_DIRECTORY)" ## Run the action server integration test containers.
-run-action-server-nlu-containers: train-action-server-nlu-bot
+run-action-server-nlu-containers: BOT_PATH=./$(NLU_BOT_DIRECTORY) ## Run the action server integration test containers.
+run-action-server-nlu-containers: ## Run the action server integration test containers for NLU bot.
 	$(RUN_ACTION_SERVER_CONTAINERS_COMMAND)
 
 
 # This target is mutually exclusive with run-action-server-nlu-containers
-run-action-server-calm-containers: BOT_PATH = "./$(CALM_BOT_DIRECTORY)" ## Run the action server integration test containers.
-run-action-server-calm-containers: train-action-server-calm-bot
+run-action-server-calm-containers: BOT_PATH = ./$(CALM_BOT_DIRECTORY) ## Run the action server integration test containers.
+run-action-server-calm-containers: ## Run the action server integration test containers for CALM bot.
 	$(RUN_ACTION_SERVER_CONTAINERS_COMMAND)
 
 
