@@ -83,7 +83,7 @@ def test_handle_prompts_all_custom(empty_project: Path, monkeypatch):
 
     # Confirm all custom prompts are written to files
     expected_files = {
-        f"{prompt_name}.jinja": prompt_name for prompt_name in prompt_names
+        f"{prompt_name}.jinja2": prompt_name for prompt_name in prompt_names
     }
     for prompt_file_name, prompt_content in expected_files.items():
         prompt_path = prompt_dir / prompt_file_name
@@ -94,14 +94,14 @@ def test_handle_prompts_all_custom(empty_project: Path, monkeypatch):
     endpoints = read_yaml(empty_project / prompts.DEFAULT_ENDPOINTS_PATH)
     rephraser_prompt_path = str(
         Path(prompts.DEFAULT_PROMPTS_PATH)
-        / f"{prompts.CONTEXTUAL_RESPONSE_REPHRASER_NAME}.jinja"
+        / f"{prompts.CONTEXTUAL_RESPONSE_REPHRASER_NAME}.jinja2"
     )
     assert endpoints["nlg"]["prompt"] == rephraser_prompt_path
 
     # Confirm that config.yml file includes custom prompt paths
     config = read_yaml(empty_project / prompts.DEFAULT_CONFIG_PATH)
     command_generator_prompt_path = str(
-        Path(prompts.DEFAULT_PROMPTS_PATH) / f"{prompts.COMMAND_GENERATOR_NAME}.jinja"
+        Path(prompts.DEFAULT_PROMPTS_PATH) / f"{prompts.COMMAND_GENERATOR_NAME}.jinja2"
     )
     assert (
         config[prompts.CONFIG_PIPELINE_KEY][0][prompts.PROMPT_TEMPLATE_CONFIG_KEY]
@@ -109,7 +109,7 @@ def test_handle_prompts_all_custom(empty_project: Path, monkeypatch):
     )
 
     enterprise_search_prompt_path = str(
-        Path(prompts.DEFAULT_PROMPTS_PATH) / f"{prompts.ENTERPRISE_SEARCH_NAME}.jinja"
+        Path(prompts.DEFAULT_PROMPTS_PATH) / f"{prompts.ENTERPRISE_SEARCH_NAME}.jinja2"
     )
     assert (
         config[prompts.CONFIG_POLICIES_KEY][0][prompts.PROMPT_CONFIG_KEY]

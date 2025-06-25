@@ -1478,14 +1478,26 @@ def handler() -> StudioDataHandler:
 def test_build_request_simple(handler: StudioDataHandler) -> None:
     request = handler._build_request()
     assert request == {
-        "query": (
-            "query ExportAsEncodedYaml($input: ExportAsEncodedYamlInput!)"
-            " { exportAsEncodedYaml(input: $input) "
-            "{ ... on ExportModernAsEncodedYamlOutput "
-            "{ nlu flows domain endpoints config prompts }"
-            " ... on ExportClassicAsEncodedYamlOutput "
-            "{ nlu domain }}}"
-        ),
+        "query": "query ExportAsEncodedYaml($input: ExportAsEncodedYamlInput!) {\n"
+        "  exportAsEncodedYaml(input: $input) {\n"
+        "    ... on ExportModernAsEncodedYamlOutput {\n"
+        "      nlu\n"
+        "      flows\n"
+        "      domain\n"
+        "      endpoints\n"
+        "      config\n"
+        "      prompts {\n"
+        "        command_generator\n"
+        "        contextual_response_rephraser\n"
+        "        enterprise_search\n"
+        "      }\n"
+        "    }\n"
+        "    ... on ExportClassicAsEncodedYamlOutput {\n"
+        "      nlu\n"
+        "      domain\n"
+        "    }\n"
+        "  }\n"
+        "}\n",
         "variables": {"input": {"assistantName": "test"}},
     }
 
@@ -1493,14 +1505,26 @@ def test_build_request_simple(handler: StudioDataHandler) -> None:
 def test_build_request(handler: StudioDataHandler) -> None:
     request = handler._build_request(["inform"], ["city"])
     assert request == {
-        "query": (
-            "query ExportAsEncodedYaml($input: ExportAsEncodedYamlInput!)"
-            " { exportAsEncodedYaml(input: $input) "
-            "{ ... on ExportModernAsEncodedYamlOutput "
-            "{ nlu flows domain endpoints config prompts }"
-            " ... on ExportClassicAsEncodedYamlOutput "
-            "{ nlu domain }}}"
-        ),
+        "query": "query ExportAsEncodedYaml($input: ExportAsEncodedYamlInput!) {\n"
+        "  exportAsEncodedYaml(input: $input) {\n"
+        "    ... on ExportModernAsEncodedYamlOutput {\n"
+        "      nlu\n"
+        "      flows\n"
+        "      domain\n"
+        "      endpoints\n"
+        "      config\n"
+        "      prompts {\n"
+        "        command_generator\n"
+        "        contextual_response_rephraser\n"
+        "        enterprise_search\n"
+        "      }\n"
+        "    }\n"
+        "    ... on ExportClassicAsEncodedYamlOutput {\n"
+        "      nlu\n"
+        "      domain\n"
+        "    }\n"
+        "  }\n"
+        "}\n",
         "variables": {
             "input": {
                 "assistantName": "test",

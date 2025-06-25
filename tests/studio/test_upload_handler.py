@@ -12,8 +12,16 @@ from pytest import MonkeyPatch
 import rasa.shared.utils.io
 import rasa.shared.utils.yaml
 import rasa.studio.upload
+from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
+from rasa.dialogue_understanding.generator import SingleStepLLMCommandGenerator
+from rasa.shared.constants import DEFAULT_PROMPTS_PATH
 from rasa.shared.exceptions import RasaException
 from rasa.studio.config import StudioConfig
+from rasa.studio.prompts import (
+    COMMAND_GENERATOR_NAME,
+    CONTEXTUAL_RESPONSE_REPHRASER_NAME,
+    ENTERPRISE_SEARCH_NAME,
+)
 from rasa.studio.results_logger import StudioResult, with_studio_error_handler
 from rasa.studio.upload import (
     build_get_assistant_by_name_request,
@@ -749,3 +757,63 @@ def test_build_import_request_skips_none_values() -> None:
     assert "config" not in payload
     assert "endpoints" not in payload
     assert "nlu" not in payload
+
+
+def test_collect_custom_prompts_all(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    # Write prompts to the temporary directory
+    prompt_names = [
+        CONTEXTUAL_RESPONSE_REPHRASER_NAME,
+        COMMAND_GENERATOR_NAME,
+        ENTERPRISE_SEARCH_NAME,
+    ]
+    prompts_dict = {prompt_name: prompt_name for prompt_name in prompt_names}
+    prompts_dir = tmp_path / DEFAULT_PROMPTS_PATH
+    prompts_dir.mkdir(parents=True, exist_ok=True)
+    for component_name, prompt_text in prompts_dict.items():
+        prompt_file = prompts_dir / f"{component_name}.jinja"
+        prompt_file.write_text(prompt_text, encoding="utf-8")
+
+    # Write prompt path to endpoints.yml
+    endpoints = {
+        "nlg": {
+            "prompt": str(prompts_dir / f"{CONTEXTUAL_RESPONSE_REPHRASER_NAME}.jinja")
+        }
+    }
+
+    # Write prompt paths to config.yml
+    config = {
+        "pipeline": [
+            {
+                "name": SingleStepLLMCommandGenerator.__name__,
+                "prompt_template": str(prompts_dir / f"{COMMAND_GENERATOR_NAME}.jinja"),
+            }
+        ],
+        "policies": [
+            {
+                "name": EnterpriseSearchPolicy.__name__,
+                "prompt": str(prompts_dir / f"{ENTERPRISE_SEARCH_NAME}.jinja"),
+            }
+        ],
+    }
+
+    # Make sure `collect_custom_prompts` returns the expected prompts
+    prompts = rasa.studio.upload.collect_custom_prompts(config, endpoints, tmp_path)
+    for prompt_name in prompt_names:
+        assert prompt_name in prompts
+        assert prompts[prompt_name] == prompt_name
+
+
+def test_collect_custom_prompts_empty() -> None:
+    config: Dict[str, Any] = {"pipeline": [], "policies": []}
+    endpoints: Dict[str, Any] = {}
+    assert rasa.studio.upload.collect_custom_prompts(config, endpoints) == {}
+
+
+def test_build_import_request_with_prompts() -> None:
+    prompts_json = {CONTEXTUAL_RESPONSE_REPHRASER_NAME: "custom prompt"}
+    gql = rasa.studio.upload.build_import_request(
+        assistant_name="bot",
+        prompts_json=prompts_json,
+    )
+
+    assert gql["variables"]["input"]["prompts"] == prompts_json

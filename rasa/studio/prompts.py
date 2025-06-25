@@ -85,7 +85,7 @@ def _handle_contextual_response_rephraser(
         return
 
     prompt_path = _save_prompt_file(
-        root, f"{CONTEXTUAL_RESPONSE_REPHRASER_NAME}.jinja", prompt_content
+        root, f"{CONTEXTUAL_RESPONSE_REPHRASER_NAME}.jinja2", prompt_content
     )
 
     endpoints["nlg"] = endpoints.get("nlg") or {}
@@ -113,7 +113,7 @@ def _handle_command_generator(
         return
 
     prompt_path = _save_prompt_file(
-        root, f"{COMMAND_GENERATOR_NAME}.jinja", prompt_content
+        root, f"{COMMAND_GENERATOR_NAME}.jinja2", prompt_content
     )
 
     command_generator_names: List[str] = [
@@ -149,7 +149,7 @@ def _handle_enterprise_search(
         return
 
     prompt_path = _save_prompt_file(
-        root, f"{ENTERPRISE_SEARCH_NAME}.jinja", prompt_content
+        root, f"{ENTERPRISE_SEARCH_NAME}.jinja2", prompt_content
     )
 
     _add_prompt_to_config(

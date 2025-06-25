@@ -31,6 +31,7 @@ from rasa.shared.nlu.training_data.formats.rasa_yaml import (
     RasaYAMLReader,
     RasaYAMLWriter,
 )
+from rasa.shared.utils.llm import collect_custom_prompts
 from rasa.shared.utils.yaml import (
     dump_obj_as_yaml_to_string,
     read_yaml,
@@ -299,6 +300,7 @@ def upload_calm_assistant(
         endpoints_path=args.endpoints,
     )
 
+    prompts_json = collect_custom_prompts(parts.config, parts.endpoints)
     graphql_req = build_import_request(
         assistant_name,
         flows_yaml=yaml_or_empty(parts.flows),
@@ -306,6 +308,7 @@ def upload_calm_assistant(
         config_yaml=yaml_or_empty(parts.config),
         endpoints=yaml_or_empty(parts.endpoints),
         nlu_yaml=yaml_or_empty(parts.nlu),
+        prompts_json=prompts_json,
     )
     structlogger.info(
         "rasa.studio.upload.calm", event_info="Uploading to Rasa Studio..."
@@ -451,6 +454,7 @@ def build_import_request(
     config_yaml: Optional[str] = None,
     endpoints: Optional[str] = None,
     nlu_yaml: Optional[str] = None,
+    prompts_json: Optional[Dict[str, str]] = None,
 ) -> Dict:
     """Builds the GraphQL request for uploading a modern assistant.
 
@@ -461,6 +465,7 @@ def build_import_request(
         config_yaml: The YAML representation of the config
         endpoints: The YAML representation of the endpoints
         nlu_yaml: The YAML representation of the NLU data
+        prompts_json: The JSON representation of the prompts
 
     Returns:
         A dictionary representing the GraphQL request for uploading the assistant.
@@ -473,11 +478,14 @@ def build_import_request(
         "nlu": nlu_yaml,
     }
 
-    payload = {
+    payload: Dict[Text, Any] = {
         field: convert_string_to_base64(value)
         for field, value in inputs_map.items()
         if value is not None
     }
+
+    if prompts_json:
+        payload["prompts"] = prompts_json
 
     variables_input = {"assistantName": assistant_name, **payload}
 

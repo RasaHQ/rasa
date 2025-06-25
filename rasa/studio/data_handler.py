@@ -1,5 +1,4 @@
 import base64
-import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -46,15 +45,33 @@ class StudioDataHandler:
         intent_names: Optional[List[str]] = None,
         entity_names: Optional[List[str]] = None,
     ) -> dict:
+        from rasa.studio.prompts import (
+            COMMAND_GENERATOR_NAME,
+            CONTEXTUAL_RESPONSE_REPHRASER_NAME,
+            ENTERPRISE_SEARCH_NAME,
+        )
+
         request = {
-            "query": (
-                "query ExportAsEncodedYaml($input: ExportAsEncodedYamlInput!) "
-                "{ exportAsEncodedYaml(input: $input) "
-                "{ ... on ExportModernAsEncodedYamlOutput "
-                "{ nlu flows domain endpoints config prompts } "
-                "... on ExportClassicAsEncodedYamlOutput "
-                "{ nlu domain }}}"
-            ),
+            "query": "query ExportAsEncodedYaml($input: ExportAsEncodedYamlInput!) {\n"
+            "  exportAsEncodedYaml(input: $input) {\n"
+            "    ... on ExportModernAsEncodedYamlOutput {\n"
+            "      nlu\n"
+            "      flows\n"
+            "      domain\n"
+            "      endpoints\n"
+            "      config\n"
+            "      prompts {\n"
+            f"        {COMMAND_GENERATOR_NAME}\n"
+            f"        {CONTEXTUAL_RESPONSE_REPHRASER_NAME}\n"
+            f"        {ENTERPRISE_SEARCH_NAME}\n"
+            "      }\n"
+            "    }\n"
+            "    ... on ExportClassicAsEncodedYamlOutput {\n"
+            "      nlu\n"
+            "      domain\n"
+            "    }\n"
+            "  }\n"
+            "}\n",
             "variables": {"input": {"assistantName": self.assistant_name}},
         }
         if intent_names or entity_names:
@@ -98,7 +115,6 @@ class StudioDataHandler:
             },
             verify=verify,
         )
-
         if res.status_code != 200:
             raise RasaException(
                 f"Download from Studio with URL: "
@@ -203,9 +219,7 @@ class StudioDataHandler:
         self.flows = self._decode_response(return_data.get("flows"))
         self.config = self._decode_response(return_data.get("config"))
         self.endpoints = self._decode_response(return_data.get("endpoints"))
-
-        prompts_string = self._decode_response(return_data.get("prompts"))
-        self.prompts = json.loads(prompts_string) if prompts_string else None
+        self.prompts = return_data.get("prompts")
 
         if not self.has_nlu() and not self.has_flows():
             raise RasaException("No nlu or flows data in Studio response.")

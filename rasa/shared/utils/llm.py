@@ -6,6 +6,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime
 from functools import wraps
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -24,6 +25,9 @@ from typing import (
 import structlog
 from pydantic import BaseModel, Field
 
+import rasa.cli.telemetry
+import rasa.cli.utils
+import rasa.shared.utils.cli
 import rasa.shared.utils.io
 from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.shared.constants import (
@@ -31,6 +35,7 @@ from rasa.shared.constants import (
     CONFIG_PIPELINE_KEY,
     CONFIG_POLICIES_KEY,
     DEFAULT_PROMPT_PACKAGE_NAME,
+    ENDPOINTS_NLG_KEY,
     LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
@@ -1072,3 +1077,82 @@ def get_system_default_prompts(
         enterprise_search=_get_enterprise_search_prompt(config),
         contextual_response_rephraser=DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE,
     )
+
+
+def collect_custom_prompts(
+    config: Dict[Text, Any],
+    endpoints: Dict[Text, Any],
+    project_root: Optional[Path] = None,
+) -> Dict[Text, Text]:
+    """Collects custom prompts from the project configuration and endpoints.
+
+    Args:
+        config: The configuration dictionary of the project.
+        endpoints: The endpoints configuration dictionary.
+        project_root: The root directory of the project.
+
+    Returns:
+        A dictionary containing custom prompts.
+        The keys are:
+            - 'contextual_response_rephraser'
+            - 'command_generator'
+            - 'enterprise_search'
+    """
+    from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
+    from rasa.dialogue_understanding.generator.llm_based_command_generator import (
+        LLMBasedCommandGenerator,
+    )
+    from rasa.studio.prompts import (
+        COMMAND_GENERATOR_NAME,
+        CONTEXTUAL_RESPONSE_REPHRASER_NAME,
+        ENTERPRISE_SEARCH_NAME,
+    )
+
+    prompts: Dict[Text, Text] = {}
+    project_root = project_root or Path(".").resolve()
+
+    def _read_prompt(root: Path, path_in_yaml: Text) -> Optional[Text]:
+        if not path_in_yaml:
+            return None
+
+        prompt_path = (
+            (root / path_in_yaml).resolve()
+            if not Path(path_in_yaml).is_absolute()
+            else Path(path_in_yaml)
+        )
+        if prompt_path.exists():
+            return prompt_path.read_text(encoding="utf-8")
+
+        structlogger.warning(
+            "utils.llm.collect_custom_prompts.prompt_not_found",
+            event_info=(f"Prompt file '{prompt_path}' not found. "),
+            prompt_path=prompt_path,
+            project_root=root,
+        )
+        return None
+
+    # contextual_response_rephraser
+    nlg_conf = endpoints.get(ENDPOINTS_NLG_KEY) or {}
+    if prompt_text := _read_prompt(project_root, nlg_conf.get(PROMPT_CONFIG_KEY)):
+        prompts[CONTEXTUAL_RESPONSE_REPHRASER_NAME] = prompt_text
+
+    # command_generator
+    command_generator_classes = {
+        cls.__name__ for cls in all_subclasses(LLMBasedCommandGenerator)
+    }
+    for component in config.get(CONFIG_PIPELINE_KEY, []):
+        if component.get(CONFIG_NAME_KEY) in command_generator_classes:
+            if prompt_text := _read_prompt(
+                project_root, component.get(PROMPT_TEMPLATE_CONFIG_KEY)
+            ):
+                prompts[COMMAND_GENERATOR_NAME] = prompt_text
+                break
+
+    # enterprise_search
+    for policy in config.get(CONFIG_POLICIES_KEY, []):
+        if policy.get(CONFIG_NAME_KEY) == EnterpriseSearchPolicy.__name__:
+            if prompt_text := _read_prompt(project_root, policy.get(PROMPT_CONFIG_KEY)):
+                prompts[ENTERPRISE_SEARCH_NAME] = prompt_text
+            break
+
+    return prompts

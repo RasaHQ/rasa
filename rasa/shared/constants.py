@@ -104,6 +104,8 @@ UTTER_FREE_CHITCHAT_RESPONSE = "utter_free_chitchat_response"
 ASSISTANT_ID_KEY = "assistant_id"
 ASSISTANT_ID_DEFAULT_VALUE = "placeholder_default"
 
+ENDPOINTS_NLG_KEY = "nlg"
+
 CONFIG_MANDATORY_COMMON_KEYS = [ASSISTANT_ID_KEY]
 CONFIG_NAME_KEY = "name"
 CONFIG_POLICIES_KEY = "policies"
