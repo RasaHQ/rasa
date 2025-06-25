@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import structlog
+from _pytest.logging import LogCaptureFixture
 from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.llms.fake import FakeListLLM
 from pytest import MonkeyPatch
@@ -440,6 +441,159 @@ def test_enterprise_search_policy_vector_store_config(
     assert policy.vector_store_config.get("type") == "milvus"
 
 
+def test_train_faiss_with_non_existing_documents_path(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+    tmp_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    docs_dir = tmp_path / "non_existent_folder"
+    assert not docs_dir.exists()
+
+    config = {
+        "vector_store": {
+            "type": "faiss",
+            "source": str(docs_dir),
+        }
+    }
+
+    policy = EnterpriseSearchPolicy(
+        config=config,
+        model_storage=default_model_storage,
+        resource=Resource("enterprisesearchpolicy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+
+    with structlog.testing.capture_logs() as log_events:
+        with pytest.raises(SystemExit) as exc_info:
+            policy.train([], Domain.empty(), None, None, None)
+
+        assert any(
+            [
+                "Document source directory does not exist or is not a directory"
+                in log_event.get("message", "")
+                for log_event in log_events
+            ]
+        )
+    assert exc_info.value.code == 1
+
+
+def test_train_faiss_with_invalid_documents_path(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+    tmp_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    docs_dir = tmp_path / "existing_file.txt"
+    docs_dir.touch()
+    assert docs_dir.exists() and not docs_dir.is_dir()
+
+    config = {
+        "vector_store": {
+            "type": "faiss",
+            "source": str(docs_dir),
+        }
+    }
+
+    policy = EnterpriseSearchPolicy(
+        config=config,
+        model_storage=default_model_storage,
+        resource=Resource("enterprisesearchpolicy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+
+    with structlog.testing.capture_logs() as log_events:
+        with pytest.raises(SystemExit) as exc_info:
+            policy.train([], Domain.empty(), None, None, None)
+
+        assert any(
+            [
+                "Document source directory does not exist or is not a directory"
+                in log_event.get("message", "")
+                for log_event in log_events
+            ]
+        )
+    assert exc_info.value.code == 1
+
+
+def test_train_faiss_with_empty_documents_path(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+    tmp_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    assert docs_dir.exists()
+
+    config = {
+        "vector_store": {
+            "type": "faiss",
+            "source": str(docs_dir),
+        }
+    }
+
+    policy = EnterpriseSearchPolicy(
+        config=config,
+        model_storage=default_model_storage,
+        resource=Resource("enterprisesearchpolicy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+
+    with structlog.testing.capture_logs() as log_events:
+        with pytest.raises(SystemExit) as exc_info:
+            policy.train([], Domain.empty(), None, None, None)
+
+        assert any(
+            [
+                "Document source directory is empty" in log_event.get("message", "")
+                for log_event in log_events
+            ]
+        )
+    assert exc_info.value.code == 1
+
+
+def test_train_faiss_with_valid_documents_path(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+    tmp_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    docs_dir = tmp_path / "test_train_faiss_with_valid_documents_path"
+    docs_dir.mkdir()
+    assert docs_dir.exists() and docs_dir.is_dir()
+    example_doc = docs_dir / "example.txt"
+    example_doc.write_text("This is an example document.")
+    assert example_doc.exists() and example_doc.is_file()
+
+    config = {
+        "vector_store": {
+            "type": "faiss",
+            "source": str(docs_dir),
+        }
+    }
+
+    policy = EnterpriseSearchPolicy(
+        config=config,
+        model_storage=default_model_storage,
+        resource=Resource("enterprisesearchpolicy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+
+    try:
+        policy._validate_documents_folder(docs_dir)
+    except SystemExit:
+        pytest.fail("SystemExit was raised unexpectedly")
+
+
 def test_enterprise_search_policy_fingerprint_addon_not_faiss_vector_store(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
@@ -484,6 +638,32 @@ def test_enterprise_search_policy_fingerprint_addon_faiss_no_file(
 ) -> None:
     docs_dir = tmp_path / "docs"
     docs_dir.mkdir()
+
+    config = {
+        "vector_store": {
+            "type": "faiss",
+            "source": str(docs_dir),
+        }
+    }
+
+    policy = EnterpriseSearchPolicy(
+        config={},
+        model_storage=default_model_storage,
+        resource=Resource("enterprisesearchpolicy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+    assert policy._get_local_knowledge_data(config) is None
+
+
+def test_enterprise_search_policy_fingerprint_addon_faiss_non_existing_source(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+    tmp_path: Path,
+) -> None:
+    docs_dir = tmp_path / "docs"
+    assert not docs_dir.exists()
 
     config = {
         "vector_store": {
@@ -1968,11 +2148,19 @@ def test_train_and_load_calls_faiss_store_with_parsed_faq_when_use_generative_ll
     resource: Resource,
     use_generative_llm_config: dict,
     expected_parse_as_faq_pairs: bool,
+    tmp_path: Path,
 ):
+    docs_dir = tmp_path / "test_train_faiss_with_valid_documents_path"
+    docs_dir.mkdir()
+    assert docs_dir.exists() and docs_dir.is_dir()
+    example_doc = docs_dir / "example.txt"
+    example_doc.write_text("This is an example document.")
+    assert example_doc.exists() and example_doc.is_file()
+
     # Given
     mock_create_plain_embedder.return_value = Mock()
     config = {
-        "vector_store": {"type": "faiss", "source": "my_faq_docs"},
+        "vector_store": {"type": "faiss", "source": str(docs_dir)},
         **use_generative_llm_config,
     }
     policy = EnterpriseSearchPolicy(

@@ -3,6 +3,7 @@ import logging
 import os
 import tempfile
 import uuid
+from pathlib import Path
 from typing import Any, Dict, Sequence
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -377,7 +378,13 @@ async def test_tracing_enterprise_search_policy_training_health_check(
     # (usually for different Python versions), we need to create a
     # unique temporary directory for the cache
     # and set the environment variable to point to it.
-    with tempfile.TemporaryDirectory(suffix=uuid.uuid4().__str__()):
+    with tempfile.TemporaryDirectory(suffix=uuid.uuid4().__str__()) as temp_dir:
+        docs_dir = Path(temp_dir) / "docs"
+        docs_dir.mkdir()
+
+        example_doc = docs_dir / "example.txt"
+        example_doc.write_text("This is an example document.")
+
         monkeypatch.setenv(LLM_API_HEALTH_CHECK_ENV_VAR, "true")
         component_class = EnterpriseSearchPolicy
         vector_store = MockInformationRetrieval()
@@ -395,6 +402,10 @@ async def test_tracing_enterprise_search_policy_training_health_check(
             config={
                 "trace_prompt_tokens": True,
                 "llm": {"provider": "cohere", "model": "command"},
+                "vector_store": {
+                    "type": "faiss",
+                    "source": str(docs_dir),
+                },
             },
             model_storage=default_model_storage,
             resource=Resource("enterprisesearchpolicy"),

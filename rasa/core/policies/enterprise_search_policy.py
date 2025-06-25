@@ -1,6 +1,8 @@
 import dataclasses
+import glob
 import importlib.resources
 import json
+import os.path
 import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text
 
@@ -351,9 +353,11 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
 
         if self.vector_store_type == DEFAULT_VECTOR_STORE_TYPE:
             structlogger.info("enterprise_search_policy.train.faiss")
+            docs_folder = self.vector_store_config.get(SOURCE_PROPERTY)
+            self._validate_documents_folder(docs_folder)
             with self._model_storage.write_to(self._resource) as path:
                 self.vector_store = FAISS_Store(
-                    docs_folder=self.vector_store_config.get(SOURCE_PROPERTY),
+                    docs_folder=docs_folder,
                     embeddings=embeddings,
                     index_path=path,
                     create_index=True,
@@ -774,6 +778,33 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         return result
 
     @classmethod
+    def _validate_documents_folder(cls, docs_folder: str) -> None:
+        if not os.path.exists(docs_folder) or not os.path.isdir(docs_folder):
+            error_message = (
+                f"Document source directory does not exist or is not a "
+                f"directory: '{docs_folder}'. "
+                "Please specify a valid path to the documents source directory in the "
+                "vector_store configuration."
+            )
+            structlogger.error(
+                "enterprise_search_policy.train.faiss.invalid_source_directory",
+                message=error_message,
+            )
+            print_error_and_exit(error_message)
+
+        docs = glob.glob(os.path.join(docs_folder, "*.txt"), recursive=True)
+        if not docs or len(docs) < 1:
+            error_message = (
+                f"Document source directory is empty: '{docs_folder}'. "
+                "Please add documents to this directory or specify a different one."
+            )
+            structlogger.error(
+                "enterprise_search_policy.train.faiss.source_directory_empty",
+                message=error_message,
+            )
+            print_error_and_exit(error_message)
+
+    @classmethod
     def load(
         cls,
         config: Dict[Text, Any],
@@ -864,7 +895,12 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         e.g. FAISS, to ensure that the graph component is retrained when the knowledge
         base is updated.
         """
-        if store_type != DEFAULT_VECTOR_STORE_TYPE or not source:
+        if (
+            store_type != DEFAULT_VECTOR_STORE_TYPE
+            or not source
+            or not os.path.exists(source)
+            or not os.path.isdir(source)
+        ):
             return None
 
         docs = FAISS_Store.load_documents(source)
