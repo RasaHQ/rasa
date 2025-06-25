@@ -513,6 +513,54 @@ def test_clean_up_commands(
 
 
 @pytest.mark.parametrize(
+    "slot_name, value, commands, expected_clean_commands",
+    [
+        ("eggs", "scrambled", [SetSlotCommand("eggs", "scrambled")], []),
+        ("affirmation", False, [SetSlotCommand("affirmation", False)], []),
+    ],
+)
+def test_clean_up_commands_skip_slot_already_set(
+    collect_info_flow: FlowsList,
+    slot_name: str,
+    value: Any,
+    commands: List[Command],
+    expected_clean_commands: List[Command],
+):
+    domain = Domain.from_yaml(
+        """
+        slots:
+          ham:
+            type: text
+          eggs:
+            type: text
+          affirmation:
+            type: bool
+        """
+    )
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test", evts=[], slots=domain.slots
+    )
+    # Set the slot with a value
+    slot_event = SlotSet(slot_name, value)
+    # Update the tracker with the slot event
+    tracker.update(slot_event)
+
+    # When
+    with patch(
+        (
+            "rasa.dialogue_understanding.processor."
+            "command_processor.filled_slots_for_active_flow"
+        ),
+        Mock(return_value=({slot_name}, "egg")),
+    ):
+        clean_commands = clean_up_commands(commands, tracker, collect_info_flow, Mock())
+
+    # Then
+    # As the slot is already set, the command should be skipped
+    assert clean_commands == expected_clean_commands
+
+
+@pytest.mark.parametrize(
     "commands, expected_clean_commands",
     [
         ([SetSlotCommand("ham", "100")], []),

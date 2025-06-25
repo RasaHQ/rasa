@@ -639,9 +639,9 @@ def clean_up_slot_command(
             resulting_commands.append(command)
             return resulting_commands
 
-        if (slot := tracker.slots.get(command.name)) is not None and slot.value == str(
-            command.value
-        ):
+        if (slot := tracker.slots.get(command.name)) is not None and str(
+            slot.value
+        ) == str(command.value):
             # the slot is already set, we don't need to set it again
             structlogger.debug(
                 "command_processor.clean_up_slot_command.skip_command_slot_already_set",
