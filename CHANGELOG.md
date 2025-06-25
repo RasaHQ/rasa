@@ -10,9 +10,21 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.12.20] - 2025-06-24
+
+Rasa Pro 3.12.20 (2025-06-24)
+### Bugfixes
+- [#1886](https://github.com/rasahq/rasa-private/issues/1886): Flows now traverse called and linked flows, including nested and branching called / linked flows.
+  As a result, E2E coverage reports include any linked and called flows triggered by the flow being tested.
+- [#2684](https://github.com/rasahq/rasa-private/issues/2684): Fixed a bug in Genesys and Audiocodes Stream channels where conversations used a placeholder value `default` as the Sender ID. Added a new method `VoiceInputChannel.get_sender_id(call_parameters)` that returns the platform's `call_id` as the Sender ID. This ensures each conversation has a unique identifier based on the call ID from the respective platform. Channels can override this method to customize Sender ID generation.
+
+### Miscellaneous internal changes
+- [#2704](https://github.com/rasahq/rasa-private/issues/2704)
+
+
 ## [3.12.19] - 2025-06-18
-                         
-Rasa Pro 3.12.19 (2025-06-18)                              
+
+Rasa Pro 3.12.19 (2025-06-18)
 ### Bugfixes
 - [#2599](https://github.com/rasahq/rasa-private/issues/2599): Fix issues where linked flows could not be cancelled and slots collected within linked flows could not be prefilled.
 - [#2685](https://github.com/rasahq/rasa-private/issues/2685): Fix `InvalidFlowStepIdException` thrown when a bot is restarted with a retrained model which contains an update to the step order in a given active flow.
@@ -20,8 +32,8 @@ Rasa Pro 3.12.19 (2025-06-18)
 
 
 ## [3.12.18] - 2025-06-12
-                         
-Rasa Pro 3.12.18 (2025-06-12)                              
+
+Rasa Pro 3.12.18 (2025-06-12)
 ### Bugfixes
 - [#1939](https://github.com/rasahq/rasa-private/issues/1939): Ensure that old step ID formats (without the flow ID prefix) can be loaded without raising an
   `InvalidFlowStepIdException` in newer Rasa versions that expect the flow ID prefix.
@@ -34,15 +46,15 @@ Rasa Pro 3.12.18 (2025-06-12)
 
 
 ## [3.12.17] - 2025-06-05
-                         
-Rasa Pro 3.12.17 (2025-06-05)                              
+
+Rasa Pro 3.12.17 (2025-06-05)
 ### Bugfixes
 - [#2598](https://github.com/rasahq/rasa-private/issues/2598): Fix an issue where the SetSlot and Clarify command value was parsed incorrectly if a newline character immediately followed the value argument in the LLM output.
 
 
 ## [3.12.16] - 2025-06-03
-                         
-Rasa Pro 3.12.16 (2025-06-03)                              
+
+Rasa Pro 3.12.16 (2025-06-03)
 ### Bugfixes
 - [#2576](https://github.com/rasahq/rasa-private/issues/2576): Make `domain` an optional argument in `CommandProcessorComponent`. This change addresses a potential `TypeError` that could occur when loading a model trained without providing domain as a required argument. By making domain optional, models trained with older configurations or without a domain component will now load correctly without errors.
 
@@ -51,10 +63,10 @@ Rasa Pro 3.12.16 (2025-06-03)
 
 
 ## [3.12.15] - 2025-06-02
-                         
-Rasa Pro 3.12.15 (2025-06-02)                              
+
+Rasa Pro 3.12.15 (2025-06-02)
 ### Improvements
-- [#2545](https://github.com/rasahq/rasa-private/issues/2545): 
+- [#2545](https://github.com/rasahq/rasa-private/issues/2545):
 
 ### Bugfixes
 - [#1910](https://github.com/rasahq/rasa-private/issues/1910): Add turn_wrapper to count multiple utterances by bot/user as single turn rather than individual turns.
@@ -64,8 +76,8 @@ Rasa Pro 3.12.15 (2025-06-02)
 
 
 ## [3.12.14] - 2025-05-28
-                         
-Rasa Pro 3.12.14 (2025-05-28)                              
+
+Rasa Pro 3.12.14 (2025-05-28)
 ### Improvements
 - [#2349](https://github.com/rasahq/rasa-private/issues/2349): - Updates the parameter name from `max_tokens`, which is deprecated by OpenAI, to `max_completion_tokens`. The old `max_tokens` is not supported for the `o` models.
   - Exposes LiteLLM's `drop_params` parameter for LLM configurations.
@@ -78,14 +90,14 @@ Rasa Pro 3.12.14 (2025-05-28)
 
 
 ## [3.12.13] - 2025-05-19
-                         
-Rasa Pro 3.12.13 (2025-05-19)                              
+
+Rasa Pro 3.12.13 (2025-05-19)
 ### Bugfixes
 - [#1827](https://github.com/rasahq/rasa-private/issues/1827): The `Clarify` (syntax used by `SingleStepLLMCommandGenerator`) / `disambiguate flows` (syntax used by `CompactLLMCommandGenerator`) command will now parse flow names with dashes.
 - [#2425](https://github.com/rasahq/rasa-private/issues/2425): Fix remote model download when models are stored in a path, not in the root of the remote storage.
   Add new training CLI param `--remote-root-only` that can be used by the model service to store the model in the root of the remote storage.
   Propagate this parameter to the persistor's `persist` method.
-  Simplify persistor code when retrieving models by downloading the model to the target path directly rather than copying the downloaded model to the target path. 
+  Simplify persistor code when retrieving models by downloading the model to the target path directly rather than copying the downloaded model to the target path.
   This also improved testability.
 - [#2447](https://github.com/rasahq/rasa-private/issues/2447): When inspector is not used, root server path should output: `Hello from Rasa: <version>.`.
   When inspector is used, root server path should output HTML page with a link to the path on which inspector can be reached.
@@ -93,8 +105,8 @@ Rasa Pro 3.12.13 (2025-05-19)
 
 
 ## [3.12.12] - 2025-05-15
-                         
-Rasa Pro 3.12.12 (2025-05-15)                              
+
+Rasa Pro 3.12.12 (2025-05-15)
 ### Improvements
 - [#2380](https://github.com/rasahq/rasa-private/issues/2380): Improved `CRFEntityExtractor` persistence and loading methods to improve model loading times.
 
