@@ -25,7 +25,7 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Upload primitives to Rasa Studio. Only works with NLU assistants.",
+        help="Upload primitives to Rasa Studio.",
     )
 
     upload_parser.set_defaults(func=handle_upload)

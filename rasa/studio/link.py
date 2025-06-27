@@ -179,8 +179,19 @@ def handle_link(args: argparse.Namespace) -> None:
     link_file = _link_file(project_root)
 
     if link_file.exists():
+        linked_assistant_name = read_assistant_name(project_root)
+        if linked_assistant_name == assistant_name:
+            rasa.shared.utils.cli.print_info(
+                f"Project is already linked to assistant '{assistant_name}'."
+            )
+            sys.exit(0)
+
         overwrite = questionary.confirm(
-            f"This project is already linked " f"(link file '{link_file}').\nOverwrite?"
+            f"Project is currently linked to the following Rasa Studio assistant:\n\n"
+            f"  Assistant name: {linked_assistant_name}\n"
+            f"  Studio URL: {studio_cfg.studio_url}\n"
+            f"  Keycloak Auth URL: {studio_cfg.authentication_server_url}\n\n"
+            f"Do you want to overwrite it with the new assistant '{assistant_name}'?"
         ).ask()
         if not overwrite:
             rasa.shared.utils.cli.print_info(

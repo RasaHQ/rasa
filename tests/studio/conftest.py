@@ -206,7 +206,7 @@ def mock_args(tmp_path: Path) -> MagicMock:
     args.domain = None
     data_dir = tmp_path / "data_dir"
     data_dir.mkdir(parents=True, exist_ok=True)
-    args.data = [str(data_dir)]
+    args.data = str(data_dir)
     args.overwrite = False
     args.config = None
     args.endpoints = None

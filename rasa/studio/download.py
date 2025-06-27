@@ -25,6 +25,7 @@ from rasa.studio.constants import DOMAIN_FILENAME
 from rasa.studio.data_handler import StudioDataHandler
 from rasa.studio.prompts import handle_prompts
 from rasa.studio.pull.data import _dump_flows_as_separate_files
+from rasa.studio.utils import validate_argument_paths
 
 structlogger = structlog.get_logger()
 
@@ -35,6 +36,7 @@ def handle_download(args: argparse.Namespace) -> None:
     Args:
         args: The command line arguments.
     """
+    validate_argument_paths(args)
     assistant_name = args.assistant_name
     target_root = _prepare_target_directory(assistant_name)
 

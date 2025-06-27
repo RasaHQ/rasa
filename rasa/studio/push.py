@@ -19,6 +19,7 @@ from rasa.studio.upload import (
     make_request,
     run_validation,
 )
+from rasa.studio.utils import validate_argument_paths
 
 structlogger = structlog.get_logger(__name__)
 
@@ -62,6 +63,7 @@ def handle_push(args: argparse.Namespace) -> None:
     Args:
         args: The command line arguments.
     """
+    validate_argument_paths(args)
     studio_cfg = get_studio_config()
 
     run_validation(args)

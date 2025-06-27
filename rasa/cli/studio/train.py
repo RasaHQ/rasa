@@ -20,10 +20,7 @@ def add_subparser(
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help=(
-            "Trains a Rasa model using Rasa Studio "
-            "data and your NLU data and stories."
-        ),
+        help="Trains a Rasa model using Rasa Studio data.",
     )
 
     train_parser.set_defaults(func=handle_train)

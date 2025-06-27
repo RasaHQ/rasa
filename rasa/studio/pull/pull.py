@@ -22,6 +22,7 @@ from rasa.studio.data_handler import StudioDataHandler, import_data_from_studio
 from rasa.studio.link import read_assistant_name
 from rasa.studio.pull.data import merge_flows_in_directory, merge_nlu_in_directory
 from rasa.studio.pull.domains import merge_domain
+from rasa.studio.utils import validate_argument_paths
 from rasa.utils.mapper import RasaPrimitiveStorageMapper
 
 structlogger = structlog.get_logger(__name__)
@@ -33,6 +34,7 @@ def handle_pull(args: argparse.Namespace) -> None:
     Args:
         args: The command line arguments.
     """
+    validate_argument_paths(args)
     handler = _create_studio_handler()
     handler.request_all_data()
 
@@ -55,6 +57,7 @@ def handle_pull_config(args: argparse.Namespace) -> None:
     Args:
         args: The command line arguments.
     """
+    validate_argument_paths(args)
     handler = _create_studio_handler()
     handler.request_all_data()
 
@@ -73,6 +76,7 @@ def handle_pull_endpoints(args: argparse.Namespace) -> None:
     Args:
         args: The command line arguments.
     """
+    validate_argument_paths(args)
     handler = _create_studio_handler()
     handler.request_all_data()
 
@@ -149,10 +153,10 @@ def _prepare_data_and_domain_paths(args: argparse.Namespace) -> Tuple[Path, Path
         domain_path = Path(domain_path)
 
     data_path = rasa.cli.utils.get_validated_path(
-        args.data[0], "data", DEFAULT_DATA_PATH, none_is_valid=True
+        args.data, "data", DEFAULT_DATA_PATH, none_is_valid=True
     )
 
-    data_path = Path(data_path or args.data[0])
+    data_path = Path(data_path or args.data)
     if not (data_path.is_file() or data_path.is_dir()):
         data_path.mkdir(parents=True, exist_ok=True)
 

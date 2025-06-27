@@ -64,7 +64,7 @@ def test_handle_push_all(
 
     args = Namespace(
         domain="domain.yml",
-        data=["data"],
+        data="data",
         config="config.yml",
         endpoints="endpoints.yml",
     )

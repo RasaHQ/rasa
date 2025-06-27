@@ -41,6 +41,7 @@ from rasa.studio import results_logger
 from rasa.studio.auth import KeycloakTokenReader
 from rasa.studio.config import StudioConfig
 from rasa.studio.results_logger import StudioResult, with_studio_error_handler
+from rasa.studio.utils import validate_argument_paths
 from rasa.telemetry import track_upload_to_studio_failed
 
 structlogger = structlog.get_logger()
@@ -116,7 +117,7 @@ def run_validation(args: argparse.Namespace) -> None:
 
     training_data_importer = TrainingDataImporter.load_from_dict(
         domain_path=args.domain,
-        training_data_paths=args.data,
+        training_data_paths=[args.data],
         config_path=args.config,
         expand_env_vars=False,
     )
@@ -143,6 +144,7 @@ def run_validation(args: argparse.Namespace) -> None:
 
 def handle_upload(args: argparse.Namespace) -> None:
     """Uploads primitives to rasa studio."""
+    validate_argument_paths(args)
     studio_config = StudioConfig.read_config()
     endpoint = studio_config.studio_url
     verify = not studio_config.disable_verify
@@ -166,6 +168,13 @@ def handle_upload(args: argparse.Namespace) -> None:
     args.config = rasa.cli.utils.get_validated_path(
         args.config, "config", DEFAULT_CONFIG_PATH
     )
+
+    config = read_yaml_file(args.config, expand_env_vars=False)
+    assistant_name = args.assistant_name or _get_assistant_name(config)
+    if not _handle_existing_assistant(
+        assistant_name, studio_config.studio_url, verify, args
+    ):
+        return
 
     Domain.expand_env_vars = False
     RasaYAMLReader.expand_env_vars = False
@@ -254,7 +263,7 @@ def build_calm_import_parts(
     domain = extract_values(domain_from_files, DOMAIN_KEYS)
 
     flow_importer = FlowSyncImporter.load_from_dict(
-        training_data_paths=data_path, expand_env_vars=False
+        training_data_paths=[str(data_path)], expand_env_vars=False
     )
 
     flows = list(flow_importer.get_user_flows())
@@ -262,7 +271,7 @@ def build_calm_import_parts(
     flows = read_yaml(flows_yaml, expand_env_vars=False)
 
     nlu_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=data_path, expand_env_vars=False
+        training_data_paths=[str(data_path)], expand_env_vars=False
     )
     nlu_data = nlu_importer.get_nlu_data()
     nlu_examples = nlu_data.filter_training_examples(
@@ -298,6 +307,7 @@ def upload_calm_assistant(
         domain_path=args.domain,
         config_path=args.config,
         endpoints_path=args.endpoints,
+        assistant_name=args.assistant_name,
     )
 
     prompts_json = collect_custom_prompts(parts.config, parts.endpoints)
@@ -310,6 +320,7 @@ def upload_calm_assistant(
         nlu_yaml=yaml_or_empty(parts.nlu),
         prompts_json=prompts_json,
     )
+
     structlogger.info(
         "rasa.studio.upload.calm", event_info="Uploading to Rasa Studio..."
     )
@@ -339,7 +350,7 @@ def upload_nlu_assistant(
     )
     importer = TrainingDataImporter.load_from_dict(
         domain_path=args.domain,
-        training_data_paths=args.data,
+        training_data_paths=[args.data],
         config_path=args.config,
         expand_env_vars=False,
     )
@@ -685,3 +696,40 @@ def build_get_assistant_by_name_request(
         },
     }
     return graphql_req
+
+
+def _handle_existing_assistant(
+    assistant_name: str,
+    endpoint: str,
+    verify: bool,
+    args: argparse.Namespace,
+) -> bool:
+    """Deal with the case that an assistant with the same name already exists.
+
+    Args:
+        assistant_name: The name of the assistant
+        endpoint: The studio endpoint
+        verify: Whether to verify SSL
+        args: The command line arguments
+
+    Returns:
+        bool: True if the assistant does not exist and can be created,
+              False if the assistant already exists and was linked.
+    """
+    from rasa.studio.link import handle_link
+
+    if not check_if_assistant_already_exists(assistant_name, endpoint, verify):
+        return True
+
+    should_link = questionary.confirm(
+        f"An assistant named {assistant_name} already exists in Studio. "
+        f"Would you like to link your local project to this existing assistant?"
+    ).ask()
+
+    if not should_link:
+        rasa.shared.utils.cli.print_error_and_exit("Upload cancelled.")
+        return False
+
+    args.assistant_name = assistant_name
+    handle_link(args)
+    return False

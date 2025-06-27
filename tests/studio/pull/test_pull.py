@@ -92,8 +92,7 @@ def test_pull_all_creates_files(
 
     args = Namespace(
         domain="domain.yml",
-        data=["data"],
-        overwrite=False,
+        data="data",
         config="config.yml",
         endpoints="endpoints.yml",
     )
@@ -185,7 +184,7 @@ def test_handle_pull_overwrites_flows(
         lambda *a, **kw: mock_studio_handler,
     )
 
-    mock_args.data = ["data"]
+    mock_args.data = "data"
     monkeypatch.chdir(project)
 
     rasa.studio.pull.pull.handle_pull(mock_args)

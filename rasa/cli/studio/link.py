@@ -2,15 +2,8 @@ import argparse
 from typing import List, Text
 
 from rasa.cli import SubParsersAction
-from rasa.cli.arguments.default_arguments import (
-    add_config_param,
-    add_data_param,
-    add_domain_param,
-    add_endpoint_param,
-)
 from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATH,
-    DEFAULT_ENDPOINTS_PATH,
 )
 from rasa.studio.link import handle_link
 
@@ -39,14 +32,5 @@ def add_subparser(
         "assistant_name",
         type=str,
         help="Name of the assistant in Rasa Studio.",
-    )
-
-    add_domain_param(link_parser, domain)
-    add_data_param(link_parser)
-    add_config_param(link_parser)
-    add_endpoint_param(
-        link_parser,
-        "Configuration file for the model endpoints.",
-        default=DEFAULT_ENDPOINTS_PATH,
     )
     link_parser.set_defaults(func=handle_link)
