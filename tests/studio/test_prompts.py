@@ -1,5 +1,4 @@
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Dict, Optional, Text
 
 import pytest
@@ -27,28 +26,9 @@ def empty_project(tmp_path: Path) -> Path:
     return tmp_path
 
 
-@pytest.fixture(autouse=True)
-def _patch_singletons(monkeypatch):
-    """
-    Replace helpers that would hit real code with small stubs,
-    so the test focuses purely on prompts.py logic.
-    """
-    # 2. Fake system-default prompts – we only need the three attributes
-    sys_prompts = SimpleNamespace(
-        contextual_response_rephraser="default_ctx",
-        command_generator="default_cmd",
-        enterprise_search="default_es",
-    )
-    monkeypatch.setattr(
-        prompts,
-        "get_system_default_prompts",
-        lambda *_: sys_prompts,
-    )
-
-
 def test_handle_prompts_no_prompts(empty_project: Path):
     handler = _DummyHandler(returned_prompts=None)
-    prompts.handle_prompts(handler, empty_project)
+    prompts.handle_prompts(handler.get_prompts(), empty_project)
 
     # config / endpoints remain empty
     assert not (empty_project / prompts.DEFAULT_CONFIG_PATH).read_text()
@@ -75,7 +55,7 @@ def test_handle_prompts_all_custom(empty_project: Path, monkeypatch):
     }
     write_yaml(data=config, target=empty_project / prompts.DEFAULT_CONFIG_PATH)
 
-    prompts.handle_prompts(handler, empty_project)
+    prompts.handle_prompts(handler.get_prompts(), empty_project)
 
     # Prompts directory should be created for custom prompts
     prompt_dir = empty_project / prompts.DEFAULT_PROMPTS_PATH

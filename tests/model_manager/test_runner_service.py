@@ -1,8 +1,10 @@
 import asyncio
+import base64
 import os
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Any, Dict
 from unittest import mock
 
 import boto3
@@ -26,8 +28,15 @@ from rasa.model_manager.runner_service import (
     set_bot_status_to_stopped,
     terminate_bot,
     update_bot_status,
+    write_encoded_config_data_to_files,
 )
 from rasa.model_manager.utils import models_base_path
+from rasa.shared.constants import DEFAULT_PROMPTS_PATH
+from rasa.studio.prompts import (
+    COMMAND_GENERATOR_NAME,
+    CONTEXTUAL_RESPONSE_REPHRASER_NAME,
+    ENTERPRISE_SEARCH_NAME,
+)
 
 
 @pytest.fixture
@@ -103,8 +112,8 @@ def test_prepare_bot_directory(tmp_path: Path, monkeypatch: MonkeyPatch) -> None
 
     assert os.path.exists(bot_base_path)
     assert os.path.exists(bot_base_path / "models")
-    assert os.path.exists(bot_base_path / "endpoints.yml")
-    assert os.path.exists(bot_base_path / "credentials.yml")
+    assert not os.path.exists(bot_base_path / "endpoints.yml")
+    assert not os.path.exists(bot_base_path / "credentials.yml")
 
 
 @mock_aws
@@ -154,8 +163,8 @@ def test_prepare_remote_bot_directory(
     assert os.path.exists(bot_base_path)
     assert os.path.exists(bot_base_path / "models")
     assert os.path.exists(bot_base_path / "models" / f"{model_name}.tar.gz")
-    assert os.path.exists(bot_base_path / "endpoints.yml")
-    assert os.path.exists(bot_base_path / "credentials.yml")
+    assert not os.path.exists(bot_base_path / "endpoints.yml")
+    assert not os.path.exists(bot_base_path / "credentials.yml")
 
     # check if a non existing model raises an exception
 
@@ -243,3 +252,47 @@ def test_terminate_bot(mock_bot_session: BotSession) -> None:
     assert mock_bot_session.status == "stopped"
     assert mock_bot_session.returncode == 1
     mock_bot_session.process.terminate.assert_called_once()  # type: ignore[attr-defined]
+
+
+def test_write_encoded_config_data_to_files_with_configs(monkeypatch, tmp_path):
+    configs = {
+        "endpoints": b"some endpoints data",
+        "config": b"some config data",
+        "credentials": b"some credentials data",
+    }
+    encoded_configs = {
+        key: base64.b64encode(value).decode("utf-8") for key, value in configs.items()
+    }
+
+    write_encoded_config_data_to_files(encoded_configs, str(tmp_path))
+
+    for config_name in configs.keys():
+        endpoints_file = tmp_path / f"{config_name}.yml"
+        assert endpoints_file.exists()
+        assert endpoints_file.read_bytes() == configs[config_name]
+
+
+def test_write_encoded_config_data_to_files_with_prompts(monkeypatch, tmp_path):
+    configs = {
+        "endpoints": b"nlg:",
+        "config": b"pipeline: []",
+    }
+    encoded_configs: Dict[str, Any] = {
+        key: base64.b64encode(value).decode("utf-8") for key, value in configs.items()
+    }
+
+    component_names = [
+        COMMAND_GENERATOR_NAME,
+        CONTEXTUAL_RESPONSE_REPHRASER_NAME,
+        ENTERPRISE_SEARCH_NAME,
+    ]
+    encoded_configs["prompts"] = {
+        component_name: component_name for component_name in component_names
+    }
+    write_encoded_config_data_to_files(encoded_configs, str(tmp_path))
+
+    prompts_dir = tmp_path / DEFAULT_PROMPTS_PATH
+    for component_name in component_names:
+        prompt_file = prompts_dir / f"{component_name}.jinja2"
+        assert prompt_file.exists()
+        assert prompt_file.read_text() == component_name

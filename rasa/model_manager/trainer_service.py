@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 from enum import Enum
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 import structlog
@@ -20,6 +21,7 @@ from rasa.model_manager.warm_rasa_process import (
     start_rasa_process,
 )
 from rasa.model_training import generate_random_model_name
+from rasa.studio.prompts import handle_prompts
 
 structlogger = structlog.get_logger()
 
@@ -208,6 +210,7 @@ def write_training_data_to_files(
         "stories": "base64 encoded stories.yml",
         "rules": "base64 encoded rules.yml",
         "nlu": "base64 encoded nlu.yml"
+        "prompts": "dictionary with the prompts",
     }
     ```
     """
@@ -229,6 +232,9 @@ def write_training_data_to_files(
             encoded_training_data.get(key, ""),
             subpath(training_base_path + "/" + parent_path, file_name),
         )
+
+    if prompts := encoded_training_data.get("prompts"):
+        handle_prompts(prompts, Path(training_base_path))
 
 
 def prepare_training_directory(

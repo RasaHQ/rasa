@@ -20,7 +20,6 @@ from rasa.shared.constants import (
 from rasa.shared.utils.common import all_subclasses
 from rasa.shared.utils.llm import get_system_default_prompts
 from rasa.shared.utils.yaml import read_yaml, write_yaml
-from rasa.studio.data_handler import StudioDataHandler
 
 structlogger = structlog.get_logger()
 
@@ -29,14 +28,13 @@ COMMAND_GENERATOR_NAME = "command_generator"
 ENTERPRISE_SEARCH_NAME = "enterprise_search"
 
 
-def handle_prompts(handler: StudioDataHandler, root: Path) -> None:
+def handle_prompts(prompts: Dict[Text, Text], root: Path) -> None:
     """Handle prompts for the assistant.
 
     Args:
-        handler: The data handler to retrieve prompts from.
+        prompts: A dict containing prompt names as keys and their content as values.
         root: The root directory where the prompts should be saved.
     """
-    prompts = handler.get_prompts()
     if not prompts:
         return
 

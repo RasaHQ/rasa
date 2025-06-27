@@ -47,7 +47,9 @@ def handle_download(args: argparse.Namespace) -> None:
     _handle_endpoints(handler, target_root)
     _handle_domain(handler, target_root)
     _handle_data(handler, target_root)
-    handle_prompts(handler, target_root)
+
+    if prompts := handler.get_prompts():
+        handle_prompts(prompts, target_root)
 
     structlogger.info(
         "studio.download.success",

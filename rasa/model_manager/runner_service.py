@@ -2,7 +2,8 @@ import os
 import shutil
 import subprocess
 from enum import Enum
-from typing import Dict, Optional
+from pathlib import Path
+from typing import Dict, Optional, Union
 
 import aiohttp
 import structlog
@@ -18,6 +19,7 @@ from rasa.model_manager.utils import (
     write_encoded_data_to_file,
 )
 from rasa.model_manager.warm_rasa_process import start_rasa_process
+from rasa.studio.prompts import handle_prompts
 
 structlogger = structlog.get_logger()
 
@@ -121,11 +123,25 @@ def get_open_port() -> int:
 
 
 def write_encoded_config_data_to_files(
-    encoded_configs: Dict[str, bytes], base_path: str
+    encoded_configs: Dict[str, Union[bytes, Dict[str, str]]], base_path: str
 ) -> None:
     """Write the encoded config data to files."""
-    for key, value in encoded_configs.items():
-        write_encoded_data_to_file(value, subpath(base_path, f"{key}.yml"))
+    endpoints_encoded = encoded_configs.get("endpoints")
+    if endpoints_encoded:
+        write_encoded_data_to_file(
+            endpoints_encoded, subpath(base_path, "endpoints.yml")
+        )
+    config_encoded = encoded_configs.get("config")
+    if config_encoded:
+        write_encoded_data_to_file(config_encoded, subpath(base_path, "config.yml"))
+    credentials_encoded = encoded_configs.get("credentials")
+    if credentials_encoded:
+        write_encoded_data_to_file(
+            credentials_encoded, subpath(base_path, "credentials.yml")
+        )
+
+    if prompts := encoded_configs.get("prompts"):
+        handle_prompts(prompts, Path(base_path))
 
 
 def prepare_bot_directory(
