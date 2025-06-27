@@ -1,0 +1,73 @@
+name: Semgrep PII Detection
+on:
+  pull_request:
+    branches:
+      - main
+      - '[0-9]+.[0-9]+.x'
+    paths:
+      - '**/*.py'
+
+jobs:
+  semgrep:
+    name: PII Detection with Semgrep
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    
+    # Skip any PR created by dependabot
+    if: (github.actor != 'dependabot[bot]')
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install requests semgrep==1.45.0
+      
+      - name: Get changed files
+        id: changed-files
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} HEAD | grep '\.py$' || true)
+          
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "changed_files<<EOF" >> $GITHUB_OUTPUT
+            echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "changed_files=" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Run Semgrep scan
+        run: |
+          CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "$CHANGED_FILES" | xargs semgrep --config=.semgrep/rules/pii-logging-rules.yml \
+                    --json \
+                    --output=semgrep-results.json \
+                    || true
+          else
+            echo "[]" > semgrep-results.json
+          fi
+      
+      - name: Comment on added lines
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 scripts/comment-on-pii.py
+      
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: semgrep-pii-results
+          path: semgrep-results.json
+        continue-on-error: true

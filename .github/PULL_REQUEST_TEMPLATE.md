@@ -17,3 +17,10 @@
 
 - [ ] If your changes effect integration/compatibility with providers, then please run the [Providers E2E tests workflow](./workflows/providers-e2e-tests.yml) on your branch.
 - [ ] If required, update the [provider(s)' test configs](../data/test_config/providers/) as appropriate.
+
+**PII Leakage Detection and Prevention Checklist**
+- [ ] **String formatting** - Confirm that string interpolation (f-strings, .format(), %) do not include variables that may contain PII.
+- [ ] **Keyword arguments** - Check that logging calls do not pass variables that may contain PII as named parameters.
+- [ ] **Debug vs other log levels** - Verify appropriate log levels are used if variables that may contain PII have to be logged (**Only debug logs are allowed to contain PII**).
+- [ ] **Common PII sources** - Slot values, user messages, bot responses, tracker state, dialogue stack/frames, commands, and events.
+- [ ] **Variable naming patterns** - Variables containing these keywords may contain PII: `slot`, `user`, `text`, `message`, `response`, `tracker`, `stack`, `frame`, `top`, `command`, `event`, `document`, `context`, `input`.

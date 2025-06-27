@@ -1,0 +1,58 @@
+rules:
+  # Catch keyword arguments with potential PII variable names
+  - id: pii-keyword-arguments-in-logging
+    patterns:
+      - pattern-either:
+          - pattern: logger.$METHOD(..., $KEY=$VAR, ...)
+          - pattern: structlogger.$METHOD(..., $KEY=$VAR, ...)
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: '.*(slot|document|context|user|text|message|response|input|tracker|stack|frame|top|command|event).*'
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: '^(?!debug$).*'
+    message: "Potential PII keyword argument '$KEY=$VAR' detected in logging"
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: pii-detection
+
+  # Catch positional arguments with potential PII variable names
+  - id: pii-positional-arguments-in-logging
+    patterns:
+      - pattern-either:
+          - pattern: logger.$METHOD(..., $VAR, ...)
+          - pattern: structlogger.$METHOD(..., $VAR, ...)
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: '.*(slot|document|context|user|text|message|response|input|tracker|stack|frame|top|command|event).*'
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: '^(?!debug$).*'
+    message: "Potential PII variable '$VAR' detected in logging"
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: pii-detection
+
+  # Catch string formatting with potential PII variables
+  - id: pii-string-formatting-in-logging
+    patterns:
+      - pattern-either:
+          - pattern: logger.$METHOD(f"...$VAR...")
+          - pattern: structlogger.$METHOD(f"...$VAR...")
+          - pattern: logger.$METHOD("...".format(..., $VAR, ...))
+          - pattern: structlogger.$METHOD("...".format(..., $VAR, ...))
+          - pattern: logger.$METHOD("..." % (..., $VAR, ...))
+          - pattern: structlogger.$METHOD("..." % (..., $VAR, ...))
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: '.*(slot|document|context|user|text|message|response|input|tracker|stack|frame|top|command|event).*'
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: '^(?!debug$).*'
+    message: "Potential PII variable '$VAR' in string formatting detected in logging"
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: pii-detection

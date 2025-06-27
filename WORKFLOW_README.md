@@ -146,6 +146,10 @@ This workflow runs everytime a pull request is closed and skips pull requests cr
 Deletes all dev docker images created as part of the [continuous integration workflow](#continuous-integration)
 and removes them from the ECR repositories.
 
+### Semgrep PII Detection
+This workflow scans pull requests using the Semgrep tool to detect potential PII (Personally Identifiable Information) exposure.
+It scans only the newly added lines in the PR, posts inline comments on any PII findings, and provides a summary comment with the total results. 
+
 ## Actions
 In order to remove duplications in the CI workflow steps actions were packaged using [composite actions](https://docs.github.com/en/actions/creating-actions/creating-a-composite-action).
 The current set of actions are as follows :
