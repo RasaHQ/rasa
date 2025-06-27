@@ -15,14 +15,14 @@ configs:
       tracing:
         type: otlp
         endpoint: otlp-collector:4317
-        insecure: true ## set to false when using a tsl connection
+        insecure: false
         service_name: rasa
         root_certificates: ./certs/ca.pem
       
       metrics:
         type: otlp
         endpoint: otlp-collector:4317
-        insecure: true ## set to false when using a tsl connection
+        insecure: false
         service_name: rasa
         root_certificates: ./certs/ca.pem
   prometheus.yml:
@@ -41,11 +41,10 @@ configs:
           protocols:
             grpc:
               endpoint: 0.0.0.0:4317 
-          # Add the following for TLS connection
-            # tls:
-              # ca_file: /etc/otelcol-tls/ca.pem
-              # cert_file: /etc/otelcol-tls/cert.pem
-              # key_file: /etc/otelcol-tls/cert-key.pem
+              tls:
+                ca_file: /etc/otelcol-tls/ca.pem
+                cert_file: /etc/otelcol-tls/cert.pem
+                key_file: /etc/otelcol-tls/cert-key.pem
       
       exporters:
         prometheus:
@@ -61,6 +60,10 @@ configs:
           metrics:
             receivers: [otlp]
             exporters: [prometheus]
+        telemetry:
+          logs:
+            level: DEBUG
+            development: true
 
 
 services:
@@ -80,7 +83,7 @@ services:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
       - "./calm_bot:/app"
-#      - "./certs/ca.pem:/app/certs/ca.pem" # uncomment this line when using a tls connection
+      - "./certs/ca.pem:/app/certs/ca.pem" # uncomment this line when using a tls connection
     configs:
       - source: endpoints-metrics.yml
         target: /endpoints-metrics.yml
@@ -106,8 +109,10 @@ services:
 
   otlp-collector:
    image: otel/opentelemetry-collector:0.96.0
-  #   volumes:
-  #     - ./certs:/etc/otelcol-tls # uncomment this line when using a tls connection
+   container_name: otlp-collector
+   command: ["--config=/etc/otelcol/config.yaml"]
+   volumes:
+       - ./certs:/etc/otelcol-tls # uncomment this line when using a tls connection
    configs:
       - source: otlp-collector-config.yml
         target: /etc/otelcol/config.yaml
