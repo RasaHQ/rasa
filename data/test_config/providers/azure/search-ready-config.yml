@@ -88,20 +88,5 @@ policies:
       api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2024-02-01
       timeout: 7
-  - name: IntentlessPolicy
-    llm:
-      provider: azure
-      deployment: gpt-4o
-      api_type: azure
-      api_base: https://devtribe-ci-canada-east.openai.azure.com/
-      api_version: 2024-02-01
-      timeout: 7
-    embeddings:
-      provider: azure
-      deployment: text-embedding-3-large
-      api_type: azure
-      api_base: https://devtribe-ci-canada-east.openai.azure.com/
-      api_version: 2023-05-15
-      timeout: 7
 
 assistant_id: 20240418-073244-narrow-archive

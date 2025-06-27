@@ -57,10 +57,5 @@ policies:
       provider: groq
       model: llama3-8b-8192
       timeout: 7
-  - name: IntentlessPolicy
-    llm:
-      provider: groq
-      model: llama3-8b-8192
-      timeout: 7
 
 assistant_id: 20240418-073244-narrow-archive

@@ -48,8 +48,5 @@ policies:
       source: data-repo/docs/
     llm:
       model_group: sagemaker_chat_llm
-  - name: IntentlessPolicy
-    llm:
-      model_group: sagemaker_chat_llm
 
 assistant_id: 20240418-073244-narrow-archive

@@ -70,14 +70,5 @@ policies:
       provider: bedrock
       model: anthropic.claude-3-5-sonnet-20240620-v1:0
       timeout: 7
-  - name: IntentlessPolicy
-    llm:
-      provider: bedrock
-      model: anthropic.claude-3-5-sonnet-20240620-v1:0
-      timeout: 7
-    embeddings:
-      provider: bedrock
-      model: amazon.titan-embed-text-v1
-      timeout: 7
 
 assistant_id: 20240418-073244-narrow-archive

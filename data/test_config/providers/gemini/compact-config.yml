@@ -57,10 +57,5 @@ policies:
       provider: gemini
       model: gemini-2.0-flash-lite-001
       timeout: 7
-  - name: IntentlessPolicy
-    llm:
-      provider: gemini
-      model: gemini-2.0-flash-lite-001
-      timeout: 7
 
 assistant_id: 20240418-073244-narrow-archive

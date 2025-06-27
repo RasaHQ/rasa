@@ -67,20 +67,9 @@ on:
         required: true
         default: main
       command-generator:
-        description: "Command-generator(s) to use: single-step, multi-step, compact or all"
+        description: "Command-generator(s) to use: compact, search-ready or all"
         required: true
         default: all
-      single-step-e2e-test-with-assertions:
-        description: "Path to test file. Ignored unless `run_e2e_test_on_providers==true`"
-        type: string
-        required: true
-        # TODO: Use test that invokes enterprise-search, when flakiness is resolved
-        default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
-      multi-step-e2e-test-with-assertions:
-        description: "Path to test file. Ignored unless `run_e2e_test_on_providers==true`"
-        type: string
-        required: true
-        default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
       compact-e2e-test-with-assertions:
         description: "Path to test file. Ignored unless `run_e2e_test_on_providers==true`"
         type: string
@@ -119,8 +108,6 @@ jobs:
       provider: ${{ inputs.provider }}
       data-repo: ${{ inputs.data-repo }}
       data-repo-branch: ${{ inputs.data-repo-branch }}
-      single-step-e2e-test-with-assertions: ${{ inputs.single-step-e2e-test-with-assertions }}
-      multi-step-e2e-test-with-assertions: ${{ inputs.multi-step-e2e-test-with-assertions }}
       compact-e2e-test-with-assertions: ${{ inputs.compact-e2e-test-with-assertions }}
       search-ready-e2e-test-with-assertions: ${{ inputs.search-ready-e2e-test-with-assertions }}
       command-generator: ${{ inputs.command-generator }}

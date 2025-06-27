@@ -57,10 +57,5 @@ policies:
       provider: together_ai
       model: meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo
       timeout: 7
-  - name: IntentlessPolicy
-    llm:
-      provider: together_ai
-      model: meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo
-      timeout: 7
 
 assistant_id: 20240418-073244-narrow-archive

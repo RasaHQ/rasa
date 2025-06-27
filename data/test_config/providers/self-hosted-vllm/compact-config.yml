@@ -63,12 +63,5 @@ policies:
       api_base: "http://localhost:8080/v1"
       timeout: 900
       temperature: 0.2
-  - name: IntentlessPolicy
-    llm:
-      provider: self-hosted
-      model: Qwen/Qwen2.5-Coder-1.5B-Instruct
-      api_base: "http://localhost:8080/v1"
-      timeout: 900
-      temperature: 0.2
 
 assistant_id: 20240418-073244-narrow-archive

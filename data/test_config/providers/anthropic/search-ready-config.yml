@@ -57,10 +57,5 @@ policies:
       provider: anthropic
       model: claude-3-5-sonnet-latest
       timeout: 7
-  - name: IntentlessPolicy
-    llm:
-      provider: anthropic
-      model: claude-3-5-sonnet-latest
-      timeout: 7
 
 assistant_id: 20240418-073244-narrow-archive

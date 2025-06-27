@@ -73,30 +73,15 @@ on:
         default: "main"
 
       command-generator:
-        description: "Command-generator(s) to use: single-step, multi-step, compact, search-ready or all"
+        description: "Command-generator(s) to use: compact, search-ready or all"
         type: choice
         required: true
         default: all
         options:
-          - single-step
-          - multi-step
           - compact
           - search-ready
           - all
-
-      single-step-e2e-test-with-assertions:
-        description: "Path to test file, to be run with single-step trained model"
-        type: string
-        required: true
-        # TODO: Use test that invokes enterprise-search, when flakiness is resolved
-        default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
-
-      multi-step-e2e-test-with-assertions:
-        description: "Path to test file, to be run with multi-step trained model"
-        type: string
-        required: true
-        default: "e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml"
-
+          
       compact-e2e-test-with-assertions:
         description: "Path to test file, to be run with compact-LLM-Generator trained model"
         type: string
@@ -136,15 +121,7 @@ on:
         type: string
         required: true
       command-generator:
-        description: "Command-generator(s) to use: single-step, multi-step, compact, search-ready or all (1 job for each)"
-        type: string
-        required: true
-      single-step-e2e-test-with-assertions:
-        description: "Path to test file"
-        type: string
-        required: true
-      multi-step-e2e-test-with-assertions:
-        description: "Path to test file"
+        description: "Command-generator(s) to use: compact, search-ready or all (1 job for each)"
         type: string
         required: true
       compact-e2e-test-with-assertions:
@@ -164,7 +141,7 @@ env:
   RASA_PRO_BETA_STUB_CUSTOM_ACTION: true
   LOG_LEVEL_LLM: DEBUG
   COMMAND_GENERATOR: ${{ inputs.command-generator || 'all' }}
-  COMMAND_GENERATOR_MATRIX: '{"single-step": ["singlestep"], "multi-step": ["multistep"], "compact": ["compact"], "search-ready": ["search-ready"], "all": ["singlestep", "multistep", "compact", "search-ready"]}'
+  COMMAND_GENERATOR_MATRIX: '{"compact": ["compact"], "search-ready": ["search-ready"], "all": ["compact", "search-ready"]}'
   ENDPOINTS_FILE_NAME: endpoints
   REDIS_HOST: localhost
   REDIS_PORT: 6379
@@ -360,30 +337,54 @@ jobs:
             openai-with-custom-prompt-for-CustomSearchReadyLLMCommandGenerator
           ] # TODO: Enable testing all the providers
         train-and-test: ${{ fromJson(needs.job_setup.outputs.COMMAND_GENERATOR_MATRIX)[needs.job_setup.outputs.COMMAND_GENERATOR] }}
+        exclude:
+          - provider: anthropic
+            train-and-test: search-ready
+          - provider: bedrock-multiple-deployments-with-routing
+            train-and-test: search-ready
+          - provider: bedrock
+            train-and-test: search-ready
+          - provider: gemini-multiple-deployments-with-routing
+            train-and-test: search-ready
+          - provider: gemini
+            train-and-test: search-ready
+          - provider: groq
+            train-and-test: search-ready
+          - provider: huggingface
+            train-and-test: search-ready
+          - provider: huggingface_local
+            train-and-test: search-ready
+          - provider: mistral
+            train-and-test: search-ready
+          - provider: ollama
+            train-and-test: search-ready
+          - provider: sagemaker_chat-multiple-deployments-with-routing
+            train-and-test: search-ready
+          - provider: self-hosted-vllm
+            train-and-test: search-ready
+          - provider: self-hosted-llama-cpp
+            train-and-test: search-ready
+          - provider: together_ai
+            train-and-test: search-ready
+          - provider: openai-with-custom-prompt-for-CompactLLMCommandGenerator
+            train-and-test: search-ready
+          - provider: openai-with-custom-prompt-for-CustomLLMCommandGenerator
+            train-and-test: search-ready
+          - provider: openai-with-custom-prompt-for-CustomSearchReadyLLMCommandGenerator
+            train-and-test: compact
     steps:
       - name: Checkout git repository 🕝
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           path: rasa-private
 
-      # Skip job if required config file for provider does not exist
-      - name: Job to be skipped
-        run: |
-          if [[ -e rasa-private/data/test_config/providers/${{ matrix.provider }}/${{ matrix.train-and-test }}-config.yml ]]; then
-            echo "JOB_TO_BE_SKIPPED=false" >> "$GITHUB_ENV"
-          else
-              echo "JOB_TO_BE_SKIPPED=true" >> "$GITHUB_ENV"
-          fi
-
       - name: Set provider API key
-        if: ${{ env.JOB_TO_BE_SKIPPED == 'false' }}
         continue-on-error: true
         run: |
           : Set provider API key
           echo "${{ fromJson(env.API_KEY_NAMES)[matrix.provider] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[matrix.provider]] }}" >> "$GITHUB_ENV"
 
       - name: E2E test
-        if: ${{ env.JOB_TO_BE_SKIPPED == 'false' }}
         uses: ./rasa-private/.github/actions/providers-tests
         env:
           OTEL_SERVICE_NAME: e2e-tests-${{ matrix.provider }}
@@ -392,8 +393,6 @@ jobs:
           train-and-test: ${{ matrix.train-and-test }}
           data-repo: ${{ inputs.data-repo || 'rasa-calm-demo' }}
           data-repo-branch: ${{ inputs.data-repo-branch || 'main' }}
-          single-step-tests: ${{ inputs.single-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }} # TODO: Use test that invokes enterprise-search, when flakiness is resolved
-          multi-step-tests: ${{ inputs.multi-step-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }}
           compact-tests: ${{ inputs.compact-e2e-test-with-assertions || 'e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml' }}
           search-ready-tests: ${{ inputs.search-ready-e2e-test-with-assertions || 'e2e_tests_with_assertions/knowledge_relevancy_check/chitchat_during_flow.yml' }}
 
@@ -424,19 +423,7 @@ jobs:
         with:
           path: rasa-private
 
-      # Skip job if required config file for provider does not exist
-      - name: Job to be skipped
-        env:
-          PROVIDER: ${{ inputs.provider }}
-        run: |
-          if [[ -e rasa-private/data/test_config/providers/${{ env.PROVIDER }}/${{ matrix.train-and-test }}-config.yml ]]; then
-            echo "JOB_TO_BE_SKIPPED=false" >> "$GITHUB_ENV"
-          else
-              echo "JOB_TO_BE_SKIPPED=true" >> "$GITHUB_ENV"
-          fi
-
       - name: Set provider API key
-        if: ${{ env.JOB_TO_BE_SKIPPED == 'false' }}
         continue-on-error: true
         env:
           PROVIDER: ${{ inputs.PROVIDER }}
@@ -445,7 +432,6 @@ jobs:
           echo "${{ fromJson(env.API_KEY_NAMES)[env.PROVIDER] }}=${{ secrets[fromJson(env.API_KEY_NAMES)[env.PROVIDER]] }}" >> "$GITHUB_ENV"
 
       - name: E2E test on single provider
-        if: ${{ env.JOB_TO_BE_SKIPPED == 'false' }}
         uses: ./rasa-private/.github/actions/providers-tests
         env:
           OTEL_SERVICE_NAME: e2e-tests-${{ inputs.provider }}
@@ -454,7 +440,5 @@ jobs:
           train-and-test: ${{ matrix.train-and-test }}
           data-repo: ${{ inputs.data-repo || 'rasa-calm-demo' }}
           data-repo-branch: ${{ inputs.data-repo-branch || 'main' }}
-          single-step-tests: ${{ inputs.single-step-e2e-test-with-assertions }}
-          multi-step-tests: ${{ inputs.multi-step-e2e-test-with-assertions }}
           compact-tests: ${{ inputs.compact-e2e-test-with-assertions }}
           search-ready-tests: ${{ inputs.search-ready-e2e-test-with-assertions }}

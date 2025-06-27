@@ -61,12 +61,5 @@ policies:
       api_base: "http://localhost:8080/v1"
       timeout: 900
       temperature: 0.2
-  - name: IntentlessPolicy
-    llm:
-      provider: self-hosted
-      model: ggml-org/Meta-Llama-3.1-8B-Instruct-Q4_0-GGUF
-      api_base: "http://localhost:8080/v1"
-      timeout: 900
-      temperature: 0.2
 
 assistant_id: 20240418-073244-narrow-archive

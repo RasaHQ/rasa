@@ -55,8 +55,5 @@ policies:
     check_relevancy: true
     vector_store:
       source: data-repo/docs/
-  - name: IntentlessPolicy
-    llm:
-      model: gpt-4o
 
 assistant_id: 20240418-073244-narrow-archive

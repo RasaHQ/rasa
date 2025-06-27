@@ -70,14 +70,5 @@ policies:
       encode_kwargs: # used during inference
         normalize_embeddings: true
       timeout: 7
-  - name: IntentlessPolicy
-    embeddings:
-      provider: huggingface_local
-      model: BAAI/bge-small-en-v1.5
-      model_kwargs: # used during instantiation
-        device: "cpu"
-      encode_kwargs: # used during inference
-        normalize_embeddings: true
-      timeout: 7
 
 assistant_id: 20240418-073244-narrow-archive

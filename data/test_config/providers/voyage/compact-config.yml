@@ -58,10 +58,5 @@ policies:
       provider: voyage
       model: voyage-3
       timeout: 7
-  - name: IntentlessPolicy
-    embeddings:
-      provider: voyage
-      model: voyage-3
-      timeout: 7
 
 assistant_id: 20240418-073244-narrow-archive

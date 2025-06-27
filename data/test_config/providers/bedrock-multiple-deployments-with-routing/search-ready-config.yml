@@ -52,10 +52,5 @@ policies:
       model_group: bedrock_embeddings
     llm:
       model_group: bedrock_llm
-  - name: IntentlessPolicy
-    llm:
-      model_group: bedrock_llm
-    embeddings:
-      model_group: bedrock_embeddings
 
 assistant_id: 20240418-073244-narrow-archive

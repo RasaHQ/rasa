@@ -50,10 +50,5 @@ policies:
       source: data-repo/docs/
     embeddings:
       model_group: openai_embeddings
-  - name: IntentlessPolicy
-    llm:
-      model_group: openai_llm
-    embeddings:
-      model_group: openai_embeddings
 
 assistant_id: 20240418-073244-narrow-archive

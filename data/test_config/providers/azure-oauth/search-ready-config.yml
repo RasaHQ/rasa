@@ -54,10 +54,5 @@ policies:
       model_group: azure_embeddings
     llm:
       model_group: azure_llm
-  - name: IntentlessPolicy
-    llm:
-      model_group: azure_llm
-    embeddings:
-      model_group: azure_embeddings
 
 assistant_id: 20240418-073244-narrow-archive

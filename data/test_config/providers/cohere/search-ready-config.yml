@@ -70,11 +70,6 @@ policies:
       provider: cohere
       model: command-r-plus-08-2024
       timeout: 7
-  - name: IntentlessPolicy
-    llm:
-      provider: cohere
-      model: command-r-plus-08-2024
-      timeout: 7
 
     # TODO: Resolve  IntentlessPolicy training failure with Cohere embedding models with error:
     # `total number of texts must be at most 96 - received 299`.
