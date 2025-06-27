@@ -16,6 +16,7 @@ from rasa.shared.constants import (
     PROMPT_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
 )
+from rasa.shared.utils.io import raise_deprecation_warning
 from rasa.shared.utils.llm import (
     check_prompt_config_keys_and_warn_if_deprecated,
     get_prompt_template,
@@ -47,6 +48,14 @@ class SingleStepLLMCommandGenerator(SingleStepBasedLLMCommandGenerator):
         prompt_template: Optional[Text] = None,
         **kwargs: Any,
     ) -> None:
+        raise_deprecation_warning(
+            message=(
+                "Support for `SingleStepLLMCommandGenerator` will be removed in Rasa "
+                "`4.0.0`. Please modify your assistant's configuration to use the "
+                "`CompactLLMCommandGenerator` or `SearchReadyLLMCommandGenerator` "
+                "instead."
+            )
+        )
         super().__init__(
             config,
             model_storage,

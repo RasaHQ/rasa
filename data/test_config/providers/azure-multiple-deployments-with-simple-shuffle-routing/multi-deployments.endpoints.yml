@@ -25,17 +25,17 @@ model_groups:
     models:
     # Same LLM models across multiple deployments
       - provider: azure
-        deployment: ${AZURE_DEPLOYMENT_GPT3_5_TURBO_CA}
-        api_base: ${AZURE_API_BASE_GPT3_5_TURBO_CA}
+        deployment: ${AZURE_DEPLOYMENT_GPT4o_CA}
+        api_base: ${AZURE_API_BASE_GPT4o_CA}
         api_key: ${AZURE_API_KEY_CA}
-        api_version: ${AZURE_API_VERSION_GPT3_5_TURBO_CA}
+        api_version: ${AZURE_API_VERSION_GPT4o_CA}
         timeout: 7
         num_retries: 5
       - provider: azure
-        deployment: ${AZURE_DEPLOYMENT_GPT3_5_TURBO_FR}
-        api_base: ${AZURE_API_BASE_GPT3_5_TURBO_FR}
+        deployment: ${AZURE_DEPLOYMENT_GPT4o_FR}
+        api_base: ${AZURE_API_BASE_GPT4o_FR}
         api_key: ${AZURE_API_KEY_FR}
-        api_version: ${AZURE_API_VERSION_GPT3_5_TURBO_FR}
+        api_version: ${AZURE_API_VERSION_GPT4o_FR}
         timeout: 7
         num_retries: 5
     router:
@@ -55,17 +55,17 @@ model_groups:
     models:
       # Same Embedding models across multiple deployments
       - provider: azure
-        deployment: ${AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_CA}
-        api_base: ${AZURE_API_BASE_TXT_EMBEDDING_ADA_CA}
+        deployment: ${AZURE_DEPLOYMENT_TXT_EMBEDDING_3_LARGE_CA}
+        api_base: ${AZURE_API_BASE_TXT_EMBEDDING_3_LARGE_CA}
         api_key: ${AZURE_API_KEY_CA}
-        api_version: ${AZURE_API_VERSION_TXT_EMBEDDING_ADA_CA}
+        api_version: ${AZURE_API_VERSION_TXT_EMBEDDING_3_LARGE_CA}
         timeout: 7
         num_retries: 5
       - provider: azure
-        deployment: ${AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_FR}
-        api_base: ${AZURE_API_BASE_TXT_EMBEDDING_ADA_FR}
+        deployment: ${AZURE_DEPLOYMENT_TXT_EMBEDDING_3_LARGE_FR}
+        api_base: ${AZURE_API_BASE_TXT_EMBEDDING_3_LARGE_FR}
         api_key: ${AZURE_API_KEY_FR}
-        api_version: ${AZURE_API_VERSION_TXT_EMBEDDING_ADA_FR}
+        api_version: ${AZURE_API_VERSION_TXT_EMBEDDING_3_LARGE_FR}
         timeout: 7
         num_retries: 5
     router:

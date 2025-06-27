@@ -127,10 +127,10 @@ def greet_tracker() -> DialogueStateTracker:
             },
         ),
         (
-            {"model_name": "gpt-4o-2024-11-20"},
+            {"model_name": "gpt-4o"},
             OPENAI_API_KEY_ENV_VAR,
             {
-                "llm_model": "gpt-4o-2024-11-20",
+                "llm_model": "gpt-4o",
                 "llm_type": "openai",
                 "llm_model_group_id": "None",
             },
@@ -458,10 +458,10 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
             },
         ),
         (
-            {"model_name": "gpt-4o-2024-11-20"},
+            {"model_name": "gpt-4o"},
             OPENAI_API_KEY_ENV_VAR,
             {
-                "llm_model": "gpt-4o-2024-11-20",
+                "llm_model": "gpt-4o",
                 "llm_type": "openai",
                 "llm_model_group_id": "None",
             },

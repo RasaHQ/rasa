@@ -125,8 +125,9 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
         raise_deprecation_warning(
             message=(
                 "Support for `MultiStepLLMCommandGenerator` will be removed in Rasa "
-                "`4.0.0`. Please modify your assistant's configuration to use other "
-                "LLM command generators like the `SingleStepLLMCommandGenerator`."
+                "`4.0.0`. Please modify your assistant's configuration to use the "
+                "`CompactLLMCommandGenerator` or `SearchReadyLLMCommandGenerator` "
+                "instead."
             )
         )
 

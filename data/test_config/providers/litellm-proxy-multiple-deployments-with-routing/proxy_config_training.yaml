@@ -1,18 +1,18 @@
 model_list:
-  - model_name: gpt-3.5-turbo
+  - model_name: gpt-4o
     litellm_params:
-      model: azure/test-gpt-35-turbo
-      api_base: "os.environ/AZURE_API_BASE_GPT3_5_TURBO"
+      model: azure/test-gpt-4o
+      api_base: "os.environ/AZURE_API_BASE_GPT4o"
       api_key: "os.environ/AZURE_API_KEY_TRAINING"
-      api_version: "os.environ/AZURE_API_VERSION_GPT3_5_TURBO"
+      api_version: "os.environ/AZURE_API_VERSION_GPT4o"
       timeout: 7
       num_retries: 5
   - model_name: text-embedding-3-large
     litellm_params:
       model: azure/test-text-embedding-3-large
-      api_base: "os.environ/AZURE_API_BASE_TXT_EMBEDDING_ADA"
+      api_base: "os.environ/AZURE_API_BASE_TXT_EMBEDDING_3_LARGE"
       api_key: "os.environ/AZURE_API_KEY_TRAINING"
-      api_version: "os.environ/AZURE_API_VERSION_TXT_EMBEDDING_ADA"
+      api_version: "os.environ/AZURE_API_VERSION_TXT_EMBEDDING_3_LARGE"
       timeout: 7
       num_retries: 5
 

@@ -819,7 +819,7 @@ def compute_prompt_tokens_length(
         )
         return None
 
-    if model_name in ["gpt-3.5-turbo", "gpt-4"]:
+    if model_name == "gpt-4":
         logger.debug(
             f"Model {model_name} may update over time. "
             f"Returning num tokens assuming model '{model_name}-0613.'"

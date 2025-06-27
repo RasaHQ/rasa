@@ -65,11 +65,11 @@ def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
             {
                 "prompt_template": TEST_PROMPT_DIRECTORY,
                 "llm": {
-                    "model": "gpt-3.5-turbo",
+                    "model": "gpt-4o-2024-11-20",
                 },
             },
             {
-                "llm_model": "gpt-3.5-turbo",
+                "llm_model": "gpt-4o-2024-11-20",
             },
         ),
         (

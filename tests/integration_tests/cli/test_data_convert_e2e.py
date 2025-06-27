@@ -86,7 +86,7 @@ def test_rasa_data_convert_e2e_feature_enabled_csv(
         line_text_bot = input_utterance_lines.split(":")[2].strip("\nFinbo").strip(" ")
         output_utterance_lines_bot = output_dict.get("test_cases", [])[0]["steps"][0][
             "assertions"
-        ][0]["bot_uttered"]["text_matches"]
+        ][0]["bot_uttered"]["text_matches"].rstrip()
         assert line_text_bot == output_utterance_lines_bot
 
 
@@ -124,7 +124,7 @@ def test_rasa_data_convert_e2e_feature_enabled_xlsx(
         line_text_bot = input_utterance_lines.split(":")[2].strip("\nFinbo").strip(" ")
         output_utterance_lines_bot = output_dict.get("test_cases", [])[0]["steps"][0][
             "assertions"
-        ][0]["bot_uttered"]["text_matches"]
+        ][0]["bot_uttered"]["text_matches"].rstrip()
         assert line_text_bot == output_utterance_lines_bot
 
 

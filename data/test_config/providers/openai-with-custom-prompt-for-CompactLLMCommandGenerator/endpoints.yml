@@ -35,6 +35,6 @@ model_groups:
   - id: openai_embeddings
     models:
       - provider: openai
-        model: text-embedding-3-small
+        model: text-embedding-3-large
         timeout: 20
         num_retries: 5

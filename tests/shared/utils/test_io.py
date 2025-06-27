@@ -290,8 +290,8 @@ def test_resolve_environment_variable_catches_not_existing_sensitive_keys():
 @pytest.mark.dont_replace_environment_variables_in_yaml
 def test_does_not_resolve_sensitive_environment_variable(monkeypatch):
     monkeypatch.setenv("AZURE_API_KEY_FR", "1234")
-    monkeypatch.setenv("AZURE_API_BASE_GPT3_5_TURBO_FR", "gpt-3.5-turbo")
-    monkeypatch.setenv("AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE", "deployment")
+    monkeypatch.setenv("AZURE_API_BASE_GPT4o_FR", "gpt-4o")
+    monkeypatch.setenv("AZURE_DEPLOYMENT_GPT4o_FRANCE", "deployment")
 
     monkeypatch.setenv(
         "AWS_ACCESS_KEY_ID_TEST",
@@ -311,8 +311,8 @@ def test_does_not_resolve_sensitive_environment_variable(monkeypatch):
       - id: azure_llm
         models:
           - provider: openai
-            deployment: ${AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE}
-            api_base: ${AZURE_API_BASE_GPT3_5_TURBO_FR}
+            deployment: ${AZURE_DEPLOYMENT_GPT4o_FRANCE}
+            api_base: ${AZURE_API_BASE_GPT4o_FR}
             api_key: ${AZURE_API_KEY_FR}
             timeout: 14
           - provider: bedrock
@@ -327,7 +327,7 @@ def test_does_not_resolve_sensitive_environment_variable(monkeypatch):
 
     assert content["model_groups"][0]["models"][0]["api_key"] == "${AZURE_API_KEY_FR}"
     assert content["model_groups"][0]["models"][0]["deployment"] == "deployment"
-    assert content["model_groups"][0]["models"][0]["api_base"] == "gpt-3.5-turbo"
+    assert content["model_groups"][0]["models"][0]["api_base"] == "gpt-4o"
 
     assert (
         content["model_groups"][0]["models"][1]["aws_access_key_id"]

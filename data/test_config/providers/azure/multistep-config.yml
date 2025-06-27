@@ -5,7 +5,7 @@ pipeline:
     prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
       provider: azure
-      deployment: gpt-35-turbo
+      deployment: gpt-4o
       api_type: azure
       api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2024-02-01
@@ -37,14 +37,14 @@ pipeline:
   - name: MultiStepLLMCommandGenerator
     llm:
       provider: azure
-      deployment: gpt-35-turbo
+      deployment: gpt-4o
       api_type: azure
       api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2024-02-01
       timeout: 7
     embeddings:
       provider: azure
-      deployment: text-embedding-3-small
+      deployment: text-embedding-3-large
       api_type: azure
       api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2023-05-15
@@ -52,7 +52,7 @@ pipeline:
     flow_retrieval:
       embeddings:
         provider: azure
-        deployment: text-embedding-3-small
+        deployment: text-embedding-3-large
         api_type: azure
         api_base: https://devtribe-ci-canada-east.openai.azure.com/
         api_version: 2023-05-15
@@ -71,14 +71,14 @@ policies:
       source: data-repo/docs/
     embeddings:
       provider: azure
-      deployment: text-embedding-3-small
+      deployment: text-embedding-3-large
       api_type: azure
       api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2023-05-15
       timeout: 7
     llm:
       provider: azure
-      deployment: gpt-35-turbo
+      deployment: gpt-4.1-mini
       api_type: azure
       api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2024-02-01
@@ -86,14 +86,14 @@ policies:
   - name: IntentlessPolicy
     llm:
       provider: azure
-      deployment: gpt-35-turbo
+      deployment: gpt-4o
       api_type: azure
       api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2024-02-01
       timeout: 7
     embeddings:
       provider: azure
-      deployment: text-embedding-3-small
+      deployment: text-embedding-3-large
       api_type: azure
       api_base: https://devtribe-ci-canada-east.openai.azure.com/
       api_version: 2023-05-15

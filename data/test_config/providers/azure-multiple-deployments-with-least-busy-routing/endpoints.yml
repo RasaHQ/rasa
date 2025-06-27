@@ -10,10 +10,10 @@ model_groups:
   - id: azure_llm
     models:
       - provider: azure
-        deployment: ${AZURE_DEPLOYMENT_GPT3_5_TURBO}
-        api_base: ${AZURE_API_BASE_GPT3_5_TURBO}
+        deployment: ${AZURE_DEPLOYMENT_GPT4o}
+        api_base: ${AZURE_API_BASE_GPT4o}
         api_key: ${AZURE_API_KEY_TRAINING}
-        api_version: ${AZURE_API_VERSION_GPT3_5_TURBO}       
+        api_version: ${AZURE_API_VERSION_GPT4o}
         timeout: 20
         temperature: 0.0
         top_p: 0.0
@@ -24,10 +24,10 @@ model_groups:
   - id: azure_embeddings
     models:
       - provider: azure
-        deployment: ${AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA}
-        api_base: ${AZURE_API_BASE_TXT_EMBEDDING_ADA}
+        deployment: ${AZURE_DEPLOYMENT_TXT_EMBEDDING_3_LARGE}
+        api_base: ${AZURE_API_BASE_TXT_EMBEDDING_3_LARGE}
         api_key: ${AZURE_API_KEY_TRAINING}
-        api_version: ${AZURE_API_VERSION_TXT_EMBEDDING_ADA} 
+        api_version: ${AZURE_API_VERSION_TXT_EMBEDDING_3_LARGE}
         timeout: 20
         num_retries: 5
 

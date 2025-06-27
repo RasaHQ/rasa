@@ -89,7 +89,7 @@ def test_create_llm_judge_config_conftest_with_custom_config(
             model: gpt-4
         embeddings:
             provider: openai
-            model: text-embedding-3-small
+            model: text-embedding-3-large
     """)
     assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
         llm_config=BaseModelConfig(
@@ -99,7 +99,7 @@ def test_create_llm_judge_config_conftest_with_custom_config(
         ),
         embeddings=BaseModelConfig(
             provider=OPENAI_PROVIDER,
-            model="text-embedding-3-small",
+            model="text-embedding-3-large",
             extra_parameters={},
         ),
     )
@@ -135,7 +135,7 @@ def test_create_llm_judge_config_conftest_with_model_group(
             model_group: openai-direct-gpt-4
         embeddings:
             provider: openai
-            model: text-embedding-3-small
+            model: text-embedding-3-large
     """)
 
     endpoints_path = tmp_path / "endpoints.yml"
@@ -166,7 +166,7 @@ def test_create_llm_judge_config_conftest_with_model_group(
         ),
         embeddings=BaseModelConfig(
             provider=OPENAI_PROVIDER,
-            model="text-embedding-3-small",
+            model="text-embedding-3-large",
             extra_parameters={},
         ),
     )
@@ -309,7 +309,7 @@ def test_llm_e2e_test_converter_config_from_dict_valid():
     converter_config = LLME2ETestConverterConfig.from_dict(
         {
             "provider": "openai",
-            "model": "gpt-3.5-turbo",
+            "model": "gpt-4o",
             "deployment": "v1",
             "api_base": "https://api.openai.com/v1",
             "custom_key": "custom_value",
@@ -317,7 +317,7 @@ def test_llm_e2e_test_converter_config_from_dict_valid():
     )
 
     assert converter_config.provider == "openai"
-    assert converter_config.model == "gpt-3.5-turbo"
+    assert converter_config.model == "gpt-4o"
     assert converter_config.deployment == "v1"
     assert converter_config.api_base == "https://api.openai.com/v1"
     assert converter_config.extra_parameters == {"custom_key": "custom_value"}
@@ -327,7 +327,7 @@ def test_llm_e2e_test_converter_config_as_dict():
     converter_config = LLME2ETestConverterConfig.from_dict(
         {
             "provider": "openai",
-            "model": "gpt-3.5-turbo",
+            "model": "gpt-4o",
             "deployment": "v1",
             "api_base": "https://api.openai.com/v1",
             "custom_key": "custom_value",
@@ -336,7 +336,7 @@ def test_llm_e2e_test_converter_config_as_dict():
 
     assert converter_config.as_dict() == {
         "provider": "openai",
-        "model": "gpt-3.5-turbo",
+        "model": "gpt-4o",
         "deployment": "v1",
         "api_base": "https://api.openai.com/v1",
         "extra_parameters": {"custom_key": "custom_value"},

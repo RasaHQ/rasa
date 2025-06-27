@@ -1292,7 +1292,7 @@ class TestCompactLLMCommandGenerator:
                 [
                     {
                         "id": "openai_gpt",
-                        "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                        "models": [{"provider": "openai", "model": "gpt-4o"}],
                     },
                 ],
                 True,
@@ -1309,7 +1309,7 @@ class TestCompactLLMCommandGenerator:
                 [
                     {
                         "id": "openai_gpt-2",
-                        "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                        "models": [{"provider": "openai", "model": "gpt-4o"}],
                     },
                 ],
                 True,
@@ -1773,7 +1773,7 @@ class TestCompactLLMCommandGenerator:
     ):
         # Given
         resource = Resource("llmcmdgen")
-        config = {"llm": {"provider": "openai", "model": "gpt-4o-2024-11-20"}}
+        config = {"llm": {"provider": "openai", "model": "gpt-4o"}}
         generator = CompactLLMCommandGenerator(config, model_storage, resource)
         resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
 
@@ -1816,7 +1816,7 @@ class TestCompactLLMCommandGenerator:
                         "models": [
                             {
                                 "provider": "openai",
-                                "model": "gpt-4o-2024-11-20",
+                                "model": "gpt-4o",
                             }
                         ],
                     }

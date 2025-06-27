@@ -151,8 +151,8 @@ Rasa Pro 3.12.8 (2025-04-30)
 
 
 ## [3.12.7] - 2025-04-28
-                        
-Rasa Pro 3.12.7 (2025-04-28)                             
+
+Rasa Pro 3.12.7 (2025-04-28)
 ### Improvements
 - [#2293](https://github.com/rasahq/rasa-private/issues/2293): Adds two optional properties on Jambonz channel connector, `username` and `password` which can be used to enable Basic Access Authentication
 - [#2310](https://github.com/rasahq/rasa-private/issues/2310): Added support for basic authentication in Twilio channels (Voice Ready and Voice Streaming).
@@ -187,8 +187,8 @@ Rasa Pro 3.12.7 (2025-04-28)
 
 
 ## [3.12.6] - 2025-04-15
-                        
-Rasa Pro 3.12.6 (2025-04-15)                             
+
+Rasa Pro 3.12.6 (2025-04-15)
 ### Deprecations and Removals
 - [#2229](https://github.com/rasahq/rasa-private/issues/2229): Remove the behaviour handling digressions as eligible flows that can be started while handling an active collect step.
   These properties have been removed from the flow and collect step:
@@ -229,8 +229,8 @@ Rasa Pro 3.12.6 (2025-04-15)
 
 
 ## [3.12.5] - 2025-04-07
-                        
-Rasa Pro 3.12.5 (2025-04-07)                             
+
+Rasa Pro 3.12.5 (2025-04-07)
 ### Bugfixes
 - [#2181](https://github.com/rasahq/rasa-private/issues/2181): Fix `ChitChatAnswerCommand` command replaced with `CannotHandleCommand` if there are no e2e stories defined.
   Improve validation that `IntentlessPolicy` has applicable responses: either responses in the domain that are not part of any flow, or if there are e2e stories. This validation performed during the training time and during cleanup of the `ChitChatAnswerCommand` command.
@@ -424,8 +424,8 @@ Rasa Pro 3.12.0 (2025-03-19)
 - [#1685](https://github.com/rasahq/rasa-private/issues/1685), [#1760](https://github.com/rasahq/rasa-private/issues/1760), [#1780](https://github.com/rasahq/rasa-private/issues/1780), [#1784](https://github.com/rasahq/rasa-private/issues/1784), [#1829](https://github.com/rasahq/rasa-private/issues/1829), [#1868](https://github.com/rasahq/rasa-private/issues/1868), [#1873](https://github.com/rasahq/rasa-private/issues/1873), [#1929](https://github.com/rasahq/rasa-private/issues/1929), [#1930](https://github.com/rasahq/rasa-private/issues/1930), [#1946](https://github.com/rasahq/rasa-private/issues/1946), [#1949](https://github.com/rasahq/rasa-private/issues/1949), [#1955](https://github.com/rasahq/rasa-private/issues/1955), [#1972](https://github.com/rasahq/rasa-private/issues/1972), [#1989](https://github.com/rasahq/rasa-private/issues/1989), [#1991](https://github.com/rasahq/rasa-private/issues/1991), [#1998](https://github.com/rasahq/rasa-private/issues/1998), [#2004](https://github.com/rasahq/rasa-private/issues/2004), [#2016](https://github.com/rasahq/rasa-private/issues/2016), [#2024](https://github.com/rasahq/rasa-private/issues/2024), [#2037](https://github.com/rasahq/rasa-private/issues/2037), [#2077](https://github.com/rasahq/rasa-private/issues/2077), [#2079](https://github.com/rasahq/rasa-private/issues/2079), [#2100](https://github.com/rasahq/rasa-private/issues/2100), [#2113](https://github.com/rasahq/rasa-private/issues/2113), [#2124](https://github.com/rasahq/rasa-private/issues/2124)
 
 ## [3.11.16] - 2025-06-12
-                         
-Rasa Pro 3.11.16 (2025-06-12)                              
+
+Rasa Pro 3.11.16 (2025-06-12)
 ### Bugfixes
 - [#1939](https://github.com/rasahq/rasa-private/issues/1939): Ensure that old step ID formats (without the flow ID prefix) can be loaded without raising an
   `InvalidFlowStepIdException` in newer Rasa versions that expect the flow ID prefix.
@@ -436,8 +436,8 @@ Rasa Pro 3.11.16 (2025-06-12)
 
 
 ## [3.11.15] - 2025-06-03
-                         
-Rasa Pro 3.11.15 (2025-06-03)                              
+
+Rasa Pro 3.11.15 (2025-06-03)
 
 ### Bugfixes
 - [#2576](https://github.com/rasahq/rasa-private/issues/2576): Make `domain` an optional argument in `CommandProcessorComponent`. This change addresses a potential `TypeError` that could occur when loading a model trained without providing domain as a required argument. By making domain optional, models trained with older configurations or without a domain component will now load correctly without errors.
@@ -445,11 +445,11 @@ Rasa Pro 3.11.15 (2025-06-03)
 
 ## [3.11.14] - 2025-06-02
 
-Rasa Pro 3.11.14 (2025-06-02)                              
+Rasa Pro 3.11.14 (2025-06-02)
 ### Improvements
 - [#2349](https://github.com/rasahq/rasa-private/issues/2349): - Updates the parameter name from `max_tokens`, which is deprecated by OpenAI, to `max_completion_tokens`. The old `max_tokens` is not supported for the `o` models.
   - Exposes LiteLLM's `drop_params` parameter for LLM configurations.
-- [#2545](https://github.com/rasahq/rasa-private/issues/2545): 
+- [#2545](https://github.com/rasahq/rasa-private/issues/2545):
 
 ### Bugfixes
 - [#1827](https://github.com/rasahq/rasa-private/issues/1827): The `Clarify` command now parses flow names with dashes.
@@ -461,15 +461,15 @@ Rasa Pro 3.11.14 (2025-06-02)
 - [#2425](https://github.com/rasahq/rasa-private/issues/2425): Fix remote model download when models are stored in a path, not in the root of the remote storage.
   Add new training CLI param `--remote-root-only` that can be used by the model service to store the model in the root of the remote storage.
   Propagate this parameter to the persistor's `persist` method.
-  Simplify persistor code when retrieving models by downloading the model to the target path directly rather than copying the downloaded model to the target path. 
+  Simplify persistor code when retrieving models by downloading the model to the target path directly rather than copying the downloaded model to the target path.
   This also improved testability.
 - [#2447](https://github.com/rasahq/rasa-private/issues/2447): When inspector is not used, root server path should output: `Hello from Rasa: <version>.`.
   When inspector is used, root server path should output HTML page with a link to the path on which inspector can be reached.
 
 
 ## [3.11.13] - 2025-05-15
-                         
-Rasa Pro 3.11.13 (2025-05-15)                              
+
+Rasa Pro 3.11.13 (2025-05-15)
 ### Improvements
 - [#2380](https://github.com/rasahq/rasa-private/issues/2380): Improved `CRFEntityExtractor` persistence and loading methods to improve model loading times.
 
@@ -484,23 +484,23 @@ Rasa Pro 3.11.12 (2025-05-14)
 No significant changes.
 
 ## [3.11.11] - 2025-05-08
-                         
-Rasa Pro 3.11.11 (2025-05-08)                              
+
+Rasa Pro 3.11.11 (2025-05-08)
 ### Bugfixes
-- [#2379](https://github.com/rasahq/rasa-private/issues/2379): Fix issues in Audiocodes Channel Connector. The values in `user_phone` and `bot_phone` available in session_started_metadata are swapped to correctly map to `calller` and `callee` respectively. 
+- [#2379](https://github.com/rasahq/rasa-private/issues/2379): Fix issues in Audiocodes Channel Connector. The values in `user_phone` and `bot_phone` available in session_started_metadata are swapped to correctly map to `calller` and `callee` respectively.
   Fixed evening handling where events without the key "parameters" raised an exception.
 
 
 ## [3.11.10] - 2025-05-06
-                         
-Rasa Pro 3.11.10 (2025-05-06)                              
+
+Rasa Pro 3.11.10 (2025-05-06)
 ### Bugfixes
 - [#2292](https://github.com/rasahq/rasa-private/issues/2292): Implemented backtracking and corrected the recursion logic in the all-paths generation for a flow. Removed the need to deepcopy the `step_ids_visited` set on each branch within `_handle_links`, which prevents the coverage report from freezing due to hitting the recursion limit.
 
 
 ## [3.11.9] - 2025-04-30
-                        
-Rasa Pro 3.11.9 (2025-04-30)                             
+
+Rasa Pro 3.11.9 (2025-04-30)
 ### Bugfixes
 - [#2315](https://github.com/rasahq/rasa-private/issues/2315): Upgrade openai and litellm dependencies to fix found vulnerabilities in litellm.
 - [#2344](https://github.com/rasahq/rasa-private/issues/2344): Add support for `auth_token` to Rasa Inspector.
@@ -509,8 +509,8 @@ Rasa Pro 3.11.9 (2025-04-30)
 
 
 ## [3.11.8] - 2025-04-28
-                        
-Rasa Pro 3.11.8 (2025-04-28)                             
+
+Rasa Pro 3.11.8 (2025-04-28)
 ### Improvements
 - [#2293](https://github.com/rasahq/rasa-private/issues/2293): Adds two optional properties on Jambonz channel connector, `username` and `password` which can be used to enable Basic Access Authentication
 - [#2309](https://github.com/rasahq/rasa-private/issues/2309): Added support for basic authentication in Twilio channels (Voice Ready and Voice Streaming).
@@ -546,8 +546,8 @@ Rasa Pro 3.11.8 (2025-04-28)
 
 
 ## [3.11.7] - 2025-04-14
-                        
-Rasa Pro 3.11.7 (2025-04-14)                             
+
+Rasa Pro 3.11.7 (2025-04-14)
 ### Bugfixes
 - [#2181](https://github.com/rasahq/rasa-private/issues/2181): Fix `ChitChatAnswerCommand` command replaced with `CannotHandleCommand` if there are no e2e stories defined.
   Improve validation that `IntentlessPolicy` has applicable responses: either responses in the domain that are not part of any flow, or if there are e2e stories. This validation performed during the training time and during cleanup of the `ChitChatAnswerCommand` command.
@@ -558,7 +558,7 @@ Rasa Pro 3.11.7 (2025-04-14)
 
 ## [3.11.6] - 2025-04-02
 
-Rasa Pro 3.11.6 (2025-04-02)                             
+Rasa Pro 3.11.6 (2025-04-02)
 ### Bugfixes
 - [#1982](https://github.com/rasahq/rasa-private/issues/1982): Improved error handling for Deepgram and Cartesia connection failures to display more meaningful error messages when authentication fails or other connection issues occur.
 - [#2027](https://github.com/rasahq/rasa-private/issues/2027): Modify Enterprise Search Citation Prompt Template to use `doc.text`
@@ -906,15 +906,15 @@ Rasa Pro 3.11.0 (2024-12-11)
 
 
 ## [3.10.27] - 2025-06-03
-                         
-Rasa Pro 3.10.27 (2025-06-03)                              
+
+Rasa Pro 3.10.27 (2025-06-03)
 ### Bugfixes
 - [#2576](https://github.com/rasahq/rasa-private/issues/2576): Make `domain` an optional argument in `CommandProcessorComponent`. This change addresses a potential `TypeError` that could occur when loading a model trained without providing domain as a required argument. By making domain optional, models trained with older configurations or without a domain component will now load correctly without errors.
 
 
 ## [3.10.26] - 2025-06-02
 
-Rasa Pro 3.10.26 (2025-06-02)                              
+Rasa Pro 3.10.26 (2025-06-02)
 ### Improvements
 - [#2349](https://github.com/rasahq/rasa-private/issues/2349): - Updates the parameter name from `max_tokens`, which is deprecated by OpenAI, to `max_completion_tokens`. The old `max_tokens` is not supported for the `o` models.
   - Exposes LiteLLM's `drop_params` parameter for LLM configurations.
@@ -929,8 +929,8 @@ Rasa Pro 3.10.26 (2025-06-02)
 
 
 ## [3.10.25] - 2025-05-15
-                         
-Rasa Pro 3.10.25 (2025-05-15)                              
+
+Rasa Pro 3.10.25 (2025-05-15)
 ### Improvements
 - [#2380](https://github.com/rasahq/rasa-private/issues/2380): Improved `CRFEntityExtractor` persistence and loading methods to improve model loading times.
 
@@ -992,8 +992,8 @@ Rasa Pro 3.10.20 (2025-04-28)
 
 
 ## [3.10.19] - 2025-04-15
-                         
-Rasa Pro 3.10.19 (2025-04-15)                              
+
+Rasa Pro 3.10.19 (2025-04-15)
 ### Bugfixes
 - [#2181](https://github.com/rasahq/rasa-private/issues/2181): Fix `ChitChatAnswerCommand` command replaced with `CannotHandleCommand` if there are no e2e stories defined.
   Improve validation that `IntentlessPolicy` has applicable responses: either responses in the domain that are not part of any flow, or if there are e2e stories. This validation performed during the training time and during cleanup of the `ChitChatAnswerCommand` command.
@@ -1511,8 +1511,8 @@ Rasa Pro 3.10.0 (2024-09-04)
 
 
 ## [3.9.20] - 2025-04-14
-                        
-Rasa Pro 3.9.20 (2025-04-14)                             
+
+Rasa Pro 3.9.20 (2025-04-14)
 ### Bugfixes
 - [#1923](https://github.com/rasahq/rasa-private/issues/1923): Updated `Inspector` dependent packages (cross-spawn, mermaid, dom-purify, vite, braces, ws, axios and rollup) to address security vulnerabilities.
 - [#2027](https://github.com/rasahq/rasa-private/issues/2027): Modify Enterprise Search Citation Prompt Template to use `doc.text`
@@ -1521,7 +1521,7 @@ Rasa Pro 3.9.20 (2025-04-14)
 
 ## [3.9.19] - 2025-01-30
 
-Rasa Pro 3.9.19 (2025-01-30)                             
+Rasa Pro 3.9.19 (2025-01-30)
 ### Improvements
 - [#1900](https://github.com/rasahq/rasa-private/issues/1900): Remove unnecessary deepcopy to improve performance in `undo_fallback_prediction` method of `FallbackClassifier`
 
@@ -1535,9 +1535,9 @@ Rasa Pro 3.9.19 (2025-01-30)
 
 ## [3.9.18] - 2025-01-15
 
-Rasa Pro 3.9.18 (2025-01-15)                             
+Rasa Pro 3.9.18 (2025-01-15)
 ### Bugfixes
-- [#1690](https://github.com/rasahq/rasa-private/issues/1690): Fix issue in e2e testing when customising `action_session_start` would lead to AttributeError, because the `output_channel` was not set. 
+- [#1690](https://github.com/rasahq/rasa-private/issues/1690): Fix issue in e2e testing when customising `action_session_start` would lead to AttributeError, because the `output_channel` was not set.
   This is now fixed by setting the `output_channel` to `CollectingOutputChannel()`.
 - [#1706](https://github.com/rasahq/rasa-private/issues/1706): Pass flow human-readable name instead of flow id when the cancel pattern stack frame is pushed during flow policy
   validation checks of collect steps.

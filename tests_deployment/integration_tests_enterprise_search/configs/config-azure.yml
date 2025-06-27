@@ -27,8 +27,8 @@ policies:
     openai_api_type: azure
     openai_api_version: "2024-02-01"
   llm:
-    model: "gpt-4"
-    engine: "test-gpt-4"
+    model: "gpt-4.1-mini"
+    engine: "test-gpt-4.1-mini"
     api_type: "azure"
     api_version: "2024-02-01"
     openai_api_base: "https://devtribe-testing.openai.azure.com/"
@@ -41,8 +41,8 @@ policies:
     openai_api_type: azure
     openai_api_version: "2024-02-01"
   llm:
-    model: "gpt-4"
-    engine: "test-gpt-4"
+    model: "gpt-4o"
+    engine: "test-gpt-4o"
     api_type: "azure"
     api_version: "2024-02-01"
     openai_api_base: "https://devtribe-testing.openai.azure.com/"

@@ -1839,7 +1839,7 @@ class MockAvailableEndpointsForTestValidation:
             },
             {
                 "id": "another_model_group_id",
-                "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                "models": [{"provider": "openai", "model": "gpt-4o"}],
             },
         ]
 
@@ -1957,7 +1957,7 @@ class MockAvailableEndpointsForTestValidation:
                     "name": "IntentlessPolicy",
                     LLM_CONFIG_KEY: {
                         "provider": "openai",
-                        "model": "gpt-3.5-turbo",
+                        "model": "gpt-4o",
                     },
                 },
             ],
@@ -1980,7 +1980,7 @@ class MockAvailableEndpointsForTestValidation:
                     "name": "SingleStepLLMCommandGenerator",
                     LLM_CONFIG_KEY: {
                         "provider": "openai",
-                        "model": "gpt-3.5-turbo",
+                        "model": "gpt-4o",
                     },
                 },
             ],
@@ -1993,7 +1993,7 @@ class MockAvailableEndpointsForTestValidation:
                     "name": "IntentlessPolicy",
                     LLM_CONFIG_KEY: {
                         "provider": "openai",
-                        "model": "gpt-4",
+                        "model": "gpt-4o",
                     },
                     EMBEDDINGS_CONFIG_KEY: {
                         MODEL_GROUP_CONFIG_KEY: "model_group_id",
@@ -2292,7 +2292,7 @@ def test_validate_model_client_configuration_setup_during_inference_time(
                         "models": [
                             {
                                 "provider": "openai",
-                                "model": "text-embedding-3-small",
+                                "model": "text-embedding-3-large",
                                 "api_key": "mock key in test_tracing_rephraser",
                             },
                             {
@@ -2353,7 +2353,7 @@ def test_validate_model_client_configuration_setup_during_inference_time(
                 },
                 {
                     "id": "another_model_group_id",
-                    "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                    "models": [{"provider": "openai", "model": "gpt-4o"}],
                 },
             ],
             False,
@@ -2365,7 +2365,7 @@ def test_validate_model_client_configuration_setup_during_inference_time(
                     "id": "model_group_id",
                     "models": [
                         {"provider": "openai", "model": "gpt-4"},
-                        {"provider": "openai", "model": "gpt-3.5-turbo"},
+                        {"provider": "openai", "model": "gpt-4o"},
                     ],
                     "router": {"routing_strategy": "least_busy"},
                 }
@@ -2378,7 +2378,7 @@ def test_validate_model_client_configuration_setup_during_inference_time(
                     "id": "model_group_id",
                     "models": [
                         {"provider": "openai", "model": "gpt-4"},
-                        {"provider": "openai", "model": "gpt-3.5-turbo"},
+                        {"provider": "openai", "model": "gpt-4o"},
                     ],
                     "router": {"routing_strategy": "least-busy"},
                 }
@@ -2393,8 +2393,8 @@ def test_validate_model_client_configuration_setup_during_inference_time(
                     "models": [
                         {
                             "provider": "openai",
-                            "deployment": "${AZURE_DEPLOYMENT_GPT3_5_TURBO_FRANCE}",
-                            "api_base": "${AZURE_API_BASE_GPT3_5_TURBO_FR}",
+                            "deployment": "${AZURE_DEPLOYMENT_GPT4o_FRANCE}",
+                            "api_base": "${AZURE_API_BASE_GPT4o_FR}",
                             "api_key": "${AZURE_API_KEY_FR}",
                             "api_version": "${AZURE_API_VERSION}",
                         },
@@ -2425,7 +2425,7 @@ def test_validate_model_client_configuration_setup_during_inference_time(
                     "id": "model_group_id",
                     "models": [
                         {"provider": "openai", "model": "gpt-4"},
-                        {"provider": "openai", "model": "gpt-3.5-turbo"},
+                        {"provider": "openai", "model": "gpt-4o"},
                     ],
                     "router": {"routing_strategy": "simple-shuffle"},
                 }
@@ -2441,7 +2441,7 @@ def test_validate_model_client_configuration_setup_during_inference_time(
                 },
                 {
                     "id": "model_group_id",
-                    "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                    "models": [{"provider": "openai", "model": "gpt-4o"}],
                 },
             ],
             True,
@@ -2453,7 +2453,7 @@ def test_validate_model_client_configuration_setup_during_inference_time(
                     "id": "model_group_id",
                     "models": [
                         {"provider": "openai", "model": "gpt-4"},
-                        {"provider": "openai", "model": "gpt-3.5-turbo"},
+                        {"provider": "openai", "model": "gpt-4o"},
                     ],
                 }
             ],
@@ -2466,7 +2466,7 @@ def test_validate_model_client_configuration_setup_during_inference_time(
                     "id": "model_group_id",
                     "models": [
                         {"provider": "openai", "model": "gpt-4"},
-                        {"provider": "openai", "model": "gpt-3.5-turbo"},
+                        {"provider": "openai", "model": "gpt-4o"},
                     ],
                 },
                 {
@@ -2499,7 +2499,7 @@ def test_validate_model_client_configuration_setup_during_inference_time(
                         {
                             "provider": "azure",
                             "deployment": "${DEPLOYMENT_AZURE}",
-                            "api_base": "${AZURE_API_BASE_GPT3_5_TURBO_FR}",
+                            "api_base": "${AZURE_API_BASE_GPT4o_FR}",
                             "api_key": "59968xxxxxxxxx5f355dd",
                             "api_version": "2024-02-15-preview",
                             "timeout": 14,
@@ -2516,7 +2516,7 @@ def test_validate_model_client_configuration_setup_during_inference_time(
                     "id": "model_group_id",
                     "models": [
                         {"provider": "openai", "model": "gpt-4"},
-                        {"provider": "openai", "model": "gpt-3.5-turbo"},
+                        {"provider": "openai", "model": "gpt-4o"},
                     ],
                     "router": {"routing_strategy": "non-existing-key"},
                 }

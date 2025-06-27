@@ -1205,7 +1205,7 @@ class TestSearchReadyLLMCommandGenerator:
                 [
                     {
                         "id": "openai_gpt",
-                        "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                        "models": [{"provider": "openai", "model": "gpt-4o"}],
                     },
                 ],
                 True,
@@ -1222,7 +1222,7 @@ class TestSearchReadyLLMCommandGenerator:
                 [
                     {
                         "id": "openai_gpt-2",
-                        "models": [{"provider": "openai", "model": "gpt-3.5-turbo"}],
+                        "models": [{"provider": "openai", "model": "gpt-4o"}],
                     },
                 ],
                 True,

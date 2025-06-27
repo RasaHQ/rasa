@@ -3,7 +3,7 @@ language: en
 pipeline:
   - name: LLMBasedRouter
     llm:
-      model: gpt-4o-2024-11-20
+      model: gpt-4o
     prompt: rasa-private/data/test_config/providers/router_template.jinja2
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"

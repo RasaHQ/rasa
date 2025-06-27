@@ -7,8 +7,8 @@ model_name = "gpt-4o"
 print(tiktoken.encoding_for_model(model_name))
 
 # Choose the tokenizer for your model
-# gpt-3.5-turbo and gpt-4 uses "cl100k_base"
-# gpt-4o uses "o200k_base"
+# gpt-4 uses "cl100k_base"
+# gpt-4o and gpt-4.1 use "o200k_base"
 tokenizer = tiktoken.get_encoding("o200k_base")
 
 # The tokens you want to check

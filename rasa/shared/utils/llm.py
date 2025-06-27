@@ -583,7 +583,7 @@ def embedder_factory(
     ```
     {
        "provider": "openai",
-       "model": "text-embedding-3-small",
+       "model": "text-embedding-3-large",
        "timeout": 10,
        "num_retries": 3,
     }
@@ -596,7 +596,7 @@ def embedder_factory(
         "models": [
             {
                 "provider": "openai",
-                "model": "test-embedding-3-small",
+                "model": "test-embedding-3-large",
                 "api_key": "test"
             },
         ],

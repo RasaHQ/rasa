@@ -203,39 +203,39 @@ env:
   LLM_API_HEALTH_CHECK: True
 
   # Training deployment
-  AZURE_DEPLOYMENT_GPT3_5_TURBO: "test-gpt-35-turbo"
-  AZURE_API_BASE_GPT3_5_TURBO: "https://engine-testing.openai.azure.com/"
-  AZURE_API_VERSION_GPT3_5_TURBO: "2024-02-01"
-  AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA: "test-text-embedding-3-large"
-  AZURE_API_BASE_TXT_EMBEDDING_ADA: "https://engine-testing.openai.azure.com/"
-  AZURE_API_VERSION_TXT_EMBEDDING_ADA: "2023-05-15"
+  AZURE_DEPLOYMENT_GPT4o: "test-gpt-4o"
+  AZURE_API_BASE_GPT4o: "https://engine-testing.openai.azure.com/"
+  AZURE_API_VERSION_GPT4o: "2024-02-01"
+  AZURE_DEPLOYMENT_TXT_EMBEDDING_3_LARGE: "test-text-embedding-3-large"
+  AZURE_API_BASE_TXT_EMBEDDING_3_LARGE: "https://engine-testing.openai.azure.com/"
+  AZURE_API_VERSION_TXT_EMBEDDING_3_LARGE: "2023-05-15"
   AZURE_API_KEY_TRAINING: ${{ secrets.AZURE_OPENAI_API_KEY_ENGINE_TESTING }}
 
     # Deployment 1
-  AZURE_DEPLOYMENT_GPT3_5_TURBO_CA: "test-gpt-35-turbo"
-  AZURE_API_BASE_GPT3_5_TURBO_CA: "https://devtribe-testing-canada-east.openai.azure.com/"
-  AZURE_API_VERSION_GPT3_5_TURBO_CA: "2024-02-01"
-  AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_CA: "test-text-embedding-3-large"
-  AZURE_API_BASE_TXT_EMBEDDING_ADA_CA: "https://devtribe-testing-canada-east.openai.azure.com"
-  AZURE_API_VERSION_TXT_EMBEDDING_ADA_CA: "2023-05-15"
+  AZURE_DEPLOYMENT_GPT4o_CA: "test-gpt-4o"
+  AZURE_API_BASE_GPT4o_CA: "https://devtribe-testing-canada-east.openai.azure.com/"
+  AZURE_API_VERSION_GPT4o_CA: "2024-02-01"
+  AZURE_DEPLOYMENT_TXT_EMBEDDING_3_LARGE_CA: "test-text-embedding-3-large"
+  AZURE_API_BASE_TXT_EMBEDDING_3_LARGE_CA: "https://devtribe-testing-canada-east.openai.azure.com"
+  AZURE_API_VERSION_TXT_EMBEDDING_3_LARGE_CA: "2023-05-15"
   AZURE_API_KEY_CA: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING_CANADA_EAST }}
 
     # Deployment 2
-  AZURE_DEPLOYMENT_GPT3_5_TURBO_FR: "test-gpt-35-turbo"
-  AZURE_API_BASE_GPT3_5_TURBO_FR: "https://devtribe-testing.openai.azure.com/"
-  AZURE_API_VERSION_GPT3_5_TURBO_FR: "2024-02-01"
-  AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_FR: "test-text-embedding-3-large"
-  AZURE_API_BASE_TXT_EMBEDDING_ADA_FR: "https://devtribe-testing.openai.azure.com/"
-  AZURE_API_VERSION_TXT_EMBEDDING_ADA_FR: "2023-05-15"
+  AZURE_DEPLOYMENT_GPT4o_FR: "test-gpt-4o"
+  AZURE_API_BASE_GPT4o_FR: "https://devtribe-testing.openai.azure.com/"
+  AZURE_API_VERSION_GPT4o_FR: "2024-02-01"
+  AZURE_DEPLOYMENT_TXT_EMBEDDING_3_LARGE_FR: "test-text-embedding-3-large"
+  AZURE_API_BASE_TXT_EMBEDDING_3_LARGE_FR: "https://devtribe-testing.openai.azure.com/"
+  AZURE_API_VERSION_TXT_EMBEDDING_3_LARGE_FR: "2023-05-15"
   AZURE_API_KEY_FR: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING }}
 
     # Deployment 3
-  AZURE_DEPLOYMENT_GPT3_5_TURBO_CI_FR: "gpt-35-turbo"
-  AZURE_API_BASE_GPT3_5_TURBO_CI_FR: "https://devtribe-ci-france.openai.azure.com/"
-  AZURE_API_VERSION_GPT3_5_TURBO_CI_FR: "2024-02-01"
-  AZURE_DEPLOYMENT_TXT_EMBEDDING_ADA_CI_FR: "text-embedding-3-large"
-  AZURE_API_BASE_TXT_EMBEDDING_ADA_CI_FR: "https://devtribe-ci-france.openai.azure.com/"
-  AZURE_API_VERSION_TXT_EMBEDDING_ADA_CI_FR: "2023-05-15"
+  AZURE_DEPLOYMENT_GPT4o_CI_FR: "gpt-4o"
+  AZURE_API_BASE_GPT4o_CI_FR: "https://devtribe-ci-france.openai.azure.com/"
+  AZURE_API_VERSION_GPT4o_CI_FR: "2024-02-01"
+  AZURE_DEPLOYMENT_TXT_EMBEDDING_3_LARGE_CI_FR: "text-embedding-3-large"
+  AZURE_API_BASE_TXT_EMBEDDING_3_LARGE_CI_FR: "https://devtribe-ci-france.openai.azure.com/"
+  AZURE_API_VERSION_TXT_EMBEDDING_3_LARGE_CI_FR: "2023-05-15"
   AZURE_API_KEY_CI_FR: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_CI_FRANCE }}
 
     # Azure Oauth

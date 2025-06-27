@@ -906,7 +906,7 @@ class MockAvailableEndpoints:
                 "models": [
                     {
                         "provider": "openai",
-                        "model": "text-embedding-3-small",
+                        "model": "text-embedding-3-large",
                         "api_key": "mock key in test_tracing_rephraser",
                         # configuration parsers will append these deprecated fields
                         # automatically, so it's easier for testing the value of

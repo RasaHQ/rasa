@@ -40,7 +40,7 @@ DEFAULT_GROUNDEDNESS_PROMPT_TEMPLATE_FILE_NAME = "groundedness_prompt_template.j
 DEFAULT_ANSWER_RELEVANCE_PROMPT_TEMPLATE_FILE_NAME = (
     "answer_relevance_prompt_template.jinja2"
 )
-DEFAULT_E2E_TESTING_MODEL = "gpt-4o-mini"
+DEFAULT_E2E_TESTING_MODEL = "gpt-4.1-mini-2025-04-14"
 KEY_SCORE = "score"
 KEY_JUSTIFICATION = "justification"
 KEY_EXTRA_PARAMETERS = "extra_parameters"
