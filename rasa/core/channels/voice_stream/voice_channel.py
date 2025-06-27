@@ -35,7 +35,7 @@ from rasa.core.channels.voice_stream.util import (
     generate_silence,
 )
 from rasa.shared.core.constants import SILENCE_TIMEOUT_SLOT
-from rasa.shared.utils.cli import print_error_and_exit
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.utils.common import (
     class_from_module_path,
     mark_as_beta_feature,
@@ -71,6 +71,14 @@ class ContinueConversationAction(VoiceChannelAction):
 
 
 def asr_engine_from_config(asr_config: Dict) -> ASREngine:
+    if not asr_config:
+        raise ValueError("ASR configuration dictionary cannot be empty")
+
+    if "name" not in asr_config:
+        raise ValueError(
+            "ASR configuration must contain 'name' key specifying the engine type"
+        )
+
     name = str(asr_config["name"])
     asr_config = copy.copy(asr_config)
     asr_config.pop("name")
@@ -84,12 +92,12 @@ def asr_engine_from_config(asr_config: Dict) -> ASREngine:
             asr_engine_class = class_from_module_path(name)
             return asr_engine_class.from_config_dict(asr_config)
         except NameError:
-            print_error_and_exit(
+            raise InvalidConfigException(
                 f"Failed to initialize ASR Engine with type '{name}'. "
                 f"Please make sure the method `from_config_dict`is implemented."
             )
         except TypeError as e:
-            print_error_and_exit(
+            raise InvalidConfigException(
                 f"Failed to initialize ASR Engine with type '{name}'. "
                 f"Invalid configuration provided. "
                 f"Error: {e}"
@@ -97,6 +105,14 @@ def asr_engine_from_config(asr_config: Dict) -> ASREngine:
 
 
 def tts_engine_from_config(tts_config: Dict) -> TTSEngine:
+    if not tts_config:
+        raise ValueError("TTS configuration dictionary cannot be empty")
+
+    if "name" not in tts_config:
+        raise ValueError(
+            "TTS configuration must contain 'name' key specifying the engine type"
+        )
+
     name = str(tts_config["name"])
     tts_config = copy.copy(tts_config)
     tts_config.pop("name")
@@ -110,13 +126,13 @@ def tts_engine_from_config(tts_config: Dict) -> TTSEngine:
             tts_engine_class = class_from_module_path(name)
             return tts_engine_class.from_config_dict(tts_config)
         except NameError:
-            print_error_and_exit(
+            raise InvalidConfigException(
                 f"Failed to initialize TTS Engine with type '{name}'. "
                 f"Please make sure the method `from_config_dict`is implemented."
             )
         except TypeError as e:
-            print_error_and_exit(
-                f"Failed to initialize ASR Engine with type '{name}'. "
+            raise InvalidConfigException(
+                f"Failed to initialize TTS Engine with type '{name}'. "
                 f"Invalid configuration provided. "
                 f"Error: {e}"
             )
@@ -336,11 +352,24 @@ class VoiceInputChannel(InputChannel):
         cls,
         credentials: Optional[Dict[str, Any]],
     ) -> InputChannel:
-        credentials = credentials or {}
+        if not credentials:
+            cls.raise_missing_credentials_exception()
+
+        if not credentials.get("server_url"):
+            raise InvalidConfigException("No server_url provided in credentials.")
+        if not credentials.get("asr"):
+            raise InvalidConfigException(
+                "No ASR configuration provided in credentials."
+            )
+        if not credentials.get("tts"):
+            raise InvalidConfigException(
+                "No TTS configuration provided in credentials."
+            )
+
         return cls(
-            credentials["server_url"],
-            credentials["asr"],
-            credentials["tts"],
+            server_url=credentials["server_url"],
+            asr_config=credentials["asr"],
+            tts_config=credentials["tts"],
         )
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:

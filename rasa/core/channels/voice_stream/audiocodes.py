@@ -121,16 +121,10 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
     def from_credentials(
         cls,
         credentials: Optional[Dict[str, Any]],
-    ) -> VoiceInputChannel:
-        if not credentials:
-            raise ValueError("No credentials given for Audiocodes voice channel.")
-
-        return cls(
-            token=credentials.get("token"),
-            server_url=credentials["server_url"],
-            asr_config=credentials["asr"],
-            tts_config=credentials["tts"],
-        )
+    ) -> "AudiocodesVoiceInputChannel":
+        channel = super().from_credentials(credentials)
+        channel.token = credentials.get("token")  # type: ignore[attr-defined, union-attr]
+        return channel  # type: ignore[return-value]
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
         return RasaAudioBytes(base64.b64decode(input_bytes))

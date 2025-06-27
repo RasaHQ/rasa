@@ -16,9 +16,12 @@ from rasa.core.channels.channel import (
     create_auth_requested_response_provider,
     requires_basic_auth,
 )
-from rasa.core.channels.voice_ready.utils import CallParameters
+from rasa.core.channels.voice_ready.utils import (
+    CallParameters,
+    validate_username_password_credentials,
+)
 from rasa.shared.core.events import BotUttered
-from rasa.shared.exceptions import InvalidConfigException, RasaException
+from rasa.shared.exceptions import InvalidConfigException
 
 logger = structlog.get_logger(__name__)
 
@@ -127,11 +130,7 @@ class TwilioVoiceInput(InputChannel):
 
         username = credentials.get("username")
         password = credentials.get("password")
-        if (username is None) != (password is None):
-            raise RasaException(
-                "In TwilioVoice channel, either both username and password "
-                "or neither should be provided. "
-            )
+        validate_username_password_credentials(username, password, "TwilioVoice")
 
         return cls(
             credentials.get(
@@ -180,8 +179,9 @@ class TwilioVoiceInput(InputChannel):
         if self.assistant_voice not in self.SUPPORTED_VOICES:
             self._raise_invalid_voice_exception()
 
-        if (self.username is None) != (self.password is None):
-            self._raise_invalid_credentials_exception()
+        validate_username_password_credentials(
+            self.username, self.password, "TwilioVoice"
+        )
 
         try:
             int(self.speech_timeout)
@@ -389,9 +389,10 @@ class TwilioVoiceInput(InputChannel):
         return voice_response
 
     def _raise_invalid_credentials_exception(self) -> None:
-        raise InvalidConfigException(
-            "In TwilioVoice channel, either both username and password "
-            "or neither should be provided. "
+        # This method is now redundant since we use the shared validation function
+        # but keeping it for backward compatibility if any external code calls it
+        validate_username_password_credentials(
+            self.username, self.password, "TwilioVoice"
         )
 
 

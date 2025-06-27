@@ -17,7 +17,10 @@ from rasa.core.channels.voice_ready.jambonz_protocol import (
     send_ws_text_message,
     websocket_message_handler,
 )
-from rasa.core.channels.voice_ready.utils import validate_voice_license_scope
+from rasa.core.channels.voice_ready.utils import (
+    validate_username_password_credentials,
+    validate_voice_license_scope,
+)
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.common import mark_as_beta_feature
 from rasa.utils.io import remove_emojis
@@ -41,11 +44,7 @@ class JambonzVoiceReadyInput(InputChannel):
 
         username = credentials.get("username")
         password = credentials.get("password")
-        if (username is None) != (password is None):
-            raise RasaException(
-                "In Jambonz channel, either both username and password "
-                "or neither should be provided. "
-            )
+        validate_username_password_credentials(username, password, "Jambonz")
 
         return cls(username, password)
 

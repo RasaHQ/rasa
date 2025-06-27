@@ -6,6 +6,7 @@ import pytest
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import CallState, _call_state
 from rasa.core.channels.voice_stream.jambonz import (
+    JAMBONZ_STREAMS_WEBSOCKET_PATH,
     JambonzStreamInputChannel,
     JambonzStreamOutputChannel,
     map_call_params,
@@ -15,6 +16,7 @@ from rasa.core.channels.voice_stream.voice_channel import (
     EndConversationAction,
     NewAudioAction,
 )
+from rasa.shared.exceptions import InvalidConfigException, RasaException
 
 
 @pytest.fixture
@@ -22,7 +24,13 @@ def input_channel() -> JambonzStreamInputChannel:
     server_url = "localhost"
     asr_config = {"name": "azure"}
     tts_config = {"name": "azure"}
-    return JambonzStreamInputChannel(server_url, asr_config, tts_config)
+    return JambonzStreamInputChannel(
+        server_url=server_url,
+        asr_config=asr_config,
+        tts_config=tts_config,
+        username=None,
+        password=None,
+    )
 
 
 @pytest.fixture
@@ -164,3 +172,90 @@ async def test_blueprint_health_endpoint(input_channel):
     assert prefix + "/webhook" in routes
     assert prefix + "/call_status" in routes
     assert prefix + "/websocket" in routes
+
+
+@pytest.mark.parametrize(
+    "credentials",
+    [
+        None,  # No credentials
+        {},  # Empty credentials
+    ],
+)
+def test_from_empty_credentials(credentials):
+    """Test validation of credentials when creating channel from config."""
+    with pytest.raises(RasaException):
+        JambonzStreamInputChannel.from_credentials(credentials)
+
+
+@pytest.mark.parametrize(
+    "credentials",
+    [
+        {"server_url": "example.com"},  # Missing ASR and TTS
+        {"server_url": "example.com", "asr": {"name": "azure"}},  # Missing TTS
+        {
+            "server_url": "example.com",
+            "asr": {"name": "azure"},
+            "tts": {"name": "azure"},
+            "username": "test_user",
+        },  # Missing password
+    ],
+)
+def test_from_credentials_validation(credentials):
+    """Test validation of credentials when creating channel from config."""
+    with pytest.raises(InvalidConfigException):
+        JambonzStreamInputChannel.from_credentials(credentials)
+
+
+def test_from_credentials_success():
+    """Test successful creation of channel from valid credentials."""
+    credentials = {
+        "server_url": "example.com",
+        "asr": {"name": "azure"},
+        "tts": {"name": "azure"},
+        "username": "test_user",
+        "password": "test_pass",
+    }
+
+    channel = JambonzStreamInputChannel.from_credentials(credentials)
+
+    assert isinstance(channel, JambonzStreamInputChannel)
+    assert channel.server_url == "example.com"
+    assert channel.asr_config == {"name": "azure"}
+    assert channel.tts_config == {"name": "azure"}
+    assert channel.username == "test_user"
+    assert channel.password == "test_pass"
+
+
+@pytest.mark.parametrize(
+    "server_url,expected_ws_url",
+    [
+        (
+            "example.com",
+            f"wss://example.com/{JAMBONZ_STREAMS_WEBSOCKET_PATH}",
+        ),
+        (
+            "http://example.com",
+            f"ws://example.com/{JAMBONZ_STREAMS_WEBSOCKET_PATH}",
+        ),
+        (
+            "https://example.com",
+            f"wss://example.com/{JAMBONZ_STREAMS_WEBSOCKET_PATH}",
+        ),
+        (
+            "http://example.com:8080",
+            f"ws://example.com:8080/{JAMBONZ_STREAMS_WEBSOCKET_PATH}",
+        ),
+        (
+            "example.com:8080",
+            f"wss://example.com:8080/{JAMBONZ_STREAMS_WEBSOCKET_PATH}",
+        ),
+    ],
+)
+def test_websocket_stream_url(server_url: str, expected_ws_url: str):
+    """Test websocket URL generation with different server URL formats."""
+    channel = JambonzStreamInputChannel(
+        server_url=server_url,
+        asr_config={"name": "azure"},
+        tts_config={"name": "azure"},
+    )
+    assert channel._websocket_stream_url() == expected_ws_url

@@ -55,3 +55,37 @@ def test_custom_tts_service() -> None:
     # Then the ASR engine should be an instance of the custom ASR engine
     assert isinstance(tts_engine, CustomTTSEngine)
     assert tts_engine.config.language == "hi"
+
+
+@pytest.mark.parametrize(
+    "config,expected_error",
+    [
+        ({}, "ASR configuration dictionary cannot be empty"),
+        (
+            {"key": "value"},
+            "ASR configuration must contain 'name' key specifying the engine type",
+        ),
+        (None, "ASR configuration dictionary cannot be empty"),
+    ],
+)
+def test_asr_engine_config_validation(config, expected_error):
+    """Test validation of ASR engine configuration."""
+    with pytest.raises(ValueError, match=expected_error):
+        asr_engine_from_config(config)
+
+
+@pytest.mark.parametrize(
+    "config,expected_error",
+    [
+        ({}, "TTS configuration dictionary cannot be empty"),
+        (
+            {"key": "value"},
+            "TTS configuration must contain 'name' key specifying the engine type",
+        ),
+        (None, "TTS configuration dictionary cannot be empty"),
+    ],
+)
+def test_tts_engine_config_validation(config, expected_error):
+    """Test validation of TTS engine configuration."""
+    with pytest.raises(ValueError, match=expected_error):
+        tts_engine_from_config(config)

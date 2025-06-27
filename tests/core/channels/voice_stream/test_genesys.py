@@ -17,7 +17,11 @@ def input_channel() -> GenesysInputChannel:
     api_key = "SGVsbG8sIEkgYW0gdGhlIEFQSSBrZXkh"
     client_secret = "TXlTdXBlclNlY3JldEtleVRlbGxOby0xITJAMyM0JDU="
     return GenesysInputChannel(
-        api_key, client_secret, server_url, asr_config, tts_config
+        api_key=api_key,
+        client_secret=client_secret,
+        server_url=server_url,
+        asr_config=asr_config,
+        tts_config=tts_config,
     )
 
 

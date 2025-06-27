@@ -29,6 +29,7 @@ from rasa.core.channels.voice_stream.voice_channel import (
     VoiceInputChannel,
     VoiceOutputChannel,
 )
+from rasa.shared.exceptions import InvalidConfigException
 
 """
 Genesys throws a rate limit error with too many audio messages.
@@ -91,9 +92,14 @@ class GenesysInputChannel(VoiceInputChannel):
         return "genesys"
 
     def __init__(
-        self, api_key: Text, client_secret: Optional[Text], *args: Any, **kwargs: Any
+        self,
+        server_url: str,
+        asr_config: Dict,
+        tts_config: Dict,
+        api_key: Optional[Text] = None,
+        client_secret: Optional[Text] = None,
     ) -> None:
-        super().__init__(*args, **kwargs)
+        super().__init__(server_url, asr_config, tts_config)
         self.api_key = api_key
         self.client_secret = client_secret
 
@@ -101,20 +107,33 @@ class GenesysInputChannel(VoiceInputChannel):
     def from_credentials(
         cls,
         credentials: Optional[Dict[str, Any]],
-    ) -> VoiceInputChannel:
-        if not credentials:
-            raise ValueError("No credentials given for Genesys voice channel.")
+    ) -> "GenesysInputChannel":
+        """Create a channel from credentials dictionary.
 
-        if not credentials.get("api_key"):
-            raise ValueError("No API key given for Genesys voice channel (api_key).")
+        Args:
+            credentials: Dictionary containing the required credentials:
+                - server_url: URL where the server is hosted
+                - asr: ASR engine configuration
+                - tts: TTS engine configuration
+                - api_key: Required API key for Genesys authentication
+                - client_secret: Optional client secret for signature verification
 
-        return cls(
-            api_key=credentials["api_key"],
-            client_secret=credentials.get("client_secret"),
-            server_url=credentials["server_url"],
-            asr_config=credentials["asr"],
-            tts_config=credentials["tts"],
-        )
+        Returns:
+            GenesysInputChannel instance
+        """
+        channel = super().from_credentials(credentials)
+
+        # Check required Genesys-specific credentials
+        if not credentials.get("api_key"):  # type: ignore[union-attr]
+            raise InvalidConfigException(
+                "No API key given for Genesys voice channel (api_key)."
+            )
+
+        # Update channel with Genesys-specific credentials
+        channel.api_key = credentials["api_key"]  # type: ignore[index,attr-defined]
+        channel.client_secret = credentials.get("client_secret")  # type: ignore[union-attr,attr-defined]
+
+        return channel  # type: ignore[return-value]
 
     def _ensure_channel_data_initialized(self) -> None:
         """Initialize Genesys-specific channel data if not already present.

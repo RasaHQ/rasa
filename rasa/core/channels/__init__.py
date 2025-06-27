@@ -6,6 +6,7 @@ from rasa.core.channels.channel import (  # noqa: F401
     OutputChannel,
     UserMessage,
     CollectingOutputChannel,
+    requires_basic_auth,
 )
 
 # this prevents IDE's from optimizing the imports - we need to import the

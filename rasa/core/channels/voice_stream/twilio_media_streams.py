@@ -19,7 +19,10 @@ from rasa.core.channels.channel import (
     create_auth_requested_response_provider,
     requires_basic_auth,
 )
-from rasa.core.channels.voice_ready.utils import CallParameters
+from rasa.core.channels.voice_ready.utils import (
+    CallParameters,
+    validate_username_password_credentials,
+)
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import call_state
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
@@ -31,7 +34,6 @@ from rasa.core.channels.voice_stream.voice_channel import (
     VoiceInputChannel,
     VoiceOutputChannel,
 )
-from rasa.shared.exceptions import RasaException
 
 if TYPE_CHECKING:
     from twilio.twiml.voice_response import VoiceResponse
@@ -122,11 +124,7 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
 
         username = credentials.get("username")
         password = credentials.get("password")
-        if (username is None) != (password is None):
-            raise RasaException(
-                "In TwilioMediaStreams channel, either both username and password "
-                "or neither should be provided. "
-            )
+        validate_username_password_credentials(username, password, "TwilioMediaStreams")
 
         return cls(
             credentials["server_url"],

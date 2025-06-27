@@ -12,8 +12,11 @@ from sanic import (  # type: ignore[attr-defined]
     response,
 )
 
-from rasa.core.channels import UserMessage
-from rasa.core.channels.voice_ready.utils import CallParameters
+from rasa.core.channels import UserMessage, requires_basic_auth
+from rasa.core.channels.voice_ready.utils import (
+    CallParameters,
+    validate_username_password_credentials,
+)
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import call_state
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
@@ -27,6 +30,8 @@ from rasa.core.channels.voice_stream.voice_channel import (
 )
 
 logger = structlog.get_logger()
+
+JAMBONZ_STREAMS_WEBSOCKET_PATH = "webhooks/jambonz_streams/websocket"
 
 
 def map_call_params(data: Dict[Text, str]) -> CallParameters:
@@ -67,6 +72,65 @@ class JambonzStreamInputChannel(VoiceInputChannel):
     @classmethod
     def name(cls) -> str:
         return "jambonz_stream"
+
+    def __init__(
+        self,
+        server_url: str,
+        asr_config: Dict,
+        tts_config: Dict,
+        username: Optional[Text] = None,
+        password: Optional[Text] = None,
+    ) -> None:
+        """Initialize the channel.
+
+        Args:
+            username: Optional username for basic auth
+            password: Optional password for basic auth
+        """
+        super().__init__(server_url, asr_config, tts_config)
+        self.username = username
+        self.password = password
+
+    @classmethod
+    def from_credentials(
+        cls, credentials: Optional[Dict[Text, Any]]
+    ) -> "JambonzStreamInputChannel":
+        """Create a channel from credentials dictionary.
+
+        Args:
+            credentials: Dictionary containing the required credentials:
+                - server_url: URL where the server is hosted
+                - asr: ASR engine configuration
+                - tts: TTS engine configuration
+                - username: Optional username for basic auth
+                - password: Optional password for basic auth
+
+        Returns:
+            JambonzStreamInputChannel instance
+        """
+        # Get common credentials from parent
+        channel = super().from_credentials(credentials)
+
+        # Check optional basic auth credentials
+        username = credentials.get("username")  # type: ignore[union-attr]
+        password = credentials.get("password")  # type: ignore[union-attr]
+        validate_username_password_credentials(username, password, "Jambonz Stream")
+
+        # Update channel with auth credentials
+        channel.username = username  # type: ignore[attr-defined]
+        channel.password = password  # type: ignore[attr-defined]
+
+        return channel  # type: ignore[return-value]
+
+    def _websocket_stream_url(self) -> str:
+        """Returns the websocket stream URL."""
+        # depending on the config value, the url might contain http as a
+        # protocol or not - we'll make sure both work
+        if self.server_url.startswith("http"):
+            base_url = self.server_url.replace("http", "ws")
+        else:
+            base_url = f"wss://{self.server_url}"
+        return f"{base_url}/{JAMBONZ_STREAMS_WEBSOCKET_PATH}"
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
         """Convert Jambonz audio bytes (L16 PCM) to Rasa audio bytes (μ-law)."""
@@ -129,6 +193,7 @@ class JambonzStreamInputChannel(VoiceInputChannel):
             return response.json({"status": "ok"})
 
         @blueprint.route("/call_status", methods=["POST"])
+        @requires_basic_auth(self.username, self.password)
         async def call_status(request: Request) -> HTTPResponse:
             """Handle call status updates from Jambonz."""
             data = request.json
@@ -136,6 +201,7 @@ class JambonzStreamInputChannel(VoiceInputChannel):
             return response.json({"status": "ok"})
 
         @blueprint.route("/webhook", methods=["POST"])
+        @requires_basic_auth(self.username, self.password)
         async def webhook(request: Request) -> HTTPResponse:
             """Handle incoming webhook requests from Jambonz."""
             data = request.json
@@ -144,7 +210,7 @@ class JambonzStreamInputChannel(VoiceInputChannel):
                 [
                     {
                         "verb": "listen",
-                        "url": f"wss://{self.server_url}/webhooks/jambonz_stream/websocket",
+                        "url": self._websocket_stream_url(),
                         "sampleRate": 8000,
                         "passDtmf": True,
                         "bidirectionalAudio": {
