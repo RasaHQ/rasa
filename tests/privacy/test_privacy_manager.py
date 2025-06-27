@@ -14,7 +14,10 @@ from structlog.testing import capture_logs
 
 from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.brokers.kafka import KafkaEventBroker
-from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
+from rasa.core.tracker_stores.tracker_store import (
+    FailSafeTrackerStore,
+    InMemoryTrackerStore,
+)
 from rasa.privacy.constants import USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME
 from rasa.privacy.privacy_config import PrivacyConfig
 from rasa.privacy.privacy_filter import PrivacyFilter
@@ -221,7 +224,10 @@ async def test_create_background_privacy_manager(
     assert isinstance(privacy_manager, BackgroundPrivacyManager)
 
     assert privacy_manager.tracker_store.event_broker is None
-    assert isinstance(privacy_manager.tracker_store, InMemoryTrackerStore)
+    assert isinstance(privacy_manager.tracker_store, FailSafeTrackerStore)
+    assert isinstance(
+        privacy_manager.tracker_store._tracker_store, InMemoryTrackerStore
+    )
 
     assert len(privacy_manager.event_brokers) == 1
     broker = privacy_manager.event_brokers[0]
@@ -516,11 +522,16 @@ async def test_privacy_manager_run_tracker_store_deletion(
         deletion_privacy_config_data,
     )
 
+    in_memory_tracker_store = InMemoryTrackerStore(Domain.empty())
     privacy_manager = await BackgroundPrivacyManager.create_instance(
         AvailableEndpoints.read_endpoints(str(tmp_path / "endpoints.yml")),
+        in_memory_tracker_store=in_memory_tracker_store,
     )
     await privacy_manager.tracker_store.save(unanonymized_tracker)
     privacy_manager.tracker_store.domain = pii_domain
+    assert (
+        len(in_memory_tracker_store.store) != 0
+    ), "Tracker store reference should not be empty."
 
     await privacy_manager._run_tracker_store_deletion()
 
@@ -528,6 +539,10 @@ async def test_privacy_manager_run_tracker_store_deletion(
         unanonymized_tracker.sender_id
     )
     assert tracker is None, "Tracker should have been deleted after inactivity."
+
+    assert (
+        len(in_memory_tracker_store.store) == 0
+    ), "In-memory tracker store should be empty after deletion."
 
     privacy_manager.stop()
 
@@ -590,11 +605,16 @@ async def test_privacy_manager_run_tracker_store_anonymization(
         anonymization_privacy_config_data,
     )
 
+    in_memory_tracker_store = InMemoryTrackerStore(Domain.empty())
     privacy_manager = await BackgroundPrivacyManager.create_instance(
         AvailableEndpoints.read_endpoints(str(tmp_path / "endpoints.yml")),
+        in_memory_tracker_store=in_memory_tracker_store,
     )
     await privacy_manager.tracker_store.save(unanonymized_tracker)
     privacy_manager.tracker_store.domain = pii_domain
+    assert (
+        len(in_memory_tracker_store.store) != 0
+    ), "Tracker store reference should not be empty."
 
     await privacy_manager._run_tracker_store_anonymization()
 
@@ -603,6 +623,12 @@ async def test_privacy_manager_run_tracker_store_anonymization(
     )
     assert tracker is not None
     assert len(tracker.events) == 5
+
+    tracker_from_in_memory_store = await in_memory_tracker_store.retrieve(
+        unanonymized_tracker.sender_id
+    )
+    assert tracker == tracker_from_in_memory_store
+
     assert (
         tracker.events[2].text
         == "I want to report my credit card [CREDIT_CARD_NUMBER] as lost."

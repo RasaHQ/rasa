@@ -35,6 +35,7 @@ from rasa.core.actions.action import (
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.agent import Agent, load_agent
 from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
@@ -2845,6 +2846,7 @@ async def test_processor_trigger_anonymization(
     monkeypatch: MonkeyPatch,
 ) -> None:
     mock_privacy_manager = MagicMock(spec=BackgroundPrivacyManager)
+    mock_privacy_manager.event_brokers = [Mock(spec=EventBroker)]
     mock_run = Mock(return_value=None)
     mock_privacy_manager.run = mock_run
     monkeypatch.setattr(default_processor, "privacy_manager", mock_privacy_manager)

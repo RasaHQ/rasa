@@ -12,7 +12,7 @@ import structlog
 from apscheduler.schedulers.background import BackgroundScheduler
 
 import rasa.shared.core.trackers
-from rasa.core.tracker_stores.tracker_store import TrackerStore
+from rasa.core.tracker_stores.tracker_store import FailSafeTrackerStore, TrackerStore
 from rasa.privacy.constants import (
     TEXT_KEY,
     USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME,
@@ -63,6 +63,7 @@ class BackgroundPrivacyManager:
         self,
         endpoints: Optional["AvailableEndpoints"],
         event_loop: Optional["AbstractEventLoop"] = None,
+        in_memory_tracker_store: Optional[TrackerStore] = None,
     ):
         self.config = (
             PrivacyConfig.from_dict(endpoints.privacy)
@@ -76,15 +77,28 @@ class BackgroundPrivacyManager:
             os.getenv(USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME, 30)
         )
 
-        # we recreate the tracker store here to ensure
-        # that this instance has no event brokers
-        # that could publish events during the tracker store
-        # background jobs
-        self.tracker_store = (
-            TrackerStore.create(endpoints.tracker_store)
-            if endpoints
-            else TrackerStore.create(None)
-        )
+        if in_memory_tracker_store is not None:
+            # if an in-memory tracker store is provided,
+            # we need to keep the reference to it
+            # so that the background jobs can access it.
+            # We also set the event broker to None
+            # to prevent it from publishing events
+            # during the tracker store background jobs
+            in_memory_tracker_store.event_broker = None
+            tracker_store = in_memory_tracker_store
+        else:
+            # we recreate the tracker store here to ensure
+            # that this instance has no event brokers
+            # that could publish events during the tracker store
+            # background jobs
+            tracker_store = (
+                TrackerStore.create(endpoints.tracker_store)
+                if endpoints
+                else TrackerStore.create(None)
+            )
+
+        self.tracker_store = FailSafeTrackerStore(tracker_store)
+
         self.event_brokers: List["EventBroker"] = []
         self.event_loop = event_loop
 
@@ -124,9 +138,10 @@ class BackgroundPrivacyManager:
         cls,
         endpoints: Optional["AvailableEndpoints"],
         event_loop: Optional["AbstractEventLoop"] = None,
+        in_memory_tracker_store: Optional[TrackerStore] = None,
     ) -> BackgroundPrivacyManager:
         """Create an instance of BackgroundPrivacyManager."""
-        instance = cls(endpoints, event_loop)
+        instance = cls(endpoints, event_loop, in_memory_tracker_store)
         return await instance.initialize(endpoints)
 
     def stop(self) -> None:

@@ -237,6 +237,12 @@ class MessageProcessor:
             )
             return None
 
+        if not self.privacy_manager.event_brokers:
+            structlogger.debug(
+                "processor.trigger_anonymization.skipping.no_event_brokers",
+            )
+            return None
+
         structlogger.info(
             "rasa.core.processor.trigger_anonymization",
             sender_id=tracker.sender_id,

@@ -238,9 +238,15 @@ async def load_agent(
         if endpoints.nlu:
             http_interpreter = RasaNLUHttpInterpreter(endpoints.nlu)
         if endpoints.privacy:
+            in_memory_tracker_store = (
+                tracker_store
+                if isinstance(tracker_store, InMemoryTrackerStore)
+                else None
+            )
             privacy_manager = await BackgroundPrivacyManager.create_instance(
                 endpoints=endpoints,
                 event_loop=loop,
+                in_memory_tracker_store=in_memory_tracker_store,
             )
             track_privacy_enabled(privacy_manager.config, broker)
 
