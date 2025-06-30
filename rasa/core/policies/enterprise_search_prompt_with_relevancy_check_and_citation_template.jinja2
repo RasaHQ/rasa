@@ -1,8 +1,11 @@
-Based on the provided documents and the recent conversation context, answer the following question.
+{% if check_relevancy %}Based on the provided documents and the recent conversation context, answer the following question.
 Before responding, ensure the answer is directly supported by the documents or context.
 Do not make assumptions or infer beyond the given information.
 Only answer if you are more than 80% confident that the response is fully supported.
 If the answer cannot be determined, respond with: [NO_RAG_ANSWER]
+{% else %}Given the following information, please provide an answer based on the provided documents and the context of the recent conversation.
+If the answer is not known or cannot be determined from the provided documents or context, please state that you do not know to the user.
+{% endif %}
 
 ### Relevant Documents
 Use the following documents to answer the question:

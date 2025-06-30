@@ -244,20 +244,20 @@ def search_results() -> SearchResultList:
         ),
         (
             {"check_relevancy": True},
-            "Based on the provided documents and the recent conversation context, "
-            "answer the following question.",
+            "{% if check_relevancy %}Based on the provided documents and the recent "
+            "conversation context, answer the following question.",
             "[NO_RAG_ANSWER]",
         ),
         (
             {"check_relevancy": True, "citation_enabled": True},
-            "Based on the provided documents and the recent conversation context, "
-            "answer the following question.",
+            "{% if check_relevancy %}Based on the provided documents and the recent "
+            "conversation context, answer the following question.",
             "[NO_RAG_ANSWER]",
         ),
         (
             {"check_relevancy": True, "citation_enabled": False},
-            "Based on the provided documents and the recent conversation context, "
-            "answer the following question.",
+            "{% if check_relevancy %}Based on the provided documents and the recent "
+            "conversation context, answer the following question.",
             "[NO_RAG_ANSWER]",
         ),
     ],
@@ -2078,14 +2078,14 @@ async def test_enterprise_search_policy_prediction_varied_configs(
         ),
         (
             {"check_relevancy": True},
-            "Based on the provided documents and the recent conversation context, "
-            "answer the following question.",
+            "{% if check_relevancy %}Based on the provided documents and the recent "
+            "conversation context, answer the following question.",
             ["[NO_RAG_ANSWER]"],
         ),
         (
             {"check_relevancy": True, "citation_enabled": True},
-            "Based on the provided documents and the recent conversation context, "
-            "answer the following question.",
+            "{% if check_relevancy %}Based on the provided documents and the recent "
+            "conversation context, answer the following question.",
             [
                 "[NO_RAG_ANSWER]",
                 "Citing Sources",
@@ -2093,8 +2093,8 @@ async def test_enterprise_search_policy_prediction_varied_configs(
         ),
         (
             {"check_relevancy": True, "citation_enabled": False},
-            "Based on the provided documents and the recent conversation context, "
-            "answer the following question.",
+            "{% if check_relevancy %}Based on the provided documents and the recent "
+            "conversation context, answer the following question.",
             ["[NO_RAG_ANSWER]"],
         ),
     ],
