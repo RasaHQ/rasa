@@ -235,3 +235,61 @@ def test_merge_domain_dir_has_leftover(
     # `action_hello` is not in the local domain, so it goes to the studio domain file
     assert "action_hello" not in merged_domain.action_names_or_texts
     assert "action_hello" in leftover_domain.action_names_or_texts
+
+
+def test_merge_domain_dir_excludes_existing_studio_domain_file(
+    tmp_path: Path,
+    mock_data_importer: MagicMock,
+    simple_domain: Domain,
+    bigger_domain: Domain,
+):
+    """Test that existing studio domain file is excluded from merge."""
+    domain_dir = tmp_path / "domain_dir"
+    domain_dir.mkdir(parents=True, exist_ok=True)
+    local_domain_file = domain_dir / "local_domain.yml"
+    local_domain_file.write_text(simple_domain.as_yaml())
+
+    # Create an existing studio domain file with some content
+    existing_studio_domain_file = domain_dir / STUDIO_DOMAIN_FILENAME
+    existing_studio_domain = Domain.from_dict(
+        {
+            "intents": ["old_intent"],
+            "entities": ["old_entity"],
+        }
+    )
+    existing_studio_domain_file.write_text(existing_studio_domain.as_yaml())
+
+    # Mock the local data importer to return both the local domain file and the
+    # existing studio domain file
+    mock_data_importer.get_user_domain.return_value = simple_domain
+    mock_data_importer.get_domain_files.return_value = [
+        str(local_domain_file),
+        str(existing_studio_domain_file),
+    ]
+
+    studio_importer = MagicMock()
+    studio_importer.get_user_domain.return_value = bigger_domain
+
+    merge_domain(
+        data_from_studio=studio_importer,
+        data_local=mock_data_importer,
+        domain_path=domain_dir,
+    )
+
+    # Verify that the local domain file was updated correctly
+    merged_domain = Domain.from_file(str(local_domain_file))
+    assert {"greet"}.issubset(merged_domain.intents)
+    assert "goodbye" not in merged_domain.intents
+    assert {"name"}.issubset(set(merged_domain.entities))
+    assert "date" not in merged_domain.entities
+
+    # Verify that the studio domain file was overwritten with leftover items
+    # (not merged with old content)
+    leftover_domain = Domain.from_file(str(existing_studio_domain_file))
+    assert "goodbye" in leftover_domain.intents
+    assert "date" in leftover_domain.entities
+    assert "action_hello" in leftover_domain.action_names_or_texts
+
+    # Verify that the old content from the existing studio domain file is not present
+    assert "old_intent" not in leftover_domain.intents
+    assert "old_entity" not in leftover_domain.entities
