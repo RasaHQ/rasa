@@ -348,3 +348,36 @@ async def test_redis_tracker_store_delete_no_tracker(
         )
 
         assert len(logs) == 1
+
+
+async def test_redis_tracker_store_delete_tracker_with_prefix(
+    domain: Domain,
+    tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
+) -> None:
+    # Given
+    tracker_store = MockedRedisTrackerStore(domain)
+    sender_id = tracker_with_restarted_event.sender_id
+    await tracker_store.save(tracker_with_restarted_event)
+
+    ## This will retrieve the sender_id with the prefix as bytes object
+    existing_sender_ids = await tracker_store.keys()
+    assert len(list(existing_sender_ids)) == 1
+    existing_sender_id = next(iter(existing_sender_ids))
+    existing_sender_id = existing_sender_id.decode("utf-8")
+    assert existing_sender_id == f"{tracker_store.key_prefix}{sender_id}"
+
+    # When
+    with capture_logs() as caplog:
+        await tracker_store.delete(existing_sender_id)
+        logs = filter_logs(
+            caplog,
+            event="redis_tracker_store.delete.deleted_tracker",
+            log_level="info",
+        )
+
+        assert len(logs) == 1
+
+    # Then
+    tracker = await tracker_store.retrieve(existing_sender_id)
+    assert tracker is None

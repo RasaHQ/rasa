@@ -113,6 +113,9 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
             )
             return None
 
+        if sender_id.startswith(self.key_prefix):
+            sender_id = sender_id[len(self.key_prefix) :]
+
         self.red.delete(self.key_prefix + sender_id)
         structlogger.info(
             "redis_tracker_store.delete.deleted_tracker",
@@ -156,6 +159,9 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
             sender_id: Conversation ID to fetch the tracker for.
             fetch_all_sessions: Whether to fetch all sessions or only the last one.
         """
+        if sender_id.startswith(self.key_prefix):
+            sender_id = sender_id[len(self.key_prefix) :]
+
         stored = self.red.get(self.key_prefix + sender_id)
         if stored is None:
             structlogger.debug(
