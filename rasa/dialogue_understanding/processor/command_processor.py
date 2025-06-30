@@ -64,12 +64,6 @@ from rasa.shared.nlu.constants import COMMANDS
 
 structlogger = structlog.get_logger()
 
-CANNOT_HANDLE_REASON = (
-    "A command generator attempted to set a slot "
-    "with a value extracted by an extractor "
-    "that is incompatible with the slot mapping type."
-)
-
 
 def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
     """Check if a list of commands contains a command of a given type.
@@ -587,6 +581,11 @@ def clean_up_slot_command(
             "command_processor.clean_up_slot_command.skip_command_slot_not_in_domain",
             command=command,
         )
+        resulting_commands.append(
+            CannotHandleCommand(
+                reason="The slot predicted by the LLM is not defined in the domain."
+            )
+        )
         return resulting_commands
 
     if not should_slot_be_set(slot, command, resulting_commands):
@@ -605,7 +604,10 @@ def clean_up_slot_command(
             for command in resulting_commands
         )
 
-        cannot_handle = CannotHandleCommand(reason=CANNOT_HANDLE_REASON)
+        cannot_handle = CannotHandleCommand(
+            reason="A command generator attempted to set a slot with a value extracted "
+            "by an extractor that is incompatible with the slot mapping type."
+        )
         if not slot_command_exists_already and cannot_handle not in resulting_commands:
             resulting_commands.append(cannot_handle)
 

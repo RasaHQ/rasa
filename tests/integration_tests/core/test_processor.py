@@ -13,7 +13,6 @@ from rasa.dialogue_understanding.commands import (
     StartFlowCommand,
 )
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
-from rasa.dialogue_understanding.processor.command_processor import CANNOT_HANDLE_REASON
 from rasa.shared.core.events import SlotSet
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.providers.llm.llm_response import LLMResponse
@@ -408,9 +407,11 @@ async def test_processor_handle_message_calm_cannot_handle_command(
         assert tracker.get_slot("payment_option") is None
 
     captured = capsys.readouterr()
-    command_processor_debug_log = (
-        f"CannotHandleCommand(reason='{CANNOT_HANDLE_REASON}')"
+    reason = (
+        "A command generator attempted to set a slot with a value extracted "
+        "by an extractor that is incompatible with the slot mapping type."
     )
+    command_processor_debug_log = f"CannotHandleCommand(reason='{reason}')"
     assert command_processor_debug_log in captured.out
 
 

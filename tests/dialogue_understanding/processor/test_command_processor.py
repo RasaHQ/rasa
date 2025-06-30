@@ -563,7 +563,14 @@ def test_clean_up_commands_skip_slot_already_set(
 @pytest.mark.parametrize(
     "commands, expected_clean_commands",
     [
-        ([SetSlotCommand("ham", "100")], []),
+        (
+            [SetSlotCommand("ham", "100")],
+            [
+                CannotHandleCommand(
+                    "The slot predicted by the LLM is not defined in the domain."
+                )
+            ],
+        ),
         ([SetSlotCommand("egg", "some_value")], []),
         ([SetSlotCommand("eggs", "scrambled")], [SetSlotCommand("eggs", "scrambled")]),
         (
@@ -572,6 +579,8 @@ def test_clean_up_commands_skip_slot_already_set(
                 SetSlotCommand("ham", 100),
                 SetSlotCommand("eggs", "scrambled"),
             ],
+            # Cannot handle command for the unknown slot - `ham` is removed in the
+            # cleanup, as we have a set slot command for a valid slot `eggs`.
             [SetSlotCommand("eggs", "scrambled")],
         ),
     ],
