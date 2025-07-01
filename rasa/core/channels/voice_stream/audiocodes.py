@@ -104,10 +104,10 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
 
     def __init__(
         self,
-        token: Optional[Text],
         server_url: str,
         asr_config: Dict,
         tts_config: Dict,
+        token: Optional[Text] = None,
     ):
         mark_as_beta_feature("Audiocodes (audiocodes_stream) Channel")
         super().__init__(

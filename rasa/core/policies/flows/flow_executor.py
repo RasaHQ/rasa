@@ -41,6 +41,7 @@ from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.patterns.search import SearchPatternFlowStackFrame
+from rasa.dialogue_understanding.patterns.user_silence import FLOW_PATTERN_USER_SILENCE
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
@@ -590,9 +591,9 @@ def run_step(
         initial_events.append(FlowStarted(flow.id, metadata=stack.current_context()))
 
     # FLow does not start with collect step or we are not in collect information pattern
-    if _first_step_is_not_collect(
-        step, previous_step_id
-    ) and not _in_collect_information_pattern(flow):
+    if _first_step_is_not_collect(step, previous_step_id) and not (
+        _in_collect_information_pattern(flow) or _in_pattern_user_silence(flow)
+    ):
         _append_global_silence_timeout_event(initial_events, tracker)
 
     if isinstance(step, CollectInformationFlowStep):
@@ -648,6 +649,11 @@ def _first_step_is_not_collect(
 def _in_collect_information_pattern(flow: Flow) -> bool:
     """Check if the current flow is a collect information pattern."""
     return flow.id == FLOW_PATTERN_COLLECT_INFORMATION
+
+
+def _in_pattern_user_silence(flow: Flow) -> bool:
+    """Check if the current flow is a user silence pattern."""
+    return flow.id == FLOW_PATTERN_USER_SILENCE
 
 
 def _run_end_step(

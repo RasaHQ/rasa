@@ -121,3 +121,34 @@ def test_is_token_valid(
     assert input_channel_no_token._is_token_valid(None) is True
     assert input_channel_no_token._is_token_valid("invalid_token") is True
     assert input_channel_no_token._is_token_valid("test_token") is True
+
+
+@pytest.mark.parametrize(
+    "input_data",
+    [
+        {
+            "token": "test_token",
+            "server_url": "https://example.com",
+            "asr": {"name": "deepgram"},
+            "tts": {"name": "azure"},
+        },
+        {
+            "token": None,
+            "server_url": "https://example.com",
+            "asr": {"name": "deepgram"},
+            "tts": {"name": "azure"},
+        },
+    ],
+)
+@pytest.mark.usefixtures("mock_validate_voice_license_scope")
+def test_from_credentials(input_data: dict, mock_validate_voice_license_scope):
+    """Tests the from_credentials method."""
+    channel = AudiocodesVoiceInputChannel.from_credentials(
+        input_data,
+    )
+
+    assert isinstance(channel, AudiocodesVoiceInputChannel)
+    assert channel.token == input_data["token"]
+    assert channel.server_url == input_data["server_url"]
+    assert channel.asr_config == input_data["asr"]
+    assert channel.tts_config == input_data["tts"]
