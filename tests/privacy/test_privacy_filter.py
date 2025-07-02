@@ -507,3 +507,32 @@ def test_privacy_filter_anonymize_sensitive_slot_event_empty_value(
         anonymized_event.value == slot_value
     ), "Value should remain unchanged when empty."
     mock_anonymize_value.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "text, original_value, replacement, expected",
+    [
+        ("My name is John Doe.", "John Doe", "[NAME]", "My name is [NAME]."),
+        ("My age is 24 years.", "24.0", "[AGE]", "My age is [AGE] years."),
+        (
+            "My email is test@example.com.",
+            "test@example.com",
+            "[EMAIL]",
+            "My email is [EMAIL].",
+        ),
+    ],
+)
+def test_privacy_filter_smart_replace(
+    privacy_filter_with_loaded_gliner: PrivacyFilter,
+    text: str,
+    original_value: str,
+    replacement: str,
+    expected: str,
+) -> None:
+    """Test smart_replace method."""
+    assert (
+        privacy_filter_with_loaded_gliner._smart_replace(
+            text, original_value, replacement
+        )
+        == expected
+    )

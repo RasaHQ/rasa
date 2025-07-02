@@ -1691,9 +1691,9 @@ def test_track_privacy_enabled(
     assert mock_track.call_count == 1
     mock_call = mock_track.mock_calls[0]
     assert mock_call.args[0] == TELEMETRY_PRIVACY_ENABLED_EVENT
-    assert mock_call.args[1]["num_total_rules"] == 1
+    assert mock_call.args[1]["num_total_rules"] == 2
     assert mock_call.args[1]["redact_count"] == 1
-    assert mock_call.args[1]["mask_count"] == 0
+    assert mock_call.args[1]["mask_count"] == 1
     assert mock_call.args[1]["stream_pii"] is expected_stream_pii
     assert mock_call.args[1]["tracker_store_anonymization_enabled"] is True
     assert mock_call.args[1]["tracker_store_deletion_enabled"] is True

@@ -193,7 +193,9 @@ class PrivacyFilter:
 
         for key, slot in anonymized_slots.items():
             original_slot_value = key.split(":", 1)[1]
-            anonymized_text = user_event.text.replace(original_slot_value, slot.value)
+            anonymized_text = self._smart_replace(
+                user_event.text, original_slot_value, slot.value
+            )
             user_event.text = anonymized_text
 
             anonymized_parse_data[TEXT_KEY] = anonymized_text
@@ -232,7 +234,9 @@ class PrivacyFilter:
 
         for key, slot in anonymized_slots.items():
             original_slot_value = key.split(":", 1)[1]
-            anonymized_text = bot_event.text.replace(original_slot_value, slot.value)
+            anonymized_text = self._smart_replace(
+                bot_event.text, original_slot_value, slot.value
+            )
             bot_event.text = anonymized_text
 
         bot_event.text = self._anonymize_edge_cases(bot_event.text, anonymized_slots)
@@ -338,3 +342,41 @@ class PrivacyFilter:
             text = text.replace(entity_value, self._mask(entity[ENTITY_LABEL_KEY]))
 
         return text
+
+    @staticmethod
+    def _smart_replace(text: str, original_value: str, replacement: str) -> str:
+        """Replace original_value with replacement in text.
+
+        This method performs a string replacement in the text,
+        with special handling for floats.
+        If original_value is a float string like "24.0",
+        also tries replacing the integer version "24".
+
+        Args:
+            text (str): The text to perform replacements on
+            original_value (str): The value to replace
+            replacement (str): The replacement value
+
+        Returns:
+            str: The text with replacements applied
+        """
+        # First try the original replacement
+        result = text.replace(original_value, replacement)
+        if text != result:
+            return result
+
+        # If replacement didn't happen and it's a float,
+        # try replacing the integer version
+        if "." in original_value:
+            try:
+                float_val = float(original_value)
+                if float_val.is_integer():
+                    int_version = str(int(float_val))
+                    result = result.replace(int_version, replacement)
+            except ValueError:
+                structlogger.warning(
+                    "rasa.privacy.privacy_filter.smart_replace_float_error",
+                    event_info="Unable to anonymize float value.",
+                )
+
+        return result

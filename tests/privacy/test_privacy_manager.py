@@ -49,6 +49,8 @@ def pii_domain() -> Domain:
         slots:
             credit_card_number:
                 type: text
+            age:
+                type: float
         """
     )
 
@@ -65,10 +67,11 @@ def pii_tracker(pii_domain: Domain) -> DialogueStateTracker:
             UserUttered("I've been double-charged for my rent this month."),
             BotUttered(
                 "Sorry to hear that! Can you please provide your "
-                "credit card number so I can look into this for you?"
+                "credit card number and your age so I can look into this for you?"
             ),
-            UserUttered("Sure, it's 1234-5678-9012-3456."),
+            UserUttered("Sure, it's 1234-5678-9012-3456 and I'm 24 years old."),
             SlotSet("credit_card_number", "1234-5678-9012-3456"),
+            SlotSet("age", 24),
             BotUttered(
                 "I've recorded your dispute regarding the double charge. "
                 "We will investigate this matter and get back to you shortly."
@@ -189,7 +192,8 @@ def anonymization_privacy_config_data() -> Dict[str, Any]:
                 },
             },
             "rules": [
-                {"slot": "credit_card_number", "anonymization": {"type": "mask"}}
+                {"slot": "credit_card_number", "anonymization": {"type": "mask"}},
+                {"slot": "age", "anonymization": {"type": "mask"}},
             ],
         },
     }
@@ -270,12 +274,20 @@ def test_privacy_manager_process_events_all(
 
     second_user_message = anonymized_events[4]
     assert isinstance(second_user_message, UserUttered)
-    assert second_user_message.text == "Sure, it's ###############3456."
+    assert (
+        second_user_message.text
+        == "Sure, it's ###############3456 and I'm [AGE] years old."
+    )
 
-    slot_set_message = anonymized_events[5]
-    assert isinstance(slot_set_message, SlotSet)
-    assert slot_set_message.key == "credit_card_number"
-    assert slot_set_message.value == "###############3456"
+    first_slot_set_message = anonymized_events[5]
+    assert isinstance(first_slot_set_message, SlotSet)
+    assert first_slot_set_message.key == "credit_card_number"
+    assert first_slot_set_message.value == "###############3456"
+
+    second_slot_set_message = anonymized_events[6]
+    assert isinstance(second_slot_set_message, SlotSet)
+    assert second_slot_set_message.key == "age"
+    assert second_slot_set_message.value == "[AGE]"
 
     last_bot_message = anonymized_events[-1]
     assert isinstance(last_bot_message, BotUttered)
@@ -489,8 +501,9 @@ def test_privacy_manager_validate_sensitive_slots(
             log_level="error",
             log_message_parts=["Sensitive slot not found in the domain."],
         )
-        assert len(logs) == 1
+        assert len(logs) == 2
         assert logs[0].get("sensitive_slot") == "credit_card_number"
+        assert logs[1].get("sensitive_slot") == "age"
 
 
 def test_privacy_manager_validate_sensitive_slots_with_no_config(

@@ -24,3 +24,6 @@ privacy:
           type: redact
           redaction_char: "#"
           keep_right: 4
+    - slot: age
+      anonymization:
+          type: mask
