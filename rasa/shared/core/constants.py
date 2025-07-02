@@ -182,6 +182,7 @@ class SetSlotExtractor(Enum):
 # the keys for `State` (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # represent the origin of a `SubState`
 USER = "user"
+BOT = "bot"
 SLOTS = "slots"
 
 USE_TEXT_FOR_FEATURIZATION = "use_text_for_featurization"

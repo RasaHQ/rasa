@@ -9,8 +9,8 @@ from rasa.e2e_test.e2e_test_case import ActualStepOutput, TestCase, TestStep, Te
 from rasa.e2e_test.e2e_test_runner import TEST_TURNS_TYPE, E2ETestRunner
 from rasa.llm_fine_tuning.conversations import Conversation, ConversationStep
 from rasa.llm_fine_tuning.storage import StorageContext
-from rasa.shared.core.constants import USER
-from rasa.shared.core.events import UserUttered
+from rasa.shared.core.constants import BOT, USER
+from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import FinetuningDataPreparationException
 from rasa.shared.nlu.constants import LLM_COMMANDS, LLM_PROMPT
@@ -83,16 +83,18 @@ def generate_conversation(
         Conversation.
     """
     steps = []
-    tracker_event_indices = [
-        i for i, event in enumerate(tracker.events) if isinstance(event, UserUttered)
-    ]
-
-    if len(test_case.steps) != len(tracker_event_indices):
-        raise FinetuningDataPreparationException(
-            "Number of test case steps and tracker events do not match."
-        )
 
     if assertions_used:
+        tracker_event_indices = [
+            i
+            for i, event in enumerate(tracker.events)
+            if isinstance(event, UserUttered)
+        ]
+        if len(test_case.steps) != len(tracker_event_indices):
+            raise FinetuningDataPreparationException(
+                "Number of test case steps and tracker events do not match."
+            )
+
         # we only have user steps, extract the bot response from the bot uttered
         # events of the test turn
         for i, (original_step, tracker_event_index) in enumerate(
@@ -110,8 +112,30 @@ def generate_conversation(
             )
             steps.extend(_create_bot_test_steps(test_turns[i]))
     else:
+        tracker_event_indices = [
+            i
+            for i, event in enumerate(tracker.events)
+            if isinstance(event, UserUttered) or isinstance(event, BotUttered)
+        ]
+
+        # Generally, we expect one or more bot response(s) for each user utterance
+        # in the test case, so that we can evaluate the actual bot response.
+        # If the test case ends with one or more user utterance(s) instead,
+        # we should thus trim those from the test case steps.
+        # This only applies to test cases that have at least one bot utterance;
+        # otherwise, all test case steps would be removed.
+        has_bot_utterance = any(step.actor == BOT for step in test_case.steps)
+        i = len(test_case.steps)
+        if has_bot_utterance:
+            while i > 0 and test_case.steps[i - 1].actor == USER:
+                i -= 1
+        test_case_steps = test_case.steps[:i]
+
+        # If the number of test case steps and tracker events differ,
+        # using zip ensures we only process pairs that exist in both lists.
+        # Prevents index errors and ensures we don't process unmatched steps or events.
         for i, (original_step, tracker_event_index) in enumerate(
-            zip(test_case.steps, tracker_event_indices)
+            zip(test_case_steps, tracker_event_indices)
         ):
             if original_step.actor == USER:
                 previous_turn = _get_previous_actual_step_output(test_turns, i)
@@ -126,6 +150,14 @@ def generate_conversation(
                 )
             else:
                 steps.append(original_step)
+
+        # the tracker should only include events up to the last bot utterance
+        # so that the resulting transcript ends with the last bot utterance too
+        # only applies to test cases that have at least one bot utterance
+        if has_bot_utterance and test_case.steps and test_case.steps[-1].actor == USER:
+            event_to_go_to = tracker_event_indices[len(test_case_steps)] - 1
+            timestamp = tracker.events[event_to_go_to].timestamp
+            tracker = tracker.travel_back_in_time(timestamp)
 
     # Some messages in an e2e test case could be mapped to commands via
     # 'NLUCommandAdapter', e.g. the message will not be annotated with a prompt and

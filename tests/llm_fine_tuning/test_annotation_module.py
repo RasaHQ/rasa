@@ -27,6 +27,11 @@ def test_step() -> TestStep:
 
 
 @pytest.fixture
+def test_step_bot() -> TestStep:
+    return TestStep.from_dict({"bot": "How much money do you want to transfer?"})
+
+
+@pytest.fixture
 def test_turn(test_step: TestStep) -> ActualStepOutput:
     return ActualStepOutput.from_test_step(
         test_step,
@@ -94,47 +99,138 @@ def test_annotate_e2e_tests(mock_asyncio_run: Mock):
     assert result == mock_conversations
 
 
-def test_generate_conversation(test_step: TestStep, test_turn: ActualStepOutput):
-    sender_id = "test_annotation_module"
-
-    tracker = DialogueStateTracker.from_events(
-        sender_id, [UserUttered("I want to transfer money")] * 2
-    )
-
-    test_turns = {0: test_step, 1: test_turn}
-    test_case = TestCase("test_case_name", steps=[test_step, test_step])
-
-    result = generate_conversation(test_turns, test_case, tracker)
-
-    assert result is not None
-    assert isinstance(result, Conversation)
-    assert result.original_e2e_test_case == test_case
-    assert len(result.steps) == 2
-    assert result.steps[0] == test_step
-    assert isinstance(result.steps[1], ConversationStep)
-
-
-def test_generate_conversation_using_assertions(
-    test_step: TestStep, test_turn: ActualStepOutput
+@pytest.mark.parametrize(
+    "events,steps,test_turns,expected_len,assertions_used,expected_step_types",
+    [
+        # Only user utterances; no assertions
+        (
+            [UserUttered("I want to transfer money")] * 2,
+            lambda test_step, test_step_bot: [test_step, test_step],
+            lambda test_step, test_step_bot, test_turn: {0: test_step, 1: test_turn},
+            2,
+            False,
+            [TestStep, ConversationStep],
+        ),
+        # User and bot utterance; no assertions
+        (
+            [
+                UserUttered("I want to transfer money"),
+                BotUttered("How much money do you want to transfer?"),
+            ],
+            lambda test_step, test_step_bot: [test_step, test_step_bot],
+            lambda test_step, test_step_bot, test_turn: {
+                0: test_turn,
+                1: test_step_bot,
+            },
+            2,
+            False,
+            [ConversationStep, TestStep],
+        ),
+        # User, bot, user utterances; no assertions
+        (
+            [
+                UserUttered("I want to transfer money"),
+                BotUttered("How much money do you want to transfer?"),
+                UserUttered("I want to transfer money"),
+            ],
+            lambda test_step, test_step_bot: [test_step, test_step_bot, test_step],
+            lambda test_step, test_step_bot, test_turn: {
+                0: test_turn,
+                1: test_step_bot,
+            },
+            2,
+            False,
+            [ConversationStep, TestStep],
+        ),
+        # User, bot, user, user utterances; no assertions
+        (
+            [
+                UserUttered("I want to transfer money"),
+                BotUttered("How much money do you want to transfer?"),
+                UserUttered("I want to transfer money"),
+                UserUttered("I want to transfer money"),
+            ],
+            lambda test_step, test_step_bot: [
+                test_step,
+                test_step_bot,
+                test_step,
+                test_step,
+            ],
+            lambda test_step, test_step_bot, test_turn: {
+                0: test_turn,
+                1: test_step_bot,
+            },
+            2,
+            False,
+            [ConversationStep, TestStep],
+        ),
+        # Only user utterances; assertions used
+        (
+            [UserUttered("I want to transfer money")] * 2,
+            lambda test_step, test_step_bot: [test_step, test_step],
+            lambda test_step, test_step_bot, test_turn: {0: test_turn, 1: test_turn},
+            4,
+            True,
+            [ConversationStep, TestStep],
+        ),
+        # Multiple, different user utterances in test case; assertions used
+        # With assertions, the test case steps consist of user utterances only,
+        # whilst their corresponding, expected bot utterances are defined as assertions.
+        (
+            [
+                UserUttered("I want to transfer money"),
+                # followed by bot utterance in the form of an assertion
+                # bot_uttered: "Who do you want to transfer money to?",
+                UserUttered("to John"),
+                # followed by bot utterance in the form of an assertion
+                # bot_uttered: "Do you want to transfer that money?",
+                UserUttered("yes"),
+            ],
+            lambda test_step, test_step_bot: [test_step, test_step, test_step],
+            lambda test_step, test_step_bot, test_turn: {
+                0: test_turn,
+                1: test_turn,
+                2: test_turn,
+            },
+            6,  # 3 * 2, since each user step is paired with an assertion step
+            True,
+            # alternates between ConversationStep and TestStep for each pair
+            [
+                ConversationStep,
+                TestStep,
+                ConversationStep,
+                TestStep,
+                ConversationStep,
+                TestStep,
+            ],
+        ),
+    ],
+)
+def test_generate_conversation_various_cases(
+    test_step: TestStep,
+    test_step_bot: TestStep,
+    test_turn: ActualStepOutput,
+    events,
+    steps,
+    test_turns,
+    expected_len,
+    assertions_used,
+    expected_step_types,
 ):
-    test_turns = {0: test_turn, 1: test_turn}
-    test_case = TestCase("test_case_name", steps=[test_step, test_step])
+    tracker = DialogueStateTracker.from_events("test_annotation_module", events)
+    test_case = TestCase("test_case_name", steps=steps(test_step, test_step_bot))
+    turns = test_turns(test_step, test_step_bot, test_turn)
 
-    sender_id = "test_annotation_module"
-    tracker = DialogueStateTracker.from_events(
-        sender_id, [UserUttered("I want to transfer money")] * 2
+    result = generate_conversation(
+        turns, test_case, tracker, assertions_used=assertions_used
     )
-
-    result = generate_conversation(test_turns, test_case, tracker, assertions_used=True)
 
     assert result is not None
     assert isinstance(result, Conversation)
     assert result.original_e2e_test_case == test_case
-    assert len(result.steps) == 4
-    assert isinstance(result.steps[0], ConversationStep)
-    assert isinstance(result.steps[1], TestStep)
-    assert isinstance(result.steps[2], ConversationStep)
-    assert isinstance(result.steps[3], TestStep)
+    assert len(result.steps) == expected_len
+    for idx, expected_step_type in enumerate(expected_step_types):
+        assert isinstance(result.steps[idx], expected_step_type)
 
 
 def test_convert_to_conversation_step_returns_conversation_step(
