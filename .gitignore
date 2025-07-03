@@ -111,3 +111,5 @@ e2e_tests/
 infrastructure/**/*.pyc
 infrastructure/**/venv
 coverage.xml
+anonymization_db
+deletion_db

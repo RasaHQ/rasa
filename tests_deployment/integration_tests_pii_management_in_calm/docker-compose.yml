@@ -3,6 +3,7 @@ x-license: &license
   OPENAI_API_KEY: ${OPENAI_API_KEY}
 x-pii-config: &pii-env-vars
   USER_CHAT_INACTIVITY_IN_MINUTES: 0
+  GLINER_MODEL_PATH: "/app/gliner_model"
 
 configs:
   endpoints-anonymization.yml:
@@ -134,10 +135,11 @@ services:
   rasa-pro-http-anonymization:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
-      - "${BOT_PATH}:/app"
+      - "${BOT_PATH}:/app/bot"
     configs:
       - source: endpoints-anonymization.yml
         target: /endpoints-anonymization.yml
+    working_dir: /app/bot
     entrypoint: ""
     command: rasa run -p 5005 --enable-api --endpoints /endpoints-anonymization.yml
     networks:
@@ -162,7 +164,8 @@ services:
   rasa-pro-http-deletion:
     image: ${RASA_REPOSITORY}:${RASA_IMAGE_TAG}
     volumes:
-      - "${BOT_PATH}:/app"
+      - "${BOT_PATH}:/app/bot"
+    working_dir: /app/bot
     configs:
       - source: endpoints-deletion.yml
         target: /endpoints-deletion.yml

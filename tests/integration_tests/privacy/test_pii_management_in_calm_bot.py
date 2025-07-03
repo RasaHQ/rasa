@@ -31,7 +31,7 @@ BOT_MESSAGES = [
         "Credit Card Number: 1234-5678-9012-3456",
         2: "Please provide your feedback on the service.",
     },
-    {},
+    {-1: "What else can I help you with?"},
 ]
 
 
@@ -150,14 +150,14 @@ def test_pii_management_in_calm_bot_anonymization(
         user_messages[4]["value"]["text"] == "I've had a great experience, thank you! "
         "Shame that you are not able to process my "
         "direct debit payments from my bank account "
-        "number 2715500356."
+        "number [BANK ACCOUNT NUMBER]."
     )
     assert (
         user_messages[4]["value"]["parse_data"]["text"]
         == "I've had a great experience, thank you! "
         "Shame that you are not able to process "
         "my direct debit payments from my bank "
-        "account number 2715500356."
+        "account number [BANK ACCOUNT NUMBER]."
     )
 
     slot_events = list(
@@ -172,6 +172,12 @@ def test_pii_management_in_calm_bot_anonymization(
     assert slot_events[4]["value"]["value"] == "[NATIONAL_INSURANCE_NUMBER]"
     assert slot_events[5]["value"]["name"] == "credit_card_number"
     assert slot_events[5]["value"]["value"] == "***************3456"
+    assert slot_events[6]["value"]["name"] == "feedback"
+    assert slot_events[6]["value"]["value"] == (
+        "I've had a great experience, thank you! "
+        "Shame that you are not able to process my "
+        "direct debit payments from my bank account number [BANK ACCOUNT NUMBER]."
+    )
 
     bot_events = list(
         filter(lambda m: m["value"]["event"] == "bot", anonymization_messages)
@@ -205,10 +211,12 @@ def test_pii_management_in_calm_bot_anonymization(
         tracker_user_events[3]["text"]
         == "My credit card number is ***************3456."
     )
+
+    # bank account number is an entity detected by gliner model
     assert (
         tracker_user_events[4]["text"] == "I've had a great experience, thank you! "
         "Shame that you are not able to process my "
-        "direct debit payments from my bank account number 2715500356."
+        "direct debit payments from my bank account number [BANK ACCOUNT NUMBER]."
     )
 
     tracker_slot_events = list(filter(lambda m: m["event"] == "slot", tracker_events))
@@ -221,6 +229,12 @@ def test_pii_management_in_calm_bot_anonymization(
     assert tracker_slot_events[4]["value"] == "[NATIONAL_INSURANCE_NUMBER]"
     assert tracker_slot_events[5]["name"] == "credit_card_number"
     assert tracker_slot_events[5]["value"] == "***************3456"
+    assert tracker_slot_events[6]["name"] == "feedback"
+    assert tracker_slot_events[6]["value"] == (
+        "I've had a great experience, thank you! "
+        "Shame that you are not able to process my "
+        "direct debit payments from my bank account number [BANK ACCOUNT NUMBER]."
+    )
 
     tracker_bot_events = list(filter(lambda m: m["event"] == "bot", tracker_events))
     assert (

@@ -2,6 +2,7 @@ import copy
 import datetime
 import json
 import os
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import structlog
@@ -60,8 +61,17 @@ class PrivacyFilter:
     def _load_gliner_model() -> Optional[Any]:
         """Load the GLiNER model for PII detection."""
         local_model_path = os.getenv(GLINER_MODEL_PATH_ENV_VAR_NAME)
-        cache_dir = os.getenv(HUGGINGFACE_CACHE_DIR_ENV_VAR_NAME)
-        model_path = local_model_path or DEFAULT_PII_MODEL
+        cache_dir_env_value = os.getenv(HUGGINGFACE_CACHE_DIR_ENV_VAR_NAME)
+        cache_dir = Path(cache_dir_env_value).resolve() if cache_dir_env_value else None
+        model_path = (
+            Path(local_model_path).resolve() if local_model_path else DEFAULT_PII_MODEL
+        )
+        local_files_only = isinstance(model_path, Path) and model_path.exists()
+
+        structlogger.debug(
+            "rasa.privacy.privacy_filter.loading_gliner_model",
+            local_files_only=local_files_only,
+        )
 
         try:
             from gliner import GLiNER
@@ -69,6 +79,7 @@ class PrivacyFilter:
             return GLiNER.from_pretrained(
                 model_path,
                 cache_dir=cache_dir,
+                local_files_only=local_files_only,
             )
         except ImportError:
             structlogger.warning(

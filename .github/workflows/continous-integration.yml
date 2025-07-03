@@ -317,9 +317,10 @@ jobs:
           AWS_MODEL_S3_ACCESS_KEY_ID: ${{ secrets.AWS_MODEL_S3_ACCESS_KEY_ID }}
           AWS_MODEL_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_MODEL_S3_SECRET_ACCESS_KEY }}
 
-      - name: Force stop pulumi during ci cancelation
+      - name: Force stop pulumi during ci cancellation or failure
         # This step is used to force stop the deployment if the CI is cancelled
-        if: ${{ cancelled() }}
+        # or the previous step fails
+        if: always()
         uses: ./.github/actions/force-stop-deployment
         with:
           STACK_NAME: pr-${{ github.event.number }}
@@ -1296,6 +1297,12 @@ jobs:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
           POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
 
+      - name: Get latest Rasa Pro version
+        id: get-latest-rasa-pro-version
+        run: |
+          chmod 755 scripts/get-latest-rasa-version.py
+          echo "LATEST_RASA_PRO_VERSION=$(python scripts/get-latest-rasa-version.py)" >> $GITHUB_ENV
+
       - name: Download image artifact
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
         with:
@@ -1305,15 +1312,16 @@ jobs:
         run: |
           gunzip -c image-${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}.tar.gz | docker load
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
-        with:
-          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
+      - name: Build Rasa Pro PII image with GLiNER and trained Rasa models
+        id: build_rasa_pro_pii_image
+        env:
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+        working-directory: "./tests_deployment/integration_tests_pii_management_in_calm/calm_demo_bot"
+        run: |
+          docker build --build-arg RASA_REPOSITORY=${{ env.RASA_PRO_DEV_REPOSITORY }} \
+                       --build-arg RASA_IMAGE_TAG=${{ env.RASA_IMAGE_TAG }} \
+                       --build-arg LATEST_RASA_PRO_VERSION=${{ env.LATEST_RASA_PRO_VERSION }} \
+                       -t ${{ env.RASA_PRO_DEV_REPOSITORY }}:${{ env.RASA_IMAGE_TAG }}-pii .
 
       - name: PII Integration Testing - Run docker containers
         run: |
@@ -1322,7 +1330,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}-pii
           RASA_SDK_REPOSITORY: ${{ env.RASA_SDK_DEV_REPOSITORY }}
           RASA_SDK_IMAGE_TAG: ${{ env.RASA_SDK_IMAGE_TAG }}
 
@@ -1339,7 +1347,7 @@ jobs:
         with:
           COMPOSE_FILE_PATH: tests_deployment/integration_tests_pii_management_in_calm/docker-compose.yml
           RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
-          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}
+          RASA_IMAGE_TAG: ${{ needs.rasa-private-dev-docker-image.outputs.rasa_image_tag }}-pii
           BOT_PATH: "./tests_deployment/integration_tests_pii_management_in_calm/calm_demo_bot"
 
       - name: PII Integration Testing - Stop docker containers

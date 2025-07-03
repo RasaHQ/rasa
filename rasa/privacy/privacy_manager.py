@@ -352,7 +352,7 @@ class BackgroundPrivacyManager:
             if not full_tracker:
                 structlogger.debug(
                     "rasa.privacy_manager.no_tracker_found_for_sender_id",
-                    key=key,
+                    sender_id=key,
                 )
                 continue
 
@@ -374,7 +374,7 @@ class BackgroundPrivacyManager:
 
             structlogger.info(
                 "rasa.privacy_manager.save_tracker_after_deletion",
-                key=key,
+                sender_id=key,
                 event_info="Saved tracker with events not scheduled "
                 "for deletion yet.",
             )
@@ -523,7 +523,7 @@ class BackgroundPrivacyManager:
             ):
                 structlogger.info(
                     "rasa.privacy_manager.anonymizing_tracker_session",
-                    key=session.sender_id,
+                    sender_id=session.sender_id,
                     last_event_timestamp=last_event_timestamp,
                     triggered_by="anonymization_cron_job",
                 )
@@ -539,7 +539,7 @@ class BackgroundPrivacyManager:
                 uneligible_events.extend(events)
                 structlogger.debug(
                     "rasa.privacy_manager.session_not_valid_for_anonymization",
-                    key=session.sender_id,
+                    sender_id=session.sender_id,
                     session_id=session.sender_id,
                     last_event_timestamp=last_event_timestamp,
                 )
@@ -575,7 +575,7 @@ class BackgroundPrivacyManager:
 
                 structlogger.info(
                     "rasa.privacy_manager.tracker_session_scheduled_for_deletion",
-                    key=full_tracker.sender_id,
+                    sender_id=full_tracker.sender_id,
                     last_event_timestamp=last_event_timestamp,
                     triggered_by="deletion_cron_job",
                 )

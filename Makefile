@@ -601,7 +601,8 @@ TRAIN_PII_BOT_COMMAND = docker run --rm \
 		-u $(USER_ID) \
 		--name $(CONTAINER_NAME) \
 		$(DOCKER_ENV_VARS) \
-		-v $(BOT_PATH)\:/app \
+		-v $(BOT_PATH)\:/app/bot \
+		-w /app/bot \
 		$(RASA_REPOSITORY):$(RASA_IMAGE_TAG) \
 		train --fixed-model-name $(MODEL_NAME)
 
@@ -622,20 +623,18 @@ RUN_PII_CONTAINERS_COMMAND = USER_ID=$(USER_ID) \
 		--env-file $(PII_INTEGRATION_TESTS_ENV_FILE) \
 		up --wait
 
-run-pii-calm-containers: BOT_PATH = "./$(PII_CALM_BOT_DIRECTORY)" ## Run the PII integration test containers.
+run-pii-calm-containers: BOT_PATH = "./$(PII_CALM_BOT_DIRECTORY)" ## Run the PII integration test containers for CALM bot.
 run-pii-calm-containers: train-pii-calm-bot
 	$(RUN_PII_CONTAINERS_COMMAND)
 
 STOP_PII_CONTAINERS_COMMAND = USER_ID=$(USER_ID) \
 	BOT_PATH=$(BOT_PATH) \
-	GLINER_LOCAL_PATH=$(GLINER_LOCAL_PATH) \
 	docker compose \
 		-f $(PII_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
 		--env-file $(PII_INTEGRATION_TESTS_ENV_FILE) \
 		down
 
 stop-pii-calm-containers: BOT_PATH = "./$(PII_CALM_BOT_DIRECTORY)" ## Stop the PII integration test containers.
-stop-pii-calm-containers: GLINER_LOCAL_PATH="./$(GLINER_MODELS_DIRECTORY)"
 stop-pii-calm-containers: ## Stop the PII integration test containers for CALM bot.
 	$(STOP_PII_CONTAINERS_COMMAND)
 

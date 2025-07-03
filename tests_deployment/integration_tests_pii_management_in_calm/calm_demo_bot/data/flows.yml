@@ -12,3 +12,4 @@ flows:
       - action: utter_submit_payment
       - collect: feedback
         description: "The user's feedback on the service"
+        force_slot_filling: true
