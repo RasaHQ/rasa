@@ -4,7 +4,7 @@ import importlib.resources
 import json
 import os.path
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple
 
 import dotenv
 import structlog
@@ -138,6 +138,8 @@ DEFAULT_ENTERPRISE_SEARCH_PROMPT_WITH_RELEVANCY_CHECK_AND_CITATION_TEMPLATE = (
 )
 
 _ENTERPRISE_SEARCH_ANSWER_NOT_RELEVANT_PATTERN = re.compile(r"\[NO_RAG_ANSWER\]")
+
+_ENTERPRISE_SEARCH_CITATION_PATTERN = re.compile(r"\[([^\]]+)\]")
 
 
 class VectorStoreConnectionError(RasaException):
@@ -944,10 +946,18 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
 
     @staticmethod
     def post_process_citations(llm_answer: str) -> str:
-        """Post-process the LLM answer.
+        """Post-processes the LLM answer to correctly number and sort citations and
+        sources.
 
-         Re-writes the bracketed numbers to start from 1 and
-         re-arranges the sources to follow the enumeration order.
+        - Handles both single `[1]` and grouped `[1, 3]` citations.
+        - Rewrites the numbers in square brackets in the answer text to start from 1
+        and be sorted within each group.
+        - Reorders the sources according to the order of their first appearance
+        in the text.
+        - Removes citations from the text that point to sources missing from
+        the source list.
+        - Keeps sources that are not cited in the text, placing them at the end
+        of the list.
 
         Args:
             llm_answer: The LLM answer.
@@ -961,77 +971,160 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
 
         # Split llm_answer into answer and citations
         try:
-            answer, citations = llm_answer.rsplit("Sources:", 1)
+            answer_part, sources_part = llm_answer.rsplit("Sources:", 1)
         except ValueError:
-            # if there is no "Sources:" in the llm_answer
-            return llm_answer
+            # if there is no "Sources:" separator, return the original llm_answer
+            return llm_answer.strip()
 
-        # Find all source references in the answer
-        pattern = r"\[\s*(\d+(?:\s*,\s*\d+)*)\s*\]"
-        matches = re.findall(pattern, answer)
-        old_source_indices = [
-            int(num.strip()) for match in matches for num in match.split(",")
-        ]
+        # Parse the sources block to extract valid sources and other lines
+        valid_sources, other_source_lines = EnterpriseSearchPolicy._parse_sources_block(
+            sources_part
+        )
 
-        # Map old source references to the correct enumeration
-        renumber_mapping = {num: idx + 1 for idx, num in enumerate(old_source_indices)}
+        # Find all unique, valid citations in the answer text in their order
+        # of appearance
+        cited_order = EnterpriseSearchPolicy._get_cited_order(
+            answer_part, valid_sources
+        )
 
-        # remove whitespace from original source citations in answer
-        for match in matches:
-            answer = answer.replace(f"[{match}]", f"[{match.replace(' ', '')}]")
+        # Create a mapping from the old source numbers to the new, sequential numbers.
+        # For example, if the citation order in the text was [3, 1, 2], this map
+        # becomes {3: 1, 1: 2, 2: 3}. This allows for a quick lookup when rewriting
+        # the citations
+        renumbering_map = {
+            old_num: new_num + 1 for new_num, old_num in enumerate(cited_order)
+        }
 
-        new_answer = []
-        for word in answer.split():
-            matches = re.findall(pattern, word)
-            if matches:
-                for match in matches:
-                    if "," in match:
-                        old_indices = [
-                            int(num.strip()) for num in match.split(",") if num
-                        ]
-                        new_indices = [
-                            renumber_mapping[old_index]
-                            for old_index in old_indices
-                            if old_index in renumber_mapping
-                        ]
-                        if not new_indices:
-                            continue
+        # Rewrite the citations in the answer text based on the renumbering map
+        processed_answer = EnterpriseSearchPolicy._rewrite_answer_citations(
+            answer_part, renumbering_map
+        )
 
-                        word = word.replace(
-                            match, f"{', '.join(map(str, new_indices))}"
-                        )
-                    else:
-                        old_index = int(match.strip("[].,:;?!"))
-                        new_index = renumber_mapping.get(old_index)
-                        if not new_index:
-                            continue
+        # Build the new list of sources
+        new_sources_list = EnterpriseSearchPolicy._build_final_sources_list(
+            cited_order,
+            renumbering_map,
+            valid_sources,
+            other_source_lines,
+        )
 
-                        word = word.replace(str(old_index), str(new_index))
-            new_answer.append(word)
+        if len(new_sources_list) > 0:
+            processed_answer += "\nSources:\n" + "\n".join(new_sources_list)
 
-        # join the words
-        joined_answer = " ".join(new_answer)
-        joined_answer += "\nSources:\n"
+        return processed_answer
 
-        new_sources: List[str] = []
+    @staticmethod
+    def _parse_sources_block(sources_part: str) -> Tuple[Dict[int, str], List[str]]:
+        """Parses the sources block from the LLM response.
+        Returns a tuple containing:
+        - A dictionary of valid sources matching the "[1] ..." format,
+        where the key is the source number
+        - A list of other source lines that do not match the specified format
+        """
+        valid_sources: Dict[int, str] = {}
+        other_source_lines: List[str] = []
+        source_line_pattern = re.compile(r"^\s*\[(\d+)\](.*)")
 
-        for line in citations.split("\n"):
-            pattern = r"(?<=\[)\d+"
-            match = re.search(pattern, line)
+        source_lines = sources_part.strip().split("\n")
+
+        for line in source_lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            match = source_line_pattern.match(line)
             if match:
-                old_index = int(match.group(0))
-                new_index = renumber_mapping[old_index]
-                # replace only the first occurrence of the old index
-                line = line.replace(f"[{old_index}]", f"[{new_index}]", 1)
+                num = int(match.group(1))
+                valid_sources[num] = line
+            else:
+                other_source_lines.append(line)
 
-                # insert the line into the new_index position
-                new_sources.insert(new_index - 1, line)
-            elif line.strip():
-                new_sources.append(line)
+        return valid_sources, other_source_lines
 
-        joined_sources = "\n".join(new_sources)
+    @staticmethod
+    def _get_cited_order(
+        answer_part: str, available_sources: Dict[int, str]
+    ) -> List[int]:
+        """Find all unique, valid citations in the answer text in their order
+        # of appearance
+        """
+        cited_order: List[int] = []
+        seen_indices = set()
 
-        return joined_answer + joined_sources
+        for match in _ENTERPRISE_SEARCH_CITATION_PATTERN.finditer(answer_part):
+            content = match.group(1)
+            indices_str = [s.strip() for s in content.split(",")]
+            for index_str in indices_str:
+                if index_str.isdigit():
+                    index = int(index_str)
+                    if index in available_sources and index not in seen_indices:
+                        cited_order.append(index)
+                        seen_indices.add(index)
+
+        return cited_order
+
+    @staticmethod
+    def _rewrite_answer_citations(
+        answer_part: str, renumber_map: Dict[int, int]
+    ) -> str:
+        """Rewrites the citations in the answer text based on the renumbering map."""
+
+        def replacer(match: re.Match) -> str:
+            content = match.group(1)
+            old_indices_str = [s.strip() for s in content.split(",")]
+            new_indices = [
+                renumber_map[int(s)]
+                for s in old_indices_str
+                if s.isdigit() and int(s) in renumber_map
+            ]
+            if not new_indices:
+                return ""
+
+            return f"[{', '.join(map(str, sorted(list(set(new_indices)))))}]"
+
+        processed_answer = _ENTERPRISE_SEARCH_CITATION_PATTERN.sub(
+            replacer, answer_part
+        )
+
+        # Clean up formatting after replacements
+        processed_answer = re.sub(r"\s+([,.?])", r"\1", processed_answer)
+        processed_answer = processed_answer.replace("[]", " ")
+        processed_answer = re.sub(r"\s+", " ", processed_answer)
+        processed_answer = processed_answer.strip()
+
+        return processed_answer
+
+    @staticmethod
+    def _build_final_sources_list(
+        cited_order: List[int],
+        renumbering_map: Dict[int, int],
+        valid_sources: Dict[int, str],
+        other_source_lines: List[str],
+    ) -> List[str]:
+        """Builds the final list of sources based on the cited order and
+        renumbering map.
+        """
+        new_sources_list: List[str] = []
+
+        # First, add the sorted, used sources
+        for old_num in cited_order:
+            new_num = renumbering_map[old_num]
+            source_line = valid_sources[old_num]
+            new_sources_list.append(
+                source_line.replace(f"[{old_num}]", f"[{new_num}]", 1)
+            )
+
+        # Then, add the unused but validly numbered sources
+        used_source_nums = set(cited_order)
+        # Sort by number to ensure a consistent order for uncited sources
+        for num, line in sorted(valid_sources.items()):
+            if num not in used_source_nums:
+                new_sources_list.append(line)
+
+        # Finally, add any other source lines
+        new_sources_list.extend(other_source_lines)
+
+        return new_sources_list
 
     @classmethod
     def _perform_health_checks(

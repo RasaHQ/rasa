@@ -1081,42 +1081,136 @@ Sources:
     )
 
 
-def test_enterprise_search_policy_post_process_citations_diff_format(
-    default_model_storage: ModelStorage,
-    default_execution_context: ExecutionContext,
-    vector_store: InformationRetrieval,
-) -> None:
-    """Test that sources are returned as is when there are no relevant sources."""
-    llm_answer = """This is a test answer without relevant sources.
+@pytest.mark.parametrize(
+    "llm_answer, expected_answer",
+    [
+        # Test that sources are returned as is when there are no relevant sources
+        (
+            """This is a test answer without relevant sources.
 
 Sources:
 
-No relevant sources.""".strip()
-
-    llm_answer = "\n".join([line.rstrip() for line in llm_answer.splitlines()])
-
-    processed_answer = EnterpriseSearchPolicy.post_process_citations(llm_answer)
-
-    assert (
-        processed_answer.strip()
-        == textwrap.dedent(
+No relevant sources.""",
             """This is a test answer without relevant sources.
 Sources:
-No relevant sources."""
-        ).strip()
-    )
+No relevant sources.""",
+        ),
+        # Test that sources are returned as is when there are no sources
+        (
+            "This is a test answer without sources.",
+            "This is a test answer without sources.",
+        ),
+        # LLM answer contain multiple sources, but there is no citation.
+        (
+            """This is a test answer without a proper citation.
 
+Sources:
+[1] https://www.example.com/1
+[2] https://www.example.com/2
+[3] https://www.example.com/3""",
+            """This is a test answer without a proper citation.
+Sources:
+[1] https://www.example.com/1
+[2] https://www.example.com/2
+[3] https://www.example.com/3""",
+        ),
+        # LLM answer contain multiple sources, but there is only one citation.
+        (
+            """This is a text with some citations [1].
 
-def test_enterprise_search_policy_post_process_citations_no_sources(
+Sources:
+[1] example.org/abc
+[2] example.org/def""",
+            """This is a text with some citations [1].
+Sources:
+[1] example.org/abc
+[2] example.org/def""",
+        ),
+        # LLM answer contain citations, but no sources
+        (
+            """Test answer with citations but without sources.[1][2]
+
+Sources:
+""",
+            """Test answer with citations but without sources.""",
+        ),
+        # LLM answer contain multiple citations, but some of the sources are not present
+        (
+            """Test answer with a citations, but some sources are missing. [1][2][3]
+
+Sources:
+[1] https://www.example.com/abc
+[3] https://www.example.com/ghi""",
+            """Test answer with a citations, but some sources are missing. [1][2]
+Sources:
+[1] https://www.example.com/abc
+[2] https://www.example.com/ghi""",
+        ),
+        # LLM answer contain multiple citations, but some of the sources are not present
+        # and the order is wrong
+        (
+            """Test answer with a citations[3], but some sources are missing.[1][2]
+
+Sources:
+[1] https://www.example.com/abc
+[3] https://www.example.com/ghi""",
+            """Test answer with a citations[1], but some sources are missing.[2]
+Sources:
+[1] https://www.example.com/ghi
+[2] https://www.example.com/abc""",
+        ),
+        # LLM answer contain multiple citations, but some of the sources are not present
+        # and the order is wrong. Sources contain colons.
+        (
+            """Test answer with a citations[3], but some sources are missing.[1][2]
+
+Sources:
+[1]: https://www.example.com/abc
+[3]: https://www.example.com/ghi""",
+            """Test answer with a citations[1], but some sources are missing.[2]
+Sources:
+[1]: https://www.example.com/ghi
+[2]: https://www.example.com/abc""",
+        ),
+        # Test that a citation group with duplicate numbers is correctly deduplicated
+        # and sorted
+        (
+            """This is a test with a group citation [2, 1, 2].
+
+Sources:
+[1] https://www.example.com/abc
+[2] https://www.example.com/def""",
+            """This is a test with a group citation [1, 2].
+Sources:
+[1] https://www.example.com/def
+[2] https://www.example.com/abc""",
+        ),
+        # Test that all citations are removed if none are valid, and sources are
+        # preserved.
+        (
+            """Here is a citation[5] and another one [9]. Neither is valid.
+
+Sources:
+[1] Source 1
+[2] Source 2""",
+            """Here is a citation and another one. Neither is valid.
+Sources:
+[1] Source 1
+[2] Source 2""",
+        ),
+    ],
+)
+def test_enterprise_search_policy_post_process_citations_parametrized(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     vector_store: InformationRetrieval,
+    llm_answer: str,
+    expected_answer: str,
 ) -> None:
-    """Test that the llm answer is returned as is when no sources are present."""
-    llm_answer = "This is a test answer without sources."
-
+    llm_answer = textwrap.dedent(llm_answer).strip()
     processed_answer = EnterpriseSearchPolicy.post_process_citations(llm_answer)
-    assert processed_answer == llm_answer
+    expected_answer = textwrap.dedent(expected_answer).strip()
+    assert processed_answer == expected_answer
 
 
 def test_enterprise_search_policy_post_process_citations_consecutive_citations(
