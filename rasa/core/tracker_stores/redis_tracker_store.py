@@ -88,17 +88,21 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
         if not timeout and self.record_exp:
             timeout = self.record_exp
 
-        stored = self.red.get(self.key_prefix + tracker.sender_id)
+        # if the sender_id starts with the key prefix, we remove it
+        # this is used to avoid storing the prefix twice
+        sender_id = tracker.sender_id
+        if sender_id.startswith(self.key_prefix):
+            sender_id = sender_id[len(self.key_prefix) :]
+
+        stored = self.red.get(self.key_prefix + sender_id)
 
         if stored is not None:
-            prior_tracker = self.deserialise_tracker(tracker.sender_id, stored)
+            prior_tracker = self.deserialise_tracker(sender_id, stored)
 
             tracker = self._merge_trackers(prior_tracker, tracker)
 
         serialised_tracker = self.serialise_tracker(tracker)
-        self.red.set(
-            self.key_prefix + tracker.sender_id, serialised_tracker, ex=timeout
-        )
+        self.red.set(self.key_prefix + sender_id, serialised_tracker, ex=timeout)
 
     async def delete(self, sender_id: Text) -> None:
         """Delete tracker for the given sender_id.

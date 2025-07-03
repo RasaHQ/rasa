@@ -353,7 +353,6 @@ async def test_redis_tracker_store_delete_no_tracker(
 async def test_redis_tracker_store_delete_tracker_with_prefix(
     domain: Domain,
     tracker_with_restarted_event: DialogueStateTracker,
-    events_after_restart: List[Event],
 ) -> None:
     # Given
     tracker_store = MockedRedisTrackerStore(domain)
@@ -381,3 +380,23 @@ async def test_redis_tracker_store_delete_tracker_with_prefix(
     # Then
     tracker = await tracker_store.retrieve(existing_sender_id)
     assert tracker is None
+
+
+async def test_redis_tracker_store_save_tracker_with_prefix(
+    domain: Domain,
+    events_after_restart: List[Event],
+) -> None:
+    # Given
+    tracker_store = MockedRedisTrackerStore(domain)
+    expected_sender_id = tracker_store.key_prefix + uuid.uuid4().hex
+    tracker = DialogueStateTracker.from_events(expected_sender_id, events_after_restart)
+
+    # When
+    await tracker_store.save(tracker)
+
+    # Then
+    actual_sender_ids = await tracker_store.keys()
+    assert len(list(actual_sender_ids)) == 1
+    actual_sender_id = next(iter(actual_sender_ids))
+    actual_sender_id = actual_sender_id.decode("utf-8")
+    assert actual_sender_id == expected_sender_id
