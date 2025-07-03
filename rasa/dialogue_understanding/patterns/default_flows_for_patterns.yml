@@ -139,7 +139,8 @@ flows:
     steps:
       - noop: true
         next:
-          # Chitchat fallback
+          # Fallback for ChitChat command when IntentlessPolicy isn't set, but
+          # pattern_chitchat invokes action_trigger_chitchat
           - if: context.reason is "cannot_handle_chitchat"
             then:
               - action: utter_cannot_handle
@@ -164,7 +165,9 @@ flows:
     description: Conversation repair flow for off-topic interactions that won't disrupt the main conversation
     name: pattern chitchat
     steps:
-      - action: action_trigger_chitchat
+      - action: utter_cannot_handle
+      # To enable free-form response use:
+      # - action: utter_free_chitchat_response
 
   pattern_clarification:
     description: Conversation repair flow for handling ambiguous requests that could match multiple flows
