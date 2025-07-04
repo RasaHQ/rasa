@@ -92,6 +92,29 @@ class AuthRetryTrackerStore(TrackerStore):
             )
             return None
 
+    async def retrieve_full_tracker(
+        self, sender_id: Text
+    ) -> Optional["DialogueStateTracker"]:
+        """Retries retrieving the full tracker if it fails."""
+        # add + 1 to retries because the retries are additional to the first attempt
+        for _ in range(self.retries + 1):
+            try:
+                return await self._tracker_store.retrieve_full_tracker(sender_id)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to retrieve full tracker for {sender_id}. Retrying...",
+                    exc_info=e,
+                )
+                self._tracker_store = self.recreate_tracker_store(
+                    self.domain, self.event_broker
+                )
+
+        logger.error(
+            f"Failed to retrieve full tracker for {sender_id} "
+            f"after {self.retries} retries."
+        )
+        return None
+
     async def save(self, tracker: "DialogueStateTracker") -> None:
         """Retries saving the tracker if it fails."""
         # add + 1 to retries because the retries are additional to the first attempt
@@ -120,6 +143,44 @@ class AuthRetryTrackerStore(TrackerStore):
         endpoint_config = EndpointResolver.update_config(self.endpoint_config)
         return create_tracker_store(endpoint_config, domain, event_broker)
 
-    async def delete(self, sender_id: Text) -> None:
-        """Delete tracker for the given sender_id."""
-        await self._tracker_store.delete(sender_id)
+    async def delete(self, sender_id: str) -> None:
+        """Retries deleting the tracker for the given sender_id."""
+        # add + 1 to retries because the retries are additional to the first attempt
+        for _ in range(self.retries + 1):
+            try:
+                await self._tracker_store.delete(sender_id)
+                break
+            except Exception as e:
+                logger.warning(
+                    f"Failed to delete tracker for {sender_id}. Retrying...",
+                    exc_info=e,
+                )
+                self._tracker_store = self.recreate_tracker_store(
+                    self.domain, self.event_broker
+                )
+        else:
+            logger.error(
+                f"Failed to delete tracker for {sender_id} "
+                f"after {self.retries} retries."
+            )
+
+    async def update(self, tracker: DialogueStateTracker) -> None:
+        """Retries replacing the tracker if it fails."""
+        # add + 1 to retries because the retries are additional to the first attempt
+        for _ in range(self.retries + 1):
+            try:
+                await self._tracker_store.update(tracker)
+                break
+            except Exception as e:
+                logger.warning(
+                    f"Failed to replace tracker for {tracker.sender_id}. Retrying...",
+                    exc_info=e,
+                )
+                self._tracker_store = self.recreate_tracker_store(
+                    self.domain, self.event_broker
+                )
+        else:
+            logger.error(
+                f"Failed to replace tracker for {tracker.sender_id} "
+                f"after {self.retries} retries."
+            )

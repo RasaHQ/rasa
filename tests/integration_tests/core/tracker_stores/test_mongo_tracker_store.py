@@ -6,10 +6,11 @@ import pytest
 from dotenv import load_dotenv
 
 from rasa.core.tracker_stores.mongo_tracker_store import MongoTrackerStore
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 
 if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
-    from rasa.shared.core.trackers import DialogueStateTracker, Event
+    from rasa.shared.core.trackers import Event
 
 
 MONGODB_PARENT_PATH_NAME = (
@@ -159,3 +160,45 @@ async def test_mongo_tracker_store_delete(
     # Then
     tracker = await mongo_tracker_store.retrieve(sender_id)
     assert tracker is None
+
+
+@pytest.mark.parametrize(
+    "host_uri", ["mongodb://localhost:27000", get_mongodb_tls_host_uri()]
+)
+async def test_mongo_tracker_store_update(
+    domain: "Domain",
+    tracker_with_restarted_event: DialogueStateTracker,
+    mongodb_credentials: Tuple[str, str, str],
+    host_uri: str,
+    events_after_restart: List["Event"],
+) -> None:
+    """Verify that the MongoTrackerStore can update a tracker."""
+    # Given
+    db_name, username, password = mongodb_credentials
+
+    mongo_tracker_store = MongoTrackerStore(
+        domain,
+        host=host_uri,
+        db=db_name,
+        username=username,
+        password=password,
+        auth_source=db_name,
+    )
+    await mongo_tracker_store.save(tracker_with_restarted_event)
+    new_tracker = DialogueStateTracker.from_events(
+        sender_id=tracker_with_restarted_event.sender_id,
+        evts=events_after_restart,
+        slots=domain.slots,
+        domain=domain,
+    )
+
+    # When
+    await mongo_tracker_store.update(new_tracker)
+
+    # Then
+    updated_tracker = await mongo_tracker_store.retrieve_full_tracker(
+        tracker_with_restarted_event.sender_id
+    )
+    assert updated_tracker.current_state(
+        EventVerbosity.ALL
+    ) == new_tracker.current_state(EventVerbosity.ALL)

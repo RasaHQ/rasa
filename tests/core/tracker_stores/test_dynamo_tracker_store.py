@@ -12,10 +12,14 @@ from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core.tracker_stores.dynamo_tracker_store import DynamoTrackerStore
 from rasa.core.tracker_stores.tracker_store import TrackerStore
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import SlotSet
+from rasa.shared.core.events import SlotSet, UserUttered
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import EndpointConfig
-from tests.core.tracker_stores.conftest import get_or_create_tracker_store
+from tests.core.tracker_stores.conftest import (
+    _saved_tracker_with_multiple_session_starts,
+    get_or_create_tracker_store,
+)
 from tests.utilities import filter_logs
 
 
@@ -136,3 +140,26 @@ async def test_dynamo_tracker_store_delete_no_tracker(mock_dynamodb: Any) -> Non
         )
 
         assert len(logs) == 1
+
+
+async def test_dynamo_tracker_store_update_tracker(mock_dynamodb: Any) -> None:
+    # Given
+    sender_id = uuid.uuid4().hex
+    tracker_store = DynamoTrackerStore(Domain.empty())
+    tracker = await _saved_tracker_with_multiple_session_starts(
+        tracker_store, sender_id
+    )
+    new_events = list(tracker.events)[3:] + [
+        UserUttered("What's the weather like today?")
+    ]
+    new_tracker = DialogueStateTracker.from_events(
+        sender_id,
+        new_events,
+    )
+
+    # When
+    await tracker_store.update(new_tracker)
+
+    # Then
+    updated_tracker = await tracker_store.retrieve(sender_id)
+    assert updated_tracker == new_tracker

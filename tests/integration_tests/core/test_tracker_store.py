@@ -1,3 +1,4 @@
+import uuid
 from typing import List
 from unittest.mock import Mock
 
@@ -8,8 +9,9 @@ from pytest import MonkeyPatch
 
 from rasa.core.tracker_stores.redis_tracker_store import RedisTrackerStore
 from rasa.core.tracker_stores.sql_tracker_store import SQLTrackerStore
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from tests.utilities import filter_logs
 
 from .conftest import (
@@ -242,6 +244,54 @@ async def test_postgres_tracker_store_delete(
     tracker_store.engine.dispose()
 
 
+@pytest.mark.sequential
+@pytest.mark.timeout(10, func_only=True)
+async def test_postgres_tracker_store_update(
+    tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
+    postgres_login_db_connection: sa.engine.Connection,
+    postgres_login_db_name: str,
+    postgres_db_name: str,
+) -> None:
+    # Given
+    sender_id = uuid.uuid4().hex
+    postgres_login_db_connection.execute(sa.text(f"CREATE DATABASE {postgres_db_name}"))
+    empty_domain = Domain.empty()
+    tracker_store = SQLTrackerStore(
+        dialect="postgresql",
+        host=POSTGRES_HOST,
+        port=POSTGRES_PORT,
+        username=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        db=postgres_db_name,
+        login_db=postgres_login_db_name,
+        domain=empty_domain,
+    )
+    initial_tracker = DialogueStateTracker.from_events(
+        sender_id=sender_id,
+        evts=tracker_with_restarted_event.events,
+    )
+    await tracker_store.save(initial_tracker)
+
+    new_tracker = DialogueStateTracker.from_events(
+        sender_id=sender_id,
+        evts=events_after_restart,
+        slots=empty_domain.slots,
+        domain=empty_domain,
+    )
+
+    # When
+    await tracker_store.update(new_tracker)
+
+    # Then
+    updated_tracker = await tracker_store.retrieve_full_tracker(sender_id)
+    assert updated_tracker.current_state(
+        EventVerbosity.ALL
+    ) == new_tracker.current_state(EventVerbosity.ALL)
+
+    tracker_store.engine.dispose()
+
+
 async def test_redis_tracker_store_retrieve_full_tracker(
     tracker_with_restarted_event: DialogueStateTracker,
     redis_tracker_store: RedisTrackerStore,
@@ -281,3 +331,24 @@ async def test_redis_tracker_store_delete(
     # Then
     tracker = await redis_tracker_store.retrieve(sender_id)
     assert tracker is None
+
+
+async def test_redis_tracker_store_update(
+    redis_tracker_store: RedisTrackerStore,
+    tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
+) -> None:
+    # Given
+    sender_id = tracker_with_restarted_event.sender_id
+    await redis_tracker_store.save(tracker_with_restarted_event)
+    new_tracker = DialogueStateTracker.from_events(
+        sender_id=sender_id,
+        evts=events_after_restart,
+    )
+
+    # When
+    await redis_tracker_store.update(new_tracker)
+
+    # Then
+    tracker = await redis_tracker_store.retrieve(sender_id)
+    assert tracker == new_tracker

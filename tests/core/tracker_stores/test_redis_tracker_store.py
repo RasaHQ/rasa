@@ -34,6 +34,9 @@ from rasa.shared.core.events import (
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ConnectionException
 from rasa.utils.endpoints import read_endpoint_config
+from tests.core.tracker_stores.conftest import (
+    _saved_tracker_with_multiple_session_starts,
+)
 from tests.utilities import filter_logs
 
 
@@ -400,3 +403,49 @@ async def test_redis_tracker_store_save_tracker_with_prefix(
     actual_sender_id = next(iter(actual_sender_ids))
     actual_sender_id = actual_sender_id.decode("utf-8")
     assert actual_sender_id == expected_sender_id
+
+
+async def test_redis_tracker_store_update_tracker(domain: Domain) -> None:
+    # Given
+    sender_id = uuid.uuid4().hex
+    tracker_store = MockedRedisTrackerStore(domain)
+    tracker = await _saved_tracker_with_multiple_session_starts(
+        tracker_store, sender_id
+    )
+    new_events = list(tracker.events)[3:] + [
+        UserUttered("What's the weather like today?")
+    ]
+    new_tracker = DialogueStateTracker.from_events(
+        sender_id,
+        new_events,
+    )
+
+    # When
+    await tracker_store.update(new_tracker)
+
+    # Then
+    updated_tracker = await tracker_store.retrieve(sender_id)
+    assert updated_tracker == new_tracker
+
+
+async def test_redis_tracker_store_update_tracker_with_prefix(domain: Domain) -> None:
+    # Given
+    sender_id = uuid.uuid4().hex
+    tracker_store = MockedRedisTrackerStore(domain)
+    tracker = await _saved_tracker_with_multiple_session_starts(
+        tracker_store, sender_id
+    )
+    new_events = list(tracker.events)[3:] + [
+        UserUttered("What's the weather like today?")
+    ]
+    new_tracker = DialogueStateTracker.from_events(
+        tracker_store.key_prefix + sender_id,
+        new_events,
+    )
+
+    # When
+    await tracker_store.update(new_tracker)
+
+    # Then
+    updated_tracker = await tracker_store.retrieve(sender_id)
+    assert updated_tracker.events == new_tracker.events

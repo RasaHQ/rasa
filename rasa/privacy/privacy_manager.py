@@ -12,7 +12,7 @@ import structlog
 from apscheduler.schedulers.background import BackgroundScheduler
 
 import rasa.shared.core.trackers
-from rasa.core.tracker_stores.tracker_store import FailSafeTrackerStore, TrackerStore
+from rasa.core.tracker_stores.tracker_store import TrackerStore
 from rasa.privacy.constants import (
     TEXT_KEY,
     USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME,
@@ -25,7 +25,7 @@ from rasa.privacy.privacy_config import (
 )
 from rasa.privacy.privacy_filter import PrivacyFilter
 from rasa.shared.core.events import Event, SlotSet, UserUttered, split_events
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -97,7 +97,7 @@ class BackgroundPrivacyManager:
                 else TrackerStore.create(None)
             )
 
-        self.tracker_store = FailSafeTrackerStore(tracker_store)
+        self.tracker_store = tracker_store
 
         self.event_brokers: List["EventBroker"] = []
         self.event_loop = event_loop
@@ -264,15 +264,16 @@ class BackgroundPrivacyManager:
             )
             return None
 
-        latest_message = tracker.latest_message
-
-        if latest_message is None or not latest_message.text:
+        latest_user_message = tracker.get_last_event_for(
+            UserUttered, event_verbosity=EventVerbosity.ALL
+        )
+        if latest_user_message is None or not latest_user_message.text:
             structlogger.debug(
                 "rasa.privacy_manager.no_user_message.skipping_processing",
             )
             return None
 
-        return latest_message
+        return latest_user_message
 
     @staticmethod
     def _has_session_been_anonymized(events: List[Event]) -> bool:
@@ -360,9 +361,13 @@ class BackgroundPrivacyManager:
                 full_tracker
             )
 
-            await self.tracker_store.delete(sender_id=key)
-
             if not events_to_be_retained:
+                await self.tracker_store.delete(sender_id=key)
+                structlogger.info(
+                    "rasa.privacy_manager.tracker_session_deleted",
+                    sender_id=full_tracker.sender_id,
+                    triggered_by="deletion_cron_job",
+                )
                 continue
 
             tracker = DialogueStateTracker.from_events(
@@ -370,12 +375,13 @@ class BackgroundPrivacyManager:
                 evts=events_to_be_retained,
                 slots=full_tracker.slots.values(),
             )
-            await self.tracker_store.save(tracker)
+            await self.tracker_store.update(tracker)
 
             structlogger.info(
-                "rasa.privacy_manager.save_tracker_after_deletion",
+                "rasa.privacy_manager.overwritten_tracker",
                 sender_id=key,
-                event_info="Saved tracker with events not scheduled "
+                event_info="Deleted eligible events and saved "
+                "tracker with events not scheduled "
                 "for deletion yet.",
             )
 
@@ -527,10 +533,7 @@ class BackgroundPrivacyManager:
                     last_event_timestamp=last_event_timestamp,
                     triggered_by="anonymization_cron_job",
                 )
-                tracker = DialogueStateTracker.from_events(
-                    session.sender_id, session.events
-                )
-                events = self.process_events(tracker, process_all=True)
+                events = self.process_events(session, process_all=True)
                 processed_events.extend(events)
             else:
                 # If the session is not valid for anonymization,

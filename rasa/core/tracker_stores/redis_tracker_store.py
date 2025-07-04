@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Dict, Iterable, Optional, Text
 
 import structlog
@@ -227,3 +228,25 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
                 merged.update(new_event)
 
         return merged
+
+    async def update(self, tracker: DialogueStateTracker) -> None:
+        """Overwrites the tracker for the given sender_id."""
+        serialised_tracker = self.serialise_tracker(tracker)
+
+        # if the sender_id starts with the key prefix, we remove it
+        # this is used to avoid storing the prefix twice
+        sender_id = tracker.sender_id
+        if sender_id.startswith(self.key_prefix):
+            sender_id = sender_id[len(self.key_prefix) :]
+
+        self.red.set(
+            self.key_prefix + sender_id, serialised_tracker, ex=self.record_exp
+        )
+
+        first_event_timestamp = str(datetime.fromtimestamp(tracker.events[0].timestamp))
+
+        structlogger.info(
+            "redis_tracker_store.update.updated_tracker",
+            sender_id=tracker.sender_id,
+            first_event_timestamp=first_event_timestamp,
+        )

@@ -281,3 +281,26 @@ async def test_mongo_tracker_store_delete_no_tracker(
         )
 
         assert len(logs) == 1
+
+
+async def test_mongo_tracker_store_update_tracker(domain: Domain) -> None:
+    # Given
+    sender_id = uuid.uuid4().hex
+    tracker_store = MockedMongoTrackerStore(domain)
+    tracker = await _saved_tracker_with_multiple_session_starts(
+        tracker_store, sender_id
+    )
+    new_events = list(tracker.events)[3:] + [
+        UserUttered("What's the weather like today?")
+    ]
+    new_tracker = DialogueStateTracker.from_events(
+        sender_id,
+        new_events,
+    )
+
+    # When
+    await tracker_store.update(new_tracker)
+
+    # Then
+    updated_tracker = await tracker_store.retrieve(sender_id)
+    assert updated_tracker == new_tracker

@@ -4,6 +4,7 @@ import contextlib
 import itertools
 import json
 import os
+from datetime import datetime
 from time import sleep
 from typing import (
     TYPE_CHECKING,
@@ -552,4 +553,30 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
 
         return itertools.islice(
             tracker.events, number_of_events_since_last_session, len(tracker.events)
+        )
+
+    async def update(self, tracker_to_keep: DialogueStateTracker) -> None:
+        """Overwrite the tracker in the SQL tracker store."""
+        with self.session_scope() as session:
+            # Delete events whose timestamp are older
+            # than the first event of the tracker to keep.
+            statement = sa.delete(self.SQLEvent).where(
+                self.SQLEvent.sender_id == tracker_to_keep.sender_id,
+                self.SQLEvent.timestamp < tracker_to_keep.events[0].timestamp
+                if tracker_to_keep.events
+                else 0,
+            )
+
+            result = session.execute(statement)
+            session.commit()
+
+        first_event_timestamp = str(
+            datetime.fromtimestamp(tracker_to_keep.events[0].timestamp)
+        )
+
+        structlogger.info(
+            "sql_tracker_store.update.updated_tracker",
+            sender_id=tracker_to_keep.sender_id,
+            first_event_timestamp=first_event_timestamp,
+            event_info=f"{result.rowcount} rows removed from tracker.",
         )

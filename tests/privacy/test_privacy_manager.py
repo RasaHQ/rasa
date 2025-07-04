@@ -15,7 +15,6 @@ from structlog.testing import capture_logs
 from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.brokers.kafka import KafkaEventBroker
 from rasa.core.tracker_stores.tracker_store import (
-    FailSafeTrackerStore,
     InMemoryTrackerStore,
 )
 from rasa.privacy.constants import USER_CHAT_INACTIVITY_IN_MINUTES_ENV_VAR_NAME
@@ -228,10 +227,7 @@ async def test_create_background_privacy_manager(
     assert isinstance(privacy_manager, BackgroundPrivacyManager)
 
     assert privacy_manager.tracker_store.event_broker is None
-    assert isinstance(privacy_manager.tracker_store, FailSafeTrackerStore)
-    assert isinstance(
-        privacy_manager.tracker_store._tracker_store, InMemoryTrackerStore
-    )
+    assert isinstance(privacy_manager.tracker_store, InMemoryTrackerStore)
 
     assert len(privacy_manager.event_brokers) == 1
     broker = privacy_manager.event_brokers[0]
@@ -590,6 +586,11 @@ async def test_privacy_manager_run_tracker_store_deletion_retained_events(
     privacy_manager = await BackgroundPrivacyManager.create_instance(
         AvailableEndpoints.read_endpoints(str(tmp_path / "endpoints.yml")),
     )
+    mock_tracker_store_delete = AsyncMock()
+    monkeypatch.setattr(
+        privacy_manager.tracker_store, "delete", mock_tracker_store_delete
+    )
+
     await privacy_manager.tracker_store.save(unanonymized_tracker)
     privacy_manager.tracker_store.domain = pii_domain
 
@@ -601,6 +602,7 @@ async def test_privacy_manager_run_tracker_store_deletion_retained_events(
     assert tracker is not None
     assert len(tracker.events) == 3, "Tracker should retain events after inactivity."
     assert list(tracker.events) == new_tracker_events
+    mock_tracker_store_delete.assert_not_called()
 
     privacy_manager.stop()
 

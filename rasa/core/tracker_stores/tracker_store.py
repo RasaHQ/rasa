@@ -251,6 +251,14 @@ class TrackerStore:
         """
         raise NotImplementedError()
 
+    async def update(self, tracker: DialogueStateTracker) -> None:
+        """Replace an existing tracker with a new one.
+
+        Args:
+            tracker: The tracker to update.
+        """
+        raise NotImplementedError()
+
     async def retrieve_full_tracker(
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
@@ -478,6 +486,14 @@ class InMemoryTrackerStore(TrackerStore, SerializedTrackerAsText):
 
         return multiple_tracker_sessions[-1]
 
+    async def update(self, tracker: DialogueStateTracker) -> None:
+        """Replace an existing tracker with a new one.
+
+        Args:
+            tracker: The tracker to update.
+        """
+        await self.save(tracker)
+
 
 def validate_port(port: Any) -> Optional[int]:
     """Ensure that port can be converted to integer.
@@ -583,7 +599,19 @@ class FailSafeTrackerStore(TrackerStore):
 
     async def delete(self, sender_id: Text) -> None:
         """Delete tracker for the given sender_id."""
-        await self._tracker_store.delete(sender_id)
+        try:
+            await self._tracker_store.delete(sender_id)
+        except Exception as e:
+            self.on_tracker_store_error(e)
+            await self.fallback_tracker_store.delete(sender_id)
+
+    async def update(self, tracker: DialogueStateTracker) -> None:
+        """Replace an existing tracker with a new one."""
+        try:
+            await self._tracker_store.update(tracker)
+        except Exception as e:
+            self.on_tracker_store_error(e)
+            await self.fallback_tracker_store.update(tracker)
 
     async def retrieve_full_tracker(
         self, sender_id: Text
@@ -793,7 +821,13 @@ class AwaitableTrackerStore(TrackerStore):
 
     async def delete(self, sender_id: Text) -> None:
         """Delete tracker for the given sender_id."""
-        await self._tracker_store.delete(sender_id)
+        result = self._tracker_store.delete(sender_id)
+        return await result if isawaitable(result) else result
+
+    async def update(self, tracker: DialogueStateTracker) -> None:
+        """Replace an existing tracker with a new one."""
+        result = self._tracker_store.update(tracker)
+        return await result if isawaitable(result) else result
 
     async def retrieve_full_tracker(
         self, conversation_id: Text

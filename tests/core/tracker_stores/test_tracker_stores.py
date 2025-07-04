@@ -187,6 +187,19 @@ async def test_fail_safe_tracker_store_if_no_errors():
     assert await tracker_store.keys() == expected
     mocked_tracker_store.keys.assert_called_once()
 
+    # test update
+    tracker = DialogueStateTracker.from_events(
+        "test_update", [ActionExecuted("action_listen")]
+    )
+    mocked_tracker_store.update = AsyncMock()
+    await tracker_store.update(tracker)
+    mocked_tracker_store.update.assert_called_once()
+
+    # test delete
+    mocked_tracker_store.delete = AsyncMock()
+    await tracker_store.delete("test-sender-id")
+    mocked_tracker_store.delete.assert_called_once_with("test-sender-id")
+
 
 async def test_fail_safe_tracker_store_with_save_error():
     mocked_tracker_store = Mock()
@@ -480,6 +493,27 @@ async def test_wrapper_tracker_stores_delete(
     mocked_inner_tracker_store.delete.assert_called_once_with(sender_id)
 
 
+@pytest.mark.parametrize(
+    "tracker_store_type",
+    [
+        FailSafeTrackerStore,
+        AwaitableTrackerStore,
+    ],
+)
+async def test_wrapper_tracker_stores_update(
+    tracker_store_type: Type[TrackerStore],
+) -> None:
+    mocked_inner_tracker_store = Mock()
+    tracker_store = tracker_store_type(mocked_inner_tracker_store)
+
+    mocked_inner_tracker_store.update = AsyncMock()
+    tracker = DialogueStateTracker.from_events(
+        "test_update", [ActionExecuted("action_listen")]
+    )
+    await tracker_store.update(tracker)
+    mocked_inner_tracker_store.update.assert_called_once_with(tracker)
+
+
 @pytest.fixture(
     params=[
         "data/test_endpoints/event_brokers/kafka_pii_endpoint.yml",
@@ -558,3 +592,42 @@ async def test_tracker_store_stream_events_with_pii(
     await tracker_store.stream_events(tracker)
     # Then
     mock_stream_new_events.assert_called_once()
+
+
+async def test_fail_safe_tracker_store_with_update_error():
+    mocked_tracker_store = Mock()
+    mocked_tracker_store.save = Mock(side_effect=Exception())
+
+    fallback_tracker_store = Mock()
+    fallback_tracker_store.update = AsyncMock()
+
+    on_error_callback = Mock()
+
+    tracker_store = FailSafeTrackerStore(
+        mocked_tracker_store, on_error_callback, fallback_tracker_store
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test_with_pii", [ActionExecuted("action_listen")]
+    )
+    await tracker_store.update(tracker)
+
+    fallback_tracker_store.update.assert_called_once()
+    on_error_callback.assert_called_once()
+
+
+async def test_fail_safe_tracker_store_with_delete_error():
+    mocked_tracker_store = Mock()
+    mocked_tracker_store.save = Mock(side_effect=Exception())
+
+    fallback_tracker_store = Mock()
+    fallback_tracker_store.delete = AsyncMock()
+
+    on_error_callback = Mock()
+
+    tracker_store = FailSafeTrackerStore(
+        mocked_tracker_store, on_error_callback, fallback_tracker_store
+    )
+    await tracker_store.delete("test-sender-id")
+
+    fallback_tracker_store.delete.assert_called_once()
+    on_error_callback.assert_called_once()

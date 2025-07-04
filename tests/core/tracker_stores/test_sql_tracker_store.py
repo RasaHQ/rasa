@@ -38,7 +38,7 @@ from rasa.shared.core.events import (
     SessionStarted,
     UserUttered,
 )
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.tracker_stores.conftest import (
@@ -633,3 +633,38 @@ async def test_sql_tracker_store_delete_no_tracker() -> None:
         )
 
         assert len(logs) == 1
+
+
+async def test_sql_tracker_store_update_tracker() -> None:
+    # Given
+    sender_id = uuid.uuid4().hex
+    empty_domain = Domain.empty()
+    tracker_store = SQLTrackerStore(empty_domain, **{"host": "sqlite:///"})
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("hi"),
+            ActionExecuted(ACTION_SESSION_START_NAME),
+            SessionStarted(),
+            UserUttered("What's the weather like today?"),
+        ],
+    )
+    await tracker_store.save(tracker)
+    new_events = list(tracker.events)[3:]
+    new_tracker = DialogueStateTracker.from_events(
+        sender_id,
+        new_events,
+        slots=empty_domain.slots,
+        domain=empty_domain,
+    )
+
+    # When
+    await tracker_store.update(new_tracker)
+
+    # Then
+    updated_tracker = await tracker_store.retrieve_full_tracker(sender_id)
+    assert updated_tracker.current_state(
+        EventVerbosity.ALL
+    ) == new_tracker.current_state(EventVerbosity.ALL)

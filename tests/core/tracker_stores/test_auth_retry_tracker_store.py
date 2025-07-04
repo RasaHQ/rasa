@@ -66,6 +66,9 @@ def mock_tracker_store(moodbot_domain: Domain) -> AsyncMock:
     tracker_store.save = AsyncMock(side_effect=Exception)
     tracker_store.retrieve = AsyncMock(side_effect=Exception)
     tracker_store.keys = AsyncMock(side_effect=Exception)
+    tracker_store.update = AsyncMock(side_effect=Exception)
+    tracker_store.delete = AsyncMock(side_effect=Exception)
+    tracker_store.retrieve_full_tracker = AsyncMock(side_effect=Exception)
 
     return tracker_store
 
@@ -79,6 +82,9 @@ def mock_new_tracker_store(moodbot_domain: Domain) -> AsyncMock:
     tracker_store.save = AsyncMock()
     tracker_store.retrieve = AsyncMock()
     tracker_store.keys = AsyncMock()
+    tracker_store.update = AsyncMock()
+    tracker_store.delete = AsyncMock()
+    tracker_store.retrieve_full_tracker = AsyncMock()
 
     return tracker_store
 
@@ -586,3 +592,294 @@ async def test_wrapper_tracker_stores_delete(monkeypatch: MonkeyPatch) -> None:
     sender_id = uuid.uuid4().hex
     await tracker_store.delete(sender_id)
     mocked_inner_tracker_store.delete.assert_called_once_with(sender_id)
+
+
+async def test_wrapper_tracker_stores_update(monkeypatch: MonkeyPatch) -> None:
+    mocked_inner_tracker_store = MagicMock(spec=TrackerStore)
+    monkeypatch.setattr(
+        "rasa.core.tracker_stores.auth_retry_tracker_store.AuthRetryTrackerStore.recreate_tracker_store",
+        lambda *args, **kwargs: mocked_inner_tracker_store,
+    )
+    tracker_store = AuthRetryTrackerStore(mocked_inner_tracker_store, EndpointConfig())
+
+    mocked_inner_tracker_store.update = AsyncMock()
+    tracker = DialogueStateTracker.from_events(
+        sender_id="test_sender",
+        evts=[UserUttered("test message")],
+    )
+    await tracker_store.update(tracker)
+    mocked_inner_tracker_store.update.assert_called_once_with(tracker)
+
+
+async def test_auth_retry_tracker_store_update_successful_with_exception(
+    moodbot_domain: Domain,
+    mock_tracker_store: AsyncMock,
+    mock_auth_retry_tracker_store_recreate_tracker_store: MagicMock,
+    mock_new_tracker_store: AsyncMock,
+    sender_id: str,
+    caplog: LogCaptureFixture,
+) -> None:
+    mock_auth_retry_tracker_store_recreate_tracker_store.side_effect = [
+        mock_tracker_store,
+        mock_new_tracker_store,
+    ]
+
+    auth_retry_tracker_store = AuthRetryTrackerStore(
+        endpoint_config=EndpointConfig(),
+        domain=moodbot_domain,
+        retries=1,
+        event_broker=EventBroker(),
+    )
+
+    with caplog.at_level(logging.WARNING):
+        tracker = DialogueStateTracker.from_events(
+            sender_id=sender_id,
+            evts=[UserUttered("test message")],
+        )
+        await auth_retry_tracker_store.update(tracker)
+
+    assert auth_retry_tracker_store._tracker_store == mock_new_tracker_store
+    mock_auth_retry_tracker_store_recreate_tracker_store.assert_has_calls(
+        [
+            call(
+                auth_retry_tracker_store.domain,
+                auth_retry_tracker_store.event_broker,
+            ),
+            call(
+                auth_retry_tracker_store.domain,
+                auth_retry_tracker_store.event_broker,
+            ),
+        ]
+    )
+
+    mock_tracker_store.update.assert_called_once_with(tracker)
+
+    log_msg = f"Failed to replace tracker for {sender_id}. Retrying..."
+    assert log_msg in caplog.text
+
+
+async def test_auth_retry_tracker_store_update_unsuccessful_after_max_retries(
+    moodbot_domain: Domain,
+    mock_tracker_store: AsyncMock,
+    mock_auth_retry_tracker_store_recreate_tracker_store: MagicMock,
+    sender_id: str,
+    caplog: LogCaptureFixture,
+) -> None:
+    retries = 1
+    mock_auth_retry_tracker_store_recreate_tracker_store.side_effect = [
+        mock_tracker_store,
+        mock_tracker_store,
+        mock_tracker_store,
+    ]
+
+    auth_retry_tracker_store = AuthRetryTrackerStore(
+        endpoint_config=EndpointConfig(),
+        domain=moodbot_domain,
+        retries=retries,
+        event_broker=EventBroker(),
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        tracker = DialogueStateTracker.from_events(
+            sender_id=sender_id,
+            evts=[UserUttered("test message")],
+        )
+        await auth_retry_tracker_store.update(tracker)
+
+    assert mock_tracker_store.update.call_count == 2
+
+    mock_auth_retry_tracker_store_recreate_tracker_store.assert_has_calls(
+        [
+            call(
+                auth_retry_tracker_store.domain, auth_retry_tracker_store.event_broker
+            ),
+            call(
+                auth_retry_tracker_store.domain, auth_retry_tracker_store.event_broker
+            ),
+            call(
+                auth_retry_tracker_store.domain, auth_retry_tracker_store.event_broker
+            ),
+        ]
+    )
+
+    log_msg = (
+        f"Failed to replace tracker for {tracker.sender_id} "
+        f"after {retries} retries."
+    )
+    assert log_msg in caplog.text
+
+
+async def test_auth_retry_tracker_store_delete_successful_with_exception(
+    moodbot_domain: Domain,
+    mock_tracker_store: AsyncMock,
+    mock_auth_retry_tracker_store_recreate_tracker_store: MagicMock,
+    mock_new_tracker_store: AsyncMock,
+    sender_id: str,
+    caplog: LogCaptureFixture,
+) -> None:
+    mock_auth_retry_tracker_store_recreate_tracker_store.side_effect = [
+        mock_tracker_store,
+        mock_new_tracker_store,
+    ]
+
+    auth_retry_tracker_store = AuthRetryTrackerStore(
+        endpoint_config=EndpointConfig(),
+        domain=moodbot_domain,
+        retries=1,
+        event_broker=EventBroker(),
+    )
+
+    with caplog.at_level(logging.WARNING):
+        await auth_retry_tracker_store.delete(sender_id)
+
+    assert auth_retry_tracker_store._tracker_store == mock_new_tracker_store
+    mock_auth_retry_tracker_store_recreate_tracker_store.assert_has_calls(
+        [
+            call(
+                auth_retry_tracker_store.domain,
+                auth_retry_tracker_store.event_broker,
+            ),
+            call(
+                auth_retry_tracker_store.domain,
+                auth_retry_tracker_store.event_broker,
+            ),
+        ]
+    )
+
+    mock_tracker_store.delete.assert_called_once_with(sender_id)
+
+    log_msg = f"Failed to delete tracker for {sender_id}. Retrying..."
+    assert log_msg in caplog.text
+
+
+async def test_auth_retry_tracker_store_delete_unsuccessful_after_max_retries(
+    moodbot_domain: Domain,
+    mock_tracker_store: AsyncMock,
+    mock_auth_retry_tracker_store_recreate_tracker_store: MagicMock,
+    sender_id: str,
+    caplog: LogCaptureFixture,
+) -> None:
+    retries = 1
+    mock_auth_retry_tracker_store_recreate_tracker_store.side_effect = [
+        mock_tracker_store,
+        mock_tracker_store,
+        mock_tracker_store,
+    ]
+
+    auth_retry_tracker_store = AuthRetryTrackerStore(
+        endpoint_config=EndpointConfig(),
+        domain=moodbot_domain,
+        retries=retries,
+        event_broker=EventBroker(),
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        await auth_retry_tracker_store.delete(sender_id)
+
+    assert mock_tracker_store.delete.call_count == 2
+
+    mock_auth_retry_tracker_store_recreate_tracker_store.assert_has_calls(
+        [
+            call(
+                auth_retry_tracker_store.domain, auth_retry_tracker_store.event_broker
+            ),
+            call(
+                auth_retry_tracker_store.domain, auth_retry_tracker_store.event_broker
+            ),
+            call(
+                auth_retry_tracker_store.domain, auth_retry_tracker_store.event_broker
+            ),
+        ]
+    )
+
+    log_msg = f"Failed to delete tracker for {sender_id} " f"after {retries} retries."
+    assert log_msg in caplog.text
+
+
+async def test_auth_retry_tracker_store_retrieve_full_tracker_successful_with_exception(
+    moodbot_domain: Domain,
+    mock_tracker_store: AsyncMock,
+    mock_auth_retry_tracker_store_recreate_tracker_store: MagicMock,
+    mock_new_tracker_store: AsyncMock,
+    sender_id: str,
+    caplog: LogCaptureFixture,
+) -> None:
+    mock_auth_retry_tracker_store_recreate_tracker_store.side_effect = [
+        mock_tracker_store,
+        mock_new_tracker_store,
+    ]
+
+    auth_retry_tracker_store = AuthRetryTrackerStore(
+        endpoint_config=EndpointConfig(),
+        domain=moodbot_domain,
+        retries=1,
+        event_broker=EventBroker(),
+    )
+
+    with caplog.at_level(logging.WARNING):
+        await auth_retry_tracker_store.retrieve_full_tracker(sender_id)
+
+    assert auth_retry_tracker_store._tracker_store == mock_new_tracker_store
+    mock_auth_retry_tracker_store_recreate_tracker_store.assert_has_calls(
+        [
+            call(
+                auth_retry_tracker_store.domain,
+                auth_retry_tracker_store.event_broker,
+            ),
+            call(
+                auth_retry_tracker_store.domain,
+                auth_retry_tracker_store.event_broker,
+            ),
+        ]
+    )
+
+    mock_tracker_store.retrieve_full_tracker.assert_called_once_with(sender_id)
+
+    log_msg = f"Failed to retrieve full tracker for {sender_id}. Retrying..."
+    assert log_msg in caplog.text
+
+
+async def test_auth_retry_tracker_store_retrieve_full_tracker_unsuccessful_after_max_retries(  # noqa: E501
+    moodbot_domain: Domain,
+    mock_tracker_store: AsyncMock,
+    mock_auth_retry_tracker_store_recreate_tracker_store: MagicMock,
+    sender_id: str,
+    caplog: LogCaptureFixture,
+) -> None:
+    retries = 1
+    mock_auth_retry_tracker_store_recreate_tracker_store.side_effect = [
+        mock_tracker_store,
+        mock_tracker_store,
+        mock_tracker_store,
+    ]
+
+    auth_retry_tracker_store = AuthRetryTrackerStore(
+        endpoint_config=EndpointConfig(),
+        domain=moodbot_domain,
+        retries=retries,
+        event_broker=EventBroker(),
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        await auth_retry_tracker_store.retrieve_full_tracker(sender_id)
+
+    assert mock_tracker_store.retrieve_full_tracker.call_count == 2
+
+    mock_auth_retry_tracker_store_recreate_tracker_store.assert_has_calls(
+        [
+            call(
+                auth_retry_tracker_store.domain, auth_retry_tracker_store.event_broker
+            ),
+            call(
+                auth_retry_tracker_store.domain, auth_retry_tracker_store.event_broker
+            ),
+            call(
+                auth_retry_tracker_store.domain, auth_retry_tracker_store.event_broker
+            ),
+        ]
+    )
+
+    log_msg = (
+        f"Failed to retrieve full tracker for {sender_id} " f"after {retries} retries."
+    )
+    assert log_msg in caplog.text

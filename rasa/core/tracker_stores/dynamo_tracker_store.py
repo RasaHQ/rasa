@@ -216,3 +216,13 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
             sender_ids.extend([i["sender_id"] for i in response["Items"]])
 
         return sender_ids
+
+    async def update(self, tracker: DialogueStateTracker) -> None:
+        """Overwrites the tracker for the given sender_id."""
+        serialized = self.serialise_tracker(tracker)
+        self.db.put_item(Item=serialized)
+
+        structlogger.info(
+            "dynamo_tracker_store.replace.replaced_tracker",
+            sender_id=tracker.sender_id,
+        )

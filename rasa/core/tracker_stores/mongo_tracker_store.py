@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+from datetime import datetime
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Text
 
 import structlog
@@ -204,3 +205,19 @@ class MongoTrackerStore(TrackerStore, SerializedTrackerAsText):
     async def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the Mongo Tracker Store."""
         return [c["sender_id"] for c in self.conversations.find()]
+
+    async def update(self, tracker: DialogueStateTracker) -> None:
+        """Overwrites the tracker for the given sender_id."""
+        self.conversations.replace_one(
+            {"sender_id": tracker.sender_id},
+            tracker.current_state(EventVerbosity.ALL),
+            upsert=True,
+        )
+
+        first_event_timestamp = str(datetime.fromtimestamp(tracker.events[0].timestamp))
+
+        structlogger.info(
+            "redis_tracker_store.update.updated_tracker",
+            sender_id=tracker.sender_id,
+            first_event_timestamp=first_event_timestamp,
+        )

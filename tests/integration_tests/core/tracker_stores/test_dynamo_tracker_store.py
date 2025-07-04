@@ -85,3 +85,22 @@ async def test_dynamo_tracker_store_delete(
 
     tracker = await dynamo_tracker_store.retrieve(sender_id)
     assert tracker is None
+
+
+async def test_dynamo_tracker_store_update(
+    dynamo_tracker_store: DynamoTrackerStore,
+    tracker_with_restarted_event: DialogueStateTracker,
+    events_after_restart: List[Event],
+) -> None:
+    if not await dynamo_tracker_store.exists(tracker_with_restarted_event.sender_id):
+        await dynamo_tracker_store.save(tracker_with_restarted_event)
+
+    sender_id = tracker_with_restarted_event.sender_id
+    new_tracker = DialogueStateTracker.from_events(
+        sender_id=sender_id,
+        evts=events_after_restart,
+    )
+    await dynamo_tracker_store.update(new_tracker)
+
+    tracker = await dynamo_tracker_store.retrieve(sender_id)
+    assert tracker == new_tracker
