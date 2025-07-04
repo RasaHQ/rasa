@@ -249,7 +249,7 @@ flows:
                 next: END
 
   pattern_repeat_bot_messages:
-    description: Voice conversation repair pattern to repeat bot messages
+    description: Conversation repair flow for repeating previous messages
     name: pattern repeat bot messages
     steps:
       - action: action_repeat_bot_messages
