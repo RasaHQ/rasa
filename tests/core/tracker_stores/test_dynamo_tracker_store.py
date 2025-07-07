@@ -12,8 +12,15 @@ from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core.tracker_stores.dynamo_tracker_store import DynamoTrackerStore
 from rasa.core.tracker_stores.tracker_store import TrackerStore
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import SlotSet, UserUttered
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.events import (
+    ActionExecuted,
+    BotUttered,
+    Restarted,
+    SessionStarted,
+    SlotSet,
+    UserUttered,
+)
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import EndpointConfig
 from tests.core.tracker_stores.conftest import (
@@ -163,3 +170,119 @@ async def test_dynamo_tracker_store_update_tracker(mock_dynamodb: Any) -> None:
     # Then
     updated_tracker = await tracker_store.retrieve(sender_id)
     assert updated_tracker == new_tracker
+
+
+async def test_dynamo_tracker_store_save_single_user_uttered(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    # Given
+    conversation_id = uuid.uuid4().hex
+    tracker_store = DynamoTrackerStore(test_domain)
+
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [
+            SessionStarted(),
+            ActionExecuted("action_session_start"),
+            SlotSet("session_started_metadata", {}),
+            ActionExecuted("action_listen"),
+            UserUttered("What's the weather like today?"),
+        ],
+        slots=test_domain.slots,
+        domain=test_domain,
+    )
+
+    # When
+    await tracker_store.save(tracker)
+
+    retrieved_tracker = await tracker_store.retrieve(conversation_id)
+    assert retrieved_tracker.current_state(
+        EventVerbosity.APPLIED
+    ) == tracker.current_state(EventVerbosity.APPLIED)
+
+
+async def test_dynamo_tracker_store_save_multiple_turns(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    # Given
+    conversation_id = uuid.uuid4().hex
+    tracker_store = DynamoTrackerStore(test_domain)
+
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [
+            SessionStarted(),
+            ActionExecuted("action_session_start"),
+            SlotSet("session_started_metadata", {}),
+            ActionExecuted("action_listen"),
+            UserUttered("What's the weather like today?"),
+            BotUttered("The weather is rainy."),
+        ],
+        slots=test_domain.slots,
+        domain=test_domain,
+    )
+
+    await tracker_store.save(tracker)
+
+    tracker.update_with_events(
+        [
+            UserUttered("Can you tell me the time?"),
+            BotUttered("Sure, it's 3 PM."),
+            ActionExecuted("action_listen"),
+        ],
+        domain=test_domain,
+    )
+
+    # When
+
+    await tracker_store.save(tracker)
+
+    retrieved_tracker = await tracker_store.retrieve(conversation_id)
+    assert retrieved_tracker.current_state(
+        EventVerbosity.APPLIED
+    ) == tracker.current_state(EventVerbosity.APPLIED)
+
+
+async def test_dynamo_tracker_store_save_multiple_sessions(
+    test_domain: Domain, mock_dynamodb: Any
+) -> None:
+    # Given
+    conversation_id = uuid.uuid4().hex
+    tracker_store = DynamoTrackerStore(test_domain)
+
+    tracker = DialogueStateTracker.from_events(
+        conversation_id,
+        [
+            SessionStarted(),
+            ActionExecuted("action_session_start"),
+            SlotSet("session_started_metadata", {}),
+            ActionExecuted("action_listen"),
+            UserUttered("What's the weather like today?"),
+            BotUttered("The weather is rainy."),
+        ],
+        slots=test_domain.slots,
+        domain=test_domain,
+    )
+
+    await tracker_store.save(tracker)
+
+    tracker.update_with_events(
+        [
+            UserUttered("/restart"),
+            ActionExecuted("action_restart"),
+            Restarted(),
+            SessionStarted(),
+            ActionExecuted("action_session_start"),
+            SlotSet("session_started_metadata", {}),
+            ActionExecuted("action_listen"),
+        ],
+        domain=test_domain,
+    )
+
+    # When
+    await tracker_store.save(tracker)
+
+    retrieved_tracker = await tracker_store.retrieve_full_tracker(conversation_id)
+    assert retrieved_tracker.current_state(EventVerbosity.ALL) == tracker.current_state(
+        EventVerbosity.ALL
+    )

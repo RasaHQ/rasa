@@ -109,7 +109,35 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
         await self.stream_events(tracker)
         serialized = self.serialise_tracker(tracker)
 
-        self.db.put_item(Item=serialized)
+        full_tracker = await self.retrieve_full_tracker(tracker.sender_id)
+        if full_tracker is None:
+            self.db.put_item(Item=serialized)
+            return None
+
+        # return the latest events since the last user message
+        new_tracker = DialogueStateTracker.from_dict(
+            serialized["sender_id"], events_as_dict=serialized["events"]
+        )
+        new_events = new_tracker.get_last_turn_events()
+        new_serialized_events = [event.as_dict() for event in new_events]
+
+        # we need to save the full tracker if it is a new tracker
+        # without events following a user message
+        if not new_serialized_events:
+            self.db.put_item(Item=serialized)
+            return None
+
+        # append new events to the existing tracker
+        self.db.update_item(
+            Key={"sender_id": tracker.sender_id},
+            UpdateExpression="SET events = list_append(if_not_exists(events, :empty_list), :events)",  # noqa: E501
+            ExpressionAttributeValues={
+                ":events": new_serialized_events,
+                ":empty_list": [],
+            },
+            ReturnValues="UPDATED_NEW",
+        )
+        return None
 
     async def delete(self, sender_id: Text) -> None:
         """Delete tracker for the given sender_id."""
@@ -181,7 +209,7 @@ class DynamoTrackerStore(TrackerStore, SerializedTrackerAsDict):
                 events = rasa.utils.json_utils.replace_decimals_with_floats(
                     dialogue["events"]
                 )
-                events_with_floats += events
+                events_with_floats.extend(events)
 
         if self.domain is None:
             slots = []

@@ -1170,6 +1170,23 @@ class DialogueStateTracker:
                 "Example: `language: en`."
             )
 
+    def get_last_turn_events(self) -> List[Event]:
+        """Get all events of the last conversation turn."""
+        last_user_message = self.get_last_event_for(
+            UserUttered, event_verbosity=EventVerbosity.ALL
+        )
+        if not last_user_message:
+            return []
+
+        last_turn_events = []
+        for event in reversed(self.events):
+            if event.timestamp >= last_user_message.timestamp:
+                last_turn_events.append(event)
+            else:
+                break
+
+        return list(reversed(last_turn_events))
+
 
 class TrackerEventDiffEngine:
     """Computes event difference of two trackers."""
