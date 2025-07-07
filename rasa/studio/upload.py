@@ -171,6 +171,7 @@ def handle_upload(args: argparse.Namespace) -> None:
 
     config = read_yaml_file(args.config, expand_env_vars=False)
     assistant_name = args.assistant_name or _get_assistant_name(config)
+    args.assistant_name = assistant_name
     if not _handle_existing_assistant(
         assistant_name, studio_config.studio_url, verify, args
     ):
