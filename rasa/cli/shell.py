@@ -6,6 +6,7 @@ from typing import List
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
+from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.exceptions import ModelNotFound
 from rasa.model import get_local_model
@@ -105,7 +106,11 @@ def shell(args: argparse.Namespace) -> None:
     from rasa.shared.constants import DEFAULT_MODELS_PATH
 
     args.connector = "cmdline"
-
+    # Load endpoints with proper endpoint file location
+    # This will initialise the endpoints singleton properly so that
+    # it can be used safely throughout the codebase with
+    # `AvailableEndpoints.get_instance()`
+    AvailableEndpoints.get_instance(args.endpoints)
     model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 
     try:

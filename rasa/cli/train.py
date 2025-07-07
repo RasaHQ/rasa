@@ -112,6 +112,10 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     )
     config = rasa.cli.utils.get_validated_config(args.config, CONFIG_MANDATORY_KEYS)
 
+    # Validates and loads endpoints with proper endpoint file location
+    # This will initialise the endpoints singleton properly so that
+    # it can be used safely throughout the codebase with
+    # `AvailableEndpoints.get_instance()`
     _check_nlg_endpoint_validity(args.endpoints)
 
     training_files = [
