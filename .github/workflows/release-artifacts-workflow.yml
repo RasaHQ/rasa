@@ -74,12 +74,12 @@ on:
         description: "Path to test file. Ignored unless `run_e2e_test_on_providers==true`"
         type: string
         required: true
-        default: "e2e/e2e_tests_with_assertions/test/happy_path/user_checks_balance.yml"
+        default: "e2e_tests/tests_for_github_workflows/user_checks_balance.yml"
       search-ready-e2e-test-with-assertions:
         description: "Path to test file, to be run with search-ready-LLM-Generator trained model"
         type: string
         required: true
-        default: "e2e_tests_with_assertions/knowledge_relevancy_check/chitchat_during_flow.yml"
+        default: e2e_tests/tests_for_github_workflows/chitchat_during_flow.yml"
 
 # SECRETS
 # - SLACK_BOT_TOKEN: token to post to RasaHQ slack account

@@ -227,6 +227,6 @@ jobs:
           provider: ${{ inputs.provider }}
           train-and-test: ${{ matrix.train-and-test }}
           rasa-calm-demo-branch: ${{ inputs.rasa-calm-demo-branch }}
-          single-step-tests: e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml
-          multi-step-tests: e2e_tests_with_assertions/passing/happy_path/user_checks_balance.yml
+          single-step-tests: e2e_tests/tests_for_github_workflows/user_checks_balance.yml
+          multi-step-tests: e2e_tests/tests_for_github_workflows/user_checks_balance.yml
           llm-judge-model: gpt-4.1-mini

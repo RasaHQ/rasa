@@ -27,12 +27,12 @@ inputs:
   compact-tests:
     description: "Path to test file(s)"
     required: true
-    default: "e2e/e2e_tests_with_assertions/test/happy_path/user_checks_balance.yml"
+    default: "e2e_tests/tests_for_github_workflows/user_checks_balance.yml"
 
   search-ready-tests:
     description: "Path to test file(s)"
     required: true
-    default: "e2e_tests_with_assertions/knowledge_relevancy_check/chitchat_during_flow.yml"
+    default: "e2e_tests/tests_for_github_workflows/chitchat_during_flow.yml"
 
 runs:
   using: composite
