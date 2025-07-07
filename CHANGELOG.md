@@ -10,6 +10,227 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.13.0] - 2025-07-07
+                        
+Rasa Pro 3.13.0 (2025-07-07)                             
+### Deprecations and Removals
+- [#2531](https://github.com/rasahq/rasa-private/issues/2531): Deprecate IntentlessPolicy and schedule for removal in Rasa `4.0.0`.
+- [#2610](https://github.com/rasahq/rasa-private/issues/2610): Removed `monitor_silence` parameter from Voice Channel configuration. Silence Monitoring is now enabled by default. It can be configured by changing the value of Global Silence Timeout
+- [#2628](https://github.com/rasahq/rasa-private/issues/2628): Remove pre-CALM PII management capability originally released in Rasa Plus 3.6.0.
+  Remove `presidio`, `faker` and `pycountry` dependencies from Rasa Pro.
+
+### Features
+- [#2507](https://github.com/rasahq/rasa-private/issues/2507): Introducing the `SearchReadyLLMCommandGenerator` component, an enhancement over the `CompactLLMCommandGenerator`.
+  This new component improves the triggering accuracy of `KnowledgeAnswerCommand` and should be used
+  when the `EnterpriseSearchPolicy` is added to the pipeline.
+  By default, this new component does not trigger the `ChitChatAnswerCommand` and `HumanHandoffCommand`.
+  Handling small talk and chit-chat conversations is now delegated to the `EnterpriseSearchPolicy`.
+
+  To incorporate the `SearchReadyLLMCommandGenerator` into your pipeline, simply add the following:
+
+  pipeline:
+
+  ```yaml
+  ...
+  - name: SearchReadyLLMCommandGenerator
+  ...
+  ```
+- [#2542](https://github.com/rasahq/rasa-private/issues/2542): Implement Privacy Filter capability to detect PII in 3 supported events (SlotSet, BotUttered, and UserUttered)
+  and anonymise PII from the event data.
+
+  The PII detection takes a tiered approach:
+  - the first tier represents a slot-based approach: the sensitive data is stored in a slot whose name is defined in the privacy YAML configuration.
+  - the second optional tier uses a default GliNer model to detect PII that is not captured by the slot-based approach.
+
+  The anonymisation of PII is done by redacting or replacing the sensitive data with a placeholder.
+  These anonymisation rules are also defined in the privacy YAML configuration.
+- [#2545](https://github.com/rasahq/rasa-private/issues/2545): `EnterpriseSearchPolicy` can now assess the relevancy of the generated answer.
+  By default, the policy does not check the relevancy of the generated answer.
+  But you enable the relevancy check by setting `check_relevancy` to `true` in the policy
+  configuration.
+
+  ```yaml
+    policies:
+      - name: FlowPolicy
+      - name: EnterpriseSearchPolicy
+        ...
+        check_relevancy: true # by default this is false
+  ```
+
+  If the relevancy check is enabled, the policy will evaluate the generated answer and determine if it is relevant
+  to the user's query. In case the answer is relevant, the generated answer will be returned to the user.
+  If the answer is not relevant, the policy will fallback to `pattern_cannot_handle` to handle the situation.
+
+  ```yaml
+  pattern_cannot_handle:
+    description: |
+      Conversation repair flow for addressing failed command generation scenarios
+    name: pattern cannot handle
+    steps:
+      - noop: true
+        next:
+            ... # other cases
+          # Fallback to handle cases where the generated answer is not relevant
+              - if: "'{{context.reason}}' = 'cannot_handle_no_relevant_answer'"
+              then:
+                - action: utter_no_relevant_answer_found
+                  next: "END"
+  ```
+- [#2596](https://github.com/rasahq/rasa-private/issues/2596): Implement privacy manager class which manages privacy-related tasks in the background.
+
+  This class handles the anonymization and deletion of sensitive information
+  in dialogue state trackers stored in the tracker store, as well as the streaming of anonymized events
+  to event brokers. It uses background schedulers to periodically run these
+  tasks and processes trackers from a queue to ensure that sensitive information
+  is handled in a timely manner.
+- [#2622](https://github.com/rasahq/rasa-private/issues/2622): Add support for `jambonz_stream` voice-stream channel.
+  Log level of `websockets` library is set to `ERROR` by default, it can be changed by the environment variable `LOG_LEVEL_LIBRARIES`.
+- [#2627](https://github.com/rasahq/rasa-private/issues/2627): Remove the beta feature flag check from the `RepeatBotMessagesCommand`. The `RASA_PRO_BETA_REPEAT_COMMAND` environment variable is no longer needed as the feature is GA in 3.13.0.
+
+### Improvements
+- [#1938](https://github.com/rasahq/rasa-private/issues/1938): Coverage report feature can now be used independently of RASA_PRO_BETA_FINE_TUNING_RECIPE feature flag.
+- [#1977](https://github.com/rasahq/rasa-private/issues/1977): Update default Embedding model from `text-embedding-ada-002` to `text-embedding-3-large`.
+  Update `LLMBasedRouter`, `IntentlessPolicy` and `ContextualResponseRephraser` default models to use `gpt-4o-2024-11-20` instead of `gpt-3.5-turbo`.
+  Update the `EnterpriseSearchPolicy` to use `gpt-4.1-mini-2025-04-14` instead of `gpt-3.5-turbo`.
+- [#2006](https://github.com/rasahq/rasa-private/issues/2006): Update `MultistepCommandGenerator` to use `gpt-4o`, specifically `gpt-4o-2024-11-20`, instead of `gpt-3.5-turbo` as `gpt-3.5-turbo` will be deprecated on July 16, 2025.
+  Add deprecation warning for `SingleStepCommandGenerator`; leave current default model as `gpt-4-0613`.
+  Adapt tests for CommandGenerators to use `gpt-4o` instead of `gpt-3.5-turbo` due to upcoming model deprecation.
+  Update `LLMJudgeModel` and `Fine tuning Conversation Rephraser` to use `gpt-4.1-mini`, specifically `gpt-4.1-mini-2025-04-14`, instead of `gpt-4o-mini`, as `gpt-4o-mini` will be deprecated on September 15, 2025.
+- [#2230](https://github.com/rasahq/rasa-private/issues/2230): Make `CALM` template the default for `rasa init`.
+- [#2287](https://github.com/rasahq/rasa-private/issues/2287): Redis lock store now accepts `host` property from endpoints config.
+  Property `url` is marked as deprecated for Redis lock store.
+- [#2306](https://github.com/rasahq/rasa-private/issues/2306): Added support for basic authentication in Twilio channels (Voice Ready and Voice Streaming).
+  This allows users to authenticate their Twilio channels using basic authentication credentials, enhancing security and access control for voice communication.
+  To use this feature, set `username` and `password` in the Twilio channel configuration.
+  ```yaml title="credentials.yaml"
+  twilio_voice:
+      username: your_username
+      password: your_password
+      ...
+
+  twilio_media_streams:
+      username: your_username
+      password: your_password
+      ...
+  ```
+
+  At Twilio, configure the webhook URL to include the basic authentication credentials:
+  ```
+  # twilio voice webhook
+  https://<username>:<password>@yourdomain.com/webhooks/twilio_voice/webhook
+
+  # twilio media streams webhook
+  https://<username>:<password>@yourdomain.com/webhooks/twilio_media_streams/webhook
+  ```
+- [#2399](https://github.com/rasahq/rasa-private/issues/2399): Added two endpoints to the model service for retrieving the assistant’s default configuration and the default project template used by the assistant.
+- [#2424](https://github.com/rasahq/rasa-private/issues/2424): All conversations on Twilio Media Streams, Audiocodes Stream, Genesys channel ends with the message `/session_end`. This applies to both the conversation ended by user and the assistant.
+- [#2451](https://github.com/rasahq/rasa-private/issues/2451): Refactor Voice Inspector to use AudioWorklet Web API
+- [#2463](https://github.com/rasahq/rasa-private/issues/2463): Added new CLI commands to support project-level linking and granular push/pull workflows for Rasa Studio assistants:
+
+  - Introduced `rasa studio link` to associate a local project with a specific Studio assistant.
+  - Added `rasa studio pull` and `rasa studio push`, with subcommands for granular resource updates (`config`, `endpoints`) between local and Studio assistants.
+- [#2471](https://github.com/rasahq/rasa-private/issues/2471): Implement `delete` method for `InMemoryTrackerStore`,`AuthRetryTrackerStore`, `AwaitableTrackerStore` and `FailSafeTrackerStore` subclasses.
+- [#2487](https://github.com/rasahq/rasa-private/issues/2487): Implement `delete` method for `MongoTrackerStore`.
+- [#2492](https://github.com/rasahq/rasa-private/issues/2492): Implement `delete` method for SQLTrackerStore: this method accepts sender_id and
+  deletes the corresponding tracker from the store if it exists.
+- [#2496](https://github.com/rasahq/rasa-private/issues/2496): Implement `delete` method for DynamoTrackerStore: this method accepts sender_id and
+  deletes the corresponding tracker from the store if it exists.
+- [#2499](https://github.com/rasahq/rasa-private/issues/2499): Implement `delete` method for `RedisTrackerStore`.
+- [#2501](https://github.com/rasahq/rasa-private/issues/2501): Update `KafkaEventBroker` YAML config to accept 2 new parameters:
+  - `stream_pii`: boolean (default: true). If set to `false`, the broker will not publish un-anonymised events to the configured topic.
+  - `anonymization_topics`: list of strings (default: []). If set, the broker will publish anonymised events to the configured topics when the PII management capability is enabled.
+- [#2503](https://github.com/rasahq/rasa-private/issues/2503): Add 2 new PII configuration parameters to `PikaEventBroker`:
+  - `stream_pii`: Boolean flag to control whether or not to publish un-anonymised events to the configured `queues`. If set to False, un-anonymised events won't be published to RabbitMQ. Defaults to `True` for backwards compatibility.
+  - `anonymization_queues`: List of queue names that should receive anonymized events with PII removed. Defaults to an empty list (`[]`).
+- [#2505](https://github.com/rasahq/rasa-private/issues/2505): Add a new `anonymized_at` timestamp field to the Rasa Pro events supported by the PII management capability:
+  - `user`
+  - `slot`
+  - `bot`
+  This field indicates when the PII data in the event was anonymized. The field is set to `null` if the PII data has not been anonymized.
+- [#2512](https://github.com/rasahq/rasa-private/issues/2512): Add support for reading `privacy` configuration key from endpoints file to enable PII management capability.
+- [#2527](https://github.com/rasahq/rasa-private/issues/2527): Add new `DELETE /conversations/<conversation_id>/tracker` endpoint that allows deletion of tracker data for a specific conversation.
+- [#2597](https://github.com/rasahq/rasa-private/issues/2597): Cleaned up potential sources of PII from `info`, `exception` and `error` logs.
+- [#2647](https://github.com/rasahq/rasa-private/issues/2647): Allow default patterns to link to `pattern_chitchat`.
+- [#2648](https://github.com/rasahq/rasa-private/issues/2648): Cleaned up potential sources of PII from `warning` logs.
+- [#2675](https://github.com/rasahq/rasa-private/issues/2675): Add a warning log to alert users when exporting tracker data that contains unanonymized events.
+- [#2690](https://github.com/rasahq/rasa-private/issues/2690): Remove beta feature flag for pypred predicate usage in conditional response variations.
+  Mark this functionality for general availability (GA).
+- [#2775](https://github.com/rasahq/rasa-private/issues/2775): Updated the default behavior of `pattern_chitchat`. With the deprecation of
+  `IntentlessPolicy`, `pattern_chitchat` now defaults to responding with 
+  `utter_cannot_handle` instead of triggering `action_trigger_chitchat`.
+- [#2776](https://github.com/rasahq/rasa-private/issues/2776): PII deletion job now performs a single database transaction in the case of trackers with multiple sessions, where only some
+  sessions are eligible for deletion. The deletion job overwrites the serialized tracker record with the retained events
+  only. This ensures that the tracker store is updated atomically, preventing any potential tracker data loss in case of
+  Rasa Pro server crashes or other issues during the deletion job execution.
+
+### Bugfixes
+- [#1986](https://github.com/rasahq/rasa-private/issues/1986): Fixes a bug where fine-tuning data generation raises a FineTuningDataPreparationException
+  for test cases without assertions that end with one/multiple user utterance/s,
+  as opposed to one/multiple bot utterance/s.
+
+  For these types of test cases, the fine-tuning data generation transcript now contains
+  all test case utterances up to but excluding the last user utterance(s) as the test case
+  does not specify the corresponding, expected bot response(s).
+- [#2126](https://github.com/rasahq/rasa-private/issues/2126): allowed for usage of litellm model prefixes that do not end in '<provider>/'
+- [#2153](https://github.com/rasahq/rasa-private/issues/2153): Fixes a bug in Inspector that raised a TypeError when serialising `numpy.float64` from Tracker
+- [#2174](https://github.com/rasahq/rasa-private/issues/2174): - Fixes an issue with prompt rendering where minified JSON structures were displayed without properly escaping newlines, tabs, and quotes.
+  - Introduced a new Jinja `filter to_json_encoded_string` that escapes newlines (`\n`), tabs (`\t`), and quotes (`\"`) for safe JSON rendering.
+    `to_json_encoded_string` filter preserves other special characters (e.g., umlauts) without encoding them.
+  - Updated the default prompts for `gpt-4o` and `claude-sonnet-3.5`
+- [#2177](https://github.com/rasahq/rasa-private/issues/2177): Fix intermittent crashes on Inspector app when Enterprise Search or Chitchat Policies were triggered
+- [#2256](https://github.com/rasahq/rasa-private/issues/2256): Add channel name to UserMessage created by the Audiocodes channel.
+- [#2276](https://github.com/rasahq/rasa-private/issues/2276): Reduced redundant log entries when reading prompt templates by contextualizing them.
+  Added source component and method metadata to logs, and changed prompt-loading logs
+  triggered from `fingerprint_addon` to use `DEBUG` level.
+- [#2452](https://github.com/rasahq/rasa-private/issues/2452): Prompts for rephrased messages and conversations are now rendered using agent, eliminating errors that occurred when string replacements broke after prompt updates.
+- [#2496](https://github.com/rasahq/rasa-private/issues/2496): Fix retrieval of latest tracker session from DynamoTrackerStore.
+- [#2541](https://github.com/rasahq/rasa-private/issues/2541): Files generated by the finetuning data generation pipeline are now encoded in UTF-8, allowing characters such as German umlauts (ä, ö, ü) to render correctly.
+- [#2598](https://github.com/rasahq/rasa-private/issues/2598): Fix an issue where the SetSlot and Clarify command value was parsed incorrectly if a newline character immediately followed the value argument in the LLM output.
+- [#2603](https://github.com/rasahq/rasa-private/issues/2603): Fixed the repeat action to include all messages of the last turn in collect steps.
+- [#2608](https://github.com/rasahq/rasa-private/issues/2608): - Fix an issue where running `rasa inspect` would always set the `route_session_to_calm`
+    slot to `True`, even when no user-triggered commands were present. This caused
+    incorrect routing to CALM, bypassing the logic of the router.
+  - Fix a regression in non-sticky routing where sessions intended for the NLU were
+    incorrectly routed to CALM when the router predicted `NoopCommand()`.
+- [#2714](https://github.com/rasahq/rasa-private/issues/2714): Fix validation and improve error messages for the documents source directory when FAISS vector store is configured for the Enterprise Search Policy.
+- [#2719](https://github.com/rasahq/rasa-private/issues/2719): Prevent slot correction when the slot is already set to the desired value.
+- [#2728](https://github.com/rasahq/rasa-private/issues/2728): Fallback to `CannotHandle` command when the slot predicted by the LLM is not defined in the domain.
+- [#2732](https://github.com/rasahq/rasa-private/issues/2732): Fix tracker store PII background jobs not updating the `InMemoryTrackerStore` reference stored by the Agent.
+- [#2751](https://github.com/rasahq/rasa-private/issues/2751): Fix potential `KeyError` in `EnterpriseSearchPolicy` citation post-processing when the source does not have the correct citation. Improve the citation post-processing logic to handle additional edge cases.
+- [#2755](https://github.com/rasahq/rasa-private/issues/2755): Fix issue with PrivacyManager unable to retrieve trackers from Redis tracker store during its deletion background job,
+  because the Redis tracker store prefix was added twice during retrieval.
+- [#2766](https://github.com/rasahq/rasa-private/issues/2766): Fixed anonymization failing for `FloatSlots` when user-provided integer values don't match the stored float representation during text replacement.
+- [#2770](https://github.com/rasahq/rasa-private/issues/2770): Fix Redis tracker store saving tracker with prefix added twice during the anonymization background job.
+- [#2794](https://github.com/rasahq/rasa-private/issues/2794): Fix DynamoDB tracker store overwriting tracker with the latest session in case of multiple sessions saved prior.
+
+### Miscellaneous internal changes
+- [#2125](https://github.com/rasahq/rasa-private/issues/2125), [#2134](https://github.com/rasahq/rasa-private/issues/2134), [#2361](https://github.com/rasahq/rasa-private/issues/2361), [#2419](https://github.com/rasahq/rasa-private/issues/2419), [#2471](https://github.com/rasahq/rasa-private/issues/2471), [#2496](https://github.com/rasahq/rasa-private/issues/2496), [#2506](https://github.com/rasahq/rasa-private/issues/2506), [#2513](https://github.com/rasahq/rasa-private/issues/2513), [#2538](https://github.com/rasahq/rasa-private/issues/2538), [#2571](https://github.com/rasahq/rasa-private/issues/2571), [#2615](https://github.com/rasahq/rasa-private/issues/2615), [#2629](https://github.com/rasahq/rasa-private/issues/2629), [#2668](https://github.com/rasahq/rasa-private/issues/2668), [#2672](https://github.com/rasahq/rasa-private/issues/2672), [#2682](https://github.com/rasahq/rasa-private/issues/2682), [#2707](https://github.com/rasahq/rasa-private/issues/2707), [#2712](https://github.com/rasahq/rasa-private/issues/2712), [#2720](https://github.com/rasahq/rasa-private/issues/2720), [#2745](https://github.com/rasahq/rasa-private/issues/2745), [#2769](https://github.com/rasahq/rasa-private/issues/2769)
+
+
+## [3.12.22] - 2025-07-07
+
+Rasa Pro 3.12.22 (2025-07-07)
+
+No significant changes.
+
+
+## [3.12.21] - 2025-07-03
+
+Rasa Pro 3.12.21 (2025-07-03)
+### Bugfixes
+- [#1986](https://github.com/rasahq/rasa-private/issues/1986): Fixes a bug where fine-tuning data generation raises a FineTuningDataPreparationException
+  for test cases without assertions that end with one/multiple user utterance/s,
+  as opposed to one/multiple bot utterance/s.
+
+  For these types of test cases, the fine-tuning data generation transcript now contains
+  all test case utterances up to but excluding the last user utterance(s) as the test case
+  does not specify the corresponding, expected bot response(s).
+- [#2714](https://github.com/rasahq/rasa-private/issues/2714): Fix validation and improve error messages for the documents source directory when FAISS vector store is configured for the Enterprise Search Policy.
+- [#2719](https://github.com/rasahq/rasa-private/issues/2719): Prevent slot correction when the slot is already set to the desired value.
+- [#2728](https://github.com/rasahq/rasa-private/issues/2728): Fallback to `CannotHandle` command when the slot predicted by the LLM is not defined in the domain.
+- [#2751](https://github.com/rasahq/rasa-private/issues/2751): Fix potential `KeyError` in `EnterpriseSearchPolicy` citation post-processing when the source does not have the correct citation. Improve the citation post-processing logic to handle additional edge cases.
+
+
 ## [3.12.20] - 2025-06-24
 
 Rasa Pro 3.12.20 (2025-06-24)
@@ -422,6 +643,20 @@ Rasa Pro 3.12.0 (2025-03-19)
 
 ### Miscellaneous internal changes
 - [#1685](https://github.com/rasahq/rasa-private/issues/1685), [#1760](https://github.com/rasahq/rasa-private/issues/1760), [#1780](https://github.com/rasahq/rasa-private/issues/1780), [#1784](https://github.com/rasahq/rasa-private/issues/1784), [#1829](https://github.com/rasahq/rasa-private/issues/1829), [#1868](https://github.com/rasahq/rasa-private/issues/1868), [#1873](https://github.com/rasahq/rasa-private/issues/1873), [#1929](https://github.com/rasahq/rasa-private/issues/1929), [#1930](https://github.com/rasahq/rasa-private/issues/1930), [#1946](https://github.com/rasahq/rasa-private/issues/1946), [#1949](https://github.com/rasahq/rasa-private/issues/1949), [#1955](https://github.com/rasahq/rasa-private/issues/1955), [#1972](https://github.com/rasahq/rasa-private/issues/1972), [#1989](https://github.com/rasahq/rasa-private/issues/1989), [#1991](https://github.com/rasahq/rasa-private/issues/1991), [#1998](https://github.com/rasahq/rasa-private/issues/1998), [#2004](https://github.com/rasahq/rasa-private/issues/2004), [#2016](https://github.com/rasahq/rasa-private/issues/2016), [#2024](https://github.com/rasahq/rasa-private/issues/2024), [#2037](https://github.com/rasahq/rasa-private/issues/2037), [#2077](https://github.com/rasahq/rasa-private/issues/2077), [#2079](https://github.com/rasahq/rasa-private/issues/2079), [#2100](https://github.com/rasahq/rasa-private/issues/2100), [#2113](https://github.com/rasahq/rasa-private/issues/2113), [#2124](https://github.com/rasahq/rasa-private/issues/2124)
+
+
+## [3.11.17] - 2025-07-03
+                         
+Rasa Pro 3.11.17 (2025-07-03)                              
+### Bugfixes
+- [#1886](https://github.com/rasahq/rasa-private/issues/1886): Flows now traverse called and linked flows, including nested and branching called / linked flows.
+  As a result, E2E coverage reports include any linked and called flows triggered by the flow being tested.
+- [#2599](https://github.com/rasahq/rasa-private/issues/2599): Fix issues where linked flows could not be cancelled and slots collected within linked flows could not be prefilled.
+- [#2714](https://github.com/rasahq/rasa-private/issues/2714): Fix validation and improve error messages for the documents source directory when FAISS vector store is configured for the Enterprise Search Policy.
+- [#2719](https://github.com/rasahq/rasa-private/issues/2719): Prevent slot correction when the slot is already set to the desired value.
+- [#2728](https://github.com/rasahq/rasa-private/issues/2728): Fallback to `CannotHandle` command when the slot predicted by the LLM is not defined in the domain.
+- [#2751](https://github.com/rasahq/rasa-private/issues/2751): Fix potential `KeyError` in `EnterpriseSearchPolicy` citation post-processing when the source does not have the correct citation. Improve the citation post-processing logic to handle additional edge cases.
+
 
 ## [3.11.16] - 2025-06-12
 
