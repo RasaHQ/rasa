@@ -99,7 +99,7 @@ def plot_confusion_matrix(
     zmax = confusion_matrix.max() if len(confusion_matrix) > 0 else 1
     plt.clf()
     if not color_map:
-        color_map = plt.cm.Blues
+        color_map = plt.cm.get_cmap("Blues")
     plt.imshow(
         confusion_matrix,
         interpolation="nearest",
