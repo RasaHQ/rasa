@@ -171,7 +171,7 @@ Rasa Pro 3.13.0 (2025-07-07)
   For these types of test cases, the fine-tuning data generation transcript now contains
   all test case utterances up to but excluding the last user utterance(s) as the test case
   does not specify the corresponding, expected bot response(s).
-- [#2126](https://github.com/rasahq/rasa-private/issues/2126): allowed for usage of litellm model prefixes that do not end in '<provider>/'
+- [#2126](https://github.com/rasahq/rasa-private/issues/2126): allowed for usage of litellm model prefixes that do not end in '&lt;provider&gt;/'
 - [#2153](https://github.com/rasahq/rasa-private/issues/2153): Fixes a bug in Inspector that raised a TypeError when serialising `numpy.float64` from Tracker
 - [#2174](https://github.com/rasahq/rasa-private/issues/2174): - Fixes an issue with prompt rendering where minified JSON structures were displayed without properly escaping newlines, tabs, and quotes.
   - Introduced a new Jinja `filter to_json_encoded_string` that escapes newlines (`\n`), tabs (`\t`), and quotes (`\"`) for safe JSON rendering.
