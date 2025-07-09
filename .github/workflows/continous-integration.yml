@@ -339,6 +339,43 @@ jobs:
             Helm chart version: ${{ env.RASA_PRO_HELM_VERSION }}
             URL: https://${{ needs.rasa-private-dev-docker-image.outputs.stack_name }}.rasapro.rasa-dev.io/version
 
+  # This job is being moved here from the pr-cleanup.yml workflow, to reduce AWS costs and save resources.
+  # Skip this job from merge queue, Backport PRs and Dependabot PRs
+  pulumi-destroy:
+    if: github.event_name != 'merge_group' && !startsWith(github.event.pull_request.title, 'Backport' && github.actor != 'dependabot[bot]')
+    name: Destroy pulumi resources
+    needs: deploy-rasa-private-helm-chart
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set stack name
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            echo "STACK_NAME=pr-${{ github.event.number }}" >> $GITHUB_ENV
+          else
+            echo "STACK_NAME=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 # v3.0.1
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up kubeconfig
+        run: |
+          aws eks update-kubeconfig --name rasa-pro-cluster --region ${{ env.AWS_REGION }}
+
+      - uses: pulumi/actions@ae8c5623fbcf1b4781618a60e69d423f9a6b9c92 #v5.1.1
+      - name: Destroy resources and remove the stack
+        run: |
+          pulumi destroy -s rasa/rasa-pro-eks-helm/${{ env.STACK_NAME }} --yes
+          pulumi stack rm rasa/rasa-pro-eks-helm/${{ env.STACK_NAME }} --yes
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.HELM_DEPLOY_PULUMI_ACCESS_TOKEN }}
+
   check_inspector_build:
     name: Check Inspector Build
     runs-on: ubuntu-24.04
