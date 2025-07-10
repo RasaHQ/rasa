@@ -622,3 +622,118 @@ def test_are_all_slots_reset_only(proposed_slots: Dict[str, Any], expected: bool
         CorrectSlotsCommand.are_all_slots_reset_only(proposed_slots, all_flows)
         == expected
     )
+
+
+@pytest.mark.parametrize("step", ["link", "call"])
+def test_run_command_on_tracker_with_prefilled_slots_of_child_flows(
+    step: str,
+):
+    all_flows = flows_from_str(
+        f"""
+        flows:
+          flow1:
+            description: flow one
+            name: first flow
+            steps:
+            - id: collect_bar
+              collect: bar
+            - id: collect_test
+              collect: test
+            - {step}: flow2
+          flow2:
+            description: flow 2
+            name: second flow
+            steps:
+            - id: collect_foo
+              collect: foo
+            - id: collect_name
+              collect: name
+        """
+    )
+    slot_set_events = [SlotSet("bar", "bar"), SlotSet("foo", "foo")]
+
+    tracker = DialogueStateTracker.from_events("test", evts=slot_set_events)
+    update_tracker_with_path_through_flow(
+        tracker, "flow1", ["collect_bar", "collect_test"]
+    )
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="foo", value="foofoo")]
+    )
+
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+    assert len(events) == 1
+
+    dialogue_stack_event = events[0]
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
+
+    patch = jsonpatch.JsonPatch.from_string(dialogue_stack_event.update)
+    dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
+
+    assert isinstance(dialogue_stack_dump, list) and len(dialogue_stack_dump) == 2
+
+    assert dialogue_stack_dump[0]["type"] == "flow"
+    assert dialogue_stack_dump[0]["flow_id"] == "flow1"
+    assert dialogue_stack_dump[0]["step_id"] == "collect_test"
+    assert dialogue_stack_dump[0]["frame_type"] == FlowStackFrameType.REGULAR
+    assert dialogue_stack_dump[0]["frame_id"] == "some-frame-id"
+
+    assert dialogue_stack_dump[1]["type"] == "pattern_correction"
+    assert dialogue_stack_dump[1]["flow_id"] == "pattern_correction"
+    assert dialogue_stack_dump[1]["step_id"] == "START"
+    assert dialogue_stack_dump[1]["corrected_slots"] == {
+        "foo": {"value": "foofoo", "filled_by": None}
+    }
+    assert dialogue_stack_dump[1]["reset_flow_id"] is None
+    assert dialogue_stack_dump[1]["reset_step_id"] is None
+    assert dialogue_stack_dump[1]["is_reset_only"] is False
+    assert dialogue_stack_dump[1]["new_slot_values"] == ["foofoo"]
+
+
+@pytest.mark.parametrize("step", ["link", "call"])
+def test_create_correction_frame_with_prefilled_slots_of_child_flows(
+    step: str,
+):
+    all_flows = flows_from_str(
+        f"""
+        flows:
+          flow1:
+            description: flow one
+            name: first flow
+            steps:
+            - id: collect_bar
+              collect: bar
+            - id: collect_test
+              collect: test
+            - {step}: flow2
+          flow2:
+            description: flow 2
+            name: second flow
+            steps:
+            - id: collect_foo
+              collect: foo
+            - id: collect_name
+              collect: name
+        """
+    )
+    proposed_slots = {"foo": {"value": "foofoo", "filled_by": None}}
+    slot_set_events = [SlotSet("bar", "bar"), SlotSet("foo", "foo")]
+    tracker = DialogueStateTracker.from_events("test", evts=slot_set_events)
+    update_tracker_with_path_through_flow(
+        tracker, "flow1", ["collect_bar", "collect_test"]
+    )
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="foo", value="foofoo")]
+    )
+    correction_frame = command.create_correction_frame(
+        proposed_slots, all_flows, tracker
+    )
+    assert isinstance(correction_frame, CorrectionPatternFlowStackFrame)
+    assert correction_frame.flow_id == "pattern_correction"
+    assert correction_frame.step_id == "START"
+    assert correction_frame.reset_flow_id is None
+    assert correction_frame.reset_step_id is None
+    assert correction_frame.is_reset_only is False
+    assert correction_frame.corrected_slots == {
+        "foo": {"value": "foofoo", "filled_by": None}
+    }
+    assert correction_frame.new_slot_values == ["foofoo"]

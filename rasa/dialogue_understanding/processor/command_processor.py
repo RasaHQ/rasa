@@ -398,7 +398,12 @@ def clean_up_commands(
     """
     domain = domain if domain else Domain.empty()
 
-    slots_so_far, active_flow = filled_slots_for_active_flow(tracker, all_flows)
+    slots_so_far, _ = filled_slots_for_active_flow(tracker, all_flows)
+
+    # update the slots so far with the slots that were set in the tracker
+    slots_so_far.update(
+        {event.key for event in tracker.events if isinstance(event, SlotSet)}
+    )
 
     clean_commands: List[Command] = []
 

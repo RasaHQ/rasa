@@ -232,16 +232,6 @@ class CorrectSlotsCommand(Command):
             proposed_slots, all_flows, tracker
         )
 
-        if not earliest_collect and not is_reset_only:
-            # if we could not find any step in the flow, where the slots were
-            # previously set, and we also don't want to reset the slots, do
-            # not correct the slots.
-            structlogger.debug(
-                "correct_slots_command.skip_correction",
-                is_reset_only=is_reset_only,
-            )
-            return None
-
         return CorrectionPatternFlowStackFrame(
             is_reset_only=is_reset_only,
             corrected_slots=proposed_slots,
