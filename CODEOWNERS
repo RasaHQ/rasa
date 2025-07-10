@@ -1,5 +1,1 @@
 /.github/workflows/ @RasaHQ/infrastructure-squad
-/rasa/ @RasaHQ/dev-tribe-engineers
-/scripts/ @RasaHQ/dev-tribe-engineers
-pyproject.toml @RasaHQ/dev-tribe-engineers
-Makefile @RasaHQ/dev-tribe-engineers
