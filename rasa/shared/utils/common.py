@@ -373,7 +373,8 @@ def validate_environment(
             importlib.import_module(p)
         except ImportError:
             raise MissingDependencyException(
-                f"Missing package for {component_name}: {p}"
+                f"Missing dependency for {component_name}: {p}. "
+                f"Please ensure the correct package is installed."
             )
 
 
