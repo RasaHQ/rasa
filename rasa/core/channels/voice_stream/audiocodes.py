@@ -84,6 +84,12 @@ class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
         logger.debug("Sending start marker", stream_id=self._get_stream_id())
         await self.voice_websocket.send(media_message)
 
+        # This should be set when the bot actually starts speaking
+        # however, Audiocodes does not have an event to indicate that.
+        # This is an approximation, as the bot will be sent the audio chunks next
+        # which are played to the user immediately.
+        call_state.is_bot_speaking = True  # type: ignore[attr-defined]
+
     async def send_intermediate_marker(self, recipient_id: str) -> None:
         """Audiocodes doesn't need intermediate markers, so do nothing."""
         pass
@@ -173,21 +179,20 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         if data["type"] == "activities":
             activities = data["activities"]
             for activity in activities:
-                logger.debug("audiocodes_stream.activity", data=activity)
                 if activity["name"] == "start":
-                    # already handled in collect_call_parameters
+                    # handled in collect_call_parameters
                     pass
                 elif activity["name"] == "dtmf":
-                    # TODO: handle DTMF input
+                    logger.info("audiocodes_stream.dtmf_ignored", data=activity)
                     pass
                 elif activity["name"] == "playFinished":
                     logger.debug("audiocodes_stream.playFinished", data=activity)
+                    call_state.is_bot_speaking = False  # type: ignore[attr-defined]
                     if call_state.should_hangup:
                         logger.info("audiocodes_stream.hangup")
                         self._send_hangup(ws, data)
                         # the conversation should continue until
                         # we receive a end message from audiocodes
-                    pass
                 else:
                     logger.warning("audiocodes_stream.unknown_activity", data=activity)
         elif data["type"] == "userStream.start":

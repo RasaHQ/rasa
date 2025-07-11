@@ -145,3 +145,8 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
     def concatenate_transcripts(t1: str, t2: str) -> str:
         """Concatenate two transcripts making sure there is a space between them."""
         return (t1.strip() + " " + t2.strip()).strip()
+
+    async def send_keep_alive(self) -> None:
+        """Send a keep-alive message to the Deepgram websocket connection."""
+        if self.asr_socket is not None:
+            await self.asr_socket.send(json.dumps({"type": "KeepAlive"}))

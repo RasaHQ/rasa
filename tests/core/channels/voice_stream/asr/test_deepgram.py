@@ -1,3 +1,4 @@
+import json
 from dataclasses import asdict
 from unittest import mock
 
@@ -127,3 +128,14 @@ def test_configuration_additional_attributes():
 )
 async def test_transcript_concatenation(t1: str, t2: str, expected_result: str):
     assert expected_result == DeepgramASR.concatenate_transcripts(t1, t2)
+
+
+@pytest.mark.asyncio
+async def test_deepgram_keep_alive_sends_message():
+    asr_engine = DeepgramASR()
+    mock_socket = mock.AsyncMock()
+    asr_engine.asr_socket = mock_socket
+
+    await asr_engine.send_keep_alive()
+
+    mock_socket.send.assert_awaited_once_with(json.dumps({"type": "KeepAlive"}))

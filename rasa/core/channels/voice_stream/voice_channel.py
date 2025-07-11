@@ -470,10 +470,17 @@ class VoiceInputChannel(InputChannel):
                     call_parameters,
                 )
 
+        async def asr_keep_alive_task() -> None:
+            interval = getattr(asr_engine.config, "keep_alive_interval", 5)
+            while True:
+                await asyncio.sleep(interval)
+                await asr_engine.send_keep_alive()
+
         tasks = [
             asyncio.create_task(consume_audio_bytes()),
             asyncio.create_task(receive_asr_events()),
             asyncio.create_task(handle_asr_events()),
+            asyncio.create_task(asr_keep_alive_task()),
         ]
         await asyncio.wait(
             tasks,

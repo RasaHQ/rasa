@@ -26,7 +26,7 @@ logger = structlog.get_logger(__name__)
 
 @dataclass
 class ASREngineConfig(MergeableConfig):
-    pass
+    keep_alive_interval: int = 5  # seconds
 
 
 class ASREngine(Generic[T]):
@@ -93,3 +93,7 @@ class ASREngine(Generic[T]):
     def get_default_config() -> T:
         """Get the default config for this component."""
         raise NotImplementedError
+
+    async def send_keep_alive(self) -> None:
+        """Send a keep-alive message to the ASR system if supported."""
+        pass
