@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import audioop
 import base64
 import json
 import uuid
-from typing import Any, Awaitable, Callable, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
 
 import structlog
 from sanic import (  # type: ignore[attr-defined]
@@ -18,6 +20,7 @@ from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import call_state
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
+from rasa.core.channels.voice_stream.util import repack_voice_credentials
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     EndConversationAction,
@@ -49,6 +52,12 @@ class BrowserAudioOutputChannel(VoiceOutputChannel):
 
 
 class BrowserAudioInputChannel(VoiceInputChannel):
+    def __init__(
+        self, server_url: str, asr_config: Dict[str, Any], tts_config: Dict[str, Any]
+    ) -> None:
+        """Initializes the browser audio input channel."""
+        super().__init__(server_url, asr_config, tts_config)
+
     @classmethod
     def name(cls) -> str:
         return "browser_audio"
@@ -61,6 +70,15 @@ class BrowserAudioInputChannel(VoiceInputChannel):
     ) -> Optional[CallParameters]:
         call_id = f"inspect-{uuid.uuid4()}"
         return CallParameters(call_id, "local", "local", stream_id=call_id)
+
+    @classmethod
+    def from_credentials(
+        cls,
+        credentials: Optional[Dict[str, Any]],
+    ) -> BrowserAudioInputChannel:
+        cls.validate_basic_credentials(credentials)
+        new_creds = repack_voice_credentials(credentials)
+        return cls(**new_creds)
 
     def map_input_message(
         self,

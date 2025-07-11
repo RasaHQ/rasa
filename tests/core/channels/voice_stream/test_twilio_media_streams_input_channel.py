@@ -121,6 +121,20 @@ def test_twilio_voice_valid_credentials(
 @pytest.mark.parametrize(
     "config",
     [
+        None,  # No credentials
+        {},  # Empty credentials
+        {
+            "asr": {"name": "deepgram"},
+            "tts": {"name": "azure"},
+        },
+        {
+            "server_url": f"https://{server_url}",
+            "asr": {"name": "deepgram"},
+        },
+        {
+            "server_url": f"https://{server_url}",
+            "tts": {"name": "azure"},
+        },
         {
             "server_url": f"https://{server_url}",
             "asr": {"name": "deepgram"},

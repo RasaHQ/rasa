@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import audioop
 import base64
@@ -42,7 +44,7 @@ if TYPE_CHECKING:
     from sanic import Sanic, Websocket  # type: ignore[attr-defined]
     from socketio import AsyncServer
 
-    from rasa.core.channels.channel import InputChannel, UserMessage
+    from rasa.core.channels.channel import UserMessage
     from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -179,7 +181,9 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         self._register_tracker_update_hook()
 
     @classmethod
-    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> "InputChannel":
+    def from_credentials(
+        cls, credentials: Optional[Dict[Text, Any]]
+    ) -> "StudioChatInput":
         """Creates a StudioChatInput channel from credentials."""
         credentials = credentials or {}
 

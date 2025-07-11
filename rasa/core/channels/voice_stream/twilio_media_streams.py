@@ -26,6 +26,7 @@ from rasa.core.channels.voice_ready.utils import (
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import call_state
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
+from rasa.core.channels.voice_stream.util import repack_voice_credentials
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     EndConversationAction,
@@ -120,19 +121,19 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
         cls,
         credentials: Optional[Dict[str, Any]],
     ) -> VoiceInputChannel:
-        credentials = credentials or {}
+        cls.validate_basic_credentials(credentials)
+        new_creds = repack_voice_credentials(credentials)
+        return cls(**new_creds)
 
-        username = credentials.get("username")
-        password = credentials.get("password")
+    @classmethod
+    def validate_credentials(
+        cls,
+        credentials: Optional[Dict[str, Any]],
+    ) -> None:
+        cls.validate_basic_credentials(credentials)
+        username = credentials.get("username") if credentials else None
+        password = credentials.get("password") if credentials else None
         validate_username_password_credentials(username, password, "TwilioMediaStreams")
-
-        return cls(
-            credentials["server_url"],
-            credentials["asr"],
-            credentials["tts"],
-            username=username,
-            password=password,
-        )
 
     @classmethod
     def name(cls) -> str:

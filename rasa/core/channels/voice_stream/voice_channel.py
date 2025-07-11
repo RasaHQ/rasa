@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import copy
 from dataclasses import asdict, dataclass
@@ -348,29 +350,29 @@ class VoiceInputChannel(InputChannel):
             call_state.silence_timeout_watcher = None  # type: ignore[attr-defined]
 
     @classmethod
-    def from_credentials(
-        cls,
-        credentials: Optional[Dict[str, Any]],
-    ) -> InputChannel:
+    def validate_basic_credentials(cls, credentials: Optional[Dict[str, Any]]) -> None:
+        """Validate the basic credentials for the voice channel."""
         if not credentials:
             cls.raise_missing_credentials_exception()
-
-        if not credentials.get("server_url"):
-            raise InvalidConfigException("No server_url provided in credentials.")
-        if not credentials.get("asr"):
+        if not isinstance(credentials, dict):
             raise InvalidConfigException(
-                "No ASR configuration provided in credentials."
-            )
-        if not credentials.get("tts"):
-            raise InvalidConfigException(
-                "No TTS configuration provided in credentials."
+                "Credentials must be a dictionary for voice channel."
             )
 
-        return cls(
-            server_url=credentials["server_url"],
-            asr_config=credentials["asr"],
-            tts_config=credentials["tts"],
-        )
+        required_keys = {"server_url", "asr", "tts"}
+        credentials_keys = set(credentials.keys())
+        if not required_keys.issubset(credentials_keys):
+            missing_fields = required_keys - credentials_keys
+            raise InvalidConfigException(
+                f"Missing required fields in credentials: {', '.join(missing_fields)} "
+                f"for channel {cls.name()}"
+            )
+
+    @classmethod
+    def from_credentials(
+        cls, credentials: Optional[Dict[str, Any]]
+    ) -> VoiceInputChannel:
+        raise NotImplementedError
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
         raise NotImplementedError

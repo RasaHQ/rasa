@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import base64
 import hmac
@@ -21,6 +23,7 @@ from rasa.core.channels.voice_stream.call_state import (
     call_state,
 )
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
+from rasa.core.channels.voice_stream.util import repack_voice_credentials
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     EndConversationAction,
@@ -121,10 +124,10 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
     def from_credentials(
         cls,
         credentials: Optional[Dict[str, Any]],
-    ) -> "AudiocodesVoiceInputChannel":
-        channel = super().from_credentials(credentials)
-        channel.token = credentials.get("token")  # type: ignore[attr-defined, union-attr]
-        return channel  # type: ignore[return-value]
+    ) -> AudiocodesVoiceInputChannel:
+        cls.validate_basic_credentials(credentials)
+        new_creds = repack_voice_credentials(credentials)
+        return cls(**new_creds)
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
         return RasaAudioBytes(base64.b64decode(input_bytes))

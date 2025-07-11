@@ -1,21 +1,17 @@
 import json
-from unittest.mock import AsyncMock, MagicMock
+from typing import Dict
+from unittest.mock import AsyncMock
 
 import pytest
 
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.audiocodes import AudiocodesVoiceInputChannel
+from rasa.shared.exceptions import RasaException
 
 
 @pytest.fixture
-def mock_validate_voice_license_scope(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Mock the validate_voice_license_scope function."""
-    monkeypatch.setattr(
-        "rasa.core.channels.voice_stream.voice_channel.validate_voice_license_scope",
-        MagicMock(),
-    )
+def server_url() -> str:
+    return "example.com"
 
 
 @pytest.fixture
@@ -152,3 +148,30 @@ def test_from_credentials(input_data: dict, mock_validate_voice_license_scope):
     assert channel.server_url == input_data["server_url"]
     assert channel.asr_config == input_data["asr"]
     assert channel.tts_config == input_data["tts"]
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        None,  # No credentials
+        {},  # Empty credentials
+        {
+            "asr": {"name": "deepgram"},
+            "tts": {"name": "azure"},
+        },
+        {
+            "server_url": f"https://{server_url}",
+            "asr": {"name": "deepgram"},
+        },
+        {
+            "server_url": f"https://{server_url}",
+            "tts": {"name": "azure"},
+        },
+    ],
+)
+def test_twilio_voice_input_invalid_credentials(
+    config: Dict[str, str],
+):
+    """Test creation of TwilioMediaStreamsInputChannel with invalid credentials."""
+    with pytest.raises(RasaException):
+        AudiocodesVoiceInputChannel.from_credentials(config)

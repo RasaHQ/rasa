@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import audioop
 import json
 import uuid
@@ -20,6 +22,7 @@ from rasa.core.channels.voice_ready.utils import (
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import call_state
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
+from rasa.core.channels.voice_stream.util import repack_voice_credentials
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     EndConversationAction,
@@ -94,7 +97,7 @@ class JambonzStreamInputChannel(VoiceInputChannel):
     @classmethod
     def from_credentials(
         cls, credentials: Optional[Dict[Text, Any]]
-    ) -> "JambonzStreamInputChannel":
+    ) -> JambonzStreamInputChannel:
         """Create a channel from credentials dictionary.
 
         Args:
@@ -109,18 +112,17 @@ class JambonzStreamInputChannel(VoiceInputChannel):
             JambonzStreamInputChannel instance
         """
         # Get common credentials from parent
-        channel = super().from_credentials(credentials)
+        cls.validate_credentials(credentials)
+        new_creds = repack_voice_credentials(credentials)
+        return cls(**new_creds)
 
+    @classmethod
+    def validate_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> None:
+        cls.validate_basic_credentials(credentials)
         # Check optional basic auth credentials
         username = credentials.get("username")  # type: ignore[union-attr]
         password = credentials.get("password")  # type: ignore[union-attr]
         validate_username_password_credentials(username, password, "Jambonz Stream")
-
-        # Update channel with auth credentials
-        channel.username = username  # type: ignore[attr-defined]
-        channel.password = password  # type: ignore[attr-defined]
-
-        return channel  # type: ignore[return-value]
 
     def _websocket_stream_url(self) -> str:
         """Returns the websocket stream URL."""

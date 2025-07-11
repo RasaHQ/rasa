@@ -1,7 +1,7 @@
 import audioop
 import wave
 from dataclasses import asdict, dataclass
-from typing import Optional, Type, TypeVar
+from typing import Dict, Optional, Type, TypeVar
 
 import structlog
 
@@ -55,3 +55,13 @@ class MergeableConfig:
     @classmethod
     def from_dict(cls: Type[T], data: dict[str, Optional[str]]) -> T:
         return cls(**data)
+
+
+def repack_voice_credentials(
+    credentials: Dict[str, str],
+) -> Dict[str, str]:
+    """Repack voice credentials to ensure they are in the correct format."""
+    new_creds = {**credentials}
+    new_creds["asr_config"] = new_creds.pop("asr", None)
+    new_creds["tts_config"] = new_creds.pop("tts", None)
+    return new_creds

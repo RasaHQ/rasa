@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import base64
 import hashlib
@@ -21,6 +23,7 @@ from rasa.core.channels.voice_stream.call_state import (
     call_state,
 )
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
+from rasa.core.channels.voice_stream.util import repack_voice_credentials
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
     EndConversationAction,
@@ -107,7 +110,7 @@ class GenesysInputChannel(VoiceInputChannel):
     def from_credentials(
         cls,
         credentials: Optional[Dict[str, Any]],
-    ) -> "GenesysInputChannel":
+    ) -> GenesysInputChannel:
         """Create a channel from credentials dictionary.
 
         Args:
@@ -121,21 +124,21 @@ class GenesysInputChannel(VoiceInputChannel):
         Returns:
             GenesysInputChannel instance
         """
-        channel = super().from_credentials(credentials)
+        cls.validate_basic_credentials(credentials)
+        new_creds = repack_voice_credentials(credentials)
+        return cls(**new_creds)
 
-        # Check required Genesys-specific credentials
+    @classmethod
+    def validate_credentials(cls, credentials: Optional[Dict[str, Any]]) -> None:
+        """Validate the credentials for the Genesys voice channel."""
+        cls.validate_basic_credentials(credentials)
         if not credentials.get("api_key"):  # type: ignore[union-attr]
             raise InvalidConfigException(
                 "No API key given for Genesys voice channel (api_key)."
             )
 
-        # Update channel with Genesys-specific credentials
-        channel.api_key = credentials["api_key"]  # type: ignore[index,attr-defined]
-        channel.client_secret = credentials.get("client_secret")  # type: ignore[union-attr,attr-defined]
-
-        return channel  # type: ignore[return-value]
-
-    def _ensure_channel_data_initialized(self) -> None:
+    @staticmethod
+    def _ensure_channel_data_initialized() -> None:
         """Initialize Genesys-specific channel data if not already present.
 
         Genesys requires the server and client each maintain a

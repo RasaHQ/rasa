@@ -20,6 +20,11 @@ from rasa.shared.exceptions import InvalidConfigException, RasaException
 
 
 @pytest.fixture
+def server_url() -> str:
+    return "example.com"
+
+
+@pytest.fixture
 def input_channel() -> JambonzStreamInputChannel:
     server_url = "localhost"
     asr_config = {"name": "azure"}
@@ -179,9 +184,21 @@ async def test_blueprint_health_endpoint(input_channel):
     [
         None,  # No credentials
         {},  # Empty credentials
+        {
+            "asr": {"name": "deepgram"},
+            "tts": {"name": "azure"},
+        },
+        {
+            "server_url": f"https://{server_url}",
+            "asr": {"name": "deepgram"},
+        },
+        {
+            "server_url": f"https://{server_url}",
+            "tts": {"name": "azure"},
+        },
     ],
 )
-def test_from_empty_credentials(credentials):
+def test_from_invalid_credentials(credentials):
     """Test validation of credentials when creating channel from config."""
     with pytest.raises(RasaException):
         JambonzStreamInputChannel.from_credentials(credentials)
@@ -198,6 +215,12 @@ def test_from_empty_credentials(credentials):
             "tts": {"name": "azure"},
             "username": "test_user",
         },  # Missing password
+        {
+            "server_url": "example.com",
+            "asr": {"name": "azure"},
+            "tts": {"name": "azure"},
+            "password": "test_pass",
+        },  # Missing username
     ],
 )
 def test_from_credentials_validation(credentials):

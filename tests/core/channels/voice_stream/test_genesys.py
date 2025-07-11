@@ -1,3 +1,4 @@
+from typing import Dict
 from unittest.mock import AsyncMock
 
 import pytest
@@ -7,6 +8,12 @@ from rasa.core.channels.voice_stream.genesys import (
     GenesysInputChannel,
     map_call_params,
 )
+from rasa.shared.exceptions import RasaException
+
+
+@pytest.fixture
+def server_url() -> str:
+    return "example.com"
 
 
 @pytest.fixture
@@ -112,3 +119,90 @@ async def test_verify_signature(input_channel, mocked_request):
     # modify the header and verification should fail
     mocked_request.headers["Audiohook-Organization-Id"] = "random-value"
     assert await input_channel._verify_signature(mocked_request) is False
+
+
+@pytest.mark.parametrize(
+    "input_data",
+    [
+        {
+            "api_key": "test_token",
+            "client_secret": "some_secret",
+            "server_url": "https://example.com",
+            "asr": {"name": "deepgram"},
+            "tts": {"name": "azure"},
+        },
+        {
+            "api_key": "test_token",
+            "client_secret": None,
+            "server_url": "https://example.com",
+            "asr": {"name": "deepgram"},
+            "tts": {"name": "azure"},
+        },
+        {
+            "api_key": None,
+            "client_secret": "some_secret",
+            "server_url": "https://example.com",
+            "asr": {"name": "deepgram"},
+            "tts": {"name": "azure"},
+        },
+        {
+            "api_key": None,
+            "client_secret": None,
+            "server_url": "https://example.com",
+            "asr": {"name": "deepgram"},
+            "tts": {"name": "azure"},
+        },
+    ],
+)
+@pytest.mark.usefixtures("mock_validate_voice_license_scope")
+def test_from_credentials(input_data: dict, mock_validate_voice_license_scope):
+    """Tests the from_credentials method."""
+    channel = GenesysInputChannel.from_credentials(
+        input_data,
+    )
+
+    assert isinstance(channel, GenesysInputChannel)
+    assert channel.api_key == input_data["api_key"]
+    assert channel.client_secret == input_data["client_secret"]
+    assert channel.server_url == input_data["server_url"]
+    assert channel.asr_config == input_data["asr"]
+    assert channel.tts_config == input_data["tts"]
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        None,  # No credentials
+        {},  # Empty credentials
+        {
+            "asr": {"name": "deepgram"},
+            "tts": {"name": "azure"},
+        },
+        {
+            "server_url": f"https://{server_url}",
+            "asr": {"name": "deepgram"},
+        },
+        {
+            "server_url": f"https://{server_url}",
+            "tts": {"name": "azure"},
+        },
+        {
+            "server_url": f"https://{server_url}",
+            "asr": {"name": "deepgram"},
+            "tts": {"name": "azure"},
+            "username": "test_user",
+        },
+        {
+            "server_url": f"https://{server_url}",
+            "asr": {"name": "deepgram"},
+            "tts": {"name": "azure"},
+            "password": "test_password",
+        },
+    ],
+)
+def test_twilio_voice_input_invalid_credentials(
+    config: Dict[str, str],
+):
+    """Test creation of TwilioMediaStreamsInputChannel with invalid credentials."""
+    with pytest.raises(RasaException):
+        GenesysInputChannel.from_credentials(config)
