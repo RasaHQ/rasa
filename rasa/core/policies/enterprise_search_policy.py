@@ -679,7 +679,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         answer_relevant = not _ENTERPRISE_SEARCH_ANSWER_NOT_RELEVANT_PATTERN.search(
             llm_answer
         )
-        structlogger.debug("")
+
         return _RelevancyCheckResponse(
             answer=llm_answer if answer_relevant else None,
             relevant=answer_relevant,
