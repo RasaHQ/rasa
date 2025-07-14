@@ -84,6 +84,11 @@ def test_nlg_schema_validation():
     assert CallbackNaturalLanguageGenerator.validate_response(content)
 
 
+def test_nlg_schema_validation_null_text():
+    content = {"text": None}
+    assert CallbackNaturalLanguageGenerator.validate_response(content)
+
+
 def test_nlg_schema_validation_empty_buttons():
     content = {"text": "Hey there!", "buttons": []}
     assert CallbackNaturalLanguageGenerator.validate_response(content)

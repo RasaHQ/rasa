@@ -392,6 +392,65 @@ async def test_remote_action_utterances_with_none_values(
     ]
 
 
+async def test_remote_action_with_nlg_returning_only_custom_no_text(
+    default_channel: OutputChannel,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
+):
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+
+    response = {
+        "events": [],
+        "responses": [
+            {
+                "text": None,
+                "buttons": [],
+                "elements": [],
+                "custom": {},
+                "template": "utter_ask_cuisine",
+                "response": "utter_ask_cuisine",
+                "image": None,
+                "attachment": None,
+            },
+        ],
+    }
+
+    nlg = TemplatedNaturalLanguageGenerator(
+        {
+            "utter_ask_cuisine": [
+                {
+                    "custom": {
+                        "text": "What do you want to eat?",
+                        "disable_text": "True",
+                    }
+                }
+            ]
+        }
+    )
+    with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", payload=response)
+
+        events = await remote_action.run(default_channel, nlg, default_tracker, domain)
+
+    assert events == [
+        BotUttered(
+            None,
+            metadata={
+                "template": "utter_ask_cuisine",
+                "utter_action": "utter_ask_cuisine",
+                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            },
+            data={
+                "custom": {
+                    "text": "What do you want to eat?",
+                    "disable_text": "True",
+                }
+            },
+        )
+    ]
+
+
 @pytest.mark.parametrize(
     "event",
     (

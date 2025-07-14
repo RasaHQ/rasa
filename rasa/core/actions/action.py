@@ -899,8 +899,8 @@ class RemoteAction(Action):
 
             # Avoid overwriting `draft` values with empty values
             response = {k: v for k, v in response.items() if v}
-            draft.update(response)
-            bot_messages.append(create_bot_utterance(draft))
+            response.update(draft)
+            bot_messages.append(create_bot_utterance(response))
 
         return bot_messages
 

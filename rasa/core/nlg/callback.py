@@ -19,7 +19,7 @@ def nlg_response_format_spec() -> Dict[Text, Any]:
     return {
         "type": "object",
         "properties": {
-            "text": {"type": "string"},
+            "text": {"type": ["string", "null"]},
             "id": {"type": ["string", "null"]},
             "buttons": {"type": ["array", "null"], "items": {"type": "object"}},
             "elements": {"type": ["array", "null"], "items": {"type": "object"}},
