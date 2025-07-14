@@ -34,6 +34,7 @@ from rasa.core.channels.voice_stream.voice_channel import (
     VoiceInputChannel,
     VoiceOutputChannel,
 )
+from rasa.core.exceptions import AgentNotReady
 from rasa.hooks import hookimpl
 from rasa.plugin import plugin_manager
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
@@ -203,6 +204,13 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             metadata_key=credentials.get("metadata_key", "metadata"),
         )
 
+    async def emit(self, event: str, data: Dict, room: str) -> None:
+        """Emits an event to the websocket."""
+        if not self.sio:
+            structlogger.error("studio_chat.emit.sio_not_initialized")
+            return
+        await self.sio.emit(event, data, room=room)
+
     def _register_tracker_update_hook(self) -> None:
         plugin_manager().register(StudioTrackerUpdatePlugin(self))
 
@@ -212,10 +220,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
 
     async def publish_tracker_update(self, sender_id: str, tracker_dump: Dict) -> None:
         """Publishes a tracker update notification to the websocket."""
-        if not self.sio:
-            structlogger.error("studio_chat.on_tracker_updated.sio_not_initialized")
-            return
-        await self.sio.emit("tracker", tracker_dump, room=sender_id)
+        await self.emit("tracker", tracker_dump, room=sender_id)
 
     async def on_message_proxy(
         self,
@@ -228,8 +233,15 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         """
         await on_new_message(message)
 
-        if not self.agent:
+        if not self.agent or not self.agent.is_ready():
             structlogger.error("studio_chat.on_message_proxy.agent_not_initialized")
+            await self.emit_error(
+                "The Rasa Pro model could not be loaded. "
+                "Please check the training and deployment logs "
+                "for more information.",
+                message.sender_id,
+                AgentNotReady("The Rasa Pro model could not be loaded."),
+            )
             return
 
         tracker = await self.agent.tracker_store.retrieve(message.sender_id)
@@ -238,6 +250,17 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             return
 
         await self.on_tracker_updated(tracker)
+
+    async def emit_error(self, message: str, room: str, e: Exception) -> None:
+        await self.emit(
+            "error",
+            {
+                "message": message,
+                "error": str(e),
+                "exception": str(type(e).__name__),
+            },
+            room=room,
+        )
 
     async def handle_tracker_update(self, sid: str, data: Dict) -> None:
         from rasa.shared.core.trackers import DialogueStateTracker
@@ -255,21 +278,41 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             structlogger.error("studio_chat.sio.domain_not_initialized")
             return None
 
+        tracker: Optional[DialogueStateTracker] = None
+
         async with self.agent.lock_store.lock(data["sender_id"]):
-            tracker = DialogueStateTracker.from_dict(
-                data["sender_id"], data["events"], domain.slots
-            )
+            try:
+                tracker = DialogueStateTracker.from_dict(
+                    data["sender_id"], data["events"], domain.slots
+                )
 
-            # will override an existing tracker with the same id!
-            await self.agent.tracker_store.save(tracker)
-
-            processor = self.agent.processor
-            if processor and does_need_action_prediction(tracker):
-                output_channel = self.get_output_channel()
-
-                await processor._run_prediction_loop(output_channel, tracker)
+                # will override an existing tracker with the same id!
                 await self.agent.tracker_store.save(tracker)
 
+                processor = self.agent.processor
+                if processor and does_need_action_prediction(tracker):
+                    output_channel = self.get_output_channel()
+
+                    await processor._run_prediction_loop(output_channel, tracker)
+                    await self.agent.tracker_store.save(tracker)
+            except Exception as e:
+                structlogger.error(
+                    "studio_chat.sio.handle_tracker_update.error",
+                    error=e,
+                    sender_id=data["sender_id"],
+                )
+                await self.emit_error(
+                    "An error occurred while updating the conversation.",
+                    data["sender_id"],
+                    e,
+                )
+
+        if not tracker:
+            # in case the tracker couldn't be updated, we retrieve the prior
+            # version and use that to populate the update
+            tracker = await self.agent.tracker_store.get_or_create_tracker(
+                data["sender_id"]
+            )
         await self.on_tracker_updated(tracker)
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:
@@ -279,7 +322,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
     async def collect_call_parameters(
         self, channel_websocket: "Websocket"
     ) -> Optional[CallParameters]:
-        """Voice method to collect call parameters"""
+        """Voice method to collect call parameters."""
         session_id = channel_websocket.session_id
         return CallParameters(session_id, "local", "local", stream_id=session_id)
 
@@ -309,7 +352,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
     def create_output_channel(
         self, voice_websocket: "Websocket", tts_engine: TTSEngine
     ) -> VoiceOutputChannel:
-        """Create a voice output channel"""
+        """Create a voice output channel."""
         return StudioVoiceOutputChannel(
             voice_websocket,
             tts_engine,

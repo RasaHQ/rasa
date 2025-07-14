@@ -132,6 +132,13 @@ async def create_bridge_client(
         await sio.emit("bot_message", data, room=sid)
 
     @client.event  # type: ignore[misc]
+    async def error(data: Dict[str, Any]) -> None:
+        structlogger.debug(
+            "model_runner.bot_error", deployment_id=deployment_id, data=data
+        )
+        await sio.emit("error", data, room=sid)
+
+    @client.event  # type: ignore[misc]
     async def tracker(data: Dict[str, Any]) -> None:
         await sio.emit("tracker", json.loads(data), room=sid)
 

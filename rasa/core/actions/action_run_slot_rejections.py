@@ -216,6 +216,6 @@ class ActionRunSlotRejections(Action):
             message = add_bot_utterance_metadata(
                 message, utterance, nlg, domain, tracker
             )
-            events.append(create_bot_utterance(message, tracker.current_language))
+            events.append(create_bot_utterance(message))
 
         return events

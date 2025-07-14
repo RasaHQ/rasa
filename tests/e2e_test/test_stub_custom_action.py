@@ -351,3 +351,27 @@ def test_stub_custom_action_invalid_event() -> None:
         )
 
     assert "Enum 'dialogue_stack_updated' does not exist." in str(exc.value)
+
+
+def test_fixture_is_allowed_to_use_dashes_in_name() -> None:
+    e2e_test_schema = read_e2e_test_schema()
+    yaml_content = parse_raw_yaml(
+        """
+        fixtures:
+            - language_fr-BE:
+                - language: fr-BE
+        test_cases:
+            - test_case: 893b99f2-4307-4478-918c-3eb56129cbc5
+              fixtures:
+                  - language_fr-BE
+              steps:
+                  - user: "j'ai perdu ma carte"
+        """
+    )
+
+    try:
+        validate_yaml_data_using_schema_with_assertions(
+            yaml_data=yaml_content, schema_content=e2e_test_schema
+        )
+    except Exception as exc:
+        pytest.fail(f"Failed to validate the schema: {exc!s}")

@@ -30,8 +30,6 @@ from rasa.core.actions.action import (
     RemoteActionJSONValidator,
     create_bot_utterance,
     default_actions,
-    get_translated_buttons,
-    get_translated_text,
 )
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.actions.forms import FormAction
@@ -45,6 +43,7 @@ from rasa.core.constants import (
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
+from rasa.core.nlg.translate import get_translated_buttons, get_translated_text
 from rasa.core.policies.enterprise_search_policy import (
     SEARCH_QUERY_METADATA_KEY,
     SEARCH_RESULTS_METADATA_KEY,
@@ -3742,10 +3741,12 @@ async def test_create_bot_utterance_translation(monkeypatch: MonkeyPatch):
     tracker = DialogueStateTracker(sender_id="test", slots=slots)
 
     default_response = await nlg.generate(
-        utter_action="utter_test", tracker=tracker, output_channel=""
+        utter_action="utter_test",
+        tracker=tracker,
+        output_channel="",
     )
 
-    bot_utterance = create_bot_utterance(default_response, tracker.current_language)
+    bot_utterance = create_bot_utterance(default_response)
     assert bot_utterance.text == "texte traduit"
     assert bot_utterance.data[BUTTONS][0][TITLE] == "titre traduit"
     assert bot_utterance.data[BUTTONS][0][PAYLOAD] == "/traduit"

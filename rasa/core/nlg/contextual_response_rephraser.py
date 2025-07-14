@@ -224,8 +224,10 @@ class ContextualResponseRephraser(
 
     @measure_llm_latency
     async def _generate_llm_response(self, prompt: str) -> Optional[LLMResponse]:
-        """Use LLM to generate a response, returning an LLMResponse object
-        containing both the generated text (choices) and metadata.
+        """Use LLM to generate a response.
+
+        Returns an LLMResponse object containing both the generated text
+        (choices) and metadata.
 
         Args:
             prompt: The prompt to send to the LLM.
@@ -406,12 +408,9 @@ class ContextualResponseRephraser(
         Returns:
             The generated response.
         """
-        filled_slots = tracker.current_slot_values()
-        stack_context = tracker.stack.current_context()
-        templated_response = self.generate_from_slots(
+        templated_response = await super().generate(
             utter_action=utter_action,
-            filled_slots=filled_slots,
-            stack_context=stack_context,
+            tracker=tracker,
             output_channel=output_channel,
             **kwargs,
         )

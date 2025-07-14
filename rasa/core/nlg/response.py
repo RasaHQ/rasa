@@ -5,8 +5,11 @@ from typing import Any, Dict, List, Optional, Text
 from rasa.core.constants import DEFAULT_TEMPLATE_ENGINE, TEMPLATE_ENGINE_CONFIG_KEY
 from rasa.core.nlg import interpolator
 from rasa.core.nlg.generator import NaturalLanguageGenerator, ResponseVariationFilter
-from rasa.shared.constants import RESPONSE_CONDITION
+from rasa.core.nlg.translate import get_translated_buttons, get_translated_text
+from rasa.engine.language import Language
+from rasa.shared.constants import BUTTONS, RESPONSE_CONDITION, TEXT
 from rasa.shared.core.domain import RESPONSE_KEYS_TO_INTERPOLATE
+from rasa.shared.core.flows.constants import KEY_TRANSLATION
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import METADATA
 
@@ -30,7 +33,11 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
 
     # noinspection PyUnusedLocal
     def _random_response_for(
-        self, utter_action: Text, output_channel: Text, filled_slots: Dict[Text, Any]
+        self,
+        utter_action: Text,
+        output_channel: Text,
+        filled_slots: Dict[Text, Any],
+        language: Optional[Language] = None,
     ) -> Optional[Dict[Text, Any]]:
         """Select random response for the utter action from available ones.
 
@@ -42,7 +49,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         if utter_action in self.responses:
             response_filter = ResponseVariationFilter(self.responses)
             suitable_responses = response_filter.responses_for_utter_action(
-                utter_action, output_channel, filled_slots
+                utter_action, output_channel, filled_slots, language
             )
 
             if suitable_responses:
@@ -75,9 +82,36 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         """Generate a response for the requested utter action."""
         filled_slots = tracker.current_slot_values()
         stack_context = tracker.stack.current_context()
-        return self.generate_from_slots(
-            utter_action, filled_slots, stack_context, output_channel, **kwargs
+        response = self.generate_from_slots(
+            utter_action,
+            filled_slots,
+            stack_context,
+            output_channel,
+            tracker.current_language,
+            **kwargs,
         )
+        if response is not None:
+            return self.translate_response(response, tracker.current_language)
+        return None
+
+    def translate_response(
+        self, response: Dict[Text, Any], language: Optional[Language] = None
+    ) -> Dict[Text, Any]:
+        message_copy = copy.deepcopy(response)
+
+        text = get_translated_text(
+            text=message_copy.pop(TEXT, None),
+            translation=message_copy.pop(KEY_TRANSLATION, {}),
+            language=language,
+        )
+
+        buttons = get_translated_buttons(
+            buttons=message_copy.pop(BUTTONS, None), language=language
+        )
+        message_copy[TEXT] = text
+        if buttons:
+            message_copy[BUTTONS] = buttons
+        return message_copy
 
     def generate_from_slots(
         self,
@@ -85,12 +119,15 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         filled_slots: Dict[Text, Any],
         stack_context: Dict[Text, Any],
         output_channel: Text,
+        language: Optional[Language] = None,
         **kwargs: Any,
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested utter action."""
         # Fetching a random response for the passed utter action
         r = copy.deepcopy(
-            self._random_response_for(utter_action, output_channel, filled_slots)
+            self._random_response_for(
+                utter_action, output_channel, filled_slots, language
+            )
         )
         # Filling the slots in the response with placeholders and returning the response
         if r is not None:

@@ -6,6 +6,8 @@ from pypred import Predicate
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+from rasa.core.nlg.translate import has_translation
+from rasa.engine.language import Language
 from rasa.shared.constants import CHANNEL, RESPONSE_CONDITION
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -131,11 +133,23 @@ class ResponseVariationFilter:
 
         return True
 
+    def _filter_by_language(
+        self, responses: List[Dict[Text, Any]], language: Optional[Language] = None
+    ) -> List[Dict[Text, Any]]:
+        if not language:
+            return responses
+
+        if filtered := [r for r in responses if has_translation(r, language)]:
+            return filtered
+        # if no translation is found, return the original response variations
+        return responses
+
     def responses_for_utter_action(
         self,
         utter_action: Text,
         output_channel: Text,
         filled_slots: Dict[Text, Any],
+        language: Optional[Language] = None,
     ) -> List[Dict[Text, Any]]:
         """Returns array of responses that fit the channel, action and condition."""
         # filter responses without a condition
@@ -176,16 +190,16 @@ class ResponseVariationFilter:
         )
 
         if conditional_channel:
-            return conditional_channel
+            return self._filter_by_language(conditional_channel, language)
 
         if default_channel:
-            return default_channel
+            return self._filter_by_language(default_channel, language)
 
         if conditional_no_channel:
-            return conditional_no_channel
+            return self._filter_by_language(conditional_no_channel, language)
 
         if default_no_channel:
-            return default_no_channel
+            return self._filter_by_language(default_no_channel, language)
 
         # if there is no response variation selected,
         # return the internal error response to prevent
@@ -198,7 +212,9 @@ class ResponseVariationFilter:
             f"a default variation and that all the conditions are valid. "
             f"Returning the internal error response.",
         )
-        return self.responses.get("utter_internal_error_rasa", [])
+        return self._filter_by_language(
+            self.responses.get("utter_internal_error_rasa", []), language
+        )
 
     def get_response_variation_id(
         self,

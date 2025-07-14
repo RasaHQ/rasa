@@ -23,11 +23,9 @@ from rasa.core.constants import (
     KEY_IS_COEXISTENCE_ASSISTANT,
     UTTER_SOURCE_METADATA_KEY,
 )
-from rasa.core.nlg.translate import get_translated_buttons, get_translated_text
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.utils import add_bot_utterance_metadata
 from rasa.e2e_test.constants import KEY_STUB_CUSTOM_ACTIONS
-from rasa.engine.language import Language
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_PREDICTION_KEY,
@@ -84,7 +82,6 @@ from rasa.shared.core.events import (
     UserUttered,
 )
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.flows.constants import KEY_TRANSLATION
 from rasa.shared.core.slot_mappings import (
     SlotFillingManager,
     extract_slot_value,
@@ -251,36 +248,25 @@ def action_for_name_or_text(
     return RemoteAction(action_name_or_text, action_endpoint)
 
 
-def create_bot_utterance(
-    message: Dict[Text, Any], language: Optional[Language] = None
-) -> BotUttered:
-    """Create BotUttered event from message with translation support."""
-    message_copy = copy.deepcopy(message)
-
-    text = get_translated_text(
-        text=message_copy.pop(TEXT, None),
-        translation=message_copy.pop(KEY_TRANSLATION, {}),
-        language=language,
+def create_bot_utterance(message: Dict[Text, Any]) -> BotUttered:
+    """Create BotUttered event from message."""
+    bot_message = BotUttered(
+        text=message.pop(TEXT, None),
+        data={
+            ELEMENTS: message.pop(ELEMENTS, None),
+            QUICK_REPLIES: message.pop(QUICK_REPLIES, None),
+            BUTTONS: message.pop(BUTTONS, None),
+            # for legacy / compatibility reasons we need to set the image
+            # to be the attachment if there is no other attachment (the
+            # `.get` is intentional - no `pop` as we still need the image`
+            # property to set it in the following line)
+            ATTACHMENT: message.pop(ATTACHMENT, None) or message.get(IMAGE, None),
+            IMAGE: message.pop(IMAGE, None),
+            CUSTOM: message.pop(CUSTOM, None),
+        },
+        metadata=message,
     )
-
-    buttons = get_translated_buttons(
-        buttons=message_copy.pop(BUTTONS, None), language=language
-    )
-
-    data = {
-        ELEMENTS: message_copy.pop(ELEMENTS, None),
-        QUICK_REPLIES: message_copy.pop(QUICK_REPLIES, None),
-        BUTTONS: buttons,
-        # for legacy / compatibility reasons we need to set the image
-        # to be the attachment if there is no other attachment (the
-        # `.get` is intentional - no `pop` as we still need the image`
-        # property to set it in the following line)
-        ATTACHMENT: message_copy.pop(ATTACHMENT, None) or message_copy.get(IMAGE, None),
-        IMAGE: message_copy.pop(IMAGE, None),
-        CUSTOM: message_copy.pop(CUSTOM, None),
-    }
-
-    return BotUttered(text=text, data=data, metadata=message_copy)
+    return bot_message
 
 
 class Action:
@@ -393,7 +379,7 @@ class ActionBotResponse(Action):
         message = add_bot_utterance_metadata(
             message, self.utter_action, nlg, domain, tracker
         )
-        return [create_bot_utterance(message, tracker.current_language)]
+        return [create_bot_utterance(message)]
 
     def name(self) -> Text:
         """Returns action name."""
@@ -427,7 +413,7 @@ class ActionEndToEndResponse(Action):
     ) -> List[Event]:
         """Runs action (see parent class for full docstring)."""
         message = {"text": self.action_text}
-        return [create_bot_utterance(message, tracker.current_language)]
+        return [create_bot_utterance(message)]
 
     def event_for_successful_execution(
         self,
@@ -893,7 +879,10 @@ class RemoteAction(Action):
             generated_response = response.pop("response", None)
             if generated_response is not None:
                 draft = await nlg.generate(
-                    generated_response, tracker, output_channel.name(), **response
+                    generated_response,
+                    tracker,
+                    output_channel.name(),
+                    **response,
                 )
                 if not draft:
                     continue
@@ -911,7 +900,7 @@ class RemoteAction(Action):
             # Avoid overwriting `draft` values with empty values
             response = {k: v for k, v in response.items() if v}
             draft.update(response)
-            bot_messages.append(create_bot_utterance(draft, tracker.current_language))
+            bot_messages.append(create_bot_utterance(draft))
 
         return bot_messages
 
@@ -1068,6 +1057,7 @@ def _revert_rephrasing_events() -> List[Event]:
     ]
 
 
+# TODO: this should be removed, e.g. it uses a hardcoded message and no translation
 class ActionDefaultAskAffirmation(Action):
     """Default implementation which asks the user to affirm his intent.
 
@@ -1119,7 +1109,7 @@ class ActionDefaultAskAffirmation(Action):
             "utter_action": self.name(),
         }
 
-        return [create_bot_utterance(message, tracker.current_language)]
+        return [create_bot_utterance(message)]
 
 
 class ActionDefaultAskRephrase(ActionBotResponse):
@@ -1155,7 +1145,7 @@ class ActionSendText(Action):
 
         should_send_text = metadata_copy.get("should_send_text", True)
         if should_send_text:
-            return [create_bot_utterance(message, tracker.current_language)]
+            return [create_bot_utterance(message)]
         return []
 
 

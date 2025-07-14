@@ -23,6 +23,14 @@ def get_translated_text(
     return translation.get(language_code, text)
 
 
+def has_translation(
+    message: Dict[Text, Any], language: Optional[Language] = None
+) -> bool:
+    """Check if the message has a translation for the given language."""
+    language_code = language.code if language else None
+    return language_code in message.get(KEY_TRANSLATION, {})
+
+
 def get_translated_buttons(
     buttons: Optional[List[Dict[Text, Any]]], language: Optional[Language] = None
 ) -> Optional[List[Dict[Text, Any]]]:

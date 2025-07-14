@@ -571,7 +571,7 @@ def external_blueprint() -> Blueprint:
     """Create a blueprint for the model manager API."""
     from rasa.core.channels.socketio import SocketBlueprint
 
-    sio = AsyncServer(async_mode="sanic", cors_allowed_origins=[])
+    sio = AsyncServer(async_mode="sanic", cors_allowed_origins="*")
     bp = SocketBlueprint(sio, "", "model_api_external")
 
     create_bridge_server(sio, running_bots)
