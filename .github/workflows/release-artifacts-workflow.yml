@@ -361,5 +361,5 @@ jobs:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           # Send notification to #devtribe slack channel
           payload: |
-            channel: "C061J0LGHU0"
+            channel: "C36SS4N8M"
             text: ":broken_heart: *Rasa Private* release version `${{ needs.release-artifacts-docker.outputs.tag_version }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."

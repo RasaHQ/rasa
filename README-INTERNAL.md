@@ -306,7 +306,7 @@ the [Product Release and Maintenance Policy](https://rasa.com/rasa-product-relea
 
 #### A week before release day
 
-**Post a message on the engineering Slack channel** (`#dev-tribe`), letting the team know you'll be the one cutting the
+**Post a message on the engineering Slack channel** (`#prodeng-internal`), letting the team know you'll be the one cutting the
 upcoming release, as well as:
 
 1. Reminding everyone to go over their issues and PRs and prioritise reviews and merges.
@@ -323,7 +323,7 @@ Postponing the release should be considered as an edge case scenario.
 
 #### Release day! 🚀
 
-1. **At the start of the day, post a small message on Slack (`#dev-tribe`) announcing release day!**
+1. **At the start of the day, post a small message on Slack (`#prodeng-internal`) announcing release day!**
    Communicate you'll be handling the release, and the time you're aiming to start releasing
    (no later than 4pm, as issues may arise and cause delays). This message should be posted early in the morning and
    before moving forward with any of the steps of the release,
@@ -332,7 +332,7 @@ Postponing the release should be considered as an edge case scenario.
    found [here](https://rasa-hq.slack.com/archives/C36SS4N8M/p1613032208137500?thread_ts=1612876410.068400&cid=C36SS4N8M).
    The release time should be communicated transparently so that others can plan potentially necessary steps
    accordingly. If there are bigger changes this should be communicated.
-2. Once everything in the release is taken care of, post a small message on Slack (`#dev-tribe`) communicating you are
+2. Once everything in the release is taken care of, post a small message on Slack (`#prodeng-internal`) communicating you are
    about to start the release process (in case anything is missing).
 3. **You may now do the release by following the instructions outlined in the
    [Rasa Pro README](#steps-to-release-a-new-major-minor-version) !**
@@ -381,7 +381,7 @@ Releasing a new Major / Minor version is quite simple, as the packages are build
    the company's Slack (`#release`) like
    this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600).
 10. If however an error occurs in the build, then we should see a failure message automatically posted in the company's
-    Slack (`#dev-tribe`) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919). Follow the
+    Slack (`#prodeng-internal`) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919). Follow the
     steps in
     [Troubleshooting a release](#troubleshooting-a-release) to debug the issue.
 
@@ -391,7 +391,7 @@ Patch releases are simpler to cut, since they are meant to contain only bugfixes
 
 **The only things you need to do to cut a patch release are:**
 
-1. Notify the engineering team on Slack (`#dev-tribe`) that you are planning to cut a patch, in case someone has an
+1. Notify the engineering team on Slack (`#prodeng-internal`) that you are planning to cut a patch, in case someone has an
    important fix to add.
 2. Make sure the bugfix(es) are in the release branch you will use (p.e if you are cutting a `3.8.2` patch, you will
    need your fixes to be on the `3.8.x` release branch). All patch releases must come from a `.x` branch!
@@ -416,7 +416,7 @@ Patch releases are simpler to cut, since they are meant to contain only bugfixes
    the company's Slack (`#release`) like
    this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600).
 7. If however an error occurs in the build, then we should see a failure message automatically posted in the company's
-   Slack (`#dev-tribe`) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919). Follow the
+   Slack (`#prodeng-internal`) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919). Follow the
    steps in [Troubleshooting a release](#troubleshooting-a-release) to debug the issue.
 
 ### Cutting a Pre release version
@@ -457,7 +457,7 @@ to be merged.
 8. After all the steps are completed and if everything goes well then we should see a message automatically posted in
    the company's Slack (`#release`) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600).
 9. If however an error occurs in the build, then we should see a failure message automatically posted in the company's
-   Slack (`#dev-tribe`) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919).Follow the
+   Slack (`#prodeng-internal`) like this [one](https://rasa-hq.slack.com/archives/C01M5TAHDHA/p1701444735622919).Follow the
    steps in [Troubleshooting a release](#troubleshooting-a-release) to debug the issue.
 
 **Note**: Pre release versions don't need to be backported to `main` as they are not considered stable releases.

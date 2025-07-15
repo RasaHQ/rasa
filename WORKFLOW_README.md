@@ -74,7 +74,7 @@ This workflow does the following:
 - builds and pushes a python package to [GCP](https://console.cloud.google.com/artifacts/python/rasa-releases/europe-west3/rasa-pro-python/rasa-pro?authuser=1&project=rasa-releases)
 
 This workflow can also be run as a [workflow dispatch](#glossary) event.
-If this workflow fails a Slack notification is sent to the channel `#devtribe`.
+If this workflow fails a Slack notification is sent to the channel `#prodeng-internal`.
 
 ### Tag Release
 Workflow pushes a tag by running `make tag-release-auto`.
