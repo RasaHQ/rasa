@@ -114,7 +114,7 @@ class CommandGenerator:
             # slot asked by the active collect step.
             # Or return a CannotHandleCommand if no matching command is found.
             commands = self._filter_commands_during_force_slot_filling(
-                commands, available_flows, tracker
+                commands, flows, tracker
             )
 
             commands_dicts = [command.as_dict() for command in commands]
@@ -385,14 +385,14 @@ class CommandGenerator:
     @staticmethod
     def _filter_commands_during_force_slot_filling(
         commands: List[Command],
-        available_flows: FlowsList,
+        flows: FlowsList,
         tracker: Optional[DialogueStateTracker] = None,
     ) -> List[Command]:
         """Filter commands during a collect step that has set `force_slot_filling`.
 
         Args:
             commands: The commands to filter.
-            available_flows: The available flows.
+            flows: All flows.
             tracker: The tracker.
 
         Returns:
@@ -409,7 +409,7 @@ class CommandGenerator:
             )
             return commands
 
-        updated_flows = find_updated_flows(tracker, available_flows)
+        updated_flows = find_updated_flows(tracker, flows)
         if updated_flows:
             structlogger.debug(
                 "command_generator.filter_commands_during_force_slot_filling.running_flows_were_updated",
@@ -418,7 +418,7 @@ class CommandGenerator:
             return [HandleCodeChangeCommand()]
 
         stack = tracker.stack
-        step = get_current_collect_step(stack, available_flows)
+        step = get_current_collect_step(stack, flows)
 
         if step is None or not step.force_slot_filling:
             return commands
