@@ -34,7 +34,7 @@ from rasa.core.channels.voice_stream.voice_channel import (
 
 logger = structlog.get_logger()
 
-JAMBONZ_STREAMS_WEBSOCKET_PATH = "webhooks/jambonz_streams/websocket"
+JAMBONZ_STREAMS_WEBSOCKET_PATH = "webhooks/jambonz_stream/websocket"
 
 
 def map_call_params(data: Dict[Text, str]) -> CallParameters:
