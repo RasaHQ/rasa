@@ -316,7 +316,7 @@ def test_custom_prompt_is_written_and_added_to_endpoints(
     endpoints_file = (tmp_path / DEFAULT_ENDPOINTS_PATH).read_text()
     endpoints = read_yaml(endpoints_file)
     assert (
-        endpoints["nlg"]["prompt"]
+        Path(endpoints["nlg"]["prompt"]).as_posix()
         == f"{DEFAULT_PROMPTS_PATH}/{CONTEXTUAL_RESPONSE_REPHRASER_NAME}.jinja2"
     )
 
@@ -324,11 +324,11 @@ def test_custom_prompt_is_written_and_added_to_endpoints(
     config_file = (tmp_path / DEFAULT_CONFIG_PATH).read_text()
     config = read_yaml(config_file)
     assert (
-        config["pipeline"][0]["prompt_template"]
+        Path(config["pipeline"][0]["prompt_template"]).as_posix()
         == f"{DEFAULT_PROMPTS_PATH}/{COMMAND_GENERATOR_NAME}.jinja2"
     )
     assert (
-        config["policies"][1]["prompt"]
+        Path(config["policies"][1]["prompt"]).as_posix()
         == f"{DEFAULT_PROMPTS_PATH}/{ENTERPRISE_SEARCH_NAME}.jinja2"
     )
 

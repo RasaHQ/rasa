@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import tempfile
 from typing import Any, Dict, List, Optional, Text
 
@@ -78,13 +79,34 @@ def _get_domain_from_importer(config: Dict[Text, Any]) -> Domain:
     Returns:
         A Domain object .
     """
-    with tempfile.NamedTemporaryFile("w+", suffix=".yml") as tmp:
-        write_yaml(config, tmp.name)
+    # We create the file with delete=False so that it can be re-opened on
+    # Windows. If delete=True, the file is opened with the _O_TEMPORARY flag
+    # which blocks any second open() call.
+    tmp = tempfile.NamedTemporaryFile("w+", suffix=".yml", delete=False)
+
+    try:
+        path = tmp.name
+
+        # write_yaml() re-opens the same path. On Windows an already-open
+        # handle keeps the file locked for further opens, so we close
+        # the first handle before we call write_yaml().
+        tmp.close()
+        write_yaml(config, path)
+
         importer = TrainingDataImporter.load_from_config(
             domain_path=FlowSyncImporter.default_pattern_path(),
-            config_path=tmp.name,
+            config_path=path,
         )
         return importer.get_domain()
+
+    finally:
+        # Because we passed delete=False above, Python will not clean the file
+        # To avoid leaving garbage in the temp directory after the tests run,
+        # we remove it explicitly.
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            pass
 
 
 def get_pattern_defaults(config: Dict[Text, Any]) -> PatternDefaults:
