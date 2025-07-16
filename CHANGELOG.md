@@ -10,6 +10,15 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.13.1] - 2025-07-14
+                        
+Rasa Pro 3.13.1 (2025-07-14)                             
+### Bugfixes
+- [#2804](https://github.com/rasahq/rasa-private/issues/2804): Fix issues with bot not giving feedback for slot corrections.
+- [#2817](https://github.com/rasahq/rasa-private/issues/2817): Fixed bot speaking state management in Audiocodes Stream channel. This made the assistant unable to handle user silences
+  Added periodic keepAlive messages to deepgram, this interval can be configured with `keep_alive_interval` parameter
+
+
 ## [3.13.0] - 2025-07-07
                         
 Rasa Pro 3.13.0 (2025-07-07)                             
