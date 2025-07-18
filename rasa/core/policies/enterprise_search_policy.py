@@ -794,7 +794,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             )
             print_error_and_exit(error_message)
 
-        docs = glob.glob(os.path.join(docs_folder, "*.txt"), recursive=True)
+        docs = glob.glob(os.path.join(docs_folder, "**", "*.txt"), recursive=True)
         if not docs or len(docs) < 1:
             error_message = (
                 f"Document source directory is empty: '{docs_folder}'. "

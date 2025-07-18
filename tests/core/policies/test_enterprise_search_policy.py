@@ -594,6 +594,44 @@ def test_train_faiss_with_valid_documents_path(
         pytest.fail("SystemExit was raised unexpectedly")
 
 
+def test_train_faiss_with_valid_documents_path_recursive_structure(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+    tmp_path: Path,
+    caplog: LogCaptureFixture,
+) -> None:
+    docs_dir = tmp_path / "test_train_faiss_with_valid_documents_path"
+    docs_dir.mkdir()
+
+    nested_dir = docs_dir / "nested_dir"
+    nested_dir.mkdir()
+
+    example_doc = nested_dir / "example.txt"
+    example_doc.write_text("This is an example document.")
+    assert example_doc.exists() and example_doc.is_file()
+
+    config = {
+        "vector_store": {
+            "type": "faiss",
+            "source": str(docs_dir),
+        }
+    }
+
+    policy = EnterpriseSearchPolicy(
+        config=config,
+        model_storage=default_model_storage,
+        resource=Resource("enterprisesearchpolicy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+
+    try:
+        policy._validate_documents_folder(docs_dir)
+    except SystemExit:
+        pytest.fail("SystemExit was raised unexpectedly")
+
+
 def test_enterprise_search_policy_fingerprint_addon_not_faiss_vector_store(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
