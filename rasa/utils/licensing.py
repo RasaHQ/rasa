@@ -20,7 +20,8 @@ from rasa.shared.utils.cli import print_error_and_exit
 if typing.TYPE_CHECKING:
     from rasa.core.tracker_stores.tracker_store import TrackerStore
 
-LICENSE_ENV_VAR = "RASA_PRO_LICENSE"
+LICENSE_ENV_VAR = "RASA_LICENSE"
+LICENSE_ENV_VAR_LEGACY = "RASA_PRO_LICENSE"
 ALGORITHM = "RS256"
 # deepcode ignore HardcodedKey: This is a public key - not a security issue.
 PUBLIC_KEY = """-----BEGIN PUBLIC KEY-----
@@ -265,12 +266,22 @@ class License:
 
 def retrieve_license_from_env() -> Text:
     """Return the license found in the env var."""
+    # Check environment variables first
+    license_value = os.environ.get(LICENSE_ENV_VAR) or os.environ.get(
+        LICENSE_ENV_VAR_LEGACY
+    )
+    if license_value:
+        return license_value
+
+    # Fall back to .env file
     stored_env_values = dotenv_values(".env")
-    license_from_env = os.environ.get(LICENSE_ENV_VAR)
-    license = license_from_env or stored_env_values.get(LICENSE_ENV_VAR)
-    if not license:
-        raise LicenseNotFoundException()
-    return license
+    license_value = stored_env_values.get(LICENSE_ENV_VAR) or stored_env_values.get(
+        LICENSE_ENV_VAR_LEGACY
+    )
+    if license_value:
+        return license_value
+
+    raise LicenseNotFoundException()
 
 
 def is_license_expiring_soon(license: License) -> bool:
@@ -297,15 +308,15 @@ def validate_license_from_env(product_area: Text = PRODUCT_AREA) -> None:
     except LicenseNotFoundException:
         structlogger.error("license.not_found.error")
         raise SystemExit(
-            f"A Rasa Pro license is required. "
-            f"Please set the environmental variable "
+            f"A Rasa license is required. "
+            f"Please set the environment variable "
             f"`{LICENSE_ENV_VAR}` to a valid license string. "
         )
     except LicenseValidationException as e:
         structlogger.error("license.validation.error", error=e)
         raise SystemExit(
-            f"Failed to validate Rasa Pro license "
-            f"which was read from environmental variable `{LICENSE_ENV_VAR}`. "
+            f"Failed to validate Rasa license "
+            f"which was read from environment variable `{LICENSE_ENV_VAR}`. "
             f"Please ensure `{LICENSE_ENV_VAR}` is set to a valid license string. "
         )
 

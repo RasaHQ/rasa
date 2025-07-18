@@ -12,6 +12,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils import licensing
 from rasa.utils.licensing import (
     LICENSE_ENV_VAR,
+    LICENSE_ENV_VAR_LEGACY,
     PRODUCT_AREA,
     License,
     LicenseEncodingException,
@@ -39,8 +40,17 @@ def test_validate_valid_license(monkeypatch: MonkeyPatch, valid_license: Text) -
     validate_license_from_env()
 
 
+def test_validate_valid_license_legacy(
+    monkeypatch: MonkeyPatch, valid_license: Text
+) -> None:
+    monkeypatch.delenv(LICENSE_ENV_VAR, raising=False)
+    monkeypatch.setenv(LICENSE_ENV_VAR_LEGACY, valid_license)
+    validate_license_from_env()
+
+
 def test_validate_license_env_var_not_set(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.delenv(LICENSE_ENV_VAR, raising=False)
+    monkeypatch.delenv(LICENSE_ENV_VAR_LEGACY, raising=False)
     with pytest.raises(SystemExit):
         validate_license_from_env()
 

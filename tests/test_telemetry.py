@@ -67,7 +67,7 @@ from rasa.telemetry import (
 )
 from rasa.utils import licensing
 from rasa.utils.endpoints import read_property_config_from_endpoints_file
-from rasa.utils.licensing import LICENSE_ENV_VAR
+from rasa.utils.licensing import LICENSE_ENV_VAR, LICENSE_ENV_VAR_LEGACY
 
 if TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
@@ -684,7 +684,8 @@ def test_get_telemetry_id_valid(monkeypatch: MonkeyPatch, valid_license: Text) -
 
 
 def test_get_telemetry_id_no_license(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.delenv(LICENSE_ENV_VAR)
+    monkeypatch.delenv(LICENSE_ENV_VAR, raising=False)
+    monkeypatch.delenv(LICENSE_ENV_VAR_LEGACY, raising=False)
 
     assert telemetry.get_telemetry_id() is None
 

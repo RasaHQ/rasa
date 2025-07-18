@@ -9,7 +9,7 @@ import requests
 from _pytest.pytester import Pytester, RunResult
 from pytest import MonkeyPatch
 
-from rasa.utils.licensing import LICENSE_ENV_VAR
+from rasa.utils.licensing import LICENSE_ENV_VAR, LICENSE_ENV_VAR_LEGACY
 
 # licenses used in these tests
 # they all expire on 26.01.2034
@@ -37,11 +37,12 @@ def test_missing_license(
     monkeypatch: MonkeyPatch, run_in_simple_project: Callable[..., RunResult]
 ):
     monkeypatch.setenv(LICENSE_ENV_VAR, "")
+    monkeypatch.setenv(LICENSE_ENV_VAR_LEGACY, "")
     result = run_in_simple_project("--help")
 
     assert result.ret == 1
     assert (
-        "Please set the environmental variable `RASA_PRO_LICENSE` to "
+        "Please set the environment variable `RASA_LICENSE` to "
         "a valid license string."
     ) in str(result.stderr)
 
@@ -54,8 +55,8 @@ def test_missing_license_scope(
 
     assert result.ret == 1
     assert (
-        "Failed to validate Rasa Pro license which was read from environmental "
-        "variable `RASA_PRO_LICENSE`. Please ensure `RASA_PRO_LICENSE` is set "
+        "Failed to validate Rasa license which was read from environment "
+        "variable `RASA_LICENSE`. Please ensure `RASA_LICENSE` is set "
         "to a valid license string."
     ) in str(result.stderr)
 
