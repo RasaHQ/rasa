@@ -30,7 +30,7 @@ TWILIO_VOICE_PATH = "webhooks/twilio_voice/webhook"
 
 
 def map_call_params(form: RequestParameters) -> CallParameters:
-    """Map the Audiocodes parameters to the CallParameters dataclass."""
+    """Map the Twilio Voice parameters to the CallParameters dataclass."""
     return CallParameters(
         call_id=form.get("CallSid"),
         user_phone=form.get("Caller"),

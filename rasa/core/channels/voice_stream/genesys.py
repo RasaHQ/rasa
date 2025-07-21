@@ -57,7 +57,7 @@ logger = structlog.get_logger(__name__)
 
 
 def map_call_params(data: Dict[Text, Any]) -> CallParameters:
-    """Map the twilio stream parameters to the CallParameters dataclass."""
+    """Map the Genesys parameters to the CallParameters dataclass."""
     parameters = data["parameters"]
     participant = parameters["participant"]
     # sent as {"ani": "tel:+491604697810"}
@@ -124,7 +124,7 @@ class GenesysInputChannel(VoiceInputChannel):
         Returns:
             GenesysInputChannel instance
         """
-        cls.validate_basic_credentials(credentials)
+        cls.validate_credentials(credentials)
         new_creds = repack_voice_credentials(credentials)
         return cls(**new_creds)
 

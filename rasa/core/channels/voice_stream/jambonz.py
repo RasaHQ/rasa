@@ -38,7 +38,7 @@ JAMBONZ_STREAMS_WEBSOCKET_PATH = "webhooks/jambonz_stream/websocket"
 
 
 def map_call_params(data: Dict[Text, str]) -> CallParameters:
-    """Map the twilio stream parameters to the CallParameters dataclass."""
+    """Map the Jambonz stream parameters to the CallParameters dataclass."""
     call_sid = data.get("callSid", "None")
     from_number = data.get("from", "Unknown")
     to_number = data.get("to")

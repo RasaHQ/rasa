@@ -43,7 +43,7 @@ def input_channel(server_url: str) -> TwilioMediaStreamsInputChannel:
     asr_config = {"name": "deepgram"}
     tts_config = {"name": "azure"}
     input_channel = TwilioMediaStreamsInputChannel(
-        f"https://{server_url}", asr_config, tts_config
+        "https://example.com", asr_config, tts_config
     )
     return input_channel
 
@@ -104,9 +104,7 @@ def call_parameters() -> CallParameters:
         ),
     ],
 )
-def test_twilio_voice_valid_credentials(
-    config: Dict[str, str], expected: Dict[str, str]
-):
+def test_valid_credentials(config: Dict[str, str], expected: Dict[str, str]):
     """Test creation of TwilioMediaStreamsInputChannel with valid credentials."""
     input_channel = TwilioMediaStreamsInputChannel.from_credentials(config)
     assert isinstance(input_channel, TwilioMediaStreamsInputChannel)
@@ -128,28 +126,28 @@ def test_twilio_voice_valid_credentials(
             "tts": {"name": "azure"},
         },
         {
-            "server_url": f"https://{server_url}",
+            "server_url": "https://example.com",
             "asr": {"name": "deepgram"},
         },
         {
-            "server_url": f"https://{server_url}",
+            "server_url": "https://example.com",
             "tts": {"name": "azure"},
         },
         {
-            "server_url": f"https://{server_url}",
+            "server_url": "https://example.com",
             "asr": {"name": "deepgram"},
             "tts": {"name": "azure"},
             "username": "test_user",
         },
         {
-            "server_url": f"https://{server_url}",
+            "server_url": "https://example.com",
             "asr": {"name": "deepgram"},
             "tts": {"name": "azure"},
             "password": "test_password",
         },
     ],
 )
-def test_twilio_voice_input_invalid_credentials(
+def test_invalid_credentials(
     config: Dict[str, str],
 ):
     """Test creation of TwilioMediaStreamsInputChannel with invalid credentials."""
@@ -347,7 +345,7 @@ def twilio_media_streams_input_with_auth(
 ) -> TwilioMediaStreamsInputChannel:
     """Fixture to create a TwilioMediaStreamsInputChannel with authentication."""
     inputs = {
-        "server_url": f"https://{server_url}",
+        "server_url": "https://example.com",
         "asr_config": {"name": "deepgram"},
         "tts_config": {"name": "azure"},
         "username": twilio_username_password[USERNAME],

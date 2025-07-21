@@ -10,11 +10,6 @@ from rasa.shared.exceptions import RasaException
 
 
 @pytest.fixture
-def server_url() -> str:
-    return "example.com"
-
-
-@pytest.fixture
 def input_channel(
     mock_validate_voice_license_scope: None,
 ) -> AudiocodesVoiceInputChannel:
@@ -160,16 +155,16 @@ def test_from_credentials(input_data: dict, mock_validate_voice_license_scope):
             "tts": {"name": "azure"},
         },
         {
-            "server_url": f"https://{server_url}",
+            "server_url": "https://example.com",
             "asr": {"name": "deepgram"},
         },
         {
-            "server_url": f"https://{server_url}",
+            "server_url": "https://example.com",
             "tts": {"name": "azure"},
         },
     ],
 )
-def test_twilio_voice_input_invalid_credentials(
+def test_invalid_credentials(
     config: Dict[str, str],
 ):
     """Test creation of TwilioMediaStreamsInputChannel with invalid credentials."""

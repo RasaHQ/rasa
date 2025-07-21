@@ -121,7 +121,7 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
         cls,
         credentials: Optional[Dict[str, Any]],
     ) -> VoiceInputChannel:
-        cls.validate_basic_credentials(credentials)
+        cls.validate_credentials(credentials)
         new_creds = repack_voice_credentials(credentials)
         return cls(**new_creds)
 

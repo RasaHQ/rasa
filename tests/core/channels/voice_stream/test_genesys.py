@@ -12,11 +12,6 @@ from rasa.shared.exceptions import RasaException
 
 
 @pytest.fixture
-def server_url() -> str:
-    return "example.com"
-
-
-@pytest.fixture
 def input_channel() -> GenesysInputChannel:
     server_url = "pro-grouse-possibly.ngrok-free.app"
     asr_config = {"name": "azure"}
@@ -138,20 +133,6 @@ async def test_verify_signature(input_channel, mocked_request):
             "asr": {"name": "deepgram"},
             "tts": {"name": "azure"},
         },
-        {
-            "api_key": None,
-            "client_secret": "some_secret",
-            "server_url": "https://example.com",
-            "asr": {"name": "deepgram"},
-            "tts": {"name": "azure"},
-        },
-        {
-            "api_key": None,
-            "client_secret": None,
-            "server_url": "https://example.com",
-            "asr": {"name": "deepgram"},
-            "tts": {"name": "azure"},
-        },
     ],
 )
 @pytest.mark.usefixtures("mock_validate_voice_license_scope")
@@ -179,30 +160,27 @@ def test_from_credentials(input_data: dict, mock_validate_voice_license_scope):
             "tts": {"name": "azure"},
         },
         {
-            "server_url": f"https://{server_url}",
+            "server_url": "https://example.com",
             "asr": {"name": "deepgram"},
         },
         {
-            "server_url": f"https://{server_url}",
+            "server_url": "https://example.com",
             "tts": {"name": "azure"},
+            "asr": {"name": "azure"},
+            # Missing API key
         },
         {
-            "server_url": f"https://{server_url}",
-            "asr": {"name": "deepgram"},
+            "server_url": "https://example.com",
             "tts": {"name": "azure"},
-            "username": "test_user",
-        },
-        {
-            "server_url": f"https://{server_url}",
-            "asr": {"name": "deepgram"},
-            "tts": {"name": "azure"},
-            "password": "test_password",
+            "asr": {"name": "azure"},
+            "client_secret": "some_secret",
+            # Missing API key
         },
     ],
 )
-def test_twilio_voice_input_invalid_credentials(
+def test_invalid_credentials(
     config: Dict[str, str],
 ):
-    """Test creation of TwilioMediaStreamsInputChannel with invalid credentials."""
+    """Test creation of GenesysInputChannel with invalid credentials."""
     with pytest.raises(RasaException):
         GenesysInputChannel.from_credentials(config)

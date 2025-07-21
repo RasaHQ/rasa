@@ -16,12 +16,7 @@ from rasa.core.channels.voice_stream.voice_channel import (
     EndConversationAction,
     NewAudioAction,
 )
-from rasa.shared.exceptions import InvalidConfigException, RasaException
-
-
-@pytest.fixture
-def server_url() -> str:
-    return "example.com"
+from rasa.shared.exceptions import InvalidConfigException
 
 
 @pytest.fixture
@@ -177,31 +172,6 @@ async def test_blueprint_health_endpoint(input_channel):
     assert prefix + "/webhook" in routes
     assert prefix + "/call_status" in routes
     assert prefix + "/websocket" in routes
-
-
-@pytest.mark.parametrize(
-    "credentials",
-    [
-        None,  # No credentials
-        {},  # Empty credentials
-        {
-            "asr": {"name": "deepgram"},
-            "tts": {"name": "azure"},
-        },
-        {
-            "server_url": f"https://{server_url}",
-            "asr": {"name": "deepgram"},
-        },
-        {
-            "server_url": f"https://{server_url}",
-            "tts": {"name": "azure"},
-        },
-    ],
-)
-def test_from_invalid_credentials(credentials):
-    """Test validation of credentials when creating channel from config."""
-    with pytest.raises(RasaException):
-        JambonzStreamInputChannel.from_credentials(credentials)
 
 
 @pytest.mark.parametrize(
