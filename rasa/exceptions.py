@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Text
+from typing import Any, Text
 
 from packaging import version
 
@@ -49,6 +49,19 @@ class NoEventsInTimeRangeError(RasaException):
 
 class MissingDependencyException(RasaException):
     """Raised if a python package dependency is needed, but not installed."""
+
+
+class ValidationError(RasaException):
+    """Raised when an error occurs during validation."""
+
+    def __init__(self, *, code: str, event_info: str, **ctx: Any) -> None:
+        super().__init__(event_info)
+        self.code = code
+        self.info = event_info
+        self.ctx = ctx
+
+    def __str__(self) -> str:
+        return self.info
 
 
 @dataclass

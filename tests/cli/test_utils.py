@@ -17,7 +17,7 @@ from ruamel.yaml import YAML
 
 import rasa.cli.utils
 import rasa.shared.utils.io
-from rasa.exceptions import ModelNotFound
+from rasa.exceptions import ModelNotFound, ValidationError
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
@@ -91,7 +91,7 @@ def test_parse_no_positional_model_path_argument(argv):
 
 
 def test_validate_invalid_path():
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         rasa.cli.utils.get_validated_path("test test test", "out", "default")
 
 
@@ -276,7 +276,7 @@ def test_get_validated_config_with_invalid_input(parameters: Dict[Text, Any]) ->
     default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
     write_yaml(parameters["default_config"], default_config_path)
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         rasa.cli.utils.get_validated_config(
             config_path, parameters["mandatory_keys"], default_config_path
         )
@@ -310,7 +310,7 @@ def test_get_validated_config_with_default_and_no_config(
     default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
     write_yaml(default_config_content, default_config_path)
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         rasa.cli.utils.get_validated_config(
             config_path, mandatory_keys, default_config_path
         )
@@ -321,14 +321,14 @@ def test_get_validated_config_with_no_content() -> None:
     default_config_path = os.path.join(tempfile.mkdtemp(), DEFAULT_CONFIG_PATH)
     mandatory_keys = CONFIG_MANDATORY_KEYS
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         rasa.cli.utils.get_validated_config(
             config_path, mandatory_keys, default_config_path
         )
 
 
 def test_validate_config_path_with_non_existing_file():
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         rasa.cli.utils.validate_config_path("non-existing-file.yml")
 
 
@@ -412,7 +412,7 @@ def test_validate_files_action_not_found_invalid_domain(
         [file_name],
     )
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         rasa.cli.utils.validate_files(
             fail_on_warnings=False,
             max_history=None,
@@ -444,7 +444,7 @@ def test_validate_files_form_not_found_invalid_domain(
         "data/test_restaurantbot/domain.yml",
         [file_name],
     )
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         rasa.cli.utils.validate_files(
             fail_on_warnings=False,
             max_history=None,
@@ -516,7 +516,7 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
         domain_file_name,
         "data/test_moodbot/data",
     )
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         rasa.cli.utils.validate_files(
             fail_on_warnings=False,
             max_history=None,
@@ -525,7 +525,7 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
 
 
 def test_validate_files_exit_early():
-    with pytest.raises(SystemExit) as pytest_e:
+    with pytest.raises(ValidationError) as pytest_e:
         importer = TrainingDataImporter.load_from_config(
             "data/test_config/config_defaults.yml",
             "data/test_domains/duplicate_intents.yml",
@@ -537,8 +537,7 @@ def test_validate_files_exit_early():
             importer=importer,
         )
 
-    assert pytest_e.type == SystemExit
-    assert pytest_e.value.code == 1
+    assert pytest_e.type == ValidationError
 
 
 def test_validate_files_invalid_domain():
@@ -548,7 +547,7 @@ def test_validate_files_invalid_domain():
         None,
     )
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         rasa.cli.utils.validate_files(
             fail_on_warnings=False,
             max_history=None,

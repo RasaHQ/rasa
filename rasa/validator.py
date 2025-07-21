@@ -1,7 +1,6 @@
 import logging
 import re
 import string
-import sys
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
@@ -17,6 +16,7 @@ import rasa.shared.utils.io
 from rasa.core.channels import UserMessage
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 from rasa.engine.language import Language
+from rasa.exceptions import ValidationError
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
@@ -237,8 +237,7 @@ class Validator:
                     "validator.verify_intents_in_stories_or_flows.not_used",
                     intent=intent,
                     event_info=(
-                        f"The intent '{intent}' is not used "
-                        f"in any story, rule or flow."
+                        f"The intent '{intent}' is not used in any story, rule or flow."
                     ),
                 )
                 everything_is_alright = ignore_warnings or everything_is_alright
@@ -605,7 +604,7 @@ class Validator:
                     "validator.config_missing_mandatory_key",
                     key=key,
                     event_info=(
-                        f"The config file is missing the " f"'{key}' mandatory key."
+                        f"The config file is missing the '{key}' mandatory key."
                     ),
                 )
 
@@ -1792,7 +1791,10 @@ class Validator:
                 "rasa.validator.verify_studio_supported_validations.empty_domain",
                 event_info="Encountered empty domain during validation.",
             )
-            sys.exit(1)
+            raise ValidationError(
+                code="rasa.validator.verify_studio_supported_validations.empty_domain",
+                event_info="Encountered empty domain during validation.",
+            )
 
         self.warn_if_config_mandatory_keys_are_not_set()
 

@@ -4,6 +4,7 @@ import pytest
 
 from rasa.dialogue_understanding_test.du_test_case import DialogueUnderstandingTestCase
 from rasa.dialogue_understanding_test.validation import validate_test_cases
+from rasa.exceptions import ValidationError
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import FlowsList
 
@@ -60,10 +61,10 @@ def test_validate_test_cases_fails_with_using_invalid_response_template() -> Non
         )
     ]
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         validate_test_cases(test_cases, Domain.empty())
 
 
 def test_validate_test_cases_with_no_domain_throws_error():
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         validate_test_cases([], None)

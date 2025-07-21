@@ -15,7 +15,7 @@ from rasa.e2e_test.utils.validation import (
     validate_test_case_fixtures,
     validate_test_case_metadata,
 )
-from rasa.exceptions import ModelNotFound
+from rasa.exceptions import ModelNotFound, ValidationError
 from rasa.shared.constants import DEFAULT_MODELS_PATH
 
 if typing.TYPE_CHECKING:
@@ -58,15 +58,21 @@ def test_validate_path_to_test_cases(tmp_path: Path) -> None:
     """
     path_to_test_cases = tmp_path / "test_cases.yml"
 
-    match_msg = f"Path to test cases does not exist: {path_to_test_cases!s}."
+    expected_code = "e2e_test.utils.validation.invalid_test_case_path"
+    expected_msg = (
+        f"Path to test cases does not exist: {path_to_test_cases}. "
+        f"Please provide a valid path to test cases. "
+    )
 
     if platform.system() == "Windows":
-        # Windows uses backslashes in paths
-        match_msg = match_msg.replace("\\", "\\\\")
+        expected_msg = expected_msg.replace("\\", "\\\\")
 
-    with pytest.warns(UserWarning, match=match_msg):
-        with pytest.raises(SystemExit):
-            validate_path_to_test_cases(str(path_to_test_cases))
+    with pytest.raises(ValidationError) as exc_info:
+        validate_path_to_test_cases(str(path_to_test_cases))
+
+    err = exc_info.value
+    assert err.code == expected_code
+    assert expected_msg in str(err)
 
 
 def test_validate_test_case() -> None:
@@ -75,11 +81,18 @@ def test_validate_test_case() -> None:
     The tested function should raise a UserWarning and exit the program.
     """
     test_case = "test_case1"
-    match_msg = f"Test case does not exist: {test_case!s}."
+    expected_code = "e2e_test.utils.validation.invalid_test_case"
+    expected_msg = (
+        f"Test case does not exist: {test_case}. "
+        f"Please check for typos and provide a valid test case name. "
+    )
 
-    with pytest.warns(UserWarning, match=match_msg):
-        with pytest.raises(SystemExit):
-            validate_test_case(test_case, [], {}, {})
+    with pytest.raises(ValidationError) as exc_info:
+        validate_test_case(test_case, [], {}, {})
+
+    err = exc_info.value
+    assert err.code == expected_code
+    assert expected_msg in str(err)
 
 
 @pytest.mark.parametrize(
@@ -116,7 +129,7 @@ def test_validate_test_case() -> None:
                         "Fixture 'fixture_3' referenced in the "
                         "test case 'test_case_name' is not defined."
                     ),
-                    "event": "validation.validate_test_case_fixtures",
+                    "event": "e2e_test.utils.validation.validate_test_case_fixtures",
                     "log_level": "error",
                 }
             ],
@@ -132,7 +145,7 @@ def test_validate_test_case() -> None:
                         "Fixture 'fixture_1' referenced in the "
                         "test case 'test_case_name' is not defined."
                     ),
-                    "event": "validation.validate_test_case_fixtures",
+                    "event": "e2e_test.utils.validation.validate_test_case_fixtures",
                     "log_level": "error",
                 },
                 {
@@ -140,7 +153,7 @@ def test_validate_test_case() -> None:
                         "Fixture 'fixture_2' referenced in the "
                         "test case 'test_case_name' is not defined."
                     ),
-                    "event": "validation.validate_test_case_fixtures",
+                    "event": "e2e_test.utils.validation.validate_test_case_fixtures",
                     "log_level": "error",
                 },
             ],
@@ -196,7 +209,7 @@ def test_validate_test_case_fixtures(
                         "test case 'test_case_name' is not defined."
                     ),
                     "event": (
-                        "validation.validate_test_case_metadata.test_case_metadata"
+                        "e2e_test.utils.validation.validate_test_case_metadata.test_case_metadata"
                     ),
                     "log_level": "error",
                 }
@@ -252,7 +265,8 @@ def test_validate_test_case_metadata(
                         "Metadata 'metadata_1' referenced in the step of the "
                         "test case 'test_case_name' is not defined."
                     ),
-                    "event": "validation.validate_test_case_metadata.step_metadata",
+                    "event": "e2e_test.utils.validation.validate_test_case_metadata"
+                    ".step_metadata",
                     "log_level": "error",
                 }
             ],

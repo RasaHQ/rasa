@@ -1176,12 +1176,13 @@ def sanic_test_mode(monkeypatch: MonkeyPatch):
 def filter_expected_warnings(records: WarningsRecorder) -> WarningsRecorder:
     records_copy = copy.deepcopy(records.list)
 
-    for warning_type, warning_message in rasa.utils.common.EXPECTED_WARNINGS:
-        for record in records_copy:
+    for record in records_copy:
+        for warning_type, warning_message in rasa.utils.common.EXPECTED_WARNINGS:
             if type(record.message) == warning_type and re.search(
                 warning_message, str(record.message)
             ):
                 records.pop(type(record.message))
+                break
 
     return records
 
@@ -1446,22 +1447,14 @@ def stub_data() -> Dict[str, Any]:
 def action_name_test_file_with_separator(
     test_file_name: str, action_name_test_file: str
 ) -> str:
-    return (
-        f"{test_file_name}"
-        f"{STUB_CUSTOM_ACTION_NAME_SEPARATOR}"
-        f"{action_name_test_file}"
-    )
+    return f"{test_file_name}{STUB_CUSTOM_ACTION_NAME_SEPARATOR}{action_name_test_file}"
 
 
 @pytest.fixture
 def action_name_test_case_with_separator(
     test_case_name: str, action_name_test_case: str
 ) -> str:
-    return (
-        f"{test_case_name}"
-        f"{STUB_CUSTOM_ACTION_NAME_SEPARATOR}"
-        f"{action_name_test_case}"
-    )
+    return f"{test_case_name}{STUB_CUSTOM_ACTION_NAME_SEPARATOR}{action_name_test_case}"
 
 
 @pytest.fixture

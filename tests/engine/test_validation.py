@@ -7,7 +7,6 @@ from unittest.mock import Mock, patch
 
 import pytest
 import structlog
-from _pytest.capture import CaptureFixture
 from _pytest.logging import LogCaptureFixture
 
 from rasa.core.policies.policy import PolicyPrediction
@@ -42,6 +41,7 @@ from rasa.engine.validation import (
     validate_model_client_configuration_setup_during_training_time,
     validate_model_group_configuration_setup,
 )
+from rasa.exceptions import ValidationError
 from rasa.shared.constants import (
     API_KEY,
     CONFIG_RECIPE_KEY,
@@ -1396,25 +1396,19 @@ def test_validate_routing_setup_with_unrequired_calm_slot(tmp_path: Path) -> Non
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
     expected_event = (
-        f"validation.coexistance."
+        f"engine.validation.coexistance."
         f"{ROUTE_TO_CALM_SLOT}_in_domain_with_no_router_defined"
     )
-    expected_log_level = "error"
-    expected_log_message = (
+    expected_error_message = (
         "LLMBasedRouter or the IntentBasedRouter is not in the config"
     )
 
-    # When / Then
-    with structlog.testing.capture_logs() as caplog:
-        with pytest.raises(SystemExit):
-            validate_coexistance_routing_setup(
-                domain, model_configuration, FlowsList([])
-            )
+    with pytest.raises(ValidationError) as exc_info:
+        validate_coexistance_routing_setup(domain, model_configuration, FlowsList([]))
 
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    # `str(exc_info.value)` contains the full error message
+    assert expected_error_message in str(exc_info.value)
+    assert expected_event in exc_info.value.code
 
 
 @pytest.mark.parametrize(
@@ -1449,23 +1443,18 @@ def test_validate_routing_setup_with_router_and_no_calm_slot(
     recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
-    expected_event = f"validation.coexistance" f".{ROUTE_TO_CALM_SLOT}_not_in_domain"
-    expected_log_level = "error"
-    expected_log_message = (
+    expected_event = f"engine.validation.coexistance.{ROUTE_TO_CALM_SLOT}_not_in_domain"
+    expected_msg = (
         f"is in the config, but the slot {ROUTE_TO_CALM_SLOT} is not in the domain"
     )
 
     # When / Then
-    with structlog.testing.capture_logs() as caplog:
-        with pytest.raises(SystemExit):
-            validate_coexistance_routing_setup(
-                domain, model_configuration, FlowsList([])
-            )
+    with pytest.raises(ValidationError) as exc_info:
+        validate_coexistance_routing_setup(domain, model_configuration, FlowsList([]))
 
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    # Check that both pieces of information are present
+    assert expected_msg in str(exc_info.value)
+    assert expected_event in exc_info.value.code
 
 
 @pytest.mark.parametrize(
@@ -1496,7 +1485,7 @@ def test_validate_routing_setup_with_wrong_component_order(
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
     # When / Then
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         validate_coexistance_routing_setup(domain, model_configuration, FlowsList([]))
 
 
@@ -1521,7 +1510,7 @@ def test_validate_routing_setup_with_both_coexistence_components(
     recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         validate_coexistance_routing_setup(domain, model_configuration, FlowsList([]))
 
 
@@ -1627,24 +1616,20 @@ def test_validate_coexistence_configuration(
     recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
-    expected_event = "validation.coexistance.invalid_configuration"
-    expected_log_level = "error"
-    expected_log_message = (
+    expected_event = "engine.validation.coexistance.invalid_configuration"
+    expected_msg = (
         f"The configuration of the {router_component} is invalid."
         f" Please check the documentation."
     )
 
     # When / Then
-    with structlog.testing.capture_logs() as caplog:
-        with pytest.raises(SystemExit):
-            validate_coexistance_routing_setup(
-                domain, model_configuration, FlowsList([])
-            )
+    with pytest.raises(ValidationError) as exc_info:
+        validate_coexistance_routing_setup(domain, model_configuration, FlowsList([]))
 
-        logs = filter_logs(
-            caplog, expected_event, expected_log_level, [expected_log_message]
-        )
-        assert len(logs) == 1
+    err = exc_info.value  # the raised ValidationError instance
+
+    assert err.code == expected_event  # event / error-code check
+    assert expected_msg in str(err)  # message text check
 
 
 def test_validate_routing_setup_with_unrequired_action_reset_routing(
@@ -1682,7 +1667,7 @@ def test_validate_routing_setup_with_unrequired_action_reset_routing(
     )
 
     expected_event = (
-        f"validation.coexistance.{ACTION_RESET_ROUTING}_present_in_flow"
+        f"engine.validation.coexistance.{ACTION_RESET_ROUTING}_present_in_flow"
         f"_without_router_or_{ROUTE_TO_CALM_SLOT}_slot"
     )
     expected_log_level = "error"
@@ -1694,7 +1679,7 @@ def test_validate_routing_setup_with_unrequired_action_reset_routing(
 
     # When / Then
     with structlog.testing.capture_logs() as caplog:
-        with pytest.raises(SystemExit):
+        with pytest.raises(ValidationError):
             validate_coexistance_routing_setup(domain, model_configuration, flows_list)
 
         logs = filter_logs(
@@ -1721,24 +1706,26 @@ def mock_schema():
 def test_validate_intent_based_router_position(
     mock_schema, router_index, generator_index, should_exit
 ):
-    with (
-        patch(
-            "rasa.engine.validation.get_component_index",
-            side_effect=lambda schema, cls: router_index
-            if cls is IntentBasedRouter
-            else generator_index,
-        ),
-        patch("rasa.engine.validation.structlogger.error") as mock_error,
-        patch("sys.exit") as mock_exit,
+    with patch(
+        "rasa.engine.validation.get_component_index",
+        side_effect=lambda schema, cls: router_index
+        if cls is IntentBasedRouter
+        else generator_index,
     ):
-        validate_intent_based_router_position(mock_schema)
-
+        expected_event = "engine.validation.coexistance.wrong_order_of_components"
+        expected_error_message = (
+            "IntentBasedRouter should come before "
+            "an LLMBasedCommandGenerator in the pipeline."
+        )
         if should_exit:
-            mock_error.assert_called_once()
-            mock_exit.assert_called_once_with(1)
+            with pytest.raises(ValidationError) as exc_info:
+                validate_intent_based_router_position(mock_schema)
+
+            err = exc_info.value
+            assert err.code == expected_event
+            assert expected_error_message in str(err)
         else:
-            mock_error.assert_not_called()
-            mock_exit.assert_not_called()
+            validate_intent_based_router_position(mock_schema)
 
 
 @pytest.fixture
@@ -1815,14 +1802,23 @@ def test_validate_command_generator_exclusivity(
         test_schema.nodes[str(i)] = SchemaNode(
             needs={}, uses=component, constructor_name="create", fn="train", config={}
         )
-    validate_command_generator_exclusivity(test_schema)
 
+    expected_event = (
+        "engine.validation.command_generator.multiple_command_generator_defined"
+    )
+    expected_error_message = (
+        "Multiple LLM based command generators are defined in "
+        "the config. Please use only one LLM based command generator."
+    )
     if should_exit:
-        patch_error.assert_called_once()
-        patch_exit.assert_called_once_with(1)
+        with pytest.raises(ValidationError) as exc_info:
+            validate_command_generator_exclusivity(test_schema)
+
+        err = exc_info.value
+        assert err.code == expected_event
+        assert expected_error_message in str(err)
     else:
-        patch_error.assert_not_called()
-        patch_exit.assert_not_called()
+        validate_command_generator_exclusivity(test_schema)
 
 
 class MockAvailableEndpointsForTestValidation:
@@ -2148,9 +2144,8 @@ def test_validate_llm_configuration_setup(
     config = {"pipeline": pipeline_config}
 
     if should_exit:
-        with pytest.raises(SystemExit) as exc_info:
+        with pytest.raises(ValidationError):
             validate_model_client_configuration_setup_during_training_time(config)
-        assert exc_info.value.code == 1
     else:
         validate_model_client_configuration_setup_during_training_time(config)
 
@@ -2329,7 +2324,7 @@ def test_validate_model_client_configuration_setup_during_inference_time(
     monkeypatch.setattr("rasa.engine.validation.AvailableEndpoints", mock_endpoints)
 
     if should_raise_error:
-        with pytest.raises(SystemExit):
+        with pytest.raises(ValidationError):
             validate_model_client_configuration_setup_during_inference_time(
                 model_metadata
             )
@@ -2677,9 +2672,8 @@ def test_validate_model_group_configuration_setup(
     monkeypatch.setattr("rasa.engine.validation.AvailableEndpoints", mock_endpoints)
 
     if should_exit:
-        with pytest.raises(SystemExit) as exc_info:
+        with pytest.raises(ValidationError):
             validate_model_group_configuration_setup()
-        assert exc_info.value.code == 1
     else:
         validate_model_group_configuration_setup()
 
@@ -2829,19 +2823,17 @@ def test_validate_model_group_configuration_setup(
     ],
 )
 def test_validate_api_type_key_used_correctly(
-    pipeline_config: List[Dict[Text, Any]],
-    should_exit: bool,
-    capsys: CaptureFixture,
+    pipeline_config: List[Dict[Text, Any]], should_exit: bool
 ):
     config = {"pipeline": pipeline_config}
+    expected_error_code = "engine.validation.component.api_type_config_key_invalid"
 
     if should_exit:
-        with pytest.raises(SystemExit) as excinfo:
+        with pytest.raises(ValidationError) as exc_info:
             validate_model_client_configuration_setup_during_training_time(config)
-        assert excinfo.value.code == 1
-        captured = capsys.readouterr()
-        expected_error_code = "validation.component.api_type_config_key_invalid"
-        assert expected_error_code in captured.out
+
+        err = exc_info.value
+        assert err.code == expected_error_code
     else:
         validate_model_client_configuration_setup_during_training_time(config)
 
@@ -2978,15 +2970,12 @@ def test_validate_responses_for_intentless_policy_no_responses_in_domain_no_stor
 
     model_configuration = recipe.graph_config_for_recipe(config, {})
 
-    # When / Then - should raise validation error
-    expected_event = "validation.intentless_policy.no_applicable_responses_found"
-    expected_log_level = "error"
+    expected_code = "engine.validation.intentless_policy.no_applicable_responses_found"
 
-    with structlog.testing.capture_logs() as caplog:
-        with pytest.raises(SystemExit):
-            _validate_intentless_policy_responses(
-                FlowsList([]), domain, StoryGraph([]), model_configuration
-            )
+    with pytest.raises(ValidationError) as exc_info:
+        _validate_intentless_policy_responses(
+            FlowsList([]), domain, StoryGraph([]), model_configuration
+        )
 
-        logs = filter_logs(caplog, expected_event, expected_log_level, None)
-        assert len(logs) == 1
+    err = exc_info.value
+    assert err.code == expected_code

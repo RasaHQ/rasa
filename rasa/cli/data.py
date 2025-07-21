@@ -205,9 +205,14 @@ def _build_training_data_importer(args: argparse.Namespace) -> "TrainingDataImpo
         args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=False
     )
 
-    return TrainingDataImporter.load_from_config(
-        domain_path=domain, training_data_paths=args.data, config_path=config
-    )
+    if config:
+        return TrainingDataImporter.load_from_config(
+            domain_path=domain, training_data_paths=args.data, config_path=config
+        )
+    else:
+        return TrainingDataImporter.load_from_dict(
+            domain_path=domain, training_data_paths=args.data, config_path=config
+        )
 
 
 def _append_story_structure_arguments(parser: argparse.ArgumentParser) -> None:

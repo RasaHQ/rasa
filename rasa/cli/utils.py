@@ -14,7 +14,7 @@ import structlog
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 from rasa import telemetry
-from rasa.exceptions import ModelNotFound
+from rasa.exceptions import ModelNotFound, ValidationError
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
     ASSISTANT_ID_KEY,
@@ -191,16 +191,15 @@ def validate_config_path(
     config = rasa.cli.utils.get_validated_path(config, "config", default_config)
 
     if not config or not os.path.exists(config):
-        structlogger.error(
-            "cli.validate_config_path.does_not_exists",
+        display_research_study_prompt()
+        raise ValidationError(
+            code="cli.validate_config_path.does_not_exists",
             config=config,
             event_info=(
                 f"The config file '{config}' does not exist. "
                 f"Use '--config' to specify a valid config file."
             ),
         )
-        display_research_study_prompt()
-        sys.exit(1)
 
     return str(config)
 
@@ -221,8 +220,9 @@ def validate_mandatory_config_keys(
     """
     missing_keys = set(rasa.cli.utils.missing_config_keys(config, mandatory_keys))
     if missing_keys:
-        structlogger.error(
-            "cli.validate_mandatory_config_keys.missing_keys",
+        display_research_study_prompt()
+        raise ValidationError(
+            code="cli.validate_mandatory_config_keys.missing_keys",
             config=config,
             missing_keys=missing_keys,
             event_info=(
@@ -232,8 +232,6 @@ def validate_mandatory_config_keys(
                 )
             ),
         )
-        display_research_study_prompt()
-        sys.exit(1)
 
     return str(config)
 
@@ -287,7 +285,10 @@ def validate_files(
                 event_info="Encountered empty domain during validation.",
             )
             display_research_study_prompt()
-            sys.exit(1)
+            raise ValidationError(
+                code="cli.validate_files.empty_domain",
+                event_info="Encountered empty domain during validation.",
+            )
 
         valid_domain = _validate_domain(validator)
         valid_nlu = _validate_nlu(validator, fail_on_warnings)
@@ -295,7 +296,10 @@ def validate_files(
             validator, max_history, fail_on_warnings
         )
         valid_flows = validator.verify_flows()
-        valid_translations = validator.verify_translations(summary_mode=True)
+        if validator.config:
+            valid_translations = validator.verify_translations(summary_mode=True)
+        else:
+            valid_translations = True
         valid_CALM_slot_mappings = validator.validate_CALM_slot_mappings()
 
         all_good = (
@@ -307,7 +311,8 @@ def validate_files(
             and valid_CALM_slot_mappings
         )
 
-    validator.warn_if_config_mandatory_keys_are_not_set()
+    if validator.config:
+        validator.warn_if_config_mandatory_keys_are_not_set()
 
     telemetry.track_validate_files(all_good)
     if not all_good:
@@ -316,7 +321,10 @@ def validate_files(
             event_info="Project validation completed with errors.",
         )
         display_research_study_prompt()
-        sys.exit(1)
+        raise ValidationError(
+            code="cli.validate_files.project_validation_error",
+            event_info="Project validation completed with errors.",
+        )
 
 
 def _validate_domain(validator: "Validator") -> bool:
@@ -354,7 +362,7 @@ def _validate_story_structure(
     # Check if a valid setting for `max_history` was given
     if isinstance(max_history, int) and max_history < 1:
         raise argparse.ArgumentTypeError(
-            f"The value of `--max-history {max_history}` " f"is not a positive integer."
+            f"The value of `--max-history {max_history}` is not a positive integer."
         )
 
     return validator.verify_story_structure(
@@ -391,7 +399,15 @@ def cancel_cause_not_found(
         ),
     )
     display_research_study_prompt()
-    sys.exit(1)
+    raise ValidationError(
+        code="cli.path_does_not_exist",
+        path=current,
+        event_info=(
+            f"The path '{current}' does not exist. "
+            f"Please make sure to {default_clause} specify it "
+            f"with '--{parameter}'."
+        ),
+    )
 
 
 def parse_last_positional_argument_as_model_path() -> None:

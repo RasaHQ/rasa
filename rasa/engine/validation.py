@@ -2,8 +2,8 @@ import dataclasses
 import inspect
 import logging
 import re
-import sys
 import typing
+from collections import Counter
 from typing import (
     Any,
     Callable,
@@ -57,6 +57,7 @@ from rasa.engine.graph import (
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelMetadata, ModelStorage
 from rasa.engine.training.fingerprinting import Fingerprintable
+from rasa.exceptions import ValidationError
 from rasa.shared.constants import (
     API_BASE_CONFIG_KEY,
     API_KEY,
@@ -698,8 +699,8 @@ def _validate_intentless_policy_responses(
         return
 
     if not contains_intentless_policy_responses(flows, domain, story_graph):
-        structlogger.error(
-            "validation.intentless_policy.no_applicable_responses_found",
+        raise ValidationError(
+            code="engine.validation.intentless_policy.no_applicable_responses_found",
             event_info=(
                 "IntentlessPolicy is configured, but no applicable responses are "
                 "found. Please make sure that there are responses defined in the "
@@ -707,7 +708,6 @@ def _validate_intentless_policy_responses(
                 "end-to-end stories in the training data."
             ),
         )
-        sys.exit(1)
 
 
 def get_component_index(schema: GraphSchema, component_class: Type) -> Optional[int]:
@@ -743,14 +743,13 @@ def validate_router_exclusivity(schema: GraphSchema) -> None:
     defined at the same time.
     """
     if schema.has_node(IntentBasedRouter) and schema.has_node(LLMBasedRouter):
-        structlogger.error(
-            "validation.coexistance.both_routers_defined",
+        raise ValidationError(
+            code="engine.validation.coexistance.both_routers_defined",
             event_info=(
                 "Both LLMBasedRouter and IntentBasedRouter are in the config. "
                 "Please use only one of them."
             ),
         )
-        sys.exit(1)
 
 
 def validate_intent_based_router_position(schema: GraphSchema) -> None:
@@ -764,14 +763,13 @@ def validate_intent_based_router_position(schema: GraphSchema) -> None:
         and llm_command_generator_pos is not None
         and intent_based_router_pos > llm_command_generator_pos
     ):
-        structlogger.error(
-            "validation.coexistance.wrong_order_of_components",
+        raise ValidationError(
+            code="engine.validation.coexistance.wrong_order_of_components",
             event_info=(
                 "IntentBasedRouter should come before "
-                "a LLMBasedCommandGenerator in the pipeline."
+                "an LLMBasedCommandGenerator in the pipeline."
             ),
         )
-        sys.exit(1)
 
 
 def validate_that_slots_are_defined_if_router_is_defined(
@@ -782,15 +780,14 @@ def validate_that_slots_are_defined_if_router_is_defined(
         router_present = schema.has_node(router_type)
         slot_has_issue = len(routing_slots) == 0 or routing_slots[0].type_name != "bool"
         if router_present and slot_has_issue:
-            structlogger.error(
-                f"validation.coexistance.{ROUTE_TO_CALM_SLOT}_not_in_domain",
+            raise ValidationError(
+                code=f"engine.validation.coexistance.{ROUTE_TO_CALM_SLOT}_not_in_domain",
                 event_info=(
                     f"{router_type.__name__} is in the config, but the slot "
                     f"{ROUTE_TO_CALM_SLOT} is not in the domain or not of "
                     f"type bool."
                 ),
             )
-            sys.exit(1)
 
 
 def validate_that_router_is_defined_if_router_slots_are_in_domain(
@@ -804,8 +801,8 @@ def validate_that_router_is_defined_if_router_slots_are_in_domain(
     if defined_router_slots and (
         not router_present or routing_slots[0].type_name != "bool"
     ):
-        structlogger.error(
-            f"validation.coexistance"
+        raise ValidationError(
+            code=f"engine.validation.coexistance"
             f".{ROUTE_TO_CALM_SLOT}_in_domain_with_no_router_defined",
             event_info=(
                 f"The slot {ROUTE_TO_CALM_SLOT} is in the domain but the "
@@ -813,7 +810,6 @@ def validate_that_router_is_defined_if_router_slots_are_in_domain(
                 f"the type of the slot is not bool."
             ),
         )
-        sys.exit(1)
 
 
 def valid_nlu_entry_config(config: Optional[Dict[str, Any]]) -> bool:
@@ -842,14 +838,13 @@ def validate_configuration(
     if schema.has_node(IntentBasedRouter, include_subtypes=False):
         config = get_component_config(schema, IntentBasedRouter)
         if not valid_calm_entry_config(config) or not valid_nlu_entry_config(config):
-            structlogger.error(
-                "validation.coexistance.invalid_configuration",
+            raise ValidationError(
+                code="engine.validation.coexistance.invalid_configuration",
                 event_info=(
                     "The configuration of the IntentBasedRouter is invalid. "
-                    "Please check the documentation.",
+                    "Please check the documentation."
                 ),
             )
-            sys.exit(1)
 
     if schema.has_node(LLMBasedRouter, include_subtypes=False):
         config = get_component_config(schema, LLMBasedRouter)
@@ -858,14 +853,13 @@ def validate_configuration(
             and NLU_ENTRY in config
             and not valid_nlu_entry_config(config)
         ):
-            structlogger.error(
-                "validation.coexistance.invalid_configuration",
+            raise ValidationError(
+                code="engine.validation.coexistance.invalid_configuration",
                 event_info=(
                     "The configuration of the LLMBasedRouter is invalid. "
-                    "Please check the documentation.",
+                    "Please check the documentation."
                 ),
             )
-            sys.exit(1)
 
 
 def validate_coexistance_routing_setup(
@@ -892,7 +886,7 @@ def validate_coexistance_routing_setup(
         if faulty_flows_with_action_reset_routing:
             for flow in faulty_flows_with_action_reset_routing:
                 structlogger.error(
-                    f"validation.coexistance.{ACTION_RESET_ROUTING}_present_in_flow"
+                    f"engine.validation.coexistance.{ACTION_RESET_ROUTING}_present_in_flow"
                     f"_without_router_or_{ROUTE_TO_CALM_SLOT}_slot",
                     event_info=(
                         f"The action - {ACTION_RESET_ROUTING} is used in the flow - "
@@ -900,7 +894,23 @@ def validate_coexistance_routing_setup(
                         f" {ROUTE_TO_CALM_SLOT} are not defined.",
                     ),
                 )
-            sys.exit(1)
+
+            flow_ids = [flow.id for flow in faulty_flows_with_action_reset_routing]
+            raise ValidationError(
+                code=(
+                    "engine.validation.coexistance."
+                    f"{ACTION_RESET_ROUTING}_present_in_flow_without_router_or_"
+                    f"{ROUTE_TO_CALM_SLOT}_slot"
+                ),
+                event_info=(
+                    f"The action '{ACTION_RESET_ROUTING}' is used in "
+                    f"{len(flow_ids)} flow(s) "
+                    f"({', '.join(flow_ids)}) without a router "
+                    f"(LLMBasedRouter/IntentBasedRouter) or the "
+                    f"'{ROUTE_TO_CALM_SLOT}' slot."
+                ),
+                flows=flow_ids,  # any extra fields you want
+            )
 
     validate_router_exclusivity(schema)
     validate_intent_based_router_position(schema)
@@ -941,8 +951,8 @@ def _validate_component_model_client_config(
         model_group_ids.append(component_config[key][MODEL_GROUP_CONFIG_KEY])
 
         if len(component_config[key]) > 1:
-            structlogger.error(
-                "validation.validate_model_client_configuration_setup"
+            raise ValidationError(
+                code="engine.validation.validate_model_client_configuration_setup"
                 ".only_model_group_reference_key_is_allowed",
                 event_info=(
                     f"You specified a '{MODEL_GROUP_CONFIG_KEY}' for the '{key}' "
@@ -954,15 +964,14 @@ def _validate_component_model_client_config(
                 component_name=component_name or component_config["name"],
                 component_client_config_key=key,
             )
-            sys.exit(1)
     else:
         model_group_syntax_used.append(False)
 
         # check that any of the sensitive data keys is not set in config
         for secret_key in SENSITIVE_DATA:
             if secret_key in component_config[key]:
-                structlogger.error(
-                    "validation.validate_model_client_configuration_setup"
+                raise ValidationError(
+                    code="engine.validation.validate_model_client_configuration_setup"
                     ".secret_key_not_allowed_in_the_config",
                     event_info=(
                         f"You specified '{secret_key}' in the config for "
@@ -974,7 +983,6 @@ def _validate_component_model_client_config(
                     component_client_config_key=key,
                     secret_key=secret_key,
                 )
-                sys.exit(1)
 
 
 def validate_model_client_configuration_setup_during_training_time(
@@ -1042,8 +1050,8 @@ def validate_model_client_configuration_setup_during_training_time(
         )
 
     if not is_uniform_bool_list(model_group_syntax_used):
-        structlogger.error(
-            "validation.validate_model_client_configuration_setup"
+        raise ValidationError(
+            code="engine.validation.validate_model_client_configuration_setup"
             ".inconsistent_use_of_model_group_syntax",
             event_info=(
                 "Some of your components refer to an LLM using the "
@@ -1054,7 +1062,6 @@ def validate_model_client_configuration_setup_during_training_time(
                 "and update your config."
             ),
         )
-        sys.exit(1)
 
     # Print a deprecation warning in case the old syntax is used.
     if len(model_group_syntax_used) > 0 and model_group_syntax_used[0] is False:
@@ -1070,8 +1077,8 @@ def validate_model_client_configuration_setup_during_training_time(
 
     endpoints = AvailableEndpoints.get_instance()
     if len(model_group_ids) > 0 and endpoints.model_groups is None:
-        structlogger.error(
-            "validation.validate_model_client_configuration_setup"
+        raise ValidationError(
+            code="engine.validation.validate_model_client_configuration_setup"
             ".referencing_model_group_but_none_are_defined",
             event_info=(
                 "You are referring to (a) model group(s) in your "
@@ -1080,7 +1087,6 @@ def validate_model_client_configuration_setup_during_training_time(
                 "group(s)."
             ),
         )
-        sys.exit(1)
 
     if endpoints.model_groups is None:
         return
@@ -1091,8 +1097,8 @@ def validate_model_client_configuration_setup_during_training_time(
 
     for model_group_id in model_group_ids:
         if model_group_id not in existing_model_group_ids:
-            structlogger.error(
-                "validation.validate_model_client_configuration_setup"
+            raise ValidationError(
+                code="engine.validation.validate_model_client_configuration_setup"
                 ".referencing_undefined_model_group",
                 event_info=(
                     "One of your components is referring to the model group "
@@ -1104,7 +1110,6 @@ def validate_model_client_configuration_setup_during_training_time(
                 referencing_model_group_id=model_group_id,
                 existing_model_group_ids=existing_model_group_ids,
             )
-            sys.exit(1)
 
 
 def _validate_component_model_client_config_has_references_to_endpoints(
@@ -1139,8 +1144,8 @@ def _validate_component_model_client_config_has_references_to_endpoints(
         referencing_model_group_id = component_config[key][MODEL_GROUP_CONFIG_KEY]
 
         if endpoints.model_groups is None:
-            structlogger.error(
-                "validation.validate_model_client_config_correctly_references_endpoints"
+            raise ValidationError(
+                code="engine.validation.validate_model_client_config_correctly_references_endpoints"
                 ".no_model_groups_defined",
                 event_info=(
                     f"Your {component_name or component_config.get('name') or ''} "
@@ -1154,7 +1159,6 @@ def _validate_component_model_client_config_has_references_to_endpoints(
                 model_group_id=referencing_model_group_id,
                 component_client_config_key=key,
             )
-            sys.exit(1)
 
         existing_model_group_ids = [
             model_group[MODEL_GROUP_ID_CONFIG_KEY]
@@ -1162,8 +1166,8 @@ def _validate_component_model_client_config_has_references_to_endpoints(
         ]
 
         if referencing_model_group_id not in existing_model_group_ids:
-            structlogger.error(
-                "validation.validate_model_client_config_correctly_references_endpoints"
+            raise ValidationError(
+                code="engine.validation.validate_model_client_config_correctly_references_endpoints"
                 ".referenced_model_group_does_not_exist",
                 event_info=(
                     f"Your {component_name or component_config.get('name') or ''} "
@@ -1179,7 +1183,6 @@ def _validate_component_model_client_config_has_references_to_endpoints(
                 existing_model_group_ids=existing_model_group_ids,
                 component_client_config_key=key,
             )
-            sys.exit(1)
 
 
 def validate_model_client_configuration_setup_during_inference_time(
@@ -1223,14 +1226,18 @@ def _validate_unique_model_group_ids(model_groups: List[Dict[str, Any]]) -> None
     # Each model id must be unique within the model_groups
     model_ids = [model_group[MODEL_GROUP_ID_CONFIG_KEY] for model_group in model_groups]
     if len(model_ids) != len(set(model_ids)):
-        structlogger.error(
-            "validate_model_group_configuration_setup.non_unique_model_group_ids",
+        counts = Counter(model_ids)
+        duplicate_model_group_ids = {
+            model_group_id for model_group_id, count in counts.items() if count > 1
+        }
+        raise ValidationError(
+            code="engine.validation.validate_model_group_configuration_setup.non_unique_model_group_ids",
             event_info=(
-                "Each model group id must be unique. Please make sure that "
-                "the model group ids are unique in your endpoints.yml file."
+                f"Duplicate model-group IDs found: "
+                f"{', '.join(duplicate_model_group_ids)}. "
+                f"Each model-group ID in endpoints.yml must be unique."
             ),
         )
-        sys.exit(1)
 
 
 def _validate_model_group_with_multiple_models(
@@ -1242,8 +1249,8 @@ def _validate_model_group_with_multiple_models(
             len(model_group[MODELS_CONFIG_KEY]) > 1
             and ROUTER_CONFIG_KEY not in model_group
         ):
-            structlogger.error(
-                "validate_model_group_configuration_setup.router_not_present",
+            raise ValidationError(
+                code="engine.validation.validate_model_group_configuration_setup.router_not_present",
                 event_info=(
                     f"You defined multiple models for the model group "
                     f"'{model_group[MODEL_GROUP_ID_CONFIG_KEY]}', but no router. "
@@ -1253,7 +1260,6 @@ def _validate_model_group_with_multiple_models(
                 ),
                 model_group_id=model_group[MODEL_GROUP_ID_CONFIG_KEY],
             )
-            sys.exit(1)
 
 
 def _validate_model_group_router_setting(
@@ -1266,8 +1272,8 @@ def _validate_model_group_router_setting(
 
         for model_config in model_group.get(MODELS_CONFIG_KEY, []):
             if USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY in model_config:
-                structlogger.error(
-                    "validation.validate_model_group_configuration_setup"
+                raise ValidationError(
+                    code="engine.validation.validate_model_group_configuration_setup"
                     f".{USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY}_set_incorrectly",
                     event_info=(
                         f"You defined the '{USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY}' "
@@ -1280,14 +1286,13 @@ def _validate_model_group_router_setting(
                     ),
                     model_group_id=model_group[MODEL_GROUP_ID_CONFIG_KEY],
                 )
-                sys.exit(1)
 
         router_config = model_group[ROUTER_CONFIG_KEY]
         if ROUTING_STRATEGY_CONFIG_KEY in router_config:
             routing_strategy = router_config.get(ROUTING_STRATEGY_CONFIG_KEY)
             if routing_strategy and routing_strategy not in VALID_ROUTING_STRATEGIES:
-                structlogger.error(
-                    "validation.validate_model_group_configuration_setup"
+                raise ValidationError(
+                    code="engine.validation.validate_model_group_configuration_setup"
                     ".invalid_routing_strategy",
                     event_info=(
                         f"The routing strategy '{routing_strategy}' you defined for "
@@ -1308,13 +1313,12 @@ def _validate_model_group_router_setting(
                         ROUTING_STRATEGIES_NOT_REQUIRING_CACHE
                     ),
                 )
-                sys.exit(1)
             if (
                 routing_strategy in ROUTING_STRATEGIES_REQUIRING_REDIS_CACHE
                 and REDIS_HOST_CONFIG_KEY not in router_config
             ):
                 structlogger.warning(
-                    "validation.routing_strategy.redis_host_not_defined",
+                    "engine.validation.routing_strategy.redis_host_not_defined",
                     event_info=(
                         f"The routing strategy '{routing_strategy}' requires a Redis "
                         f"host to be defined. Without a Redis host, the system "
@@ -1349,8 +1353,8 @@ def _validate_usage_of_environment_variables_in_model_group_config(
             for key, value in model_config.items():
                 if isinstance(value, str):
                     if re.match(r"\${(\w+)}", value) and key not in allowed_env_vars:
-                        structlogger.error(
-                            "validation.validate_model_group_configuration_setup"
+                        raise ValidationError(
+                            code="engine.validation.validate_model_group_configuration_setup"
                             ".invalid_use_of_environment_variables",
                             event_info=(
                                 f"You defined '{key}' as environment variable in model "
@@ -1364,7 +1368,6 @@ def _validate_usage_of_environment_variables_in_model_group_config(
                             key=key,
                             allowed_keys_for_env_vars=allowed_env_vars,
                         )
-                        sys.exit(1)
 
 
 def _validate_sensitive_keys_are_an_environment_variables_for_model_groups(
@@ -1377,8 +1380,8 @@ def _validate_sensitive_keys_are_an_environment_variables_for_model_groups(
                 if key in SENSITIVE_DATA:
                     if isinstance(value, str):
                         if not re.match(r"\${(\w+)}", value):
-                            structlogger.error(
-                                "validation.validate_model_group_configuration_setup"
+                            raise ValidationError(
+                                code="engine.validation.validate_model_group_configuration_setup"
                                 ".sensitive_key_string_value_must_be_set_as_env_var",
                                 event_info=(
                                     f"You defined the '{key}' in model group "
@@ -1389,10 +1392,9 @@ def _validate_sensitive_keys_are_an_environment_variables_for_model_groups(
                                 key=key,
                                 model_group_id=model_group[MODEL_GROUP_ID_CONFIG_KEY],
                             )
-                            sys.exit(1)
                     else:
-                        structlogger.error(
-                            "validation.validate_model_group_configuration_setup"
+                        raise ValidationError(
+                            code="engine.validation.validate_model_group_configuration_setup"
                             ".sensitive_key_must_be_set_as_env_var",
                             event_info=(
                                 f"You should define the '{key}' in model group "
@@ -1404,7 +1406,6 @@ def _validate_sensitive_keys_are_an_environment_variables_for_model_groups(
                             key=key,
                             model_group_id=model_group[MODEL_GROUP_ID_CONFIG_KEY],
                         )
-                        sys.exit(1)
 
 
 def validate_model_group_configuration_setup() -> None:
@@ -1436,14 +1437,11 @@ def validate_command_generator_exclusivity(schema: GraphSchema) -> None:
     )
 
     if count > 1:
-        structlogger.error(
-            "validation.command_generator.multiple_command_generator_defined",
-            event_info=(
-                "Multiple LLM based command generators are defined in the config. "
-                "Please use only one LLM based command generator."
-            ),
+        raise ValidationError(
+            code="engine.validation.command_generator.multiple_command_generator_defined",
+            event_info="Multiple LLM based command generators are defined in "
+            "the config. Please use only one LLM based command generator.",
         )
-        sys.exit(1)
 
 
 def validate_command_generator_setup(
@@ -1475,16 +1473,13 @@ def validate_api_type_config_key_usage(
     if API_TYPE_CONFIG_KEY in component_config[key]:
         api_type = component_config[key][API_TYPE_CONFIG_KEY]
         if api_type not in VALID_PROVIDERS_FOR_API_TYPE_CONFIG_KEY:
-            structlogger.error(
-                "validation.component.api_type_config_key_invalid",
-                event_info=(
-                    f"You specified '{API_TYPE_CONFIG_KEY}: {api_type}' for "
-                    f"'{component_name or component_config['name']}', which is not "
-                    f"allowed. "
-                    f"The '{API_TYPE_CONFIG_KEY}' key can only be used for the "
-                    f"following providers: {VALID_PROVIDERS_FOR_API_TYPE_CONFIG_KEY}. "
-                    f"For other providers, please use the '{PROVIDER_CONFIG_KEY}' key."
-                ),
-            )
             display_research_study_prompt()
-            sys.exit(1)
+            raise ValidationError(
+                code="engine.validation.component.api_type_config_key_invalid",
+                event_info=f"You specified '{API_TYPE_CONFIG_KEY}: {api_type}' for "
+                f"'{component_name or component_config['name']}', which is not "
+                f"allowed. "
+                f"The '{API_TYPE_CONFIG_KEY}' key can only be used for the "
+                f"following providers: {VALID_PROVIDERS_FOR_API_TYPE_CONFIG_KEY}. "
+                f"For other providers, please use the '{PROVIDER_CONFIG_KEY}' key.",
+            )
