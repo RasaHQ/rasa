@@ -1,0 +1,99 @@
+# .github/workflows/publish-to-public-ecr.yml
+# This workflow builds and pushes the Rasa Pro Docker image to the public ECR repository.
+# It is triggered on pushes to the main branch or when a pull request is labeled with 'hello-rasa' or 'studio'.
+# The image is tagged with the pull request number or branch name and the short commit hash.
+# The workflow uses AWS credentials stored in GitHub secrets to authenticate with Amazon ECR.
+# The Docker image is built using a Makefile and the Poetry version is read from a script.
+# The image is then pushed to the specified public ECR repository.
+
+name: Push Rasa Pro to Public ECR
+
+# This workflow is triggered on pushes to the main branch or when
+# a pull request labeled.
+on:
+  pull_request:
+    types: [labeled]
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: eu-west-1
+  RASA_PRO_PUBLIC_REPO: public.ecr.aws/f7b7r5o7/rasa/rasa-private-dev
+
+
+jobs:
+  build-and-push-to-ecr:
+    name: Build and Push Docker Image to Public ECR
+    runs-on: ubuntu-24.04
+
+    # This condition ensures the job only runs for pushes to 'main' or for PRs
+    # that have either the 'hello-rasa' or 'studio' label.
+    # This prevents the job from running on every PR update unless the labels are present.
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' &&
+       (contains(github.event.pull_request.labels.*.name, 'hello-rasa') ||
+        contains(github.event.pull_request.labels.*.name, 'studio')))
+
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: read
+
+    env:
+      PLATFORM: linux/amd64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Set image tags
+        id: set-tags
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            PR_SHORT_SHA=$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))
+            echo "RASA_IMAGE_TAG=pr-${{ github.event.number }}-${PR_SHORT_SHA}" >> $GITHUB_ENV
+            echo "RASA_IMAGE_TAG_LATEST=pr-${{ github.event.number }}-latest" >> $GITHUB_ENV
+          else
+            MAIN_SHORT_SHA=$(git rev-parse --short HEAD)
+            echo "RASA_IMAGE_TAG=main-${MAIN_SHORT_SHA}" >> $GITHUB_ENV
+            echo "RASA_IMAGE_TAG_LATEST=main-latest" >> $GITHUB_ENV
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR Public
+        id: login-ecr-public
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
+        with:
+          registry-type: public
+        env:
+          # ECR Public authentication must use us-east-1 regardless of repository region
+          AWS_REGION: us-east-1
+
+      - name: Build Rasa Private Dev Docker Image
+        run: |
+          POETRY_VERSION=$POETRY_VERSION \
+          PLATFORM=${{ env.PLATFORM }} \
+          RASA_REPOSITORY=${{ env.RASA_PRO_PUBLIC_REPO }} \
+          RASA_IMAGE_TAG=${{ env.RASA_IMAGE_TAG }} \
+          make build-docker
+
+      - name: Tag and push images to Amazon Public ECR
+        run: |
+          # Push the specific tag (pr{number}-{sha} or main-{sha})
+          docker push ${{ env.RASA_PRO_PUBLIC_REPO }}:${{ env.RASA_IMAGE_TAG }}
+          
+          # Tag and push the latest version (pr-latest or main-latest)
+          docker tag ${{ env.RASA_PRO_PUBLIC_REPO }}:${{ env.RASA_IMAGE_TAG }} ${{ env.RASA_PRO_PUBLIC_REPO }}:${{ env.RASA_IMAGE_TAG_LATEST }}
+          docker push ${{ env.RASA_PRO_PUBLIC_REPO }}:${{ env.RASA_IMAGE_TAG_LATEST }}

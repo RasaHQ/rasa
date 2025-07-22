@@ -11,10 +11,10 @@ permissions:
   contents: read # This is required for actions/checkout
 
 jobs:
-  aws-ecr:
+  aws-ecr-private:
     # Skip any PR created by dependabot to avoid permission issues
     if: (github.actor != 'dependabot[bot]')
-    name: Delete PR docker images
+    name: Delete PR docker images from private ECR
     runs-on: ubuntu-24.04
     steps:
       - name: Configure AWS credentials
@@ -47,3 +47,81 @@ jobs:
               aws ecr batch-delete-image --repository-name $REPO_NAME --image-ids imageTag=$IMAGE
             done
           done
+
+  aws-ecr-public:
+    # Skip any PR created by dependabot to avoid permission issues
+    if: (github.actor != 'dependabot[bot]')
+    name: Delete PR docker images from public ECR
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
+        with:
+          registry-type: public
+        env:
+          # ECR Public authentication must use us-east-1 regardless of repository region
+          AWS_REGION: us-east-1
+
+      - name: Remove docker images from all ECR repositories
+        run: |
+          REPO_NAME="rasa/rasa-private-dev"
+          SEARCH_STRING="pr-${{ github.event.number }}"
+          
+          echo "=== DEBUGGING ECR PUBLIC ==="
+          echo "Repository Name: $REPO_NAME"
+          echo "Search Pattern: $SEARCH_STRING"
+          echo ""
+          
+          echo "1. Testing AWS CLI access..."
+          aws sts get-caller-identity
+          echo ""
+          
+          echo "2. Listing all repositories in the public registry..."
+          aws ecr-public describe-repositories --region us-east-1 || echo "Failed to list repositories"
+          echo ""
+          
+          echo "3. Listing all images in the target repository..."
+          aws ecr-public describe-images --repository-name $REPO_NAME --region us-east-1 --query "imageDetails[?imageTags!=null].{Tags:imageTags,Digest:imageDigest}" --output table || echo "Failed to list images"
+          echo ""
+          
+          echo "4. Listing all tags in the target repository..."
+          ALL_TAGS=$(aws ecr-public describe-images --repository-name $REPO_NAME --region us-east-1 --query "imageDetails[?imageTags!=null].imageTags[]" --output text 2>/dev/null || echo "")
+          echo "All tags found:"
+          echo "$ALL_TAGS"
+          echo ""
+          
+          echo "5. Filtering tags that contain '$SEARCH_STRING'..."
+          if [ -n "$ALL_TAGS" ]; then
+            MATCHING_IMAGES=$(echo "$ALL_TAGS" | tr '\t' '\n' | grep "$SEARCH_STRING" || echo "")
+          else
+            MATCHING_IMAGES=""
+          fi
+          
+          if [ -z "$MATCHING_IMAGES" ]; then
+            echo "No images found matching pattern: $SEARCH_STRING"
+          else
+            echo "Images matching pattern '$SEARCH_STRING':"
+            echo "$MATCHING_IMAGES"
+            echo ""
+            
+            echo "6. Would delete the following images (DRY RUN):"
+            for IMAGE in $MATCHING_IMAGES
+            do
+              echo "  - $IMAGE"
+            done
+            
+            echo ""
+            echo "7. Deleting images..."
+            for IMAGE in $MATCHING_IMAGES
+            do
+              echo "Deleting image: $IMAGE"
+              aws ecr-public batch-delete-image --repository-name $REPO_NAME --region us-east-1 --image-ids imageTag=$IMAGE
+            done
+          fi
