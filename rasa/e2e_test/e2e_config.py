@@ -67,26 +67,33 @@ class LLMJudgeConfig(BaseModel):
     @classmethod
     def from_dict(cls, config_data: Dict[str, Any]) -> LLMJudgeConfig:
         """Loads the configuration from a dictionary."""
-        embeddings = config_data.pop(EMBEDDINGS_CONFIG_KEY, None)
+        embeddings = config_data.pop(EMBEDDINGS_CONFIG_KEY, {})
         llm_config = config_data.pop("llm", {})
 
         llm_config = resolve_model_client_config(llm_config)
-        llm_config, extra_parameters = cls.extract_attributes(llm_config)
+        llm_config, llm_extra_parameters = cls.extract_attributes(llm_config)
         llm_config = combine_custom_and_default_config(
             llm_config, cls.get_default_llm_config()
         )
         embeddings_config = resolve_model_client_config(embeddings)
+        embeddings_config, embeddings_extra_parameters = cls.extract_attributes(
+            embeddings_config
+        )
 
         return LLMJudgeConfig(
-            llm_config=BaseModelConfig(extra_parameters=extra_parameters, **llm_config),
-            embeddings=BaseModelConfig(**embeddings_config)
+            llm_config=BaseModelConfig(
+                extra_parameters=llm_extra_parameters, **llm_config
+            ),
+            embeddings=BaseModelConfig(
+                extra_parameters=embeddings_extra_parameters, **embeddings_config
+            )
             if embeddings_config
             else None,
         )
 
     @classmethod
     def extract_attributes(
-        cls, llm_config: Dict[str, Any]
+        cls, config: Dict[str, Any]
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """Extract the expected fields from the configuration."""
         required_config = {}
@@ -96,22 +103,22 @@ class LLMJudgeConfig(BaseModel):
             MODEL_CONFIG_KEY,
         ]
 
-        if PROVIDER_CONFIG_KEY in llm_config:
+        if PROVIDER_CONFIG_KEY in config:
             required_config = {
-                expected_field: llm_config.pop(expected_field, None)
+                expected_field: config.pop(expected_field, None)
                 for expected_field in expected_fields
             }
 
-        elif MODELS_CONFIG_KEY in llm_config:
-            llm_config = llm_config.pop(MODELS_CONFIG_KEY)[0]
+        elif MODELS_CONFIG_KEY in config:
+            config = config.pop(MODELS_CONFIG_KEY)[0]
 
             required_config = {
-                expected_field: llm_config.pop(expected_field, None)
+                expected_field: config.pop(expected_field, None)
                 for expected_field in expected_fields
             }
 
         clean_config = clean_up_config(required_config)
-        return clean_config, llm_config
+        return clean_config, config
 
     @property
     def llm_config_as_dict(self) -> Dict[str, Any]:

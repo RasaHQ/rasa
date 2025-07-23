@@ -15,7 +15,7 @@ from rasa.e2e_test.e2e_config import (
     get_conftest_path,
     read_conftest_file,
 )
-from rasa.shared.constants import OPENAI_PROVIDER
+from rasa.shared.constants import HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER, OPENAI_PROVIDER
 from rasa.shared.utils.yaml import YamlValidationException, write_yaml
 
 
@@ -125,7 +125,7 @@ def test_create_llm_judge_config_conftest_with_different_llm_provider(
 
 
 @pytest.mark.parametrize("conftest_file_name", ["conftest.yaml", "conftest.yml"])
-def test_create_llm_judge_config_conftest_with_model_group(
+def test_create_llm_judge_config_conftest_with_llm_model_group(
     tmp_path: Path, monkeypatch: MonkeyPatch, conftest_file_name: str
 ) -> None:
     test_case_path = tmp_path / conftest_file_name
@@ -167,7 +167,106 @@ def test_create_llm_judge_config_conftest_with_model_group(
         embeddings=BaseModelConfig(
             provider=OPENAI_PROVIDER,
             model="text-embedding-3-large",
+        ),
+    )
+
+
+@pytest.mark.parametrize("conftest_file_name", ["conftest.yaml", "conftest.yml"])
+def test_create_llm_judge_config_conftest_with_embeddings_model_group(
+    tmp_path: Path, monkeypatch: MonkeyPatch, conftest_file_name: str
+) -> None:
+    test_case_path = tmp_path / conftest_file_name
+    test_case_path.write_text("""
+    llm_judge:
+        llm:
+            provider: openai
+            model: gpt-4
+        embeddings:
+            model_group: open_ai_text_embedding
+    """)
+
+    endpoints_path = tmp_path / "endpoints.yml"
+    endpoints_path.write_text("""
+    model_groups:
+        - id: open_ai_text_embedding
+          models:
+            - provider: openai
+              model: text-embedding-3-large
+    """)
+    endpoints = AvailableEndpoints.read_endpoints(str(endpoints_path))
+    assert endpoints.model_groups is not None
+
+    monkeypatch.setattr(AvailableEndpoints, "get_instance", lambda: endpoints)
+
+    assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
+        llm_config=BaseModelConfig(
+            provider=OPENAI_PROVIDER,
+            model="gpt-4",
+        ),
+        embeddings=BaseModelConfig(
+            provider=OPENAI_PROVIDER,
+            model="text-embedding-3-large",
             extra_parameters={},
+        ),
+    )
+
+
+@pytest.mark.parametrize("conftest_file_name", ["conftest.yaml", "conftest.yml"])
+def test_create_llm_judge_config_conftest_with_model_groups(
+    tmp_path: Path, monkeypatch: MonkeyPatch, conftest_file_name: str
+) -> None:
+    test_case_path = tmp_path / conftest_file_name
+    test_case_path.write_text("""
+    llm_judge:
+        llm:
+            model_group: openai-direct-gpt-4
+        embeddings:
+            model_group: huggingface_local
+    """)
+
+    endpoints_path = tmp_path / "endpoints.yml"
+    endpoints_path.write_text("""
+    model_groups:
+        - id: openai-direct-gpt-4
+          models:
+            - provider: openai
+              model: gpt-4
+              timeout: 7
+              temperature: 0.0
+              top_p: 0.0
+        - id: huggingface_local
+          models:
+            - provider: huggingface_local
+              model: BAAI/bge-small-en-v1.5
+              model_kwargs:
+                device: "cpu"
+              encode_kwargs:
+                normalize_embeddings: true
+              timeout: 7
+    """)
+    endpoints = AvailableEndpoints.read_endpoints(str(endpoints_path))
+    assert endpoints.model_groups is not None
+
+    monkeypatch.setattr(AvailableEndpoints, "get_instance", lambda: endpoints)
+
+    assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
+        llm_config=BaseModelConfig(
+            provider=OPENAI_PROVIDER,
+            model="gpt-4",
+            extra_parameters={
+                "timeout": 7,
+                "temperature": 0.0,
+                "top_p": 0.0,
+            },
+        ),
+        embeddings=BaseModelConfig(
+            provider=HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
+            model="BAAI/bge-small-en-v1.5",
+            extra_parameters={
+                "model_kwargs": {"device": "cpu"},
+                "encode_kwargs": {"normalize_embeddings": True},
+                "timeout": 7,
+            },
         ),
     )
 
