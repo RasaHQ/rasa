@@ -47,6 +47,7 @@ from rasa.dialogue_understanding.utils import set_record_commands_and_prompts
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.exceptions import EnterpriseSearchPolicyError
 from rasa.shared.constants import (
     EMBEDDINGS_CONFIG_KEY,
     LLM_CONFIG_KEY,
@@ -466,18 +467,19 @@ def test_train_faiss_with_non_existing_documents_path(
         vector_store=vector_store,
     )
 
-    with structlog.testing.capture_logs() as log_events:
-        with pytest.raises(SystemExit) as exc_info:
-            policy.train([], Domain.empty(), None, None, None)
+    with pytest.raises(EnterpriseSearchPolicyError) as exc_info:
+        policy.train([], Domain.empty(), None, None, None)
 
-        assert any(
-            [
-                "Document source directory does not exist or is not a directory"
-                in log_event.get("message", "")
-                for log_event in log_events
-            ]
-        )
-    assert exc_info.value.code == 1
+    expected_error_code = (
+        "core.policies.enterprise_search_policy.train.faiss.invalid_source_directory"
+    )
+    expected_error_msg_fragment = (
+        "Document source directory does not exist or is not a directory"
+    )
+
+    err = exc_info.value
+    assert err.code == expected_error_code
+    assert expected_error_msg_fragment in str(err)
 
 
 def test_train_faiss_with_invalid_documents_path(
@@ -506,18 +508,19 @@ def test_train_faiss_with_invalid_documents_path(
         vector_store=vector_store,
     )
 
-    with structlog.testing.capture_logs() as log_events:
-        with pytest.raises(SystemExit) as exc_info:
-            policy.train([], Domain.empty(), None, None, None)
+    expected_error_code = (
+        "core.policies.enterprise_search_policy.train" ".faiss.invalid_source_directory"
+    )
+    expected_msg_substring = (
+        "Document source directory does not exist " "or is not a directory"
+    )
 
-        assert any(
-            [
-                "Document source directory does not exist or is not a directory"
-                in log_event.get("message", "")
-                for log_event in log_events
-            ]
-        )
-    assert exc_info.value.code == 1
+    with pytest.raises(EnterpriseSearchPolicyError) as exc_info:
+        policy.train([], Domain.empty(), None, None, None)
+
+    err = exc_info.value
+    assert err.code == expected_error_code
+    assert expected_msg_substring in str(err)
 
 
 def test_train_faiss_with_empty_documents_path(
@@ -546,17 +549,17 @@ def test_train_faiss_with_empty_documents_path(
         vector_store=vector_store,
     )
 
-    with structlog.testing.capture_logs() as log_events:
-        with pytest.raises(SystemExit) as exc_info:
-            policy.train([], Domain.empty(), None, None, None)
+    expected_error_code = (
+        "core.policies.enterprise_search_policy.train" ".faiss.source_directory_empty"
+    )
+    expected_msg_substring = "Document source directory is empty"
 
-        assert any(
-            [
-                "Document source directory is empty" in log_event.get("message", "")
-                for log_event in log_events
-            ]
-        )
-    assert exc_info.value.code == 1
+    with pytest.raises(EnterpriseSearchPolicyError) as exc_info:
+        policy.train([], Domain.empty(), None, None, None)
+
+    err = exc_info.value
+    assert err.code == expected_error_code
+    assert expected_msg_substring in str(err)
 
 
 def test_train_faiss_with_valid_documents_path(

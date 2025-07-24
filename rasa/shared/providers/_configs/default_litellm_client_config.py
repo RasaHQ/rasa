@@ -5,7 +5,7 @@ from typing import Any, Dict
 
 import structlog
 
-import rasa.shared.utils.cli
+from rasa.exceptions import ValidationError
 from rasa.shared.constants import (
     MODEL_CONFIG_KEY,
     MODEL_NAME_CONFIG_KEY,
@@ -124,9 +124,5 @@ class DefaultLiteLLMClientConfig:
                 f"Unsupported parameter - {MODEL_NAME_CONFIG_KEY} is set. Please use "
                 f"{MODEL_CONFIG_KEY} instead."
             )
-            structlogger.error(
-                "default_litellm_client_config.unsupported_parameter_in_config",
-                event_info=event_info,
-                config=config,
-            )
-            rasa.shared.utils.cli.print_error_and_exit(event_info)
+            error_code = "default_litellm_client_config.unsupported_parameter_in_config"
+            raise ValidationError(code=error_code, event_info=event_info, config=config)

@@ -50,6 +50,7 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.exceptions import EnterpriseSearchPolicyError
 from rasa.graph_components.providers.forms_provider import Forms
 from rasa.graph_components.providers.responses_provider import Responses
 from rasa.shared.constants import (
@@ -82,7 +83,6 @@ from rasa.shared.providers.embedding._langchain_embedding_client_adapter import 
     _LangchainEmbeddingClientAdapter,
 )
 from rasa.shared.providers.llm.llm_response import LLMResponse, measure_llm_latency
-from rasa.shared.utils.cli import print_error_and_exit
 from rasa.shared.utils.constants import (
     LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
     LOG_COMPONENT_SOURCE_METHOD_INIT,
@@ -343,14 +343,11 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         try:
             embeddings = self._create_plain_embedder(self.embeddings_config)
         except (ValidationError, Exception) as e:
-            structlogger.error(
-                "enterprise_search_policy.train.embedder_instantiation_failed",
-                message="Unable to instantiate the embedding client.",
-                error=e,
-            )
-            print_error_and_exit(
-                "Unable to create embedder. Please make sure you specified the "
-                f"required environment variables. Error: {e}"
+            raise EnterpriseSearchPolicyError(
+                code="core.policies.enterprise_search_policy.train"
+                ".embedder_instantiation_failed",
+                event_info=f"Unable to create embedder. Please make sure you "
+                f"specified the required environment variables. Error: {e}",
             )
 
         if self.vector_store_type == DEFAULT_VECTOR_STORE_TYPE:
@@ -788,11 +785,11 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                 "Please specify a valid path to the documents source directory in the "
                 "vector_store configuration."
             )
-            structlogger.error(
-                "enterprise_search_policy.train.faiss.invalid_source_directory",
-                message=error_message,
+            error_code = (
+                "core.policies.enterprise_search_policy.train"
+                ".faiss.invalid_source_directory"
             )
-            print_error_and_exit(error_message)
+            raise EnterpriseSearchPolicyError(code=error_code, event_info=error_message)
 
         docs = glob.glob(os.path.join(docs_folder, "**", "*.txt"), recursive=True)
         if not docs or len(docs) < 1:
@@ -800,11 +797,11 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
                 f"Document source directory is empty: '{docs_folder}'. "
                 "Please add documents to this directory or specify a different one."
             )
-            structlogger.error(
-                "enterprise_search_policy.train.faiss.source_directory_empty",
-                message=error_message,
+            error_code = (
+                "core.policies.enterprise_search_policy.train"
+                ".faiss.source_directory_empty"
             )
-            print_error_and_exit(error_message)
+            raise EnterpriseSearchPolicyError(code=error_code, event_info=error_message)
 
     @classmethod
     def load(

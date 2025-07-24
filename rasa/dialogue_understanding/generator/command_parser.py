@@ -1,5 +1,4 @@
 import re
-import sys
 from functools import lru_cache
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
@@ -19,6 +18,7 @@ from rasa.dialogue_understanding.commands import (
 )
 from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.dialogue_understanding.commands.utils import start_flow_by_name
+from rasa.exceptions import ValidationError
 from rasa.shared.core.flows import FlowsList
 
 structlogger = structlog.get_logger()
@@ -87,16 +87,13 @@ def validate_custom_commands(command_classes: List[Type[PromptCommand]]) -> None
     ]
 
     if clz_not_inheriting_from_command_clz:
-        structlogger.error(
-            "command_parser.validate_custom_commands.invalid_command",
+        raise ValidationError(
+            code="command_parser.validate_custom_commands.invalid_command",
+            event_info="The additional command classes must be a subclass of the "
+            "'Command' class. Please refer to the class in "
+            "`rasa.dialogue_understanding.commands.command.Command`",
             invalid_commands=clz_not_inheriting_from_command_clz,
-            event_info=(
-                "The additional command classes must be a subclass of the 'Command' "
-                "class. Please refer to the class in "
-                "`rasa.dialogue_understanding.commands.command.Command`"
-            ),
         )
-        sys.exit(1)
 
     clz_not_adhering_to_prompt_command_protocol = [
         command_clz.__name__
@@ -105,16 +102,15 @@ def validate_custom_commands(command_classes: List[Type[PromptCommand]]) -> None
     ]
 
     if clz_not_adhering_to_prompt_command_protocol:
-        structlogger.error(
-            "command_parser.validate_custom_commands.invalid_command",
-            invalid_commands=clz_not_adhering_to_prompt_command_protocol,
+        raise ValidationError(
+            code="command_parser.validate_custom_commands.invalid_command",
             event_info=(
                 "The additional command classes must adhere to the 'PromptCommand' "
                 "protocol. Please refer to the protocol in "
                 "`rasa.dialogue_understanding.commands.prompt_command.PromptCommand`"
             ),
+            invalid_commands=clz_not_adhering_to_prompt_command_protocol,
         )
-        sys.exit(1)
 
 
 def parse_commands(

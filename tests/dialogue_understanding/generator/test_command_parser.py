@@ -21,6 +21,7 @@ from rasa.dialogue_understanding.generator.command_parser import (
     parse_commands,
     validate_custom_commands,
 )
+from rasa.exceptions import ValidationError
 from rasa.shared.core.flows import FlowsList
 from tests.utilities import flows_from_str
 
@@ -266,5 +267,5 @@ def test_validate_custom_commands_failed():
         def regex_pattern() -> str:
             return r"test\(\)"
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         validate_custom_commands([InvalidCommand])

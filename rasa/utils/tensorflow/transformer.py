@@ -7,7 +7,7 @@ import tensorflow as tf
 from keras.src.utils.control_flow_util import smart_cond
 from tensorflow.keras import backend as K
 
-import rasa.shared.utils.cli
+from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.layers import RandomlyConnectedDense
 
 
@@ -48,8 +48,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         super().__init__()
 
         if units % num_heads != 0:
-            rasa.shared.utils.cli.print_error_and_exit(
-                f"Value Error: The given transformer size {units} should be a "
+            raise TFLayerConfigException(
+                f"The given transformer size {units} should be a "
                 f"multiple of the number of attention heads {num_heads}."
             )
 

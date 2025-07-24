@@ -34,7 +34,7 @@ from rasa.cli.utils import (
     warn_if_rasa_plus_package_installed,
 )
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
-from rasa.exceptions import ValidationError
+from rasa.exceptions import DetailedRasaException
 from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
 from rasa.utils.common import configure_logging_and_warnings
@@ -153,14 +153,13 @@ def main(raw_arguments: Optional[List[str]] = None) -> None:
             structlogger.error("cli.no_command", event_info="No command specified.")
             arg_parser.print_help()
             sys.exit(1)
-    except ValidationError as exc:
+    except DetailedRasaException as exc:
         structlogger.error(
             exc.code,
             event_info=exc.info,
             **exc.ctx,
         )
         sys.exit(1)
-
     except RasaException as exc:
         # these are exceptions we expect to happen (e.g. invalid training data format)
         # it doesn't make sense to print a stacktrace for these if we are not in

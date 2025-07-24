@@ -23,6 +23,7 @@ from rasa.dialogue_understanding.generator.single_step.compact_llm_command_gener
     MODEL_PROMPT_MAPPER,
     get_default_prompt_template_based_on_model,
 )
+from rasa.exceptions import ValidationError
 from rasa.shared.constants import (
     AZURE_API_BASE_ENV_VAR,
     AZURE_API_KEY_ENV_VAR,
@@ -2553,7 +2554,7 @@ def test_combine_custom_and_default_config_combining_single_model_configurations
         "timeout": 7,
     }
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValidationError):
         combine_custom_and_default_config(custom_config, default_config)
 
 

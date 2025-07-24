@@ -65,6 +65,8 @@ def print_error(*args: Any) -> None:
 
 def print_error_and_exit(message: Text, exit_code: int = 1) -> NoReturn:
     """Print an error message and exit the application.
+    This function is intended only for the CLI module; library code
+    should raise an appropriate exception instead
 
     Args:
         message: The error message to be printed.

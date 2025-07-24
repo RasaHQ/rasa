@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Text
+from typing import Any, Dict, Text
 
 from packaging import version
 
@@ -51,17 +51,29 @@ class MissingDependencyException(RasaException):
     """Raised if a python package dependency is needed, but not installed."""
 
 
-class ValidationError(RasaException):
-    """Raised when an error occurs during validation."""
+class DetailedRasaException(RasaException):
+    """Base class for exceptions that carry an error code and extra context."""
 
     def __init__(self, *, code: str, event_info: str, **ctx: Any) -> None:
         super().__init__(event_info)
-        self.code = code
-        self.info = event_info
-        self.ctx = ctx
+        self.code: str = code
+        self.info: str = event_info
+        self.ctx: Dict[str, Any] = ctx
 
     def __str__(self) -> str:
         return self.info
+
+
+class HealthCheckError(DetailedRasaException):
+    """Raised when an error occurs during health checks."""
+
+
+class EnterpriseSearchPolicyError(DetailedRasaException):
+    """Raised when an error occurs in EnterpriseSearchPolicy."""
+
+
+class ValidationError(DetailedRasaException):
+    """Raised when an error occurs during validation."""
 
 
 @dataclass

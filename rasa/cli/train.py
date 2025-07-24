@@ -15,7 +15,7 @@ from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephra
 from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.core.train import do_compare_training
 from rasa.engine.validation import validate_api_type_config_key_usage
-from rasa.exceptions import ValidationError
+from rasa.exceptions import DetailedRasaException
 from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS,
     CONFIG_MANDATORY_KEYS_CORE,
@@ -82,7 +82,7 @@ def _check_nlg_endpoint_validity(endpoint: Union[Path, str]) -> None:
                 ContextualResponseRephraser.__name__,
             )
         NaturalLanguageGenerator.create(endpoints.nlg)
-    except ValidationError as e:
+    except DetailedRasaException as e:
         structlogger.error(
             e.code,
             event_info=e.info,

@@ -1,7 +1,7 @@
 import os
-import sys
 from typing import Any, Dict, Optional
 
+from rasa.exceptions import HealthCheckError
 from rasa.shared.constants import (
     LLM_API_HEALTH_CHECK_DEFAULT_VALUE,
     LLM_API_HEALTH_CHECK_ENV_VAR,
@@ -23,8 +23,8 @@ def try_instantiate_llm_client(
     try:
         return llm_factory(custom_llm_config, default_llm_config)
     except (ProviderClientValidationError, ValueError) as e:
-        structlogger.error(
-            f"{log_source_function}.llm_instantiation_failed",
+        raise HealthCheckError(
+            code=f"{log_source_function}.llm_instantiation_failed",
             event_info=(
                 f"Unable to create the LLM client for component - "
                 f"{log_source_component}. "
@@ -33,7 +33,6 @@ def try_instantiate_llm_client(
             ),
             error=e,
         )
-        sys.exit(1)
 
 
 def try_instantiate_embedder(
@@ -46,8 +45,8 @@ def try_instantiate_embedder(
     try:
         return embedder_factory(custom_embeddings_config, default_embeddings_config)
     except (ProviderClientValidationError, ValueError) as e:
-        structlogger.error(
-            f"{log_source_function}.embedder_instantiation_failed",
+        raise HealthCheckError(
+            code=f"{log_source_function}.embedder_instantiation_failed",
             event_info=(
                 f"Unable to create the Embedding client for component - "
                 f"{log_source_component}. Please make sure you specified the required "
@@ -55,7 +54,6 @@ def try_instantiate_embedder(
             ),
             error=e,
         )
-        sys.exit(1)
 
 
 def perform_llm_health_check(
@@ -200,16 +198,15 @@ def send_test_llm_api_request(
     try:
         llm_client.completion("hello")
     except Exception as e:
-        structlogger.error(
-            f"{log_source_function}.send_test_llm_api_request_failed",
+        raise HealthCheckError(
+            code=f"{log_source_function}.send_test_llm_api_request_failed",
             event_info=(
                 f"Test call to the LLM API failed for component - "
-                f"{log_source_component}.",
+                f"{log_source_component}."
             ),
             config=llm_client.config,
             error=e,
         )
-        sys.exit(1)
 
 
 def send_test_embeddings_api_request(
@@ -231,8 +228,8 @@ def send_test_embeddings_api_request(
     try:
         embedder.embed(["hello"])
     except Exception as e:
-        structlogger.error(
-            f"{log_source_function}.send_test_llm_api_request_failed",
+        raise HealthCheckError(
+            code=f"{log_source_function}.send_test_llm_api_request_failed",
             event_info=(
                 f"Test call to the Embeddings API failed for component - "
                 f"{log_source_component}."
@@ -240,7 +237,6 @@ def send_test_embeddings_api_request(
             config=embedder.config,
             error=e,
         )
-        sys.exit(1)
 
 
 def is_api_health_check_enabled() -> bool:
