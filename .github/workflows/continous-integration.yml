@@ -16,10 +16,10 @@ on:
         default: 'true'
         description: "Whether to run the Code Quality checks."
       # Only run partial workflow steps
-      run_mode:
+      full_ci_mode:
         type: string
         required: false
-        default: 'full'
+        default: 'true'
         description: "Whether to run all the CI checks."
 
 concurrency:
@@ -144,7 +144,7 @@ jobs:
   rasa-private-dev-docker-image:
     name: rasa-private dev docker image
     runs-on: ubuntu-24.04
-    if: ${{ inputs.run_mode != 'false' }}
+    if: ${{ inputs.full_ci_mode != 'false' }}
     outputs:
       rasa_image_tag: ${{ steps.set-tag.outputs.rasa_image_tag }}
       stack_name: ${{ steps.set-tag.outputs.stack_name }}
@@ -331,7 +331,7 @@ jobs:
   # This job is being moved here from the pr-cleanup.yml workflow, to reduce AWS costs and save resources.
   # Skip this job from merge queue, Backport PRs and Dependabot PRs
   pulumi-destroy:
-    if: always() && github.event_name != 'merge_group' && !startsWith(github.event.pull_request.title, 'Backport') && github.actor != 'dependabot[bot]'
+    if: always() && github.event_name != 'merge_group' && !startsWith(github.event.pull_request.title, 'Backport') && github.actor != 'dependabot[bot]' &&  inputs.full_ci_mode != 'false'
     name: Destroy pulumi resources
     needs: deploy-rasa-private-helm-chart
     runs-on: ubuntu-24.04
@@ -368,7 +368,7 @@ jobs:
   check_inspector_build:
     name: Check Inspector Build
     runs-on: ubuntu-24.04
-    if: ${{ inputs.run_mode != 'false' }}
+    if: ${{ inputs.full_ci_mode != 'false' }}
     defaults:
       run:
         shell: bash
@@ -416,7 +416,7 @@ jobs:
 
   tracing-integration-test:
     name: Tracing Integration Tests
-    if: ${{ inputs.run_mode != 'false' }}
+    if: ${{ inputs.full_ci_mode != 'false' }}
     needs: rasa-private-dev-docker-image
     runs-on: ubuntu-24.04-4core
     steps:
@@ -488,7 +488,7 @@ jobs:
 
   metric-integration-test:
     name: Metric Integration Tests
-    if: ${{ inputs.run_mode != 'false' }}
+    if: ${{ inputs.full_ci_mode != 'false' }}
     needs: rasa-private-dev-docker-image
     runs-on: ubuntu-24.04-4core
     steps:
@@ -547,7 +547,7 @@ jobs:
 
   custom-action-integration-tests:
     name: Custom Action Integration Tests With NLU bot and CALM bot
-    if: ${{ inputs.run_mode != 'false' }}
+    if: ${{ inputs.full_ci_mode != 'false' }}
     needs: rasa-private-dev-docker-image
     runs-on: ubuntu-24.04-4core
     env:
@@ -634,6 +634,14 @@ jobs:
         run: |
           make stop-action-server-nlu-containers
 
+      - name: Save Test Results NLU bot
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: Custom Action Integration Test Results For NLU bot
+          path:
+           integration-results-custom-actions-with-nlu-bot-results.xml
+
       - name: Custom Actions Integration Testing CALM - Train docker containers
         run: |
           make train-action-server-calm-bot
@@ -680,18 +688,17 @@ jobs:
         run: |
           make stop-action-server-calm-containers
 
-      - name: Save Test Results NLU and CALM
+      - name: Save Test Results CALM bot
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: Custom Action Integration Test Results For NLU bot
+          name: Custom Action Integration Test Results For CALM bot
           path:
-           integration-results-custom-actions-with-nlu-bot-results.xml
            integration-results-custom-actions-with-calm-bot-results.xml
 
   enterprise-search-integration-tests:
     name: Run Enterprise Search Integration Tests
-    if: ${{ inputs.run_mode != 'false' }}
+    if: ${{ inputs.full_ci_mode != 'false' }}
     needs: rasa-private-dev-docker-image
     runs-on: ubuntu-24.04-4core
     env:
@@ -832,7 +839,7 @@ jobs:
   sequential-integration-test:
       name: Run Sequential Integration Tests
       runs-on: ubuntu-24.04
-      if: ${{ inputs.run_mode != 'false' }}
+      if: ${{ inputs.full_ci_mode != 'false' }}
       timeout-minutes: 60
       env:
         POSTGRES_HOST: localhost
@@ -895,7 +902,7 @@ jobs:
   non-sequential-integration-test:
     name: Run Non-Sequential Integration Tests
     runs-on: ubuntu-24.04-8core
-    if: ${{ inputs.run_mode != 'false' }}
+    if: ${{ inputs.full_ci_mode != 'false' }}
     timeout-minutes: 60
     env:
       REDIS_HOST: localhost
@@ -979,7 +986,7 @@ jobs:
   mongo-tracker-store-integration-test:
     name: Run Mongo Tracker Store Integration Tests
     runs-on: ubuntu-24.04-8core
-    if: ${{ inputs.run_mode != 'false' }}
+    if: ${{ inputs.full_ci_mode != 'false' }}
     timeout-minutes: 60
     env:
       DB_PORT: 27017
@@ -1050,7 +1057,7 @@ jobs:
   dynamo-tracker-store-integration-test:
     name: Run Dynamo Tracker Store Integration Tests
     runs-on: ubuntu-24.04
-    if: ${{ inputs.run_mode != 'false' }}
+    if: ${{ inputs.full_ci_mode != 'false' }}
     timeout-minutes: 60
 
     steps:
@@ -1110,7 +1117,7 @@ jobs:
   concurrent-lockstore-integration-test:
     name: Run Concurrent LockStore Integration Tests
     runs-on: ubuntu-24.04
-    if: ${{ inputs.run_mode != 'false' }}
+    if: ${{ inputs.full_ci_mode != 'false' }}
     timeout-minutes: 60
     env:
       REDIS_HOST: localhost
@@ -1168,7 +1175,7 @@ jobs:
   broker_integration_test:
     name: Run Broker Integration Tests
     runs-on: ubuntu-24.04
-    if: ${{ inputs.run_mode != 'false' }}
+    if: ${{ inputs.full_ci_mode != 'false' }}
     timeout-minutes: 60
 
     steps:
@@ -1225,7 +1232,7 @@ jobs:
   channel_connector_integration_tests:
     name: Channel Connector Integration Tests With CALM bot
     needs: rasa-private-dev-docker-image
-    if: ${{ inputs.run_mode != 'false' }}
+    if: ${{ inputs.full_ci_mode != 'false' }}
     runs-on: ubuntu-24.04
     steps:
       - name: Check out code
@@ -1304,7 +1311,7 @@ jobs:
   pii-management-in-calm-integration-tests:
     name: PII Management in CALM Bot Integration Tests
     needs: [rasa-private-dev-docker-image, check-pii-management-changes]
-    if: ${{ inputs.run_mode != 'false' && (needs.check-pii-management-changes.outputs.pii-management == 'true') }}
+    if: ${{ inputs.full_ci_mode != 'false' && (needs.check-pii-management-changes.outputs.pii-management == 'true') }}
     runs-on: ubuntu-24.04-4core
     env:
       RASA_SDK_IMAGE_TAG: latest
@@ -1571,7 +1578,7 @@ jobs:
 
   publish-test-results:
     runs-on: ubuntu-24.04
-    if: ${{ inputs.run_mode != 'false' }}
+    if: ${{ inputs.full_ci_mode != 'false' }}
     needs: [ tracing-integration-test,
              metric-integration-test,
              enterprise-search-integration-tests,
@@ -1595,42 +1602,12 @@ jobs:
           files: "artifacts/**/integration-results-*.xml"
           check_name: "Integration Test Results"
 
-      - name: Publish unit-test results
-        if: always()
-        uses: EnricoMi/publish-unit-test-result-action@afb2984f4d89672b2f9d9c13ae23d53779671984 # v2.19.0
-        with:
-          files: "artifacts/unit-tests-results-*.xml"
-          check_name: "Unit Test Results"
-
-  publish-test-results-on-scheduled-runs:
-    runs-on: ubuntu-24.04
-    if: ${{ inputs.run_mode == 'false' }}
-    needs: [ unit-test, test-anonymization ]
-    steps:
-      - name: Download test reports
-        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
-        with:
-          path: artifacts
-
-      - name: Publish integration test results
-        if: always()
-        uses: EnricoMi/publish-unit-test-result-action@afb2984f4d89672b2f9d9c13ae23d53779671984 # v2.19.0
-        with:
-          files: "artifacts/**/integration-results-*.xml"
-          check_name: "Integration Test Results"
-
-      - name: Publish unit-test results
-        if: always()
-        uses: EnricoMi/publish-unit-test-result-action@afb2984f4d89672b2f9d9c13ae23d53779671984 # v2.19.0
-        with:
-          files: "artifacts/**/unit-tests-results-*.xml"
-          check_name: "Unit Test Results"
-
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-24.04
     needs: [ unit-test, test-anonymization ]
-    if: '!cancelled()'
+     # We don't want to run the code quality checks on scheduled runs
+    if: ${{ inputs.full_ci_mode != 'false' && !cancelled() }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
