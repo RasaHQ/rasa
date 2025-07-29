@@ -405,6 +405,39 @@ def test_get_collect_steps_excluding_ask_before_filling_for_active_flow() -> Non
     assert slots == {"foo", "baz"}
 
 
+def test_get_collect_steps_excluding_ask_before_filling_for_active_flow_called_flows():
+    all_flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: test my flow
+            name: foo flow
+            steps:
+            - collect: foo
+            - collect: bar
+              ask_before_filling: true
+            - call: other_flow
+            - collect: baz
+          other_flow:
+            description: test other flow
+            name: abc flow
+            steps:
+            - collect: abc
+            - collect: xyz
+              ask_before_filling: true
+            - collect: fgh
+        """
+    )
+    user_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="collect_bar", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_frame])
+    slots = get_collect_steps_excluding_ask_before_filling_for_active_flow(
+        stack, all_flows
+    )
+    assert slots == {"foo", "baz", "abc", "fgh"}
+
+
 def test_get_collect_steps_excluding_ask_before_filling_empty_stack() -> None:
     all_flows = flows_from_str(
         """
