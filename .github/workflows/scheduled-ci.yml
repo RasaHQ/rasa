@@ -18,5 +18,5 @@ jobs:
       # We don't want to run the code quality checks on scheduled runs
       run_code_quality: 'false'
       # We only want to run the CI checks for unit tests that need to be run against multiple python versions
-      run_mode: 'false'
+      full_ci_mode: 'false'
     secrets: inherit
