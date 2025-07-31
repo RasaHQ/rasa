@@ -216,10 +216,7 @@ jobs:
           make install-full
           make prepare-tests-windows-gha
           make update-rasa-sdk-to-main
-
-      - name: Install spaCy language model
-        run: |
-          poetry run python -m pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.7.1/en_core_web_lg-3.7.1-py3-none-any.whl
+          make install-pii
 
       - name: Disable "LongPathsEnabled" option on Windows
         # On Windows laptops, a default preset prevents path names from being longer than
@@ -231,6 +228,23 @@ jobs:
           (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
           Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 0
 
+      - name: Install Hugging Face CLI
+        run: |
+          .\.venv\Scripts\activate
+          py -m pip install -U huggingface_hub
+
+      - name: Download GliNER model for PII
+        env:
+            HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
+            PYTHONIOENCODING: "utf-8"
+        run: |
+            [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+            .\.venv\Scripts\activate
+            git config --global credential.helper cache
+            hf login --token ${{ env.HUGGINGFACE_API_KEY }} --add-to-git-credential
+            if (!(Test-Path models)) { mkdir models } 
+            hf download urchade/gliner_multi_pii-v1 --repo-type model --local-dir models --cache-dir models
+
       - name: Install ddtrace on Windows
         run: |
           .\.venv\Scripts\activate
@@ -238,14 +252,18 @@ jobs:
 
       - name: Test Code 🔍 (multi-process)
         env:
-          JOBS: 2
+          JOBS: 1
           PYTHONUTF8: 1
           DD_SERVICE: rasa
           DD_ARGS: --ddtrace --ddtrace-patch-all
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          HUGGINGFACE_HUB_CACHE_DIR: ${{ github.workspace }}/models
+          GLINER_MODEL_PATH: ${{ github.workspace }}/models
+          TRANSFORMERS_OFFLINE: 0
+          HF_TOKEN: ${{ secrets.HUGGINGFACE_API_KEY }}
         run: |
+          .\.venv\Scripts\activate
           make test-anonymization
-        shell: bash # bash shell is a way to make code run for both Linux and Windows
 
   test-flaky:
     name: Run Flaky Tests
