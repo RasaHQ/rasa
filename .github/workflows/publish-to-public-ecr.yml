@@ -9,10 +9,10 @@
 name: Push Rasa Pro to Public ECR
 
 # This workflow is triggered on pushes to the main branch or when
-# a pull request labeled.
+# a pull request is labeled or when new commits are pushed to a labeled PR.
 on:
   pull_request:
-    types: [labeled]
+    types: [labeled, synchronize]
   push:
     branches:
       - main
@@ -21,7 +21,6 @@ env:
   AWS_REGION: eu-west-1
   RASA_PRO_PUBLIC_REPO: public.ecr.aws/f7b7r5o7/rasa/rasa-private-dev
 
-
 jobs:
   build-and-push-to-ecr:
     name: Build and Push Docker Image to Public ECR
@@ -29,7 +28,7 @@ jobs:
 
     # This condition ensures the job only runs for pushes to 'main' or for PRs
     # that have either the 'hello-rasa' or 'studio' label.
-    # This prevents the job from running on every PR update unless the labels are present.
+    # For pull_request events, it runs on both label addition and new commits to labeled PRs.
     if: |
       github.event_name == 'push' ||
       (github.event_name == 'pull_request' &&
@@ -93,7 +92,7 @@ jobs:
         run: |
           # Push the specific tag (pr{number}-{sha} or main-{sha})
           docker push ${{ env.RASA_PRO_PUBLIC_REPO }}:${{ env.RASA_IMAGE_TAG }}
-          
+
           # Tag and push the latest version (pr-latest or main-latest)
           docker tag ${{ env.RASA_PRO_PUBLIC_REPO }}:${{ env.RASA_IMAGE_TAG }} ${{ env.RASA_PRO_PUBLIC_REPO }}:${{ env.RASA_IMAGE_TAG_LATEST }}
           docker push ${{ env.RASA_PRO_PUBLIC_REPO }}:${{ env.RASA_IMAGE_TAG_LATEST }}
