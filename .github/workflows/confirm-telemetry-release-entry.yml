@@ -1,0 +1,78 @@
+name: Confirm Telemetry Release Entry
+
+on:
+  schedule:
+   # Run at 5am UTC each Monday
+    - cron: "0 9 * * TUE"
+  workflow_run:
+    workflows: [ "Release artifacts workflow" ]
+    types: [ completed ] # triggered only if the "Release" workflow run is completed
+  workflow_dispatch:
+
+jobs:
+  run_metabase_query:
+    name: Query Metabase
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+    - name: Set up Python 🐍
+      uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
+      with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+    - name: Read Poetry Version 🔢
+      run: |
+         echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Fetch latest Rasa Pro version
+      id: fetch_rasa_version
+      run: |
+        echo "VERSION=$(python -c 'import rasa; print(rasa.__version__)')" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Run metabase query
+      id: metabase_query
+      env:
+        METABASE_API_KEY: ${{ secrets.CI_METABASE_API_PASSWORD }}
+        RASA_PRO_VERSION: ${{ steps.fetch_rasa_version.outputs.VERSION }}
+      run: |
+        set -e
+        OUTPUT=$(python3 scripts/query_metabase.py)
+        Docker=$(echo $OUTPUT | cut -d',' -f1)
+        Python=$(echo $OUTPUT | cut -d',' -f2)
+        if [ "$Docker" -le 0 ]; then
+          echo "error_message_docker=Error: No telemetry events detected for docker installs, for Rasa Pro version $RASA_PRO_VERSION" >> $GITHUB_OUTPUT
+          if [ "$Python" -le 0 ]; then
+            echo "error_message_python=Error: No telemetry events detected for python installs, for Rasa Pro version $RASA_PRO_VERSION" >> $GITHUB_OUTPUT
+          fi
+        exit 1
+        fi
+      shell: bash
+          
+
+  slack-notifications:
+    name: Slack Notifications
+    runs-on: ubuntu-24.04
+    needs: [run_metabase_query]
+    if: always()  # Ensures this job runs regardless of the result of previous jobs
+
+    steps:
+      - name: Notify Slack of failure ⛔️
+        # send notification if 'run_metabase_query' is skipped (previous needed job failed) or failed
+        if: needs.run_metabase_query.result != 'success'
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          # Send notification to #atom-squad-alerts slack channel
+          payload: |
+            channel: "C01M5TAHDHA"
+            text: >-
+                ⛔️ \*Rasa Pro telemetry release entry check\* failed 😱!
+                ${{ needs.run_metabase_query.outputs.error_message_docker || '' }}
+                ${{ needs.run_metabase_query.outputs.error_message_python || '' }}
+                Please review the workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

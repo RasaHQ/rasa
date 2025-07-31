@@ -169,7 +169,8 @@ jobs:
           title: Release ${{ github.event.inputs.version }}
 
   if_merged_tag_release:
-    if: startsWith(github.head_ref, 'prepare-release-') && github.event.pull_request.merged == true
+    # github.event.pull_request.head.ref ensures that tag is pushed even when PR is created/merged from a feature branch
+    if: startsWith(github.event.pull_request.head.ref, 'prepare-release-') && github.event.pull_request.merged == true
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout git repository 🕝

@@ -65,6 +65,10 @@ def create_argument_parser() -> argparse.ArgumentParser:
         "--interactive",
         action="store_true",
     )
+    prepare_subparser.add_argument(
+        "--automated-release",
+        action="store_true",
+    )
     tag_subparser = subparsers.add_parser(
         "tag",
         description="Tag the next release",
@@ -295,6 +299,13 @@ def create_commit(version: Version) -> None:
     """Creates a git commit with all stashed changes."""
     check_call(["git", "commit", "-m", f"prepared release of version {version}"])
 
+def create_commit_with_automated_user(version: Version) -> None:
+    """Creates a git commit with all stashed changes using an automated user."""
+    check_call(["git", "config", "--global", "user.name", "rasabot"])
+    check_call(["git", "config", "--global", "user.email", "rasabot@rasa.com"])
+
+    check_call(["git", "commit", "-m", f"prepared release of version {version}"])
+
 
 def push_changes() -> None:
     """Pushes the current branch to origin."""
@@ -428,6 +439,12 @@ def prepare_release(args: argparse.Namespace) -> None:
         # never update changelog on a pre-release version
         generate_changelog(version)
 
+    if args.automated_release:
+        # if this is an automated release, we don't want to create a new branch
+        # but rather commit the changes directly to the current branch
+        print("Automated release: committing changes to the current branch.")
+        create_commit_with_automated_user(version)
+        return
     # alpha or beta workflow on feature branch when a version bump is required
     if (
         version.is_alpha or version.is_beta
