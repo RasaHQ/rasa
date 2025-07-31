@@ -37,7 +37,6 @@ from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.utils import (
-    filled_slots_for_active_flow,
     top_flow_frame,
     top_user_flow_frame,
 )
@@ -125,7 +124,8 @@ def validate_state_of_commands(commands: List[Command]) -> None:
     # check that there is only at max one cancel flow command
     if sum(isinstance(c, CancelFlowCommand) for c in commands) > 1:
         structlogger.error(
-            "command_processor.validate_state_of_commands.multiple_cancel_flow_commands",
+            "command_processor.validate_state_of_commands."
+            "multiple_cancel_flow_commands",
             commands=[command.__class__.__name__ for command in commands],
         )
         raise ValueError("There can only be one cancel flow command.")
@@ -136,7 +136,8 @@ def validate_state_of_commands(commands: List[Command]) -> None:
     ]
     if free_form_answer_commands != commands[: len(free_form_answer_commands)]:
         structlogger.error(
-            "command_processor.validate_state_of_commands.free_form_answer_commands_not_at_beginning",
+            "command_processor.validate_state_of_commands."
+            "free_form_answer_commands_not_at_beginning",
             commands=[command.__class__.__name__ for command in commands],
         )
         raise ValueError(
@@ -146,7 +147,8 @@ def validate_state_of_commands(commands: List[Command]) -> None:
     # check that there is at max only one correctslots command
     if sum(isinstance(c, CorrectSlotsCommand) for c in commands) > 1:
         structlogger.error(
-            "command_processor.validate_state_of_commands.multiple_correct_slots_commands",
+            "command_processor.validate_state_of_commands."
+            "multiple_correct_slots_commands",
             commands=[command.__class__.__name__ for command in commands],
         )
         raise ValueError("There can only be one correct slots command.")
@@ -230,11 +232,9 @@ def execute_commands(
 
     events: List[Event] = flow_hash_events
 
-    # commands need to be reversed to make sure they end up in the right order
-    # on the stack. e.g. if there multiple start flow commands, the first one
-    # should be on top of the stack. this is achieved by reversing the list
-    # and then pushing the commands onto the stack in the reversed order.
-    reversed_commands = list(reversed(commands))
+    # reorder commands: in case there is no active flow, we want to make sure to
+    # run the start flow commands first.
+    final_commands = reorder_commands(commands, tracker)
 
     # we need to keep track of the ValidateSlotPatternFlowStackFrame that
     # should be pushed onto the stack before executing the StartFlowCommands.
@@ -245,7 +245,7 @@ def execute_commands(
 
     validate_state_of_commands(commands)
 
-    for command in reversed_commands:
+    for command in final_commands:
         new_events = command.run_command_on_tracker(
             tracker, all_flows, original_tracker
         )
@@ -398,11 +398,11 @@ def clean_up_commands(
     """
     domain = domain if domain else Domain.empty()
 
-    slots_so_far, _ = filled_slots_for_active_flow(tracker, all_flows)
-
-    # update the slots so far with the slots that were set in the tracker
-    slots_so_far.update(
-        {event.key for event in tracker.events if isinstance(event, SlotSet)}
+    # we consider all slots that were set in the tracker for potential corrections
+    # in the correct_slot_command we will check if a slot should actually be
+    # corrected
+    slots_so_far = set(
+        [event.key for event in tracker.events if isinstance(event, SlotSet)]
     )
 
     clean_commands: List[Command] = []
@@ -444,7 +444,8 @@ def clean_up_commands(
                 # drop a start flow command if the starting flow is equal
                 # to the currently active flow
                 structlogger.debug(
-                    "command_processor.clean_up_commands.skip_command_flow_already_active",
+                    "command_processor.clean_up_commands."
+                    "skip_command_flow_already_active",
                     command=command,
                 )
                 continue
@@ -475,7 +476,8 @@ def clean_up_commands(
             clean_commands = clean_up_clarify_command(clean_commands, commands, command)
             if command not in clean_commands:
                 structlogger.debug(
-                    "command_processor.clean_up_commands.drop_clarify_given_other_commands",
+                    "command_processor.clean_up_commands."
+                    "drop_clarify_given_other_commands",
                     command=command,
                 )
         else:
@@ -577,10 +579,10 @@ def clean_up_slot_command(
         The cleaned up commands.
     """
     stack = tracker.stack
-
     resulting_commands = commands_so_far[:]
-
     slot = tracker.slots.get(command.name)
+
+    # if the slot is not in the domain, we cannot set it
     if slot is None:
         structlogger.debug(
             "command_processor.clean_up_slot_command.skip_command_slot_not_in_domain",
@@ -593,6 +595,7 @@ def clean_up_slot_command(
         )
         return resulting_commands
 
+    # check if the slot should be set by the command
     if not should_slot_be_set(slot, command, resulting_commands):
         structlogger.debug(
             "command_processor.clean_up_slot_command.skip_command.extractor_"
@@ -618,6 +621,7 @@ def clean_up_slot_command(
 
         return resulting_commands
 
+    # check if the slot can be corrected by the LLM
     if (
         slot.filled_by == SetSlotExtractor.NLU.value
         and command.extractor == SetSlotExtractor.LLM.value
@@ -646,49 +650,71 @@ def clean_up_slot_command(
             resulting_commands.append(command)
             return resulting_commands
 
-        if (slot := tracker.slots.get(command.name)) is not None and str(
-            slot.value
-        ) == str(command.value):
-            # the slot is already set, we don't need to set it again
-            structlogger.debug(
-                "command_processor.clean_up_slot_command.skip_command_slot_already_set",
-                command=command,
-            )
-            return resulting_commands
-
-        top = top_flow_frame(stack)
-        if isinstance(top, CorrectionPatternFlowStackFrame):
-            already_corrected_slots = top.corrected_slots
+        if should_slot_be_corrected(command, tracker, stack, all_flows):
+            # if the slot was already set before, we need to convert it into
+            # a correction
+            return convert_set_slot_to_correction(command, resulting_commands)
         else:
-            already_corrected_slots = {}
-
-        if command.name in already_corrected_slots and str(
-            already_corrected_slots[command.name]
-        ) == str(command.value):
-            structlogger.debug(
-                "command_processor.clean_up_slot_command"
-                ".skip_command_slot_already_corrected",
-                command=command,
-            )
             return resulting_commands
 
+    resulting_commands.append(command)
+    return resulting_commands
+
+
+def should_slot_be_corrected(
+    command: SetSlotCommand,
+    tracker: DialogueStateTracker,
+    stack: DialogueStack,
+    all_flows: FlowsList,
+) -> bool:
+    """Check if a slot should be corrected."""
+    if (slot := tracker.slots.get(command.name)) is not None and str(slot.value) == str(
+        command.value
+    ):
+        # the slot is already set to the same value, we don't need to set it again
         structlogger.debug(
-            "command_processor.clean_up_slot_command.convert_command_to_correction",
+            "command_processor.clean_up_slot_command.skip_command_slot_already_set",
             command=command,
         )
+        return False
 
-        # Group all corrections into one command
-        corrected_slot = CorrectedSlot(command.name, command.value, command.extractor)
-        for c in resulting_commands:
-            if isinstance(c, CorrectSlotsCommand):
-                c.corrected_slots.append(corrected_slot)
-                break
-        else:
-            resulting_commands.append(
-                CorrectSlotsCommand(corrected_slots=[corrected_slot])
-            )
+    top = top_flow_frame(stack)
+    if isinstance(top, CorrectionPatternFlowStackFrame):
+        already_corrected_slots = top.corrected_slots
     else:
-        resulting_commands.append(command)
+        already_corrected_slots = {}
+
+    if command.name in already_corrected_slots and str(
+        already_corrected_slots[command.name]
+    ) == str(command.value):
+        structlogger.debug(
+            "command_processor.clean_up_slot_command"
+            ".skip_command_slot_already_corrected",
+            command=command,
+        )
+        return False
+
+    return True
+
+
+def convert_set_slot_to_correction(
+    command: SetSlotCommand,
+    resulting_commands: List[Command],
+) -> List[Command]:
+    """Convert a set slot command to a correction command."""
+    structlogger.debug(
+        "command_processor.convert_set_slot_to_correction",
+        command=command,
+    )
+
+    # Group all corrections into one command
+    corrected_slot = CorrectedSlot(command.name, command.value, command.extractor)
+    for c in resulting_commands:
+        if isinstance(c, CorrectSlotsCommand):
+            c.corrected_slots.append(corrected_slot)
+            break
+    else:
+        resulting_commands.append(CorrectSlotsCommand(corrected_slots=[corrected_slot]))
 
     return resulting_commands
 
@@ -747,7 +773,8 @@ def clean_up_chitchat_command(
             0, CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)
         )
         structlogger.warn(
-            "command_processor.clean_up_chitchat_command.replace_chitchat_answer_with_cannot_handle",
+            "command_processor.clean_up_chitchat_command."
+            "replace_chitchat_answer_with_cannot_handle",
             command=resulting_commands[0],  # no PII
             pattern_chitchat_uses_action_trigger_chitchat=has_action_trigger_chitchat,
             defined_intentless_policy_in_config=defines_intentless_policy,
@@ -850,3 +877,49 @@ def filter_cannot_handle_command(
         for command in clean_commands
         if not isinstance(command, CannotHandleCommand)
     ]
+
+
+def reorder_commands(
+    commands: List[Command], tracker: DialogueStateTracker
+) -> List[Command]:
+    """Reorder commands.
+
+    In case there is no active flow, we want to make sure to run the start flow
+    commands first.
+    """
+    reordered_commands = commands
+
+    top_flow_frame = top_user_flow_frame(tracker.stack)
+
+    if top_flow_frame is None:
+        # no active flow, we want to make sure to run the start flow commands first
+        start_flow_commands: List[Command] = [
+            command for command in commands if isinstance(command, StartFlowCommand)
+        ]
+
+        # if there are no start flow commands, we can return the commands as they are
+        if not start_flow_commands:
+            reordered_commands = commands
+
+        # if there is just one start flow command, we want to run it first
+        # as the order of commands is reserved later,
+        # we need to add it to the end of the list
+        elif len(start_flow_commands) == 1:
+            reordered_commands = [
+                command for command in commands if command not in start_flow_commands
+            ] + start_flow_commands
+
+        # if there are multiple start flow commands,
+        # we just make sure to move the first start flow command to the end of the list
+        # (due to the reverse execution order of commands) and keep the other commands
+        # as they are.
+        else:
+            reordered_commands = [
+                command for command in commands if command != start_flow_commands[-1]
+            ] + [start_flow_commands[-1]]
+
+    # commands need to be reversed to make sure they end up in the right order
+    # on the stack. e.g. if there multiple start flow commands, the first one
+    # should be on top of the stack. this is achieved by reversing the list
+    # and then pushing the commands onto the stack in the reversed order.
+    return list(reversed(reordered_commands))

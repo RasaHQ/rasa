@@ -269,6 +269,20 @@ class CorrectSlotsCommand(Command):
             return []
 
         structlogger.debug("correct_slots_command", command=self)
+
+        # check if the correct slot is referring to a slot of a flow on the stack
+        # the slot also needs to be part of a collect step in any of those flows
+        # if this is not the case, we don't want to correct the slot
+        for slot in self.corrected_slots:
+            if not self.should_correct_slot(slot, tracker, all_flows):
+                structlogger.warning(
+                    "correct_slots_command.skip_correct_slot",
+                    correct_slot=slot,
+                    reason="The slot is not part of a collect step in any of the flows "
+                    "on the stack. Skipping correction.",
+                )
+                return []
+
         proposed_slots = self.corrected_slots_dict(tracker)
 
         correction_frame = self.create_correction_frame(
@@ -293,3 +307,27 @@ class CorrectSlotsCommand(Command):
             return False
 
         return True
+
+    def should_correct_slot(
+        self, slot: CorrectedSlot, tracker: DialogueStateTracker, all_flows: FlowsList
+    ) -> bool:
+        """Checks if the slot should be corrected.
+
+        Args:
+            slot: The slot to check.
+            tracker: The tracker.
+            all_flows: All flows in the assistant.
+        """
+        # get all flows on the stack
+        flows_on_stack = utils.user_flows_on_the_stack(tracker.stack)
+
+        # check if the slot is part of a collect step in any of the flows on the stack
+        for flow_id in flows_on_stack:
+            flow = all_flows.flow_by_id(flow_id)
+            if flow is None:
+                continue
+            for collect_step in flow.get_collect_steps():
+                if collect_step.collect == slot.name:
+                    return True
+
+        return False

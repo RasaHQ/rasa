@@ -37,12 +37,14 @@ from rasa.dialogue_understanding.processor.command_processor import (
     get_current_collect_step,
     push_stack_frames_to_follow_commands,
     remove_duplicated_set_slots,
+    reorder_commands,
     should_slot_be_set,
     validate_state_of_commands,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     BaseFlowStackFrame,
+    FlowStackFrameType,
     UserFlowStackFrame,
 )
 from rasa.engine.graph import ExecutionContext
@@ -493,20 +495,15 @@ def test_clean_up_commands(
         """
     )
     tracker_eggs = DialogueStateTracker.from_events(
-        sender_id="test", evts=[], slots=domain.slots
+        sender_id="test",
+        evts=[SlotSet("ham", "value"), SlotSet("eggs", "value")],
+        slots=domain.slots,
     )
     tracker_eggs.update_stack(stack)
     # When
-    with patch(
-        (
-            "rasa.dialogue_understanding.processor."
-            "command_processor.filled_slots_for_active_flow"
-        ),
-        Mock(return_value=({"ham"}, "egg")),
-    ):
-        clean_commands = clean_up_commands(
-            commands, tracker_eggs, collect_info_flow, Mock()
-        )
+    clean_commands = clean_up_commands(
+        commands, tracker_eggs, collect_info_flow, Mock()
+    )
 
     # Then
     assert clean_commands == expected_clean_commands
@@ -546,14 +543,7 @@ def test_clean_up_commands_skip_slot_already_set(
     tracker.update(slot_event)
 
     # When
-    with patch(
-        (
-            "rasa.dialogue_understanding.processor."
-            "command_processor.filled_slots_for_active_flow"
-        ),
-        Mock(return_value=({slot_name}, "egg")),
-    ):
-        clean_commands = clean_up_commands(commands, tracker, collect_info_flow, Mock())
+    clean_commands = clean_up_commands(commands, tracker, collect_info_flow, Mock())
 
     # Then
     # As the slot is already set, the command should be skipped
@@ -596,7 +586,7 @@ def test_clean_up_commands_with_correction_pattern_on_stack(
 
     tracker_eggs = DialogueStateTracker.from_events(
         sender_id="test",
-        evts=[],
+        evts=[SlotSet("ham", "value"), SlotSet("egg", "some_value")],
         slots=[
             TextSlot("egg", mappings=[], initial_value="some_value"),
             TextSlot("eggs", mappings=[], initial_value=None),
@@ -604,16 +594,9 @@ def test_clean_up_commands_with_correction_pattern_on_stack(
     )
     tracker_eggs.update_stack(stack)
     # When
-    with patch(
-        (
-            "rasa.dialogue_understanding.processor."
-            "command_processor.filled_slots_for_active_flow"
-        ),
-        Mock(return_value=({"ham", "egg"}, "spam")),
-    ):
-        clean_commands = clean_up_commands(
-            commands, tracker_eggs, collect_info_flow, Mock()
-        )
+    clean_commands = clean_up_commands(
+        commands, tracker_eggs, collect_info_flow, Mock()
+    )
 
     # Then
     assert clean_commands == expected_clean_commands
@@ -634,19 +617,14 @@ def test_clean_up_commands_with_start_flow(
 ):
     stack = DialogueStack(frames=[user_frame_collect_eggs])
 
-    tracker_eggs = DialogueStateTracker.from_events(sender_id="test", evts=[])
+    tracker_eggs = DialogueStateTracker.from_events(
+        sender_id="test", evts=[SlotSet("ham", "prosciutto")]
+    )
     tracker_eggs.update_stack(stack)
     # When
-    with patch(
-        (
-            "rasa.dialogue_understanding.processor."
-            "command_processor.filled_slots_for_active_flow"
-        ),
-        Mock(return_value=({"ham"}, "spam")),
-    ):
-        clean_commands = clean_up_commands(
-            commands, tracker_eggs, collect_info_flow, Mock()
-        )
+    clean_commands = clean_up_commands(
+        commands, tracker_eggs, collect_info_flow, Mock()
+    )
 
     # Then
     assert clean_commands == expected_clean_commands
@@ -971,17 +949,12 @@ def test_command_processor_clean_up_slot_command_adds_cannot_handle_multiple_slo
         SetSlotCommand(second_slot, "test@test.com", SetSlotExtractor.LLM.value),
     ]
     sender_id = uuid.uuid4().hex
-    tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
-    slots_so_far = {first_slot, second_slot}
-    all_flows = FlowsList(underlying_flows=[])
-
-    def mock_filled_slots_for_active_flow(*args, **kwargs):
-        return slots_so_far, None
-
-    monkeypatch.setattr(
-        "rasa.dialogue_understanding.processor.command_processor.filled_slots_for_active_flow",
-        mock_filled_slots_for_active_flow,
+    tracker = DialogueStateTracker.from_events(
+        sender_id,
+        [SlotSet(first_slot, "some_value"), SlotSet(second_slot, "value")],
+        slots=domain.slots,
     )
+    all_flows = FlowsList(underlying_flows=[])
 
     cleaned_commands = clean_up_commands(commands, tracker, all_flows, Mock())
 
@@ -1019,13 +992,10 @@ def test_command_processor_clean_up_commands_with_cannot_handle(
         StartFlowCommand("flow_name"),
     ]
     sender_id = uuid.uuid4().hex
-    tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
-    all_flows = FlowsList(underlying_flows=[])
-
-    monkeypatch.setattr(
-        "rasa.dialogue_understanding.processor.command_processor.filled_slots_for_active_flow",
-        lambda *args, **kwargs: ({slot_name}, None),
+    tracker = DialogueStateTracker.from_events(
+        sender_id, [SlotSet(slot_name, "some_value")], slots=domain.slots
     )
+    all_flows = FlowsList(underlying_flows=[])
 
     cleaned_commands = clean_up_commands(commands, tracker, all_flows, Mock())
 
@@ -1684,12 +1654,8 @@ def test_execute_commands_with_setslot_command(all_flows: FlowsList):
     assert events[0].key == "flow_hashes"
     assert events[0].value.keys() == {"foo", "bar", "ask"}
 
-    assert isinstance(events[1], SlotSet)
-    assert events[1].key == "test_slot"
-    assert events[1].value == "slot_value"
-
-    assert isinstance(events[2], DialogueStackUpdated)
-    updated_stack = tracker.stack.update_from_patch(events[2].update)
+    assert isinstance(events[1], DialogueStackUpdated)
+    updated_stack = tracker.stack.update_from_patch(events[1].update)
 
     assert len(updated_stack.frames) == 3
 
@@ -1699,8 +1665,12 @@ def test_execute_commands_with_setslot_command(all_flows: FlowsList):
     assert frame.step_id == "START"
     assert frame.frame_type == "regular"
 
+    assert isinstance(events[2], SlotSet)
+    assert events[2].key == "test_slot"
+    assert events[2].value == "slot_value"
+
     assert isinstance(events[3], DialogueStackUpdated)
-    updated_stack = tracker.stack.update_from_patch(events[2].update)
+    updated_stack = tracker.stack.update_from_patch(events[3].update)
 
     assert len(updated_stack.frames) == 3
 
@@ -1709,3 +1679,240 @@ def test_execute_commands_with_setslot_command(all_flows: FlowsList):
     assert frame.flow_id == "pattern_validate_slot"
     assert frame.step_id == "START"
     assert frame.validate == "test_slot"
+
+
+@pytest.mark.parametrize(
+    "commands, expected",
+    [
+        (
+            # Test that a single StartFlowCommand is moved to the front when
+            # no active flow.
+            [
+                SetSlotCommand("slot1", "value1"),
+                StartFlowCommand("flow1"),
+                SetSlotCommand("slot2", "value2"),
+            ],
+            [
+                StartFlowCommand("flow1"),
+                SetSlotCommand("slot2", "value2"),
+                SetSlotCommand("slot1", "value1"),
+            ],
+        ),
+        (
+            # Test that multiple StartFlowCommands are reordered correctly when
+            # no active flow.
+            [
+                SetSlotCommand("slot1", "value1"),
+                StartFlowCommand("flow1"),
+                SetSlotCommand("slot2", "value2"),
+                StartFlowCommand("flow2"),
+                StartFlowCommand("flow3"),
+                SetSlotCommand("slot3", "value3"),
+            ],
+            [
+                StartFlowCommand("flow3"),
+                SetSlotCommand("slot3", "value3"),
+                StartFlowCommand("flow2"),
+                SetSlotCommand("slot2", "value2"),
+                StartFlowCommand("flow1"),
+                SetSlotCommand("slot1", "value1"),
+            ],
+        ),
+        (
+            # Test that commands are returned unchanged when no StartFlowCommands
+            # and no active flow.
+            [
+                SetSlotCommand("slot1", "value1"),
+                SetSlotCommand("slot2", "value2"),
+                CorrectSlotsCommand(corrected_slots=[]),
+            ],
+            [
+                CorrectSlotsCommand(corrected_slots=[]),
+                SetSlotCommand("slot2", "value2"),
+                SetSlotCommand("slot1", "value1"),
+            ],
+        ),
+        (
+            # Test that only StartFlowCommands are handled correctly when no
+            # active flow.
+            [
+                StartFlowCommand("flow1"),
+                StartFlowCommand("flow2"),
+                StartFlowCommand("flow3"),
+            ],
+            [
+                StartFlowCommand("flow3"),
+                StartFlowCommand("flow2"),
+                StartFlowCommand("flow1"),
+            ],
+        ),
+        (
+            # Test that StartFlowCommands at the beginning are handled correctly
+            # when no active flow.
+            [
+                StartFlowCommand("flow1"),
+                StartFlowCommand("flow2"),
+                SetSlotCommand("slot1", "value1"),
+                SetSlotCommand("slot2", "value2"),
+            ],
+            [
+                StartFlowCommand("flow2"),
+                SetSlotCommand("slot2", "value2"),
+                SetSlotCommand("slot1", "value1"),
+                StartFlowCommand("flow1"),
+            ],
+        ),
+        (
+            # Test that StartFlowCommands at the end are handled correctly
+            # when no active flow.
+            [
+                SetSlotCommand("slot1", "value1"),
+                SetSlotCommand("slot2", "value2"),
+                StartFlowCommand("flow1"),
+                StartFlowCommand("flow2"),
+            ],
+            [
+                StartFlowCommand("flow2"),
+                StartFlowCommand("flow1"),
+                SetSlotCommand("slot2", "value2"),
+                SetSlotCommand("slot1", "value1"),
+            ],
+        ),
+        (
+            # Test that mixed command types are handled correctly when no
+            # active flow.
+            [
+                SetSlotCommand("slot1", "value1"),
+                StartFlowCommand("flow1"),
+                CorrectSlotsCommand(corrected_slots=[]),
+                StartFlowCommand("flow2"),
+                CancelFlowCommand(),
+                StartFlowCommand("flow3"),
+                ClarifyCommand(["option1", "option2"]),
+            ],
+            [
+                StartFlowCommand("flow3"),
+                ClarifyCommand(["option1", "option2"]),
+                CancelFlowCommand(),
+                StartFlowCommand("flow2"),
+                CorrectSlotsCommand(corrected_slots=[]),
+                StartFlowCommand("flow1"),
+                SetSlotCommand("slot1", "value1"),
+            ],
+        ),
+        (
+            # Test that empty commands list is handled correctly.
+            [],
+            [],
+        ),
+    ],
+)
+def test_reorder_commands_no_active_flow(
+    commands: List[Command], expected: List[Command]
+):
+    # Arrange
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = DialogueStack.empty()
+
+    # Act
+    result = reorder_commands(commands, tracker)
+
+    # Assert
+    assert result == expected
+
+
+def test_reorder_commands_with_active_flow():
+    """Test that commands are returned unchanged when there is an active flow."""
+    # Arrange
+    commands = [
+        SetSlotCommand("slot1", "value1"),
+        StartFlowCommand("flow1"),
+        SetSlotCommand("slot2", "value2"),
+    ]
+    tracker = Mock(spec=DialogueStateTracker)
+
+    # Create a stack with an active user flow frame
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="active_flow", step_id="some_step", frame_id="frame_id"
+    )
+    tracker.stack = DialogueStack(frames=[user_flow_frame])
+
+    # Act
+    result = reorder_commands(commands, tracker)
+
+    # Assert
+    assert result == [
+        SetSlotCommand("slot2", "value2"),
+        StartFlowCommand("flow1"),
+        SetSlotCommand("slot1", "value1"),
+    ]
+
+
+def test_reorder_commands_with_active_flow_and_pattern_frames():
+    """Test that commands are returned unchanged when there is an
+    active flow with pattern frames.
+    """
+    # Arrange
+    commands = [
+        SetSlotCommand("slot1", "value1"),
+        StartFlowCommand("flow1"),
+        SetSlotCommand("slot2", "value2"),
+    ]
+    tracker = Mock(spec=DialogueStateTracker)
+
+    # Create a stack with pattern frames and an active user flow frame
+    pattern_frame = CollectInformationPatternFlowStackFrame(
+        collect="some_slot", frame_id="pattern_frame_id"
+    )
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="active_flow", step_id="some_step", frame_id="frame_id"
+    )
+    tracker.stack = DialogueStack(frames=[user_flow_frame, pattern_frame])
+
+    # Act
+    result = reorder_commands(commands, tracker)
+
+    # Assert
+    assert result == [
+        SetSlotCommand("slot2", "value2"),
+        StartFlowCommand("flow1"),
+        SetSlotCommand("slot1", "value1"),
+    ]
+
+
+def test_reorder_commands_with_call_and_link_frames():
+    """Test that commands are returned unchanged when there are call/link
+    frames but no active user flow.
+    """
+    # Arrange
+    commands = [
+        SetSlotCommand("slot1", "value1"),
+        StartFlowCommand("flow1"),
+        SetSlotCommand("slot2", "value2"),
+    ]
+    tracker = Mock(spec=DialogueStateTracker)
+
+    # Create a stack with only call and link frames (no regular user flow frames)
+    call_frame = UserFlowStackFrame(
+        flow_id="called_flow",
+        step_id="some_step",
+        frame_id="call_frame_id",
+        frame_type=FlowStackFrameType.CALL,
+    )
+    link_frame = UserFlowStackFrame(
+        flow_id="linked_flow",
+        step_id="some_step",
+        frame_id="link_frame_id",
+        frame_type=FlowStackFrameType.LINK,
+    )
+    tracker.stack = DialogueStack(frames=[call_frame, link_frame])
+
+    # Act
+    result = reorder_commands(commands, tracker)
+
+    # Assert
+    assert result == [
+        StartFlowCommand("flow1"),
+        SetSlotCommand("slot2", "value2"),
+        SetSlotCommand("slot1", "value1"),
+    ]

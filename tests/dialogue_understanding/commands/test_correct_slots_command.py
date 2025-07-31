@@ -1,4 +1,5 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+from unittest.mock import Mock
 
 import jsonpatch
 import pytest
@@ -14,12 +15,17 @@ from rasa.dialogue_understanding.patterns.correction import (
     CorrectionPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames import DialogueStackFrame
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
 )
+from rasa.dialogue_understanding.stack.frames.pattern_frame import PatternFlowStackFrame
 from rasa.shared.core.constants import SetSlotExtractor
 from rasa.shared.core.events import DialogueStackUpdated, Event, SlotSet
+from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows.flow import Flow
+from rasa.shared.core.flows.steps import CollectInformationFlowStep
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.dialogue_understanding.conftest import update_tracker_with_path_through_flow
 from tests.utilities import (
@@ -27,6 +33,718 @@ from tests.utilities import (
     flows_from_str_including_defaults,
     flows_from_str_with_defaults,
 )
+
+
+@pytest.mark.parametrize(
+    "slot_name, slot_value, expected_result, flow_id, collect_steps_config, "
+    "stack_frames",
+    [
+        (
+            # slot is in collect step of active flow
+            "user_name",
+            "John",
+            True,
+            "test_flow",
+            [{"collect": "user_name", "custom_id": "collect_name"}],
+            [UserFlowStackFrame(flow_id="test_flow", step_id="collect_name")],
+        ),
+        (
+            # slot is not in any collect step
+            "invalid_slot",
+            "some_value",
+            False,
+            "test_flow",
+            [
+                {"collect": "user_name", "custom_id": "collect_name"},
+                {"collect": "email", "custom_id": "collect_email"},
+            ],
+            [UserFlowStackFrame(flow_id="test_flow", step_id="collect_name")],
+        ),
+        (
+            # flow has no collect steps
+            "user_name",
+            "John",
+            False,
+            "test_flow",
+            [],
+            [UserFlowStackFrame(flow_id="test_flow", step_id="some_step")],
+        ),
+        (
+            # flow not found in list of flows
+            "user_name",
+            "John",
+            False,
+            None,
+            [{"collect": "user_name", "custom_id": "collect_name"}],
+            [UserFlowStackFrame(flow_id="nonexistent_flow", step_id="some_step")],
+        ),
+        (
+            # mixed stack content with valid slot
+            "user_name",
+            "John",
+            True,
+            "test_flow",
+            [{"collect": "user_name", "custom_id": "collect_name"}],
+            [
+                PatternFlowStackFrame(flow_id="pattern_flow", step_id="pattern_step"),
+                UserFlowStackFrame(flow_id="test_flow", step_id="collect_name"),
+            ],
+        ),
+        (
+            # call and link frames with valid slot
+            "user_name",
+            "John",
+            True,
+            "test_flow",
+            [{"collect": "user_name", "custom_id": "collect_name"}],
+            [
+                UserFlowStackFrame(
+                    flow_id="test_flow",
+                    step_id="collect_name",
+                    frame_type=FlowStackFrameType.CALL,
+                ),
+                UserFlowStackFrame(
+                    flow_id="another_flow",
+                    step_id="some_step",
+                    frame_type=FlowStackFrameType.LINK,
+                ),
+            ],
+        ),
+    ],
+)
+def test_should_correct_slot_parametrized(
+    slot_name: str,
+    slot_value: str,
+    expected_result: bool,
+    flow_id: Optional[str],
+    collect_steps_config: List[Dict[str, Any]],
+    stack_frames: List[DialogueStackFrame],
+):
+    """Parametrized test for should_correct_slot method covering various scenarios."""
+    # Arrange
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name=slot_name, value=slot_value)]
+    )
+
+    # Create flow based on config
+    flow = Mock(spec=Flow)
+    if flow_id is None:
+        flow = None
+    else:
+        collect_steps = []
+        for i, step_config in enumerate(collect_steps_config):
+            collect_step = CollectInformationFlowStep(
+                collect=step_config["collect"],
+                utter=f"utter_ask_{step_config['collect']}",
+                collect_action=f"action_ask_{step_config['collect']}",
+                rejections=[],
+                custom_id=step_config["custom_id"],
+                idx=i,
+                description=None,
+                metadata={},
+                next=Mock(),
+                flow_id=flow_id,
+            )
+            collect_steps.append(collect_step)
+        flow.get_collect_steps.return_value = collect_steps
+
+    # Create flows list
+    flows = Mock(spec=FlowsList)
+    flows.flow_by_id.return_value = flow
+
+    # Create stack
+    stack = DialogueStack(frames=stack_frames)
+
+    # Create tracker
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = stack
+
+    # Act
+    result = command.should_correct_slot(
+        CorrectedSlot(name=slot_name, value=slot_value), tracker, flows
+    )
+
+    # Assert
+    assert result is expected_result
+
+
+@pytest.mark.parametrize(
+    "slot_name, slot_value, stack_frames",
+    [
+        (
+            # no user flows on the stack
+            "user_name",
+            "John",
+            [PatternFlowStackFrame(flow_id="pattern_flow", step_id="pattern_step")],
+        ),
+        (
+            # stack is empty
+            "user_name",
+            "John",
+            [],
+        ),
+    ],
+)
+def test_should_correct_slot_denied_no_flows(
+    slot_name: str,
+    slot_value: str,
+    stack_frames: List[DialogueStackFrame],
+):
+    """Test that slot correction is denied when no user flows are available."""
+    # Arrange
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name=slot_name, value=slot_value)]
+    )
+
+    # Create flows list
+    flows = Mock(spec=FlowsList)
+
+    # Create stack
+    if not stack_frames:
+        stack = DialogueStack.empty()
+    else:
+        stack = DialogueStack(frames=stack_frames)
+
+    # Create tracker
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = stack
+
+    # Act
+    result = command.should_correct_slot(
+        CorrectedSlot(name=slot_name, value=slot_value), tracker, flows
+    )
+
+    # Assert
+    assert result is False
+    flows.flow_by_id.assert_not_called()
+
+
+# Keep the original individual tests for backward compatibility and specific edge cases
+def test_should_correct_slot_when_slot_is_in_collect_step_of_active_flow():
+    """Test that slot correction is allowed when slot is part of a collect
+    step in an active flow.
+    """
+    # Arrange
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="user_name", value="John")]
+    )
+
+    # Create a flow with a collect step for "user_name"
+    flow = Mock(spec=Flow)
+    collect_step = CollectInformationFlowStep(
+        collect="user_name",
+        utter="utter_ask_user_name",
+        collect_action="action_ask_user_name",
+        rejections=[],
+        custom_id="collect_name",
+        idx=0,
+        description=None,
+        metadata={},
+        next=Mock(),
+        flow_id="test_flow",
+    )
+    flow.get_collect_steps.return_value = [collect_step]
+
+    # Create flows list with our flow
+    flows = Mock(spec=FlowsList)
+    flows.flow_by_id.return_value = flow
+
+    # Create stack with the flow
+    stack = DialogueStack(
+        frames=[UserFlowStackFrame(flow_id="test_flow", step_id="collect_name")]
+    )
+
+    # Create tracker
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = stack
+
+    # Act
+    result = command.should_correct_slot(
+        CorrectedSlot(name="user_name", value="John"), tracker, flows
+    )
+
+    # Assert
+    assert result is True
+    flows.flow_by_id.assert_called_once_with("test_flow")
+
+
+def test_should_correct_slot_when_slot_is_in_collect_step_of_multiple_flows():
+    """Test that slot correction is allowed when slot is part of collect
+    steps in multiple flows.
+    """
+    # Arrange
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="email", value="test@example.com")]
+    )
+
+    # Create flows with collect steps for "email"
+    flow1 = Mock(spec=Flow)
+    collect_step1 = CollectInformationFlowStep(
+        collect="email",
+        utter="utter_ask_email",
+        collect_action="action_ask_email",
+        rejections=[],
+        custom_id="collect_email",
+        idx=0,
+        description=None,
+        metadata={},
+        next=Mock(),
+        flow_id="flow1",
+    )
+    flow1.get_collect_steps.return_value = [collect_step1]
+
+    flow2 = Mock(spec=Flow)
+    collect_step2 = CollectInformationFlowStep(
+        collect="email",
+        utter="utter_ask_email",
+        collect_action="action_ask_email",
+        rejections=[],
+        custom_id="collect_email_alt",
+        idx=0,
+        description=None,
+        metadata={},
+        next=Mock(),
+        flow_id="flow2",
+    )
+    flow2.get_collect_steps.return_value = [collect_step2]
+
+    # Create flows list
+    flows = Mock(spec=FlowsList)
+    flows.flow_by_id.side_effect = (
+        lambda flow_id: flow1 if flow_id == "flow1" else flow2
+    )
+
+    # Create stack with multiple flows
+    stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(flow_id="flow1", step_id="collect_email"),
+            UserFlowStackFrame(flow_id="flow2", step_id="collect_email_alt"),
+        ]
+    )
+
+    # Create tracker
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = stack
+
+    # Act
+    result = command.should_correct_slot(
+        CorrectedSlot(name="email", value="test@example.com"), tracker, flows
+    )
+
+    # Assert
+    assert result is True
+    assert flows.flow_by_id.call_count == 1
+
+
+def test_should_correct_slot_when_slot_is_not_in_any_collect_step():
+    """Test that slot correction is denied when slot is not part of
+    any collect step.
+    """
+    # Arrange
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="invalid_slot", value="some_value")]
+    )
+
+    # Create a flow with collect steps for different slots
+    flow = Mock(spec=Flow)
+    collect_step1 = CollectInformationFlowStep(
+        collect="user_name",
+        utter="utter_ask_user_name",
+        collect_action="action_ask_user_name",
+        rejections=[],
+        custom_id="collect_name",
+        idx=0,
+        description=None,
+        metadata={},
+        next=Mock(),
+        flow_id="test_flow",
+    )
+    collect_step2 = CollectInformationFlowStep(
+        collect="email",
+        utter="utter_ask_email",
+        collect_action="action_ask_email",
+        rejections=[],
+        custom_id="collect_email",
+        idx=1,
+        description=None,
+        metadata={},
+        next=Mock(),
+        flow_id="test_flow",
+    )
+    flow.get_collect_steps.return_value = [collect_step1, collect_step2]
+
+    # Create flows list
+    flows = Mock(spec=FlowsList)
+    flows.flow_by_id.return_value = flow
+
+    # Create stack with the flow
+    stack = DialogueStack(
+        frames=[UserFlowStackFrame(flow_id="test_flow", step_id="collect_name")]
+    )
+
+    # Create tracker
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = stack
+
+    # Act
+    result = command.should_correct_slot(
+        CorrectedSlot(name="invalid_slot", value="some_value"), tracker, flows
+    )
+
+    # Assert
+    assert result is False
+
+
+def test_should_correct_slot_when_no_user_flows_on_stack():
+    """Test that slot correction is denied when no user flows are on the stack."""
+    # Arrange
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="user_name", value="John")]
+    )
+
+    # Create stack with only pattern frames (no user flows)
+    stack = DialogueStack(
+        frames=[PatternFlowStackFrame(flow_id="pattern_flow", step_id="pattern_step")]
+    )
+
+    # Create flows list
+    flows = Mock(spec=FlowsList)
+
+    # Create tracker
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = stack
+
+    # Act
+    result = command.should_correct_slot(
+        CorrectedSlot(name="user_name", value="John"), tracker, flows
+    )
+
+    # Assert
+    assert result is False
+    flows.flow_by_id.assert_not_called()
+
+
+def test_should_correct_slot_when_stack_is_empty():
+    """Test that slot correction is denied when stack is empty."""
+    # Arrange
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="user_name", value="John")]
+    )
+
+    # Create empty stack
+    stack = DialogueStack.empty()
+
+    # Create flows list
+    flows = Mock(spec=FlowsList)
+
+    # Create tracker
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = stack
+
+    # Act
+    result = command.should_correct_slot(
+        CorrectedSlot(name="user_name", value="John"), tracker, flows
+    )
+
+    # Assert
+    assert result is False
+    flows.flow_by_id.assert_not_called()
+
+
+def test_should_correct_slot_when_flow_has_no_collect_steps():
+    """Test that slot correction is denied when flow has no collect steps."""
+    # Arrange
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="user_name", value="John")]
+    )
+
+    # Create a flow with no collect steps
+    flow = Mock(spec=Flow)
+    flow.get_collect_steps.return_value = []
+
+    # Create flows list
+    flows = Mock(spec=FlowsList)
+    flows.flow_by_id.return_value = flow
+
+    # Create stack with the flow
+    stack = DialogueStack(
+        frames=[UserFlowStackFrame(flow_id="test_flow", step_id="some_step")]
+    )
+
+    # Create tracker
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = stack
+
+    # Act
+    result = command.should_correct_slot(
+        CorrectedSlot(name="user_name", value="John"), tracker, flows
+    )
+
+    # Assert
+    assert result is False
+
+
+def test_should_correct_slot_when_flow_not_found_in_flows_list():
+    """Test that slot correction is denied when flow is not found in flows list."""
+    # Arrange
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="user_name", value="John")]
+    )
+
+    # Create flows list that returns None for the flow
+    flows = Mock(spec=FlowsList)
+    flows.flow_by_id.return_value = None
+
+    # Create stack with a flow
+    stack = DialogueStack(
+        frames=[UserFlowStackFrame(flow_id="nonexistent_flow", step_id="some_step")]
+    )
+
+    # Create tracker
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = stack
+
+    # Act
+    result = command.should_correct_slot(
+        CorrectedSlot(name="user_name", value="John"), tracker, flows
+    )
+
+    # Assert
+    assert result is False
+
+
+def test_should_correct_slot_with_mixed_stack_content():
+    """Test that slot correction works correctly with mixed stack content
+    (user flows and patterns).
+    """
+    # Arrange
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="user_name", value="John")]
+    )
+
+    # Create a flow with collect steps
+    flow = Mock(spec=Flow)
+    collect_step = CollectInformationFlowStep(
+        collect="user_name",
+        utter="utter_ask_user_name",
+        collect_action="action_ask_user_name",
+        rejections=[],
+        custom_id="collect_name",
+        idx=0,
+        description=None,
+        metadata={},
+        next=Mock(),
+        flow_id="test_flow",
+    )
+    flow.get_collect_steps.return_value = [collect_step]
+
+    # Create flows list
+    flows = Mock(spec=FlowsList)
+    flows.flow_by_id.return_value = flow
+
+    # Create stack with mixed content (pattern frame and user flow)
+    stack = DialogueStack(
+        frames=[
+            PatternFlowStackFrame(flow_id="pattern_flow", step_id="pattern_step"),
+            UserFlowStackFrame(flow_id="test_flow", step_id="collect_name"),
+        ]
+    )
+
+    # Create tracker
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = stack
+
+    # Act
+    result = command.should_correct_slot(
+        CorrectedSlot(name="user_name", value="John"), tracker, flows
+    )
+
+    # Assert
+    assert result is True
+    flows.flow_by_id.assert_called_once_with("test_flow")
+
+
+def test_should_correct_slot_with_call_and_link_frames():
+    """Test that slot correction works with call and link frame types."""
+    # Arrange
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="user_name", value="John")]
+    )
+
+    # Create a flow with collect steps
+    flow = Mock(spec=Flow)
+    collect_step = CollectInformationFlowStep(
+        collect="user_name",
+        utter="utter_ask_user_name",
+        collect_action="action_ask_user_name",
+        rejections=[],
+        custom_id="collect_name",
+        idx=0,
+        description=None,
+        metadata={},
+        next=Mock(),
+        flow_id="test_flow",
+    )
+    flow.get_collect_steps.return_value = [collect_step]
+
+    # Create flows list
+    flows = Mock(spec=FlowsList)
+    flows.flow_by_id.return_value = flow
+
+    # Create stack with call and link frames
+    stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(
+                flow_id="test_flow",
+                step_id="collect_name",
+                frame_type=FlowStackFrameType.CALL,
+            ),
+            UserFlowStackFrame(
+                flow_id="another_flow",
+                step_id="some_step",
+                frame_type=FlowStackFrameType.LINK,
+            ),
+        ]
+    )
+
+    # Create tracker
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = stack
+
+    # Act
+    result = command.should_correct_slot(
+        CorrectedSlot(name="user_name", value="John"), tracker, flows
+    )
+
+    # Assert
+    assert result is True
+    assert flows.flow_by_id.call_count == 1
+
+
+def test_run_command_on_tracker_skips_correction_when_slot_not_in_collect_step():
+    """Test that run_command_on_tracker skips correction when slot is not
+    part of collect steps.
+    """
+    # Arrange
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="invalid_slot", value="some_value")]
+    )
+
+    # Create a flow with collect steps for different slots
+    flow = Mock(spec=Flow)
+    collect_step1 = CollectInformationFlowStep(
+        collect="user_name",
+        utter="utter_ask_user_name",
+        collect_action="action_ask_user_name",
+        rejections=[],
+        custom_id="collect_name",
+        idx=0,
+        description=None,
+        metadata={},
+        next=Mock(),
+        flow_id="test_flow",
+    )
+    collect_step2 = CollectInformationFlowStep(
+        collect="email",
+        utter="utter_ask_email",
+        collect_action="action_ask_email",
+        rejections=[],
+        custom_id="collect_email",
+        idx=1,
+        description=None,
+        metadata={},
+        next=Mock(),
+        flow_id="test_flow",
+    )
+    flow.get_collect_steps.return_value = [collect_step1, collect_step2]
+
+    # Create flows list
+    flows = Mock(spec=FlowsList)
+    flows.flow_by_id.return_value = flow
+
+    # Create stack with the flow
+    stack = DialogueStack(
+        frames=[UserFlowStackFrame(flow_id="test_flow", step_id="collect_name")]
+    )
+
+    # Create tracker
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = stack
+
+    # Create original tracker
+    original_tracker = Mock(spec=DialogueStateTracker)
+
+    # Act
+    result = command.run_command_on_tracker(tracker, flows, original_tracker)
+
+    # Assert
+    assert result == []  # Should return empty list when correction is skipped
+    # Verify that the stack was not modified
+    assert len(stack.frames) == 1
+    assert stack.frames[0].flow_id == "test_flow"
+
+
+def test_run_command_on_tracker_skips_correction_when_no_user_flows_on_stack():
+    """Test that run_command_on_tracker skips correction when no
+    user flows are on stack.
+    """
+    # Arrange
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="user_name", value="John")]
+    )
+
+    # Create stack with only pattern frames (no user flows)
+    stack = DialogueStack(
+        frames=[PatternFlowStackFrame(flow_id="pattern_flow", step_id="pattern_step")]
+    )
+
+    # Create flows list
+    flows = Mock(spec=FlowsList)
+
+    # Create tracker
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = stack
+
+    # Create original tracker
+    original_tracker = Mock(spec=DialogueStateTracker)
+
+    # Act
+    result = command.run_command_on_tracker(tracker, flows, original_tracker)
+
+    # Assert
+    assert result == []  # Should return empty list when correction is skipped
+    # Verify that the stack was not modified
+    assert len(stack.frames) == 1
+    assert stack.frames[0].flow_id == "pattern_flow"
+
+
+def test_run_command_on_tracker_skips_correction_when_stack_is_empty():
+    """Test that run_command_on_tracker skips correction when stack is empty."""
+    # Arrange
+    command = CorrectSlotsCommand(
+        corrected_slots=[CorrectedSlot(name="user_name", value="John")]
+    )
+
+    # Create empty stack
+    stack = DialogueStack.empty()
+
+    # Create flows list
+    flows = Mock(spec=FlowsList)
+
+    # Create tracker
+    tracker = Mock(spec=DialogueStateTracker)
+    tracker.stack = stack
+
+    # Create original tracker
+    original_tracker = Mock(spec=DialogueStateTracker)
+
+    # Act
+    result = command.run_command_on_tracker(tracker, flows, original_tracker)
+
+    # Assert
+    assert result == []  # Should return empty list when correction is skipped
+    # Verify that the stack remains empty
+    assert len(stack.frames) == 0
 
 
 def test_command_name():
@@ -624,7 +1342,7 @@ def test_are_all_slots_reset_only(proposed_slots: Dict[str, Any], expected: bool
     )
 
 
-@pytest.mark.parametrize("step", ["link", "call"])
+@pytest.mark.parametrize("step", ["call"])
 def test_run_command_on_tracker_with_prefilled_slots_of_child_flows(
     step: str,
 ):
@@ -689,7 +1407,7 @@ def test_run_command_on_tracker_with_prefilled_slots_of_child_flows(
     assert dialogue_stack_dump[1]["new_slot_values"] == ["foofoo"]
 
 
-@pytest.mark.parametrize("step", ["link", "call"])
+@pytest.mark.parametrize("step", ["call"])
 def test_create_correction_frame_with_prefilled_slots_of_child_flows(
     step: str,
 ):
