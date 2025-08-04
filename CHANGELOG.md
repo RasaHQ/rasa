@@ -10,6 +10,36 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.13.4] - 2025-07-23
+                        
+Rasa Pro 3.13.4 (2025-07-23)                             
+### Improvements
+- [#2880](https://github.com/rasahq/rasa-private/issues/2880): Engine-related modules now raise structured exceptions instead of calling
+  `sys.exit(1)` or `print_error_and_exit`, providing clearer, more actionable log
+  messages and enabling custom error handling.
+
+### Bugfixes
+- [#2862](https://github.com/rasahq/rasa-private/issues/2862): Fix validation of the FAISS documents folder to ensure it correctly discovers files in a recursive directory structure.
+- [#2871](https://github.com/rasahq/rasa-private/issues/2871): Updated `Inspector` dependent packages (`vite`, and `@adobe/css-tools`) to address security vulnerabilities.
+- [#2878](https://github.com/rasahq/rasa-private/issues/2878): Fixed bug preventing `model_group` from being used with `embeddings` in generative response LLM judge configuration.
+
+
+## [3.13.3] - 2025-07-17
+                        
+Rasa Pro 3.13.3 (2025-07-17)                             
+### Bugfixes
+- [#2854](https://github.com/rasahq/rasa-private/issues/2854): Allowed NLG servers to return None for the text property and ensured custom response data is properly retained.
+
+
+## [3.13.2] - 2025-07-16
+                        
+Rasa Pro 3.13.2 (2025-07-16)                             
+### Bugfixes
+- [#2053](https://github.com/rasahq/rasa-private/issues/2053): Pass all flows to `find_updated_flows` to avoid creating a `HandleCodeChangeCommand` in situations
+  where flows were not updated.
+- [#2839](https://github.com/rasahq/rasa-private/issues/2839): Bugfix for Jambonz Stream channel Websocket URL path which resulted in failed Websocket Connections
+
+
 ## [3.13.1] - 2025-07-14
                         
 Rasa Pro 3.13.1 (2025-07-14)                             
