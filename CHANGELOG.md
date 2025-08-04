@@ -260,6 +260,18 @@ Rasa Pro 3.13.0 (2025-07-07)
 - [#2125](https://github.com/rasahq/rasa-private/issues/2125), [#2134](https://github.com/rasahq/rasa-private/issues/2134), [#2361](https://github.com/rasahq/rasa-private/issues/2361), [#2419](https://github.com/rasahq/rasa-private/issues/2419), [#2471](https://github.com/rasahq/rasa-private/issues/2471), [#2496](https://github.com/rasahq/rasa-private/issues/2496), [#2506](https://github.com/rasahq/rasa-private/issues/2506), [#2513](https://github.com/rasahq/rasa-private/issues/2513), [#2538](https://github.com/rasahq/rasa-private/issues/2538), [#2571](https://github.com/rasahq/rasa-private/issues/2571), [#2615](https://github.com/rasahq/rasa-private/issues/2615), [#2629](https://github.com/rasahq/rasa-private/issues/2629), [#2668](https://github.com/rasahq/rasa-private/issues/2668), [#2672](https://github.com/rasahq/rasa-private/issues/2672), [#2682](https://github.com/rasahq/rasa-private/issues/2682), [#2707](https://github.com/rasahq/rasa-private/issues/2707), [#2712](https://github.com/rasahq/rasa-private/issues/2712), [#2720](https://github.com/rasahq/rasa-private/issues/2720), [#2745](https://github.com/rasahq/rasa-private/issues/2745), [#2769](https://github.com/rasahq/rasa-private/issues/2769)
 
 
+## [3.12.29] - 2025-07-31
+
+Rasa Pro 3.12.29 (2025-07-31)                              
+### Bugfixes
+- [#2090](https://github.com/rasahq/rasa-private/issues/2090): Fix correction of slots:
+
+  - Slots can only be corrected in case they belong to any flow on the stack and the slot
+    to be corrected is part of a collect step in any of those flows.
+  - A correction of a slot should be applied if the flow that is about to start is using
+    this slot.
+
+
 ## [3.12.28] - 2025-07-29
                          
 Rasa Pro 3.12.28 (2025-07-29)                              
