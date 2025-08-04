@@ -277,6 +277,16 @@ Rasa Pro 3.12.27 (2025-07-23)
 - [#2878](https://github.com/rasahq/rasa-private/issues/2878): Fixed bug preventing `model_group` from being used with `embeddings` in generative response LLM judge configuration.
 
 
+## [3.12.24] - 2025-07-14
+                         
+Rasa Pro 3.12.24 (2025-07-14)                              
+### Bugfixes
+- [#2603](https://github.com/rasahq/rasa-private/issues/2603): Fixed the repeat action to include all messages of the last turn in collect steps.
+- [#2804](https://github.com/rasahq/rasa-private/issues/2804): Fix issues with bot not giving feedback for slot corrections.
+- [#2817](https://github.com/rasahq/rasa-private/issues/2817): Fixed bot speaking state management in Audiocodes Stream channel. This made the assistant unable to handle user silences
+  Added periodic keepAlive messages to deepgram, this interval can be configured with `keep_alive_interval` parameter
+
+
 ## [3.12.22] - 2025-07-07
 
 Rasa Pro 3.12.22 (2025-07-07)
