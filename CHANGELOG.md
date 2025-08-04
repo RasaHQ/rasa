@@ -10,6 +10,20 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.13.5] - 2025-07-31
+                        
+Rasa Pro 3.13.5 (2025-07-31)                             
+### Bugfixes
+- [#2090](https://github.com/rasahq/rasa-private/issues/2090): Fix correction of slots:
+
+  - Slots can only be corrected in case they belong to any flow on the stack and the slot
+    to be corrected is part of a collect step in any of those flows.
+  - A correction of a slot should be applied if the flow that is about to start is using
+    this slot.
+- [#2900](https://github.com/rasahq/rasa-private/issues/2900): Upgrade `axios` to fix security vulnerability.
+- [#2915](https://github.com/rasahq/rasa-private/issues/2915): Fix issue where called flows could not set slots of their parent flow.
+
+
 ## [3.13.4] - 2025-07-23
                         
 Rasa Pro 3.13.4 (2025-07-23)                             
