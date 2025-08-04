@@ -277,6 +277,20 @@ Rasa Pro 3.12.27 (2025-07-23)
 - [#2878](https://github.com/rasahq/rasa-private/issues/2878): Fixed bug preventing `model_group` from being used with `embeddings` in generative response LLM judge configuration.
 
 
+## [3.12.26] - 2025-07-17
+
+Rasa Pro 3.12.26 (2025-07-17)                              
+### Bugfixes
+- [#2853](https://github.com/rasahq/rasa-private/issues/2853): Allowed NLG servers to return None for the text property and ensured custom response data is properly retained.
+
+
+## [3.12.25] - 2025-07-16
+
+Rasa Pro 3.12.25 (2025-07-16)                              
+### Bugfixes
+- [#2053](https://github.com/rasahq/rasa-private/issues/2053): Pass all flows to `find_updated_flows` to avoid creating a `HandleCodeChangeCommand` in situations where flows were not updated.
+
+
 ## [3.12.24] - 2025-07-14
                          
 Rasa Pro 3.12.24 (2025-07-14)                              
@@ -285,6 +299,13 @@ Rasa Pro 3.12.24 (2025-07-14)
 - [#2804](https://github.com/rasahq/rasa-private/issues/2804): Fix issues with bot not giving feedback for slot corrections.
 - [#2817](https://github.com/rasahq/rasa-private/issues/2817): Fixed bot speaking state management in Audiocodes Stream channel. This made the assistant unable to handle user silences
   Added periodic keepAlive messages to deepgram, this interval can be configured with `keep_alive_interval` parameter
+
+
+## [3.12.23] - 2025-07-08
+
+Rasa Pro 3.12.23 (2025-07-08)
+### Bugfixes
+- [#2801](https://github.com/rasahq/rasa-private/issues/2801): Reverted fix for custom multilingual output payloads being overwritten.
 
 
 ## [3.12.22] - 2025-07-07
