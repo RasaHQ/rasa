@@ -260,6 +260,15 @@ Rasa Pro 3.13.0 (2025-07-07)
 - [#2125](https://github.com/rasahq/rasa-private/issues/2125), [#2134](https://github.com/rasahq/rasa-private/issues/2134), [#2361](https://github.com/rasahq/rasa-private/issues/2361), [#2419](https://github.com/rasahq/rasa-private/issues/2419), [#2471](https://github.com/rasahq/rasa-private/issues/2471), [#2496](https://github.com/rasahq/rasa-private/issues/2496), [#2506](https://github.com/rasahq/rasa-private/issues/2506), [#2513](https://github.com/rasahq/rasa-private/issues/2513), [#2538](https://github.com/rasahq/rasa-private/issues/2538), [#2571](https://github.com/rasahq/rasa-private/issues/2571), [#2615](https://github.com/rasahq/rasa-private/issues/2615), [#2629](https://github.com/rasahq/rasa-private/issues/2629), [#2668](https://github.com/rasahq/rasa-private/issues/2668), [#2672](https://github.com/rasahq/rasa-private/issues/2672), [#2682](https://github.com/rasahq/rasa-private/issues/2682), [#2707](https://github.com/rasahq/rasa-private/issues/2707), [#2712](https://github.com/rasahq/rasa-private/issues/2712), [#2720](https://github.com/rasahq/rasa-private/issues/2720), [#2745](https://github.com/rasahq/rasa-private/issues/2745), [#2769](https://github.com/rasahq/rasa-private/issues/2769)
 
 
+## [3.12.27] - 2025-07-23
+                         
+Rasa Pro 3.12.27 (2025-07-23)                              
+### Bugfixes
+- [#2862](https://github.com/rasahq/rasa-private/issues/2862): Fix validation of the FAISS documents folder to ensure it correctly discovers files in a recursive directory structure.
+- [#2871](https://github.com/rasahq/rasa-private/issues/2871): Updated `Inspector` dependent packages (`vite`, and `@adobe/css-tools`) to address security vulnerabilities.
+- [#2878](https://github.com/rasahq/rasa-private/issues/2878): Fixed bug preventing `model_group` from being used with `embeddings` in generative response LLM judge configuration.
+
+
 ## [3.12.22] - 2025-07-07
 
 Rasa Pro 3.12.22 (2025-07-07)
