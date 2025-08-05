@@ -25,6 +25,8 @@ NLU_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PAT
 CALM_CUSTOM_ACTIONS_INTEGRATION_TEST_PATH = $(CUSTOM_ACTIONS_INTEGRATION_TEST_PATH)/test_custom_actions_with_calm.py
 ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/enterprise_search
 CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/channels
+VOICE_READY_CONNECTOR_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/channels/voice_ready
+VOICE_STREAM_CONNECTOR_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/channels/voice_stream
 TRACKER_STORE_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/tracker_stores
 CUSTOM_COMPONENT_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/custom_components
 CALM_PII_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/privacy
@@ -235,6 +237,13 @@ test-acceptance: prepare-spacy prepare-mitie test-marker ## Run acceptance tests
 test-audio-manual: PYTEST_MARKER=category_audio_manual and (not flaky) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
 test-audio-manual: DD_ARGS := $(or $(DD_ARGS),)
 test-audio-manual: test-marker
+
+test-voice-integration: ## Run voice integration tests
+	poetry run \
+        pytest $(VOICE_READY_CONNECTOR_INTEGRATION_TEST_PATH) \
+        $(VOICE_STREAM_CONNECTOR_INTEGRATION_TEST_PATH) \
+        -n $(JOBS) \
+        --junitxml=integration-test-results.xml
 
 test-dm1-tensorflow: PYTEST_MARKER=category_dm1_tensorflow
 test-dm1-tensorflow: prepare-spacy prepare-mitie prepare-transformers test-marker
@@ -508,7 +517,9 @@ stop-rasa-calm-demo-bot-test-containers: ## Stop the metrics integration test co
 TEST_CHANNEL_CONNECTOR_INTEGRATION_COMMAND = poetry run \
         pytest $(CHANNEL_CONNECTOR_TEST_PATH) \
         -n $(JOBS) \
-        --junitxml=$(RESULTS_FILE)
+        --junitxml=$(RESULTS_FILE) \
+        --ignore $(VOICE_READY_CONNECTOR_INTEGRATION_TEST_PATH) \
+        --ignore $(VOICE_STREAM_CONNECTOR_INTEGRATION_TEST_PATH)
 
 RUN_CHANNEL_CONNECTOR_CONTAINER_COMMAND = USER_ID=$(USER_ID) \
         docker compose \

@@ -5,13 +5,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from pytest import MonkeyPatch
 
-from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
 from rasa.core.channels.voice_stream.tts.cartesia import CartesiaTTS
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSError
 from rasa.shared.exceptions import ProviderClientValidationError
-from tests.core.channels.voice_stream.tts.test_tts import (
-    run_single_utterance_through_tts_and_asr,
-)
 
 
 async def test_environment_validation():
@@ -21,14 +17,6 @@ async def test_environment_validation():
             CartesiaTTS()
         assert e.match(CartesiaTTS.required_env_vars[0])
         assert e.match("TTS Engine CartesiaTTS")
-
-
-async def test_synthesis_with_asr():
-    tts_engine = CartesiaTTS()
-    text = "hello my name is Edgar"
-    asr_engine = DeepgramASR()
-
-    await run_single_utterance_through_tts_and_asr(text, asr_engine, tts_engine)
 
 
 # TODO: Cartesia has stopped sending Status 400 for invalid requests

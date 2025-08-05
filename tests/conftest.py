@@ -185,7 +185,10 @@ PATH_PYTEST_MARKER_MAPPINGS = {
     ],
     "category_performance": [Path("tests", "test_memory_leak.py").absolute()],
     "category_audio_manual": [
-        Path("tests", "core", "channels", "voice_stream").absolute()
+        Path("tests", "core", "channels", "voice_ready").absolute(),
+        Path("tests", "core", "channels", "voice_stream").absolute(),
+        Path("tests", "core", "channels", "voice_stream", "asr").absolute(),
+        Path("tests", "core", "channels", "voice_stream", "tts").absolute(),
     ],
     "category_dm1_tensorflow": [
         Path("tests", "core", "featurizers").absolute(),

@@ -83,19 +83,81 @@ jobs:
           path: |
             ${{ github.workspace }}/unit-tests-results-${{ matrix.test }}-python-${{ matrix.python-version }}.xml
 
-
-  send_slack_notification_on_failure:
-    name: Notify Slack
+  voice_integration_tests:
+    name: Run Integration Tests
     runs-on: ubuntu-24.04
-    if: always()
-    needs: [ voice_unit_tests ]
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
 
     steps:
-      - name: Notify Slack of failure ⛔️
-        # send notification if 'voice_unit_tests' is skipped (previous needed job failed) or failed
-        if: needs.voice_unit_tests.result != 'success'
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
-        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Prepare the job for integration tests
+        uses: ./.github/actions/test-prerequisites
         with:
-          args: "⛔️ *Voice Tests on Main* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+          POETRY_CACHE_VERSION: ${{ secrets.POETRY_CACHE_VERSION }}
+
+      - name: Install Dependencies (Linux) 📦
+        # Poetry intermittently fails to install dependency if it is not PEP 517 compliant
+        # This is a workaround for that issue
+        run: |
+          sudo apt-get -y install libpq-dev
+          make install-full | tee .output
+          if grep 'The lock file is not up to date' .output; then exit 1; fi
+          make prepare-tests-ubuntu
+
+      - name: Install ddtrace on Linux
+        run: poetry run pip install -U 'ddtrace==2.10.5'
+
+
+      - name: Install additional dependencies for voice tests
+        run: |
+          poetry run python -m pip install azure-cognitiveservices-speech
+
+      - name: Test Code 🔍 (multi-process)
+        env:
+          JOBS: 2
+          PYTHONUTF8: 1
+          DD_ENV: ${{ matrix.test }}
+          DD_SERVICE: rasa
+          DD_ARGS: --ddtrace --ddtrace-patch-all --junitxml=integration-test-results.xml
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
+          DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
+          AZURE_SPEECH_API_KEY: ${{ secrets.AZURE_SPEECH_API_KEY }}
+          API_DOCS_FORMAT: yaml
+        run: |
+          make test-voice-integration
+        shell: bash # bash shell is a way to make code run for both Linux and Windows
+
+      - name: Prepare test results
+        if: always()
+        run: mv integration-test-results.xml ${{ github.workspace }}/integration-results-voice-ready-and-stream-results-python-${{ matrix.python-version }}.xml
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: integration-results-voice-ready-and-stream-results-python-${{ matrix.python-version }}
+          path: |
+            ${{ github.workspace }}/integration-results-voice-ready-and-stream-results-python-${{ matrix.python-version }}.xml
+
+
+ send_slack_notification_on_failure:
+   name: Notify Slack
+   runs-on: ubuntu-24.04
+   if: always()
+   needs: [ voice_unit_tests ]
+
+   steps:
+     - name: Notify Slack of failure ⛔️
+       # send notification if 'voice_unit_tests' is skipped (previous needed job failed) or failed
+       if: ${{ needs.voice_unit_tests.result != 'success' || needs.voice_integration_tests.result != 'success' }}
+       env:
+         SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
+       uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+       with:
+         args: "⛔️ *Voice Tests on Main* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
