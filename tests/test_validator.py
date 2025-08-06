@@ -1347,10 +1347,10 @@ def test_verify_predicates_invalid_rejection_if(
     expected_event = "validator.verify_predicates.invalid_rejection"
     expected_log_level = "error"
     expected_log_message = (
-        f"Detected invalid rejection '{predicate}' "
-        f"at `collect` step 'ask_account_type' for "
-        f"flow id 'transfer_money'. Please make sure "
-        f"that all conditions are valid."
+        f"event_info='Detected invalid rejection \\'{predicate}\\' "
+        f"at `collect` step \\'ask_account_type\\' for "
+        f"flow id \\'transfer_money\\'. Please make sure "
+        f"that all conditions are valid.'"
     )
 
     assert not validator.verify_predicates()

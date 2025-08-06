@@ -346,11 +346,21 @@ async def test_action_run_slot_rejections_run_success(
 
 
 @pytest.mark.parametrize(
-    "predicate",
-    [None, "slots.recurrent_payment_type in {'direct debit', 'standing order'}"],
+    "predicate, predicate_in_log",
+    [
+        (None, "predicate=None"),
+        (
+            "slots.recurrent_payment_type in {'direct debit', 'standing order'}",
+            (
+                'predicate="slots.recurrent_payment_type in '
+                "{'direct debit', 'standing order'}"
+            ),
+        ),
+    ],
 )
 async def test_action_run_slot_rejections_internal_error(
     predicate: Optional[Text],
+    predicate_in_log: Text,
     default_channel: OutputChannel,
     rejection_test_nlg: TemplatedNaturalLanguageGenerator,
     rejection_test_domain: Domain,
@@ -416,7 +426,7 @@ async def test_action_run_slot_rejections_internal_error(
 
     out = capsys.readouterr().out
     assert "[error    ] run.predicate.error" in out
-    assert f"predicate={predicate}" in out
+    assert predicate_in_log in out
 
 
 async def test_action_run_slot_rejections_collect_missing_utter(

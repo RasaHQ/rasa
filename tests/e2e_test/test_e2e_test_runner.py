@@ -2173,7 +2173,7 @@ async def test_run_assertions_with_user_message_not_found(
         "User message 'send money' was not found in the actual events. "
         "The user message properties which were searched: "
         "{'text': 'send money', 'metadata': {'foo': 'bar', "
-        "'model_id': None, 'assistant_id': None}}\n"
+        "'model_id': None, 'assistant_id': None}}"
     )
     assert error_message in captured.out
 

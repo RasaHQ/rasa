@@ -2,8 +2,7 @@ import json
 from typing import Any, Dict, Optional
 
 import structlog
-from socketio import AsyncServer
-from socketio.asyncio_client import AsyncClient
+from socketio import AsyncClient, AsyncServer  # type: ignore[attr-defined]
 from socketio.exceptions import ConnectionRefusedError
 
 from rasa.model_manager.runner_service import BotSession

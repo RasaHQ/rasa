@@ -2,7 +2,7 @@ from typing import Callable, Text, TypeVar
 
 from socketio.asgi import ASGIApp
 from socketio.asyncio_aiopika_manager import AsyncAioPikaManager
-from socketio.asyncio_client import AsyncClient
+from socketio import AsyncClient # type: ignore[attr-defined]
 from socketio.asyncio_manager import AsyncManager
 from socketio.asyncio_namespace import AsyncNamespace, AsyncClientNamespace
 from socketio.asyncio_redis_manager import AsyncRedisManager
