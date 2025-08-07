@@ -24,6 +24,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.domain import KEY_RESPONSES_TEXT, Domain
 from rasa.shared.core.events import BotUttered, UserUttered
+from rasa.shared.core.flows.constants import KEY_TRANSLATION
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import (
     KEY_COMPONENT_NAME,
@@ -307,7 +308,12 @@ class ContextualResponseRephraser(
         Returns:
             The response with the rephrased text.
         """
-        if not (response_text := response.get(KEY_RESPONSES_TEXT)):
+        translation_response = response.get(KEY_TRANSLATION) or {}
+        lang_code = getattr(tracker.current_language, "code", None)
+        response_text = translation_response.get(
+            lang_code, response.get(KEY_RESPONSES_TEXT)
+        )
+        if not response_text:
             return response
 
         prompt_template_text = self._template_for_response_rephrasing(response)
@@ -369,12 +375,17 @@ class ContextualResponseRephraser(
             return response
 
         updated_text = llm_response.choices[0]
+
+        if lang_code in translation_response:
+            response[KEY_TRANSLATION][lang_code] = updated_text
+        else:
+            response[KEY_RESPONSES_TEXT] = updated_text
+
         structlogger.debug(
             "nlg.rewrite.complete",
             response_text=response_text,
             updated_text=updated_text,
         )
-        response[KEY_RESPONSES_TEXT] = updated_text
         return response
 
     def does_response_allow_rephrasing(self, template: Dict[Text, Any]) -> bool:

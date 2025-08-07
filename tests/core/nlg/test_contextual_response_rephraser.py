@@ -1,5 +1,7 @@
+import copy
+from types import SimpleNamespace
 from typing import Any, Dict, Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from jinja2 import Template
@@ -877,3 +879,44 @@ def test_prompt_includes_language_label_without_language(
         language=empty_rephraser.get_language_label(tracker_without_language),
     )
     assert "simple English" in prompt
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "language_code, expected_translation_de, expected_text",
+    [
+        ("de", "foobar", "Hello!"),
+        ("fr", "Hallo!", "foobar"),
+        (None, "Hallo!", "foobar"),
+    ],
+)
+async def test_rephrase_language_handling(
+    monkeypatch: MonkeyPatch,
+    language_code: str,
+    expected_translation_de: str,
+    expected_text: str,
+):
+    # Mock tracker with desired language or None
+    tracker = MagicMock()
+    tracker.current_language = (
+        Language.from_language_code(language_code)
+        if language_code is not None
+        else None
+    )
+    tracker.latest_message = SimpleNamespace(text="Hello")
+    tracker.current_slot_values.return_value = {}
+
+    # Mock the ContextualResponseRephraser
+    rephraser = ContextualResponseRephraser(
+        EndpointConfig.from_dict({}),
+        Domain.empty(),
+    )
+    llm_response = AsyncMock(return_value=LLMResponse.ensure_llm_response("foobar"))
+    monkeypatch.setattr(rephraser, "_generate_llm_response", llm_response)
+    monkeypatch.setattr(rephraser, "_create_history", AsyncMock(return_value="hello"))
+
+    response = {"text": "Hello!", "translation": {"de": "Hallo!"}}
+    rephrased_response = await rephraser.rephrase(copy.deepcopy(response), tracker)
+
+    assert rephrased_response["text"] == expected_text
+    assert rephrased_response["translation"]["de"] == expected_translation_de
