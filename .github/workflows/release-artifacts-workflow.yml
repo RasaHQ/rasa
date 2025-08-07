@@ -363,3 +363,16 @@ jobs:
           payload: |
             channel: "C36SS4N8M"
             text: ":broken_heart: *Rasa Private* release version `${{ needs.release-artifacts-docker.outputs.tag_version }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
+
+  trigger_dev_edition_rasa_pro_image_tag_update:
+    needs: [release-artifacts-docker, release-artifacts-pypi]
+    name: Trigger Dev Edition Rasa Pro Image Tag Update in Docker Compose
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Trigger dev edition Rasa Pro image tag update workflow
+        uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0  #v3.0.0
+        with:
+          event-type: trigger-image-tag-update
+          repository: RasaHQ/developer-edition-docker-compose
+          client-payload: '{"version": "${{ needs.release-artifacts-docker.outputs.tag_version }}"}'
+          token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
