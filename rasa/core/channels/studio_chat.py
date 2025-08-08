@@ -4,6 +4,7 @@ import asyncio
 import audioop
 import base64
 import json
+import time
 import uuid
 from functools import partial
 from typing import (
@@ -18,6 +19,7 @@ from typing import (
     Tuple,
 )
 
+import orjson
 import structlog
 
 from rasa.core.channels import UserMessage
@@ -52,7 +54,9 @@ if TYPE_CHECKING:
 structlogger = structlog.get_logger()
 
 
-def tracker_as_dump(tracker: "DialogueStateTracker") -> str:
+def tracker_as_dump(
+    tracker: "DialogueStateTracker", latency: Optional[float] = None
+) -> str:
     """Create a dump of the tracker state."""
     from rasa.shared.core.trackers import get_trackers_for_conversation_sessions
 
@@ -64,7 +68,10 @@ def tracker_as_dump(tracker: "DialogueStateTracker") -> str:
         last_tracker = multiple_tracker_sessions[-1]
 
     state = last_tracker.current_state(EventVerbosity.AFTER_RESTART)
-    return json.dumps(state)
+
+    if latency is not None:
+        state["latency"] = {"rasa_processing_latency_ms": latency}
+    return orjson.dumps(state, option=orjson.OPT_SERIALIZE_NUMPY).decode("utf-8")
 
 
 def does_need_action_prediction(tracker: "DialogueStateTracker") -> bool:
@@ -178,6 +185,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         # `background_tasks` holds the asyncio tasks for voice streaming
         self.active_connections: Dict[str, SocketIOVoiceWebsocketAdapter] = {}
         self.background_tasks: Dict[str, asyncio.Task] = {}
+        self._turn_start_times: Dict[Text, float] = {}
 
         self._register_tracker_update_hook()
 
@@ -204,7 +212,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             metadata_key=credentials.get("metadata_key", "metadata"),
         )
 
-    async def emit(self, event: str, data: Dict, room: str) -> None:
+    async def emit(self, event: str, data: str, room: str) -> None:
         """Emits an event to the websocket."""
         if not self.sio:
             structlogger.error("studio_chat.emit.sio_not_initialized")
@@ -214,13 +222,31 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
     def _register_tracker_update_hook(self) -> None:
         plugin_manager().register(StudioTrackerUpdatePlugin(self))
 
-    async def on_tracker_updated(self, tracker: "DialogueStateTracker") -> None:
+    async def on_tracker_updated(
+        self, tracker: "DialogueStateTracker", latency: Optional[float] = None
+    ) -> None:
         """Triggers a tracker update notification after a change to the tracker."""
-        await self.publish_tracker_update(tracker.sender_id, tracker_as_dump(tracker))
+        await self.publish_tracker_update(
+            tracker.sender_id, tracker_as_dump(tracker, latency)
+        )
 
-    async def publish_tracker_update(self, sender_id: str, tracker_dump: Dict) -> None:
+    async def publish_tracker_update(self, sender_id: str, tracker_dump: str) -> None:
         """Publishes a tracker update notification to the websocket."""
         await self.emit("tracker", tracker_dump, room=sender_id)
+
+    def _record_turn_start_time(self, sender_id: Text) -> None:
+        """Records the start time of a new turn."""
+        self._turn_start_times[sender_id] = time.time()
+
+    def _get_latency(self, sender_id: Text) -> Optional[float]:
+        """Returns the latency of the current turn in milliseconds."""
+        if sender_id not in self._turn_start_times:
+            return None
+
+        latency = (time.time() - self._turn_start_times[sender_id]) * 1000
+        # The turn is over, so we can remove the start time
+        del self._turn_start_times[sender_id]
+        return latency
 
     async def on_message_proxy(
         self,
@@ -231,6 +257,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
 
         Triggers a tracker update notification after processing the message.
         """
+        self._record_turn_start_time(message.sender_id)
         await on_new_message(message)
 
         if not self.agent or not self.agent.is_ready():
@@ -249,7 +276,8 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             structlogger.error("studio_chat.on_message_proxy.tracker_not_found")
             return
 
-        await self.on_tracker_updated(tracker)
+        latency = self._get_latency(message.sender_id)
+        await self.on_tracker_updated(tracker, latency)
 
     async def emit_error(self, message: str, room: str, e: Exception) -> None:
         await self.emit(
@@ -339,14 +367,14 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         elif "marker" in message:
             if message["marker"] == call_state.latest_bot_audio_id:
                 # Just finished streaming last audio bytes
-                call_state.is_bot_speaking = False  # type: ignore[attr-defined]
+                call_state.is_bot_speaking = False
                 if call_state.should_hangup:
                     structlogger.debug(
                         "studio_chat.hangup", marker=call_state.latest_bot_audio_id
                     )
                     return EndConversationAction()
             else:
-                call_state.is_bot_speaking = True  # type: ignore[attr-defined]
+                call_state.is_bot_speaking = True
         return ContinueConversationAction()
 
     def create_output_channel(
@@ -429,9 +457,8 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
     def blueprint(
         self, on_new_message: Callable[["UserMessage"], Awaitable[Any]]
     ) -> SocketBlueprint:
-        socket_blueprint = super().blueprint(
-            partial(self.on_message_proxy, on_new_message)
-        )
+        proxied_on_message = partial(self.on_message_proxy, on_new_message)
+        socket_blueprint = super().blueprint(proxied_on_message)
 
         if not self.sio:
             structlogger.error("studio_chat.blueprint.sio_not_initialized")
@@ -466,7 +493,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
 
             # start a voice session if requested
             if data and data.get("is_voice", False):
-                self._start_voice_session(data["session_id"], sid, on_new_message)
+                self._start_voice_session(data["session_id"], sid, proxied_on_message)
 
         @self.sio.on(self.user_message_evt, namespace=self.namespace)
         async def handle_message(sid: Text, data: Dict) -> None:
@@ -480,7 +507,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
                 return
 
             # Handle text messages
-            await self.handle_user_message(sid, data, on_new_message)
+            await self.handle_user_message(sid, data, proxied_on_message)
 
         @self.sio.on("update_tracker", namespace=self.namespace)
         async def on_update_tracker(sid: Text, data: Dict) -> None:
@@ -504,7 +531,24 @@ class StudioVoiceOutputChannel(VoiceOutputChannel):
 
     def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
         message_id = uuid.uuid4().hex
-        return json.dumps({"marker": message_id}), message_id
+        marker_data = {"marker": message_id}
+
+        # Include comprehensive latency information if available
+        latency_data = {
+            "asr_latency_ms": call_state.asr_latency_ms,
+            "rasa_processing_latency_ms": call_state.rasa_processing_latency_ms,
+            "tts_first_byte_latency_ms": call_state.tts_first_byte_latency_ms,
+            "tts_complete_latency_ms": call_state.tts_complete_latency_ms,
+        }
+
+        # Filter out None values from latency data
+        latency_data = {k: v for k, v in latency_data.items() if v is not None}
+
+        # Add latency data to marker if any metrics are available
+        if latency_data:
+            marker_data["latency"] = latency_data  # type: ignore[assignment]
+
+        return json.dumps(marker_data), message_id
 
 
 class SocketIOVoiceWebsocketAdapter:

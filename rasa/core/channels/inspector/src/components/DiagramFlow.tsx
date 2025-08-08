@@ -22,7 +22,7 @@ export const DiagramFlow = ({ stackFrame, stepTrail, flows, slots }: Props) => {
 
   const config = {
     startOnLoad: true,
-    logLevel: 'info',
+    logLevel: 'warning',
     flowchart: {
       useMaxWidth: false,
     },

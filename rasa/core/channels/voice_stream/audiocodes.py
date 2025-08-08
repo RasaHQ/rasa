@@ -88,7 +88,7 @@ class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
         # however, Audiocodes does not have an event to indicate that.
         # This is an approximation, as the bot will be sent the audio chunks next
         # which are played to the user immediately.
-        call_state.is_bot_speaking = True  # type: ignore[attr-defined]
+        call_state.is_bot_speaking = True
 
     async def send_intermediate_marker(self, recipient_id: str) -> None:
         """Audiocodes doesn't need intermediate markers, so do nothing."""
@@ -187,7 +187,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
                     pass
                 elif activity["name"] == "playFinished":
                     logger.debug("audiocodes_stream.playFinished", data=activity)
-                    call_state.is_bot_speaking = False  # type: ignore[attr-defined]
+                    call_state.is_bot_speaking = False
                     if call_state.should_hangup:
                         logger.info("audiocodes_stream.hangup")
                         self._send_hangup(ws, data)

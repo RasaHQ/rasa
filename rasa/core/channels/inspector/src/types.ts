@@ -42,11 +42,19 @@ export interface Stack {
   ended: boolean
 }
 
+export interface LatencyData {
+  rasa_processing_latency_ms?: number
+  asr_latency_ms?: number
+  tts_first_byte_latency_ms?: number
+  tts_complete_latency_ms?: number
+}
+
 export interface Tracker {
   sender_id: string
   slots: { [key: string]: unknown }
   events: Event[]
   stack: Stack[]
+  latency?: LatencyData
 }
 
 export interface Flow {

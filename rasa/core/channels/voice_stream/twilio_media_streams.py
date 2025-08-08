@@ -176,14 +176,14 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
         elif data["event"] == "mark":
             if data["mark"]["name"] == call_state.latest_bot_audio_id:
                 # Just finished streaming last audio bytes
-                call_state.is_bot_speaking = False  # type: ignore[attr-defined]
+                call_state.is_bot_speaking = False
                 if call_state.should_hangup:
                     logger.debug(
                         "twilio_streams.hangup", marker=call_state.latest_bot_audio_id
                     )
                     return EndConversationAction()
             else:
-                call_state.is_bot_speaking = True  # type: ignore[attr-defined]
+                call_state.is_bot_speaking = True
         return ContinueConversationAction()
 
     def create_output_channel(

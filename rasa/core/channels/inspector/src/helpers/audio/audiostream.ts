@@ -187,7 +187,7 @@ const setupAudioPlayback = async (socket: WebSocket): Promise<AudioQueue> => {
 }
 
 const addDataToAudioQueue =
-  (audioQueue: AudioQueue) => (message: MessageEvent<any>) => {
+  (audioQueue: AudioQueue, onLatencyUpdate?: (latency: any) => void) => (message: MessageEvent<any>) => {
     try {
       const data = JSON.parse(message.data.toString())
       if (data['error']) {
@@ -199,6 +199,10 @@ const addDataToAudioQueue =
         const audioData = intToFloatArray(int32Data)
         audioQueue.write(audioData)
       } else if (data['marker']) {
+        if (data['latency'] && onLatencyUpdate) {
+          onLatencyUpdate(data['latency'])
+        }
+        console.log('Voice Latency Metrics:', data['latency'])
         audioQueue.addMarker(data['marker'])
       }
     } catch (error) {
@@ -231,8 +235,9 @@ function getWebSocketUrl(baseUrl: string) {
  * Creates a WebSocket connection for browser audio and streams microphone input to the server
  *
  * @param baseUrl - The base URL (e.g., "https://example.com" or "http://localhost:5005")
+ * @param onLatencyUpdate - Optional callback function to receive latency updates
  */
-export async function createAudioConnection(baseUrl: string) {
+export async function createAudioConnection(baseUrl: string, onLatencyUpdate?: (latency: any) => void) {
   const websocketURL = getWebSocketUrl(baseUrl)
   const socket = new WebSocket(websocketURL)
 
@@ -241,5 +246,5 @@ export async function createAudioConnection(baseUrl: string) {
   }
 
   const audioQueue = await setupAudioPlayback(socket)
-  socket.onmessage = addDataToAudioQueue(audioQueue)
+  socket.onmessage = addDataToAudioQueue(audioQueue, onLatencyUpdate)
 }

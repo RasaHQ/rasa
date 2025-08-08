@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from functools import partial
 from typing import (
     TYPE_CHECKING,
@@ -35,6 +36,7 @@ if TYPE_CHECKING:
     from sanic.response import HTTPResponse
 
     from rasa.core.channels.channel import UserMessage
+    from rasa.core.processor import MessageProcessor
     from rasa.shared.core.trackers import DialogueStateTracker
 
 from rasa.hooks import hookimpl
@@ -49,6 +51,7 @@ class DevelopmentInspectorPlugin:
     """Plugin for broadcasting tracker updates to development inspector clients."""
 
     def __init__(self, inspector: DevelopmentInspectProxy) -> None:
+        """Initializes the plugin."""
         self.inspector = inspector
         self.tasks: List[asyncio.Task] = []
 
@@ -61,19 +64,21 @@ class DevelopmentInspectorPlugin:
         """Remove tasks that have already completed."""
         self.tasks = [task for task in self.tasks if not task.done()]
 
-    @hookimpl  # type: ignore[misc]
-    def after_new_user_message(self, tracker: DialogueStateTracker) -> None:
-        """Broadcasts tracker updates after a new user message."""
+    def _create_broadcast_task(self, tracker: DialogueStateTracker) -> None:
+        """Creates a task to broadcast tracker updates."""
         task = asyncio.create_task(self.inspector.on_tracker_updated(tracker))
         self.tasks.append(task)
         self._cleanup_completed_tasks()
 
     @hookimpl  # type: ignore[misc]
+    def after_new_user_message(self, tracker: DialogueStateTracker) -> None:
+        """Broadcasts tracker updates after a new user message."""
+        self._create_broadcast_task(tracker)
+
+    @hookimpl  # type: ignore[misc]
     def after_action_executed(self, tracker: DialogueStateTracker) -> None:
         """Broadcasts tracker updates after an action is executed."""
-        task = asyncio.create_task(self.inspector.on_tracker_updated(tracker))
-        self.tasks.append(task)
-        self._cleanup_completed_tasks()
+        self._create_broadcast_task(tracker)
 
     @hookimpl  # type: ignore[misc]
     def after_server_stop(self) -> None:
@@ -93,8 +98,9 @@ class DevelopmentInspectProxy(InputChannel):
         super().__init__()
         self.underlying = underlying
         self.is_voice = is_voice
-        self.processor = None
+        self.processor: Optional[MessageProcessor] = None
         self.tracker_stream = TrackerStream(get_tracker=self.get_tracker_state)
+        self._turn_start_times: Dict[Text, float] = {}
         # Register the plugin to get tracker updates
         plugin_manager().register(DevelopmentInspectorPlugin(self))
 
@@ -124,26 +130,51 @@ class DevelopmentInspectProxy(InputChannel):
 
         return pkg_resources.resource_filename(__name__, INSPECT_TEMPLATE_PATH)
 
-    async def get_tracker_state(self, sender_id: str) -> str:
-        """Returns the state of the tracker as a json string."""
+    async def _get_tracker(self, sender_id: Text) -> DialogueStateTracker:
+        """Returns the tracker for the given sender ID."""
         if not self.processor:
             structlogger.error(
-                "development_inspector.get_tracker_state.agent_not_initialized"
+                "development_inspector._get_tracker.agent_not_initialized"
             )
-            return ""
+            raise ValueError("Agent processor is not initialized.")
+        return await self.processor.get_tracker(sender_id)
 
-        tracker = await self.processor.get_tracker(sender_id)
+    async def get_tracker_state(self, sender_id: str) -> str:
+        """Returns the state of the tracker as a json string."""
+        tracker = await self._get_tracker(sender_id)
         state = tracker.current_state(EventVerbosity.AFTER_RESTART)
         return orjson.dumps(state, option=orjson.OPT_SERIALIZE_NUMPY).decode("utf-8")
 
-    async def on_tracker_updated(self, tracker: DialogueStateTracker) -> None:
+    async def on_tracker_updated(
+        self, tracker: DialogueStateTracker, latency: Optional[float] = None
+    ) -> None:
         """Notifies all clients about tracker updates in real-time."""
         if self.tracker_stream and tracker.sender_id:
             state = tracker.current_state(EventVerbosity.AFTER_RESTART)
+            if latency is not None:
+                state["latency"] = {"rasa_processing_latency_ms": latency}
+
             tracker_dump = orjson.dumps(
                 state, option=orjson.OPT_SERIALIZE_NUMPY
             ).decode("utf-8")
             await self.tracker_stream.broadcast(tracker_dump)
+
+    def _record_turn_start_time(self, sender_id: Text) -> None:
+        """Records the start time of a new turn."""
+        self._turn_start_times[sender_id] = time.time()
+
+    async def _broadcast_latency(self, sender_id: Text) -> None:
+        """Broadcasts the tracker with latency of the current turn to all clients."""
+        if sender_id not in self._turn_start_times:
+            return None
+
+        latency = (time.time() - self._turn_start_times[sender_id]) * 1000
+        # The turn is over, so we can remove the start time
+        del self._turn_start_times[sender_id]
+
+        # broadcast tracker update with latency
+        tracker = await self._get_tracker(sender_id)
+        await self.on_tracker_updated(tracker, latency)
 
     async def on_message_proxy(
         self,
@@ -151,7 +182,9 @@ class DevelopmentInspectProxy(InputChannel):
         message: "UserMessage",
     ) -> None:
         """Proxies the on_new_message call to the underlying channel."""
+        self._record_turn_start_time(message.sender_id)
         await on_new_message(message)
+        await self._broadcast_latency(message.sender_id)
 
     @classmethod
     async def serve_inspect_html(cls) -> HTTPResponse:
@@ -197,7 +230,7 @@ class DevelopmentInspectProxy(InputChannel):
 class TrackerStream:
     """Stream tracker state to connected clients."""
 
-    def __init__(self, get_tracker: Callable[[str], Awaitable[Dict[str, Any]]]) -> None:
+    def __init__(self, get_tracker: Callable[[str], Awaitable[str]]) -> None:
         """Initializes the TrackerStream."""
         self._connected_clients: Set[Websocket] = set()
         self.get_tracker = get_tracker

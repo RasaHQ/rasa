@@ -48,7 +48,24 @@ class BrowserAudioOutputChannel(VoiceOutputChannel):
 
     def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
         message_id = uuid.uuid4().hex
-        return json.dumps({"marker": message_id}), message_id
+        marker_data = {"marker": message_id}
+
+        # Include comprehensive latency information if available
+        latency_data = {
+            "asr_latency_ms": call_state.asr_latency_ms,
+            "rasa_processing_latency_ms": call_state.rasa_processing_latency_ms,
+            "tts_first_byte_latency_ms": call_state.tts_first_byte_latency_ms,
+            "tts_complete_latency_ms": call_state.tts_complete_latency_ms,
+        }
+
+        # Filter out None values from latency data
+        latency_data = {k: v for k, v in latency_data.items() if v is not None}
+
+        # Add latency data to marker if any metrics are available
+        if latency_data:
+            marker_data["latency"] = latency_data  # type: ignore[assignment]
+
+        return json.dumps(marker_data), message_id
 
 
 class BrowserAudioInputChannel(VoiceInputChannel):
@@ -93,14 +110,14 @@ class BrowserAudioInputChannel(VoiceInputChannel):
         elif "marker" in data:
             if data["marker"] == call_state.latest_bot_audio_id:
                 # Just finished streaming last audio bytes
-                call_state.is_bot_speaking = False  # type: ignore[attr-defined]
+                call_state.is_bot_speaking = False
                 if call_state.should_hangup:
                     logger.debug(
                         "browser_audio.hangup", marker=call_state.latest_bot_audio_id
                     )
                     return EndConversationAction()
             else:
-                call_state.is_bot_speaking = True  # type: ignore[attr-defined]
+                call_state.is_bot_speaking = True
         return ContinueConversationAction()
 
     def create_output_channel(

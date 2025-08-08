@@ -1,7 +1,7 @@
 import asyncio
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 from werkzeug.local import LocalProxy
 
@@ -19,9 +19,20 @@ class CallState:
     should_hangup: bool = False
     connection_failed: bool = False
 
+    # Latency tracking - start times only
+    user_speech_start_time: Optional[float] = None
+    rasa_processing_start_time: Optional[float] = None
+    tts_start_time: Optional[float] = None
+
+    # Calculated latencies (used by channels like browser_audio)
+    asr_latency_ms: Optional[float] = None
+    rasa_processing_latency_ms: Optional[float] = None
+    tts_first_byte_latency_ms: Optional[float] = None
+    tts_complete_latency_ms: Optional[float] = None
+
     # Generic field for channel-specific state data
     channel_data: Dict[str, Any] = field(default_factory=dict)
 
 
 _call_state: ContextVar[CallState] = ContextVar("call_state")
-call_state = LocalProxy(_call_state)
+call_state: CallState = cast(CallState, LocalProxy(_call_state))

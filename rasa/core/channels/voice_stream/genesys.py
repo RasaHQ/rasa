@@ -219,10 +219,10 @@ class GenesysInputChannel(VoiceInputChannel):
                 self.handle_ping(ws, data)
             elif msg_type == "playback_started":
                 logger.debug("genesys.handle_playback_started", message=data)
-                call_state.is_bot_speaking = True  # type: ignore[attr-defined]
+                call_state.is_bot_speaking = True
             elif msg_type == "playback_completed":
                 logger.debug("genesys.handle_playback_completed", message=data)
-                call_state.is_bot_speaking = False  # type: ignore[attr-defined]
+                call_state.is_bot_speaking = False
                 if call_state.should_hangup:
                     logger.info("genesys.hangup")
                     self.disconnect(ws, data)

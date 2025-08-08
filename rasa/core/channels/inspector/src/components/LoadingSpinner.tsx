@@ -8,7 +8,11 @@ import {
 import { useOurTheme } from '../theme'
 import { createAudioConnection } from '../helpers/audio/audiostream.ts'
 
-export const LoadingSpinner = () => {
+interface LoadingSpinnerProps {
+  onLatencyUpdate?: (latency: any) => void
+}
+
+export const LoadingSpinner = ({ onLatencyUpdate }: LoadingSpinnerProps) => {
   const { rasaSpace } = useOurTheme()
   const isVoice = window.location.href.includes('browser_audio')
   const text = isVoice
@@ -27,7 +31,7 @@ export const LoadingSpinner = () => {
       {isVoice ? (
         <Button
           onClick={async () =>
-            await createAudioConnection(window.location.href)
+            await createAudioConnection(window.location.href, onLatencyUpdate)
           }
         >
           Go

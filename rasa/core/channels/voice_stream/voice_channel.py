@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import time
 from dataclasses import asdict, dataclass
 from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional, Tuple
 
@@ -191,7 +192,7 @@ class VoiceOutputChannel(OutputChannel):
     def update_silence_timeout(self) -> None:
         """Updates the silence timeout for the session."""
         if self.tracker_state:
-            call_state.silence_timeout = self.tracker_state["slots"][  # type: ignore[attr-defined]
+            call_state.silence_timeout = self.tracker_state["slots"][
                 SILENCE_TIMEOUT_SLOT
             ]
             logger.debug(
@@ -209,22 +210,63 @@ class VoiceOutputChannel(OutputChannel):
         """Uses the concise button output format for voice channels."""
         await self.send_text_with_buttons_concise(recipient_id, text, buttons, **kwargs)
 
+    def _track_rasa_processing_latency(self) -> None:
+        """Track and log Rasa processing completion latency."""
+        if call_state.rasa_processing_start_time:
+            call_state.rasa_processing_latency_ms = (
+                time.time() - call_state.rasa_processing_start_time
+            ) * 1000
+            logger.debug(
+                "voice_channel.rasa_processing_latency",
+                latency_ms=call_state.rasa_processing_latency_ms,
+            )
+
+    def _track_tts_first_byte_latency(self) -> None:
+        """Track and log TTS first byte latency."""
+        if call_state.tts_start_time:
+            call_state.tts_first_byte_latency_ms = (
+                time.time() - call_state.tts_start_time
+            ) * 1000
+            logger.debug(
+                "voice_channel.tts_first_byte_latency",
+                latency_ms=call_state.tts_first_byte_latency_ms,
+            )
+
+    def _track_tts_complete_latency(self) -> None:
+        """Track and log TTS completion latency."""
+        if call_state.tts_start_time:
+            call_state.tts_complete_latency_ms = (
+                time.time() - call_state.tts_start_time
+            ) * 1000
+            logger.debug(
+                "voice_channel.tts_complete_latency",
+                latency_ms=call_state.tts_complete_latency_ms,
+            )
+
     async def send_text_message(
         self, recipient_id: str, text: str, **kwargs: Any
     ) -> None:
         text = remove_emojis(text)
         self.update_silence_timeout()
+
+        # Track Rasa processing completion
+        self._track_rasa_processing_latency()
+
+        # Track TTS start time
+        call_state.tts_start_time = time.time()
+
         cached_audio_bytes = self.tts_cache.get(text)
         collected_audio_bytes = RasaAudioBytes(b"")
         seconds_marker = -1
         last_sent_offset = 0
+        first_audio_sent = False
         logger.debug("voice_channel.sending_audio", text=text)
 
         # Send start marker before first chunk
         try:
             await self.send_start_marker(recipient_id)
         except (WebsocketClosed, ServerError):
-            call_state.connection_failed = True  # type: ignore[attr-defined]
+            call_state.connection_failed = True
 
         if cached_audio_bytes:
             audio_stream = self.chunk_audio(cached_audio_bytes)
@@ -246,6 +288,11 @@ class VoiceOutputChannel(OutputChannel):
 
             if should_send:
                 try:
+                    # Track TTS first byte time
+                    if not first_audio_sent:
+                        self._track_tts_first_byte_latency()
+                        first_audio_sent = True
+
                     # Send only the new bytes since last send
                     new_bytes = RasaAudioBytes(collected_audio_bytes[last_sent_offset:])
                     await self.send_audio_bytes(recipient_id, new_bytes)
@@ -258,24 +305,31 @@ class VoiceOutputChannel(OutputChannel):
 
                 except (WebsocketClosed, ServerError):
                     # ignore sending error, and keep collecting and caching audio bytes
-                    call_state.connection_failed = True  # type: ignore[attr-defined]
+                    call_state.connection_failed = True
 
         # Send any remaining audio not yet sent
         remaining_bytes = len(collected_audio_bytes) - last_sent_offset
         if remaining_bytes > 0:
             try:
+                # Track TTS first byte time if not already tracked
+                if not first_audio_sent:
+                    self._track_tts_first_byte_latency()
+
                 new_bytes = RasaAudioBytes(collected_audio_bytes[last_sent_offset:])
                 await self.send_audio_bytes(recipient_id, new_bytes)
             except (WebsocketClosed, ServerError):
                 # ignore sending error
-                call_state.connection_failed = True  # type: ignore[attr-defined]
+                call_state.connection_failed = True
+
+        # Track TTS completion time
+        self._track_tts_complete_latency()
 
         try:
             await self.send_end_marker(recipient_id)
         except (WebsocketClosed, ServerError):
             # ignore sending error
             pass
-        call_state.latest_bot_audio_id = self.latest_message_id  # type: ignore[attr-defined]
+        call_state.latest_bot_audio_id = self.latest_message_id
 
         if not cached_audio_bytes:
             self.tts_cache.put(text, collected_audio_bytes)
@@ -300,7 +354,7 @@ class VoiceOutputChannel(OutputChannel):
         return
 
     async def hangup(self, recipient_id: str, **kwargs: Any) -> None:
-        call_state.should_hangup = True  # type: ignore[attr-defined]
+        call_state.should_hangup = True
 
 
 class VoiceInputChannel(InputChannel):
@@ -347,7 +401,7 @@ class VoiceInputChannel(InputChannel):
         if call_state.silence_timeout_watcher:
             logger.debug("voice_channel.cancelling_current_timeout_watcher_task")
             call_state.silence_timeout_watcher.cancel()
-            call_state.silence_timeout_watcher = None  # type: ignore[attr-defined]
+            call_state.silence_timeout_watcher = None
 
     @classmethod
     def validate_basic_credentials(cls, credentials: Optional[Dict[str, Any]]) -> None:
@@ -441,10 +495,8 @@ class VoiceInputChannel(InputChannel):
                 if was_bot_speaking_before and not is_bot_speaking_after:
                     logger.debug("voice_channel.bot_stopped_speaking")
                     self._cancel_silence_timeout_watcher()
-                    call_state.silence_timeout_watcher = (  # type: ignore[attr-defined]
-                        asyncio.create_task(
-                            self.monitor_silence_timeout(asr_event_queue)
-                        )
+                    call_state.silence_timeout_watcher = asyncio.create_task(
+                        self.monitor_silence_timeout(asr_event_queue)
                     )
                 if isinstance(channel_action, NewAudioAction):
                     await asr_engine.send_audio_chunks(channel_action.audio_bytes)
@@ -500,6 +552,16 @@ class VoiceInputChannel(InputChannel):
         """Create a matching voice output channel for this voice input channel."""
         raise NotImplementedError
 
+    def _track_asr_latency(self) -> None:
+        """Track and log ASR processing latency."""
+        if call_state.user_speech_start_time:
+            call_state.asr_latency_ms = (
+                time.time() - call_state.user_speech_start_time
+            ) * 1000
+            logger.debug(
+                "voice_channel.asr_latency", latency_ms=call_state.asr_latency_ms
+            )
+
     async def handle_asr_event(
         self,
         e: ASREvent,
@@ -513,7 +575,12 @@ class VoiceInputChannel(InputChannel):
             logger.debug(
                 "VoiceInputChannel.handle_asr_event.new_transcript", transcript=e.text
             )
-            call_state.is_user_speaking = False  # type: ignore[attr-defined]
+            call_state.is_user_speaking = False
+
+            # Track ASR and Rasa latencies
+            self._track_asr_latency()
+            call_state.rasa_processing_start_time = time.time()
+
             output_channel = self.create_output_channel(voice_websocket, tts_engine)
             message = UserMessage(
                 text=e.text,
@@ -524,8 +591,11 @@ class VoiceInputChannel(InputChannel):
             )
             await on_new_message(message)
         elif isinstance(e, UserIsSpeaking):
+            # Track when user starts speaking for ASR latency calculation
+            if not call_state.is_user_speaking:
+                call_state.user_speech_start_time = time.time()
             self._cancel_silence_timeout_watcher()
-            call_state.is_user_speaking = True  # type: ignore[attr-defined]
+            call_state.is_user_speaking = True
         elif isinstance(e, UserSilence):
             output_channel = self.create_output_channel(voice_websocket, tts_engine)
             message = UserMessage(

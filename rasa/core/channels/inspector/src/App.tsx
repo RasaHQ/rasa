@@ -5,7 +5,7 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { useOurTheme } from './theme'
 import { Welcome } from './components/Welcome'
@@ -23,6 +23,7 @@ import {
 } from './helpers/utils'
 import queryString from 'query-string'
 import { Chat } from './components/Chat'
+import { LatencyDisplay } from './components/LatencyDisplay'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
 
 export function App() {
@@ -35,6 +36,7 @@ export function App() {
   const [story, setStory] = useState<string>('')
   const [stack, setStack] = useState<Stack[]>([])
   const [frame, setFrame] = useState<SelectedStack | undefined>(undefined)
+  const [latency, setLatency] = useState<any>(null)
 
   // State to control the visibility of the RecruitmentPanel
   const [showRecruitmentPanel, setShowRecruitmentPanel] = useState(true)
@@ -127,6 +129,13 @@ export function App() {
       !rasaChatSessionId ||
       lastJsonMessage?.sender_id === rasaChatSessionId
     ) {
+      if (lastJsonMessage.latency) {
+        console.log('Latency update:', lastJsonMessage.latency)
+        setLatency((prevLatency: any) => ({
+          ...prevLatency,
+          ...lastJsonMessage.latency,
+        }))
+      }
       setSlots(formatSlots(lastJsonMessage.slots))
       setEvents(lastJsonMessage.events)
       const updatedStack = createHistoricalStack(
@@ -175,6 +184,21 @@ export function App() {
       : 'max-content minmax(10rem, 17.5rem) minmax(10rem, auto)',
     gridRowGap: rasaSpace[1],
   }
+  const rightColumnSx = {
+    height: '100%',
+    overflow: 'hidden',
+    gridTemplateColumns: '1fr',
+    gridTemplateRows: 'max-content 1fr',
+    gridRowGap: rasaSpace[1],
+  }
+
+  const chatContainerSx = {
+    ...borderRadiusSx,
+    padding: rasaSpace[1],
+    bg: useColorModeValue('neutral.50', 'neutral.50'),
+    overflow: 'auto', // Allow scrolling for chat
+    height: '100%',
+  }
 
   const onFrameSelected = (stack: Stack) => {
     setFrame({
@@ -188,8 +212,25 @@ export function App() {
     setShowRecruitmentPanel(false)
   }
 
+  const onLatencyUpdate = useCallback((newLatency: any) => {
+    setLatency((prevLatency: any) => ({
+      ...prevLatency,
+      ...newLatency,
+    }))
+  }, [])
+
+  // Make latency update function available globally for audio stream
+  useEffect(() => {
+    if (window.location.href.includes('browser_audio')) {
+      ;(window as any).updateLatency = onLatencyUpdate
+    }
+    return () => {
+      delete (window as any).updateLatency
+    }
+  }, [onLatencyUpdate])
+
   if (!rasaChatSessionId && !window.location.href.includes('socketio'))
-    return <LoadingSpinner />
+    return <LoadingSpinner onLatencyUpdate={onLatencyUpdate} />
 
   return (
     <Grid sx={gridSx}>
@@ -222,11 +263,16 @@ export function App() {
           slots={slots}
         />
       </GridItem>
-      {shouldShowTranscript && (
-        <GridItem>
-          <Chat events={events || []} />
-        </GridItem>
-      )}
+      <GridItem overflow="hidden">
+        <Grid sx={rightColumnSx}>
+          <LatencyDisplay latency={latency} sx={boxSx} />
+          {shouldShowTranscript && (
+            <GridItem sx={chatContainerSx}>
+              <Chat events={events || []} />
+            </GridItem>
+          )}
+        </Grid>
+      </GridItem>
     </Grid>
   )
 }
