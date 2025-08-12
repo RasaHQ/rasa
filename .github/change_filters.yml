@@ -62,3 +62,11 @@ lock_file:
 
 pii-management:
   - 'rasa/privacy/**'
+
+voice-files:
+  - rasa/core/channels/voice_ready/**
+  - rasa/core/channels/voice_stream/**
+  - rasa/core/channels/channel.py
+  - rasa/core/channels/socketio.py
+  - rasa/core/channels/studio_chat.py
+
