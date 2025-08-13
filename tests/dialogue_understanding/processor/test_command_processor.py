@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 from unittest.mock import Mock, patch
 
 import pytest
@@ -28,6 +28,7 @@ from rasa.dialogue_understanding.patterns.validate_slot import (
     ValidateSlotPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.processor.command_processor import (
+    _get_slots_eligible_for_correction,
     calculate_flow_fingerprints,
     clean_up_commands,
     clean_up_slot_command,
@@ -877,7 +878,7 @@ def test_command_processor_should_slot_be_set(
             SetSlotExtractor.LLM.value,
         ),
         ([{"type": "from_text", "intent": "inform"}], SetSlotExtractor.LLM.value),
-        ([{"type": "custom"}], SetSlotExtractor.LLM.value),
+        ([{"type": "custom"}], SetSlotExtractor.NLU.value),
     ],
 )
 def test_command_processor_should_slot_be_set_invalid(
@@ -906,11 +907,10 @@ def test_command_processor_clean_up_slot_command_adds_cannot_handle() -> None:
     command = SetSlotCommand(slot_name, "Daisy", SetSlotExtractor.LLM.value)
     sender_id = uuid.uuid4().hex
     tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
-    slots_so_far = {slot_name}
     all_flows = FlowsList(underlying_flows=[])
 
     cleaned_commands = clean_up_slot_command(
-        commands_so_far, command, tracker, all_flows, slots_so_far
+        commands_so_far, command, tracker, all_flows
     )
 
     assert len(cleaned_commands) == 1
@@ -1033,11 +1033,10 @@ def test_clean_up_slot_set_command_from_llm_extractor_for_custom_slot_mapping() 
     command = SetSlotCommand(slot_name, "Daisy", SetSlotExtractor.LLM.value)
     sender_id = uuid.uuid4().hex
     tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
-    slots_so_far = set()
     all_flows = FlowsList(underlying_flows=[])
 
     cleaned_commands = clean_up_slot_command(
-        commands_so_far, command, tracker, all_flows, slots_so_far
+        commands_so_far, command, tracker, all_flows
     )
 
     assert len(cleaned_commands) == 1
@@ -1267,15 +1266,12 @@ def test_clean_up_slot_command_accept_nlu_correction_valid() -> None:
     sender_id = uuid.uuid4().hex
     tracker = DialogueStateTracker.from_events(
         sender_id,
-        [SlotSet("name", "Smith", filled_by=SetSlotExtractor.NLU.value)],
+        [SlotSet("name", None, filled_by=SetSlotExtractor.NLU.value)],
         slots=domain.slots,
     )
-    slots_so_far = set()
     all_flows = FlowsList(underlying_flows=[])
 
-    result = clean_up_slot_command(
-        commands_so_far, command, tracker, all_flows, slots_so_far
-    )
+    result = clean_up_slot_command(commands_so_far, command, tracker, all_flows)
 
     assert result == [command]
 
@@ -1308,12 +1304,9 @@ def test_clean_up_slot_command_accept_nlu_correction_invalid() -> None:
         [SlotSet("name", "Smith", filled_by=SetSlotExtractor.NLU.value)],
         slots=domain.slots,
     )
-    slots_so_far = set()
     all_flows = FlowsList(underlying_flows=[])
 
-    result = clean_up_slot_command(
-        commands_so_far, command, tracker, all_flows, slots_so_far
-    )
+    result = clean_up_slot_command(commands_so_far, command, tracker, all_flows)
 
     assert result == []
 
@@ -1347,12 +1340,9 @@ def test_clean_up_slot_command_nlu_filled_slot_valid() -> None:
         [SlotSet("name", "Smith", filled_by=SetSlotExtractor.NLU.value)],
         slots=domain.slots,
     )
-    slots_so_far = {"name"}
     all_flows = FlowsList(underlying_flows=[])
 
-    result = clean_up_slot_command(
-        commands_so_far, command, tracker, all_flows, slots_so_far
-    )
+    result = clean_up_slot_command(commands_so_far, command, tracker, all_flows)
 
     assert result == [
         CorrectSlotsCommand(
@@ -1402,12 +1392,9 @@ def test_clean_up_slot_command_nlu_filled_slot_invalid() -> None:
         [SlotSet("name", "Smith", filled_by=SetSlotExtractor.NLU.value)],
         slots=domain.slots,
     )
-    slots_so_far = {"name"}
     all_flows = FlowsList(underlying_flows=[])
 
-    result = clean_up_slot_command(
-        commands_so_far, command, tracker, all_flows, slots_so_far
-    )
+    result = clean_up_slot_command(commands_so_far, command, tracker, all_flows)
 
     assert result == commands_so_far
 
@@ -1449,12 +1436,9 @@ def test_clean_up_slot_command_llm_filled_slot_corrected_by_nlu() -> None:
         [SlotSet("name", "Smith", filled_by=SetSlotExtractor.LLM.value)],
         slots=domain.slots,
     )
-    slots_so_far = {"name"}
     all_flows = FlowsList(underlying_flows=[])
 
-    result = clean_up_slot_command(
-        commands_so_far, command, tracker, all_flows, slots_so_far
-    )
+    result = clean_up_slot_command(commands_so_far, command, tracker, all_flows)
 
     assert result == commands_so_far
 
@@ -1488,12 +1472,9 @@ def test_clean_up_slot_command_llm_filled_slot_not_corrected_by_nlu() -> None:
         [SlotSet("name", "Pika", filled_by=SetSlotExtractor.LLM.value)],
         slots=domain.slots,
     )
-    slots_so_far = {"name"}
     all_flows = FlowsList(underlying_flows=[])
 
-    result = clean_up_slot_command(
-        commands_so_far, command, tracker, all_flows, slots_so_far
-    )
+    result = clean_up_slot_command(commands_so_far, command, tracker, all_flows)
 
     assert result == [
         CorrectSlotsCommand(
@@ -1536,12 +1517,9 @@ def test_clean_up_slot_command_nlu_filled_slot_not_corrected_by_nlu() -> None:
         [SlotSet("name", "Pika", filled_by=SetSlotExtractor.NLU.value)],
         slots=domain.slots,
     )
-    slots_so_far = {"name"}
     all_flows = FlowsList(underlying_flows=[])
 
-    result = clean_up_slot_command(
-        commands_so_far, command, tracker, all_flows, slots_so_far
-    )
+    result = clean_up_slot_command(commands_so_far, command, tracker, all_flows)
 
     assert result == [
         CorrectSlotsCommand(
@@ -1576,19 +1554,16 @@ def test_clean_up_slot_command_nlu_filled_slot_not_corrected_by_nlu_invalid() ->
      """)
 
     commands_so_far = []
-    command = SetSlotCommand(slot_name, "Pikachu", SetSlotExtractor.LLM.value)
+    command = SetSlotCommand(slot_name, None, SetSlotExtractor.LLM.value)
     sender_id = uuid.uuid4().hex
     tracker = DialogueStateTracker.from_events(
         sender_id,
         [SlotSet("name", "Pika", filled_by=SetSlotExtractor.NLU.value)],
         slots=domain.slots,
     )
-    slots_so_far = {"name"}
     all_flows = FlowsList(underlying_flows=[])
 
-    result = clean_up_slot_command(
-        commands_so_far, command, tracker, all_flows, slots_so_far
-    )
+    result = clean_up_slot_command(commands_so_far, command, tracker, all_flows)
 
     assert result == []
 
@@ -1916,3 +1891,97 @@ def test_reorder_commands_with_call_and_link_frames():
         SetSlotCommand("slot2", "value2"),
         SetSlotCommand("slot1", "value1"),
     ]
+
+
+@pytest.mark.parametrize(
+    "events, expected_slots",
+    [
+        # empty tracker
+        ([], set()),
+        # tracker with no SlotSet events
+        (
+            [UserUttered("hello"), BotUttered("hi there")],
+            set(),
+        ),
+        # tracker with SlotSet event
+        (
+            [SlotSet("user_name", "John")],
+            {"user_name"},
+        ),
+        # tracker with SlotSet event to None
+        ([SlotSet("user_name", None)], set()),
+        # tracker with multiple slots
+        (
+            [
+                SlotSet("user_name", "John"),
+                SlotSet("user_age", 25),
+                SlotSet("user_email", None),
+                SlotSet("user_city", "New York"),
+            ],
+            {"user_name", "user_age", "user_city"},
+        ),
+        # tracker with mixed events
+        (
+            [
+                UserUttered("hello"),
+                SlotSet("user_name", "John"),
+                BotUttered("hi there"),
+                SlotSet("user_age", 25),
+            ],
+            {"user_name", "user_age"},
+        ),
+        # tracker with duplicate slot names
+        (
+            [
+                SlotSet("user_name", "John"),
+                SlotSet("user_age", 25),
+                SlotSet("user_name", "Jane"),  # Override previous value
+                SlotSet("user_city", "New York"),
+            ],
+            {"user_name", "user_age", "user_city"},
+        ),
+        # tracker with SlotSet event to False
+        (
+            [SlotSet("is_active", False)],
+            {"is_active"},
+        ),
+        # tracker with SlotSet event to empty string
+        (
+            [SlotSet("user_name", "")],
+            {"user_name"},
+        ),
+        # tracker with SlotSet event to 0
+        (
+            [SlotSet("user_age", 0)],
+            {"user_age"},
+        ),
+        # tracker with SlotSet event to None after value
+        (
+            [
+                SlotSet("user_name", "John"),
+                SlotSet("user_name", None),  # Clear the slot
+            ],
+            set(),
+        ),
+        # tracker with SlotSet event to value after None
+        (
+            [
+                SlotSet("user_name", None),
+                SlotSet("user_name", "John"),  # Set the slot to a value
+            ],
+            {"user_name"},
+        ),
+    ],
+)
+def test_get_slots_eligible_for_correction(
+    events: List[Event], expected_slots: Set[str]
+):
+    """Test _get_slots_eligible_for_correction function with various scenarios."""
+    # Arrange
+    tracker = DialogueStateTracker.from_events(sender_id="test", evts=events)
+
+    # Act
+    result = _get_slots_eligible_for_correction(tracker)
+
+    # Assert
+    assert result == expected_slots

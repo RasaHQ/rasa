@@ -398,19 +398,12 @@ def clean_up_commands(
     """
     domain = domain if domain else Domain.empty()
 
-    # we consider all slots that were set in the tracker for potential corrections
-    # in the correct_slot_command we will check if a slot should actually be
-    # corrected
-    slots_so_far = set(
-        [event.key for event in tracker.events if isinstance(event, SlotSet)]
-    )
-
     clean_commands: List[Command] = []
 
     for command in commands:
         if isinstance(command, SetSlotCommand):
             clean_commands = clean_up_slot_command(
-                clean_commands, command, tracker, all_flows, slots_so_far
+                clean_commands, command, tracker, all_flows
             )
 
         elif isinstance(command, CancelFlowCommand) and contains_command(
@@ -501,6 +494,25 @@ def clean_up_commands(
     return clean_commands
 
 
+def _get_slots_eligible_for_correction(tracker: DialogueStateTracker) -> Set[str]:
+    """Get all slots that are eligible for correction.
+
+    # We consider all slots, which are not None, that were set in the tracker
+    # eligible for correction.
+    # In the correct_slot_command we will check if a slot should actually be
+    # corrected.
+    """
+    # get all slots that were set in the tracker
+    slots_so_far = set(
+        [event.key for event in tracker.events if isinstance(event, SlotSet)]
+    )
+
+    # filter out slots that are set to None (None = empty value)
+    slots_so_far = {slot for slot in slots_so_far if tracker.get_slot(slot) is not None}
+
+    return slots_so_far
+
+
 def ensure_max_number_of_command_type(
     commands: List[Command], command_type: Type[Command], n: int
 ) -> List[Command]:
@@ -560,7 +572,6 @@ def clean_up_slot_command(
     command: SetSlotCommand,
     tracker: DialogueStateTracker,
     all_flows: FlowsList,
-    slots_so_far: Set[str],
 ) -> List[Command]:
     """Clean up a slot command.
 
@@ -573,7 +584,6 @@ def clean_up_slot_command(
         command: The command to clean up.
         tracker: The dialogue state tracker.
         all_flows: All flows.
-        slots_so_far: The slots that have been filled so far.
 
     Returns:
         The cleaned up commands.
@@ -642,7 +652,13 @@ def clean_up_slot_command(
             )
             return resulting_commands
 
-    if command.name in slots_so_far and command.name != ROUTE_TO_CALM_SLOT:
+    # get all slots that were set in the tracker and are eligible for correction
+    slots_eligible_for_correction = _get_slots_eligible_for_correction(tracker)
+
+    if (
+        command.name in slots_eligible_for_correction
+        and command.name != ROUTE_TO_CALM_SLOT
+    ):
         current_collect_info = get_current_collect_step(stack, all_flows)
 
         if current_collect_info and current_collect_info.collect == command.name:
