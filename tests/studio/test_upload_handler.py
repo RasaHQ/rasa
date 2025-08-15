@@ -1,7 +1,9 @@
 import argparse
 import base64
 from pathlib import Path
+from sys import modules
 from textwrap import dedent
+from types import SimpleNamespace
 from typing import Any, Dict, List, Set, Text, Union
 from unittest.mock import MagicMock, patch
 
@@ -815,3 +817,47 @@ def test_build_import_request_with_prompts() -> None:
     )
 
     assert gql["variables"]["input"]["prompts"] == prompts_json
+
+
+@pytest.mark.parametrize(
+    "data_value, expected_training_paths",
+    [
+        ("data/path", ["data/path"]),
+        (["data/one", "data/two"], ["data/one", "data/two"]),
+    ],
+)
+def test_run_validation_accepts_data_str_or_list(
+    monkeypatch, data_value, expected_training_paths
+) -> None:
+    """Ensure `run_validation` accepts `data` as a string or a list of strings."""
+    # Mock TrainingDataImporter
+    importer_instance = MagicMock(name="ImporterInstance")
+    training_importer_mock = MagicMock()
+    training_importer_mock.load_from_dict.return_value = importer_instance
+    monkeypatch.setattr(
+        rasa.studio.upload, "TrainingDataImporter", training_importer_mock
+    )
+
+    # Mock Validator imported inside the function
+    validator_instance = MagicMock()
+    validator_instance.verify_studio_supported_validations.return_value = True
+    ValidatorMock = MagicMock()
+    ValidatorMock.from_importer.return_value = validator_instance
+    fake_validator_module = SimpleNamespace(Validator=ValidatorMock)
+    monkeypatch.setitem(modules, "rasa.validator", fake_validator_module)
+
+    # Prepare args and run
+    args = argparse.Namespace(domain="domain.yml", data=data_value, config="config.yml")
+    rasa.studio.upload.run_validation(args)
+
+    # Assert TrainingDataImporter receives a list for training_data_paths
+    training_importer_mock.load_from_dict.assert_called_once_with(
+        domain_path="domain.yml",
+        training_data_paths=expected_training_paths,
+        config_path="config.yml",
+        expand_env_vars=False,
+    )
+
+    # Validator is called as expected
+    ValidatorMock.from_importer.assert_called_once_with(importer_instance)
+    validator_instance.verify_studio_supported_validations.assert_called_once()

@@ -115,9 +115,10 @@ def run_validation(args: argparse.Namespace) -> None:
     """
     from rasa.validator import Validator
 
+    training_data_paths = args.data if isinstance(args.data, list) else [args.data]
     training_data_importer = TrainingDataImporter.load_from_dict(
         domain_path=args.domain,
-        training_data_paths=[args.data],
+        training_data_paths=training_data_paths,
         config_path=args.config,
         expand_env_vars=False,
     )
@@ -263,8 +264,9 @@ def build_calm_import_parts(
     domain_from_files = importer.get_user_domain().as_dict()
     domain = extract_values(domain_from_files, DOMAIN_KEYS)
 
+    training_data_paths = data_path if isinstance(data_path, list) else [str(data_path)]
     flow_importer = FlowSyncImporter.load_from_dict(
-        training_data_paths=[str(data_path)], expand_env_vars=False
+        training_data_paths=training_data_paths, expand_env_vars=False
     )
 
     flows = list(flow_importer.get_user_flows())
@@ -272,7 +274,7 @@ def build_calm_import_parts(
     flows = read_yaml(flows_yaml, expand_env_vars=False)
 
     nlu_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[str(data_path)], expand_env_vars=False
+        training_data_paths=training_data_paths, expand_env_vars=False
     )
     nlu_data = nlu_importer.get_nlu_data()
     nlu_examples = nlu_data.filter_training_examples(
@@ -349,9 +351,10 @@ def upload_nlu_assistant(
         "rasa.studio.upload.nlu_data_read",
         event_info="Found DM1 assistant data, parsing...",
     )
+    training_data_paths = args.data if isinstance(args.data, list) else [args.data]
     importer = TrainingDataImporter.load_from_dict(
         domain_path=args.domain,
-        training_data_paths=[args.data],
+        training_data_paths=training_data_paths,
         config_path=args.config,
         expand_env_vars=False,
     )
