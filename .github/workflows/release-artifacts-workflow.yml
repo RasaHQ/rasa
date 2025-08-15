@@ -359,10 +359,53 @@ jobs:
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}
-          # Send notification to #devtribe slack channel
+          # Send notification to #prodeng-internal slack channel
           payload: |
             channel: "C36SS4N8M"
             text: ":broken_heart: *Rasa Private* release version `${{ needs.release-artifacts-docker.outputs.tag_version }}` has failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."
+
+# this step can be moved to a separate workflow, if needed. We only need to figure out how to pass the tag version to the new workflow
+  install-released-rasa-version-and-run:
+    name: Install released Rasa version and run
+    runs-on: ubuntu-24.04
+    needs: [release-artifacts-docker, release-artifacts-pypi]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.release-artifacts-docker.outputs.tag_version }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Install released Rasa Docker image and run container with init command
+        run: |
+            # Install the released docker image of Rasa
+            docker pull ${{ env.DOCKER_HUB_RASA_IMAGE_REPOSITORY }}:${{ needs.release-artifacts-docker.outputs.tag_version }}
+            docker run --rm -e RASA_PRO_LICENSE=${{ secrets.RASA_PRO_LICENSE }} -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ${{ env.DOCKER_HUB_RASA_IMAGE_REPOSITORY }}:${{ needs.release-artifacts-docker.outputs.tag_version }} init --no-prompt
+        env:
+          DOCKER_HUB_RASA_IMAGE_REPOSITORY: docker.io/rasa/rasa-pro
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Install released Rasa version and run init command
+        if: always()
+        run: |
+            # Install the released python version of Rasa
+            pip install uv
+            until RASA_PRO_LICENSE=${{ secrets.RASA_PRO_LICENSE }} OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} uv pip install --upgrade --no-cache-dir rasa-pro==${{ needs.release-artifacts-docker.outputs.tag_version }} --prerelease=allow; do
+              echo "pip install failed, retrying in 10 seconds..."
+              sleep 10
+            done
+            RASA_PRO_LICENSE=${{ secrets.RASA_PRO_LICENSE }} OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} rasa init --no-prompt
+        continue-on-error: true
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
   trigger_dev_edition_rasa_pro_image_tag_update:
     needs: [release-artifacts-docker, release-artifacts-pypi]

@@ -301,7 +301,7 @@ timeout_func_only = true
 asyncio_mode = "auto"
 
 [tool.poetry.dependencies.rasa-sdk]
-version = "3.13.0"
+version = "3.14.0.dev2"
 allow-prereleases = true
 
 [tool.poetry.dependencies.keras]
@@ -370,6 +370,7 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "tests/test_telemetry.py" = [ "E501",]
 "tests/shared/core/test_domain.py" = [ "E501",]
+
 
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.3.5,<0.4.0"

@@ -6556,15 +6556,15 @@ fire = "*"
 
 [[package]]
 name = "rasa-sdk"
-version = "3.13.0"
+version = "3.14.0.dev2"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 optional = false
 python-versions = "<3.13,>3.8"
 groups = ["main"]
 markers = "sys_platform == \"linux\" or sys_platform == \"win32\" or sys_platform == \"darwin\" and platform_machine != \"arm64\" or sys_platform != \"linux\" and sys_platform != \"win32\" and sys_platform != \"darwin\" or sys_platform != \"linux\" and sys_platform != \"win32\" and platform_machine == \"arm64\""
 files = [
-    {file = "rasa_sdk-3.13.0-py3-none-any.whl", hash = "sha256:02bbd167548d2e1a501658869cb66fced046c2b9444d6802ca189f7084095606"},
-    {file = "rasa_sdk-3.13.0.tar.gz", hash = "sha256:bc5923faef0dfd90f877611e9761e31126caedf82940d68b693a5a406bcb2064"},
+    {file = "rasa_sdk-3.14.0.dev2-py3-none-any.whl", hash = "sha256:bf2a47dd877cea36b08d160a8270b47cc2fba22d5107903358811925f80da00f"},
+    {file = "rasa_sdk-3.14.0.dev2.tar.gz", hash = "sha256:7a4e45dedeaf7adbcfef3ca48a38be41d8dc3e3e05e6a7c3ce91e6ce81384639"},
 ]
 
 [package.dependencies]
@@ -6577,7 +6577,7 @@ opentelemetry-exporter-jaeger = ">=1.16.0,<1.17.0"
 opentelemetry-exporter-otlp = ">=1.16.0,<1.17.0"
 opentelemetry-sdk = ">=1.16.0,<1.17.0"
 pluggy = ">=1.0.0,<2.0.0"
-protobuf = ">=4.25.3,<4.26.0"
+protobuf = ">=4.25.8,<4.26.0"
 pydantic = ">=2.6.4,<3.0.0"
 "ruamel.yaml" = ">=0.16.5,<0.18.0"
 sanic = ">=22.12,<23.0"
@@ -9918,4 +9918,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9.2,<3.12"
-content-hash = "a50c43cd2141024948b404f5273796f1d4f50785ef7cd6830f13ca9f4c121020"
+content-hash = "4a58c937573eb0b2bfe1399cc4000aae5adfe0a2210ff42018e6c4cf02823a07"

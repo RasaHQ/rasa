@@ -76,6 +76,14 @@ This workflow does the following:
 This workflow can also be run as a [workflow dispatch](#glossary) event.
 If this workflow fails a Slack notification is sent to the channel `#prodeng-internal`.
 
+### Weekly Scheduled Dev releases
+Runs every Monday at 9:00 UTC from the `main` branch and creates a dev release with version `(latest minor + 1).dev(date %Y%m%d)`, e.g. if last release was 3.13.3, weekly release will be 3.14.0.dev20250731.
+The release PR is opened by `rasabot` user and automatically merged. Tag push workflow happens as usual after the release PR is merged.
+Release artifacts workflow runs after tag push and installs the newly released docker image and runs rasa init in container and installs the python package to run rasa init in the CI build.
+### Confirm Telemetry Release Entry
+Runs every Tuesday at 5am UTC and fetches the latest version of rasa that was changed by the dev release workflow above and then runs a metabase query to verify that an entry was made against docker and python for the release and installation above.
+The failure notification is sent to `#atom-squad-channel`
+
 ### Tag Release
 Workflow pushes a tag by running `make tag-release-auto`.
 This workflow runs on `main` and `release branches` and is triggered only after the release prep branch with the name `prepare-release*` is merged.
