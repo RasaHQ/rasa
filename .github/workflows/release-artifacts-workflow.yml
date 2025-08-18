@@ -401,7 +401,7 @@ jobs:
               echo "pip install failed, retrying in 10 seconds..."
               sleep 10
             done
-            RASA_PRO_LICENSE=${{ secrets.RASA_PRO_LICENSE }} OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} rasa init --no-prompt
+            mkdir -p rasa-bot && cd rasa-bot && RASA_PRO_LICENSE=${{ secrets.RASA_PRO_LICENSE }} OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} rasa init --no-prompt
         continue-on-error: true
         env:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}

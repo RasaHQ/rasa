@@ -2,11 +2,7 @@ name: Confirm Telemetry Release Entry
 
 on:
   schedule:
-   # Run at 5am UTC each Monday
-    - cron: "0 9 * * TUE"
-  workflow_run:
-    workflows: [ "Release artifacts workflow" ]
-    types: [ completed ] # triggered only if the "Release" workflow run is completed
+    - cron: "0 9 * * 2" # Every Tuesday at 9:00 UTC
   workflow_dispatch:
 
 
