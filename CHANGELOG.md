@@ -10,6 +10,23 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.13.7] - 2025-08-15
+                        
+Rasa Pro 3.13.7 (2025-08-15)                             
+### Bugfixes
+- [#2131](https://github.com/rasahq/rasa-private/issues/2131): Don't tigger a slot correction for slots that are currently set to `None` as `None`
+  counts as empty value.
+- [#3022](https://github.com/rasahq/rasa-private/issues/3022): Enabled the data argument to support both string and list inputs, normalizing to a list for consistent handling.
+
+
+## [3.13.6] - 2025-08-08
+                        
+Rasa Pro 3.13.6 (2025-08-08)                             
+### Bugfixes
+- [#2971](https://github.com/rasahq/rasa-private/issues/2971): Fixed the contextual response rephraser to use and update the correct translated response text for the current language, instead of falling back to the default response.
+- [#2978](https://github.com/rasahq/rasa-private/issues/2978): Refactored `validate_argument_paths` to accept list values and aggregate all missing paths before exiting.
+
+
 ## [3.13.5] - 2025-07-31
                         
 Rasa Pro 3.13.5 (2025-07-31)                             
