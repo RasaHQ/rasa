@@ -11,8 +11,8 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 <!-- TOWNCRIER -->
 
 ## [3.13.7] - 2025-08-15
-                        
-Rasa Pro 3.13.7 (2025-08-15)                             
+
+Rasa Pro 3.13.7 (2025-08-15)
 ### Bugfixes
 - [#2131](https://github.com/rasahq/rasa-private/issues/2131): Don't tigger a slot correction for slots that are currently set to `None` as `None`
   counts as empty value.
@@ -20,16 +20,16 @@ Rasa Pro 3.13.7 (2025-08-15)
 
 
 ## [3.13.6] - 2025-08-08
-                        
-Rasa Pro 3.13.6 (2025-08-08)                             
+
+Rasa Pro 3.13.6 (2025-08-08)
 ### Bugfixes
 - [#2971](https://github.com/rasahq/rasa-private/issues/2971): Fixed the contextual response rephraser to use and update the correct translated response text for the current language, instead of falling back to the default response.
 - [#2978](https://github.com/rasahq/rasa-private/issues/2978): Refactored `validate_argument_paths` to accept list values and aggregate all missing paths before exiting.
 
 
 ## [3.13.5] - 2025-07-31
-                        
-Rasa Pro 3.13.5 (2025-07-31)                             
+
+Rasa Pro 3.13.5 (2025-07-31)
 ### Bugfixes
 - [#2090](https://github.com/rasahq/rasa-private/issues/2090): Fix correction of slots:
 
@@ -42,8 +42,8 @@ Rasa Pro 3.13.5 (2025-07-31)
 
 
 ## [3.13.4] - 2025-07-23
-                        
-Rasa Pro 3.13.4 (2025-07-23)                             
+
+Rasa Pro 3.13.4 (2025-07-23)
 ### Improvements
 - [#2880](https://github.com/rasahq/rasa-private/issues/2880): Engine-related modules now raise structured exceptions instead of calling
   `sys.exit(1)` or `print_error_and_exit`, providing clearer, more actionable log
@@ -56,15 +56,15 @@ Rasa Pro 3.13.4 (2025-07-23)
 
 
 ## [3.13.3] - 2025-07-17
-                        
-Rasa Pro 3.13.3 (2025-07-17)                             
+
+Rasa Pro 3.13.3 (2025-07-17)
 ### Bugfixes
 - [#2854](https://github.com/rasahq/rasa-private/issues/2854): Allowed NLG servers to return None for the text property and ensured custom response data is properly retained.
 
 
 ## [3.13.2] - 2025-07-16
-                        
-Rasa Pro 3.13.2 (2025-07-16)                             
+
+Rasa Pro 3.13.2 (2025-07-16)
 ### Bugfixes
 - [#2053](https://github.com/rasahq/rasa-private/issues/2053): Pass all flows to `find_updated_flows` to avoid creating a `HandleCodeChangeCommand` in situations
   where flows were not updated.
@@ -72,8 +72,8 @@ Rasa Pro 3.13.2 (2025-07-16)
 
 
 ## [3.13.1] - 2025-07-14
-                        
-Rasa Pro 3.13.1 (2025-07-14)                             
+
+Rasa Pro 3.13.1 (2025-07-14)
 ### Bugfixes
 - [#2804](https://github.com/rasahq/rasa-private/issues/2804): Fix issues with bot not giving feedback for slot corrections.
 - [#2817](https://github.com/rasahq/rasa-private/issues/2817): Fixed bot speaking state management in Audiocodes Stream channel. This made the assistant unable to handle user silences
@@ -81,8 +81,8 @@ Rasa Pro 3.13.1 (2025-07-14)
 
 
 ## [3.13.0] - 2025-07-07
-                        
-Rasa Pro 3.13.0 (2025-07-07)                             
+
+Rasa Pro 3.13.0 (2025-07-07)
 ### Deprecations and Removals
 - [#2531](https://github.com/rasahq/rasa-private/issues/2531): Deprecate IntentlessPolicy and schedule for removal in Rasa `4.0.0`.
 - [#2610](https://github.com/rasahq/rasa-private/issues/2610): Removed `monitor_silence` parameter from Voice Channel configuration. Silence Monitoring is now enabled by default. It can be configured by changing the value of Global Silence Timeout
@@ -226,7 +226,7 @@ Rasa Pro 3.13.0 (2025-07-07)
 - [#2690](https://github.com/rasahq/rasa-private/issues/2690): Remove beta feature flag for pypred predicate usage in conditional response variations.
   Mark this functionality for general availability (GA).
 - [#2775](https://github.com/rasahq/rasa-private/issues/2775): Updated the default behavior of `pattern_chitchat`. With the deprecation of
-  `IntentlessPolicy`, `pattern_chitchat` now defaults to responding with 
+  `IntentlessPolicy`, `pattern_chitchat` now defaults to responding with
   `utter_cannot_handle` instead of triggering `action_trigger_chitchat`.
 - [#2776](https://github.com/rasahq/rasa-private/issues/2776): PII deletion job now performs a single database transaction in the case of trackers with multiple sessions, where only some
   sessions are eligible for deletion. The deletion job overwrites the serialized tracker record with the retained events
@@ -279,7 +279,7 @@ Rasa Pro 3.13.0 (2025-07-07)
 
 ## [3.12.29] - 2025-07-31
 
-Rasa Pro 3.12.29 (2025-07-31)                              
+Rasa Pro 3.12.29 (2025-07-31)
 ### Bugfixes
 - [#2090](https://github.com/rasahq/rasa-private/issues/2090): Fix correction of slots:
 
@@ -290,16 +290,16 @@ Rasa Pro 3.12.29 (2025-07-31)
 
 
 ## [3.12.28] - 2025-07-29
-                         
-Rasa Pro 3.12.28 (2025-07-29)                              
+
+Rasa Pro 3.12.28 (2025-07-29)
 ### Bugfixes
 - [#2900](https://github.com/rasahq/rasa-private/issues/2900): Upgrade `axios` to fix security vulnerability.
 - [#2915](https://github.com/rasahq/rasa-private/issues/2915): Fix issue where called flows could not set slots of their parent flow.
 
 
 ## [3.12.27] - 2025-07-23
-                         
-Rasa Pro 3.12.27 (2025-07-23)                              
+
+Rasa Pro 3.12.27 (2025-07-23)
 ### Bugfixes
 - [#2862](https://github.com/rasahq/rasa-private/issues/2862): Fix validation of the FAISS documents folder to ensure it correctly discovers files in a recursive directory structure.
 - [#2871](https://github.com/rasahq/rasa-private/issues/2871): Updated `Inspector` dependent packages (`vite`, and `@adobe/css-tools`) to address security vulnerabilities.
@@ -308,21 +308,21 @@ Rasa Pro 3.12.27 (2025-07-23)
 
 ## [3.12.26] - 2025-07-17
 
-Rasa Pro 3.12.26 (2025-07-17)                              
+Rasa Pro 3.12.26 (2025-07-17)
 ### Bugfixes
 - [#2853](https://github.com/rasahq/rasa-private/issues/2853): Allowed NLG servers to return None for the text property and ensured custom response data is properly retained.
 
 
 ## [3.12.25] - 2025-07-16
 
-Rasa Pro 3.12.25 (2025-07-16)                              
+Rasa Pro 3.12.25 (2025-07-16)
 ### Bugfixes
 - [#2053](https://github.com/rasahq/rasa-private/issues/2053): Pass all flows to `find_updated_flows` to avoid creating a `HandleCodeChangeCommand` in situations where flows were not updated.
 
 
 ## [3.12.24] - 2025-07-14
-                         
-Rasa Pro 3.12.24 (2025-07-14)                              
+
+Rasa Pro 3.12.24 (2025-07-14)
 ### Bugfixes
 - [#2603](https://github.com/rasahq/rasa-private/issues/2603): Fixed the repeat action to include all messages of the last turn in collect steps.
 - [#2804](https://github.com/rasahq/rasa-private/issues/2804): Fix issues with bot not giving feedback for slot corrections.
@@ -775,9 +775,23 @@ Rasa Pro 3.12.0 (2025-03-19)
 - [#1685](https://github.com/rasahq/rasa-private/issues/1685), [#1760](https://github.com/rasahq/rasa-private/issues/1760), [#1780](https://github.com/rasahq/rasa-private/issues/1780), [#1784](https://github.com/rasahq/rasa-private/issues/1784), [#1829](https://github.com/rasahq/rasa-private/issues/1829), [#1868](https://github.com/rasahq/rasa-private/issues/1868), [#1873](https://github.com/rasahq/rasa-private/issues/1873), [#1929](https://github.com/rasahq/rasa-private/issues/1929), [#1930](https://github.com/rasahq/rasa-private/issues/1930), [#1946](https://github.com/rasahq/rasa-private/issues/1946), [#1949](https://github.com/rasahq/rasa-private/issues/1949), [#1955](https://github.com/rasahq/rasa-private/issues/1955), [#1972](https://github.com/rasahq/rasa-private/issues/1972), [#1989](https://github.com/rasahq/rasa-private/issues/1989), [#1991](https://github.com/rasahq/rasa-private/issues/1991), [#1998](https://github.com/rasahq/rasa-private/issues/1998), [#2004](https://github.com/rasahq/rasa-private/issues/2004), [#2016](https://github.com/rasahq/rasa-private/issues/2016), [#2024](https://github.com/rasahq/rasa-private/issues/2024), [#2037](https://github.com/rasahq/rasa-private/issues/2037), [#2077](https://github.com/rasahq/rasa-private/issues/2077), [#2079](https://github.com/rasahq/rasa-private/issues/2079), [#2100](https://github.com/rasahq/rasa-private/issues/2100), [#2113](https://github.com/rasahq/rasa-private/issues/2113), [#2124](https://github.com/rasahq/rasa-private/issues/2124)
 
 
+## [3.11.19] - 2025-08-19
+
+Rasa Pro 3.11.19 (2025-08-19)
+### Bugfixes
+- [#2090](https://github.com/rasahq/rasa-private/issues/2090): Fix correction of slots:
+
+  - Slots can only be corrected in case they belong to any flow on the stack and the slot
+    to be corrected is part of a collect step in any of those flows.
+  - A correction of a slot should be applied if the flow that is about to start is using
+    this slot.
+- [#2131](https://github.com/rasahq/rasa-private/issues/2131): Don't tigger a slot correction for slots that are currently set to `None` as `None`
+  counts as empty value.
+- [#2915](https://github.com/rasahq/rasa-private/issues/2915): Fix issue where called flows could not set slots of their parent flow.
+
 ## [3.11.18] - 2025-07-24
-                         
-Rasa Pro 3.11.18 (2025-07-24)                              
+
+Rasa Pro 3.11.18 (2025-07-24)
 ### Bugfixes
 - [#2804](https://github.com/rasahq/rasa-private/issues/2804): Fix issues with bot not giving feedback for slot corrections.
 - [#2862](https://github.com/rasahq/rasa-private/issues/2862): Fix validation of the FAISS documents folder to ensure it correctly discovers files in a recursive directory structure.
@@ -787,8 +801,8 @@ Rasa Pro 3.11.18 (2025-07-24)
 
 
 ## [3.11.17] - 2025-07-03
-                         
-Rasa Pro 3.11.17 (2025-07-03)                              
+
+Rasa Pro 3.11.17 (2025-07-03)
 ### Bugfixes
 - [#1886](https://github.com/rasahq/rasa-private/issues/1886): Flows now traverse called and linked flows, including nested and branching called / linked flows.
   As a result, E2E coverage reports include any linked and called flows triggered by the flow being tested.
