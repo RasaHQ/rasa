@@ -39,6 +39,7 @@ class DefaultLiteLLMClient(_BaseLiteLLMClient):
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> DefaultLiteLLMClient:
+        """Creates a DefaultLiteLLMClient instance from a configuration dictionary."""
         default_config = DefaultLiteLLMClientConfig.from_dict(config)
         return cls(
             model=default_config.model,
@@ -110,6 +111,7 @@ class DefaultLiteLLMClient(_BaseLiteLLMClient):
                 self._litellm_model_name,
                 self._litellm_extra_parameters,
                 "default_litellm_llm_client",
+                provider=self.provider,
             )
         else:
             super().validate_client_setup()

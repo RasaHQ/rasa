@@ -37,6 +37,7 @@ class DefaultLiteLLMEmbeddingClient(_BaseLiteLLMEmbeddingClient):
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "DefaultLiteLLMEmbeddingClient":
+        """Creates a DefaultLiteLLMEmbeddingClient instance from a config dict."""
         default_config = DefaultLiteLLMClientConfig.from_dict(config)
         return cls(
             model=default_config.model,
@@ -121,6 +122,7 @@ class DefaultLiteLLMEmbeddingClient(_BaseLiteLLMEmbeddingClient):
                 self._litellm_model_name,
                 self._litellm_extra_parameters,
                 "default_litellm_embedding_client",
+                provider=self.provider,
             )
         else:
             super().validate_client_setup()

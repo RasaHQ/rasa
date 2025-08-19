@@ -1,87 +1,103 @@
 from typing import Any, Dict, Optional
 
+import boto3
 import structlog
-from litellm import validate_environment
+from botocore.exceptions import BotoCoreError, ClientError
 
 from rasa.shared.constants import (
     API_BASE_CONFIG_KEY,
     API_VERSION_CONFIG_KEY,
     AWS_ACCESS_KEY_ID_CONFIG_KEY,
-    AWS_ACCESS_KEY_ID_ENV_VAR,
+    AWS_BEDROCK_PROVIDER,
     AWS_REGION_NAME_CONFIG_KEY,
-    AWS_REGION_NAME_ENV_VAR,
+    AWS_SAGEMAKER_CHAT_PROVIDER,
+    AWS_SAGEMAKER_PROVIDER,
     AWS_SECRET_ACCESS_KEY_CONFIG_KEY,
-    AWS_SECRET_ACCESS_KEY_ENV_VAR,
     AWS_SESSION_TOKEN_CONFIG_KEY,
-    AWS_SESSION_TOKEN_ENV_VAR,
     AZURE_API_BASE_ENV_VAR,
     AZURE_API_VERSION_ENV_VAR,
     DEPLOYMENT_CONFIG_KEY,
 )
 from rasa.shared.exceptions import ProviderClientValidationError
-from rasa.shared.providers.embedding._base_litellm_embedding_client import (
-    _VALIDATE_ENVIRONMENT_MISSING_KEYS_KEY,
-)
+from rasa.shared.utils.io import resolve_environment_variables
 
 structlogger = structlog.get_logger()
 
 
 def validate_aws_setup_for_litellm_clients(
-    litellm_model_name: str, litellm_call_kwargs: dict, source_log: str
+    litellm_model_name: str, litellm_call_kwargs: Dict, source_log: str, provider: str
 ) -> None:
-    """Validates the AWS setup for LiteLLM clients to ensure all required
-    environment variables or corresponding call kwargs are set.
+    """Validates the AWS setup for LiteLLM clients to ensure credentials are set.
 
     Args:
         litellm_model_name (str): The name of the LiteLLM model being validated.
         litellm_call_kwargs (dict): Additional keyword arguments passed to the client,
             which may include configuration values for AWS credentials.
         source_log (str): The source log identifier for structured logging.
+        provider (str): The provider for which the validation is being performed.
 
     Raises:
         ProviderClientValidationError: If any required AWS environment variable
             or corresponding configuration key is missing.
     """
+    # expand environment variables if referenced in the config
+    resolved_litellm_call_kwargs: Dict = resolve_environment_variables(
+        litellm_call_kwargs
+    )  # type: ignore[assignment]
 
-    # Mapping of environment variable names to their corresponding config keys
-    envs_to_args = {
-        AWS_ACCESS_KEY_ID_ENV_VAR: AWS_ACCESS_KEY_ID_CONFIG_KEY,
-        AWS_SECRET_ACCESS_KEY_ENV_VAR: AWS_SECRET_ACCESS_KEY_CONFIG_KEY,
-        AWS_REGION_NAME_ENV_VAR: AWS_REGION_NAME_CONFIG_KEY,
-        AWS_SESSION_TOKEN_ENV_VAR: AWS_SESSION_TOKEN_CONFIG_KEY,
-    }
-
-    # Validate the environment setup for the model
-    validation_info = validate_environment(litellm_model_name)
-    missing_environment_variables = validation_info.get(
-        _VALIDATE_ENVIRONMENT_MISSING_KEYS_KEY, []
+    # boto3 only accepts bedrock and sagemaker as valid clients
+    # therefore we need to convert the provider name if it is defined
+    # as sagemaker_chat
+    provider = (
+        AWS_SAGEMAKER_PROVIDER if provider == AWS_SAGEMAKER_CHAT_PROVIDER else provider
     )
-    # Filter out missing environment variables that have been set trough arguments
-    # in extra parameters
-    missing_environment_variables = [
-        missing_env_var
-        for missing_env_var in missing_environment_variables
-        if litellm_call_kwargs.get(envs_to_args.get(missing_env_var)) is None
-    ]
 
-    if missing_environment_variables:
-        missing_environment_details = [
-            (
-                f"'{missing_env_var}' environment variable or "
-                f"'{envs_to_args.get(missing_env_var)}' config key"
-            )
-            for missing_env_var in missing_environment_variables
+    # if the AWS credentials are defined in the endpoints yaml model config,
+    # either as referenced secret env vars or direct values, we need to pass them
+    # to the boto3 client to ensure that the client can connect to the AWS service.
+    additional_kwargs: Dict[str, Any] = {}
+    if AWS_ACCESS_KEY_ID_CONFIG_KEY in resolved_litellm_call_kwargs:
+        additional_kwargs[AWS_ACCESS_KEY_ID_CONFIG_KEY] = resolved_litellm_call_kwargs[
+            AWS_ACCESS_KEY_ID_CONFIG_KEY
         ]
+    if AWS_SECRET_ACCESS_KEY_CONFIG_KEY in resolved_litellm_call_kwargs:
+        additional_kwargs[AWS_SECRET_ACCESS_KEY_CONFIG_KEY] = (
+            resolved_litellm_call_kwargs[AWS_SECRET_ACCESS_KEY_CONFIG_KEY]
+        )
+    if AWS_SESSION_TOKEN_CONFIG_KEY in resolved_litellm_call_kwargs:
+        additional_kwargs[AWS_SESSION_TOKEN_CONFIG_KEY] = resolved_litellm_call_kwargs[
+            AWS_SESSION_TOKEN_CONFIG_KEY
+        ]
+    if AWS_REGION_NAME_CONFIG_KEY in resolved_litellm_call_kwargs:
+        additional_kwargs["region_name"] = resolved_litellm_call_kwargs[
+            AWS_REGION_NAME_CONFIG_KEY
+        ]
+
+    try:
+        # We are using the boto3 client because it can discover the AWS credentials
+        # from the environment variables, credentials file, or IAM roles.
+        # This is necessary to ensure that the client can connect to the AWS service.
+        aws_client = boto3.client(provider, **additional_kwargs)
+
+        # Using different method calls available to different AWS clients
+        # to test the connection
+        if provider == AWS_SAGEMAKER_PROVIDER:
+            aws_client.list_models()
+        elif provider == AWS_BEDROCK_PROVIDER:
+            aws_client.get_model_invocation_logging_configuration()
+
+    except (ClientError, BotoCoreError) as exc:
         event_info = (
-            f"The following environment variables or configuration keys are "
-            f"missing: "
-            f"{', '.join(missing_environment_details)}. "
-            f"These settings are required for API calls."
+            f"Failed to validate AWS setup for LiteLLM clients: {exc}. "
+            f"Ensure that you are using one of the available authentication methods:"
+            f"credentials file, environment variables, or IAM roles. "
+            f"Also, ensure that the AWS region is set correctly. "
         )
         structlogger.error(
-            f"{source_log}.validate_aws_environment_variables",
+            f"{source_log}.validate_aws_credentials_for_litellm_clients",
             event_info=event_info,
-            missing_environment_variables=missing_environment_variables,
+            exception=str(exc),
+            model_name=litellm_model_name,
         )
         raise ProviderClientValidationError(event_info)
 

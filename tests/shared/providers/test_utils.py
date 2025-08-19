@@ -1,4 +1,5 @@
 import pytest
+from moto import mock_aws
 
 from rasa.shared.constants import (
     AWS_ACCESS_KEY_ID_CONFIG_KEY,
@@ -21,7 +22,7 @@ from rasa.shared.providers._utils import validate_aws_setup_for_litellm_clients
             {
                 AWS_ACCESS_KEY_ID_CONFIG_KEY: "key_id",
                 AWS_SECRET_ACCESS_KEY_CONFIG_KEY: "secret_key",
-                AWS_REGION_NAME_CONFIG_KEY: "region",
+                AWS_REGION_NAME_CONFIG_KEY: "us-east-1",
                 AWS_SESSION_TOKEN_CONFIG_KEY: "token",
             },
             {},
@@ -30,7 +31,7 @@ from rasa.shared.providers._utils import validate_aws_setup_for_litellm_clients
         # All settings are provided through config keys and env vars
         (
             {
-                AWS_REGION_NAME_CONFIG_KEY: "region",
+                AWS_REGION_NAME_CONFIG_KEY: "us-east-1",
                 AWS_SESSION_TOKEN_CONFIG_KEY: "token",
             },
             {
@@ -42,7 +43,7 @@ from rasa.shared.providers._utils import validate_aws_setup_for_litellm_clients
         # Missing one setting (access key id)
         (
             {
-                AWS_REGION_NAME_CONFIG_KEY: "region",
+                AWS_REGION_NAME_CONFIG_KEY: "us-east-1",
                 AWS_SESSION_TOKEN_CONFIG_KEY: "token",
             },
             {
@@ -53,7 +54,7 @@ from rasa.shared.providers._utils import validate_aws_setup_for_litellm_clients
         # Missing multiple settings (access key id and aws secret access key)
         (
             {
-                AWS_REGION_NAME_CONFIG_KEY: "region",
+                AWS_REGION_NAME_CONFIG_KEY: "us-east-1",
                 AWS_SESSION_TOKEN_CONFIG_KEY: "token",
             },
             {},
@@ -82,9 +83,10 @@ def test_validate_aws_setup_for_litellm_clients(
     if should_raise_error:
         with pytest.raises(ProviderClientValidationError):
             validate_aws_setup_for_litellm_clients(
-                litellm_model_name, available_call_kwargs, "test"
+                litellm_model_name, available_call_kwargs, "test", "bedrock"
             )
     else:
-        validate_aws_setup_for_litellm_clients(
-            litellm_model_name, available_call_kwargs, "test"
-        )
+        with mock_aws():
+            validate_aws_setup_for_litellm_clients(
+                litellm_model_name, available_call_kwargs, "test", "bedrock"
+            )

@@ -2,6 +2,7 @@ from typing import List
 
 import pytest
 import structlog
+from moto import mock_aws
 from pytest import MonkeyPatch
 
 from rasa.shared.exceptions import ProviderClientValidationError
@@ -9,7 +10,7 @@ from rasa.shared.providers.llm.default_litellm_llm_client import DefaultLiteLLMC
 from rasa.shared.providers.llm.llm_client import LLMClient
 
 
-class TestDefaultLiteLLMEmbeddingClient:
+class TestDefaultLiteLLMClient:
     @pytest.fixture
     def client(self) -> DefaultLiteLLMClient:
         config = {
@@ -93,6 +94,7 @@ class TestDefaultLiteLLMEmbeddingClient:
 
         assert found_validation_log
 
+    @mock_aws
     @pytest.mark.parametrize(
         "config, expected_model, expected_litellm_model_name, mock_env_vars",
         [
@@ -109,10 +111,34 @@ class TestDefaultLiteLLMEmbeddingClient:
                 ["COHERE_API_KEY"],
             ),
             (
-                {"provider": "sagemaker_chat", "model": "sagemaker_chat/endpoint-xyz"},
+                {
+                    "provider": "sagemaker_chat",
+                    "model": "sagemaker_chat/endpoint-xyz",
+                    "aws_region_name": "us-east-1",
+                    "aws_access_key_id": "mock_access_key",
+                    "aws_secret_access_key": "mock_secret_access_key",
+                    "aws_session_token": "mock_session_token",
+                },
                 "sagemaker_chat/endpoint-xyz",
                 "sagemaker_chat/endpoint-xyz",
                 [],
+            ),
+            (
+                {
+                    "provider": "bedrock",
+                    "model": "anthropic.claude-3-7-sonnet-20250219-v1:0",
+                    "aws_region_name": "us-east-1",
+                    "aws_access_key_id": "${MY_AWS_ACCESS_KEY_ID}",
+                    "aws_secret_access_key": "${MY_AWS_SECRET_ACCESS_KEY}",
+                    "aws_session_token": "${MY_AWS_SESSION_TOKEN}",
+                },
+                "anthropic.claude-3-7-sonnet-20250219-v1:0",
+                "bedrock/anthropic.claude-3-7-sonnet-20250219-v1:0",
+                [
+                    "MY_AWS_ACCESS_KEY_ID",
+                    "MY_AWS_SECRET_ACCESS_KEY",
+                    "MY_AWS_SESSION_TOKEN",
+                ],
             ),
             (
                 {

@@ -1,8 +1,10 @@
+from typing import List
 from unittest.mock import patch
 
 import litellm
 import pytest
 import structlog
+from moto import mock_aws
 from pytest import MonkeyPatch
 
 from rasa.shared.exceptions import ProviderClientValidationError
@@ -175,18 +177,38 @@ class TestDefaultLiteLLMEmbeddingClient:
 
         assert found_validation_log
 
+    @mock_aws
     @pytest.mark.parametrize(
-        "config, expected_model, expected_litellm_model_name",
+        "config, expected_model, expected_litellm_model_name, mock_env_vars",
         [
             (
                 {"provider": "cohere", "model": "test-cohere"},
                 "test-cohere",
                 "cohere/test-cohere",
+                ["COHERE_API_KEY"],
             ),
             (
                 {"provider": "cohere", "model": "cohere/test-cohere"},
                 "cohere/test-cohere",
                 "cohere/test-cohere",
+                ["COHERE_API_KEY"],
+            ),
+            (
+                {
+                    "provider": "bedrock",
+                    "model": "anthropic.claude-3-7-sonnet-20250219-v1:0",
+                    "aws_region_name": "us-east-1",
+                    "aws_access_key_id": "${MY_AWS_ACCESS_KEY_ID}",
+                    "aws_secret_access_key": "${MY_AWS_SECRET_ACCESS_KEY}",
+                    "aws_session_token": "${MY_AWS_SESSION_TOKEN}",
+                },
+                "anthropic.claude-3-7-sonnet-20250219-v1:0",
+                "bedrock/anthropic.claude-3-7-sonnet-20250219-v1:0",
+                [
+                    "MY_AWS_ACCESS_KEY_ID",
+                    "MY_AWS_SECRET_ACCESS_KEY",
+                    "MY_AWS_SESSION_TOKEN",
+                ],
             ),
         ],
     )
@@ -195,19 +217,21 @@ class TestDefaultLiteLLMEmbeddingClient:
         config: dict,
         expected_model: str,
         expected_litellm_model_name: str,
+        mock_env_vars: List[str],
         monkeypatch: MonkeyPatch,
     ):
         # Given
-        monkeypatch.setenv(
-            "COHERE_API_KEY",
-            "mock key in test_that_litellm_model_name_is_correctly_initialized",
-        )
+        for env_var in mock_env_vars:
+            monkeypatch.setenv(
+                env_var,
+                "mock key in test_that_litellm_model_name_is_correctly_initialized",
+            )
         # When
         client = DefaultLiteLLMEmbeddingClient.from_config(config)
         # Then
         assert client.model == expected_model
         assert client._litellm_model_name == expected_litellm_model_name
-        assert client.provider == "cohere"
+        assert client.provider == config["provider"]
 
     @pytest.mark.parametrize(
         "config, expected_model, api_key_env_var, api_base_env_var, expected_failure",
