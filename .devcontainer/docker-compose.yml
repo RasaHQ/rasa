@@ -29,7 +29,7 @@ services:
     # user: vscode
 
   db:
-    image: "bitnami/postgresql:11.15.0"
+    image: "bitnamilegacy/postgresql:11.15.0"
     restart: unless-stopped
     volumes:
       - postgres-data:/bitnami/postgresql
@@ -47,7 +47,7 @@ services:
 
   redis:
     restart: unless-stopped
-    image: "bitnami/redis:6.2.7"
+    image: "bitnamilegacy/redis:6.2.7"
     environment:
       REDIS_PASSWORD: "redis"
     expose:
