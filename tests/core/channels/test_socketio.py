@@ -8,8 +8,10 @@ from rasa.shared.core.trackers import DialogueStateTracker
 
 @pytest.fixture
 def socketio_output(default_tracker: DialogueStateTracker):
-    sio = AsyncMock()
-    output_channel = SocketIOOutput(sio, "bot")
+    sio_server = AsyncMock()
+    mock_input_channel = AsyncMock()
+    mock_input_channel.enable_silence_timeout = False
+    output_channel = SocketIOOutput(mock_input_channel, sio_server, "bot")
     output_channel.attach_tracker_state(default_tracker)
     return output_channel
 
@@ -38,7 +40,7 @@ async def test_socketio_handles_buttons_without_payload(
             room="recipient_id",
         ),
     ]
-    socketio_output.sio.emit.assert_has_calls(expected_calls, any_order=False)
+    socketio_output.sio_server.emit.assert_has_calls(expected_calls, any_order=False)
 
 
 async def test_socketio_handles_buttons_with_payload(socketio_output: SocketIOOutput):
@@ -67,4 +69,4 @@ async def test_socketio_handles_buttons_with_payload(socketio_output: SocketIOOu
             room="recipient_id",
         ),
     ]
-    socketio_output.sio.emit.assert_has_calls(expected_calls, any_order=False)
+    socketio_output.sio_server.emit.assert_has_calls(expected_calls, any_order=False)

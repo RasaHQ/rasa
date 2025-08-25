@@ -19,7 +19,7 @@ socket_proxy_clients = {}
 
 
 async def socketio_websocket_traffic_wrapper(
-    sio: AsyncServer,
+    sio_server: AsyncServer,
     running_bots: Dict[str, BotSession],
     sid: str,
     auth: Optional[Dict],
@@ -55,7 +55,9 @@ async def socketio_websocket_traffic_wrapper(
         structlogger.error("model_runner.bot_not_alive", deployment_id=deployment_id)
         raise ConnectionRefusedError("model_runner.bot_not_alive")
 
-    client = await create_bridge_client(sio, bot.internal_url, sid, deployment_id)
+    client = await create_bridge_client(
+        sio_server, bot.internal_url, sid, deployment_id
+    )
 
     if client.sid is not None:
         structlogger.debug(
@@ -70,20 +72,24 @@ async def socketio_websocket_traffic_wrapper(
         raise ConnectionRefusedError("model_runner.bot_connection_failed")
 
 
-def create_bridge_server(sio: AsyncServer, running_bots: Dict[str, BotSession]) -> None:
+def create_bridge_server(
+    sio_server: AsyncServer, running_bots: Dict[str, BotSession]
+) -> None:
     """Create handlers for the socket server side.
 
     Forwards messages coming from the user to the bot.
     """
 
-    @sio.on("connect")
+    @sio_server.on("connect")
     async def socketio_websocket_traffic(
         sid: str, environ: Dict, auth: Optional[Dict]
     ) -> bool:
         """Bridge websockets between user chat socket and bot server."""
-        return await socketio_websocket_traffic_wrapper(sio, running_bots, sid, auth)
+        return await socketio_websocket_traffic_wrapper(
+            sio_server, running_bots, sid, auth
+        )
 
-    @sio.on("disconnect")
+    @sio_server.on("disconnect")
     async def disconnect(sid: str) -> None:
         """Disconnect the bot connection."""
         structlogger.debug("model_runner.bot_disconnect", sid=sid)
@@ -91,7 +97,7 @@ def create_bridge_server(sio: AsyncServer, running_bots: Dict[str, BotSession]) 
             await socket_proxy_clients[sid].disconnect()
             del socket_proxy_clients[sid]
 
-    @sio.on("*")
+    @sio_server.on("*")
     async def handle_message(event: str, sid: str, data: Dict[str, Any]) -> None:
         """Bridge messages between user and bot.
 
@@ -108,7 +114,7 @@ def create_bridge_server(sio: AsyncServer, running_bots: Dict[str, BotSession]) 
 
 
 async def create_bridge_client(
-    sio: AsyncServer, url: str, sid: str, deployment_id: str
+    sio_server: AsyncServer, url: str, sid: str, deployment_id: str
 ) -> AsyncClient:
     """Create a new socket bridge client.
 
@@ -123,36 +129,36 @@ async def create_bridge_client(
         structlogger.debug(
             "model_runner.bot_session_confirmed", deployment_id=deployment_id
         )
-        await sio.emit("session_confirm", room=sid)
+        await sio_server.emit("session_confirm", room=sid)
 
     @client.event  # type: ignore[misc]
     async def bot_message(data: Dict[str, Any]) -> None:
         structlogger.debug("model_runner.bot_message", deployment_id=deployment_id)
-        await sio.emit("bot_message", data, room=sid)
+        await sio_server.emit("bot_message", data, room=sid)
 
     @client.event  # type: ignore[misc]
     async def error(data: Dict[str, Any]) -> None:
         structlogger.debug(
             "model_runner.bot_error", deployment_id=deployment_id, data=data
         )
-        await sio.emit("error", data, room=sid)
+        await sio_server.emit("error", data, room=sid)
 
     @client.event  # type: ignore[misc]
     async def tracker(data: Dict[str, Any]) -> None:
-        await sio.emit("tracker", json.loads(data), room=sid)
+        await sio_server.emit("tracker", json.loads(data), room=sid)
 
     @client.event  # type: ignore[misc]
     async def disconnect() -> None:
         structlogger.debug(
             "model_runner.bot_connection_closed", deployment_id=deployment_id
         )
-        await sio.emit("disconnect", room=sid)
+        await sio_server.emit("disconnect", room=sid)
 
     @client.event  # type: ignore[misc]
     async def connect_error() -> None:
         structlogger.error(
             "model_runner.bot_connection_error", deployment_id=deployment_id
         )
-        await sio.emit("disconnect", room=sid)
+        await sio_server.emit("disconnect", room=sid)
 
     return client

@@ -42,10 +42,20 @@ from rasa.utils import licensing
 logger = logging.getLogger()  # get the root logger
 
 
-def create_http_input_channels(
+def create_input_channels(
     channel: Optional[Text], credentials_file: Optional[Text]
 ) -> List[InputChannel]:
-    """Instantiate the chosen input channel."""
+    """Instantiate the chosen input channel.
+
+    Args:
+        channel (optional): The name of the specific input channel to create.
+        credentials_file: Path to the credentials file containing channel credentials.
+
+    Returns:
+        A list of instantiated input channels. If a specific channel is provided,
+        it returns a list with that single channel. If no channel is specified,
+        it returns a list of all channels defined in the credentials file.
+    """
     if credentials_file:
         all_credentials = read_config_file(credentials_file)
     else:
@@ -253,7 +263,7 @@ def serve_application(
     if not channel and not credentials:
         channel = "cmdline"
 
-    input_channels = create_http_input_channels(channel, credentials)
+    input_channels = create_input_channels(channel, credentials)
 
     if inspect:
         logger.info("Starting development inspector.")

@@ -19,7 +19,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 def studio_input() -> StudioChatInput:
     sio = AsyncMock()
     output_channel = StudioChatInput("", {}, {})
-    output_channel.sio = sio
+    output_channel.sio_server = sio
     return output_channel
 
 
@@ -70,7 +70,7 @@ async def test_tracker_update_plugin_triggers_after_new_user_message(
             room=default_tracker.sender_id,
         ),
     ]
-    studio_input.sio.emit.assert_has_calls(expected_calls, any_order=False)
+    studio_input.sio_server.emit.assert_has_calls(expected_calls, any_order=False)
 
 
 async def test_tracker_update_plugin_triggers_after_action_executed(
@@ -96,7 +96,7 @@ async def test_tracker_update_plugin_triggers_after_action_executed(
             room=default_tracker.sender_id,
         ),
     ]
-    studio_input.sio.emit.assert_has_calls(expected_calls, any_order=False)
+    studio_input.sio_server.emit.assert_has_calls(expected_calls, any_order=False)
 
 
 async def test_studio_chat_handle_tracker_update(
@@ -119,8 +119,8 @@ async def test_studio_chat_handle_tracker_update(
     }
     await studio_input.handle_tracker_update("some_sid", data)
 
-    assert len(studio_input.sio.emit.call_args_list) == 1
-    call = studio_input.sio.emit.call_args_list[0]
+    assert len(studio_input.sio_server.emit.call_args_list) == 1
+    call = studio_input.sio_server.emit.call_args_list[0]
     assert call.args[0] == "tracker"
     # check that the new message is present and the old one isn't
     assert "hello world" in call.args[1]

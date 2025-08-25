@@ -81,7 +81,7 @@ responses:
         rephrase: True
 
   utter_inform_hangup:
-    - text: It seems you are not there anymore. I will hang up shortly.
+    - text: I haven’t heard from you, so I’ll end our conversation shortly.
       metadata:
         rephrase: True
 

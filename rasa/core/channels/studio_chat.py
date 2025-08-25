@@ -47,7 +47,6 @@ if TYPE_CHECKING:
     from sanic import Sanic, Websocket  # type: ignore[attr-defined]
     from socketio import AsyncServer
 
-    from rasa.core.channels.channel import UserMessage
     from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -153,6 +152,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         jwt_key: Optional[Text] = None,
         jwt_method: Optional[Text] = "HS256",
         metadata_key: Optional[Text] = "metadata",
+        enable_silence_timeout: bool = False,
     ) -> None:
         """Creates a `StudioChatInput` object."""
         from rasa.core.agent import Agent
@@ -170,6 +170,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             jwt_key=jwt_key,
             jwt_method=jwt_method,
             metadata_key=metadata_key,
+            enable_silence_timeout=enable_silence_timeout,
         )
 
         # Initialize the Voice Input Channel
@@ -210,14 +211,15 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             jwt_key=credentials.get("jwt_key"),
             jwt_method=credentials.get("jwt_method", "HS256"),
             metadata_key=credentials.get("metadata_key", "metadata"),
+            enable_silence_timeout=credentials.get("enable_silence_timeout", False),
         )
 
     async def emit(self, event: str, data: str, room: str) -> None:
         """Emits an event to the websocket."""
-        if not self.sio:
+        if not self.sio_server:
             structlogger.error("studio_chat.emit.sio_not_initialized")
             return
-        await self.sio.emit(event, data, room=room)
+        await self.sio_server.emit(event, data, room=room)
 
     def _register_tracker_update_hook(self) -> None:
         plugin_manager().register(StudioTrackerUpdatePlugin(self))
@@ -250,8 +252,8 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
 
     async def on_message_proxy(
         self,
-        on_new_message: Callable[["UserMessage"], Awaitable[Any]],
-        message: "UserMessage",
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        message: UserMessage,
     ) -> None:
         """Proxies the on_new_message call to the underlying channel.
 
@@ -377,7 +379,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
                 call_state.is_bot_speaking = True
         return ContinueConversationAction()
 
-    def create_output_channel(
+    def _create_output_channel(
         self, voice_websocket: "Websocket", tts_engine: TTSEngine
     ) -> VoiceOutputChannel:
         """Create a voice output channel."""
@@ -407,7 +409,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
 
         # Create a websocket adapter for this connection
         ws_adapter = SocketIOVoiceWebsocketAdapter(
-            sio=self.sio,
+            sio_server=self.sio_server,
             session_id=session_id,
             sid=sid,
             bot_message_evt=self.bot_message_evt,
@@ -455,12 +457,12 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             task.cancel()
 
     def blueprint(
-        self, on_new_message: Callable[["UserMessage"], Awaitable[Any]]
+        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> SocketBlueprint:
         proxied_on_message = partial(self.on_message_proxy, on_new_message)
         socket_blueprint = super().blueprint(proxied_on_message)
 
-        if not self.sio:
+        if not self.sio_server:
             structlogger.error("studio_chat.blueprint.sio_not_initialized")
             return socket_blueprint
 
@@ -470,12 +472,12 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         ) -> None:
             self.agent = app.ctx.agent
 
-        @self.sio.on("disconnect", namespace=self.namespace)
+        @self.sio_server.on("disconnect", namespace=self.namespace)
         async def disconnect(sid: Text) -> None:
             structlogger.debug("studio_chat.sio.disconnect", sid=sid)
             self._cleanup_tasks_for_sid(sid)
 
-        @self.sio.on("session_request", namespace=self.namespace)
+        @self.sio_server.on("session_request", namespace=self.namespace)
         async def session_request(sid: Text, data: Optional[Dict]) -> None:
             """Overrides the base SocketIOInput session_request handler.
 
@@ -495,7 +497,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             if data and data.get("is_voice", False):
                 self._start_voice_session(data["session_id"], sid, proxied_on_message)
 
-        @self.sio.on(self.user_message_evt, namespace=self.namespace)
+        @self.sio_server.on(self.user_message_evt, namespace=self.namespace)
         async def handle_message(sid: Text, data: Dict) -> None:
             """Overrides the base SocketIOInput handle_message handler."""
             # Handle voice messages
@@ -509,7 +511,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             # Handle text messages
             await self.handle_user_message(sid, data, proxied_on_message)
 
-        @self.sio.on("update_tracker", namespace=self.namespace)
+        @self.sio_server.on("update_tracker", namespace=self.namespace)
         async def on_update_tracker(sid: Text, data: Dict) -> None:
             await self.handle_tracker_update(sid, data)
 
@@ -555,9 +557,9 @@ class SocketIOVoiceWebsocketAdapter:
     """Adapter to make Socket.IO work like a Sanic WebSocket for voice channels."""
 
     def __init__(
-        self, sio: "AsyncServer", session_id: str, sid: str, bot_message_evt: str
+        self, sio_server: "AsyncServer", session_id: str, sid: str, bot_message_evt: str
     ) -> None:
-        self.sio = sio
+        self.sio_server = sio_server
         self.bot_message_evt = bot_message_evt
         self._closed = False
         self._receive_queue: asyncio.Queue[Any] = asyncio.Queue()
@@ -576,7 +578,7 @@ class SocketIOVoiceWebsocketAdapter:
     async def send(self, data: Any) -> None:
         """Send data to the client."""
         if not self.closed:
-            await self.sio.emit(self.bot_message_evt, data, room=self.sid)
+            await self.sio_server.emit(self.bot_message_evt, data, room=self.sid)
 
     async def recv(self) -> Any:
         """Receive data from the client."""

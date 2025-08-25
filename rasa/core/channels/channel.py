@@ -102,6 +102,9 @@ class UserMessage:
         return f"{self.__class__.__name__}({self.text})"
 
 
+OnNewMessageType = Callable[[UserMessage], Awaitable[Any]]
+
+
 def register(
     input_channels: List[InputChannel], app: Sanic, route: Optional[Text]
 ) -> None:
@@ -135,9 +138,7 @@ class InputChannel:
     def url_prefix(self) -> Text:
         return self.name()
 
-    def blueprint(
-        self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
-    ) -> Blueprint:
+    def blueprint(self, on_new_message: OnNewMessageType) -> Blueprint:
         """Defines a Sanic blueprint.
 
         The blueprint will be attached to a running sanic server and handle

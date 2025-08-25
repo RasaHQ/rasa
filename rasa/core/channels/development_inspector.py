@@ -195,7 +195,7 @@ class DevelopmentInspectProxy(InputChannel):
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> "Blueprint":
         """Defines a Sanic blueprint."""
-        self.sio = AsyncServer(async_mode="sanic", cors_allowed_origins=[])
+        self.sio_server = AsyncServer(async_mode="sanic", cors_allowed_origins=[])
         underlying_webhook: Blueprint = self.underlying.blueprint(
             partial(self.on_message_proxy, on_new_message)
         )

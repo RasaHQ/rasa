@@ -11,6 +11,11 @@ from sanic import Websocket  # type: ignore
 from sanic.exceptions import ServerError, WebsocketClosed
 
 from rasa.core.channels import InputChannel, OutputChannel, UserMessage
+from rasa.core.channels.constants import (
+    USER_CONVERSATION_SESSION_END,
+    USER_CONVERSATION_SESSION_START,
+    USER_CONVERSATION_SILENCE_TIMEOUT,
+)
 from rasa.core.channels.voice_ready.utils import (
     CallParameters,
     validate_voice_license_scope,
@@ -48,9 +53,6 @@ from rasa.utils.io import remove_emojis
 logger = structlog.get_logger(__name__)
 
 # define constants for the voice channel
-USER_CONVERSATION_SESSION_END = "/session_end"
-USER_CONVERSATION_SESSION_START = "/session_start"
-USER_CONVERSATION_SILENCE_TIMEOUT = "/silence_timeout"
 
 
 @dataclass
