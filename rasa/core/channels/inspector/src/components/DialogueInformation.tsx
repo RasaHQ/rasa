@@ -13,13 +13,14 @@ import {
   useTab,
   useToast,
 } from '@chakra-ui/react'
+import { useEffect } from 'react'
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { useCopyToClipboard } from 'usehooks-ts'
+import { formatTestCases } from '../helpers/formatters'
 import { useOurTheme } from '../theme'
 import { Event, Slot } from '../types'
-import { formatTestCases } from '../helpers/formatters'
-import { useCopyToClipboard } from 'usehooks-ts'
-import { useEffect } from 'react'
 import { FullscreenButton } from './FullscreenButton'
+import { LatencyDisplay } from './LatencyDisplay'
 import { SlotTable, Slots } from './Slots'
 
 interface Props extends FlexProps {
@@ -27,6 +28,7 @@ interface Props extends FlexProps {
   events: Event[]
   story: string
   slots: Slot[]
+  latency: any
 }
 
 export const DialougeInformation = ({
@@ -35,6 +37,7 @@ export const DialougeInformation = ({
   events,
   story,
   slots,
+  latency,
   ...props
 }: Props) => {
   const toast = useToast()
@@ -105,6 +108,7 @@ export const DialougeInformation = ({
           <CustomTab>Slots</CustomTab>
           <CustomTab>End-2-end test</CustomTab>
           <CustomTab>Tracker state</CustomTab>
+          <CustomTab>Latency</CustomTab>
         </TabList>
         <TabPanels height="100%" overflow="hidden">
           <TabPanel sx={tabPanelSx}>
@@ -159,6 +163,11 @@ export const DialougeInformation = ({
                 </SyntaxHighlighter>
               </FullscreenButton>
             </HStack>
+          </TabPanel>
+          <TabPanel sx={tabPanelSx}>
+            <Box sx={overflowBox}>
+              <LatencyDisplay latency={latency} />
+            </Box>
           </TabPanel>
         </TabPanels>
       </Tabs>

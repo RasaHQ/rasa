@@ -5,26 +5,25 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react'
-import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
-import { useOurTheme } from './theme'
-import { Welcome } from './components/Welcome'
-import { DialogueStack } from './components/DialogueStack'
-import { DialougeInformation } from './components/DialogueInformation'
-import { LoadingSpinner } from './components/LoadingSpinner'
+import queryString from 'query-string'
+import { useCallback, useEffect, useState } from 'react'
+import useWebSocket, { ReadyState } from 'react-use-websocket'
+import { Chat } from './components/Chat'
 import { DiagramFlow } from './components/DiagramFlow'
+import { DialougeInformation } from './components/DialogueInformation'
+import { DialogueStack } from './components/DialogueStack'
+import { LoadingSpinner } from './components/LoadingSpinner'
 import { RecruitmentPanel } from './components/RecruitmentPanel'
+import { Welcome } from './components/Welcome'
 import { formatSlots } from './helpers/formatters'
-import { Slot, Stack, Event, Flow, SelectedStack, Tracker } from './types'
 import {
   createHistoricalStack,
   flowStepTrail,
   updatedActiveFrame,
 } from './helpers/utils'
-import queryString from 'query-string'
-import { Chat } from './components/Chat'
-import { LatencyDisplay } from './components/LatencyDisplay'
-import useWebSocket, { ReadyState } from 'react-use-websocket'
+import { useOurTheme } from './theme'
+import { Event, Flow, SelectedStack, Slot, Stack, Tracker } from './types'
 
 export function App() {
   const toast = useToast()
@@ -252,6 +251,7 @@ export function App() {
             slots={slots}
             events={events}
             story={story}
+            latency={latency}
           />
         </Grid>
       </GridItem>
@@ -265,7 +265,6 @@ export function App() {
       </GridItem>
       <GridItem overflow="hidden">
         <Grid sx={rightColumnSx}>
-          <LatencyDisplay latency={latency} sx={boxSx} />
           {shouldShowTranscript && (
             <GridItem sx={chatContainerSx}>
               <Chat events={events || []} />
