@@ -1,8 +1,11 @@
+import os
 import sys
+import tarfile
 import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import List, Text
+from unittest.mock import MagicMock, Mock, patch
 
 import freezegun
 import pytest
@@ -15,6 +18,8 @@ from rasa.engine.graph import GraphModelConfiguration, GraphSchema, SchemaNode
 from rasa.engine.storage.local_model_storage import (
     MODEL_ARCHIVE_METADATA_FILE,
     LocalModelStorage,
+    create_combined_filter,
+    filter_normpath,
 )
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelMetadata, ModelStorage
@@ -380,3 +385,139 @@ def test_create_model_package_with_non_existing_dir(
     )
 
     assert path.exists()
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32", reason="The test needs to be executed only on Windows"
+)
+@patch("TarSafe.open")
+def test_extract_archive_uses_filter_on_windows(mock_tar_open: Mock):
+    """Test that extraction filter is always applied on Windows"""
+    # Given
+    mock_tar = MagicMock()
+    mock_tar_open.return_value.__enter__.return_value = mock_tar
+
+    # When
+    LocalModelStorage._extract_archive_to_directory("test.tar.gz", Path("/temp"))
+
+    # Then
+    assert mock_tar.extractall.call_count == 1
+    assert mock_tar.extraction_filter is not None
+
+    call_args = mock_tar.extractall.call_args_list[0]
+    assert call_args[0][0] == "\\\\?\\\\temp"
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32", reason="The test needs to be executed only on Windows"
+)
+@patch("TarSafe.open")
+def test_extract_archive_fallback_on_exception(mock_tar_open: Mock):
+    """Test fallback to normal extraction when filter approach fails"""
+    # Given
+    mock_tar = MagicMock()
+    mock_tar_open.return_value.__enter__.return_value = mock_tar
+
+    mock_tar.extractall.side_effect = [Exception("failing"), None]
+
+    # When
+    LocalModelStorage._extract_archive_to_directory("test.tar.gz", Path("/temp"))
+
+    # Then
+    assert mock_tar.extractall.call_count == 2
+
+    # First call: with \\?\ prefix and filter
+    first_call = mock_tar.extractall.call_args_list[0]
+    assert first_call[0][0].startswith("\\\\?\\")
+    assert "temp" in first_call[0][0]
+    assert mock_tar.extraction_filter is not None
+
+    # Second call: fallback without prefix
+    second_call = mock_tar.extractall.call_args_list[1]
+    assert second_call[0][0] == Path("/temp")
+
+
+@patch("tarsafe.TarSafe.open")
+def test_extract_archive_no_filter(mock_tar_open: Mock):
+    """Test that no special handling occurs on non-Windows platforms"""
+    # Given
+    mock_tar = MagicMock()
+    mock_tar_open.return_value.__enter__.return_value = mock_tar
+
+    # When
+    LocalModelStorage._extract_archive_to_directory("test.tar.gz", Path("/temp"))
+
+    # Then
+    assert mock_tar.extractall.call_count == 1
+
+    call_args = mock_tar.extractall.call_args_list[0]
+    assert call_args[0][0] == Path("/temp")
+    assert "\\\\?\\" not in str(call_args[0][0])
+
+
+def test_filter_normpath():
+    """Test the filter_normpath function directly"""
+    # Given
+    member = Mock(spec=tarfile.TarInfo)
+    member.name = "some/path/../with/../redundant/./parts"
+
+    # When
+    result = filter_normpath(member, "/dest")
+
+    # Then
+    assert "../" not in result.name
+    assert "./" not in result.name
+    expected = os.path.normpath("some/path/../with/../redundant/./parts")
+    assert result.name == expected
+
+
+def test_create_combined_filter_with_existing():
+    """Test combined filter when existing filter exists"""
+
+    # Given
+    def existing_filter(member, dest_path):
+        member.existing_called = True
+        return member
+
+    member = Mock(spec=tarfile.TarInfo)
+    member.name = "test/../path"
+
+    # When
+    combined = create_combined_filter(existing_filter)
+    result = combined(member, "/dest")
+
+    # Then
+    assert hasattr(result, "existing_called")
+    assert result.name == "path"  # normalized
+
+
+def test_create_combined_filter_existing_rejects():
+    """Test combined filter respects existing filter rejection"""
+
+    # Given
+    def rejecting_filter(member, dest_path):
+        return None  # Reject the member
+
+    member = Mock()
+    member.name = "test/path"
+
+    # When
+    combined = create_combined_filter(rejecting_filter)
+    result = combined(member, "/dest")
+
+    # Then
+    assert result is None  # Should be rejected
+
+
+def test_create_combined_filter_no_existing():
+    """Test combined filter when no existing filter"""
+    # Given
+    member = Mock()
+    member.name = "test/../path"
+
+    # When
+    combined = create_combined_filter(None)
+
+    # Then
+    result = combined(member, "/dest")
+    assert result.name == "path"  # Only normalization applied

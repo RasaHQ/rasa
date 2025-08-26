@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import logging
+import os
 import shutil
 import sys
+import tarfile
 import tempfile
 import uuid
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Generator, Optional, Text, Tuple, Union
+from typing import Callable, Generator, Optional, Text, Tuple, Union
 
 from tarsafe import TarSafe
 
@@ -55,6 +57,35 @@ def windows_safe_temporary_directory(
         with tempfile.TemporaryDirectory() as temporary_directory:
             temporary_directory = rasa.utils.common.decode_bytes(temporary_directory)
             yield temporary_directory
+
+
+def filter_normpath(member: tarfile.TarInfo, dest_path: str) -> tarfile.TarInfo:
+    """Normalize tar member paths for safe extraction"""
+    if member.name:
+        member.name = os.path.normpath(member.name)
+    return member
+
+
+FilterFunction = Callable[[tarfile.TarInfo, str], Optional[tarfile.TarInfo]]
+
+
+def create_combined_filter(existing_filter: Optional[FilterFunction]) -> FilterFunction:
+    """Create a filter that combines existing filter with path normalization"""
+
+    def combined_filter(
+        member: tarfile.TarInfo, dest_path: str
+    ) -> Optional[tarfile.TarInfo]:
+        """Apply existing filter first, then path normalization"""
+        if existing_filter is not None:
+            filtered_member = existing_filter(member, dest_path)
+            if filtered_member is None:
+                return None  # Rejected by existing filter
+            member = filtered_member  # Use the filtered result
+
+        # Apply our path normalization
+        return filter_normpath(member, dest_path)
+
+    return combined_filter
 
 
 class LocalModelStorage(ModelStorage):
@@ -122,7 +153,19 @@ class LocalModelStorage(ModelStorage):
                 # this restriction in environments where it's not possible
                 # to override this behavior, mostly for internal policy reasons
                 # reference: https://stackoverflow.com/a/49102229
-                tar.extractall(f"\\\\?\\{temporary_directory}")
+                try:
+                    # Use extraction filter to normalize paths for compatibility
+                    # before trying the \\?\ prefix approach first
+                    prev_filter = getattr(tar, "extraction_filter", None)
+                    tar.extraction_filter = create_combined_filter(prev_filter)
+                    tar.extractall(f"\\\\?\\{temporary_directory}")
+                except Exception:
+                    # Fallback for Python versions with tarfile security fix
+                    logger.warning(
+                        "Failed to extract model archive with long path support. "
+                        "Falling back to regular extraction."
+                    )
+                    tar.extractall(temporary_directory)
             else:
                 tar.extractall(temporary_directory)
         LocalModelStorage._assert_not_rasa2_archive(temporary_directory)
