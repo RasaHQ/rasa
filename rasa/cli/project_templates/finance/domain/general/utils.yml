@@ -1,0 +1,13 @@
+version: "3.1"
+
+slots:
+  current_date:
+    type: text
+  username:
+    type: text
+  email_address:
+    type: text
+  physical_address:
+    type: text
+  segment:
+    type: text

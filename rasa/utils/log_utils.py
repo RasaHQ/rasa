@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import structlog
 from structlog.dev import ConsoleRenderer
@@ -37,6 +37,7 @@ class HumanConsoleRenderer(ConsoleRenderer):
 def configure_structlog(
     log_level: Optional[int] = None,
     include_time: bool = False,
+    additional_processors: Optional[List[structlog.typing.Processor]] = None,
 ) -> None:
     """Configure logging of the server."""
     if log_level is None:  # Log level NOTSET is 0 so we use `is None` here
@@ -74,6 +75,9 @@ def configure_structlog(
 
     if include_time:
         shared_processors.append(structlog.processors.TimeStamper(fmt="iso"))
+
+    if additional_processors:
+        shared_processors.extend(additional_processors)
 
     if not FORCE_JSON_LOGGING and sys.stderr.isatty():
         # Pretty printing when we run in a terminal session.

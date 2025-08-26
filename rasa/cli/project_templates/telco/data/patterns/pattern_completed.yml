@@ -1,0 +1,7 @@
+flows:
+  pattern_completed: # this a patters that is triggered at the end of every flow
+    description: all flows have been completed and there is nothing else to be done
+    name: pattern completed
+    steps:
+      - noop: True # this means no operation and when this command is detected CALM won't do any actions. it can also be replaced by an utter.
+        next: END

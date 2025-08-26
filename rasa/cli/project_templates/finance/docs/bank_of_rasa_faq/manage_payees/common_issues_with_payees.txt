@@ -1,0 +1,8 @@
+Q: What should I do if I encounter issues with an authorised payee?
+A: Double-check the payee's details for accuracy and ensure they are still an authorised payee on your account.
+
+Q: Why can’t I transfer money to a specific payee?
+A: If a payee is inactive or has been removed, you won't be able to transfer money to them. Check your payee list for updates.
+
+Q: How can I resolve a problem with a payment made to a payee?
+A: Contact customer support for assistance, providing details of the transaction and the issue encountered.

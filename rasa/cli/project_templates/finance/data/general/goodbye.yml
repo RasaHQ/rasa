@@ -1,0 +1,6 @@
+flows: 
+  goodbye_flow:
+    description: Handle user goodbye messages, say farewell, and collect feedback
+    steps:
+      - action: utter_goodbye
+      - link: leave_feedback

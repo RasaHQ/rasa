@@ -1,0 +1,44 @@
+[
+    {
+      "branch_id": 1,
+      "name": "Eto Demerzel",
+      "email": "eto.demerzel@trantorbranch.com",
+      "phone": "02079460001",
+      "position": "Business Loan Advisor"
+    },
+    {
+      "branch_id": 1,
+      "name": "Bayta Darell",
+      "email": "bayta.darell@trantorbranch.com",
+      "phone": "02079460003",
+      "position": "Wealth Management Advisor"
+    },
+    {
+      "branch_id": 2,
+      "name": "Daneel Olivaw",
+      "email": "daneel.olivaw@terminusbranch.com",
+      "phone": "02079460004",
+      "position": "Retirement Planning Advisor"
+    },
+    {
+      "branch_id": 3,
+      "name": "Hober Mallow",
+      "email": "hober.mallow@asimovbranch.com",
+      "phone": "02079460007",
+      "position": "Personal Finance Advisor"
+    },
+    {
+      "branch_id": 3,
+      "name": "Bel Riose",
+      "email": "bel.riose@asimovbranch.com",
+      "phone": "02079460008",
+      "position": "Investment Advisor"
+    },
+    {
+      "branch_id": 3,
+      "name": "Pritcher",
+      "email": "pritcher@asimovbranch.com",
+      "phone": "02079460009",
+      "position": "Investment Advisor"
+    }
+  ]

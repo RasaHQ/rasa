@@ -1,0 +1,16 @@
+version: "3.1"
+
+slots:
+  payee_removed:
+    type: bool
+
+responses:
+  utter_ask_payee_name_to_remove:
+    - text: "Which payee would you like to remove?"
+  utter_payee_removed_success:
+    - text: "{payee_name} has been successfully removed from your list of authorised payees"
+  utter_payee_removed_failure:
+    - text: "I'm terribly sorry, but there was an error removing {payee_name}. Please try again later or contact Customer Support"
+
+actions:
+  - action_remove_payee

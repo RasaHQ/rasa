@@ -1,0 +1,102 @@
+actions:
+  - action_get_customer_info
+  - action_verify_bill_by_date
+  - action_recap_bill
+
+slots:
+  bill_month:
+    type: categorical
+    mappings:
+      - type: from_llm
+    values:
+      - January
+      - February
+      - March
+      - April
+      - May
+      - June
+      - July
+      - August
+      - September
+      - October
+      - November
+      - December
+
+  bill_amount:
+    type: float
+    mappings:
+      - type: controlled
+
+  user_authenticated:
+    type: bool
+    mappings:
+      - type: controlled
+    initial_value: True
+
+  average_bill:
+      type: float
+      mappings:
+        - type: controlled
+
+  difference:
+      type: float
+      mappings:
+        - type: controlled
+
+  breakdown_cost:
+      type: bool
+      mappings:
+        - type: from_llm
+
+  issue_solved:
+      type: bool
+      mappings:
+        - type: from_llm
+
+  more_bill_details:
+      type: bool
+      mappings:
+        - type: from_llm
+
+responses:
+  utter_ask_customer_id:
+    - text: |
+        Can you please provide me your customer id?
+
+  utter_ask_bill_month:
+    - text: |
+        Alright. Could you please specify the month? 📅
+
+  utter_ask_breakdown_cost:
+    - text: |
+        Would you like to see the breakdown of the costs?
+      buttons:
+        - title: "Yes, please"
+          payload: "/SetSlots(breakdown_cost=True)"
+        - title: "No, all good"
+          payload: "/SetSlots(breakdown_cost=False)"
+
+  utter_ask_issue_solved:
+    - text: |
+        Did I manage to provide all the information you need?
+      buttons:
+        - title: "Yes, all good"
+          payload: "/SetSlots(issue_solved=True)"
+        - title: "No, I need further help"
+          payload: "/SetSlots(issue_solved=False)"
+
+  utter_ask_more_bill_details:
+      - text: |
+          You can see more details in your account.
+          Would you like a link to the overview that contains all your bills?
+        buttons:
+        - title: "Yes, please"
+          payload: "/SetSlots(more_bill_details=True)"
+        - title: "No, it's enough"
+          payload: "/SetSlots(more_bill_details=False)"
+
+  utter_provide_bill_sources:
+      - text: |
+          I've provided a quick summary of your bill ⤵️
+          For full details, please log in to your account and check your billing history here:
+          https://companyName/account/your-bills 🔗

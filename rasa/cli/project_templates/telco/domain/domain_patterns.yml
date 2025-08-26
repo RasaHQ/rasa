@@ -1,0 +1,17 @@
+
+responses:
+  utter_more_help_needed_handoff_pattern: # add more information here, if you need this to connect to specific channel..
+    - text: |
+            Please hold on while I connect you to our expert 📲
+      image: "https://cdn-icons-png.flaticon.com/512/1042/1042127.png"
+  utter_connect_to_human:
+    - text: |
+        Let me connect you to our human support managers. They will help you further!
+
+  utter_cannot_handle:
+    - text: |
+          I appreciate your question!
+          That's a bit outside my expertise, but I'm here to help if your internet is slow or if you need help understanding your bill.
+          Would you like assistance with that?
+      metadata:
+        rephrase: true

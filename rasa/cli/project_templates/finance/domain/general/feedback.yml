@@ -1,0 +1,28 @@
+slots:
+  feedback_rating:
+    type: categorical
+    values: [thumbs_up, thumbs_down]
+    mappings:
+      - type: from_llm
+
+responses:
+  utter_ask_feedback_rating:
+    - text: "Before you go, how was your experience?"
+      buttons:
+        - title: "👍 Great"
+          payload: "/SetSlots(feedback_rating=thumbs_up)"
+        - title: "👎 Could be better"
+          payload: "/SetSlots(feedback_rating=thumbs_down)"
+
+  utter_thankyou_positive:
+    - text: "That's wonderful to hear! Thank you for your feedback! Have a fantastic day! 🌟"
+    - text: "So glad we could help! Thanks for the positive feedback! Take care! 😊"
+    - text: "Amazing! We're thrilled you had a great experience. Have a wonderful day! 🎉"
+
+  utter_thankyou_negative:
+    - text: "Thank you for your honest feedback. We're always working to improve our service. Have a good day."
+    - text: "We appreciate your feedback and will use it to make our service better. Thank you for your time."
+    - text: "Thanks for letting us know. Your feedback helps us improve. Take care!"
+
+actions:
+  - action_default_fallback

@@ -15,11 +15,11 @@ from rasa.model_manager import config
 from rasa.model_manager.utils import (
     logs_path,
     models_base_path,
-    subpath,
     write_encoded_data_to_file,
 )
 from rasa.model_manager.warm_rasa_process import start_rasa_process
 from rasa.studio.prompts import handle_prompts
+from rasa.utils.io import subpath
 
 structlogger = structlog.get_logger()
 

@@ -1,0 +1,29 @@
+[
+  {
+    "name": "John Smith",
+    "email": "john.smith@example.com",
+    "phone": "0123456789",
+    "address": "1 Psychohistorical Way, Trantor Square, London, SW1A 1AA",
+    "username": "john.smith",
+    "password": "smith123",
+    "segment": "Corporate"
+  },
+  {
+    "name": "Mary Brown",
+    "email": "mary.brown@example.com",
+    "phone": "0129876543",
+    "address": "2 Foundation Drive, Terminus Park, London, E1 6AN",
+    "username": "mary.brown",
+    "password": "brown123",
+    "segment": "Retail"
+  },
+  {
+    "name": "Dan Young",
+    "email": "dan.young@example.com",
+    "phone": "0123345678",
+    "address": "3 Scholar's Lane, Asimov Gardens, London, WC1B 5HA",
+    "username": "dan.young",
+    "password": "young123",
+    "segment": "SME"
+  }
+]

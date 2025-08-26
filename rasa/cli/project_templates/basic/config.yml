@@ -1,0 +1,23 @@
+# This file contains the configuration for the bot.
+# https://rasa.com/docs/reference/config/overview
+
+recipe: default.v1
+language: en
+assistant_id: placeholder_default
+
+pipeline:
+- name: SearchReadyLLMCommandGenerator
+  llm:
+    model_group: openai-gpt-4o
+  flow_retrieval:
+    active: false
+
+policies:
+- name: FlowPolicy
+- name: EnterpriseSearchPolicy
+  vector_store:
+    type: "faiss"
+    source: "./docs"
+  llm:
+    model_group: openai-gpt-4o
+  check_relevancy: true

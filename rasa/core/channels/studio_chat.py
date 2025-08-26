@@ -17,9 +17,9 @@ from typing import (
     Optional,
     Text,
     Tuple,
+    Union,
 )
 
-import orjson
 import structlog
 
 from rasa.core.channels import UserMessage
@@ -55,7 +55,7 @@ structlogger = structlog.get_logger()
 
 def tracker_as_dump(
     tracker: "DialogueStateTracker", latency: Optional[float] = None
-) -> str:
+) -> Dict[str, Any]:
     """Create a dump of the tracker state."""
     from rasa.shared.core.trackers import get_trackers_for_conversation_sessions
 
@@ -66,11 +66,14 @@ def tracker_as_dump(
     else:
         last_tracker = multiple_tracker_sessions[-1]
 
+    # TODO: this is a bug: the bridge converts this back to json, but it
+    # should be json in the first place
     state = last_tracker.current_state(EventVerbosity.AFTER_RESTART)
 
     if latency is not None:
         state["latency"] = {"rasa_processing_latency_ms": latency}
-    return orjson.dumps(state, option=orjson.OPT_SERIALIZE_NUMPY).decode("utf-8")
+
+    return state
 
 
 def does_need_action_prediction(tracker: "DialogueStateTracker") -> bool:
@@ -214,7 +217,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             enable_silence_timeout=credentials.get("enable_silence_timeout", False),
         )
 
-    async def emit(self, event: str, data: str, room: str) -> None:
+    async def emit(self, event: str, data: Union[Dict, str], room: str) -> None:
         """Emits an event to the websocket."""
         if not self.sio_server:
             structlogger.error("studio_chat.emit.sio_not_initialized")
@@ -260,7 +263,14 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         Triggers a tracker update notification after processing the message.
         """
         self._record_turn_start_time(message.sender_id)
-        await on_new_message(message)
+        try:
+            await on_new_message(message)
+        except Exception as e:
+            structlogger.exception(
+                "studio_chat.on_new_message.error",
+                error=str(e),
+                sender_id=message.sender_id,
+            )
 
         if not self.agent or not self.agent.is_ready():
             structlogger.error("studio_chat.on_message_proxy.agent_not_initialized")
@@ -508,8 +518,16 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
                     ws.put_message(data)
                 return
 
-            # Handle text messages
-            await self.handle_user_message(sid, data, proxied_on_message)
+            try:
+                # Handle text messages
+                await self.handle_user_message(sid, data, proxied_on_message)
+            except Exception as e:
+                structlogger.exception(
+                    "studio_chat.sio.handle_message.error",
+                    error=str(e),
+                    sid=sid,
+                )
+                await self.emit("error", str(e), room=sid)
 
         @self.sio_server.on("update_tracker", namespace=self.namespace)
         async def on_update_tracker(sid: Text, data: Dict) -> None:

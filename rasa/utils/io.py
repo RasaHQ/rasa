@@ -26,6 +26,7 @@ from typing_extensions import Protocol
 
 import rasa.shared.constants
 import rasa.shared.utils.io
+from rasa.shared.exceptions import RasaException
 
 if TYPE_CHECKING:
     from prompt_toolkit.validation import Validator
@@ -124,9 +125,7 @@ def create_path(file_path: Text) -> None:
 def file_type_validator(
     valid_file_types: List[Text], error_message: Text
 ) -> Type["Validator"]:
-    """Creates a `Validator` class which can be used with `questionary` to validate
-    file paths.
-    """
+    """Creates a file type validator class for the questionary package."""
 
     def is_valid(path: Text) -> bool:
         return path is not None and any(
@@ -137,9 +136,7 @@ def file_type_validator(
 
 
 def not_empty_validator(error_message: Text) -> Type["Validator"]:
-    """Creates a `Validator` class which can be used with `questionary` to validate
-    that the user entered something other than whitespace.
-    """
+    """Creates a not empty validator class for the questionary package."""
 
     def is_valid(input: Text) -> bool:
         return input is not None and input.strip() != ""
@@ -150,9 +147,7 @@ def not_empty_validator(error_message: Text) -> Type["Validator"]:
 def create_validator(
     function: Callable[[Text], bool], error_message: Text
 ) -> Type["Validator"]:
-    """Helper method to create `Validator` classes from callable functions. Should be
-    removed when questionary supports `Validator` objects.
-    """
+    """Helper method to create a validator class from a callable function."""
     from prompt_toolkit.document import Document
     from prompt_toolkit.validation import ValidationError, Validator
 
@@ -250,3 +245,26 @@ def write_yaml(
 
     with Path(target).open("w", encoding="utf-8") as outfile:
         dumper.dump(data, outfile, transform=transform)
+
+
+class InvalidPathException(RasaException):
+    """Raised if a path is invalid - e.g. path traversal is detected."""
+
+
+def subpath(parent: str, child: str) -> str:
+    """Return the path to the child directory of the parent directory.
+
+    Ensures, that child doesn't navigate to parent directories. Prevents
+    path traversal. Raises an InvalidPathException if the path is invalid.
+
+    Based on Snyk's directory traversal mitigation:
+    https://learn.snyk.io/lesson/directory-traversal/
+    """
+    safe_path = os.path.abspath(os.path.join(parent, child))
+    parent = os.path.abspath(parent)
+
+    common_base = os.path.commonpath([parent, safe_path])
+    if common_base != parent:
+        raise InvalidPathException(f"Invalid path: {safe_path}")
+
+    return safe_path

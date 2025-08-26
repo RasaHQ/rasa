@@ -1,0 +1,72 @@
+[
+  {
+    "user_id": 1,
+    "account_id": 1,
+    "number": "1111222233334444",
+    "type": "debit",
+    "status": "active"
+  },
+  {
+    "user_id": 1,
+    "account_id": 2,
+    "number": "1234567812345678",
+    "type": "debit",
+    "status": "active"
+  },
+  {
+    "user_id": 1,
+    "account_id": null,
+    "number": "5555666677778888",
+    "type": "credit",
+    "status": "active"
+  },
+  {
+    "user_id": 2,
+    "account_id": 3,
+    "number": "9999000011112222",
+    "type": "debit",
+    "status": "active"
+  },
+  {
+    "user_id": 2,
+    "account_id": 4,
+    "number": "2345678923456789",
+    "type": "debit",
+    "status": "active"
+  },
+  {
+    "user_id": 2,
+    "account_id": 5,
+    "number": "3456789034567890",
+    "type": "debit",
+    "status": "active"
+  },
+  {
+    "user_id": 2,
+    "account_id": null,
+    "number": "3333444455556666",
+    "type": "credit",
+    "status": "active"
+  },
+  {
+    "user_id": 3,
+    "account_id": 6,
+    "number": "2222333344445555",
+    "type": "debit",
+    "status": "active"
+  },
+  {
+    "user_id": 3,
+    "account_id": 7,
+    "number": "4567890145678901",
+    "type": "debit",
+    "status": "active"
+  },
+  {
+    "user_id": 3,
+    "account_id": null,
+    "number": "6666777788889999",
+    "type": "credit",
+    "status": "active"
+  }
+]

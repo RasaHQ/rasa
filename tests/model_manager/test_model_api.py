@@ -26,7 +26,7 @@ from rasa.model_manager.model_api import (
 from rasa.model_manager.runner_service import BotSession
 from rasa.model_manager.trainer_service import TrainingSession, TrainingSessionStatus
 from rasa.model_manager.utils import models_base_path
-from rasa.studio.upload import CALMImportParts
+from rasa.studio.upload import CALMUserData
 
 
 @pytest.fixture
@@ -509,7 +509,7 @@ async def test_project_template_happy_path(client: SanicASGITestClient) -> None:
         "assistantName",
         "defaults",
         "version",
-        *CALMImportParts.model_fields.keys(),
+        *CALMUserData.model_fields.keys(),
     }
     assert expected == set(payload)
     assert payload["assistantName"] == ProjectTemplateName.DEFAULT.value

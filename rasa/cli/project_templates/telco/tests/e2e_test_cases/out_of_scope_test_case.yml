@@ -1,0 +1,21 @@
+test_cases:
+  - test_case: out of scope topics
+    steps:
+    - user: "can you help me book a hotel or restaurant"
+      assertions:
+        - flow_started: "pattern_cannot_handle"
+        - bot_uttered:
+              utter_name: "utter_cannot_handle"
+              # generated text:
+                #Thank you for your query!
+                # Booking a hotel or restaurant isn't really my strong suit, but I can certainly assist you if you're having issues with your internet speed or need clarification on your bill.
+                # Do you need help with any of those?
+    - user: "can we discuss politics"
+      assertions:
+        - flow_started: "pattern_cannot_handle"
+        - bot_uttered:
+              utter_name: "utter_cannot_handle"
+              # generated text:
+                # Thank you for your question!
+                # Discussing politics isn't really my strong suit, but I'm available to assist if you're having issues with your internet speed or need clarification on your bill.
+                # Can I help you with any of these?

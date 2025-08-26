@@ -1,0 +1,51 @@
+[
+  {
+    "user_id": 1,
+    "balance": 10123.45,
+    "type": "savings",
+    "number": "12345678",
+    "sort_code": "123456"
+  },
+  {
+    "user_id": 1,
+    "balance": 4923.67,
+    "type": "current",
+    "number": "23456789",
+    "sort_code": "123456"
+  },
+  {
+    "user_id": 2,
+    "balance": 14789.32,
+    "type": "current",
+    "number": "34567890",
+    "sort_code": "234567"
+  },
+  {
+    "user_id": 2,
+    "balance": 7134.56,
+    "type": "savings",
+    "number": "45678901",
+    "sort_code": "234567"
+  },
+  {
+    "user_id": 2,
+    "balance": 2987.23,
+    "type": "business",
+    "number": "56789012",
+    "sort_code": "234567"
+  },
+  {
+    "user_id": 3,
+    "balance": 20245.67,
+    "type": "savings",
+    "number": "67890123",
+    "sort_code": "345678"
+  },
+  {
+    "user_id": 3,
+    "balance": 8034.12,
+    "type": "current",
+    "number": "78901234",
+    "sort_code": "345678"
+  }
+]

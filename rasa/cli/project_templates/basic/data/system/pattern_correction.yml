@@ -1,0 +1,7 @@
+flows:
+  pattern_correction:
+    description: Handle a correction of a slot value.
+    name: pattern correction
+    steps:
+      - action: action_correct_flow_slot
+        next: "END"

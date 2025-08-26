@@ -7,7 +7,6 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Text, Tuple, Union
 import questionary
 import requests
 import structlog
-from pydantic import BaseModel, Field
 
 import rasa.cli.telemetry
 import rasa.cli.utils
@@ -24,9 +23,13 @@ from rasa.shared.constants import (
     DEFAULT_DOMAIN_PATHS,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader, YamlFlowsWriter
+from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 from rasa.shared.exceptions import RasaException
-from rasa.shared.importers.importer import FlowSyncImporter, TrainingDataImporter
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.importers.utils import (
+    CALMUserData,
+    extract_calm_import_parts_from_importer,
+)
 from rasa.shared.nlu.training_data.formats.rasa_yaml import (
     RasaYAMLReader,
     RasaYAMLWriter,
@@ -34,7 +37,6 @@ from rasa.shared.nlu.training_data.formats.rasa_yaml import (
 from rasa.shared.utils.llm import collect_custom_prompts
 from rasa.shared.utils.yaml import (
     dump_obj_as_yaml_to_string,
-    read_yaml,
     read_yaml_file,
 )
 from rasa.studio import results_logger
@@ -43,6 +45,7 @@ from rasa.studio.config import StudioConfig
 from rasa.studio.results_logger import StudioResult, with_studio_error_handler
 from rasa.studio.utils import validate_argument_paths
 from rasa.telemetry import track_upload_to_studio_failed
+from rasa.utils.json_utils import extract_values
 
 structlogger = structlog.get_logger()
 
@@ -66,16 +69,6 @@ DOMAIN_KEYS = [
     "forms",
     "session_config",
 ]
-
-
-class CALMImportParts(BaseModel):
-    """All pieces that will be uploaded to Rasa Studio."""
-
-    flows: Dict[str, Any]
-    domain: Dict[str, Any]
-    config: Dict[str, Any]
-    endpoints: Dict[str, Any]
-    nlu: Dict[str, Any] = Field(default_factory=dict)
 
 
 def _get_selected_entities_and_intents(
@@ -195,11 +188,6 @@ config_keys = [
 ]
 
 
-def extract_values(data: Dict, keys: List[Text]) -> Dict:
-    """Extracts values for given keys from a dictionary."""
-    return {key: data.get(key) for key in keys if data.get(key)}
-
-
 def _get_assistant_name(config: Dict[Text, Any]) -> str:
     config_assistant_id = config.get("assistant_id", "")
     assistant_name = questionary.text(
@@ -238,7 +226,7 @@ def build_calm_import_parts(
     config_path: Text,
     endpoints_path: Optional[Text] = None,
     assistant_name: Optional[Text] = None,
-) -> Tuple[str, CALMImportParts]:
+) -> Tuple[str, CALMUserData]:
     """Builds the parts of the assistant to be uploaded to Studio.
 
     Args:
@@ -251,9 +239,11 @@ def build_calm_import_parts(
     Returns:
         The assistant name and the parts to be uploaded
     """
+    training_data_paths = data_path if isinstance(data_path, list) else [str(data_path)]
     importer = TrainingDataImporter.load_from_dict(
         domain_path=domain_path,
         config_path=config_path,
+        training_data_paths=training_data_paths,
         expand_env_vars=False,
     )
 
@@ -261,34 +251,10 @@ def build_calm_import_parts(
     endpoints = read_yaml_file(endpoints_path, expand_env_vars=False)
     assistant_name = assistant_name or _get_assistant_name(config)
 
-    domain_from_files = importer.get_user_domain().as_dict()
-    domain = extract_values(domain_from_files, DOMAIN_KEYS)
-
-    training_data_paths = data_path if isinstance(data_path, list) else [str(data_path)]
-    flow_importer = FlowSyncImporter.load_from_dict(
-        training_data_paths=training_data_paths, expand_env_vars=False
-    )
-
-    flows = list(flow_importer.get_user_flows())
-    flows_yaml = YamlFlowsWriter().dumps(flows)
-    flows = read_yaml(flows_yaml, expand_env_vars=False)
-
-    nlu_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=training_data_paths, expand_env_vars=False
-    )
-    nlu_data = nlu_importer.get_nlu_data()
-    nlu_examples = nlu_data.filter_training_examples(
-        lambda ex: ex.get("intent") in nlu_data.intents
-    )
-    nlu_examples_yaml = RasaYAMLWriter().dumps(nlu_examples)
-    nlu = read_yaml(nlu_examples_yaml, expand_env_vars=False)
-
-    parts = CALMImportParts(
-        flows=flows,
-        domain=domain,
+    parts = extract_calm_import_parts_from_importer(
+        importer=importer,
         config=config,
         endpoints=endpoints,
-        nlu=nlu,
     )
 
     return assistant_name, parts

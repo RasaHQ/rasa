@@ -234,7 +234,27 @@ def test_handle_upload(
     assert mock.post.called
     assert mock.post.call_args[0][0] == endpoint
     assert mock.post.call_args[1]["verify"] is True
-    assert mock.post.call_args[1]["json"] == expected
+
+    actual = mock.post.call_args[1]["json"]
+    assert actual["query"] == expected["query"]
+
+    actual_input = actual["variables"]["input"]
+    expected_input = expected["variables"]["input"]
+
+    # Compare stable fields directly
+    for key in ["assistantName", "domain", "flows", "config", "endpoints"]:
+        if key in expected_input:
+            assert actual_input[key] == expected_input[key]
+
+    # Compare NLU semantically (decoded YAML), tolerant to quote style
+    if "nlu" in expected_input:
+        actual_nlu_yaml = base64.b64decode(actual_input["nlu"]).decode("utf-8")
+        expected_nlu_yaml = base64.b64decode(expected_input["nlu"]).decode("utf-8")
+
+        actual_nlu = rasa.shared.utils.yaml.read_yaml(actual_nlu_yaml, "safe")
+        expected_nlu = rasa.shared.utils.yaml.read_yaml(expected_nlu_yaml, "safe")
+
+        assert actual_nlu == expected_nlu
 
 
 @pytest.mark.parametrize("disable_verify", [True, False])

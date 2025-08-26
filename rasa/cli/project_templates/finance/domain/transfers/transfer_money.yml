@@ -1,0 +1,79 @@
+version: "3.1"
+
+slots:
+  account_from:
+    type: text
+  payee_name:
+    type: text
+  payee_exists:
+    type: bool
+  amount:
+    type: float
+  sufficient_funds:
+    type: bool
+  timing:
+    type: categorical
+    values:
+      - now
+      - future
+  payment_date:
+    type: text
+  confirm_immediate_payment:
+    type: bool
+  confirm_future_payment:
+    type: bool
+  payment_processed:
+    type: bool
+  payment_scheduled:
+    type: bool
+  valid_payment_date:
+    type: bool
+  future_payment_date:
+    type: bool
+
+responses:
+  utter_transfer_money_understand:
+    - text: "Okay lets transfer money"
+      metadata:
+        rephrase: True
+  utter_ask_payee_name:
+    - text: "Which payee would you like to send money to?"
+  utter_ask_amount:
+    - text: "How much money would you like to transfer?"
+  utter_insufficient_funds:
+    - text: "I'm sorry, but you have insufficient funds for this transfer. Please enter a different amount"
+  utter_ask_timing:
+    - text: "When would you like this transfer to be made?"
+      buttons:
+        - title: Immediate
+          payload: "/SetSlots(timing=now)"
+        - title: Future
+          payload: "/SetSlots(timing=future)"
+  utter_ask_payment_date:
+    - text: "On which date would you like this payment to be made?"
+  utter_ask_confirm_future_payment:
+    - text: "A payment of ${amount} to {payee_name} will be scheduled for {payment_date}. Is this correct?"
+  utter_payment_scheduled:
+    - text: "Your payment of ${amount} to {payee_name} has been successfully scheduled for {payment_date}"
+  utter_ask_confirm_immediate_payment:
+    - text: "An immediate payment of ${amount} to {payee_name} will be processed. Is this correct?"
+  utter_transfer_successful:
+    - text: "Your transfer of ${amount} to {payee_name} has been successfully processed"
+  utter_cancel_transfer:
+    - text: "No problem. I will cancel this transfer"
+  utter_invalid_amount:
+    - text: "You have to enter an amount greater than 0"
+      metadata:
+        rephrase: True
+  utter_past_payment_date:
+    - text: "A future payment date cannot be in the past!"
+      metadata:
+        rephrase: True
+
+actions:
+  - action_ask_account_from
+  - action_check_payee_existence
+  - action_check_sufficient_funds
+  - action_schedule_payment
+  - action_process_immediate_payment
+  - action_validate_payment_date

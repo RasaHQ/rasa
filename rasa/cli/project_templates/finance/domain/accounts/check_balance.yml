@@ -1,0 +1,11 @@
+version: "3.1"
+
+slots:
+  account:
+    type: text
+    mappings:
+      - type: from_llm
+
+actions:
+  - action_ask_account
+  - action_check_balance

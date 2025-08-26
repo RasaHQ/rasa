@@ -52,7 +52,13 @@ def step_from_json(flow_id: Text, data: Dict[Text, Any]) -> FlowStep:
         return SetSlotsFlowStep.from_json(flow_id, data)
     if "noop" in data:
         return NoOperationFlowStep.from_json(flow_id, data)
-    raise RasaException(f"Failed to parse step from json. Unknown type for {data}.")
+
+    required_properties = ["action", "collect", "link", "call", "set_slots", "noop"]
+    raise RasaException(
+        f"Failed to parse step from json. Unknown type for {data}. "
+        f"At least one of the following properties is required: "
+        f"{', '.join(required_properties)}"
+    )
 
 
 @dataclass

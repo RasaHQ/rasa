@@ -1,0 +1,7 @@
+flows: 
+  pattern_completed:
+    description: A flow has been completed and there is nothing else to be done
+    if: False
+    steps:
+      - noop: true
+        next: END

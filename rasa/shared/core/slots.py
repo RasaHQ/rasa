@@ -273,10 +273,14 @@ class Slot(ABC):
         try:
             return rasa.shared.utils.common.class_from_module_path(type_name)
         except (ImportError, AttributeError):
+            known_types = [
+                cls.type_name for cls in rasa.shared.utils.common.all_subclasses(Slot)
+            ]
             raise InvalidSlotTypeException(
                 f"Failed to find slot type, '{type_name}' is neither a known type nor "
                 f"user-defined. If you are creating your own slot type, make "
                 f"sure its module path is correct. "
+                f"Known types: {', '.join(known_types)} "
                 f"You can find all build in types at {DOCS_URL_SLOTS}"
             )
 

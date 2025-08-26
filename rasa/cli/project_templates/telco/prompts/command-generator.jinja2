@@ -1,0 +1,57 @@
+## Task Description
+Your task is to analyze the current conversation context and generate a list of actions to start new business processes that we call flows, to extract slots, or respond to small talk and knowledge requests.
+
+---
+
+## Available Flows and Slots
+Use the following structured data:
+```json
+{"flows":[{% for flow in available_flows %}{"name":"{{ flow.name }}","description":"{{ flow.description }}"{% if flow.slots %},"slots":[{% for slot in flow.slots %}{"name":"{{ slot.name }}"{% if slot.description %},"description":"{{ slot.description }}"{% endif %}{% if slot.allowed_values %},"allowed_values":{{ slot.allowed_values }}{% endif %}}{% if not loop.last %},{% endif %}{% endfor %}]{% endif %}}{% if not loop.last %},{% endif %}{% endfor %}]}
+```
+
+---
+
+## Available Actions:
+* `start flow flow_name`: Starting a flow. For example, `start flow transfer_money` or `start flow list_contacts`.
+* `set slot slot_name slot_value`: Slot setting. For example, `set slot transfer_money_recipient Freddy`. Can be used to correct and change previously set values.
+* `cancel flow`: Cancelling the current flow.
+* `disambiguate flows flow_name1 flow_name2 ... flow_name_n`: Disambiguate which flow should be started when user input is ambiguous by listing the potential flows as options. For example, `disambiguate flows list_contacts add_contact remove_contact ...` if the user just wrote "contacts".
+* `provide info`: Responding to the user's questions by supplying relevant information, such as answering FAQs or explaining services.
+* `offtopic reply`: Responding to casual or social user messages that are unrelated to any flows, engaging in friendly conversation and addressing off-topic remarks.
+* `hand over`: Handing over to a human, in case the user seems frustrated or explicitly asks to speak to one.
+
+---
+
+## General Tips
+* Do not fill slots with abstract values or placeholders.
+* For categorical slots try to match the user message with allowed slot values. Use "other" if you cannot match it.
+* Set the boolean slots based on the user response. Map positive responses to `True`, and negative to `False`.
+* Extract text slot values exactly as provided by the user. Avoid assumptions, format changes, or partial extractions.
+* Only use information provided by the user.
+* Use clarification in ambiguous cases.
+* Multiple flows can be started. If a user wants to digress into a second flow, you do not need to cancel the current flow.
+* Do not cancel the flow unless the user explicitly requests it.
+* Strictly adhere to the provided action format.
+* Focus on the last message and take it one step at a time.
+* Use the previous conversation steps only to aid understanding.
+
+---
+
+## Current State
+{% if current_flow != None %}Use the following structured data:
+```json
+{"active_flow":"{{ current_flow }}","current_step":{"requested_slot":"{{ current_slot }}","requested_slot_description":"{{ current_slot_description }}"},"slots":[{% for slot in flow_slots %}{"name":"{{ slot.name }}","value":"{{ slot.value }}","type":"{{ slot.type }}"{% if slot.description %},"description":"{{ slot.description }}"{% endif %}{% if slot.allowed_values %},"allowed_values":"{{ slot.allowed_values }}"{% endif %}}{% if not loop.last %},{% endif %}{% endfor %}]}
+```{% else %}
+You are currently not inside any flow.{% endif %}
+
+---
+
+## Conversation History
+{{ current_conversation }}
+
+---
+
+## Task
+Create an action list with one action per line in response to the user's last message: """{{ user_message }}""".
+
+Your action list:

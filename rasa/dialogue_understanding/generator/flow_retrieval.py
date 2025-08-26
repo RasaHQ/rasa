@@ -219,11 +219,6 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
         if self.vector_store is not None:
             with self._model_storage.write_to(self._resource) as model_path:
                 self.vector_store.save_local(model_path)
-        else:
-            structlogger.warning(
-                "flow_retrieval.persist_vector_store.not_initialized",
-                event_info="Vector store is None, not persisted.",
-            )
 
     def _persist_config(self) -> None:
         with self._model_storage.write_to(self._resource) as path:
@@ -249,6 +244,16 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
         )
 
         flows_to_embedd = flows.exclude_link_only_flows()
+
+        if not flows_to_embedd:
+            structlogger.debug(
+                "flow_retrieval.populate_vector_store.no_flows_to_embed",
+                event_info=(
+                    "No flows to embed in the vector store, skipping population."
+                ),
+            )
+            return
+
         embeddings = self._create_embedder(self.config)
         documents = self._generate_flow_documents(flows_to_embedd, domain)
         try:
@@ -420,10 +425,6 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
             The top k documents with similarity scores.
         """
         if self.vector_store is None:
-            structlogger.error(
-                "flow_retrieval.query_vector_store.vector_store_not_configured",
-                event_info="Vector store is not configured",
-            )
             return []
         try:
             documents_with_scores = (

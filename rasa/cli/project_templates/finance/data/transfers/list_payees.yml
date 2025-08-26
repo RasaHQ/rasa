@@ -1,0 +1,5 @@
+flows:
+  list_payees:
+    description: "Retrieve and display the user’s list of authorized payees, allowing them to view all accounts available for transactions."
+    steps:
+      - action: action_list_payees

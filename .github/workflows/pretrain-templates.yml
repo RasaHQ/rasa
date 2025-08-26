@@ -1,0 +1,154 @@
+name: Build and Upload caches and models for Rasa Templates
+
+# Pre-building the models and caches for the templates
+# speeds up initial training - esp. for hello rasa.
+# Manually trigger the workflow using
+#
+# gh workflow run --ref getting-started-experience-poc pretrain-templates.yml -f rasa_pro_image=rasa/rasa-pro:3.13.1a20
+#
+# the `ref` argument is only needed as long as it is still on poc branch,
+# when it is merged to main, it can be removed.
+
+on:
+  workflow_run:
+    workflows: ["Release artifacts workflow"]
+    types:
+      - completed
+
+  workflow_dispatch:
+    inputs:
+      rasa_pro_image:
+        description: "Rasa Pro image"
+        required: true
+        default: "rasa/rasa-pro:3.13.1a18"
+
+env:
+  AWS_REGION: us-east-1
+  S3_BUCKET: trained-templates
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-24.04
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        template: [telco, finance, default]
+    env:
+      RASA_PRO_IMAGE: ${{ inputs.rasa_pro_image }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    outputs:
+      release_tag: ${{ steps.release_tag.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Determine release tag from triggering run
+        id: release_tag
+        if: ${{ github.event_name == 'workflow_run' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          TAG="${{ github.event.workflow_run.head_branch }}"
+          if [[ -z "${TAG}" || ! "${TAG}" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            TAG=$(git tag --points-at "${{ github.event.workflow_run.head_sha }}" | head -n1 || true)
+          fi
+          if [[ -z "${TAG}" ]]; then
+            echo "Could not resolve tag from workflow_run payload" >&2
+            exit 1
+          fi
+          echo "Resolved release tag: ${TAG}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "RASA_PRO_IMAGE=rasa/rasa-pro:${TAG}" >> "$GITHUB_ENV"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df # v4.2.1
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_TEMPLATES_UPLOAD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build model for ${{ matrix.template }}
+        id: build
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          TEMPLATE: ${{ matrix.template }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${RASA_PRO_LICENSE:-}" ]]; then
+            echo "RASA_PRO_LICENSE is required" >&2
+            exit 1
+          fi
+
+          mkdir -p "$PWD/models/${TEMPLATE}"
+          RASA_PRO_VERSION="${RASA_PRO_IMAGE##*:}"
+
+          echo "Using image: ${RASA_PRO_IMAGE}"
+          echo "Resolved version tag: ${RASA_PRO_VERSION}"
+
+          mkdir -p "$PWD/workspace/${TEMPLATE}"
+
+          docker run --rm \
+            -e RASA_PRO_LICENSE="$RASA_PRO_LICENSE" \
+            -e OPENAI_API_KEY="$OPENAI_API_KEY" \
+            -v "$PWD/workspace/${TEMPLATE}:/app" \
+            "$RASA_PRO_IMAGE" \
+            init --template ${TEMPLATE} --no-prompt
+
+          # Verify training artifacts exist
+          if [[ ! -d "$PWD/workspace/${TEMPLATE}/models" ]] || [[ ! -d "$PWD/workspace/${TEMPLATE}/.rasa" ]]; then
+            echo "Missing training artifacts for template ${TEMPLATE}" >&2
+            ls -la "$PWD/workspace/${TEMPLATE}/"
+            exit 1
+          fi
+
+          # Create tar.gz with models and .rasa cache
+          TARGET_NAME="${RASA_PRO_VERSION}-${TEMPLATE}.tar.gz"
+          cd "$PWD/workspace/${TEMPLATE}"
+          tar -czf "../../${TARGET_NAME}" models .rasa
+          cd - > /dev/null
+
+          echo "TARGET_NAME=${TARGET_NAME}" >> "$GITHUB_OUTPUT"
+          echo "ARTIFACT_PATH=$PWD/${TARGET_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to S3
+        env:
+          ARTIFACT_PATH: ${{ steps.build.outputs.ARTIFACT_PATH }}
+          TARGET_NAME: ${{ steps.build.outputs.TARGET_NAME }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          aws s3 cp "${ARTIFACT_PATH}" "s3://${S3_BUCKET}/${TARGET_NAME}"
+
+      - name: Verify upload
+        env:
+          TARGET_NAME: ${{ steps.build.outputs.TARGET_NAME }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          aws s3 ls "s3://${S3_BUCKET}/${TARGET_NAME}" || { echo "S3 upload verification failed" >&2; exit 1; }
+  slack-notifications:
+    name: Slack Notifications
+    runs-on: ubuntu-24.04
+    needs: [build-and-upload]
+    if: always()  # Ensures this job runs regardless of the result of previous jobs
+
+    steps:
+      - name: Notify Slack of unsuccessful template build ⛔️
+        if: ${{ needs.build-and-upload.result != 'success' }}
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          # Send notification to #devtribe slack channel
+          payload: |
+            channel: "C36SS4N8M"
+            text: ":cry: *Rasa Templates* release version `${{ needs.build-and-upload.outputs.release_tag }}` failed to pre-build failed! More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."

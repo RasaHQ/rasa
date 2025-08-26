@@ -740,7 +740,14 @@ def _run_action_step(
             # do not log about non-existing validation actions of collect steps
             utter_action_name = render_template_variables("{{context.utter}}", context)
             if utter_action_name not in available_actions:
-                structlogger.warning("flow.step.run.action.unknown", action=action_name)
+                structlogger.warning(
+                    "flow.step.run.action.unknown",
+                    action=action_name,
+                    event_info=(
+                        f"The action '{action_name}' is not defined in the domain but "
+                        f"getting triggered by the flow '{step.flow_id}'."
+                    ),
+                )
         return ContinueFlowWithNextStep(events=initial_events)
 
 

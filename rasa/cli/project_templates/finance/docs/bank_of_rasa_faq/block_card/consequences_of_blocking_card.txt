@@ -1,0 +1,8 @@
+Q: What happens when I block my card?
+A: All transactions will be halted, and you will receive a new card within a specified timeframe.
+
+Q: Will blocking my card affect my recurring payments?
+A: Yes, any recurring payments linked to your blocked card will be interrupted until you update them with a new card number.
+
+Q: Can I unblock my card after blocking it?
+A: You can unblock your card if it is temporarily blocked, but permanently blocked cards will need to be replaced.

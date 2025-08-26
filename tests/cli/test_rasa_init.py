@@ -61,7 +61,8 @@ def test_init_help(run: Callable[..., RunResult]):
 
     help_text = f"""usage: {RASA_EXE} init [-h] [-v] [-vv] [--quiet]
         [--logging-config-file LOGGING_CONFIG_FILE] [--no-prompt]
-        [--init-dir INIT_DIR] [--template {{default,tutorial}}]"""
+        [--init-dir INIT_DIR]
+        [--template {{default,tutorial,basic,finance,telco}}]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -120,7 +121,7 @@ def test_train_data_in_project_dir(monkeypatch: MonkeyPatch, tmp_path: Path):
     assert os.path.exists(".rasa/cache")
 
 
-@pytest.mark.parametrize("template", ["default", "tutorial"])
+@pytest.mark.parametrize("template", ["default", "tutorial", "plain", "finance"])
 def test_train_data_non_default_template(
     run_with_stdin: Callable[..., RunResult],
     tmp_path: Path,

@@ -98,6 +98,8 @@ IS_RETRIEVAL_INTENT_KEY = "is_retrieval_intent"
 ENTITY_ROLES_KEY = "roles"
 ENTITY_GROUPS_KEY = "groups"
 ENTITY_FEATURIZATION_KEY = "influence_conversation"
+STORE_ENTITIES_AS_SLOTS_KEY = "store_entities_as_slots"
+DOMAIN_CONFIG_KEY = "config"
 
 KEY_SLOTS = "slots"
 KEY_INTENTS = "intents"
@@ -145,6 +147,8 @@ MERGE_FUNC_MAPPING: Dict[Text, Callable[..., Any]] = {
     KEY_E2E_ACTIONS: rasa.shared.utils.common.merge_lists,
     KEY_FORMS: rasa.shared.utils.common.merge_dicts,
 }
+
+DEFAULT_STORE_ENTITIES_AS_SLOTS = True
 
 DICT_DATA_KEYS = [
     key
@@ -318,7 +322,7 @@ class Domain:
         actions = cls._collect_action_names(domain_actions)
 
         additional_arguments = {
-            **data.get("config", {}),
+            **data.get(DOMAIN_CONFIG_KEY, {}),
             "actions_which_explicitly_need_domain": (
                 cls._collect_actions_which_explicitly_need_domain(domain_actions)
             ),
@@ -468,9 +472,9 @@ class Domain:
             return domain_dict
 
         if override:
-            config = domain_dict.get("config", {})
+            config = domain_dict.get(DOMAIN_CONFIG_KEY, {})
             for key, val in config.items():
-                combined["config"][key] = val
+                combined[DOMAIN_CONFIG_KEY][key] = val
 
         if (
             override
@@ -508,10 +512,10 @@ class Domain:
         return combined
 
     def partial_merge(self, other: Domain) -> Domain:
-        """
-        Returns a new Domain with intersection-based merging:
-          - For each domain section only overwrite items that already exist in self.
-          - Brand-new items in `other` are ignored.
+        """Returns a new Domain with intersection-based merging.
+
+        For each domain section only overwrite items that already exist in self.
+        Brand-new items in `other` are ignored.
 
         Args:
             other: The domain to merge with.
@@ -543,9 +547,9 @@ class Domain:
         return Domain.from_dict(updated_self)
 
     def difference(self, other: Domain) -> Domain:
-        """
-        Returns a new Domain containing items in `self` that are NOT in `other`,
-        using simple equality checks for dict/list items.
+        """Returns a new Domain containing items in `self` that are NOT in `other`.
+
+        Uses simple equality checks for dict/list items.
 
         Args:
             other: The domain to compare with.
@@ -598,9 +602,16 @@ class Domain:
     ) -> Dict:
         # add the config, session_config and training data version defaults
         # if not included in the original domain dict
-        if "config" not in data and not store_entities_as_slots:
+        if (
+            DOMAIN_CONFIG_KEY not in data
+            and store_entities_as_slots != DEFAULT_STORE_ENTITIES_AS_SLOTS
+        ):
             data.update(
-                {"config": {"store_entities_as_slots": store_entities_as_slots}}
+                {
+                    DOMAIN_CONFIG_KEY: {
+                        STORE_ENTITIES_AS_SLOTS_KEY: store_entities_as_slots
+                    }
+                }
             )
 
         if SESSION_CONFIG_KEY not in data:
@@ -937,7 +948,7 @@ class Domain:
         forms: Union[Dict[Text, Any], List[Text]],
         data: Dict,
         action_texts: Optional[List[Text]] = None,
-        store_entities_as_slots: bool = True,
+        store_entities_as_slots: bool = DEFAULT_STORE_ENTITIES_AS_SLOTS,
         session_config: SessionConfig = SessionConfig.default(),
         **kwargs: Any,
     ) -> None:
@@ -1711,9 +1722,45 @@ class Domain:
         else:
             return True
 
-    def as_dict(self) -> Dict[Text, Any]:
+    def _uses_custom_session_config(self) -> bool:
+        """Check if the domain uses a custom session config."""
+        return self._data.get(SESSION_CONFIG_KEY) != SessionConfig.default().as_dict()
+
+    def _uses_custom_domain_config(self) -> bool:
+        """Check if the domain uses a custom domain config."""
+        return self._data.get(DOMAIN_CONFIG_KEY) != {
+            STORE_ENTITIES_AS_SLOTS_KEY: DEFAULT_STORE_ENTITIES_AS_SLOTS
+        }
+
+    def _cleaned_json_data(self) -> Dict[Text, Any]:
+        """Remove default values from the domain data.
+
+        Only retains data that was customized by the user.
+
+        Returns:
+            A cleaned dictionary version of the domain.
+        """
+        cleaned_data = copy.deepcopy(self._data)
+
+        # Remove default config if it only contains store_entities_as_slots: False
+        if DOMAIN_CONFIG_KEY in cleaned_data and not self._uses_custom_domain_config():
+            del cleaned_data[DOMAIN_CONFIG_KEY]
+
+        # Remove default session config if it matches the default values
+        if (
+            SESSION_CONFIG_KEY in cleaned_data
+            and not self._uses_custom_session_config()
+        ):
+            del cleaned_data[SESSION_CONFIG_KEY]
+
+        return cleaned_data
+
+    def as_dict(self, should_clean_json: bool = False) -> Dict[Text, Any]:
         """Return serialized `Domain`."""
-        return self._data
+        if should_clean_json:
+            return self._cleaned_json_data()
+        else:
+            return self._data
 
     @staticmethod
     def get_responses_with_multilines(

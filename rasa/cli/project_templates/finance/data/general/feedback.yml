@@ -1,0 +1,20 @@
+# Simple thumbs up/down feedback flow
+flows:
+  leave_feedback:
+    description: This flow collects simple thumbs up or thumbs down feedback
+    if: False # Flow guard to prevent direct triggering
+    steps:
+      - collect: feedback_rating
+        description: Ask user for thumbs up or thumbs down feedback
+      - id: feedback_response
+        noop: true
+        next:
+          - if: slots.feedback_rating == "thumbs_up"
+            then: positive_response
+          - else: negative_response
+      - id: positive_response
+        action: utter_thankyou_positive
+        next: END
+      - id: negative_response
+        action: utter_thankyou_negative
+        next: END

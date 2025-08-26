@@ -1,0 +1,8 @@
+version: "3.1"
+
+responses:
+  utter_greeting:
+    - text: "Hi there! I'm {assistant_name}. I can help you with {skills_summary}. How can I help you today?"
+      metadata:
+        rephrase: True
+

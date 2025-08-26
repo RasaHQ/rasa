@@ -1,0 +1,7 @@
+flows:
+  reset_router: # restet the router rometely
+    if: False
+    description: Help user reset their router, the bot will do this action on behalf of the user
+    steps:
+      - action: utter_explain_reset_router
+      - action: utter_image_reset_router

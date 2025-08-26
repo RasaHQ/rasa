@@ -1,0 +1,13 @@
+test_cases:
+  - test_case: bot challenge and ask to connect to a human agent
+    steps:
+    - user: "who am I talking with?"
+      assertions:
+        - flow_started: "bot_challenge"
+        - bot_uttered:
+              utter_name: "utter_bot_challenge"
+    - user: "Indeed, I would like to speak with a human"
+      assertions:
+        - flow_started: "pattern_human_handoff"
+        - bot_uttered:
+              utter_name: "utter_more_help_needed_handoff_pattern"

@@ -1,0 +1,66 @@
+flows:
+  block_card:
+    description: "Block or freeze a user's debit or credit card to prevent unauthorized use, stop transactions, or report it lost, stolen, damaged, or misplaced for added security"
+    name: block a card
+    steps:
+      - action: utter_block_card_understand
+      - call: select_card
+      - collect: reason_for_blocking
+        description: |
+          The reason for freezing or blocking the card, described as lost, damaged, stolen, suspected of fraud,
+          malfunctioning, or expired. The user may say they are traveling or moving, or they may say they want to
+          temporarily freeze their card. For all other responses, set reason_for_blocking slot to 'unknown'.
+        next:
+          - if: "slots.reason_for_blocking == 'damaged' or slots.reason_for_blocking == 'expired'"
+            then: "acknowledge_reason_damaged_expired"
+          - if: "slots.reason_for_blocking == 'fraud' or slots.reason_for_blocking == 'stolen' or slots.reason_for_blocking == 'lost'"
+            then:
+              - set_slots:
+                  - fraud_reported: true
+                next: "acknowledge_reason_fraud_stolen_lost"
+          - if: "slots.reason_for_blocking == 'traveling' or slots.reason_for_blocking == 'moving'"
+            then:
+              - set_slots:
+                  - temp_block_card: true
+                next: "acknowledge_reason_travelling_moving"
+          - else: "contact_support"
+      - id: acknowledge_reason_damaged_expired
+        action: utter_acknowledge_reason_damaged_expired
+        next: "confirm_issue_new_card"
+      - id: acknowledge_reason_fraud_stolen_lost
+        action: utter_acknowledge_reason_fraud_stolen_lost
+        next: "card_blocked"
+      - id: acknowledge_reason_travelling_moving
+        action: utter_acknowledge_reason_travelling_moving
+        next: "card_blocked"
+      - id: "card_blocked"
+        action: "utter_card_blocked"
+        next: "confirm_issue_new_card"
+      - id: "confirm_issue_new_card"
+        collect: confirm_issue_new_card
+        description: |
+          Confirm if the user wants to be issued a new card. The answer should be an affirmative statement,
+          such as "yes" or "correct," or a declined statement, such as "no" or "I don't want to"
+        ask_before_filling: true
+        next:
+          - if: "slots.confirm_issue_new_card"
+            then: "retrieve_user_address"
+          - else: "update_card_status"
+      - id: "retrieve_user_address"
+        collect: address_confirmed
+        description: |
+          Confirm if the given address is correct. The answer should be an affirmative statement, such as "yes" or
+          "correct," or a declined statement, such as "no" or "that's not right."
+        next:
+          - if: "slots.address_confirmed"
+            then: "card_sent"
+          - else: "contact_support"
+      - id: "card_sent"
+        action: utter_confirm_physical_address
+        next: update_card_status
+      - id: "contact_support"
+        action: utter_contact_support
+        next: update_card_status
+      - id: "update_card_status"
+        action: action_update_card_status
+        next: END

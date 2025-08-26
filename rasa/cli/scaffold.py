@@ -5,6 +5,9 @@ from collections import defaultdict
 from enum import Enum
 from typing import List, Text
 
+import randomname
+import structlog
+
 from rasa import telemetry
 from rasa.api import train
 from rasa.cli import SubParsersAction
@@ -16,7 +19,10 @@ from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
     DOCS_BASE_URL,
 )
+from rasa.shared.utils import yaml
 from rasa.shared.utils.cli import print_error_and_exit, print_success
+
+structlogger = structlog.get_logger(__name__)
 
 
 class ProjectTemplateName(Enum):
@@ -24,13 +30,27 @@ class ProjectTemplateName(Enum):
 
     DEFAULT = "default"
     TUTORIAL = "tutorial"
+    BASIC = "basic"
+    FINANCE = "finance"
+    TELCO = "telco"
 
     def __str__(self) -> str:
         return self.value
 
+    @classmethod
+    def get_all_values(cls) -> List[str]:
+        return [name.value for name in cls]
+
+    @classmethod
+    def supported_values(cls) -> str:
+        return ", ".join(cls.get_all_values())
+
 
 template_domain_path = defaultdict(lambda: DEFAULT_DOMAIN_PATH)
 template_domain_path[ProjectTemplateName.DEFAULT] = "domain"
+template_domain_path[ProjectTemplateName.BASIC] = "domain"
+template_domain_path[ProjectTemplateName.FINANCE] = "domain"
+template_domain_path[ProjectTemplateName.TELCO] = "domain"
 
 
 def add_subparser(
@@ -159,9 +179,33 @@ def create_initial_project(
     path: Text, template: ProjectTemplateName = ProjectTemplateName.DEFAULT
 ) -> None:
     """Creates directory structure and templates for initial project."""
-    from distutils.dir_util import copy_tree
+    import distutils.dir_util as dir_util
 
-    copy_tree(scaffold_path(template), path)
+    # clear the cache of the copy_tree function, this avoids issues if
+    # a project directory existed before and we removed folders in it
+    # with shutil.rmtree. see
+    # https://stackoverflow.com/questions/9160227/dir-util-copy-tree-fails-after-shutil-rmtree
+    if hasattr(dir_util, "_path_created"):
+        dir_util._path_created.clear()
+    else:
+        dir_util.SkipRepeatAbsolutePaths.clear()  # type: ignore[attr-defined]
+    dir_util.copy_tree(scaffold_path(template), path)
+
+    create_random_assistant_id(path)
+
+
+def create_random_assistant_id(path: Text) -> None:
+    """Create a random assistant id."""
+    assistant_id = f"{randomname.get_name()}"
+    config = yaml.read_yaml_file(os.path.join(path, "config.yml"))
+
+    if isinstance(config, dict):
+        config["assistant_id"] = assistant_id
+        yaml.write_yaml(config, os.path.join(path, "config.yml"))
+    else:
+        structlogger.warning(
+            "cli.scaffold.create_random_assistant_id.invalid_config", config=config
+        )
 
 
 def scaffold_path(template: ProjectTemplateName) -> Text:

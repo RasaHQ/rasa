@@ -1,0 +1,8 @@
+Q: What methods can I use to check my account balance?
+A: You can check your balance via the Bank of Rasa app, online banking, or by visiting an ATM.
+
+Q: Is it possible to receive balance alerts?
+A: Yes, you can set up balance alerts to receive notifications when your balance reaches a certain threshold.
+
+Q: Can I check my balance without logging in?
+A: No, you must log in to your account for security reasons to check your balance.

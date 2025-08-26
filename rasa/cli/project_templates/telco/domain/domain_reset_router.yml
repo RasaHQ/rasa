@@ -1,0 +1,11 @@
+
+responses:
+  utter_explain_reset_router:
+  - text: |
+      I will reset your router remotely to try to fix the issue.
+      No action is needed from your end.
+      It may take a minute. Please hold on ⏳
+  utter_image_reset_router:
+  - text: |
+      Router is reset successfully! 🎉
+    image: "https://www.creativefabrica.com/wp-content/uploads/2022/09/04/Wifi-router-outline-icon-Graphics-37782400-1.jpg"

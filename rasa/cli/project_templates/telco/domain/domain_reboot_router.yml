@@ -1,0 +1,20 @@
+slots:
+  reboot_router:
+    type: bool
+    mappings:
+      - type: from_llm
+
+responses:
+
+  utter_explain_reboot_router:
+  - text: |
+      Please turn the router off, wait 10 seconds and turn it back on.
+
+  utter_ask_reboot_router:
+  - text: |
+      Let me know when you are done!
+    buttons:
+    - title: "Done"
+      payload: "/SetSlots(reboot_router=True)"
+    - title: "Facing a problem"
+      payload: "/SetSlots(reboot_router=False)"

@@ -1,0 +1,6 @@
+Here are concise summaries of how to turn your router on and off:
+Using the Power Button: Press the power button to turn off the router, wait 30 seconds, then press it again to turn it back on.
+Unplugging Method: Disconnect the power cable, wait 30 seconds, then plug it back in to restart the router.
+Full Restart for Issues: Turn off the router, wait 1 minute, then turn it back on to refresh the connection.
+
+To turn your router off, press the power button (if available) or unplug it from the power source. Wait about 30 seconds to 1 minute before turning it back on by pressing the power button again or plugging it back in. This helps refresh the connection and resolve minor network issues.

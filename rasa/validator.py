@@ -629,11 +629,14 @@ class Validator:
         flow_id: str,
     ) -> bool:
         """Validates that a collect step can have either an action or an utterance.
+
         Also logs an error if neither an action nor an utterance is defined.
 
         Args:
             collect: the name of the slot to collect
             all_good: boolean value indicating the validation status
+            domain_slots: the slots of the domain
+            flow_id: the id of the flow
 
         Returns:
             False, if validation failed, true, otherwise
@@ -682,9 +685,10 @@ class Validator:
                 has_action_defined=has_action_defined,
                 flow=flow_id,
                 event_info=(
-                    f"The collect step '{collect.collect}' has neither an utterance "
-                    f"nor an action defined, or an initial value defined in the domain."
-                    f"You need to define either an utterance or an action."
+                    f"The collect step '{collect.collect}' has neither a response "
+                    f"nor an action defined, nor an initial value defined in the "
+                    f"domain. You can fix this by adding a response named "
+                    f"'{collect.utter}' used in the collect step."
                 ),
             )
             all_good = False

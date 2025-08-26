@@ -1,0 +1,4 @@
+id,name,email,phone,address,username,password,segment,created_at,updated_at
+1,"John Smith",john.smith@example.com,0123456789,"1 Psychohistorical Way, Trantor Square, London, SW1A 1AA",john.smith,smith123,Corporate,"2024-10-02 17:33:16","2024-10-02 17:33:16"
+2,"Mary Brown",mary.brown@example.com,0129876543,"2 Foundation Drive, Terminus Park, London, E1 6AN",mary.brown,brown123,Retail,"2024-10-02 17:33:16","2024-10-02 17:33:16"
+3,"Dan Young",dan.young@example.com,0123345678,"3 Scholar's Lane, Asimov Gardens, London, WC1B 5HA",dan.young,young123,SME,"2024-10-02 17:33:16","2024-10-02 17:33:16"

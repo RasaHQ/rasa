@@ -1,0 +1,25 @@
+# The config recipe.
+recipe: default.v1
+
+# The assistant project unique identifier
+# This default value must be replaced with a unique assistant name within your deployment
+assistant_id: placeholder_default
+
+language: en
+pipeline:
+- name: CompactLLMCommandGenerator
+  llm:
+    model_group: openai-gpt-4o
+  flow_retrieval:
+    active: false
+  prompt_template: prompts/command-generator.jinja2
+
+# Configuration for Rasa Core.
+policies:
+- name: FlowPolicy
+- name: EnterpriseSearchPolicy
+  vector_store:
+    type: "faiss"
+    source: "./docs"
+  llm:
+    model_group: openai-gpt-4o

@@ -1,0 +1,1474 @@
+[
+    {
+        "advisor_id": 1,
+        "date": "2024-10-01",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-01",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-01",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-01",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-01",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-02",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-02",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-02",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-02",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-02",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-03",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-03",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-03",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-03",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-03",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-04",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-04",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-04",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-04",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-04",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-05",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-05",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-05",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-05",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-05",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-06",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-06",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-06",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-06",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-06",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-07",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-07",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-07",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-07",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 1,
+        "date": "2024-10-07",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+
+    {
+        "advisor_id": 2,
+        "date": "2024-10-01",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-01",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-01",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-01",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-01",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-02",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-02",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-02",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-02",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-02",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-03",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-03",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-03",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-03",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-03",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-04",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-04",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-04",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-04",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-04",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-05",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-05",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-05",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-05",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-05",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-06",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-06",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-06",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-06",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-06",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-07",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-07",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-07",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-07",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 2,
+        "date": "2024-10-07",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+
+    {
+        "advisor_id": 3,
+        "date": "2024-10-01",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-01",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-01",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-01",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-01",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-02",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-02",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-02",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-02",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-02",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-03",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-03",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-03",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-03",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-03",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-04",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-04",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-04",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-04",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-04",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-05",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-05",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-05",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-05",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-05",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-06",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-06",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-06",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-06",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-06",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-07",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-07",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-07",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-07",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 3,
+        "date": "2024-10-07",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-01",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-01",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-01",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-01",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-01",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-02",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-02",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-02",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-02",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-02",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-03",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-03",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-03",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-03",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-03",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-04",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-04",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-04",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-04",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-04",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-05",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-05",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-05",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-05",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-05",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-06",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-06",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-06",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-06",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-06",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-07",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-07",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-07",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-07",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 4,
+        "date": "2024-10-07",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-01",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-01",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-01",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-01",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-01",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-02",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-02",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-02",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-02",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-02",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-03",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-03",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-03",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-03",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-03",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-04",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-04",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-04",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-04",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-04",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-05",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-05",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-05",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-05",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-05",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-06",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-06",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-06",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-06",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-06",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-07",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-07",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-07",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-07",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 5,
+        "date": "2024-10-07",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-01",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-01",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-01",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-01",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-01",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-02",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-02",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-02",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-02",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-02",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-03",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-03",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-03",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-03",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-03",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-04",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-04",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-04",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-04",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-04",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-05",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-05",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-05",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-05",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-05",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-06",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-06",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-06",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-06",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-06",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-07",
+        "start_time": "09:00",
+        "end_time": "09:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-07",
+        "start_time": "10:00",
+        "end_time": "10:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-07",
+        "start_time": "11:00",
+        "end_time": "11:30",
+        "status": "booked"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-07",
+        "start_time": "14:00",
+        "end_time": "14:30",
+        "status": "open"
+    },
+    {
+        "advisor_id": 6,
+        "date": "2024-10-07",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "status": "booked"
+    }
+]

@@ -1,0 +1,7 @@
+1. General Questions
+
+Q: What else can you do?
+A: I can answer questions from docs. Add more txt files to /docs to get started. 
+
+Q: Can you do RAG?
+A: Yes, you can use Retrieval-Augmented Generation (RAG) with Rasa. Rasa's CALM architecture supports RAG through its Enterprise Search Policy. Right now, I'm just retrieving messages from the /docs folder for demo purposes. Add more txt files to /docs to test it out.

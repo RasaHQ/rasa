@@ -1,0 +1,12 @@
+slots:
+  skills_summary:
+    type: text
+    initial_value: "general questions or direct you to an available agent"
+    mappings:
+      - type: controlled
+  assistant_name:
+    type: text
+    initial_value: "Vanessa"
+    mappings:
+      - type: controlled
+

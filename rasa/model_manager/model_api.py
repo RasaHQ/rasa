@@ -39,11 +39,9 @@ from rasa.model_manager.trainer_service import (
     update_training_status,
 )
 from rasa.model_manager.utils import (
-    InvalidPathException,
     get_logs_content,
     logs_base_path,
     models_base_path,
-    subpath,
 )
 from rasa.model_manager.warm_rasa_process import (
     initialize_warm_rasa_process,
@@ -53,6 +51,7 @@ from rasa.server import ErrorResponse
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
 from rasa.studio.upload import build_calm_import_parts
+from rasa.utils.io import InvalidPathException, subpath
 
 dotenv.load_dotenv()
 

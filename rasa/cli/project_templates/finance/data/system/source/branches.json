@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Trantor Square Branch",
+    "address": "10 Psychohistorical Way, Trantor Square, London, SW1A 1AB",
+    "distance_km": 0.2
+  },
+  {
+    "name": "Foundation Central Branch",
+    "address": "5 Foundation Road, Trantor Square, London, SW1A 1AC",
+    "distance_km": 0.3
+  },
+  {
+    "name": "Trantor East Branch",
+    "address": "12 Trantor Lane, Trantor Square, London, SW1A 1AD",
+    "distance_km": 0.4
+  },
+  {
+    "name": "Terminus Park Branch",
+    "address": "3 Foundation Drive, Terminus Park, London, E1 6AP",
+    "distance_km": 0.5
+  },
+  {
+    "name": "Foundation Retail Branch",
+    "address": "8 Terminus Avenue, Terminus Park, London, E1 6AQ",
+    "distance_km": 0.6
+  },
+  {
+    "name": "Terminus Square Branch",
+    "address": "6 Terminus Way, Terminus Park, London, E1 6AR",
+    "distance_km": 0.7
+  },
+  {
+    "name": "Asimov Gardens Branch",
+    "address": "4 Scholar's Lane, Asimov Gardens, London, WC1B 5HB",
+    "distance_km": 0.3
+  },
+  {
+    "name": "Garden Square Branch",
+    "address": "8 Asimov Way, Asimov Gardens, London, WC1B 5HC",
+    "distance_km": 0.5
+  },
+  {
+    "name": "Scholar's Lane Branch",
+    "address": "2 Scholar's Court, Asimov Gardens, London, WC1B 5HD",
+    "distance_km": 0.4
+  }
+]

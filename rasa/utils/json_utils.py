@@ -1,6 +1,6 @@
 import json
 from decimal import Decimal
-from typing import Any, Text
+from typing import Any, Dict, List, Text
 
 
 class DecimalEncoder(json.JSONEncoder):
@@ -58,3 +58,8 @@ def replace_decimals_with_floats(obj: Any) -> Any:
         Input `obj` with all `Decimal` types replaced by `float`s.
     """
     return json.loads(json.dumps(obj, cls=DecimalEncoder))
+
+
+def extract_values(data: Dict, keys: List[Text]) -> Dict:
+    """Extracts values for given keys from a dictionary."""
+    return {key: data.get(key) for key in keys if data.get(key)}

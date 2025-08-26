@@ -1,0 +1,492 @@
+[
+  {
+    "account_id": 1,
+    "amount": 500.0,
+    "description": "Purchase at Galactic Market",
+    "payment_method": "debit",
+    "payee": "Galactic Market"
+  },
+  {
+    "account_id": 1,
+    "amount": 1500.0,
+    "description": "Rent Payment to Trantor Estates",
+    "payment_method": "regular",
+    "payee": "Trantor Estates"
+  },
+  {
+    "account_id": 1,
+    "amount": 75.50,
+    "description": "Dinner at Mycogen Sector Restaurant",
+    "payment_method": "debit",
+    "payee": "Mycogen Cuisine"
+  },
+  {
+    "account_id": 1,
+    "amount": 250.0,
+    "description": "Interplanetary Transport Fare",
+    "payment_method": "debit",
+    "payee": "Imperial Spacelines"
+  },
+  {
+    "account_id": 1,
+    "amount": 120.75,
+    "description": "Vault of Trantor Museum Tickets",
+    "payment_method": "debit",
+    "payee": "Trantor Historical Society"
+  },
+  {
+    "account_id": 1,
+    "amount": 800.0,
+    "description": "Personal Shield Maintenance",
+    "payment_method": "regular",
+    "payee": "Imperial Tech Services"
+  },
+  {
+    "account_id": 1,
+    "amount": 45.99,
+    "description": "Prime Radiant Data Subscription",
+    "payment_method": "debit",
+    "payee": "Seldon Psychohistory Institute"
+  },
+  {
+    "account_id": 1,
+    "amount": 350.0,
+    "description": "Gravitic Repulsor Boots",
+    "payment_method": "debit",
+    "payee": "Terminus Outfitters"
+  },
+  {
+    "account_id": 1,
+    "amount": 1000.0,
+    "description": "Spaceship Insurance Premium",
+    "payment_method": "regular",
+    "payee": "Galactic Insurers"
+  },
+  {
+    "account_id": 1,
+    "amount": 180.25,
+    "description": "Galactic Standard Language Course",
+    "payment_method": "regular",
+    "payee": "Imperial University of Trantor"
+  },
+  {
+    "account_id": 2,
+    "amount": 200.0,
+    "description": "Energy Bill for Terminus Power",
+    "payment_method": "regular",
+    "payee": "Terminus Power"
+  },
+  {
+    "account_id": 2,
+    "amount": 1200.0,
+    "description": "Subscription to Encyclopedia Galactica",
+    "payment_method": "regular",
+    "payee": "Encyclopedia Galactica"
+  },
+  {
+    "account_id": 2,
+    "amount": 85.75,
+    "description": "Hyperwave Transceiver Repair",
+    "payment_method": "debit",
+    "payee": "Foundation TechnoFix"
+  },
+  {
+    "account_id": 2,
+    "amount": 450.0,
+    "description": "Subetheric Communication Package",
+    "payment_method": "regular",
+    "payee": "GalactiComm"
+  },
+  {
+    "account_id": 2,
+    "amount": 75.0,
+    "description": "Atomic Converter Fuel",
+    "payment_method": "debit",
+    "payee": "Anacreon Fuel Station"
+  },
+  {
+    "account_id": 2,
+    "amount": 300.0,
+    "description": "Positronic Brain Maintenance",
+    "payment_method": "debit",
+    "payee": "R. Daneel Olivaw Services"
+  },
+  {
+    "account_id": 2,
+    "amount": 1800.0,
+    "description": "Vault of Trantor Access Fee",
+    "payment_method": "debit",
+    "payee": "Imperial Library of Trantor"
+  },
+  {
+    "account_id": 2,
+    "amount": 95.50,
+    "description": "Neuronic Whip Power Cell",
+    "payment_method": "debit",
+    "payee": "Imperial Armory"
+  },
+  {
+    "account_id": 2,
+    "amount": 250.0,
+    "description": "Holographic Home Decor",
+    "payment_method": "debit",
+    "payee": "Kalgan Luxury Imports"
+  },
+  {
+    "account_id": 2,
+    "amount": 500.0,
+    "description": "Gravitic Gymnasium Membership",
+    "payment_method": "regular",
+    "payee": "Trantor Fitness"
+  },
+  {
+    "account_id": 3,
+    "amount": 450.0,
+    "description": "Purchase from Anacreon Traders",
+    "payment_method": "debit",
+    "payee": "Anacreon Traders"
+  },
+  {
+    "account_id": 3,
+    "amount": 320.0,
+    "description": "Gym Membership at Imperial Fitness",
+    "payment_method": "regular",
+    "payee": "Imperial Fitness"
+  },
+  {
+    "account_id": 3,
+    "amount": 150.75,
+    "description": "Galactic Cuisine Cooking Class",
+    "payment_method": "debit",
+    "payee": "Synnax Culinary Academy"
+  },
+  {
+    "account_id": 3,
+    "amount": 700.0,
+    "description": "Jump Drive Upgrade",
+    "payment_method": "debit",
+    "payee": "Terminus Shipyards"
+  },
+  {
+    "account_id": 3,
+    "amount": 45.99,
+    "description": "Mycogen Sector Fungi Supplies",
+    "payment_method": "debit",
+    "payee": "Mycogen Agri-Corp"
+  },
+  {
+    "account_id": 3,
+    "amount": 1200.0,
+    "description": "Personal Force Field Maintenance",
+    "payment_method": "regular",
+    "payee": "Terminus Technologies"
+  },
+  {
+    "account_id": 3,
+    "amount": 80.0,
+    "description": "Trantorian Postal Service",
+    "payment_method": "debit",
+    "payee": "Imperial Postal Service"
+  },
+  {
+    "account_id": 3,
+    "amount": 350.0,
+    "description": "Psychohistory Conference Fee",
+    "payment_method": "regular",
+    "payee": "Second Foundation"
+  },
+  {
+    "account_id": 3,
+    "amount": 25.50,
+    "description": "Spaceship Debris Shield Insurance",
+    "payment_method": "regular",
+    "payee": "Galactic Insurers"
+  },
+  {
+    "account_id": 3,
+    "amount": 500.0,
+    "description": "Mental Static Device",
+    "payment_method": "debit",
+    "payee": "Second Foundation Tech"
+  },
+  {
+    "account_id": 4,
+    "amount": 300.0,
+    "description": "Dinner at Star's End Diner",
+    "payment_method": "debit",
+    "payee": "Star's End Diner"
+  },
+  {
+    "account_id": 4,
+    "amount": 50.0,
+    "description": "Coffee at Terminus Cafe",
+    "payment_method": "debit",
+    "payee": "Terminus Cafe"
+  },
+  {
+    "account_id": 4,
+    "amount": 1500.0,
+    "description": "Far Star Spacecraft Lease Payment",
+    "payment_method": "regular",
+    "payee": "Foundation Fleet Services"
+  },
+  {
+    "account_id": 4,
+    "amount": 75.25,
+    "description": "Zero-G Yoga Class",
+    "payment_method": "debit",
+    "payee": "Synnax Fitness Studio"
+  },
+  {
+    "account_id": 4,
+    "amount": 200.0,
+    "description": "Galactic Dating App Subscription",
+    "payment_method": "regular",
+    "payee": "Hearts Across the Stars"
+  },
+  {
+    "account_id": 4,
+    "amount": 450.0,
+    "description": "Vault of Trantor Virtual Access",
+    "payment_method": "regular",
+    "payee": "Imperial Library of Trantor"
+  },
+  {
+    "account_id": 4,
+    "amount": 30.50,
+    "description": "Anacreon Beast Feed",
+    "payment_method": "debit",
+    "payee": "Anacreon Livestock Supplies"
+  },
+  {
+    "account_id": 4,
+    "amount": 800.0,
+    "description": "Personal Force Field Repair",
+    "payment_method": "debit",
+    "payee": "Foundation Tech Services"
+  },
+  {
+    "account_id": 4,
+    "amount": 150.0,
+    "description": "Mule's Emotional Projector Experience",
+    "payment_method": "debit",
+    "payee": "Kalgan Entertainment"
+  },
+  {
+    "account_id": 4,
+    "amount": 100.0,
+    "description": "Mycogen Yeast Culture Subscription",
+    "payment_method": "regular",
+    "payee": "Mycogen Sector Imports"
+  },
+  {
+    "account_id": 5,
+    "amount": 600.0,
+    "description": "Office Supplies from Foundation Store",
+    "payment_method": "debit",
+    "payee": "Foundation Office Store"
+  },
+  {
+    "account_id": 5,
+    "amount": 1000.0,
+    "description": "Trantor Docking Fee",
+    "payment_method": "regular",
+    "payee": "Imperial Spaceport Authority"
+  },
+  {
+    "account_id": 5,
+    "amount": 75.50,
+    "description": "Galactic Standard Translator Device",
+    "payment_method": "debit",
+    "payee": "Foundation Electronics"
+  },
+  {
+    "account_id": 5,
+    "amount": 250.0,
+    "description": "Visi-Sonor Tuning",
+    "payment_method": "debit",
+    "payee": "Rossem Instruments"
+  },
+  {
+    "account_id": 5,
+    "amount": 350.0,
+    "description": "Planetary Defense Shield Subscription",
+    "payment_method": "regular",
+    "payee": "Terminus Defense Systems"
+  },
+  {
+    "account_id": 5,
+    "amount": 120.75,
+    "description": "Seldon Crisis Forecast Update",
+    "payment_method": "debit",
+    "payee": "Psychohistory Institute"
+  },
+  {
+    "account_id": 5,
+    "amount": 800.0,
+    "description": "Artificial Gravity Generator",
+    "payment_method": "debit",
+    "payee": "Foundation Physics Corp"
+  },
+  {
+    "account_id": 5,
+    "amount": 40.0,
+    "description": "Concentrated Food Tablets",
+    "payment_method": "debit",
+    "payee": "Foundation Nutrition"
+  },
+  {
+    "account_id": 5,
+    "amount": 500.0,
+    "description": "Hyper-sleep Chamber Rental",
+    "payment_method": "regular",
+    "payee": "Anacreon Travel Services"
+  },
+  {
+    "account_id": 5,
+    "amount": 150.0,
+    "description": "Vault of Trantor Artifact Insurance",
+    "payment_method": "regular",
+    "payee": "Galactic Treasures Assurance"
+  },
+  {
+    "account_id": 6,
+    "amount": 900.0,
+    "description": "Software Subscription to Seldon Analytics",
+    "payment_method": "regular",
+    "payee": "Seldon Analytics"
+  },
+  {
+    "account_id": 6,
+    "amount": 1200.0,
+    "description": "Purchase of Holographic Equipment",
+    "payment_method": "debit",
+    "payee": "HoloTech"
+  },
+  {
+    "account_id": 6,
+    "amount": 50.25,
+    "description": "Atomic Coffee Subscription",
+    "payment_method": "regular",
+    "payee": "Trantor Roasters"
+  },
+  {
+    "account_id": 6,
+    "amount": 300.0,
+    "description": "Hyperspace Communication Charges",
+    "payment_method": "regular",
+    "payee": "GalactiComm"
+  },
+  {
+    "account_id": 6,
+    "amount": 75.0,
+    "description": "Anti-Grav Hair Styling Gel",
+    "payment_method": "debit",
+    "payee": "Kalgan Cosmetics"
+  },
+  {
+    "account_id": 6,
+    "amount": 450.0,
+    "description": "R. Daneel Olivaw Model Upgrade",
+    "payment_method": "debit",
+    "payee": "Aurora Robotics"
+  },
+  {
+    "account_id": 6,
+    "amount": 200.0,
+    "description": "Space Pirate Insurance",
+    "payment_method": "regular",
+    "payee": "Galactic Risk Management"
+  },
+  {
+    "account_id": 6,
+    "amount": 100.0,
+    "description": "Terminus Mining Royalties",
+    "payment_method": "regular",
+    "payee": "Foundation Resources"
+  },
+  {
+    "account_id": 6,
+    "amount": 750.0,
+    "description": "Jump-2 Hyperdrive System",
+    "payment_method": "debit",
+    "payee": "Foundation Fleet Tech"
+  },
+  {
+    "account_id": 6,
+    "amount": 25.50,
+    "description": "Gravitic Repulsion Yoga Mat",
+    "payment_method": "debit",
+    "payee": "Synnax Fitness Gear"
+  },
+  {
+    "account_id": 7,
+    "amount": 150.0,
+    "description": "Book Purchase from Trantor Books",
+    "payment_method": "debit",
+    "payee": "Trantor Books"
+  },
+  {
+    "account_id": 7,
+    "amount": 500.0,
+    "description": "Personal Force Field System",
+    "payment_method": "debit",
+    "payee": "Terminus Security Solutions"
+  },
+  {
+    "account_id": 7,
+    "amount": 75.25,
+    "description": "Atomic Vibro-Blade Toothbrush",
+    "payment_method": "debit",
+    "payee": "Foundation Health Tech"
+  },
+  {
+    "account_id": 7,
+    "amount": 1000.0,
+    "description": "Spacecraft Neural Interface Upgrade",
+    "payment_method": "debit",
+    "payee": "Foundation Fleet Systems"
+  },
+  {
+    "account_id": 7,
+    "amount": 250.0,
+    "description": "Holographic History Tour of Trantor",
+    "payment_method": "debit",
+    "payee": "Imperial Tourism Board"
+  },
+  {
+    "account_id": 7,
+    "amount": 180.0,
+    "description": "Psychohistory for Beginners Course",
+    "payment_method": "regular",
+    "payee": "Seldon Institute"
+  },
+  {
+    "account_id": 7,
+    "amount": 90.50,
+    "description": "Trantorian Cuisine Delivery",
+    "payment_method": "debit",
+    "payee": "GalactiEats"
+  },
+  {
+    "account_id": 7,
+    "amount": 550.0,
+    "description": "Personal Mentalic Shield",
+    "payment_method": "debit",
+    "payee": "Second Foundation Tech"
+  },
+  {
+    "account_id": 7,
+    "amount": 125.75,
+    "description": "Vault of Trantor Virtual Tour",
+    "payment_method": "debit",
+    "payee": "Imperial Library of Trantor"
+  },
+  {
+    "account_id": 7,
+    "amount": 300.0,
+    "description": "Foundation Encyclopedia Update",
+    "payment_method": "regular",
+    "payee": "Encyclopedia Galactica"
+  }
+]

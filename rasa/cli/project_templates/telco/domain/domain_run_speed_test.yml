@@ -1,0 +1,24 @@
+slots:
+  how_to_run_speed_test:
+    type: text
+    mappings:
+      - type: from_llm
+
+  run_speed_test:
+    type: bool
+    mappings:
+      - type: from_llm
+
+  download_speed:
+    type: text
+    mappings:
+      - type: from_llm
+
+responses:
+
+  utter_ask_download_speed:
+  - text: |
+      Run it and let me know the download speed.
+  utter_help_run_speed_test:
+    - text: |
+          You can use our Rasacom App, go to the Home menu and select WLAN speed test or use this link https://fast.com/

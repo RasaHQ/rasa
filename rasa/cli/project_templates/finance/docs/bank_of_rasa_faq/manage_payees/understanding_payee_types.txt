@@ -1,0 +1,8 @@
+Q: What types of payees can I add?
+A: You can add individuals, companies, or organisations as payees, depending on your payment needs.
+
+Q: Are there any restrictions on adding payees?
+A: Yes, you can only add payees that meet the bank's criteria for authorised payees.
+
+Q: Can I set different payment limits for different payees?
+A: Currently, there is no option to set individual limits for payees; all payees are subject to your overall account limits.

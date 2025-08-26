@@ -1,0 +1,74 @@
+slots:
+  network_speed:
+    type: float
+    mappings:
+      - type: controlled
+  more_help_needed:
+    type: bool
+    mappings:
+      - type: from_llm
+
+responses:
+
+  utter_acknowledge_issue:
+    - text: |
+        I see.
+        Let me try to identify the root cause of the issue you are facing.
+  utter_communicate_run_diagnosticss:
+    - text: |
+        I will run a network diagnostics for you 🛜
+        Wait a moment please...
+      image: "https://static.vecteezy.com/system/resources/previews/002/785/641/non_2x/speed-test-internet-measure-icon-illustration-free-vector.jpg"
+  utter_acknowledge_speed_test_not_good:
+  - text: |
+      Your network download speed is {network_speed} Mbps.
+      That's definitely not good.
+
+  utter_propose_reboot_router_solution:
+  - text: |
+      Let's reboot your router.
+      It helps resolving most issues with speed.
+  utter_speed_issue_resolved:
+    - text: |
+        {network_speed} Mbps, Awesome! 🚀
+        If the Internet gets slow again, you can always reset the router.
+        If that doesn't help, let me know, and we can try something else. 😊
+  utter_speed_issue_not_resolved:
+    - text: |
+        Your network speed is {network_speed} Mbps.
+        That's too low.
+  utter_speed_network_not_issue:
+    - text: |
+        {network_speed} Mbps sounds right. The speed seems to be in order.
+  utter_propose_other_solutions:
+    - text: |
+        The result of my test shows that there is no technical issues between your home and our core network.
+        However, if you're still experiencing slow browsing or buffering, it could be due to network congestion, too many connected devices, or Wi-Fi interference.
+        Try moving closer to your router or disconnecting unused devices.
+  utter_ask_more_help_needed:
+    - text: |
+        I can connect you to a human agent for further assistance.
+        Would you like me to do that now?
+      buttons:
+        - title: "Yes, please"
+          payload: "/SetSlots(more_help_needed=True)"
+        - title: "Not now"
+          payload: "/SetSlots(more_help_needed=False)"
+  utter_final_help:
+    - text: |
+        No problem! If you need help later, feel free to ask.
+        In the meantime, you might try checking for background apps using bandwidth or reducing the number of connected devices.
+        Let me know if there's anything else I can do for you!
+  utter_final_diagnistics_run:
+    - text: |
+        Final try 🤞
+  utter_fail_to_find_fix:
+    - text: |
+        I am sorry that I could not resolve the problem with your Internet speed.
+        Please don't worry, we will find the exact cause and remedy it.
+  utter_final_try_worked:
+    - text: |
+        third time is a charm
+actions:
+  - actions_run_speed_test
+  - action_sleep_few_sec

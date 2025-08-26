@@ -262,12 +262,9 @@ class YamlFlowsWriter:
         Returns:
             The dumped YAML.
         """
-        dump = {}
-        for flow in flows:
-            dumped_flow = get_flow_as_json(flow, should_clean_json)
-            del dumped_flow["id"]
-            dump[flow.id] = dumped_flow
-        return dump_obj_as_yaml_to_string({KEY_FLOWS: dump})
+        return dump_obj_as_yaml_to_string(
+            {KEY_FLOWS: get_flows_as_json(flows, should_clean_json)}
+        )
 
     @staticmethod
     def dump(
@@ -424,9 +421,20 @@ def process_yaml_content(yaml_content: Dict[str, Any]) -> Dict[str, Any]:
     return yaml_content
 
 
+def get_flows_as_json(
+    flows: FlowsList, should_clean_json: bool = False
+) -> Dict[str, Any]:
+    """Get the flows as a JSON dictionary."""
+    dump = {}
+    for flow in flows:
+        dumped_flow = get_flow_as_json(flow, should_clean_json)
+        del dumped_flow["id"]
+        dump[flow.id] = dumped_flow
+    return dump
+
+
 def get_flow_as_json(flow: Flow, should_clean_json: bool = False) -> Dict[str, Any]:
-    """
-    Clean the Flow JSON by removing default values and empty fields.
+    """Clean the Flow JSON by removing default values and empty fields.
 
     Args:
         flow: The Flow object to clean.

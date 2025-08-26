@@ -1,0 +1,8 @@
+Q: What is an authorised payee?
+A: An authorised payee is a person or entity that you have approved to receive payments from your account.
+
+Q: Why should I set up authorised payees?
+A: Authorised payees streamline payments and enhance security by reducing the risk of errors in transaction details.
+
+Q: Can I have the same payee for multiple accounts?
+A: Yes, you can set up the same payee for multiple accounts within your Bank of Rasa account.

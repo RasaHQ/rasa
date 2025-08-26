@@ -1,0 +1,8 @@
+Q: What information do I need to make a transfer?
+A: You'll need the payee's name, account number, sort code, and the amount you wish to transfer.
+
+Q: Can I transfer money internationally?
+A: Yes, you can transfer money internationally, but you may need additional details like the recipient's address.
+
+Q: Are there any restrictions on who I can transfer money to?
+A: Transfers can only be made to authorised payees that you have set up in your account.

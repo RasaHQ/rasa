@@ -1,0 +1,73 @@
+flows:
+  fix_internet_slow: # flow name mandatory – this defines a conversational flow for running diagnostics.
+    description: Help users solve when internet is slow and provide solutions # description another madatory field this will be sent to CALM
+    steps:
+      - action: utter_acknowledge_issue # an utter a response that the assistant will display to the end user.
+      - action: action_sleep_few_sec # Adding sleep time in a chatbot conversation makes interactions feel more natural,
+                                    #improves readability, and simulates processing delays for a better user experience.
+      - call: run_diagnostics # Call a flow, this flow can be re-used multiple times.
+                              # fix_internet_slow will (parent flow) call run_diagnostics (child flow)
+                              # when you call a flow, you go to the child flow and then be back to the parent flow
+                              # first call
+        next:
+          - if: slots.network_speed < 100 # the syntax is important it has to be slots, this slot has to be float as well
+            then:
+              - action: utter_acknowledge_speed_test_not_good
+              - action: action_sleep_few_sec
+              - action: utter_propose_reboot_router_solution
+              - action: action_sleep_few_sec
+              - call: reboot_router
+                next:
+                  - if: slots.reboot_router # this slot is boolean
+                    then:
+                      - call: run_diagnostics # Second call
+                        next:
+                          - if: slots.network_speed > 100
+                            then:
+                              - action: action_sleep_few_sec
+                              - action: utter_speed_issue_resolved
+                                next: "END" # this has to be added, either next END to explain the flow end or point to another section
+                          - else:
+                            - action: action_sleep_few_sec
+                            - action: utter_speed_issue_not_resolved
+                            - call: reset_router
+                            - action: utter_final_diagnistics_run
+                            - call: run_diagnostics # Third call
+                              next:
+                                - if: slots.network_speed < 100
+                                  then:
+                                    - action: utter_acknowledge_speed_test_not_good
+                                    - action: utter_fail_to_find_fix
+                                    - link: pattern_human_handoff # when you link a flow, you go to the child flow and then the flow ends there.
+                                - else:
+                                  - action: action_sleep_few_sec
+                                  - action: utter_final_try_worked
+                                  - action: utter_speed_issue_resolved
+                                    next: "END"
+
+
+                  - else:
+                    - link: pattern_human_handoff
+          - else:
+            - action: utter_speed_network_not_issue
+            - action: action_sleep_few_sec
+            - action: utter_propose_other_solutions
+            - action: action_sleep_few_sec
+            - collect: more_help_needed
+              next:
+                - if: slots.more_help_needed
+                  then:
+                    - link: pattern_human_handoff
+                - else:
+                  - action: action_sleep_few_sec
+                  - action: utter_final_help
+                    next: "END"
+
+
+  run_diagnostics:
+    if: False # Conditional check – this flow will not run unless this condition is verified.
+              #when it is False this means this flow will only be run if it is called by another flow, not the user.
+    description: run diagnostics to check the internet speed for the user
+    steps:
+      - action: utter_communicate_run_diagnosticss
+      - action: actions_run_speed_test

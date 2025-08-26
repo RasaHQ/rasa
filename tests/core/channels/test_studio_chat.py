@@ -40,8 +40,7 @@ def test_tracker_as_dump_only_returns_last_session_on_tracker(
     default_tracker.update(ActionExecuted(ACTION_SESSION_START_NAME))
     default_tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 
-    dump = tracker_as_dump(default_tracker)
-    loaded = json.loads(dump)
+    loaded = tracker_as_dump(default_tracker)
 
     # there should be one action listen and one action session start
     assert len(loaded.get("events")) == 2
@@ -123,8 +122,8 @@ async def test_studio_chat_handle_tracker_update(
     call = studio_input.sio_server.emit.call_args_list[0]
     assert call.args[0] == "tracker"
     # check that the new message is present and the old one isn't
-    assert "hello world" in call.args[1]
-    assert "foo bar" not in call.args[1]
+    assert "hello world" in json.dumps(call.args[1])
+    assert "foo bar" not in json.dumps(call.args[1])
 
     retrieved_tracker = await default_agent.tracker_store.retrieve(
         default_tracker.sender_id

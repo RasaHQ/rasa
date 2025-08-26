@@ -1,0 +1,74 @@
+[
+  {
+    "user_id": 1,
+    "name": "Robert",
+    "sort_code": "123456",
+    "account_number": "65432178",
+    "type": "person",
+    "reference": "friend"
+  },
+  {
+    "user_id": 1,
+    "name": "James",
+    "sort_code": "123456",
+    "account_number": "87654321",
+    "type": "person",
+    "reference": "son"
+  },
+  {
+    "user_id": 1,
+    "name": "Food Market",
+    "sort_code": "123456",
+    "account_number": "11223344",
+    "type": "business",
+    "reference": "groceries"
+  },
+  {
+    "user_id": 2,
+    "name": "Richard",
+    "sort_code": "654321",
+    "account_number": "12345678",
+    "type": "person",
+    "reference": "business partner"
+  },
+  {
+    "user_id": 2,
+    "name": "Susan",
+    "sort_code": "654321",
+    "account_number": "87654321",
+    "type": "person",
+    "reference": "friend"
+  },
+  {
+    "user_id": 2,
+    "name": "Electric Company",
+    "sort_code": "654321",
+    "account_number": "99887766",
+    "type": "business",
+    "reference": "utilities"
+  },
+  {
+    "user_id": 3,
+    "name": "William",
+    "sort_code": "111111",
+    "account_number": "22223333",
+    "type": "person",
+    "reference": "friend"
+  },
+  {
+    "user_id": 3,
+    "name": "Amy",
+    "sort_code": "111111",
+    "account_number": "33332222",
+    "type": "person",
+    "reference": "colleague"
+  },
+  {
+    "user_id": 3,
+    "name": "Fitness Gym",
+    "sort_code": "111111",
+    "account_number": "44556677",
+    "type": "business",
+    "reference": "gym"
+  }
+]

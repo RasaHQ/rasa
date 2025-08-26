@@ -1,0 +1,30 @@
+version: "3.1"
+actions:
+  - "action_human_handoff"
+
+slots: 
+ confirm_human_handoff:
+    type: "categorical"
+    mappings:
+      - type: "from_llm"
+    values:
+      - "Yes"
+      - "No" 
+
+responses:
+  utter_ask_confirm_human_handoff:
+    - text: "Do you want to be connected to a human agent?"
+      buttons:
+        - payload: "/SetSlots(confirm_human_handoff=Yes)"
+          title: "Yes"
+        - payload: "/SetSlots(confirm_human_handoff=No)"
+          title: "No"
+
+  utter_transferring_to_human:
+    - text: "You will be transfered to a human agent in a few moments."
+
+  utter_human_handoff_cancelled:
+    - text: "Ok, I understand you don't want to be connected to a human agent. Is there something else I can help you with?"
+      metadata:
+        rephrase: True
+

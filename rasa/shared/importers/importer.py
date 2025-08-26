@@ -207,6 +207,12 @@ class TrainingDataImporter(ABC):
                 )
             ]
 
+        return TrainingDataImporter.wrap_in_builtins(importers)
+
+    @staticmethod
+    def wrap_in_builtins(
+        importers: List["TrainingDataImporter"],
+    ) -> "TrainingDataImporter":
         return LanguageImporter(
             E2EImporter(
                 FlowSyncImporter(ResponsesSyncImporter(CombinedDataImporter(importers)))

@@ -1,0 +1,9 @@
+flows:
+  pattern_session_start: # this is a pattern that will be triggered in the begining of the session
+    description: Flow for starting the conversation
+    name: pattern session start
+    nlu_trigger:
+      - intent: session_start
+    steps:
+      - action: action_get_customer_info
+      - action: utter_session_start

@@ -1,0 +1,7 @@
+flows:
+  pattern_search: # This is a patter that triggered if we have a knowledge base question so we rely on the description we have for SearchAndReply() command
+    description: Flow for handling how to run a speed test ## This is a description just a place holder
+                                                            #if you want to change it you need to update the command description in the prompt
+    name: pattern search
+    steps:
+      - action: action_trigger_search

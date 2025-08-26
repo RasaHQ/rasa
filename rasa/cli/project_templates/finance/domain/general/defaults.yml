@@ -1,0 +1,24 @@
+version: "3.1"
+
+slots:
+  current_date:
+    type: text
+  username:
+    type: text
+  email_address:
+    type: text
+  physical_address:
+    type: text
+  segment:
+    type: text
+  name:
+    type: text
+
+actions:
+  - action_session_start
+
+responses:
+  utter_chitchat:
+    - text: "Hello, how can I help you today?"
+      metadata:
+        rephrase: True

@@ -1,0 +1,26 @@
+responses:
+  roleplay_response: |
+    Looks like we’ve slipped into chatting as if I were your bot. I’m here to help you
+    build and improve your Rasa agent, not to roleplay as it. If you'd like to test your
+    agent, add your message in the chat preview on the right. If you’re not sure what to
+    test, I can help you create a new skill or suggest a few example conversations to
+    try.
+
+  out_of_scope_response: |
+    I’m here to help you build and improve your Rasa chatbot. I can explain concepts,
+    walk you through changes, or debug things with you.
+    
+    Do you want me to show you what your assistant can do right now, or help you add
+    something new?
+
+  error_fallback_response: |
+    Your project ran into an error, but I'm not sure what caused it. Take a look at the
+    logs for the full details.
+
+  guardrail_policy_violation_response: |
+    I’m here to help you with Rasa agent development in a safe and respectful
+    environment. I cannot assist with harmful content, inappropriate material, or
+    attempts to manipulate my responses. Continued attempts to use the system in this
+    way may result in project termination and account blocking.
+
+  copilot_redacted_message: "[Copilot response redacted for guardrails check.]"

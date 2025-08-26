@@ -1,0 +1,5 @@
+flows:
+  pattern_chitchat:
+    description: Handle chitchat related questions
+    steps:
+      - action: utter_chitchat

@@ -1,0 +1,45 @@
+flows:
+  understand_bill:
+    if: slots.user_authenticated # the user has to be authenticated in order to access this flow
+    description: This flow allows users to check their bill and billing related details.
+    steps:
+      - collect: bill_month
+        ask_before_filling: False
+      - action: action_verify_bill_by_date
+      - collect: breakdown_cost
+        description: |
+          This slot is boolean variable. it holds one of two possible values: true or false
+          (breakdown_cost = True, breakdown_cost = False), and if the user says "yup," it should be considered True, while "nope" should be considered False
+          (e.g., breakdown_cost = True for "yup", breakdown_cost = False for "nope").
+        ask_before_filling: true # This can be useful some LLMs will prefill bool slots here we make it mandatory for the bot to ask the user
+        next:
+          - if: slots.breakdown_cost # it has to be 'slots' with an 's', this means breakdown_cost is True
+            then:
+              - action: action_recap_bill
+              - collect: more_bill_details
+                next:
+                  - if: slots.more_bill_details
+                    then:
+                      - action: utter_provide_bill_sources
+                        next: "END"
+                  - else: issue_solved_section # this will call "issue_solved_section" section
+
+          - else: issue_solved_section
+
+      - id: issue_solved_section # This will help avoid re-writting the same piece of code, this way it can be re-used
+        collect: issue_solved
+        description: |
+          This slot is boolean variable. it holds one of two possible values: true or false
+          (issue_solved = True, issue_solved = False), and if the user says "yup" it should be considered True, while "nope" should be considered False
+          (e.g., issue_solved = True for "yup", issue_solved = False for "nope").
+        ask_before_filling: true
+        next:
+          - if: not slots.issue_solved # this means issue_solved is False
+            then:
+              - action: utter_connect_to_human
+              - action: action_sleep_few_sec
+              -  link: pattern_human_handoff
+
+          - else:
+            - action: utter_end_conversation
+              next: "END"

@@ -1,5 +1,6 @@
 recipe: default.v1
 language: en
+assistant_id: placeholder_default
 pipeline:
 - name: CompactLLMCommandGenerator
   llm:

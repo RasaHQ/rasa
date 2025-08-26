@@ -1,0 +1,5 @@
+version: "3.1"
+
+responses:
+  utter_help:
+    - text: "I can help you with {skills_summary}."

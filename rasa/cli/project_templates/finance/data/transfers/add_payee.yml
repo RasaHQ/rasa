@@ -1,0 +1,29 @@
+flows:
+  add_payee:
+    description: "Add a new payee to the user’s account by collecting and confirming details such as payee name, account number, payee type (person or business), and a reference note"
+    steps:
+      - collect: payee_name
+        description: "name of the payee"
+      - collect: account_number
+        description: "banking account number"
+      - collect: payee_type
+        description: "type of the payee that can be either person or business"
+      - collect: reference
+        description: "a short note to identify the payee or purpose"
+      - collect: confirm_payee_details
+        description: "confirmation from the user that all payee details are correct before proceeding"
+        ask_before_filling: true
+        next:
+            - if: slots.confirm_payee_details
+              then: action_add_payee_step
+            - else: END
+      - id: action_add_payee_step
+        action: action_add_payee
+        next:
+          - if: slots.payee_added
+            then:
+              - action: utter_payee_added_success
+                next: END
+          - else:
+              - action: utter_payee_added_failure
+                next: END

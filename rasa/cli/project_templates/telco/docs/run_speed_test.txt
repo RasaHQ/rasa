@@ -1,0 +1,6 @@
+Speed test is run by a special software to check what is the current speed of your Internet when uploading or downloading files
+You can use "Fast.com", "Speedtest.net", or Google "Internet speed test"
+An internet speed test measures your connection's performance by evaluating download and upload speeds (Mbps), ping (latency in ms), and jitter.
+It helps determine how fast data is sent and received, impacting streaming, gaming, and video calls.
+Speed tests are useful for diagnosing slow connections and verifying ISP performance.
+You can use our App for a speed test. Go to the Home menu, select WLAN speed test and run it.

@@ -1,0 +1,8 @@
+Q: Why does my account balance fluctuate?
+A: Your balance may change due to pending transactions, transfers, or bank fees applied to your account.
+
+Q: How frequently is my balance updated?
+A: Your balance updates in real-time for most transactions, but some may take longer to process.
+
+Q: Can I see historical balance information?
+A: Yes, you can view historical balance information in the transaction history section of the app or online banking.

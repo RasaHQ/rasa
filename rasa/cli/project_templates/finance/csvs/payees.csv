@@ -1,0 +1,11 @@
+id,user_id,name,sort_code,account_number,type,reference,added_at
+1,1,Robert,123456,65432178,person,friend,2024-10-02 17:33:16
+2,1,James,123456,87654321,person,son,2024-10-02 17:33:16
+3,1,Food Market,123456,11223344,business,groceries,2024-10-02 17:33:16
+4,2,Richard,654321,12345678,person,business partner,2024-10-02 17:33:16
+5,2,Susan,654321,87654321,person,friend,2024-10-02 17:33:16
+6,2,Electric Company,654321,99887766,business,utilities,2024-10-02 17:33:16
+8,3,Amy,111111,33332222,person,colleague,2024-10-02 17:33:16
+9,3,Fitness Gym,111111,44556677,business,gym,2024-10-02 17:33:16
+10,3,William,111111,22223333,person,friend,2024-11-27 12:21:15
+11,1,albert,,123123123,person,big brother,2025-08-01 15:47:00

@@ -1,0 +1,8 @@
+flows:
+  pattern_session_start:
+    description: Flow for starting the conversation
+    name: pattern session start
+    nlu_trigger:
+        - intent: session_start
+    steps:
+      - action: utter_greeting

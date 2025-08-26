@@ -1,0 +1,6 @@
+flows:
+  pattern_human_handoff:
+    description: Conversation repair flow for switching users to a human agent if their request can't be handled
+    name: pattern human handoff
+    steps:
+      - action: utter_more_help_needed_handoff_pattern

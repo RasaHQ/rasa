@@ -3,7 +3,6 @@ import contextlib
 import hashlib
 import inspect
 import json
-import logging
 import multiprocessing
 import os
 import platform
@@ -70,7 +69,7 @@ if typing.TYPE_CHECKING:
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.shared.nlu.training_data.training_data import TrainingData
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 SEGMENT_TRACK_ENDPOINT = "https://api.segment.io/v1/track"
 SEGMENT_IDENTIFY_ENDPOINT = "https://api.segment.io/v1/identify"
@@ -197,6 +196,10 @@ TELEMETRY_E2E_TEST_CONVERSION_EVENT = "E2E Test Conversion Completed"
 E2E_TEST_CONVERSION_FILE_TYPE = "file_type"
 E2E_TEST_CONVERSION_TEST_CASE_COUNT = "test_case_count"
 
+# Copilot telemetry
+TELEMETRY_COPILOT_USER_MESSAGE_EVENT = "copilot_user_message"
+TELEMETRY_COPILOT_BOT_MESSAGE_EVENT = "copilot_bot_message"
+
 
 def print_telemetry_reporting_info() -> None:
     """Print telemetry information to std out."""
@@ -255,7 +258,11 @@ def _is_telemetry_enabled_in_configuration() -> bool:
 
         return stored_config[CONFIG_TELEMETRY_ENABLED]
     except ValueError as e:
-        logger.debug(f"Could not read telemetry settings from configuration file: {e}")
+        structlogger.debug(
+            "telemetry.is_telemetry_enabled_in_configuration.error",
+            error=str(e),
+            event_info="Could not read telemetry settings from configuration file",
+        )
 
         # seems like there is no config, we'll create one and enable telemetry
         success = _write_default_telemetry_configuration()
@@ -272,7 +279,10 @@ def is_telemetry_enabled() -> bool:
     from rasa.utils import licensing
 
     if licensing.is_champion_server_license():
-        logger.debug("Telemetry is enabled for developer licenses.")
+        structlogger.debug(
+            "telemetry.enabled.developer_license",
+            event_info="Telemetry is enabled for developer licenses.",
+        )
         return True
 
     telemetry_environ = os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE)
@@ -308,9 +318,13 @@ def initialize_telemetry() -> bool:
 
         return telemetry_environ.lower() == "true"
     except Exception as e:  # skipcq:PYL-W0703
-        logger.exception(
-            f"Failed to initialize telemetry reporting: {e}."
-            f"Telemetry reporting will be disabled."
+        structlogger.exception(
+            "telemetry.initialize_telemetry.error",
+            error=str(e),
+            event_info=(
+                "Failed to initialize telemetry reporting. "
+                "Telemetry reporting will be disabled."
+            ),
         )
         return False
 
@@ -481,7 +495,10 @@ def print_telemetry_payload(payload: Dict[Text, Any]) -> None:
         payload: payload to be delivered to segment.
     """
     payload_json = json.dumps(payload, indent=2)
-    logger.debug(f"Telemetry payload: {payload_json}")
+    structlogger.debug(
+        "telemetry.print_telemetry_payload.debug",
+        event_info=f"Telemetry payload: {payload_json}",
+    )
 
 
 def _get_telemetry_write_key() -> Optional[Text]:
@@ -535,10 +552,24 @@ def _send_request(url: Text, payload: Dict[Text, Any]) -> None:
     if not write_key:
         # If RASA_TELEMETRY_WRITE_KEY is empty or `None`, telemetry has not
         # been enabled for this build (e.g. because it is running from source)
-        logger.debug("Skipping request to external service: telemetry key not set.")
+        structlogger.debug(
+            "telemetry.send_request.no_telemetry_key",
+            event_info="Skipping request to external service: telemetry key not set.",
+        )
         return
 
-    headers = rasa.telemetry.segment_request_header(write_key)
+    send_segment_request(url, payload, write_key)
+
+
+def send_segment_request(url: Text, payload: Dict[Text, Any], write_key: Text) -> None:
+    """Send a request to the Segment API.
+
+    Args:
+        url: URL of the Segment API endpoint
+        payload: payload to send to the Segment API
+        write_key: write key for the Segment API
+    """
+    headers = segment_request_header(write_key)
 
     resp = requests.post(
         url=url,
@@ -548,15 +579,22 @@ def _send_request(url: Text, payload: Dict[Text, Any]) -> None:
     )
     # handle different failure cases
     if resp.status_code != 200:
-        logger.debug(
-            f"Segment telemetry request returned a {resp.status_code} response. "
-            f"Body: {resp.text}"
+        structlogger.debug(
+            "telemetry.send_segment_request.error_response",
+            event_info=(
+                f"Segment telemetry request returned a {resp.status_code} "
+                f"response. Body: {resp.text}"
+            ),
         )
     else:
         data = resp.json()
         if not data.get("success"):
-            logger.debug(
-                f"Segment telemetry request returned a failure. Response: {data}"
+            structlogger.debug(
+                "telemetry.send_segment_request.failure",
+                event_info=(
+                    f"Segment telemetry request returned a failure. "
+                    f"Response: {data}"
+                ),
             )
 
 
@@ -609,6 +647,15 @@ def with_default_context_fields(
     return {**_default_context_fields(), **context}
 
 
+def get_deployment_stack() -> Text:
+    """Return the deployment stack.
+
+    Returns:
+        The deployment stack.
+    """
+    return os.environ.get("DEPLOYMENT_STACK", "")
+
+
 def _default_context_fields() -> Dict[Text, Any]:
     """Return a dictionary that contains the default context values.
 
@@ -632,6 +679,7 @@ def _default_context_fields() -> Dict[Text, Any]:
             "cpu": multiprocessing.cpu_count(),
             "docker": _is_docker(),
             "license_hash": get_license_hash(),
+            "deployment_stack": get_deployment_stack(),
             "company": property_of_active_license(
                 lambda active_license: active_license.company
             ),
@@ -663,7 +711,10 @@ def _track(
         telemetry_id = get_telemetry_id()
 
         if not telemetry_id:
-            logger.debug("Will not report telemetry events as no ID was found.")
+            structlogger.debug(
+                "telemetry.track.no_id_found",
+                event_info="Will not report telemetry events as no ID was found.",
+            )
             return
 
         if not properties:
@@ -681,7 +732,11 @@ def _track(
                 with_default_context_fields(context),
             )
     except Exception as e:  # skipcq:PYL-W0703
-        logger.debug(f"Skipping telemetry reporting: {e}")
+        structlogger.debug(
+            "telemetry.track.error",
+            error=str(e),
+            event_info="Skipping telemetry reporting",
+        )
 
 
 def _identify(
@@ -702,7 +757,10 @@ def _identify(
         telemetry_id = get_telemetry_id()
 
         if not telemetry_id:
-            logger.debug("Will not report telemetry events as no ID was found.")
+            structlogger.debug(
+                "telemetry.identify.no_id_found",
+                event_info="Will not report telemetry events as no ID was found.",
+            )
             return
 
         if not traits:
@@ -710,7 +768,11 @@ def _identify(
 
         _send_traits(telemetry_id, traits, with_default_context_fields(context))
     except Exception as e:
-        logger.debug(f"Skipping telemetry reporting: {e}")
+        structlogger.debug(
+            "telemetry.identify.error",
+            error=str(e),
+            event_info="Skipping telemetry reporting",
+        )
 
 
 def _send_traits(
@@ -868,13 +930,16 @@ def strip_sensitive_data_from_sentry_event(
 
 
 @ensure_telemetry_enabled
-def initialize_error_reporting() -> None:
+def initialize_error_reporting(private_mode: bool = True) -> None:
     """Sets up automated error reporting.
 
     Exceptions are reported to sentry. We avoid sending any metadata (local
     variables, paths, ...) to make sure we don't compromise any data. Only the
     exception and its stacktrace is logged and only if the exception origins
     from the `rasa` package.
+
+    Args:
+        private_mode: If True, try to send as little data as possible.
     """
     import sentry_sdk
     from sentry_sdk import configure_scope
@@ -892,11 +957,18 @@ def initialize_error_reporting() -> None:
 
     telemetry_id = get_telemetry_id()
 
+    # in hello rasa we use a different project, so we need to be able
+    # to set the whole url. since we can't change the behavior of sentry in pro
+    # we have two kinds of keys, full urls and jsut the key within the fixed rasa
+    # pro project.
+    if not key.startswith("https://"):
+        key = f"https://{key}.ingest.sentry.io/2801673"
+
     # this is a very defensive configuration, avoiding as many integrations as
     # possible. it also submits very little data (exception with error message
     # and line numbers).
     sentry_sdk.init(
-        f"https://{key}.ingest.sentry.io/2801673",
+        key,
         before_send=before_send,
         integrations=[
             ExcepthookIntegration(),
@@ -916,7 +988,7 @@ def initialize_error_reporting() -> None:
             OSError,
         ],
         in_app_include=["rasa"],  # only submit errors in this package
-        include_local_variables=False,  # don't submit local variables
+        include_local_variables=not private_mode,
         release=f"rasa-{rasa.__version__}",
         default_integrations=False,
         environment="development" if in_continuous_integration() else "production",
@@ -937,6 +1009,7 @@ def initialize_error_reporting() -> None:
                 # os is a nested dict, hence we report it separately
                 scope.set_context("Operating System", default_context.pop("os"))
             scope.set_context("Environment", default_context)
+    structlogger.debug("telemetry.sentry.initialized")
 
 
 @contextlib.contextmanager
@@ -1426,6 +1499,7 @@ def track_shell_started(model_type: Text, assistant_id: Text) -> None:
 
     Args:
         model_type: Type of the model, core / nlu or rasa.
+        assistant_id: ID of the assistant being inspected.
     """
     _track(
         TELEMETRY_SHELL_STARTED_EVENT,
@@ -1997,7 +2071,7 @@ def _extract_stream_pii(event_broker: Optional["EventBroker"]) -> bool:
 def track_privacy_enabled(
     privacy_config: "PrivacyConfig", event_broker: Optional["EventBroker"]
 ) -> None:
-    """Track when PII management capability is enabled"""
+    """Track when PII management capability is enabled."""
     stream_pii = _extract_stream_pii(event_broker)
     privacy_properties = _extract_privacy_enabled_event_properties(
         privacy_config, stream_pii

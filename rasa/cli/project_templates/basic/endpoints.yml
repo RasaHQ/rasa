@@ -1,0 +1,73 @@
+ # This file contains the different endpoints your bot can use.
+
+# Server which runs your custom actions.
+# https://rasa.com/docs/rasa-pro/concepts/custom-actions
+action_endpoint:
+  actions_module: "actions"
+
+# Allow rephrasing of responses using a Rasa-hosted model
+nlg:
+  type: rephrase
+  llm:
+    model_group: openai-gpt-4o
+  prompt_template: ./prompts/rephraser_demo_personality_prompt.jinja2
+  rephrase_all: False
+  summarize_history: False
+
+# Model Groups - Integrate with different LLM providers
+# https://rasa.com/docs/reference/config/components/llm-configuration/#model-groups
+# https://platform.openai.com/docs/models
+model_groups:
+  - id: openai-gpt-4o
+    models:
+      - provider: openai
+        model: gpt-4o-2024-11-20
+        timeout: 7
+        temperature: 0.0
+        top_p: 0.0
+  - id: gpt-3.5-turbo-openai-model
+    models:
+      - provider: openai
+        model: gpt-3.5-turbo
+        temperature: 0.3
+  # - id: rasa_command_generation_model
+  #   models:
+  #     - provider: rasa
+  #       model: rasa/cmd_gen_codellama_13b_calm_demo
+  #       api_base: "https://tutorial-llm.rasa.ai"
+  # - id: openai_embeddings
+  #   models:
+  #     - provider: openai
+  #       model: text-embedding-ada-002
+
+
+# Server where the models are pulled from.
+# https://rasa.com/docs/rasa-pro/production/model-storage#fetching-models-from-a-server
+#models:
+#  url: http://my-server.com/models/default_core@latest
+#  wait_time_between_pulls:  10   # [optional](default: 100)
+
+# Tracker store which is used to store the conversations.
+# By default the conversations are stored in memory.
+# https://rasa.com/docs/rasa-pro/production/tracker-stores
+#tracker_store:
+#    type: redis
+#    url: <host of the redis instance, e.g. localhost>
+#    port: <port of your redis instance, usually 6379>
+#    db: <number of your database within redis, e.g. 0>
+#    password: <password used for authentication>
+#    use_ssl: <whether or not the communication is encrypted, default false>
+#tracker_store:
+#    type: mongod
+#    url: <url to your mongo instance, e.g. mongodb://localhost:27017>
+#    db: <name of the db within your mongo instance, e.g. rasa>
+#    username: <username used for authentication>
+#    password: <password used for authentication>
+
+# Event broker which all conversation events should be streamed to.
+# https://rasa.com/docs/rasa-pro/production/event-brokers
+#event_broker:
+#  url: localhost
+#  username: username
+#  password: password
+#  queue: queue

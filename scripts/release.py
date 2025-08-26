@@ -19,12 +19,12 @@ import re
 import sys
 from pathlib import Path
 from subprocess import CalledProcessError, check_call, check_output
-from typing import Text, Set
+from typing import Set, Text
 
 import questionary
 import tomlkit as toml
-from tomlkit.exceptions import UnexpectedCharError
 from pep440_version_utils import Version, is_valid_version
+from tomlkit.exceptions import UnexpectedCharError
 
 VERSION_FILE_PATH = "rasa/version.py"
 
@@ -274,8 +274,9 @@ def git_current_branch() -> Text:
 
 
 def git_current_branch_is_main_or_release() -> bool:
-    """Returns True if the current local git
-    branch is main or a release branch e.g. 1.10.x.
+    """Returns True if the current local git branch is main or a release branch.
+
+    A release branch has the format 1.10.x.
     """
     current_branch = git_current_branch()
     return (
@@ -297,7 +298,9 @@ def create_release_branch(version: Version) -> Text:
 
 def create_commit(version: Version) -> None:
     """Creates a git commit with all stashed changes."""
-    check_call(["git", "commit", "-m", f"prepared release of version {version}"])
+    check_call(
+        ["git", "commit", "-m", f"prepared release of version {version}", "--no-verify"]
+    )
 
 def create_commit_with_automated_user(version: Version) -> None:
     """Creates a git commit with all stashed changes using an automated user."""
@@ -367,12 +370,11 @@ def print_done_message(branch: Text, base: Text, version: Version) -> None:
 
 
 def print_done_message_same_branch(version: Version) -> None:
-    """Print final information for the user in case changes
-    are directly committed on this branch.
-    """
+    """Confirmation message in case changes are committed on the same branch."""
     print()
     print(
-        f"\033[94m All done - changes for version {version} where committed on this branch \033[0m"
+        f"\033[94m All done - changes for version {version} "
+        f"were committed on this branch \033[0m"
     )
 
 
@@ -385,7 +387,7 @@ def tag_commit(tag: Text) -> None:
 def push_tag(tag: Text) -> None:
     """Pushes a tag to the remote."""
     print(f"Pushing tag '{tag}' to origin.")
-    check_call(["git", "push", "origin", tag, "--tags"])
+    check_call(["git", "push", "origin", tag])
 
 
 def print_tag_release_done_message(version: Version) -> None:

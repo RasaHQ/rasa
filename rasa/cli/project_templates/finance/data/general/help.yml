@@ -1,0 +1,9 @@
+flows:
+  help:
+    description: This flow addresses user inquiries about the assistant's capabilities.
+      It starts by acknowledging the user's request and providing a clear overview of
+      key skills and services. This helps users understand how the assistant can assist
+      them effectively.
+    name: help
+    steps:
+      - action: utter_help

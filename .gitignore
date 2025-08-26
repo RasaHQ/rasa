@@ -106,10 +106,13 @@ swagger-doc*
 working-data
 __pycache__/
 training_time.txt
-e2e_tests/
+/e2e_tests/
 .codegpt
 infrastructure/**/*.pyc
 infrastructure/**/venv
 coverage.xml
+markdown_to_url.json
+file_ids.json
+rasa_docs_md/**
 anonymization_db
 deletion_db

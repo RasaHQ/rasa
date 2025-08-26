@@ -273,6 +273,10 @@ test-marker: clean ## Run marker tests
 release:  ## Prepare a release.
 	poetry run python scripts/release.py prepare --interactive
 
+alpha-release:  ## Prepare a release.
+	poetry run python scripts/release.py prepare --next_version alpha && \
+	poetry run python scripts/release.py tag --skip-confirmation
+
 build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
 	cd $(INTEGRATION_TEST_DEPLOYMENT_PATH) && \
 	test -f .env || cat .env.example >> .env
@@ -546,7 +550,7 @@ test-channel-connectors-integration-with-calm-bot: ## Run the channel connectors
 	$(TEST_CHANNEL_CONNECTOR_INTEGRATION_COMMAND)
 
 # Run the Custom Broker integration tests with CALM bot
-test-custom-broker-integration-with-calm-bot: 
+test-custom-broker-integration-with-calm-bot:
 	poetry run \
         pytest tests/integration_tests/core/custom_components/test_custom_broker.py \
         -n $(JOBS) \

@@ -1,0 +1,9 @@
+flows:
+  welcome:
+    if: False
+    description: |
+      This flow is designed to greet and onboard new users who initiate a welcome intent.
+      It begins with an initial greeting message to establish a friendly interaction.
+    name: say hello
+    steps:
+      - action: utter_greeting

@@ -5,13 +5,9 @@ from typing import Optional
 import structlog
 
 from rasa.model_manager import config
-from rasa.shared.exceptions import RasaException
+from rasa.utils.io import subpath
 
 structlogger = structlog.get_logger()
-
-
-class InvalidPathException(RasaException):
-    """Raised if a path is invalid - e.g. path traversal is detected."""
 
 
 def write_encoded_data_to_file(encoded_data: bytes, file: str) -> None:
@@ -51,30 +47,6 @@ def logs_path(action_id: str) -> str:
         action_id: can either be a training_id or a deployment_id
     """
     return subpath(logs_base_path(), f"{action_id}.txt")
-
-
-def subpath(parent: str, child: str) -> str:
-    """Return the path to the child directory of the parent directory.
-
-    Ensures, that child doesn't navigate to parent directories. Prevents
-    path traversal. Raises an InvalidPathException if the path is invalid.
-
-    Based on Snyk's directory traversal mitigation:
-    https://learn.snyk.io/lesson/directory-traversal/
-    """
-    safe_path = os.path.abspath(os.path.join(parent, child))
-    parent = os.path.abspath(parent)
-
-    common_base = os.path.commonpath([parent, safe_path])
-    if common_base != parent:
-        raise InvalidPathException(f"Invalid path: {safe_path}")
-
-    if os.path.basename(safe_path) != child:
-        raise InvalidPathException(
-            f"Invalid path - path traversal detected: {safe_path}"
-        )
-
-    return safe_path
 
 
 def get_logs_content(action_id: str) -> Optional[str]:

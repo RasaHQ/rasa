@@ -1,0 +1,12 @@
+flows:
+  select_card:
+    if: False
+    description: Guides the user through selecting a card
+    name: select a card number
+    steps:
+      - collect: card
+        description: "card number of the user"
+        ask_before_filling: true
+        rejections:
+          - if: not (slots.card matches "^[0-9]+$")
+            utter: utter_invalid_card_number

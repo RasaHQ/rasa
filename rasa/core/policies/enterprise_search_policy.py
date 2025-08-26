@@ -781,7 +781,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         if not os.path.exists(docs_folder) or not os.path.isdir(docs_folder):
             error_message = (
                 f"Document source directory does not exist or is not a "
-                f"directory: '{docs_folder}'. "
+                f"directory: '{os.path.abspath(docs_folder)}'. "
                 "Please specify a valid path to the documents source directory in the "
                 "vector_store configuration."
             )
@@ -1130,8 +1130,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         embeddings_config: Dict[Text, Any],
         log_source_method: str,
     ) -> None:
-        """
-        Perform the health checks using resolved LLM and embeddings configurations.
+        """Perform the health checks using resolved LLM and embeddings configurations.
         Resolved means the configuration is either:
         - A reference to a model group that has already been expanded into
           its corresponding configuration using the information from
@@ -1160,8 +1159,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
 
     @classmethod
     def get_system_default_prompt_based_on_config(cls, config: Dict[str, Any]) -> str:
-        """
-        Resolves the default prompt template for Enterprise Search Policy based on
+        """Resolves the default prompt template for Enterprise Search Policy based on
         the component's configuration.
 
         - The old prompt is selected when both citation and relevancy check are either
@@ -1192,8 +1190,7 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         relevancy_check_enabled: bool,
         citation_enabled: bool,
     ) -> str:
-        """
-        Returns the appropriate default prompt template based on the feature flags.
+        """Returns the appropriate default prompt template based on the feature flags.
 
         The selection follows this priority:
         1. If relevancy check is enabled, return the prompt that includes both relevancy

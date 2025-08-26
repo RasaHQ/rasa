@@ -14,7 +14,6 @@ from rasa.model_manager.utils import (
     ensure_base_directory_exists,
     logs_path,
     models_base_path,
-    subpath,
     write_encoded_data_to_file,
 )
 from rasa.model_manager.warm_rasa_process import (
@@ -22,6 +21,7 @@ from rasa.model_manager.warm_rasa_process import (
 )
 from rasa.model_training import generate_random_model_name
 from rasa.studio.prompts import handle_prompts
+from rasa.utils.io import subpath
 
 structlogger = structlog.get_logger()
 
@@ -52,6 +52,15 @@ class TrainingSession(BaseModel):
     def is_status_indicating_alive(self) -> bool:
         """Check if the training is running."""
         return self.status == TrainingSessionStatus.RUNNING
+
+    def has_just_finished(self) -> bool:
+        if not self.is_status_indicating_alive():
+            # skip if the training is not running
+            return False
+        if self.process.poll() is None:
+            # process is still running
+            return False
+        return True
 
     def model_path(self) -> str:
         """Return the path to the model."""
@@ -89,14 +98,8 @@ def terminate_training(training: TrainingSession) -> None:
 
 
 def update_training_status(training: TrainingSession) -> None:
-    if not training.is_status_indicating_alive():
-        # skip if the training is not running
-        return
-    if training.process.poll() is None:
-        # process is still running
-        return
-
-    complete_training(training)
+    if training.has_just_finished():
+        complete_training(training)
 
 
 def complete_training(training: TrainingSession) -> None:

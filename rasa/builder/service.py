@@ -1,0 +1,1142 @@
+# mypy: disable-error-code=misc
+import asyncio
+import sys
+import time
+from http import HTTPStatus
+from typing import Any, Optional
+
+import structlog
+from sanic import Blueprint, HTTPResponse, response
+from sanic.request import Request
+from sanic_openapi import openapi
+
+from rasa.builder.auth import HEADER_USER_ID, is_auth_required_now, protected
+from rasa.builder.config import (
+    COPILOT_ASSISTANT_TRACKER_MAX_TURNS,
+    COPILOT_HANDLER_ROLLING_BUFFER_SIZE,
+    HELLO_RASA_PROJECT_ID,
+)
+from rasa.builder.copilot.constants import ROLE_USER
+from rasa.builder.copilot.exceptions import CopilotStreamError
+from rasa.builder.copilot.models import (
+    CopilotContext,
+    CopilotRequest,
+    GeneratedContent,
+    ReferenceEntry,
+    ReferenceSection,
+    ResponseCategory,
+    ResponseCompleteness,
+)
+from rasa.builder.copilot.telemetry import CopilotTelemetry
+from rasa.builder.download import create_bot_project_archive
+from rasa.builder.guardrails.utils import (
+    check_assistant_chat_for_policy_violations,
+    check_copilot_chat_for_policy_violations,
+)
+from rasa.builder.job_manager import job_manager
+from rasa.builder.jobs import (
+    run_prompt_to_bot_job,
+    run_template_to_bot_job,
+    run_update_files_job,
+)
+from rasa.builder.llm_service import llm_service
+from rasa.builder.logging_utils import (
+    capture_exception_with_context,
+    get_recent_logs,
+)
+from rasa.builder.models import (
+    ApiErrorResponse,
+    AssistantInfo,
+    BotData,
+    JobCreateResponse,
+    JobStatus,
+    JobStatusEvent,
+    PromptRequest,
+    ServerSentEvent,
+    TemplateRequest,
+)
+from rasa.builder.project_generator import ProjectGenerator
+from rasa.builder.shared.tracker_context import TrackerContext
+from rasa.core.agent import Agent
+from rasa.core.channels.studio_chat import StudioChatInput
+from rasa.core.exceptions import AgentNotReady
+from rasa.shared.core.flows.flows_list import FlowsList
+from rasa.shared.core.flows.yaml_flows_io import get_flows_as_json
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.importers.utils import DOMAIN_KEYS
+from rasa.utils.json_utils import extract_values
+from rasa.utils.openapi import model_to_schema
+
+structlogger = structlog.get_logger()
+
+# Create the blueprint
+bp = Blueprint("bot_builder", url_prefix="/api")
+
+
+def setup_project_generator(project_folder: Optional[str] = None) -> ProjectGenerator:
+    """Initialize and return a ProjectGenerator instance."""
+    if project_folder is None:
+        import tempfile
+
+        project_folder = tempfile.mkdtemp(prefix="rasa_builder_")
+
+    # Ensure the project folder is in sys.path
+    if project_folder not in sys.path:
+        sys.path.insert(0, project_folder)
+
+    structlogger.info(
+        "bot_builder_service.service_initialized", project_folder=project_folder
+    )
+
+    return ProjectGenerator(project_folder)
+
+
+def get_project_generator(request: Request) -> ProjectGenerator:
+    """Get the project generator from app context."""
+    return request.app.ctx.project_generator
+
+
+def get_input_channel(request: Request) -> StudioChatInput:
+    """Get the input channel from app context."""
+    return request.app.ctx.input_channel
+
+
+async def extract_bot_data_from_agent(agent: Agent) -> BotData:
+    """Extract BotData from an Agent.
+
+    Args:
+        agent: The agent to extract data from
+
+    Returns:
+        BotData containing flows, domain, config, endpoints, and nlu data
+    """
+    domain = agent.domain.as_dict() if agent.domain else {}
+    flows = (
+        await agent.processor.get_flows()
+        if agent.processor
+        else FlowsList(underlying_flows=[])
+    )
+    return BotData(
+        flows=get_flows_as_json(flows),
+        domain=extract_values(domain, DOMAIN_KEYS),
+    )
+
+
+# Health check endpoint
+@bp.route("/", methods=["GET"])
+@openapi.summary("Health check endpoint")
+@openapi.description("Returns the health status of the Bot Builder service")
+@openapi.tag("health")
+@openapi.response(200, {"application/json": {"status": str, "service": str}})
+async def health(request: Request) -> HTTPResponse:
+    """Health check endpoint."""
+    project_generator = get_project_generator(request)
+    return response.json(
+        {
+            "status": "ok",
+            "service": "bot-builder",
+            "auth_required": is_auth_required_now(
+                project_info=project_generator.project_info
+            ),
+        }
+    )
+
+
+@bp.route("/job-events/<job_id>", methods=["GET"])
+@openapi.summary("Stream job progress events")
+@openapi.description(
+    "Stream server-sent events (SSE) tracking real-time job progress.\n\n"
+    "**Connect with:** `Accept: text/event-stream`.\n\n"
+    "**SSE Event Example:**\n"
+    "```text\n"
+    "event: received\n"
+    'data: {"status": "received"}\n'
+    "```\n\n"
+)
+@openapi.tag("job-events")
+@openapi.parameter(
+    "job_id", str, location="path", description="The id of the job to stream events for"
+)
+@openapi.response(
+    200,
+    {"text/event-stream": str},
+    description="Server-sent events stream. See documentation for event types.",
+    example=(
+        "event: received\n"
+        'data: {"status": "received"}\n'
+        "\n"
+        "event: generating\n"
+        'data: {"status": "generating"}\n'
+    ),
+)
+@openapi.response(
+    404,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Unknown job_id: No such job exists.",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def job_events(request: Request, job_id: str) -> HTTPResponse:
+    try:
+        job = job_manager.get_job(job_id)
+        if job is None:
+            return response.json(
+                ApiErrorResponse(
+                    error="Job not found", details={"job_id": job_id}
+                ).model_dump(),
+                status=404,
+            )
+
+        stream = await request.respond(content_type="text/event-stream")
+
+        try:
+            async for evt in job.event_stream():
+                await stream.send(evt.format())
+        except Exception as exc:
+            # Handle exceptions within the SSE stream context
+            capture_exception_with_context(
+                exc,
+                "bot_builder_service.job_events.streaming_error",
+                extra={"job_id": job_id},
+                tags={"endpoint": "/api/job-events/<job_id>"},
+            )
+            # Send error event in SSE format instead of JSON response
+            error_event = JobStatusEvent.from_status(
+                status=JobStatus.error.value,
+                message=f"Failed to stream job events: {exc}",
+            ).format()
+            await stream.send(error_event)
+        finally:
+            await stream.eof()
+
+        return stream
+    except Exception as exc:
+        # This exception handler only applies before stream.respond() is called
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.job_events.unexpected_error",
+            extra={"job_id": job_id},
+            tags={"endpoint": "/api/job-events/<job_id>"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to stream job events", details={"error": str(exc)}
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/prompt-to-bot", methods=["POST"])
+@openapi.summary("Generate bot from natural language prompt")
+@openapi.description(
+    "Creates a complete conversational AI bot from a natural language prompt. "
+    "Returns immediately with a job ID. Connect to `/job-events/<job_id>` to "
+    "receive server-sent events (SSE) for real-time progress tracking "
+    "throughout the bot creation process.\n\n"
+    "**SSE Event Flow** (via `/job-events/<job_id>`):\n"
+    "1. `received` - Request received by server\n"
+    "2. `generating` - Generating bot project files\n"
+    "3. `generation_success` - Bot generation completed successfully\n"
+    "4. `training` - Training the bot model\n"
+    "5. `train_success` - Model training completed\n"
+    "6. `done` - Bot creation completed\n\n"
+    "**Error Events:**\n"
+    "- `generation_error` - Failed to generate bot from prompt\n"
+    "- `train_error` - Bot generated but training failed\n"
+    "- `validation_error` - Generated bot configuration is invalid\n"
+    "- `error` - Unexpected error occurred\n\n"
+    "**Usage:**\n"
+    "1. Send POST request with Content-Type: application/json\n"
+    "2. The response will be a JSON object `{job_id: ...}`\n"
+    "3. Connect to `/job-events/<job_id>` for a server-sent event stream of progress."
+)
+@openapi.tag("bot-generation")
+@openapi.body(
+    {"application/json": model_to_schema(PromptRequest)},
+    description="Prompt request with natural language description.",
+    required=True,
+)
+@openapi.response(
+    200,
+    {"application/json": model_to_schema(JobCreateResponse)},
+    description="Job created. Poll or subscribe to /job-events/<job_id> for progress.",
+)
+@openapi.response(
+    400,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Validation error in request payload",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def handle_prompt_to_bot(request: Request) -> HTTPResponse:
+    """Handle prompt-to-bot generation requests."""
+    try:
+        payload = PromptRequest(**request.json)
+    except Exception as exc:
+        return response.json(
+            ApiErrorResponse(
+                error="Invalid request", details={"error": str(exc)}
+            ).model_dump(),
+            status=400,
+        )
+
+    try:
+        # Allocate job and schedule background task
+        job = job_manager.create_job()
+        request.app.add_task(run_prompt_to_bot_job(request.app, job, payload.prompt))
+        return response.json(JobCreateResponse(job_id=job.id).model_dump(), status=200)
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.prompt_to_bot.unexpected_error",
+            tags={"endpoint": "/api/prompt-to-bot"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to create prompt-to-bot job",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/template-to-bot", methods=["POST"])
+@openapi.summary("Generate bot from predefined template")
+@openapi.description(
+    "Creates a complete conversational AI bot from a predefined template. "
+    "Returns immediately with a job ID. Connect to `/job-events/<job_id>` to "
+    "receive server-sent events (SSE) for real-time progress tracking "
+    "throughout the bot creation process.\n\n"
+    "**SSE Event Flow** (via `/job-events/<job_id>`):\n"
+    "1. `received` - Request received by server\n"
+    "2. `generating` - Initializing bot from template\n"
+    "3. `generation_success` - Template initialization completed successfully\n"
+    "4. `training` - Training the bot model\n"
+    "5. `train_success` - Model training completed\n"
+    "6. `done` - Bot creation completed\n\n"
+    "**Error Events:**\n"
+    "- `generation_error` - Failed to initialize bot from template\n"
+    "- `train_error` - Template loaded but training failed\n"
+    "- `validation_error` - Template configuration is invalid\n"
+    "- `error` - Unexpected error occurred\n\n"
+    "**Usage:**\n"
+    "1. Send POST request with Content-Type: application/json\n"
+    "2. The response will be a JSON object `{job_id: ...}`\n"
+    "3. Connect to `/job-events/<job_id>` for a server-sent event stream of progress."
+)
+@openapi.tag("bot-generation")
+@openapi.body(
+    {"application/json": model_to_schema(TemplateRequest)},
+    description="Template request with template name.",
+    required=True,
+)
+@openapi.response(
+    200,
+    {"application/json": model_to_schema(JobCreateResponse)},
+    description="Job created. Poll or subscribe to /job-events/<job_id> for progress.",
+)
+@openapi.response(
+    400,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Validation error in request payload or invalid template name",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def handle_template_to_bot(request: Request) -> HTTPResponse:
+    """Create a new template-to-bot job and return job_id immediately."""
+    try:
+        template_data = TemplateRequest(**request.json)
+    except Exception as exc:
+        return response.json(
+            ApiErrorResponse(
+                error="Invalid request", details={"error": str(exc)}
+            ).model_dump(),
+            status=400,
+        )
+
+    try:
+        # allocate job and schedule background task
+        job = job_manager.create_job()
+        request.app.add_task(
+            run_template_to_bot_job(request.app, job, template_data.template_name)
+        )
+        return response.json(JobCreateResponse(job_id=job.id).model_dump(), status=200)
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.template_to_bot.unexpected_error",
+            tags={"endpoint": "/api/template-to-bot"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to create template-to-bot job",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/files", methods=["GET"])
+@openapi.summary("Get bot files")
+@openapi.description("Retrieves the current bot configuration files and data")
+@openapi.tag("bot-files")
+@openapi.response(
+    200,
+    {"application/json": {str: Optional[str]}},
+    description="Bot files retrieved successfully",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def get_bot_files(request: Request) -> HTTPResponse:
+    """Get current bot files."""
+    try:
+        project_generator = get_project_generator(request)
+        bot_files = project_generator.get_bot_files()
+        return response.json(bot_files)
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.get_bot_files.unexpected_error",
+            tags={"endpoint": "/api/files", "method": "GET"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to retrieve bot files", details={"error": str(exc)}
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/files", methods=["PUT"])
+@openapi.summary("Update bot files")
+@openapi.description(
+    "Updates the bot configuration files and retrains the model. "
+    "Returns immediately with a job ID. Connect to `/job-events/<job_id>` "
+    "for real-time SSE progress tracking."
+    "\n\n"
+    "**SSE Event Flow:** (available via /job-events/<job_id>)\n"
+    "1. `received` - Request received by server\n"
+    "2. `validating` - Validating bot configuration files\n"
+    "3. `validation_success` - File validation completed successfully\n"
+    "4. `training` - Training the bot model with updated files\n"
+    "5. `train_success` - Model training completed\n"
+    "6. `done` - Bot files update completed\n\n"
+    "**Error Events (can occur at any time):**\n"
+    "- `validation_error` - Bot configuration files are invalid\n"
+    "- `train_error` - Files updated but training failed\n"
+    "- `error` - Unexpected error occurred\n\n"
+    "**Usage:**\n"
+    "1. Send PUT request with Content-Type: application/json\n"
+    "2. The response will be a JSON object `{job_id: ...}`\n"
+    "3. Connect to `/job-events/<job_id>` for a server-sent event stream of progress."
+)
+@openapi.tag("bot-files")
+@openapi.body(
+    {"application/json": {"file_name": str}},
+    description="A dictionary mapping file names to their updated content. "
+    "The file name should be the name of the file in the project folder. "
+    "Files that are not in the request will not be updated.",
+    required=True,
+)
+@openapi.response(
+    200,
+    {"application/json": model_to_schema(JobCreateResponse)},
+    description=(
+        "Job created. Poll or subscribe to /job-events/<job_id> "
+        "for progress and SSE updates."
+    ),
+)
+@openapi.response(
+    400,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Validation error in bot files",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@openapi.response(
+    401,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description=(
+        "Authentication failed - Authorization header missing or invalid. "
+        "Auth may be conditionally required depending on server "
+        "configuration."
+    ),
+)
+@openapi.parameter(
+    "Authorization",
+    description=(
+        "Bearer token for authentication. Required after auth start window "
+        "or if configured."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+@protected()
+async def update_bot_files(request: Request) -> HTTPResponse:
+    """Update bot files with server-sent events for progress tracking."""
+    try:
+        bot_files = request.json
+    except Exception as exc:
+        return response.json(
+            ApiErrorResponse(
+                error="Invalid request", details={"error": str(exc)}
+            ).model_dump(),
+            status=400,
+        )
+
+    try:
+        job = job_manager.create_job()
+        request.app.add_task(run_update_files_job(request.app, job, bot_files))
+        return response.json(JobCreateResponse(job_id=job.id).model_dump(), status=200)
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.update_bot_files.unexpected_error",
+            tags={"endpoint": "/api/files", "method": "PUT"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to update bot files", details={"error": str(exc)}
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/data", methods=["GET"])
+@openapi.summary("Get bot data")
+@openapi.description(
+    "Retrieves the current bot data in CALM import format with flows, domain, "
+    "config, endpoints, and NLU data"
+)
+@openapi.tag("bot-data")
+@openapi.response(
+    200,
+    {"application/json": model_to_schema(BotData)},
+    description="Bot data retrieved successfully",
+)
+@openapi.response(
+    409,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Agent not ready",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def get_bot_data(request: Request) -> HTTPResponse:
+    """Get current bot data in CALM import format."""
+    try:
+        agent: Optional[Agent] = request.app.ctx.agent
+        if not agent:
+            raise AgentNotReady(
+                "Can't retrieve the data without an agent being loaded."
+            )
+
+        bot_data = await extract_bot_data_from_agent(agent)
+
+        return response.json(bot_data.model_dump())
+    except AgentNotReady as e:
+        return response.json(
+            ApiErrorResponse(
+                error="Agent not ready",
+                details={"error": str(e)},
+            ).model_dump(),
+            status=HTTPStatus.CONFLICT,
+        )
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.get_bot_data.unexpected_error",
+            tags={"endpoint": "/api/data"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to retrieve bot data",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/assistant", methods=["GET"])
+@openapi.summary("Get assistant info")
+@openapi.description(
+    "Returns basic information about the loaded assistant, including the assistant id "
+    "as configured in the model's metadata (from config.yml)."
+)
+@openapi.tag("assistant")
+@openapi.response(
+    200,
+    {"application/json": model_to_schema(AssistantInfo)},
+    description="Assistant info retrieved successfully",
+)
+@openapi.response(
+    409,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Agent not ready",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def get_bot_info(request: Request) -> HTTPResponse:
+    """Return assistant info including assistant id from model metadata."""
+    try:
+        agent: Optional[Agent] = request.app.ctx.agent
+        if not agent:
+            raise AgentNotReady("Can't retrieve bot info without a loaded agent.")
+
+        assistant_id: Optional[str] = (
+            agent.processor.model_metadata.assistant_id
+            if agent.processor
+            and agent.processor.model_metadata
+            and hasattr(agent.processor.model_metadata, "assistant_id")
+            else None
+        )
+
+        return response.json(AssistantInfo(assistant_id=assistant_id).model_dump())
+    except AgentNotReady as e:
+        return response.json(
+            ApiErrorResponse(
+                error="Agent not ready",
+                details={"error": str(e)},
+            ).model_dump(),
+            status=HTTPStatus.CONFLICT,
+        )
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.get_bot_info.unexpected_error",
+            tags={"endpoint": "/api/assistant"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to retrieve bot info",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@bp.route("/download", methods=["GET"])
+@openapi.summary("Download bot project as tar.gz")
+@openapi.description(
+    "Downloads the current bot project files as a compressed tar.gz archive. "
+    "Includes all configuration files and a .env file with RASA_PRO_LICENSE. "
+    "Requires valid JWT token in Authorization header."
+)
+@openapi.tag("bot-files")
+@openapi.parameter(
+    "Authorization",
+    description="Bearer token for authentication",
+    _in="header",
+    required=True,
+    schema=str,
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+@openapi.parameter(
+    "project_name",
+    description="Name of the project for the archive filename and pyproject.toml",
+    _in="query",
+    required=False,
+    schema=str,
+)
+@openapi.response(
+    200,
+    {"application/gzip": bytes},
+    description="Bot project downloaded successfully as tar.gz",
+)
+@openapi.response(
+    401,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Authentication failed - invalid or missing token",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@protected(always_required=True)
+async def download_bot_project(request: Request) -> HTTPResponse:
+    """Download bot project as tar.gz archive."""
+    try:
+        # Token verification is enforced by the
+        # protected(always_required=True) decorator.
+
+        # Get bot files
+        project_generator = get_project_generator(request)
+        bot_files = project_generator.get_bot_files()
+
+        # Get project name from query parameters, default to "bot-project"
+        project_name = request.args.get("project_name", "bot-project")
+
+        # Create tar.gz archive
+        tar_data = create_bot_project_archive(bot_files, project_name)
+
+        structlogger.info(
+            "bot_builder_service.download_bot_project.success",
+            user_sub=(getattr(request.ctx, "auth_payload", None) or {}).get("sub"),
+            files_count=len(bot_files),
+            archive_size=len(tar_data),
+            payload=getattr(request.ctx, "auth_payload", None),
+            project_name=project_name,
+        )
+
+        return response.raw(
+            tar_data,
+            content_type="application/gzip",
+            headers={
+                "Content-Disposition": f"attachment; filename={project_name}.tar.gz"
+            },
+        )
+
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.download_bot_project.unexpected_error",
+            tags={"endpoint": "/api/download"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to create bot project archive",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=500,
+        )
+
+
+@bp.route("/copilot", methods=["POST"])
+@openapi.summary("AI copilot for bot building")
+@openapi.description(
+    "Provides LLM-powered copilot assistance with streaming markdown responses. "
+    "Returns server-sent events (SSE) for real-time streaming of copilot responses.\n\n"
+    "The event's `event` field is the type of event. For this endpoint it will always "
+    "be: `copilot_response`.\n\n"
+)
+@openapi.tag("copilot")
+@openapi.body(
+    {"application/json": model_to_schema(CopilotRequest)},
+    description=(
+        "Copilot request containing: "
+        "1. conversation history between user and copilot, "
+        "2. session ID for tracking conversation context with the bot being built."
+    ),
+    required=True,
+)
+@openapi.response(
+    200,
+    {"text/event-stream": model_to_schema(ServerSentEvent)},
+    description=(
+        "Server-sent events stream with copilot responses and references. "
+        "The event's `event` field is the type "
+        "of event. For this endpoint it will always be: `copilot_response`. "
+        "The event's data field is a JSON dump. The following describes the event data "
+        "field:\n"
+        "- `response_category` can be one of the following:\n"
+        "  - `copilot` - Stream token generated by the copilot.\n"
+        "  - `out_of_scope_detection` - Response coming from the the out of scope detection.\n"  # noqa: E501
+        "  - `roleplay_detection` - Response coming from the the roleplay detection.\n"
+        "  - `reference` - Reference section.\n"
+        "  - `training_error_log_analysis` - Used to flag the responses that are training error log analysis.\n"  # noqa: E501
+        "  - `e2e_testing_error_log_analysis` - Used to flag the responses that are e2e testing error log analysis.\n"  # noqa: E501
+        "  - `guardrail_policy_violation` - Used to flag the responses that are flagged as a violation of the guardrail policy.\n\n"  # noqa: E501
+        "- `completeness`: Whether this is a streaming token or complete response.\n\n"
+        "- `content`: The actual response content (for streaming tokens).\n\n"
+        "- `references`: (Only for `reference` response category) List of reference entries. Each reference entry is a dictionary with the following keys:\n\n"  # noqa: E501
+        "   - `index`: Reference index as an integer number.\n"
+        "   - `title`: Reference title as a string.\n"
+        "   - `url`: Reference URL as a string.\n\n"
+    ),
+    examples={
+        "Streaming token from copilot": {
+            "summary": "Streaming token from copilot",
+            "value": GeneratedContent(
+                content="<token generated by the copilot>",
+                response_category=ResponseCategory.COPILOT,
+                response_completeness=ResponseCompleteness.TOKEN,
+            )
+            .to_sse_event()
+            .model_dump(),
+        },
+        "Complete response for the following response categories: out_of_scope_detection / roleplay_detection / training_error_log_analysis / e2e_testing_error_log_analysis / guardrail_policy_violation": {  # noqa: E501
+            "summary": "Complete response from copilot",
+            "value": GeneratedContent(
+                content="<response from the out of scope detection>",
+                response_category=ResponseCategory.OUT_OF_SCOPE_DETECTION,
+                response_completeness=ResponseCompleteness.COMPLETE,
+            )
+            .to_sse_event()
+            .model_dump(),
+        },
+        "Response with the references": {
+            "summary": "Reference section with all references",
+            "value": ReferenceSection(
+                references=[
+                    ReferenceEntry(
+                        index=1,
+                        title="Title of the reference",
+                        url="https://rasa.com/docs/...",
+                    ),
+                    ReferenceEntry(
+                        index=2,
+                        title="Title of another reference",
+                        url="https://rasa.com/docs/...",
+                    ),
+                ],
+                response_category=ResponseCategory.REFERENCE,
+                response_completeness=ResponseCompleteness.COMPLETE,
+            )
+            .to_sse_event()
+            .model_dump(),
+        },
+    },
+)
+@openapi.response(
+    400,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Validation error in request",
+)
+@openapi.response(
+    502,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="LLM generation failed.",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error.",
+)
+@openapi.response(
+    401,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description=(
+        "Authentication failed - Authorization header missing or invalid. "
+        "Auth may be conditionally required depending on server "
+        "configuration."
+    ),
+)
+@openapi.parameter(
+    "Authorization",
+    description=(
+        "Bearer token for authentication. Required after auth start window "
+        "or if configured."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+@protected()
+async def copilot(request: Request) -> None:
+    """Handle copilot requests with streaming markdown responses."""
+    sse = await request.respond(content_type="text/event-stream")
+    project_generator = get_project_generator(request)
+
+    try:
+        # 1. Validate and unpack input
+        req = CopilotRequest(**request.json)
+
+        telemetry = CopilotTelemetry(
+            project_id=HELLO_RASA_PROJECT_ID,
+            user_id=request.headers.get(HEADER_USER_ID),
+        )
+        structlogger.debug("builder.copilot.telemetry.request.init")
+
+        if req.last_message and req.last_message.role == ROLE_USER:
+            structlogger.debug("builder.copilot.telemetry.request.user_turn")
+            # Offload telemetry logging to a background task
+            request.app.add_task(
+                asyncio.to_thread(
+                    telemetry.log_user_turn, req.last_message.get_text_content()
+                )
+            )
+
+        # 2. Get the necessary context for the copilot
+        tracker = await current_tracker_from_input_channel(request.app, req.session_id)
+        tracker_context = TrackerContext.from_tracker(
+            tracker, max_turns=COPILOT_ASSISTANT_TRACKER_MAX_TURNS
+        )
+        if tracker_context is not None:
+            tracker_context = await check_assistant_chat_for_policy_violations(
+                tracker_context=tracker_context,
+                hello_rasa_user_id=request.headers.get(HEADER_USER_ID),
+                hello_rasa_project_id=HELLO_RASA_PROJECT_ID,
+            )
+
+        # Copilot doesn't need to know about the docs and any file that is not a core
+        # assistant file
+        relevant_assistant_files = project_generator.get_bot_files(
+            exclude_docs_directory=True,
+            allowed_file_extensions=["yaml", "yml", "py", "jinja", "jinja2"],
+        )
+        context = CopilotContext(
+            tracker_context=tracker_context,
+            assistant_logs=get_recent_logs(),
+            assistant_files=relevant_assistant_files,
+            copilot_chat_history=req.copilot_chat_history,
+        )
+
+        # 3. Run guardrail policy checks. If any policy violations are detected,
+        #    send a response and end the stream.
+        guardrail_response: Optional[
+            GeneratedContent
+        ] = await check_copilot_chat_for_policy_violations(
+            context=context,
+            hello_rasa_user_id=request.headers.get(HEADER_USER_ID),
+            hello_rasa_project_id=HELLO_RASA_PROJECT_ID,
+        )
+        if guardrail_response is not None:
+            await sse.send(guardrail_response.to_sse_event().format())
+            await sse.eof()
+            return
+
+        # 4. Get the original response stream from copilot and handle it with the
+        #    copilot response handler
+        start_timestamp = time.perf_counter()
+        copilot_client = llm_service.instantiate_copilot()
+        (
+            original_stream,
+            used_documents,
+        ) = await copilot_client.generate_response(context)
+
+        copilot_response_handler = llm_service.instantiate_handler(
+            COPILOT_HANDLER_ROLLING_BUFFER_SIZE
+        )
+        intercepted_stream = copilot_response_handler.handle_response(original_stream)
+
+        # 5. Stream the intercepted response
+        async for token in intercepted_stream:
+            await sse.send(token.to_sse_event().format())
+
+        # Offload telemetry logging to a background task
+        request.app.add_task(
+            asyncio.to_thread(
+                telemetry.log_copilot_from_handler,
+                handler=copilot_response_handler,
+                used_documents=used_documents,
+                latency_ms=int((time.perf_counter() - start_timestamp) * 1000),
+                **copilot_client.usage_statistics.model_dump(),
+            )
+        )
+
+        # 6. Once the stream is over, extract and send references
+        #    if any documents were used
+        if used_documents:
+            reference_section = copilot_response_handler.extract_references(
+                used_documents
+            )
+            await sse.send(reference_section.to_sse_event().format())
+
+    except CopilotStreamError as e:
+        capture_exception_with_context(
+            e,
+            "bot_builder_service.copilot.generation_error",
+            extra={"session_id": req.session_id},
+            tags={"endpoint": "/api/copilot"},
+        )
+        await sse.send(
+            ServerSentEvent(
+                event="error",
+                data={"error": str(e)},
+            ).format()
+        )
+
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.copilot.unexpected_error",
+            extra={"session_id": req.session_id if "req" in locals() else None},
+            tags={"endpoint": "/api/copilot"},
+        )
+        await sse.send(
+            ServerSentEvent(
+                event="error",
+                data={"error": str(exc)},
+            ).format()
+        )
+
+    finally:
+        await sse.eof()
+
+
+@bp.route("/copilot/internal_message_templates/<template_name>", methods=["GET"])
+@openapi.summary("Get templated response for copilot internal message")
+@openapi.description(
+    "Returns the templated response text for a given template name from the "
+    "copilot internal message formatter. This endpoint provides access to the "
+    "predefined templates used for formatting internal system messages."
+)
+@openapi.tag("copilot")
+@openapi.parameter(
+    "template_name",
+    str,
+    location="path",
+    description=(
+        "The template name to get the template for."
+        "(e.g., 'training_error_log_analysis', 'e2e_testing_error_log_analysis')",
+    ),
+)
+@openapi.response(
+    200,
+    {"application/json": {"template": str, "template_name": str}},
+    description="Successfully retrieved the template for the given template name",
+    example={
+        "template": "The assistant training failed. Your task is ...",
+        "template_name": "training_error_log_analysis",
+    },
+)
+@openapi.response(
+    404,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Template not found for the given template name",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def get_copilot_internal_message_template(
+    request: Request, template_name: str
+) -> HTTPResponse:
+    """Get templated response for copilot internal message formatter."""
+    try:
+        # Try to get the template for the given template name
+        template = llm_service.copilot_internal_message_templates.get(template_name)
+        structlogger.info(
+            "bot_builder_service.get_copilot_internal_message_template.template_found",
+            template_name=template_name,
+            template=template,
+        )
+
+        if template is None:
+            structlogger.warning(
+                "bot_builder_service.get_copilot_internal_message_template.not_found",
+                template_name=template_name,
+            )
+            return response.json(
+                ApiErrorResponse(
+                    error="Template not found", details={"template_name": template_name}
+                ).model_dump(),
+                status=404,
+            )
+
+        return response.json({"template": template, "template_name": template_name})
+
+    except Exception as e:
+        structlogger.error(
+            "bot_builder_service.get_copilot_internal_message_template.error",
+            error=str(e),
+            template_name=template_name,
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Internal server error", details={"template_name": template_name}
+            ).model_dump(),
+            status=500,
+        )
+
+
+async def current_tracker_from_input_channel(
+    app: Any, session_id: str
+) -> Optional[DialogueStateTracker]:
+    """Generate chat bot context from current conversation."""
+    if app.ctx.agent and session_id:
+        return await app.ctx.agent.tracker_store.retrieve(session_id)
+    else:
+        return None

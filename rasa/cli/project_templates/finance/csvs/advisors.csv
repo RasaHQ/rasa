@@ -1,0 +1,7 @@
+id,branch_id,name,email,phone,position
+1,1,"Eto Demerzel",eto.demerzel@trantorbranch.com,02079460001,"Business Loan Advisor"
+2,1,"Bayta Darell",bayta.darell@trantorbranch.com,02079460003,"Wealth Management Advisor"
+3,2,"Daneel Olivaw",daneel.olivaw@terminusbranch.com,02079460004,"Retirement Planning Advisor"
+4,3,"Hober Mallow",hober.mallow@asimovbranch.com,02079460007,"Personal Finance Advisor"
+5,3,"Bel Riose",bel.riose@asimovbranch.com,02079460008,"Investment Advisor"
+6,3,Pritcher,pritcher@asimovbranch.com,02079460009,"Investment Advisor"

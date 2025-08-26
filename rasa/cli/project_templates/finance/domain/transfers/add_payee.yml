@@ -1,0 +1,47 @@
+version: "3.1"
+
+slots:
+  account_number:
+    type: text
+  sort_code:
+    type: text
+  payee_type:
+    type: categorical
+    values:
+      - person
+      - business
+  reference:
+    type: text
+  payee_added:
+    type: bool
+  confirm_payee_details:
+    type: bool
+
+responses:
+  utter_ask_account_number:
+    - text: "Please enter the account number for this payee"
+  utter_ask_sort_code:
+    - text: "Please enter the sort code for this payee's account"
+  utter_ask_payee_type:
+    - text: "Please select the type of payee"
+      buttons:
+      - title: "Person"
+        payload: "/SetSlots(payee_type=person)"
+      - title: "Business"
+        payload: "/SetSlots(payee_type=business)"
+  utter_ask_reference:
+    - text: "Please provide a reference for this payee"
+  utter_ask_confirm_payee_details:
+    - text: "You are about to add the following payee: Name: {payee_name}, Account Number: {account_number}, Payee Type: {payee_type}, Reference: {reference}. Is this correct?"
+      buttons:
+      - title: "Yes"
+        payload: "/SetSlots(confirm_payee_details=True)"
+      - title: "No"
+        payload: "/SetSlots(confirm_payee_details=False)"
+  utter_payee_added_success:
+    - text: "{payee_name} has been successfully added to your list of authorised payees"
+  utter_payee_added_failure:
+    - text: "I'm sorry, but there was an error adding {payee_name}. Please try again later or contact Customer Support"
+
+actions:
+  - action_add_payee

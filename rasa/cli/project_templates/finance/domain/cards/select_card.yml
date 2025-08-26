@@ -1,0 +1,12 @@
+version: "3.1"
+
+slots:
+  card:
+    type: text
+
+actions:
+  - action_ask_card
+
+responses:
+  utter_invalid_card_number:
+    - text: "Sorry, that is not a valid card number."

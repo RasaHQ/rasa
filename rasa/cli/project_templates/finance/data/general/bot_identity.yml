@@ -1,0 +1,6 @@
+flows:
+  bot_identity:
+    name: Bot Identity
+    description: This flow handles questions about whether the assistant is a bot or AI
+    steps:
+      - action: utter_bot_identity

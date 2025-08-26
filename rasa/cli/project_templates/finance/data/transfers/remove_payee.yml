@@ -1,0 +1,21 @@
+flows:
+  remove_payee:
+    if: False
+    description: |
+      Facilitates the process of removing an existing payee from a user's
+      account, ensuring the user is authenticated before proceeding. This flow
+      guides the user through specifying the payee to be removed, attempts the
+      removal action, and provides appropriate feedback on the success or
+      failure of the operation
+    name: delete an existing authorised payee
+    steps:
+      - collect: payee_name
+      - action: action_remove_payee
+        next:
+          - if: slots.payee_removed
+            then:
+              - action: utter_payee_removed_success
+                next: END
+          - else:
+              - action: utter_payee_removed_failure
+                next: END

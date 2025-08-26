@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 import responses
+import structlog
 import yaml
 from pytest import LogCaptureFixture, MonkeyPatch
 
@@ -887,7 +888,7 @@ def test_track_no_event_name(
 ) -> None:
     mock_get_telemetry_id.return_value = None
 
-    with caplog.at_level(logging.DEBUG):
+    with structlog.testing.capture_logs() as caplog:
         telemetry._track(event_name="event", properties={}, context={})
 
     mock_get_telemetry_id.assert_called_once()
@@ -895,7 +896,7 @@ def test_track_no_event_name(
     mock_with_default_context_fields.assert_not_called()
 
     log_msg = "Will not report telemetry events as no ID was found."
-    assert log_msg in caplog.text
+    assert log_msg in caplog[0]["event_info"]
 
 
 @pytest.fixture
@@ -1056,7 +1057,7 @@ def test_send_request_with_invalid_write_key(
     telemetry_key = None
     mock_get_telemetry_write_key.return_value = telemetry_key
 
-    with caplog.at_level(logging.DEBUG):
+    with structlog.testing.capture_logs() as caplog:
         telemetry._send_request("some_url", {"some": "payload"})
 
     mock_is_telemetry_debug_enabled.assert_called_once()
@@ -1066,7 +1067,7 @@ def test_send_request_with_invalid_write_key(
     mock_requests_post.assert_not_called()
 
     log_msg = "Skipping request to external service: telemetry key not set."
-    assert log_msg in caplog.text
+    assert log_msg in caplog[0]["event_info"]
 
 
 def test_send_request_received_unsuccessful_response(
@@ -1089,7 +1090,7 @@ def test_send_request_received_unsuccessful_response(
 
     url = "some_url"
     payload = {"some": "payload"}
-    with caplog.at_level(logging.DEBUG):
+    with structlog.testing.capture_logs() as caplog:
         telemetry._send_request(url, payload)
 
     mock_is_telemetry_debug_enabled.assert_called_once()
@@ -1104,7 +1105,7 @@ def test_send_request_received_unsuccessful_response(
     )
 
     log_msg = "Segment telemetry request returned a 400 response. Body: some error"
-    assert log_msg in caplog.text
+    assert log_msg in caplog[0]["event_info"]
 
 
 def test_send_request_succeeds_without_success_field_in_response(
@@ -1129,7 +1130,7 @@ def test_send_request_succeeds_without_success_field_in_response(
 
     url = "some_url"
     payload = {"some": "payload"}
-    with caplog.at_level(logging.DEBUG):
+    with structlog.testing.capture_logs() as caplog:
         telemetry._send_request(url, payload)
 
     mock_is_telemetry_debug_enabled.assert_called_once()
@@ -1145,7 +1146,7 @@ def test_send_request_succeeds_without_success_field_in_response(
     mock_response.json.assert_called_once()
 
     log_msg = f"Segment telemetry request returned a failure. Response: {json_data}"
-    assert log_msg in caplog.text
+    assert log_msg in caplog[0]["event_info"]
 
 
 @pytest.mark.parametrize(

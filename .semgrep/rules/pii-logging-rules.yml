@@ -7,7 +7,7 @@ rules:
           - pattern: structlogger.$METHOD(..., $KEY=$VAR, ...)
       - metavariable-regex:
           metavariable: $KEY
-          regex: '.*(slot|document|context|user|text|message|response|input|tracker|stack|frame|top|command|event).*'
+          regex: '.*(slot|document|context|user|text|message|response|input|tracker|stack|frame|top|command|event(?!_info)).*'
       - metavariable-regex:
           metavariable: $METHOD
           regex: '^(?!debug$).*'
@@ -25,7 +25,8 @@ rules:
           - pattern: structlogger.$METHOD(..., $VAR, ...)
       - metavariable-regex:
           metavariable: $VAR
-          regex: '.*(slot|document|context|user|text|message|response|input|tracker|stack|frame|top|command|event).*'
+          regex: '.*(slot|document|context|user|text|message|response|input|tracker|stack|frame|top|command|event(?!_info)).*'
+          
       - metavariable-regex:
           metavariable: $METHOD
           regex: '^(?!debug$).*'
@@ -47,7 +48,7 @@ rules:
           - pattern: structlogger.$METHOD("..." % (..., $VAR, ...))
       - metavariable-regex:
           metavariable: $VAR
-          regex: '.*(slot|document|context|user|text|message|response|input|tracker|stack|frame|top|command|event).*'
+          regex: '.*(slot|document|context|user|text|message|response|input|tracker|stack|frame|top|command|event(?!_info)).*'
       - metavariable-regex:
           metavariable: $METHOD
           regex: '^(?!debug$).*'

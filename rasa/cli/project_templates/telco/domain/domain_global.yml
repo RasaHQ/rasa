@@ -1,0 +1,29 @@
+version: "3.1"
+
+slots: # list all you slots, it can be in different files per use case for better structure
+  customer_id:
+    type: text
+    mappings:
+      - type: from_llm
+    initial_value: 123 # suppose we always have the customer ID
+  customer_first_name:
+    type: text
+    mappings:
+      - type: controlled
+
+responses:
+  utter_session_start:
+    - text: |
+        Hey {customer_first_name} 👋
+        I am your virtual AI assistant that can check your bills or resolve issues with Internet speed.
+        How may I help you?
+
+  utter_end_conversation:
+    - text: |
+        Glad, I helped ✨
+        Have a nice day!
+
+  utter_bot_challenge:
+  - text: |
+      I'm an AI assistant designed to assist you quickly and efficiently.
+      If you ever need to speak with a human agent, just let me know!

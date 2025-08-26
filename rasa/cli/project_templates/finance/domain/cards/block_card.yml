@@ -1,0 +1,101 @@
+version: "3.1"
+
+slots:
+  reason_for_blocking:
+    type: categorical
+    values:
+      - lost
+      - fraud
+      - stolen
+      - damaged
+      - expired
+      - traveling
+      - moving
+  address_confirmed:
+    type: bool
+  fraud_reported:
+    type: bool
+    initial_value: false
+  temp_block_card:
+    type: bool
+    initial_value: false
+  confirm_issue_new_card:
+    type: bool
+  address:
+    type: text
+  card_status:
+    type: categorical
+    values:
+      - active
+      - inactive
+actions:
+  - action_update_card_status
+
+responses:
+  utter_ask_reason_for_blocking:
+    - text: "Please tell us the reason for blocking"
+      buttons:
+      - title: "I lost my card"
+        payload: "/SetSlots(reason_for_blocking=lost)"
+      - title: "My card is damaged"
+        payload: "/SetSlots(reason_for_blocking=damaged)"
+      - title: "I suspect fraud on my account"
+        payload: "/SetSlots(reason_for_blocking=fraud)"
+      - title: "My card has expired"
+        payload: "/SetSlots(reason_for_blocking=expired)"
+      - title: "I'm planning to travel soon"
+        payload: "/SetSlots(reason_for_blocking=traveling)"
+      - title: "I'm moving to a new address"
+        payload: "/SetSlots(reason_for_blocking=moving)"
+  utter_block_card_understand:
+    - text: "Okay, we can block a card. Let's do it in a few steps"
+      metadata:
+        rephrase: True
+  utter_ask_address_confirmed:
+    - text: "I have found your address: {physical_address}. Should the new card be delivered there?"
+      buttons:
+        - title: "Yes"
+          payload: "/SetSlots(address_confirmed=True)"
+        - title: "No"
+          payload: "/SetSlots(address_confirmed=False)"
+  utter_confirm_physical_address:
+    - text: "Your card will be delivered to {physical_address} within 7 business days"
+  utter_card_blocked:
+    - condition:
+        - type: slot
+          name: fraud_reported
+          value: true
+      text: "Since you have reported {reason_for_blocking}, we will block your card"
+    - condition:
+        - type: slot
+          name: temp_block_card
+          value: true
+      text: "Since you are {reason_for_blocking}, we will temporarily block your card."
+    - text: We will block your card.
+  utter_ask_confirm_issue_new_card:
+    - text: "Would you like to be issued a new card?"
+      buttons:
+        - title: "Yes, send me a new card"
+          payload: "/SetSlots(confirm_issue_new_card=true)"
+        - title: "No, just block my card"
+          payload: "/SetSlots(confirm_issue_new_card=false)"
+  utter_ask_address:
+    - text: "Would you like us to deliver your new card to this address: {physical_address}?"
+      buttons:
+        - title: "Yes, send a new card"
+          payload: "/SetSlots(address_confirmed=true)"
+        - title: "No, I'll go to the bank"
+          payload: "/SetSlots(address_confirmed=false)"
+  utter_contact_support:
+    - text: "Should you require further assistance, please contact our support team at 020 7777 7777. Thank you for being a valued customer."
+    - text: "If you have any questions or concerns, please don't hesitate to reach out to our support team at 020 7777 7777. We're here to help."
+    - text: "For additional support, please contact our customer service team at 020 7777 7777. Thank you for being a valued customer."
+  utter_acknowledge_reason_damaged_expired:
+    - text: "Thank you for letting us know. I'm sorry to hear the card was {reason_for_blocking}"
+      metadata:
+        rephrase: True
+  utter_acknowledge_reason_fraud_stolen_lost:
+    - text: "As your card was potentially stolen, it's crucial to report this incident to the authorities. Please contact your local law enforcement agency immediately."
+    - text: "Given the unfortunate potential theft of your card, please report this incident to your local law enforcement agency. We'll work together to minimize the impact of this situation."
+  utter_acknowledge_reason_travelling_moving:
+    - text: Thanks for informing us about moving.

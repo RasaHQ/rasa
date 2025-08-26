@@ -1,0 +1,8 @@
+Q: What are the benefits of setting up authorised payees?
+A: Benefits include faster payments, reduced errors in transaction details, and enhanced security for recurring payments.
+
+Q: How can authorised payees help me manage my finances better?
+A: Authorised payees allow for easy tracking of regular payments, helping you maintain better control over your finances.
+
+Q: Can I categorise my payees for better organisation?
+A: Yes, categorising your payees can help you manage them more effectively, especially if you have many set up.

@@ -1,0 +1,16 @@
+# Templates for role ROLE_RASA_INTERNAL
+# Note: Only 'training_error_log_analysis' and 'e2e_testing_error_log_analysis' are
+# valid response categories for rasa internal messages for now.
+# Future contexts can be added here + in ResponseCategory enumeration.
+
+templates:
+  # Templated utterance when training fails.
+  training_error_log_analysis: |
+    The assistant training failed. Your task is to analyze provided error logs
+    and help me fix the issue.
+
+  # Templated utterance when e2e testing fails.
+  e2e_testing_error_log_analysis: |
+    The e2e testing failed. Your task is to analyze provided error from the E2E
+    test logs and help me fix the issue. Help me understand if the issue is within
+    the the E2E test or the assistant.

@@ -1,0 +1,5 @@
+responses:
+  utter_bot_identity:
+    - text: "Yes, I'm an AI assistant designed to help you with your questions. I'm here to provide helpful information and support. How can I assist you today?"
+    - text: "I am indeed an AI assistant! I'm programmed to be helpful, accurate, and friendly. What can I help you with?"
+    - text: "That's right, I'm an AI bot created to assist you. I aim to provide useful responses and help solve your questions. Is there something specific I can help you with?"

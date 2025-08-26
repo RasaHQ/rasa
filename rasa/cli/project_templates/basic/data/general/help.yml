@@ -1,0 +1,6 @@
+flows:
+  help:
+    description: Answer the users question on what the assistant can do to help them
+    name: help
+    steps:
+      - action: utter_help
