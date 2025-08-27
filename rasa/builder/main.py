@@ -140,7 +140,7 @@ def main(project_folder: Optional[str] = None) -> None:
 
         # working directory needs to be the project folder, e.g.
         # for relative paths (./docs) in a projects config to work
-        if project_folder is None:
+        if not project_folder:
             import tempfile
 
             project_folder = tempfile.mkdtemp(prefix="rasa_builder_")
