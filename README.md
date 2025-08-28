@@ -1,4 +1,4 @@
-<h1 align="center">Rasa Pro</h1>
+<h1 align="center">Rasa</h1>
 
 <div align="center">
 
@@ -10,19 +10,17 @@
 
 <hr />
 
-Rasa Pro is a framework for building scalable, dynamic conversational AI assistants that integrate large language models (LLMs) to enable more contextually aware and agentic interactions. Whether you’re new to conversational AI or an experienced developer, Rasa Pro offers enhanced flexibility, control, and performance for mission-critical applications.
-
-Building on the foundation of Rasa Open Source, Rasa Pro adds advanced features like CALM (Conversational AI with Language Models) and Dialogue Understanding (DU), which enable developers to shift from traditional intent-driven systems to LLM-based agents. This allows for more robust, responsive interactions that adhere strictly to business logic, while reducing risks like prompt injection and minimizing hallucinations.
+Rasa is a framework for building scalable, dynamic conversational AI assistants that integrate large language models (LLMs) to enable more contextually aware and agentic interactions. Whether you’re new to conversational AI or an experienced developer, Rasa offers enhanced flexibility, control, and performance for mission-critical applications.
 
 **Key Features:**
 
 - **Flows for Business Logic:** Easily define business logic through Flows, a simplified way to describe how your AI assistant should handle conversations. Flows help streamline the development process, focusing on key tasks and reducing the complexity involved in managing conversations.
 - **Automatic Conversation Repair:** Ensure seamless interactions by automatically handling interruptions or unexpected inputs. Developers have full control to customize these repairs based on specific use cases.
-- **Customizable and Open:** Fully customizable code that allows developers to modify Rasa Pro to meet specific requirements, ensuring flexibility and adaptability to various conversational AI needs.
+- **Customizable and Open:** Fully customizable code that allows developers to modify Rasa to meet specific requirements, ensuring flexibility and adaptability to various conversational AI needs.
 - **Robustness and Control:** Maintain strict adherence to business logic, preventing unwanted behaviors like prompt injection and hallucinations, leading to more reliable responses and secure interactions.
 - **Built-in Security:** Safeguard sensitive data, control access, and ensure secure deployment, essential for production environments that demand high levels of security and compliance.
 
-A [free developer license](https://rasa.com/docs/pro/intro/#who-rasa-pro-is-for) is available so you can explore and get to know Rasa Pro. It allows you to take your assistant live in production a limited capacity. A paid license is required for larger-scale production use, but all code is visible and can be customized as needed.
+A [free developer license](https://rasa.com/docs/pro/intro/#who-rasa-pro-is-for) is available so you can explore and get to know Rasa. It allows you to take your assistant live in production a limited capacity. A paid license is required for larger-scale production use, but all code is visible and can be customized as needed.
 
 To get started right now, you can
 
@@ -30,9 +28,9 @@ To get started right now, you can
 
 Check out our
 
-- [Rasa-pro Quickstart](https://rasa.com/docs/learn/quickstart/pro),
+- [Rasa Quickstart](https://rasa.com/docs/learn/quickstart/pro),
 - [Conversational AI with Language Models (CALM) conceptual rundown](https://rasa.com/docs/learn/concepts/calm),
-- [Rasa Pro / CALM tutorial](https://rasa.com/docs/pro/tutorial), and
-- [Rasa pro changelog](https://rasa.com/docs/reference/changelogs/rasa-pro-changelog)
+- [Rasa tutorial](https://rasa.com/docs/pro/tutorial), and
+- [Changelog](https://rasa.com/docs/reference/changelogs/rasa-pro-changelog)
 
 for more. Also feel free to reach out to us on the [Rasa forum](https://forum.rasa.com/).
