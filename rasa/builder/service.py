@@ -1028,6 +1028,7 @@ async def copilot(request: Request) -> None:
         (
             original_stream,
             used_documents,
+            system_prompt,
         ) = await copilot_client.generate_response(context)
 
         copilot_response_handler = llm_service.instantiate_handler(
@@ -1046,6 +1047,7 @@ async def copilot(request: Request) -> None:
                 handler=copilot_response_handler,
                 used_documents=used_documents,
                 latency_ms=int((time.perf_counter() - start_timestamp) * 1000),
+                system_prompt=system_prompt,
                 **copilot_client.usage_statistics.model_dump(),
             )
         )

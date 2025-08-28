@@ -124,7 +124,7 @@ class Copilot:
     async def generate_response(
         self,
         context: CopilotContext,
-    ) -> tuple[AsyncGenerator[str, None], list[Document]]:
+    ) -> tuple[AsyncGenerator[str, None], list[Document], str]:
         """Generate a response from the copilot.
 
         This method performs document retrieval and response generation as a single
@@ -136,8 +136,8 @@ class Copilot:
             context: The context of the copilot.
 
         Returns:
-            A tuple containing the async response stream and the relevant documents
-            used as supporting evidence for the generated response.
+            A tuple containing the async response stream, relevant documents used
+            as supporting evidence for the generated response, and the prompt used.
 
         Raises:
             CopilotStreamError: If the stream fails.
@@ -148,7 +148,11 @@ class Copilot:
         chat_history = self._create_chat_history_messages(context)
         messages = [system_message, *chat_history]
 
-        return self._stream_response(messages), relevant_documents
+        return (
+            self._stream_response(messages),
+            relevant_documents,
+            system_message.get("content", ""),
+        )
 
     async def _stream_response(
         self, messages: List[Dict[str, Any]]

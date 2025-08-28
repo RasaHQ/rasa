@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from pytest import MonkeyPatch
 
 from rasa.builder import config
 from rasa.builder.copilot.copilot import Copilot
@@ -75,8 +76,9 @@ async def bot_files_for_agent(agent: Agent) -> dict[str, str]:
 
 
 @pytest.mark.asyncio
-async def test_llm_service_copilot_response(agent_with_flows: Agent):
-    """Test that copilot messages are created correctly."""
+async def test_llm_service_copilot_response(
+    agent_with_flows: Agent, monkeypatch: MonkeyPatch
+):
     os.environ["OPENAI_API_KEY"] = "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"
     os.environ["INKEEP_API_KEY"] = "CHANGEME"
 
@@ -90,10 +92,20 @@ async def test_llm_service_copilot_response(agent_with_flows: Agent):
         copilot_chat_history=sample_chat_history(),
     )
 
+    expected_system_prompt = {"role": "system", "content": "TEST_SYSTEM_PROMPT"}
+
+    async def _fake_create_system_message(self, context, relevant_documents):
+        return expected_system_prompt
+
+    monkeypatch.setattr(
+        Copilot, "_create_system_message", _fake_create_system_message, raising=True
+    )
+
     from rasa.builder.llm_service import llm_service
 
-    # Get the streaming response
-    stream, documents = await llm_service.copilot.generate_response(context)
+    stream, documents, system_prompt = await llm_service.copilot.generate_response(
+        context
+    )
 
     # Collect all tokens from the stream
     result = ""
@@ -106,6 +118,9 @@ async def test_llm_service_copilot_response(agent_with_flows: Agent):
 
     # Assert that documents were retrieved (even if empty)
     assert documents is not None
+
+    # Assert that the system prompt returned is the one we patched in
+    assert system_prompt == expected_system_prompt["content"]
 
 
 def test_format_conversation_history():

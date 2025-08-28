@@ -97,6 +97,7 @@ class CopilotTelemetry:
         input_tokens: Optional[int] = None,
         output_tokens: Optional[int] = None,
         total_tokens: Optional[int] = None,
+        system_prompt: Optional[str] = None,
     ) -> None:
         """Track a copilot message in the conversation.
 
@@ -126,6 +127,7 @@ class CopilotTelemetry:
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
                 "total_tokens": total_tokens,
+                "system_prompt": system_prompt,
                 "timestamp": dt.datetime.utcnow().isoformat(),
             },
         )
@@ -169,6 +171,7 @@ class CopilotTelemetry:
         prompt_tokens: int,
         completion_tokens: int,
         total_tokens: int,
+        system_prompt: str,
     ) -> None:
         """Log a copilot message from the response handler.
 
@@ -180,6 +183,7 @@ class CopilotTelemetry:
             prompt_tokens: Number of input tokens used.
             completion_tokens: Number of output tokens generated.
             total_tokens: Total number of tokens used (input + output).
+            system_prompt: The system prompt used.
         """
         structlogger.debug("builder.telemetry.log_copilot_from_handler")
         text = self._full_text(handler)
@@ -192,4 +196,5 @@ class CopilotTelemetry:
             input_tokens=prompt_tokens,
             output_tokens=completion_tokens,
             total_tokens=total_tokens,
+            system_prompt=system_prompt,
         )

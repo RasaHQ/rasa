@@ -133,6 +133,7 @@ def test_log_copilot_from_handler_combines_everything(
         prompt_tokens=10,
         completion_tokens=20,
         total_tokens=30,
+        system_prompt="system prompt",
     )
 
     # Third recorded call: index 2
@@ -145,3 +146,4 @@ def test_log_copilot_from_handler_combines_everything(
     assert event.properties["input_tokens"] == 10
     assert event.properties["output_tokens"] == 20
     assert event.properties["total_tokens"] == 30
+    assert event.properties["system_prompt"] == "system prompt"
