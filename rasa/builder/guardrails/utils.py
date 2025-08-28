@@ -11,6 +11,7 @@ from rasa.builder.config import (
 from rasa.builder.copilot.constants import ROLE_COPILOT, ROLE_USER
 from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
 from rasa.builder.copilot.models import (
+    CopilotChatMessage,
     CopilotContext,
     GeneratedContent,
     ResponseCategory,
@@ -220,6 +221,26 @@ async def check_assistant_chat_for_policy_violations(
     return new_tracker_context
 
 
+def _annotate_flagged_user_messages(
+    history: List[CopilotChatMessage], flagged_user_indices: Set[int]
+) -> None:
+    """Mark flagged user messages in-place on the original history.
+
+    Args:
+        history: The copilot chat history containing messages.
+        flagged_user_indices: Set of indices of user messages that were flagged.
+    """
+    if not flagged_user_indices:
+        return
+
+    total = len(history)
+    for uidx in flagged_user_indices:
+        if 0 <= uidx < total and history[uidx].role == ROLE_USER:
+            history[
+                uidx
+            ].response_category = ResponseCategory.GUARDRAILS_POLICY_VIOLATION
+
+
 async def check_copilot_chat_for_policy_violations(
     context: CopilotContext,
     hello_rasa_user_id: Optional[str],
@@ -261,6 +282,8 @@ async def check_copilot_chat_for_policy_violations(
         lakera_project_id=COPILOT_HISTORY_GUARDRAIL_PROJECT_ID,
         log_prefix="copilot_guardrails",
     )
+
+    _annotate_flagged_user_messages(history, flagged_user_indices)
 
     if not flagged_user_indices:
         return None

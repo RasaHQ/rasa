@@ -18,3 +18,15 @@ class CopilotStreamError(Exception):
     """Raised when the stream fails."""
 
     pass
+
+
+class InvalidCopilotChatHistorySignature(Exception):
+    """Raised when the provided history signature does not match."""
+
+    pass
+
+
+class MissingCopilotChatHistorySignature(Exception):
+    """Raised when a required history signature is missing."""
+
+    pass

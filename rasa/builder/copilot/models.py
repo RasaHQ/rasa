@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 import structlog
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_serializer, model_validator
 from typing_extensions import Annotated
 
 from rasa.builder.copilot.constants import (
@@ -45,6 +45,9 @@ class ResponseCategory(Enum):
     # When Copilot analyzes error logs and provides suggestions
     TRAINING_ERROR_LOG_ANALYSIS = "training_error_log_analysis"
     E2E_TESTING_ERROR_LOG_ANALYSIS = "e2e_testing_error_log_analysis"
+
+    # Conversation history signature
+    SIGNATURE = "signature"
 
 
 class BaseContent(BaseModel):
@@ -185,6 +188,13 @@ class CopilotChatMessage(BaseModel):
 
         return self
 
+    @field_serializer("response_category", when_used="always")
+    def _serialize_response_category(
+        self, v: Optional[ResponseCategory]
+    ) -> Optional[str]:
+        """Serializing CopilotChatMessage, response_category should be a string."""
+        return None if v is None else v.value
+
     def get_text_content(self) -> str:
         """Concatenate all 'text' content blocks into a single string."""
         return "\n".join(
@@ -258,6 +268,14 @@ class CopilotRequest(BaseModel):
             "The session ID of chat session with the assistant. "
             "Used to fetch the conversation from the tracker."
         ),
+    )
+    history_signature: Optional[str] = Field(
+        default=None,
+        description="HMAC signature (base64url) for the provided chat history.",
+    )
+    signature_version: Optional[str] = Field(
+        default=None,
+        description='Signature scheme version (e.g. "v1").',
     )
 
     @property
@@ -429,3 +447,14 @@ class UsageStatistics(BaseModel):
         self.completion_tokens = usage.completion_tokens
         self.total_tokens = usage.total_tokens
         self.model = getattr(chunk, "model", None)
+
+
+class SigningContext(BaseModel):
+    secret: Optional[str] = Field(None)
+    default_version: str = Field("v1", description="Default signature version")
+
+    @property
+    def available(self) -> bool:
+        """Signing is enabled if a non-empty secret is present."""
+        secret = (self.secret or "").strip()
+        return bool(secret)

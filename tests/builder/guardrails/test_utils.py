@@ -1,9 +1,23 @@
 """Unit tests for guardrails utils."""
 
+from typing import List
+
 import pytest
 
+from rasa.builder.copilot.models import (
+    CopilotChatMessage,
+    ResponseCategory,
+    TextContent,
+)
 from rasa.builder.guardrails.models import GuardrailType
-from rasa.builder.guardrails.utils import map_lakera_detector_type_to_guardrail_type
+from rasa.builder.guardrails.utils import (
+    _annotate_flagged_user_messages,
+    map_lakera_detector_type_to_guardrail_type,
+)
+
+
+def create_copilot_chat_message(role: str, text: str) -> CopilotChatMessage:
+    return CopilotChatMessage(role=role, content=[TextContent(type="text", text=text)])
 
 
 class TestMapLakeraDetectorTypeToGuardrailType:
@@ -32,3 +46,49 @@ class TestMapLakeraDetectorTypeToGuardrailType:
         """Test that Lakera detector types are correctly mapped to Rasa types."""
         result = map_lakera_detector_type_to_guardrail_type(detector_type)
         assert result == expected_guardrail_type
+
+    def test_annotate_flagged_user_messages_marks_user_indices_and_ignores_out_of_range(
+        self,
+    ) -> None:
+        history: List[CopilotChatMessage] = [
+            create_copilot_chat_message("user", "hello"),
+            create_copilot_chat_message("copilot", "welcome"),
+            create_copilot_chat_message("user", "steal money"),
+            create_copilot_chat_message("copilot", "refuse"),
+            create_copilot_chat_message("user", "fine"),
+        ]
+
+        flagged = {
+            2,  # Index 2 is the proper user message to be annotated
+            1,  # Index 1 is a copilot message, these should not be annotated
+            10,  # Index 10 is out of range and should be ignored
+        }
+
+        _annotate_flagged_user_messages(history, flagged)
+
+        assert history[0].response_category is None
+        assert history[1].response_category is None
+        assert (
+            history[2].response_category == ResponseCategory.GUARDRAILS_POLICY_VIOLATION
+        )
+        assert history[3].response_category is None
+        assert history[4].response_category is None
+
+    def test_annotate_flagged_user_messages_idempotent_and_noop_on_empty(self) -> None:
+        history: List[CopilotChatMessage] = [
+            create_copilot_chat_message("user", "hello"),
+            create_copilot_chat_message("user", "steal money"),
+        ]
+
+        _annotate_flagged_user_messages(history, {1})
+        assert history[0].response_category is None
+        assert (
+            history[1].response_category == ResponseCategory.GUARDRAILS_POLICY_VIOLATION
+        )
+
+        # No-op: empty flagged set should not change anything
+        _annotate_flagged_user_messages(history, set())
+        assert history[0].response_category is None
+        assert (
+            history[1].response_category == ResponseCategory.GUARDRAILS_POLICY_VIOLATION
+        )

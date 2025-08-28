@@ -23,3 +23,6 @@ ROLE_COPILOT_INTERNAL: Literal["copilot_internal"] = "copilot_internal"
 
 # Copilot Telemetry
 COPILOT_SEGMENT_WRITE_KEY_ENV_VAR = "COPILOT_SEGMENT_WRITE_KEY"
+
+# Copilot signing
+SIGNATURE_VERSION_V1 = "v1"

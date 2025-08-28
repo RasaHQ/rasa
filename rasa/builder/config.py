@@ -24,6 +24,10 @@ MAX_RETRIES = int(os.getenv("MAX_RETRIES", "5"))
 MAX_LOG_ENTRIES = int(os.getenv("MAX_LOG_ENTRIES", "30"))
 HELLO_RASA_PROJECT_ID = os.getenv("HELLO_RASA_PROJECT_ID")
 
+# Copilot Signature Configuration
+# Setting the secret turns on signing on the server-side.
+COPILOT_HISTORY_SIGNING_SECRET = os.getenv("COPILOT_HISTORY_SIGNING_SECRET")
+
 # CORS Configuration
 _cors_origins_env = os.getenv("CORS_ORIGINS", "*")
 CORS_ORIGINS = _cors_origins_env.split(",") if _cors_origins_env != "*" else ["*"]

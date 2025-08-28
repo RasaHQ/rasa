@@ -16,8 +16,12 @@ from rasa.builder.config import (
     COPILOT_HANDLER_ROLLING_BUFFER_SIZE,
     HELLO_RASA_PROJECT_ID,
 )
-from rasa.builder.copilot.constants import ROLE_USER
-from rasa.builder.copilot.exceptions import CopilotStreamError
+from rasa.builder.copilot.constants import ROLE_USER, SIGNATURE_VERSION_V1
+from rasa.builder.copilot.exceptions import (
+    CopilotStreamError,
+    InvalidCopilotChatHistorySignature,
+    MissingCopilotChatHistorySignature,
+)
 from rasa.builder.copilot.models import (
     CopilotContext,
     CopilotRequest,
@@ -26,6 +30,11 @@ from rasa.builder.copilot.models import (
     ReferenceSection,
     ResponseCategory,
     ResponseCompleteness,
+)
+from rasa.builder.copilot.signing import (
+    create_signature_envelope_for_handler,
+    create_signature_envelope_for_text,
+    verify_signature,
 )
 from rasa.builder.copilot.telemetry import CopilotTelemetry
 from rasa.builder.download import create_bot_project_archive
@@ -938,7 +947,33 @@ async def copilot(request: Request) -> None:
                 )
             )
 
-        # 2. Get the necessary context for the copilot
+        # 2 Verify the request signature
+        try:
+            if not await verify_signature(req):
+                await sse.eof()
+                return
+        except InvalidCopilotChatHistorySignature:
+            version = getattr(req, "signature_version", None) or SIGNATURE_VERSION_V1
+            await sse.send(
+                ServerSentEvent(
+                    event="copilot_response",
+                    data={"error": "invalid_history_signature", "version": version},
+                ).format()
+            )
+            await sse.eof()
+            return
+        except MissingCopilotChatHistorySignature:
+            version = getattr(req, "signature_version", None) or SIGNATURE_VERSION_V1
+            await sse.send(
+                ServerSentEvent(
+                    event="copilot_response",
+                    data={"error": "missing_history_signature", "version": version},
+                ).format()
+            )
+            await sse.eof()
+            return
+
+        # 3. Get the necessary context for the copilot
         tracker = await current_tracker_from_input_channel(request.app, req.session_id)
         tracker_context = TrackerContext.from_tracker(
             tracker, max_turns=COPILOT_ASSISTANT_TRACKER_MAX_TURNS
@@ -963,7 +998,7 @@ async def copilot(request: Request) -> None:
             copilot_chat_history=req.copilot_chat_history,
         )
 
-        # 3. Run guardrail policy checks. If any policy violations are detected,
+        # 4. Run guardrail policy checks. If any policy violations are detected,
         #    send a response and end the stream.
         guardrail_response: Optional[
             GeneratedContent
@@ -974,10 +1009,19 @@ async def copilot(request: Request) -> None:
         )
         if guardrail_response is not None:
             await sse.send(guardrail_response.to_sse_event().format())
+
+            # 5. Send signature for the guardrail response
+            if envelope := await create_signature_envelope_for_text(
+                req=req,
+                text=guardrail_response.content,
+                category=ResponseCategory.GUARDRAILS_POLICY_VIOLATION,
+            ):
+                await sse.send(envelope.format())
+
             await sse.eof()
             return
 
-        # 4. Get the original response stream from copilot and handle it with the
+        # 6. Get the original response stream from copilot and handle it with the
         #    copilot response handler
         start_timestamp = time.perf_counter()
         copilot_client = llm_service.instantiate_copilot()
@@ -991,11 +1035,11 @@ async def copilot(request: Request) -> None:
         )
         intercepted_stream = copilot_response_handler.handle_response(original_stream)
 
-        # 5. Stream the intercepted response
+        # 7. Stream the intercepted response
         async for token in intercepted_stream:
             await sse.send(token.to_sse_event().format())
 
-        # Offload telemetry logging to a background task
+        # 8. Offload telemetry logging to a background task
         request.app.add_task(
             asyncio.to_thread(
                 telemetry.log_copilot_from_handler,
@@ -1006,13 +1050,19 @@ async def copilot(request: Request) -> None:
             )
         )
 
-        # 6. Once the stream is over, extract and send references
+        # 9. Once the stream is over, extract and send references
         #    if any documents were used
         if used_documents:
             reference_section = copilot_response_handler.extract_references(
                 used_documents
             )
             await sse.send(reference_section.to_sse_event().format())
+
+        # 10. Sign the next history
+        if envelope := await create_signature_envelope_for_handler(
+            req, copilot_response_handler
+        ):
+            await sse.send(envelope.format())
 
     except CopilotStreamError as e:
         capture_exception_with_context(
