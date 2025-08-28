@@ -73,13 +73,8 @@ structlogger = structlog.get_logger()
 bp = Blueprint("bot_builder", url_prefix="/api")
 
 
-def setup_project_generator(project_folder: Optional[str] = None) -> ProjectGenerator:
+def setup_project_generator(project_folder: str) -> ProjectGenerator:
     """Initialize and return a ProjectGenerator instance."""
-    if project_folder is None:
-        import tempfile
-
-        project_folder = tempfile.mkdtemp(prefix="rasa_builder_")
-
     # Ensure the project folder is in sys.path
     if project_folder not in sys.path:
         sys.path.insert(0, project_folder)

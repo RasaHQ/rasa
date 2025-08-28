@@ -81,7 +81,7 @@ def setup_middleware(app: Sanic) -> None:
             pass
 
 
-def create_app(project_folder: Optional[str] = None) -> Sanic:
+def create_app(project_folder: str) -> Sanic:
     """Create and configure the Sanic app."""
     app = Sanic("BotBuilderService")
 
@@ -140,8 +140,12 @@ def main(project_folder: Optional[str] = None) -> None:
 
         # working directory needs to be the project folder, e.g.
         # for relative paths (./docs) in a projects config to work
-        if project_folder:
-            os.chdir(project_folder)
+        if not project_folder:
+            import tempfile
+
+            project_folder = tempfile.mkdtemp(prefix="rasa_builder_")
+
+        os.chdir(project_folder)
 
         # Create and configure app
         app = create_app(project_folder)
