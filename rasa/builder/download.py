@@ -7,6 +7,8 @@ import tarfile
 from textwrap import dedent
 from typing import Dict, Optional
 
+import rasa
+
 
 def _get_env_content() -> str:
     """Generate .env file content."""
@@ -18,6 +20,11 @@ def _get_python_version_content() -> str:
     return f"{sys.version_info.major}.{sys.version_info.minor}\n"
 
 
+def _get_rasa_pro_minor_version() -> str:
+    """Get the minor version of Rasa Pro."""
+    return ".".join(rasa.__version__.split(".")[:2])
+
+
 def _get_pyproject_toml_content(project_id: str) -> str:
     """Generate pyproject.toml file content."""
     return dedent(
@@ -27,7 +34,7 @@ def _get_pyproject_toml_content(project_id: str) -> str:
         version = "0.1.0"
         description = "Add your description for your Rasa bot here"
         readme = "README.md"
-        dependencies = []
+        dependencies = ["rasa-pro>={_get_rasa_pro_minor_version()}"]
         requires-python = ">={sys.version_info.major}.{sys.version_info.minor}"
         """
     )
