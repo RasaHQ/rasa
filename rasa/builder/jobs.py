@@ -3,6 +3,7 @@ from typing import Any, Optional
 import structlog
 from sanic import Sanic
 
+from rasa.builder import config
 from rasa.builder.exceptions import (
     LLMGenerationError,
     ProjectGenerationError,
@@ -77,11 +78,24 @@ async def run_prompt_to_bot_job(
         job_manager.mark_done(job, error=str(exc))
 
     except ValidationError as exc:
+        # Log levels to include in the error message
+        log_levels = ["error"]
+        if config.VALIDATION_FAIL_ON_WARNINGS:
+            log_levels.append("warning")
+
         structlogger.debug(
-            "prompt_to_bot_job.validation_error", job_id=job.id, error=str(exc)
+            "prompt_to_bot_job.validation_error",
+            job_id=job.id,
+            error=str(exc),
+            all_validation_logs=exc.validation_logs,
+            included_log_levels=log_levels,
         )
-        await push_job_status_event(job, JobStatus.validation_error, message=str(exc))
-        job_manager.mark_done(job, error=str(exc))
+
+        error_message = exc.get_error_message_with_logs(log_levels=log_levels)
+        await push_job_status_event(
+            job, JobStatus.validation_error, message=error_message
+        )
+        job_manager.mark_done(job, error=error_message)
 
     except (ProjectGenerationError, LLMGenerationError) as exc:
         structlogger.debug(
@@ -148,13 +162,23 @@ async def run_template_to_bot_job(
         job_manager.mark_done(job, error=str(exc))
 
     except ValidationError as exc:
+        # Log levels to include in the error message
+        log_levels = ["error"]
+        if config.VALIDATION_FAIL_ON_WARNINGS:
+            log_levels.append("warning")
+
         structlogger.debug(
             "template_to_bot_job.validation_error",
             job_id=job.id,
             error=str(exc),
+            all_validation_logs=exc.validation_logs,
+            included_log_levels=log_levels,
         )
-        await push_job_status_event(job, JobStatus.validation_error, message=str(exc))
-        job_manager.mark_done(job, error=str(exc))
+        error_message = exc.get_error_message_with_logs(log_levels=log_levels)
+        await push_job_status_event(
+            job, JobStatus.validation_error, message=error_message
+        )
+        job_manager.mark_done(job, error=error_message)
 
     except ProjectGenerationError as exc:
         structlogger.debug(
@@ -206,13 +230,21 @@ async def run_update_files_job(
         job_manager.mark_done(job)
 
     except ValidationError as exc:
+        log_levels = ["error"]
+        if config.VALIDATION_FAIL_ON_WARNINGS:
+            log_levels.append("warning")
         structlogger.debug(
             "update_files_job.validation_error",
             job_id=job.id,
             error=str(exc),
+            validation_logs=exc.validation_logs,
+            included_log_levels=log_levels,
         )
-        await push_job_status_event(job, JobStatus.validation_error, message=str(exc))
-        job_manager.mark_done(job, error=str(exc))
+        error_message = exc.get_error_message_with_logs(log_levels=log_levels)
+        await push_job_status_event(
+            job, JobStatus.validation_error, message=error_message
+        )
+        job_manager.mark_done(job, error=error_message)
 
     except TrainingError as exc:
         structlogger.debug(
