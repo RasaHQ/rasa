@@ -2,12 +2,14 @@
 
 import json
 from enum import Enum
+from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
 
 import structlog
 from pydantic import BaseModel, Field, validator
 
 from rasa.cli.scaffold import ProjectTemplateName
+from rasa.shared.importers.importer import TrainingDataImporter
 
 structlogger = structlog.get_logger()
 
@@ -195,3 +197,12 @@ class JobStatus(str, Enum):
 class JobCreateResponse(BaseModel):
     job_id: str = Field(...)
     status: JobStatus = JobStatus.received
+
+
+class TrainingInput(BaseModel):
+    """Input for training a model."""
+
+    model_config = {"arbitrary_types_allowed": True}
+
+    importer: TrainingDataImporter = Field(..., description="Training data importer")
+    endpoints_file: Path = Field(..., description="Path to the endpoints file")

@@ -20,6 +20,7 @@ from rasa.builder.llm_service import get_skill_generation_messages, llm_service
 from rasa.builder.logging_utils import capture_exception_with_context
 from rasa.builder.models import BotFiles
 from rasa.builder.project_info import ProjectInfo, ensure_first_used, load_project_info
+from rasa.builder.training_service import TrainingInput
 from rasa.builder.validation_service import validate_project
 from rasa.cli.scaffold import ProjectTemplateName, create_initial_project
 from rasa.shared.core.flows import yaml_flows_io
@@ -176,6 +177,17 @@ class ProjectGenerator:
 
         if validation_error:
             raise ValidationError(validation_error)
+
+    def _get_endpoints_file(self) -> Path:
+        """Get the endpoints file."""
+        return self.project_folder / "endpoints.yml"
+
+    def get_training_input(self) -> TrainingInput:
+        """Get the training input."""
+        return TrainingInput(
+            importer=self._create_importer(),
+            endpoints_file=self._get_endpoints_file(),
+        )
 
     def _create_importer(self) -> TrainingDataImporter:
         """Create a training data importer from the current bot files."""

@@ -3,10 +3,7 @@
 import os
 from typing import Any, Dict
 
-import importlib_resources
-
-from rasa.constants import PACKAGE_NAME
-from rasa.shared.utils.yaml import read_yaml, read_yaml_file
+from rasa.shared.utils.yaml import read_yaml
 
 # OpenAI Configuration
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-2025-04-14")
@@ -72,40 +69,6 @@ if HELLO_LLM_PROXY_BASE_URL:
 # across routes (except when auth is globally disabled on the server).
 # Default kept small for development; adjust as needed.
 AUTH_REQUIRED_AFTER_MINUTES = int(os.getenv("AUTH_REQUIRED_AFTER_MINUTES", "480"))
-
-
-def get_default_config(assistant_id: str) -> Dict[str, Any]:
-    """Get default Rasa configuration."""
-    base_config = read_yaml_file(
-        str(
-            importlib_resources.files(PACKAGE_NAME).joinpath(
-                "cli/project_templates/default/config.yml"
-            )
-        )
-    )
-
-    if not isinstance(base_config, dict):
-        raise ValueError("Base config is not a dictionary")
-
-    base_config["assistant_id"] = assistant_id
-
-    return base_config
-
-
-def get_default_endpoints() -> Dict[str, Any]:
-    """Get default endpoints configuration."""
-    endpoints_config = read_yaml_file(
-        str(
-            importlib_resources.files(PACKAGE_NAME).joinpath(
-                "cli/project_templates/default/endpoints.yml"
-            )
-        )
-    )
-
-    if not isinstance(endpoints_config, dict):
-        raise ValueError("Endpoints config is not a dictionary")
-
-    return endpoints_config
 
 
 def get_default_credentials() -> Dict[str, Any]:

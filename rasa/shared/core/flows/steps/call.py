@@ -50,7 +50,14 @@ class CallFlowStep(FlowStep):
 
         if should_resolve_calls:
             if not self.called_flow_reference:
-                raise ValueError("Call flow reference not set.")
+                raise ValueError(
+                    f"Flow step '{self.id}' in flow '{self.flow_id}' is trying "
+                    f"to call flow '{self.call}', but the flow reference could "
+                    f"not be resolved. Please ensure that:\n"
+                    f"1. A flow named '{self.call}' is defined in your domain\n"
+                    f"2. The flow name is spelled correctly (case-sensitive)\n"
+                    f"3. The called flow is properly formatted with valid YAML syntax"
+                )
 
             yield from self.called_flow_reference.steps_with_calls_resolved
 

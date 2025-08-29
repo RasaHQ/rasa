@@ -1,26 +1,25 @@
 """Functions for training and loading Rasa models."""
 
 import os
-import tempfile
+from pathlib import Path
 
 import structlog
 
-from rasa.builder import config
 from rasa.builder.exceptions import AgentLoadError, TrainingError
+from rasa.builder.models import TrainingInput
 from rasa.core import agent
 from rasa.core.utils import AvailableEndpoints, read_endpoints_from_path
 from rasa.model_training import TrainingResult, train
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
 
 structlogger = structlog.get_logger()
 
 
-async def train_and_load_agent(importer: TrainingDataImporter) -> agent.Agent:
+async def train_and_load_agent(input: TrainingInput) -> agent.Agent:
     """Train a model and load an agent.
 
     Args:
-        importer: Training data importer with domain, flows, and config
+        input: Training input with importer and endpoints file
 
     Returns:
         Loaded and ready agent
@@ -31,10 +30,10 @@ async def train_and_load_agent(importer: TrainingDataImporter) -> agent.Agent:
     """
     try:
         # Setup endpoints for training validation
-        await _setup_endpoints()
+        await _setup_endpoints(input.endpoints_file)
 
         # Train the model
-        training_result = await _train_model(importer)
+        training_result = await _train_model(input.importer)
 
         # Load the agent
         agent_instance = await _load_agent(training_result.model)
@@ -55,21 +54,14 @@ async def train_and_load_agent(importer: TrainingDataImporter) -> agent.Agent:
         raise TrainingError(f"SystemExit during training: {e}")
 
 
-async def _setup_endpoints() -> None:
+async def _setup_endpoints(endpoints_file: Path) -> None:
     """Setup endpoints configuration for training."""
     try:
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".yml", delete=False
-        ) as temp_file:
-            endpoints_yaml = dump_obj_as_yaml_to_string(config.get_default_endpoints())
-            temp_file.write(endpoints_yaml)
-            temp_file.flush()
+        # Reset and load endpoints
+        AvailableEndpoints.reset_instance()
+        read_endpoints_from_path(endpoints_file)
 
-            # Reset and load endpoints
-            AvailableEndpoints.reset_instance()
-            read_endpoints_from_path(temp_file.name)
-
-            structlogger.debug("training.endpoints_setup", temp_file=temp_file.name)
+        structlogger.debug("training.endpoints_setup", endpoints_file=endpoints_file)
 
     except Exception as e:
         raise TrainingError(f"Failed to setup endpoints: {e}")

@@ -15,9 +15,11 @@ from rasa.builder.models import (
     JobStatus,
     JobStatusEvent,
 )
+from rasa.builder.project_generator import ProjectGenerator
 from rasa.builder.training_service import train_and_load_agent
 from rasa.builder.validation_service import validate_project
 from rasa.cli.scaffold import ProjectTemplateName
+from rasa.core.channels.studio_chat import StudioChatInput
 
 structlogger = structlog.get_logger()
 
@@ -42,8 +44,8 @@ async def run_prompt_to_bot_job(
         job: The job information instance.
         prompt: The natural language prompt for bot generation.
     """
-    project_generator = app.ctx.project_generator
-    input_channel = app.ctx.input_channel
+    project_generator: ProjectGenerator = app.ctx.project_generator
+    input_channel: StudioChatInput = app.ctx.input_channel
 
     await push_job_status_event(job, JobStatus.received)
 
@@ -58,8 +60,9 @@ async def run_prompt_to_bot_job(
 
         # 2. Training
         await push_job_status_event(job, JobStatus.training)
-        importer = project_generator._create_importer()
-        app.ctx.agent = await train_and_load_agent(importer)
+        app.ctx.agent = await train_and_load_agent(
+            project_generator.get_training_input()
+        )
         input_channel.agent = app.ctx.agent
         await push_job_status_event(job, JobStatus.train_success)
 
@@ -139,8 +142,9 @@ async def run_template_to_bot_job(
 
         # 2) Training
         await push_job_status_event(job, JobStatus.training)
-        importer = project_generator._create_importer()
-        app.ctx.agent = await train_and_load_agent(importer)
+        app.ctx.agent = await train_and_load_agent(
+            project_generator.get_training_input()
+        )
         input_channel.agent = app.ctx.agent
         await push_job_status_event(job, JobStatus.train_success)
 
@@ -214,15 +218,15 @@ async def run_update_files_job(
 
         # 1. Validating
         await push_job_status_event(job, JobStatus.validating)
-        importer = project_generator._create_importer()
-        validation_error = await validate_project(importer)
+        training_input = project_generator.get_training_input()
+        validation_error = await validate_project(training_input.importer)
         if validation_error:
             raise ValidationError(validation_error)
         await push_job_status_event(job, JobStatus.validation_success)
 
         # 2. Training
         await push_job_status_event(job, JobStatus.training)
-        app.ctx.agent = await train_and_load_agent(importer)
+        app.ctx.agent = await train_and_load_agent(training_input)
         input_channel.agent = app.ctx.agent
         await push_job_status_event(job, JobStatus.train_success)
 
