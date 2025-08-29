@@ -21,6 +21,7 @@ from rasa.builder.copilot.models import (
     ResponseCompleteness,
 )
 from rasa.builder.document_retrieval.models import Document
+from rasa.builder.guardrails.constants import BLOCK_SCOPE_USER, BlockScope
 
 structlogger = structlog.get_logger()
 
@@ -53,6 +54,14 @@ GUARDRAIL_POLICY_VIOLATION_RESPONSE = _handler_responses.get(
     "guardrail_policy_violation_response", ""
 )
 COPILOT_REDACTED_MESSAGE = _handler_responses.get("copilot_redacted_message", "")
+
+# Guardrails blocked responses
+GUARDRAIL_BLOCKED_USER_RESPONSE = _handler_responses.get(
+    "guardrail_blocked_user_response", ""
+)
+GUARDRAIL_BLOCKED_PROJECT_RESPONSE = _handler_responses.get(
+    "guardrail_blocked_project_response", ""
+)
 
 # Common LLM response prefixes and suffixes before the actual content. These are removed
 # from the content.
@@ -371,6 +380,27 @@ class CopilotResponseHandler:
         return GeneratedContent(
             response_category=ResponseCategory.GUARDRAILS_POLICY_VIOLATION,
             content=GUARDRAIL_POLICY_VIOLATION_RESPONSE,
+            response_completeness=ResponseCompleteness.COMPLETE,
+        )
+
+    @staticmethod
+    def respond_to_guardrail_blocked(scope: BlockScope) -> GeneratedContent:
+        """Return a blocked response for user or project scope.
+
+        Args:
+            scope: 'user' for user-level block, 'project' for project-level block.
+
+        Returns:
+            GeneratedContent with GUARDRAILS_BLOCKED category.
+        """
+        content = (
+            GUARDRAIL_BLOCKED_USER_RESPONSE
+            if scope == BLOCK_SCOPE_USER
+            else GUARDRAIL_BLOCKED_PROJECT_RESPONSE
+        )
+        return GeneratedContent(
+            response_category=ResponseCategory.GUARDRAILS_BLOCKED,
+            content=content,
             response_completeness=ResponseCompleteness.COMPLETE,
         )
 

@@ -197,3 +197,35 @@ class GuardrailRequestKey(BaseModel):
 
     # hashable by value
     model_config = ConfigDict(frozen=True)
+
+
+class ScopeState(BaseModel):
+    blocked_until: Optional[float] = Field(
+        default=None,
+        description="UNIX timestamp in seconds until this scope is blocked.",
+    )
+    violations: List[float] = Field(
+        default_factory=list,
+        description="UNIX timestamps in seconds when violations occurred.",
+    )
+
+    def is_blocked(self, now: float) -> bool:
+        """Return whether the scope is currently blocked.
+
+        Args:
+            now: Current time as a UNIX timestamp.
+
+        Returns:
+            True if blocked_until is set and in the future, else False.
+        """
+        return self.blocked_until is not None and now < self.blocked_until
+
+
+class ProjectState(BaseModel):
+    project: ScopeState = Field(default_factory=ScopeState)
+    users: Dict[str, ScopeState] = Field(default_factory=dict)
+
+
+class BlockResult(BaseModel):
+    user_blocked_now: bool = False
+    project_blocked_now: bool = False

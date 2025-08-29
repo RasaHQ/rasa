@@ -24,3 +24,11 @@ responses:
     way may result in project termination and account blocking.
 
   copilot_redacted_message: "[Copilot response redacted for guardrails check.]"
+
+  guardrail_blocked_user_response: |
+    Your Copilot access has been temporarily blocked due to repeated policy violations.
+    If you believe this is an error or would like to request a review, please reach out to support@rasa.com.
+
+  guardrail_blocked_project_response: |
+    Your Copilot access has been temporarily blocked due to repeated policy violations.
+    If you believe this is an error or would like to request a review, please reach out to support@rasa.com.

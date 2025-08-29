@@ -42,6 +42,8 @@ class ResponseCategory(Enum):
     ERROR_FALLBACK = "error_fallback"
     # When a policy violation is detected
     GUARDRAILS_POLICY_VIOLATION = "guardrails_policy_violation"
+    # When Copilot access is blocked after repeated violations
+    GUARDRAILS_BLOCKED = "guardrails_blocked"
     # When Copilot analyzes error logs and provides suggestions
     TRAINING_ERROR_LOG_ANALYSIS = "training_error_log_analysis"
     E2E_TESTING_ERROR_LOG_ANALYSIS = "e2e_testing_error_log_analysis"

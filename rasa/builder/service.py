@@ -14,9 +14,11 @@ from rasa.builder.auth import HEADER_USER_ID, is_auth_required_now, protected
 from rasa.builder.config import (
     COPILOT_ASSISTANT_TRACKER_MAX_TURNS,
     COPILOT_HANDLER_ROLLING_BUFFER_SIZE,
+    GUARDRAILS_ENABLE_BLOCKING,
     HELLO_RASA_PROJECT_ID,
 )
 from rasa.builder.copilot.constants import ROLE_USER, SIGNATURE_VERSION_V1
+from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
 from rasa.builder.copilot.exceptions import (
     CopilotStreamError,
     InvalidCopilotChatHistorySignature,
@@ -38,6 +40,12 @@ from rasa.builder.copilot.signing import (
 )
 from rasa.builder.copilot.telemetry import CopilotTelemetry
 from rasa.builder.download import create_bot_project_archive
+from rasa.builder.guardrails.constants import (
+    BLOCK_SCOPE_PROJECT,
+    BLOCK_SCOPE_USER,
+    BlockScope,
+)
+from rasa.builder.guardrails.store import guardrails_store
 from rasa.builder.guardrails.utils import (
     check_assistant_chat_for_policy_violations,
     check_copilot_chat_for_policy_violations,
@@ -915,11 +923,9 @@ async def download_bot_project(request: Request) -> HTTPResponse:
 )
 @openapi.parameter(
     HEADER_USER_ID,
-    description=(
-        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
-    ),
+    description=("Required user id used for telemetry and guardrails (X-User-Id)."),
     _in="header",
-    required=False,
+    required=True,
     schema=str,
 )
 @protected()
@@ -932,10 +938,24 @@ async def copilot(request: Request) -> None:
         # 1. Validate and unpack input
         req = CopilotRequest(**request.json)
 
-        telemetry = CopilotTelemetry(
-            project_id=HELLO_RASA_PROJECT_ID,
-            user_id=request.headers.get(HEADER_USER_ID),
-        )
+        # Require user identifier via header and fail fast if missing
+        user_id = (request.headers.get(HEADER_USER_ID) or "").strip()
+        if not user_id:
+            structlogger.error(
+                "bot_builder_service.copilot.missing_or_empty_user_id_header",
+                event_info=f"Missing or empty required header: {HEADER_USER_ID}",
+            )
+            await sse.send(
+                ServerSentEvent(
+                    event="error",
+                    data={
+                        "error": f"Missing or empty required header: {HEADER_USER_ID}"
+                    },
+                ).format()
+            )
+            return
+
+        telemetry = CopilotTelemetry(project_id=HELLO_RASA_PROJECT_ID, user_id=user_id)
         structlogger.debug("builder.copilot.telemetry.request.init")
 
         if req.last_message and req.last_message.role == ROLE_USER:
@@ -947,11 +967,15 @@ async def copilot(request: Request) -> None:
                 )
             )
 
-        # 2 Verify the request signature
+        # 2. Check if we need to block the request due to too many guardrails violations
+        if (scope := await _get_copilot_block_scope(user_id)) is not None:
+            message = CopilotResponseHandler.respond_to_guardrail_blocked(scope)
+            await sse.send(message.to_sse_event().format())
+            return
+
+        # 3 Verify the request signature
         try:
-            if not await verify_signature(req):
-                await sse.eof()
-                return
+            await verify_signature(req)
         except InvalidCopilotChatHistorySignature:
             version = getattr(req, "signature_version", None) or SIGNATURE_VERSION_V1
             await sse.send(
@@ -960,7 +984,6 @@ async def copilot(request: Request) -> None:
                     data={"error": "invalid_history_signature", "version": version},
                 ).format()
             )
-            await sse.eof()
             return
         except MissingCopilotChatHistorySignature:
             version = getattr(req, "signature_version", None) or SIGNATURE_VERSION_V1
@@ -970,10 +993,9 @@ async def copilot(request: Request) -> None:
                     data={"error": "missing_history_signature", "version": version},
                 ).format()
             )
-            await sse.eof()
             return
 
-        # 3. Get the necessary context for the copilot
+        # 4. Get the necessary context for the copilot
         tracker = await current_tracker_from_input_channel(request.app, req.session_id)
         tracker_context = TrackerContext.from_tracker(
             tracker, max_turns=COPILOT_ASSISTANT_TRACKER_MAX_TURNS
@@ -981,7 +1003,7 @@ async def copilot(request: Request) -> None:
         if tracker_context is not None:
             tracker_context = await check_assistant_chat_for_policy_violations(
                 tracker_context=tracker_context,
-                hello_rasa_user_id=request.headers.get(HEADER_USER_ID),
+                hello_rasa_user_id=user_id,
                 hello_rasa_project_id=HELLO_RASA_PROJECT_ID,
             )
 
@@ -998,27 +1020,32 @@ async def copilot(request: Request) -> None:
             copilot_chat_history=req.copilot_chat_history,
         )
 
-        # 4. Run guardrail policy checks. If any policy violations are detected,
+        # 5. Run guardrail policy checks. If any policy violations are detected,
         #    send a response and end the stream.
         guardrail_response: Optional[
             GeneratedContent
         ] = await check_copilot_chat_for_policy_violations(
             context=context,
-            hello_rasa_user_id=request.headers.get(HEADER_USER_ID),
+            hello_rasa_user_id=user_id,
             hello_rasa_project_id=HELLO_RASA_PROJECT_ID,
         )
         if guardrail_response is not None:
-            await sse.send(guardrail_response.to_sse_event().format())
+            blocked_or_violation_message = (
+                await _handle_guardrail_violation_and_maybe_block(
+                    sse=sse,
+                    user_id=user_id,
+                    violation_response=guardrail_response,
+                )
+            )
 
-            # 5. Send signature for the guardrail response
+            # Send signature for the guardrail response
             if envelope := await create_signature_envelope_for_text(
                 req=req,
-                text=guardrail_response.content,
-                category=ResponseCategory.GUARDRAILS_POLICY_VIOLATION,
+                text=blocked_or_violation_message.content,
+                category=blocked_or_violation_message.response_category,
             ):
                 await sse.send(envelope.format())
 
-            await sse.eof()
             return
 
         # 6. Get the original response stream from copilot and handle it with the
@@ -1187,3 +1214,52 @@ async def current_tracker_from_input_channel(
         return await app.ctx.agent.tracker_store.retrieve(session_id)
     else:
         return None
+
+
+async def _get_copilot_block_scope(user_id: str) -> Optional[BlockScope]:
+    """Return the guardrail block scope for Copilot if blocked.
+
+    Args:
+        user_id: User identifier.
+
+    Returns:
+        'user' or 'project' when blocked, otherwise None.
+    """
+    if not GUARDRAILS_ENABLE_BLOCKING:
+        return None
+
+    return await guardrails_store.check_block_scope(user_id)
+
+
+async def _handle_guardrail_violation_and_maybe_block(
+    sse: Any,
+    violation_response: GeneratedContent,
+    user_id: str,
+) -> GeneratedContent:
+    """Record a violation, apply block if threshold crossed, and respond.
+
+    Args:
+        sse: Active SSE stream.
+        violation_response: The default violation warning response.
+        user_id: User identifier.
+
+    Returns:
+        The GeneratedContent message that was sent to the client.
+    """
+    if not GUARDRAILS_ENABLE_BLOCKING:
+        await sse.send(violation_response.to_sse_event().format())
+        return violation_response
+
+    result = await guardrails_store.record_violation(user_id)
+
+    if result.user_blocked_now:
+        message = CopilotResponseHandler.respond_to_guardrail_blocked(BLOCK_SCOPE_USER)
+    elif result.project_blocked_now:
+        message = CopilotResponseHandler.respond_to_guardrail_blocked(
+            BLOCK_SCOPE_PROJECT
+        )
+    else:
+        message = violation_response
+
+    await sse.send(message.to_sse_event().format())
+    return message
