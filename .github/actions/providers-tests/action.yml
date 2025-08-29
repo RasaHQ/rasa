@@ -571,9 +571,9 @@ runs:
       with:
         method: chat.postMessage
         token: ${{ env.SLACK_BOT_TOKEN }}
-        # Send notification to #dev-tribe-alerts slack channel
+        # Send notification to #rasa-pro-alerts slack channel
         payload: |
-          channel: C070ELPSLBB
+          channel: C01M5TAHDHA
           text: ':rocket: *Rasa-Pro* (version `${{ env.RASA_VERSION }}`, `rasa-private` branch `${{ github.ref_name }}` sha `${{ env.SHORT_SHA }}`)
             CALM tests (from `${{ inputs.data-repo }}` branch `${{ inputs.data-repo-branch }}`) passed against: `${{ inputs.provider }}`, with ${{ inputs.train-and-test }} command-generator. More
             information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>.'
@@ -584,9 +584,9 @@ runs:
       with:
         method: chat.postMessage
         token: ${{ env.SLACK_BOT_TOKEN }}
-        # Send notification to #dev-tribe-alerts slack channel
+        # Send notification to #rasa-pro-alerts slack channel
         payload: |
-          channel: C070ELPSLBB
+          channel: C01M5TAHDHA
           text: '<!subteam^S0322UJCPU1> :broken_heart: *Rasa-Pro* (version `${{ env.RASA_VERSION
             }}`, `rasa-private` branch `${{ github.ref_name }}` sha `${{ env.SHORT_SHA }}`) CALM tests (from `${{ inputs.data-repo }}` branch `${{ inputs.data-repo-branch }}`) failed against: `${{ inputs.provider }}`, with ${{ inputs.train-and-test }} command-generator!
             More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>.'
