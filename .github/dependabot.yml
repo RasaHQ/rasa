@@ -31,15 +31,16 @@ updates:
           - "matplotlib"
           - "gliner"
           - "onnxruntime"
-      atom-squad:
+          - "skops"
+          - "safetensors"
+      server-and-protocols:
         dependency-type: production
         patterns:
           - "sanic"
           - "sanic-cors"
-          - "sanic-jwt"
           - "sanic-routing"
           - "sanic-openapi"
-          - "redis"
+          - "portalocker"
           - "ruamel.yaml"
           - "pyyaml"
           - "packaging"
@@ -50,11 +51,7 @@ updates:
           - "python-engineio"
           - "confluent-kafka"
           - "pypred"
-          - "structlog"
           - "jinja2"
-          - "jsonpatch"
-          - "sqlalchemy"
-          - "psycopg2-binary"
       cloud-and-channels:
         dependency-type: production
         patterns:
@@ -67,10 +64,7 @@ updates:
           - "mattermostwrapper"
           - "rocketchat_API"
           - "aiogram"
-          - "google-auth"
           - "slack-sdk"
-          - "pymilvus"
-          - "qdrant-client"
           - "azure-identity"
       static-analysis-tools:
         dependency-type: production
@@ -87,6 +81,82 @@ updates:
           - "pykwalify"
           - "pydantic"
           - "towncrier"
+      database-and-storage:
+        dependency-type: production
+        patterns:
+          - "pymongo"
+          - "sqlalchemy"
+          - "psycopg2-binary"
+          - "diskcache"
+          - "redis"
+          - "qdrant-client"
+          - "pymilvus"
+          - "tenacity"
+          - "types-protobuf"
+          - "openpyxl"
+          - "hvac"
+      config-serialisation-parsing:
+        dependency-type: production
+        patterns:
+          - "attrs"
+          - "pytz"
+          - "jsonpicke"
+          - "pykwalify"
+          - "ruamel.yaml"
+          - "pyyaml"
+          - "packaging"
+          - "colorama"
+          - "colorhash"
+          - "colorclass"
+          - "terminaltables"
+          - "pydot"
+          - "ujson"
+          - "regex"
+          - "jsonpatch"
+          - "importlib-resources"
+          - "importlib-metadata"
+          - "python-dateutil"
+          - "dnspython"
+          - "randomname"
+      utilities:
+        dependency-type: production
+        patterns:
+          - "demoji"
+          - "langcodes"
+          - "pep440-version-utils"
+          - "tqdm"
+          - "coloredlogs"
+          - "tarsafe"
+          - "rich"
+          - "tenacity"
+          - "python-dotenv"
+          - "questionary"
+          - "pluggy"
+          - "certifi"
+          - "absl-py"
+          - "apscheduler"
+          - "CacheControl"
+          - "cvg-python-sdk"
+          - "psutil"
+      security-auth:
+        dependency-type: production
+        patterns:
+          - "hvac"
+          - "python-keycloak"
+          - "cryptography"
+          - "google-auth"
+          - "sanic-jwt"
+          - "PyJWT"
+      logging-observability:
+        dependency-type: production
+        patterns:
+          - "structlog"
+          - "sentry-sdk"
+          - "structlog-sentry"
+          - "opentelemetry-sdk"
+          - "opentelemetry-exporter-jaeger"
+          - "opentelemetry-exporter-otlp"
+          - "opentelemetry-api"
       other-production-dependencies:
         dependency-type: production
         patterns:
