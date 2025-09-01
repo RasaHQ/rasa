@@ -206,3 +206,11 @@ class TrainingInput(BaseModel):
 
     importer: TrainingDataImporter = Field(..., description="Training data importer")
     endpoints_file: Path = Field(..., description="Path to the endpoints file")
+
+
+class AgentStatus(str, Enum):
+    """Status of the agent."""
+
+    not_loaded = "not_loaded"
+    ready = "ready"
+    not_ready = "not_ready"

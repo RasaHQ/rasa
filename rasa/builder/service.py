@@ -10,6 +10,7 @@ from sanic import Blueprint, HTTPResponse, response
 from sanic.request import Request
 from sanic_openapi import openapi
 
+import rasa
 from rasa.builder.auth import HEADER_USER_ID, is_auth_required_now, protected
 from rasa.builder.config import (
     COPILOT_ASSISTANT_TRACKER_MAX_TURNS,
@@ -62,6 +63,7 @@ from rasa.builder.logging_utils import (
     get_recent_logs,
 )
 from rasa.builder.models import (
+    AgentStatus,
     ApiErrorResponse,
     AssistantInfo,
     BotData,
@@ -134,12 +136,41 @@ async def extract_bot_data_from_agent(agent: Agent) -> BotData:
     )
 
 
+async def get_agent_status(request: Request) -> AgentStatus:
+    """Get the status of the agent."""
+    if request.app.ctx.agent is None:
+        return AgentStatus.not_loaded
+    agent: Agent = request.app.ctx.agent
+    if agent.is_ready():
+        return AgentStatus.ready
+    return AgentStatus.not_ready
+
+
 # Health check endpoint
 @bp.route("/", methods=["GET"])
 @openapi.summary("Health check endpoint")
-@openapi.description("Returns the health status of the Bot Builder service")
+@openapi.description(
+    "Returns the health status of the Bot Builder service including version "
+    "information and authentication requirements"
+)
 @openapi.tag("health")
-@openapi.response(200, {"application/json": {"status": str, "service": str}})
+@openapi.response(
+    200,
+    {
+        "application/json": {
+            "status": str,
+            "service": str,
+            "rasa_version": str,
+            "auth_required": bool,
+            "agent_status": str,
+        }
+    },
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
 async def health(request: Request) -> HTTPResponse:
     """Health check endpoint."""
     project_generator = get_project_generator(request)
@@ -147,6 +178,8 @@ async def health(request: Request) -> HTTPResponse:
         {
             "status": "ok",
             "service": "bot-builder",
+            "rasa_version": rasa.__version__,
+            "agent_status": await get_agent_status(request),
             "auth_required": is_auth_required_now(
                 project_info=project_generator.project_info
             ),
@@ -185,6 +218,11 @@ async def health(request: Request) -> HTTPResponse:
     404,
     {"application/json": model_to_schema(ApiErrorResponse)},
     description="Unknown job_id: No such job exists.",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
 )
 @openapi.parameter(
     HEADER_USER_ID,
@@ -274,6 +312,13 @@ async def job_events(request: Request, job_id: str) -> HTTPResponse:
     {"application/json": model_to_schema(PromptRequest)},
     description="Prompt request with natural language description.",
     required=True,
+    example={
+        "prompt": (
+            "Create a customer support bot that can help users with order inquiries, "
+            "product questions, and returns processing. The bot should be friendly "
+            "and able to escalate to human agents when needed."
+        )
+    },
 )
 @openapi.response(
     200,
@@ -360,6 +405,7 @@ async def handle_prompt_to_bot(request: Request) -> HTTPResponse:
     {"application/json": model_to_schema(TemplateRequest)},
     description="Template request with template name.",
     required=True,
+    example={"template_name": "telco"},
 )
 @openapi.response(
     200,
@@ -421,7 +467,11 @@ async def handle_template_to_bot(request: Request) -> HTTPResponse:
 
 @bp.route("/files", methods=["GET"])
 @openapi.summary("Get bot files")
-@openapi.description("Retrieves the current bot configuration files and data")
+@openapi.description(
+    "Retrieves the current bot configuration files including domain.yml, "
+    "config.yml, flows.yml, NLU data, and other project files as a "
+    "dictionary mapping file names to their string contents"
+)
 @openapi.tag("bot-files")
 @openapi.response(
     200,
@@ -487,11 +537,28 @@ async def get_bot_files(request: Request) -> HTTPResponse:
 )
 @openapi.tag("bot-files")
 @openapi.body(
-    {"application/json": {"file_name": str}},
-    description="A dictionary mapping file names to their updated content. "
-    "The file name should be the name of the file in the project folder. "
-    "Files that are not in the request will not be updated.",
+    {"application/json": {str: Optional[str]}},
+    description=(
+        "A dictionary mapping file names to their updated content. "
+        "The file name should be the name of the file in the project folder. "
+        "Files that are not in the request will not be updated."
+    ),
     required=True,
+    example={
+        "domain.yml": (
+            "version: '3.1'\n"
+            "intents:\n  - greet\n  - goodbye\n"
+            "responses:\n  utter_greet:\n  - text: 'Hello!'\n"
+            "  utter_goodbye:\n  - text: 'Goodbye!'"
+        ),
+        "config.yml": (
+            "version: '3.1'\n"
+            "pipeline:\n  - name: WhitespaceTokenizer\n"
+            "  - name: RegexFeaturizer\n  - name: LexicalSyntacticFeaturizer\n"
+            "  - name: CountVectorsFeaturizer\n"
+            "policies:\n  - name: MemoizationPolicy\n  - name: RulePolicy"
+        ),
+    },
 )
 @openapi.response(
     200,
@@ -576,7 +643,7 @@ async def update_bot_files(request: Request) -> HTTPResponse:
     "Retrieves the current bot data in CALM import format with flows, domain, "
     "config, endpoints, and NLU data"
 )
-@openapi.tag("bot-data")
+@openapi.tag("bot-info")
 @openapi.response(
     200,
     {"application/json": model_to_schema(BotData)},
@@ -642,7 +709,7 @@ async def get_bot_data(request: Request) -> HTTPResponse:
     "Returns basic information about the loaded assistant, including the assistant id "
     "as configured in the model's metadata (from config.yml)."
 )
-@openapi.tag("assistant")
+@openapi.tag("bot-info")
 @openapi.response(
     200,
     {"application/json": model_to_schema(AssistantInfo)},
@@ -716,7 +783,7 @@ async def get_bot_info(request: Request) -> HTTPResponse:
 @openapi.tag("bot-files")
 @openapi.parameter(
     "Authorization",
-    description="Bearer token for authentication",
+    description=("Bearer token for authentication. Always required for this endpoint."),
     _in="header",
     required=True,
     schema=str,
@@ -745,7 +812,10 @@ async def get_bot_info(request: Request) -> HTTPResponse:
 @openapi.response(
     401,
     {"application/json": model_to_schema(ApiErrorResponse)},
-    description="Authentication failed - invalid or missing token",
+    description=(
+        "Authentication failed - Authorization header missing or invalid. "
+        "Authentication is always required for this endpoint."
+    ),
 )
 @openapi.response(
     500,
