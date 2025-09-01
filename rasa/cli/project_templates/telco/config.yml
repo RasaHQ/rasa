@@ -1,20 +1,21 @@
-# The config recipe.
+# Rasa Assistant Configuration
+# This file controls your assistant's language, message processing pipeline, and conversation policies.
+# For full documentation, see: https://rasa.com/docs/pro/build/configuring-assistant
 recipe: default.v1
+language: en
 
 # The assistant project unique identifier
 # This default value must be replaced with a unique assistant name within your deployment
 assistant_id: placeholder_default
 
-language: en
 pipeline:
-- name: CompactLLMCommandGenerator
+- name: SearchReadyLLMCommandGenerator
   llm:
     model_group: openai-gpt-4o
   flow_retrieval:
     active: false
-  prompt_template: prompts/command-generator.jinja2
 
-# Configuration for Rasa Core.
+
 policies:
 - name: FlowPolicy
 - name: EnterpriseSearchPolicy
@@ -23,3 +24,4 @@ policies:
     source: "./docs"
   llm:
     model_group: openai-gpt-4o
+  check_relevancy: true

@@ -22,3 +22,4 @@ responses:
   utter_help_run_speed_test:
     - text: |
           You can use our Rasacom App, go to the Home menu and select WLAN speed test or use this link https://fast.com/
+

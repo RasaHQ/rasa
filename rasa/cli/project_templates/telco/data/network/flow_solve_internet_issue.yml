@@ -2,7 +2,7 @@ flows:
   fix_internet_slow: # flow name mandatory – this defines a conversational flow for running diagnostics.
     description: Help users solve when internet is slow and provide solutions # description another madatory field this will be sent to CALM
     steps:
-      - action: utter_acknowledge_issue # an utter a response that the assistant will display to the end user.
+      - action: utter_acknowledge_issue # an utter a response that the agent will display to the end user.
       - action: action_sleep_few_sec # Adding sleep time in a chatbot conversation makes interactions feel more natural,
                                     #improves readability, and simulates processing delays for a better user experience.
       - call: run_diagnostics # Call a flow, this flow can be re-used multiple times.
@@ -38,7 +38,7 @@ flows:
                                   then:
                                     - action: utter_acknowledge_speed_test_not_good
                                     - action: utter_fail_to_find_fix
-                                    - link: pattern_human_handoff # when you link a flow, you go to the child flow and then the flow ends there.
+                                    - link: human_handoff # when you link a flow, you go to the child flow and then the flow ends there.
                                 - else:
                                   - action: action_sleep_few_sec
                                   - action: utter_final_try_worked
@@ -47,7 +47,7 @@ flows:
 
 
                   - else:
-                    - link: pattern_human_handoff
+                    - link: human_handoff
           - else:
             - action: utter_speed_network_not_issue
             - action: action_sleep_few_sec
@@ -57,7 +57,7 @@ flows:
               next:
                 - if: slots.more_help_needed
                   then:
-                    - link: pattern_human_handoff
+                    - link: human_handoff
                 - else:
                   - action: action_sleep_few_sec
                   - action: utter_final_help

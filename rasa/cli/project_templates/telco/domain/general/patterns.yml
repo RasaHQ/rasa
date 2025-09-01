@@ -1,0 +1,33 @@
+slots: 
+  example_questions:
+    type: text
+    initial_value: |
+      - My internet is slow—what can I do?
+      - What is a speed test?
+      - How to reset my router?
+      - Explain my April bill.
+    mappings:
+      - type: controlled
+  agent_name:
+    type: text
+    initial_value: "Telly"
+    mappings:
+      - type: controlled
+      
+responses:
+  utter_more_help_needed_handoff_pattern:
+    - text: "Please hold on while I connect you to our expert 📲"
+  utter_connect_to_human:
+    - text: "Let me connect you to our human support managers. They will help you further!"
+  utter_cannot_handle:
+    - text: "I’m sorry, I can’t help with that."
+      metadata:
+        rephrase: True
+  utter_no_relevant_answer_found:
+    - text: I’m sorry, I can’t help with that.
+      metadata:
+        rephrase: True
+  utter_greeting:
+    - text: "Hi there! I'm {agent_name} 👋. I can help with your internet and mobile plan questions. \n\nHere's a few things you can ask me:\n{example_questions} \n\n How can I help you today?"
+      metadata:
+        rephrase: True

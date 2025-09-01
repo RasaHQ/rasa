@@ -1,0 +1,129 @@
+version: "3.1"
+
+slots:
+  email:
+    type: text
+    mappings:
+      - type: from_llm
+  address:
+    type: text
+    mappings:
+      - type: from_llm
+  date:
+    type: any
+    mappings:
+      - type: from_llm
+  time:
+    type: any
+    mappings:
+      - type: from_llm
+  date_range_start:
+    type: any
+    mappings:
+      - type: from_llm
+  date_range_end:
+    type: any
+    mappings:
+      - type: from_llm
+  month:
+    type: text
+    mappings:
+      - type: from_llm
+  year:
+    type: text
+    mappings:
+      - type: from_llm
+  confirmation:
+    type: bool
+    mappings:
+      - type: from_llm
+  return_value:
+    type: any
+    mappings:
+      - type: from_llm
+  customer_id:
+    type: text
+    mappings:
+      - type: from_llm
+    initial_value: 123 # suppose we always have the customer ID
+  customer_first_name:
+    type: text
+    mappings:
+      - type: controlled
+  skills_summary:
+    type: text
+    initial_value: "running diagnostics, rebooting/resetting routers, performing speed tests, and explaining your bill"
+    mappings:
+      - type: controlled
+
+
+responses:
+  # Utterances for shared slots
+  utter_ask_email:
+    - text: "Please provide the email."
+  utter_ask_address:
+    - text: "Please provide the address."
+  utter_ask_date:
+    - text: "Please provide the date."
+  utter_ask_date_range_start:
+    - text: "Please provide the start date."
+  utter_ask_date_range_end:
+    - text: "Please provide the end date."
+  utter_ask_month:
+    - text: "Please provide month."
+  utter_ask_year:
+    - text: "Please provide year."
+  utter_ask_time:
+    - text: "Please provide time."
+  utter_ask_confirmation:
+    - text: "Do you confirm your action?"
+  utter_end_conversation:
+    - text: |
+        Glad, I helped ✨
+        Have a nice day!
+
+  # Other utterances
+  utter_noworries:
+    - text: You're welcome :)
+  utter_ask_rephrase:
+    - text: I didn't quite understand that. Can you rephrase?
+  utter_default:
+    - text: I didn't quite understand that. Could you rephrase?
+  utter_help:
+    - text: "I can help you with your everyday banking needs. You can ask me things like: \n {example_questions}."
+  utter_take_your_time:
+    - text: sure, take your time
+  utter_glad_you_are_happy:
+    - text: I am glad you are happy about that!
+  utter_good_one:
+    - text: Haha, that's a good one! 😄
+  utter_curious:
+    - text: Now I'm curious
+  utter_intriguing:
+    - text: That's quite intriguing! Can you elaborate?
+  utter_understand_private:
+    - text: I understand if you'd rather not share that. Let's move on.
+  utter_cannot_answer:
+    - text: Sorry, I cannot answer that.
+  utter_struggle_understand:
+    - text: I struggle to understand, can you be more specific or rephrase that?
+  utter_empathetic_listen:
+    - text: It sounds like you've had quite an experience. I'm here to listen.
+  utter_creative:
+    - text: oh, that's really creative!
+  utter_good_idea:
+    - text: that sounds like a good idea!
+  utter_surprise:
+    - text: Whoa, that's quite unexpected!
+  utter_sorry_to_hear:
+    - text: I'm sorry to hear that.
+  utter_cheer_on:
+    - text: You've got this – one step at a time, you're making progress.
+  utter_anticipation:
+    - text: I can't wait to see how this unfolds.
+  utter_conversation_highlight:
+    - text: Our conversation was a highlight of my virtual day!
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

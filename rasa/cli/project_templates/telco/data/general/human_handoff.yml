@@ -1,0 +1,16 @@
+version: "3.1"
+flows:
+  human_handoff:
+    description: When you are unable to handle the request or the user is frustrated - offers to hand the user over to a live human agent. 
+    steps:
+      - collect: confirm_human_handoff
+        ask_before_filling: True
+        next:
+          - if: slots.confirm_human_handoff is "Yes"
+            then:
+            - action: utter_transferring_to_human
+            - action: action_human_handoff
+              next: END
+          - else:
+            - action: utter_human_handoff_cancelled
+              next: END

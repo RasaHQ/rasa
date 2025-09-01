@@ -69,7 +69,7 @@ class ActionVerifyBillByDate(Action):
                 for row in reader:
                     if row["customer_id"] == str(customer_id):
                         # Parse the date from CSV
-                        row_date = datetime.strptime(row["date"], "%Y-%m-%d")
+                        row_date = datetime.strptime(row["date"], "%d/%m/%Y")
                         row["amount"] = float(row["amount"])
                         customer_bills.append(row)
 
@@ -163,7 +163,7 @@ class ActionRecapBill(Action):
                 for row in reader:
                     if row["customer_id"] == str(customer_id):
                         # Parse date and add to filtered records
-                        row_date: datetime = datetime.strptime(row["date"], "%Y-%m-%d")
+                        row_date: datetime = datetime.strptime(row["date"], "%d/%m/%Y")
                         filtered_records.append(
                             {
                                 "date": row_date.date(),

@@ -1,0 +1,5 @@
+responses:
+  utter_hello:
+    - text: "Hi there! Nice to meet you!"
+      metadata:
+        rephrase: True

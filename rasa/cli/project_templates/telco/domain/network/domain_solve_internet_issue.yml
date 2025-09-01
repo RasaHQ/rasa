@@ -72,3 +72,4 @@ responses:
 actions:
   - actions_run_speed_test
   - action_sleep_few_sec
+

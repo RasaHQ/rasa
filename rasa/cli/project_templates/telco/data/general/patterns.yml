@@ -1,0 +1,30 @@
+flows:
+  pattern_completed:
+    description: A flow has been completed and there is nothing else to be done
+    if: False
+    steps:
+      - noop: true
+        next: END
+
+  pattern_correction:
+    description: Handle a correction of a slot value.
+    name: pattern correction
+    steps:
+      - action: action_correct_flow_slot
+        next: "END"
+
+  pattern_search:
+    description: Flow for handling knowledge-based questions
+    name: pattern search
+    steps:
+      - id: 0_action_trigger_search
+        next: END
+        action: action_trigger_search
+
+  pattern_session_start:
+    description: Flow for starting the conversation
+    name: pattern session start
+    nlu_trigger:
+      - intent: session_start
+    steps:
+      - action: utter_greeting

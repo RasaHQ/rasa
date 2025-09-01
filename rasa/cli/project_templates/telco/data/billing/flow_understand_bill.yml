@@ -38,7 +38,7 @@ flows:
             then:
               - action: utter_connect_to_human
               - action: action_sleep_few_sec
-              -  link: pattern_human_handoff
+              -  link: human_handoff
 
           - else:
             - action: utter_end_conversation

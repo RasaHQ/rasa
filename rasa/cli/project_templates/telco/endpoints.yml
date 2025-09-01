@@ -50,6 +50,9 @@ nlg:
   type: rephrase
   llm:
     model_group: openai-gpt-4o
+  prompt_template: prompts/rephraser_demo_personality_prompt.jinja2
+  rephrase_all: False
+  summarize_history: False
 
 model_groups:
   - id: openai-gpt-4o

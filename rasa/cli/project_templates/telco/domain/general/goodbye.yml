@@ -1,0 +1,7 @@
+responses:
+  utter_goodbye:
+    - text: "Thanks for stopping by — take care!"
+    - text: "Thanks for the chat. Have a great day!"
+    - text: "Catch you later! Feel free to reach out anytime."
+    - text: "Goodbye for now — we're here if you need anything."
+    - text: "Take care! Let us know if you have any other questions."

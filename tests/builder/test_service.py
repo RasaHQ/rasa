@@ -142,6 +142,8 @@ def test_setup_project_generator_avoids_duplicate_sys_path_entries(tmp_path: Pat
 async def test_template_loads_actions_module(tmp_path: Path, monkeypatch: MonkeyPatch):
     tmp_path_str = str(tmp_path)
     monkeypatch.chdir(tmp_path_str)
+    # this is required for the human handoff action in the telco example
+    monkeypatch.setenv("OPENAI_API_KEY", "test-foo-bar")
 
     # Initialize project from template, and fetch action names
     project_generator = setup_project_generator(tmp_path_str)
