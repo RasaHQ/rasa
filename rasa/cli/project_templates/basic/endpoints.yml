@@ -49,7 +49,7 @@ action_endpoint:
 nlg:
   type: rephrase
   llm:
-    model_group: openai-gpt-4o
+    model_group: rasa-llm-proxy-openai-llm
   prompt_template: prompts/rephraser_demo_personality_prompt.jinja2
   rephrase_all: False
   summarize_history: False
@@ -61,3 +61,17 @@ model_groups:
         model: gpt-4o-2024-11-20
         timeout: 7
         max_tokens: 256
+  - id: rasa-llm-proxy-openai-llm
+    models:
+      - provider: openai
+        api_base: https://hello-llm-proxy.rasa-e2e.workers.dev
+        api_key: ${RASA_PRO_LICENSE}
+        model: gpt-4o-2024-11-20
+        timeout: 7
+        max_tokens: 256
+  - id: rasa-llm-proxy-openai-embeddings
+    models:
+      - provider: openai
+        model: text-embedding-3-large
+        api_base: https://hello-llm-proxy.rasa-e2e.workers.dev/embeddings
+        api_key: ${RASA_PRO_LICENSE}
