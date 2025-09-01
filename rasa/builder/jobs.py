@@ -16,7 +16,7 @@ from rasa.builder.models import (
     JobStatusEvent,
 )
 from rasa.builder.project_generator import ProjectGenerator
-from rasa.builder.training_service import train_and_load_agent
+from rasa.builder.training_service import train_and_load_agent, try_load_existing_agent
 from rasa.builder.validation_service import validate_project
 from rasa.cli.scaffold import ProjectTemplateName
 from rasa.core.channels.studio_chat import StudioChatInput
@@ -128,7 +128,7 @@ async def run_template_to_bot_job(
         job: The job information instance.
         template_name: The name of the template to use for bot generation.
     """
-    project_generator = app.ctx.project_generator
+    project_generator: ProjectGenerator = app.ctx.project_generator
     input_channel = app.ctx.input_channel
 
     await push_job_status_event(job, JobStatus.received)
@@ -142,9 +142,15 @@ async def run_template_to_bot_job(
 
         # 2) Training
         await push_job_status_event(job, JobStatus.training)
-        app.ctx.agent = await train_and_load_agent(
-            project_generator.get_training_input()
-        )
+        app.ctx.agent = await try_load_existing_agent(project_generator.project_folder)
+        if app.ctx.agent is None:
+            app.ctx.agent = await train_and_load_agent(
+                project_generator.get_training_input()
+            )
+        else:
+            structlogger.info(
+                "bot_builder_service.template_to_bot.agent_loaded_from_cache",
+            )
         input_channel.agent = app.ctx.agent
         await push_job_status_event(job, JobStatus.train_success)
 

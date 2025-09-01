@@ -22,10 +22,8 @@ from rasa.builder.logging_utils import (
     log_request_start,
 )
 from rasa.builder.service import bp, setup_project_generator
-from rasa.core.agent import Agent, load_agent
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.builder.training_service import try_load_existing_agent
 from rasa.core.channels.studio_chat import StudioChatInput
-from rasa.model import get_latest_model
 from rasa.server import configure_cors
 from rasa.utils.common import configure_logging_and_warnings
 from rasa.utils.log_utils import configure_structlog
@@ -58,63 +56,6 @@ def setup_input_channel() -> StudioChatInput:
         StudioChatInput.name()
     )
     return StudioChatInput.from_credentials(credentials=studio_chat_credentials)
-
-
-async def try_load_existing_agent(project_folder: str) -> Optional[Agent]:
-    """Try to load an existing agent from the project's models directory.
-
-    Args:
-        project_folder: Path to the project folder
-
-    Returns:
-        Loaded Agent instance if successful, None otherwise
-    """
-    models_dir = os.path.join(project_folder, "models")
-
-    if not os.path.exists(models_dir) or not os.path.isdir(models_dir):
-        structlogger.debug("No models directory found", models_dir=models_dir)
-        return None
-
-    try:
-        # Find the latest model in the models directory
-        latest_model_path = get_latest_model(models_dir)
-        if not latest_model_path:
-            structlogger.debug(
-                "No models found in models directory", models_dir=models_dir
-            )
-            return None
-
-        structlogger.info(
-            "Found existing model, attempting to load", model_path=latest_model_path
-        )
-
-        # Get available endpoints for agent loading
-        available_endpoints = AvailableEndpoints.get_instance()
-
-        # Load the agent
-        agent = await load_agent(
-            model_path=latest_model_path, endpoints=available_endpoints
-        )
-
-        if agent and agent.is_ready():
-            structlogger.info(
-                "Successfully loaded existing agent", model_path=latest_model_path
-            )
-            return agent
-        else:
-            structlogger.warning(
-                "Agent loaded but not ready", model_path=latest_model_path
-            )
-            return None
-
-    except Exception as e:
-        structlogger.warning(
-            "Failed to load existing agent",
-            models_dir=models_dir,
-            error=str(e),
-            exc_info=True,
-        )
-        return None
 
 
 def setup_middleware(app: Sanic) -> None:

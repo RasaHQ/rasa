@@ -2,20 +2,22 @@
 
 import os
 from pathlib import Path
+from typing import Optional
 
 import structlog
 
 from rasa.builder.exceptions import AgentLoadError, TrainingError
 from rasa.builder.models import TrainingInput
-from rasa.core import agent
+from rasa.core.agent import Agent, load_agent
 from rasa.core.utils import AvailableEndpoints, read_endpoints_from_path
+from rasa.model import get_latest_model
 from rasa.model_training import TrainingResult, train
 from rasa.shared.importers.importer import TrainingDataImporter
 
 structlogger = structlog.get_logger()
 
 
-async def train_and_load_agent(input: TrainingInput) -> agent.Agent:
+async def train_and_load_agent(input: TrainingInput) -> Agent:
     """Train a model and load an agent.
 
     Args:
@@ -54,6 +56,63 @@ async def train_and_load_agent(input: TrainingInput) -> agent.Agent:
         raise TrainingError(f"SystemExit during training: {e}")
 
 
+async def try_load_existing_agent(project_folder: str) -> Optional[Agent]:
+    """Try to load an existing agent from the project's models directory.
+
+    Args:
+        project_folder: Path to the project folder
+
+    Returns:
+        Loaded Agent instance if successful, None otherwise
+    """
+    models_dir = os.path.join(project_folder, "models")
+
+    if not os.path.exists(models_dir) or not os.path.isdir(models_dir):
+        structlogger.debug("No models directory found", models_dir=models_dir)
+        return None
+
+    try:
+        # Find the latest model in the models directory
+        latest_model_path = get_latest_model(models_dir)
+        if not latest_model_path:
+            structlogger.debug(
+                "No models found in models directory", models_dir=models_dir
+            )
+            return None
+
+        structlogger.info(
+            "Found existing model, attempting to load", model_path=latest_model_path
+        )
+
+        # Get available endpoints for agent loading
+        available_endpoints = AvailableEndpoints.get_instance()
+
+        # Load the agent
+        agent = await load_agent(
+            model_path=latest_model_path, endpoints=available_endpoints
+        )
+
+        if agent and agent.is_ready():
+            structlogger.info(
+                "Successfully loaded existing agent", model_path=latest_model_path
+            )
+            return agent
+        else:
+            structlogger.warning(
+                "Agent loaded but not ready", model_path=latest_model_path
+            )
+            return None
+
+    except Exception as e:
+        structlogger.warning(
+            "Failed to load existing agent",
+            models_dir=models_dir,
+            error=str(e),
+            exc_info=True,
+        )
+        return None
+
+
 async def _setup_endpoints(endpoints_file: Path) -> None:
     """Setup endpoints configuration for training."""
     try:
@@ -90,7 +149,7 @@ async def _train_model(importer: TrainingDataImporter) -> TrainingResult:
         raise TrainingError(f"Model training failed: {e}")
 
 
-async def _load_agent(model_path: str) -> agent.Agent:
+async def _load_agent(model_path: str) -> Agent:
     """Load the trained agent."""
     try:
         structlogger.info("training.loading_agent", model_path=model_path)
@@ -105,7 +164,7 @@ async def _load_agent(model_path: str) -> agent.Agent:
             model_path=model_path,
         )
 
-        agent_instance = await agent.load_agent(
+        agent_instance = await load_agent(
             model_path=model_path,
             remote_storage=None,
             endpoints=available_endpoints,
