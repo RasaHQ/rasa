@@ -44,6 +44,8 @@ class ResponseCategory(Enum):
     GUARDRAILS_POLICY_VIOLATION = "guardrails_policy_violation"
     # When Copilot access is blocked after repeated violations
     GUARDRAILS_BLOCKED = "guardrails_blocked"
+    # When Copilot detects request for KB content
+    KNOWLEDGE_BASE_ACCESS_REQUESTED = "knowledge_base_access_requested"
     # When Copilot analyzes error logs and provides suggestions
     TRAINING_ERROR_LOG_ANALYSIS = "training_error_log_analysis"
     E2E_TESTING_ERROR_LOG_ANALYSIS = "e2e_testing_error_log_analysis"

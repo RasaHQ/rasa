@@ -29,6 +29,7 @@ structlogger = structlog.get_logger()
 ROLEPLAY_PREDICTION = "[ROLEPLAY_REQUEST_DETECTED]"
 OUT_OF_SCOPE_PREDICTION = "[OUT_OF_SCOPE_REQUEST_DETECTED]"
 ERROR_FALLBACK_PREDICTION = "[ERROR_FALLBACK]"
+KNOWLEDGE_BASE_ACCESS_REQUESTED_PREDICTION = "[NO_KNOWLEDGE_BASE_ACCESS]"
 
 # Load predefined for controlled predictions from YAML
 _handler_responses = load_copilot_handler_default_responses()
@@ -46,6 +47,10 @@ PREDICTION_RESPONSES = {
     ERROR_FALLBACK_PREDICTION: (
         _handler_responses.get("error_fallback_response", ""),
         ResponseCategory.ERROR_FALLBACK,
+    ),
+    KNOWLEDGE_BASE_ACCESS_REQUESTED_PREDICTION: (
+        _handler_responses.get("knowledge_base_access_requested_response", ""),
+        ResponseCategory.KNOWLEDGE_BASE_ACCESS_REQUESTED,
     ),
 }
 

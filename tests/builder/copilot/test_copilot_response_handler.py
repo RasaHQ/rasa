@@ -5,6 +5,7 @@ import pytest
 import structlog
 
 from rasa.builder.copilot.copilot_response_handler import (
+    KNOWLEDGE_BASE_ACCESS_REQUESTED_PREDICTION,
     LLM_PREFIXES_TO_SUFFIX_REMOVE,
     OUT_OF_SCOPE_PREDICTION,
     PREDICTION_RESPONSES,
@@ -109,6 +110,26 @@ class TestCopilotResponseHandler:
             (
                 f"`{OUT_OF_SCOPE_PREDICTION}`",
                 [PREDICTION_RESPONSES[OUT_OF_SCOPE_PREDICTION][0]],
+                False,
+                False,
+            ),
+            # Knowledge base access requested detection
+            (
+                f"I detected a knowledge base access requested:"
+                f"{KNOWLEDGE_BASE_ACCESS_REQUESTED_PREDICTION}",
+                [PREDICTION_RESPONSES[KNOWLEDGE_BASE_ACCESS_REQUESTED_PREDICTION][0]],
+                False,
+                False,
+            ),
+            (
+                f"```{KNOWLEDGE_BASE_ACCESS_REQUESTED_PREDICTION}```",
+                [PREDICTION_RESPONSES[KNOWLEDGE_BASE_ACCESS_REQUESTED_PREDICTION][0]],
+                False,
+                False,
+            ),
+            (
+                f"`{KNOWLEDGE_BASE_ACCESS_REQUESTED_PREDICTION}`",
+                [PREDICTION_RESPONSES[KNOWLEDGE_BASE_ACCESS_REQUESTED_PREDICTION][0]],
                 False,
                 False,
             ),

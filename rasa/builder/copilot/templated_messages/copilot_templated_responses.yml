@@ -25,6 +25,10 @@ responses:
 
   copilot_redacted_message: "[Copilot response redacted for guardrails check.]"
 
+  knowledge_base_access_requested_response: |
+    At the moment I can't read your knowledge base directly, but you can browse the
+    available entries in the `/docs` folder in your code editor. 
+
   guardrail_blocked_user_response: |
     Your Copilot access has been temporarily blocked due to repeated policy violations.
     If you believe this is an error or would like to request a review, please reach out to support@rasa.com.
