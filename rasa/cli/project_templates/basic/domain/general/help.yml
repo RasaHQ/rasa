@@ -1,5 +1,21 @@
 version: "3.1"
 
-responses:
-  utter_help:
-    - text: "I can help you with {skills_summary}."
+slots:
+  example_questions:
+    type: text
+    initial_value: |
+      - What can you do?
+      - Connect me to a human
+      - Browse FAQs
+    mappings:
+      - type: controlled
+
+responses: 
+  utter_what_can_you_do:
+    - text: |
+        I can help you with a few basics like:
+        - Connecting you to a human
+        - Help you try out the FAQs
+        - Collect your feedback
+      metadata:
+        rephrase: True

@@ -1,0 +1,19 @@
+version: "3.1"
+responses:
+  utter_welcome:
+    - text: |
+        Hi there! I'm {agent_name} 👋. I'm a starter kit with some example skills to help you get going. Add your own flows and FAQs to make me your own.
+
+        Try a few examples:
+        {example_questions}
+  utter_help:
+    - text: "What can I help you with?"
+      metadata:
+        rephrase: True
+
+slots:
+  agent_name:
+    type: text
+    initial_value: "Riley"
+    mappings:
+      - type: controlled

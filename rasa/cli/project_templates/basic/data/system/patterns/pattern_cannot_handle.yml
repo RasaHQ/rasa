@@ -1,0 +1,7 @@
+# Flow for handling cases where the agent cannot provide a relevant answer
+flows:
+  cannot_handle:
+    description: Handle cases where no relevant answer is found
+    if: False
+    steps:
+      - action: utter_no_relevant_answer_found

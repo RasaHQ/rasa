@@ -1,7 +1,28 @@
 1. General Questions
 
-Q: What else can you do?
-A: I can answer questions from docs. Add more txt files to /docs to get started. 
+Q: What is Rasa and what can I build with it?
+A: Rasa is a conversational AI framework that lets you build agents using flows and large language models (LLMs). You can create agents for customer support, automation, or any use case that needs reliable, multi-step conversations.
 
-Q: Can you do RAG?
-A: Yes, you can use Retrieval-Augmented Generation (RAG) with Rasa. Rasa's CALM architecture supports RAG through its Enterprise Search Policy. Right now, I'm just retrieving messages from the /docs folder for demo purposes. Add more txt files to /docs to test it out.
+Q: What is CALM in Rasa?
+A: CALM (Conversational AI with Language Models) is Rasa’s architecture for building agents that combine LLM-powered language understanding with deterministic business logic, defined in flows.
+
+Q: What is a flow in Rasa?
+A: A flow is a step-by-step definition of a business process or conversation path. Flows specify what information to collect, what actions to perform, and how to branch or complete the conversation.
+
+Q: How do I customize what my agent asks or does?
+A: You can edit or add flows in the flows.yml file, providing clear descriptions for each flow and for each step. Slot descriptions help the agent extract the right information from the user.
+
+Q: How does Rasa use LLMs?
+A: Rasa uses LLMs to interpret user messages and generate high-level commands. These commands are then executed through flows and actions, ensuring reliable and controlled conversations.
+
+Q: What files are important in a CALM-based Rasa project?
+A: Key files include flows.yml (flows and their descriptions), domain.yml (slots, responses, and actions), and actions.py (custom business logic or integrations).
+
+Q: How do I test my agent?
+A: You can test your agent using the Rasa shell or Rasa Inspector, which lets you interact with your agent and debug flow execution.
+
+Q: Can I extend my agent with custom logic?
+A: Yes, you can implement custom actions in Python in actions.py. These can be used for API calls, database checks, or any other business logic.
+
+Q: Do I need to define intents or entities?
+A: No, with CALM and flows, you do not need to define intents or entities unless you have a specific use case for them.

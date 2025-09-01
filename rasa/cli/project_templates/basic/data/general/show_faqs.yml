@@ -1,0 +1,6 @@
+flows:
+  show_faqs:
+    description: Show users the most frequently asked questions about Rasa and CALM
+    name: show_faqs
+    steps:
+      - action: utter_top_faqs

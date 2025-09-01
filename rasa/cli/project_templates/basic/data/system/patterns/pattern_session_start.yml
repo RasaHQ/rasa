@@ -5,4 +5,4 @@ flows:
     nlu_trigger:
         - intent: session_start
     steps:
-      - link: hello
+      - action: utter_welcome

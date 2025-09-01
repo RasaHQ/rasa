@@ -3,5 +3,4 @@ flows:
     description: Flow for greeting the user hello
     name: hello
     steps:
-      - action: utter_greeting
-
+      - action: utter_hello

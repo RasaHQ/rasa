@@ -1,0 +1,14 @@
+version: "3.1"
+
+responses:
+  utter_top_faqs:
+    - text: |
+        Try out some of these questions to trigger agent search:
+        
+        - 🤖 What is Rasa?
+        - 💬 What is CALM?
+        - 🔄 What is a flow?
+        - ⚙️ How do I customize my agent?
+        - 🧠 How does Rasa use LLMs?
+      metadata:
+        rephrase: True

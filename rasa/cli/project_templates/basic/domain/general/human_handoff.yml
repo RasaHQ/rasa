@@ -2,12 +2,6 @@ version: "3.1"
 actions:
   - "action_human_handoff"
 
-intents:
-  - human_handoff
-  - speak_to_agent
-  - talk_to_human
-  - escalate
-
 slots: 
  confirm_human_handoff:
     type: "categorical"
@@ -33,3 +27,6 @@ responses:
     - text: "Ok, I understand you don't want to be connected to a human agent. Is there something else I can help you with?"
       metadata:
         rephrase: True
+
+  utter_transfer_to_manager:
+    - text: "I will transfer the following summary of our conversation to the Callback Manager:\n{summary}"
