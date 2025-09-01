@@ -5,7 +5,8 @@ import logging
 import threading
 import time
 import uuid
-from typing import Any, Deque, Dict, Mapping, MutableMapping, Optional
+from contextlib import contextmanager
+from typing import Any, Deque, Dict, Generator, List, Mapping, MutableMapping, Optional
 
 import sentry_sdk
 import structlog
@@ -19,6 +20,8 @@ structlogger = structlog.get_logger()
 # Thread-safe deque for collecting recent logs
 _recent_logs: Deque[str] = collections.deque(maxlen=config.MAX_LOG_ENTRIES)
 _logs_lock = threading.RLock()
+# Thread-local storage for validation logs
+_validation_logs = threading.local()
 
 
 def collecting_logs_processor(
@@ -36,6 +39,59 @@ def collecting_logs_processor(
             _recent_logs.append(log_entry)
 
     return event_dict
+
+
+def collecting_validation_logs_processor(
+    logger: Any, method_name: str, event_dict: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Structlog processor that captures validation logs in thread-local storage.
+
+    It's designed to be used with the capture_validation_logs context manager.
+
+    Args:
+        logger: The structlog logger instance
+        method_name: The logging method name (e.g., "error", "warning", "info", "debug")
+        event_dict: The event dictionary containing log data
+
+    Returns:
+        The unmodified event_dict (this processor doesn't modify the log data)
+    """
+    # Only capture logs if we're in a validation context
+    # (logs list exists for this thread)
+    if hasattr(_validation_logs, "logs"):
+        log_entry = {"log_level": method_name, **event_dict}
+        _validation_logs.logs.append(log_entry)
+
+    return event_dict
+
+
+@contextmanager
+def capture_validation_logs() -> Generator[List[Dict[str, Any]], Any, None]:
+    """Context manager to capture validation logs using thread-local storage.
+
+    This context manager temporarily reconfigures structlog to capture all logs
+    during validation and stores them in thread-local storage. It's thread-safe
+    and automatically cleans up after use.
+
+    Yields:
+        A list of captured log entries, each containing the log level and all
+        original log data from the event_dict.
+    """
+    # Temporarily reconfigure structlog to add our capture processor
+    original_processors = structlog.get_config()["processors"]
+    new_processors = [collecting_validation_logs_processor] + original_processors
+    structlog.configure(processors=new_processors)
+
+    # Initialize thread-local logs storage
+    _validation_logs.logs = []
+
+    try:
+        yield _validation_logs.logs
+    finally:
+        # Restore original configuration and clean up thread-local storage
+        structlog.configure(processors=original_processors)
+        if hasattr(_validation_logs, "logs"):
+            delattr(_validation_logs, "logs")
 
 
 def attach_request_id_processor(

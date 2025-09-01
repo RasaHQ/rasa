@@ -5,10 +5,10 @@ from contextlib import contextmanager
 from typing import Any, Dict, Generator, Optional
 
 import structlog
-from structlog.testing import capture_logs
 
 from rasa.builder import config
 from rasa.builder.exceptions import ValidationError
+from rasa.builder.logging_utils import capture_validation_logs
 from rasa.cli.utils import validate_files
 from rasa.shared.importers.importer import TrainingDataImporter
 
@@ -44,50 +44,54 @@ async def validate_project(importer: TrainingDataImporter) -> Optional[str]:
     Raises:
         ValidationError: If validation fails
     """
-    try:
-        with _mock_sys_exit() as exit_tracker:
-            with capture_logs() as cap_logs:
+    with capture_validation_logs() as captured_logs:
+        try:
+            with _mock_sys_exit() as exit_tracker:
                 validate_files(
                     fail_on_warnings=config.VALIDATION_FAIL_ON_WARNINGS,
                     max_history=config.VALIDATION_MAX_HISTORY,
                     importer=importer,
                 )
 
-            if exit_tracker["value"]:
-                error_logs = [
-                    log for log in cap_logs if log.get("log_level") != "debug"
-                ]
-                structlogger.error(
-                    "validation.failed.sys_exit",
-                    error_logs=error_logs,
-                )
-                raise ValidationError(
-                    "Validation failed with sys.exit", validation_logs=error_logs
-                )
+                if exit_tracker["value"]:
+                    error_logs = [
+                        log for log in captured_logs if log.get("log_level") != "debug"
+                    ]
+                    structlogger.error(
+                        "validation.failed.sys_exit",
+                        error_logs=error_logs,
+                    )
+                    raise ValidationError(
+                        "Validation failed with sys.exit", validation_logs=error_logs
+                    )
 
-            structlogger.info("validation.success")
-            return None
+                structlogger.info("validation.success")
+                return None
 
-    except ValidationError:
-        raise
+        except ValidationError:
+            raise
 
-    except Exception as e:
-        error_msg = f"Validation failed with exception: {e}"
+        except Exception as e:
+            error_msg = f"Validation failed with exception: {e}"
 
-        error_logs = [log for log in cap_logs if log.get("log_level") != "debug"]
+            error_logs = [
+                log for log in captured_logs if log.get("log_level") != "debug"
+            ]
 
-        structlogger.error(
-            "validation.failed.exception", error=str(e), validation_logs=error_logs
-        )
-        raise ValidationError(error_msg, validation_logs=error_logs)
+            structlogger.error(
+                "validation.failed.exception", error=str(e), validation_logs=error_logs
+            )
+            raise ValidationError(error_msg, validation_logs=error_logs)
 
-    except SystemExit as e:
-        error_logs = [log for log in cap_logs if log.get("log_level") != "debug"]
+        except SystemExit as e:
+            error_logs = [
+                log for log in captured_logs if log.get("log_level") != "debug"
+            ]
 
-        structlogger.error(
-            "validation.failed.sys_exit",
-            error_logs=error_logs,
-        )
-        raise ValidationError(
-            f"SystemExit during validation: {e}", validation_logs=error_logs
-        )
+            structlogger.error(
+                "validation.failed.sys_exit",
+                error_logs=error_logs,
+            )
+            raise ValidationError(
+                f"SystemExit during validation: {e}", validation_logs=error_logs
+            )
