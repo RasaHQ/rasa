@@ -3,6 +3,7 @@ import logging
 import os
 import platform
 import sys
+import importlib
 
 from rasa_sdk import __version__ as rasa_sdk_version
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
@@ -92,6 +93,28 @@ def print_version() -> None:
     if result:
         print(f"\t{result[0][0]}  :         {result[0][1]}")
 
+def _load_custom_logger_util(spec: str):
+    """
+    Lädt eine Logger-Setup-Funktion aus 'modul[:funktion]'.
+    - Wenn keine Funktion angegeben ist, wird 'configure_unified_structlog' erwartet.
+    - Die Funktion muss das Signatur-Pattern (log_level: Optional[int]) -> None unterstützen.
+    """
+    if not spec:
+        return None
+    if ":" in spec:
+        module_name, func_name = spec.split(":", 1)
+    else:
+        module_name, func_name = spec, "configure_unified_structlog"
+
+    try:
+        mod = importlib.import_module(module_name)
+    except Exception as e:
+        raise RuntimeError(f"Could not import logger util module '{module_name}': {e}") from e
+    try:
+        fn = getattr(mod, func_name)
+    except AttributeError as e:
+        raise RuntimeError(f"Logger util function '{func_name}' not found in module '{module_name}'.") from e
+    return fn
 
 def main() -> None:
     """Run as standalone python application."""
@@ -127,8 +150,25 @@ def main() -> None:
             plugin_manager().hook.init_anonymization_pipeline(
                 endpoints_file=endpoints_file
             )
-            # configure structlog
-            configure_structlog(log_level)
+            # === Logging-Setup auswählen ===
+            custom_logger_spec = getattr(cmdline_arguments, "logger_util", None)
+            if custom_logger_spec:
+                # Nutzer wünscht explizit: Custom Logger statt Rasa-Default
+                try:
+                    init_fn = _load_custom_logger_util(custom_logger_spec)
+                    # Wichtig: log_level (von CLI) weiterreichen
+                    init_fn(log_level)
+                    logger.info(
+                        "Using custom logger util.",
+                        extra={"extra_data": {"logger_util": custom_logger_spec}},
+                    )
+                except Exception as e:
+                    # Fehler klar anzeigen und mit Exit abbrechen (keine halb-konfigurierte Logs)
+                    print_error(f"Logger initialization failed: {e}")
+                    sys.exit(1)
+            else:
+                # Fallback: Rasa-Default
+                configure_structlog(log_level)
 
             cmdline_arguments.func(cmdline_arguments)
         elif hasattr(cmdline_arguments, "version"):

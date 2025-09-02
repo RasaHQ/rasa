@@ -163,3 +163,15 @@ def add_logging_options(parser: argparse.ArgumentParser) -> None:
         help="If set, the name of the logging configuration file will be set "
         "to the given name.",
     )
+    
+    logging_arguments.add_argument(
+        "--logger-util",
+        dest="logger_util",
+        metavar="MODULE[:FUNC]",
+        default=None,
+        help=(
+            "Custom logger initializer to use instead of Rasa's default. "
+            "Format: 'module[:function]'. Default function name is "
+            "'configure_unified_structlog'."
+        ),
+    )
