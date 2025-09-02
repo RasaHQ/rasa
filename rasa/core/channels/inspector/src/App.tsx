@@ -183,21 +183,6 @@ export function App() {
       : 'max-content minmax(10rem, 17.5rem) minmax(10rem, auto)',
     gridRowGap: rasaSpace[1],
   }
-  const rightColumnSx = {
-    height: '100%',
-    overflow: 'hidden',
-    gridTemplateColumns: '1fr',
-    gridTemplateRows: 'max-content 1fr',
-    gridRowGap: rasaSpace[1],
-  }
-
-  const chatContainerSx = {
-    ...borderRadiusSx,
-    padding: rasaSpace[1],
-    bg: useColorModeValue('neutral.50', 'neutral.50'),
-    overflow: 'auto', // Allow scrolling for chat
-    height: '100%',
-  }
 
   const onFrameSelected = (stack: Stack) => {
     setFrame({
@@ -263,15 +248,11 @@ export function App() {
           slots={slots}
         />
       </GridItem>
-      <GridItem overflow="hidden">
-        <Grid sx={rightColumnSx}>
-          {shouldShowTranscript && (
-            <GridItem sx={chatContainerSx}>
-              <Chat events={events || []} />
-            </GridItem>
-          )}
-        </Grid>
-      </GridItem>
+      {shouldShowTranscript && (
+        <GridItem>
+          <Chat events={events || []} />
+        </GridItem>
+      )}
     </Grid>
   )
 }

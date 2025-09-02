@@ -5,7 +5,6 @@ import { Command, Event } from '../types'
 
 interface Props extends FlexProps {
   events: Event[]
-  hasLatencyDisplay?: boolean
 }
 
 export const Chat = ({ sx, events, ...props }: Props) => {
@@ -13,9 +12,9 @@ export const Chat = ({ sx, events, ...props }: Props) => {
     ...sx,
     p: 0,
     flexDirection: 'column',
-    height: '100%',
   }
 
+  const maxHeight = document.documentElement.scrollHeight - 64
   // 21 and 25 are the rem number we're using for the columns. We add 0.75rem for the padding
   // A potential improvement would be to add a onresize event for both width and height
   let remReference = 21.75
@@ -111,7 +110,7 @@ export const Chat = ({ sx, events, ...props }: Props) => {
           borderRadius: '10px',
           border: 'none',
           width: columnWidth,
-          height: '100%',
+          height: maxHeight,
         }}
         history={messages}
         demo={true}
