@@ -69,6 +69,7 @@ class SchemaNode:
 
     def matches_type(self, node_type: Type, include_subtypes: bool = True) -> bool:
         """Checks if schema node's 'uses' is of specified node type.
+
         By default, it also checks for subtypes of the specified node type.
         """
         return (self.uses is node_type) or (
@@ -171,6 +172,7 @@ class GraphSchema:
 
     def has_node(self, node_type: Type, include_subtypes: bool = True) -> bool:
         """Checks if the graph schema contains a node of the specified node type.
+
         By default, it also checks for subtypes of the specified node type.
         """
         for node in self.nodes.values():
@@ -181,7 +183,7 @@ class GraphSchema:
     def count_nodes_of_a_given_type(
         self, node_type: Type, include_subtypes: bool = True
     ) -> int:
-        """Counts the number of the nodes of specified class"""
+        """Counts the number of the nodes of specified class."""
         counter = 0
         for node in self.nodes.values():
             if (node.uses is node_type) or (
@@ -353,6 +355,7 @@ class ExecutionContext:
 
     def has_node(self, node_type: Type, include_subtypes: bool = True) -> bool:
         """Checks if the graph node of the given type is present in the graph schema.
+
         By default, it also checks for subtypes of the specified node type.
         """
         return self.graph_schema.has_node(node_type, include_subtypes)
@@ -555,6 +558,7 @@ class GraphNode:
                 structlogger.error(
                     "graph.node.error_running_component",
                     node_name=self._node_name,
+                    error=str(e),
                 )
                 raise
 

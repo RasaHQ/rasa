@@ -84,12 +84,12 @@ async def test_download_cache_for_template_telco_creates_rasa_folder(
 
     # patch the ClientSession used inside download_cache_for_template
     monkeypatch.setattr(
-        "rasa.builder.project_generator.aiohttp.ClientSession",
+        "rasa.builder.template_cache.aiohttp.ClientSession",
         lambda: _MockSession(tar_bytes),
     )
 
     # act
-    from rasa.builder.project_generator import download_cache_for_template
+    from rasa.builder.template_cache import download_cache_for_template
 
     await download_cache_for_template(
         ProjectTemplateName.TELCO, project_folder.as_posix()

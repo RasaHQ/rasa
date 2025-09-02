@@ -1,12 +1,10 @@
 import json
 import os
 from typing import Any, Dict, List
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest import MonkeyPatch
 
-from rasa.builder import config
 from rasa.builder.copilot.copilot import Copilot
 from rasa.builder.copilot.models import (
     CopilotChatMessage,
@@ -295,25 +293,3 @@ def test_create_chat_history_messages(
     for i, expected_message in enumerate(expected_formatted_messages):
         assert formatted_messages[i]["role"] == expected_message["role"]
         assert formatted_messages[i]["content"] == expected_message["content"]
-
-
-@pytest.mark.asyncio
-async def test_copilot_uses_proxy_for_openai(monkeypatch: pytest.MonkeyPatch):
-    proxy = "https://hello-llm-proxy.example"
-    license_token = "rasa-license-jwt"
-    monkeypatch.setattr(config, "HELLO_LLM_PROXY_BASE_URL", proxy, raising=False)
-    monkeypatch.setattr(config, "RASA_PRO_LICENSE", license_token, raising=False)
-
-    mock_client = AsyncMock()
-    async_openai_mock = MagicMock(return_value=mock_client)
-    monkeypatch.setattr("openai.AsyncOpenAI", async_openai_mock)
-
-    copilot = Copilot()
-
-    async with copilot._get_client():
-        pass
-
-    assert async_openai_mock.call_args.kwargs.get("timeout") == config.OPENAI_TIMEOUT
-    assert async_openai_mock.call_args.kwargs.get("base_url") == proxy
-    assert async_openai_mock.call_args.kwargs.get("api_key") == license_token
-    mock_client.close.assert_awaited()

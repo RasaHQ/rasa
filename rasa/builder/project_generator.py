@@ -3,23 +3,18 @@
 import json
 import os
 import shutil
-import tarfile
-import tempfile
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Dict, List, Optional
 
-import aiofiles
-import aiohttp
 import structlog
 
-import rasa.version
 from rasa.builder import config
 from rasa.builder.exceptions import ProjectGenerationError, ValidationError
 from rasa.builder.llm_service import get_skill_generation_messages, llm_service
-from rasa.builder.logging_utils import capture_exception_with_context
 from rasa.builder.models import BotFiles
 from rasa.builder.project_info import ProjectInfo, ensure_first_used, load_project_info
+from rasa.builder.template_cache import copy_cache_for_template_if_available
 from rasa.builder.training_service import TrainingInput
 from rasa.builder.validation_service import validate_project
 from rasa.cli.scaffold import ProjectTemplateName, create_initial_project
@@ -48,12 +43,25 @@ class ProjectGenerator:
         """Get the project info."""
         return load_project_info(self.project_folder)
 
+    def is_empty(self) -> bool:
+        """Check if the project folder is empty.
+
+        Excluding hidden paths.
+        """
+        return not any(
+            file.is_file()
+            for file in self.project_folder.iterdir()
+            if not file.name.startswith(".")
+        )
+
     async def init_from_template(self, template: ProjectTemplateName) -> None:
         """Create the initial project files."""
         self.cleanup()
         create_initial_project(self.project_folder.as_posix(), template)
-        await download_cache_for_template(template, self.project_folder.as_posix())
-        # needs to happen after caching, as we download .rasa and that would
+        # If a local cache for this template exists, copy it into the project.
+        # We no longer download here to avoid blocking project creation.
+        copy_cache_for_template_if_available(template, self.project_folder)
+        # needs to happen after caching, as we download/copy .rasa and that would
         # overwrite the project info file in .rasa
         ensure_first_used(self.project_folder)
 
@@ -341,122 +349,3 @@ class ProjectGenerator:
                     error=str(e),
                     file_path=file_path,
                 )
-
-
-CACHE_BUCKET_URL = "https://trained-templates.s3.us-east-1.amazonaws.com"
-
-
-def _safe_tar_members(
-    tar: tarfile.TarFile, destination_directory: Path
-) -> Generator[tarfile.TarInfo, None, None]:
-    """Yield safe members for extraction to prevent path traversal and links.
-
-    Args:
-        tar: Open tar file handle
-        destination_directory: Directory to which files will be extracted
-
-    Yields:
-        Members that are safe to extract within destination_directory
-    """
-    base_path = destination_directory.resolve()
-
-    for member in tar.getmembers():
-        name = member.name
-        # Skip empty names and absolute paths
-        if not name or name.startswith("/") or name.startswith("\\"):
-            continue
-
-        # Disallow symlinks and hardlinks
-        if member.issym() or member.islnk():
-            continue
-
-        # Compute the final path and ensure it's within base_path
-        target_path = (base_path / name).resolve()
-        try:
-            target_path.relative_to(base_path)
-        except ValueError:
-            # Member would escape the destination directory
-            continue
-
-        yield member
-
-
-async def download_cache_for_template(
-    template: ProjectTemplateName, project_folder: str
-) -> None:
-    # get a temp path for the cache file download
-    temporary_cache_file = tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False)
-
-    try:
-        url = f"{CACHE_BUCKET_URL}/{rasa.version.__version__}-{template.value}.tar.gz"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                response.raise_for_status()
-                async with aiofiles.open(temporary_cache_file.name, "wb") as f:
-                    async for chunk in response.content.iter_chunked(1024 * 1024):
-                        await f.write(chunk)
-
-        # extract the cache to the project folder using safe member filtering
-        with tarfile.open(temporary_cache_file.name, "r:gz") as tar:
-            destination = Path(project_folder)
-            destination.mkdir(parents=True, exist_ok=True)
-            tar.extractall(
-                path=destination,
-                members=_safe_tar_members(tar, destination),
-            )
-
-        structlogger.info(
-            "project_generator.download_cache_for_template.success",
-            template=template,
-            event_info=(
-                f"Downloaded cache for template, extracted to {project_folder}."
-            ),
-        )
-    except aiohttp.ClientResponseError as e:
-        if e.status == 403:
-            structlogger.debug(
-                "project_generator.download_cache_for_template.no_cache_found",
-                template=template,
-                event_info=("No cache found for template, continuing without it."),
-            )
-        else:
-            structlogger.debug(
-                "project_generator.download_cache_for_template.response_error",
-                error=str(e),
-                status=e.status,
-                template=template,
-                event_info=(
-                    "Failed to download cache for template, continuing without it."
-                ),
-            )
-            capture_exception_with_context(
-                e,
-                "project_generator.download_cache_for_template.response_error",
-                tags={"template": template.value, "status": str(e.status)},
-            )
-    except Exception as exc:
-        structlogger.debug(
-            "project_generator.download_cache_for_template.unexpected_error",
-            error=str(exc),
-            template=template,
-            event_info=(
-                "Unexpected error when downloading cache for template, "
-                "continuing without it."
-            ),
-        )
-        capture_exception_with_context(
-            exc,
-            "project_generator.download_cache_for_template.unexpected_error",
-            tags={"template": template.value},
-        )
-    finally:
-        # Clean up the temporary file
-        try:
-            Path(temporary_cache_file.name).unlink(missing_ok=True)
-        except Exception as exc:
-            structlogger.debug(
-                "project_generator.download_cache_for_template.cleanup_error",
-                error=str(exc),
-                template=template,
-                event_info=("Failed to cleanup cache for template, ignoring."),
-            )

@@ -22,6 +22,9 @@ from rasa.builder.logging_utils import (
     log_request_start,
 )
 from rasa.builder.service import bp, setup_project_generator
+from rasa.builder.template_cache import (
+    background_download_template_caches,
+)
 from rasa.builder.training_service import try_load_existing_agent
 from rasa.core.channels.studio_chat import StudioChatInput
 from rasa.server import configure_cors
@@ -146,7 +149,44 @@ def create_app(project_folder: str) -> Sanic:
         except Exception as e:
             structlogger.warning("Failed to load agent on server startup", error=str(e))
 
+    if config.HELLO_RASA_PROJECT_ID and app.ctx.project_generator.is_empty():
+        app.register_listener(background_download_template_caches, "after_server_start")
+    else:
+        structlogger.debug(
+            "builder.main.background_cache_download.disabled",
+            event_info=(
+                "No hello rasa project id set; skipping background cache download"
+            ),
+        )
+
     return app
+
+
+def _apply_llm_overrides_from_builder_env() -> None:
+    # Prefer a dedicated builder key, fall back to license if you proxy with it
+    if not config.HELLO_LLM_PROXY_BASE_URL:
+        return
+
+    structlogger.debug(
+        "builder.main.using_llm_proxy", base_url=config.HELLO_LLM_PROXY_BASE_URL
+    )
+
+    if not config.RASA_PRO_LICENSE:
+        structlogger.error(
+            "copilot.proxy_missing_license",
+            event_info=(
+                "HELLO_LLM_PROXY_BASE_URL is set but RASA_PRO_LICENSE is missing."
+            ),
+        )
+        return
+
+    if not os.getenv("OPENAI_API_BASE") and not os.getenv("OPENAI_API_KEY"):
+        base_url = config.HELLO_LLM_PROXY_BASE_URL.rstrip("/")
+        # needed for litellm client
+        os.environ["OPENAI_API_BASE"] = base_url
+        # needed for openai async client
+        os.environ["OPENAI_BASE_URL"] = base_url
+        os.environ["OPENAI_API_KEY"] = config.RASA_PRO_LICENSE
 
 
 def main(project_folder: Optional[str] = None) -> None:
@@ -158,6 +198,9 @@ def main(project_folder: Optional[str] = None) -> None:
         # Setup telemetry
         rasa.telemetry.initialize_telemetry()
         rasa.telemetry.initialize_error_reporting(private_mode=False)
+
+        # TODO: don't do this when running locally
+        _apply_llm_overrides_from_builder_env()
 
         # working directory needs to be the project folder, e.g.
         # for relative paths (./docs) in a projects config to work

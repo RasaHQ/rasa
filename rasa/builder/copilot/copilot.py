@@ -55,29 +55,7 @@ class Copilot:
     @asynccontextmanager
     async def _get_client(self) -> AsyncGenerator[openai.AsyncOpenAI, None]:
         """Create a fresh OpenAI client, yield it, and always close it."""
-        kwargs: Dict[str, Any] = {"timeout": config.OPENAI_TIMEOUT}
-        if config.HELLO_LLM_PROXY_BASE_URL:
-            structlogger.debug(
-                "copilot.using_llm_proxy", base_url=config.HELLO_LLM_PROXY_BASE_URL
-            )
-            if not config.RASA_PRO_LICENSE:
-                structlogger.error(
-                    "copilot.proxy_missing_license",
-                    event_info=(
-                        "HELLO_LLM_PROXY_BASE_URL is set "
-                        "but RASA_PRO_LICENSE is missing."
-                    ),
-                )
-                raise CopilotStreamError(
-                    "HELLO_LLM_PROXY_BASE_URL is set but RASA_PRO_LICENSE is missing. "
-                    "Provide a valid license token for proxy authentication."
-                )
-
-            kwargs["base_url"] = config.HELLO_LLM_PROXY_BASE_URL
-            kwargs["api_key"] = config.RASA_PRO_LICENSE
-
-        client = openai.AsyncOpenAI(**kwargs)
-
+        client = openai.AsyncOpenAI(timeout=config.OPENAI_TIMEOUT)
         try:
             yield client
         except Exception as e:

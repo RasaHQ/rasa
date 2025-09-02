@@ -11,7 +11,7 @@ assistant_id: placeholder_default
 pipeline:
 - name: SearchReadyLLMCommandGenerator
   llm:
-    model_group: rasa-llm-proxy-openai-llm
+    model_group: openai-gpt-4o
   flow_retrieval:
     active: false
 
@@ -23,8 +23,7 @@ policies:
     type: "faiss"
     source: "./docs"
   llm:
-    model_group: rasa-llm-proxy-openai-llm
+    model_group: openai-gpt-4o
   embeddings:
-    model_group: rasa-llm-proxy-openai-embeddings
-
+    model_group: openai-embeddings
   check_relevancy: true
