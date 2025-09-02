@@ -1,4 +1,3 @@
-import json
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
@@ -231,8 +230,11 @@ class CopilotChatMessage(BaseModel):
 
     def _copilot_message_to_openai_format(self) -> Dict[str, Any]:
         role = self._map_role_to_openai()
-        content_blocks = [block.model_dump() for block in self.content]
-        content = json.dumps(content_blocks)
+        # For now the Copilot responds only with the text content and all the content
+        # is formatted as a markdown.
+        # TODO: Once we start predicting the files, and expecting other content blocks
+        #       we should update this.
+        content = self.get_text_content()
         return {"role": role, "content": content}
 
     def _map_role_to_openai(self) -> str:

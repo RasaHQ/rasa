@@ -9,7 +9,6 @@ from rasa.builder.copilot.copilot import Copilot
 from rasa.builder.copilot.models import (
     CopilotChatMessage,
     CopilotContext,
-    LogContent,
     ResponseCategory,
     TextContent,
 )
@@ -234,11 +233,11 @@ def test_format_conversation_history_empty():
                 {"role": "user", "content": "Hello"},
                 {
                     "role": "assistant",
-                    "content": '[{"type": "text", "text": "Hi there!"}]',
+                    "content": "Hi there!",
                 },
             ],
         ),
-        # Chat with copilot_internal role and training_error_log_analysis
+        # Chat with copilot_internal role and multiple text content blocks
         (
             [
                 CopilotChatMessage(
@@ -248,10 +247,15 @@ def test_format_conversation_history_empty():
                             type="text",
                             text="The assistant training failed.",
                         ),
-                        LogContent(
-                            type="log",
-                            content="ERROR: Invalid intent 'greet' in training data",
-                            context="training session",
+                        TextContent(
+                            type="text",
+                            text="Here are the details of what went wrong:",
+                        ),
+                        TextContent(
+                            type="text",
+                            text=(
+                                "The model couldn't process the training data properly."
+                            ),
                         ),
                     ],
                     response_category=ResponseCategory.TRAINING_ERROR_LOG_ANALYSIS,
@@ -261,11 +265,9 @@ def test_format_conversation_history_empty():
                 {
                     "role": "user",
                     "content": (
-                        "[{"
-                        '"type": "text", "text": "The assistant training failed."}, '
-                        '{"type": "log", "content": "ERROR: Invalid intent \'greet\' '
-                        'in training data", "context": "training session", '
-                        '"metadata": {}}]'
+                        "The assistant training failed."
+                        "\nHere are the details of what went wrong:"
+                        "\nThe model couldn't process the training data properly."
                     ),
                 }
             ],
