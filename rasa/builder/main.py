@@ -25,7 +25,7 @@ from rasa.builder.service import bp, setup_project_generator
 from rasa.builder.template_cache import (
     background_download_template_caches,
 )
-from rasa.builder.training_service import try_load_existing_agent
+from rasa.builder.training_service import try_load_existing_agent, update_agent
 from rasa.core.channels.studio_chat import StudioChatInput
 from rasa.server import configure_cors
 from rasa.utils.common import configure_logging_and_warnings
@@ -101,13 +101,14 @@ def create_app(project_folder: str) -> Sanic:
         use_authentication=app.config.USE_AUTHENTICATION,
         rasa_version=rasa.__version__,
     )
-    app.ctx.agent = None
 
     # Set up project generator and store in app context
     app.ctx.project_generator = setup_project_generator(project_folder)
 
     # Set up input channel and store in app context
     app.ctx.input_channel = setup_input_channel()
+
+    update_agent(None, app)
 
     # Register the blueprint
     app.blueprint(bp)
@@ -140,7 +141,7 @@ def create_app(project_folder: str) -> Sanic:
         try:
             existing_agent = await try_load_existing_agent(project_folder)
             if existing_agent:
-                app.ctx.agent = existing_agent
+                update_agent(existing_agent, app)
                 structlogger.info("Agent loaded on server startup")
             else:
                 structlogger.info(

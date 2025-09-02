@@ -480,7 +480,8 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         async def after_server_start(
             app: "Sanic", _: asyncio.AbstractEventLoop
         ) -> None:
-            self.agent = app.ctx.agent
+            if hasattr(app.ctx, "agent"):
+                self.agent = app.ctx.agent
 
         @self.sio_server.on("disconnect", namespace=self.namespace)
         async def disconnect(sid: Text) -> None:

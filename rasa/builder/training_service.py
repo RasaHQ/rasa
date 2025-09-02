@@ -5,16 +5,27 @@ from pathlib import Path
 from typing import Optional
 
 import structlog
+from sanic import Sanic
 
 from rasa.builder.exceptions import AgentLoadError, TrainingError
 from rasa.builder.models import TrainingInput
 from rasa.core.agent import Agent, load_agent
+from rasa.core.channels.studio_chat import StudioChatInput
 from rasa.core.utils import AvailableEndpoints, read_endpoints_from_path
 from rasa.model import get_latest_model
 from rasa.model_training import TrainingResult, train
 from rasa.shared.importers.importer import TrainingDataImporter
 
 structlogger = structlog.get_logger()
+
+
+def update_agent(agent: Optional[Agent], app: Sanic) -> None:
+    """Update the agent in the request context."""
+    app.ctx.agent = agent
+    if hasattr(app.ctx, "input_channel") and isinstance(
+        app.ctx.input_channel, StudioChatInput
+    ):
+        app.ctx.input_channel.agent = agent
 
 
 async def train_and_load_agent(input: TrainingInput) -> Agent:
