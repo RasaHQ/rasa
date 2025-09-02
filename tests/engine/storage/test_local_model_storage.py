@@ -20,6 +20,7 @@ from rasa.engine.storage.local_model_storage import (
     LocalModelStorage,
     create_combined_filter,
     filter_normpath,
+    yield_safe_members,
 )
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelMetadata, ModelStorage
@@ -521,3 +522,26 @@ def test_create_combined_filter_no_existing():
     # Then
     result = combined(member, "/dest")
     assert result.name == "path"  # Only normalization applied
+
+
+def test_yield_safe_members(tmp_path: Path):
+    # Given
+    safe_file = tmp_path / "safe.txt"
+    safe_file.write_text("safe content")
+    unsafe_file_1 = tmp_path / ".." / "unsafe.txt"
+    unsafe_file_1.write_text("unsafe content")
+    unsafe_file_2 = tmp_path / "\\..\\unsafe2.txt"
+    unsafe_file_2.write_text("unsafe content 2")
+
+    with TarSafe.open(tmp_path / "test.tar", "w:gz") as tar:
+        tar.add(safe_file, arcname=safe_file.name)
+        tar.add(unsafe_file_1)
+        tar.add(unsafe_file_2)
+
+    # When
+    with TarSafe.open(tmp_path / "test.tar", "r:gz") as tar:
+        members = [member for member in yield_safe_members(tar.getmembers())]
+
+    # Then
+    assert len(members) == 1
+    assert members[0].name == "safe.txt"

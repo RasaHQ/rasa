@@ -10,7 +10,7 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Generator, Optional, Text, Tuple, Union
+from typing import Callable, Generator, List, Optional, Text, Tuple, Union
 
 from tarsafe import TarSafe
 
@@ -158,16 +158,24 @@ class LocalModelStorage(ModelStorage):
                     # before trying the \\?\ prefix approach first
                     prev_filter = getattr(tar, "extraction_filter", None)
                     tar.extraction_filter = create_combined_filter(prev_filter)
-                    tar.extractall(f"\\\\?\\{temporary_directory}")
+                    tar.extractall(
+                        f"\\\\?\\{temporary_directory}",
+                        members=yield_safe_members(tar.getmembers()),
+                    )
                 except Exception:
                     # Fallback for Python versions with tarfile security fix
                     logger.warning(
                         "Failed to extract model archive with long path support. "
                         "Falling back to regular extraction."
                     )
-                    tar.extractall(temporary_directory)
+                    tar.extractall(
+                        temporary_directory,
+                        members=yield_safe_members(tar.getmembers()),
+                    )
             else:
-                tar.extractall(temporary_directory)
+                tar.extractall(
+                    temporary_directory, members=yield_safe_members(tar.getmembers())
+                )
         LocalModelStorage._assert_not_rasa2_archive(temporary_directory)
 
     @staticmethod
@@ -287,3 +295,32 @@ class LocalModelStorage(ModelStorage):
             core_target=model_configuration.core_target,
             nlu_target=model_configuration.nlu_target,
         )
+
+
+def yield_safe_members(
+    members: List[tarfile.TarInfo],
+) -> Generator[tarfile.TarInfo, None, None]:
+    """
+    Filter function for tar.extractall members parameter.
+    Validates each member and yields only safe ones.
+
+    Args:
+        members: Iterator of TarInfo objects from tar.getmembers()
+
+    Yields:
+        TarInfo: Safe members to extract
+    """
+    for member in members:
+        # Skip absolute paths
+        if Path(member.name).is_absolute():
+            continue
+
+        # Skip paths with directory traversal sequences
+        if ".." in member.name or "\\.." in member.name:
+            continue
+
+        # Skip special file types unless you need them
+        if member.isdev() or member.issym():
+            continue
+
+        yield member
