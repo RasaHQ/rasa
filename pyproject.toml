@@ -314,7 +314,7 @@ timeout_func_only = true
 asyncio_mode = "auto"
 
 [tool.poetry.dependencies.rasa-sdk]
-version = "3.14.0.dev2"
+version = "3.14.0a1"
 allow-prereleases = true
 
 [tool.poetry.dependencies.keras]

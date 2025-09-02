@@ -20,11 +20,6 @@ def _get_python_version_content() -> str:
     return f"{sys.version_info.major}.{sys.version_info.minor}\n"
 
 
-def _get_rasa_pro_minor_version() -> str:
-    """Get the minor version of Rasa Pro."""
-    return ".".join(rasa.__version__.split(".")[:2])
-
-
 def _get_pyproject_toml_content(project_id: str) -> str:
     """Generate pyproject.toml file content."""
     return dedent(
@@ -34,7 +29,7 @@ def _get_pyproject_toml_content(project_id: str) -> str:
         version = "0.1.0"
         description = "Add your description for your Rasa bot here"
         readme = "README.md"
-        dependencies = ["rasa-pro>={_get_rasa_pro_minor_version()}"]
+        dependencies = ["rasa-pro>={rasa.__version__}"]
         requires-python = ">={sys.version_info.major}.{sys.version_info.minor}"
         """
     )
