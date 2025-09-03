@@ -213,7 +213,7 @@ class HangoutsInput(InputChannel):
         # every message. Actual caching depends on response headers.
         # see: https://github.com/googleapis/google-auth-library-python/blob/main/google/oauth2/id_token.py#L15 # noqa: E501
         cached_session = cachecontrol.CacheControl(requests.session())
-        self.google_request = google.auth.transport.requests.Request(
+        self.google_request = google.auth.transport.requests.Request(  # type: ignore[no-untyped-call]
             session=cached_session
         )
 
@@ -267,7 +267,7 @@ class HangoutsInput(InputChannel):
         # see https://developers.google.com/chat/how-tos/bots-develop#verifying_bot_authenticity # noqa: E501
         # and https://google-auth.readthedocs.io/en/latest/user-guide.html#identity-tokens # noqa: E501
         try:
-            decoded_token = id_token.verify_token(
+            decoded_token = id_token.verify_token(  # type: ignore[no-untyped-call]
                 bot_token,
                 self.google_request,
                 audience=self.project_id,

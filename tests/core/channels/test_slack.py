@@ -474,7 +474,7 @@ async def test_slackbot_send_attachment_only():
 
     with aioresponses() as mocked:
         mocked.post(
-            "https://www.slack.com/api/chat.postMessage",
+            "https://slack.com/api/chat.postMessage",
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
@@ -483,7 +483,7 @@ async def test_slackbot_send_attachment_only():
 
         await bot.send_attachment("ID", attachment)
 
-        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+        r = latest_request(mocked, "POST", "https://slack.com/api/chat.postMessage")
 
         assert r
 
@@ -503,7 +503,7 @@ async def test_slackbot_send_attachment_only_threaded():
 
     with aioresponses() as mocked:
         mocked.post(
-            "https://www.slack.com/api/chat.postMessage",
+            "https://slack.com/api/chat.postMessage",
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
@@ -512,7 +512,7 @@ async def test_slackbot_send_attachment_only_threaded():
 
         await bot.send_attachment("ID", attachment)
 
-        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+        r = latest_request(mocked, "POST", "https://slack.com/api/chat.postMessage")
 
         assert r
 
@@ -533,7 +533,7 @@ async def test_slackbot_send_attachment_with_text():
 
     with aioresponses() as mocked:
         mocked.post(
-            "https://www.slack.com/api/chat.postMessage",
+            "https://slack.com/api/chat.postMessage",
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
@@ -543,7 +543,7 @@ async def test_slackbot_send_attachment_with_text():
 
         await bot.send_attachment("ID", attachment)
 
-        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+        r = latest_request(mocked, "POST", "https://slack.com/api/chat.postMessage")
 
         assert r
 
@@ -563,7 +563,7 @@ async def test_slackbot_send_attachment_with_text_threaded():
 
     with aioresponses() as mocked:
         mocked.post(
-            "https://www.slack.com/api/chat.postMessage",
+            "https://slack.com/api/chat.postMessage",
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
@@ -573,7 +573,7 @@ async def test_slackbot_send_attachment_with_text_threaded():
 
         await bot.send_attachment("ID", attachment)
 
-        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+        r = latest_request(mocked, "POST", "https://slack.com/api/chat.postMessage")
 
         assert r
 
@@ -594,7 +594,7 @@ async def test_slackbot_send_image_url():
 
     with aioresponses() as mocked:
         mocked.post(
-            "https://www.slack.com/api/chat.postMessage",
+            "https://slack.com/api/chat.postMessage",
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
@@ -602,7 +602,7 @@ async def test_slackbot_send_image_url():
         url = "http://www.rasa.net"
         await bot.send_image_url("ID", url)
 
-        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+        r = latest_request(mocked, "POST", "https://slack.com/api/chat.postMessage")
 
         assert r
 
@@ -623,7 +623,7 @@ async def test_slackbot_send_image_url_threaded():
 
     with aioresponses() as mocked:
         mocked.post(
-            "https://www.slack.com/api/chat.postMessage",
+            "https://slack.com/api/chat.postMessage",
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
@@ -631,7 +631,7 @@ async def test_slackbot_send_image_url_threaded():
         url = "http://www.rasa.net"
         await bot.send_image_url("ID", url)
 
-        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+        r = latest_request(mocked, "POST", "https://slack.com/api/chat.postMessage")
 
         assert r
 
@@ -653,14 +653,14 @@ async def test_slackbot_send_text():
 
     with aioresponses() as mocked:
         mocked.post(
-            "https://www.slack.com/api/chat.postMessage",
+            "https://slack.com/api/chat.postMessage",
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
         bot = SlackBot("DummyToken", "General")
         await bot.send_text_message("ID", "my message")
 
-        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+        r = latest_request(mocked, "POST", "https://slack.com/api/chat.postMessage")
 
         assert r
 
@@ -681,14 +681,14 @@ async def test_slackbot_send_text_threaded():
 
     with aioresponses() as mocked:
         mocked.post(
-            "https://www.slack.com/api/chat.postMessage",
+            "https://slack.com/api/chat.postMessage",
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
         bot = SlackBot("DummyToken", "General", thread_id="DummyThread")
         await bot.send_text_message("ID", "my message")
 
-        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+        r = latest_request(mocked, "POST", "https://slack.com/api/chat.postMessage")
 
         assert r
 
@@ -710,7 +710,7 @@ async def test_slackbot_send_text_with_buttons():
 
     with aioresponses() as mocked:
         mocked.post(
-            "https://www.slack.com/api/chat.postMessage",
+            "https://slack.com/api/chat.postMessage",
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
@@ -719,7 +719,7 @@ async def test_slackbot_send_text_with_buttons():
 
         await bot.send_text_with_buttons("ID", "my message", buttons)
 
-        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+        r = latest_request(mocked, "POST", "https://slack.com/api/chat.postMessage")
 
         assert r
 
@@ -754,7 +754,7 @@ async def test_slackbot_send_text_with_buttons_threaded():
 
     with aioresponses() as mocked:
         mocked.post(
-            "https://www.slack.com/api/chat.postMessage",
+            "https://slack.com/api/chat.postMessage",
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
@@ -763,7 +763,7 @@ async def test_slackbot_send_text_with_buttons_threaded():
 
         await bot.send_text_with_buttons("ID", "my message", buttons)
 
-        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+        r = latest_request(mocked, "POST", "https://slack.com/api/chat.postMessage")
 
         assert r
 
@@ -799,14 +799,14 @@ async def test_slackbot_send_custom_json():
 
     with aioresponses() as mocked:
         mocked.post(
-            "https://www.slack.com/api/chat.postMessage",
+            "https://slack.com/api/chat.postMessage",
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
         bot = SlackBot("DummyToken", "General")
         await bot.send_custom_json("ID", {"test_key": "test_value"})
 
-        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+        r = latest_request(mocked, "POST", "https://slack.com/api/chat.postMessage")
 
         assert r
 
@@ -826,14 +826,14 @@ async def test_slackbot_send_custom_json_threaded():
 
     with aioresponses() as mocked:
         mocked.post(
-            "https://www.slack.com/api/chat.postMessage",
+            "https://slack.com/api/chat.postMessage",
             payload={"ok": True, "purpose": "Testing bots"},
         )
 
         bot = SlackBot("DummyToken", "General", thread_id="DummyThread")
         await bot.send_custom_json("ID", {"test_key": "test_value"})
 
-        r = latest_request(mocked, "POST", "https://www.slack.com/api/chat.postMessage")
+        r = latest_request(mocked, "POST", "https://slack.com/api/chat.postMessage")
 
         assert r
 
