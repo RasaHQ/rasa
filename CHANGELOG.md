@@ -10,6 +10,34 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.13.9] - 2025-09-03
+                        
+Rasa Pro 3.13.9 (2025-09-03)                             
+### Bugfixes
+- [#3149](https://github.com/rasahq/rasa-private/issues/3149): Upgrade `skops` to version `0.13.0` and `requests` to version `2.32.5` to fix vulnerabilities.
+- [#3154](https://github.com/rasahq/rasa-private/issues/3154): Fixed flow retrieval to skip vector store population when there are no flows to embed.
+
+### Miscellaneous internal changes
+- [#3149](https://github.com/rasahq/rasa-private/issues/3149)
+
+
+## [3.13.8] - 2025-08-26
+
+Rasa Pro 3.13.8 (2025-08-26)
+### Improvements
+- [#2828](https://github.com/rasahq/rasa-private/issues/2828): Validation errors now raise meaningful exceptions instead of calling sys.exit(1),
+  producing clearer and more actionable log messages while allowing custom error handling.
+- [#2998](https://github.com/rasahq/rasa-private/issues/2998): Enable connection to AWS services for LLMs (e.g. Bedrock, Sagemaker) via multiple additional methods to environment variables,
+  for example by using IAM roles or AWS credentials file.
+
+### Bugfixes
+- [#2178](https://github.com/rasahq/rasa-private/issues/2178): The .devcontainer docker-compose file now uses the new `docker.io/bitnamilegacy` repository for images, rather than the old `docker.io/bitnami`.
+  This change was made in response to Bitnami's announcement that they will be putting all of their public Helm Chart container images behind a paywall starting August 28th, 2025.
+  Existing public images are moved to the new legacy repository - `bitnamilegacy` - which is only intended for short-term migration purposes.
+- [#2998](https://github.com/rasahq/rasa-private/issues/2998): Fix expansion of referenced environment variables in `endpoints.yml` during Bedrock model config validation.
+- [#3092](https://github.com/rasahq/rasa-private/issues/3092): Fixed model loading failures on Windows systems running recent Python versions (3.9.23+, 3.10.18+, 3.11.13+) due to tarfile security fix incompatibility with Windows long path prefix.
+
+
 ## [3.13.7] - 2025-08-15
 
 Rasa Pro 3.13.7 (2025-08-15)
