@@ -64,8 +64,8 @@ jobs:
           push: true
           sbom: true
           build-args: |
-            IMAGE_BASE_NAME=ghcr.io/tapgermany/rasa-base
+            IMAGE_BASE_NAME=ghcr.io/${{ github.actor }}/rasa-base
             BASE_IMAGE_HASH=latest
             BASE_BUILDER_IMAGE_HASH=latest
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ github.actor }}
+          labels: ${{ github.actor }}
