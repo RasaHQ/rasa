@@ -45,7 +45,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ..
-          file: ./Dockerfile
+          file: docker/Dockerfile.full
           push: true
           sbom: true
           tags: ${{ steps.meta.outputs.tags }}
