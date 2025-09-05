@@ -1,9 +1,7 @@
 import json
-import os
 from typing import Any, Dict, List
 
 import pytest
-from pytest import MonkeyPatch
 
 from rasa.builder.copilot.copilot import Copilot
 from rasa.builder.copilot.models import (
@@ -69,54 +67,6 @@ async def bot_files_for_agent(agent: Agent) -> dict[str, str]:
         ),
         "config.yml": "",
     }
-
-
-@pytest.mark.asyncio
-async def test_llm_service_copilot_response(
-    agent_with_flows: Agent, monkeypatch: MonkeyPatch
-):
-    os.environ["OPENAI_API_KEY"] = "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"
-    os.environ["INKEEP_API_KEY"] = "CHANGEME"
-
-    tracker = sample_tracker(agent_with_flows.domain)
-    tracker_context = TrackerContext.from_tracker(tracker)
-
-    context = CopilotContext(
-        tracker_context=tracker_context,
-        assistant_logs=sample_bot_logs(),
-        assistant_files=await bot_files_for_agent(agent_with_flows),
-        copilot_chat_history=sample_chat_history(),
-    )
-
-    expected_system_prompt = {"role": "system", "content": "TEST_SYSTEM_PROMPT"}
-
-    async def _fake_create_system_message(self):
-        return expected_system_prompt
-
-    monkeypatch.setattr(
-        Copilot, "_create_system_message", _fake_create_system_message, raising=True
-    )
-
-    from rasa.builder.llm_service import llm_service
-
-    stream, support_evidence = await llm_service.copilot.generate_response(context)
-    documents = support_evidence.relevant_documents
-    system_message = support_evidence.system_message
-
-    # Collect all tokens from the stream
-    result = ""
-    async for token in stream:
-        result += token
-
-    # Assert that we got some response
-    assert result is not None
-    assert len(result) > 0
-
-    # Assert that documents were retrieved (even if empty)
-    assert documents is not None
-
-    # Assert that the system message returned is the one we patched in
-    assert system_message == expected_system_prompt
 
 
 def test_format_conversation_history():

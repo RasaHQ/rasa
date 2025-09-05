@@ -419,6 +419,7 @@ class TestOpenAILLMClient:
         monkeypatch: MonkeyPatch,
     ) -> None:
         # Given
+        monkeypatch.delenv(OPENAI_API_KEY_ENV_VAR, raising=False)
         if api_key_env_var:
             monkeypatch.setenv(api_key_env_var, "openai llm client validation key")
 
