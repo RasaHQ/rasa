@@ -7,7 +7,7 @@ variable "IMAGE_TAG" {
 }
 
 variable "GH_OWNER" {
-  default = "TAProjectGermany"
+  default = "taprojectgermany"
 }
 
 variable "BASE_IMAGE_HASH" {
