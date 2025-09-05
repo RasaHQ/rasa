@@ -4,12 +4,8 @@ on:
   push:
     branches:
       - 3.6.x
-    paths:
-      - 'rasa/**'
-      - 'docker/**'
-      - 'Makefile'
-      - 'pyproject.toml'
-      - 'poetry.lock'
+  workflow_dispatch:
+
 permissions:
   contents: read
   packages: write
