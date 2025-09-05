@@ -39,7 +39,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=ref,event=branch,prefix=rasa_lib:
+            type=ref,event=branch:
 
       - name: Build, push, and generate SBOM for Rasa image
         uses: docker/build-push-action@v6
@@ -48,5 +48,10 @@ jobs:
           file: docker/Dockerfile.full
           push: true
           sbom: true
+          build-args: |
+            IMAGE_BASE_NAME=python:3.11-slim
+            BASE_IMAGE_HASH=latest
+            BASE_MITIE_IMAGE_HASH=latest
+            BASE_BUILDER_IMAGE_HASH=latest
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
