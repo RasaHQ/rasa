@@ -45,13 +45,12 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ..
-          file: docker/Dockerfile.full
+          file: ./Dockerfile
           push: true
           sbom: true
           build-args: |
             IMAGE_BASE_NAME=python:3.11-slim
             BASE_IMAGE_HASH=latest
-            BASE_MITIE_IMAGE_HASH=latest
             BASE_BUILDER_IMAGE_HASH=latest
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
