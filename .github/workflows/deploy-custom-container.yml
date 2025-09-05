@@ -43,8 +43,7 @@ jobs:
 
       - name: Push Docker base image from a fork
         run: |
-          docker buildx bake --set GH_OWNER=${{ github.repository_owner }} --set IMAGE_TAG=localdev -f docker/docker-bake.hcl base --push
-
+          docker buildx bake --set base.args.GH_OWNER=${{ github.repository_owner }} --set base.args.IMAGE_TAG=localdev -f docker/docker-bake.hcl base --push
 
       - name: Extract metadata for Docker Image
         id: meta
