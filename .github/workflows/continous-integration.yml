@@ -912,36 +912,6 @@ jobs:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
 
-    services:
-      redis:
-        image: redis:6
-        # Set health checks to wait until redis has started
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          # FIXME: cannot use ${{ env.REDIS_PORT }} here
-          # mapping container ports to the host
-          - 6379:6379
-
-      postgres:
-        image: postgres:13
-        # Set health checks to wait until postgres has started
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        env:
-          # postgres image requires password to be set
-          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-        ports:
-          # FIXME: cannot use ${{ env.POSTGRES_PORT }} here
-          # mapping container ports to the host
-          - 5432:5432
-
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -956,6 +926,10 @@ jobs:
         run: |
           make install
         shell: bash
+
+      - name: Run container for non-sequential integration testing
+        run: |
+          make run-non-sequential-container
 
       - name: Test Code with Services 🩺
         env:
@@ -982,6 +956,14 @@ jobs:
         with:
           name: Non-Sequential Integration Test Results
           path: integration-results-non-sequential.xml
+
+      - name: Show container logs for non-sequential integration testing
+        run: |
+          make show-non-sequential-container-logs
+
+      - name: Stop container for non-sequential integration testing
+        run: |
+          make stop-non-sequential-container
 
   mongo-tracker-store-integration-test:
     name: Run Mongo Tracker Store Integration Tests

@@ -664,3 +664,16 @@ test-pii-integration-with-calm-bot: INTEGRATION_TEST_PATH = $(CALM_PII_INTEGRATI
 test-pii-integration-with-calm-bot: RESULTS_FILE = pii-management-in-calm-integration-results.xml
 test-pii-integration-with-calm-bot:  ## Run the pii integration tests with CALM bot.
 	$(TEST_PII_INTEGRATION_COMMAND)
+
+NON_SEQUENTIAL_INTEGRATION_TEST_DOCKER_COMPOSE = $(TRACKER_STORE_INTEGRATION_TEST_PATH)/docker-compose.yml
+
+run-non-sequential-container:
+	docker compose -f $(NON_SEQUENTIAL_INTEGRATION_TEST_DOCKER_COMPOSE) up --wait
+
+stop-non-sequential-container:
+	docker compose -f $(NON_SEQUENTIAL_INTEGRATION_TEST_DOCKER_COMPOSE) down
+
+show-non-sequential-container-logs:
+	docker compose -f $(NON_SEQUENTIAL_INTEGRATION_TEST_DOCKER_COMPOSE) logs \
+		postgres redis redis-cluster redis-master \
+		redis-replica-1 redis-replica-2 redis-sentinel-1 redis-sentinel-2 redis-sentinel-3

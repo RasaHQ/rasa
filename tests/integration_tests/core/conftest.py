@@ -85,13 +85,43 @@ def _drop_db(connection: sa.engine.Connection, database_name: Text) -> None:
     connection.execute(sa.text(f"DROP DATABASE IF EXISTS {database_name}"))
 
 
-@pytest.fixture
-def redis_tracker_store(domain: Domain) -> Iterator[RedisTrackerStore]:
+@pytest.fixture(
+    params=[
+        {"deployment_mode": "standard"},
+        {
+            "deployment_mode": "cluster",
+            "endpoints": [
+                f"{REDIS_HOST}:7000",
+                f"{REDIS_HOST}:7001",
+                f"{REDIS_HOST}:7002",
+            ],
+        },
+        {
+            "deployment_mode": "sentinel",
+            "endpoints": [
+                f"{REDIS_HOST}:26379",
+                f"{REDIS_HOST}:26380",
+                f"{REDIS_HOST}:26381",
+            ],
+            "sentinel_service": "mymaster",
+        },
+    ]
+)
+def redis_tracker_store(domain: Domain, request) -> Iterator[RedisTrackerStore]:
     # we need one redis database per worker, otherwise
     # tests conflicts with each others when databases are flushed
     pytest_worker_id = os.getenv("PYTEST_XDIST_WORKER", "gw0")
     redis_database = int(pytest_worker_id.replace("gw", ""))
-    tracker_store = RedisTrackerStore(domain, db=redis_database)
+    # Base configuration
+    config = {"domain": domain}
+
+    # For cluster mode, don't set db (clusters only support db 0)
+    if request.param["deployment_mode"] != "cluster":
+        config["db"] = redis_database
+
+    config.update(request.param)
+
+    tracker_store = RedisTrackerStore(**config)
     try:
         yield tracker_store
     finally:
