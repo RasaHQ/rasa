@@ -39,7 +39,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=ref,event=branch:
+            type=ref,event=branch,prefix=rasa_lib:
 
       - name: Build, push, and generate SBOM for Rasa image
         uses: docker/build-push-action@v6
