@@ -1,5 +1,5 @@
 variable "IMAGE_NAME" {
-  default = "rasa/rasa"
+  default = "ghcr.io/taprojectgermany/rasa-base"
 }
 
 variable "IMAGE_TAG" {

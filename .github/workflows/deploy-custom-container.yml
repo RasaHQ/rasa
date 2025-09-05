@@ -15,9 +15,6 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    outputs:
-      # Tag name used for images created during Docker image builds, e.g. 3886 - a PR number
-      image_tag: ${{ steps.set_output.outputs.image_tag }}
 
     steps:
       - name: Checkout repositorys
@@ -75,25 +72,3 @@ jobs:
             --set default.args.GH_OWNER=${GITHUB_REPOSITORY_OWNER,,} \
             --set default.args.IMAGE_TAG=localdev \
             -f docker/docker-bake.hcl default --push
-
-      - name: Extract metadata for Docker Image
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=ref,event=branch,prefix=rasa_lib:
-
-      - uses: docker/build-push-action@v6
-        with:
-          context: ..
-          file: docker/Dockerfile.full
-          push: true
-          sbom: true
-          build-args: |
-            build-args: |
-            IMAGE_BASE_NAME=ghcr.io/taprojectgermany/rasa-base
-            BASE_IMAGE_HASH=base-localdev
-            BASE_BUILDER_IMAGE_HASH=base-localdev
-          tags: ${{ github.actor }}
-          labels: ${{ github.actor }}
