@@ -41,9 +41,40 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push Docker base image from a fork
+      - name: Push Docker base image
         run: |
-          docker buildx bake --set base.args.GH_OWNER=${GITHUB_REPOSITORY_OWNER,,} --set base.args.IMAGE_TAG=localdev -f docker/docker-bake.hcl base --push
+          docker buildx bake \
+            --set base.args.GH_OWNER=${GITHUB_REPOSITORY_OWNER,,} \
+            --set base.args.IMAGE_TAG=localdev \
+            -f docker/docker-bake.hcl base --push
+
+      - name: Push Docker mitie base image
+        run: |
+          docker buildx bake \
+            --set base-mitie.args.GH_OWNER=${GITHUB_REPOSITORY_OWNER,,} \
+            --set base-mitie.args.IMAGE_TAG=localdev \
+            -f docker/docker-bake.hcl base-mitie --push
+
+      - name: Push Docker poetry base image
+        run: |
+          docker buildx bake \
+            --set base-poetry.args.GH_OWNER=${GITHUB_REPOSITORY_OWNER,,} \
+            --set base-poetry.args.IMAGE_TAG=localdev \
+            -f docker/docker-bake.hcl base-poetry --push
+
+      - name: Push Docker builder base image
+        run: |
+          docker buildx bake \
+            --set base-builder.args.GH_OWNER=${GITHUB_REPOSITORY_OWNER,,} \
+            --set base-builder.args.IMAGE_TAG=localdev \
+            -f docker/docker-bake.hcl base-builder --push
+
+      - name: Build and push full Rasa image
+        run: |
+          docker buildx bake \
+            --set default.args.GH_OWNER=${GITHUB_REPOSITORY_OWNER,,} \
+            --set default.args.IMAGE_TAG=localdev \
+            -f docker/docker-bake.hcl default --push
 
       - name: Extract metadata for Docker Image
         id: meta
@@ -60,8 +91,9 @@ jobs:
           push: true
           sbom: true
           build-args: |
-            IMAGE_BASE_NAME=ghcr.io/TAProjectGermany/rasa-base
-            BASE_IMAGE_HASH=latest
-            BASE_BUILDER_IMAGE_HASH=latest
+            build-args: |
+            IMAGE_BASE_NAME=ghcr.io/taprojectgermany/rasa-base
+            BASE_IMAGE_HASH=base-localdev
+            BASE_BUILDER_IMAGE_HASH=base-localdev
           tags: ${{ github.actor }}
           labels: ${{ github.actor }}
