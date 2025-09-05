@@ -1,13 +1,14 @@
 import uuid
 import warnings
 from typing import List
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import fakeredis
 import pytest
 from pytest import MonkeyPatch
 from structlog.testing import capture_logs
 
+from rasa.core.redis_connection_factory import DeploymentMode, RedisConfig
 from rasa.core.tracker_stores.redis_tracker_store import (
     DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX,
     RedisTrackerStore,
@@ -32,7 +33,7 @@ from rasa.shared.core.events import (
     UserUttered,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.exceptions import ConnectionException
+from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import read_endpoint_config
 from tests.core.tracker_stores.conftest import (
     _saved_tracker_with_multiple_session_starts,
@@ -68,18 +69,133 @@ def test_create_tracker_store_from_endpoint_config(
     assert isinstance(tracker_store, type(TrackerStore.create(store, domain)))
 
 
+@pytest.mark.parametrize(
+    "deployment_mode,endpoints,sentinel_service,expected_mode,expected_endpoints,expected_sentinel_service",
+    [
+        ("standard", None, None, DeploymentMode.STANDARD.value, None, None),
+        (
+            "cluster",
+            ["node1:6379", "node2:6379"],
+            None,
+            DeploymentMode.CLUSTER.value,
+            ["node1:6379", "node2:6379"],
+            None,
+        ),
+        (
+            "sentinel",
+            ["sentinel1:26379"],
+            "custom",
+            DeploymentMode.SENTINEL.value,
+            ["sentinel1:26379"],
+            "custom",
+        ),
+    ],
+)
+def test_create_tracker_store_high_availability_modes(
+    domain: Domain,
+    deployment_mode,
+    endpoints,
+    sentinel_service,
+    expected_mode,
+    expected_endpoints,
+    expected_sentinel_service,
+):
+    """Test tracker store creation with different high availability modes."""
+    with patch(
+        "rasa.core.redis_connection_factory.RedisConnectionFactory.create_connection"
+    ) as mock_create:
+        # Given
+        mock_redis = Mock()
+        mock_create.return_value = mock_redis
+
+        # When
+        tracker_store = RedisTrackerStore(
+            domain=domain,
+            host="localhost",
+            port=6379,
+            db=0,
+            deployment_mode=deployment_mode,
+            endpoints=endpoints,
+            sentinel_service=sentinel_service,
+        )
+
+        # Then
+        assert isinstance(tracker_store, RedisTrackerStore)
+        assert tracker_store.red == mock_redis
+
+        mock_create.assert_called_once()
+        call_args = mock_create.call_args
+        config = call_args.args[0]
+        assert isinstance(config, RedisConfig)
+
+        assert config.deployment_mode == expected_mode
+        assert config.endpoints == expected_endpoints
+        assert config.sentinel_service == expected_sentinel_service
+
+
+def test_create_tracker_store_default_deployment_mode(domain: Domain):
+    """Test tracker store creation with standard deployment mode."""
+    with patch(
+        "rasa.core.redis_connection_factory.RedisConnectionFactory.create_connection"
+    ) as mock_create:
+        # Given
+        mock_redis = Mock()
+        mock_create.return_value = mock_redis
+
+        # When
+        tracker_store = RedisTrackerStore(
+            domain=domain,
+            host="localhost",
+            port=6379,
+            db=0,
+        )
+
+        # Then
+        assert isinstance(tracker_store, RedisTrackerStore)
+        assert tracker_store.red == mock_redis
+
+        mock_create.assert_called_once()
+        call_args = mock_create.call_args
+        config = call_args.args[0]
+
+        assert isinstance(config, RedisConfig)
+        assert config.deployment_mode == DeploymentMode.STANDARD.value
+        assert config.host == "localhost"
+        assert config.port == 6379
+        assert config.db == 0
+
+
+@pytest.mark.parametrize(
+    "invalid_config",
+    [
+        {"host": 123, "port": 6379},
+        {"endpoints": [123, "localhost:6379"]},
+    ],
+)
+def test_redis_tracker_store_validation_error(domain: Domain, invalid_config):
+    """Test that RedisTrackerStore properly handles configuration validation errors."""
+
+    with pytest.raises(RasaException) as exc_info:
+        RedisTrackerStore(domain=domain, **invalid_config)
+
+    assert "Invalid Redis configuration" in str(exc_info.value)
+
+
 def test_redis_tracker_store_invalid_key_prefix(domain: Domain):
     test_invalid_key_prefix = "$$ &!"
 
-    tracker_store = RedisTrackerStore(
-        domain=domain,
-        host="localhost",
-        port=6379,
-        db=0,
-        password="password",
-        key_prefix=test_invalid_key_prefix,
-        record_exp=3000,
-    )
+    with patch(
+        "rasa.core.redis_connection_factory.RedisConnectionFactory.create_connection"
+    ):
+        tracker_store = RedisTrackerStore(
+            domain=domain,
+            host="localhost",
+            port=6379,
+            db=0,
+            password="password",
+            key_prefix=test_invalid_key_prefix,
+            record_exp=3000,
+        )
 
     assert tracker_store._get_key_prefix() == DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
 
@@ -87,15 +203,18 @@ def test_redis_tracker_store_invalid_key_prefix(domain: Domain):
 def test_redis_tracker_store_valid_key_prefix(domain: Domain):
     test_valid_key_prefix = "spanish"
 
-    tracker_store = RedisTrackerStore(
-        domain=domain,
-        host="localhost",
-        port=6379,
-        db=0,
-        password="password",
-        key_prefix=test_valid_key_prefix,
-        record_exp=3000,
-    )
+    with patch(
+        "rasa.core.redis_connection_factory.RedisConnectionFactory.create_connection"
+    ):
+        tracker_store = RedisTrackerStore(
+            domain=domain,
+            host="localhost",
+            port=6379,
+            db=0,
+            password="password",
+            key_prefix=test_valid_key_prefix,
+            record_exp=3000,
+        )
 
     assert (
         tracker_store._get_key_prefix()

@@ -4,12 +4,19 @@ from datetime import datetime
 from typing import Any, Dict, Iterable, Optional, Text
 
 import structlog
+from pydantic import ValidationError
 
 import rasa.shared
 from rasa.core.brokers.broker import EventBroker
+from rasa.core.redis_connection_factory import (
+    DeploymentMode,
+    RedisConfig,
+    RedisConnectionFactory,
+)
 from rasa.core.tracker_stores.tracker_store import SerializedTrackerAsText, TrackerStore
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.exceptions import RasaException
 
 structlogger = structlog.get_logger(__name__)
 
@@ -35,23 +42,34 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
         ssl_keyfile: Optional[Text] = None,
         ssl_certfile: Optional[Text] = None,
         ssl_ca_certs: Optional[Text] = None,
+        deployment_mode: Text = DeploymentMode.STANDARD.value,
+        endpoints: Optional[list] = None,
+        sentinel_service: Optional[Text] = None,
         **kwargs: Dict[Text, Any],
     ) -> None:
         """Initializes the tracker store."""
-        import redis
 
-        self.red = redis.StrictRedis(
-            host=host,
-            port=port,
-            db=db,
-            username=username,
-            password=password,
-            ssl=use_ssl,
-            ssl_keyfile=ssl_keyfile,
-            ssl_certfile=ssl_certfile,
-            ssl_ca_certs=ssl_ca_certs,
-            decode_responses=True,
-        )
+        # Create Redis connection using the factory directly
+        try:
+            config = RedisConfig(
+                host=host,
+                port=port,
+                db=db,
+                username=username,
+                password=password,
+                use_ssl=use_ssl,
+                ssl_keyfile=ssl_keyfile,
+                ssl_certfile=ssl_certfile,
+                ssl_ca_certs=ssl_ca_certs,
+                deployment_mode=deployment_mode,
+                endpoints=endpoints,
+                sentinel_service=sentinel_service,
+                decode_responses=True,
+            )
+            self.red = RedisConnectionFactory.create_connection(config)
+        except ValidationError as e:
+            raise RasaException(f"Invalid Redis configuration: {e}")
+
         self.record_exp = record_exp
 
         self.key_prefix = DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
