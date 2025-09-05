@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import importlib
 import json
 from contextlib import asynccontextmanager
@@ -10,7 +11,9 @@ from jinja2 import Template
 from typing_extensions import AsyncGenerator
 
 from rasa.builder import config
+from rasa.builder.config import COPILOT_DOCUMENTATION_SEARCH_QUERY_HISTORY_MESSAGES
 from rasa.builder.copilot.constants import (
+    COPILOT_LAST_USER_MESSAGE_CONTEXT_PROMPT_FILE,
     COPILOT_PROMPTS_DIR,
     COPILOT_PROMPTS_FILE,
     ROLE_COPILOT,
@@ -20,8 +23,11 @@ from rasa.builder.copilot.constants import (
 )
 from rasa.builder.copilot.exceptions import CopilotStreamError
 from rasa.builder.copilot.models import (
+    CopilotChatMessage,
     CopilotContext,
+    CopilotGenerationContext,
     ResponseCategory,
+    TextContent,
     UsageStatistics,
 )
 from rasa.builder.document_retrieval.inkeep_document_retrieval import (
@@ -46,6 +52,12 @@ class Copilot:
             importlib.resources.read_text(
                 f"{PACKAGE_NAME}.{COPILOT_PROMPTS_DIR}",
                 COPILOT_PROMPTS_FILE,
+            )
+        )
+        self._last_user_message_context_prompt_template = Template(
+            importlib.resources.read_text(
+                f"{PACKAGE_NAME}.{COPILOT_PROMPTS_DIR}",
+                COPILOT_LAST_USER_MESSAGE_CONTEXT_PROMPT_FILE,
             )
         )
 
@@ -102,7 +114,7 @@ class Copilot:
     async def generate_response(
         self,
         context: CopilotContext,
-    ) -> tuple[AsyncGenerator[str, None], list[Document], str]:
+    ) -> tuple[AsyncGenerator[str, None], CopilotGenerationContext]:
         """Generate a response from the copilot.
 
         This method performs document retrieval and response generation as a single
@@ -114,22 +126,27 @@ class Copilot:
             context: The context of the copilot.
 
         Returns:
-            A tuple containing the async response stream, relevant documents used
-            as supporting evidence for the generated response, and the prompt used.
+            A tuple containing the async response stream and a
+            CopilotGenerationContext object with relevant documents, and all the
+            messages used to generate the response.
 
         Raises:
             CopilotStreamError: If the stream fails.
             Exception: If an unexpected error occurs.
         """
         relevant_documents = await self.search_rasa_documentation(context)
-        system_message = await self._create_system_message(context, relevant_documents)
-        chat_history = self._create_chat_history_messages(context)
-        messages = [system_message, *chat_history]
+        messages = await self._build_messages(context, relevant_documents)
+
+        support_evidence = CopilotGenerationContext(
+            relevant_documents=relevant_documents,
+            system_message=messages[0],
+            chat_history=messages[1:-1],
+            last_user_message=messages[-1],
+        )
 
         return (
             self._stream_response(messages),
-            relevant_documents,
-            system_message.get("content", ""),
+            support_evidence,
         )
 
     async def _stream_response(
@@ -174,60 +191,139 @@ class Copilot:
             )
             raise
 
-    async def _create_system_message(
+    async def _build_messages(
         self,
         context: CopilotContext,
         relevant_documents: List[Document],
-    ) -> Dict[str, Any]:
-        """Render the correct Jinja template based on desired output_type."""
-        # Format relevant documentation
-        documents = [doc.model_dump() for doc in relevant_documents]
+    ) -> List[Dict[str, Any]]:
+        """Build the complete message list for the OpenAI API.
 
-        # Format conversation history
-        conversation = self._format_conversation_history(context.tracker_context)
+        Args:
+            context: The context of the copilot.
+            relevant_documents: The relevant documents to use in the context.
 
-        # Format current state
-        current_state = self._format_current_state(context.tracker_context)
+        Returns:
+            A list of messages in OpenAI format.
+        """
+        # Split chat history into past messages and latest message
+        past_messages = [
+            message
+            for message in context.copilot_chat_history[:-1]
+            if message.response_category != ResponseCategory.GUARDRAILS_POLICY_VIOLATION
+        ]
+        latest_message = context.copilot_chat_history[-1]
 
-        # Render template
-        rendered_prompt = self._system_message_prompt_template.render(
-            current_conversation=conversation,
-            current_state=current_state,
-            assistant_logs=context.assistant_logs,
-            assistant_files=context.assistant_files,
-            documentation_results=documents,
+        # Create the system message
+        system_message = await self._create_system_message()
+        # Create the chat history messages (excludes the last message)
+        chat_history = self._create_chat_history_messages(past_messages)
+        # Create the last message and add the context to it
+        latest_message_with_context = self._create_last_user_message_with_context(
+            latest_message, context, relevant_documents
         )
+        return [system_message, *chat_history, latest_message_with_context]
+
+    async def _create_system_message(self) -> Dict[str, Any]:
+        """Render the correct Jinja template based on desired output_type."""
+        rendered_prompt = self._system_message_prompt_template.render()
         return {"role": ROLE_SYSTEM, "content": rendered_prompt}
 
     def _create_chat_history_messages(
         self,
-        context: CopilotContext,
+        past_messages: List["CopilotChatMessage"],
     ) -> List[Dict[str, Any]]:
         """Create the chat history messages for the copilot.
 
         Filter out messages with response_category of GUARDRAILS_POLICY_VIOLATION.
         This will filter out all the user messages that were flagged by guardrails, but
         also the copilot messages that were produced by guardrails.
+
+        Args:
+            past_messages: List of past messages (excluding the latest message).
+
+        Returns:
+            List of messages in OpenAI format.
         """
-        # Filter out messages with response_category of GUARDRAILS_POLICY_VIOLATION.
-        # This will filter out all the user messages flagged by guardrails, but also the
-        # copilot messages that were produced.
         return [
             message.to_openai_format()
-            for message in context.copilot_chat_history
+            for message in past_messages
             if message.response_category != ResponseCategory.GUARDRAILS_POLICY_VIOLATION
         ]
+
+    def _create_last_user_message_with_context(
+        self,
+        latest_message: "CopilotChatMessage",
+        context: CopilotContext,
+        relevant_documents: List[Document],
+    ) -> Dict[str, Any]:
+        """Create the last user message with context.
+
+        The last user message is the last message in the copilot chat history.
+        We add the context prompt with the current conversation, state, assistant logs,
+        assistant files, and relevant documents as a text content block to the beginning
+        of the message.
+
+        Args:
+            context: The context of the copilot.
+            relevant_documents: The relevant documents to use in the context.
+
+        Returns:
+            The last user message with context in the OpenAI format.
+        """
+        last_user_message = copy.deepcopy(latest_message)
+        context_prompt = self._render_last_user_message_context_prompt(
+            context, relevant_documents
+        )
+        last_user_message.content.insert(
+            0, TextContent(type="text", text=context_prompt)
+        )
+        return {
+            "role": ROLE_USER,
+            "content": [
+                {"type": "text", "text": content.text}
+                for content in last_user_message.content
+                if isinstance(content, TextContent)
+            ],
+        }
+
+    def _render_last_user_message_context_prompt(
+        self,
+        context: CopilotContext,
+        relevant_documents: List[Document],
+    ) -> str:
+        # Format relevant documentation
+        documents = [doc.model_dump() for doc in relevant_documents]
+        # Format conversation history
+        conversation = self._format_conversation_history(context.tracker_context)
+        # Format current state
+        current_state = self._format_current_state(context.tracker_context)
+
+        rendered_prompt = self._last_user_message_context_prompt_template.render(
+            current_conversation=conversation,
+            current_state=current_state,
+            assistant_logs=context.assistant_logs,
+            assistant_files=context.assistant_files,
+            documentation_results=documents,
+        )
+        return rendered_prompt
 
     @staticmethod
     def _create_documentation_search_query(context: CopilotContext) -> str:
         """Format chat messages between user and copilot for documentation search."""
+
         result = ""
         role_to_prefix = {
             ROLE_USER: "User",
             ROLE_COPILOT: "Assistant",
             ROLE_COPILOT_INTERNAL: "Copilot Internal Request",
         }
-        for message in context.copilot_chat_history:
+
+        # Only use the last N messages for documentation search
+        messages_to_include = context.copilot_chat_history[
+            -COPILOT_DOCUMENTATION_SEARCH_QUERY_HISTORY_MESSAGES:
+        ]
+
+        for message in messages_to_include:
             prefix = role_to_prefix[message.role]
             text = message.get_text_content().strip()
             if text:

@@ -110,6 +110,17 @@ def test_log_copilot_turn_emits_complete_payload(
 def test_log_copilot_from_handler_combines_everything(
     telemetry_events: tuple[CopilotTelemetry, list[TrackedEvent]],
 ):
+    # Given
+    system_message = {"role": "system", "content": "system message"}
+    chat_history = [{"role": "user", "content": "chat history"}]
+    last_user_message = {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "last user context"},
+            {"type": "text", "text": "last user message"},
+        ],
+    }
+
     telemetry, events = telemetry_events
 
     # MagicMock lets us attach arbitrary attributes required by the code
@@ -133,7 +144,9 @@ def test_log_copilot_from_handler_combines_everything(
         prompt_tokens=10,
         completion_tokens=20,
         total_tokens=30,
-        system_prompt="system prompt",
+        system_message=system_message,
+        chat_history=chat_history,
+        last_user_message=last_user_message,
     )
 
     # Third recorded call: index 2
@@ -146,4 +159,6 @@ def test_log_copilot_from_handler_combines_everything(
     assert event.properties["input_tokens"] == 10
     assert event.properties["output_tokens"] == 20
     assert event.properties["total_tokens"] == 30
-    assert event.properties["system_prompt"] == "system prompt"
+    assert event.properties["system_message"] == system_message
+    assert event.properties["chat_history"] == chat_history
+    assert event.properties["last_user_message"] == last_user_message

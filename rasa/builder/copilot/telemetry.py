@@ -1,7 +1,7 @@
 import datetime as dt
 import os
 import uuid
-from typing import Iterable, Optional, Sequence
+from typing import Any, Iterable, Optional, Sequence
 
 import structlog
 
@@ -97,7 +97,9 @@ class CopilotTelemetry:
         input_tokens: Optional[int] = None,
         output_tokens: Optional[int] = None,
         total_tokens: Optional[int] = None,
-        system_prompt: Optional[str] = None,
+        system_message: Optional[dict[str, Any]] = None,
+        chat_history: Optional[list[dict[str, Any]]] = None,
+        last_user_message: Optional[dict[str, Any]] = None,
     ) -> None:
         """Track a copilot message in the conversation.
 
@@ -127,7 +129,9 @@ class CopilotTelemetry:
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
                 "total_tokens": total_tokens,
-                "system_prompt": system_prompt,
+                "system_message": system_message,
+                "chat_history": chat_history,
+                "last_user_message": last_user_message,
                 "timestamp": dt.datetime.utcnow().isoformat(),
             },
         )
@@ -171,7 +175,9 @@ class CopilotTelemetry:
         prompt_tokens: int,
         completion_tokens: int,
         total_tokens: int,
-        system_prompt: str,
+        system_message: dict[str, Any],
+        chat_history: list[dict[str, Any]],
+        last_user_message: dict[str, Any],
     ) -> None:
         """Log a copilot message from the response handler.
 
@@ -183,7 +189,9 @@ class CopilotTelemetry:
             prompt_tokens: Number of input tokens used.
             completion_tokens: Number of output tokens generated.
             total_tokens: Total number of tokens used (input + output).
-            system_prompt: The system prompt used.
+            system_message: The system message used.
+            chat_history: The chat history messages used.
+            last_user_message: The last user message used.
         """
         structlogger.debug("builder.telemetry.log_copilot_from_handler")
         text = self._full_text(handler)
@@ -196,5 +204,7 @@ class CopilotTelemetry:
             input_tokens=prompt_tokens,
             output_tokens=completion_tokens,
             total_tokens=total_tokens,
-            system_prompt=system_prompt,
+            system_message=system_message,
+            chat_history=chat_history,
+            last_user_message=last_user_message,
         )

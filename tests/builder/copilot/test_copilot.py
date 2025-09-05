@@ -9,7 +9,6 @@ from rasa.builder.copilot.copilot import Copilot
 from rasa.builder.copilot.models import (
     CopilotChatMessage,
     CopilotContext,
-    ResponseCategory,
     TextContent,
 )
 from rasa.builder.shared.tracker_context import (
@@ -91,7 +90,7 @@ async def test_llm_service_copilot_response(
 
     expected_system_prompt = {"role": "system", "content": "TEST_SYSTEM_PROMPT"}
 
-    async def _fake_create_system_message(self, context, relevant_documents):
+    async def _fake_create_system_message(self):
         return expected_system_prompt
 
     monkeypatch.setattr(
@@ -100,9 +99,9 @@ async def test_llm_service_copilot_response(
 
     from rasa.builder.llm_service import llm_service
 
-    stream, documents, system_prompt = await llm_service.copilot.generate_response(
-        context
-    )
+    stream, support_evidence = await llm_service.copilot.generate_response(context)
+    documents = support_evidence.relevant_documents
+    system_message = support_evidence.system_message
 
     # Collect all tokens from the stream
     result = ""
@@ -116,8 +115,8 @@ async def test_llm_service_copilot_response(
     # Assert that documents were retrieved (even if empty)
     assert documents is not None
 
-    # Assert that the system prompt returned is the one we patched in
-    assert system_prompt == expected_system_prompt["content"]
+    # Assert that the system message returned is the one we patched in
+    assert system_message == expected_system_prompt
 
 
 def test_format_conversation_history():
@@ -213,9 +212,35 @@ def test_format_conversation_history_empty():
 
 
 @pytest.mark.parametrize(
-    "chat_history,expected_formatted_messages",
+    "chat_history,expected_openai_format",
     [
-        # Regular chat - no internal messages
+        # Only one message
+        (
+            [
+                CopilotChatMessage(
+                    role="user",
+                    content=[TextContent(type="text", text="Hello")],
+                    response_category=None,
+                ),
+            ],
+            [
+                {
+                    "role": "system",
+                    "content": "[SYSTEM_PROMPT_PLACEHOLDER]",
+                },  # System prompt (content varies)
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "[LAST_USER_MESSAGE_CONTEXT_PROMPT_PLACEHOLDER]",
+                        },
+                        {"type": "text", "text": "Hello"},
+                    ],
+                },  # Context + user message
+            ],
+        ),
+        # Two messages
         (
             [
                 CopilotChatMessage(
@@ -230,68 +255,116 @@ def test_format_conversation_history_empty():
                 ),
             ],
             [
-                {"role": "user", "content": "Hello"},
                 {
-                    "role": "assistant",
-                    "content": "Hi there!",
-                },
+                    "role": "system",
+                    "content": "[SYSTEM_PROMPT_PLACEHOLDER]",
+                },  # System prompt
+                {
+                    "role": "user",
+                    "content": "Hello",
+                },  # Chat history (only first message)
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "[LAST_USER_MESSAGE_CONTEXT_PROMPT_PLACEHOLDER]",
+                        },
+                        {"type": "text", "text": "Hi there!"},
+                    ],
+                },  # Last message with context
             ],
         ),
-        # Chat with copilot_internal role and multiple text content blocks
+        # Multiple messages
         (
             [
                 CopilotChatMessage(
-                    role="copilot_internal",
+                    role="user",
+                    content=[TextContent(type="text", text="Hello")],
+                    response_category=None,
+                ),
+                CopilotChatMessage(
+                    role="copilot",
+                    content=[TextContent(type="text", text="Hi there!")],
+                    response_category=None,
+                ),
+                CopilotChatMessage(
+                    role="user",
                     content=[
                         TextContent(
-                            type="text",
-                            text="The assistant training failed.",
-                        ),
-                        TextContent(
-                            type="text",
-                            text="Here are the details of what went wrong:",
-                        ),
-                        TextContent(
-                            type="text",
-                            text=(
-                                "The model couldn't process the training data properly."
-                            ),
-                        ),
+                            type="text", text="How do I create a custom action?"
+                        )
                     ],
-                    response_category=ResponseCategory.TRAINING_ERROR_LOG_ANALYSIS,
+                    response_category=None,
                 ),
             ],
             [
                 {
+                    "role": "system",
+                    "content": "[SYSTEM_PROMPT_PLACEHOLDER]",
+                },  # System prompt
+                {"role": "user", "content": "Hello"},  # Chat history (first message)
+                {
+                    "role": "assistant",
+                    "content": "Hi there!",
+                },  # Chat history (second message)
+                {
                     "role": "user",
-                    "content": (
-                        "The assistant training failed."
-                        "\nHere are the details of what went wrong:"
-                        "\nThe model couldn't process the training data properly."
-                    ),
-                }
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "[LAST_USER_MESSAGE_CONTEXT_PROMPT_PLACEHOLDER]",
+                        },
+                        {"type": "text", "text": "How do I create a custom action?"},
+                    ],
+                },  # Last message with context
             ],
         ),
     ],
 )
-def test_create_chat_history_messages(
+@pytest.mark.asyncio
+async def test_build_messages_openai_format(
     chat_history: List[CopilotChatMessage],
-    expected_formatted_messages: List[Dict[str, Any]],
+    expected_openai_format: List[Dict[str, Any]],
 ):
+    """Test that _build_messages produces the exact OpenAI format structure."""
+    # Given
     context = CopilotContext(
         tracker_context=None,
-        assistant_logs="",
-        assistant_files={},
+        assistant_logs="Some assistant logs",
+        assistant_files={"domain.yml": "version: '3.1'"},
         copilot_chat_history=chat_history,
     )
-
     copilot = Copilot()
-    formatted_messages = copilot._create_chat_history_messages(context)
 
-    # Assert the number of messages
-    assert len(formatted_messages) == len(expected_formatted_messages)
+    # When
+    result = await copilot._build_messages(context=context, relevant_documents=[])
 
-    # Assert each message matches the expected format
-    for i, expected_message in enumerate(expected_formatted_messages):
-        assert formatted_messages[i]["role"] == expected_message["role"]
-        assert formatted_messages[i]["content"] == expected_message["content"]
+    # Then
+    assert len(result) == len(expected_openai_format)
+
+    for i, (actual, expected) in enumerate(zip(result, expected_openai_format)):
+        # Check role
+        assert actual["role"] == expected["role"]
+
+        # System prompt - just check it's a string and not empty
+        if expected["content"] == "[SYSTEM_PROMPT_PLACEHOLDER]":
+            assert isinstance(actual["content"], str)
+            assert len(actual["content"]) > 0
+
+        # Simple string content (chat history)
+        elif isinstance(expected["content"], str):
+            assert actual["content"] == expected["content"]
+
+        # Last user message with context
+        elif isinstance(expected["content"], list):
+            assert isinstance(actual["content"], list)
+            assert len(actual["content"]) == len(expected["content"])
+
+            # First content block should always be context (rendered prompt)
+            assert actual["content"][0]["type"] == "text"
+            assert "Some assistant logs" in actual["content"][0]["text"]
+            assert "domain.yml" in actual["content"][0]["text"]
+
+            # Second content block should always be the actual user message
+            assert actual["content"][1]["text"] == chat_history[-1].content[0].text

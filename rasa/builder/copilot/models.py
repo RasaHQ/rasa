@@ -13,6 +13,7 @@ from rasa.builder.copilot.constants import (
     ROLE_COPILOT_INTERNAL,
     ROLE_USER,
 )
+from rasa.builder.document_retrieval.models import Document
 from rasa.builder.models import ServerSentEvent
 from rasa.builder.shared.tracker_context import TrackerContext
 
@@ -464,3 +465,36 @@ class SigningContext(BaseModel):
         """Signing is enabled if a non-empty secret is present."""
         secret = (self.secret or "").strip()
         return bool(secret)
+
+
+class CopilotGenerationContext(BaseModel):
+    """Container for copilot generation context and supporting evidence.
+
+    This class organizes the context and supporting evidence information used by the
+    copilot's generate_response method, providing a cleaner interface than returning
+    a tuple for the non-streaming data.
+    """
+
+    relevant_documents: List["Document"] = Field(
+        ...,
+        description=(
+            "The relevant documents used as supporting evidence for the respons."
+        ),
+    )
+    system_message: Dict[str, Any] = Field(
+        ..., description="The system message with instructions."
+    )
+    chat_history: List[Dict[str, Any]] = Field(
+        ...,
+        description=(
+            "The chat history messages (excluding the last message) used as a context."
+        ),
+    )
+    last_user_message: Optional[Dict[str, Any]] = Field(
+        None, description="The last user message with context that was processed."
+    )
+
+    class Config:
+        """Config for CopilotGenerationContext."""
+
+        arbitrary_types_allowed = True

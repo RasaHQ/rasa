@@ -1122,11 +1122,9 @@ async def copilot(request: Request) -> None:
         #    copilot response handler
         start_timestamp = time.perf_counter()
         copilot_client = llm_service.instantiate_copilot()
-        (
-            original_stream,
-            used_documents,
-            system_prompt,
-        ) = await copilot_client.generate_response(context)
+        (original_stream, generation_context) = await copilot_client.generate_response(
+            context
+        )
 
         copilot_response_handler = llm_service.instantiate_handler(
             COPILOT_HANDLER_ROLLING_BUFFER_SIZE
@@ -1142,18 +1140,19 @@ async def copilot(request: Request) -> None:
             asyncio.to_thread(
                 telemetry.log_copilot_from_handler,
                 handler=copilot_response_handler,
-                used_documents=used_documents,
+                used_documents=generation_context.relevant_documents,
                 latency_ms=int((time.perf_counter() - start_timestamp) * 1000),
-                system_prompt=system_prompt,
+                system_message=generation_context.system_message,
+                chat_history=generation_context.chat_history,
                 **copilot_client.usage_statistics.model_dump(),
             )
         )
 
         # 9. Once the stream is over, extract and send references
         #    if any documents were used
-        if used_documents:
+        if generation_context.relevant_documents:
             reference_section = copilot_response_handler.extract_references(
-                used_documents
+                generation_context.relevant_documents
             )
             await sse.send(reference_section.to_sse_event().format())
 

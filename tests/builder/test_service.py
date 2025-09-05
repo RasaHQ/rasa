@@ -13,10 +13,12 @@ from rasa.builder.copilot.constants import ROLE_COPILOT, ROLE_USER
 from rasa.builder.copilot.models import (
     CopilotChatMessage,
     CopilotContext,
+    CopilotGenerationContext,
     ResponseCategory,
     ResponseCompleteness,
     TextContent,
 )
+from rasa.builder.document_retrieval.models import Document
 from rasa.builder.guardrails.lakera import LakeraAIGuardrails
 from rasa.builder.guardrails.models import (
     GuardrailResponse,
@@ -68,7 +70,21 @@ def patch_copilot_dependencies(monkeypatch):
 
     fake_copilot = SimpleNamespace(
         generate_response=AsyncMock(
-            return_value=(fake_stream(), [SimpleNamespace(url="https://doc")])
+            return_value=(
+                fake_stream(),
+                CopilotGenerationContext(
+                    relevant_documents=[
+                        Document(
+                            title="test doc",
+                            content="test doc",
+                            url="https://doc",
+                        )
+                    ],
+                    system_message={"role": "system", "content": "test system message"},
+                    chat_history=[{"role": "user", "content": "test history"}],
+                    last_user_message={"role": "user", "content": "test user message"},
+                ),
+            )
         ),
         usage_statistics=usage_stats,
     )

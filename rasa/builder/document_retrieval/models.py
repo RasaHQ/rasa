@@ -10,9 +10,9 @@ class Document(BaseModel):
     """Model for document retrieval results."""
 
     content: str = Field(...)
-    url: Optional[str] = Field(None)
-    title: Optional[str] = Field(None)
-    metadata: Optional[Dict[str, Any]] = Field(None)
+    url: Optional[str] = Field(default=None)
+    title: Optional[str] = Field(default=None)
+    metadata: Optional[Dict[str, Any]] = Field(default=None)
 
     @classmethod
     def from_inkeep_rag_response(cls, rag_item: Dict[str, Any]) -> "Document":
