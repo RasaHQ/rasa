@@ -30,19 +30,19 @@ group "base-images" {
 
 target "base" {
   dockerfile = "docker/Dockerfile.base"
-  tags       = ["${IMAGE_NAME}:base-${IMAGE_TAG}"]
+  tags       = ["ghcr.io/tapgermany/rasa-base:base-${IMAGE_TAG}"]
   cache-to   = ["type=inline"]
 }
 
 target "base-mitie" {
   dockerfile = "docker/Dockerfile.base-mitie"
-  tags       = ["${IMAGE_NAME}:base-mitie-${IMAGE_TAG}"]
+  tags       = ["ghcr.io/tapgermany/rasa-base:base-mitie-${IMAGE_TAG}"]
   cache-to   = ["type=inline"]
 }
 
 target "base-poetry" {
   dockerfile = "docker/Dockerfile.base-poetry"
-  tags       = ["${IMAGE_NAME}:base-poetry-${POETRY_VERSION}"]
+  tags       = ["ghcr.io/tapgermany/rasa-base:base-poetry-${POETRY_VERSION}"]
 
   args = {
     IMAGE_BASE_NAME = "${IMAGE_NAME}"
@@ -53,13 +53,13 @@ target "base-poetry" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${IMAGE_NAME}:base-poetry-${POETRY_VERSION}",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:base-poetry-${POETRY_VERSION}",
   ]
 }
 
 target "base-builder" {
   dockerfile = "docker/Dockerfile.base-builder"
-  tags       = ["${IMAGE_NAME}:base-builder-${IMAGE_TAG}"]
+  tags       = ["ghcr.io/tapgermany/rasa-base:base-builder-${IMAGE_TAG}"]
 
   args = {
     IMAGE_BASE_NAME = "${IMAGE_NAME}"
@@ -71,7 +71,7 @@ target "base-builder" {
 
 target "default" {
   dockerfile = "Dockerfile"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}"]
+  tags       = ["ghcr.io/tapgermany/rasa-base:${IMAGE_TAG}"]
 
   args = {
     IMAGE_BASE_NAME         = "${IMAGE_NAME}"
@@ -82,15 +82,15 @@ target "default" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:latest",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:latest",
   ]
 }
 
 target "full" {
   dockerfile = "docker/Dockerfile.full"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-full"]
+  tags       = ["ghcr.io/tapgermany/rasa-base:${IMAGE_TAG}-full"]
 
   args = {
     IMAGE_BASE_NAME         = "${IMAGE_NAME}"
@@ -102,15 +102,15 @@ target "full" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:latest-full",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:latest-full",
   ]
 }
 
 target "mitie-en" {
   dockerfile = "docker/Dockerfile.pretrained_embeddings_mitie_en"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-mitie-en"]
+  tags       = ["ghcr.io/tapgermany/rasa-base:${IMAGE_TAG}-mitie-en"]
 
   args = {
     IMAGE_BASE_NAME         = "${IMAGE_NAME}"
@@ -122,16 +122,16 @@ target "mitie-en" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:base-mitie-${BASE_MITIE_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:latest-mitie-en",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:base-mitie-${BASE_MITIE_IMAGE_HASH}",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:latest-mitie-en",
   ]
 }
 
 target "spacy-de" {
   dockerfile = "docker/Dockerfile.pretrained_embeddings_spacy_de"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-de"]
+  tags       = ["ghcr.io/tapgermany/rasa-base:${IMAGE_TAG}-spacy-de"]
 
   args = {
     IMAGE_BASE_NAME         = "${IMAGE_NAME}"
@@ -142,15 +142,15 @@ target "spacy-de" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:latest-spacy-de",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:latest-spacy-de",
   ]
 }
 
 target "spacy-it" {
   dockerfile = "docker/Dockerfile.pretrained_embeddings_spacy_it"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-it"]
+  tags       = ["ghcr.io/tapgermany/rasa-base:${IMAGE_TAG}-spacy-it"]
 
   args = {
     IMAGE_BASE_NAME         = "${IMAGE_NAME}"
@@ -161,15 +161,15 @@ target "spacy-it" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:latest-spacy-it",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:latest-spacy-it",
   ]
 }
 
 target "spacy-en" {
   dockerfile = "docker/Dockerfile.pretrained_embeddings_spacy_en"
-  tags       = ["${IMAGE_NAME}:${IMAGE_TAG}-spacy-en"]
+  tags       = ["ghcr.io/tapgermany/rasa-base:${IMAGE_TAG}-spacy-en"]
 
   args = {
     IMAGE_BASE_NAME         = "${IMAGE_NAME}"
@@ -180,8 +180,8 @@ target "spacy-en" {
   cache-to = ["type=inline"]
 
   cache-from = [
-    "type=registry,ref=${IMAGE_NAME}:base-${BASE_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:base-builder-${BASE_BUILDER_IMAGE_HASH}",
-    "type=registry,ref=${IMAGE_NAME}:latest-spacy-en",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:base-${BASE_IMAGE_HASH}",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:base-builder-${BASE_BUILDER_IMAGE_HASH}",
+    "type=registry,ref=ghcr.io/tapgermany/rasa-base:latest-spacy-en",
   ]
 }
