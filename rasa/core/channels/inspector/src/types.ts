@@ -17,7 +17,8 @@ export interface Event {
   timestamp: string
   update?: string
   parse_data?: { commands: Command[] }
-  metadata?: { utter_action?: string }
+  metadata?: { utter_action?: string; execution_times?: RasaLatency }
+  name?: string
 }
 
 export interface Command {
@@ -42,11 +43,16 @@ export interface Stack {
   ended: boolean
 }
 
-export interface LatencyData {
-  rasa_processing_latency_ms?: number
-  asr_latency_ms?: number
-  tts_first_byte_latency_ms?: number
-  tts_complete_latency_ms?: number
+export interface RasaLatency {
+  command_processor: number
+  prediction_loop: number
+}
+
+export interface VoiceLatency {
+  rasa_processing_latency_ms: number
+  asr_latency_ms: number
+  tts_first_byte_latency_ms: number
+  tts_complete_latency_ms: number
 }
 
 export interface Tracker {
@@ -54,7 +60,6 @@ export interface Tracker {
   slots: { [key: string]: unknown }
   events: Event[]
   stack: Stack[]
-  latency?: LatencyData
 }
 
 export interface Flow {
@@ -95,4 +100,24 @@ interface Step {
   reset_after_flow_ends: boolean
   utter: string
   set_slots?: unknown
+}
+
+export function isRasaLatency(obj: any): obj is RasaLatency {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    typeof obj.command_processor === 'number' &&
+    typeof obj.prediction_loop === 'number'
+  )
+}
+
+export function isVoiceLatency(obj: any): obj is VoiceLatency {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    typeof obj.rasa_processing_latency_ms === 'number' &&
+    typeof obj.asr_latency_ms === 'number' &&
+    typeof obj.tts_first_byte_latency_ms === 'number' &&
+    typeof obj.tts_complete_latency_ms === 'number'
+  )
 }

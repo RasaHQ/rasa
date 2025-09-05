@@ -2,40 +2,47 @@ import {
   Box,
   Flex,
   FlexProps,
-  Text,
-  useColorModeValue,
-  Tooltip,
   Table,
   Tbody,
-  Tr,
   Td,
+  Text,
+  Tooltip,
+  Tr,
+  useColorModeValue,
 } from '@chakra-ui/react'
 import { useOurTheme } from '../theme'
-import { LatencyData } from '../types'
+import {
+  isRasaLatency,
+  isVoiceLatency,
+  RasaLatency,
+  VoiceLatency,
+} from '../types'
 
-interface Props extends FlexProps {
-  latency: LatencyData
+interface MinimalDisplayProps extends FlexProps {
+  latency: RasaLatency
 }
 
 /**
  * Simple latency display for text-only conversations.
  * Shows a single response time value.
  */
-const MinimalDisplay = ({ latency, sx, ...props }: Props) => {
+const MinimalDisplay = ({ latency, sx, ...props }: MinimalDisplayProps) => {
   const containerSx = {
     ...sx,
     display: 'flex',
     alignItems: 'center',
   }
-  
+
   const getLatencyColor = (latency: number) => {
     if (latency < 1500) return 'green.500'
     if (latency < 2500) return 'orange.500'
     return 'red.500'
   }
-  
-  const value = Math.round(latency.rasa_processing_latency_ms || 0);
-  const color = getLatencyColor(value);
+
+  const value = Math.round(
+    (latency.command_processor || 0) + (latency.prediction_loop || 0),
+  )
+  const color = getLatencyColor(value)
 
   return (
     <Flex sx={containerSx} {...props}>
@@ -49,11 +56,15 @@ const MinimalDisplay = ({ latency, sx, ...props }: Props) => {
   )
 }
 
+interface WaterfallDisplayProps extends FlexProps {
+  latency: VoiceLatency
+}
+
 /**
  * Detailed latency waterfall chart for voice conversations.
  * Displays processing times for ASR, Rasa, and TTS components.
  */
-const WaterfallDisplay = ({ latency, sx, ...props }: Props) => {
+const WaterfallDisplay = ({ latency, sx, ...props }: WaterfallDisplayProps) => {
   const { rasaSpace } = useOurTheme()
 
   const containerSx = {
@@ -61,13 +72,13 @@ const WaterfallDisplay = ({ latency, sx, ...props }: Props) => {
     flexDirection: 'column',
     gap: rasaSpace[1],
   }
-  
+
   const headerSx = {
     fontSize: 'sm',
     fontWeight: 'bold',
     color: useColorModeValue('gray.700', 'gray.300'),
   }
-  
+
   const waterfallBarSx = {
     height: '24px',
     borderRadius: '4px',
@@ -75,10 +86,10 @@ const WaterfallDisplay = ({ latency, sx, ...props }: Props) => {
     border: '1px solid',
     borderColor: useColorModeValue('gray.200', 'gray.600'),
   }
-  
+
   const legendTableSx = {
     size: 'sm',
-    mt: rasaSpace[0.5]
+    mt: rasaSpace[0.5],
   }
 
   const getLatencyColor = (type: string) => {
@@ -95,8 +106,10 @@ const WaterfallDisplay = ({ latency, sx, ...props }: Props) => {
     const descriptions: { [key: string]: string } = {
       asr: 'Time from the first Partial Transcript event to the Final Transcript event from Speech Recognition. It also includes the time taken by the user to speak.',
       rasa: 'Time taken by Rasa to process the text from the Final Transcript event from Speech Recognition until a text response is generated.',
-      tts_first: 'Time between the request sent to Text-to-Speech processing and the first byte of audio received by Rasa.',
-      tts_complete: 'Time taken by Text-to-Speech to complete audio generation. It depends on the length of the text and could overlap with the Bot speaking time.'
+      tts_first:
+        'Time between the request sent to Text-to-Speech processing and the first byte of audio received by Rasa.',
+      tts_complete:
+        'Time taken by Text-to-Speech to complete audio generation. It depends on the length of the text and could overlap with the Bot speaking time.',
     }
     return descriptions[type] || ''
   }
@@ -151,10 +164,10 @@ const WaterfallDisplay = ({ latency, sx, ...props }: Props) => {
   )
 
   // Calculate total latency for title (Rasa + TTS First Byte)
-  const totalDisplayLatency = 
-    (latency.rasa_processing_latency_ms || 0) + 
-    (latency.tts_first_byte_latency_ms || 0);
-    
+  const totalDisplayLatency =
+    (latency.rasa_processing_latency_ms || 0) +
+    (latency.tts_first_byte_latency_ms || 0)
+
   return (
     <Flex sx={containerSx} {...props}>
       <Text sx={headerSx}>
@@ -241,28 +254,43 @@ const WaterfallDisplay = ({ latency, sx, ...props }: Props) => {
   )
 }
 
+interface LatencyDisplayProps extends FlexProps {
+  voiceLatency?: any
+  rasaLatency?: any
+}
+
 /**
  * Displays processing latency information for the conversation.
- * Shows either a detailed waterfall chart for voice conversations or 
+ * Shows either a detailed waterfall chart for voice conversations or
  * a simpler display for text-only conversations.
  */
 export const LatencyDisplay = ({
   sx,
-  latency,
+  voiceLatency,
+  rasaLatency,
   ...props
-}: Props) => {
-  if (!latency) {
-    console.warn('Latency data is not available')
-    return null
+}: LatencyDisplayProps) => {
+  // We give priority to voice latency as most comprehensive.
+  if (isVoiceLatency(voiceLatency)) {
+    return <WaterfallDisplay latency={voiceLatency} sx={sx} {...props} />
   }
 
-  // Show waterfall if voice metrics are available, otherwise show minimal display
-  const isVoiceMetricsAvailable =
-    latency.asr_latency_ms && latency.tts_complete_latency_ms
-
-  if (isVoiceMetricsAvailable) {
-    return <WaterfallDisplay latency={latency} sx={sx} {...props} />
+  // If voice latency is not available, we use rasa latency.
+  if (isRasaLatency(rasaLatency)) {
+    return <MinimalDisplay latency={rasaLatency} sx={sx} {...props} />
   }
 
-  return <MinimalDisplay latency={latency} sx={sx} {...props} />
+  // If rasa latency is not available, we are either waiting for first data from voice stream or the conversation is not started yet.
+  if (!rasaLatency) {
+    return <Text>Rasa latency data is not available yet</Text>
+  }
+
+  // If rasa latency is available but did not pass type guard, we are in an unexpected state
+  // and we should log an error but gracefully fallback to showing no data.
+  console.warn(
+    `Latency data has unexpected format. Raw data of rasaLatency: ${rasaLatency},
+    raw data of voice latency: ${voiceLatency}`,
+  )
+
+  return <Text>Latency data is not available yet</Text>
 }

@@ -35,6 +35,7 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_METADATA_EXECUTION_ERROR_MESSAGE,
     ACTION_METADATA_EXECUTION_SUCCESS,
+    ACTION_METADATA_EXECUTION_TIME,
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     ACTION_SESSION_START_NAME,
     ENTITY_LABEL_SEPARATOR,
@@ -1815,6 +1816,7 @@ class ActionExecuted(Event):
         items_to_ignore = [
             ACTION_METADATA_EXECUTION_SUCCESS,
             ACTION_METADATA_EXECUTION_ERROR_MESSAGE,
+            ACTION_METADATA_EXECUTION_TIME,
         ]
         meta_no_nones = {
             k: v

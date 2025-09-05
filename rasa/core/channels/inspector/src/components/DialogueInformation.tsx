@@ -95,6 +95,7 @@ export const DialougeInformation = ({
   }, [copiedText, toast])
 
   const testCases = formatTestCases(events, rasaChatSessionId)
+  const rasaLatency = getLastActionListenEvent(events)?.metadata?.execution_times
 
   return (
     <Flex sx={containerSx} {...props}>
@@ -166,7 +167,10 @@ export const DialougeInformation = ({
           </TabPanel>
           <TabPanel sx={tabPanelSx}>
             <Box sx={overflowBox}>
-              <LatencyDisplay latency={latency} />
+              <LatencyDisplay
+                voiceLatency={latency}
+                rasaLatency={rasaLatency}
+              />
             </Box>
           </TabPanel>
         </TabPanels>
@@ -193,4 +197,8 @@ const CustomTab = (props: TabProps) => {
       {tabProps.children}
     </Button>
   )
+}
+
+const getLastActionListenEvent = (events: Event[]): Event | undefined => {
+  return [...events].reverse().find((event) => event.name === 'action_listen')
 }

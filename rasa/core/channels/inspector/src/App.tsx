@@ -128,13 +128,6 @@ export function App() {
       !rasaChatSessionId ||
       lastJsonMessage?.sender_id === rasaChatSessionId
     ) {
-      if (lastJsonMessage.latency) {
-        console.log('Latency update:', lastJsonMessage.latency)
-        setLatency((prevLatency: any) => ({
-          ...prevLatency,
-          ...lastJsonMessage.latency,
-        }))
-      }
       setSlots(formatSlots(lastJsonMessage.slots))
       setEvents(lastJsonMessage.events)
       const updatedStack = createHistoricalStack(

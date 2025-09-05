@@ -1,4 +1,3 @@
-import json
 from typing import Any, Dict, Optional
 
 import structlog
@@ -145,7 +144,7 @@ async def create_bridge_client(
 
     @client.event  # type: ignore[misc]
     async def tracker(data: Dict[str, Any]) -> None:
-        await sio_server.emit("tracker", json.loads(data), room=sid)
+        await sio_server.emit("tracker", data, room=sid)
 
     @client.event  # type: ignore[misc]
     async def disconnect() -> None:

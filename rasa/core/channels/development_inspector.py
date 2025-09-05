@@ -145,15 +145,10 @@ class DevelopmentInspectProxy(InputChannel):
         state = tracker.current_state(EventVerbosity.AFTER_RESTART)
         return orjson.dumps(state, option=orjson.OPT_SERIALIZE_NUMPY).decode("utf-8")
 
-    async def on_tracker_updated(
-        self, tracker: DialogueStateTracker, latency: Optional[float] = None
-    ) -> None:
+    async def on_tracker_updated(self, tracker: DialogueStateTracker) -> None:
         """Notifies all clients about tracker updates in real-time."""
         if self.tracker_stream and tracker.sender_id:
             state = tracker.current_state(EventVerbosity.AFTER_RESTART)
-            if latency is not None:
-                state["latency"] = {"rasa_processing_latency_ms": latency}
-
             tracker_dump = orjson.dumps(
                 state, option=orjson.OPT_SERIALIZE_NUMPY
             ).decode("utf-8")
@@ -163,28 +158,13 @@ class DevelopmentInspectProxy(InputChannel):
         """Records the start time of a new turn."""
         self._turn_start_times[sender_id] = time.time()
 
-    async def _broadcast_latency(self, sender_id: Text) -> None:
-        """Broadcasts the tracker with latency of the current turn to all clients."""
-        if sender_id not in self._turn_start_times:
-            return None
-
-        latency = (time.time() - self._turn_start_times[sender_id]) * 1000
-        # The turn is over, so we can remove the start time
-        del self._turn_start_times[sender_id]
-
-        # broadcast tracker update with latency
-        tracker = await self._get_tracker(sender_id)
-        await self.on_tracker_updated(tracker, latency)
-
     async def on_message_proxy(
         self,
         on_new_message: Callable[["UserMessage"], Awaitable[Any]],
         message: "UserMessage",
     ) -> None:
         """Proxies the on_new_message call to the underlying channel."""
-        self._record_turn_start_time(message.sender_id)
         await on_new_message(message)
-        await self._broadcast_latency(message.sender_id)
 
     @classmethod
     async def serve_inspect_html(cls) -> HTTPResponse:

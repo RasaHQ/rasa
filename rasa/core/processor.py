@@ -72,6 +72,7 @@ from rasa.shared.core.constants import (
     ACTION_CORRECT_FLOW_SLOT,
     ACTION_EXTRACT_SLOTS,
     ACTION_LISTEN_NAME,
+    ACTION_METADATA_EXECUTION_TIME,
     ACTION_SESSION_START_NAME,
     FOLLOWUP_ACTION,
     SESSION_START_METADATA_SLOT,
@@ -207,6 +208,7 @@ class MessageProcessor:
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message with this processor."""
         # preprocess message if necessary
+        self.time_turn_start = time.time()
         tracker = await self.log_message(message, should_save_tracker=False)
 
         if self.model_metadata.training_type == TrainingType.NLU:
@@ -1154,6 +1156,7 @@ class MessageProcessor:
         should_predict_another_action = True
 
         tracker = await self.run_command_processor(tracker)
+        self.time_command_processor = time.time()
 
         # action loop. predicts actions until we hit action listen
         while should_predict_another_action and self._should_handle_message(tracker):
@@ -1403,6 +1406,34 @@ class MessageProcessor:
         plugin_manager().hook.after_action_executed(tracker=tracker)
         return self.should_predict_another_action(action.name())
 
+    def _add_metadata_if_action_listen(
+        self, action: Action, prediction: PolicyPrediction
+    ) -> None:
+        """Adds execution times to the ActionExecuted event metadata."""
+        if not hasattr(self, "time_turn_start"):
+            return
+
+        if not hasattr(self, "time_command_processor"):
+            return
+
+        if not action.name() == ACTION_LISTEN_NAME:
+            return
+
+        if prediction.action_metadata is None:
+            prediction.action_metadata = {}
+
+        # calculate execution times
+        execution_time_prediction_loop = (
+            time.time() - self.time_command_processor
+        ) * 1000
+        execution_time_command_processor = (
+            self.time_command_processor - self.time_turn_start
+        ) * 1000
+        prediction.action_metadata[ACTION_METADATA_EXECUTION_TIME] = {
+            "command_processor": execution_time_command_processor,
+            "prediction_loop": execution_time_prediction_loop,
+        }
+
     def _log_action_and_events_on_tracker(
         self,
         tracker: DialogueStateTracker,
@@ -1448,6 +1479,7 @@ class MessageProcessor:
         tracker.update_with_events(prediction.events)
 
         # log the action and its produced events
+        self._add_metadata_if_action_listen(action, prediction)
         tracker.update(
             action.event_for_successful_execution(
                 prediction, was_successful, error_message

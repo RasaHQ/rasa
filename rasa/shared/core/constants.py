@@ -55,6 +55,7 @@ ACTION_REPEAT_BOT_MESSAGES = "action_repeat_bot_messages"
 
 ACTION_METADATA_EXECUTION_SUCCESS = "execution_success"
 ACTION_METADATA_EXECUTION_ERROR_MESSAGE = "execution_error_message"
+ACTION_METADATA_EXECUTION_TIME = "execution_times"
 
 
 DEFAULT_ACTION_NAMES = [
