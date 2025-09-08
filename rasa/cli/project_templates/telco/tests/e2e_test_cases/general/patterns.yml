@@ -1,0 +1,23 @@
+test_cases:
+- test_case: test pattern search
+  steps:
+    - user: "how do you run a network speed test?"
+      assertions:
+        - generative_response_is_grounded:
+            threshold: 0.90
+            ground_truth: "You can run a network speed test using special software such as \"Fast.com\", \"Speedtest.net\", or Google's \"Internet speed test\". Alternatively, if you have our app, you can go to the Home menu, select WLAN speed test and run it. These tests measure your internet connection's performance by evaluating download and upload speeds, ping, and jitter."
+    - user: "what is the difference between restart and reset a router"
+      assertions:
+        - flow_completed:
+            flow_id: "pattern_search"
+        - generative_response_is_grounded:
+            threshold: 0.90
+            ground_truth: "Restarting or rebooting a router involves turning it off and back on without changing any settings, which can help resolve temporary issues like slow speeds or dropped connections. Resetting a router, however, restores it to factory settings, erasing all custom configurations such as the Wi-Fi name, password, and advanced settings. Resetting should only be done as a last resort when troubleshooting persistent problems."
+#
+- test_case: test pattern session start
+  steps:
+    - user: "/session_start"
+      assertions:
+        - flow_started: "pattern_session_start"
+        - bot_uttered:
+            utter_name: "utter_greeting"

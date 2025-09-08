@@ -1,0 +1,46 @@
+test_cases:
+  - test_case: positive feedback
+    steps:
+    - user: "goodbye"
+      assertions:
+        - flow_started: "goodbye"
+        - bot_uttered:
+            utter_name: "utter_goodbye"
+        - flow_started: "leave_feedback"
+        - bot_uttered:
+            utter_name: "utter_ask_feedback_rating"
+            buttons:
+              - title: "👍 Great"
+                payload: "/SetSlots(feedback_rating=thumbs_up)"
+              - title: "👎 Could be better"
+                payload: "/SetSlots(feedback_rating=thumbs_down)"
+    - user: "/SetSlots(feedback_rating=thumbs_up)"
+      assertions:
+        - slot_was_set:
+            - name: "feedback_rating"
+              value: "thumbs_up"
+        - bot_uttered:
+            utter_name: "utter_thankyou_positive"
+# 
+  - test_case: negative feedback
+    steps:
+    - user: "goodbye"
+      assertions:
+        - flow_started: "goodbye"
+        - bot_uttered:
+            utter_name: "utter_goodbye"
+        - flow_started: "leave_feedback"
+        - bot_uttered:
+            utter_name: "utter_ask_feedback_rating"
+            buttons:
+              - title: "👍 Great"
+                payload: "/SetSlots(feedback_rating=thumbs_up)"
+              - title: "👎 Could be better"
+                payload: "/SetSlots(feedback_rating=thumbs_down)"
+    - user: "/SetSlots(feedback_rating=thumbs_down)"
+      assertions:
+        - slot_was_set:
+            - name: "feedback_rating"
+              value: "thumbs_down"
+        - bot_uttered:
+            utter_name: "utter_thankyou_negative"

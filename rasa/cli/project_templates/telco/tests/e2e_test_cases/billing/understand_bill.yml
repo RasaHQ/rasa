@@ -1,0 +1,67 @@
+fixtures:
+  - customer_information: # name of the fixture must be provided and be unique
+      - customer_id: "123" # every fixture can contain multiple slot key-value pairs
+
+test_cases:
+  - test_case: billing happy path
+    fixtures:
+      - customer_information
+    steps:
+    - user: "I would like to check my bill"
+      assertions:
+        - flow_started: "understand_bill"
+        - bot_uttered:
+            utter_name: utter_ask_bill_month
+    - user: "April"
+      assertions:
+        - slot_was_set:
+            - name: "bill_month"
+              value: "April"
+        - action_executed: action_verify_bill_by_date
+        - bot_uttered:
+            utter_name: utter_ask_breakdown_cost
+            text_matches: Would you like to see the breakdown of the costs?
+            buttons:
+              - title: "Yes, please"
+                payload: "/SetSlots(breakdown_cost=True)"
+              - title: "No, all good"
+                payload: "/SetSlots(breakdown_cost=False)"
+    - user: "/SetSlots(breakdown_cost=True)"
+      assertions:
+        - action_executed: action_recap_bill
+        - bot_uttered:
+            utter_name: utter_ask_more_bill_details
+    - user: "/SetSlots(more_bill_details=True)"
+      assertions:
+        - bot_uttered:
+            utter_name: utter_provide_bill_sources
+# ====================================================>
+  - test_case: billing unhappy path
+    steps:
+    - user: "I would like to check my bill"
+      assertions:
+        - flow_started: "understand_bill"
+        - bot_uttered:
+            utter_name: utter_ask_bill_month
+    - user: "February"
+      assertions:
+        - slot_was_set:
+            - name: "bill_month"
+              value: "February"
+        - action_executed: action_verify_bill_by_date
+        - bot_uttered:
+            utter_name: utter_ask_breakdown_cost
+            text_matches: Would you like to see the breakdown of the costs?
+            buttons:
+              - title: "Yes, please"
+                payload: "/SetSlots(breakdown_cost=True)"
+              - title: "No, all good"
+                payload: "/SetSlots(breakdown_cost=False)"
+    - user: "/SetSlots(breakdown_cost=False)"
+      assertions:
+        - bot_uttered:
+            utter_name: utter_ask_issue_solved
+    - user: "/SetSlots(issue_solved=True)"
+      assertions:
+        - bot_uttered:
+            utter_name: utter_end_conversation

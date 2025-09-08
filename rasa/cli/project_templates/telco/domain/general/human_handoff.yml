@@ -4,20 +4,17 @@ actions:
 
 slots: 
  confirm_human_handoff:
-    type: "categorical"
+    type: bool
     mappings:
       - type: "from_llm"
-    values:
-      - "Yes"
-      - "No" 
 
 responses:
   utter_ask_confirm_human_handoff:
     - text: "Do you want to be connected to a human agent?"
       buttons:
-        - payload: "/SetSlots(confirm_human_handoff=Yes)"
+        - payload: "/SetSlots(confirm_human_handoff=True)"
           title: "Yes"
-        - payload: "/SetSlots(confirm_human_handoff=No)"
+        - payload: "/SetSlots(confirm_human_handoff=False)"
           title: "No"
 
   utter_transferring_to_human:
