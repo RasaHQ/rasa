@@ -3,25 +3,34 @@ from collections import deque
 from contextlib import contextmanager
 from pathlib import Path
 from typing import ContextManager, Dict, List, Optional, Union
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 import sqlalchemy
+from moto import mock_aws
+from moto.core import set_initial_no_auth_action_count
 from pytest import CaptureFixture, LogCaptureFixture, MonkeyPatch
-from sqlalchemy import URL
+from sqlalchemy import URL, Engine, make_url
 from sqlalchemy.dialects.oracle.base import OracleDialect
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from structlog.testing import capture_logs
 
 from rasa.core.agent import Agent
-from rasa.core.constants import POSTGRESQL_SCHEMA
+from rasa.core.constants import (
+    IAM_CLOUD_PROVIDER_ENV_VAR_NAME,
+    POSTGRESQL_SCHEMA,
+    SQL_TRACKER_STORE_SSL_MODE_ENV_VAR_NAME,
+    SQL_TRACKER_STORE_SSL_ROOT_CERTIFICATE_ENV_VAR_NAME,
+)
+from rasa.core.tracker_stores.auth_retry_tracker_store import AuthRetryTrackerStore
 from rasa.core.tracker_stores.sql_tracker_store import (
     POSTGRESQL_DEFAULT_MAX_OVERFLOW,
     POSTGRESQL_DEFAULT_POOL_SIZE,
     SQLTrackerStore,
     create_engine_kwargs,
     ensure_schema_exists,
+    get_ssl_args,
     is_postgresql_url,
 )
 from rasa.core.tracker_stores.tracker_store import (
@@ -668,3 +677,91 @@ async def test_sql_tracker_store_update_tracker() -> None:
     assert updated_tracker.current_state(
         EventVerbosity.ALL
     ) == new_tracker.current_state(EventVerbosity.ALL)
+
+
+@set_initial_no_auth_action_count(1)
+@mock_aws
+def test_sql_tracker_store_creation_with_iam_enabled(
+    monkeypatch: MonkeyPatch,
+    domain: Domain,
+    capsys: CaptureFixture,
+):
+    monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+    # intentionally do not pass password input
+    tracker_store = TrackerStore.create(
+        EndpointConfig(
+            url="localhost",
+            username="test_user",
+            port=5432,
+            type="sql",
+            dialect="postgresql",
+        ),
+        domain,
+    )
+    assert isinstance(tracker_store, AuthRetryTrackerStore)
+    assert isinstance(tracker_store._tracker_store, SQLTrackerStore)
+    assert tracker_store._tracker_store.engine.url.password is not None
+
+    captured = capsys.readouterr()
+    assert "rasa.core.aws_rds_iam_credentials_provider.get_credentials" in captured.out
+    assert (
+        "rasa.core.aws_rds_iam_credentials_provider.generated_credentials"
+        in captured.out
+    )
+    assert (
+        "sql_tracker_store.iam_credentials_provider "
+        "event_info='Using temporary auth token from "
+        "IAM credentials provider.'" in captured.out
+    )
+
+
+def test_get_ssl_args(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(SQL_TRACKER_STORE_SSL_MODE_ENV_VAR_NAME, "verify-full")
+    monkeypatch.setenv(
+        SQL_TRACKER_STORE_SSL_ROOT_CERTIFICATE_ENV_VAR_NAME, "/path/to/cert"
+    )
+
+    ssl_args = get_ssl_args()
+    assert ssl_args == {"sslmode": "verify-full", "sslrootcert": "/path/to/cert"}
+
+
+@set_initial_no_auth_action_count(1)
+@mock_aws
+def test_sql_tracker_store_creation_with_iam_enabled_and_ssl_args(
+    monkeypatch: MonkeyPatch,
+    domain: Domain,
+    capsys: CaptureFixture,
+):
+    monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+    monkeypatch.setenv(SQL_TRACKER_STORE_SSL_MODE_ENV_VAR_NAME, "verify-full")
+    monkeypatch.setenv(
+        SQL_TRACKER_STORE_SSL_ROOT_CERTIFICATE_ENV_VAR_NAME, "/path/to/cert"
+    )
+
+    mock_engine = Mock(spec=Engine)
+    mock_engine.url = make_url("postgresql://test_user:***@localhost:5432/rasa.db")
+    mock_create_engine = MagicMock(return_value=mock_engine)
+    monkeypatch.setattr(sqlalchemy, "create_engine", mock_create_engine)
+
+    # intentionally do not pass password input
+    tracker_store = TrackerStore.create(
+        EndpointConfig(
+            url="localhost",
+            username="test_user",
+            port=5432,
+            type="sql",
+            dialect="postgresql",
+        ),
+        domain,
+    )
+    assert isinstance(tracker_store, AuthRetryTrackerStore)
+    assert isinstance(tracker_store._tracker_store, SQLTrackerStore)
+
+    assert mock_create_engine.call_count == 1
+
+    ssl_args = {"sslmode": "verify-full", "sslrootcert": "/path/to/cert"}
+    assert ssl_args == mock_create_engine.call_args[1]["connect_args"]

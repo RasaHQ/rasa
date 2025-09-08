@@ -27,6 +27,13 @@ from rasa.core.constants import (
     POSTGRESQL_MAX_OVERFLOW,
     POSTGRESQL_POOL_SIZE,
     POSTGRESQL_SCHEMA,
+    SQL_TRACKER_STORE_SSL_MODE_ENV_VAR_NAME,
+    SQL_TRACKER_STORE_SSL_ROOT_CERTIFICATE_ENV_VAR_NAME,
+)
+from rasa.core.iam_credentials_providers.credentials_provider_protocol import (
+    IAMCredentialsProviderInput,
+    SupportedServiceType,
+    create_iam_credentials_provider,
 )
 from rasa.core.tracker_stores.tracker_store import (
     SerializedTrackerAsText,
@@ -85,6 +92,21 @@ def is_postgresql_url(url: Union[Text, "URL"]) -> bool:
     return url.drivername == "postgresql"
 
 
+def get_ssl_args() -> Dict[str, Any]:
+    """Get SSL arguments for PostgreSQL connection from environment variables."""
+    ssl_mode = os.getenv(SQL_TRACKER_STORE_SSL_MODE_ENV_VAR_NAME)
+    ssl_root_cert = os.getenv(SQL_TRACKER_STORE_SSL_ROOT_CERTIFICATE_ENV_VAR_NAME)
+    ssl_args = {}
+
+    if ssl_mode:
+        ssl_args["sslmode"] = ssl_mode
+
+    if ssl_root_cert:
+        ssl_args["sslrootcert"] = ssl_root_cert
+
+    return ssl_args
+
+
 def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Any]:
     """Get `sqlalchemy.create_engine()` kwargs.
 
@@ -118,6 +140,14 @@ def create_engine_kwargs(url: Union[Text, "URL"]) -> Dict[Text, Any]:
     kwargs["max_overflow"] = int(
         os.environ.get(POSTGRESQL_MAX_OVERFLOW, POSTGRESQL_DEFAULT_MAX_OVERFLOW)
     )
+
+    ssl_args = get_ssl_args()
+
+    if ssl_args:
+        if "connect_args" in kwargs:
+            kwargs["connect_args"].update(ssl_args)
+        else:
+            kwargs["connect_args"] = ssl_args
 
     return kwargs
 
@@ -197,6 +227,32 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
 
         port = validate_port(port)
 
+        iam_credentials_provider = create_iam_credentials_provider(
+            IAMCredentialsProviderInput(
+                service_name=SupportedServiceType.TRACKER_STORE,
+                username=username,
+                host=host,
+                port=port,
+            )
+        )
+        if iam_credentials_provider is not None:
+            credentials = iam_credentials_provider.get_credentials()
+            if credentials.auth_token:
+                password = credentials.auth_token
+                structlogger.debug(
+                    "sql_tracker_store.iam_credentials_provider",
+                    event_info="Using temporary auth token from "
+                    "IAM credentials provider.",
+                )
+            else:
+                structlogger.warning(
+                    "sql_tracker_store.iam_credentials_provider.no_auth_token",
+                    event_info=(
+                        "IAM credentials provider did not return an auth token. "
+                        "Falling back to provided password or no password."
+                    ),
+                )
+
         engine_url = self.get_db_url(
             dialect, host, port, db, username, password, login_db, query
         )
@@ -272,7 +328,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             host: Database network host.
             port: Database network port.
             db: Database name.
-            username: User name to use when connecting to the database.
+            username: Username to use when connecting to the database.
             password: Password for database user.
             login_db: Alternative database name to which initially connect, and create
                 the database specified by `db` (PostgreSQL only).
