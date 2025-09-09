@@ -1,11 +1,11 @@
-# Rasa Assistant Configuration
-# This file controls your assistant's language, message processing pipeline, and conversation policies.
+# Rasa Agent Configuration
+# This file controls your agent's language, message processing pipeline, and conversation policies.
 # For full documentation, see: https://rasa.com/docs/pro/build/configuring-assistant
 recipe: default.v1
 language: en
 
-# The assistant project unique identifier
-# This default value must be replaced with a unique assistant name within your deployment
+# The agent project unique identifier  
+# This default value must be replaced with a unique agent name within your deployment
 assistant_id: placeholder_default
 
 pipeline:

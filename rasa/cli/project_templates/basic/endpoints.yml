@@ -60,7 +60,7 @@ model_groups:
       - provider: openai
         model: gpt-4o-2024-11-20
         timeout: 7
-        max_tokens: 256
+        max_completion_tokens: 256
   - id: openai-embeddings
     models:
       - provider: openai

@@ -3,7 +3,7 @@ version: "3.1"
 responses:
   utter_top_faqs:
     - text: |
-        Try out some of these questions to trigger agent search:
+        Try out some of these questions you can use to get me to search your knowledge base:
         
         - 🤖 What is Rasa?
         - 💬 What is CALM?

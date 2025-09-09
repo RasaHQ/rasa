@@ -4,7 +4,7 @@ slots:
     initial_value: "transferring money, managing authorised payees, checking an account balance, blocking a card, and answering your general finance enquiries"
     mappings:
       - type: controlled
-  assistant_name:
+  agent_name:
     type: text
     initial_value: "Finley"
     mappings:

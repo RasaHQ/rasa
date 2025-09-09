@@ -43,7 +43,7 @@ class ActionSessionStart(Action):
 
         # Advanced option: It is possible to enable the chatbot with multiple
         # user profiles.
-        # This option influences the interactions with the assistant.
+        # This option influences the interactions with the agent.
         # The bot randomly assigns a user profile at the start of each session.
         # With this advance option: The demo bot will include three user profiles
         # with different payees:
