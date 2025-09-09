@@ -5,23 +5,25 @@ import os
 import shutil
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 
 import structlog
 
 from rasa.builder import config
 from rasa.builder.exceptions import ProjectGenerationError, ValidationError
 from rasa.builder.llm_service import get_skill_generation_messages, llm_service
+from rasa.builder.logging_utils import capture_exception_with_context
 from rasa.builder.models import BotFiles
 from rasa.builder.project_info import ProjectInfo, ensure_first_used, load_project_info
 from rasa.builder.template_cache import copy_cache_for_template_if_available
 from rasa.builder.training_service import TrainingInput
 from rasa.builder.validation_service import validate_project
 from rasa.cli.scaffold import ProjectTemplateName, create_initial_project
+from rasa.shared.constants import DEFAULT_MODELS_PATH
 from rasa.shared.core.flows import yaml_flows_io
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.yaml import dump_obj_as_yaml_to_string
-from rasa.utils.io import subpath
+from rasa.utils.io import InvalidPathException, subpath
 
 structlogger = structlog.get_logger()
 
@@ -233,24 +235,8 @@ class ProjectGenerator:
         """
         bot_files: BotFiles = {}
 
-        for file in self.project_folder.glob("**/*"):
-            # Skip directories
-            if not file.is_file():
-                continue
-
+        for file in self.bot_file_paths():
             relative_path = file.relative_to(self.project_folder)
-
-            # Skip hidden files and directories (any path component starting with '.')
-            # as well as `__pycache__` folders
-            if any(part.startswith(".") for part in relative_path.parts):
-                continue
-
-            if "__pycache__" in relative_path.parts:
-                continue
-
-            # exclude the project_folder / models folder
-            if relative_path.parts[0] == "models":
-                continue
 
             # Exclude the docs directory if specified
             if exclude_docs_directory and relative_path.parts[0] == "docs":
@@ -263,7 +249,6 @@ class ProjectGenerator:
                 ]
                 if file.suffix.lstrip(".").lower() not in allowed_file_extensions:
                     continue
-
             # Read file content and store with relative path as key
             try:
                 bot_files[relative_path.as_posix()] = file.read_text(encoding="utf-8")
@@ -274,8 +259,39 @@ class ProjectGenerator:
                     file_path=file.as_posix(),
                 )
                 bot_files[relative_path.as_posix()] = None
-
         return bot_files
+
+    def is_restricted_path(self, path: Path) -> bool:
+        """Check if the path is restricted.
+
+        These paths are excluded from deletion and editing by the user.
+        """
+        relative_path = path.relative_to(self.project_folder)
+
+        # Skip hidden files and directories (any path component starting with '.')
+        # as well as `__pycache__` folders
+        if any(part.startswith(".") for part in relative_path.parts):
+            return True
+
+        if "__pycache__" in relative_path.parts:
+            return True
+
+        # exclude the project_folder / models folder
+        if relative_path.parts[0] == DEFAULT_MODELS_PATH:
+            return True
+
+        return False
+
+    def bot_file_paths(
+        self,
+    ) -> Generator[Path, None, None]:
+        """Get the paths of all bot files."""
+        for file in self.project_folder.glob("**/*"):
+            # Skip directories
+            if not file.is_file() or self.is_restricted_path(file):
+                continue
+
+            yield file
 
     def _get_bot_data_for_llm(self) -> Dict[str, Any]:
         """Get the current bot data for the LLM."""
@@ -321,7 +337,7 @@ class ProjectGenerator:
     def update_bot_files(self, files: Dict[str, Optional[str]]) -> None:
         """Update bot files with new content by writing to disk."""
         for filename, content in files.items():
-            file_path = Path(subpath(self.project_folder, filename))
+            file_path = Path(subpath(str(self.project_folder), filename))
             # Disallow updates inside .rasa project metadata directory
             if any(
                 part.startswith(".")
@@ -332,6 +348,95 @@ class ProjectGenerator:
             file_path.parent.mkdir(parents=True, exist_ok=True)
             file_path.write_text(content, encoding="utf-8")
 
+    def ensure_all_files_are_writable(self, files: Dict[str, Optional[str]]) -> None:
+        """Ensure all files are writable."""
+        for filename, content in files.items():
+            file_path = Path(subpath(str(self.project_folder), filename))
+            if self.is_restricted_path(file_path):
+                raise InvalidPathException(
+                    f"This file or folder is restricted from editing: {file_path}"
+                )
+
+    def replace_all_bot_files(self, files: Dict[str, Optional[str]]) -> None:
+        """Replace all bot files with new content, deleting files not in the request.
+
+        Files/folders starting with .rasa/ or models/ are excluded from deletion.
+
+        Args:
+            files: Dictionary mapping file names to their content
+        """
+        self.ensure_all_files_are_writable(files)
+        # Collect all existing files - any files not in the new `files` dict will be
+        # deleted from this set
+        existing_files = set(path.as_posix() for path in self.bot_file_paths())
+
+        # Write all new files
+        for filename, content in files.items():
+            if content is None:
+                continue
+
+            file_path = Path(subpath(str(self.project_folder), filename))
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+
+            try:
+                file_path.write_text(content, encoding="utf-8")
+            except Exception as e:
+                # Log write failure and avoid deleting an existing file by mistake
+                capture_exception_with_context(
+                    e,
+                    "project_generator.replace_all_bot_files.write_error",
+                    extra={"file_path": file_path},
+                )
+                if file_path.as_posix() in existing_files:
+                    # Keep the original file if it already existed
+                    existing_files.discard(file_path.as_posix())
+                continue
+
+            # Remove from deletion set since this file is in the new set of files
+            existing_files.discard(file_path.as_posix())
+
+        # Delete files that weren't in the request
+        for file_to_delete in existing_files:
+            file_path = Path(file_to_delete)
+            try:
+                file_path.unlink()
+            except Exception as e:
+                capture_exception_with_context(
+                    e,
+                    "project_generator.replace_all_bot_files.delete_error",
+                    extra={"file_path": file_path},
+                )
+
+        # Clean up empty directories (except excluded ones)
+        self._cleanup_empty_directories()
+
+    def _cleanup_empty_directories(self) -> None:
+        """Remove empty directories from the project folder.
+
+        Excludes hidden files and directories, and models/ from cleanup.
+        """
+        # Walk directories in reverse order (deepest first)
+        for dirpath, dirnames, filenames in os.walk(self.project_folder, topdown=False):
+            # Skip if this is the project root
+            if dirpath == str(self.project_folder):
+                continue
+
+            if self.is_restricted_path(Path(dirpath)):
+                continue
+
+            relative_path = Path(dirpath).relative_to(self.project_folder)
+
+            try:
+                # Only remove if directory is empty
+                if not os.listdir(dirpath):
+                    os.rmdir(dirpath)
+            except Exception as e:
+                capture_exception_with_context(
+                    e,
+                    "project_generator.cleanup_empty_directories.error",
+                    extra={"directory": relative_path.as_posix()},
+                )
+
     def cleanup(self) -> None:
         """Cleanup the project folder."""
         # remove all the files and folders in the project folder resulting
@@ -339,6 +444,8 @@ class ProjectGenerator:
         for filename in os.listdir(self.project_folder):
             file_path = os.path.join(self.project_folder, filename)
             try:
+                if filename == "lost+found":
+                    continue
                 if os.path.isfile(file_path) or os.path.islink(file_path):
                     os.unlink(file_path)
                 elif os.path.isdir(file_path):

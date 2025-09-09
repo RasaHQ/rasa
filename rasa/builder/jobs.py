@@ -207,16 +207,26 @@ async def run_template_to_bot_job(
         job_manager.mark_done(job, error=str(exc))
 
 
-async def run_update_files_job(
+async def run_replace_all_files_job(
     app: "Sanic",
     job: JobInfo,
     bot_files: dict,
 ) -> None:
+    """Run the replace-all-files job in the background.
+
+    This replaces all bot files with the provided files and deletes any files
+    not included in the request (excluding .rasa/ and models/ directories).
+
+    Args:
+        app: The Sanic application instance.
+        job: The job information instance.
+        bot_files: Dictionary of file names to content for replacement.
+    """
     project_generator = app.ctx.project_generator
     await push_job_status_event(job, JobStatus.received)
 
     try:
-        project_generator.update_bot_files(bot_files)
+        project_generator.replace_all_bot_files(bot_files)
 
         # 1. Validating
         await push_job_status_event(job, JobStatus.validating)
@@ -240,7 +250,7 @@ async def run_update_files_job(
         if config.VALIDATION_FAIL_ON_WARNINGS:
             log_levels.append("warning")
         structlogger.debug(
-            "update_files_job.validation_error",
+            "replace_all_files_job.validation_error",
             job_id=job.id,
             error=str(exc),
             validation_logs=exc.validation_logs,
@@ -254,7 +264,7 @@ async def run_update_files_job(
 
     except TrainingError as exc:
         structlogger.debug(
-            "update_files_job.train_error",
+            "replace_all_files_job.train_error",
             job_id=job.id,
             error=str(exc),
         )
@@ -264,7 +274,7 @@ async def run_update_files_job(
     except Exception as exc:
         # Capture full traceback for anything truly unexpected
         structlogger.exception(
-            "update_files_job.unexpected_error",
+            "replace_all_files_job.unexpected_error",
             job_id=job.id,
             error=str(exc),
         )

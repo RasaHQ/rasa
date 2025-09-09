@@ -311,3 +311,244 @@ async def test_get_assistant_info_returns_json(sanic_app: Sanic):
     assert response.status == 200
     payload = json.loads(response.body)
     assert payload == {"assistant_id": assistant_id}
+
+
+class TestFilesEndpoint:
+    """Test the POST /api/files endpoint."""
+
+    @pytest.fixture
+    def sample_bot_files(self):
+        """Sample bot files for testing."""
+        return {
+            "config.yml": "version: '3.1'\npipeline: []",
+            "domain.yml": "version: '3.1'\nintents: []",
+            "data/nlu.yml": "version: '3.1'\nnlu: []",
+        }
+
+    @pytest.fixture
+    def mock_project_generator(self, monkeypatch):
+        """Mock project generator for testing."""
+        mock_pg = Mock()
+        mock_pg.replace_all_bot_files = Mock()
+        mock_pg.get_training_input = Mock()
+        monkeypatch.setattr(
+            "rasa.builder.service.get_project_generator", lambda _: mock_pg
+        )
+        return mock_pg
+
+    @pytest.mark.asyncio
+    async def test_post_files_creates_job(
+        self, sanic_app: Sanic, sample_bot_files, mock_project_generator
+    ):
+        """Test POST /api/files creates a job and returns job_id."""
+        with patch("rasa.builder.service.run_replace_all_files_job") as mock_job:
+            async with sanic_app.asgi_client as client:
+                _, response = await client.post("/api/files", json=sample_bot_files)
+
+            assert response.status == 200
+            payload = json.loads(response.body)
+            assert "job_id" in payload
+            assert payload["status"] == "received"
+
+            # Verify job was created and scheduled
+            mock_job.assert_called_once()
+            call_args = mock_job.call_args[0]
+            assert call_args[2] == sample_bot_files  # bot_files argument
+
+    @pytest.mark.asyncio
+    async def test_post_files_invalid_json(
+        self, sanic_app: Sanic, mock_project_generator
+    ):
+        """Test POST /api/files with invalid JSON returns 400."""
+        async with sanic_app.asgi_client as client:
+            _, response = await client.post("/api/files", data="invalid json")
+
+        assert response.status == 400
+        payload = json.loads(response.body)
+        assert payload["error"] == "Invalid request"
+
+    @pytest.mark.asyncio
+    async def test_post_files_empty_payload(
+        self, sanic_app: Sanic, mock_project_generator
+    ):
+        """Test POST /api/files with empty payload."""
+        async with sanic_app.asgi_client as client:
+            _, response = await client.post("/api/files", json={})
+
+        assert response.status == 200
+        payload = json.loads(response.body)
+        assert "job_id" in payload
+
+    @pytest.mark.asyncio
+    async def test_post_files_with_none_values(
+        self, sanic_app: Sanic, mock_project_generator
+    ):
+        """Test POST /api/files handles None values correctly."""
+        files_with_none = {
+            "config.yml": "version: '3.1'",
+            "domain.yml": None,
+            "data/nlu.yml": "nlu data",
+        }
+
+        async with sanic_app.asgi_client as client:
+            _, response = await client.post("/api/files", json=files_with_none)
+
+        assert response.status == 200
+        payload = json.loads(response.body)
+        assert "job_id" in payload
+
+    @pytest.mark.asyncio
+    async def test_post_files_job_creation_error(
+        self, sanic_app: Sanic, mock_project_generator
+    ):
+        """Test POST /api/files handles job creation errors."""
+        with patch("rasa.builder.service.job_manager.create_job") as mock_create_job:
+            mock_create_job.side_effect = Exception("Job creation failed")
+
+            async with sanic_app.asgi_client as client:
+                _, response = await client.post(
+                    "/api/files", json={"config.yml": "test"}
+                )
+
+            assert response.status == 500
+            payload = json.loads(response.body)
+            assert payload["error"] == "Failed to replace bot files"
+
+    @pytest.mark.asyncio
+    async def test_get_files_endpoint_still_works(self, sanic_app: Sanic):
+        """Test that GET /api/files endpoint still works after POST changes."""
+        mock_files = {"config.yml": "test config", "domain.yml": "test domain"}
+
+        with patch("rasa.builder.service.get_project_generator") as mock_get_pg:
+            mock_pg = Mock()
+            mock_pg.get_bot_files.return_value = mock_files
+            mock_get_pg.return_value = mock_pg
+
+            async with sanic_app.asgi_client as client:
+                _, response = await client.get("/api/files")
+
+            assert response.status == 200
+            payload = json.loads(response.body)
+            assert payload == mock_files
+
+
+class TestFilesEndpointIntegration:
+    """Integration tests for the files endpoint with job execution."""
+
+    @pytest.fixture
+    def temp_project_dir(self, tmp_path):
+        """Create a temporary project directory."""
+        return tmp_path / "project"
+
+    @pytest.mark.asyncio
+    async def test_full_replace_workflow(self, sanic_app: Sanic, temp_project_dir):
+        """Test the full file replacement workflow."""
+        temp_project_dir.mkdir()
+
+        # Create initial files
+        (temp_project_dir / "config.yml").write_text("old config")
+        (temp_project_dir / "old_file.txt").write_text("old file")
+
+        # Mock project generator with real directory
+        from rasa.builder.project_generator import ProjectGenerator
+
+        real_pg = ProjectGenerator(str(temp_project_dir))
+        sanic_app.ctx.project_generator = real_pg
+
+        with (
+            patch(
+                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
+            ) as mock_validate,
+            patch(
+                "rasa.builder.jobs.train_and_load_agent", new_callable=AsyncMock
+            ) as mock_train,
+            patch("rasa.builder.jobs.update_agent"),
+        ):
+            mock_validate.return_value = None
+            mock_train.return_value = Mock()
+
+            new_files = {"config.yml": "new config", "domain.yml": "new domain"}
+
+            async with sanic_app.asgi_client as client:
+                _, response = await client.post("/api/files", json=new_files)
+
+            assert response.status == 200
+            payload = json.loads(response.body)
+            job_id = payload["job_id"]
+
+            # Wait deterministically for the background job to complete
+            job = job_manager.get_job(job_id)
+
+            async def drain():
+                async for _ in job.event_stream():
+                    pass
+
+            await drain()
+
+            # Verify files were replaced correctly
+            assert (temp_project_dir / "config.yml").read_text() == "new config"
+            assert (temp_project_dir / "domain.yml").read_text() == "new domain"
+            # Old file should be deleted
+            assert not (temp_project_dir / "old_file.txt").exists()
+
+    @pytest.mark.asyncio
+    async def test_restricted_files_preserved(self, sanic_app: Sanic, temp_project_dir):
+        """Test that restricted files are preserved during replacement."""
+        temp_project_dir.mkdir()
+
+        # Create restricted directories and files
+        rasa_dir = temp_project_dir / ".rasa"
+        rasa_dir.mkdir()
+        (rasa_dir / "cache").write_text("cache data")
+
+        models_dir = temp_project_dir / "models"
+        models_dir.mkdir()
+        (models_dir / "model.tar.gz").write_text("model data")
+
+        # Create regular file
+        (temp_project_dir / "config.yml").write_text("old config")
+
+        from rasa.builder.project_generator import ProjectGenerator
+
+        real_pg = ProjectGenerator(str(temp_project_dir))
+        sanic_app.ctx.project_generator = real_pg
+
+        with (
+            patch(
+                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
+            ) as mock_validate,
+            patch(
+                "rasa.builder.jobs.train_and_load_agent", new_callable=AsyncMock
+            ) as mock_train,
+            patch("rasa.builder.jobs.update_agent"),
+        ):
+            mock_validate.return_value = None
+            mock_train.return_value = Mock()
+
+            new_files = {"config.yml": "new config", "domain.yml": "new domain"}
+
+            async with sanic_app.asgi_client as client:
+                _, response = await client.post("/api/files", json=new_files)
+
+            assert response.status == 200
+            payload = json.loads(response.body)
+            job_id = payload["job_id"]
+
+            # Wait deterministically for the background job to complete
+            job = job_manager.get_job(job_id)
+
+            async def drain():
+                async for _ in job.event_stream():
+                    pass  # consume until EOF
+
+            await drain()
+
+            # Verify restricted files are preserved
+            assert (rasa_dir / "cache").exists()
+            assert (rasa_dir / "cache").read_text() == "cache data"
+            assert (models_dir / "model.tar.gz").exists()
+            assert (models_dir / "model.tar.gz").read_text() == "model data"
+
+            # Verify new files were written
+            assert (temp_project_dir / "config.yml").read_text() == "new config"
+            assert (temp_project_dir / "domain.yml").read_text() == "new domain"

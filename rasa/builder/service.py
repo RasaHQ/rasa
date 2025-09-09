@@ -54,8 +54,8 @@ from rasa.builder.guardrails.utils import (
 from rasa.builder.job_manager import job_manager
 from rasa.builder.jobs import (
     run_prompt_to_bot_job,
+    run_replace_all_files_job,
     run_template_to_bot_job,
-    run_update_files_job,
 )
 from rasa.builder.llm_service import llm_service
 from rasa.builder.logging_utils import (
@@ -512,26 +512,31 @@ async def get_bot_files(request: Request) -> HTTPResponse:
         )
 
 
-@bp.route("/files", methods=["PUT"])
-@openapi.summary("Update bot files")
+@bp.route("/files", methods=["POST"])
+@openapi.summary("Replace all bot files")
 @openapi.description(
-    "Updates the bot configuration files and retrains the model. "
-    "Returns immediately with a job ID. Connect to `/job-events/<job_id>` "
-    "for real-time SSE progress tracking."
+    "Replaces all bot configuration files with the provided files, deletes any "
+    "files not included in the request (excluding .rasa/ and models/ directories), "
+    "and retrains the model. Returns immediately with a job ID. Connect to "
+    "`/job-events/<job_id>` for real-time SSE progress tracking."
     "\n\n"
+    "**File Management:**\n"
+    "- All files in the request are written to the project folder\n"
+    "- Files not included in the request are deleted from the project\n"
+    "- Files/folders starting with `.rasa/` or `models/` are excluded from deletion\n\n"
     "**SSE Event Flow:** (available via /job-events/<job_id>)\n"
     "1. `received` - Request received by server\n"
     "2. `validating` - Validating bot configuration files\n"
     "3. `validation_success` - File validation completed successfully\n"
     "4. `training` - Training the bot model with updated files\n"
     "5. `train_success` - Model training completed\n"
-    "6. `done` - Bot files update completed\n\n"
+    "6. `done` - Bot files replacement completed\n\n"
     "**Error Events (can occur at any time):**\n"
     "- `validation_error` - Bot configuration files are invalid\n"
     "- `train_error` - Files updated but training failed\n"
     "- `error` - Unexpected error occurred\n\n"
     "**Usage:**\n"
-    "1. Send PUT request with Content-Type: application/json\n"
+    "1. Send POST request with Content-Type: application/json\n"
     "2. The response will be a JSON object `{job_id: ...}`\n"
     "3. Connect to `/job-events/<job_id>` for a server-sent event stream of progress."
 )
@@ -539,9 +544,11 @@ async def get_bot_files(request: Request) -> HTTPResponse:
 @openapi.body(
     {"application/json": {str: Optional[str]}},
     description=(
-        "A dictionary mapping file names to their updated content. "
-        "The file name should be the name of the file in the project folder. "
-        "Files that are not in the request will not be updated."
+        "A dictionary mapping file names to their complete content. "
+        "All files in the project will be replaced with these files. "
+        "Files not included in the request will be deleted from the project "
+        "(except for .rasa/ and models/ directories). "
+        "The file name should be the relative path from the project root."
     ),
     required=True,
     example={
@@ -558,6 +565,10 @@ async def get_bot_files(request: Request) -> HTTPResponse:
             "  - name: CountVectorsFeaturizer\n"
             "policies:\n  - name: MemoizationPolicy\n  - name: RulePolicy"
         ),
+        "data/nlu.yml": (
+            "version: '3.1'\n"
+            "nlu:\n- intent: greet\n  examples: |\n    - hello\n    - hi"
+        ),
     },
 )
 @openapi.response(
@@ -565,7 +576,7 @@ async def get_bot_files(request: Request) -> HTTPResponse:
     {"application/json": model_to_schema(JobCreateResponse)},
     description=(
         "Job created. Poll or subscribe to /job-events/<job_id> "
-        "for progress and SSE updates."
+        "for progress and SSE updates on file replacement and training."
     ),
 )
 @openapi.response(
@@ -607,8 +618,8 @@ async def get_bot_files(request: Request) -> HTTPResponse:
     schema=str,
 )
 @protected()
-async def update_bot_files(request: Request) -> HTTPResponse:
-    """Update bot files with server-sent events for progress tracking."""
+async def replace_all_bot_files(request: Request) -> HTTPResponse:
+    """Replace all bot files with server-sent events for progress tracking."""
     try:
         bot_files = request.json
     except Exception as exc:
@@ -621,17 +632,17 @@ async def update_bot_files(request: Request) -> HTTPResponse:
 
     try:
         job = job_manager.create_job()
-        request.app.add_task(run_update_files_job(request.app, job, bot_files))
+        request.app.add_task(run_replace_all_files_job(request.app, job, bot_files))
         return response.json(JobCreateResponse(job_id=job.id).model_dump(), status=200)
     except Exception as exc:
         capture_exception_with_context(
             exc,
-            "bot_builder_service.update_bot_files.unexpected_error",
-            tags={"endpoint": "/api/files", "method": "PUT"},
+            "bot_builder_service.replace_all_bot_files.unexpected_error",
+            tags={"endpoint": "/api/files", "method": "POST"},
         )
         return response.json(
             ApiErrorResponse(
-                error="Failed to update bot files", details={"error": str(exc)}
+                error="Failed to replace bot files", details={"error": str(exc)}
             ).model_dump(),
             status=HTTPStatus.INTERNAL_SERVER_ERROR,
         )
