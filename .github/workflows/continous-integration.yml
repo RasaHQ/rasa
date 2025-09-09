@@ -212,7 +212,7 @@ jobs:
   # Skip this job from merge queue, Backport PRs and Dependabot PRs
   rasa-private-dev-train-the-model:
     name: Train the model and upload to S3
-    if: github.event_name != 'merge_group' && !startsWith(github.event.pull_request.title, 'Backport' && github.actor != 'dependabot[bot]')
+    if: github.event_name != 'merge_group' && !startsWith(github.event.pull_request.title, 'Backport') && github.actor != 'dependabot[bot]' &&  inputs.full_ci_mode != 'false'
     needs: rasa-private-dev-docker-image
     runs-on: ubuntu-24.04
 
@@ -258,7 +258,7 @@ jobs:
   # Skip this job from merge queue, Backport PRs and Dependabot PRs
   deploy-rasa-private-helm-chart:
     name: Deploy rasa private helm chart
-    if: github.event_name != 'merge_group' && !startsWith(github.event.pull_request.title, 'Backport' && github.actor != 'dependabot[bot]')
+    if: github.event_name != 'merge_group' && !startsWith(github.event.pull_request.title, 'Backport') && github.actor != 'dependabot[bot]' &&  inputs.full_ci_mode != 'false'
     runs-on: ubuntu-24.04
     needs: [rasa-private-dev-docker-image, rasa-private-dev-train-the-model]
 
