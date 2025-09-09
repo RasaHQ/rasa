@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
 
 import structlog
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from rasa.cli.scaffold import ProjectTemplateName
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -21,7 +21,8 @@ class PromptRequest(BaseModel):
         ..., min_length=1, max_length=10000, description="The skill description prompt"
     )
 
-    @validator("prompt")
+    @field_validator("prompt")
+    @classmethod
     def validate_prompt(cls, v: str) -> str:
         if not v.strip():
             raise ValueError("Prompt cannot be empty or whitespace only")
@@ -38,7 +39,8 @@ class TemplateRequest(BaseModel):
         ),
     )
 
-    @validator("template_name")
+    @field_validator("template_name")
+    @classmethod
     def validate_template_name(cls, v: Any) -> Any:
         if v not in ProjectTemplateName:
             raise ValueError(
@@ -54,10 +56,8 @@ class BotDataUpdateRequest(BaseModel):
     flows_yml: Optional[str] = Field(None, alias="flows.yml")
     config_yml: Optional[str] = Field(None, alias="config.yml")
 
-    class Config:
-        """Config for BotDataUpdateRequest."""
-
-        allow_population_by_field_name = True
+    # Allow using either field names or aliases when creating the model
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class BotData(BaseModel):
