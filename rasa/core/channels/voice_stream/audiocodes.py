@@ -89,6 +89,7 @@ class AudiocodesVoiceOutputChannel(VoiceOutputChannel):
         # This is an approximation, as the bot will be sent the audio chunks next
         # which are played to the user immediately.
         call_state.is_bot_speaking = True
+        VoiceInputChannel._cancel_silence_timeout_watcher()
 
     async def send_intermediate_marker(self, recipient_id: str) -> None:
         """Audiocodes doesn't need intermediate markers, so do nothing."""
