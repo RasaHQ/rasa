@@ -69,6 +69,6 @@ jobs:
       - name: Build and push full Rasa image
         run: |
           docker buildx bake \
-            --set default.args.GH_OWNER=${GITHUB_REPOSITORY_OWNER,,} \
-            --set default.args.IMAGE_TAG=localdev \
-            -f docker/docker-bake.hcl default --push
+            --set full.args.GH_OWNER=${GITHUB_REPOSITORY_OWNER,,} \
+            --set full.args.IMAGE_TAG=localdev \
+            -f docker/docker-bake.hcl full --push
