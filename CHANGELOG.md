@@ -10,6 +10,15 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.13.10] - 2025-09-12
+                         
+Rasa Pro 3.13.10 (2025-09-12)                              
+### Bugfixes
+- [#3150](https://github.com/rasahq/rasa-private/issues/3150): Fixes the silence handling bug in Audiocodes Stream Channel where consecutive bot responses could trip silence timeout pattern while the bot is speaking. Audiocodes Stream channel now forcefully cancels the silence timeout watcher whenever it sends the bot response audio.
+- [#3214](https://github.com/rasahq/rasa-private/issues/3214): Update `langchain` to `0.3.27` and `langchain-community` to `0.3.29` to fix CVE-2025-6984 vulnerability in
+  `langchain-community` version `0.2.19`.
+
+
 ## [3.13.9] - 2025-09-03
                         
 Rasa Pro 3.13.9 (2025-09-03)                             
