@@ -314,6 +314,14 @@ Rasa Pro 3.13.0 (2025-07-07)
 - [#2125](https://github.com/rasahq/rasa-private/issues/2125), [#2134](https://github.com/rasahq/rasa-private/issues/2134), [#2361](https://github.com/rasahq/rasa-private/issues/2361), [#2419](https://github.com/rasahq/rasa-private/issues/2419), [#2471](https://github.com/rasahq/rasa-private/issues/2471), [#2496](https://github.com/rasahq/rasa-private/issues/2496), [#2506](https://github.com/rasahq/rasa-private/issues/2506), [#2513](https://github.com/rasahq/rasa-private/issues/2513), [#2538](https://github.com/rasahq/rasa-private/issues/2538), [#2571](https://github.com/rasahq/rasa-private/issues/2571), [#2615](https://github.com/rasahq/rasa-private/issues/2615), [#2629](https://github.com/rasahq/rasa-private/issues/2629), [#2668](https://github.com/rasahq/rasa-private/issues/2668), [#2672](https://github.com/rasahq/rasa-private/issues/2672), [#2682](https://github.com/rasahq/rasa-private/issues/2682), [#2707](https://github.com/rasahq/rasa-private/issues/2707), [#2712](https://github.com/rasahq/rasa-private/issues/2712), [#2720](https://github.com/rasahq/rasa-private/issues/2720), [#2745](https://github.com/rasahq/rasa-private/issues/2745), [#2769](https://github.com/rasahq/rasa-private/issues/2769)
 
 
+## [3.12.33] - 2025-09-12
+                         
+Rasa Pro 3.12.33 (2025-09-12)                              
+### Bugfixes
+- [#3150](https://github.com/rasahq/rasa-private/issues/3150): Fixes the silence handling bug in Audiocodes Stream Channel where consecutive bot responses could trip silence timeout pattern while the bot is speaking. Audiocodes Stream channel now forcefully cancels the silence timeout watcher whenever it sends the bot response audio.
+- [#3154](https://github.com/rasahq/rasa-private/issues/3154): Fixed flow retrieval to skip vector store population when there are no flows to embed.
+
+
 ## [3.12.32] - 2025-09-03
 
 Rasa Pro 3.12.32 (2025-09-03)
