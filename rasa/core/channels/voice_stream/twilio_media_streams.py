@@ -105,6 +105,7 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
         server_url: str,
         asr_config: Dict,
         tts_config: Dict,
+        interruptions: Optional[Dict[str, int]] = None,
         username: Optional[Text] = None,
         password: Optional[Text] = None,
     ):
@@ -112,6 +113,7 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
             server_url=server_url,
             asr_config=asr_config,
             tts_config=tts_config,
+            interruptions=interruptions,
         )
         self.username = username
         self.password = password
@@ -193,6 +195,20 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
             voice_websocket,
             tts_engine,
             self.tts_cache,
+        )
+
+    async def interrupt_playback(
+        self, ws: Websocket, call_parameters: CallParameters
+    ) -> None:
+        """Interrupt the current playback of audio."""
+        logger.debug("twilio_media_streams.interrupt_playback")
+        await ws.send(
+            json.dumps(
+                {
+                    "event": "clear",
+                    "streamSid": call_parameters.stream_id,
+                }
+            )
         )
 
     def blueprint(

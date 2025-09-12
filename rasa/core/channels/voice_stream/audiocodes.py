@@ -117,6 +117,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
         server_url: str,
         asr_config: Dict,
         tts_config: Dict,
+        interruptions: Optional[Dict[str, int]] = None,
         token: Optional[Text] = None,
     ):
         mark_as_beta_feature("Audiocodes (audiocodes_stream) Channel")
@@ -124,6 +125,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
             server_url=server_url,
             asr_config=asr_config,
             tts_config=tts_config,
+            interruptions=interruptions,
         )
         self.token = token
 

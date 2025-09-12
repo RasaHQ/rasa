@@ -2472,6 +2472,23 @@ def test_merge_yaml_domains_loads_actions_which_explicitly_need_domain():
                 ],
             },
         ),
+        (
+            """
+            responses:
+                utter_greet:
+                - text: hey there!
+                  allow_interruptions: false
+                - text: hey ho!
+            """,
+            {
+                "utter_greet": [
+                    {"text": "hey there!", "allow_interruptions": False},
+                    {
+                        "text": "hey ho!",
+                    },
+                ],
+            },
+        ),
     ],
 )
 def test_domain_responses_with_ids_are_loaded(domain_yaml, expected) -> None:

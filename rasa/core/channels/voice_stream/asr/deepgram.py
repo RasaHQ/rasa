@@ -117,7 +117,7 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
                         self.accumulated_transcript, transcript
                     )
             elif transcript:
-                return UserIsSpeaking()
+                return UserIsSpeaking(transcript)
         # event that comes after utterance_end_ms of no new transcript
         elif data_type == "UtteranceEnd":
             if self.accumulated_transcript:

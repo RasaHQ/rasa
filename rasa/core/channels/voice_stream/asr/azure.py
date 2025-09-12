@@ -1,7 +1,7 @@
 import asyncio
 import os
 from dataclasses import dataclass
-from typing import Any, AsyncIterator, Dict, Optional
+from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, Optional
 
 import structlog
 
@@ -14,6 +14,9 @@ from rasa.core.channels.voice_stream.asr.asr_event import (
 from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
 from rasa.shared.constants import AZURE_SPEECH_API_KEY_ENV_VAR
 from rasa.shared.exceptions import ConnectionException
+
+if TYPE_CHECKING:
+    from azure.cognitiveservices.speech import SpeechRecognitionEventArgs
 
 logger = structlog.get_logger(__name__)
 
@@ -43,9 +46,9 @@ class AzureASR(ASREngine[AzureASRConfig]):
         )
         self.main_loop = asyncio.get_running_loop()
 
-    def signal_user_is_speaking(self, event: Any) -> None:
+    def signal_user_is_speaking(self, event: "SpeechRecognitionEventArgs") -> None:
         """Replace the azure event with a generic is speaking event."""
-        self.fill_queue(UserIsSpeaking())
+        self.fill_queue(UserIsSpeaking(event.result.text))
 
     def fill_queue(self, event: Any) -> None:
         """Either puts the event or a dedicated ASR Event into the queue."""

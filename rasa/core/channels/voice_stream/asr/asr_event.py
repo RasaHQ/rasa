@@ -15,7 +15,7 @@ class NewTranscript(ASREvent):
 
 @dataclass
 class UserIsSpeaking(ASREvent):
-    pass
+    text: str
 
 
 @dataclass

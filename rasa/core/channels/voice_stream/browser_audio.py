@@ -3,7 +3,9 @@ from __future__ import annotations
 import audioop
 import base64
 import json
+import os
 import uuid
+import wave
 from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
 
 import structlog
@@ -70,10 +72,45 @@ class BrowserAudioOutputChannel(VoiceOutputChannel):
 
 class BrowserAudioInputChannel(VoiceInputChannel):
     def __init__(
-        self, server_url: str, asr_config: Dict[str, Any], tts_config: Dict[str, Any]
+        self,
+        server_url: str,
+        asr_config: Dict[str, Any],
+        tts_config: Dict[str, Any],
+        recording: bool = False,
+        interruptions: Optional[Dict[str, int]] = None,
     ) -> None:
         """Initializes the browser audio input channel."""
-        super().__init__(server_url, asr_config, tts_config)
+        super().__init__(server_url, asr_config, tts_config, interruptions)
+
+        # For debugging, recording of user audio might be useful
+        # to identify audio quality issues or transcription errors
+        self._recording_enabled = recording
+        self._wav_file: Optional[wave.Wave_write] = None
+
+    def _start_recording(self, call_id: str, user_id: str) -> None:
+        os.makedirs("recordings", exist_ok=True)
+        filename = f"{user_id}_{call_id}.wav"
+        file_path = os.path.join("recordings", filename)
+
+        if not self._recording_enabled:
+            return
+
+        self._wav_file = wave.open(file_path, "wb")
+        self._wav_file.setnchannels(1)  # Mono audio
+        self._wav_file.setsampwidth(4)  # 32-bit audio (4 bytes)
+        self._wav_file.setframerate(8000)  # 8kHz sample rate
+        logger.info("voice_channel.user_audio_recording.started", file_path=file_path)
+
+    def _append_audio_to_recording(self, audio_bytes: bytes) -> None:
+        if self._wav_file and self._recording_enabled:
+            self._wav_file.writeframes(audio_bytes)
+
+    def _stop_recording(self) -> None:
+        """Close the recording file if it's open."""
+        if self._wav_file:
+            self._wav_file.close()
+            self._wav_file = None
+            logger.debug("voice_channel.user_audio_recording.stopped")
 
     @classmethod
     def name(cls) -> str:
@@ -94,7 +131,7 @@ class BrowserAudioInputChannel(VoiceInputChannel):
         credentials: Optional[Dict[str, Any]],
     ) -> BrowserAudioInputChannel:
         cls.validate_basic_credentials(credentials)
-        new_creds = repack_voice_credentials(credentials)
+        new_creds = repack_voice_credentials(credentials or {})
         return cls(**new_creds)
 
     def map_input_message(
@@ -105,6 +142,7 @@ class BrowserAudioInputChannel(VoiceInputChannel):
         data = json.loads(message)
         if "audio" in data:
             channel_bytes = base64.b64decode(data["audio"])
+            self._append_audio_to_recording(channel_bytes)
             audio_bytes = self.channel_bytes_to_rasa_audio_bytes(channel_bytes)
             return NewAudioAction(audio_bytes)
         elif "marker" in data:
@@ -119,6 +157,13 @@ class BrowserAudioInputChannel(VoiceInputChannel):
             else:
                 call_state.is_bot_speaking = True
         return ContinueConversationAction()
+
+    async def interrupt_playback(
+        self, ws: Websocket, call_parameters: CallParameters
+    ) -> None:
+        """Interrupt the current playback of audio."""
+        logger.debug("browser_audio.interrupt_playback")
+        await ws.send(json.dumps({"interruptPlayback": True}))
 
     def create_output_channel(
         self, voice_websocket: Websocket, tts_engine: TTSEngine
@@ -142,8 +187,13 @@ class BrowserAudioInputChannel(VoiceInputChannel):
         @blueprint.websocket("/websocket")  # type: ignore
         async def handle_message(request: Request, ws: Websocket) -> None:
             try:
+                call_parameters = await self.collect_call_parameters(ws)
+                if call_parameters and call_parameters.call_id:
+                    self._start_recording(call_parameters.call_id, "local")
                 await self.run_audio_streaming(on_new_message, ws)
             except Exception as e:
                 logger.error("browser_audio.handle_message.error", error=e)
+            finally:
+                self._stop_recording()
 
         return blueprint

@@ -372,6 +372,13 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
             self.tts_cache,
         )
 
+    async def interrupt_playback(
+        self, ws: Websocket, call_parameters: CallParameters
+    ) -> None:
+        """Interrupt the current playback of audio."""
+        structlogger.debug("studio_chat.interrupt_playback")
+        await ws.send(json.dumps({"interruptPlayback": True}))
+
     def _start_voice_session(
         self,
         session_id: str,

@@ -52,6 +52,7 @@ interface AudioQueue {
   addMarker: (id: string) => void
   reduceMarkers: (bytesRead: number) => void
   popMarkers: () => void
+  clear: () => void
 }
 
 const createAudioQueue = (socket: WebSocket): AudioQueue => {
@@ -107,6 +108,14 @@ const createAudioQueue = (socket: WebSocket): AudioQueue => {
           this.socket.send(JSON.stringify({ marker: m.id }))
         }
       })
+    },
+
+    /**
+     * Clears the audio queue, removing all buffered audio and markers.
+     */
+    clear: function () {
+      this.buffer = new Float32Array(0)
+      this.marks = []
     },
   }
 }
@@ -204,7 +213,12 @@ const addDataToAudioQueue =
         }
         console.log('Voice Latency Metrics:', data['latency'])
         audioQueue.addMarker(data['marker'])
+      } else if (data['interruptPlayback']) {
+        // User interrupted the bot, immediately clear the audio queue
+        audioQueue.clear()
+        console.log('Audio queue cleared due to user interruption.')
       }
+
     } catch (error) {
       console.error('Error processing server incoming audio data:', error)
     }

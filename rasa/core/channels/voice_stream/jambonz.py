@@ -81,6 +81,7 @@ class JambonzStreamInputChannel(VoiceInputChannel):
         server_url: str,
         asr_config: Dict,
         tts_config: Dict,
+        interruptions: Optional[Dict[str, int]] = None,
         username: Optional[Text] = None,
         password: Optional[Text] = None,
     ) -> None:
@@ -90,7 +91,7 @@ class JambonzStreamInputChannel(VoiceInputChannel):
             username: Optional username for basic auth
             password: Optional password for basic auth
         """
-        super().__init__(server_url, asr_config, tts_config)
+        super().__init__(server_url, asr_config, tts_config, interruptions)
         self.username = username
         self.password = password
 
@@ -184,6 +185,13 @@ class JambonzStreamInputChannel(VoiceInputChannel):
             tts_engine,
             self.tts_cache,
         )
+
+    async def interrupt_playback(
+        self, ws: Websocket, call_parameters: CallParameters
+    ) -> None:
+        """Interrupt the current playback of audio."""
+        logger.debug("jambonz.interrupt_playback")
+        await ws.send(json.dumps({"type": "killAudio"}))
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]

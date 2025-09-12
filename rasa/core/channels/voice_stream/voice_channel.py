@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import string
 import time
 from dataclasses import asdict, dataclass
 from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional, Tuple
@@ -53,6 +54,13 @@ from rasa.utils.io import remove_emojis
 logger = structlog.get_logger(__name__)
 
 # define constants for the voice channel
+DEFAULT_INTERRUPTION_MIN_WORDS = 3
+
+
+@dataclass
+class InterruptionConfig:
+    enabled: bool = False
+    min_words: int = DEFAULT_INTERRUPTION_MIN_WORDS
 
 
 @dataclass
@@ -270,6 +278,10 @@ class VoiceOutputChannel(OutputChannel):
         except (WebsocketClosed, ServerError):
             call_state.connection_failed = True
 
+        # Is the response interruptible?
+        allow_interruptions = kwargs.get("allow_interruptions", True)
+        call_state.channel_data["allow_interruptions"] = allow_interruptions
+
         if cached_audio_bytes:
             audio_stream = self.chunk_audio(cached_audio_bytes)
         else:
@@ -368,6 +380,7 @@ class VoiceInputChannel(InputChannel):
         server_url: str,
         asr_config: Dict,
         tts_config: Dict,
+        interruptions: Optional[Dict[str, Any]] = None,
     ):
         if self.requires_voice_license:
             validate_voice_license_scope()
@@ -376,12 +389,21 @@ class VoiceInputChannel(InputChannel):
         self.asr_config = asr_config
         self.tts_config = tts_config
         self.tts_cache = TTSCache(tts_config.get("cache_size", 1000))
+        if interruptions:
+            self.interruption_config = InterruptionConfig(**interruptions)
+        else:
+            self.interruption_config = InterruptionConfig()
+
+        if self.interruption_config.enabled:
+            mark_as_beta_feature(f"Interruption Handling in {self.name()}")
 
         logger.info(
             "voice_channel.initialized",
+            name=self.name(),
             server_url=self.server_url,
             asr_config=self.asr_config,
             tts_config=self.tts_config,
+            interruption_config=self.interruption_config,
         )
 
     def get_sender_id(self, call_parameters: CallParameters) -> str:
@@ -462,6 +484,43 @@ class VoiceInputChannel(InputChannel):
     ) -> VoiceChannelAction:
         """Map a channel input message to a voice channel action."""
         raise NotImplementedError
+
+    def should_interrupt(self, e: ASREvent) -> bool:
+        """Determine if the current ASR event should interrupt playback.
+        Returns True if the bot response is interruptible
+        And if the user spoke more than 3 words.
+
+        Arguments:
+            e: The ASR event to evaluate.
+
+        Returns:
+            True if the event should interrupt playback, False otherwise.
+        """
+        # Are interruptions are enabled for the channel?
+        if not self.interruption_config.enabled:
+            return False
+
+        # Is the bot response interruptible?
+        if not call_state.channel_data.get("allow_interruptions", True):
+            return False
+
+        # Did the user speak more than 3 words?
+        min_words = self.interruption_config.min_words
+        if isinstance(e, UserIsSpeaking):
+            translator = str.maketrans("", "", string.punctuation)
+            words = e.text.translate(translator).split()
+            return len(words) >= min_words
+        return False
+
+    async def interrupt_playback(
+        self, ws: Websocket, call_parameters: CallParameters
+    ) -> None:
+        """Interrupt the current playback of audio.
+
+        This function is used for interruption handling.
+        As not all channels support flushing bot audio buffer,
+        if a channel does not implement it. It has no effect."""
+        pass
 
     async def run_audio_streaming(
         self,
@@ -598,6 +657,8 @@ class VoiceInputChannel(InputChannel):
                 call_state.user_speech_start_time = time.time()
             self._cancel_silence_timeout_watcher()
             call_state.is_user_speaking = True
+            if self.should_interrupt(e):
+                await self.interrupt_playback(voice_websocket, call_parameters)
         elif isinstance(e, UserSilence):
             output_channel = self.create_output_channel(voice_websocket, tts_engine)
             message = UserMessage(

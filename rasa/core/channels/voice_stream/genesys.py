@@ -99,10 +99,11 @@ class GenesysInputChannel(VoiceInputChannel):
         server_url: str,
         asr_config: Dict,
         tts_config: Dict,
+        interruptions: Optional[Dict[str, int]] = None,
         api_key: Optional[Text] = None,
         client_secret: Optional[Text] = None,
     ) -> None:
-        super().__init__(server_url, asr_config, tts_config)
+        super().__init__(server_url, asr_config, tts_config, interruptions)
         self.api_key = api_key
         self.client_secret = client_secret
 

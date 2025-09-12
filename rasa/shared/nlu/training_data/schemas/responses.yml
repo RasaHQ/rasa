@@ -72,6 +72,9 @@ schema;responses:
               allowempty: True
           channel:
             type: "str"
+          allow_interruptions:
+            type: "bool"
+            required: False
           metadata:
             type: "any"
           condition:
