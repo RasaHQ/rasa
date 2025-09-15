@@ -1,0 +1,32 @@
+actions:
+  - check_transfer_limit
+
+slots:
+  transfer_limit_type:
+    type: categorical
+    values:
+      - daily
+      - monthly
+    mappings:
+      - type: from_llm
+
+  transfer_limit:
+    type: float
+    mappings:
+      - type: controlled
+
+responses:
+
+  utter_ask_transfer_limit_type:
+    - text: "Would you like to check your daily or monthly transfer limit?"
+      buttons:
+        - title: Daily
+          payload: "/SetSlots(transfer_limit_type=daily)"
+        - title: Monthly
+          payload: "/SetSlots(transfer_limit_type=monthly)"
+
+  utter_transfer_limit_error:
+    - text: "I am sorry, but I couldn't retrieve your transfer limit right now. Please try again later."
+
+  utter_show_transfer_limit:
+    - text: "Your {transfer_limit_type} transfer limit is ${transfer_limit}."

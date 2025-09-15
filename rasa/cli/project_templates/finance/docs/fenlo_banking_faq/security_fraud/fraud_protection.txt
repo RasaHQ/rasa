@@ -1,0 +1,22 @@
+Fraud Protection and Suspicious Activity
+
+Q: How does Fenlo protect me from fraud?
+A: Fenlo uses advanced security measures including instant transaction notifications, biometric login, location-based security, machine learning fraud detection, real-time transaction monitoring, and 3D Secure for online payments.
+
+Q: What suspicious activities does Fenlo monitor?
+A: We monitor unusual spending patterns, transactions in unexpected locations, large or frequent transactions, multiple failed PIN attempts, and suspicious merchant activity. Our AI systems flag potentially fraudulent behavior in real-time.
+
+Q: What happens if Fenlo detects potential fraud?
+A: If fraud is detected, the transaction may be temporarily blocked, you'll receive an instant notification, and you can confirm if the transaction is genuine via the app. Your account may be temporarily secured for protection.
+
+Q: How do I report suspicious activity on my account?
+A: Report any suspicious transactions immediately via the app chat. You can also freeze your card instantly if needed, change your PIN and password, and review all recent transactions for any unauthorized activity.
+
+Q: How quickly will I get my money back if there's fraud?
+A: Fenlo will investigate reported fraudulent transactions and typically refund confirmed fraudulent transactions within 24 hours. Your money is protected by our fraud guarantee.
+
+Q: What should I do if I see an unrecognized transaction?
+A: Contact support immediately through the app chat, freeze your card if you suspect ongoing fraud, review all recent transactions, and change your PIN and password as a precaution. We'll investigate and help resolve the issue quickly.
+
+Q: Does Fenlo offer fraud insurance?
+A: Yes, all Fenlo customers are protected by our comprehensive fraud guarantee. You won't be liable for unauthorized transactions made on your account when reported promptly.

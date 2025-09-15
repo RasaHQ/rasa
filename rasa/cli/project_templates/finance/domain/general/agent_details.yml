@@ -1,7 +1,21 @@
 slots:
+  bank_name:
+    type: text
+    initial_value: "Fenlo"
+    mappings:
+      - type: controlled
   skills_summary:
     type: text
     initial_value: "transferring money, managing authorised payees, checking an account balance, blocking a card, and answering your general finance enquiries"
+    mappings:
+      - type: controlled
+  example_questions:
+    type: text
+    initial_value: |
+      - What's my account balance?
+      - Transfer $50 to Alice today.
+      - Block my Visa temporarily.
+      - Download my June 2024 statement as a PDF.
     mappings:
       - type: controlled
   agent_name:
@@ -10,3 +24,8 @@ slots:
     mappings:
       - type: controlled
 
+responses:
+  utter_agent_details:
+    - text: "I can help you {skills_summary}. What do you need help with today?"
+      metadata:
+        rephrase: True

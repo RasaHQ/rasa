@@ -23,6 +23,3 @@ responses:
     - text: "Thank you for your honest feedback. We're always working to improve our service. Have a good day."
     - text: "We appreciate your feedback and will use it to make our service better. Thank you for your time."
     - text: "Thanks for letting us know. Your feedback helps us improve. Take care!"
-
-actions:
-  - action_default_fallback

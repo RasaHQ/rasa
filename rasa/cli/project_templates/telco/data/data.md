@@ -1,6 +1,6 @@
 ## 📂 `data/` – The Agent's Business Logic
 
-This folder holds files that define your telecom agent's skills using "flows". Each flow is a structured sequence of steps that describes the business logic needed to perform a specific goal. 
+This folder holds files that define your agent’s skills using "flows". [1](https://rasa.com/docs/pro/build/writing-flows) Each flow is a step-by-step conversation pattern (like a recipe) for handling a user goal (e.g., checking a balance, updating an address).
 
 **What you'll find:**
 - **billing/**: Billing and payment flows (bill inquiries, payment processing)

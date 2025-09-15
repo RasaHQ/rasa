@@ -1,0 +1,22 @@
+Secure Payment Methods and Verification
+
+Q: How are my card payments protected?
+A: Fenlo uses multiple security layers including tokenization for card payments, 3D Secure authentication, dynamic card verification codes, encrypted data transmission, and PCI DSS compliance to protect all transactions.
+
+Q: What verification methods does Fenlo use?
+A: We use PIN for card transactions, biometric authentication (fingerprint/face recognition), SMS verification codes, push notifications for approval, and device-based authentication to verify your identity.
+
+Q: How secure are my online payments?
+A: Online payments are protected by 3D Secure which redirects to the Fenlo app for approval, real-time transaction notifications, merchant verification, secure card tokens (no real card details shared), and virtual card numbers for online shopping.
+
+Q: How do mobile payments work with Fenlo?
+A: Mobile payments through Apple Pay/Google Pay use tokenization, device-specific authentication, transaction-specific cryptograms, and no card details are stored on your device, making them extremely secure.
+
+Q: What are the best practices for keeping my account secure?
+A: Enable biometric login, use strong unique passwords, keep the app updated, never share your PIN or passwords, log out on shared devices, monitor transactions regularly, and report suspicious activity immediately.
+
+Q: How is my payment data protected?
+A: All payment data is encrypted end-to-end and never stored in plain text. Fenlo follows strict security protocols and compliance standards to ensure your financial information remains completely secure.
+
+Q: Can I use virtual cards for online shopping?
+A: Yes, Fenlo offers virtual card numbers for secure online shopping. These protect your real card details and can be easily managed or cancelled through the app without affecting your main card.

@@ -50,15 +50,16 @@ nlg:
   type: rephrase
   llm:
     model_group: openai-gpt-4o
-  prompt: prompts/rephraser_demo_personality_prompt.jinja2
+  prompt_template: prompts/rephraser_demo_personality_prompt.jinja2
   rephrase_all: False
+  summarize_history: False
 
 model_groups:
   - id: openai-gpt-4o
     models:
       - provider: openai
         model: gpt-4o-2024-11-20
-        request_timeout: 7
+        timeout: 7
         max_completion_tokens: 256
   - id: openai-embeddings
     models:

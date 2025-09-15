@@ -1,0 +1,15 @@
+actions:
+  - check_that_card_exists
+
+slots:
+  bank_card_number:
+    type: text
+    mappings:
+      - type: from_llm
+
+responses:
+  utter_bank_card_not_found:
+    - text: "The card number you provided could not be found. Please check and try again."
+
+  utter_ask_bank_card_number:
+    - text: "What is the number of the card you wish to perform this action for?"

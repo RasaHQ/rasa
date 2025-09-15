@@ -1,0 +1,22 @@
+[
+  { "datetime": "2023-06-20T19:15:45.000000", "recipient": "Anna", "sender": "self", "amount": "120$", "description": "concert tickets" },
+  { "datetime": "2023-06-18T08:22:10.000000", "recipient": "self", "sender": "Tom", "amount": "25$", "description": "grocery reimbursement" },
+  { "datetime": "2023-06-13T14:35:00.000000", "recipient": "Paul", "sender": "self", "amount": "45$", "description": "movie night, tickets" },
+  { "datetime": "2023-06-09T12:07:14.000000", "recipient": "Ben", "sender": "self", "amount": "15$", "description": "coffee meetup" },
+  { "datetime": "2023-06-05T21:40:00.000000", "recipient": "self", "sender": "Anna", "amount": "10$", "description": "shared taxi" },
+  { "datetime": "2023-05-28T13:09:50.000000", "recipient": "Mary", "sender": "self", "amount": "35$", "description": "birthday present contribution" },
+  { "datetime": "2023-05-25T18:38:29.000000", "recipient": "self", "sender": "Paul", "amount": "80$", "description": "utilities bill split" },
+  { "datetime": "2023-05-22T15:15:15.000000", "recipient": "Joe", "sender": "self", "amount": "22$", "description": "picnic groceries" },
+  { "datetime": "2023-05-21T17:55:01.000000", "recipient": "self", "sender": "Mary", "amount": "300$", "description": "rent contribution" },
+  { "datetime": "2023-05-19T14:23:58.000000", "recipient": "Anna", "sender": "self", "amount": "60$", "description": "dinner out" },
+  { "datetime": "2023-05-15T11:41:37.000000", "recipient": "self", "sender": "Ben", "amount": "18$", "description": "cafe lunch" },
+  { "datetime": "2023-05-03T10:18:45.000000", "recipient": "Paul", "sender": "self", "amount": "100$", "description": "shared Airbnb fee" },
+  { "datetime": "2023-04-29T21:16:10.000000", "recipient": "Mary", "sender": "self", "amount": "55$", "description": "concert drinks" },
+  { "datetime": "2023-04-23T13:00:00.000000", "recipient": "Anna", "sender": "self", "amount": "40$", "description": "tickets for art show" },
+  { "datetime": "2023-04-19T16:37:05.000000", "recipient": "Joe", "sender": "self", "amount": "250$", "description": "apartment deposit" },
+  { "datetime": "2023-04-14T09:55:33.000000", "recipient": "self", "sender": "Tom", "amount": "27$", "description": "fuel for roadtrip" },
+  { "datetime": "2023-04-10T20:44:12.000000", "recipient": "Ben", "sender": "self", "amount": "13$", "description": "movie snacks" },
+  { "datetime": "2023-03-28T08:30:30.000000", "recipient": "Mary", "sender": "self", "amount": "10$", "description": "flowers for mom" },
+  { "datetime": "2023-03-24T18:48:59.000000", "recipient": "self", "sender": "Paul", "amount": "35$", "description": "parking lot fee" },
+  { "datetime": "2023-03-16T15:10:09.000000", "recipient": "Anna", "sender": "self", "amount": "75$", "description": "festival entry" }
+]

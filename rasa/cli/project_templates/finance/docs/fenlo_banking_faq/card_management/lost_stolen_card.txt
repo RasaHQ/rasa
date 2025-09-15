@@ -1,0 +1,19 @@
+Lost or Stolen Card Procedures
+
+Q: What should I do immediately if my card is lost or stolen?
+A: Immediately freeze your card in the Fenlo app by going to Cards → Select card → Toggle 'Freeze card'. Then check recent transactions for unauthorized activity and report any suspicious transactions through the app.
+
+Q: How do I order a replacement card?
+A: Go to Cards → Card settings → Replace card in the Fenlo app. You can choose delivery speed: standard delivery is free and takes 2-7 working days, or express delivery for £4.99.
+
+Q: Will my replacement card have the same number?
+A: No, replacement cards have new numbers for security reasons. Your old card becomes permanently inactive once replaced, so you'll need to update any saved payment methods with your new card details.
+
+Q: What if I find my card after ordering a replacement?
+A: If you find your card before the replacement arrives, you can simply unfreeze it in the app. However, if you've already ordered a replacement, the old card will become permanently inactive when the new one is activated.
+
+Q: Can I track my replacement card delivery?
+A: Yes, you'll receive tracking information once your replacement card is dispatched. You can monitor the delivery status through the app or the tracking link provided.
+
+Q: Are there any fees for card replacement?
+A: The replacement card itself is free, but express delivery costs £4.99. Standard delivery (2-7 working days) is completely free.

@@ -1,0 +1,37 @@
+version: "3.1"
+
+actions:
+  - add_contact
+
+slots:
+  add_contact_name:
+    type: text
+    mappings:
+    - type: from_llm
+  add_contact_handle:
+    type: text
+    mappings:
+      - type: from_llm
+
+responses:
+  utter_ask_add_contact_confirmation:
+    - text: Do you want to add {add_contact_name}({add_contact_handle}) to your contacts?
+      buttons:
+        - payload: "/SetSlots(confirmation=true)"
+          title: "Yes"
+        - payload: "/SetSlots(confirmation=true)"
+          title: "No, cancel"
+  utter_ask_add_contact_handle:
+    - text: "What's the account handle or number for this contact? Example: @shaun"
+      metadata:
+        rephrase: True
+  utter_ask_add_contact_name:
+    - text: "What's the name of this contact?"
+  utter_add_contact_error:
+    - text: "I'm sorry, something went wrong while adding the contact. Please try again."
+  utter_add_contact_cancelled:
+    - text: "No problem! I've cancelled adding the contact."
+  utter_contact_already_exists:
+    - text: "You already have a contact with that handle in your list."
+  utter_contact_added:
+    - text: "Great! I've added {add_contact_name} to your contacts."

@@ -1,0 +1,16 @@
+flows:
+  replace_card:
+    description: Replaces an existing card if it’s lost, stolen, damaged, or compromised (including suspected fraud).
+    name: replace card
+    steps:
+      - collect: confirm_correct_card
+        description: "Confirms whether the displayed card is the correct one to replace; accepts True or False, yes or no."
+        ask_before_filling: true
+        next:
+          - if: slots.confirm_correct_card
+            then:
+              - call: replace_eligible_card
+                next: END
+          - else:
+              - action: utter_relevant_card_not_linked
+                next: END

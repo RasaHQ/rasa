@@ -1,11 +1,15 @@
 version: "3.1"
 
 slots:
-  account:
-    type: text
+  current_balance:
+    type: float
     mappings:
-      - type: from_llm
+      - type: controlled
 
 actions:
-  - action_ask_account
-  - action_check_balance
+  - check_balance
+
+responses:
+  utter_current_balance:
+    - text: "Your current account balance is {current_balance}."
+    - text: "You have {current_balance} available in your {bank_name} account."

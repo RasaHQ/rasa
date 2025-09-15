@@ -1,0 +1,17 @@
+slots:
+  recipient_account:
+    type: text
+    mappings:
+      - type: from_llm
+
+  amount_of_money:
+    type: float
+    mappings:
+      - type: from_llm
+
+responses:
+  utter_ask_recipient_account:
+    - text: Who should receive the payment?
+
+  utter_ask_amount_of_money:
+    - text: How much money should be transferred?

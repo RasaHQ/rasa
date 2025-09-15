@@ -7,4 +7,12 @@ This folder contains YAML files that define the agent's:
 
 The `bank_name` slot allows easy rebranding - just change its default value to customize all bank references throughout the agent.
 
+**What you'll find:**
+- **accounts/**: Domain configuration for account management features
+- **bills/**: Domain setup for bill payment and reminder features
+- **cards/**: Domain elements for card management operations
+- **contacts/**: Domain configuration for contact and advisor management
+- **transfers/**: Domain setup for money transfer and payment features
+- **general/**: General banking conversation domain elements
+
 You can organize the domain as one big file or many small ones. Rasa will automatically merge everything during training [1](https://rasa.com/docs/reference/config/domain).

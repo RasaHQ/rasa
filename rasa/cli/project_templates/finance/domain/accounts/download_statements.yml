@@ -1,0 +1,40 @@
+version: '3.1'
+slots:
+  statement_format:
+    type: categorical
+    values:
+      - pdf
+      - csv
+    mappings:
+      - type: from_llm
+
+responses:
+  utter_ask_statement_month:
+    - text: For which month would you like the statement?
+  utter_ask_statement_year:
+    - text: For which year would you like the statement?
+  utter_ask_statement_format:
+    - text: "Which format would you like your statement in?"
+      buttons:
+        - title: "PDF"
+          payload: "/SetSlots(statement_format=pdf)"
+        - title: "CSV"
+          payload: "/SetSlots(statement_format=csv)"
+  utter_ask_statement_download_confirmation:
+    - text: "Just to confirm, would you like to download your {statement_month} {statement_year} statement as a PDF?"
+      buttons:
+        - title: "Yes"
+          payload: "/SetSlots(confirmation=true)"
+        - title: "No"
+          payload: "/SetSlots(confirmation=false)"
+    - text: "Great! Should I go ahead and download the statement in PDF format for you?"
+      buttons:
+        - title: "Yes"
+          payload: "/SetSlots(confirmation=true)"
+        - title: "No"
+          payload: "/SetSlots(confirmation=false)"
+  utter_statement_download_complete:
+    - text: Your statement for {statement_month} {statement_year} in {statement_format}
+        format has been downloaded.
+  utter_statement_download_cancelled:
+    - text: Statement download cancelled.

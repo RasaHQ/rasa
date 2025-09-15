@@ -1,0 +1,25 @@
+flows:
+  bill_pay_reminder:
+    name: set up bill payment reminder
+    description: Help users set up automatic reminders for recurring bill payments.
+    steps:
+      - collect: biller_name
+        description: The name of the company or person the bill is paid to.
+      - collect: bill_due_date
+        description: The date the bill is due.
+      - collect: reminder_frequency
+        description: How often the reminder should be sent (once, monthly, weekly).
+      - id: confirm_reminder
+        collect: confirmation
+        utter: utter_ask_bill_pay_reminder_confirmation
+        description: Asks the user to confirm setting the reminder.
+        ask_before_filling: true
+        next:
+          - if: not slots.confirmation
+            then:
+              - action: utter_bill_pay_reminder_cancelled
+                next: END
+          - else: setup_bill_pay_reminder
+      - id: setup_bill_pay_reminder
+        action: utter_bill_pay_reminder_complete
+        next: END

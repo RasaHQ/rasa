@@ -1,0 +1,49 @@
+version: "3.1"
+
+slots:
+  biller_name:
+    type: text
+    mappings:
+      - type: from_llm
+  bill_due_date:
+    type: text
+    mappings:
+      - type: from_llm
+  reminder_frequency:
+    type: categorical
+    values:
+      - once
+      - monthly
+      - weekly
+    mappings:
+      - type: from_llm
+
+responses:
+  utter_ask_biller_name:
+    - text: "Who is the bill for?"
+  utter_ask_bill_due_date:
+    - text: "What date is this bill due?"
+  utter_ask_reminder_frequency:
+    - text: "How often should I remind you? Once, monthly, or weekly?"
+      buttons:
+        - title: "Once"
+          payload: "/SetSlots(reminder_frequency=once)"
+        - title: "Monthly"
+          payload: "/SetSlots(reminder_frequency=monthly)"
+        - title: "Weekly"
+          payload: "/SetSlots(reminder_frequency=weekly)"
+  utter_ask_bill_pay_reminder_confirmation:
+    - text: "Just to confirm - I'll setup a reminder to pay {biller_name} on {bill_due_date} ({reminder_frequency})?"
+      buttons:
+        - title: "Yes"
+          payload: "/SetSlots(confirmation=true)"
+        - title: "No"
+          payload: "/SetSlots(confirmation=false)"
+  utter_bill_pay_reminder_complete:
+    - condition: slots.reminder_frequency == "once"
+      text: "All set! I'll remind you to pay {biller_name} on {bill_due_date}. If you need to make any changes, just let me know!"
+    - condition: slots.reminder_frequency != "once"
+      text: "All set! I'll remind you to pay {biller_name} on {bill_due_date} {reminder_frequency}. If you need to make any changes, just let me know!"
+    - text: "Your reminder for {biller_name} is saved. I’ll give you a heads-up on {bill_due_date} ({reminder_frequency}). Need to update anything else?"
+  utter_bill_pay_reminder_cancelled:
+    - text: "Okay, I won’t set up that reminder. If you change your mind, just ask me anytime."

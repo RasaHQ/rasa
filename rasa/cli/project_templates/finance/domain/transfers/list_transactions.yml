@@ -1,0 +1,44 @@
+version: "3.1"
+
+
+actions:
+  - list_transactions
+
+slots:
+  transactions_list:
+    type: text
+    mappings:
+      - type: controlled
+  list_transactions_next_option:
+    type: categorical
+    values:
+      - show_scheduled_transactions
+      - show_all_transactions
+      - none_of_the_above
+    mappings:
+      - type: from_llm
+  full_transaction_list:
+    type: bool
+    mappings:
+      - type: controlled
+    initial_value: false
+
+responses:
+  utter_scheduled_transactions:
+    - text: "Here are your scheduled transactions:\n\n {transactions_list}"
+  utter_transactions:
+    - condition: slots.full_transaction_list
+      text: "Here is the full list of transactions:\n\n {transactions_list}"
+    - condition: not slots.full_transaction_list
+      text: "Your last recent transactions are:\n\n {transactions_list}"
+  utter_no_next_option:
+    - text: "Ok."
+  utter_ask_list_transactions_next_option:
+    - text: Would you like to do any of the following?
+      buttons:
+        - payload: "/SetSlots(list_transactions_next_option=show_scheduled_transactions)"
+          title: "Show scheduled transactions"
+        - payload: "/SetSlots(list_transactions_next_option=show_all_transactions)"
+          title: "List all transactions"
+        - payload: "/SetSlots(list_transactions_next_option=none_of_the_above)"
+          title: "None of the above"

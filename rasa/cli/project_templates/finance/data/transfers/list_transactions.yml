@@ -1,0 +1,46 @@
+flows:
+  list_transactions:
+    name: Show Recent Transactions
+    description: |
+      Enables users to quickly view their most recent account transactions. 
+      After presenting these, the users has the option to view their scheduled (upcoming) 
+      transactions.
+    steps:
+      - action: list_transactions
+      - action: utter_transactions
+      - collect: list_transactions_next_option
+        ask_before_filling: true
+        next:
+          - if: slots.list_transactions_next_option == "show_scheduled_transactions"
+            then: show_scheduled_transactions
+          - if: slots.list_transactions_next_option == "show_all_transactions"
+            then: show_all_transactions
+          - else:
+            - action: utter_no_next_option
+              next: END
+      - id: show_scheduled_transactions
+        link: list_scheduled_transactions
+      - id: show_all_transactions
+        link: list_all_transactions
+
+  list_all_transactions:
+    name: View All Transactions
+    description: |
+      Enables users to view all of their account transactions.
+    if: False
+    steps:
+      - set_slots:
+         - full_transaction_list: true
+      - action: list_transactions
+      - action: utter_transactions
+      - set_slots:
+         - full_transaction_list: false
+
+  list_scheduled_transactions:
+    name: List scheduled Transactions
+    if: False
+    description: |
+      Shows only the upcoming scheduled transactions of the account.
+    steps:
+    - action: utter_scheduled_transactions
+      next: END

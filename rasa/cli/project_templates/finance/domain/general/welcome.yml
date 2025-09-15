@@ -2,7 +2,10 @@ version: "3.1"
 
 responses:
   utter_greeting:
-    - text: "Hi there! I'm {agent_name}. I can help you with {skills_summary}. How can I help you today?"
+    - text: "Hi there! I'm {agent_name} 👋. I can help you with your everyday banking needs. \n Here's a few things you can ask me: {example_questions} \n How can I help you today?"
       metadata:
         rephrase: True
-
+  utter_hello:
+    - text: "Hi nice to meet you - I'm here to help with your {bank_name} account. How can I assist you?"
+      metadata:
+        rephrase: True

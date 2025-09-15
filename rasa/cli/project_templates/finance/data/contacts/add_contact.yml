@@ -1,0 +1,33 @@
+flows:
+  add_contact:
+    description: Add a person with their contact details to your contacts list to enable simplified payments.
+    name: add a contact
+    steps:
+      - collect: add_contact_handle
+        description: The persons handle or username starting with @.
+      - collect: add_contact_name
+        description: a name of a person
+      - collect: confirmation
+        utter: utter_ask_add_contact_confirmation
+        description: Confirms whether the user wishes to proceed; accepts True or False, yes or no.
+        ask_before_filling: true
+        next:
+          - if: not slots.confirmation
+            then:
+              - action: utter_add_contact_cancelled
+                next: END
+          - else: add_contact
+      - id: add_contact
+        action: add_contact
+        next:
+          - if: "slots.return_value = 'success'"
+            then:
+              - action: utter_contact_added
+                next: END
+          - if: "slots.return_value = 'already_exists'"
+            then:
+              - action: utter_contact_already_exists
+                next: END
+          - else:
+              - action: utter_add_contact_error
+                next: END

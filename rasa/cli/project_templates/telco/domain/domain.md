@@ -8,7 +8,6 @@ This folder contains YAML files that define the telecom agent's:
 **What you'll find:**
 - **billing/**: Domain configuration for billing and payment features
 - **network/**: Domain setup for network diagnostics and troubleshooting
-- **general/**: General telecom customer service domain configuration
-- `shared.yml`: Shared domain elements across all telecom services
+- **general/**: General telecom customer service domain elements
 
 You can organize the domain as one big file or many small ones. Rasa will automatically merge everything during training [1](https://rasa.com/docs/reference/config/domain).

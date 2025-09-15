@@ -1,0 +1,19 @@
+Instant Payments and Transfers
+
+Q: How do I send money instantly to other Fenlo customers?
+A: Go to 'Payments' in the app, select the recipient or add a new contact, enter the amount and reference, then confirm with your PIN or biometric. Transfers to other Fenlo customers are free and instant 24/7.
+
+Q: What are the limits for instant transfers?
+A: Limits depend on your account type: Standard accounts can send £1,000 per transfer with £5,000 daily limit. Premium accounts can send £5,000 per transfer with £20,000 daily limit. Metal accounts can send £25,000 per transfer with £100,000 daily limit.
+
+Q: Which banks support instant transfers?
+A: Fenlo supports instant transfers to major UK banks (Barclays, HSBC, Lloyds, NatWest, etc.), EU banks with SEPA Instant, and select international banks. UK Faster Payments are usually instant and free.
+
+Q: Are there fees for instant transfers?
+A: Transfers to other Fenlo customers are always free. UK Faster Payments are free and usually instant. SEPA Instant transfers to EU banks have a small fee but arrive within seconds.
+
+Q: What happens if instant transfer isn't available?
+A: If instant transfer isn't available to the recipient's bank, your transfer will be sent as a standard transfer and typically arrive within 1-2 working days.
+
+Q: Can I schedule instant transfers for later?
+A: Instant transfers happen immediately when you send them. If you want to schedule a transfer for a future date, you'll need to use our scheduled payments feature, though the actual transfer speed will depend on the recipient's bank capabilities at that time.

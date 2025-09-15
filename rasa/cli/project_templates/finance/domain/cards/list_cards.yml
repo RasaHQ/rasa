@@ -1,0 +1,16 @@
+version: "3.1"
+
+responses:
+  utter_list_cards:
+    - text: "You currently have the following bank cards:\n{cards_list}"
+  utter_no_cards:
+    - text: "You currently have no bank cards."
+
+slots:
+  cards_list:
+    type: text
+    mappings:
+      - type: controlled
+
+actions: 
+  - list_cards

@@ -1,0 +1,16 @@
+Card Freezing and Security Controls
+
+Q: How do I freeze my card instantly?
+A: You can instantly freeze your card through the Fenlo app by going to 'Cards', selecting your card, and toggling 'Freeze card'. Your card will be blocked immediately for all transactions and you can unfreeze it anytime using the same toggle.
+
+Q: What happens when my card is frozen?
+A: When frozen, all payments are blocked including online purchases, in-store transactions, and ATM withdrawals. However, direct debits and standing orders will still work, and you can still receive money into your account.
+
+Q: How quickly can I unfreeze my card?
+A: To unfreeze your card, simply toggle 'Freeze card' off in the app. Your card will be active within seconds and ready to use for all transactions.
+
+Q: Why would I want to freeze my card?
+A: You should freeze your card if it's lost, stolen, or if you want to prevent unauthorized transactions. It's also useful as a temporary security measure if you suspect fraudulent activity or want to control spending.
+
+Q: Can I still use online banking when my card is frozen?
+A: Yes, freezing your card only affects card payments. You can still use the Fenlo app, check balances, make transfers, and manage your account normally. Only card transactions are blocked.

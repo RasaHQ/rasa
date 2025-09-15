@@ -1,0 +1,6 @@
+flows:
+  agent_details:
+    description: Flow to provide information about the assistant's capabilities and details
+    name: assistant details
+    steps:
+      - action: utter_agent_details

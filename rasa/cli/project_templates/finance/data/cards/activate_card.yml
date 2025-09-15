@@ -1,0 +1,35 @@
+flows:
+  activate_card:
+    description: Activates user's card.
+    name: activate card
+    steps:
+      - action: utter_start_activate_card
+
+      - id: get_bank_card_number
+        collect: bank_card_number
+        description: The number of the card user wants to activate
+        ask_before_filling: true
+
+      - action: check_that_card_exists
+        next:
+          - if: not slots.return_value
+            then:
+              - action: utter_bank_card_not_found
+                next: get_bank_card_number
+          - else: activation_confirmation
+
+      - id: activation_confirmation
+        collect: confirmation
+        description: "Confirms the request for a card activation; accepts True or False, yes or no."
+        utter: utter_ask_activate_card_confirmation
+        ask_before_filling: true
+        next:
+          - if: not slots.confirmation
+            then:
+              - action: utter_activate_card_cancelled
+                next: END
+          - else: execute_activation
+
+      - id: execute_activation
+        action: utter_activate_card_successful
+        next: END

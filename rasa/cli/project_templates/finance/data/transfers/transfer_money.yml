@@ -1,67 +1,34 @@
 flows:
   transfer_money:
-    description: Guides the user through the process of initiating a bank transfer.
+    name: transfer money
+    description: |
+      Handles the following types of money transfers initiated by the user:
+      - "Third Party": Transfer money to another person, business or service within domestic banks. Third party transfer can be immediate, scheduled, or set up as a recurring payments.
+      - "Self transfer": Transfer funds between user's own accounts at the same bank (immediate only).
+
     steps:
-      - action: utter_transfer_money_understand
-      - collect: account_from
-      - collect: payee_name
-      - action: action_check_payee_existence
+      - id: choose_transfer_type
+        collect: transfer_type
+        description: |
+          Specifies the type of transfer based on the intended recipient:
+          - "Self transfer": Moving money between the user's own accounts at the same bank.
+          - "Third party": Sending money to another person, business, or paying a bill domestically (inside the country). Includes friends, family, companies, service providers.
+
+          If the user mentions sending money to a person, a business, paying a bill, or setting up a recurring payment, set "third party" transfer.
+          If the user mentions transferring funds between their own accounts (e.g., moving money from savings to checking), set "self transfer".
         next:
-          - if: not slots.payee_exists
-            then:
-              - call: add_payee
-                next: "get_transfer_amount"
-          - else: "get_transfer_amount"
-      - id: "get_transfer_amount"
-        collect: amount
-        description: The amount of money to transfer
-        rejections:
-          - if: slots.amount <= 0
-            utter: utter_invalid_amount
-      - action: action_check_sufficient_funds
-        next:
-          - if: slots.sufficient_funds
-            then: "get_payment_timing"
+          - if: slots.transfer_type == "self transfer"
+            then: perform_self_transfer
+          - if: slots.transfer_type == "third party"
+            then: perform_third_party_transfer
           - else:
-              - action: utter_insufficient_funds
-                next: END
-      - id: "get_payment_timing"
-        collect: timing
-        next:
-          - if: slots.timing == "now"
-            then: "confirm_immediate_transfer"
-          - else: "get_payment_date"
-      - id: "confirm_immediate_transfer"
-        collect: confirm_immediate_payment
-        ask_before_filling: true
-        next:
-          - if: slots.confirm_immediate_payment
-            then:
-              - action: action_process_immediate_payment
-              - action: utter_transfer_successful
-                next: END
-          - else: "transfer_cancelled"
-      - id: "get_payment_date"
-        collect: payment_date
-        description: the future payment date of the money transfer. Convert date to DD/MM/YYYY format
-      - action: action_validate_payment_date
-        next:
-          - if: slots.future_payment_date
-            then: "confirm_future_payment"
-          - else:
-              - action: utter_past_payment_date
-              - set_slots:
-                - payment_date: null
-                next: "get_payment_date"
-      - id: "confirm_future_payment"
-        collect: confirm_future_payment
-        ask_before_filling: true
-        next:
-          - if: slots.confirm_future_payment
-            then:
-              - action: action_schedule_payment
-              - action: utter_payment_scheduled
-                next: END
-          - else: "transfer_cancelled"
-      - id: "transfer_cancelled"
-        action: utter_cancel_transfer
+              - action: utter_inform_on_wrong_transfer_type
+                next: choose_transfer_type
+
+      - id: perform_self_transfer
+        call: move_money_between_accounts
+        next: END
+
+      - id: perform_third_party_transfer
+        call: transfer_money_to_a_third_party
+        next: END

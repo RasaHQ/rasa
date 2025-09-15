@@ -1,0 +1,11 @@
+responses:
+  utter_session_start_greeting:
+    - text: "Hi! I'm {agent_name}, your {bank_name} banking agent. I'm here to help you with {skills_summary}."
+      metadata:
+        rephrase: True
+    - text: "Hello! Welcome to {bank_name}. I'm {agent_name} and I can help you with banking tasks like {skills_summary}."
+      metadata:
+        rephrase: True
+    - text: "Welcome to {bank_name}! I'm {agent_name}, ready to help with your banking needs."
+      metadata:
+        rephrase: True

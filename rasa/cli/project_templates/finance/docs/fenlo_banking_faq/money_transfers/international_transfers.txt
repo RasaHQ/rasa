@@ -1,0 +1,19 @@
+International Money Transfers
+
+Q: How many countries can I send money to with Fenlo?
+A: Fenlo supports money transfers to over 160 countries and territories worldwide, with both standard transfers (1-3 working days) and instant transfers available to select countries.
+
+Q: What are the fees for international transfers?
+A: Fees depend on your plan: Standard accounts have a 0.5% markup on exchange rates plus a small fixed fee. Premium accounts get better exchange rates and reduced fees. Metal accounts get interbank exchange rates on weekdays and no fees up to monthly limits.
+
+Q: What are the transfer limits for international payments?
+A: Transfer limits vary by account type: Standard accounts can send up to £5,000 per transfer, Premium accounts up to £50,000 per transfer, and Metal accounts up to £100,000 per transfer.
+
+Q: What information do I need to send an international transfer?
+A: You'll need the recipient's full name and address, receiving bank name and address, IBAN or account number, SWIFT/BIC code, and the purpose of payment for compliance purposes.
+
+Q: How long do international transfers take?
+A: Standard transfers typically take 1-3 working days. Instant transfers to select countries arrive within minutes. You can track your transfer in real-time through the app, and recipients receive notifications when money arrives.
+
+Q: Can I cancel an international transfer after sending it?
+A: You may be able to cancel a transfer if it hasn't been processed yet. Contact our support team immediately through the app chat if you need to cancel or modify a transfer.

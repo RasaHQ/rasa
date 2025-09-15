@@ -1,0 +1,175 @@
+flows:
+
+  transfer_money_to_a_third_party:
+    description: |
+      Transferring money to someone else, such as friends, family, or businesses. This
+      includes paying bills, rent, subscriptions, or transferring money to accounts
+      outside the user's own portfolio. Third party transfers are limited to recipients
+      with accounts at domestic banks. Supports immediate, scheduled, and recurring
+      transfers.
+    name: transfer money to a third party
+    if: False
+
+    steps:
+      - collect: recipient_account
+        description: |
+          The recipient’s contact handle, if one is available; otherwise, a properly
+          formatted account number.
+
+      - id: ask_amount
+        collect: amount_of_money
+        description: The amount of money without any currency designation.
+
+      - action: check_transfer_funds
+        next:
+          - if: not slots.has_sufficient_funds
+            then:
+              - action: utter_transfer_money_insufficient_funds
+              - set_slots:
+                  - amount_of_money: null
+                  - has_sufficient_funds: null
+                next: ask_amount
+          - else: choose_transfer_timing_type
+
+      - id: choose_transfer_timing_type
+        collect: transfer_timing_type
+        description: |
+          Desired timing of the transfer — whether it should be processed immediately,
+          scheduled for a specific date, or configured as a recurring payment.
+        next:
+          - if: slots.transfer_timing_type == "immediate"
+            then: execute_immediate_transfer
+          - if: slots.transfer_timing_type == "scheduled"
+            then: setup_scheduled_transfer
+          - if: slots.transfer_timing_type == "recurring"
+            then: setup_recurring_payment
+          - else:
+              - action: utter_inform_on_wrong_transfer_timing_type
+                next: choose_transfer_timing_type
+
+      - id: execute_immediate_transfer
+        call: execute_immediate_transfer
+        next: END
+
+      - id: setup_scheduled_transfer
+        call: setup_scheduled_transfer
+        next: END
+
+      - id: setup_recurring_payment
+        call: setup_recurring_payment
+        next: END
+
+
+  execute_immediate_transfer:
+    description: Executes an immediate transfer.
+    name: execute immediate transfer
+    if: False
+
+    steps:
+      - id: confirm_transfer
+        collect: confirmation
+        description: User confirmation to proceed with the immediate transfer; accepts True or False, yes or no.
+        utter: utter_ask_immediate_transfer_confirmation
+        ask_before_filling: true
+        next:
+          - if: not slots.confirmation
+            then:
+              - action: utter_transfer_cancelled
+                next: END
+          - else: execute_transfer
+
+      - id: execute_transfer
+        action: execute_transfer
+        next:
+          - if: slots.transfer_successful
+            then:
+              - action: utter_transfer_completed
+                next: END
+          - else:
+              - action: utter_transfer_failed
+                next: END
+
+
+  setup_scheduled_transfer:
+    name: setup scheduled transfer
+    description: Collects the details and setups a future money transfer.
+    if: False
+
+    steps:
+      - collect: date
+        description: The date on which the transfer should be executed.
+        utter: utter_ask_schedule_transaction_date
+
+      - collect: time
+        description: The time of day when the transfer should be executed.
+        utter: utter_ask_schedule_transaction_time
+
+      - id: confirm_transfer
+        collect: confirmation
+        description: User confirmation to proceed with the scheduled transfer; accepts True or False, yes or no.
+        utter: utter_ask_setup_scheduled_transfer_confirmation
+        ask_before_filling: true
+        next:
+          - if: not slots.confirmation
+            then:
+              - action: utter_transfer_cancelled
+                next: END
+          - else: save_scheduled_transfer
+
+      - id: save_scheduled_transfer
+        action: utter_schedule_transaction_complete
+        next: END
+
+
+  setup_recurring_payment:
+    name: setup recurring payment
+    description: |
+      Collects the information needed to configure a recurring payment and sets it up.
+    if: False
+
+    steps:
+      - collect: recurrent_payment_type
+        description: The type of recurring payment (e.g., standing order or direct debit).
+
+      - collect: recurrent_payment_frequency
+        description: How often the payment occurs.
+
+      - id: set_start_date
+        collect: date_range_start
+        description: The date when the recurring payments begins.
+        utter: utter_ask_recurrent_payment_start_date
+
+      - id: set_end_date
+        collect: date_range_end
+        description: The date when the recurring payments stops.
+        utter: utter_ask_recurrent_payment_end_date
+        rejections:
+          - if: slots.date_range_end < slots.date_range_start
+            utter: utter_invalid_recurrent_payment_end_date
+            then: set_start_date
+
+      - id: confirm_transfer
+        collect: confirmation
+        description: User confirmation to proceed with setting up the recurring payment; accepts True or False, yes or no.
+        utter: utter_ask_setup_recurring_payment_confirmation
+        ask_before_filling: true
+        next:
+          - if: not slots.confirmation
+            then:
+              - action: utter_recurring_payment_setup_cancelled
+                next: END
+          - else: setup_recurring_payment
+
+      - id: setup_recurring_payment
+        action: execute_recurrent_payment
+        next:
+          - if: slots.setup_recurrent_payment_successful
+            then:
+              - action: utter_recurring_payment_setup_complete
+                next: END
+          - else: payment_failed
+
+      - id: payment_failed
+        action: utter_recurring_payment_setup_failed
+      - action: utter_recurring_payment_setup_failed_handover
+      - action: utter_failed_handoff

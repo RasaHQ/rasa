@@ -1,0 +1,22 @@
+Budgeting Tools and Spending Analytics
+
+Q: How does Fenlo categorize my spending automatically?
+A: Fenlo automatically categorizes transactions into categories like Groceries & Dining, Transport, Shopping, Entertainment, Bills & Services, Travel, Healthcare, and more. The system learns from your spending patterns to improve accuracy over time.
+
+Q: How do I set up budgets for different spending categories?
+A: Go to 'Analytics' in the app, select 'Budget', then set monthly budget amounts for each category you want to track. You can enable notifications to alert you when you reach 80% and 100% of your budget limits.
+
+Q: What kind of spending insights does Fenlo provide?
+A: Fenlo provides monthly spending breakdowns by category, spending trends and patterns, merchant insights and frequency analysis, balance predictions, and helps identify unusual spending patterns by comparing month-to-month spending.
+
+Q: Can I set savings goals with Fenlo?
+A: Yes, you can set savings goals and track your progress. Fenlo also offers a round-up feature that saves spare change from transactions to help you reach your savings targets automatically.
+
+Q: What notifications can I set up for my spending?
+A: You can enable budget limit warnings at 80% and 100% thresholds, large transaction alerts, weekly spending summaries, monthly budget reviews, and recurring payment reminders.
+
+Q: Is my financial data private and secure?
+A: Absolutely. All your spending data is encrypted and completely private to you. Fenlo uses advanced encryption methods to protect your financial information and never shares your personal spending data with third parties.
+
+Q: Can I export my spending data?
+A: Yes, you can export your transaction data and spending analytics from the app for your personal records or to use with external financial planning tools.

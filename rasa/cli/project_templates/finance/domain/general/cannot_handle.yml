@@ -1,5 +1,8 @@
 responses:
   utter_no_relevant_answer_found:
-    - text: I’m sorry, I can’t help with that.
+    - text: "I'm sorry, I can't help with that request. You can try asking about your {bank_name} account balance, transfers, card management, or say 'help' to see what I can do."
       metadata:
-        rephrase: False
+        rephrase: True
+    - text: "I'm not able to assist with that. I can help with {bank_name} banking tasks like checking balances, managing cards, or transferring money. What would you like to do?"
+      metadata:
+        rephrase: True

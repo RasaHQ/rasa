@@ -1,0 +1,24 @@
+version: '3.1'
+
+responses:
+  utter_start_activate_card:
+    - text: "Let's get your card activated!"
+      metadata:
+        rephrase: True
+  utter_ask_activate_card_confirmation:
+    - text: "Are you sure you want to activate your card ending in {bank_card_number}?"
+      buttons:
+        - title: "Yes, activate it"
+          payload: /SetSlots(confirmation=true)
+        - title: "No, cancel"
+          payload: /SetSlots(confirmation=false)
+      metadata:
+        rephrase: True
+  utter_activate_card_successful:
+    - text: "Perfect! Your card is now activated and ready to use."
+      metadata:
+        rephrase: True
+  utter_activate_card_cancelled:
+    - text: "No problem! I've cancelled the activation. Let me know if you'd like to try again later."
+      metadata:
+        rephrase: True

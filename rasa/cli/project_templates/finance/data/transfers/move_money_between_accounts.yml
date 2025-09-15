@@ -1,0 +1,51 @@
+flows:
+
+  move_money_between_accounts:
+    name: move money between accounts
+    description: Transfers money between user's own accounts.
+    if: False
+
+    steps:
+      - collect: self_transfer_source_account
+        description: The user's source account from which the money will be transferred.
+        # rejections:
+        #   - if: self_transfer_destination_account == slots.self_transfer_source_account
+        #     utter: utter_accounts_invalid
+
+      - collect: self_transfer_destination_account
+        description: The destination account that will receive the funds.
+        # rejections:
+        #   - if: self_transfer_destination_account == slots.self_transfer_source_account
+        #     utter: utter_accounts_invalid
+
+      - id: ask_amount
+        collect: amount_of_money
+        description: |
+          The amount of money to transfer, without specifying the currency symbol
+          (e.g., 250.00).
+
+      - action: check_transfer_funds
+        next:
+          - if: not slots.has_sufficient_funds
+            then:
+              - action: utter_transfer_money_insufficient_funds
+              - set_slots:
+                  - amount_of_money: null
+                  - has_sufficient_funds: null
+                next: ask_amount
+          - else: confirm_transfer
+
+      - id: confirm_transfer
+        collect: confirmation
+        utter: utter_ask_self_transfer_final_confirmation
+        description: User confirmation to proceed with the transfer between their accounts; accepts True or False, yes or no.
+        ask_before_filling: true
+        next:
+          - if: not slots.confirmation
+            then:
+              - action: utter_transfer_cancelled
+                next: END
+          - else: execute_transfer
+      - id: execute_transfer
+        action: utter_self_transfer_completed
+        next: END

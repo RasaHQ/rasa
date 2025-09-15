@@ -1,0 +1,16 @@
+Contactless Payment Limits and Security
+
+Q: What are the contactless payment limits for Fenlo cards?
+A: All Fenlo cards (Standard, Premium, and Metal) have a contactless limit of £100 per transaction. This limit is set by payment networks for security and cannot be customized.
+
+Q: What happens if I need to pay more than £100?
+A: For transactions over £100, you'll need to use chip and PIN, mobile payments (Apple Pay/Google Pay), or online payments. Mobile payments through Apple Pay/Google Pay have no preset limits and use biometric authentication.
+
+Q: How secure are contactless payments?
+A: Contactless payments are very secure. They include random PIN requests for added security, instant notifications for all transactions, and transactions over the limit automatically require PIN or biometric verification.
+
+Q: Can I increase my contactless limit?
+A: No, you cannot customize contactless limits as they're set by payment networks for security reasons. However, you can use mobile payments for higher amounts with biometric authentication for enhanced security.
+
+Q: Do mobile payments have the same limits as contactless cards?
+A: No, mobile payments through Apple Pay or Google Pay have no preset limits and use biometric authentication (fingerprint/face recognition) instead of the £100 contactless limit.

@@ -13,7 +13,7 @@ slots:
 
 responses:
   utter_ask_confirm_human_handoff:
-    - text: "Do you want to be connected to a human agent?"
+    - text: "Do you want to be connected to a {bank_name} specialist?"
       buttons:
         - payload: "/SetSlots(confirm_human_handoff=Yes)"
           title: "Yes"
@@ -21,10 +21,14 @@ responses:
           title: "No"
 
   utter_transferring_to_human:
-    - text: "You will be transfered to a human agent in a few moments."
-
-  utter_human_handoff_cancelled:
-    - text: "Ok, I understand you don't want to be connected to a human agent. Is there something else I can help you with?"
+    - text: "I'm connecting you with a {bank_name} specialist now. They'll be with you shortly!"
       metadata:
         rephrase: True
 
+  utter_human_handoff_cancelled:
+    - text: "No problem! I'll continue helping you with your {bank_name} banking needs. What else can I assist you with?"
+      metadata:
+        rephrase: True
+
+  utter_transfer_to_manager:
+    - text: "I will transfer the following summary of our conversation to the {bank_name} Callback Manager:\n{summary}"

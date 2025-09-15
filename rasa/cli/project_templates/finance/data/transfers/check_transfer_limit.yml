@@ -1,0 +1,18 @@
+flows:
+  check_transfer_limit:
+    description: Provides the maximum allowed amount the user can send or transfer per transaction, per day, or per month, as set by account policies—not the current available balance.
+    steps:
+
+      - collect: transfer_limit_type
+        description: Daily or monthly transfer limit.
+
+      - action: check_transfer_limit
+        next:
+          - if: not slots.return_value
+            then:
+              - action: utter_transfer_limit_error
+                next: END
+          - else: show_transfer_limit
+
+      - id: show_transfer_limit
+        action: utter_show_transfer_limit

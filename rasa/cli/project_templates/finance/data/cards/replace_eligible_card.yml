@@ -1,0 +1,29 @@
+flows:
+  replace_eligible_card:
+    description: |
+      Guides the user through replacing an eligible card based on the reason (lost, damaged, or unknown)
+      and addresses potential fraud if needed
+    name: replace eligible card
+    steps:
+      - collect: replacement_reason
+        description: "Indicates why the user needs to replace their card: lost, damaged, or reason unknown."
+        next:
+          - if: slots.replacement_reason == "lost"
+            then:
+              - collect: was_card_used_fraudulently
+                description: "Indicates whether the card has been used for unauthorized or fraudulent transactions; accepts True or False, yes or no."
+                ask_before_filling: true
+                next:
+                  - if: slots.was_card_used_fraudulently
+                    then:
+                      - action: utter_report_fraud
+                        next: END
+                  - else: start_replacement
+          - if: slots.replacement_reason == "damaged"
+            then: start_replacement
+          - else:
+            - action: utter_unknown_replacement_reason_handover
+              next: END
+      - id: start_replacement
+        action: utter_will_cancel_and_send_new
+      - action: utter_new_card_has_been_ordered

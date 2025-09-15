@@ -1,0 +1,43 @@
+version: "3.1"
+
+slots:
+  confirm_correct_card:
+    type: bool
+    mappings:
+      - type: from_llm
+  replacement_reason:
+    type: categorical
+    values:
+      - lost
+      - damaged
+    mappings:
+      - type: from_llm
+  was_card_used_fraudulently:
+    type: bool
+    mappings:
+      - type: from_llm
+
+responses:
+  utter_ask_confirm_correct_card:
+    - text: I've found the card with number ****3452 on file. Is this the card you want to replace?
+  utter_relevant_card_not_linked:
+    - text: Seems like I don't have the card you're asking about on file.
+  utter_ask_replacement_reason:
+    - text: Why do you need to replace your card?
+      buttons:
+      - title: "Lost"
+        payload: /SetSlots(replacement_reason=lost)
+      - title: "Damaged"
+        payload: /SetSlots(replacement_reason=damaged)
+  utter_ask_was_card_used_fraudulently:
+    - text: Is it possible that someone else has managed to use your card?
+  utter_will_cancel_and_send_new:
+    - text: Alright, I'll cancel your card and send you a new one.
+  utter_new_card_has_been_ordered:
+    - text: Your new card should arrive in 3 to 5 business days in a white envelope.
+  utter_report_fraud:
+    - text: I am sorry to hear that. Unfortunately, I can't directly handle fraudulently used cards. Please go to FinX.com/disputes, to report the fraud on your account.
+  utter_unknown_replacement_reason_handover:
+    - text: Let me connect you to an agent, to get the details of what happened to your card.
+  utter_failed_handoff:
+    - text: I am sorry, I was not able to connect you to an agent. I have created a support ticket for you. Someone will reach out to you shortly.

@@ -1,0 +1,26 @@
+flows:
+  download_statements:
+    name: download account statements
+    description: Allow users to download their monthly account statements in PDF or CSV format.
+    steps:
+      - collect: statement_month
+        description: "The specific month the user wants the account statement for."
+        utter: utter_ask_statement_month
+      - collect: statement_year
+        description: "The specific year of the account statement requested by the user."
+        utter: utter_ask_statement_year
+      - collect: statement_format
+        description: "The preferred file format for the statement: PDF or CSV."
+      - collect: confirmation
+        description: "Confirms whether the user wishes to proceed; accepts True or False, yes or no."
+        utter: utter_ask_statement_download_confirmation
+        ask_before_filling: true
+        next:
+          - if: not slots.confirmation
+            then:
+              - action: utter_statement_download_cancelled
+                next: END
+          - else: initiate_download
+      - id: initiate_download
+        action: utter_statement_download_complete
+        next: END

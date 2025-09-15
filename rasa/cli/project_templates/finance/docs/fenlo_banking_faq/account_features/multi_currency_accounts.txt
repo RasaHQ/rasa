@@ -1,0 +1,19 @@
+Multi-Currency Accounts and Exchange
+
+Q: How many currencies can I hold with Fenlo?
+A: Fenlo supports over 30 currencies including major currencies like USD, EUR, GBP, CHF, JPY, CAD, AUD, and regional currencies like PLN, SEK, NOK, DKK, CZK, HUF, RON, BGN, HRK, and more.
+
+Q: How do I exchange currencies in the Fenlo app?
+A: Go to 'Accounts', select the currency you want to exchange from, choose your target currency, enter the amount, review the exchange rate, and confirm. The exchange happens instantly.
+
+Q: What are the exchange rates and fees?
+A: Exchange rates depend on your plan: Standard accounts have a small markup on interbank rates. Premium accounts get better rates with higher free monthly allowances. Metal accounts get interbank rates on weekdays.
+
+Q: How much can I exchange for free each month?
+A: Free monthly exchange varies by plan: Standard accounts get £1,000 equivalent free per month, Premium accounts get £6,000 equivalent, and Metal accounts get unlimited free exchanges on weekdays.
+
+Q: Do I pay foreign transaction fees when spending abroad?
+A: No, there are no foreign transaction fees when you spend in currencies you already hold. If you don't have sufficient balance in the local currency, automatic conversion applies with your plan's standard exchange rates.
+
+Q: Can I set up exchange rate alerts?
+A: Yes, Fenlo provides real-time exchange rate alerts. You can set notifications for when rates reach your desired levels, helping you exchange currencies at optimal times.

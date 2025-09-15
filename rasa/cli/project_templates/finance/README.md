@@ -5,11 +5,12 @@ A lightweight banking conversational agent template for the fictional **Fenlo Ba
 ## 🚀 What's Included
 
 This template provides a banking assistant with:
-- **Account Management**: Balance checking, account selection, and validation
-- **Card Services**: Card blocking, status management, and security features  
-- **Money Transfers**: Payee management, fund transfers, and payment scheduling
-- **Banking Knowledge**: FAQ system with comprehensive banking documentation
-- **Security Features**: Account verification, sufficient funds checking, and secure transactions
+- **Account Management**: Balance checking and statement downloads
+- **Card Services**: Card activation, blocking, replacement, and listing  
+- **Money Transfers**: Account-to-account transfers and third-party payments
+- **Contact Management**: Add, list, and remove trusted contacts
+- **Bill Management**: Bill payment reminders and scheduling
+- **Banking Knowledge**: FAQ system with Fenlo Bank documentation
 
 ## 📁 Directory Structure
 
@@ -17,8 +18,8 @@ This template provides a banking assistant with:
 ├── actions/         # Custom Python logic for banking operations
 ├── data/            # Banking conversation flows and training data
 ├── domain/          # Banking agent configuration
-├── csvs/            # Mock database for testing
-├── docs/            # Basic knowledge base and FAQ documents
+├── db/              # Mock JSON database for testing
+├── docs/            # Fenlo Bank knowledge base and FAQ documents
 ├── prompts/         # LLM prompts for enhanced banking responses
 └── config.yml       # Training pipeline configuration
 ```

@@ -1,0 +1,14 @@
+flows:
+  list_cards:
+    name: Show cards along with the account information the cards are linked to.
+    description: show your card list
+    steps:
+      - action: list_cards
+        next:
+          - if: slots.cards_list
+            then:
+              - action: utter_list_cards
+                next: END
+          - else:
+              - action: utter_no_cards
+                next: END

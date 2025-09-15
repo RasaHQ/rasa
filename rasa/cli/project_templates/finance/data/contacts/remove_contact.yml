@@ -1,0 +1,31 @@
+flows:
+  remove_contact:
+    name: remove a contact
+    description: Remove somebody and their details from your contacts list.
+    steps:
+      - collect: remove_contact_handle
+        description: The handle or username starting with @ of the contact to be removed.
+      - collect: confirmation
+        utter: utter_ask_remove_contact_confirmation
+        description: Confirms whether the user wishes to proceed; accepts True or False, yes or no.
+        ask_before_filling: true
+        next:
+          - if: not slots.confirmation
+            then:
+              - action: utter_remove_contact_cancelled
+                next: END
+          - else: remove_contact
+      - id: remove_contact
+        action: remove_contact
+        next:
+          - if: "slots.return_value = 'success'"
+            then:
+              - action: utter_remove_contact_success
+                next: END
+          - if: "slots.return_value = 'not_found'"
+            then:
+              - action: utter_contact_not_in_list
+                next: END
+          - else:
+              - action: utter_remove_contact_error
+                next: END
