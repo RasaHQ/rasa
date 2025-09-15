@@ -1155,6 +1155,11 @@ async def copilot(request: Request) -> None:
                 latency_ms=int((time.perf_counter() - start_timestamp) * 1000),
                 system_message=generation_context.system_message,
                 chat_history=generation_context.chat_history,
+                last_user_message=(
+                    req.last_message.get_text_content()
+                    if (req.last_message and req.last_message.role == ROLE_USER)
+                    else None
+                ),
                 **copilot_client.usage_statistics.model_dump(),
             )
         )

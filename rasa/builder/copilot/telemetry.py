@@ -99,7 +99,7 @@ class CopilotTelemetry:
         total_tokens: Optional[int] = None,
         system_message: Optional[dict[str, Any]] = None,
         chat_history: Optional[list[dict[str, Any]]] = None,
-        last_user_message: Optional[dict[str, Any]] = None,
+        last_user_message: Optional[str] = None,
     ) -> None:
         """Track a copilot message in the conversation.
 
@@ -112,28 +112,44 @@ class CopilotTelemetry:
             input_tokens: Number of input tokens used (optional).
             output_tokens: Number of output tokens generated (optional).
             total_tokens: Total number of tokens used (input + output) (optional).
+            system_message: The system message used (optional).
+            chat_history: The chat history messages used (optional).
+            last_user_message: The last user message used (optional).
         """
         structlogger.debug("builder.telemetry.log_copilot_turn", text=text)
+
+        # FIXME: Temporarily remove the system_message from telemetry payload.
+        # Reason: It often exceeds Segment payload size limits, causing the request
+        # to be rejected and the event to be absent in Segment. Instead, temporarily
+        # log the system_message so it's visible in Grafana.
+        telemetry_data = {
+            "project_id": self._project_id,
+            "message_id": uuid.uuid4().hex,
+            "text": text,
+            "prompt_version": self._prompt_version,
+            "source_urls": list(source_urls),
+            "flags": list(flags),
+            "latency_ms": latency_ms,
+            "model": model,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": total_tokens,
+            "chat_history": chat_history,
+            "last_user_message": last_user_message,
+            "timestamp": dt.datetime.utcnow().isoformat(),
+        }
+
+        # Log all telemetry data plus system_message for debugging
+        log_data = telemetry_data.copy()
+        if system_message:
+            log_data["system_message"] = system_message
+
+        structlogger.info("builder.telemetry.copilot_turn", **log_data)
+
         _track(
             COPILOT_BOT_MESSAGE_EVENT,
             self._user_id,
-            {
-                "project_id": self._project_id,
-                "message_id": uuid.uuid4().hex,
-                "text": text,
-                "prompt_version": self._prompt_version,
-                "source_urls": list(source_urls),
-                "flags": list(flags),
-                "latency_ms": latency_ms,
-                "model": model,
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-                "total_tokens": total_tokens,
-                "system_message": system_message,
-                "chat_history": chat_history,
-                "last_user_message": last_user_message,
-                "timestamp": dt.datetime.utcnow().isoformat(),
-            },
+            telemetry_data,
         )
 
     @staticmethod
@@ -177,7 +193,7 @@ class CopilotTelemetry:
         total_tokens: int,
         system_message: dict[str, Any],
         chat_history: list[dict[str, Any]],
-        last_user_message: dict[str, Any],
+        last_user_message: Optional[str],
     ) -> None:
         """Log a copilot message from the response handler.
 
