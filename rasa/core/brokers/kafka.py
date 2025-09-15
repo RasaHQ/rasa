@@ -6,13 +6,18 @@ import threading
 import time
 from asyncio import AbstractEventLoop
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, Union
 
 import structlog
 
 import rasa.shared.utils.common
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.exceptions import KafkaProducerInitializationError
+from rasa.core.iam_credentials_providers.credentials_provider_protocol import (
+    IAMCredentialsProviderInput,
+    SupportedServiceType,
+    create_iam_credentials_provider,
+)
 from rasa.shared.core.events import ErrorHandled
 from rasa.shared.utils.io import DEFAULT_ENCODING
 from rasa.utils.endpoints import EndpointConfig
@@ -93,6 +98,9 @@ class KafkaEventBroker(EventBroker):
         self.ssl_keyfile = ssl_keyfile
         self.queue_size = kwargs.get("queue_size")
         self.ssl_check_hostname = "https" if ssl_check_hostname else None
+        self.iam_credentials_provider = create_iam_credentials_provider(
+            IAMCredentialsProviderInput(service_name=SupportedServiceType.EVENT_BROKER)
+        )
 
         # PII management attributes
         self.stream_pii = kwargs.get("stream_pii", True)
@@ -134,8 +142,8 @@ class KafkaEventBroker(EventBroker):
             try:
                 self._check_kafka_connection()
                 logger.debug("Connection to kafka successful.")
-            except KafkaException:
-                logger.debug("Failed to connect kafka.")
+            except KafkaException as exc:
+                logger.debug(f"Failed to connect to kafka: {exc}")
                 return
         while retries:
             try:
@@ -215,7 +223,31 @@ class KafkaEventBroker(EventBroker):
             KafkaException: if Kafka is disconnected.
         """
         if self.producer is not None:
-            self.producer.list_topics(timeout=5)
+            structlogger.debug(
+                "rasa.core.brokers.kafka.KafkaEventBroker.check_kafka_connection",
+            )
+            # we have to poll to trigger the oauth_cb if using IAM authentication
+            self.producer.poll(0)
+            self.producer.list_topics(self.topic, timeout=5)
+
+    def get_aws_iam_token(
+        self, oauth_config: Any
+    ) -> Tuple[Optional[str], Optional[float]]:
+        """Callback function to fetch AWS IAM token for MSK authentication.
+
+        The callback function requires this specific signature to work correctly.
+
+        Args:
+            oauth_config: OAuth configuration.
+
+        Returns:
+            A tuple of auth token and expiry time in seconds.
+        """
+        if self.iam_credentials_provider is None:
+            return None, None
+
+        temp_credentials = self.iam_credentials_provider.get_credentials()
+        return temp_credentials.auth_token, temp_credentials.expiration
 
     def _get_kafka_config(self) -> Dict[Text, Any]:
         config = {
@@ -246,15 +278,27 @@ class KafkaEventBroker(EventBroker):
             }
         elif self.security_protocol == "SASL_SSL":
             authentication_params = {
-                "sasl.username": self.sasl_username,
-                "sasl.password": self.sasl_password,
                 "ssl.ca.location": self.ssl_cafile,
-                "ssl.certificate.location": self.ssl_certfile,
-                "ssl.key.location": self.ssl_keyfile,
                 "ssl.endpoint.identification.algorithm": self.ssl_check_hostname,
                 "security.protocol": self.security_protocol,
                 "sasl.mechanism": self.sasl_mechanism,
             }
+
+            if self.iam_credentials_provider is not None:
+                authentication_params.update(
+                    {
+                        "oauth_cb": self.get_aws_iam_token,
+                    }
+                )
+            else:
+                authentication_params.update(
+                    {
+                        "sasl.username": self.sasl_username,
+                        "sasl.password": self.sasl_password,
+                        "ssl.certificate.location": self.ssl_certfile,
+                        "ssl.key.location": self.ssl_keyfile,
+                    }
+                )
         else:
             raise ValueError(
                 f"Cannot initialise `KafkaEventBroker`: "

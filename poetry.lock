@@ -473,6 +473,27 @@ tests = ["attrs[tests-no-zope]", "zope-interface"]
 tests-no-zope = ["cloudpickle ; platform_python_implementation == \"CPython\"", "hypothesis", "mypy (>=1.1.1) ; platform_python_implementation == \"CPython\"", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins ; platform_python_implementation == \"CPython\" and python_version < \"3.11\"", "pytest-xdist[psutil]"]
 
 [[package]]
+name = "aws-msk-iam-sasl-signer-python"
+version = "1.0.2"
+description = "Amazon MSK Library in Python for SASL/OAUTHBEARER Auth"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+markers = "sys_platform == \"linux\" or sys_platform == \"win32\" or sys_platform == \"darwin\" and platform_machine != \"arm64\" or sys_platform != \"linux\" and sys_platform != \"win32\" and sys_platform != \"darwin\" or sys_platform != \"linux\" and sys_platform != \"win32\" and platform_machine == \"arm64\""
+files = [
+    {file = "aws_msk_iam_sasl_signer_python-1.0.2-py2.py3-none-any.whl", hash = "sha256:310eb2db9ca0ff55ed06a24212739b87533e7f1cf6f34e43aabbd97a3b21290e"},
+    {file = "aws_msk_iam_sasl_signer_python-1.0.2.tar.gz", hash = "sha256:3432d88a7c6db4887ceb1130ebaed0113bfda48b79ea811537add5f1d25fa13f"},
+]
+
+[package.dependencies]
+boto3 = ">=1.26.125"
+botocore = ">=1.29.125"
+Click = ">=7.0"
+
+[package.extras]
+test = ["coverage (==7.2.5)", "mock (==5.0.2)", "pytest (==7.3.1)", "pytest-cov (==4.0.0)"]
+
+[[package]]
 name = "azure-core"
 version = "1.32.0"
 description = "Microsoft Azure Core Library for Python"
@@ -10146,4 +10167,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9.2,<3.12"
-content-hash = "07724415af8969763d5baf11f20cedb32759e0a7f0e214cfbaf42d9e503b97f0"
+content-hash = "dbe6b55292fb35474ba8bf9d9ad30191a20189b675401ed5c4f594fe8dd17e87"

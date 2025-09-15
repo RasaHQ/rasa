@@ -23,6 +23,10 @@ from rasa.core.brokers.file import FileEventBroker
 from rasa.core.brokers.kafka import KafkaEventBroker, KafkaProducerInitializationError
 from rasa.core.brokers.pika import DEFAULT_QUEUE_NAME, PikaEventBroker
 from rasa.core.brokers.sql import SQLEventBroker
+from rasa.core.constants import IAM_CLOUD_PROVIDER_ENV_VAR_NAME
+from rasa.core.iam_credentials_providers.aws_iam_credentials_providers import (
+    AWSMSKafkaIAMCredentialsProvider,
+)
 from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
@@ -514,3 +518,26 @@ async def test_kafka_broker_from_config_with_pii_attributes():
     assert actual.partition_by_sender == expected.partition_by_sender
     assert actual.stream_pii == expected.stream_pii
     assert actual.anonymization_topics == expected.anonymization_topics
+
+
+def test_kafka_event_broker_iam_config(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+    monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
+    broker = KafkaEventBroker(
+        "localhost",
+        sasl_mechanism="OAUTHBEARER",
+        topic="topic",
+        partition_by_sender=True,
+        security_protocol="SASL_SSL",
+        ssl_check_hostname=True,
+    )
+
+    assert isinstance(broker.iam_credentials_provider, AWSMSKafkaIAMCredentialsProvider)
+
+    config = broker._get_kafka_config()
+
+    assert config["sasl.mechanism"] == "OAUTHBEARER"
+    assert config["security.protocol"] == "SASL_SSL"
+    assert config["oauth_cb"] == broker.get_aws_iam_token
+    assert "sasl.username" not in config
+    assert "sasl.password" not in config

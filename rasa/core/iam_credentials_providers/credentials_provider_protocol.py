@@ -16,7 +16,7 @@ class TemporaryCredentials(BaseModel):
     """Dataclass storing temporary credentials."""
 
     auth_token: Optional[str] = None
-    expiration: Optional[int] = None
+    expiration: Optional[float] = None
     username: Optional[str] = None
     presigned_url: Optional[str] = None
 

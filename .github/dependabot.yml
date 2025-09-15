@@ -66,6 +66,7 @@ updates:
           - "aiogram"
           - "slack-sdk"
           - "azure-identity"
+          - "aws-msk-iam-sasl-signer-python"
       static-analysis-tools:
         dependency-type: production
         patterns:

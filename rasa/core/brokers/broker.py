@@ -66,7 +66,7 @@ class EventBroker:
         raise NotImplementedError("Event broker must implement the `publish` method.")
 
     def is_ready(self) -> bool:
-        """Determine whether or not the event broker is ready.
+        """Determine whether the event broker is ready.
 
         Returns:
             `True` by default, but this may be overridden by subclasses.
