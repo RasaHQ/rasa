@@ -4,13 +4,14 @@ import sys
 import time
 from collections import deque
 from pathlib import Path
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Optional, Text, Union
 from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import pytest
 import structlog.testing
 from _pytest.monkeypatch import MonkeyPatch
+from pydantic import ValidationError
 
 import rasa.core.lock_store
 from rasa.core.agent import Agent
@@ -25,6 +26,7 @@ from rasa.core.lock_store import (
     RedisLockStore,
     RedisLockStoreConfig,
 )
+from rasa.core.redis_connection_factory import DeploymentMode
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
@@ -92,6 +94,40 @@ def test_create_lock_store(lock_store: LockStore):
     lock = lock_store.get_lock(conversation_id)
     assert lock
     assert lock.conversation_id == conversation_id
+
+
+@pytest.mark.parametrize(
+    "redis_response",
+    [
+        # bytes response (needs conversion)
+        b'{"conversation_id": "test_id"}',
+        # string response (no conversion needed)
+        '{"conversation_id": "test_id"}',
+    ],
+)
+def test_get_lock_handles_bytes_and_string_responses(redis_response: Union[bytes, str]):
+    """Test that get_lock properly handles both bytes and string responses."""
+    lock_store = RedisLockStore()
+    mock_redis = Mock()
+    mock_redis.get.return_value = redis_response
+    lock_store.red = mock_redis
+
+    result = lock_store.get_lock("test_conversation")
+
+    assert result is not None
+    assert result.conversation_id == "test_id"
+
+
+def test_get_lock_returns_none_for_missing_key():
+    """Test that get_lock returns None when Redis returns None."""
+    lock_store = RedisLockStore()
+    mock_redis = Mock()
+    mock_redis.get.return_value = None
+    lock_store.red = mock_redis
+
+    result = lock_store.get_lock("nonexistent_conversation")
+
+    assert result is None
 
 
 def test_raise_connection_exception_redis_lock_store(monkeypatch: MonkeyPatch):
@@ -370,40 +406,45 @@ async def test_redis_lock_store_waiting_lock(
         serialized_unlocked_lock,  # returned on finish_serving
         serialized_unlocked_lock,  # returned on delete_lock
     ]
-    redis_lock = RedisLockStore(RedisLockStoreConfig())
-    conversation_id = "test_acquire_lock_debug_message"
-    wait_time_in_seconds = 0.01
-    with structlog.testing.capture_logs() as caplog:
-        async with redis_lock.lock(
-            conversation_id, wait_time_in_seconds=wait_time_in_seconds
-        ):
-            logs = filter_logs(
-                caplog,
-                "lock_store._retrying_lock_acquisition",
-                "debug",
-                [
-                    f"because 1 other item(s) for this "
-                    f"conversation ID have to be finished "
-                    f"processing first. Retrying in "
-                    f"{wait_time_in_seconds} seconds ..."
-                ],
-                log_contains_all_message_parts=True,
-            )
-            assert len(logs) == 1
 
-            logs = filter_logs(
-                caplog,
-                "lock_store._retrying_lock_acquisition",
-                "debug",
-                [
-                    f"because 2 other item(s) for this "
-                    f"conversation ID have to be finished "
-                    f"processing first. Retrying in "
-                    f"{wait_time_in_seconds} seconds ..."
-                ],
-                log_contains_all_message_parts=True,
-            )
-            assert len(logs) == 1
+    with patch(
+        "rasa.core.redis_connection_factory.RedisConnectionFactory.create_connection",
+        return_value=mock_strict_redis,
+    ):
+        redis_lock = RedisLockStore(RedisLockStoreConfig())
+        conversation_id = "test_acquire_lock_debug_message"
+        wait_time_in_seconds = 0.01
+        with structlog.testing.capture_logs() as caplog:
+            async with redis_lock.lock(
+                conversation_id, wait_time_in_seconds=wait_time_in_seconds
+            ):
+                logs = filter_logs(
+                    caplog,
+                    "lock_store._retrying_lock_acquisition",
+                    "debug",
+                    [
+                        f"because 1 other item(s) for this "
+                        f"conversation ID have to be finished "
+                        f"processing first. Retrying in "
+                        f"{wait_time_in_seconds} seconds ..."
+                    ],
+                    log_contains_all_message_parts=True,
+                )
+                assert len(logs) == 1
+
+                logs = filter_logs(
+                    caplog,
+                    "lock_store._retrying_lock_acquisition",
+                    "debug",
+                    [
+                        f"because 2 other item(s) for this "
+                        f"conversation ID have to be finished "
+                        f"processing first. Retrying in "
+                        f"{wait_time_in_seconds} seconds ..."
+                    ],
+                    log_contains_all_message_parts=True,
+                )
+                assert len(logs) == 1
 
 
 async def test_in_memory_lock_store_waiting_lock():
@@ -534,22 +575,126 @@ async def test_redis_lock_store_with_valid_prefix(monkeypatch: MonkeyPatch):
 
 def test_create_lock_store_from_endpoint_config(endpoints_path: Text):
     store = read_endpoint_config(endpoints_path, endpoint_type="lock_store")
-    lock_store = RedisLockStore(
-        config=RedisLockStoreConfig(
-            host="localhost",
-            port=6379,
-            db=0,
-            username="username",
-            password="password",
-            use_ssl=True,
-            ssl_keyfile="keyfile.key",
-            ssl_certfile="certfile.crt",
-            ssl_ca_certs="my-bundle.ca-bundle",
-            key_prefix="lock",
-        ),
-    )
+
+    with patch(
+        "rasa.core.redis_connection_factory.RedisConnectionFactory.create_connection"
+    ):
+        lock_store = RedisLockStore(
+            config=RedisLockStoreConfig(
+                host="localhost",
+                port=6379,
+                db=0,
+                username="username",
+                password="password",
+                use_ssl=True,
+                ssl_keyfile="keyfile.key",
+                ssl_certfile="certfile.crt",
+                ssl_ca_certs="my-bundle.ca-bundle",
+                key_prefix="lock",
+            ),
+        )
 
     assert isinstance(lock_store, type(LockStore.create(store)))
+
+
+@pytest.mark.parametrize(
+    "extra_config,expected_mode,expected_endpoints,expected_sentinel_service",
+    [
+        ({"deployment_mode": "standard"}, DeploymentMode.STANDARD.value, None, None),
+        (
+            {"deployment_mode": "cluster", "endpoints": ["node1:6379", "node2:6379"]},
+            DeploymentMode.CLUSTER.value,
+            ["node1:6379", "node2:6379"],
+            None,
+        ),
+        (
+            {
+                "deployment_mode": "sentinel",
+                "endpoints": ["sentinel1:26379"],
+                "sentinel_service": "mymaster",
+            },
+            DeploymentMode.SENTINEL.value,
+            ["sentinel1:26379"],
+            "mymaster",
+        ),
+        ({}, DeploymentMode.STANDARD.value, None, None),  # Default case
+    ],
+)
+def test_create_lock_store_deployment_modes(
+    extra_config: Dict[str, Any],
+    expected_mode: str,
+    expected_endpoints: Optional[List[str]],
+    expected_sentinel_service: Optional[str],
+):
+    """Test lock store creation with different deployment modes including default."""
+    with patch(
+        "rasa.core.redis_connection_factory.RedisConnectionFactory.create_connection"
+    ) as mock_create:
+        # Given
+        mock_redis = Mock()
+        mock_create.return_value = mock_redis
+
+        base_config = {"host": "localhost", "port": 6379, "db": 0}
+        config = RedisLockStoreConfig(**{**base_config, **extra_config})
+
+        # When
+        lock_store = RedisLockStore(config=config)
+
+        # Then
+        assert isinstance(lock_store, RedisLockStore)
+        assert lock_store.red == mock_redis
+
+        mock_create.assert_called_once()
+        call_args = mock_create.call_args
+        config = call_args.args[0]
+
+        assert config.deployment_mode == expected_mode
+        assert config.endpoints == expected_endpoints
+        assert config.sentinel_service == expected_sentinel_service
+
+
+def test_create_lock_store_default_deployment_mode():
+    """Test default lock store creation."""
+    with patch(
+        "rasa.core.redis_connection_factory.RedisConnectionFactory.create_connection"
+    ) as mock_create:
+        # Given
+        mock_redis = Mock()
+        mock_create.return_value = mock_redis
+
+        base_config = {"host": "localhost", "port": 6379, "db": 0}
+        config = RedisLockStoreConfig(**{**base_config})
+
+        # When
+        lock_store = RedisLockStore(config=config)
+
+        # Then
+        assert isinstance(lock_store, RedisLockStore)
+        assert lock_store.red == mock_redis
+
+        mock_create.assert_called_once()
+        call_args = mock_create.call_args
+        config = call_args.args[0]
+
+        assert config.deployment_mode == DeploymentMode.STANDARD.value
+        assert config.host == "localhost"
+        assert config.port == 6379
+        assert config.db == 0
+        assert config.endpoints is None
+
+
+def test_redis_lock_store_validation_error():
+    """Test that RedisLockStore properly handles configuration validation errors."""
+
+    with pytest.raises(ValidationError) as exc_info:
+        config = RedisLockStoreConfig(
+            **{
+                **{"endpoints": [123, "localhost:6379"]},
+            }
+        )
+        RedisLockStore(config=config)
+
+    assert "validation error for RedisLockStoreConfig" in str(exc_info.value)
 
 
 @pytest.fixture
@@ -677,27 +822,3 @@ def test_redis_lock_store_config_serialization(
     assert result["ssl_certfile"] == partial_redis_lock_store_config["ssl_certfile"]
     assert result["ssl_ca_certs"] == partial_redis_lock_store_config["ssl_ca_certs"]
     assert result["key_prefix"] == partial_redis_lock_store_config["key_prefix"]
-
-
-def test_redis_lock_store_config_to_strict_redis(
-    partial_redis_lock_store_config: Dict[str, Any],
-    mock_redis_lock_store: MagicMock,
-) -> None:
-    """Tests that the RedisLockStoreConfig creates valid strict redis config."""
-    partial_redis_lock_store_config["host"] = "redis://localhost:6379"
-    endpoint_config = EndpointConfig(**partial_redis_lock_store_config)
-
-    config = RedisLockStoreConfig(**endpoint_config.to_dict())
-
-    result = config.to_strict_redis()
-
-    assert str(result["host"]) == partial_redis_lock_store_config["host"]
-    assert result["port"] == partial_redis_lock_store_config["port"]
-    assert result["db"] == partial_redis_lock_store_config["db"]
-    assert result["username"] == partial_redis_lock_store_config["username"]
-    assert result["password"] == partial_redis_lock_store_config["password"]
-    assert result["ssl"] == partial_redis_lock_store_config["use_ssl"]
-    assert result["ssl_keyfile"] == partial_redis_lock_store_config["ssl_keyfile"]
-    assert result["ssl_certfile"] == partial_redis_lock_store_config["ssl_certfile"]
-    assert result["ssl_ca_certs"] == partial_redis_lock_store_config["ssl_ca_certs"]
-    assert "key_prefix" not in result.keys()

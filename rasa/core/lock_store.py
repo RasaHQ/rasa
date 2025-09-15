@@ -4,7 +4,7 @@ import asyncio
 import json
 import os
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, Literal, Optional, Text, Union
+from typing import Any, AsyncGenerator, Dict, List, Literal, Optional, Text, Union
 
 import structlog
 from pydantic import (
@@ -12,12 +12,18 @@ from pydantic import (
     BaseModel,
     Field,
     NonNegativeInt,
+    ValidationError,
     model_validator,
 )
 
 import rasa.shared.utils.common
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME
 from rasa.core.lock import TicketLock
+from rasa.core.redis_connection_factory import (
+    DeploymentMode,
+    RedisConfig,
+    RedisConnectionFactory,
+)
 from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.shared.utils.io import raise_deprecation_warning
 from rasa.utils.endpoints import EndpointConfig
@@ -269,6 +275,18 @@ class RedisLockStoreConfig(BaseModel):
         "will be raised in case Redis doesn't respond "
         "within `socket_timeout` seconds.",
     )
+    deployment_mode: DeploymentMode = Field(
+        default=DeploymentMode.STANDARD,
+        description="Redis deployment mode: 'standard', 'cluster', or 'sentinel'",
+    )
+    endpoints: Optional[List[str]] = Field(
+        default=None,
+        description="List of endpoints for cluster/sentinel mode in 'host:port' format",
+    )
+    sentinel_service: Optional[str] = Field(
+        default=None,
+        description="Sentinel service name",
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -298,9 +316,6 @@ class RedisLockStoreConfig(BaseModel):
             )
         return self
 
-    def to_strict_redis(self) -> Dict[str, Any]:
-        return self.model_dump(by_alias=True, exclude={"key_prefix"})
-
 
 class RedisLockStore(LockStore):
     """Redis store for ticket locks."""
@@ -314,10 +329,26 @@ class RedisLockStore(LockStore):
         Args:
             config: Redis lock store configuration.
         """
-        import redis
-
         self.config = config
-        self.red = redis.StrictRedis(**self.config.to_strict_redis())
+        try:
+            redis_config = RedisConfig(
+                host=str(self.config.host),
+                port=self.config.port,
+                db=self.config.db,
+                username=self.config.username,
+                password=self.config.password,
+                use_ssl=self.config.use_ssl,
+                ssl_keyfile=self.config.ssl_keyfile,
+                ssl_certfile=self.config.ssl_certfile,
+                ssl_ca_certs=self.config.ssl_ca_certs,
+                deployment_mode=self.config.deployment_mode,
+                endpoints=self.config.endpoints,
+                sentinel_service=self.config.sentinel_service,
+                socket_timeout=self.config.socket_timeout,
+            )
+            self.red = RedisConnectionFactory.create_connection(redis_config)
+        except ValidationError as e:
+            raise RasaException(f"Invalid Redis configuration: {e}")
 
         self.key_prefix = DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
         if self.config.key_prefix:
@@ -349,6 +380,9 @@ class RedisLockStore(LockStore):
         """Retrieves lock (see parent docstring for more information)."""
         serialised_lock = self.red.get(self.key_prefix + conversation_id)
         if serialised_lock:
+            # Handle bytes to string conversion for JSON parsing
+            if isinstance(serialised_lock, bytes):
+                serialised_lock = serialised_lock.decode("utf-8")
             return TicketLock.from_dict(json.loads(serialised_lock))
 
         return None
