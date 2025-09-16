@@ -32,6 +32,7 @@ CUSTOM_COMPONENT_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/custom_
 CALM_PII_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/privacy
 INTEGRATION_TEST_DEPLOYMENT_PATH = $(PWD)/tests_deployment
 TRANSFORMERS_OFFLINE ?= 1
+CONCURRENT_LOCK_STORE_INTEGRATION_TEST_PATH = $(INTEGRATION_TEST_FOLDER)/core/concurrent_lock_stores
 
 BOT_PATH ?=
 MODEL_NAME ?= model
@@ -676,4 +677,17 @@ stop-non-sequential-container:
 show-non-sequential-container-logs:
 	docker compose -f $(NON_SEQUENTIAL_INTEGRATION_TEST_DOCKER_COMPOSE) logs \
 		postgres redis redis-cluster redis-master \
+		redis-replica-1 redis-replica-2 redis-sentinel-1 redis-sentinel-2 redis-sentinel-3
+
+CONCURRENT_LOCK_STORE_TEST_DOCKER_COMPOSE = $(CONCURRENT_LOCK_STORE_INTEGRATION_TEST_PATH)/docker-compose.yml
+
+run-concurrent-lock-store-container:
+	docker compose -f $(CONCURRENT_LOCK_STORE_TEST_DOCKER_COMPOSE) up --wait
+
+stop-concurrent-lock-store-container:
+	docker compose -f $(CONCURRENT_LOCK_STORE_TEST_DOCKER_COMPOSE) down
+
+show-concurrent-lock-store-container-logs:
+	docker compose -f $(CONCURRENT_LOCK_STORE_TEST_DOCKER_COMPOSE) logs \
+		redis redis-cluster redis-master \
 		redis-replica-1 redis-replica-2 redis-sentinel-1 redis-sentinel-2 redis-sentinel-3

@@ -4,6 +4,7 @@ from collections import deque
 from typing import Deque, Optional, Text
 
 import structlog
+from pydantic import ValidationError
 
 from rasa.core.lock import Ticket, TicketLock
 from rasa.core.lock_store import (
@@ -12,6 +13,12 @@ from rasa.core.lock_store import (
     LockError,
     LockStore,
 )
+from rasa.core.redis_connection_factory import (
+    DeploymentMode,
+    RedisConfig,
+    RedisConnectionFactory,
+)
+from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 
 DEFAULT_REDIS_DB = 1
@@ -74,9 +81,10 @@ class ConcurrentRedisLockStore(LockStore):
                 alphanumeric.
             socket_timeout - Timeout in seconds after which an exception will be raised
                 in case Redis doesn't respond within `socket_timeout` seconds.
+            deployment_mode - Redis deployment mode: standard, cluster, or sentinel.
+            endpoints - List of endpoints for cluster/sentinel mode in host:port format.
+            sentinel_service - Sentinel service name.
         """
-        import redis
-
         host = endpoint_config.kwargs.get("host", DEFAULT_HOSTNAME)
         port = endpoint_config.kwargs.get("port", DEFAULT_PORT)
         db = endpoint_config.kwargs.get("db", DEFAULT_REDIS_DB)
@@ -90,20 +98,33 @@ class ConcurrentRedisLockStore(LockStore):
         socket_timeout = endpoint_config.kwargs.get(
             "socket_timeout", DEFAULT_SOCKET_TIMEOUT_IN_SECONDS
         )
-
-        self.red = redis.StrictRedis(
-            host=host,
-            port=int(port),
-            db=int(db),
-            username=username,
-            password=password,
-            ssl=use_ssl,
-            ssl_certfile=ssl_certfile,
-            ssl_keyfile=ssl_keyfile,
-            ssl_ca_certs=ssl_ca_certs,
-            socket_timeout=socket_timeout,
+        deployment_mode = endpoint_config.kwargs.get(
+            "deployment_mode", DeploymentMode.STANDARD.value
         )
+        endpoints = endpoint_config.kwargs.get("endpoints", [])
+        sentinel_service = endpoint_config.kwargs.get("sentinel_service")
 
+        try:
+            redis_config = RedisConfig(
+                host=host,
+                port=port,
+                db=db,
+                username=username,
+                password=password,
+                use_ssl=use_ssl,
+                ssl_certfile=ssl_certfile,
+                ssl_keyfile=ssl_keyfile,
+                ssl_ca_certs=ssl_ca_certs,
+                socket_timeout=socket_timeout,
+                deployment_mode=deployment_mode,
+                endpoints=endpoints,
+                sentinel_service=sentinel_service,
+            )
+            self.red = RedisConnectionFactory.create_connection(redis_config)
+        except ValidationError as e:
+            raise RasaException(f"Invalid Redis configuration: {e}")
+
+        self.deployment_mode = deployment_mode
         self.key_prefix = DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX
         if key_prefix:
             structlogger.debug(
@@ -128,6 +149,32 @@ class ConcurrentRedisLockStore(LockStore):
                     f"Using default '{self.key_prefix}' instead."
                 ),
             )
+
+    def _get_keys_by_pattern(self, pattern: Text) -> list:
+        """Get keys by pattern, using SCAN for cluster mode and KEYS for others."""
+        if self.deployment_mode == DeploymentMode.CLUSTER.value:
+            # In cluster mode, use SCAN to get keys more reliably
+            keys = []
+            cursor = 0
+
+            while True:
+                try:
+                    cursor, batch_keys = self.red.scan(cursor, match=pattern, count=100)
+                    keys.extend(batch_keys)
+                    if cursor == 0:
+                        break
+                except Exception as e:
+                    structlogger.warning(
+                        "concurrent_redis_lock_store._get_keys_by_pattern.scan_interrupted",
+                        event_info=f"SCAN interrupted in cluster mode: {e}. "
+                        f"Returning {len(keys)} keys found so far.",
+                    )
+                    break
+        else:
+            # Standard and sentinel modes use KEYS
+            keys = self.red.keys(pattern)
+
+        return keys
 
     def issue_ticket(
         self, conversation_id: Text, lock_lifetime: float = LOCK_LIFETIME
@@ -157,11 +204,14 @@ class ConcurrentRedisLockStore(LockStore):
         tickets: Deque[Ticket] = deque()
 
         pattern = self.key_prefix + conversation_id + ":" + "[0-9]*"
-        redis_keys = self.red.keys(pattern)
+        redis_keys = self._get_keys_by_pattern(pattern)
 
         for key in redis_keys:
             serialised_ticket = self.red.get(key)
             if serialised_ticket:
+                # Handle bytes to string conversion for JSON parsing
+                if isinstance(serialised_ticket, bytes):
+                    serialised_ticket = serialised_ticket.decode("utf-8")
                 ticket = Ticket.from_dict(json.loads(serialised_ticket))
                 tickets.appendleft(ticket)
 
@@ -172,7 +222,7 @@ class ConcurrentRedisLockStore(LockStore):
     def delete_lock(self, conversation_id: Text) -> None:
         """Deletes lock for conversation ID."""
         pattern = self.key_prefix + conversation_id + ":*"
-        redis_keys = self.red.keys(pattern)
+        redis_keys = self._get_keys_by_pattern(pattern)
 
         if not redis_keys:
             structlogger.debug(

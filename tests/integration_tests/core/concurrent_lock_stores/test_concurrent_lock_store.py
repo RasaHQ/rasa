@@ -22,19 +22,45 @@ REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
 
 
-@pytest.fixture
-def concurrent_redis_lock_store() -> Iterator[ConcurrentRedisLockStore]:
+@pytest.fixture(
+    params=[
+        {"deployment_mode": "standard"},
+        {
+            "deployment_mode": "cluster",
+            "endpoints": [
+                f"{REDIS_HOST}:7000",
+                f"{REDIS_HOST}:7001",
+                f"{REDIS_HOST}:7002",
+            ],
+        },
+        {
+            "deployment_mode": "sentinel",
+            "endpoints": [
+                f"{REDIS_HOST}:26379",
+                f"{REDIS_HOST}:26380",
+                f"{REDIS_HOST}:26381",
+            ],
+            "sentinel_service": "mymaster",
+        },
+    ]
+)
+def concurrent_redis_lock_store(
+    request: pytest.FixtureRequest,
+) -> Iterator[ConcurrentRedisLockStore]:
     # we need one redis database per worker, otherwise
     # tests conflict with each others when databases are flushed
     pytest_worker_id = os.getenv("PYTEST_XDIST_WORKER", "gw0")
     redis_database = int(pytest_worker_id.replace("gw", ""))
-    lock_store = ConcurrentRedisLockStore(
-        EndpointConfig(
-            host=REDIS_HOST,
-            port=REDIS_PORT,
-            db=redis_database,
-        )
-    )
+    # Base configuration
+    config = {"host": REDIS_HOST, "port": REDIS_PORT}
+
+    # For cluster mode, don't set db (clusters only support db 0)
+    if request.param["deployment_mode"] != "cluster":
+        config["db"] = redis_database
+
+    config.update(request.param)
+
+    lock_store = ConcurrentRedisLockStore(EndpointConfig(**config))
     try:
         yield lock_store
     finally:

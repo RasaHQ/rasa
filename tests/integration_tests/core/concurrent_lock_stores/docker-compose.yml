@@ -1,0 +1,198 @@
+services:  
+  redis:
+    image: redis:6
+    container_name: redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    ports:
+      - 6379:6379
+
+  # Redis Cluster - minimum 3 nodes for proper cluster
+  redis-cluster:
+    image: grokzen/redis-cluster:6.2.0
+    container_name: redis-cluster
+    ports:
+      - 7000-7005:7000-7005
+    environment:
+      - IP=0.0.0.0
+      - INITIAL_PORT=7000
+      - MASTERS=3
+      - SLAVES_PER_MASTER=0
+      - BIND_ADDRESS=0.0.0.0
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "7000", "cluster", "info"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Redis Master for Sentinel
+  redis-master:
+    image: redis:7-alpine
+    container_name: redis-master
+    command: redis-server --port 6380
+    volumes:
+      - redis-master-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6380", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    network_mode: "host"
+
+  # Redis Replica 1
+  redis-replica-1:
+    image: redis:7-alpine
+    container_name: redis-replica-1
+    command: redis-server --port 6381 --replicaof 127.0.0.1 6380
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    volumes:
+      - redis-replica-1-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6381", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    network_mode: "host"
+
+  # Redis Replica 2
+  redis-replica-2:
+    image: redis:7-alpine
+    container_name: redis-replica-2
+    command: redis-server --port 6382 --replicaof 127.0.0.1 6380
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    volumes:
+      - redis-replica-2-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6382", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    network_mode: "host"
+
+  # Sentinel 1
+  redis-sentinel-1:
+    image: redis:7-alpine
+    container_name: redis-sentinel-1
+    command: >
+      sh -c "
+      echo 'port 26379' > /tmp/sentinel.conf &&
+      echo 'sentinel resolve-hostnames yes' >> /tmp/sentinel.conf &&
+      echo 'sentinel announce-hostnames yes' >> /tmp/sentinel.conf &&
+      echo 'sentinel monitor mymaster 127.0.0.1 6380 2' >> /tmp/sentinel.conf &&
+      echo 'sentinel down-after-milliseconds mymaster 5000' >> /tmp/sentinel.conf &&
+      echo 'sentinel parallel-syncs mymaster 1' >> /tmp/sentinel.conf &&
+      echo 'sentinel failover-timeout mymaster 10000' >> /tmp/sentinel.conf &&
+      echo 'sentinel deny-scripts-reconfig yes' >> /tmp/sentinel.conf &&
+      
+      echo 'Waiting for redis-master...' &&
+      until redis-cli -h 127.0.0.1 -p 6380 ping > /dev/null 2>&1; do
+        sleep 1
+      done &&
+      
+      echo 'Starting sentinel...' &&
+      redis-sentinel /tmp/sentinel.conf
+      "
+    depends_on:
+      redis-master:
+        condition: service_healthy
+      redis-replica-1:
+        condition: service_healthy
+      redis-replica-2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26379", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    network_mode: "host"
+
+  # Sentinel 2
+  redis-sentinel-2:
+    image: redis:7-alpine
+    container_name: redis-sentinel-2
+    command: >
+      sh -c "
+      echo 'port 26380' > /tmp/sentinel.conf &&
+      echo 'sentinel resolve-hostnames yes' >> /tmp/sentinel.conf &&
+      echo 'sentinel announce-hostnames yes' >> /tmp/sentinel.conf &&
+      echo 'sentinel monitor mymaster 127.0.0.1 6380 2' >> /tmp/sentinel.conf &&
+      echo 'sentinel down-after-milliseconds mymaster 5000' >> /tmp/sentinel.conf &&
+      echo 'sentinel parallel-syncs mymaster 1' >> /tmp/sentinel.conf &&
+      echo 'sentinel failover-timeout mymaster 10000' >> /tmp/sentinel.conf &&
+      echo 'sentinel deny-scripts-reconfig yes' >> /tmp/sentinel.conf &&
+      
+      echo 'Waiting for redis-master...' &&
+      until redis-cli -h 127.0.0.1 -p 6380 ping > /dev/null 2>&1; do
+        sleep 1
+      done &&
+      
+      echo 'Starting sentinel...' &&
+      redis-sentinel /tmp/sentinel.conf
+      "
+    depends_on:
+      redis-master:
+        condition: service_healthy
+      redis-replica-1:
+        condition: service_healthy
+      redis-replica-2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26380", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    network_mode: "host"
+
+  # Sentinel 3
+  redis-sentinel-3:
+    image: redis:7-alpine
+    container_name: redis-sentinel-3
+    command: >
+      sh -c "
+      echo 'port 26381' > /tmp/sentinel.conf &&
+      echo 'sentinel resolve-hostnames yes' >> /tmp/sentinel.conf &&
+      echo 'sentinel announce-hostnames yes' >> /tmp/sentinel.conf &&
+      echo 'sentinel monitor mymaster 127.0.0.1 6380 2' >> /tmp/sentinel.conf &&
+      echo 'sentinel down-after-milliseconds mymaster 5000' >> /tmp/sentinel.conf &&
+      echo 'sentinel parallel-syncs mymaster 1' >> /tmp/sentinel.conf &&
+      echo 'sentinel failover-timeout mymaster 10000' >> /tmp/sentinel.conf &&
+      echo 'sentinel deny-scripts-reconfig yes' >> /tmp/sentinel.conf &&
+      
+      echo 'Waiting for redis-master...' &&
+      until redis-cli -h 127.0.0.1 -p 6380 ping > /dev/null 2>&1; do
+        sleep 1
+      done &&
+      
+      echo 'Starting sentinel...' &&
+      redis-sentinel /tmp/sentinel.conf
+      "
+    depends_on:
+      redis-master:
+        condition: service_healthy
+      redis-replica-1:
+        condition: service_healthy
+      redis-replica-2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26381", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    network_mode: "host"
+
+volumes:
+  redis_data:
+  redis-master-data:
+  redis-replica-1-data:
+  redis-replica-2-data:

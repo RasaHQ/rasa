@@ -1105,20 +1105,6 @@ jobs:
       REDIS_HOST: localhost
       REDIS_PORT: 6379
 
-    services:
-      redis:
-        image: redis:6
-        # Set health checks to wait until redis has started
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          # FIXME: cannot use ${{ env.REDIS_PORT }} here
-          # mapping container ports to the host
-          - 6379:6379
-
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -1134,7 +1120,11 @@ jobs:
           make install
         shell: bash
 
-      # these integration tests need to be run separately
+      - name: Run container for concurrent lock store integration testing
+        run: |
+          make run-concurrent-lock-store-container
+
+        # these integration tests need to be run separately
       - name: Test Code with Services 🩺 (concurrent_lock_store)
         env:
           JOBS: 1
@@ -1153,6 +1143,14 @@ jobs:
         with:
           name: Concurrent LockStore Integration Test Results
           path: integration-results-concurrent-lockstore.xml
+
+      - name: Show container logs for concurrent lock store integration testing
+        run: |
+          make show-concurrent-lock-store-container-logs
+
+      - name: Stop container for concurrent lock store integration testing
+        run: |
+          make stop-concurrent-lock-store-container
 
   broker_integration_test:
     name: Run Broker Integration Tests
