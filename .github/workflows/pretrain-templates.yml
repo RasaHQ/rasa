@@ -143,7 +143,7 @@ jobs:
 
     steps:
       - name: Notify Slack of unsuccessful template build ⛔️
-        if: ${{ needs.build-and-upload.result != 'success' }}
+        if: ${{ needs.build-and-upload.result != 'success' && needs.build-and-upload.result != 'skipped' }}
         uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
         with:
           method: chat.postMessage
