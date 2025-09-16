@@ -35,14 +35,14 @@ jobs:
           LATEST_RASA_MINOR=$(python -c "import sys; import os; sys.path.append('${{ github.workspace }}/rasa'); from rasa.version import __version__; print(__version__)")
           
            # Find latest rasa version on branch and split dev tag if available
-          if [[ "${LATEST_RASA_MINOR}" != *"dev"* ]]; then          
+          if [[ "${LATEST_RASA_MINOR}" != *"dev"* && "${LATEST_RASA_MINOR}" != *"a"* ]]; then         
               echo "Current RASA version: ${LATEST_RASA_MINOR}"
           
               ## Increment the minor version for the weekly dev release and make the patch version 0, e.g. 3.12.17 to 3.13.0
               LATEST_WEEKLY_VERSION=$(python -c "v='${LATEST_RASA_MINOR}'; parts=v.split('.'); parts[1]=str(int(parts[1])+1); parts[2]='0'; print('.'.join(parts))")
           else
-              echo "Current RASA version is already a dev version, skipping version increment."
-              LATEST_RASA_MINOR=$(python -c "import sys; import os; sys.path.append('${{ github.workspace }}/rasa'); from rasa.version import __version__; import re; print(re.sub(r'\.dev.*$', '', __version__))")
+              echo "Current RASA version is already a dev or alpha version, skipping version increment."
+              LATEST_RASA_MINOR=$(python -c "import sys; import os; sys.path.append('${{ github.workspace }}/rasa'); from rasa.version import __version__; import re; print(re.sub(r'(\.dev.*$|a\d+$)', '', __version__))")
               echo "Current RASA version: ${LATEST_RASA_MINOR}"
               LATEST_WEEKLY_VERSION="${LATEST_RASA_MINOR}"
             fi
