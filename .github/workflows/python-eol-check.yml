@@ -1,0 +1,67 @@
+name: Python EOL Check
+
+on:
+  schedule:
+    # Run every 1st day of the month at 9 AM UTC
+    - cron: '0 9 1 * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  check-python-eol:
+    runs-on: ubuntu-latest
+    outputs:
+      is-eol-soon: ${{ steps.check-eol.outputs.is-eol-soon }}
+      python-version: ${{ steps.check-eol.outputs.python-version }}
+      eol-date: ${{ steps.check-eol.outputs.eol-date }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: '3.11'
+
+      - name: Extract Python versions from pyproject.toml
+        id: extract-python-versions
+        run: |
+          versions=$(python scripts/extract_python_versions.py)
+          echo "versions_to_check=$versions" >> $GITHUB_OUTPUT
+          echo "Versions to check: $versions"
+
+      - name: Check Python EOL status
+        id: check-eol
+        uses: RasaHQ/python-eol-checker@b34b500fa512bf47dc777c01253772cec5b5d4eb
+        with:
+          python-version: ${{ steps.extract-python-versions.outputs.versions_to_check }}
+          days: '90'
+
+  slack-notifications:
+    name: Slack Notifications
+    runs-on: ubuntu-24.04
+    needs: [check-python-eol]
+    if: always()  # Ensures this job runs regardless of the result of previous jobs
+
+    steps:
+      - name: Notify Slack in case a Python version is reaching EOL 💬
+        if: ${{ needs.check-python-eol.result == 'success' && needs.check-python-eol.outputs.is-eol-soon == 'yes' && !contains(vars.ALREADY_ALERTED_PYTHON_VERSIONS, needs.check-python-eol.outputs.python-version) }}
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          # Send notification to #prodeng-internal slack channel
+          payload: |
+            channel: "C36SS4N8M"
+            text: ":bulb: :snake: Python version ${{ needs.check-python-eol.outputs.python-version }} is reaching EOL soon on ${{ needs.check-python-eol.outputs.eol-date }}. Don't forget to include this work when planning the next Rasa Pro release :nerd_face: (more info at https://devguide.python.org/versions/)"
+
+      - name: Notify Slack of unsuccessful release ⛔️
+        if: ${{ needs.check-python-eol.result != 'success' }}
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          # Send notification to #prodeng-internal slack channel
+          payload: |
+            channel: "C36SS4N8M"
+            text: "Couldn't check Python EOL status. More information can be found <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|here>."

@@ -5,7 +5,7 @@
 ## Active Workflows
 
 ### Continuous Integration
-This is the main CI file, running on every pull request and pushes to `main` branch and all `release branches`. 
+This is the main CI file, running on every pull request and pushes to `main` branch and all `release branches`.
 It runs the following checks:
 - Build docker dev images for each pull request and push to aws
 - Check poetry lock is up to date
@@ -21,37 +21,37 @@ If this workflow fails a Slack notification is sent to the channel `#atom-squad-
 This workflow can also be run as a [workflow dispatch](#glossary) event.
 
 ### E2E Test on Bot with CALM supported providers
-This workflow runs a E2E test(s) on a bot, using the various CALM supported LLM 
-and Embeddings providers, to verify CALM's integration/compatibility with the 
-providers' APIs. 
+This workflow runs a E2E test(s) on a bot, using the various CALM supported LLM
+and Embeddings providers, to verify CALM's integration/compatibility with the
+providers' APIs.
 
-This workflow runs as a cron job at 1am UTC every Sunday, and can 
-also be triggered manually/on-demand, and test results' notification is sent to 
+This workflow runs as a cron job at 1am UTC every Sunday, and can
+also be triggered manually/on-demand, and test results' notification is sent to
 `#dev-tribe-alerts` Slack channel, and traces and metrics from Rasa components are sent to [`Honeycomb`](https://ui.honeycomb.io/rasa/environments/engine). In case of failure, test results are saved, and can be
 found on GitHub's web interface, in the `Artifacts` section of the `Action`'s run summary page.
 
 ### E2E Test on Rasa-Calm-Demo with supported providers and specified config
-This workflow runs a single E2E test (with assertions) on the `rasa-calm-demo` 
-bot (from its `passing/happy_path` category), using the specified CALM supported LLM 
-or Embeddings provider (with option to also specify specific model to be used from the provider), 
+This workflow runs a single E2E test (with assertions) on the `rasa-calm-demo`
+bot (from its `passing/happy_path` category), using the specified CALM supported LLM
+or Embeddings provider (with option to also specify specific model to be used from the provider),
 to verify CALM's integration/compatibility with the providers' APIs.
 
-This workflow can be triggered manually/on-demand, and test results' notification is sent to 
+This workflow can be triggered manually/on-demand, and test results' notification is sent to
 `#dev-tribe-alerts` Slack channel, and traces and metrics from Rasa components are sent to [`Honeycomb`](https://ui.honeycomb.io/rasa/environments/engine). In case of failure, test results are saved, and can be
 found on GitHub's web interface, in the `Artifacts` section of the `Action`'s run summary page.
 
 ### Dialogue Understanding Tests
-This workflow runs a Dialogue Understanding tests on the `rasa-calm-demo` 
-bot, using the specified CALM supported LLM or Embeddings provider (with option to also specify specific model to be used from the provider), 
+This workflow runs a Dialogue Understanding tests on the `rasa-calm-demo`
+bot, using the specified CALM supported LLM or Embeddings provider (with option to also specify specific model to be used from the provider),
 to evaluate Command Generator.
 
-This workflow can be triggered manually/on-demand, and test results' notification is sent to 
+This workflow can be triggered manually/on-demand, and test results' notification is sent to
 `#dev-tribe-alerts` Slack channel, and traces and metrics from Rasa components are sent to [`Honeycomb`](https://ui.honeycomb.io/rasa/environments/engine). In case of failure, test results are saved, and can be
 found on GitHub's web interface, in the `Artifacts` section of the `Action`'s run summary page.
 
 ### DM1/Tensorflow tests
 This workflow runs DM1 tests (that use Tensorflow), on:
-1. Pull-requests and push to `main` and non-dev `release` branches and tags, when files containing DM1/Tensorflow code are changed. 
+1. Pull-requests and push to `main` and non-dev `release` branches and tags, when files containing DM1/Tensorflow code are changed.
     - The list of files and associated tests can be found [here](https://www.notion.so/rasa/ENG-1615-Identify-DM1-TensorFlow-files-and-tests-190b9c0d544a80198b11c70d55610273?pvs=4).
 2. Preparation of non-dev release branches.
 
@@ -61,13 +61,13 @@ Purpose of this dedicated workflow is to reduce GHA costs, by not running DM1/Te
 This workflow runs on release branches, to verify compatibility between minor and patch versions, by
 training model on an earlier `rasa-pro` version and starting a user session, then continuing the active user session with newer `rasa-pro` version; to verify that:
 1. Newer versions can run inference via old model without retraining.
-2. Newer versions can load active sessions from previous version, and continue conversation in them. 
+2. Newer versions can load active sessions from previous version, and continue conversation in them.
 
 ### Rasa versions performance testing
 Automated performance evaluation of new Rasa-Pro versions' command generation against baseline of previous versions, for release testing and on changes to prompt templates, to check against performance degradations.
 
 ### Release Artifacts Workflow
-Workflow runs on a tag push to the `main` branch and `release branches`. 
+Workflow runs on a tag push to the `main` branch and `release branches`.
 This workflow does the following:
 - Optionally, runs the ["E2E Test on Rasa-Calm-Demo with supported providers"](./.github/workflows/providers-e2e-tests.yml) workflow, if this workflow is triggered manually with the `run_e2e_test_on_providers` option selected.
 - builds and pushes a docker image with the tag version to [GCP](https://console.cloud.google.com/artifacts/docker/rasa-releases/europe-west3/rasa-pro/rasa-pro?authuser=1&project=rasa-releases)
@@ -89,8 +89,8 @@ Workflow pushes a tag by running `make tag-release-auto`.
 This workflow runs on `main` and `release branches` and is triggered only after the release prep branch with the name `prepare-release*` is merged.
 
 ### Release
-Workflow runs only on tag pushes and branches starting with `prepare-release*`. 
-It checks if the tag version is a pre-release version or not and 
+Workflow runs only on tag pushes and branches starting with `prepare-release*`.
+It checks if the tag version is a pre-release version or not and
 checks changelog folder to list any unexpected files.
 
 ### Backport
@@ -106,7 +106,7 @@ as soon as the source PR gets closed (by merging).
 
 The configuration for this GitHub action can be found in the `.backportrc.json` file located in the root folder.
 We have to update `targetBranchChoices` with every new release branch created after every minor or major.
-The configuration allows PRs to be opened which might contain conflicts with the target branch: the PR author has to 
+The configuration allows PRs to be opened which might contain conflicts with the target branch: the PR author has to
 resolve any conflicts before approving and merging.
 
 ### Find Newly Added Dependencies
@@ -123,7 +123,7 @@ The `Run Performance Checks` workflow will publish a comment on the PR with the 
 
 ### Run Performance Checks
 This workflow is run to check the rasa-pro package installation performance. It gathers metrics such as, `installation time`,
-`commit time`, `rasa pro version` and sends this data to segment. 
+`commit time`, `rasa pro version` and sends this data to segment.
 Workflow runs once at the end of each day against the `main` branch.
 Failure information is sent via Slack notification to the channel `#atom-squad-alerts`.
 This workflow can also be run as a [workflow dispatch](#glossary) event or as a [repository dispatch](#glossary) event.
@@ -150,13 +150,19 @@ Scans for security issues using the Semgrep tool. Runs on `main` and pull reques
 Back up rasa-private repo to S3. Runs as a cron job at 7AM Monday to Sunday. Can also be run as a [workflow dispatch](#glossary) event.
 
 ### PR Cleanup
-This workflow runs everytime a pull request is closed and skips pull requests created by dependabot. 
+This workflow runs everytime a pull request is closed and skips pull requests created by dependabot.
 Deletes all dev docker images created as part of the [continuous integration workflow](#continuous-integration)
 and removes them from the ECR repositories.
 
 ### Semgrep PII Detection
 This workflow scans pull requests using the Semgrep tool to detect potential PII (Personally Identifiable Information) exposure.
-It scans only the newly added lines in the PR, posts inline comments on any PII findings, and provides a summary comment with the total results. 
+It scans only the newly added lines in the PR, posts inline comments on any PII findings, and provides a summary comment with the total results.
+
+### Python EOL Check
+This workflow checks for the python versions supported in `pyproject.toml` and send a
+slack message if any of the version is reaching EOL within 90 days. It only sesnds
+a notification if it's the first time a specific version, e.g. 3.9, is detected to
+reach EOL, by using the `ALREADY_ALERTED_PYTHON_VERSIONS` repository variable.
 
 ## Actions
 In order to remove duplications in the CI workflow steps actions were packaged using [composite actions](https://docs.github.com/en/actions/creating-actions/creating-a-composite-action).
@@ -169,7 +175,7 @@ The current set of actions are as follows :
 - .actions/test-prerequisites/action.yml - Setups python, reads poetry version, installs poetry, load cached venv and installs setuptool when running unit/integration tests.
 
 ## Glossary
-- workflow dispatch : Only workflow files that use the workflow_dispatch event trigger will have the option to run the workflow manually using the Run workflow button. 
+- workflow dispatch : Only workflow files that use the workflow_dispatch event trigger will have the option to run the workflow manually using the Run workflow button.
  For more information refer [here](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#workflow_dispatch)
 - repository dispatch : A repository dispatch event is an event that triggers a GitHub Actions workflow in a repository. For
 more information, refer [here](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#repository_dispatch)
