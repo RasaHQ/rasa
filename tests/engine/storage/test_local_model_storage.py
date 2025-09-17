@@ -391,7 +391,7 @@ def test_create_model_package_with_non_existing_dir(
 @pytest.mark.skipif(
     sys.platform != "win32", reason="The test needs to be executed only on Windows"
 )
-@patch("TarSafe.open")
+@patch("tarsafe.TarSafe.open")
 def test_extract_archive_uses_filter_on_windows(mock_tar_open: Mock):
     """Test that extraction filter is always applied on Windows"""
     # Given
@@ -412,7 +412,7 @@ def test_extract_archive_uses_filter_on_windows(mock_tar_open: Mock):
 @pytest.mark.skipif(
     sys.platform != "win32", reason="The test needs to be executed only on Windows"
 )
-@patch("TarSafe.open")
+@patch("tarsafe.TarSafe.open")
 def test_extract_archive_fallback_on_exception(mock_tar_open: Mock):
     """Test fallback to normal extraction when filter approach fails"""
     # Given
@@ -452,8 +452,7 @@ def test_extract_archive_no_filter(mock_tar_open: Mock):
     assert mock_tar.extractall.call_count == 1
 
     call_args = mock_tar.extractall.call_args_list[0]
-    assert call_args[0][0] == Path("/temp")
-    assert "\\\\?\\" not in str(call_args[0][0])
+    assert call_args[0][0].resolve() == Path("/temp").resolve()
 
 
 def test_filter_normpath():

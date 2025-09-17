@@ -1,4 +1,3 @@
-import platform
 import typing
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -63,9 +62,6 @@ def test_validate_path_to_test_cases(tmp_path: Path) -> None:
         f"Path to test cases does not exist: {path_to_test_cases}. "
         f"Please provide a valid path to test cases. "
     )
-
-    if platform.system() == "Windows":
-        expected_msg = expected_msg.replace("\\", "\\\\")
 
     with pytest.raises(ValidationError) as exc_info:
         validate_path_to_test_cases(str(path_to_test_cases))
