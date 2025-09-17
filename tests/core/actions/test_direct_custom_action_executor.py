@@ -28,9 +28,12 @@ ENDPOINTS_FILE_PATH = "data/test_endpoints/endpoints_actions_module.yml"
 
 
 @pytest.fixture(autouse=True)
-def setup():
+def setup(monkeypatch: MonkeyPatch):
     DirectCustomActionExecutor._actions_module_registered = False
     DirectCustomActionExecutor._create_action_executor.cache_clear()
+
+    # Set OPENAI_API_KEY
+    monkeypatch.setenv("OPENAI_API_KEY", "test-foo-bar")
 
 
 @pytest.fixture

@@ -1,8 +1,9 @@
 import json
+import shutil
 import sys
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
@@ -137,16 +138,34 @@ def patch_copilot_dependencies(monkeypatch):
     monkeypatch.setattr(LakeraAIGuardrails, "send_request", _no_flag)
 
 
-def test_setup_project_generator_adds_to_sys_path(tmp_path: Path):
+@pytest.fixture
+def self_removable_path(tmp_path: Path) -> Generator[Path, Any, None]:
+    """Fixture that ensures temporary directory is cleaned up after test completion."""
+    yield tmp_path
+
+    # Clean up filesystem
+    shutil.rmtree(tmp_path, ignore_errors=True)
+
+    # Clean up sys.path
     tmp_path_str = str(tmp_path)
+
+    # Remove all occurrences safely
+    for _ in range(sys.path.count(tmp_path_str)):
+        sys.path.remove(tmp_path_str)
+
+
+def test_setup_project_generator_adds_to_sys_path(self_removable_path: Path):
+    tmp_path_str = str(self_removable_path)
     assert tmp_path_str not in sys.path
 
     setup_project_generator(tmp_path_str)
     assert tmp_path_str in sys.path
 
 
-def test_setup_project_generator_avoids_duplicate_sys_path_entries(tmp_path: Path):
-    tmp_path_str = str(tmp_path)
+def test_setup_project_generator_avoids_duplicate_sys_path_entries(
+    self_removable_path: Path,
+):
+    tmp_path_str = str(self_removable_path)
     assert tmp_path_str not in sys.path
 
     setup_project_generator(tmp_path_str)
@@ -155,8 +174,12 @@ def test_setup_project_generator_avoids_duplicate_sys_path_entries(tmp_path: Pat
     assert sys.path.count(tmp_path_str) == 1
 
 
-async def test_template_loads_actions_module(tmp_path: Path, monkeypatch: MonkeyPatch):
-    tmp_path_str = str(tmp_path)
+async def test_template_loads_actions_module(
+    self_removable_path: Path, monkeypatch: MonkeyPatch
+):
+    """Test that template loads actions module correctly."""
+    # Set up isolated environment
+    tmp_path_str = str(self_removable_path)
     monkeypatch.chdir(tmp_path_str)
     # this is required for the human handoff action in the telco example
     monkeypatch.setenv("OPENAI_API_KEY", "test-foo-bar")
@@ -436,9 +459,9 @@ class TestFilesEndpointIntegration:
     """Integration tests for the files endpoint with job execution."""
 
     @pytest.fixture
-    def temp_project_dir(self, tmp_path):
+    def temp_project_dir(self, self_removable_path: Path):
         """Create a temporary project directory."""
-        return tmp_path / "project"
+        return self_removable_path / "project"
 
     @pytest.mark.asyncio
     async def test_full_replace_workflow(self, sanic_app: Sanic, temp_project_dir):
