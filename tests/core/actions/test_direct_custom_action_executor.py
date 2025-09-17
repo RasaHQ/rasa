@@ -11,7 +11,8 @@ from pytest import CaptureFixture, MonkeyPatch
 from rasa.core.actions.action import RemoteAction, RemoteActionJSONValidator
 from rasa.core.actions.direct_custom_actions_executor import DirectCustomActionExecutor
 from rasa.core.agent import Agent
-from rasa.core.channels.channel import UserMessage
+from rasa.core.channels.channel import CollectingOutputChannel, UserMessage
+from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
@@ -78,6 +79,12 @@ async def test_executor_initialized_with_invalid_actions_module(
 ):
     endpoint = EndpointConfig(actions_module=DUMMY_INVALID_ACTIONS_MODULE_PATH)
 
+    # Executor should initialize successfully
+    executor = DirectCustomActionExecutor(
+        action_name="some_action", action_endpoint=endpoint
+    )
+
+    # Exception should be raised during run() method
     message = (
         f"You've provided the custom actions module "
         f"'{DUMMY_INVALID_ACTIONS_MODULE_PATH}' to run directly by the rasa server, "
@@ -85,9 +92,6 @@ async def test_executor_initialized_with_invalid_actions_module(
         f"Please check for typos in your `endpoints.yml` file."
     )
     with pytest.raises(RasaException, match=message):
-        executor = DirectCustomActionExecutor(
-            action_name="some_action", action_endpoint=endpoint
-        )
         await executor.run(tracker, domain)
 
 
@@ -170,7 +174,7 @@ async def test_executor_runs_action_invalid_actions_module(
 ):
     """
     Ensure that the inappropriately configured actions_module doesn't
-    break the execution of the assistant, but raises an exception log.
+    break the execution of the assistant, but logs an exception and continues.
     """
     # Set MessageProcessor to use the DirectCustomActionExecutor
     # with an invalid actions_module
@@ -178,16 +182,17 @@ async def test_executor_runs_action_invalid_actions_module(
     endpoint = EndpointConfig(actions_module=DUMMY_INVALID_ACTIONS_MODULE_PATH)
     processor.action_endpoint = endpoint
 
-    # Trigger the custom action execution and ensure the exception log is raised
+    # The conversation should complete successfully despite the invalid module
     message = UserMessage(text="Activate custom action.")
-    error_message = (
-        "You've provided the custom actions module "
-        f"'{DUMMY_INVALID_ACTIONS_MODULE_PATH}' to run directly by the rasa server, "
-        "however this module does not exist. "
-        "Please check for typos in your `endpoints.yml` file."
-    )
-    with pytest.raises(RasaException, match=error_message):
-        await processor.handle_message(message)
+    response = await processor.handle_message(message)
+
+    # Verify that the conversation completed (no exception raised)
+    assert response is not None
+
+    # Check that the error was logged
+    captured = capsys.readouterr()
+    error_message = "module does not exist"
+    assert error_message in captured.out or error_message in captured.err
 
 
 def test_action_executor_is_being_cached(mock_endpoint: EndpointConfig):
@@ -201,6 +206,31 @@ def test_action_executor_is_being_cached(mock_endpoint: EndpointConfig):
 
 
 @pytest.mark.asyncio
+async def test_conversation_completes_with_invalid_module():
+    """Test that conversation completes properly when action module doesn't exist."""
+    # Create an action with an invalid action module
+    endpoint = EndpointConfig(actions_module="nonexistent_module")
+    action = RemoteAction("test_action", endpoint)
+
+    # Create a simple domain and tracker
+    domain = Domain.empty()
+    tracker = DialogueStateTracker("test_sender", [])
+
+    # Test that the action can be created without exception
+    assert isinstance(action, RemoteAction)
+    assert isinstance(action.executor, DirectCustomActionExecutor)
+
+    # Test that running the action raises the expected exception
+    # This simulates what happens in the processor's _run_action method
+    with pytest.raises(RasaException, match="module does not exist"):
+        await action.run(
+            CollectingOutputChannel(),
+            TemplatedNaturalLanguageGenerator(domain.responses),
+            tracker,
+            domain,
+        )
+
+
 async def test_custom_actions_hot_reloading():
     def create_action_code(value: str) -> str:
         return f"""from typing import Any, Dict

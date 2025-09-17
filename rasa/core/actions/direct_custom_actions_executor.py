@@ -35,8 +35,6 @@ class DirectCustomActionExecutor(CustomActionExecutor):
         self.action_name = action_name
         self.action_endpoint = action_endpoint
         self.action_executor = self._create_action_executor()
-        self.register_actions_from_a_module()
-        self.action_executor.reload()
 
     @staticmethod
     @lru_cache(maxsize=1)
@@ -88,11 +86,20 @@ class DirectCustomActionExecutor(CustomActionExecutor):
 
         Returns:
             The response from the execution of the custom action.
+
+        Raises:
+            RasaException: If the actions module specified does not exist.
         """
         structlogger.debug(
             "action.direct_custom_action_executor.run",
             action_name=self.action_name,
         )
+
+        # Register actions module if not already registered.
+        # This is done here instead of __init__ to allow proper
+        # exception handling and avoid hanging conversations.
+        self.register_actions_from_a_module()
+        self.action_executor.reload()
 
         tracker_state = tracker.current_state(EventVerbosity.ALL)
         action_call = {
