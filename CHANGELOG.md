@@ -10,6 +10,26 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.13.12] - 2025-09-17
+                         
+Rasa Pro 3.13.12 (2025-09-17)                              
+### Improvements
+- [#2810](https://github.com/rasahq/rasa-private/issues/2810): Accept either `RASA_PRO_LICENSE` or `RASA_LICENSE` as a valid Environment Variable for providing the Rasa License. Also deprecates `RASA_PRO_LICENSE` Environment Variable.
+
+### Bugfixes
+- [#3287](https://github.com/rasahq/rasa-private/issues/3287): Fixed conversation hanging when using direct action execution with invalid actions module by deferring module validation until action execution time, allowing proper exception handling in the processor.
+
+### Miscellaneous internal changes
+- [#3267](https://github.com/rasahq/rasa-private/issues/3267)
+
+
+## [3.13.11] - 2025-09-15
+                         
+Rasa Pro 3.13.11 (2025-09-15)                               
+
+No significant changes.
+
+
 ## [3.13.10] - 2025-09-12
                          
 Rasa Pro 3.13.10 (2025-09-12)                              
