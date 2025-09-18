@@ -246,7 +246,7 @@ class KafkaEventBroker(EventBroker):
         if self.iam_credentials_provider is None:
             return None, None
 
-        temp_credentials = self.iam_credentials_provider.get_credentials()
+        temp_credentials = self.iam_credentials_provider.get_temporary_credentials()
         return temp_credentials.auth_token, temp_credentials.expiration
 
     def _get_kafka_config(self) -> Dict[Text, Any]:

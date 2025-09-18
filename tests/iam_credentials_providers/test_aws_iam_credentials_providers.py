@@ -1,3 +1,4 @@
+import re
 import time
 from typing import Optional
 from unittest.mock import MagicMock
@@ -9,6 +10,7 @@ from moto.core import set_initial_no_auth_action_count
 from pytest import CaptureFixture, MonkeyPatch
 
 from rasa.core.iam_credentials_providers.aws_iam_credentials_providers import (
+    AWSElasticacheRedisIAMCredentialsProvider,
     AWSMSKafkaIAMCredentialsProvider,
     AWSRDSIAMCredentialsProvider,
     MSKAuthTokenProvider,
@@ -55,7 +57,7 @@ def test_aws_rds_iam_credentials_provider_get_credentials(
         aws_rds_iam_provider_input
     )
     assert aws_rds_iam_provider is not None
-    credentials = aws_rds_iam_provider.get_credentials()
+    credentials = aws_rds_iam_provider.get_temporary_credentials()
     assert credentials.auth_token is not None
     assert "X-Amz-Credential" in credentials.auth_token
 
@@ -94,7 +96,7 @@ def test_aws_rds_iam_credentials_provider_get_credentials_missing_input(
     )
     aws_rds_iam_provider = create_aws_iam_credentials_provider(provider_input)
     assert aws_rds_iam_provider is not None
-    credentials = aws_rds_iam_provider.get_credentials()
+    credentials = aws_rds_iam_provider.get_temporary_credentials()
     assert type(credentials.auth_token) == expected_token_type
 
 
@@ -125,7 +127,7 @@ def test_aws_msk_iam_credentials_provider_get_credentials(
     assert isinstance(aws_kafka_iam_provider, AWSMSKafkaIAMCredentialsProvider)
     assert aws_kafka_iam_provider.token is None
 
-    credentials = aws_kafka_iam_provider.get_credentials()
+    credentials = aws_kafka_iam_provider.get_temporary_credentials()
     assert credentials.auth_token is not None
     assert isinstance(credentials.auth_token, str)
     assert credentials.expiration is not None
@@ -159,7 +161,7 @@ def test_aws_msk_iam_credentials_provider_get_credentials_refresh_token(
         aws_kafka_iam_provider, "expires_at", time.time() + 10
     )  # expires in 10 seconds
 
-    credentials = aws_kafka_iam_provider.get_credentials()
+    credentials = aws_kafka_iam_provider.get_temporary_credentials()
     assert credentials.auth_token is not None
     assert credentials.auth_token != "existing_token"  # should have been refreshed
     assert credentials.expiration is not None
@@ -194,7 +196,7 @@ def test_aws_msk_iam_credentials_provider_get_credentials_do_not_refresh_token(
         aws_kafka_iam_provider, "expires_at", time.time() + 120
     )  # expires in 120 seconds
 
-    credentials = aws_kafka_iam_provider.get_credentials()
+    credentials = aws_kafka_iam_provider.get_temporary_credentials()
     assert credentials.auth_token is not None
     assert credentials.auth_token == "existing_token"  # should not have been refreshed
     assert credentials.expiration is not None
@@ -230,4 +232,92 @@ def test_aws_msk_iam_credentials_provider_get_credentials_raises_exception(
         "Original exception: Test exception"
     )
     with pytest.raises(ConnectionException, match=exception_msg):
-        aws_kafka_iam_provider.get_credentials()
+        aws_kafka_iam_provider.get_temporary_credentials()
+
+
+def test_create_aws_iam_credentials_provider_for_redis_lock_store() -> None:
+    iam_credentials_provider = create_aws_iam_credentials_provider(
+        IAMCredentialsProviderInput(
+            service_name=SupportedServiceType.LOCK_STORE,
+            username="test_user",
+            cluster_name="test_cluster",
+        )
+    )
+    assert iam_credentials_provider is not None
+    assert isinstance(iam_credentials_provider, IAMCredentialsProvider)
+    assert isinstance(
+        iam_credentials_provider, AWSElasticacheRedisIAMCredentialsProvider
+    )
+
+
+@set_initial_no_auth_action_count(1)
+@mock_aws
+def test_aws_elasticache_redis_credentials_provider_get_temp_credentials(
+    capsys: CaptureFixture,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+    aws_elasticache_redis_iam_provider = create_aws_iam_credentials_provider(
+        IAMCredentialsProviderInput(
+            service_name=SupportedServiceType.LOCK_STORE,
+            username="test_user",
+            cluster_name="test_cluster",
+        )
+    )
+    assert aws_elasticache_redis_iam_provider is not None
+    assert isinstance(
+        aws_elasticache_redis_iam_provider, AWSElasticacheRedisIAMCredentialsProvider
+    )
+    assert aws_elasticache_redis_iam_provider.session is not None
+    assert aws_elasticache_redis_iam_provider.request_signer.region_name == "us-east-1"
+
+    credentials = aws_elasticache_redis_iam_provider.get_temporary_credentials()
+    assert credentials.username == "test_user"
+    assert credentials.presigned_url is not None
+    assert re.search(
+        r"test_cluster/\?Action=connect&User=test_user&X-Amz-Algorithm=([^&]+)&"
+        r"X-Amz-Credential=([^&]+)&X-Amz-Date=([^&]+)&X-Amz-Expires=([^&]+)&"
+        r"X-Amz-SignedHeaders=([^&]+)(?:&X-Amz-Security-Token=([^&]+))?&X-Amz-Signature=([a-f0-9]{64})$",
+        credentials.presigned_url,
+    )
+
+    captured = capsys.readouterr()
+    assert (
+        "rasa.core.aws_elasticache_redis_iam_credentials_provider."
+        "generated_credentials event_info='Successfully generated "
+        "temporary credentials for AWS ElastiCache Redis.'"
+    ) in captured.out
+
+
+@set_initial_no_auth_action_count(2)
+@mock_aws
+def test_aws_elasticache_redis_credentials_provider_caches_credentials(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+    aws_elasticache_redis_iam_provider = create_aws_iam_credentials_provider(
+        IAMCredentialsProviderInput(
+            service_name=SupportedServiceType.LOCK_STORE,
+            username="test_user",
+            cluster_name="test_cluster",
+        )
+    )
+    assert aws_elasticache_redis_iam_provider is not None
+    assert isinstance(
+        aws_elasticache_redis_iam_provider, AWSElasticacheRedisIAMCredentialsProvider
+    )
+
+    first_credentials = aws_elasticache_redis_iam_provider.get_temporary_credentials()
+    time.sleep(10)  # wait to ensure timestamp would be different
+    second_credentials = aws_elasticache_redis_iam_provider.get_temporary_credentials()
+
+    assert first_credentials.username == "test_user"
+    assert first_credentials.presigned_url is not None
+    assert re.search(
+        r"test_cluster/\?Action=connect&User=test_user&X-Amz-Algorithm=([^&]+)&"
+        r"X-Amz-Credential=([^&]+)&X-Amz-Date=([^&]+)&X-Amz-Expires=([^&]+)&"
+        r"X-Amz-SignedHeaders=([^&]+)(?:&X-Amz-Security-Token=([^&]+))?&X-Amz-Signature=([a-f0-9]{64})$",
+        first_credentials.presigned_url,
+    )
+    assert first_credentials.username == second_credentials.username
+    assert first_credentials.presigned_url == second_credentials.presigned_url

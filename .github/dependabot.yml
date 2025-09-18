@@ -83,6 +83,7 @@ updates:
           - "pykwalify"
           - "pydantic"
           - "towncrier"
+          - "types-cachetools"
       database-and-storage:
         dependency-type: production
         patterns:

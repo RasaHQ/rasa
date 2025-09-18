@@ -236,7 +236,7 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
             )
         )
         if iam_credentials_provider is not None:
-            credentials = iam_credentials_provider.get_credentials()
+            credentials = iam_credentials_provider.get_temporary_credentials()
             if credentials.auth_token:
                 password = credentials.auth_token
                 structlogger.debug(

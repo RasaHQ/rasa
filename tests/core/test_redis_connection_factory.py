@@ -1,10 +1,21 @@
+from typing import Any, Dict, List
 from unittest.mock import Mock, patch
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
+from moto import mock_aws
+from moto.core import set_initial_no_auth_action_count
 from pydantic import ValidationError
 from pytest import CaptureFixture
 from redis.cluster import ClusterNode
 
+from rasa.core.constants import (
+    AWS_ELASTICACHE_CLUSTER_NAME_ENV_VAR_NAME,
+    IAM_CLOUD_PROVIDER_ENV_VAR_NAME,
+)
+from rasa.core.iam_credentials_providers.aws_iam_credentials_providers import (
+    AWSElasticacheRedisIAMCredentialsProvider,
+)
 from rasa.core.redis_connection_factory import (
     DeploymentMode,
     RedisConfig,
@@ -98,6 +109,96 @@ class TestStandardMode:
 
             assert result == mock_connection
             mock_redis.assert_called_once_with(**expected_redis_args)
+
+    @set_initial_no_auth_action_count(1)
+    @mock_aws
+    @pytest.mark.parametrize(
+        "config_params,expected_redis_args",
+        [
+            # Default configuration
+            (
+                {},
+                {
+                    "host": "localhost",
+                    "port": 6379,
+                    "db": 0,
+                    "ssl": False,
+                    "ssl_certfile": None,
+                    "ssl_keyfile": None,
+                    "ssl_ca_certs": None,
+                    "socket_timeout": 10,
+                    "decode_responses": False,
+                },
+            ),
+            # Custom configuration
+            (
+                {
+                    "host": "redis.example.com",
+                    "port": 6380,
+                    "db": 5,
+                    "use_ssl": True,
+                    "ssl_certfile": "/path/to/cert",
+                    "socket_timeout": 30,
+                    "decode_responses": True,
+                },
+                {
+                    "host": "redis.example.com",
+                    "port": 6380,
+                    "db": 5,
+                    "ssl": True,
+                    "ssl_certfile": "/path/to/cert",
+                    "ssl_keyfile": None,
+                    "ssl_ca_certs": None,
+                    "socket_timeout": 30,
+                    "decode_responses": True,
+                },
+            ),
+            # SSL configuration with all certificates
+            (
+                {
+                    "use_ssl": True,
+                    "ssl_certfile": "/path/to/cert.pem",
+                    "ssl_keyfile": "/path/to/key.pem",
+                    "ssl_ca_certs": "/path/to/ca.pem",
+                },
+                {
+                    "host": "localhost",
+                    "port": 6379,
+                    "db": 0,
+                    "ssl": True,
+                    "ssl_certfile": "/path/to/cert.pem",
+                    "ssl_keyfile": "/path/to/key.pem",
+                    "ssl_ca_certs": "/path/to/ca.pem",
+                    "socket_timeout": 10,
+                    "decode_responses": False,
+                },
+            ),
+        ],
+    )
+    def test_create_connection_standard_mode_iam_config(
+        self, config_params: Dict, expected_redis_args: Dict, monkeypatch: MonkeyPatch
+    ):
+        """Test standard Redis connection with various configurations."""
+        monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
+        monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+        with patch("redis.StrictRedis") as mock_redis:
+            mock_connection = Mock()
+            mock_redis.return_value = mock_connection
+
+            config = RedisConfig(**config_params)
+            result = RedisConnectionFactory.create_connection(config)
+
+            assert result == mock_connection
+            mock_redis.assert_called_once()
+            call_args = mock_redis.call_args
+            for key, expected_value in expected_redis_args.items():
+                assert call_args.kwargs[key] == expected_value
+
+            iam_credential_provider = call_args.kwargs.get("credential_provider", None)
+            assert iam_credential_provider is not None
+            assert isinstance(
+                iam_credential_provider, AWSElasticacheRedisIAMCredentialsProvider
+            )
 
 
 class TestClusterMode:
@@ -210,6 +311,118 @@ class TestClusterMode:
             # Check all other parameters match
             for key, expected_value in expected_common_args.items():
                 assert call_args.kwargs[key] == expected_value
+
+    @pytest.mark.parametrize(
+        "config_params,expected_hosts_ports,expected_common_args",
+        [
+            # With explicit endpoints
+            (
+                {
+                    "deployment_mode": DeploymentMode.CLUSTER.value,
+                    "endpoints": ["node1:6379", "node2:6380", "node3:6381"],
+                },
+                [("node1", 6379), ("node2", 6380), ("node3", 6381)],
+                {
+                    "ssl": False,
+                    "socket_timeout": 10,
+                    "decode_responses": False,
+                },
+            ),
+            # With endpoints, host and port
+            (
+                {
+                    "deployment_mode": DeploymentMode.CLUSTER.value,
+                    "endpoints": ["node1:6379", "node2:6380", "node3:6381"],
+                    "host": "cluster-host",
+                    "port": 7000,
+                },
+                [("node1", 6379), ("node2", 6380), ("node3", 6381)],
+                {
+                    "ssl": False,
+                    "socket_timeout": 10,
+                    "decode_responses": False,
+                },
+            ),
+            # Fallback to host/port
+            (
+                {
+                    "deployment_mode": DeploymentMode.CLUSTER.value,
+                    "host": "cluster-host",
+                    "port": 7000,
+                },
+                [("cluster-host", 7000)],
+                {
+                    "ssl": False,
+                    "socket_timeout": 10,
+                    "decode_responses": False,
+                },
+            ),
+            # SSL configuration
+            (
+                {
+                    "deployment_mode": DeploymentMode.CLUSTER.value,
+                    "endpoints": ["secure-host:6380"],
+                    "use_ssl": True,
+                    "ssl_certfile": "/path/to/cert.pem",
+                    "ssl_keyfile": "/path/to/key.pem",
+                    "ssl_ca_certs": "/path/to/ca.pem",
+                },
+                [("secure-host", 6380)],
+                {
+                    "ssl": True,
+                    "ssl_certfile": "/path/to/cert.pem",
+                    "ssl_keyfile": "/path/to/key.pem",
+                    "ssl_ca_certs": "/path/to/ca.pem",
+                    "socket_timeout": 10,
+                    "decode_responses": False,
+                },
+            ),
+        ],
+    )
+    def test_create_connection_cluster_mode_with_iam_config(
+        self,
+        config_params: Dict,
+        expected_hosts_ports: List,
+        expected_common_args: Dict,
+        monkeypatch: MonkeyPatch,
+    ):
+        """Test cluster connection with various configurations."""
+        monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
+        monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+        monkeypatch.setenv(AWS_ELASTICACHE_CLUSTER_NAME_ENV_VAR_NAME, "foo")
+
+        with patch("redis.RedisCluster") as mock_cluster:
+            mock_connection = Mock()
+            mock_cluster.return_value = mock_connection
+
+            config = RedisConfig(**config_params)
+            result = RedisConnectionFactory.create_connection(config)
+
+            assert result == mock_connection
+
+            mock_cluster.assert_called_once()
+            call_args = mock_cluster.call_args
+
+            # Check that we have the right number of startup nodes
+            actual_endpoints = call_args.kwargs["startup_nodes"]
+            assert len(actual_endpoints) == len(expected_hosts_ports)
+
+            # Verify each startup node is a ClusterNode with correct host and port
+            for i, (expected_host, expected_port) in enumerate(expected_hosts_ports):
+                cluster_node = actual_endpoints[i]
+                assert isinstance(cluster_node, ClusterNode)
+                assert cluster_node.host == expected_host
+                assert cluster_node.port == int(expected_port)
+
+            # Check all other parameters match
+            for key, expected_value in expected_common_args.items():
+                assert call_args.kwargs[key] == expected_value
+
+            iam_credential_provider = call_args.kwargs.get("credential_provider", None)
+            assert iam_credential_provider is not None
+            assert isinstance(
+                iam_credential_provider, AWSElasticacheRedisIAMCredentialsProvider
+            )
 
     def test_create_connection_cluster_mode_db_warning(
         self,
@@ -364,10 +577,146 @@ class TestSentinelMode:
 
             assert result == mock_master
             mock_sentinel_class.assert_called_once_with(
-                expected_sentinels, **expected_sentinel_args
+                expected_sentinels, sentinel_kwargs=None, **expected_sentinel_args
             )
             mock_sentinel.master_for.assert_called_once_with(
                 expected_service, **expected_master_args
+            )
+
+    @pytest.mark.parametrize(
+        "config_params,expected_sentinels,expected_service,expected_sentinel_args,expected_master_args",
+        [
+            # With explicit endpoints and service
+            (
+                {
+                    "deployment_mode": DeploymentMode.SENTINEL.value,
+                    "endpoints": [
+                        "sentinel1:26379",
+                        "sentinel2:26379",
+                        "sentinel3:26379",
+                    ],
+                    "sentinel_service": "primary",
+                },
+                [("sentinel1", 26379), ("sentinel2", 26379), ("sentinel3", 26379)],
+                "primary",
+                {
+                    "socket_timeout": 10,
+                },
+                {
+                    "db": 0,
+                    "socket_timeout": 10,
+                    "decode_responses": False,
+                },
+            ),
+            # With host, port, endpoints and service
+            (
+                {
+                    "deployment_mode": DeploymentMode.SENTINEL.value,
+                    "endpoints": [
+                        "sentinel1:26379",
+                        "sentinel2:26379",
+                        "sentinel3:26379",
+                    ],
+                    "sentinel_service": "primary",
+                    "host": "sentinel-host",
+                    "port": 7000,
+                },
+                [("sentinel1", 26379), ("sentinel2", 26379), ("sentinel3", 26379)],
+                "primary",
+                {
+                    "socket_timeout": 10,
+                },
+                {
+                    "db": 0,
+                    "socket_timeout": 10,
+                    "decode_responses": False,
+                },
+            ),
+            # Default service name
+            (
+                {
+                    "deployment_mode": DeploymentMode.SENTINEL.value,
+                    "endpoints": ["sentinel1:26379"],
+                },
+                [("sentinel1", 26379)],
+                "mymaster",
+                {
+                    "socket_timeout": 10,
+                },
+                {
+                    "db": 0,
+                    "socket_timeout": 10,
+                    "decode_responses": False,
+                },
+            ),
+            # SSL configuration
+            (
+                {
+                    "deployment_mode": DeploymentMode.SENTINEL.value,
+                    "endpoints": ["sentinel1:26379"],
+                    "use_ssl": True,
+                    "ssl_certfile": "/path/to/cert.pem",
+                    "ssl_keyfile": "/path/to/key.pem",
+                    "ssl_ca_certs": "/path/to/ca.pem",
+                },
+                [("sentinel1", 26379)],
+                "mymaster",
+                {
+                    "socket_timeout": 10,
+                    "ssl": True,
+                    "ssl_certfile": "/path/to/cert.pem",
+                    "ssl_keyfile": "/path/to/key.pem",
+                    "ssl_ca_certs": "/path/to/ca.pem",
+                },
+                {
+                    "db": 0,
+                    "socket_timeout": 10,
+                    "decode_responses": False,
+                },
+            ),
+        ],
+    )
+    def test_create_connection_sentinel_mode_iam_config(
+        self,
+        config_params: Dict[str, Any],
+        expected_sentinels: List,
+        expected_service: str,
+        expected_sentinel_args: Dict,
+        expected_master_args: Dict,
+        monkeypatch: MonkeyPatch,
+    ):
+        """Test sentinel connection with various configurations."""
+        monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
+        monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+
+        with patch("redis.sentinel.Sentinel") as mock_sentinel_class:
+            mock_sentinel = Mock()
+            mock_master = Mock()
+            mock_sentinel_class.return_value = mock_sentinel
+            mock_sentinel.master_for.return_value = mock_master
+
+            config = RedisConfig(**config_params)
+            result = RedisConnectionFactory.create_connection(config)
+
+            assert result == mock_master
+            mock_sentinel.master_for.assert_called_once_with(
+                expected_service, **expected_master_args
+            )
+
+            mock_sentinel_class.assert_called_once()
+            call_args = mock_sentinel_class.call_args
+            assert call_args[0][0] == expected_sentinels
+
+            # Check all other parameters match
+            for key, expected_value in expected_sentinel_args.items():
+                assert call_args.kwargs[key] == expected_value
+
+            iam_credential_provider = call_args.kwargs.get("sentinel_kwargs", {}).get(
+                "credential_provider", None
+            )
+            assert iam_credential_provider is not None
+            assert isinstance(
+                iam_credential_provider, AWSElasticacheRedisIAMCredentialsProvider
             )
 
 

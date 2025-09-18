@@ -25,7 +25,7 @@ class TemporaryCredentials(BaseModel):
 class IAMCredentialsProvider(Protocol):
     """Interface for generating temporary credentials using IAM roles."""
 
-    def get_credentials(self) -> TemporaryCredentials:
+    def get_temporary_credentials(self) -> TemporaryCredentials:
         """Generates temporary credentials using IAM roles."""
         ...
 
@@ -51,6 +51,7 @@ class IAMCredentialsProviderInput(BaseModel):
     username: Optional[str] = None
     host: Optional[str] = None
     port: Optional[int] = None
+    cluster_name: Optional[str] = None
 
 
 def create_iam_credentials_provider(

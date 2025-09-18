@@ -3,6 +3,7 @@ import datetime
 import sys
 import time
 from collections import deque
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Text, Union
 from unittest.mock import MagicMock, Mock, patch
@@ -16,7 +17,7 @@ from pydantic import ValidationError
 import rasa.core.lock_store
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
-from rasa.core.constants import DEFAULT_LOCK_LIFETIME
+from rasa.core.constants import DEFAULT_LOCK_LIFETIME, IAM_CLOUD_PROVIDER_ENV_VAR_NAME
 from rasa.core.lock import Ticket, TicketLock
 from rasa.core.lock_store import (
     DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
@@ -822,3 +823,27 @@ def test_redis_lock_store_config_serialization(
     assert result["ssl_certfile"] == partial_redis_lock_store_config["ssl_certfile"]
     assert result["ssl_ca_certs"] == partial_redis_lock_store_config["ssl_ca_certs"]
     assert result["key_prefix"] == partial_redis_lock_store_config["key_prefix"]
+
+
+@contextmanager
+def not_raises(exception):
+    try:
+        yield
+    except exception:
+        raise pytest.fail(f"Raised exception {exception}")
+
+
+def test_create_from_endpoint_iam_config_no_username_and_password(
+    partial_redis_lock_store_config: Dict[str, Any],
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Username and password not required when using IAM auth."""
+    monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
+    partial_redis_lock_store_config["host"] = "localhost"
+    del partial_redis_lock_store_config["username"]
+    del partial_redis_lock_store_config["password"]
+
+    endpoint_config = EndpointConfig(**partial_redis_lock_store_config)
+
+    with not_raises(Exception):
+        LockStore.create(endpoint_config)

@@ -1,10 +1,18 @@
+import os
 from enum import Enum
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import redis
 import structlog
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
+from rasa.core.constants import AWS_ELASTICACHE_CLUSTER_NAME_ENV_VAR_NAME
+from rasa.core.iam_credentials_providers.credentials_provider_protocol import (
+    IAMCredentialsProvider,
+    IAMCredentialsProviderInput,
+    SupportedServiceType,
+    create_iam_credentials_provider,
+)
 from rasa.shared.exceptions import ConnectionException, RasaException
 
 structlogger = structlog.getLogger(__name__)
@@ -23,6 +31,8 @@ class DeploymentMode(Enum):
 class StandardRedisConfig(BaseModel):
     """Base configuration for Redis connections."""
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     host: Text = "localhost"
     port: int = 6379
     username: Optional[Text] = None
@@ -34,6 +44,7 @@ class StandardRedisConfig(BaseModel):
     db: int = 0
     socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS
     decode_responses: bool = False
+    iam_credentials_provider: Optional[IAMCredentialsProvider] = None
 
 
 class ClusterRedisConfig(StandardRedisConfig):
@@ -104,6 +115,14 @@ class RedisConnectionFactory:
             deployment_mode_enum, config.endpoints, config.host, config.port
         )
 
+        iam_credentials_provider = create_iam_credentials_provider(
+            IAMCredentialsProviderInput(
+                service_name=SupportedServiceType.LOCK_STORE,
+                username=config.username,
+                cluster_name=os.getenv(AWS_ELASTICACHE_CLUSTER_NAME_ENV_VAR_NAME),
+            )
+        )
+
         if deployment_mode_enum == DeploymentMode.CLUSTER:
             cls._log_cluster_db_warning(deployment_mode_enum, config.db)
             cluster_config = ClusterRedisConfig(
@@ -117,6 +136,7 @@ class RedisConnectionFactory:
                 socket_timeout=config.socket_timeout,
                 decode_responses=config.decode_responses,
                 endpoints=parsed_endpoints,
+                iam_credentials_provider=iam_credentials_provider,
             )
             return cls._create_cluster_connection(cluster_config)
         elif deployment_mode_enum == DeploymentMode.SENTINEL:
@@ -131,6 +151,7 @@ class RedisConnectionFactory:
                 "socket_timeout": config.socket_timeout,
                 "decode_responses": config.decode_responses,
                 "endpoints": parsed_endpoints,
+                "iam_credentials_provider": iam_credentials_provider,
             }
 
             if config.sentinel_service is not None:
@@ -151,6 +172,7 @@ class RedisConnectionFactory:
                 db=config.db,
                 socket_timeout=config.socket_timeout,
                 decode_responses=config.decode_responses,
+                iam_credentials_provider=iam_credentials_provider,
             )
             return cls._create_standard_connection(standard_config)
 
@@ -279,18 +301,31 @@ class RedisConnectionFactory:
         )
 
         cluster_nodes = [ClusterNode(host, port) for host, port in config.endpoints]
+
+        common_config_kwargs = {
+            "startup_nodes": cluster_nodes,
+            "ssl": config.use_ssl,
+            "ssl_certfile": config.ssl_certfile,
+            "ssl_keyfile": config.ssl_keyfile,
+            "ssl_ca_certs": config.ssl_ca_certs,
+            "socket_timeout": config.socket_timeout,
+            "decode_responses": config.decode_responses,
+        }
+
         try:
-            redis_cluster: redis.RedisCluster = redis.RedisCluster(
-                startup_nodes=cluster_nodes,
-                username=config.username,
-                password=config.password,
-                ssl=config.use_ssl,
-                ssl_certfile=config.ssl_certfile,
-                ssl_keyfile=config.ssl_keyfile,
-                ssl_ca_certs=config.ssl_ca_certs,
-                socket_timeout=config.socket_timeout,
-                decode_responses=config.decode_responses,
-            )
+            if config.iam_credentials_provider is not None:
+                structlogger.debug("redis_connection_factory.cluster_iam_auth_enabled")
+
+                redis_cluster: redis.RedisCluster = redis.RedisCluster(
+                    credential_provider=config.iam_credentials_provider,
+                    **common_config_kwargs,
+                )
+            else:
+                redis_cluster = redis.RedisCluster(
+                    username=config.username,
+                    password=config.password,
+                    **common_config_kwargs,
+                )
         except Exception as e:
             raise ConnectionException(f"Error initializing Redis Cluster: {e}")
 
@@ -324,15 +359,25 @@ class RedisConnectionFactory:
         )
 
         # Configuration for Sentinel connection
-        sentinel_kwargs = {
-            "username": config.username,
-            "password": config.password,
+        connection_kwargs: Dict[str, Any] = {
             "socket_timeout": config.socket_timeout,
         }
 
+        sentinel_kwargs: Optional[Dict] = None
+        if config.iam_credentials_provider is not None:
+            structlogger.debug("redis_connection_factory.sentinel_iam_auth_enabled")
+            sentinel_kwargs = {"credential_provider": config.iam_credentials_provider}
+        else:
+            connection_kwargs.update(
+                {
+                    "username": config.username,
+                    "password": config.password,
+                }
+            )
+
         # SSL configuration
         if config.use_ssl:
-            sentinel_kwargs.update(
+            connection_kwargs.update(
                 {
                     "ssl": config.use_ssl,
                     "ssl_certfile": config.ssl_certfile,
@@ -350,7 +395,9 @@ class RedisConnectionFactory:
 
         # Create Sentinel instance
         try:
-            sentinel = Sentinel(config.endpoints, **sentinel_kwargs)
+            sentinel = Sentinel(
+                config.endpoints, sentinel_kwargs=sentinel_kwargs, **connection_kwargs
+            )
             master = sentinel.master_for(config.sentinel_service, **client_kwargs)
 
             # Test the connection
@@ -383,15 +430,26 @@ class RedisConnectionFactory:
             "host": config.host,
             "port": int(config.port),
             "db": config.db,
-            "password": config.password,
             "socket_timeout": float(config.socket_timeout),
             "ssl": config.use_ssl,
             "ssl_certfile": config.ssl_certfile,
             "ssl_keyfile": config.ssl_keyfile,
             "ssl_ca_certs": config.ssl_ca_certs,
-            "username": config.username,
             "decode_responses": config.decode_responses,
         }
+
+        if config.iam_credentials_provider is not None:
+            structlogger.debug("redis_connection_factory.standard_iam_auth_enabled")
+            connection_args.update(
+                {"credential_provider": config.iam_credentials_provider}
+            )
+        else:
+            connection_args.update(
+                {
+                    "password": config.password,
+                    "username": config.username,
+                }
+            )
 
         try:
             standard_redis = redis.StrictRedis(**connection_args)

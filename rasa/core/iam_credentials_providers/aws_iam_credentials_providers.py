@@ -1,12 +1,18 @@
 import os
 import threading
 import time
-from typing import Optional
+from typing import Optional, Tuple
+from urllib.parse import ParseResult, urlencode, urlunparse
 
 import boto3
+import redis
 import structlog
 from aws_msk_iam_sasl_signer import MSKAuthTokenProvider
 from botocore.exceptions import BotoCoreError
+from botocore.model import ServiceId
+from botocore.session import get_session
+from botocore.signers import RequestSigner
+from cachetools import TTLCache, cached
 
 from rasa.core.iam_credentials_providers.credentials_provider_protocol import (
     IAMCredentialsProvider,
@@ -28,7 +34,7 @@ class AWSRDSIAMCredentialsProvider(IAMCredentialsProvider):
         self.host = host
         self.port = port
 
-    def get_credentials(self) -> TemporaryCredentials:
+    def get_temporary_credentials(self) -> TemporaryCredentials:
         """Generates temporary credentials for AWS RDS."""
         structlogger.debug(
             "rasa.core.aws_rds_iam_credentials_provider.get_credentials",
@@ -85,7 +91,7 @@ class AWSMSKafkaIAMCredentialsProvider(IAMCredentialsProvider):
     def expires_at(self, value: float) -> None:
         self._expires_at = value
 
-    def get_credentials(self) -> TemporaryCredentials:
+    def get_temporary_credentials(self) -> TemporaryCredentials:
         """Generates temporary credentials for AWS MSK."""
         with self.lock:
             current_time = time.time()  # Current time in seconds
@@ -124,6 +130,79 @@ class AWSMSKafkaIAMCredentialsProvider(IAMCredentialsProvider):
                 )
 
 
+class AWSElasticacheRedisIAMCredentialsProvider(redis.CredentialProvider):
+    """Generates temporary credentials for AWS ElastiCache Redis using IAM roles."""
+
+    def __init__(self, username: str, cluster_name: Optional[str] = None) -> None:
+        """Initializes the provider."""
+        self.username = username
+        self.cluster_name = cluster_name
+        self.region = os.getenv("AWS_DEFAULT_REGION", os.getenv("AWS_REGION"))
+        self.session = get_session()
+        self.request_signer = RequestSigner(
+            ServiceId("elasticache"),
+            self.region,
+            "elasticache",
+            "v4",
+            self.session.get_credentials(),
+            self.session.get_component("event_emitter"),
+        )
+
+    # Generated IAM tokens are valid for 15 minutes
+    @cached(cache=TTLCache(maxsize=128, ttl=900))
+    def get_credentials(self) -> Tuple[str, str]:
+        """Generates temporary credentials for AWS ElastiCache Redis.
+
+        Required method implementation by redis-py CredentialProvider parent class.
+        Used internally by redis-py when connecting to Redis.
+        """
+        query_params = {"Action": "connect", "User": self.username}
+        url = urlunparse(
+            ParseResult(
+                scheme="https",
+                netloc=self.cluster_name,
+                path="/",
+                query=urlencode(query_params),
+                params="",
+                fragment="",
+            )
+        )
+        signed_url = self.request_signer.generate_presigned_url(
+            {"method": "GET", "url": url, "body": {}, "headers": {}, "context": {}},
+            operation_name="connect",
+            expires_in=900,
+            region_name=self.region,
+        )
+
+        # RequestSigner only seems to work if the URL has a protocol, but
+        # Elasticache only accepts the URL without a protocol
+        # So strip it off the signed URL before returning
+        return self.username, signed_url.removeprefix("https://")
+
+    def get_temporary_credentials(self) -> TemporaryCredentials:
+        """Generates temporary credentials for AWS ElastiCache Redis.
+
+        Implemented to comply with the IAMCredentialsProvider rasa-pro interface.
+        Calls the get_credentials method which is used internally by redis-py.
+        """
+        try:
+            username, signed_url = self.get_credentials()
+            structlogger.info(
+                "rasa.core.aws_elasticache_redis_iam_credentials_provider.generated_credentials",
+                event_info="Successfully generated temporary credentials for "
+                "AWS ElastiCache Redis.",
+            )
+            return TemporaryCredentials(username=username, presigned_url=signed_url)
+        except Exception as exc:
+            structlogger.error(
+                "rasa.core.aws_elasticache_redis_iam_credentials_provider.error_generating_credentials",
+                event_info="Failed to generate temporary credentials for "
+                "AWS ElastiCache Redis.",
+                error=str(exc),
+            )
+            return TemporaryCredentials()
+
+
 def create_aws_iam_credentials_provider(
     provider_input: "IAMCredentialsProviderInput",
 ) -> Optional["IAMCredentialsProvider"]:
@@ -137,5 +216,11 @@ def create_aws_iam_credentials_provider(
 
     if provider_input.service_name == SupportedServiceType.EVENT_BROKER:
         return AWSMSKafkaIAMCredentialsProvider()
+
+    if provider_input.service_name == SupportedServiceType.LOCK_STORE:
+        return AWSElasticacheRedisIAMCredentialsProvider(
+            username=provider_input.username,
+            cluster_name=provider_input.cluster_name,
+        )
 
     return None

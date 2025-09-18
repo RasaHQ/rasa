@@ -240,8 +240,9 @@ demoji = "^1.1.0"
 azure-identity = "~1.24.0"
 langcodes = "^3.5.0"
 sanic-openapi = "^21.12.0"
-aioshutil = "^1.5"
+aioshutil = "~1.5"
 aws-msk-iam-sasl-signer-python = "~1.0.2"
+types-cachetools = "~6.2.0.20250827"
 
 [[tool.poetry.dependencies.gliner]]
 version = "~0.2.20"
@@ -385,11 +386,6 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "tests/test_telemetry.py" = [ "E501",]
 "tests/shared/core/test_domain.py" = [ "E501",]
-
-
-
-
-
 
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.3.5,<0.4.0"

@@ -17,7 +17,7 @@ from pydantic import (
 )
 
 import rasa.shared.utils.common
-from rasa.core.constants import DEFAULT_LOCK_LIFETIME
+from rasa.core.constants import DEFAULT_LOCK_LIFETIME, IAM_CLOUD_PROVIDER_ENV_VAR_NAME
 from rasa.core.lock import TicketLock
 from rasa.core.redis_connection_factory import (
     DeploymentMode,
@@ -227,7 +227,7 @@ class LockStore:
 
 
 class RedisLockStoreConfig(BaseModel):
-    host: Union[AnyUrl, Literal["localhost"]] = Field(
+    host: Union[AnyUrl, Literal["localhost"], str] = Field(
         default="localhost", description="The host of the redis server."
     )
     port: NonNegativeInt = Field(
@@ -308,7 +308,9 @@ class RedisLockStoreConfig(BaseModel):
 
     @model_validator(mode="after")
     def verify_username_password(self) -> RedisLockStoreConfig:
-        if bool(self.username) ^ bool(self.password):
+        if os.getenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME) is None and (
+            bool(self.username) ^ bool(self.password)
+        ):
             raise ValueError(
                 f"Expected username and password. "
                 f"Found: username: {'<has value>' if self.username else '<N/A>'}, "
@@ -341,7 +343,7 @@ class RedisLockStore(LockStore):
                 ssl_keyfile=self.config.ssl_keyfile,
                 ssl_certfile=self.config.ssl_certfile,
                 ssl_ca_certs=self.config.ssl_ca_certs,
-                deployment_mode=self.config.deployment_mode,
+                deployment_mode=self.config.deployment_mode.value,
                 endpoints=self.config.endpoints,
                 sentinel_service=self.config.sentinel_service,
                 socket_timeout=self.config.socket_timeout,
