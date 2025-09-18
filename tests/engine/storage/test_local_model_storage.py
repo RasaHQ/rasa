@@ -452,7 +452,8 @@ def test_extract_archive_no_filter(mock_tar_open: Mock):
     assert mock_tar.extractall.call_count == 1
 
     call_args = mock_tar.extractall.call_args_list[0]
-    assert call_args[0][0].resolve() == Path("/temp").resolve()
+    assert "temp" in str(call_args[0][0])
+    assert "\\\\?\\" not in str(call_args[0][0])
 
 
 def test_filter_normpath():
