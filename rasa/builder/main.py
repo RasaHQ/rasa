@@ -22,11 +22,9 @@ from rasa.builder.logging_utils import (
     log_request_start,
 )
 from rasa.builder.service import bp, setup_project_generator
-from rasa.builder.template_cache import (
-    background_download_template_caches,
-)
 from rasa.builder.training_service import try_load_existing_agent, update_agent
 from rasa.core.channels.studio_chat import StudioChatInput
+from rasa.model_manager.warm_rasa_process import warmup
 from rasa.server import configure_cors
 from rasa.utils.common import configure_logging_and_warnings
 from rasa.utils.log_utils import configure_structlog
@@ -150,16 +148,6 @@ def create_app(project_folder: str) -> Sanic:
         except Exception as e:
             structlogger.warning("Failed to load agent on server startup", error=str(e))
 
-    if config.HELLO_RASA_PROJECT_ID and app.ctx.project_generator.is_empty():
-        app.register_listener(background_download_template_caches, "after_server_start")
-    else:
-        structlogger.debug(
-            "builder.main.background_cache_download.disabled",
-            event_info=(
-                "No hello rasa project id set; skipping background cache download"
-            ),
-        )
-
     return app
 
 
@@ -200,8 +188,11 @@ def main(project_folder: Optional[str] = None) -> None:
         rasa.telemetry.initialize_telemetry()
         rasa.telemetry.initialize_error_reporting(private_mode=False)
 
-        # TODO: don't do this when running locally
         _apply_llm_overrides_from_builder_env()
+
+        if config.HELLO_RASA_PROJECT_ID:
+            # ensures long import times for modules are ahead of time
+            warmup()
 
         # working directory needs to be the project folder, e.g.
         # for relative paths (./docs) in a projects config to work

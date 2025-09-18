@@ -21,57 +21,6 @@ class TestCreateApp:
         assert hasattr(app.ctx, "project_generator")
         assert isinstance(app.ctx.project_generator, ProjectGenerator)
 
-    @patch("rasa.builder.main.config.HELLO_RASA_PROJECT_ID", None)
-    def test_does_not_register_listener_when_no_project_id(
-        self, tmp_path: Path
-    ) -> None:
-        """Test that background download listener is not registered."""
-        with patch(
-            "rasa.builder.main.background_download_template_caches"
-        ) as mock_background_download:
-            app = create_app(str(tmp_path))
-
-            # Verify the listener was not registered
-            listeners = app.listeners.get("after_server_start", [])
-            assert mock_background_download not in listeners
-
-    @patch("rasa.builder.main.config.HELLO_RASA_PROJECT_ID", "")
-    def test_does_not_register_listener_when_empty_project_id(
-        self, tmp_path: Path
-    ) -> None:
-        """Test listener not registered when project ID is empty."""
-        with patch(
-            "rasa.builder.main.background_download_template_caches"
-        ) as mock_background_download:
-            app = create_app(str(tmp_path))
-
-            # Verify the listener was not registered
-            listeners = app.listeners.get("after_server_start", [])
-            assert mock_background_download not in listeners
-
-    @patch("rasa.builder.main.config.HELLO_RASA_PROJECT_ID", "test-project-123")
-    def test_logs_debug_message_when_registering_listener(
-        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        """Test that appropriate debug messages are logged."""
-        with patch("rasa.builder.main.background_download_template_caches"):
-            create_app(str(tmp_path))
-
-            # Check that no debug message about disabling was logged
-            assert "background_cache_download.disabled" not in caplog.text
-
-    @patch("rasa.builder.main.config.HELLO_RASA_PROJECT_ID", None)
-    def test_logs_debug_message_when_not_registering_listener(
-        self, tmp_path: Path
-    ) -> None:
-        """Test that appropriate debug messages are logged when not registering."""
-        with patch("rasa.builder.main.background_download_template_caches"):
-            create_app(str(tmp_path))
-
-            # The debug message should be logged (though it might be filtered by
-            # log level). We can't easily test the exact log message without
-            # mocking structlogger
-
     def test_project_generator_uses_correct_folder(self, tmp_path: Path) -> None:
         """Test that the project generator is initialized with the correct folder."""
         app = create_app(str(tmp_path))

@@ -1,0 +1,59 @@
+name: Prepare Template Caches
+description: Downloads and extracts template artifacts for Docker builds
+
+inputs:
+  tag_version:
+    description: 'Tag version used in artifact names'
+    required: true
+  templates:
+    description: 'Space-separated list of templates to prepare'
+    required: true
+    default: 'telco finance basic'
+  artifact_name:
+    description: 'Name of the artifact to download'
+    required: false
+    default: 'template-artifacts'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Download template artifacts
+      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4.1.8
+      with:
+        name: ${{ inputs.artifact_name }}
+        path: template-artifacts
+
+    - name: Prepare template caches
+      shell: bash
+      env:
+        TAG_VERSION: ${{ inputs.tag_version }}
+        TEMPLATES: ${{ inputs.templates }}
+      run: |
+        mkdir -p templates
+        TEMPLATES_ARRAY=($TEMPLATES)
+
+        echo "Looking for template artifacts with tag: ${TAG_VERSION}"
+        echo "Contents of template-artifacts directory:"
+        ls -la template-artifacts/
+
+        for template in "${TEMPLATES_ARRAY[@]}"; do
+          if [[ -f "template-artifacts/${TAG_VERSION}-${template}.tar.gz" ]]; then
+            echo "Extracting ${template} template cache"
+            mkdir -p "templates/${template}"
+            tar -xzf "template-artifacts/${TAG_VERSION}-${template}.tar.gz" -C "templates/${template}"
+            echo "Extracted ${template} template, contents:"
+            ls -la "templates/${template}/"
+          else
+            echo "Warning: Template ${template} artifacts not found at template-artifacts/${TAG_VERSION}-${template}.tar.gz"
+          fi
+        done
+
+        echo "Final templates directory structure:"
+        ls -la templates/ || echo "Templates directory not found or empty"
+
+        # Ensure templates directory exists for Docker build
+        if [[ ! -d "templates" ]] || [[ -z "$(ls -A templates 2>/dev/null)" ]]; then
+          echo "Creating empty templates directory structure for Docker build"
+          mkdir -p templates/placeholder
+          echo "# Placeholder file to ensure directory exists" > templates/placeholder/README.md
+        fi

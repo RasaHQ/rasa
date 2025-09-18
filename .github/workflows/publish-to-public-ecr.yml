@@ -20,11 +20,44 @@ on:
 env:
   AWS_REGION: eu-west-1
   RASA_PRO_PUBLIC_REPO: public.ecr.aws/f7b7r5o7/rasa/rasa-private-dev
+  TEMPLATES: "telco finance basic"
 
 jobs:
+  train-templates:
+    name: Train Project Templates
+    runs-on: ubuntu-24.04
+    # This condition ensures the job only runs for pushes to 'main' or for PRs
+    # that have either the 'hello-rasa' or 'studio' label.
+    # For pull_request events, it runs on both label addition and new commits to labeled PRs.
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' &&
+       (contains(github.event.pull_request.labels.*.name, 'hello-rasa') ||
+        contains(github.event.pull_request.labels.*.name, 'studio')))
+
+    outputs:
+      tag_version: ${{ steps.set-tags.outputs.tag_version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set image tags
+        id: set-tags
+        uses: ./.github/actions/set-tag-version
+
+      - name: Train templates
+        uses: ./.github/actions/train-templates
+        with:
+          tag_version: ${{ steps.set-tags.outputs.tag_version }}
+          templates: ${{ env.TEMPLATES }}
+          rasa_pro_license: ${{ secrets.RASA_PRO_LICENSE }}
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+
   build-and-push-to-ecr:
     name: Build and Push Docker Image to Public ECR
     runs-on: ubuntu-24.04
+    needs: [train-templates]
 
     # This condition ensures the job only runs for pushes to 'main' or for PRs
     # that have either the 'hello-rasa' or 'studio' label.
@@ -55,13 +88,11 @@ jobs:
       - name: Set image tags
         id: set-tags
         run: |
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            PR_SHORT_SHA=$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))
-            echo "RASA_IMAGE_TAG=pr-${{ github.event.number }}-${PR_SHORT_SHA}" >> $GITHUB_ENV
-            echo "RASA_IMAGE_TAG_LATEST=pr-${{ github.event.number }}-latest" >> $GITHUB_ENV
+          TAG_VERSION="${{ needs.train-templates.outputs.tag_version }}"
+          echo "RASA_IMAGE_TAG=${TAG_VERSION}" >> $GITHUB_ENV
+          if [[ "${TAG_VERSION}" == pr-* ]]; then
+            echo "RASA_IMAGE_TAG_LATEST=${TAG_VERSION%-*}-latest" >> $GITHUB_ENV
           else
-            MAIN_SHORT_SHA=$(git rev-parse --short HEAD)
-            echo "RASA_IMAGE_TAG=main-${MAIN_SHORT_SHA}" >> $GITHUB_ENV
             echo "RASA_IMAGE_TAG_LATEST=main-latest" >> $GITHUB_ENV
           fi
 
@@ -79,6 +110,12 @@ jobs:
         env:
           # ECR Public authentication must use us-east-1 regardless of repository region
           AWS_REGION: us-east-1
+
+      - name: Prepare template caches
+        uses: ./.github/actions/prepare-template-caches
+        with:
+          tag_version: ${{ needs.train-templates.outputs.tag_version }}
+          templates: ${{ env.TEMPLATES }}
 
       - name: Build Rasa Private Dev Docker Image
         run: |

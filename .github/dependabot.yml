@@ -46,6 +46,7 @@ updates:
           - "packaging"
           - "websockets"
           - "aiohttp"
+          - "aioshutil"
           - "types-aiofiles"
           - "python-socketio"
           - "python-engineio"

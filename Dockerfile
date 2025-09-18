@@ -22,6 +22,10 @@ FROM ${IMAGE_BASE_NAME}:${BASE_IMAGE_HASH} as runner
 # copy everything from /opt/venv
 COPY --from=rasa-install /opt/venv /opt/venv
 
+# copy in templates for caching
+COPY templates /templates
+RUN chgrp -R 0 /templates && chmod -R g=u /templates
+
 # make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
 

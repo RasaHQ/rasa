@@ -62,7 +62,7 @@ class ProjectGenerator:
         create_initial_project(self.project_folder.as_posix(), template)
         # If a local cache for this template exists, copy it into the project.
         # We no longer download here to avoid blocking project creation.
-        copy_cache_for_template_if_available(template, self.project_folder)
+        await copy_cache_for_template_if_available(template, self.project_folder)
         # needs to happen after caching, as we download/copy .rasa and that would
         # overwrite the project info file in .rasa
         ensure_first_used(self.project_folder)

@@ -1,0 +1,103 @@
+name: Train Templates
+description: Trains Rasa Pro templates and creates artifacts
+
+inputs:
+  tag_version:
+    description: 'Tag version for naming artifacts'
+    required: true
+  templates:
+    description: 'Space-separated list of templates to train'
+    required: true
+    default: 'telco finance basic'
+  rasa_pro_license:
+    description: 'Rasa Pro license key'
+    required: true
+  openai_api_key:
+    description: 'OpenAI API key'
+    required: true
+  python_version:
+    description: 'Python version to use'
+    required: false
+    default: '3.11'
+
+outputs:
+  artifacts_created:
+    description: "List of artifact files created"
+    value: ${{ steps.train-templates.outputs.artifacts_created }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python 🐍
+      uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
+      with:
+        python-version: ${{ inputs.python_version }}
+
+    - name: Read Poetry Version 🔢
+      shell: bash
+      run: |
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+
+    - name: Install Poetry 🦄
+      uses: Gr1N/setup-poetry@48b0f77c8c1b1b19cb962f0f00dff7b4be8f81ec #v9
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Build and install Rasa Pro package
+      shell: bash
+      run: |
+        poetry install
+
+    - name: Train all templates sequentially
+      id: train-templates
+      shell: bash
+      env:
+        RASA_PRO_LICENSE: ${{ inputs.rasa_pro_license }}
+        OPENAI_API_KEY: ${{ inputs.openai_api_key }}
+        TAG_VERSION: ${{ inputs.tag_version }}
+        TEMPLATES: ${{ inputs.templates }}
+      run: |
+        set -euo pipefail
+        if [[ -z "${RASA_PRO_LICENSE:-}" ]]; then
+          echo "RASA_PRO_LICENSE is required" >&2
+          exit 1
+        fi
+
+        TEMPLATES_ARRAY=($TEMPLATES)
+        ARTIFACTS_CREATED=()
+
+        for TEMPLATE in "${TEMPLATES_ARRAY[@]}"; do
+          echo "Training template: ${TEMPLATE}"
+
+          # Create workspace for this template
+          mkdir -p "$PWD/workspace/${TEMPLATE}"
+          cd "$PWD/workspace/${TEMPLATE}"
+
+          # Initialize and train the template
+          poetry run rasa init --template ${TEMPLATE} --no-prompt
+
+          # Verify training artifacts exist
+          if [[ ! -d "models" ]]; then
+            echo "Missing training artifacts for template ${TEMPLATE}" >&2
+            ls -la .
+            exit 1
+          fi
+
+          # Create tar.gz with models
+          TARGET_NAME="${TAG_VERSION}-${TEMPLATE}.tar.gz"
+          tar -czf "../../${TARGET_NAME}" models
+
+          echo "Created artifact: ${TARGET_NAME}"
+          ARTIFACTS_CREATED+=("${TARGET_NAME}")
+          cd - > /dev/null
+        done
+
+        # Output the list of created artifacts
+        printf -v joined '%s,' "${ARTIFACTS_CREATED[@]}"
+        echo "artifacts_created=${joined%,}" >> "$GITHUB_OUTPUT"
+
+    - name: Upload template artifacts
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+      with:
+        name: template-artifacts
+        path: ${{ inputs.tag_version }}-*.tar.gz

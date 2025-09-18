@@ -1,6 +1,7 @@
 import os
 import shlex
 import subprocess
+import time
 import uuid
 from dataclasses import dataclass
 from typing import List
@@ -149,19 +150,28 @@ def warmup() -> None:
     We import them now, so that the training / deployment can later
     directly start.
     """
+    start_time = time.time()
     try:
         import langchain  # noqa: F401
         import litellm  # noqa: F401
         import matplotlib  # noqa: F401
         import numpy  # noqa: F401
         import pandas  # noqa: F401
-        import presidio_analyzer  # noqa: F401
-        import spacy  # noqa: F401
         import tensorflow  # noqa: F401
 
         import rasa.validator  # noqa: F401
-    except ImportError:
+    except ImportError as e:
+        structlogger.warning(
+            "model_trainer.warmup_error",
+            error=str(e),
+        )
         pass
+    finally:
+        end_time = time.time()
+        structlogger.debug(
+            "model_trainer.warmup_time",
+            time_in_seconds=end_time - start_time,
+        )
 
 
 def warm_rasa_main() -> None:

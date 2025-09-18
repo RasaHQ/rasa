@@ -94,6 +94,7 @@ on:
 env:
   GCP_TARGET_IMAGE_REGISTRY: "europe-west3-docker.pkg.dev/rasa-releases/rasa-pro"
   DEFAULT_PYTHON_VERSION: "3.11"
+  TEMPLATES: "telco finance basic"
 
 permissions:
   id-token: write # This is required for requesting the JWT
@@ -112,11 +113,39 @@ jobs:
       search-ready-e2e-test-with-assertions: ${{ inputs.search-ready-e2e-test-with-assertions }}
       command-generator: ${{ inputs.command-generator }}
 
+  train-templates:
+    name: Train Project Templates
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set tag version
+        id: set-tag-version
+        uses: ./.github/actions/set-tag-version
+        with:
+          tag_version_input: ${{ github.event.inputs.tag_version }}
+
+      - name: Checkout with tag
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ steps.set-tag-version.outputs.tag_version }}
+
+      - name: Train templates
+        uses: ./.github/actions/train-templates
+        with:
+          tag_version: ${{ steps.set-tag-version.outputs.tag_version }}
+          templates: ${{ env.TEMPLATES }}
+          rasa_pro_license: ${{ secrets.RASA_PRO_LICENSE }}
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          python_version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
   release-artifacts-docker:
     name: Release Artifacts Docker
     # Run this workflow on a large runner because ARM64 build consumes disk space
     # ubuntu-24.04-4core - 4 cores, 16GB of RAM and 150 GB SSD
     runs-on: ubuntu-24.04-4core
+    needs: [train-templates]
 
     outputs:
       tag_version: ${{ steps.set-tag-version.outputs.tag_version }}
@@ -125,26 +154,19 @@ jobs:
       DOCKER_HUB_RASA_IMAGE_REPOSITORY: docker.io/rasa/rasa-pro
 
     steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
       - name: Set tag version
         id: set-tag-version
-        run: |
-          if [[ -n "$GITHUB_REF" && "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-            echo "tag_version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          elif [[ -n "$INPUT_TAG_VERSION" ]]; then
-            echo "TAG_VERSION=$INPUT_TAG_VERSION" >> $GITHUB_ENV
-            echo "tag_version=$INPUT_TAG_VERSION" >> $GITHUB_OUTPUT
-          else
-            echo "No tag version found."
-            exit 1
-          fi
-        env:
-          INPUT_TAG_VERSION: ${{ github.event.inputs.tag_version }}
+        uses: ./.github/actions/set-tag-version
+        with:
+          tag_version_input: ${{ github.event.inputs.tag_version }}
 
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ env.TAG_VERSION }}
+          ref: ${{ steps.set-tag-version.outputs.tag_version }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
@@ -181,10 +203,16 @@ jobs:
         run: |
            gcloud auth configure-docker europe-west3-docker.pkg.dev
 
+      - name: Prepare template caches
+        uses: ./.github/actions/prepare-template-caches
+        with:
+          tag_version: ${{ steps.set-tag-version.outputs.tag_version }}
+          templates: ${{ env.TEMPLATES }}
+
       - name: Build Docker base images 🛠
         run: |
           RASA_BASE_REPOSITORY=${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa \
-          RASA_BASE_IMAGE_TAG=${{ env.TAG_VERSION }} \
+          RASA_BASE_IMAGE_TAG=${{ steps.set-tag-version.outputs.tag_version }} \
           make build-multi-platform-base-docker
 
       - name: Copy Segment write key to the package
@@ -194,17 +222,18 @@ jobs:
         run: |
            ./scripts/write_keys_file.sh
 
-      - name: Build and push rasa-pro docker image to GCP and Docker Hub
+      - name: Build and push base rasa-pro docker image to GCP and Docker Hub
+        id: build-base
         run: |
-          # Build the multi-platform docker image and push to GCP and Docker Hub
-          RASA_IMAGE_TAGS="-t ${{ env.GCP_IMAGE_TAG }} -t ${{ env.GCP_LATEST_IMAGE_TAG }} -t ${{ env.DOCKER_HUB_IMAGE_TAG }}" \
+          # Build the multi-platform base docker image and push to GCP and Docker Hub
+          TAG_VERSION="${{ steps.set-tag-version.outputs.tag_version }}"
+          RASA_IMAGE_TAGS="-t ${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa-pro:${TAG_VERSION} -t ${{ env.DOCKER_HUB_RASA_IMAGE_REPOSITORY }}:${TAG_VERSION}" \
           RASA_BASE_REPOSITORY=${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa \
-          RASA_BASE_IMAGE_TAG=${{ env.TAG_VERSION }} \
+          RASA_BASE_IMAGE_TAG=${{ steps.set-tag-version.outputs.tag_version }} \
           make build-multi-platform-rasa-docker
-        env:
-          DOCKER_HUB_IMAGE_TAG: ${{ env.DOCKER_HUB_RASA_IMAGE_REPOSITORY }}:${{ env.TAG_VERSION }}
-          GCP_LATEST_IMAGE_TAG: ${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa-pro:${{ env.TAG_VERSION }}-latest
-          GCP_IMAGE_TAG: ${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa-pro:${{ env.TAG_VERSION }}
+
+          echo "base_image_tag=${TAG_VERSION}" >> "$GITHUB_OUTPUT"
+
 
   release-artifacts-pypi:
     name: Release Artifacts PyPI
@@ -216,11 +245,22 @@ jobs:
       id-token: write
       contents: read
 
+
+
     steps:
-    - name: Check out code
+    - name: Check out code for set tag version
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+    
+    - name: Set tag version
+      id: set-tag-version
+      uses: ./.github/actions/set-tag-version
+      with:
+        tag_version_input: ${{ github.event.inputs.tag_version }}
+
+    - name: Check out code to be tagged
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
-        ref: ${{ env.TAG_VERSION }}
+        ref: ${{ steps.set-tag-version.outputs.tag_version }}
 
     - name: Set up Python 🐍
       uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
@@ -375,7 +415,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ needs.release-artifacts-docker.outputs.tag_version }}
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env
@@ -384,7 +424,7 @@ jobs:
 
       - name: Install released Rasa Docker image and run container with init command
         run: |
-            # Install the released docker image of Rasa
+            # Install the released docker image of Rasa (with templates)
             docker pull ${{ env.DOCKER_HUB_RASA_IMAGE_REPOSITORY }}:${{ needs.release-artifacts-docker.outputs.tag_version }}
             docker run --rm -e RASA_PRO_LICENSE=${{ secrets.RASA_PRO_LICENSE }} -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ${{ env.DOCKER_HUB_RASA_IMAGE_REPOSITORY }}:${{ needs.release-artifacts-docker.outputs.tag_version }} init --no-prompt
         env:

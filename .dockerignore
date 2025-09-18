@@ -11,3 +11,4 @@ examples/
 docker-data/*
 gha-creds-*.json
 **/gha-creds-*.json
+!templates/

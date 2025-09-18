@@ -1,0 +1,48 @@
+name: Set Tag Version
+description: Determines the tag version from GitHub context, supporting tags, pull requests, branches, and manual input
+
+inputs:
+  tag_version_input:
+    description: 'Manual tag version input (from workflow_dispatch)'
+    required: false
+
+outputs:
+  tag_version:
+    description: "The resolved tag version"
+    value: ${{ steps.set-tag-version.outputs.tag_version }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set tag version
+      id: set-tag-version
+      shell: bash
+      run: |
+        if [[ -n "${{ inputs.tag_version_input }}" ]]; then
+          # Manual input takes highest priority
+          TAG_VERSION="${{ inputs.tag_version_input }}"
+          echo "TAG_VERSION=${TAG_VERSION}" >> $GITHUB_ENV
+          echo "tag_version=${TAG_VERSION}" >> $GITHUB_OUTPUT
+          echo "Resolved tag version from input: ${TAG_VERSION}"
+        elif [[ -n "$GITHUB_REF" && "$GITHUB_REF" == refs/tags/* ]]; then
+          # Git tag
+          TAG_VERSION="${GITHUB_REF#refs/tags/}"
+          echo "TAG_VERSION=${TAG_VERSION}" >> $GITHUB_ENV
+          echo "tag_version=${TAG_VERSION}" >> $GITHUB_OUTPUT
+          echo "Resolved tag version from GITHUB_REF: ${TAG_VERSION}"
+        elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+          # Pull request: pr-{number}-{short_sha}
+          PR_SHORT_SHA=$(git rev-parse --short $(cat $GITHUB_EVENT_PATH | jq -r .pull_request.head.sha))
+          TAG_VERSION="pr-${{ github.event.number }}-${PR_SHORT_SHA}"
+          echo "TAG_VERSION=${TAG_VERSION}" >> $GITHUB_ENV
+          echo "tag_version=${TAG_VERSION}" >> $GITHUB_OUTPUT
+          echo "Resolved tag version for PR: ${TAG_VERSION}"
+        else
+          # Branch: {branch_name}-{short_sha}
+          BRANCH_NAME=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          TAG_VERSION="${BRANCH_NAME}-${SHORT_SHA}"
+          echo "TAG_VERSION=${TAG_VERSION}" >> $GITHUB_ENV
+          echo "tag_version=${TAG_VERSION}" >> $GITHUB_OUTPUT
+          echo "Resolved tag version for branch: ${TAG_VERSION}"
+        fi
