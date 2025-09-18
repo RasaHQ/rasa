@@ -1,0 +1,22 @@
+test_cases:
+- test_case: test pattern search
+  steps:
+    - user: "How secure are my online payments?"
+      assertions:
+        - generative_response_is_grounded:
+            threshold: 0.8
+            ground_truth: "Online payments are protected by 3D Secure which redirects to the Fenlo app for approval, real-time transaction notifications, merchant verification, secure card tokens (no real card details shared), and virtual card numbers for online shopping."
+    - user: "How do I upgrade to Premium or Metal?"
+      assertions:
+        - flow_completed:
+            flow_id: "pattern_search"
+        - generative_response_is_grounded:
+            threshold: 0.8
+            ground_truth: "Go to 'Account' in the Fenlo app, select 'Upgrade to Premium/Metal', choose your preferred plan, and confirm your payment details. Premium and Metal features are active immediately upon subscription."
+- test_case: test pattern session start
+  steps:
+    - user: "/session_start"
+      assertions:
+        - flow_started: "pattern_session_start"
+        - bot_uttered:
+            utter_name: "utter_greeting"

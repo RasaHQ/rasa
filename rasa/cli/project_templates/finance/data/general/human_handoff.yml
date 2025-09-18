@@ -6,7 +6,7 @@ flows:
       - collect: confirm_human_handoff
         ask_before_filling: True
         next:
-          - if: slots.confirm_human_handoff is "Yes"
+          - if: slots.confirm_human_handoff
             then:
             - action: utter_transferring_to_human
             - action: action_human_handoff

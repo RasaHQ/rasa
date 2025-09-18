@@ -1,0 +1,4 @@
+
+responses:
+  utter_bot_challenge:
+    - text: "You got it - I’m a virtual agent. I’ll do my best to help with your {skills_summary}."

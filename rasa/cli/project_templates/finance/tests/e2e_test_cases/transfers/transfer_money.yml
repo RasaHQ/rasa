@@ -1,0 +1,56 @@
+test_cases:
+  - test_case: transfer money (happy path)
+    steps:
+    - user: "Transfer $50 to Alice today."
+      assertions:
+        - slot_was_set:
+          - name: "transfer_timing_type"
+            value: "immediate"
+          - name: "recipient_account"
+            value: "Alice"
+          - name: "amount_of_money"
+            value: 50
+          - name: "transfer_type"
+            value: "third party"
+          - name: "has_sufficient_funds"
+            value: true
+        - flow_started: "transfer_money"
+        - flow_started: "transfer_money_to_a_third_party"
+        - action_executed: check_transfer_funds
+        - bot_uttered:
+              utter_name: "utter_ask_immediate_transfer_confirmation"
+    - user: "/SetSlots(confirmation=true)"
+      assertions:
+        - slot_was_set:
+          - name: "confirmation"
+            value: true
+        - action_executed: execute_transfer
+        - bot_uttered:
+              utter_name: "utter_transfer_completed"
+  - test_case: transfer money (unhappy path)
+    steps:
+    - user: "Transfer $50 to Alice today."
+      assertions:
+        - slot_was_set:
+          - name: "transfer_timing_type"
+            value: "immediate"
+          - name: "recipient_account"
+            value: "Alice"
+          - name: "amount_of_money"
+            value: 50
+          - name: "transfer_type"
+            value: "third party"
+          - name: "has_sufficient_funds"
+            value: true
+        - flow_started: "transfer_money"
+        - flow_started: "transfer_money_to_a_third_party"
+        - action_executed: check_transfer_funds
+        - bot_uttered:
+              utter_name: "utter_ask_immediate_transfer_confirmation"
+    - user: "/SetSlots(confirmation=false)"
+      assertions:
+        - slot_was_set:
+          - name: "confirmation"
+            value: false
+        - bot_uttered:
+              utter_name: "utter_transfer_cancelled"

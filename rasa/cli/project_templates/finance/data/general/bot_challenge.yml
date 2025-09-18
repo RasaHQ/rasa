@@ -1,0 +1,6 @@
+flows:
+  bot_challenge:
+    name: bot challenge
+    description: This flow clarifies that the user is talking to a chatbot, when the user ask if they are talking to a chatbot or a human
+    steps:
+      - action: utter_bot_challenge

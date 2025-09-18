@@ -1,0 +1,9 @@
+test_cases:
+  - test_case: check balance
+    steps:
+    - user: "What's my account balance?"
+      assertions:
+        - flow_started: "check_balance"
+        - action_executed: check_balance
+        - bot_uttered:
+              utter_name: "utter_current_balance"

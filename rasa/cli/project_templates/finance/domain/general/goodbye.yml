@@ -1,0 +1,7 @@
+responses:
+  utter_goodbye:
+    - text: "Thanks for banking with {bank_name} — take care!"
+    - text: "Thanks for the chat. Have a great day with {bank_name}!"
+    - text: "Catch you later! Feel free to reach out to {bank_name} anytime."
+    - text: "Goodbye for now — {bank_name} is here if you need anything."
+    - text: "Take care! Let {bank_name} know if you have any other questions."

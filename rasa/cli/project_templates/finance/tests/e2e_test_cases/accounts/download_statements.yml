@@ -1,0 +1,43 @@
+test_cases:
+  - test_case: download account statements (happy path)
+    steps:
+    - user: "Download my June 2024 statement as a PDF."
+      assertions:
+        - flow_started: "download_statements"
+        - slot_was_set:
+          - name: "statement_format"
+            value: "pdf"
+          - name: "statement_month"
+            value: "June"
+          - name: "statement_year"
+            value: "2024"
+        - bot_uttered:
+              utter_name: "utter_ask_statement_download_confirmation"
+    - user: "/SetSlots(confirmation=true)"
+      assertions:
+        - slot_was_set:
+          - name: "confirmation"
+            value: true
+        - bot_uttered:
+              utter_name: "utter_statement_download_complete"
+  - test_case: download account statements (unhappy path)
+    steps:
+    - user: "Download my June 2024 statement as a PDF."
+      assertions:
+        - flow_started: "download_statements"
+        - slot_was_set:
+          - name: "statement_format"
+            value: "pdf"
+          - name: "statement_month"
+            value: "June"
+          - name: "statement_year"
+            value: "2024"
+        - bot_uttered:
+              utter_name: "utter_ask_statement_download_confirmation"
+    - user: "/SetSlots(confirmation=false)"
+      assertions:
+        - slot_was_set:
+          - name: "confirmation"
+            value: false
+        - bot_uttered:
+              utter_name: "utter_statement_download_cancelled"

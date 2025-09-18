@@ -1,0 +1,8 @@
+test_cases:
+  - test_case: bot challenge
+    steps:
+    - user: "are you a bot?"
+      assertions:
+        - flow_started: "bot_challenge"
+        - bot_uttered:
+              utter_name: "utter_bot_challenge"

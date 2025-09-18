@@ -1,11 +1,39 @@
 version: "3.1"
 
+slots:
+  bank_name:
+    type: text
+    initial_value: "Fenlo"
+    mappings:
+      - type: controlled
+  skills_summary:
+    type: text
+    initial_value: "transferring money, managing authorised payees, checking an account balance, blocking a card, and answering your general finance enquiries"
+    mappings:
+      - type: controlled
+  example_questions:
+    type: text
+    initial_value: |
+      - What's my account balance?
+      - Transfer $50 to Alice today.
+      - Block my Visa temporarily.
+      - Download my June 2024 statement as a PDF.
+    mappings:
+      - type: controlled
+  agent_name:
+    type: text
+    initial_value: "Finley"
+    mappings:
+      - type: controlled
+
 responses:
   utter_greeting:
-    - text: "Hi there! I'm {agent_name} 👋. I can help you with your everyday banking needs. \n Here's a few things you can ask me: {example_questions} \n How can I help you today?"
+    - text: "Hi there! I'm {agent_name} 👋. I can help you with {skills_summary}. \n Here's a few things you can ask me: {example_questions} \n How can I help you today?"
       metadata:
         rephrase: True
   utter_hello:
     - text: "Hi nice to meet you - I'm here to help with your {bank_name} account. How can I assist you?"
       metadata:
         rephrase: True
+  utter_help:
+    - text: "I can help you with {skills_summary}. \n\n Here's a few things you can ask me: \n {example_questions}"

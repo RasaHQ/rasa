@@ -1,0 +1,55 @@
+test_cases:
+  - test_case: block card (happy path)
+    steps:
+    - user: "Temporarily block my Visa."
+      assertions:
+        - slot_was_set:
+          - name: "card_block_type"
+            value: "temporary"
+        - flow_started: "block_card"
+        - bot_uttered:
+            utter_name: "utter_start_block_card"
+        - bot_uttered:
+            utter_name: "utter_ask_bank_card_number"
+    - user: "1234 5678 9012 3456"
+      assertions:
+        - slot_was_set:
+          - name: "bank_card_number"
+            value: "1234 5678 9012 3456"
+        - action_executed: "check_that_card_exists"
+        - bot_uttered:
+            utter_name: "utter_ask_block_card_confirmation"
+    - user: "/SetSlots(confirmation=true)"
+      assertions:
+        - slot_was_set:
+          - name: "confirmation"
+            value: true
+        - bot_uttered:
+            utter_name: "utter_freeze_card_successful"
+  - test_case: block card (unhappy path)
+    steps:
+    - user: "Temporarily block my Visa."
+      assertions:
+        - slot_was_set:
+          - name: "card_block_type"
+            value: "temporary"
+        - flow_started: "block_card"
+        - bot_uttered:
+            utter_name: "utter_start_block_card"
+        - bot_uttered:
+            utter_name: "utter_ask_bank_card_number"
+    - user: "1234 5678 9012 3456"
+      assertions:
+        - slot_was_set:
+          - name: "bank_card_number"
+            value: "1234 5678 9012 3456"
+        - action_executed: "check_that_card_exists"
+        - bot_uttered:
+            utter_name: "utter_ask_block_card_confirmation"
+    - user: "/SetSlots(confirmation=false)"
+      assertions:
+        - slot_was_set:
+          - name: "confirmation"
+            value: false
+        - bot_uttered:
+            utter_name: "utter_block_card_cancelled"
