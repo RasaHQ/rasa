@@ -71,6 +71,8 @@ class BrowserAudioOutputChannel(VoiceOutputChannel):
 
 
 class BrowserAudioInputChannel(VoiceInputChannel):
+    requires_voice_license = False
+
     def __init__(
         self,
         server_url: str,
