@@ -304,7 +304,7 @@ rasa = "rasa.__main__:main"
 # - D105: Missing docstring in magic method
 # - D107: Missing docstring in __init__
 ignore = [ "D100", "D101", "D102", "D103", "D104", "D105", "D107", "RUF001", "RUF002", "RUF003", "RUF005",]
-select = [ "D", "E", "F", "I", "W", "RUF",]
+select = [ "D", "E", "F", "I", "W", "RUF", "TID"]
 
 [tool.pytest.ini_options]
 python_functions = "test_"
@@ -386,6 +386,9 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "tests/test_telemetry.py" = [ "E501",]
 "tests/shared/core/test_domain.py" = [ "E501",]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"pypred.Predicate".msg = "Only use the patched pypred module from rasa.utils.pypred."
 
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.3.5,<0.4.0"

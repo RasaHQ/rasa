@@ -2,7 +2,6 @@ from typing import Any, Dict, List, Optional, Text, Union
 
 import structlog
 from jinja2 import Template
-from pypred import Predicate
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -12,6 +11,7 @@ from rasa.shared.constants import CHANNEL, RESPONSE_CONDITION
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.pypred import Predicate
 
 structlogger = structlog.get_logger()
 

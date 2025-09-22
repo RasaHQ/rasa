@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
 import structlog
 from jinja2 import Template
-from pypred import Predicate
 from pypred.ast import CompareOperator, Literal, NegateOperator
 
 import rasa.core.training.story_conflict
@@ -74,6 +73,7 @@ from rasa.shared.nlu.constants import COMMANDS
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.telemetry import track_validation_error_log
+from rasa.utils.pypred import Predicate
 
 logger = logging.getLogger(__name__)
 
@@ -1183,23 +1183,27 @@ class Validator:
                         )
 
                 if isinstance(step, CollectInformationFlowStep):
-                    predicates = [predicate.if_ for predicate in step.rejections]
-                    for predicate in predicates:
+                    dumped_predicates = [predicate.if_ for predicate in step.rejections]
+                    for dumped_predicate in dumped_predicates:
                         all_good = self._verify_namespaces(
-                            predicate, step.id, flow.id, all_good
+                            dumped_predicate, step.id, flow.id, all_good
                         )
 
-                        pred, all_good = self._construct_predicate(
-                            predicate, step.id, context, is_step=True, all_good=all_good
+                        predicate, all_good = self._construct_predicate(
+                            dumped_predicate,
+                            step.id,
+                            context,
+                            is_step=True,
+                            all_good=all_good,
                         )
-                        if pred and not pred.is_valid():
+                        if predicate and not predicate.is_valid():
                             structlogger.error(
                                 "validator.verify_predicates.invalid_rejection",
                                 step=step.id,
                                 rejection=predicate,
                                 flow=flow.id,
                                 event_info=(
-                                    f"Detected invalid rejection '{predicate}' "
+                                    f"Detected invalid rejection '{dumped_predicate}' "
                                     f"at `collect` step '{step.id}' "
                                     f"for flow id '{flow.id}'. "
                                     f"Please make sure that all conditions are valid."

@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union
 
 import structlog
 from pydantic import BaseModel
-from pypred import Predicate
 
 import rasa.shared.utils.io
 from rasa.engine.language import Language
@@ -53,6 +52,7 @@ from rasa.shared.core.flows.steps.constants import (
 )
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
 from rasa.shared.core.slots import Slot
+from rasa.utils.pypred import Predicate
 
 structlogger = structlog.get_logger()
 

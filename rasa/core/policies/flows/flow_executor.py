@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional, Text
 
 import structlog
 from jinja2 import Template
-from pypred import Predicate
 from structlog.contextvars import (
     bound_contextvars,
 )
@@ -92,6 +91,7 @@ from rasa.shared.core.slots import Slot, SlotRejection
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
 )
+from rasa.utils.pypred import Predicate
 
 structlogger = structlog.get_logger()
 

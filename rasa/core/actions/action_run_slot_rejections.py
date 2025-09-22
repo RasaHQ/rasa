@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Union
 
 import structlog
 from jinja2 import Template
-from pypred import Predicate
 
 from rasa.core.actions.action import Action, create_bot_utterance
 from rasa.core.utils import add_bot_utterance_metadata
@@ -21,6 +20,7 @@ from rasa.shared.core.slots import (
     Slot,
     SlotRejection,
 )
+from rasa.utils.pypred import Predicate
 
 if TYPE_CHECKING:
     from rasa.core.channels.channel import OutputChannel
