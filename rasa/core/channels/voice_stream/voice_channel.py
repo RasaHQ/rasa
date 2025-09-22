@@ -38,6 +38,7 @@ from rasa.core.channels.voice_stream.call_state import (
 )
 from rasa.core.channels.voice_stream.tts.azure import AzureTTS
 from rasa.core.channels.voice_stream.tts.cartesia import CartesiaTTS
+from rasa.core.channels.voice_stream.tts.deepgram import DeepgramTTS
 from rasa.core.channels.voice_stream.tts.tts_cache import TTSCache
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
 from rasa.core.channels.voice_stream.util import (
@@ -133,6 +134,8 @@ def tts_engine_from_config(tts_config: Dict) -> TTSEngine:
         return AzureTTS.from_config_dict(tts_config)
     elif name.lower() == "cartesia":
         return CartesiaTTS.from_config_dict(tts_config)
+    elif name.lower() == "deepgram":
+        return DeepgramTTS.from_config_dict(tts_config)
     else:
         mark_as_beta_feature("Custom TTS Engine")
         try:
