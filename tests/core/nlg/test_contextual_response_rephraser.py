@@ -580,23 +580,18 @@ async def test_deprecation_warning_with_prompt(
 def test_contextual_response_rephraser_init_with_different_llm_configs(
     config: Dict[str, Any],
     expected_llm_config: Optional[Dict[str, Any]],
+    mock_available_endpoints: MagicMock,
+    mock_configuration: MagicMock,
     monkeypatch,
 ) -> None:
-    class MockAvailableEndpoints:
-        @staticmethod
-        def get_instance():
-            return MockAvailableEndpoints()
+    mock_available_endpoints.model_groups = [
+        {
+            "id": "openai_gpt-4",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        },
+    ]
 
-        def __init__(self):
-            self.model_groups = [
-                {
-                    "id": "openai_gpt-4",
-                    "models": [{"provider": "openai", "model": "gpt-4"}],
-                },
-            ]
-
-    mock_endpoints = MockAvailableEndpoints()
-    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+    monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
 
     rephraser = ContextualResponseRephraser(
         EndpointConfig.from_dict(config),

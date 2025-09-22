@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, Generator, Sequence
 from unittest.mock import Mock, patch
 
 import pytest
@@ -23,8 +23,8 @@ from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.conftest import TRACING_TESTS_FIXTURES_DIRECTORY
 from tests.tracing.instrumentation.conftest import (
-    MockAvailableEndpoints,
     MockSingleStepLLMCommandGenerator,
+    get_model_groups,
 )
 from tests.utilities import flows_from_str
 
@@ -32,14 +32,16 @@ TEST_PROMPT_DIRECTORY = str(TRACING_TESTS_FIXTURES_DIRECTORY / "test_prompt.jinj
 
 
 @pytest.fixture
-def mock_llm_factory(fake_llm_client: LLMClient) -> Mock:
+def mock_llm_factory(fake_llm_client: LLMClient) -> Generator[Mock, None, None]:
     with patch("rasa.shared.utils.llm.llm_factory") as mock_function:
         mock_function.return_value = fake_llm_client
         yield mock_function
 
 
 @pytest.fixture
-def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
+def mock_embedder_factory(
+    fake_embedding_client: EmbeddingClient,
+) -> Generator[Mock, None, None]:
     with patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.embedder_factory",
         Mock(return_value=fake_embedding_client),
@@ -48,6 +50,7 @@ def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
         yield mock_function
 
 
+@pytest.mark.usefixtures("mock_configuration")
 @pytest.mark.parametrize(
     "config, expected",
     [
@@ -110,9 +113,7 @@ def mock_embedder_factory(fake_embedding_client: EmbeddingClient) -> Mock:
                 "embeddings_model_group_id": "embedding-model-group",
                 # deprecated
                 "request_timeout": "None",
-                "embeddings": json.dumps(
-                    MockAvailableEndpoints().model_groups[1], sort_keys=True
-                ),
+                "embeddings": json.dumps(get_model_groups()[1], sort_keys=True),
             },
         ),
     ],
@@ -124,7 +125,6 @@ async def test_tracing_single_step_llm_command_generator_default_attrs(
     previous_num_captured_spans: int,
     config: Dict[str, Any],
     expected: Dict[str, Any],
-    mock_available_endpoints: MockAvailableEndpoints,
 ) -> None:
     component_class = MockSingleStepLLMCommandGenerator
 
@@ -246,6 +246,7 @@ async def test_tracing_single_step_llm_command_generator_azure_attrs(
     assert captured_span.attributes == expected_attributes
 
 
+@pytest.mark.usefixtures("mock_configuration")
 @pytest.mark.parametrize(
     "config, expected",
     [
@@ -310,9 +311,7 @@ async def test_tracing_single_step_llm_command_generator_azure_attrs(
                 "embeddings_model_group_id": "embedding-model-group",
                 # deprecated
                 "request_timeout": "None",
-                "embeddings": json.dumps(
-                    MockAvailableEndpoints().model_groups[1], sort_keys=True
-                ),
+                "embeddings": json.dumps(get_model_groups()[1], sort_keys=True),
             },
         ),
     ],
@@ -324,7 +323,6 @@ async def test_tracing_single_step_llm_command_generator_non_default_llm_attrs(
     previous_num_captured_spans: int,
     config: Dict[str, Any],
     expected: Dict[str, Any],
-    mock_available_endpoints: MockAvailableEndpoints,
 ) -> None:
     component_class = MockSingleStepLLMCommandGenerator
 

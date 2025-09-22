@@ -1,4 +1,5 @@
 from typing import Any, Dict, List
+from unittest.mock import MagicMock
 
 import pytest
 import structlog
@@ -34,28 +35,6 @@ from rasa.shared.constants import (
     PROVIDER_CONFIG_KEY,
 )
 from tests.utilities import filter_logs
-
-
-class MockAvailableEndpoints:
-    @staticmethod
-    def get_instance():
-        return MockAvailableEndpoints()
-
-    def __init__(self):
-        self.model_groups = [
-            {
-                "id": "openai-test-gpt-direct",
-                "models": [
-                    {"provider": "openai", "model": "test-gpt"},
-                ],
-            },
-            {
-                "id": "openai-test-embeddings-direct",
-                "models": [
-                    {"provider": "openai", "model": "text-embeddings"},
-                ],
-            },
-        ]
 
 
 @pytest.mark.parametrize(
@@ -194,11 +173,26 @@ class MockAvailableEndpoints:
 def test_enterprise_search_policy_config_from_dict(
     config: Dict[str, Any],
     expected_attributes_and_values: Dict[str, Any],
-    monkeypatch,
+    mock_available_endpoints: MagicMock,
+    mock_configuration: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Given
-    mock_endpoints = MockAvailableEndpoints()
-    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+    mock_available_endpoints.model_groups = [
+        {
+            "id": "openai-test-gpt-direct",
+            "models": [
+                {"provider": "openai", "model": "test-gpt"},
+            ],
+        },
+        {
+            "id": "openai-test-embeddings-direct",
+            "models": [
+                {"provider": "openai", "model": "text-embeddings"},
+            ],
+        },
+    ]
+    monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
 
     # When
     parsed_config = EnterpriseSearchPolicyConfig.from_dict(config)

@@ -1810,8 +1810,9 @@ def test_grpc_webhook_request_domain_not_found_rpc_call_error(
     grpc_custom_action_executor: GRPCCustomActionExecutor,
     grpc_payload: action_webhook_pb2.WebhookRequest,
 ) -> None:
+    action_name = "action_name"
     resource_not_found = ResourceNotFound(
-        action_name="action_name",
+        action_name=action_name,
         message="message",
         resource_type=ResourceNotFoundType.DOMAIN,
     )
@@ -1831,7 +1832,7 @@ def test_grpc_webhook_request_domain_not_found_rpc_call_error(
                 log_level="error",
                 log_message_parts=[
                     f"Failed to execute custom action "
-                    f"'{grpc_custom_action_executor.action_endpoint}'. "
+                    f"'{action_name}'. "
                     f"Could not find domain. {resource_not_found.message}"
                 ],
             )

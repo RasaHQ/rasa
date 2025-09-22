@@ -8,6 +8,7 @@ import structlog
 
 import rasa.cli.utils
 import rasa.shared.utils.cli
+from rasa.cli.validation.config_path_validation import get_validated_path
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
@@ -140,7 +141,7 @@ def _prepare_data_and_domain_paths(args: argparse.Namespace) -> Tuple[Path, Path
         A tuple containing the domain path and a data path.
     """
     # Prepare domain path.
-    domain_path = rasa.cli.utils.get_validated_path(
+    domain_path = get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
     )
     domain_or_default_path = args.domain or DEFAULT_DOMAIN_PATH
@@ -152,7 +153,7 @@ def _prepare_data_and_domain_paths(args: argparse.Namespace) -> Tuple[Path, Path
     if isinstance(domain_path, str):
         domain_path = Path(domain_path)
 
-    data_path = rasa.cli.utils.get_validated_path(
+    data_path = get_validated_path(
         args.data, "data", DEFAULT_DATA_PATH, none_is_valid=True
     )
 

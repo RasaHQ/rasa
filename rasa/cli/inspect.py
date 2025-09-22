@@ -1,6 +1,7 @@
 import argparse
 import webbrowser
 from asyncio import AbstractEventLoop
+from pathlib import Path
 from typing import List, Optional, Text
 
 from sanic import Sanic
@@ -9,7 +10,7 @@ from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
 from rasa.core import constants
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.exceptions import ModelNotFound
 from rasa.model import get_local_model
@@ -64,7 +65,7 @@ async def open_inspector_in_browser(
 def inspect(args: argparse.Namespace) -> None:
     """Inspect the bot using the most recent model."""
     import rasa.cli.run
-    from rasa.cli.utils import get_validated_path
+    from rasa.cli.validation.config_path_validation import get_validated_path
     from rasa.shared.constants import DEFAULT_MODELS_PATH
 
     async def after_start_hook_open_inspector(_: Sanic, __: AbstractEventLoop) -> None:
@@ -87,8 +88,8 @@ def inspect(args: argparse.Namespace) -> None:
     # Load endpoints with proper endpoint file location
     # This will initialise the endpoints singleton properly so that
     # it can be used safely throughout the codebase with
-    # `AvailableEndpoints.get_instance()`
-    AvailableEndpoints.get_instance(args.endpoints)
+    # `Configuration.get_instance().endpoints`
+    Configuration.initialise_endpoints(endpoints_path=Path(args.endpoints))
 
     try:
         model = get_local_model(model)

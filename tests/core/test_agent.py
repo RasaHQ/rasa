@@ -19,8 +19,8 @@ import rasa.shared.utils.common
 import rasa.utils.io
 from rasa.core import jobs
 from rasa.core.agent import Agent, load_agent
-from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.channels.channel import UserMessage
+from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.persistor import Persistor, RemoteStorageType

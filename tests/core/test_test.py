@@ -227,7 +227,9 @@ async def _train_rule_based_agent(
         rule_file.write_text(training_data_for_rules)
 
         model_path = await trained_async(
-            moodbot_domain_path, str(config_path), str(rule_file)
+            domain=moodbot_domain_path,
+            config=str(config_path),
+            training_files=str(rule_file),
         )
 
         monkeypatch.setattr(

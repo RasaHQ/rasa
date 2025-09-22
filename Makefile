@@ -634,9 +634,10 @@ train-pii-calm-bot: ## Train the CALM bot for PII integration tests.
 
 RUN_PII_CONTAINERS_COMMAND = USER_ID=$(USER_ID) \
 	BOT_PATH=$(BOT_PATH) \
+	RASA_REPOSITORY=$(RASA_REPOSITORY) \
+	RASA_IMAGE_TAG=$(RASA_IMAGE_TAG) \
 	docker compose \
 		-f $(PII_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
-		--env-file $(PII_INTEGRATION_TESTS_ENV_FILE) \
 		up --wait
 
 run-pii-calm-containers: BOT_PATH = "./$(PII_CALM_BOT_DIRECTORY)" ## Run the PII integration test containers for CALM bot.
@@ -645,9 +646,10 @@ run-pii-calm-containers: train-pii-calm-bot
 
 STOP_PII_CONTAINERS_COMMAND = USER_ID=$(USER_ID) \
 	BOT_PATH=$(BOT_PATH) \
+	RASA_REPOSITORY=$(RASA_REPOSITORY) \
+	RASA_IMAGE_TAG=$(RASA_IMAGE_TAG) \
 	docker compose \
 		-f $(PII_INTEGRATION_TESTS_DOCKER_COMPOSE_PATH) \
-		--env-file $(PII_INTEGRATION_TESTS_ENV_FILE) \
 		down
 
 stop-pii-calm-containers: BOT_PATH = "./$(PII_CALM_BOT_DIRECTORY)" ## Stop the PII integration test containers.

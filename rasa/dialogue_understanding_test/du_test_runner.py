@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Optional, Text
 import structlog
 from tqdm import tqdm
 
-from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.channels import CollectingOutputChannel, UserMessage
+from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.persistor import StorageType
 from rasa.dialogue_understanding.commands import Command

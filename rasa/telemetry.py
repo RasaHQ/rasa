@@ -31,7 +31,6 @@ from rasa.constants import (
     CONFIG_TELEMETRY_ENABLED,
     CONFIG_TELEMETRY_ID,
 )
-from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.privacy.privacy_config import AnonymizationType, PrivacyConfig
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
@@ -61,9 +60,9 @@ from rasa.utils import common as rasa_utils
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
-    from rasa.core.available_endpoints import AvailableEndpoints
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.channels.channel import InputChannel
+    from rasa.core.config.available_endpoints import AvailableEndpoints
     from rasa.core.tracker_stores.tracker_store import TrackerStore
     from rasa.e2e_test.e2e_test_case import Fixture, Metadata, TestCase
     from rasa.shared.importers.importer import TrainingDataImporter
@@ -1056,7 +1055,7 @@ def track_model_training(
         "policies": config.get(CONFIG_POLICIES_KEY),
         "train_schema": config.get(CONFIG_TRAIN_SCHEMA),
         "predict_schema": config.get(CONFIG_PREDICT_SCHEMA),
-        "model_groups": rasa.core.utils.AvailableEndpoints.get_instance().model_groups,
+        "model_groups": rasa.core.config.configuration.Configuration.get_instance().endpoints.model_groups,  # noqa: E501
         "api_health_check_enabled": (
             os.getenv(
                 LLM_API_HEALTH_CHECK_ENV_VAR, LLM_API_HEALTH_CHECK_DEFAULT_VALUE
@@ -1430,7 +1429,7 @@ def track_server_start(
         number_of_workers: number of used Sanic workers
         is_api_enabled: whether the rasa API server is enabled
     """
-    from rasa.core.available_endpoints import AvailableEndpoints
+    from rasa.core.config.available_endpoints import AvailableEndpoints
 
     def project_fingerprint_and_assistant_id_from_model(
         _model_directory: Optional[Text],
@@ -1441,7 +1440,9 @@ def track_server_start(
 
         try:
             model_archive = model.get_local_model(_model_directory)
-            metadata = LocalModelStorage.metadata_from_archive(model_archive)
+            metadata = rasa.engine.storage.local_model_storage.LocalModelStorage.metadata_from_archive(  # noqa: E501
+                model_archive
+            )
 
             return metadata.project_fingerprint, metadata.assistant_id
         except Exception:

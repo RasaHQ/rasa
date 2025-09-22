@@ -29,7 +29,8 @@ import rasa.cli.telemetry
 import rasa.cli.utils
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.shared.constants import (
     CONFIG_NAME_KEY,
     CONFIG_PIPELINE_KEY,
@@ -899,7 +900,7 @@ def resolve_model_client_config(
     if model_groups:
         endpoints = AvailableEndpoints(model_groups=model_groups)
     else:
-        endpoints = AvailableEndpoints.get_instance()
+        endpoints = Configuration.get_instance().endpoints
     if endpoints.model_groups is None:
         _raise_invalid_config_exception(
             reason=(

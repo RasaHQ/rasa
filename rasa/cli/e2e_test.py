@@ -18,7 +18,7 @@ from rasa.cli.arguments.default_arguments import (
     add_model_param,
     add_remote_storage_param,
 )
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration, EndpointsConfigPath
 from rasa.core.exceptions import AgentNotReady
 from rasa.e2e_test.aggregate_test_stats_calculator import (
     AggregateTestStatsCalculator,
@@ -50,7 +50,7 @@ from rasa.e2e_test.utils.io import (
 )
 from rasa.e2e_test.utils.validation import validate_model_path
 from rasa.exceptions import RasaException
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, DEFAULT_MODELS_PATH
+from rasa.shared.constants import DEFAULT_MODELS_PATH
 from rasa.utils.endpoints import EndpointConfig
 
 RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME = "RASA_PRO_BETA_FINE_TUNING_RECIPE"
@@ -154,10 +154,9 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
     Args:
         args: Commandline arguments.
     """
-    args.endpoints = rasa.cli.utils.get_validated_path(
-        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
-    )
-    endpoints = AvailableEndpoints.get_instance(args.endpoints)
+    endpoints = Configuration.initialise_endpoints(
+        endpoints_path=EndpointsConfigPath.validate(args.endpoints)
+    ).endpoints
 
     # Ignore all endpoints apart from action server, model, nlu and nlg
     # to ensure InMemoryTrackerStore is being used instead of production

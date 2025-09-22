@@ -9,15 +9,17 @@ from sanic import Sanic
 
 import rasa.shared.core.domain
 from rasa.core import run
-from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.brokers.sql import SQLEventBroker
+from rasa.core.config.available_endpoints import AvailableEndpoints
+from rasa.core.config.credentials import CredentialsConfig
 from rasa.core.run import serve_application
 
 CREDENTIALS_FILE = "data/test_moodbot/credentials.yml"
 
 
 def test_create_http_input_channels():
-    channels = run.create_input_channels(None, CREDENTIALS_FILE)
+    credentials_config = CredentialsConfig.load_from_file(Path(CREDENTIALS_FILE))
+    channels = run.create_input_channels(None, credentials_config)
     assert len(channels) == 7
 
     # ensure correct order
@@ -33,14 +35,17 @@ def test_create_http_input_channels():
 
 
 def test_create_single_input_channels():
-    channels = run.create_input_channels("facebook", CREDENTIALS_FILE)
+    credentials_config = CredentialsConfig.load_from_file(Path(CREDENTIALS_FILE))
+
+    channels = run.create_input_channels("facebook", credentials_config)
     assert len(channels) == 1
     assert channels[0].name() == "facebook"
 
 
 def test_create_single_input_channels_by_class():
+    credentials_config = CredentialsConfig.load_from_file(Path(CREDENTIALS_FILE))
     channels = run.create_input_channels(
-        "rasa.core.channels.rest.RestInput", CREDENTIALS_FILE
+        "rasa.core.channels.rest.RestInput", credentials_config
     )
     assert len(channels) == 1
     assert channels[0].name() == "rest"
@@ -48,7 +53,7 @@ def test_create_single_input_channels_by_class():
 
 def test_create_single_input_channels_by_class_wo_credentials():
     channels = run.create_input_channels(
-        "rasa.core.channels.rest.RestInput", credentials_file=None
+        "rasa.core.channels.rest.RestInput", credentials_config=None
     )
 
     assert len(channels) == 1

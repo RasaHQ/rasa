@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import dataclasses
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
 from rasa.shared.core.constants import (
     GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE,
     GLOBAL_SILENCE_TIMEOUT_KEY,
@@ -63,8 +63,9 @@ class AvailableEndpoints:
     _instance = None
 
     @classmethod
-    def read_endpoints(cls, endpoint_file: str) -> AvailableEndpoints:
+    def read_endpoints(cls, endpoint_file: Path) -> AvailableEndpoints:
         """Read the different endpoints from a yaml file."""
+
         nlg = read_endpoint_config(endpoint_file, endpoint_type="nlg")
         nlu = read_endpoint_config(endpoint_file, endpoint_type="nlu")
         action = read_endpoint_config(endpoint_file, endpoint_type="action_endpoint")
@@ -89,6 +90,7 @@ class AvailableEndpoints:
         )
 
         return cls(
+            endpoint_file,
             nlg,
             nlu,
             action,
@@ -104,6 +106,7 @@ class AvailableEndpoints:
 
     def __init__(
         self,
+        config_file_path: Optional[Path] = None,
         nlg: Optional[EndpointConfig] = None,
         nlu: Optional[EndpointConfig] = None,
         action: Optional[EndpointConfig] = None,
@@ -119,6 +122,7 @@ class AvailableEndpoints:
         ),
     ) -> None:
         """Create an `AvailableEndpoints` object."""
+        self.config_file_path = config_file_path
         self.model = model
         self.action = action
         self.nlu = nlu
@@ -130,17 +134,3 @@ class AvailableEndpoints:
         self.model_groups = model_groups
         self.privacy = privacy
         self.interaction_handling = interaction_handling
-
-    @classmethod
-    def get_instance(
-        cls, endpoint_file: Optional[str] = DEFAULT_ENDPOINTS_PATH
-    ) -> AvailableEndpoints:
-        """Get the singleton instance of AvailableEndpoints."""
-        # Ensure that the instance is initialized only once.
-        if cls._instance is None:
-            cls._instance = cls.read_endpoints(endpoint_file)
-        return cls._instance
-
-    @classmethod
-    def reset_instance(cls) -> None:
-        cls._instance = None

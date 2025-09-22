@@ -206,9 +206,9 @@ async def test_end_to_evaluation_trips_circuit_breaker(
     rasa.shared.utils.io.write_text_file(config, config_path)
 
     model_path = await trained_async(
-        "data/test_domains/default.yml",
-        str(config_path),
-        e2e_story_file_trips_circuit_breaker_path,
+        domain="data/test_domains/default.yml",
+        config=str(config_path),
+        training_files=e2e_story_file_trips_circuit_breaker_path,
     )
 
     agent = await load_agent(model_path)

@@ -119,14 +119,14 @@ async def test_train_core_with_original_or_provided_domain_and_compare(
     original_domain_file = example / "domain.yml"
     original_output_dir = tmp_path_factory.mktemp("output dir")
     await model_training.train(
-        domain=original_domain_file,
+        domain=str(original_domain_file),
         config=str(config_file),
-        training_files=training_files,
-        output=original_output_dir,
+        training_files=[str(training_file) for training_file in training_files],
+        output=str(original_output_dir),
     )
 
     # Let the provider create a modified domain
-    original_domain = Domain.from_file(original_domain_file)
+    original_domain = Domain.from_file(str(original_domain_file))
     component = DomainForCoreTrainingProvider.create(
         {"arbitrary-unused": 234},
         default_model_storage,
@@ -142,10 +142,10 @@ async def test_train_core_with_original_or_provided_domain_and_compare(
 
     modified_output_dir = tmp_path_factory.mktemp("modified output dir")
     modified_result = await model_training.train(
-        domain=modified_domain_file,
+        domain=str(modified_domain_file),
         config=str(config_file),
-        training_files=training_files,
-        output=modified_output_dir,
+        training_files=[str(training_file) for training_file in training_files],
+        output=str(modified_output_dir),
         dry_run=True,
     )
 

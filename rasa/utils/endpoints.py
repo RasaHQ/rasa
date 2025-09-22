@@ -1,5 +1,6 @@
 import os
 import ssl
+from pathlib import Path
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Text, Union
 
@@ -16,7 +17,7 @@ structlogger = structlog.get_logger()
 
 
 def read_endpoint_config(
-    filename: Text, endpoint_type: Text
+    filename: Union[str, Path], endpoint_type: Text
 ) -> Optional["EndpointConfig"]:
     """Read an endpoint configuration file from disk and extract one config."""
     if not filename:
@@ -24,6 +25,14 @@ def read_endpoint_config(
 
     try:
         content = read_config_file(filename)
+
+        structlogger.debug(
+            "endpoint.read.success",
+            filename=os.path.abspath(filename),
+            endpoint_type=endpoint_type,
+            event_info="Successfully read endpoint configuration file.",
+            content=content,
+        )
 
         if content.get(endpoint_type) is None:
             return None
@@ -42,7 +51,7 @@ def read_endpoint_config(
 
 
 def read_property_config_from_endpoints_file(
-    filename: str, property_name: str
+    filename: Union[str, Path], property_name: str
 ) -> Optional[Union[Dict[str, Any], List]]:
     """Read a property from an endpoint configuration file."""
     if not filename:

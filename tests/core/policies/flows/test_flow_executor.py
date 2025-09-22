@@ -1,12 +1,17 @@
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
-from unittest.mock import MagicMock, Mock
+from pathlib import Path
+from typing import List, Optional, Tuple
+from unittest.mock import Mock
 
 import pytest
 import structlog
 from pytest import MonkeyPatch
 
-from rasa.core.available_endpoints import AvailableEndpoints, InteractionHandlingConfig
+from rasa.core.config.available_endpoints import (
+    InteractionHandlingConfig,
+)
+from rasa.core.config.configuration import Configuration
+from rasa.core.config.credentials import CredentialsConfig
 from rasa.core.policies.flows import flow_executor
 from rasa.core.policies.flows.flow_exceptions import (
     FlowCircuitBreakerTrippedException,
@@ -45,6 +50,7 @@ from rasa.dialogue_understanding.stack.frames.search_frame import SearchStackFra
 from rasa.engine.language import Language
 from rasa.shared.core.constants import (
     GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE,
+    SILENCE_TIMEOUT_CHANNEL_KEY,
     SILENCE_TIMEOUT_SLOT,
 )
 from rasa.shared.core.domain import Domain
@@ -2257,7 +2263,70 @@ def test_set_silence_timeout_at_step_collect():
             previous_step_id=START_STEP,
         )
 
-        logs = filter_logs(caplog, "flow.step.run.adjusting_silence_timeout", "debug")
+        logs = filter_logs(caplog, "flow.step.run.using_step_silence_timeout", "debug")
+
+        assert len(logs) == 1
+
+    assert isinstance(result, ContinueFlowWithNextStep)
+    assert result.events == [
+        FlowStarted(flow_id="my_flow"),
+        SlotSet(SILENCE_TIMEOUT_SLOT, silence_timeout),
+    ]
+    assert len(stack.frames) == 2
+    assert isinstance(stack.frames[0], UserFlowStackFrame)
+    assert isinstance(stack.frames[1], CollectInformationPatternFlowStackFrame)
+
+
+def test_set_silence_timeout_at_step_collect_channel_specific(monkeypatch: MonkeyPatch):
+    """Test that silence timeout is set correctly when running a collect step.
+
+    We assess that event SlotSet is emitted with the correct silence timeout
+    set for a specific channel.
+    """
+
+    silence_timeout = 10
+    channel_name = "my_channel"
+
+    flows = flows_from_str(
+        f"""
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: collect_foo
+              collect: foo
+              silence_timeout:
+                {channel_name}: {silence_timeout}
+        """
+    )
+
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    monkeypatch.setattr(tracker, "get_latest_input_channel", lambda: channel_name)
+
+    flow = flows.flow_by_id("my_flow")
+
+    assert flow is not None
+    step = flow.step_by_id("collect_foo")
+
+    available_actions = ["utter_ask_foo"]
+
+    with structlog.testing.capture_logs() as caplog:
+        result = flow_executor.run_step(
+            step,
+            flow,
+            stack,
+            tracker,
+            available_actions,
+            flows,
+            previous_step_id=START_STEP,
+        )
+
+        logs = filter_logs(caplog, "flow.step.run.using_step_silence_timeout", "debug")
 
         assert len(logs) == 1
 
@@ -2276,24 +2345,9 @@ def interaction_handling_endpoint() -> InteractionHandlingConfig:
     return InteractionHandlingConfig(global_silence_timeout=10)
 
 
-@pytest.fixture
-def available_endpoints(
-    interaction_handling_endpoint: Dict[str, Any], monkeypatch: MonkeyPatch
-) -> MagicMock:
-    """Fixture to provide a mock for available endpoints."""
-    instance = MagicMock()
-    instance.interaction_handling = interaction_handling_endpoint
-    mock_endpoints = MagicMock(spec=AvailableEndpoints)
-    mock_endpoints.get_instance.return_value = instance
-    monkeypatch.setattr(
-        "rasa.core.policies.flows.flow_executor.AvailableEndpoints", mock_endpoints
-    )
-    return mock_endpoints
-
-
-@pytest.mark.usefixtures("available_endpoints")
 def test_reset_silence_timeout_to_global_at_step_collect(
-    interaction_handling_endpoint: InteractionHandlingConfig,
+    default_config: Configuration,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     """Test that silence timeout is reset to the global value.
 
@@ -2303,7 +2357,22 @@ def test_reset_silence_timeout_to_global_at_step_collect(
 
     # We set a global silence timeout in the interaction_handling endpoint
     global_silence_timeout = 11
-    interaction_handling_endpoint.global_silence_timeout = global_silence_timeout
+
+    channel_name = "test_channel"
+
+    channel_config = {
+        SILENCE_TIMEOUT_CHANNEL_KEY: global_silence_timeout,
+    }
+
+    credentials = CredentialsConfig(
+        channels={channel_name: channel_config}, config_file_path=Path()
+    )
+
+    monkeypatch.setattr(
+        default_config,
+        "credentials",
+        credentials,
+    )
 
     flows = flows_from_str(
         """
@@ -2325,6 +2394,9 @@ def test_reset_silence_timeout_to_global_at_step_collect(
 
     tracker = DialogueStateTracker.from_events("test", [])
     tracker.update_stack(stack)
+
+    monkeypatch.setattr(tracker, "get_latest_input_channel", lambda: channel_name)
+
     flow = flows.flow_by_id("my_flow")
 
     assert flow is not None
@@ -2343,9 +2415,7 @@ def test_reset_silence_timeout_to_global_at_step_collect(
             previous_step_id=START_STEP,
         )
 
-        logs = filter_logs(
-            caplog, "flow.step.run.reset_silence_timeout_to_global", "debug"
-        )
+        logs = filter_logs(caplog, "flow.step.run.use_channel_silence_timeout", "debug")
 
         assert len(logs) == 1
 

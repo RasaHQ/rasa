@@ -1281,6 +1281,10 @@ async def compare_models_in_dir(
         for k, v in number_correct_in_run.items():
             number_correct[k].append(v)
 
+    logger.info("current working directory: " + os.getcwd())
+    logger.info(
+        f"Writing model comparison results to '{os.path.join(output, RESULTS_FILE)}'"
+    )
     rasa.shared.utils.io.dump_obj_as_json_to_file(
         os.path.join(output, RESULTS_FILE), number_correct
     )

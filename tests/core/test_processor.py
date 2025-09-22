@@ -34,13 +34,13 @@ from rasa.core.actions.action import (
 )
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.agent import Agent, load_agent
-from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
     UserMessage,
 )
+from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.constants import UTTER_SOURCE_METADATA_KEY
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter
 from rasa.core.lock_store import InMemoryLockStore
@@ -1462,7 +1462,9 @@ async def test_predict_next_action_with_hidden_rules(
     config_path = tmp_path / "config.yml"
     rasa.shared.utils.io.write_text_file(config, config_path)
     model_path = await trained_async(
-        str(domain_path), str(config_path), [str(training_data_path)]
+        domain=str(domain_path),
+        config=str(config_path),
+        training_files=[str(training_data_path)],
     )
 
     action_endpoint = EndpointConfig("https://example.com/webhooks/actions")
@@ -1713,7 +1715,6 @@ async def test_loads_correct_model_from_path(
 @pytest.mark.flaky
 @pytest.mark.timeout(180, func_only=True)
 async def test_custom_action_triggers_action_extract_slots(
-    trained_async: TrainedAsync,
     caplog: LogCaptureFixture,
     custom_actions_agent: Agent,
 ):
@@ -1864,7 +1865,9 @@ async def test_from_trigger_intent_with_mapping_conditions_when_form_not_activat
     stories_path = f"{parent_folder}/stories.yml"
     nlu_path = f"{parent_folder}/nlu.yml"
 
-    model_path = await trained_async(domain_path, config_path, [stories_path, nlu_path])
+    model_path = await trained_async(
+        domain=domain_path, config=config_path, training_files=[stories_path, nlu_path]
+    )
     agent = Agent.load(model_path)
     processor = agent.processor
 
@@ -1911,7 +1914,9 @@ async def test_from_trigger_intent_no_form_condition_when_form_not_activated(
     stories_path = f"{parent_folder}/stories.yml"
     nlu_path = f"{parent_folder}/nlu.yml"
 
-    model_path = await trained_async(domain_path, config_path, [stories_path, nlu_path])
+    model_path = await trained_async(
+        domain=domain_path, config=config_path, training_files=[stories_path, nlu_path]
+    )
     agent = Agent.load(model_path)
     processor = agent.processor
 
@@ -2333,7 +2338,9 @@ async def test_predict_does_not_block_on_command_generator_llm_calls(
     rasa.shared.utils.io.write_text_file(config, config_path)
 
     model_path = await trained_async(
-        str(domain_path), str(config_path), [str(training_data_path)]
+        domain=str(domain_path),
+        config=str(config_path),
+        training_files=[str(training_data_path)],
     )
 
     async def sleepy_prediction(*args, **kwargs):

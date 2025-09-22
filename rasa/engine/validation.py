@@ -23,7 +23,8 @@ import structlog
 import typing_utils
 
 import rasa.utils.common
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.policies.intentless_policy import IntentlessPolicy
 from rasa.core.policies.policy import PolicyPrediction
@@ -1039,7 +1040,7 @@ def validate_model_client_configuration_setup_during_training_time(
                     )
 
     # also include the ContextualResponseRephraser component
-    endpoints = AvailableEndpoints.get_instance()
+    endpoints = Configuration.get_instance().endpoints
     if endpoints.nlg is not None:
         _validate_component_model_client_config(
             endpoints.nlg.kwargs,
@@ -1075,7 +1076,7 @@ def validate_model_client_configuration_setup_during_training_time(
             ),
         )
 
-    endpoints = AvailableEndpoints.get_instance()
+    endpoints = Configuration.get_instance().endpoints
     if len(model_group_ids) > 0 and endpoints.model_groups is None:
         raise ValidationError(
             code="engine.validation.validate_model_client_configuration_setup"
@@ -1138,7 +1139,7 @@ def _validate_component_model_client_config_has_references_to_endpoints(
         # no llm/embeddings configuration present
         return
 
-    endpoints = AvailableEndpoints.get_instance()
+    endpoints = Configuration.get_instance().endpoints
 
     if MODEL_GROUP_CONFIG_KEY in component_config[key]:
         referencing_model_group_id = component_config[key][MODEL_GROUP_CONFIG_KEY]
@@ -1213,7 +1214,7 @@ def validate_model_client_configuration_setup_during_inference_time(
                     )
 
     # also include the ContextualResponseRephraser component
-    endpoints = AvailableEndpoints.get_instance()
+    endpoints = Configuration.get_instance().endpoints
     if endpoints.nlg is not None:
         _validate_component_model_client_config_has_references_to_endpoints(
             component_config=endpoints.nlg.kwargs,
@@ -1224,6 +1225,12 @@ def validate_model_client_configuration_setup_during_inference_time(
 
 def _validate_unique_model_group_ids(model_groups: List[Dict[str, Any]]) -> None:
     # Each model id must be unique within the model_groups
+    structlogger.debug(
+        "engine.validation.validate_unique_model_group_ids",
+        event_info="Validating that model group IDs are unique.",
+        model_groups=model_groups,
+    )
+
     model_ids = [model_group[MODEL_GROUP_ID_CONFIG_KEY] for model_group in model_groups]
     if len(model_ids) != len(set(model_ids)):
         counts = Counter(model_ids)
@@ -1410,11 +1417,17 @@ def _validate_sensitive_keys_are_an_environment_variables_for_model_groups(
 
 def validate_model_group_configuration_setup() -> None:
     """Validates the model group configuration setup in endpoints.yml."""
-    endpoints = AvailableEndpoints.get_instance()
+    endpoints = Configuration.get_instance().endpoints
 
     if endpoints.model_groups is None:
         return
 
+    structlogger.debug(
+        "engine.validation.validate_model_group_configuration_setup",
+        event_info="Validating the model group configuration setup.",
+        model_groups=endpoints.model_groups,
+        path=endpoints.config_file_path,
+    )
     _validate_unique_model_group_ids(endpoints.model_groups)
     _validate_model_group_with_multiple_models(endpoints.model_groups)
     _validate_usage_of_environment_variables_in_model_group_config(

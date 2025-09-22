@@ -15,6 +15,10 @@ import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.common
 from rasa import telemetry
+from rasa.core.config.configuration import (
+    Configuration,
+    MessageProcessingConfigPath,
+)
 from rasa.core.persistor import StorageType
 from rasa.engine.caching import LocalTrainingCache
 from rasa.engine.recipes.recipe import Recipe
@@ -115,39 +119,11 @@ def get_unresolved_slots(domain: Domain, stories: StoryGraph) -> List[Text]:
     )
 
 
-def _check_unresolved_slots(domain: Domain, stories: StoryGraph) -> None:
-    """Checks if there are any unresolved slots.
-
-    Args:
-        domain: The domain.
-        stories: The story graph.
-
-    Raises:
-        `Sys exit` if there are any unresolved slots.
-
-    Returns:
-        `None` if there are no unresolved slots.
-    """
-    unresolved_slots = get_unresolved_slots(domain, stories)
-    if unresolved_slots:
-        structlogger.error(
-            "model.training.check_unresolved_slots.not_in_domain",
-            slots=unresolved_slots,
-            event_info=(
-                f"Unresolved slots found in stories/rules🚨 \n"
-                f'Tried to set slots "{unresolved_slots}" that are not present in'
-                f"your domain.\n Check whether they need to be added to the domain or "
-                f"whether there is a spelling error."
-            ),
-        )
-        rasa.shared.utils.common.display_research_study_prompt()
-        sys.exit(1)
-
-
 async def train(
     domain: Text,
     config: Text,
     training_files: Optional[Union[Text, List[Text]]],
+    endpoints: Text = rasa.shared.constants.DEFAULT_ENDPOINTS_PATH,
     output: Text = rasa.shared.constants.DEFAULT_MODELS_PATH,
     dry_run: bool = False,
     force_training: bool = False,
@@ -167,6 +143,7 @@ async def train(
     Args:
         domain: Path to the domain file.
         config: Path to the config file.
+        endpoints: Path to the endpoints file.
         training_files: List of paths to training data files.
         output: Output directory for the trained model.
         dry_run: If `True` then no training will be done, and the information about
@@ -194,6 +171,12 @@ async def train(
     Returns:
         An instance of `TrainingResult`.
     """
+    Configuration.initialise_message_processing(
+        message_processing_config_path=MessageProcessingConfigPath.validate(
+            Path(config)
+        )
+    ).initialise_endpoints(endpoints_path=Path(endpoints))
+
     if not file_importer:
         file_importer = TrainingDataImporter.load_from_config(
             config, domain, training_files, core_additional_arguments
@@ -276,6 +259,35 @@ async def train(
             **(core_additional_arguments or {}),
             **(nlu_additional_arguments or {}),
         )
+
+
+def _check_unresolved_slots(domain: Domain, stories: StoryGraph) -> None:
+    """Checks if there are any unresolved slots.
+
+    Args:
+        domain: The domain.
+        stories: The story graph.
+
+    Raises:
+        `Sys exit` if there are any unresolved slots.
+
+    Returns:
+        `None` if there are no unresolved slots.
+    """
+    unresolved_slots = get_unresolved_slots(domain, stories)
+    if unresolved_slots:
+        structlogger.error(
+            "model.training.check_unresolved_slots.not_in_domain",
+            slots=unresolved_slots,
+            event_info=(
+                f"Unresolved slots found in stories/rules🚨 \n"
+                f'Tried to set slots "{unresolved_slots}" that are not present in'
+                f"your domain.\n Check whether they need to be added to the domain or "
+                f"whether there is a spelling error."
+            ),
+        )
+        rasa.shared.utils.common.display_research_study_prompt()
+        sys.exit(1)
 
 
 async def _train_graph(
@@ -572,6 +584,10 @@ async def train_nlu(
             ),
         )
         return None
+
+    Configuration.initialise_message_processing(
+        message_processing_config_path=Path(config),
+    ).initialise_empty_endpoints()
 
     return (
         await _train_graph(

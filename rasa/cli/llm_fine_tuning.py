@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import sys
+from pathlib import Path
 from typing import Any, Dict, List, Type, cast
 
 import structlog
@@ -20,7 +21,8 @@ from rasa.cli.e2e_test import (
     read_test_cases,
     validate_model_path,
 )
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.core.exceptions import AgentNotReady
 from rasa.dialogue_understanding.generator.llm_based_command_generator import (
     LLMBasedCommandGenerator,
@@ -46,7 +48,6 @@ from rasa.llm_fine_tuning.train_test_split_module import (
     split_llm_fine_tuning_data,
 )
 from rasa.shared.constants import (
-    DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
     LLM_CONFIG_KEY,
 )
@@ -393,10 +394,9 @@ def write_statistics(statistics: Dict[str, Any], output_path: str) -> None:
 
 
 def get_valid_endpoints(endpoints_file: str) -> AvailableEndpoints:
-    validated_endpoints_file = rasa.cli.utils.get_validated_path(
-        endpoints_file, "endpoints", DEFAULT_ENDPOINTS_PATH, True
-    )
-    endpoints = AvailableEndpoints.get_instance(validated_endpoints_file)
+    endpoints = Configuration.initialise_endpoints(
+        endpoints_path=Path(endpoints_file)
+    ).endpoints
 
     # Ignore all endpoints apart from action server, model, nlu and nlg
     # to ensure InMemoryTrackerStore is being used instead of production

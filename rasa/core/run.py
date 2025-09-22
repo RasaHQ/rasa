@@ -30,34 +30,34 @@ from rasa import server, telemetry
 from rasa.constants import ENV_SANIC_BACKLOG
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
-from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.development_inspector import DevelopmentInspectProxy
+from rasa.core.config.available_endpoints import AvailableEndpoints
+from rasa.core.config.credentials import CredentialsConfig
 from rasa.core.persistor import StorageType
 from rasa.shared.exceptions import RasaException
-from rasa.shared.utils.yaml import read_config_file
 from rasa.utils import licensing
 
 logger = logging.getLogger()  # get the root logger
 
 
 def create_input_channels(
-    channel: Optional[Text], credentials_file: Optional[Text]
+    channel: Optional[Text], credentials_config: Optional[CredentialsConfig]
 ) -> List[InputChannel]:
     """Instantiate the chosen input channel.
 
     Args:
         channel (optional): The name of the specific input channel to create.
-        credentials_file: Path to the credentials file containing channel credentials.
+        credentials_config: CredentialsConfig object containing channel credentials.
 
     Returns:
         A list of instantiated input channels. If a specific channel is provided,
         it returns a list with that single channel. If no channel is specified,
         it returns a list of all channels defined in the credentials file.
     """
-    if credentials_file:
-        all_credentials = read_config_file(credentials_file)
+    if credentials_config:
+        all_credentials = credentials_config.channels
     else:
         all_credentials = {}
     if channel:
@@ -234,7 +234,7 @@ def serve_application(
     channel: Optional[Text] = None,
     interface: Optional[Text] = constants.DEFAULT_SERVER_INTERFACE,
     port: int = constants.DEFAULT_SERVER_PORT,
-    credentials: Optional[Text] = None,
+    credentials: Optional[CredentialsConfig] = None,
     cors: Optional[Union[Text, List[Text]]] = None,
     auth_token: Optional[Text] = None,
     enable_api: bool = True,

@@ -11,7 +11,7 @@ from aioresponses import aioresponses
 import rasa.shared.utils.io
 import rasa.version
 from rasa.cli import x
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.shared.utils.yaml import read_config_file, write_yaml
 from rasa.utils.endpoints import EndpointConfig
 from tests.cli.conftest import RASA_EXE

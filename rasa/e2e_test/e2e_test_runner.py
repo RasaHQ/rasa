@@ -13,8 +13,8 @@ import structlog
 from tqdm import tqdm
 
 import rasa.shared.utils.io
-from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.channels import CollectingOutputChannel, UserMessage
+from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.persistor import StorageType

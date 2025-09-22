@@ -44,12 +44,12 @@ import rasa.utils.endpoints
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.core.agent import Agent
-from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
     UserMessage,
 )
+from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.constants import DEFAULT_RESPONSE_TIMEOUT
 from rasa.core.persistor import parse_remote_storage
 from rasa.core.test import test

@@ -8,7 +8,7 @@ from structlog.contextvars import (
     bound_contextvars,
 )
 
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.policies.flows.flow_exceptions import (
     FlowCircuitBreakerTrippedException,
@@ -56,6 +56,8 @@ from rasa.dialogue_understanding.stack.utils import (
 from rasa.shared.constants import RASA_PATTERN_HUMAN_HANDOFF
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
+    GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE,
+    SILENCE_TIMEOUT_CHANNEL_KEY,
     SILENCE_TIMEOUT_SLOT,
 )
 from rasa.shared.core.events import (
@@ -797,21 +799,41 @@ def _silence_timeout_events_for_collect_step(
 ) -> List[Event]:
     events: List[Event] = []
 
-    silence_timeout = (
-        AvailableEndpoints.get_instance().interaction_handling.global_silence_timeout
-    )
-
     if step.silence_timeout:
+        input_channel_name = tracker.get_latest_input_channel()
+
         structlogger.debug(
-            "flow.step.run.adjusting_silence_timeout",
+            "flow.step.run.using_step_silence_timeout",
             duration=step.silence_timeout,
             collect=step.collect,
         )
 
-        silence_timeout = step.silence_timeout
+        silence_timeout = step.silence_timeout.get_silence_for_channel(
+            input_channel_name
+        )
     else:
+        input_channel_name = tracker.get_latest_input_channel()
+        credentials_config = Configuration.get_instance().credentials
+
+        if credentials_config:
+            channel_config = (
+                credentials_config.channels.get(input_channel_name)
+                if input_channel_name
+                else None
+            )
+
+            silence_timeout = (
+                channel_config.get(
+                    SILENCE_TIMEOUT_CHANNEL_KEY, GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE
+                )
+                if channel_config
+                else GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE
+            )
+        else:
+            silence_timeout = GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE
+
         structlogger.debug(
-            "flow.step.run.reset_silence_timeout_to_global",
+            "flow.step.run.use_channel_silence_timeout",
             duration=silence_timeout,
             collect=step.collect,
         )
@@ -828,14 +850,13 @@ def _append_global_silence_timeout_event(
     events: List[Event], tracker: DialogueStateTracker
 ) -> None:
     current_silence_timeout = tracker.get_slot(SILENCE_TIMEOUT_SLOT)
-    global_silence_timeout = (
-        AvailableEndpoints.get_instance().interaction_handling.global_silence_timeout
-    )
+    endpoints = Configuration.get_instance().endpoints
+    global_silence_timeout = endpoints.interaction_handling.global_silence_timeout
 
     if current_silence_timeout != global_silence_timeout:
         events.append(
             SlotSet(
                 SILENCE_TIMEOUT_SLOT,
-                AvailableEndpoints.get_instance().interaction_handling.global_silence_timeout,
+                global_silence_timeout,
             )
         )

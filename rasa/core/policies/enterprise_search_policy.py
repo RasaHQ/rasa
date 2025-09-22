@@ -12,7 +12,7 @@ from jinja2 import Template
 from pydantic import ValidationError
 
 import rasa.shared.utils.io
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.constants import (
     UTTER_SOURCE_METADATA_KEY,
 )

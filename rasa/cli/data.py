@@ -15,6 +15,8 @@ from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
 from rasa.cli.arguments import default_arguments
+from rasa.cli.validation.bot_config import validate_files
+from rasa.cli.validation.config_path_validation import get_validated_path
 from rasa.e2e_test.e2e_config import create_llm_e2e_test_converter_config
 from rasa.e2e_test.e2e_test_converter import E2ETestConverter
 from rasa.e2e_test.utils.e2e_yaml_utils import E2ETestYAMLWriter
@@ -137,7 +139,7 @@ def _add_data_validate_parsers(
     )
     _append_story_structure_arguments(validate_parser)
     validate_parser.set_defaults(
-        func=lambda args: rasa.cli.utils.validate_files(
+        func=lambda args: validate_files(
             args.fail_on_warnings, args.max_history, _build_training_data_importer(args)
         )
     )
@@ -153,7 +155,7 @@ def _add_data_validate_parsers(
     _append_story_structure_arguments(story_structure_parser)
 
     story_structure_parser.set_defaults(
-        func=lambda args: rasa.cli.utils.validate_files(
+        func=lambda args: validate_files(
             args.fail_on_warnings,
             args.max_history,
             _build_training_data_importer(args),
@@ -169,7 +171,7 @@ def _add_data_validate_parsers(
         help="Checks for inconsistencies in the flows files.",
     )
     flows_structure_parser.set_defaults(
-        func=lambda args: rasa.cli.utils.validate_files(
+        func=lambda args: validate_files(
             args.fail_on_warnings,
             args.max_history,
             _build_training_data_importer(args),
@@ -185,7 +187,7 @@ def _add_data_validate_parsers(
         help="Checks for inconsistencies of the flow and response translation.",
     )
     translations_structure_parser.set_defaults(
-        func=lambda args: rasa.cli.utils.validate_files(
+        func=lambda args: validate_files(
             args.fail_on_warnings,
             args.max_history,
             _build_training_data_importer(args),
@@ -196,12 +198,12 @@ def _add_data_validate_parsers(
 
 
 def _build_training_data_importer(args: argparse.Namespace) -> "TrainingDataImporter":
-    config = rasa.cli.utils.get_validated_path(
+    config = get_validated_path(
         args.config, "config", DEFAULT_CONFIG_PATH, none_is_valid=True
     )
 
     # Exit the validation if the domain path is invalid
-    domain = rasa.cli.utils.get_validated_path(
+    domain = get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=False
     )
 
@@ -231,7 +233,7 @@ def split_nlu_data(args: argparse.Namespace) -> None:
     Args:
         args: Commandline arguments
     """
-    data_path = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
+    data_path = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     data_path = rasa.shared.data.get_nlu_directory(data_path)
 
     nlu_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
@@ -258,7 +260,7 @@ def split_stories_data(args: argparse.Namespace) -> None:
         YAMLStoryReader,
     )
 
-    data_path = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
+    data_path = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     data_files = rasa.shared.data.get_data_files(
         data_path, YAMLStoryReader.is_stories_file
     )

@@ -4,7 +4,7 @@ import os
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, Generator, Sequence
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -23,14 +23,14 @@ from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import (
-    MockAvailableEndpoints,
     MockInformationRetrieval,
     TestSpanExporter,
+    get_model_groups,
 )
 
 
 @pytest.fixture
-def mock_create_plain_embedder() -> Mock:
+def mock_create_plain_embedder() -> Generator[Mock, None, None]:
     with patch(
         "rasa.core.policies.enterprise_search_policy.EnterpriseSearchPolicy"
         "._create_plain_embedder"
@@ -39,7 +39,7 @@ def mock_create_plain_embedder() -> Mock:
 
 
 @pytest.fixture
-def mock_faiss_store() -> Mock:
+def mock_faiss_store() -> Generator[Mock, None, None]:
     with patch(
         "rasa.core.policies.enterprise_search_policy.FAISS_Store",
     ) as mock_function:
@@ -47,7 +47,7 @@ def mock_faiss_store() -> Mock:
 
 
 @pytest.fixture
-def mock_create_from_endpoint_config() -> Mock:
+def mock_create_from_endpoint_config() -> Generator[Mock, None, None]:
     with patch(
         "rasa.core.policies.enterprise_search_policy.create_from_endpoint_config",
     ) as mock_function:
@@ -112,6 +112,7 @@ async def test_tracing_enterprise_search_policy_invoke_llm_default_config(
     }
 
 
+@pytest.mark.usefixtures("mock_configuration")
 @pytest.mark.parametrize(
     "config, expected",
     [
@@ -172,9 +173,7 @@ async def test_tracing_enterprise_search_policy_invoke_llm_default_config(
                 "embeddings_model_group_id": "embedding-model-group",
                 # deprecated
                 "request_timeout": "None",
-                "embeddings": json.dumps(
-                    MockAvailableEndpoints().model_groups[1], sort_keys=True
-                ),
+                "embeddings": json.dumps(get_model_groups()[1], sort_keys=True),
             },
         ),
     ],
@@ -190,7 +189,6 @@ async def test_tracing_enterprise_search_policy_invoke_llm_custom_config(
     config: Dict[str, Any],
     expected: Dict[str, Any],
     monkeypatch: MonkeyPatch,
-    mock_available_endpoints: MockAvailableEndpoints,
     llm_response_object: LLMResponse,
 ) -> None:
     """Test that the instrumentation traces custom configuration for the EnterpriseSearchPolicy."""  # noqa: E501

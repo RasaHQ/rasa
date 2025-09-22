@@ -2,7 +2,7 @@ import os
 import signal
 import time
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable, Generator
 
 import pytest
 import requests
@@ -19,7 +19,7 @@ LICENSE_PRO_ALL_FEATURES = os.getenv("RASA_PRO_LICENSE")
 
 
 @pytest.fixture
-def audiocodes_credentials(tmp_path: Path) -> Path:
+def audiocodes_credentials(tmp_path: Path) -> Generator[Path, Any, None]:
     """Fixture to create audiocodes credentials."""
     credentials = tmp_path / "credentials.yml"
     with credentials.open("w") as handle:

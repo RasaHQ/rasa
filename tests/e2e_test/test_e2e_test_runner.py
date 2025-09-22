@@ -13,8 +13,8 @@ from structlog.testing import capture_logs
 
 import rasa.cli.e2e_test
 from rasa.core.agent import Agent
-from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
+from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore

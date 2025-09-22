@@ -1,12 +1,13 @@
 import argparse
 import logging
 import uuid
+from pathlib import Path
 from typing import List
 
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.exceptions import ModelNotFound
 from rasa.model import get_local_model
@@ -64,7 +65,7 @@ def add_subparser(
 def shell_nlu(args: argparse.Namespace) -> None:
     """Talk with an NLU only bot though the command line."""
     import rasa.nlu.run
-    from rasa.cli.utils import get_validated_path
+    from rasa.cli.validation.config_path_validation import get_validated_path
     from rasa.shared.constants import DEFAULT_MODELS_PATH
 
     args.connector = "cmdline"
@@ -102,15 +103,15 @@ def shell_nlu(args: argparse.Namespace) -> None:
 
 def shell(args: argparse.Namespace) -> None:
     """Talk with a bot though the command line."""
-    from rasa.cli.utils import get_validated_path
+    from rasa.cli.validation.config_path_validation import get_validated_path
     from rasa.shared.constants import DEFAULT_MODELS_PATH
 
     args.connector = "cmdline"
     # Load endpoints with proper endpoint file location
     # This will initialise the endpoints singleton properly so that
     # it can be used safely throughout the codebase with
-    # `AvailableEndpoints.get_instance()`
-    AvailableEndpoints.get_instance(args.endpoints)
+    # `Configuration.get_instance().endpoints`
+    Configuration.initialise_endpoints(endpoints_path=Path(args.endpoints))
     model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 
     try:

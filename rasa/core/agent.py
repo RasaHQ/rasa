@@ -13,8 +13,8 @@ from aiohttp import ClientError
 
 import rasa.shared.utils.io
 from rasa.core import jobs
-from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.channels.channel import OutputChannel, UserMessage
+from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.http_interpreter import RasaNLUHttpInterpreter

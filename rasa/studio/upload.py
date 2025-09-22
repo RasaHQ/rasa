@@ -12,6 +12,7 @@ import rasa.cli.telemetry
 import rasa.cli.utils
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
+from rasa.cli.validation.config_path_validation import get_validated_path
 from rasa.shared.constants import (
     CONFIG_LANGUAGE_KEY,
     CONFIG_LLM_KEY,
@@ -155,13 +156,9 @@ def handle_upload(args: argparse.Namespace) -> None:
 
     structlogger.info("rasa.studio.upload.loading_data", event_info="Loading data...")
 
-    args.domain = rasa.cli.utils.get_validated_path(
-        args.domain, "domain", DEFAULT_DOMAIN_PATHS
-    )
+    args.domain = get_validated_path(args.domain, "domain", DEFAULT_DOMAIN_PATHS)
 
-    args.config = rasa.cli.utils.get_validated_path(
-        args.config, "config", DEFAULT_CONFIG_PATH
-    )
+    args.config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
 
     config = read_yaml_file(args.config, expand_env_vars=False)
     assistant_name = args.assistant_name or _get_assistant_name(config)

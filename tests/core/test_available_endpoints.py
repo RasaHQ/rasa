@@ -1,9 +1,13 @@
+from pathlib import Path
 from typing import Any, Dict
 from unittest.mock import MagicMock
 
 import pytest
 
-from rasa.core.available_endpoints import AvailableEndpoints, InteractionHandlingConfig
+from rasa.core.config.available_endpoints import (
+    InteractionHandlingConfig,
+)
+from rasa.core.config.configuration import Configuration, EndpointsConfigPath
 from rasa.shared.core.constants import GLOBAL_SILENCE_TIMEOUT_KEY
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
@@ -51,7 +55,8 @@ def mock_read_endpoint_config(
 
     _mock_read_endpoint_config = MagicMock(side_effect=_read_endpoint_config)
     monkeypatch.setattr(
-        "rasa.core.available_endpoints.read_endpoint_config", _mock_read_endpoint_config
+        "rasa.core.config.available_endpoints.read_endpoint_config",
+        _mock_read_endpoint_config,
     )
 
     return _mock_read_endpoint_config
@@ -74,7 +79,7 @@ def mock_read_property_config_from_endpoints_file(
         side_effect=_read_property_config_from_endpoints_file
     )
     monkeypatch.setattr(
-        "rasa.core.available_endpoints.read_property_config_from_endpoints_file",
+        "rasa.core.config.available_endpoints.read_property_config_from_endpoints_file",
         _mock_read_property_config_from_endpoints_file,
     )
 
@@ -86,13 +91,22 @@ def mock_read_property_config_from_endpoints_file(
 )
 def test_available_endpoints_read_endpoints(
     deserialized_endpoint_config,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test that the `AvailableEndpoints` class reads the endpoints correctly."""
 
     endpoint_file = "some/path/to/endpoints.yml"
-    AvailableEndpoints.reset_instance()  # Reset the instance before the test
+
+    mock_endpoint_config_path = MagicMock(spec=EndpointsConfigPath)
+    mock_endpoint_config_path.validate.return_value = Path(endpoint_file)
+    monkeypatch.setattr(
+        "rasa.core.config.configuration.EndpointsConfigPath", mock_endpoint_config_path
+    )
+
     # Create an instance of AvailableEndpoints
-    available_endpoints = AvailableEndpoints.read_endpoints(endpoint_file)
+    available_endpoints = Configuration.initialise_endpoints(
+        endpoints_path=Path(endpoint_file)
+    ).endpoints
 
     # Assert that the attributes are set correctly
     assert available_endpoints.nlg == deserialized_endpoint_config["nlg"]
@@ -120,59 +134,6 @@ def test_available_endpoints_read_endpoints(
             deserialized_endpoint_config["interaction_handling"]
         )
     )
-
-    # Reset the instance after the test,
-    # because AvailableEndpoints is using a singleton pattern
-    AvailableEndpoints.reset_instance()
-
-
-def test_available_endpoints_get_instance(
-    mock_read_endpoint_config: MagicMock,
-    mock_read_property_config_from_endpoints_file: MagicMock,
-) -> None:
-    """Test that `AvailableEndpoints` instance is not re-created on multiple calls."""
-    endpoint_file = "some/path/to/endpoints.yml"
-    AvailableEndpoints.reset_instance()  # Reset the instance before the test
-
-    AvailableEndpoints.get_instance(endpoint_file)
-    AvailableEndpoints.get_instance(endpoint_file)
-
-    assert mock_read_endpoint_config.call_count == 8
-    assert mock_read_property_config_from_endpoints_file.call_count == 3
-
-    # Reset the instance after the test,
-    # because AvailableEndpoints is using a singleton pattern
-    AvailableEndpoints.reset_instance()
-
-
-def test_available_endpoints_reset_instance(
-    mock_read_endpoint_config: MagicMock,
-    mock_read_property_config_from_endpoints_file: MagicMock,
-) -> None:
-    """Test that `AvailableEndpoints` instance can be reset and re-initialized."""
-    endpoint_file = "some/path/to/endpoints.yml"
-
-    AvailableEndpoints.reset_instance()  # Reset the instance before the test
-
-    # Get the instance for the first time
-    AvailableEndpoints.get_instance(endpoint_file)
-
-    # Reset the instance
-    AvailableEndpoints.reset_instance()
-
-    assert AvailableEndpoints._instance is None
-
-    # Get the instance again
-    AvailableEndpoints.get_instance(endpoint_file)
-
-    assert mock_read_endpoint_config.call_count == 16  # Called twice for each endpoint
-    assert (
-        mock_read_property_config_from_endpoints_file.call_count == 6
-    )  # Called twice for each property
-
-    # Reset the instance after the test,
-    # because AvailableEndpoints is using a singleton pattern
-    AvailableEndpoints.reset_instance()
 
 
 def test_interaction_handling_config_from_dict():

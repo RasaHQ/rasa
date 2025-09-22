@@ -4,12 +4,14 @@ import sys
 from pathlib import Path
 from typing import Any, List, Optional
 
-import rasa.cli.utils
-import rasa.shared.utils.cli
 from rasa.cli.train import (
     _model_for_finetuning,
     extract_core_additional_arguments,
     extract_nlu_additional_arguments,
+)
+from rasa.cli.validation.config_path_validation import (
+    get_validated_config,
+    get_validated_path,
 )
 from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS,
@@ -41,10 +43,10 @@ def handle_train(args: argparse.Namespace) -> Optional[str]:
     else:
         handler.request_all_data()
 
-    domain = rasa.cli.utils.get_validated_path(
+    domain = get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
-    config = rasa.cli.utils.get_validated_config(args.config, CONFIG_MANDATORY_KEYS)
+    config = get_validated_config(args.config, CONFIG_MANDATORY_KEYS)
     data_form_studio, data_original = import_data_from_studio(
         handler, domain, args.data
     )
@@ -58,9 +60,7 @@ def handle_train(args: argparse.Namespace) -> Optional[str]:
     )
 
     training_files = [
-        rasa.cli.utils.get_validated_path(
-            f, "data", DEFAULT_DATA_PATH, none_is_valid=True
-        )
+        get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)
         for f in args.data
     ]
     training_files.extend(studio_training_files)
@@ -68,6 +68,7 @@ def handle_train(args: argparse.Namespace) -> Optional[str]:
     training_result = train_all(
         domain=str(domain_file),
         config=config,
+        endpoints=args.endpoints,
         training_files=args.data,
         output=args.out,
         dry_run=args.dry_run,

@@ -136,10 +136,3 @@ def create_tar_archive_in_bytes(input_file_entries: List[TarFileEntry]) -> bytes
             tar.addfile(info, io.BytesIO(item.data))
 
     return file_like_object.getvalue()
-
-
-def clear_available_endpoints_class_instance() -> None:
-    """Clears the available endpoints class instance."""
-    from rasa.core.available_endpoints import AvailableEndpoints
-
-    AvailableEndpoints._instance = None

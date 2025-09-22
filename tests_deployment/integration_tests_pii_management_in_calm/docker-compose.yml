@@ -141,7 +141,7 @@ services:
         target: /endpoints-anonymization.yml
     working_dir: /app/bot
     entrypoint: ""
-    command: rasa run -p 5005 --enable-api --endpoints /endpoints-anonymization.yml
+    command: rasa run -p 5005 --enable-api --endpoints /endpoints-anonymization.yml --debug
     networks:
       - pii-integration-testing
     depends_on:
@@ -170,7 +170,7 @@ services:
       - source: endpoints-deletion.yml
         target: /endpoints-deletion.yml
     entrypoint: ""
-    command: rasa run -p 5006 --enable-api --endpoints /endpoints-deletion.yml
+    command: rasa run -p 5006 --enable-api --endpoints /endpoints-deletion.yml --debug
     networks:
       - pii-integration-testing
     depends_on:

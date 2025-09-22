@@ -30,8 +30,8 @@ from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
 
-    from rasa.core.available_endpoints import AvailableEndpoints
     from rasa.core.brokers.broker import EventBroker
+    from rasa.core.config.available_endpoints import AvailableEndpoints
     from rasa.shared.core.domain import Domain
 
 

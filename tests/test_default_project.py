@@ -12,6 +12,13 @@ import rasa.cli.train
 import rasa.cli.utils
 import rasa.shared.utils.io
 from rasa.__main__ import create_argument_parser
+from rasa.cli.validation.bot_config import validate_files
+from rasa.core.config.configuration import (
+    Configuration,
+    CredentialsConfigPath,
+    EndpointsConfigPath,
+    MessageProcessingConfigPath,
+)
 from rasa.shared.constants import ASSISTANT_ID_KEY
 from rasa.utils.common import EXPECTED_WARNINGS
 from rasa.utils.io import write_yaml
@@ -30,10 +37,18 @@ def test_default_project_has_no_warnings(
 
     write_yaml(config, "config.yml")
 
+    Configuration.initialise_endpoints(
+        EndpointsConfigPath.default_file_path(),
+    ).initialise_credentials(
+        CredentialsConfigPath.default_file_path(),
+    ).initialise_message_processing(
+        MessageProcessingConfigPath.default_file_path(),
+    )
+
     # Record warnings, but do not raise exception if no warnings are recorded.
     with pytest.warns(None) as warning_recorder:
         arg_namespace = parser.parse_args(["data", "validate"])
-        rasa.cli.utils.validate_files(
+        validate_files(
             arg_namespace.fail_on_warnings,
             arg_namespace.max_history,
             rasa.cli.data._build_training_data_importer(arg_namespace),

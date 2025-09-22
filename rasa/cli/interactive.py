@@ -11,6 +11,7 @@ import rasa.utils.common
 from rasa import model
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import interactive as arguments
+from rasa.cli.validation.config_path_validation import get_validated_path
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
@@ -133,7 +134,7 @@ def perform_interactive_learning(
             "Can not run interactive learning on an NLU-only model."
         )
 
-    args.endpoints = rasa.cli.utils.get_validated_path(
+    args.endpoints = get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
 
@@ -142,9 +143,7 @@ def perform_interactive_learning(
 
 def get_provided_model(arg_model: Text) -> Optional[Union[Text, Path]]:
     """Checks model path input and selects model from it."""
-    model_path = rasa.cli.utils.get_validated_path(
-        arg_model, "model", DEFAULT_MODELS_PATH
-    )
+    model_path = get_validated_path(arg_model, "model", DEFAULT_MODELS_PATH)
 
     return (
         model.get_latest_model(model_path) if os.path.isdir(model_path) else model_path

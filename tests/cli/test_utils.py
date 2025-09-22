@@ -17,6 +17,13 @@ from ruamel.yaml import YAML
 
 import rasa.cli.utils
 import rasa.shared.utils.io
+from rasa.cli.validation.bot_config import validate_files
+from rasa.cli.validation.config_path_validation import (
+    get_validated_config,
+    get_validated_path,
+    validate_assistant_id_in_config,
+    validate_config_path,
+)
 from rasa.exceptions import ModelNotFound, ValidationError
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
@@ -92,23 +99,19 @@ def test_parse_no_positional_model_path_argument(argv):
 
 def test_validate_invalid_path():
     with pytest.raises(ValidationError):
-        rasa.cli.utils.get_validated_path("test test test", "out", "default")
+        get_validated_path("test test test", "out", "default")
 
 
 def test_validate_valid_path(tmp_path: pathlib.Path):
-    assert rasa.cli.utils.get_validated_path(str(tmp_path), "out", "default") == str(
-        tmp_path
-    )
+    assert get_validated_path(str(tmp_path), "out", "default") == str(tmp_path)
 
 
 def test_validate_if_none_is_valid():
-    assert rasa.cli.utils.get_validated_path(None, "out", "default", True) is None
+    assert get_validated_path(None, "out", "default", True) is None
 
 
 def test_validate_with_multiple_default_options(tmp_path: pathlib.Path):
-    chosen_option = rasa.cli.utils.get_validated_path(
-        None, "out", ["xyz", str(tmp_path)]
-    )
+    chosen_option = get_validated_path(None, "out", ["xyz", str(tmp_path)])
     assert chosen_option == str(tmp_path)
 
 
@@ -117,9 +120,7 @@ def test_validate_with_none_if_default_is_valid(tmp_path: pathlib.Path):
     expected_log_level = "warning"
 
     with structlog.testing.capture_logs() as caplog:
-        assert rasa.cli.utils.get_validated_path(None, "out", str(tmp_path)) == str(
-            tmp_path
-        )
+        assert get_validated_path(None, "out", str(tmp_path)) == str(tmp_path)
         logs = filter_logs(caplog, expected_event, expected_log_level)
         assert len(logs) == 0
 
@@ -132,9 +133,9 @@ def test_validate_with_invalid_directory_if_default_is_valid(tmp_path: pathlib.P
     expected_log_message = "does not seem to exist"
 
     with structlog.testing.capture_logs() as caplog:
-        assert rasa.cli.utils.get_validated_path(
-            invalid_directory, "out", str(tmp_path)
-        ) == str(tmp_path)
+        assert get_validated_path(invalid_directory, "out", str(tmp_path)) == str(
+            tmp_path
+        )
 
         logs = filter_logs(
             caplog, expected_event, expected_log_level, [expected_log_message]
@@ -146,7 +147,7 @@ def test_validate_with_invalid_model_directory_is_invalid(tmp_path: pathlib.Path
     invalid_directory = "invalid/path"
 
     with pytest.raises(ModelNotFound):
-        rasa.cli.utils.get_validated_path(invalid_directory, "model", str(tmp_path))
+        get_validated_path(invalid_directory, "model", str(tmp_path))
 
 
 @pytest.mark.parametrize(
@@ -190,7 +191,7 @@ def test_get_validated_config_with_valid_input(parameters: Dict[Text, Any]) -> N
     default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
     write_yaml(parameters["default_config"], default_config_path)
 
-    config_path = rasa.cli.utils.get_validated_config(
+    config_path = get_validated_config(
         config_path, parameters["mandatory_keys"], default_config_path
     )
 
@@ -228,7 +229,7 @@ def test_get_validated_config_with_default_config(parameters: Dict[Text, Any]) -
     default_config_path = os.path.join(tempfile.mkdtemp(), "default-config.yml")
     write_yaml(parameters["default_config"], default_config_path)
 
-    config_path = rasa.cli.utils.get_validated_config(
+    config_path = get_validated_config(
         config_path, parameters["mandatory_keys"], default_config_path
     )
 
@@ -277,7 +278,7 @@ def test_get_validated_config_with_invalid_input(parameters: Dict[Text, Any]) ->
     write_yaml(parameters["default_config"], default_config_path)
 
     with pytest.raises(ValidationError):
-        rasa.cli.utils.get_validated_config(
+        get_validated_config(
             config_path, parameters["mandatory_keys"], default_config_path
         )
 
@@ -311,9 +312,7 @@ def test_get_validated_config_with_default_and_no_config(
     write_yaml(default_config_content, default_config_path)
 
     with pytest.raises(ValidationError):
-        rasa.cli.utils.get_validated_config(
-            config_path, mandatory_keys, default_config_path
-        )
+        get_validated_config(config_path, mandatory_keys, default_config_path)
 
 
 def test_get_validated_config_with_no_content() -> None:
@@ -322,14 +321,12 @@ def test_get_validated_config_with_no_content() -> None:
     mandatory_keys = CONFIG_MANDATORY_KEYS
 
     with pytest.raises(ValidationError):
-        rasa.cli.utils.get_validated_config(
-            config_path, mandatory_keys, default_config_path
-        )
+        get_validated_config(config_path, mandatory_keys, default_config_path)
 
 
 def test_validate_config_path_with_non_existing_file():
     with pytest.raises(ValidationError):
-        rasa.cli.utils.validate_config_path("non-existing-file.yml")
+        validate_config_path("non-existing-file.yml")
 
 
 @pytest.mark.parametrize(
@@ -357,7 +354,7 @@ def test_validate_assistant_id_in_config(
     expected_log_level = "warning"
 
     with structlog.testing.capture_logs() as caplog:
-        rasa.cli.utils.validate_assistant_id_in_config(config_file)
+        validate_assistant_id_in_config(config_file)
         logs = filter_logs(
             caplog, expected_log_event, expected_log_level, [expected_log_message]
         )
@@ -377,11 +374,11 @@ def test_data_validate_stories_with_max_history_zero():
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_defaults.yml",
         "data/test_moodbot/domain.yml",
-        "data/test_moodbot/data",
+        ["data/test_moodbot/data"],
     )
 
     with pytest.raises(argparse.ArgumentTypeError):
-        rasa.cli.utils.validate_files(
+        validate_files(
             fail_on_warnings=False,
             max_history=0,
             importer=importer,
@@ -409,11 +406,11 @@ def test_validate_files_action_not_found_invalid_domain(
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_defaults.yml",
         "data/test_moodbot/domain.yml",
-        [file_name],
+        [str(file_name)],
     )
 
     with pytest.raises(ValidationError):
-        rasa.cli.utils.validate_files(
+        validate_files(
             fail_on_warnings=False,
             max_history=None,
             importer=importer,
@@ -442,10 +439,10 @@ def test_validate_files_form_not_found_invalid_domain(
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_defaults.yml",
         "data/test_restaurantbot/domain.yml",
-        [file_name],
+        [str(file_name)],
     )
     with pytest.raises(ValidationError):
-        rasa.cli.utils.validate_files(
+        validate_files(
             fail_on_warnings=False,
             max_history=None,
             importer=importer,
@@ -482,7 +479,7 @@ def test_validate_files_with_active_loop_null(
         domain_file,
         [file_name, nlu_file],
     )
-    rasa.cli.utils.validate_files(
+    validate_files(
         fail_on_warnings=False, max_history=None, importer=importer, stories_only=True
     )
     records = filter_expected_warnings(recwarn)
@@ -513,11 +510,11 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
 
     importer = TrainingDataImporter.load_from_config(
         "data/test_config/config_defaults.yml",
-        domain_file_name,
-        "data/test_moodbot/data",
+        str(domain_file_name),
+        ["data/test_moodbot/data"],
     )
     with pytest.raises(ValidationError):
-        rasa.cli.utils.validate_files(
+        validate_files(
             fail_on_warnings=False,
             max_history=None,
             importer=importer,
@@ -529,9 +526,9 @@ def test_validate_files_exit_early():
         importer = TrainingDataImporter.load_from_config(
             "data/test_config/config_defaults.yml",
             "data/test_domains/duplicate_intents.yml",
-            "data/test_moodbot/data",
+            ["data/test_moodbot/data"],
         )
-        rasa.cli.utils.validate_files(
+        validate_files(
             fail_on_warnings=True,
             max_history=None,
             importer=importer,
@@ -548,7 +545,7 @@ def test_validate_files_invalid_domain():
     )
 
     with pytest.raises(ValidationError):
-        rasa.cli.utils.validate_files(
+        validate_files(
             fail_on_warnings=False,
             max_history=None,
             importer=importer,
@@ -602,7 +599,7 @@ def test_validate_files_invalid_slot_mappings(tmp_path: Path, capsys: CaptureFix
         "form's 'required_slots'."
     )
 
-    rasa.cli.utils.validate_files(
+    validate_files(
         fail_on_warnings=False,
         max_history=None,
         importer=importer,
@@ -626,7 +623,7 @@ def test_validate_files_config_default_assistant_id(capsys: CaptureFixture):
         f"placeholder value with a unique identifier."
     )
 
-    rasa.cli.utils.validate_files(
+    validate_files(
         fail_on_warnings=False,
         max_history=None,
         importer=importer,
@@ -650,7 +647,7 @@ def test_validate_files_config_missing_assistant_id(capsys: CaptureFixture):
         f"The config file is missing the '{ASSISTANT_ID_KEY}' mandatory key."
     )
 
-    rasa.cli.utils.validate_files(
+    validate_files(
         fail_on_warnings=False,
         max_history=None,
         importer=importer,
@@ -670,7 +667,7 @@ def test_validate_assistant_id_in_config_preserves_comment() -> None:
     )
 
     # append assistant_id to the config file
-    rasa.cli.utils.validate_assistant_id_in_config(config_file)
+    validate_assistant_id_in_config(config_file)
 
     # Calling the wrapped function to avoid getting cached result
     config_data = read_yaml_file.__wrapped__(config_file, reader_type=reader_type)

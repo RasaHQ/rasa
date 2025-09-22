@@ -8,10 +8,11 @@ from _pytest.capture import CaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult
 
-import rasa.core.utils as rasa_core_utils
 from rasa.cli import export
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.pika import PikaEventBroker
+from rasa.core.config.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.exceptions import NoEventsToMigrateError, PublishingError
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -21,7 +22,6 @@ from tests.conftest import (
     random_event,
     write_endpoint_config_to_yaml,
 )
-from tests.utilities import clear_available_endpoints_class_instance
 
 
 def test_export_help(run: Callable[..., RunResult]):
@@ -85,9 +85,10 @@ async def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path:
 
     # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
     # endpoints from the test file.
-    clear_available_endpoints_class_instance()
 
-    available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
+    available_endpoints = Configuration.initialise_endpoints(
+        endpoints_path=endpoints_path
+    ).endpoints
 
     # fetching the event broker is successful
     assert await export._get_event_broker(available_endpoints)
@@ -103,9 +104,10 @@ async def test_get_event_broker_from_endpoint_config_error_exit(tmp_path: Path):
 
     # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
     # endpoints from the test file.
-    clear_available_endpoints_class_instance()
 
-    available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
+    available_endpoints = Configuration.initialise_endpoints(
+        endpoints_path=endpoints_path
+    ).endpoints
 
     with pytest.raises(SystemExit):
         assert await export._get_event_broker(available_endpoints)
@@ -115,11 +117,9 @@ def test_get_tracker_store_from_endpoint_config_error_exit(tmp_path: Path):
     # write config without event broker to file
     endpoints_path = write_endpoint_config_to_yaml(tmp_path, {})
 
-    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
-    # endpoints from the test file.
-    clear_available_endpoints_class_instance()
-
-    available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
+    available_endpoints = Configuration.initialise_endpoints(
+        endpoints_path=endpoints_path
+    ).endpoints
 
     with pytest.raises(SystemExit):
         # noinspection PyProtectedMember
@@ -213,7 +213,6 @@ def prepare_namespace_and_mocked_tracker_store_with_events(
             "rules": [{"slot": "slot_a", "anonymization": {"type": "mask"}}],
         }
     endpoints_path = write_endpoint_config_to_yaml(temporary_path, config)
-    clear_available_endpoints_class_instance()
 
     # export these conversation IDs
     all_conversation_ids = ["id-1", "id-2", "id-3", "id-4", "id-5"]
@@ -272,7 +271,7 @@ def test_export_trackers_with_offset(tmp_path: Path, monkeypatch: MonkeyPatch):
     # mock event broker so we can check its `publish` method is called
     event_broker = Mock()
 
-    async def _get_event_broker(_: rasa_core_utils.AvailableEndpoints) -> EventBroker:
+    async def _get_event_broker(_: AvailableEndpoints) -> EventBroker:
         return event_broker
 
     async def close():
@@ -318,7 +317,7 @@ def test_export_trackers_publishing_exceptions(
     event_broker = Mock()
     event_broker.publish.side_effect = exception
 
-    async def _get_event_broker(_: rasa_core_utils.AvailableEndpoints) -> EventBroker:
+    async def _get_event_broker(_: AvailableEndpoints) -> EventBroker:
         return event_broker
 
     monkeypatch.setattr(export, "_get_event_broker", _get_event_broker)
@@ -340,7 +339,7 @@ def test_rasa_export_unanonymized_events_warning_log(
     # mock event broker
     event_broker = Mock()
 
-    async def _get_event_broker(_: rasa_core_utils.AvailableEndpoints) -> EventBroker:
+    async def _get_event_broker(_: AvailableEndpoints) -> EventBroker:
         return event_broker
 
     async def close():
@@ -384,7 +383,7 @@ def test_rasa_export_no_unanonymized_events_warning_log(
     # mock event broker
     event_broker = Mock()
 
-    async def _get_event_broker(_: rasa_core_utils.AvailableEndpoints) -> EventBroker:
+    async def _get_event_broker(_: AvailableEndpoints) -> EventBroker:
         return event_broker
 
     async def close():

@@ -36,7 +36,6 @@ from rasa.shared.nlu.training_data.training_data import (
 )
 from rasa.shared.utils.yaml import read_yaml_file
 from tests.cli.conftest import RASA_EXE
-from tests.utilities import clear_available_endpoints_class_instance
 
 
 @pytest.mark.parametrize(
@@ -665,10 +664,6 @@ def test_train_validate_nlg_config_valid(monkeypatch: MonkeyPatch) -> None:
         remote_root_only=False,
     )
 
-    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
-    # endpoints from the test file.
-    clear_available_endpoints_class_instance()
-
     with patch("rasa.api.train", return_value=TrainingResult(0)):
         run_training(args)
 
@@ -682,10 +677,6 @@ def test_train_validate_nlg_config_invalid() -> None:
         remote_storage=None,
         remote_root_only=False,
     )
-
-    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
-    # endpoints from the test file.
-    clear_available_endpoints_class_instance()
 
     with pytest.raises(SystemExit):
         run_training(args)
@@ -702,10 +693,6 @@ def test_train_check_nlg_endpoint_validity(
     endpoint_path: Union[Path, str], expected_error: bool, monkeypatch: MonkeyPatch
 ) -> None:
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_rasa_train")
-
-    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
-    # endpoints from the test file.
-    clear_available_endpoints_class_instance()
 
     if expected_error:
         with pytest.raises(SystemExit):
@@ -736,10 +723,6 @@ def test_train_check_nlg_endpoint_validity_api_type(
     capsys: CaptureFixture,
 ) -> None:
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_rasa_train")
-
-    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
-    # endpoints from the test file.
-    clear_available_endpoints_class_instance()
 
     if expected_error:
         with pytest.raises(SystemExit) as excinfo:

@@ -115,6 +115,7 @@ FLOW_SLOT_NAMES = [FLOW_HASHES_SLOT]
 
 # slots for audio timeout
 GLOBAL_SILENCE_TIMEOUT_KEY = "global_silence_timeout"
+SILENCE_TIMEOUT_CHANNEL_KEY = "silence_timeout"
 SILENCE_TIMEOUT_SLOT = "silence_timeout"
 SLOT_CONSECUTIVE_SILENCE_TIMEOUTS = "consecutive_silence_timeouts"
 GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE = 7.0

@@ -118,7 +118,7 @@ slots:
       - type: from_llm
   silence_timeout:
     type: float
-    initial_value: 6.0
+    initial_value: 7.0
     max_value: 1000000
   consecutive_silence_timeouts:
     type: float

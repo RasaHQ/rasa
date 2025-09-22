@@ -17,7 +17,6 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
-from tests.conftest import TrainedAsync
 
 DUMMY_ACTIONS_MODULE_PATH = "data.dummy_actions_module"
 DUMMY_INVALID_ACTIONS_MODULE_PATH = "data.dummy_invalid_actions_module"
@@ -173,7 +172,7 @@ async def test_executor_runs_action_without_response_validation(
 
 
 async def test_executor_runs_action_invalid_actions_module(
-    trained_async: TrainedAsync, capsys: CaptureFixture, custom_actions_agent: Agent
+    capsys: CaptureFixture, custom_actions_agent: Agent
 ):
     """
     Ensure that the inappropriately configured actions_module doesn't

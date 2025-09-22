@@ -9,7 +9,7 @@ import structlog
 from rasa.builder import config
 from rasa.builder.exceptions import ValidationError
 from rasa.builder.logging_utils import capture_validation_logs
-from rasa.cli.utils import validate_files
+from rasa.cli.validation.bot_config import validate_files
 from rasa.shared.importers.importer import TrainingDataImporter
 
 structlogger = structlog.get_logger()

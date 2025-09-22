@@ -6,7 +6,7 @@ import rasa.cli.arguments.evaluate as arguments
 import rasa.shared.utils.cli
 from rasa import telemetry
 from rasa.cli import SubParsersAction
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.core.evaluation.marker_base import Marker, OperatorMarker
 from rasa.core.evaluation.marker_tracker_loader import MarkerTrackerLoader
 from rasa.core.tracker_stores.tracker_store import TrackerStore
@@ -217,6 +217,8 @@ def _create_tracker_loader(
         A MarkerTrackerLoader object configured with the specified strategy against
         the configured tracker store.
     """
-    endpoints = AvailableEndpoints.get_instance(endpoint_config)
+    endpoints = Configuration.initialise_endpoints(
+        endpoints_path=Path(endpoint_config)
+    ).endpoints
     tracker_store = TrackerStore.create(endpoints.tracker_store, domain=domain)
     return MarkerTrackerLoader(tracker_store, strategy, count, seed)

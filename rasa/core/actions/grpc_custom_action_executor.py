@@ -152,7 +152,7 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
                 structlogger.error(
                     "rasa.core.actions.grpc_custom_action_executor.domain_not_found",
                     event_info=(
-                        f"Failed to execute custom action '{self.action_endpoint}'. "
+                        f"Failed to execute custom action '{self.action_name}'. "
                         f"Could not find domain. {resource_not_found_error.message}"
                     ),
                 )

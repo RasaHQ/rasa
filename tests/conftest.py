@@ -56,6 +56,10 @@ from rasa.cli.inspect import add_subparser
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import RestInput, channel
+from rasa.core.config.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import (
+    Configuration,
+)
 from rasa.core.exporter import Exporter
 from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa.dialogue_understanding.commands.command_syntax_manager import (
@@ -463,7 +467,9 @@ async def trained_default_agent_model(
     simple_config_path: Text,
 ) -> Text:
     model_path = await trained_async(
-        domain_path, simple_config_path, [stories_path, nlu_data_path]
+        domain=domain_path,
+        config=simple_config_path,
+        training_files=[stories_path, nlu_data_path],
     )
 
     return model_path
@@ -485,6 +491,7 @@ def reset_conversation_state(agent: Agent) -> Agent:
 
 @pytest.fixture
 def default_agent(trained_default_agent_model: Text) -> Agent:
+    Configuration.initialise_empty_endpoints()
     return Agent.load(trained_default_agent_model)
 
 
@@ -1410,7 +1417,9 @@ async def trained_custom_actions_model(
     config_path = f"{parent_folder}/config.yml"
     stories_path = f"{parent_folder}/stories.yml"
     nlu_path = f"{parent_folder}/nlu.yml"
-    return await trained_async(domain_path, config_path, [stories_path, nlu_path])
+    return await trained_async(
+        domain=domain_path, config=config_path, training_files=[stories_path, nlu_path]
+    )
 
 
 @pytest.fixture
@@ -1732,3 +1741,62 @@ def system_prompts() -> Dict[Text, Text]:
         COMMAND_GENERATOR_NAME: system_prompts.command_generator,
         ENTERPRISE_SEARCH_NAME: system_prompts.enterprise_search,
     }
+
+
+@pytest.fixture
+def default_configuration() -> None:
+    Configuration.initialise_empty()
+
+
+def get_model_groups() -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "llm-model-group",
+            "models": [
+                {
+                    "provider": "cohere",
+                    "model": "test-cohere",
+                    "api_key": "mock key in test_tracing_rephraser",
+                },
+                {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    "api_key": "tedst",
+                },
+                {
+                    "provider": "azure",
+                    "deployment": "my-llm-azure-deployment",
+                    "api_key": "test",
+                    "api_base": "test-base",
+                    "api_version": "test-version",
+                    "num_retries": 100,
+                    "timeout": 100,
+                },
+            ],
+            "router": {"routing_strategy": "test"},
+        },
+    ]
+
+
+@pytest.fixture
+def mock_available_endpoints() -> MagicMock:
+    _mock_available_endpoints = MagicMock(spec=AvailableEndpoints)
+    _mock_available_endpoints.nlg = None
+    _mock_available_endpoints.config_file_path = Path("this/is/a/mock/file")
+
+    _mock_available_endpoints.model_groups = get_model_groups()
+
+    return _mock_available_endpoints
+
+
+@pytest.fixture
+def mock_configuration(
+    monkeypatch: pytest.MonkeyPatch, mock_available_endpoints: MagicMock
+) -> MagicMock:
+    _mock_configuration_instance = MagicMock(spec=Configuration)
+    _mock_configuration_instance.endpoints = mock_available_endpoints
+
+    _mock_configuration = MagicMock()
+    _mock_configuration.get_instance.return_value = _mock_configuration_instance
+
+    return _mock_configuration

@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 from pytest import MonkeyPatch
 
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.e2e_test.constants import DEFAULT_E2E_TESTING_MODEL, KEY_LLM_JUDGE
 from rasa.e2e_test.e2e_config import (
     BaseModelConfig,
@@ -149,10 +149,10 @@ def test_create_llm_judge_config_conftest_with_llm_model_group(
               temperature: 0.0
               top_p: 0.0
     """)
-    endpoints = AvailableEndpoints.read_endpoints(str(endpoints_path))
+    endpoints = Configuration.initialise_endpoints(
+        endpoints_path=endpoints_path
+    ).endpoints
     assert endpoints.model_groups is not None
-
-    monkeypatch.setattr(AvailableEndpoints, "get_instance", lambda: endpoints)
 
     assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
         llm_config=BaseModelConfig(
@@ -193,10 +193,10 @@ def test_create_llm_judge_config_conftest_with_embeddings_model_group(
             - provider: openai
               model: text-embedding-3-large
     """)
-    endpoints = AvailableEndpoints.read_endpoints(str(endpoints_path))
+    endpoints = Configuration.initialise_endpoints(
+        endpoints_path=endpoints_path
+    ).endpoints
     assert endpoints.model_groups is not None
-
-    monkeypatch.setattr(AvailableEndpoints, "get_instance", lambda: endpoints)
 
     assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
         llm_config=BaseModelConfig(
@@ -244,10 +244,10 @@ def test_create_llm_judge_config_conftest_with_model_groups(
                 normalize_embeddings: true
               timeout: 7
     """)
-    endpoints = AvailableEndpoints.read_endpoints(str(endpoints_path))
+    endpoints = Configuration.initialise_endpoints(
+        endpoints_path=endpoints_path
+    ).endpoints
     assert endpoints.model_groups is not None
-
-    monkeypatch.setattr(AvailableEndpoints, "get_instance", lambda: endpoints)
 
     assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
         llm_config=BaseModelConfig(

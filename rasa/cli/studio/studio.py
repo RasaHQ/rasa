@@ -12,7 +12,7 @@ import rasa.cli.studio.train
 import rasa.cli.studio.upload
 import rasa.shared.utils.cli
 from rasa.cli import SubParsersAction
-from rasa.cli.utils import get_validated_path
+from rasa.cli.validation.config_path_validation import get_validated_path
 from rasa.shared.constants import DEFAULT_DOMAIN_PATH, DEFAULT_DOMAIN_PATHS
 from rasa.studio.auth import StudioAuth
 from rasa.studio.config import StudioConfig

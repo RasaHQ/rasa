@@ -1,5 +1,6 @@
 import textwrap
 import uuid
+from pathlib import Path
 from typing import Text
 
 import pytest
@@ -7,7 +8,8 @@ from pytest import TempPathFactory
 
 import rasa.shared.utils.io
 from rasa.core.agent import Agent
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from tests.conftest import TrainedAsync
 
@@ -36,11 +38,13 @@ async def trained_single_step_agent_model(
     domain_path_for_finetuning: Text,
     flows_path_for_finetuning: Text,
     single_step_config_path: Text,
+    endpoints_path: Path,
 ) -> Text:
     model_path = await trained_async_llm(
         domain_path_for_finetuning,
         single_step_config_path,
         training_files=[flows_path_for_finetuning],
+        endpoints=str(endpoints_path),
     )
 
     return model_path
@@ -52,11 +56,13 @@ async def trained_compact_agent_model(
     domain_path_for_finetuning: Text,
     flows_path_for_finetuning: Text,
     compact_config_path: Text,
+    endpoints_path: Path,
 ) -> Text:
     model_path = await trained_async_llm(
         domain_path_for_finetuning,
         compact_config_path,
         training_files=[flows_path_for_finetuning],
+        endpoints=str(endpoints_path),
     )
 
     return model_path
@@ -115,7 +121,7 @@ def compact_config_path(tmp_path_factory: TempPathFactory) -> Text:
 
 
 @pytest.fixture(scope="package")
-def llm_endpoints(tmp_path_factory: TempPathFactory) -> AvailableEndpoints:
+def endpoints_path(tmp_path_factory: TempPathFactory) -> Path:
     project_path = tmp_path_factory.mktemp(uuid.uuid4().hex)
 
     endpoints = textwrap.dedent(
@@ -137,8 +143,14 @@ def llm_endpoints(tmp_path_factory: TempPathFactory) -> AvailableEndpoints:
     endpoints_path = project_path / "endpoints.yml"
     rasa.shared.utils.io.write_text_file(endpoints, endpoints_path)
 
-    AvailableEndpoints.reset_instance()
-    llm_endpoints = AvailableEndpoints.get_instance(str(endpoints_path))
+    return endpoints_path
+
+
+@pytest.fixture(scope="package")
+def llm_endpoints(endpoints_path: Path) -> AvailableEndpoints:
+    llm_endpoints = Configuration.initialise_endpoints(
+        endpoints_path=endpoints_path
+    ).endpoints
 
     return llm_endpoints
 

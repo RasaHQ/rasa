@@ -3,11 +3,11 @@ import textwrap
 from collections import namedtuple
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Type
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import structlog
-from _pytest.logging import LogCaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
 
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.dialogue_understanding.coexistence.intent_based_router import (
@@ -63,8 +63,14 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import filter_logs, flows_from_str
+
+
+@pytest.fixture
+def use_mocked_configuration(
+    mock_configuration: MagicMock, monkeypatch: MonkeyPatch
+) -> None:
+    monkeypatch.setattr("rasa.engine.validation.Configuration", mock_configuration)
 
 
 class TestComponentWithoutRun(GraphComponent):
@@ -1821,337 +1827,485 @@ def test_validate_command_generator_exclusivity(
         validate_command_generator_exclusivity(test_schema)
 
 
-class MockAvailableEndpointsForTestValidation:
-    @staticmethod
-    def get_instance():
-        return MockAvailableEndpointsForTestValidation()
-
-    def __init__(self):
-        self.nlg = EndpointConfig(LLM_CONFIG_KEY={"model_group": "model_group_id"})
-        self.model_groups = [
-            {
-                "id": "model_group_id",
-                "models": [{"provider": "openai", "model": "gpt-4"}],
-            },
-            {
-                "id": "another_model_group_id",
-                "models": [{"provider": "openai", "model": "gpt-4o"}],
-            },
-        ]
-
-
+@pytest.mark.usefixtures("use_mocked_configuration")
 @pytest.mark.parametrize(
-    "pipeline_config, should_exit, should_warn",
+    "pipeline_config",
     [
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                }
-            ],
-            False,
-            False,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
+            },
+            {
+                "name": "IntentlessPolicy",
+                LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
+                EMBEDDINGS_CONFIG_KEY: {
+                    MODEL_GROUP_CONFIG_KEY: "another_model_group_id"
                 },
-                {
-                    "name": "IntentlessPolicy",
-                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
+            },
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+            },
+            {
+                "name": "IntentlessPolicy",
+                LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                EMBEDDINGS_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "text-embeddings",
+                },
+            },
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                },
+            },
+            {
+                "name": "IntentlessPolicy",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4o",
+                },
+            },
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    MODEL_GROUP_CONFIG_KEY: "model_group_id",
+                },
+                FLOW_RETRIEVAL_KEY: {
                     EMBEDDINGS_CONFIG_KEY: {
-                        MODEL_GROUP_CONFIG_KEY: "another_model_group_id"
-                    },
+                        MODEL_GROUP_CONFIG_KEY: "model_group_id",
+                    }
                 },
-            ],
-            False,
-            False,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
-                }
-            ],
-            False,
-            True,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
                 },
-                {
-                    "name": "IntentlessPolicy",
-                    LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+                FLOW_RETRIEVAL_KEY: {
+                    EMBEDDINGS_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "gpt-4",
+                    }
+                },
+            }
+        ],
+    ],
+)
+def test_validate_model_client_configuration_setup_during_training_time(
+    patch_warning: Any,
+    pipeline_config: List[Dict[Text, Any]],
+    mock_available_endpoints: MagicMock,
+    monkeypatch: Any,
+):
+    mock_available_endpoints.model_groups = [
+        {
+            "id": "model_group_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        },
+        {
+            "id": "another_model_group_id",
+            "models": [{"provider": "openai", "model": "gpt-4o"}],
+        },
+    ]
+    config = {"pipeline": pipeline_config}
+
+    validate_model_client_configuration_setup_during_training_time(config)
+
+
+@pytest.mark.usefixtures("use_mocked_configuration")
+@pytest.mark.parametrize(
+    "pipeline_config",
+    [
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+            },
+            {
+                "name": "IntentlessPolicy",
+                LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
+                EMBEDDINGS_CONFIG_KEY: {
+                    MODEL_GROUP_CONFIG_KEY: "another_model_group_id"
+                },
+            },
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    MODEL_GROUP_CONFIG_KEY: "model_group_id",
+                },
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    MODEL_GROUP_CONFIG_KEY: "non-existing-model-group",
+                },
+            }
+        ],
+        [
+            {
+                "name": "IntentlessPolicy",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                },
+                EMBEDDINGS_CONFIG_KEY: {
+                    MODEL_GROUP_CONFIG_KEY: "model_group_id",
+                },
+            },
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4o",
+                },
+            },
+        ],
+        [
+            {
+                "name": "IntentlessPolicy",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4o",
+                },
+                EMBEDDINGS_CONFIG_KEY: {
+                    MODEL_GROUP_CONFIG_KEY: "model_group_id",
+                },
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                },
+                FLOW_RETRIEVAL_KEY: {
+                    EMBEDDINGS_CONFIG_KEY: {
+                        MODEL_GROUP_CONFIG_KEY: "model_group_id",
+                    }
+                },
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                },
+                FLOW_RETRIEVAL_KEY: {
                     EMBEDDINGS_CONFIG_KEY: {
                         "provider": "openai",
                         "model": "text-embeddings",
-                    },
-                },
-            ],
-            False,
-            True,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
-                },
-                {
-                    "name": "IntentlessPolicy",
-                    LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
-                    EMBEDDINGS_CONFIG_KEY: {
-                        MODEL_GROUP_CONFIG_KEY: "another_model_group_id"
-                    },
-                },
-            ],
-            True,
-            True,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        "provider": "openai",
-                        "model": "gpt-4",
-                        MODEL_GROUP_CONFIG_KEY: "model_group_id",
-                    },
-                }
-            ],
-            True,
-            False,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        MODEL_GROUP_CONFIG_KEY: "non-existing-model-group",
-                    },
-                }
-            ],
-            True,
-            False,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        "provider": "openai",
-                        "model": "gpt-4",
-                    },
-                },
-                {
-                    "name": "IntentlessPolicy",
-                    LLM_CONFIG_KEY: {
-                        "provider": "openai",
-                        "model": "gpt-4o",
-                    },
-                },
-            ],
-            False,
-            True,
-        ),
-        (
-            [
-                {
-                    "name": "IntentlessPolicy",
-                    LLM_CONFIG_KEY: {
-                        "provider": "openai",
-                        "model": "gpt-4",
-                    },
-                    EMBEDDINGS_CONFIG_KEY: {
-                        MODEL_GROUP_CONFIG_KEY: "model_group_id",
-                    },
-                },
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        "provider": "openai",
-                        "model": "gpt-4o",
-                    },
-                },
-            ],
-            True,
-            True,
-        ),
-        (
-            [
-                {
-                    "name": "IntentlessPolicy",
-                    LLM_CONFIG_KEY: {
-                        "provider": "openai",
-                        "model": "gpt-4o",
-                    },
-                    EMBEDDINGS_CONFIG_KEY: {
-                        MODEL_GROUP_CONFIG_KEY: "model_group_id",
-                    },
-                }
-            ],
-            True,
-            True,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        MODEL_GROUP_CONFIG_KEY: "model_group_id",
-                    },
-                    FLOW_RETRIEVAL_KEY: {
-                        EMBEDDINGS_CONFIG_KEY: {
-                            MODEL_GROUP_CONFIG_KEY: "model_group_id",
-                        }
-                    },
-                }
-            ],
-            False,
-            False,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        "provider": "openai",
-                        "model": "gpt-4",
-                    },
-                    FLOW_RETRIEVAL_KEY: {
-                        EMBEDDINGS_CONFIG_KEY: {
-                            "provider": "openai",
-                            "model": "gpt-4",
-                        }
-                    },
-                }
-            ],
-            False,
-            True,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        "provider": "openai",
-                        "model": "gpt-4",
-                    },
-                    FLOW_RETRIEVAL_KEY: {
-                        EMBEDDINGS_CONFIG_KEY: {
-                            MODEL_GROUP_CONFIG_KEY: "model_group_id",
-                        }
-                    },
-                }
-            ],
-            True,
-            True,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        "provider": "openai",
-                        "model": "gpt-4",
-                    },
-                    FLOW_RETRIEVAL_KEY: {
-                        EMBEDDINGS_CONFIG_KEY: {
-                            "provider": "openai",
-                            "model": "text-embeddings",
-                            API_KEY: "1234",
-                        }
-                    },
-                }
-            ],
-            True,
-            True,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        "provider": "openai",
-                        "model": "gpt-4",
                         API_KEY: "1234",
-                    },
-                }
-            ],
-            True,
-            True,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        "provider": "openai",
-                        "model": "gpt-4",
-                        API_KEY: {"OPENAI_API_KEY": None},
-                    },
-                }
-            ],
-            True,
-            True,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        "provider": "openai",
-                        "model": "gpt-4",
-                        API_KEY: {"OPENAI_API_KEY"},
-                    },
-                }
-            ],
-            True,
-            True,
-        ),
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        "provider": "openai",
-                        "model": "gpt-4",
-                        API_KEY: "{OPENAI_API_KEY}",
-                    },
-                }
-            ],
-            True,
-            True,
-        ),
+                    }
+                },
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    API_KEY: "1234",
+                },
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    API_KEY: {"OPENAI_API_KEY": None},
+                },
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    API_KEY: {"OPENAI_API_KEY"},
+                },
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    API_KEY: "{OPENAI_API_KEY}",
+                },
+            }
+        ],
     ],
 )
-def test_validate_llm_configuration_setup(
+def test_validate_model_client_configuration_setup_during_training_time_error(
     patch_warning: Any,
     pipeline_config: List[Dict[Text, Any]],
-    should_exit: bool,
-    should_warn: bool,
+    mock_available_endpoints: MagicMock,
     monkeypatch: Any,
 ):
-    mock_endpoints = MockAvailableEndpointsForTestValidation()
-    monkeypatch.setattr("rasa.engine.validation.AvailableEndpoints", mock_endpoints)
+    mock_available_endpoints.model_groups = [
+        {
+            "id": "model_group_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        },
+        {
+            "id": "another_model_group_id",
+            "models": [{"provider": "openai", "model": "gpt-4o"}],
+        },
+    ]
 
     config = {"pipeline": pipeline_config}
 
-    if should_exit:
-        with pytest.raises(ValidationError):
-            validate_model_client_configuration_setup_during_training_time(config)
-    else:
+    with pytest.raises(ValidationError):
         validate_model_client_configuration_setup_during_training_time(config)
 
 
+@pytest.mark.usefixtures("use_mocked_configuration")
 @pytest.mark.parametrize(
-    "component_node_config, set_model_groups_in_endpoints, should_raise_error",
+    "pipeline_config",
+    [
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {"provider": "openai", "model": "gpt-4"},
+            },
+            {
+                "name": "IntentlessPolicy",
+                LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"},
+                EMBEDDINGS_CONFIG_KEY: {
+                    MODEL_GROUP_CONFIG_KEY: "another_model_group_id"
+                },
+            },
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    MODEL_GROUP_CONFIG_KEY: "model_group_id",
+                },
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    MODEL_GROUP_CONFIG_KEY: "non-existing-model-group",
+                },
+            }
+        ],
+        [
+            {
+                "name": "IntentlessPolicy",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                },
+                EMBEDDINGS_CONFIG_KEY: {
+                    MODEL_GROUP_CONFIG_KEY: "model_group_id",
+                },
+            },
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4o",
+                },
+            },
+        ],
+        [
+            {
+                "name": "IntentlessPolicy",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4o",
+                },
+                EMBEDDINGS_CONFIG_KEY: {
+                    MODEL_GROUP_CONFIG_KEY: "model_group_id",
+                },
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                },
+                FLOW_RETRIEVAL_KEY: {
+                    EMBEDDINGS_CONFIG_KEY: {
+                        MODEL_GROUP_CONFIG_KEY: "model_group_id",
+                    }
+                },
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                },
+                FLOW_RETRIEVAL_KEY: {
+                    EMBEDDINGS_CONFIG_KEY: {
+                        "provider": "openai",
+                        "model": "text-embeddings",
+                        API_KEY: "1234",
+                    }
+                },
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    API_KEY: "1234",
+                },
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    API_KEY: {"OPENAI_API_KEY": None},
+                },
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    API_KEY: {"OPENAI_API_KEY"},
+                },
+            }
+        ],
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    API_KEY: "{OPENAI_API_KEY}",
+                },
+            }
+        ],
+    ],
+)
+def test_validate_llm_configuration_setup_error(
+    patch_warning: Any,
+    pipeline_config: List[Dict[Text, Any]],
+    mock_available_endpoints: MagicMock,
+    monkeypatch: Any,
+) -> None:
+    mock_available_endpoints.model_groups = [
+        {
+            "id": "model_group_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        },
+        {
+            "id": "another_model_group_id",
+            "models": [{"provider": "openai", "model": "gpt-4o"}],
+        },
+    ]
+
+    config = {"pipeline": pipeline_config}
+
+    with pytest.raises(ValidationError):
+        validate_model_client_configuration_setup_during_training_time(config)
+
+
+def get_model_groups() -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "test-gpt",
+            "models": [
+                {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                    "api_key": "tedst",
+                },
+                {
+                    "provider": "azure",
+                    "deployment": "my-llm-azure-deployment",
+                    "api_key": "test",
+                    "api_base": "test-base",
+                    "api_version": "test-version",
+                    "num_retries": 100,
+                    "timeout": 100,
+                },
+            ],
+            "router": {"routing_strategy": "test"},
+        },
+        {
+            "id": "test-embeddings",
+            "models": [
+                {
+                    "provider": "openai",
+                    "model": "text-embedding-3-large",
+                    "api_key": "mock key in test_tracing_rephraser",
+                },
+                {
+                    "provider": "azure",
+                    "deployment": "my-azure-embedding-deployment",
+                    "api_key": "test",
+                    "api_base": "test-base",
+                    "api_version": "test-version",
+                    "num_retries": 100,
+                    "timeout": 100,
+                },
+            ],
+            "router": {"routing_strategy": "test"},
+        },
+    ]
+
+
+@pytest.mark.usefixtures("use_mocked_configuration")
+@pytest.mark.parametrize(
+    "component_node_config, model_groups",
     [
         # Model groups exist in endpoints
         (
@@ -2159,37 +2313,7 @@ def test_validate_llm_configuration_setup(
                 "llm": {"model_group": "test-gpt"},
                 "embeddings": {"model_group": "test-embeddings"},
             },
-            True,
-            False,
-        ),
-        # LLM model group does not exist in endpoints
-        (
-            {
-                "llm": {"model_group": "test-gpt-undefined-in-model-groups"},
-                "embeddings": {"model_group": "test-embeddings"},
-            },
-            True,
-            True,
-        ),
-        # Embeddings model group does not exist in endpoints
-        (
-            {
-                "llm": {"model_group": "test-gpt"},
-                "embeddings": {
-                    "model_group": "test-embeddings-undefined-in-model-groups"
-                },
-            },
-            True,
-            True,
-        ),
-        # Endpoints have no model groups defined
-        (
-            {
-                "llm": {"model_group": "test-gpt"},
-                "embeddings": {"model_group": "test-embeddings"},
-            },
-            False,
-            True,
+            get_model_groups(),
         ),
         # No model groups are used with defined endpoints
         (
@@ -2197,8 +2321,7 @@ def test_validate_llm_configuration_setup(
                 "llm": {"provider": "openai", "model": "test-gpt"},
                 "embeddings": {"provider": "openai", "model": "test-gpt"},
             },
-            True,
-            False,
+            get_model_groups(),
         ),
         # No model groups are used with undefined endpoints
         (
@@ -2206,8 +2329,7 @@ def test_validate_llm_configuration_setup(
                 "llm": {"provider": "openai", "model": "test-gpt"},
                 "embeddings": {"provider": "openai", "model": "test-gpt"},
             },
-            False,
-            False,
+            None,
         ),
         # Config with flow retrieval uses model groups correctly
         (
@@ -2215,8 +2337,7 @@ def test_validate_llm_configuration_setup(
                 "llm": {"model_group": "test-gpt"},
                 "flow_retrieval": {"model_group": "test-embeddings"},
             },
-            True,
-            False,
+            get_model_groups(),
         ),
         # Config with flow retrieval uses model group that does not exist in endpoints
         (
@@ -2226,8 +2347,7 @@ def test_validate_llm_configuration_setup(
                     "model_group": "test-embeddings-undefined-in-model-groups"
                 },
             },
-            True,
-            False,
+            get_model_groups(),
         ),
         # No model groups are used
         (
@@ -2235,74 +2355,21 @@ def test_validate_llm_configuration_setup(
                 "llm": {"provider": "openai", "model": "test-gpt"},
                 "embeddings": {"provider": "openai", "model": "test-gpt"},
             },
-            True,
-            False,
+            get_model_groups(),
         ),
         # Empty config 1
-        ({}, True, False),
+        ({}, get_model_groups()),
         # Empty config 2
-        ({}, False, False),
+        ({}, None),
     ],
 )
 def test_validate_model_client_configuration_setup_during_inference_time(
     component_node_config: Dict,
-    set_model_groups_in_endpoints: bool,
-    should_raise_error: bool,
-    caplog: LogCaptureFixture,
-    monkeypatch: Any,
+    model_groups: Optional[List[Dict[str, Any]]],
+    mock_available_endpoints: MagicMock,
+    monkeypatch: MonkeyPatch,
 ):
-    class MockAvailableEndpoints:
-        @staticmethod
-        def get_instance():
-            return MockAvailableEndpoints()
-
-        def __init__(self):
-            self.nlg = None
-            if not set_model_groups_in_endpoints:
-                self.model_groups = None
-            else:
-                self.model_groups = [
-                    {
-                        "id": "test-gpt",
-                        "models": [
-                            {
-                                "provider": "openai",
-                                "model": "gpt-4",
-                                "api_key": "tedst",
-                            },
-                            {
-                                "provider": "azure",
-                                "deployment": "my-llm-azure-deployment",
-                                "api_key": "test",
-                                "api_base": "test-base",
-                                "api_version": "test-version",
-                                "num_retries": 100,
-                                "timeout": 100,
-                            },
-                        ],
-                        "router": {"routing_strategy": "test"},
-                    },
-                    {
-                        "id": "test-embeddings",
-                        "models": [
-                            {
-                                "provider": "openai",
-                                "model": "text-embedding-3-large",
-                                "api_key": "mock key in test_tracing_rephraser",
-                            },
-                            {
-                                "provider": "azure",
-                                "deployment": "my-azure-embedding-deployment",
-                                "api_key": "test",
-                                "api_base": "test-base",
-                                "api_version": "test-version",
-                                "num_retries": 100,
-                                "timeout": 100,
-                            },
-                        ],
-                        "router": {"routing_strategy": "test"},
-                    },
-                ]
+    mock_available_endpoints.model_groups = model_groups
 
     # Given
     model_metadata = Mock()
@@ -2320,522 +2387,513 @@ def test_validate_model_client_configuration_setup_during_inference_time(
         }
     )
 
-    mock_endpoints = MockAvailableEndpoints()
-    monkeypatch.setattr("rasa.engine.validation.AvailableEndpoints", mock_endpoints)
+    validate_model_client_configuration_setup_during_inference_time(model_metadata)
 
-    if should_raise_error:
-        with pytest.raises(ValidationError):
-            validate_model_client_configuration_setup_during_inference_time(
-                model_metadata
+
+@pytest.mark.usefixtures("use_mocked_configuration")
+@pytest.mark.parametrize(
+    "component_node_config, model_groups",
+    [
+        # LLM model group does not exist in endpoints
+        (
+            {
+                "llm": {"model_group": "test-gpt-undefined-in-model-groups"},
+                "embeddings": {"model_group": "test-embeddings"},
+            },
+            get_model_groups(),
+        ),
+        # Embeddings model group does not exist in endpoints
+        (
+            {
+                "llm": {"model_group": "test-gpt"},
+                "embeddings": {
+                    "model_group": "test-embeddings-undefined-in-model-groups"
+                },
+            },
+            get_model_groups(),
+        ),
+        # Endpoints have no model groups defined
+        (
+            {
+                "llm": {"model_group": "test-gpt"},
+                "embeddings": {"model_group": "test-embeddings"},
+            },
+            None,
+        ),
+    ],
+)
+def test_validate_model_client_configuration_setup_during_inference_time_error(
+    component_node_config: Dict,
+    model_groups: Optional[List[Dict[str, Any]]],
+    mock_available_endpoints: MagicMock,
+    monkeypatch: MonkeyPatch,
+):
+    mock_available_endpoints.model_groups = model_groups
+
+    # Given
+    model_metadata = Mock()
+    model_metadata.predict_schema = GraphSchema(
+        {
+            "test_component": SchemaNode(
+                needs={},
+                uses=Mock,
+                fn="run_inference",
+                constructor_name="load",
+                config=component_node_config,
+                is_target=True,
+                resource=Mock(),
             )
-    else:
+        }
+    )
+
+    with pytest.raises(ValidationError):
         validate_model_client_configuration_setup_during_inference_time(model_metadata)
 
 
+@pytest.mark.usefixtures("use_mocked_configuration")
 @pytest.mark.parametrize(
-    "model_groups, should_exit",
+    "model_groups",
     (
         # 0
-        ([], False),
+        [],
         # 1
-        (None, False),
+        None,
         # 2
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [{"provider": "openai", "model": "gpt-4"}],
-                },
-                {
-                    "id": "another_model_group_id",
-                    "models": [{"provider": "openai", "model": "gpt-4o"}],
-                },
-            ],
-            False,
-        ),
-        # 'least_busy' instead of valid 'least-busy' # 3
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {"provider": "openai", "model": "gpt-4"},
-                        {"provider": "openai", "model": "gpt-4o"},
-                    ],
-                    "router": {"routing_strategy": "least_busy"},
-                }
-            ],
-            True,
-        ),
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {"provider": "openai", "model": "gpt-4"},
-                        {"provider": "openai", "model": "gpt-4o"},
-                    ],
-                    "router": {"routing_strategy": "least-busy"},
-                }
-            ],
-            False,
-        ),
+        [
+            {
+                "id": "model_group_id",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+            {
+                "id": "another_model_group_id",
+                "models": [{"provider": "openai", "model": "gpt-4o"}],
+            },
+        ],
+        # 3
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {"provider": "openai", "model": "gpt-4"},
+                    {"provider": "openai", "model": "gpt-4o"},
+                ],
+                "router": {"routing_strategy": "least-busy"},
+            }
+        ],
         # 4
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {
-                            "provider": "openai",
-                            "deployment": "${AZURE_DEPLOYMENT_GPT4o_FRANCE}",
-                            "api_base": "${AZURE_API_BASE_GPT4o_FR}",
-                            "api_key": "${AZURE_API_KEY_FR}",
-                            "api_version": "${AZURE_API_VERSION}",
-                        },
-                    ],
-                }
-            ],
-            False,
-        ),
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {
+                        "provider": "openai",
+                        "deployment": "${AZURE_DEPLOYMENT_GPT4o_FRANCE}",
+                        "api_base": "${AZURE_API_BASE_GPT4o_FR}",
+                        "api_key": "${AZURE_API_KEY_FR}",
+                        "api_version": "${AZURE_API_VERSION}",
+                    },
+                ],
+            }
+        ],
         # 5
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {
-                            "provider": "aws-bedrock",
-                            "aws_region_name": "${AWS_REGION_NAME}",
-                        },
-                    ],
-                }
-            ],
-            False,
-        ),
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {
+                        "provider": "aws-bedrock",
+                        "aws_region_name": "${AWS_REGION_NAME}",
+                    },
+                ],
+            }
+        ],
         # 6
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {"provider": "openai", "model": "gpt-4"},
-                        {"provider": "openai", "model": "gpt-4o"},
-                    ],
-                    "router": {"routing_strategy": "simple-shuffle"},
-                }
-            ],
-            False,
-        ),
-        # same model group id #7
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [{"provider": "openai", "model": "gpt-4"}],
-                },
-                {
-                    "id": "model_group_id",
-                    "models": [{"provider": "openai", "model": "gpt-4o"}],
-                },
-            ],
-            True,
-        ),
-        # multiple models, but no router #8
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {"provider": "openai", "model": "gpt-4"},
-                        {"provider": "openai", "model": "gpt-4o"},
-                    ],
-                }
-            ],
-            True,
-        ),
-        # 9
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {"provider": "openai", "model": "gpt-4"},
-                        {"provider": "openai", "model": "gpt-4o"},
-                    ],
-                },
-                {
-                    "id": "another_group",
-                    "models": [
-                        {"provider": "openai", "model": "gpt-4"},
-                    ],
-                },
-            ],
-            True,
-        ),
-        # incorrect usage of env_vars #10
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {"provider": "openai", "model": "${MODEL_NAME}"},
-                    ],
-                }
-            ],
-            True,
-        ),
-        # api_key is a string #11
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {
-                            "provider": "azure",
-                            "deployment": "${DEPLOYMENT_AZURE}",
-                            "api_base": "${AZURE_API_BASE_GPT4o_FR}",
-                            "api_key": "59968xxxxxxxxx5f355dd",
-                            "api_version": "2024-02-15-preview",
-                            "timeout": 14,
-                        },
-                    ],
-                }
-            ],
-            True,
-        ),
-        # incorrect router setting #12
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {"provider": "openai", "model": "gpt-4"},
-                        {"provider": "openai", "model": "gpt-4o"},
-                    ],
-                    "router": {"routing_strategy": "non-existing-key"},
-                }
-            ],
-            True,
-        ),
-        # incorrect use of use_chat_completions_endpoint #13
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {
-                            "provider": "self-hosted",
-                            "model": "some_model",
-                            "api_base": "http://localhost:8000",
-                            "use_chat_completions_endpoint": False,
-                        },
-                    ],
-                    "router": {"routing_strategy": "least-busy"},
-                }
-            ],
-            True,
-        ),
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {"provider": "openai", "model": "gpt-4"},
+                    {"provider": "openai", "model": "gpt-4o"},
+                ],
+                "router": {"routing_strategy": "simple-shuffle"},
+            }
+        ],
         # Correct use of use_chat_completions_endpoint #14
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {
-                            "provider": "self-hosted",
-                            "model": "some_model",
-                            "api_base": "http://localhost:8000",
-                        },
-                    ],
-                    "router": {
-                        "routing_strategy": "least-busy",
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {
+                        "provider": "self-hosted",
+                        "model": "some_model",
+                        "api_base": "http://localhost:8000",
+                    },
+                ],
+                "router": {
+                    "routing_strategy": "least-busy",
+                    "use_chat_completions_endpoint": False,
+                },
+            }
+        ],
+        # Correct use of use_chat_completions_endpoint in model group #15
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {
+                        "provider": "self-hosted",
+                        "model": "some_model",
+                        "api_base": "http://localhost:8000",
                         "use_chat_completions_endpoint": False,
                     },
-                }
-            ],
-            False,
-        ),
-        # Correct use of use_chat_completions_endpoint in model group #15
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {
-                            "provider": "self-hosted",
-                            "model": "some_model",
-                            "api_base": "http://localhost:8000",
-                            "use_chat_completions_endpoint": False,
-                        },
-                    ],
-                }
-            ],
-            False,
-        ),
-        # AWS secret 'aws_access_key_id' is a string #16
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {
-                            "provider": "bedrock",
-                            "model": "anthropic.test-sonnet",
-                            "aws_access_key_id": "1234-secret",
-                            "aws_secret_access_key": "${AWS_SECRET_ACCESS_KEY_TEST}",
-                            "aws_session_token": "${AWS_SESSION_TOKEN_TEST}",
-                            "aws_region_name": "us-east-1",
-                            "timeout": 14,
-                        },
-                    ],
-                }
-            ],
-            True,
-        ),
-        # AWS secret 'aws_secret_access_key' is a string #17
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {
-                            "provider": "bedrock",
-                            "model": "anthropic.test-sonnet",
-                            "aws_access_key_id": "${AWS_ACCESS_KEY_TEST}",
-                            "aws_secret_access_key": "1234-secret",
-                            "aws_session_token": "${AWS_SESSION_TOKEN_TEST}",
-                            "aws_region_name": "us-east-1",
-                            "timeout": 14,
-                        },
-                    ],
-                }
-            ],
-            True,
-        ),
-        # AWS secret 'aws_session_token' is a string #18
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {
-                            "provider": "bedrock",
-                            "model": "anthropic.test-sonnet",
-                            "aws_access_key_id": "${AWS_ACCESS_KEY_TEST}",
-                            "aws_secret_access_key": "${AWS_SECRET_ACCESS_KEY_TEST}",
-                            "aws_session_token": "1234-secret",
-                            "aws_region_name": "us-east-1",
-                            "timeout": 14,
-                        },
-                    ],
-                }
-            ],
-            True,
-        ),
+                ],
+            }
+        ],
         # AWS secrets are correctly set #19
-        (
-            [
-                {
-                    "id": "model_group_id",
-                    "models": [
-                        {
-                            "provider": "bedrock",
-                            "model": "anthropic.test-sonnet",
-                            "aws_access_key_id": "${AWS_ACCESS_KEY_TEST}",
-                            "aws_secret_access_key": "${AWS_SECRET_ACCESS_KEY_TEST}",
-                            "aws_session_token": "${AWS_SESSION_TOKEN_TEST}",
-                            "aws_region_name": "us-east-1",
-                            "timeout": 14,
-                        },
-                    ],
-                }
-            ],
-            False,
-        ),
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {
+                        "provider": "bedrock",
+                        "model": "anthropic.test-sonnet",
+                        "aws_access_key_id": "${AWS_ACCESS_KEY_TEST}",
+                        "aws_secret_access_key": "${AWS_SECRET_ACCESS_KEY_TEST}",
+                        "aws_session_token": "${AWS_SESSION_TOKEN_TEST}",
+                        "aws_region_name": "us-east-1",
+                        "timeout": 14,
+                    },
+                ],
+            }
+        ],
     ),
 )
 def test_validate_model_group_configuration_setup(
     model_groups: List[Dict[Text, Any]],
-    should_exit: bool,
+    mock_available_endpoints: MagicMock,
     monkeypatch: Any,
 ):
-    class MockAvailableEndpoints:
-        @staticmethod
-        def get_instance():
-            return MockAvailableEndpoints()
+    mock_available_endpoints.model_groups = model_groups
 
-        def __init__(self):
-            self.model_groups = model_groups
+    validate_model_group_configuration_setup()
 
-    mock_endpoints = MockAvailableEndpoints()
-    monkeypatch.setattr("rasa.engine.validation.AvailableEndpoints", mock_endpoints)
 
-    if should_exit:
-        with pytest.raises(ValidationError):
-            validate_model_group_configuration_setup()
-    else:
+@pytest.mark.usefixtures("use_mocked_configuration")
+@pytest.mark.parametrize(
+    "model_groups",
+    (
+        # 'least_busy' instead of valid 'least-busy' # 3
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {"provider": "openai", "model": "gpt-4"},
+                    {"provider": "openai", "model": "gpt-4o"},
+                ],
+                "router": {"routing_strategy": "least_busy"},
+            }
+        ],
+        # same model group id #7
+        [
+            {
+                "id": "model_group_id",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+            {
+                "id": "model_group_id",
+                "models": [{"provider": "openai", "model": "gpt-4o"}],
+            },
+        ],
+        # multiple models, but no router #8
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {"provider": "openai", "model": "gpt-4"},
+                    {"provider": "openai", "model": "gpt-4o"},
+                ],
+            }
+        ],
+        # 9
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {"provider": "openai", "model": "gpt-4"},
+                    {"provider": "openai", "model": "gpt-4o"},
+                ],
+            },
+            {
+                "id": "another_group",
+                "models": [
+                    {"provider": "openai", "model": "gpt-4"},
+                ],
+            },
+        ],
+        # incorrect usage of env_vars #10
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {"provider": "openai", "model": "${MODEL_NAME}"},
+                ],
+            }
+        ],
+        # api_key is a string #11
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {
+                        "provider": "azure",
+                        "deployment": "${DEPLOYMENT_AZURE}",
+                        "api_base": "${AZURE_API_BASE_GPT4o_FR}",
+                        "api_key": "59968xxxxxxxxx5f355dd",
+                        "api_version": "2024-02-15-preview",
+                        "timeout": 14,
+                    },
+                ],
+            }
+        ],
+        # incorrect router setting #12
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {"provider": "openai", "model": "gpt-4"},
+                    {"provider": "openai", "model": "gpt-4o"},
+                ],
+                "router": {"routing_strategy": "non-existing-key"},
+            }
+        ],
+        # incorrect use of use_chat_completions_endpoint #13
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {
+                        "provider": "self-hosted",
+                        "model": "some_model",
+                        "api_base": "http://localhost:8000",
+                        "use_chat_completions_endpoint": False,
+                    },
+                ],
+                "router": {"routing_strategy": "least-busy"},
+            }
+        ],
+        # AWS secret 'aws_access_key_id' is a string #16
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {
+                        "provider": "bedrock",
+                        "model": "anthropic.test-sonnet",
+                        "aws_access_key_id": "1234-secret",
+                        "aws_secret_access_key": "${AWS_SECRET_ACCESS_KEY_TEST}",
+                        "aws_session_token": "${AWS_SESSION_TOKEN_TEST}",
+                        "aws_region_name": "us-east-1",
+                        "timeout": 14,
+                    },
+                ],
+            }
+        ],
+        # AWS secret 'aws_secret_access_key' is a string #17
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {
+                        "provider": "bedrock",
+                        "model": "anthropic.test-sonnet",
+                        "aws_access_key_id": "${AWS_ACCESS_KEY_TEST}",
+                        "aws_secret_access_key": "1234-secret",
+                        "aws_session_token": "${AWS_SESSION_TOKEN_TEST}",
+                        "aws_region_name": "us-east-1",
+                        "timeout": 14,
+                    },
+                ],
+            }
+        ],
+        # AWS secret 'aws_session_token' is a string #18
+        [
+            {
+                "id": "model_group_id",
+                "models": [
+                    {
+                        "provider": "bedrock",
+                        "model": "anthropic.test-sonnet",
+                        "aws_access_key_id": "${AWS_ACCESS_KEY_TEST}",
+                        "aws_secret_access_key": "${AWS_SECRET_ACCESS_KEY_TEST}",
+                        "aws_session_token": "1234-secret",
+                        "aws_region_name": "us-east-1",
+                        "timeout": 14,
+                    },
+                ],
+            }
+        ],
+    ),
+)
+def test_validate_model_group_configuration_setup_error(
+    model_groups: List[Dict[Text, Any]],
+    mock_available_endpoints: MagicMock,
+    monkeypatch: Any,
+):
+    mock_available_endpoints.model_groups = model_groups
+
+    with pytest.raises(ValidationError):
         validate_model_group_configuration_setup()
 
 
+@pytest.mark.usefixtures("use_mocked_configuration")
 @pytest.mark.parametrize(
-    "pipeline_config, should_exit",
+    "pipeline_config",
     [
         # 0 valid - azure
-        (
-            [
-                {
-                    "name": "EnterpriseSearchPolicy",
-                    LLM_CONFIG_KEY: {
-                        "api_type": "azure",
-                        "deployment": "my_model_123",
+        [
+            {
+                "name": "EnterpriseSearchPolicy",
+                LLM_CONFIG_KEY: {
+                    "api_type": "azure",
+                    "deployment": "my_model_123",
+                    "api_base: ": "https://example.com",
+                },
+                EMBEDDINGS_CONFIG_KEY: {
+                    "api_type": "azure",
+                    "deployment": "embeddings_123",
+                    "api_base: ": "https://example.com",
+                },
+            }
+        ],
+        # 1 valid - openai
+        [
+            {
+                "name": "EnterpriseSearchPolicy",
+                LLM_CONFIG_KEY: {
+                    "api_type": "openai",
+                    "model": "my_model_123",
+                    "api_base: ": "https://example.com",
+                },
+                EMBEDDINGS_CONFIG_KEY: {
+                    "api_type": "openai",
+                    "model": "embeddings_123",
+                    "api_base: ": "https://example.com",
+                },
+            }
+        ],
+        # 2 valid - api_type used for openai flow retrieval
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "huggingface",
+                    "model": "my_model_123",
+                    "api_base: ": "https://example.com",
+                },
+                FLOW_RETRIEVAL_KEY: {
+                    EMBEDDINGS_CONFIG_KEY: {
+                        "api_type": "openai",
+                        "model": "embeddings_123",
                         "api_base: ": "https://example.com",
                     },
+                },
+            }
+        ],
+        # 3 valid - api_type used for azure flow retrieval
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "huggingface",
+                    "model": "my_model_123",
+                    "api_base: ": "https://example.com",
+                },
+                FLOW_RETRIEVAL_KEY: {
                     EMBEDDINGS_CONFIG_KEY: {
                         "api_type": "azure",
                         "deployment": "embeddings_123",
                         "api_base: ": "https://example.com",
                     },
-                }
-            ],
-            False,
-        ),
-        # 1 valid - openai
-        (
-            [
-                {
-                    "name": "EnterpriseSearchPolicy",
-                    LLM_CONFIG_KEY: {
-                        "api_type": "openai",
-                        "model": "my_model_123",
-                        "api_base: ": "https://example.com",
-                    },
-                    EMBEDDINGS_CONFIG_KEY: {
-                        "api_type": "openai",
-                        "model": "embeddings_123",
-                        "api_base: ": "https://example.com",
-                    },
-                }
-            ],
-            False,
-        ),
-        # 2 invalid - api_type used for huggingface LLM
-        (
-            [
-                {
-                    "name": "EnterpriseSearchPolicy",
-                    LLM_CONFIG_KEY: {
-                        "api_type": "huggingface",
-                        "model": "my_model_123",
-                        "api_base: ": "https://example.com",
-                    },
-                    EMBEDDINGS_CONFIG_KEY: {
-                        "provider": "huggingface",
-                        "model": "embeddings_123",
-                        "api_base: ": "https://example.com",
-                    },
-                }
-            ],
-            True,
-        ),
-        # 3 invalid - api_type used for huggingface embeddings
-        (
-            [
-                {
-                    "name": "EnterpriseSearchPolicy",
-                    LLM_CONFIG_KEY: {
-                        "provider": "huggingface",
-                        "model": "my_model_123",
-                        "api_base: ": "https://example.com",
-                    },
-                    EMBEDDINGS_CONFIG_KEY: {
-                        "api_type": "huggingface",
-                        "model": "embeddings_123",
-                        "api_base: ": "https://example.com",
-                    },
-                }
-            ],
-            True,
-        ),
-        # 4 valid - api_type used for openai flow retrieval
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        "provider": "huggingface",
-                        "model": "my_model_123",
-                        "api_base: ": "https://example.com",
-                    },
-                    FLOW_RETRIEVAL_KEY: {
-                        EMBEDDINGS_CONFIG_KEY: {
-                            "api_type": "openai",
-                            "model": "embeddings_123",
-                            "api_base: ": "https://example.com",
-                        },
-                    },
-                }
-            ],
-            False,
-        ),
-        # 5 valid - api_type used for azure flow retrieval
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        "provider": "huggingface",
-                        "model": "my_model_123",
-                        "api_base: ": "https://example.com",
-                    },
-                    FLOW_RETRIEVAL_KEY: {
-                        EMBEDDINGS_CONFIG_KEY: {
-                            "api_type": "azure",
-                            "deployment": "embeddings_123",
-                            "api_base: ": "https://example.com",
-                        },
-                    },
-                }
-            ],
-            False,
-        ),
-        # 6 invalid - api_type used for huggingface flow retrieval
-        (
-            [
-                {
-                    "name": "SingleStepLLMCommandGenerator",
-                    LLM_CONFIG_KEY: {
-                        "provider": "huggingface",
-                        "model_name": "my_model_123",
-                        "api_base: ": "https://example.com",
-                    },
-                    FLOW_RETRIEVAL_KEY: {
-                        EMBEDDINGS_CONFIG_KEY: {
-                            "api_type": "huggingface",
-                            "model": "embeddings_123",
-                            "api_base: ": "https://example.com",
-                        },
-                    },
-                }
-            ],
-            True,
-        ),
+                },
+            }
+        ],
     ],
 )
 def test_validate_api_type_key_used_correctly(
-    pipeline_config: List[Dict[Text, Any]], should_exit: bool
+    pipeline_config: List[Dict[Text, Any]],
+    monkeypatch: MonkeyPatch,
+):
+    config = {"pipeline": pipeline_config}
+
+    validate_model_client_configuration_setup_during_training_time(config)
+
+
+@pytest.mark.parametrize(
+    "pipeline_config",
+    [
+        # 0 invalid - api_type used for huggingface LLM
+        [
+            {
+                "name": "EnterpriseSearchPolicy",
+                LLM_CONFIG_KEY: {
+                    "api_type": "huggingface",
+                    "model": "my_model_123",
+                    "api_base: ": "https://example.com",
+                },
+                EMBEDDINGS_CONFIG_KEY: {
+                    "provider": "huggingface",
+                    "model": "embeddings_123",
+                    "api_base: ": "https://example.com",
+                },
+            }
+        ],
+        # 1 invalid - api_type used for huggingface embeddings
+        [
+            {
+                "name": "EnterpriseSearchPolicy",
+                LLM_CONFIG_KEY: {
+                    "provider": "huggingface",
+                    "model": "my_model_123",
+                    "api_base: ": "https://example.com",
+                },
+                EMBEDDINGS_CONFIG_KEY: {
+                    "api_type": "huggingface",
+                    "model": "embeddings_123",
+                    "api_base: ": "https://example.com",
+                },
+            }
+        ],
+        # 2 invalid - api_type used for huggingface flow retrieval
+        [
+            {
+                "name": "SingleStepLLMCommandGenerator",
+                LLM_CONFIG_KEY: {
+                    "provider": "huggingface",
+                    "model_name": "my_model_123",
+                    "api_base: ": "https://example.com",
+                },
+                FLOW_RETRIEVAL_KEY: {
+                    EMBEDDINGS_CONFIG_KEY: {
+                        "api_type": "huggingface",
+                        "model": "embeddings_123",
+                        "api_base: ": "https://example.com",
+                    },
+                },
+            }
+        ],
+    ],
+)
+def test_validate_api_type_key_used_correctly_error(
+    pipeline_config: List[Dict[Text, Any]],
 ):
     config = {"pipeline": pipeline_config}
     expected_error_code = "engine.validation.component.api_type_config_key_invalid"
 
-    if should_exit:
-        with pytest.raises(ValidationError) as exc_info:
-            validate_model_client_configuration_setup_during_training_time(config)
-
-        err = exc_info.value
-        assert err.code == expected_error_code
-    else:
+    with pytest.raises(ValidationError) as exc_info:
         validate_model_client_configuration_setup_during_training_time(config)
+
+    err = exc_info.value
+    assert err.code == expected_error_code
 
 
 def test_validate_responses_for_intentless_policy(tmp_path: Path) -> None:

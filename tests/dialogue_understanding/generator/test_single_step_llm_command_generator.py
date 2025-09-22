@@ -2,7 +2,7 @@ import os.path
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Text
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 import structlog
@@ -1107,40 +1107,20 @@ class TestSingleStepLLMCommandGenerator:
         model_groups_2: List[Dict[str, Any]],
         fingerprint_differs: bool,
         model_storage: ModelStorage,
+        mock_available_endpoints: MagicMock,
+        mock_configuration: MagicMock,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         generator = SingleStepLLMCommandGenerator(
             {}, model_storage, Resource("llmcmdgen")
         )
 
-        class MockAvailableEndpoints:
-            @staticmethod
-            def get_instance():
-                return MockAvailableEndpoints()
+        monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
 
-            def __init__(self):
-                self.model_groups = model_groups_1
-
-        mock_endpoints_1 = MockAvailableEndpoints()
-        monkeypatch.setattr(
-            "rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints_1
-        )
-
+        mock_available_endpoints.model_groups = model_groups_1
         fingerprint_1 = generator.fingerprint_addon(config_1)
 
-        class MockAvailableEndpoints:
-            @staticmethod
-            def get_instance():
-                return MockAvailableEndpoints()
-
-            def __init__(self):
-                self.model_groups = model_groups_2
-
-        mock_endpoints_2 = MockAvailableEndpoints()
-        monkeypatch.setattr(
-            "rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints_2
-        )
-
+        mock_available_endpoints.model_groups = model_groups_2
         fingerprint_2 = generator.fingerprint_addon(config_2)
 
         assert fingerprint_1 is not None
@@ -1486,29 +1466,22 @@ class TestSingleStepLLMCommandGenerator:
         expected_flow_retrieval_embedding_config: Optional[Dict[str, Any]],
         model_storage: ModelStorage,
         resource: Resource,
-        monkeypatch,
+        mock_available_endpoints: MagicMock,
+        mock_configuration: MagicMock,
+        monkeypatch: MonkeyPatch,
     ) -> None:
-        class MockAvailableEndpoints:
-            @staticmethod
-            def get_instance():
-                return MockAvailableEndpoints()
+        mock_available_endpoints.model_groups = [
+            {
+                "id": "openai_gpt-4",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            },
+            {
+                "id": "openai_embedding",
+                "models": [{"provider": "openai", "model": "text-embedding-3-large"}],
+            },
+        ]
 
-            def __init__(self):
-                self.model_groups = [
-                    {
-                        "id": "openai_gpt-4",
-                        "models": [{"provider": "openai", "model": "gpt-4"}],
-                    },
-                    {
-                        "id": "openai_embedding",
-                        "models": [
-                            {"provider": "openai", "model": "text-embedding-3-large"}
-                        ],
-                    },
-                ]
-
-        mock_endpoints = MockAvailableEndpoints()
-        monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+        monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
 
         generator = SingleStepLLMCommandGenerator(
             config,
@@ -1529,23 +1502,18 @@ class TestSingleStepLLMCommandGenerator:
         self,
         model_storage: LocalModelStorage,
         resource: Resource,
+        mock_available_endpoints: MagicMock,
+        mock_configuration: MagicMock,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        class MockAvailableEndpoints:
-            @staticmethod
-            def get_instance():
-                return MockAvailableEndpoints()
+        mock_available_endpoints.model_groups = [
+            {
+                "id": "model_group_id",
+                "models": [{"provider": "openai", "model": "gpt-4"}],
+            }
+        ]
 
-            def __init__(self):
-                self.model_groups = [
-                    {
-                        "id": "model_group_id",
-                        "models": [{"provider": "openai", "model": "gpt-4"}],
-                    }
-                ]
-
-        mock_endpoints = MockAvailableEndpoints()
-        monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+        monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
 
         config = {LLM_CONFIG_KEY: {MODEL_GROUP_CONFIG_KEY: "model_group_id"}}
         generator = SingleStepLLMCommandGenerator(config, model_storage, resource)

@@ -1,5 +1,5 @@
 from typing import Callable, Dict, Optional
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from pytest import RunResult
@@ -12,6 +12,7 @@ from rasa.dialogue_understanding.generator import (
 from rasa.dialogue_understanding.generator.constants import DEFAULT_LLM_CONFIG
 from rasa.engine.graph import GraphSchema, SchemaNode
 from rasa.shared.utils.llm import combine_custom_and_default_config
+from tests.conftest import get_model_groups
 
 
 def test_rasa_test_dialogue_understanding_help(run: Callable[..., RunResult]) -> None:
@@ -33,41 +34,6 @@ Runs dialogue understanding testing."""
     printed_help = {line.strip() for line in output.outlines}
     for line in lines:
         assert line.strip() in printed_help
-
-
-class MockAvailableEndpoints:
-    @staticmethod
-    def get_instance():
-        return MockAvailableEndpoints()
-
-    def __init__(self):
-        self.model_groups = [
-            {
-                "id": "llm-model-group",
-                "models": [
-                    {
-                        "provider": "cohere",
-                        "model": "test-cohere",
-                        "api_key": "mock key in test_tracing_rephraser",
-                    },
-                    {
-                        "provider": "openai",
-                        "model": "gpt-4",
-                        "api_key": "tedst",
-                    },
-                    {
-                        "provider": "azure",
-                        "deployment": "my-llm-azure-deployment",
-                        "api_key": "test",
-                        "api_base": "test-base",
-                        "api_version": "test-version",
-                        "num_retries": 100,
-                        "timeout": 100,
-                    },
-                ],
-                "router": {"routing_strategy": "test"},
-            },
-        ]
 
 
 @pytest.mark.parametrize(
@@ -100,7 +66,7 @@ class MockAvailableEndpoints:
                 is_input=False,
             ),
             combine_custom_and_default_config(
-                MockAvailableEndpoints.get_instance().model_groups[0],
+                get_model_groups()[0],
                 DEFAULT_LLM_CONFIG,
             ),
         ),
@@ -131,7 +97,7 @@ class MockAvailableEndpoints:
                 is_input=False,
             ),
             combine_custom_and_default_config(
-                MockAvailableEndpoints.get_instance().model_groups[0],
+                get_model_groups()[0],
                 DEFAULT_LLM_CONFIG,
             ),
         ),
@@ -145,6 +111,7 @@ class MockAvailableEndpoints:
 def test_get_llm_command_generator_config(
     llm_command_generator_node: Optional[SchemaNode],
     expected_llm_config: Optional[Dict],
+    mock_configuration: MagicMock,
     monkeypatch: pytest.MonkeyPatch,
 ):
     # Given
@@ -165,8 +132,7 @@ def test_get_llm_command_generator_config(
     test_runner.agent.processor.model_metadata.train_schema = GraphSchema(
         graph_schema_nodes
     )
-    mock_endpoints = MockAvailableEndpoints()
-    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+    monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
 
     # When
     result = _get_llm_command_generator_config(test_runner.agent.processor)

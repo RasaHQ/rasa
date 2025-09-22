@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import pytest
 
@@ -7,33 +7,66 @@ from rasa.shared.core.flows.flow_step_links import (
     StaticFlowStepLink,
 )
 from rasa.shared.core.flows.steps import CollectInformationFlowStep
+from rasa.shared.core.flows.steps.collect import (
+    PerChannelSilenceTimeout,
+    SilenceTimeout,
+    SingleSilenceTimeout,
+)
 from rasa.shared.core.slots import SlotRejection
 from rasa.shared.exceptions import RasaException
 
 
 @pytest.mark.parametrize(
-    "data",
+    "data, expected_silence_timeout",
     [
-        {
-            "collect": "test_slot",
-            "utter": "utter_ask_test_slot",
-            "ask_before_filling": True,
-            "reset_after_flow_ends": False,
-            "rejections": [{"if": "condition", "utter": "sample_a"}],
-            "force_slot_filling": True,
-            "silence_timeout": 10.0,
-        },
-        {
-            "collect": "test_slot",
-            "utter": "utter_ask_test_slot",
-            "ask_before_filling": True,
-            "reset_after_flow_ends": False,
-            "rejections": [{"if": "condition", "utter": "sample_a"}],
-            "force_slot_filling": True,
-        },
+        (
+            {
+                "collect": "test_slot",
+                "utter": "utter_ask_test_slot",
+                "ask_before_filling": True,
+                "reset_after_flow_ends": False,
+                "rejections": [{"if": "condition", "utter": "sample_a"}],
+                "force_slot_filling": True,
+                "silence_timeout": 10.0,
+            },
+            SingleSilenceTimeout(10.0),
+        ),
+        (
+            {
+                "collect": "test_slot",
+                "utter": "utter_ask_test_slot",
+                "ask_before_filling": True,
+                "reset_after_flow_ends": False,
+                "rejections": [{"if": "condition", "utter": "sample_a"}],
+                "force_slot_filling": True,
+                "silence_timeout": {
+                    "channel_a": 5.0,
+                    "channel_b": 15.0,
+                },
+            },
+            PerChannelSilenceTimeout(
+                {
+                    "channel_a": 5.0,
+                    "channel_b": 15.0,
+                }
+            ),
+        ),
+        (
+            {
+                "collect": "test_slot",
+                "utter": "utter_ask_test_slot",
+                "ask_before_filling": True,
+                "reset_after_flow_ends": False,
+                "rejections": [{"if": "condition", "utter": "sample_a"}],
+                "force_slot_filling": True,
+            },
+            None,
+        ),
     ],
 )
-def test_collect_step_from_json(data: Dict[str, Any]) -> None:
+def test_collect_step_from_json(
+    data: Dict[str, Any], expected_silence_timeout: Optional[SilenceTimeout]
+) -> None:
     """Test that CollectInformationFlowStep can be created from JSON."""
 
     step = CollectInformationFlowStep.from_json("flow_id", data)
@@ -46,7 +79,7 @@ def test_collect_step_from_json(data: Dict[str, Any]) -> None:
     assert step.rejections[0].if_ == "condition"
     assert step.rejections[0].utter == "sample_a"
     assert step.force_slot_filling is True
-    assert step.silence_timeout == data.get("silence_timeout", None)
+    assert step.silence_timeout == expected_silence_timeout
 
 
 @pytest.mark.parametrize(
@@ -94,7 +127,21 @@ def test_collect_step_from_json_invalid_silence_timeout(
         assert exc_info.value == expected_exception
 
 
-def test_collect_step_as_json() -> None:
+@pytest.mark.parametrize(
+    "silence_timeout",
+    [
+        SingleSilenceTimeout(10.0),
+        PerChannelSilenceTimeout(
+            {
+                "channel_a": 5.0,
+                "channel_b": 15.0,
+            }
+        ),
+    ],
+)
+def test_collect_step_as_json(
+    silence_timeout: SilenceTimeout,
+) -> None:
     """Test that CollectInformationFlowStep can be serialized to JSON."""
 
     step = CollectInformationFlowStep(
@@ -105,7 +152,7 @@ def test_collect_step_as_json() -> None:
         reset_after_flow_ends=False,
         rejections=[SlotRejection(if_="condition", utter="sample_a")],
         force_slot_filling=True,
-        silence_timeout=10.0,
+        silence_timeout=silence_timeout,
         custom_id=None,
         idx=0,
         description="Collect test slot",
@@ -122,7 +169,9 @@ def test_collect_step_as_json() -> None:
     assert json_data["reset_after_flow_ends"] is False
     assert json_data["rejections"] == [{"if": "condition", "utter": "sample_a"}]
     assert json_data["force_slot_filling"] is True
-    assert json_data["silence_timeout"] == 10.0
+    assert json_data["silence_timeout"] == silence_timeout.to_json().get(
+        "silence_timeout"
+    )
     assert json_data["description"] == "Collect test slot"
     assert "metadata" not in json_data
     assert "next" not in json_data
@@ -182,7 +231,7 @@ def test_collect_step_as_json_with_next_and_metadata() -> None:
         reset_after_flow_ends=False,
         rejections=[SlotRejection(if_="condition", utter="sample_a")],
         force_slot_filling=True,
-        silence_timeout=10.0,
+        silence_timeout=SingleSilenceTimeout(10.0),
         custom_id=None,
         idx=0,
         description="Collect test slot",

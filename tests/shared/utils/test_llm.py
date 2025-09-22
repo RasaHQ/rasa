@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, Text
 from unittest import mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pytest import MonkeyPatch
@@ -2616,65 +2616,66 @@ def test_combine_custom_and_default_config_combining_model_group_configuration()
     assert combined_config == expected_model_group_config
 
 
-class MockAvailableEndpoints:
-    @staticmethod
-    def get_instance():
-        return MockAvailableEndpoints()
-
-    def __init__(self):
-        self.model_groups = [
-            {
-                "id": "valid_id",
-                "models": [{"provider": "openai", "model": "gpt-4"}],
-            }
-        ]
-
-
-def test_resolve_llm_config_with_invalid_model_group_id(monkeypatch):
+def test_resolve_llm_config_with_invalid_model_group_id(
+    mock_available_endpoints: MagicMock,
+    mock_configuration: MagicMock,
+    monkeypatch: MonkeyPatch,
+):
     llm_config = {MODEL_GROUP_CONFIG_KEY: "invalid_id"}
     component_name = "test_component"
 
-    mock_endpoints = MockAvailableEndpoints()
-    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+    mock_available_endpoints.model_groups = [
+        {
+            "id": "valid_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        }
+    ]
+    monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
 
     with pytest.raises(InvalidConfigException, match="Could not resolve model group"):
         resolve_model_client_config(llm_config, component_name)
 
 
-def test_resolve_llm_config_with_duplicate_model_groups_defined(monkeypatch):
+def test_resolve_llm_config_with_duplicate_model_groups_defined(
+    mock_available_endpoints: MagicMock,
+    mock_configuration: MagicMock,
+    monkeypatch: MonkeyPatch,
+):
     llm_config = {MODEL_GROUP_CONFIG_KEY: "some_id"}
     component_name = "test_component"
 
-    class MockAvailableEndpointsNoModelGroups:
-        @staticmethod
-        def get_instance():
-            return MockAvailableEndpointsNoModelGroups()
+    mock_available_endpoints.model_groups = [
+        {
+            "id": "valid_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        },
+        {
+            "id": "valid_id",
+            "models": [{"provider": "openai", "model": "gpt-3.5"}],
+        },
+    ]
 
-        def __init__(self):
-            self.model_groups = [
-                {
-                    "id": "valid_id",
-                    "models": [{"provider": "openai", "model": "gpt-4"}],
-                },
-                {
-                    "id": "valid_id",
-                    "models": [{"provider": "openai", "model": "gpt-3.5"}],
-                },
-            ]
-
-    mock_endpoints = MockAvailableEndpointsNoModelGroups()
-    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+    monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
 
     with pytest.raises(InvalidConfigException):
         resolve_model_client_config(llm_config, component_name)
 
 
-def test_resolve_llm_config_with_model_id(monkeypatch: Any):
+def test_resolve_llm_config_with_model_id(
+    mock_available_endpoints: MagicMock,
+    mock_configuration: MagicMock,
+    monkeypatch: MonkeyPatch,
+):
     llm_config = {MODEL_GROUP_CONFIG_KEY: "valid_id"}
     component_name = "test_component"
 
-    mock_endpoints = MockAvailableEndpoints()
-    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+    mock_available_endpoints.model_groups = [
+        {
+            "id": "valid_id",
+            "models": [{"provider": "openai", "model": "gpt-4"}],
+        }
+    ]
+    monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
 
     result = resolve_model_client_config(llm_config, component_name)
     assert result == {
@@ -2683,20 +2684,17 @@ def test_resolve_llm_config_with_model_id(monkeypatch: Any):
     }
 
 
-def test_resolve_llm_config_with_no_model_groups_defined(monkeypatch):
+def test_resolve_llm_config_with_no_model_groups_defined(
+    mock_available_endpoints: MagicMock,
+    mock_configuration: MagicMock,
+    monkeypatch: MonkeyPatch,
+):
     llm_config = {MODEL_GROUP_CONFIG_KEY: "some_id"}
     component_name = "test_component"
 
-    class MockAvailableEndpointsNoModelGroups:
-        @staticmethod
-        def get_instance():
-            return MockAvailableEndpointsNoModelGroups()
+    mock_available_endpoints.model_groups = None
 
-        def __init__(self):
-            self.model_groups = None
-
-    mock_endpoints = MockAvailableEndpointsNoModelGroups()
-    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+    monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
 
     with pytest.raises(
         InvalidConfigException,

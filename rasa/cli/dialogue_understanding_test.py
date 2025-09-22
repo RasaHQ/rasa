@@ -3,6 +3,7 @@ import asyncio
 import datetime
 import importlib
 import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, cast
 
 import structlog
@@ -16,7 +17,8 @@ from rasa.cli.arguments.default_arguments import (
     add_remote_storage_param,
 )
 from rasa.core.agent import Agent
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.processor import MessageProcessor
 from rasa.dialogue_understanding.commands import Command
@@ -47,7 +49,6 @@ from rasa.dialogue_understanding_test.validation import (
 from rasa.e2e_test.e2e_test_case import TestSuite
 from rasa.exceptions import RasaException
 from rasa.shared.constants import (
-    DEFAULT_ENDPOINTS_PATH,
     LLM_CONFIG_KEY,
     ROUTE_TO_CALM_SLOT,
 )
@@ -323,11 +324,9 @@ def get_valid_test_suite(
 
 
 def set_up_available_endpoints(args: argparse.Namespace) -> AvailableEndpoints:
-    """Set up the available endpoints for the test runner."""
-    args.endpoints = rasa.cli.utils.get_validated_path(
-        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
-    )
-    endpoints = AvailableEndpoints.get_instance(args.endpoints)
+    endpoints = Configuration.initialise_endpoints(
+        endpoints_path=Path(args.endpoints)
+    ).endpoints
 
     # Ignore all endpoints apart from action server, model, and nlu
     # to ensure InMemoryTrackerStore is being used instead of production

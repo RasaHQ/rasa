@@ -246,7 +246,14 @@
                                 }
                             },
                             "silence_timeout": {
-                                "type": "number"
+                                "oneOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "object"
+                                  }
+                              ]
                             }
                         }
                     }

@@ -12,8 +12,9 @@ from apscheduler.triggers.cron import CronTrigger
 from pytest import MonkeyPatch
 from structlog.testing import capture_logs
 
-from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.brokers.kafka import KafkaEventBroker
+from rasa.core.config.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.core.tracker_stores.tracker_store import (
     InMemoryTrackerStore,
 )
@@ -34,9 +35,9 @@ freezegun.config.configure(extend_ignore_list=["transformers"])
 
 @pytest.fixture
 def available_endpoints_for_pii_management() -> AvailableEndpoints:
-    return AvailableEndpoints.read_endpoints(
-        "data/test_privacy/endpoints_with_valid_privacy.yml"
-    )
+    return Configuration.initialise_endpoints(
+        endpoints_path=Path("data/test_privacy/endpoints_with_valid_privacy.yml")
+    ).endpoints
 
 
 @pytest.fixture
@@ -533,7 +534,9 @@ async def test_privacy_manager_run_tracker_store_deletion(
 
     in_memory_tracker_store = InMemoryTrackerStore(Domain.empty())
     privacy_manager = await BackgroundPrivacyManager.create_instance(
-        AvailableEndpoints.read_endpoints(str(tmp_path / "endpoints.yml")),
+        Configuration.initialise_endpoints(
+            endpoints_path=tmp_path / "endpoints.yml"
+        ).endpoints,
         in_memory_tracker_store=in_memory_tracker_store,
     )
     await privacy_manager.tracker_store.save(unanonymized_tracker)
@@ -584,7 +587,9 @@ async def test_privacy_manager_run_tracker_store_deletion_retained_events(
     unanonymized_tracker.update_with_events(new_tracker_events)
 
     privacy_manager = await BackgroundPrivacyManager.create_instance(
-        AvailableEndpoints.read_endpoints(str(tmp_path / "endpoints.yml")),
+        Configuration.initialise_endpoints(
+            endpoints_path=tmp_path / "endpoints.yml"
+        ).endpoints,
     )
     mock_tracker_store_delete = AsyncMock()
     monkeypatch.setattr(
@@ -622,7 +627,9 @@ async def test_privacy_manager_run_tracker_store_anonymization(
 
     in_memory_tracker_store = InMemoryTrackerStore(Domain.empty())
     privacy_manager = await BackgroundPrivacyManager.create_instance(
-        AvailableEndpoints.read_endpoints(str(tmp_path / "endpoints.yml")),
+        Configuration.initialise_endpoints(
+            endpoints_path=tmp_path / "endpoints.yml"
+        ).endpoints,
         in_memory_tracker_store=in_memory_tracker_store,
     )
     await privacy_manager.tracker_store.save(unanonymized_tracker)
@@ -697,7 +704,9 @@ async def test_privacy_manager_run_tracker_store_anonymization_already_anonymize
         event.anonymized_at = datetime.datetime.now()
 
     privacy_manager = await BackgroundPrivacyManager.create_instance(
-        AvailableEndpoints.read_endpoints(str(tmp_path / "endpoints.yml")),
+        Configuration.initialise_endpoints(
+            endpoints_path=tmp_path / "endpoints.yml"
+        ).endpoints,
     )
     await privacy_manager.tracker_store.save(anonymized_tracker)
     privacy_manager.tracker_store.domain = pii_domain
@@ -804,7 +813,7 @@ async def test_privacy_manager_run_tracker_store_background_jobs_sequentially_bo
     )
 
     privacy_manager = await BackgroundPrivacyManager.create_instance(
-        AvailableEndpoints.read_endpoints(str(endpoints_path)),
+        Configuration.initialise_endpoints(endpoints_path=endpoints_path).endpoints,
     )
     await privacy_manager.tracker_store.save(unanonymized_tracker)
     privacy_manager.tracker_store.domain = pii_domain
@@ -862,7 +871,7 @@ async def test_privacy_manager_run_tracker_store_jobs_sequentially_anonymization
     )
 
     privacy_manager = await BackgroundPrivacyManager.create_instance(
-        AvailableEndpoints.read_endpoints(str(endpoints_path)),
+        Configuration.initialise_endpoints(endpoints_path=endpoints_path).endpoints,
     )
     await privacy_manager.tracker_store.save(unanonymized_tracker)
 

@@ -7,10 +7,13 @@ from typing import Dict, List, Optional, Text, Union
 import structlog
 
 import rasa.cli.arguments.train as train_arguments
-import rasa.cli.utils
-import rasa.core.utils
-import rasa.utils.common
 from rasa.cli import SubParsersAction
+from rasa.cli.validation.bot_config import validate_files
+from rasa.cli.validation.config_path_validation import (
+    get_validated_config,
+    get_validated_path,
+)
+from rasa.core.config.configuration import Configuration
 from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.core.train import do_compare_training
@@ -74,7 +77,9 @@ def add_subparser(
 
 def _check_nlg_endpoint_validity(endpoint: Union[Path, str]) -> None:
     try:
-        endpoints = rasa.core.utils.read_endpoints_from_path(endpoint)
+        endpoints = Configuration.initialise_endpoints(
+            endpoints_path=endpoint
+        ).endpoints
         if endpoints.nlg is not None:
             validate_api_type_config_key_usage(
                 endpoints.nlg.kwargs,
@@ -115,21 +120,17 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     """
     from rasa.api import train as train_all
 
-    domain = rasa.cli.utils.get_validated_path(
+    domain = get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
     )
-    config = rasa.cli.utils.get_validated_config(args.config, CONFIG_MANDATORY_KEYS)
+    config = get_validated_config(args.config, CONFIG_MANDATORY_KEYS)
 
     # Validates and loads endpoints with proper endpoint file location
-    # This will initialise the endpoints singleton properly so that
-    # it can be used safely throughout the codebase with
-    # `AvailableEndpoints.get_instance()`
+    # TODO(Radovan): this should be probably be done in Configuration
     _check_nlg_endpoint_validity(args.endpoints)
 
     training_files = [
-        rasa.cli.utils.get_validated_path(
-            f, "data", DEFAULT_DATA_PATH, none_is_valid=True
-        )
+        get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)
         for f in args.data
     ]
 
@@ -143,7 +144,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
             event_info="Started validating domain and training data...",
         )
 
-        rasa.cli.utils.validate_files(
+        validate_files(
             args.fail_on_validation_warnings,
             args.validation_max_history,
             training_data_importer,
@@ -152,6 +153,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     training_result = train_all(
         domain=domain,
         config=config,
+        endpoints=args.endpoints,
         training_files=training_files,
         output=args.out,
         dry_run=args.dry_run,
@@ -197,10 +199,10 @@ def run_core_training(args: argparse.Namespace) -> Optional[Text]:
     """
     from rasa.model_training import train_core
 
-    args.domain = rasa.cli.utils.get_validated_path(
+    args.domain = get_validated_path(
         args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
     )
-    story_file = rasa.cli.utils.get_validated_path(
+    story_file = get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH, none_is_valid=True
     )
     additional_arguments = {
@@ -213,9 +215,11 @@ def run_core_training(args: argparse.Namespace) -> Optional[Text]:
         if isinstance(args.config, list):
             args.config = args.config[0]
 
-        config = rasa.cli.utils.get_validated_config(
-            args.config, CONFIG_MANDATORY_KEYS_CORE
-        )
+        config = get_validated_config(args.config, CONFIG_MANDATORY_KEYS_CORE)
+
+        Configuration.initialise_message_processing(
+            message_processing_config_path=Path(config)
+        ).initialise_empty_endpoints()
 
         return asyncio.run(
             train_core(
@@ -231,6 +235,7 @@ def run_core_training(args: argparse.Namespace) -> Optional[Text]:
             )
         )
     else:
+        Configuration.initialise_empty()
         asyncio.run(do_compare_training(args, story_file, additional_arguments))
         return None
 
@@ -246,13 +251,13 @@ def run_nlu_training(args: argparse.Namespace) -> Optional[Text]:
     """
     from rasa.model_training import train_nlu
 
-    config = rasa.cli.utils.get_validated_config(args.config, CONFIG_MANDATORY_KEYS_NLU)
-    nlu_data = rasa.cli.utils.get_validated_path(
+    config = get_validated_config(args.config, CONFIG_MANDATORY_KEYS_NLU)
+    nlu_data = get_validated_path(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
 
     if args.domain:
-        args.domain = rasa.cli.utils.get_validated_path(
+        args.domain = get_validated_path(
             args.domain, "domain", DEFAULT_DOMAIN_PATHS, none_is_valid=True
         )
 

@@ -15,7 +15,9 @@ import rasa.utils.common
 import rasa.utils.io
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import x as arguments
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.cli.validation.config_path_validation import get_validated_path
+from rasa.core.config.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.shared.constants import (
     DEFAULT_CREDENTIALS_PATH,
     DEFAULT_ENDPOINTS_PATH,
@@ -90,7 +92,7 @@ def _prepare_credentials_for_rasa_x(
 ) -> Text:
     if credentials_path:
         credentials_path = str(
-            rasa.cli.utils.get_validated_path(
+            get_validated_path(
                 credentials_path, "credentials", DEFAULT_CREDENTIALS_PATH, True
             )
         )
@@ -179,7 +181,9 @@ def run_in_enterprise_connection_mode(args: argparse.Namespace) -> None:
     print_success("Starting a Rasa server in Rasa Enterprise connection mode... 🚀")
 
     credentials_path, endpoints_path = _get_credentials_and_endpoints_paths(args)
-    endpoints = AvailableEndpoints.get_instance(endpoints_path)
+    endpoints = Configuration.initialise_endpoints(
+        endpoints_path=Path(endpoints_path)
+    ).endpoints
 
     _rasa_service(args, endpoints, None, credentials_path)
 
@@ -195,7 +199,7 @@ def _get_credentials_and_endpoints_paths(
             _pull_runtime_config_from_server(config_endpoint)
         )
     else:
-        endpoints_config_path = rasa.cli.utils.get_validated_path(
+        endpoints_config_path = get_validated_path(
             args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
         )
         credentials_path = None

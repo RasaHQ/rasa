@@ -7,12 +7,12 @@ from rasa.api import run as rasa_run
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import run as arguments
 from rasa.cli.arguments.default_arguments import SkipYamlValidation
-from rasa.cli.utils import get_validated_path
+from rasa.core.config.configuration import (
+    Configuration,
+)
 from rasa.exceptions import ModelNotFound
 from rasa.shared.constants import (
     DEFAULT_ACTIONS_PATH,
-    DEFAULT_CREDENTIALS_PATH,
-    DEFAULT_ENDPOINTS_PATH,
     DEFAULT_MODELS_PATH,
     DOCS_BASE_URL,
 )
@@ -86,11 +86,10 @@ def run(args: argparse.Namespace) -> None:
     Args:
         args: The CLI arguments.
     """
-    args.endpoints = get_validated_path(
-        args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
-    )
-    args.credentials = get_validated_path(
-        args.credentials, "credentials", DEFAULT_CREDENTIALS_PATH, True
+    Configuration.initialise_endpoints(
+        args.endpoints,
+    ).initialise_credentials(
+        args.credentials,
     )
 
     if SkipYamlValidation.DOMAIN.value in args.skip_yaml_validation:
@@ -109,7 +108,6 @@ def run(args: argparse.Namespace) -> None:
     # configured
 
     import rasa.model
-    from rasa.core.available_endpoints import AvailableEndpoints
 
     # start server if remote storage is configured
     if args.remote_storage is not None:
@@ -117,7 +115,7 @@ def run(args: argparse.Namespace) -> None:
         return
 
     # start server if model server is configured
-    endpoints = AvailableEndpoints.get_instance(args.endpoints)
+    endpoints = Configuration.get_instance().endpoints
     model_server = endpoints.model if endpoints and endpoints.model else None
     if model_server is not None:
         rasa_run(**vars(args))

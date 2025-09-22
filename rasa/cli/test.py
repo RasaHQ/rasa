@@ -11,6 +11,13 @@ import rasa.shared.utils.io
 import rasa.utils.common
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import test as arguments
+from rasa.cli.validation.config_path_validation import get_validated_path
+from rasa.core.config.configuration import (
+    Configuration,
+    CredentialsConfigPath,
+    EndpointsConfigPath,
+    MessageProcessingConfigPath,
+)
 from rasa.core.constants import (
     FAILED_STORIES_FILE,
     STORIES_WITH_WARNINGS_FILE,
@@ -100,9 +107,15 @@ async def run_core_test_async(args: argparse.Namespace) -> None:
         test_core_models_in_directory,
     )
 
-    stories = rasa.cli.utils.get_validated_path(
-        args.stories, "stories", DEFAULT_DATA_PATH
+    Configuration.initialise_endpoints(
+        endpoints_path=EndpointsConfigPath.validate(),
+    ).initialise_credentials(
+        credentials_path=CredentialsConfigPath.validate()
+    ).initialise_message_processing(
+        message_processing_config_path=MessageProcessingConfigPath.validate()
     )
+
+    stories = get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
 
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
@@ -121,9 +134,7 @@ async def run_core_test_async(args: argparse.Namespace) -> None:
         return
 
     if isinstance(args.model, str):
-        model_path = rasa.cli.utils.get_validated_path(
-            args.model, "model", DEFAULT_MODELS_PATH
-        )
+        model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 
         if args.evaluate_model_directory:
             await test_core_models_in_directory(
@@ -182,9 +193,7 @@ async def run_nlu_test_async(
         test_nlu,
     )
 
-    data_path = str(
-        rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
-    )
+    data_path = str(get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH))
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[data_path], domain_path=domain_path
     )
@@ -225,18 +234,29 @@ async def run_nlu_test_async(
         )
     elif cross_validation:
         logger.info("Test model using cross validation.")
-        # FIXME: supporting Union[Path, Text] down the chain
-        # is the proper fix and needs more work
-        config = str(
-            rasa.cli.utils.get_validated_path(config, "config", DEFAULT_CONFIG_PATH)
+
+        Configuration.initialise_endpoints(
+            endpoints_path=EndpointsConfigPath.validate(),
+        ).initialise_credentials(
+            credentials_path=CredentialsConfigPath.validate()
+        ).initialise_message_processing(
+            message_processing_config_path=MessageProcessingConfigPath.validate(config),
         )
+
+        config = str(get_validated_path(config, "config", DEFAULT_CONFIG_PATH))
         config_importer = TrainingDataImporter.load_from_dict(config_path=config)
 
         config_dict = config_importer.get_config()
         await perform_nlu_cross_validation(config_dict, nlu_data, output, all_args)
     else:
-        model_path = rasa.cli.utils.get_validated_path(
-            models_path, "model", DEFAULT_MODELS_PATH
+        model_path = get_validated_path(models_path, "model", DEFAULT_MODELS_PATH)
+
+        Configuration.initialise_endpoints(
+            endpoints_path=EndpointsConfigPath.validate(),
+        ).initialise_credentials(
+            credentials_path=CredentialsConfigPath.validate()
+        ).initialise_message_processing(
+            message_processing_config_path=MessageProcessingConfigPath.validate(config),
         )
 
         await test_nlu(model_path, data_path, output, all_args, domain_path=domain_path)

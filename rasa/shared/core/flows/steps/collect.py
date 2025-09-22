@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set, Text, Union
 
 import structlog
 
 from rasa.shared.constants import ACTION_ASK_PREFIX, UTTER_ASK_PREFIX
+from rasa.shared.core.constants import GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE
 from rasa.shared.core.flows.flow_step import FlowStep
 from rasa.shared.core.slots import SlotRejection
 from rasa.shared.exceptions import RasaException
@@ -16,7 +18,93 @@ DEFAULT_FORCE_SLOT_FILLING = False
 
 logger = structlog.get_logger(__name__)
 
-SilenceTimeoutInstructionType = Union[int, float, Dict[str, Any]]
+SilenceTimeoutInstructionType = Union[int, float, Dict[str, float]]
+
+
+class SilenceTimeout(ABC):
+    @abstractmethod
+    def get_silence_for_channel(self, channel_name: str) -> float:
+        pass
+
+    @abstractmethod
+    def to_json(self) -> Dict[str, Any]:
+        pass
+
+
+class SingleSilenceTimeout(SilenceTimeout):
+    def __init__(
+        self,
+        silence_timeout: float,
+    ):
+        SingleSilenceTimeout._validate(silence_timeout)
+        self.silence_timeout = silence_timeout
+
+    def get_silence_for_channel(self, channel_name: str) -> float:
+        return self.silence_timeout
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "silence_timeout": self.silence_timeout,
+        }
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, SingleSilenceTimeout):
+            return False
+        return self.silence_timeout == other.silence_timeout
+
+    @staticmethod
+    def _validate(silence_timeout: float) -> None:
+        if silence_timeout and silence_timeout < 0:
+            raise RasaException(
+                f"Invalid silence timeout value: {silence_timeout}. "
+                "Silence timeout must be a non-negative number."
+            )
+
+    @classmethod
+    def from_json(cls, silence_timeout: float) -> SingleSilenceTimeout:
+        SingleSilenceTimeout._validate(silence_timeout)
+        return cls(silence_timeout)
+
+
+class PerChannelSilenceTimeout(SilenceTimeout):
+    def __init__(
+        self,
+        channel_silence_timeouts: Dict[str, float],
+    ):
+        self.silence_timeouts = channel_silence_timeouts
+
+    def get_silence_for_channel(self, channel_name: str) -> float:
+        return self.silence_timeouts.get(
+            channel_name, GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE
+        )
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "silence_timeout": self.silence_timeouts,
+        }
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, PerChannelSilenceTimeout):
+            return False
+        return self.silence_timeouts == other.silence_timeouts
+
+    @staticmethod
+    def _validate(silence_timeout_json: Dict[str, Any]) -> None:
+        for channel, timeout in silence_timeout_json.items():
+            if not isinstance(timeout, (int, float)) or timeout < 0:
+                raise RasaException(
+                    f"Invalid silence timeout value: {timeout} for "
+                    f"channel '{channel}'. "
+                    "If defined at collect step, silence timeout "
+                    "must be a non-negative number."
+                )
+
+    @classmethod
+    def from_json(
+        cls, channel_silence_timeouts: Dict[str, Any]
+    ) -> PerChannelSilenceTimeout:
+        PerChannelSilenceTimeout._validate(channel_silence_timeouts)
+        return cls(channel_silence_timeouts)
 
 
 @dataclass
@@ -37,7 +125,7 @@ class CollectInformationFlowStep(FlowStep):
     """Whether to reset the slot value at the end of the flow."""
     force_slot_filling: bool = False
     """Whether to keep only the SetSlot command for the collected slot."""
-    silence_timeout: Optional[float] = None
+    silence_timeout: Optional[SilenceTimeout] = None
     """The silence timeout for the collect information step."""
 
     @classmethod
@@ -79,25 +167,22 @@ class CollectInformationFlowStep(FlowStep):
     @staticmethod
     def _deserialise_silence_timeout(
         silence_timeout_json: Optional[SilenceTimeoutInstructionType],
-    ) -> Optional[float]:
+    ) -> Optional[SilenceTimeout]:
         """Deserialize silence timeout from JSON."""
         if not silence_timeout_json:
             return None
 
-        if not isinstance(silence_timeout_json, (int, float)):
+        if not isinstance(silence_timeout_json, (int, float, dict)):
             raise RasaException(
                 f"Invalid silence timeout value: {silence_timeout_json}. "
-                "If defined at collect step, silence timeout must be a number."
+                "If defined at collect step, silence timeout must be a number "
+                "or a map between channel names and timeout values."
             )
 
-        silence_timeout = silence_timeout_json
+        if isinstance(silence_timeout_json, dict):
+            return PerChannelSilenceTimeout.from_json(silence_timeout_json)
 
-        if silence_timeout and silence_timeout < 0:
-            raise RasaException(
-                f"Invalid silence timeout value: {silence_timeout}. "
-                "Silence timeout must be a non-negative number."
-            )
-        return silence_timeout
+        return SingleSilenceTimeout.from_json(silence_timeout_json)
 
     @staticmethod
     def _default_utter(collect: str) -> str:
@@ -119,7 +204,7 @@ class CollectInformationFlowStep(FlowStep):
         data["rejections"] = [rejection.as_dict() for rejection in self.rejections]
         data["force_slot_filling"] = self.force_slot_filling
         if self.silence_timeout:
-            data["silence_timeout"] = self.silence_timeout
+            data.update(self.silence_timeout.to_json())
 
         return super().as_json(step_properties=data)
 

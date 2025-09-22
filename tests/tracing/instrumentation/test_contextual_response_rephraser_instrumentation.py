@@ -1,6 +1,6 @@
 import logging
 from typing import Any, Dict, Sequence
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
@@ -11,35 +11,13 @@ from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR, OPENAI_API_KEY_E
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.utils.llm import DEFAULT_OPENAI_GENERATE_MODEL_NAME, AvailableEndpoints
+from rasa.shared.utils.llm import DEFAULT_OPENAI_GENERATE_MODEL_NAME
 from rasa.tracing.instrumentation import instrumentation
 from rasa.utils.endpoints import EndpointConfig
 from tests.tracing.instrumentation.conftest import (
-    MockAvailableEndpoints,
     MockContextualResponseRephraser,
     TestSpanExporter,
 )
-
-
-class IncompleteAvailableEndpoints:
-    @staticmethod
-    def get_instance():
-        return IncompleteAvailableEndpoints()
-
-    def __init__(self):
-        self.model_groups = [{"id": "no-llm-models-group", "models": [None]}]
-
-
-@pytest.fixture
-def mock_endpoints_for_rephraser(monkeypatch) -> IncompleteAvailableEndpoints:
-    """Fixture to mock the endpoints for the rephraser."""
-    mock = IncompleteAvailableEndpoints()
-
-    def mock_get_instance(*args, **kwargs):
-        return mock
-
-    monkeypatch.setattr(AvailableEndpoints, "get_instance", mock_get_instance)
-    return mock
 
 
 @pytest.fixture
@@ -95,6 +73,7 @@ def greet_tracker() -> DialogueStateTracker:
     )
 
 
+@pytest.mark.usefixtures("mock_configuration")
 @pytest.mark.parametrize(
     "llm_config, mock_env_key, expected",
     [
@@ -154,7 +133,6 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response(
     expected: Dict[str, Any],
     mock_env_key: str,
     monkeypatch: MonkeyPatch,
-    mock_available_endpoints: MockAvailableEndpoints,
 ) -> None:
     monkeypatch.setenv(mock_env_key, "mock key in test_tracing_rephraser")
 
@@ -206,13 +184,17 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response(
     assert captured_span.attributes == expected_attributes
 
 
+@pytest.mark.usefixtures("mock_configuration")
 async def test_tracing_contextual_response_rephraser_generate_llm_response_no_model_group(  # noqa: E501
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     domain_with_responses: Domain,
     monkeypatch: MonkeyPatch,
-    mock_endpoints_for_rephraser: IncompleteAvailableEndpoints,
+    mock_available_endpoints: MagicMock,
 ) -> None:
+    mock_available_endpoints.model_groups = [
+        {"id": "no-llm-models-group", "models": [None]}
+    ]
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "test_key")
     llm_config = {"model_group": "no-llm-models-group"}
     expected = {
@@ -425,6 +407,7 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
     assert captured_span.attributes["len_prompt_tokens"] == "None"
 
 
+@pytest.mark.usefixtures("mock_configuration")
 @pytest.mark.parametrize(
     "llm_config, mock_env_key, expected",
     [
@@ -486,7 +469,6 @@ async def test_tracing_contextual_response_rephraser_create_history(
     expected: Dict[str, Any],
     mock_env_key: str,
     monkeypatch: MonkeyPatch,
-    mock_available_endpoints: MockAvailableEndpoints,
 ) -> None:
     monkeypatch.setenv(mock_env_key, "mock key in test_tracing_rephraser")
     test_span_exported = TestSpanExporter(span_exporter)
@@ -534,14 +516,18 @@ async def test_tracing_contextual_response_rephraser_create_history(
     assert captured_span.attributes == expected_attributes
 
 
+@pytest.mark.usefixtures("mock_configuration")
 async def test_tracing_contextual_response_rephraser_create_history_no_model_group(
     tracer_provider: TracerProvider,
     span_exporter: InMemorySpanExporter,
     domain_with_responses: Domain,
     greet_tracker: DialogueStateTracker,
+    mock_available_endpoints: MagicMock,
     monkeypatch: MonkeyPatch,
-    mock_endpoints_for_rephraser: IncompleteAvailableEndpoints,
 ) -> None:
+    mock_available_endpoints.model_groups = [
+        {"id": "no-llm-models-group", "models": [None]}
+    ]
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "test_key")
 
     llm_config = {"model_group": "no-llm-models-group"}

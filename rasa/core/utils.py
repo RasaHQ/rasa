@@ -8,10 +8,8 @@ import numpy as np
 import structlog
 from sanic import Sanic
 
-import rasa.cli.utils as cli_utils
 import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
-from rasa.core.available_endpoints import AvailableEndpoints
 from rasa.core.constants import (
     ACTIVE_FLOW_METADATA_KEY,
     DOMAIN_GROUND_TRUTH_METADATA_KEY,
@@ -19,7 +17,7 @@ from rasa.core.constants import (
     UTTER_SOURCE_METADATA_KEY,
 )
 from rasa.core.lock_store import InMemoryLockStore, LockStore, RedisLockStore
-from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH, TCP_PROTOCOL
+from rasa.shared.constants import TCP_PROTOCOL
 from rasa.shared.core.constants import (
     SlotMappingType,
 )
@@ -35,25 +33,6 @@ if TYPE_CHECKING:
     from rasa.shared.core.flows.flows_list import FlowsList
 
 structlogger = structlog.get_logger()
-
-
-def read_endpoints_from_path(
-    endpoints_path: Optional[Union[Path, str]] = None,
-) -> AvailableEndpoints:
-    """Get `AvailableEndpoints` object from specified path.
-
-    Args:
-        endpoints_path: Path of the endpoints file to be read. If `None` the
-            default path for that file is used (`endpoints.yml`).
-
-    Returns:
-        `AvailableEndpoints` object read from endpoints file.
-
-    """
-    endpoints_config_path = cli_utils.get_validated_path(
-        endpoints_path, "endpoints", DEFAULT_ENDPOINTS_PATH, True
-    )
-    return AvailableEndpoints.get_instance(endpoints_config_path)
 
 
 def configure_file_logging(

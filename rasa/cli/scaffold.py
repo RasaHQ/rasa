@@ -104,10 +104,10 @@ def print_train_or_instructions(args: argparse.Namespace) -> None:
     if should_train:
         print_success("Training an initial model...")
         training_result = train(
-            template_domain_path[args.template],
-            DEFAULT_CONFIG_PATH,
-            DEFAULT_DATA_PATH,
-            DEFAULT_MODELS_PATH,
+            domain=template_domain_path[args.template],
+            config=DEFAULT_CONFIG_PATH,
+            training_files=DEFAULT_DATA_PATH,
+            output=DEFAULT_MODELS_PATH,
         )
         args.model = training_result.model
 

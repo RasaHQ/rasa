@@ -11,12 +11,11 @@ from moto import mock_aws
 from pytest import CaptureFixture, MonkeyPatch
 
 from rasa.core.agent import Agent, load_agent
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.core.persistor import AWSPersistor, RemoteStorageType
 from rasa.e2e_test.e2e_test_case import Fixture, TestCase, TestStep
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from tests.conftest import TrainedAsync
-from tests.utilities import clear_available_endpoints_class_instance
 
 
 @pytest.fixture
@@ -199,14 +198,12 @@ async def test_e2e_test_runner_with_customized_action_session_start(
     mock_flow_search_create_embedder.return_value = Mock()
     mock_load_local.return_value = Mock()
 
-    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
-    # endpoints from the test file.
-    clear_available_endpoints_class_instance()
-
     endpoints_path = (
         "data/test_e2e_test_runner_with_customised_action_session_start/endpoints.yml"
     )
-    endpoints = AvailableEndpoints.get_instance(endpoints_path)
+    endpoints = Configuration.initialise_endpoints(
+        endpoints_path=Path(endpoints_path)
+    ).endpoints
     test_agent = await load_agent(
         model_path=trained_custom_action_session_start_calm_bot, endpoints=endpoints
     )

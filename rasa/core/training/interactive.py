@@ -47,7 +47,7 @@ import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 from rasa import telemetry
 from rasa.core import run, utils
-from rasa.core.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.core.constants import DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT
 from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
@@ -1687,7 +1687,9 @@ def run_interactive_learning(
         p = None
 
     app = run.configure_app(port=port, conversation_id="default", enable_api=True)
-    endpoints = AvailableEndpoints.get_instance(server_args.get("endpoints"))
+    endpoints = Configuration.initialise_endpoints(
+        endpoints_path=server_args.get("endpoints")
+    ).endpoints
 
     # before_server_start handlers make sure the agent is loaded before the
     # interactive learning IO starts

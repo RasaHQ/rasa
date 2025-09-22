@@ -12,6 +12,7 @@ import rasa.utils.io
 import rasa.utils.json_utils
 from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core import utils
+from rasa.core.config.configuration import Configuration
 from rasa.core.lock_store import InMemoryLockStore, LockStore, RedisLockStore
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.utils import should_force_slot_filling
@@ -24,7 +25,6 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 from tests.conftest import write_endpoint_config_to_yaml
 from tests.utilities import (
-    clear_available_endpoints_class_instance,
     filter_logs,
     flows_from_str,
 )
@@ -188,12 +188,10 @@ def test_read_endpoints_from_path(tmp_path: Path):
         },
     )
 
-    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
-    # endpoints from the test file.
-    clear_available_endpoints_class_instance()
-
     # noinspection PyProtectedMember
-    available_endpoints = utils.read_endpoints_from_path(endpoints_path)
+    available_endpoints = Configuration.initialise_endpoints(
+        endpoints_path=endpoints_path
+    ).endpoints
 
     # assert event broker and tracker store are valid, others are not
     assert available_endpoints.tracker_store and available_endpoints.event_broker
@@ -217,12 +215,10 @@ def test_read_endpoints_from_path(tmp_path: Path):
 
 
 def test_read_endpoints_from_wrong_path():
-    # Clear the singleton instance of `AvailableEndpoints` to make sure we read the
-    # endpoints from the test file.
-    clear_available_endpoints_class_instance()
-
     # noinspection PyProtectedMember
-    available_endpoints = utils.read_endpoints_from_path("/some/wrong/path")
+    available_endpoints = Configuration.initialise_endpoints(
+        endpoints_path=Path("/some/wrong/path")
+    ).endpoints
 
     # endpoint config is still initialised but does not contain anything
     assert not all(

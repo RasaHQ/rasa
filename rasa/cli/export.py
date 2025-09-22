@@ -11,13 +11,14 @@ from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import export as arguments
 from rasa.core.brokers.pika import PikaEventBroker
+from rasa.core.config.configuration import Configuration
 from rasa.exceptions import PublishingError
 from rasa.shared.constants import DOCS_URL_EVENT_BROKERS, DOCS_URL_TRACKER_STORES
 from rasa.shared.exceptions import RasaException
 
 if typing.TYPE_CHECKING:
-    from rasa.core.available_endpoints import AvailableEndpoints
     from rasa.core.brokers.broker import EventBroker
+    from rasa.core.config.available_endpoints import AvailableEndpoints
     from rasa.core.exporter import Exporter
     from rasa.core.tracker_stores.tracker_store import TrackerStore
 
@@ -179,7 +180,9 @@ def export_trackers(args: argparse.Namespace) -> None:
 async def _export_trackers(args: argparse.Namespace) -> None:
     _assert_max_timestamp_is_greater_than_min_timestamp(args)
 
-    endpoints = rasa.core.utils.read_endpoints_from_path(args.endpoints)
+    endpoints = Configuration.initialise_endpoints(
+        endpoints_path=args.endpoints
+    ).endpoints
     tracker_store = _get_tracker_store(endpoints)
     event_broker = await _get_event_broker(endpoints)
     _prepare_event_broker(event_broker)

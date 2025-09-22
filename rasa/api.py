@@ -2,6 +2,7 @@ import asyncio
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Union
 
 import rasa.shared.constants
+from rasa.core.config.configuration import Configuration
 from rasa.core.persistor import StorageType
 
 # WARNING: Be careful about adding any top level imports at this place!
@@ -19,30 +20,25 @@ if TYPE_CHECKING:
 
 def run(
     model: Text,
-    endpoints: Text,
     connector: Optional[Text] = None,
-    credentials: Optional[Text] = None,
     **kwargs: Dict[Text, Any],
 ) -> None:
     """Runs a Rasa model.
 
     Args:
         model: Path to model archive.
-        endpoints: Path to endpoints file.
         connector: Connector which should be use (overwrites `credentials`
         field).
-        credentials: Path to channel credentials file.
         **kwargs: Additional arguments which are passed to
         `rasa.core.run.serve_application`.
 
     """
     import rasa.core.run
     import rasa.shared.utils.common
-    from rasa.core.available_endpoints import AvailableEndpoints
     from rasa.shared.constants import DOCS_BASE_URL
     from rasa.shared.utils.cli import print_warning
 
-    _endpoints = AvailableEndpoints.get_instance(endpoints)
+    credentials = Configuration.get_instance().credentials
 
     if not connector and not credentials:
         connector = "rest"
@@ -56,11 +52,18 @@ def run(
     kwargs = rasa.shared.utils.common.minimal_kwargs(
         kwargs, rasa.core.run.serve_application
     )
+
+    if "endpoints" in kwargs:
+        del kwargs["endpoints"]
+
+    if "credentials" in kwargs:
+        del kwargs["credentials"]
+
     rasa.core.run.serve_application(
         model,
         channel=connector,
         credentials=credentials,
-        endpoints=_endpoints,
+        endpoints=Configuration.get_instance().endpoints,
         **kwargs,
     )
 
@@ -69,6 +72,7 @@ def train(
     domain: Text,
     config: Text,
     training_files: "Union[Text, List[Text]]",
+    endpoints: Text = rasa.shared.constants.DEFAULT_ENDPOINTS_PATH,
     output: Text = rasa.shared.constants.DEFAULT_MODELS_PATH,
     dry_run: bool = False,
     force_training: bool = False,
@@ -88,6 +92,7 @@ def train(
     Args:
         domain: Path to the domain file.
         config: Path to the config for Core and NLU.
+        endpoints: Path to the endpoints file.
         training_files: Paths to the training data for Core and NLU.
         output: Output path.
         dry_run: If `True` then no training will be done, and the information about
@@ -122,6 +127,7 @@ def train(
             domain=domain,
             config=config,
             training_files=training_files,
+            endpoints=endpoints,
             output=output,
             dry_run=dry_run,
             force_training=force_training,

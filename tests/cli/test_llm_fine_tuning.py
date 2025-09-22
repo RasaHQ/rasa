@@ -1,6 +1,6 @@
 import argparse
 from typing import Any, Callable, Dict, List, Optional, Text, Union
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from pytest import RunResult
@@ -29,6 +29,7 @@ from rasa.llm_fine_tuning.storage import (
     StorageType,
 )
 from rasa.shared.utils.llm import combine_custom_and_default_config
+from tests.conftest import get_model_groups
 
 
 class MockSingleStepLLMCommandGenerator(SingleStepLLMCommandGenerator):
@@ -50,41 +51,6 @@ class MockSingleStepLLMCommandGenerator(SingleStepLLMCommandGenerator):
         self, prompt: Union[List[dict], List[str], str]
     ) -> Optional[str]:
         pass
-
-
-class MockAvailableEndpoints:
-    @staticmethod
-    def get_instance():
-        return MockAvailableEndpoints()
-
-    def __init__(self):
-        self.model_groups = [
-            {
-                "id": "llm-model-group",
-                "models": [
-                    {
-                        "provider": "cohere",
-                        "model": "test-cohere",
-                        "api_key": "mock key in test_tracing_rephraser",
-                    },
-                    {
-                        "provider": "openai",
-                        "model": "gpt-4",
-                        "api_key": "tedst",
-                    },
-                    {
-                        "provider": "azure",
-                        "deployment": "my-llm-azure-deployment",
-                        "api_key": "test",
-                        "api_base": "test-base",
-                        "api_version": "test-version",
-                        "num_retries": 100,
-                        "timeout": 100,
-                    },
-                ],
-                "router": {"routing_strategy": "test"},
-            },
-        ]
 
 
 def test_rasa_llm(run: Callable[..., RunResult]) -> None:
@@ -255,7 +221,7 @@ def test_create_storage_context():
                 is_input=False,
             ),
             combine_custom_and_default_config(
-                MockAvailableEndpoints.get_instance().model_groups[0],
+                get_model_groups()[0],
                 DEFAULT_LLM_CONFIG,
             ),
             False,
@@ -273,7 +239,7 @@ def test_create_storage_context():
                 is_input=False,
             ),
             combine_custom_and_default_config(
-                MockAvailableEndpoints.get_instance().model_groups[0],
+                get_model_groups()[0],
                 DEFAULT_LLM_CONFIG,
             ),
             False,
@@ -318,6 +284,7 @@ def test_get_llm_command_generator_config(
     single_step_llm_command_generator_node: SchemaNode,
     expected_llm_config: dict,
     should_raise_an_error: bool,
+    mock_configuration: MagicMock,
     monkeypatch: pytest.MonkeyPatch,
 ):
     # Given
@@ -338,8 +305,7 @@ def test_get_llm_command_generator_config(
     e2e_test_runner.agent.processor.model_metadata.train_schema = GraphSchema(
         graph_schema_nodes
     )
-    mock_endpoints = MockAvailableEndpoints()
-    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+    monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
 
     if not should_raise_an_error:
         # When
@@ -385,7 +351,7 @@ def test_get_llm_command_generator_config(
                 is_input=False,
             ),
             combine_custom_and_default_config(
-                MockAvailableEndpoints.get_instance().model_groups[0],
+                get_model_groups()[0],
                 DEFAULT_LLM_CONFIG,
             ),
             False,
@@ -402,6 +368,7 @@ def test_get_llm_command_generator_config_for_compact_llm_command_generator(
     compact_llm_command_generator_node: SchemaNode,
     expected_llm_config: dict,
     should_raise_an_error: bool,
+    mock_configuration: MagicMock,
     monkeypatch: pytest.MonkeyPatch,
 ):
     # Given
@@ -422,8 +389,7 @@ def test_get_llm_command_generator_config_for_compact_llm_command_generator(
     e2e_test_runner.agent.processor.model_metadata.train_schema = GraphSchema(
         graph_schema_nodes
     )
-    mock_endpoints = MockAvailableEndpoints()
-    monkeypatch.setattr("rasa.shared.utils.llm.AvailableEndpoints", mock_endpoints)
+    monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
 
     if not should_raise_an_error:
         # When

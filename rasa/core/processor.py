@@ -113,7 +113,7 @@ from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
-    from rasa.core.available_endpoints import AvailableEndpoints
+    from rasa.core.config.available_endpoints import AvailableEndpoints
     from rasa.privacy.privacy_manager import BackgroundPrivacyManager
 
 logger = logging.getLogger(__name__)
