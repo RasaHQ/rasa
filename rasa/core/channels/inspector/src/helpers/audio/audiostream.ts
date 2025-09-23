@@ -8,7 +8,7 @@ const audioOptions = {
   },
 }
 
-const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+const arrayBufferToBase64 = (buffer: ArrayBufferLike): string => {
   let binary = ''
   const bytes = new Uint8Array(buffer)
   const len = bytes.byteLength
@@ -196,7 +196,8 @@ const setupAudioPlayback = async (socket: WebSocket): Promise<AudioQueue> => {
 }
 
 const addDataToAudioQueue =
-  (audioQueue: AudioQueue, onLatencyUpdate?: (latency: any) => void) => (message: MessageEvent<any>) => {
+  (audioQueue: AudioQueue, onLatencyUpdate?: (latency: any) => void) =>
+  (message: MessageEvent<any>) => {
     try {
       const data = JSON.parse(message.data.toString())
       if (data['error']) {
@@ -218,7 +219,6 @@ const addDataToAudioQueue =
         audioQueue.clear()
         console.log('Audio queue cleared due to user interruption.')
       }
-
     } catch (error) {
       console.error('Error processing server incoming audio data:', error)
     }
@@ -251,7 +251,10 @@ function getWebSocketUrl(baseUrl: string) {
  * @param baseUrl - The base URL (e.g., "https://example.com" or "http://localhost:5005")
  * @param onLatencyUpdate - Optional callback function to receive latency updates
  */
-export async function createAudioConnection(baseUrl: string, onLatencyUpdate?: (latency: any) => void) {
+export async function createAudioConnection(
+  baseUrl: string,
+  onLatencyUpdate?: (latency: any) => void,
+) {
   const websocketURL = getWebSocketUrl(baseUrl)
   const socket = new WebSocket(websocketURL)
 
