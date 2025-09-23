@@ -1,4 +1,4 @@
-"""Unit tests for Lakera AI guardrails provider."""
+"""Unit tests for guardrails clients."""
 
 import asyncio
 import importlib
@@ -9,9 +9,10 @@ import aiohttp
 import pytest
 
 from rasa.builder import config
+from rasa.builder.guardrails.clients import LakeraAIGuardrails
 from rasa.builder.guardrails.exceptions import GuardrailsError
-from rasa.builder.guardrails.lakera import LakeraAIGuardrails
-from rasa.builder.guardrails.models import LakeraGuardrailRequest
+from rasa.builder.guardrails.models import GuardrailResponse, LakeraGuardrailRequest
+from rasa.builder.guardrails.utils import create_guardrail_request
 
 
 class MockPostResponse:
@@ -38,6 +39,74 @@ class MockPostResponse:
         exc_tb: Any,
     ) -> None:
         return None
+
+
+class TestGuardrailsClient:
+    @pytest.fixture(autouse=True)
+    def clear_schedule_check_cache(self) -> None:
+        """Ensure schedule_check LRU cache is clean between tests."""
+        # Clear the cache for all LakeraAIGuardrails instances
+        LakeraAIGuardrails.schedule_check.cache_clear()
+
+    @pytest.mark.asyncio
+    async def test_schedule_check_caches_tasks(self, monkeypatch: pytest.MonkeyPatch):
+        """Test that schedule_check method caches tasks correctly."""
+        # Given
+
+        client = LakeraAIGuardrails(api_key="test_key")
+
+        mock_response = GuardrailResponse(flagged=False)
+        mock_send_request = AsyncMock(return_value=mock_response)
+        monkeypatch.setattr(client, "send_request", mock_send_request)
+
+        # Create requests with same content - should get same cached task
+        request1 = create_guardrail_request(
+            client_type=type(client),
+            user_text="hello",
+            hello_rasa_user_id="user-1",
+            hello_rasa_project_id="proj-1",
+            lakera_project_id="lakera-1",
+        )
+        request2 = create_guardrail_request(
+            client_type=type(client),
+            user_text="hello",
+            hello_rasa_user_id="user-1",
+            hello_rasa_project_id="proj-1",
+            lakera_project_id="lakera-1",
+        )
+
+        # Different arguments - different task
+        request3 = create_guardrail_request(
+            client_type=type(client),
+            user_text="hello",
+            hello_rasa_user_id="user-1",
+            hello_rasa_project_id="proj-2",
+            lakera_project_id="lakera-1",
+        )
+        request4 = create_guardrail_request(
+            client_type=type(client),
+            user_text="hello2",
+            hello_rasa_user_id="user-1",
+            hello_rasa_project_id="proj-1",
+            lakera_project_id="lakera-1",
+        )
+        t1 = client.schedule_check(request1)
+        t2 = client.schedule_check(request2)
+        assert t1 is t2
+
+        t3 = client.schedule_check(request3)
+        t4 = client.schedule_check(request4)
+        assert t3 is not t1
+        assert t4 is not t1
+
+        # Await tasks to avoid warnings about pending tasks
+        res1, res2, res3 = await asyncio.gather(t1, t3, t4)
+        assert isinstance(res1, GuardrailResponse)
+        assert isinstance(res2, GuardrailResponse)
+        assert isinstance(res3, GuardrailResponse)
+        assert not res1.flagged
+        assert not res2.flagged
+        assert not res3.flagged
 
 
 class TestLakeraAIGuardrails:

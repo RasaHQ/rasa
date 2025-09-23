@@ -17,6 +17,8 @@ from rasa.builder.config import (
     COPILOT_HANDLER_ROLLING_BUFFER_SIZE,
     GUARDRAILS_ENABLE_BLOCKING,
     HELLO_RASA_PROJECT_ID,
+    LAKERA_ASSISTANT_HISTORY_GUARDRAIL_PROJECT_ID,
+    LAKERA_COPILOT_HISTORY_GUARDRAIL_PROJECT_ID,
 )
 from rasa.builder.copilot.constants import ROLE_USER, SIGNATURE_VERSION_V1
 from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
@@ -47,10 +49,6 @@ from rasa.builder.guardrails.constants import (
     BlockScope,
 )
 from rasa.builder.guardrails.store import guardrails_store
-from rasa.builder.guardrails.utils import (
-    check_assistant_chat_for_policy_violations,
-    check_copilot_chat_for_policy_violations,
-)
 from rasa.builder.job_manager import job_manager
 from rasa.builder.jobs import (
     run_prompt_to_bot_job,
@@ -1081,11 +1079,15 @@ async def copilot(request: Request) -> None:
         tracker_context = TrackerContext.from_tracker(
             tracker, max_turns=COPILOT_ASSISTANT_TRACKER_MAX_TURNS
         )
-        if tracker_context is not None:
-            tracker_context = await check_assistant_chat_for_policy_violations(
+        if (
+            tracker_context is not None
+            and llm_service.guardrails_policy_checker is not None
+        ):
+            tracker_context = await llm_service.guardrails_policy_checker.check_assistant_chat_for_policy_violations(  # noqa: E501
                 tracker_context=tracker_context,
                 hello_rasa_user_id=user_id,
                 hello_rasa_project_id=HELLO_RASA_PROJECT_ID,
+                lakera_project_id=LAKERA_ASSISTANT_HISTORY_GUARDRAIL_PROJECT_ID,
             )
 
         # Copilot doesn't need to know about the docs and any file that is not a core
@@ -1103,13 +1105,14 @@ async def copilot(request: Request) -> None:
 
         # 5. Run guardrail policy checks. If any policy violations are detected,
         #    send a response and end the stream.
-        guardrail_response: Optional[
-            GeneratedContent
-        ] = await check_copilot_chat_for_policy_violations(
-            context=context,
-            hello_rasa_user_id=user_id,
-            hello_rasa_project_id=HELLO_RASA_PROJECT_ID,
-        )
+        guardrail_response: Optional[GeneratedContent] = None
+        if llm_service.guardrails_policy_checker is not None:
+            guardrail_response = await llm_service.guardrails_policy_checker.check_copilot_chat_for_policy_violations(  # noqa: E501
+                context=context,
+                hello_rasa_user_id=user_id,
+                hello_rasa_project_id=HELLO_RASA_PROJECT_ID,
+                lakera_project_id=LAKERA_COPILOT_HISTORY_GUARDRAIL_PROJECT_ID,
+            )
         if guardrail_response is not None:
             blocked_or_violation_message = (
                 await _handle_guardrail_violation_and_maybe_block(

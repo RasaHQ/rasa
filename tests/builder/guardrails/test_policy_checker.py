@@ -1,9 +1,9 @@
-import asyncio
+"""Unit tests for GuardrailsPolicyChecker."""
+
 from typing import List, Tuple
 from unittest.mock import AsyncMock
 
 import pytest
-from pydantic import ValidationError
 
 from rasa.builder.copilot.constants import ROLE_COPILOT, ROLE_USER
 from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
@@ -13,14 +13,9 @@ from rasa.builder.copilot.models import (
     ResponseCategory,
     TextContent,
 )
-from rasa.builder.guardrails.models import GuardrailRequestKey, GuardrailResponse
-from rasa.builder.guardrails.utils import (
-    _detect_flagged_user_indices,
-    _schedule_guardrails_check,
-    check_assistant_chat_for_policy_violations,
-    check_copilot_chat_for_policy_violations,
-)
-from rasa.builder.llm_service import llm_service
+from rasa.builder.guardrails.clients import LakeraAIGuardrails
+from rasa.builder.guardrails.models import GuardrailResponse
+from rasa.builder.guardrails.policy_checker import GuardrailsPolicyChecker
 from rasa.builder.shared.tracker_context import (
     AssistantConversationTurn,
     CurrentState,
@@ -29,42 +24,11 @@ from rasa.builder.shared.tracker_context import (
 )
 
 
-@pytest.fixture(autouse=True)
-def clear_schedule_guardrails_check_cache() -> None:
-    """Ensure _schedule_guardrails_check LRU cache is clean between tests."""
-    _schedule_guardrails_check.cache_clear()
-
-
-@pytest.mark.asyncio
-async def test_schedule_guardrails_check_caches_tasks(monkeypatch: pytest.MonkeyPatch):
-    mock = AsyncMock(return_value=GuardrailResponse(flagged=False))
-    monkeypatch.setattr(llm_service.guardrails, "send_request", mock)
-
-    # Same arguments - same cached task
-    t1 = _schedule_guardrails_check("hello", "user-1", "proj-1", "lakera-1")
-    t2 = _schedule_guardrails_check("hello", "user-1", "proj-1", "lakera-1")
-    assert t1 is t2
-
-    # Different arguments - different task
-    t3 = _schedule_guardrails_check("hello", "user-1", "proj-2", "lakera-1")
-    t4 = _schedule_guardrails_check("hello2", "user-1", "proj-1", "lakera-1")
-    assert t3 is not t1
-    assert t4 is not t1
-
-    # Await tasks to avoid warnings about pending tasks
-    res1, res2, res3 = await asyncio.gather(t1, t3, t4)
-    assert isinstance(res1, GuardrailResponse)
-    assert isinstance(res2, GuardrailResponse)
-    assert isinstance(res3, GuardrailResponse)
-    assert not res1.flagged
-    assert not res2.flagged
-    assert not res3.flagged
-
-
 @pytest.mark.asyncio
 async def test_check_assistant_chat_filters_flagged_turns(
     monkeypatch: pytest.MonkeyPatch,
 ):
+    """Test that the policy checker filters out flagged turns."""
     # Build a TrackerContext with three turns
     turns = [
         AssistantConversationTurn(user_message=UserMessage(text="A")),  # flagged
@@ -74,16 +38,20 @@ async def test_check_assistant_chat_filters_flagged_turns(
     context = TrackerContext(conversation_turns=turns, current_state=CurrentState())
 
     async def _fake_send_request(request) -> GuardrailResponse:
-        # Requests come from _schedule_guardrails_check, with one message per user text
+        # Requests come from schedule_check, with one message per user text
         user_text = (request.messages[0]["content"] or "").strip()
         return GuardrailResponse(flagged=user_text in {"A", "C"})
 
-    monkeypatch.setattr(llm_service.guardrails, "send_request", _fake_send_request)
+    # Create policy checker and mock the client
+    client = LakeraAIGuardrails(api_key="test_key")
+    policy_checker = GuardrailsPolicyChecker(client)
+    monkeypatch.setattr(client, "send_request", _fake_send_request)
 
-    new_context = await check_assistant_chat_for_policy_violations(
+    new_context = await policy_checker.check_assistant_chat_for_policy_violations(
         tracker_context=context,
         hello_rasa_user_id="user-1",
         hello_rasa_project_id="proj-1",
+        lakera_project_id="lakera-1",
     )
 
     # We should get a new TrackerContext instance with only the safe turn ("B")
@@ -97,19 +65,24 @@ async def test_check_assistant_chat_filters_flagged_turns(
 async def test_check_assistant_chat_returns_same_if_no_flags(
     monkeypatch: pytest.MonkeyPatch,
 ):
+    """Test that the policy checker returns same context if no flags."""
     turns = [
         AssistantConversationTurn(user_message=UserMessage(text="hello")),
         AssistantConversationTurn(user_message=UserMessage(text="world")),
     ]
     ctx = TrackerContext(conversation_turns=turns, current_state=CurrentState())
 
+    # Create policy checker and mock the client
+    client = LakeraAIGuardrails(api_key="test_key")
+    policy_checker = GuardrailsPolicyChecker(client)
     mock_send_request = AsyncMock(return_value=GuardrailResponse(flagged=False))
-    monkeypatch.setattr(llm_service.guardrails, "send_request", mock_send_request)
+    monkeypatch.setattr(client, "send_request", mock_send_request)
 
-    same_ctx = await check_assistant_chat_for_policy_violations(
+    same_ctx = await policy_checker.check_assistant_chat_for_policy_violations(
         tracker_context=ctx,
         hello_rasa_user_id="user-1",
         hello_rasa_project_id="proj-1",
+        lakera_project_id="lakera-1",
     )
     assert same_ctx is ctx
     assert len(same_ctx.conversation_turns) == 2
@@ -119,6 +92,7 @@ async def test_check_assistant_chat_returns_same_if_no_flags(
 async def test_check_copilot_chat_builds_request_and_redacts(
     monkeypatch: pytest.MonkeyPatch,
 ):
+    """Test that the policy checker builds request and redacts flagged messages."""
     history = [
         CopilotChatMessage(
             role=ROLE_COPILOT,
@@ -135,13 +109,17 @@ async def test_check_copilot_chat_builds_request_and_redacts(
         ),
     ]
 
+    # Create policy checker and mock the client
+    client = LakeraAIGuardrails(api_key="test_key")
+    policy_checker = GuardrailsPolicyChecker(client)
     mock = AsyncMock(return_value=GuardrailResponse(flagged=False))
-    monkeypatch.setattr(llm_service.guardrails, "send_request", mock)
+    monkeypatch.setattr(client, "send_request", mock)
 
-    response = await check_copilot_chat_for_policy_violations(
+    response = await policy_checker.check_copilot_chat_for_policy_violations(
         context=CopilotContext(copilot_chat_history=history),
         hello_rasa_user_id="user-1",
         hello_rasa_project_id="proj-1",
+        lakera_project_id="lakera-1",
     )
     assert response is None
 
@@ -158,6 +136,7 @@ async def test_check_copilot_chat_builds_request_and_redacts(
 async def test_check_copilot_chat_returns_violation_response(
     monkeypatch: pytest.MonkeyPatch,
 ):
+    """Test that the policy checker returns violation response when flagged."""
     history = [
         CopilotChatMessage(
             role=ROLE_USER,
@@ -165,13 +144,17 @@ async def test_check_copilot_chat_returns_violation_response(
         )
     ]
 
+    # Create policy checker and mock the client
+    client = LakeraAIGuardrails(api_key="test_key")
+    policy_checker = GuardrailsPolicyChecker(client)
     mock_send_request = AsyncMock(return_value=GuardrailResponse(flagged=True))
-    monkeypatch.setattr(llm_service.guardrails, "send_request", mock_send_request)
+    monkeypatch.setattr(client, "send_request", mock_send_request)
 
-    response = await check_copilot_chat_for_policy_violations(
+    response = await policy_checker.check_copilot_chat_for_policy_violations(
         context=CopilotContext(copilot_chat_history=history),
         hello_rasa_user_id="user-1",
         hello_rasa_project_id="proj-1",
+        lakera_project_id="lakera-1",
     )
 
     assert response is not None
@@ -186,6 +169,7 @@ async def test_check_copilot_chat_returns_violation_response(
 async def test_check_copilot_sanitizes_non_latest_flagged_user_message(
     monkeypatch: pytest.MonkeyPatch,
 ):
+    """Test that the policy checker sanitizes non-latest flagged messages."""
     history = [
         CopilotChatMessage(
             role=ROLE_USER,
@@ -213,13 +197,17 @@ async def test_check_copilot_sanitizes_non_latest_flagged_user_message(
         user_text = (request.messages[0]["content"] or "").strip()
         return GuardrailResponse(flagged=(user_text == "unsafe"))
 
-    monkeypatch.setattr(llm_service.guardrails, "send_request", _fake_send_request)
+    # Create policy checker and mock the client
+    client = LakeraAIGuardrails(api_key="test_key")
+    policy_checker = GuardrailsPolicyChecker(client)
+    monkeypatch.setattr(client, "send_request", _fake_send_request)
 
     ctx = CopilotContext(copilot_chat_history=history)
-    result = await check_copilot_chat_for_policy_violations(
+    result = await policy_checker.check_copilot_chat_for_policy_violations(
         context=ctx,
         hello_rasa_user_id="user-1",
         hello_rasa_project_id="proj-1",
+        lakera_project_id="lakera-1",
     )
 
     # Not blocked because the latest user message ("ok-2") is safe
@@ -237,6 +225,7 @@ async def test_check_copilot_sanitizes_non_latest_flagged_user_message(
 async def test_check_copilot_chat_blocks_when_latest_user_flagged_and_sanitizes(
     monkeypatch: pytest.MonkeyPatch,
 ):
+    """Test that the policy checker blocks when latest user message is flagged."""
     # Latest user message is unsafe
     history = [
         CopilotChatMessage(
@@ -257,13 +246,17 @@ async def test_check_copilot_chat_blocks_when_latest_user_flagged_and_sanitizes(
         user_text = (request.messages[0]["content"] or "").strip()
         return GuardrailResponse(flagged=(user_text == "unsafe"))
 
-    monkeypatch.setattr(llm_service.guardrails, "send_request", _fake_send_request)
+    # Create policy checker and mock the client
+    client = LakeraAIGuardrails(api_key="test_key")
+    policy_checker = GuardrailsPolicyChecker(client)
+    monkeypatch.setattr(client, "send_request", _fake_send_request)
 
     ctx = CopilotContext(copilot_chat_history=history)
-    result = await check_copilot_chat_for_policy_violations(
+    result = await policy_checker.check_copilot_chat_for_policy_violations(
         context=ctx,
         hello_rasa_user_id="user-1",
         hello_rasa_project_id="proj-1",
+        lakera_project_id="lakera-1",
     )
 
     # Blocked with default violation response
@@ -278,9 +271,10 @@ async def test_check_copilot_chat_blocks_when_latest_user_flagged_and_sanitizes(
 
 
 @pytest.mark.asyncio
-async def test__detect_flagged_user_indices_maps_back_to_indices(
+async def test_check_user_messages_for_violations_maps_back_to_indices(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test that the policy checker correctly maps results back to indices."""
     items: List[Tuple[int, str]] = [
         (0, "  A  "),  # flagged (after strip)
         (1, "B"),  # safe
@@ -293,23 +287,27 @@ async def test__detect_flagged_user_indices_maps_back_to_indices(
         text = (request.messages[0]["content"] or "").strip()
         return GuardrailResponse(flagged=text in {"A", "C"})
 
-    monkeypatch.setattr(llm_service.guardrails, "send_request", _fake_send_request)
+    # Create policy checker and mock the client
+    client = LakeraAIGuardrails(api_key="test_key")
+    policy_checker = GuardrailsPolicyChecker(client)
+    monkeypatch.setattr(client, "send_request", _fake_send_request)
 
-    flagged = await _detect_flagged_user_indices(
+    flagged = await policy_checker._check_user_messages_for_violations(
         items,
         hello_rasa_user_id="user-1",
         hello_rasa_project_id="proj-1",
-        lakera_project_id="lakera-1",
         log_prefix="test_guardrails",
+        lakera_project_id="lakera-1",
     )
 
     assert flagged == {0, 3, 4}
 
 
 @pytest.mark.asyncio
-async def test__detect_flagged_user_indices_handles_exceptions(
+async def test_check_user_messages_for_violations_handles_exceptions(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test that the policy checker handles exceptions gracefully."""
     items: List[Tuple[int, str]] = [
         (0, "ERR"),
         (1, "SAFE"),
@@ -321,105 +319,16 @@ async def test__detect_flagged_user_indices_handles_exceptions(
             raise RuntimeError("provider failure")
         return GuardrailResponse(flagged=False)
 
-    monkeypatch.setattr(llm_service.guardrails, "send_request", _fake_send_request)
+    # Create policy checker and mock the client
+    client = LakeraAIGuardrails(api_key="test_key")
+    policy_checker = GuardrailsPolicyChecker(client)
+    monkeypatch.setattr(client, "send_request", _fake_send_request)
 
-    flagged = await _detect_flagged_user_indices(
+    flagged = await policy_checker._check_user_messages_for_violations(
         items,
         hello_rasa_user_id="user-1",
         hello_rasa_project_id="proj-1",
-        lakera_project_id="lakera-1",
         log_prefix="test_guardrails",
+        lakera_project_id="lakera-1",
     )
     assert flagged == set()
-
-
-def test_guardrail_request_key_value_equality_and_hash() -> None:
-    k1 = GuardrailRequestKey(
-        user_text="hi",
-        hello_rasa_user_id="u1",
-        hello_rasa_project_id="p1",
-        lakera_project_id="lk1",
-    )
-    k2 = GuardrailRequestKey(
-        user_text="hi",
-        hello_rasa_user_id="u1",
-        hello_rasa_project_id="p1",
-        lakera_project_id="lk1",
-    )
-
-    # Different instances, equal by value, same hash
-    assert k1 is not k2
-    assert k1 == k2
-    assert hash(k1) == hash(k2)
-
-
-def test_guardrail_request_key_as_dict_key() -> None:
-    k1 = GuardrailRequestKey(
-        user_text="hello",
-        hello_rasa_user_id="u1",
-        hello_rasa_project_id="p1",
-        lakera_project_id="lk1",
-    )
-    k2 = GuardrailRequestKey(
-        user_text="hello",
-        hello_rasa_user_id="u1",
-        hello_rasa_project_id="p1",
-        lakera_project_id="lk1",
-    )
-
-    mapping = {k1: "value"}
-    assert mapping[k2] == "value"
-    assert len(mapping) == 1
-
-
-def test_guardrail_request_key_inequality_by_field() -> None:
-    base = GuardrailRequestKey(
-        user_text="hello",
-        hello_rasa_user_id="u1",
-        hello_rasa_project_id="p1",
-        lakera_project_id="lk1",
-    )
-    diff_text = GuardrailRequestKey(
-        user_text="hello!",
-        hello_rasa_user_id="u1",
-        hello_rasa_project_id="p1",
-        lakera_project_id="lk1",
-    )
-    diff_user = GuardrailRequestKey(
-        user_text="hello",
-        hello_rasa_user_id="u2",
-        hello_rasa_project_id="p1",
-        lakera_project_id="lk1",
-    )
-    diff_project = GuardrailRequestKey(
-        user_text="hello",
-        hello_rasa_user_id="u1",
-        hello_rasa_project_id="p2",
-        lakera_project_id="lk1",
-    )
-    diff_policy = GuardrailRequestKey(
-        user_text="hello",
-        hello_rasa_user_id="u1",
-        hello_rasa_project_id="p1",
-        lakera_project_id="lk2",
-    )
-
-    assert base != diff_text
-    assert base != diff_user
-    assert base != diff_project
-    assert base != diff_policy
-
-    # As dict keys, they should create distinct entries
-    mapping = {base: 1, diff_text: 2, diff_user: 3, diff_project: 4, diff_policy: 5}
-    assert len(mapping) == 5
-
-
-def test_guardrail_request_key_is_frozen_immutable() -> None:
-    key = GuardrailRequestKey(
-        user_text="immutable",
-        hello_rasa_user_id="u1",
-        hello_rasa_project_id="p1",
-        lakera_project_id="lk1",
-    )
-    with pytest.raises(ValidationError):
-        key.user_text = "mutated"

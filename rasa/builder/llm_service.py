@@ -19,7 +19,11 @@ from rasa.builder.copilot.copilot_templated_message_provider import (
     load_copilot_internal_message_templates,
 )
 from rasa.builder.exceptions import LLMGenerationError
-from rasa.builder.guardrails.lakera import LakeraAIGuardrails
+from rasa.builder.guardrails.clients import (
+    GuardrailsClient,
+    LakeraAIGuardrails,
+)
+from rasa.builder.guardrails.policy_checker import GuardrailsPolicyChecker
 from rasa.constants import PACKAGE_NAME
 from rasa.shared.constants import DOMAIN_SCHEMA_FILE, RESPONSES_SCHEMA_FILE
 from rasa.shared.core.flows.yaml_flows_io import FLOWS_SCHEMA_FILE
@@ -37,7 +41,8 @@ class LLMService:
         self._domain_schema: Optional[Dict[str, Any]] = None
         self._flows_schema: Optional[Dict[str, Any]] = None
         self._copilot: Optional[Copilot] = None
-        self._guardrails: Optional[LakeraAIGuardrails] = None
+        self._guardrails: Optional[GuardrailsClient] = None
+        self._guardrails_policy_checker: Optional[GuardrailsPolicyChecker] = None
         self._copilot_response_handler: Optional[CopilotResponseHandler] = None
         self._copilot_internal_message_templates: Optional[Dict[str, str]] = None
 
@@ -77,16 +82,38 @@ class LLMService:
             raise
 
     @property
-    def guardrails(self) -> LakeraAIGuardrails:
+    def guardrails(self) -> Optional[GuardrailsClient]:
         """Get or lazy create guardrails instance."""
-        if self._guardrails is None:
-            self._guardrails = LakeraAIGuardrails()
+        if not config.ENABLE_GUARDRAILS:
+            return None
+        # TODO: Replace with Open Source guardrails implementation once it's ready
         try:
+            if self._guardrails is None:
+                self._guardrails = LakeraAIGuardrails()
             return self._guardrails
         except Exception as e:
             structlogger.error(
                 "llm_service.guardrails.error",
                 event_info="LLM Service: Error getting guardrails instance.",
+                error=str(e),
+            )
+            raise
+
+    @property
+    def guardrails_policy_checker(self) -> Optional[GuardrailsPolicyChecker]:
+        """Get or lazy create guardrails policy checker instance."""
+        try:
+            if self._guardrails_policy_checker is None and self.guardrails is not None:
+                self._guardrails_policy_checker = GuardrailsPolicyChecker(
+                    self.guardrails
+                )
+            return self._guardrails_policy_checker
+        except Exception as e:
+            structlogger.error(
+                "llm_service.guardrails_policy_checker.error",
+                event_info=(
+                    "LLM Service: Error getting guardrails policy checker instance."
+                ),
                 error=str(e),
             )
             raise

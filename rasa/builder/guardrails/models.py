@@ -19,6 +19,29 @@ class GuardrailType(Enum):
     OTHER = "other"
 
 
+class GuardrailRequestKey(BaseModel):
+    user_text: str
+    hello_rasa_user_id: str = ""
+    hello_rasa_project_id: str = ""
+    # Generic metadata field for provider-specific configurations
+    metadata: Dict[str, str] = Field(default_factory=dict)
+
+    # hashable by value
+    model_config = ConfigDict(frozen=True)
+
+    def __hash__(self) -> int:
+        """Custom hash implementation that handles the metadata dictionary."""
+        # Convert metadata dict to a sorted tuple of items for consistent hashing
+        metadata_tuple = tuple(sorted(self.metadata.items())) if self.metadata else ()
+        hash_tuple = (
+            self.user_text,
+            self.hello_rasa_user_id,
+            self.hello_rasa_project_id,
+            tuple(sorted(metadata_tuple)),
+        )
+        return hash(hash_tuple)
+
+
 class GuardrailRequest(BaseModel, ABC):
     """Request for guardrails check."""
 
@@ -72,6 +95,9 @@ class LakeraGuardrailRequest(GuardrailRequest):
         ),
     )
 
+    # Make the model hashable by value for use as cache keys in @lru_cache decorator.
+    model_config = ConfigDict(frozen=True)
+
     def to_json_payload(self) -> Dict[str, Any]:
         """Convert the request to a JSON payload to be sent to the Lakera endpoint."""
         metadata = self.metadata or {}
@@ -90,6 +116,25 @@ class LakeraGuardrailRequest(GuardrailRequest):
             json_payload["breakdown"] = self.breakdown
 
         return json_payload
+
+    def __hash__(self) -> int:
+        """Custom hash implementation that handles the messages list."""
+        # Convert messages list to a tuple for consistent hashing
+        if self.messages:
+            messages_tuple = tuple(tuple(msg.items()) for msg in self.messages)
+        else:
+            messages_tuple = ()
+
+        hash_tuple = (
+            self.hello_rasa_user_id,
+            self.hello_rasa_project_id,
+            self.lakera_project_id,
+            self.payload,
+            self.breakdown,
+            messages_tuple,
+            tuple(sorted(self.metadata.items())) if self.metadata else (),
+        )
+        return hash(hash_tuple)
 
 
 class GuardrailDetection(BaseModel):
@@ -187,16 +232,6 @@ class LakeraGuardrailResponse(GuardrailResponse):
             response.detections = detections
 
         return response
-
-
-class GuardrailRequestKey(BaseModel):
-    user_text: str
-    hello_rasa_user_id: str = ""
-    hello_rasa_project_id: str = ""
-    lakera_project_id: str
-
-    # hashable by value
-    model_config = ConfigDict(frozen=True)
 
 
 class ScopeState(BaseModel):

@@ -3,9 +3,12 @@
 from typing import Any, Dict, List
 
 import pytest
+from pydantic import ValidationError
 
+from rasa.builder.guardrails.constants import LAKERA_PROJECT_ID_KEY
 from rasa.builder.guardrails.models import (
     GuardrailDetection,
+    GuardrailRequestKey,
     GuardrailType,
     LakeraGuardrailResponse,
 )
@@ -267,3 +270,93 @@ class TestLakeraGuardrailResponse:
 
         actual_types = [detection.type for detection in response.detections]
         assert actual_types == expected_types
+
+
+class TestGuardrailRequestKey:
+    def test_guardrail_request_key_value_equality_and_hash(self) -> None:
+        k1 = GuardrailRequestKey(
+            user_text="hi",
+            hello_rasa_user_id="u1",
+            hello_rasa_project_id="p1",
+            metadata={LAKERA_PROJECT_ID_KEY: "lk1"},
+        )
+        k2 = GuardrailRequestKey(
+            user_text="hi",
+            hello_rasa_user_id="u1",
+            hello_rasa_project_id="p1",
+            metadata={LAKERA_PROJECT_ID_KEY: "lk1"},
+        )
+
+        # Different instances, equal by value, same hash
+        assert k1 is not k2
+        assert k1 == k2
+        assert hash(k1) == hash(k2)
+
+    def test_guardrail_request_key_as_dict_key(self) -> None:
+        k1 = GuardrailRequestKey(
+            user_text="hello",
+            hello_rasa_user_id="u1",
+            hello_rasa_project_id="p1",
+            metadata={LAKERA_PROJECT_ID_KEY: "lk1"},
+        )
+        k2 = GuardrailRequestKey(
+            user_text="hello",
+            hello_rasa_user_id="u1",
+            hello_rasa_project_id="p1",
+            metadata={LAKERA_PROJECT_ID_KEY: "lk1"},
+        )
+
+        mapping = {k1: "value"}
+        assert mapping[k2] == "value"
+        assert len(mapping) == 1
+
+    def test_guardrail_request_key_inequality_by_field(self) -> None:
+        base = GuardrailRequestKey(
+            user_text="hello",
+            hello_rasa_user_id="u1",
+            hello_rasa_project_id="p1",
+            metadata={LAKERA_PROJECT_ID_KEY: "lk1"},
+        )
+        diff_text = GuardrailRequestKey(
+            user_text="hello!",
+            hello_rasa_user_id="u1",
+            hello_rasa_project_id="p1",
+            metadata={LAKERA_PROJECT_ID_KEY: "lk1"},
+        )
+        diff_user = GuardrailRequestKey(
+            user_text="hello",
+            hello_rasa_user_id="u2",
+            hello_rasa_project_id="p1",
+            metadata={LAKERA_PROJECT_ID_KEY: "lk1"},
+        )
+        diff_project = GuardrailRequestKey(
+            user_text="hello",
+            hello_rasa_user_id="u1",
+            hello_rasa_project_id="p2",
+            metadata={LAKERA_PROJECT_ID_KEY: "lk1"},
+        )
+        diff_policy = GuardrailRequestKey(
+            user_text="hello",
+            hello_rasa_user_id="u1",
+            hello_rasa_project_id="p1",
+            metadata={LAKERA_PROJECT_ID_KEY: "lk2"},
+        )
+
+        assert base != diff_text
+        assert base != diff_user
+        assert base != diff_project
+        assert base != diff_policy
+
+        # As dict keys, they should create distinct entries
+        mapping = {base: 1, diff_text: 2, diff_user: 3, diff_project: 4, diff_policy: 5}
+        assert len(mapping) == 5
+
+    def test_guardrail_request_key_is_frozen_immutable(self) -> None:
+        key = GuardrailRequestKey(
+            user_text="immutable",
+            hello_rasa_user_id="u1",
+            hello_rasa_project_id="p1",
+            metadata={LAKERA_PROJECT_ID_KEY: "lk1"},
+        )
+        with pytest.raises(ValidationError):
+            key.user_text = "mutated"

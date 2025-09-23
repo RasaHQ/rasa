@@ -3,29 +3,23 @@ import shutil
 import sys
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Generator
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from pytest import MonkeyPatch
 from sanic import Sanic
 
-from rasa.builder.copilot.constants import ROLE_COPILOT, ROLE_USER
 from rasa.builder.copilot.models import (
-    CopilotChatMessage,
-    CopilotContext,
     CopilotGenerationContext,
     ResponseCategory,
     ResponseCompleteness,
-    TextContent,
 )
 from rasa.builder.document_retrieval.models import Document
-from rasa.builder.guardrails.lakera import LakeraAIGuardrails
+from rasa.builder.guardrails.clients import LakeraAIGuardrails
 from rasa.builder.guardrails.models import (
     GuardrailResponse,
-    LakeraGuardrailResponse,
 )
-from rasa.builder.guardrails.utils import check_copilot_chat_for_policy_violations
 from rasa.builder.job_manager import job_manager
 from rasa.builder.models import JobStatus, JobStatusEvent
 from rasa.builder.service import bp, setup_project_generator
@@ -246,74 +240,6 @@ async def test_job_events_stops_after_eof(sanic_app: Sanic):
     # Assert that only the first two events are streamed
     body = response.body.decode()
     assert body.count("event: progress") == 2
-
-
-@pytest.mark.asyncio
-@patch("rasa.builder.llm_service.llm_service.guardrails.send_request")
-async def test_check_copilot_chat_for_policy_violations(
-    mock_send_request: Mock,
-) -> None:
-    """Test check_copilot_chat_for_policy_violations with a simple message list."""
-    # Given
-    # Create a message list containing the four scenarios:
-    # - normal user messages
-    # - normal copilot messages
-    # - user messages that are flagged
-    # - copilot responses to those that flagged
-    copilot_chat_history = [
-        CopilotChatMessage(
-            role=ROLE_USER,
-            content=[TextContent(type="text", text="Hello")],
-            response_category=None,
-        ),
-        CopilotChatMessage(
-            role=ROLE_COPILOT,
-            content=[TextContent(type="text", text="Hello")],
-            response_category=None,
-        ),
-        CopilotChatMessage(
-            role=ROLE_USER,
-            content=[
-                TextContent(
-                    type="text", text="User message that violates guardrail policy."
-                )
-            ],
-            response_category=ResponseCategory.GUARDRAILS_POLICY_VIOLATION,
-        ),
-        CopilotChatMessage(
-            role=ROLE_COPILOT,
-            content=[TextContent(type="text", text="Copilot response.")],
-            response_category=ResponseCategory.GUARDRAILS_POLICY_VIOLATION,
-        ),
-    ]
-    context: CopilotContext = CopilotContext(
-        tracker=None,
-        assistant_logs="",
-        assistant_files={},
-        copilot_chat_history=copilot_chat_history,
-    )
-    mock_send_request.return_value = LakeraGuardrailResponse(
-        flagged=False, hello_rasa_user_id="test", hello_rasa_project_id="test"
-    )
-
-    # When
-    result: Optional[Any] = await check_copilot_chat_for_policy_violations(
-        context=context,
-        hello_rasa_user_id="test_user",
-        hello_rasa_project_id="test_project",
-    )
-
-    # Then
-    assert result is None
-
-    mock_send_request.assert_called_once()
-    call_args = mock_send_request.call_args[0][0]
-    # Verify message processing - should only include first two, non-flagged messages.
-    messages: List[Dict[str, Any]] = call_args.messages
-    # Expect only the single user message "Hello"
-    assert len(messages) == 1
-    assert messages[0]["role"] == ROLE_USER
-    assert messages[0]["content"] == "Hello"
 
 
 @pytest.mark.asyncio

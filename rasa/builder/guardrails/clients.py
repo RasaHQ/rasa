@@ -1,9 +1,11 @@
-"""Lakera AI guardrails provider implementation."""
+"""Guardrails client implementations."""
 
 import asyncio
 import os
 import time
+from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
+from functools import lru_cache
 from typing import Any, AsyncGenerator, Dict, Optional
 
 import aiohttp
@@ -17,6 +19,7 @@ from rasa.builder.guardrails.constants import (
 )
 from rasa.builder.guardrails.exceptions import GuardrailsError
 from rasa.builder.guardrails.models import (
+    GuardrailRequest,
     GuardrailResponse,
     LakeraGuardrailRequest,
     LakeraGuardrailResponse,
@@ -25,7 +28,52 @@ from rasa.builder.guardrails.models import (
 structlogger = structlog.get_logger()
 
 
-class LakeraAIGuardrails:
+class GuardrailsClient(ABC):
+    """Abstract base class for guardrails clients."""
+
+    @property
+    @abstractmethod
+    def guard_endpoint(self) -> str:
+        """Get the guard endpoint for the guardrails API."""
+        pass
+
+    @abstractmethod
+    async def send_request(self, request: GuardrailRequest) -> GuardrailResponse:
+        """Send a request to the guardrails provider.
+
+        Args:
+            request: The guardrail request to send to the provider.
+
+        Returns:
+            GuardrailResponse with the results of the check.
+
+        Raises:
+            GuardrailsError: If the request fails for any reason.
+        """
+        pass
+
+    @lru_cache(maxsize=512)
+    def schedule_check(
+        self,
+        request: GuardrailRequest,
+    ) -> "asyncio.Task[GuardrailResponse]":
+        """Return a cached asyncio.Task that resolves to guardrail response.
+
+        Args:
+            request: The guardrail request to send to the provider.
+
+        Returns:
+            An asyncio Task that resolves to a GuardrailResponse.
+        """
+        structlogger.debug(
+            "guardrails.schedule_check.cache_miss",
+            request=request.model_dump(),
+        )
+        loop = asyncio.get_running_loop()
+        return loop.create_task(self.send_request(request))
+
+
+class LakeraAIGuardrails(GuardrailsClient):
     """Guardrails provider using Lakera AI."""
 
     def __init__(
@@ -36,8 +84,6 @@ class LakeraAIGuardrails:
         """Initialize Lakera guardrails provider.
 
         Args:
-            severity_threshold: The minimum severity level for the guardrail to flag
-                the user request as unsafe.
             api_key: Lakera AI API key.
             base_url: Optional base URL for the API. If not provided, the default
                 Lakera API URL (https://api.lakera.ai/v2) will be used.
@@ -100,7 +146,7 @@ class LakeraAIGuardrails:
             )
         return {"Authorization": f"Bearer {self._api_key}"}
 
-    async def send_request(self, request: LakeraGuardrailRequest) -> GuardrailResponse:
+    async def send_request(self, request: GuardrailRequest) -> GuardrailResponse:
         """Send a request to the Lakera API.
 
         Args:
@@ -113,6 +159,10 @@ class LakeraAIGuardrails:
             GuardrailsError: If the request times out or returns a non-200 status code.
             Exception: If the request fails for any other reason.
         """
+        if not isinstance(request, LakeraGuardrailRequest):
+            raise GuardrailsError(
+                "LakeraAIGuardrails only supports LakeraGuardrailRequest"
+            )
         start_time = time.time()
         try:
             async with self._get_session() as session:

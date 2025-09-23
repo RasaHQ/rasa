@@ -9,9 +9,10 @@ from rasa.builder.copilot.models import (
     ResponseCategory,
     TextContent,
 )
+from rasa.builder.guardrails.clients import LakeraAIGuardrails
 from rasa.builder.guardrails.models import GuardrailType
+from rasa.builder.guardrails.policy_checker import GuardrailsPolicyChecker
 from rasa.builder.guardrails.utils import (
-    _annotate_flagged_user_messages,
     map_lakera_detector_type_to_guardrail_type,
 )
 
@@ -50,6 +51,7 @@ class TestMapLakeraDetectorTypeToGuardrailType:
     def test_annotate_flagged_user_messages_marks_user_indices_and_ignores_out_of_range(
         self,
     ) -> None:
+        # Given
         history: List[CopilotChatMessage] = [
             create_copilot_chat_message("user", "hello"),
             create_copilot_chat_message("copilot", "welcome"),
@@ -64,8 +66,14 @@ class TestMapLakeraDetectorTypeToGuardrailType:
             10,  # Index 10 is out of range and should be ignored
         }
 
-        _annotate_flagged_user_messages(history, flagged)
+        # Create a policy checker instance to test the method
+        client = LakeraAIGuardrails(api_key="test_key")
+        policy_checker = GuardrailsPolicyChecker(client)
 
+        # When
+        policy_checker._annotate_flagged_user_messages(history, flagged)
+
+        # Then
         assert history[0].response_category is None
         assert history[1].response_category is None
         assert (
@@ -75,19 +83,27 @@ class TestMapLakeraDetectorTypeToGuardrailType:
         assert history[4].response_category is None
 
     def test_annotate_flagged_user_messages_idempotent_and_noop_on_empty(self) -> None:
+        # Given
         history: List[CopilotChatMessage] = [
             create_copilot_chat_message("user", "hello"),
             create_copilot_chat_message("user", "steal money"),
         ]
+        client = LakeraAIGuardrails(api_key="test_key")
+        policy_checker = GuardrailsPolicyChecker(client)
 
-        _annotate_flagged_user_messages(history, {1})
+        # When
+        policy_checker._annotate_flagged_user_messages(history, {1})
+
+        # Then
         assert history[0].response_category is None
         assert (
             history[1].response_category == ResponseCategory.GUARDRAILS_POLICY_VIOLATION
         )
 
-        # No-op: empty flagged set should not change anything
-        _annotate_flagged_user_messages(history, set())
+        # When: No-op on empty flagged set should not change anything
+        policy_checker._annotate_flagged_user_messages(history, set())
+
+        # Then
         assert history[0].response_category is None
         assert (
             history[1].response_category == ResponseCategory.GUARDRAILS_POLICY_VIOLATION
