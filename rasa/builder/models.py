@@ -206,6 +206,7 @@ class TrainingInput(BaseModel):
 
     importer: TrainingDataImporter = Field(..., description="Training data importer")
     endpoints_file: Path = Field(..., description="Path to the endpoints file")
+    config_file: Path = Field(..., description="Path to the config file")
 
 
 class AgentStatus(str, Enum):

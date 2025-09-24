@@ -192,11 +192,16 @@ class ProjectGenerator:
         """Get the endpoints file."""
         return self.project_folder / "endpoints.yml"
 
+    def _get_config_file(self) -> Path:
+        """Get the config file."""
+        return self.project_folder / "config.yml"
+
     def get_training_input(self) -> TrainingInput:
         """Get the training input."""
         return TrainingInput(
             importer=self._create_importer(),
             endpoints_file=self._get_endpoints_file(),
+            config_file=self._get_config_file(),
         )
 
     def _create_importer(self) -> TrainingDataImporter:
@@ -208,7 +213,7 @@ class ProjectGenerator:
                 domain_path = self.project_folder / "domain"
 
             return TrainingDataImporter.load_from_config(
-                config_path=str(self.project_folder / "config.yml"),
+                config_path=str(self._get_config_file()),
                 domain_path=str(domain_path),
                 training_data_paths=[str(self.project_folder / "data")],
                 args={},

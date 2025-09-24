@@ -14,6 +14,7 @@ from rasa.core.channels.studio_chat import StudioChatInput
 from rasa.core.config.configuration import Configuration
 from rasa.model import get_latest_model
 from rasa.model_training import TrainingResult, train
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
 from rasa.shared.importers.importer import TrainingDataImporter
 
 structlogger = structlog.get_logger()
@@ -43,10 +44,12 @@ async def train_and_load_agent(input: TrainingInput) -> Agent:
     """
     try:
         # Train the model
-        training_result = await _train_model(input.importer, input.endpoints_file)
+        training_result = await _train_model(
+            input.importer, input.endpoints_file, input.config_file
+        )
 
         # Load the agent
-        agent_instance = await _load_agent(training_result.model)
+        agent_instance = await _load_agent(training_result.model, input.endpoints_file)
 
         # Verify agent is ready
         if not agent_instance.is_ready():
@@ -93,7 +96,9 @@ async def try_load_existing_agent(project_folder: str) -> Optional[Agent]:
         )
 
         # Get available endpoints for agent loading
-        available_endpoints = Configuration.get_instance().endpoints
+        available_endpoints = Configuration.initialise_endpoints(
+            endpoints_path=Path(project_folder) / DEFAULT_ENDPOINTS_PATH
+        ).endpoints
 
         # Load the agent
         agent = await load_agent(
@@ -122,7 +127,7 @@ async def try_load_existing_agent(project_folder: str) -> Optional[Agent]:
 
 
 async def _train_model(
-    importer: TrainingDataImporter, endpoints_file: Path
+    importer: TrainingDataImporter, endpoints_file: Path, config_file: Path
 ) -> TrainingResult:
     """Train the Rasa model."""
     try:
@@ -130,7 +135,7 @@ async def _train_model(
 
         training_result = await train(
             domain="",
-            config="",
+            config=str(config_file),
             endpoints=str(endpoints_file),
             training_files=None,
             file_importer=importer,
@@ -147,12 +152,14 @@ async def _train_model(
         raise TrainingError(f"Model training failed: {e}")
 
 
-async def _load_agent(model_path: str) -> Agent:
+async def _load_agent(model_path: str, endpoints_file: Path) -> Agent:
     """Load the trained agent."""
     try:
         structlogger.info("training.loading_agent", model_path=model_path)
 
-        available_endpoints = Configuration.get_instance().endpoints
+        available_endpoints = Configuration.initialise_endpoints(
+            endpoints_path=endpoints_file
+        ).endpoints
         if available_endpoints is None:
             raise AgentLoadError("No endpoints available for agent loading")
 
