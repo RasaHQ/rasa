@@ -417,6 +417,9 @@ jobs:
           ref: ${{ needs.release-artifacts-docker.outputs.tag_version }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Free up disk-space
+        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b
+
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env
         with:
