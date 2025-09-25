@@ -231,7 +231,7 @@ def get_rasa_sdk_version() -> Text:
         toml_data = toml.load(f)
 
     try:
-        sdk_version = toml_data["tool"]["poetry"]["dependencies"]["rasa-sdk"]
+        sdk_version = toml_data["tool"]["poetry"]["dependencies"]["rasa-sdk"][0]
         if not isinstance(sdk_version, str):
             sdk_version = sdk_version["version"]
         return sdk_version.strip("^ ~")

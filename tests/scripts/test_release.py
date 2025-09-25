@@ -219,7 +219,7 @@ def test_read_rasa_sdk_version():
     # Create test pyproject.toml
     test_file = Path("pyproject.toml")
     toml_content = """
-[tool.poetry.dependencies.rasa-sdk]
+[[tool.poetry.dependencies.rasa-sdk]]
 version = "3.11.0"
 allow-prereleases = true
     """

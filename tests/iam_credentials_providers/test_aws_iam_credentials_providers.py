@@ -284,7 +284,11 @@ def test_aws_elasticache_redis_credentials_provider_get_temp_credentials(
     captured = capsys.readouterr()
     assert (
         "rasa.core.aws_elasticache_redis_iam_credentials_provider."
-        "generated_credentials event_info='Successfully generated "
+        "generated_credentials"
+    ) in captured.out
+
+    assert (
+        "event_info='Successfully generated "
         "temporary credentials for AWS ElastiCache Redis.'"
     ) in captured.out
 
