@@ -6,7 +6,10 @@ from litellm import ModelResponse
 from litellm.utils import Usage
 from pytest import MonkeyPatch
 
-from rasa.shared.exceptions import ProviderClientAPIException
+from rasa.shared.exceptions import (
+    LLMToolResponseDecodeError,
+    ProviderClientAPIException,
+)
 from rasa.shared.providers.llm._base_litellm_client import _BaseLiteLLMClient
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.providers.llm.llm_response import LLMResponse
@@ -258,3 +261,194 @@ class TestBaseLLMClient:
         )
         assert isinstance(response, LLMResponse)
         assert response.choices == ["Hello from LiteLLM!"]
+
+    def test_completion_with_kwargs(
+        self, client: TestLiteLLMClient, mock_completion: Mock
+    ):
+        # Given
+        test_prompt = "Hello, this is a test prompt."
+
+        # When
+        response = client.completion(test_prompt, tools=["tool1", "tool2"])
+
+        # Then
+        expected_args = {
+            "messages": [{"content": test_prompt, "role": "user"}],
+            "model": client._litellm_model_name,
+            "drop_params": False,
+            "test_parameter": "test_value",
+            "tools": ["tool1", "tool2"],
+        }
+        mock_completion.assert_called_once_with(**expected_args)
+        assert isinstance(response, LLMResponse)
+        assert response.choices == ["Hello from LiteLLM!"]
+
+    async def test_acompletion_with_kwargs(
+        self, client: TestLiteLLMClient, mock_acompletion: Mock
+    ):
+        # Given
+        test_prompt = "Hello, this is a test prompt."
+
+        # When
+        response = await client.acompletion(test_prompt, tools=["tool1", "tool2"])
+
+        # Then
+        expected_args = {
+            "messages": [{"content": test_prompt, "role": "user"}],
+            "model": client._litellm_model_name,
+            "drop_params": False,
+            "test_parameter": "test_value",
+            "tools": ["tool1", "tool2"],
+        }
+        mock_acompletion.assert_called_once_with(**expected_args)
+        assert isinstance(response, LLMResponse)
+        assert response.choices == ["Hello from LiteLLM!"]
+
+    @pytest.fixture
+    def litellm_model_response_with_tool_calls(self) -> ModelResponse:
+        """Create a ModelResponse with tool calls."""
+        tool_call = {
+            "id": "call_litellm_123",
+            "function": {
+                "name": "test_function",
+                "arguments": '{"param1": "value1", "param2": 42, "nested": {"key": "value"}}',  # noqa: E501
+            },
+            "type": "function",
+        }
+
+        return ModelResponse(
+            id="id123",
+            choices=[
+                {
+                    "message": {
+                        "content": "Hello from LiteLLM!",
+                        "role": "assistant",
+                        "tool_calls": [tool_call],
+                    }
+                }
+            ],
+            created=1234567890,
+            model="test_model",
+            object="text_completion",
+            usage={"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20},
+        )
+
+    @pytest.fixture
+    def mock_tool_acompletion(
+        self,
+        monkeypatch: MonkeyPatch,
+        litellm_model_response_with_tool_calls: ModelResponse,
+    ) -> AsyncMock:
+        # Create a mock object
+        mock = AsyncMock(return_value=litellm_model_response_with_tool_calls)
+        # Replace the 'acompletion' function in its module with the mock
+        monkeypatch.setattr(
+            "rasa.shared.providers.llm._base_litellm_client.acompletion", mock
+        )
+        return mock
+
+    async def test_acompletion_with_tool_calls_valid(
+        self, client: TestLiteLLMClient, mock_tool_acompletion: Mock
+    ):
+        """Test acompletion with tool calls using the mock_tool_acompletion fixture."""
+        # Given
+        test_prompt = "Hello, this is a test prompt with tools."
+
+        # When
+        response = await client.acompletion(test_prompt, tools=["test_tool"])
+
+        # Then
+        expected_args = {
+            "messages": [{"content": test_prompt, "role": "user"}],
+            "model": client._litellm_model_name,
+            "drop_params": False,
+            "test_parameter": "test_value",
+            "tools": ["test_tool"],
+        }
+        mock_tool_acompletion.assert_called_once_with(**expected_args)
+        assert isinstance(response, LLMResponse)
+        assert response.choices == ["Hello from LiteLLM!"]
+        assert response.tool_calls is not None
+        assert len(response.tool_calls) == 1
+        assert response.tool_calls[0].id == "call_litellm_123"
+        assert response.tool_calls[0].tool_name == "test_function"
+        assert response.tool_calls[0].tool_args == {
+            "param1": "value1",
+            "param2": 42,
+            "nested": {"key": "value"},
+        }
+        assert response.tool_calls[0].type == "function"
+
+    @pytest.fixture
+    def litellm_model_response_with_malformed_tool_calls(self) -> ModelResponse:
+        """Create a ModelResponse with malformed tool calls."""
+        tool_call = {
+            "id": "call_litellm_malformed",
+            "function": {
+                "name": "malformed_function",
+                "arguments": "not json at all",  # Not JSON at all
+            },
+            "type": "function",
+        }
+
+        return ModelResponse(
+            id="id123",
+            choices=[
+                {
+                    "message": {
+                        "content": "Hello from LiteLLM!",
+                        "role": "assistant",
+                        "tool_calls": [tool_call],
+                    }
+                }
+            ],
+            created=1234567890,
+            model="test_model",
+            object="text_completion",
+            usage={"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20},
+        )
+
+    @pytest.fixture
+    def mock_malformed_tool_acompletion(
+        self,
+        monkeypatch: MonkeyPatch,
+        litellm_model_response_with_malformed_tool_calls: ModelResponse,
+    ) -> AsyncMock:
+        # Create a mock object
+        mock = AsyncMock(return_value=litellm_model_response_with_malformed_tool_calls)
+        # Replace the 'acompletion' function in its module with the mock
+        monkeypatch.setattr(
+            "rasa.shared.providers.llm._base_litellm_client.acompletion", mock
+        )
+        return mock
+
+    async def test_acompletion_with_malformed_tool_calls(
+        self, client: TestLiteLLMClient, mock_malformed_tool_acompletion: AsyncMock
+    ):
+        """Test acompletion with malformed tool calls raises an exception."""
+        # Given
+        test_prompt = "Hello, this is a test prompt with malformed tools."
+
+        # When/Then
+        with pytest.raises(ProviderClientAPIException) as exc_info:
+            await client.acompletion(test_prompt, tools=["malformed_tool"])
+
+        mock_malformed_tool_acompletion.assert_called_once_with(
+            messages=[{"content": test_prompt, "role": "user"}],
+            model=client._litellm_model_name,
+            drop_params=False,
+            test_parameter="test_value",
+            tools=["malformed_tool"],
+        )
+
+        # Verify the error message contains the expected information
+        assert "Invalid arguments for tool call - `malformed_function`" in str(
+            exc_info.value
+        )
+        assert "`not json at all`" in str(exc_info.value)
+        assert isinstance(exc_info.value.original_exception, LLMToolResponseDecodeError)
+
+        # Verify the original exception details
+        llm_tool_response_decode_error = exc_info.value.original_exception
+        assert hasattr(llm_tool_response_decode_error.original_exception, "msg")
+        assert hasattr(llm_tool_response_decode_error.original_exception, "pos")

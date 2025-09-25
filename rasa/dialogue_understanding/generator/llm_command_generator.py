@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Text, Union
 
 import structlog
-from deprecated import deprecated  # type: ignore[import]
+from deprecated import deprecated  # type: ignore[import-untyped]
 
 from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator import (  # noqa: E501
     SingleStepLLMCommandGenerator,

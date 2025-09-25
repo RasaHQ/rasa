@@ -123,9 +123,8 @@ jobs:
 
       - name: Install Dependencies (Linux) 📦
         if: needs.changes.outputs.backend == 'true'
-        run: make install
+        run: make install-full
 
       - name: Run Bandit 🔪
         if: needs.changes.outputs.backend == 'true'
         run: make lint-security
-

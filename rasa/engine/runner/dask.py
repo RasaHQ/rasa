@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from typing import Any, Dict, List, Optional, Text
 
 import dask.core
 import dask.local
+import structlog
 
 from rasa.engine.exceptions import GraphRunError
 from rasa.engine.graph import ExecutionContext, GraphNode, GraphNodeHook, GraphSchema
 from rasa.engine.runner.interface import GraphRunner
 from rasa.engine.storage.storage import ModelStorage
 
-logger = logging.getLogger(__name__)
+structlogger = structlog.get_logger()
 
 
 class DaskGraphRunner(GraphRunner):
@@ -94,9 +94,12 @@ class DaskGraphRunner(GraphRunner):
         if inputs:
             self._add_inputs_to_graph(inputs, run_graph)
 
-        logger.debug(
-            f"Running graph with inputs: {inputs}, targets: {targets} "
-            f"and {self._execution_context}."
+        structlogger.debug(
+            "rasa.engine.runner.dask.run",
+            event_info="Running graph with inputs, targets and execution context.",
+            inputs=inputs,
+            targets=targets,
+            execution_context=self._execution_context,
         )
 
         try:

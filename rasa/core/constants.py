@@ -31,6 +31,10 @@ BEARER_TOKEN_PREFIX = "Bearer "
 # The lowest priority is intended to be used by machine learning policies.
 DEFAULT_POLICY_PRIORITY = 1
 
+DEFAULT_SUB_AGENTS = "sub_agents"
+
+MCP_SERVERS_KEY = "mcp_servers"
+
 # The priority of intent-prediction policies.
 # This should be below all rule based policies but higher than ML
 # based policies. This enables a loop inside ensemble where if none

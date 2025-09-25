@@ -1,8 +1,9 @@
 import logging
 import os
+import re
 from pathlib import Path
 from socket import SOCK_DGRAM, SOCK_STREAM
-from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Text, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Text, Tuple, Union
 
 import numpy as np
 import structlog
@@ -338,3 +339,22 @@ def should_force_slot_filling(
             return True, slot_name
 
     return False, None
+
+
+def get_slot_names_from_exit_conditions(exit_conditions: List[str]) -> List[str]:
+    """Extract slot names from exit conditions.
+
+    Args:
+        exit_conditions: The exit conditions to extract slot names from.
+
+    Returns:
+        A list of slot names.
+    """
+    # Find all unique names matching "slots.<name>"
+    return list(
+        {
+            name
+            for condition in exit_conditions
+            for name in re.findall(r"\bslots\.(\w+)", condition)
+        }
+    )

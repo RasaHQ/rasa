@@ -9,7 +9,7 @@ on:
 
 
 env:
-  DEFAULT_PYTHON_VERSION: '3.9'
+  DEFAULT_PYTHON_VERSION: '3.10'
   RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
 
 jobs:

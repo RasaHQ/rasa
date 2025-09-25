@@ -14,7 +14,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.constants import INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
@@ -362,12 +362,12 @@ def _get_previous_event(
         previous_event_type = "bot utterance"
         previous_event_name = state[PREVIOUS_ACTION]["action_text"]
     elif USER in state.keys():
-        if "intent" in state[USER]:
+        if INTENT in state[USER]:
             previous_event_type = "intent"
-            previous_event_name = state[USER]["intent"]
-        elif "text" in state[USER]:
+            previous_event_name = state[USER][INTENT]
+        elif TEXT in state[USER]:
             previous_event_type = "user utterance"
-            previous_event_name = state[USER]["text"]
+            previous_event_name = state[USER][TEXT]
 
     if not isinstance(previous_event_name, (str, type(None))):
         # While the Substate type doesn't restrict the value of `action_text` /

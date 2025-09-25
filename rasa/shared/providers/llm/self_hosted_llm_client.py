@@ -237,7 +237,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
             raise ProviderClientAPIException(e)
 
     async def acompletion(
-        self, messages: Union[List[dict], List[str], str]
+        self, messages: Union[List[dict], List[str], str], **kwargs: Any
     ) -> LLMResponse:
         """Asynchronous completion of the model with the given messages.
 
@@ -255,15 +255,18 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
                 - a list of messages. Each message is a string and will be formatted
                     as a user message.
                 - a single message as a string which will be formatted as user message.
+            **kwargs: Additional parameters to pass to the completion call.
 
         Returns:
             The completion response.
         """
         if self._use_chat_completions_endpoint:
-            return await super().acompletion(messages)
+            return await super().acompletion(messages, **kwargs)
         return await self._atext_completion(messages)
 
-    def completion(self, messages: Union[List[dict], List[str], str]) -> LLMResponse:
+    def completion(
+        self, messages: Union[List[dict], List[str], str], **kwargs: Any
+    ) -> LLMResponse:
         """Completion of the model with the given messages.
 
         Method overrides the base class method to call the appropriate
@@ -273,12 +276,13 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
 
         Args:
             messages: The messages to be used for completion.
+            **kwargs: Additional parameters to pass to the completion call.
 
         Returns:
             The completion response.
         """
         if self._use_chat_completions_endpoint:
-            return super().completion(messages)
+            return super().completion(messages, **kwargs)
         return self._text_completion(messages)
 
     @staticmethod

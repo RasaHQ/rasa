@@ -14,6 +14,13 @@ from pytest import LogCaptureFixture, MonkeyPatch
 import rasa.utils.common
 import tests.conftest
 from rasa.core.agent import Agent
+
+# Skip all tests in this file if TensorFlow is not available
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if not TENSORFLOW_AVAILABLE:
+    pytest.skip("TensorFlow is not available", allow_module_level=True)
+
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.shared.exceptions import RasaException
 from rasa.utils.common import (

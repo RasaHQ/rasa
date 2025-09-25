@@ -58,6 +58,7 @@ from rasa.shared.nlu.training_data.features import (
     save_features,
 )
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils.io import raise_deprecation_warning
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.constants import (
@@ -80,7 +81,6 @@ from rasa.utils.tensorflow.constants import (
     EMBEDDING_DIMENSION,
     ENCODING_DIMENSION,
     ENTITY_RECOGNITION,
-    EPOCH_OVERRIDE,
     EPOCHS,
     EVAL_NUM_EPOCHS,
     EVAL_NUM_EXAMPLES,
@@ -363,6 +363,9 @@ class TEDPolicy(Policy):
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
     ) -> None:
         """Declares instance variables with default values."""
+        raise_deprecation_warning(
+            "TEDPolicy is deprecated and will be removed in a future version."
+        )
         super().__init__(
             config, model_storage, resource, execution_context, featurizer=featurizer
         )
@@ -668,6 +671,7 @@ class TEDPolicy(Policy):
             self.model.compile(
                 optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
             )
+
         (
             data_generator,
             validation_data_generator,
@@ -943,14 +947,16 @@ class TEDPolicy(Policy):
 
         with self._model_storage.write_to(self._resource) as model_path:
             model_filename = self._metadata_filename()
-            tf_model_file = model_path / f"{model_filename}.tf_model"
+            tf_model_file = model_path / f"{model_filename}.weights.h5"
 
             rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
             self.featurizer.persist(model_path)
 
             if self.config[CHECKPOINT_MODEL] and self.tmp_checkpoint_dir:
-                self.model.load_weights(self.tmp_checkpoint_dir / "checkpoint.tf_model")
+                self.model.load_weights(
+                    self.tmp_checkpoint_dir / "checkpoint.weights.h5"
+                )
                 # Save an empty file to flag that this model has been
                 # produced using checkpointing
                 checkpoint_marker = model_path / f"{model_filename}.from_checkpoint.pkl"
@@ -1009,7 +1015,7 @@ class TEDPolicy(Policy):
         Args:
             model_path: Path where model is to be persisted.
         """
-        tf_model_file = model_path / f"{cls._metadata_filename()}.tf_model"
+        tf_model_file = model_path / f"{cls._metadata_filename()}.weights.h5"
 
         # load data example
         loaded_data = deserialize_nested_feature_arrays(
@@ -1109,8 +1115,6 @@ class TEDPolicy(Policy):
         model_utilities = cls._load_model_utilities(model_path)
 
         config = cls._update_loaded_params(config)
-        if execution_context.is_finetuning and EPOCH_OVERRIDE in config:
-            config[EPOCHS] = config.get(EPOCH_OVERRIDE)
 
         (
             model_data_example,
@@ -1125,7 +1129,6 @@ class TEDPolicy(Policy):
                 model_data_example,
                 predict_data_example,
                 featurizer,
-                execution_context.is_finetuning,
             )
 
         return cls._load_policy_with_model(
@@ -1167,7 +1170,6 @@ class TEDPolicy(Policy):
         model_data_example: RasaModelData,
         predict_data_example: RasaModelData,
         featurizer: TrackerFeaturizer,
-        should_finetune: bool,
     ) -> TED:
         model = cls.model_class().load(
             str(model_utilities["tf_model_file"]),
@@ -1180,7 +1182,9 @@ class TEDPolicy(Policy):
             ),
             label_data=model_utilities["label_data"],
             entity_tag_specs=model_utilities["entity_tag_specs"],
-            finetune_mode=should_finetune,
+            # This feature is no longer supported as the updated version
+            # of Keras does not allow updating a compiled model anymore.
+            finetune_mode=False,
         )
         return model
 
@@ -1463,7 +1467,7 @@ class TED(TransformerRasaModel):
 
         dialogue_transformed, attention_weights = self._tf_layers[
             f"transformer.{DIALOGUE}"
-        ](dialogue_in, 1 - mask, self._training)
+        ](dialogue_in, 1 - mask, training=self._training)
         dialogue_transformed = tf.nn.gelu(dialogue_transformed)
 
         if self.max_history_featurizer_is_used:
@@ -1708,7 +1712,7 @@ class TED(TransformerRasaModel):
 
         if attribute in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
             attribute_features = self._tf_layers[f"encoding_layer.{attribute}"](
-                attribute_features, self._training
+                attribute_features, training=self._training
             )
 
         # attribute features have shape
@@ -2102,7 +2106,11 @@ class TED(TransformerRasaModel):
         predictions = {
             "scores": scores,
             "similarities": sim_all,
-            DIAGNOSTIC_DATA: {"attention_weights": attention_weights},
+            DIAGNOSTIC_DATA: {
+                "attention_weights": attention_weights.numpy()
+                if attention_weights is not None and hasattr(attention_weights, "numpy")
+                else attention_weights,
+            },
         }
 
         if (

@@ -16,6 +16,7 @@ from typing import (
     Text,
     Type,
     TypeVar,
+    cast,
 )
 
 from multidict import MultiDict
@@ -24,6 +25,9 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import SpanKind, Tracer
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
+from rasa.agents.core.agent_protocol import AgentProtocol
+from rasa.agents.protocol.mcp.mcp_base_agent import MCPBaseAgent
+from rasa.agents.schemas import AgentInput, AgentOutput, AgentToolSchema
 from rasa.core.actions.action import Action, CustomActionExecutor, RemoteAction
 from rasa.core.actions.custom_action_executor import RetryCustomActionExecutor
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
@@ -49,14 +53,27 @@ from rasa.dialogue_understanding.generator import (
 )
 from rasa.dialogue_understanding.generator.flow_retrieval import FlowRetrieval
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
+from rasa.dialogue_understanding.patterns.internal_error import (
+    InternalErrorPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.engine.graph import GraphNode
 from rasa.engine.training.graph_trainer import GraphTrainer
+from rasa.shared.agents.utils import make_agent_identifier
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import Event
 from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows.steps.call import CallFlowStep
+from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import SET_SLOT_COMMAND
 from rasa.shared.nlu.training_data.message import Message
-from rasa.tracing.constants import REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME
+from rasa.tracing.constants import (
+    AGENT_EXECUTION_DURATION_METRIC_NAME,
+    MCP_TOOL_EXECUTION_DURATION_METRIC_NAME,
+    REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME,
+    TOOL_OUTPUT_VALUE_MAX_LENGTH,
+)
 from rasa.tracing.instrumentation import attribute_extractors
 from rasa.tracing.instrumentation.intentless_policy_instrumentation import (
     _instrument_extract_ai_responses,
@@ -69,11 +86,13 @@ from rasa.tracing.instrumentation.metrics import (
     record_compact_llm_command_generator_metrics,
     record_enterprise_search_policy_metrics,
     record_llm_command_generator_metrics,
+    record_mcp_agent_llm_metrics,
     record_multi_step_llm_command_generator_metrics,
     record_request_size_in_bytes,
     record_search_ready_llm_command_generator_metrics,
     record_single_step_llm_command_generator_metrics,
 )
+from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
 from rasa.utils.endpoints import EndpointConfig, concat_url
 
 # The `TypeVar` representing the return type for a function to be wrapped.
@@ -89,6 +108,7 @@ COMMAND_PROCESSOR_MODULE_NAME = (
     "rasa.dialogue_understanding.processor.command_processor"
 )
 FLOW_EXECUTOR_MODULE_NAME = "rasa.core.policies.flows.flow_executor"
+AGENT_EXECUTOR_MODULE_NAME = "rasa.core.policies.flows.agent_executor"
 DIALOG_UNDERSTANDING_TEST_IO_MODULE_NAME = "rasa.dialogue_understanding_test.io"
 
 
@@ -244,6 +264,67 @@ def traceable_async(
     return async_wrapper
 
 
+def traceable_module_async(
+    fn: Callable[..., Awaitable[S]],
+    tracer: Tracer,
+    attr_extractor: Optional[Callable[..., Dict[str, Any]]],
+    header_extractor: Optional[Callable[..., Dict[str, Any]]],
+    metrics_recorder: Optional[Callable],
+) -> Callable[..., Awaitable[S]]:
+    """Wrap a module-level async function with tracing functionality.
+
+    :param fn: The async function to be wrapped.
+    :param tracer: The `Tracer` that shall be used for tracing this function.
+    :param attr_extractor: A function that is applied to the function's arguments.
+    :param header_extractor: A function that is applied to the function's arguments.
+    :param metrics_recorder: A function that records metric measurements.
+    :return: The wrapped function.
+    """
+    should_extract_args = _check_extractor_argument_list(fn, attr_extractor)
+
+    @functools.wraps(fn)
+    async def async_wrapper(*args: Any, **kwargs: Any) -> S:
+        attrs = (
+            attr_extractor(*args, **kwargs)
+            if attr_extractor and should_extract_args
+            else {}
+        )
+        headers = header_extractor(*args, **kwargs) if header_extractor else {}
+        context = extract_tracing_context_from_headers(headers)
+
+        # Use module name from attrs or fallback to function module
+        module_name = attrs.pop("module_name", "")
+        if module_name in [
+            "command_processor",
+            FLOW_EXECUTOR_MODULE_NAME,
+            DIALOG_UNDERSTANDING_TEST_IO_MODULE_NAME,
+        ]:
+            span_name = f"{module_name}.{fn.__name__}"
+        else:
+            span_name = f"{fn.__module__}.{fn.__name__}"
+
+        with tracer.start_as_current_span(
+            span_name,
+            attributes=attrs,
+            context=context,
+        ) as span:
+            TraceContextTextMapPropagator().inject(headers)
+
+            ctx = span.get_span_context()
+            logger.debug(
+                f"The trace id for the current span '{span_name}' is '{ctx.trace_id}'."
+            )
+
+            result = await fn(*args, **kwargs)
+
+            if metrics_recorder:
+                metrics_recorder(attrs)
+
+            return result
+
+    return async_wrapper
+
+
 def traceable_async_generator(
     fn: Callable[[T, Any, Any], AsyncIterator[S]],
     tracer: Tracer,
@@ -278,6 +359,9 @@ def traceable_async_generator(
 
 # This `TypeVar` restricts the agent_class to be instrumented to subclasses of `Agent`.
 AgentType = TypeVar("AgentType", bound=Agent)
+# This `TypeVar` restricts the subagent_class to be instrumented to subclasses of
+# `AgentProtocol`.
+AgentProtocolType = TypeVar("AgentProtocolType", bound=AgentProtocol)
 # This `TypeVar` restricts the processor_class to be instrumented to subclasses of
 # `MessageProcessor`.
 ProcessorType = TypeVar("ProcessorType", bound=MessageProcessor)
@@ -342,6 +426,7 @@ def instrument(
         List[Type[CustomActionExecutor]]
     ] = None,
     flow_retrieval_class: Optional[Type[FlowRetrievalType]] = None,
+    subagent_classes: Optional[List[Type[AgentProtocolType]]] = None,
 ) -> None:
     """Substitute methods to be traced by their traced counterparts.
 
@@ -395,8 +480,10 @@ def instrument(
         to be instrumented. If `None` is given, no `MultiStepLLMCommandGenerator` will
         be instrumented.
     :param custom_action_executor_subclasses: The subclasses of `CustomActionExecutor`
-    to be instrumented. If `None` is given, no subclass of `CustomActionExecutor`
-    will be instrumented.
+        to be instrumented. If `None` is given, no subclass of `CustomActionExecutor`
+        will be instrumented.
+    :param subagent_classes: The `AgentProtocol` classes to be instrumented.
+        If `None` is given, no `AgentProtocol` classes will be instrumented.
     """
     if agent_class is not None and not class_is_instrumented(agent_class):
         _instrument_method(
@@ -407,6 +494,49 @@ def instrument(
             attribute_extractors.extract_headers,
         )
         mark_class_as_instrumented(agent_class)
+
+    if subagent_classes is not None:
+        for subagent_class in subagent_classes:
+            if not class_is_instrumented(subagent_class):
+                # Instrument _execute_tool_call method if it exists
+                if hasattr(subagent_class, "_execute_tool_call"):
+                    _instrument_execute_tool_call(
+                        tracer_provider.get_tracer(subagent_class.__module__),
+                        subagent_class,
+                    )
+
+                # Instrument send_message method for MCP agents
+                if hasattr(subagent_class, "send_message"):
+                    _instrument_method(
+                        tracer_provider.get_tracer(subagent_class.__module__),
+                        subagent_class,
+                        "send_message",
+                        attribute_extractors.extract_attrs_for_mcp_agent_llm_call,
+                        metrics_recorder=record_mcp_agent_llm_metrics,
+                    )
+
+                    _instrument_mcp_agent_send_message_response_capture(
+                        tracer_provider.get_tracer(subagent_class.__module__),
+                        subagent_class,
+                    )
+
+                # Instrument get_available_tools method for MCP agents
+                if hasattr(subagent_class, "get_available_tools"):
+                    _instrument_mcp_agent_get_available_tools_response_capture(
+                        tracer_provider.get_tracer(subagent_class.__module__),
+                        subagent_class,
+                    )
+
+                # Instrument health check method for A2A agents
+                if hasattr(subagent_class, "_perform_health_check"):
+                    _instrument_method(
+                        tracer_provider.get_tracer(subagent_class.__module__),
+                        subagent_class,
+                        "_perform_health_check",
+                        attribute_extractors.extract_attrs_for_a2a_agent_perform_health_check,
+                    )
+
+                mark_class_as_instrumented(subagent_class)
 
     if processor_class is not None and not class_is_instrumented(processor_class):
         _instrument_processor(tracer_provider, processor_class)
@@ -443,7 +573,7 @@ def instrument(
             tracer_provider.get_tracer(lock_store_class.__module__),
             attribute_extractors.extract_attrs_for_lock_store,
         )
-        lock_store_class.lock = contextlib.asynccontextmanager(traced_lock_method)  # type: ignore[assignment]
+        lock_store_class.lock = contextlib.asynccontextmanager(traced_lock_method)  # type: ignore[method-assign]
 
         logger.debug(f"Instrumented '{lock_store_class.__name__}.lock'.")
 
@@ -761,6 +891,96 @@ def instrument(
                 mark_class_as_instrumented(custom_action_executor_subclass)
 
 
+def _instrument_mcp_agent_send_message_response_capture(
+    tracer: Tracer, agent_class: Type["MCPBaseAgent"]
+) -> None:
+    """Add response capture to the send_message method."""
+
+    def tracing_send_message_response_wrapper(fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        async def wrapper(
+            self: "MCPBaseAgent",
+            agent_input: "AgentInput",
+        ) -> "AgentOutput":
+            agent_output = await fn(self, agent_input)
+
+            # Only create response span if there's actually a response to capture
+            if agent_output:
+                with tracer.start_as_current_span(
+                    f"{self.__class__.__name__}.{fn.__name__}.llm_response"
+                ) as span:
+                    span.set_attributes(
+                        {
+                            "agent_output_response_message": (
+                                agent_output.response_message or ""
+                            ),
+                            "agent_output_id": str(agent_output.id),
+                            "agent_output_status": str(agent_output.status),
+                            "agent_output_events_count": (
+                                len(agent_output.events) if agent_output.events else 0
+                            ),
+                        }
+                    )
+
+            return agent_output
+
+        return wrapper
+
+    agent_class.send_message = tracing_send_message_response_wrapper(  # type: ignore[method-assign]
+        agent_class.send_message
+    )
+    logger.debug(
+        f"Instrumented '{agent_class.__name__}.send_message' for response capture."
+    )
+
+
+def _instrument_mcp_agent_get_available_tools_response_capture(
+    tracer: Tracer, agent_class: Type["MCPBaseAgent"]
+) -> None:
+    """Add response capture to the get_available_tools method."""
+
+    def tracing_get_available_tools_response_wrapper(fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        def wrapper(
+            self: "MCPBaseAgent",
+            agent_input: "AgentInput",
+        ) -> List["AgentToolSchema"]:
+            # Call the original method
+            available_tools = fn(self, agent_input)
+
+            # Create a span to capture the tool information
+            with tracer.start_as_current_span(
+                f"{self.__class__.__name__}.{fn.__name__}"
+            ) as span:
+                # Create a simple dictionary of tool names and descriptions
+                tools_dict = {
+                    tool.name: tool.description or "" for tool in available_tools
+                }
+
+                span.set_attributes(
+                    {
+                        "agent_name": self._name,
+                        "agent_id": str(
+                            make_agent_identifier(self._name, self.protocol_type)
+                        ),
+                        "total_available_tools_count": len(available_tools),
+                        "available_tools": json.dumps(tools_dict),
+                    }
+                )
+
+            return available_tools
+
+        return wrapper
+
+    agent_class.get_available_tools = tracing_get_available_tools_response_wrapper(  # type: ignore[method-assign]
+        agent_class.get_available_tools
+    )
+    logger.debug(
+        f"Instrumented '{agent_class.__name__}.get_available_tools' "
+        f"for response capture."
+    )
+
+
 def _instrument_nlu_command_adapter_predict_commands(
     tracer: Tracer, nlu_command_adapter_class: Type[NLUCommandAdapterType]
 ) -> None:
@@ -790,7 +1010,7 @@ def _instrument_nlu_command_adapter_predict_commands(
 
         return wrapper
 
-    nlu_command_adapter_class.predict_commands = (  # type: ignore[assignment]
+    nlu_command_adapter_class.predict_commands = (  # type: ignore[method-assign]
         tracing_nlu_command_adapter_predict_commands_wrapper(
             nlu_command_adapter_class.predict_commands
         )
@@ -839,7 +1059,7 @@ def _instrument_multi_step_llm_command_generator_parse_commands(
 
         return wrapper
 
-    multi_step_llm_command_generator_class.parse_commands = (  # type: ignore[assignment]
+    multi_step_llm_command_generator_class.parse_commands = (  # type: ignore[method-assign]
         tracing_multi_step_llm_command_generator_parse_commands_wrapper(
             multi_step_llm_command_generator_class.parse_commands
         )
@@ -873,7 +1093,7 @@ def _instrument_information_retrieval_search(
 
         return wrapper
 
-    vector_store_class.search = tracing_information_retrieval_search_wrapper(  # type: ignore[assignment]
+    vector_store_class.search = tracing_information_retrieval_search_wrapper(  # type: ignore[method-assign]
         vector_store_class.search
     )
 
@@ -1013,7 +1233,7 @@ def _instrument_get_tracker(
 
         return wrapper
 
-    processor_class.get_tracker = tracing_get_tracker_wrapper(  # type: ignore[assignment]
+    processor_class.get_tracker = tracing_get_tracker_wrapper(  # type: ignore[method-assign]
         processor_class.get_tracker
     )
 
@@ -1066,6 +1286,21 @@ def _instrument_flow_executor_module(tracer_provider: TracerProvider) -> None:
         "run_step",
         attribute_extractors.extract_attrs_for_run_step,
     )
+    # Instrument the agent execution function
+    _instrument_call_agent_with_retry(
+        tracer_provider.get_tracer(FLOW_EXECUTOR_MODULE_NAME),
+        AGENT_EXECUTOR_MODULE_NAME,
+    )
+    # Instrument the MCP tool execution function
+    _instrument_execute_mcp_tool_call(
+        tracer_provider.get_tracer("rasa.core.policies.flows.mcp_tool_executor"),
+        "rasa.core.policies.flows.mcp_tool_executor",
+    )
+    # Instrument agent internal state transitions
+    _instrument_agent_internal_state_transitions(
+        tracer_provider.get_tracer(FLOW_EXECUTOR_MODULE_NAME),
+        FLOW_EXECUTOR_MODULE_NAME,
+    )
     mark_module_as_instrumented(FLOW_EXECUTOR_MODULE_NAME)
 
 
@@ -1088,13 +1323,16 @@ def _instrument_advance_flows_until_next_action(
 ) -> None:
     def tracing_advance_flows_until_next_action_wrapper(fn: Callable) -> Callable:
         @functools.wraps(fn)
-        def wrapper(
+        async def wrapper(
             tracker: DialogueStateTracker,
             available_actions: List[str],
             flows: FlowsList,
+            slots: List[Slot],
         ) -> FlowActionPrediction:
             with tracer.start_as_current_span(f"{module_name}.{fn.__name__}") as span:
-                prediction: FlowActionPrediction = fn(tracker, available_actions, flows)
+                prediction: FlowActionPrediction = await fn(
+                    tracker, available_actions, flows, slots
+                )
 
                 span.set_attributes(
                     {
@@ -1129,6 +1367,288 @@ def _instrument_advance_flows_until_next_action(
     )
 
 
+def _instrument_call_agent_with_retry(
+    tracer: Tracer,
+    module_name: str,
+) -> None:
+    """Instrument the actual agent execution function to capture inputs/outputs."""
+    module = importlib.import_module(module_name)
+
+    original_function = getattr(module, "_call_agent_with_retry")
+
+    @functools.wraps(original_function)
+    async def traced_call_agent_with_retry(
+        agent_name: str,
+        protocol_type: Any,
+        agent_input: Any,
+        max_retries: int,
+    ) -> Any:
+        agent_input_attrs = {
+            "agent_name": agent_name,
+            "protocol_type": str(protocol_type),
+            "max_retries": max_retries,
+            "agent_input_id": agent_input.id,
+            "agent_input_user_message": agent_input.user_message,
+            "agent_input_slots_count": len(agent_input.slots),
+            "agent_input_events_count": len(agent_input.events),
+            "agent_input_conversation_history_length": len(
+                agent_input.conversation_history
+            ),
+        }
+
+        if agent_input.metadata:
+            agent_input_attrs["agent_input_metadata"] = json.dumps(
+                agent_input.metadata, sort_keys=True
+            )
+
+        span_name = f"{module_name}._call_agent_with_retry"
+        with tracer.start_as_current_span(
+            span_name, attributes=agent_input_attrs
+        ) as span:
+            start_time = time.perf_counter_ns()
+            result = await original_function(
+                agent_name, protocol_type, agent_input, max_retries
+            )
+            end_time = time.perf_counter_ns()
+            duration_ns = end_time - start_time
+
+            span.set_attribute(AGENT_EXECUTION_DURATION_METRIC_NAME, duration_ns)
+            span.set_attribute("agent_output_id", str(result.id))
+            span.set_attribute("agent_output_status", str(result.status))
+
+            instrument_provider = MetricInstrumentProvider()
+            if not instrument_provider.instruments:
+                logger.warning(
+                    "MetricInstrumentProvider has no instruments registered. "
+                    "Agent execution metrics will not be recorded."
+                )
+            else:
+                agent_metric = instrument_provider.get_instrument(
+                    AGENT_EXECUTION_DURATION_METRIC_NAME
+                )
+                if agent_metric is None:
+                    logger.warning(
+                        f"Failed to get instrument "
+                        f"'{AGENT_EXECUTION_DURATION_METRIC_NAME}'. "
+                        f"Agent execution metrics will not be recorded."
+                    )
+                else:
+                    agent_metric_attrs = {
+                        "agent_name": agent_name,
+                        "protocol_type": str(protocol_type),
+                        "status": str(result.status),
+                    }
+                    agent_metric.record(
+                        amount=duration_ns, attributes=agent_metric_attrs
+                    )
+
+            if result.response_message:
+                span.set_attribute(
+                    "agent_output_response_message", result.response_message
+                )
+
+            if result.events:
+                span.set_attribute("agent_output_events_count", len(result.events))
+
+            if result.structured_results:
+                span.set_attribute(
+                    "agent_output_structured_results_count",
+                    len(result.structured_results),
+                )
+
+            if result.error_message:
+                span.set_attribute("agent_output_error", result.error_message)
+
+            if result.metadata:
+                span.set_attribute("agent_output_metadata", json.dumps(result.metadata))
+
+            return result
+
+    setattr(module, "_call_agent_with_retry", traced_call_agent_with_retry)
+    logger.debug(
+        f"Instrumented function '_call_agent_with_retry' in module '{module_name}'"
+    )
+
+
+def _instrument_execute_mcp_tool_call(
+    tracer: Tracer,
+    module_name: str,
+) -> None:
+    """Instrument the actual MCP tool execution function to capture inputs/outputs."""
+    module = importlib.import_module(module_name)
+
+    original_function = getattr(module, "_execute_mcp_tool_call")
+
+    @functools.wraps(original_function)
+    async def traced_execute_mcp_tool_call(
+        initial_events: List[Event],
+        stack: DialogueStack,
+        step: "CallFlowStep",
+        tracker: DialogueStateTracker,
+    ) -> Any:
+        tool_input_attrs = {
+            "tool_id": step.call,
+            "mcp_server": step.mcp_server or "unknown",
+            "execution_context": "flow",
+            "tool_input_mapping": (
+                json.dumps(step.mapping["input"])
+                if step.mapping and "input" in step.mapping
+                else "{}"
+            ),
+        }
+
+        if step.mapping and "input" in step.mapping and step.mapping["input"]:
+            try:
+                from rasa.core.policies.flows.mcp_tool_executor import (
+                    _prepare_tool_arguments,
+                )
+
+                arguments = _prepare_tool_arguments(step.mapping["input"], tracker)
+                tool_input_attrs["tool_input_arguments"] = json.dumps(arguments)
+            except Exception as e:
+                logger.warning(f"Failed to prepare tool arguments: {e}")
+                tool_input_attrs["tool_input_arguments"] = "{}"
+
+        span_name = f"{module_name}._execute_mcp_tool_call"
+        with tracer.start_as_current_span(
+            span_name, attributes=tool_input_attrs
+        ) as span:
+            start_time = time.perf_counter_ns()
+            result = await original_function(initial_events, stack, step, tracker)
+            end_time = time.perf_counter_ns()
+            duration_ns = end_time - start_time
+
+            span.set_attribute(MCP_TOOL_EXECUTION_DURATION_METRIC_NAME, duration_ns)
+
+            # Count events that were generated by the tool execution
+            # Success: result.events contains initial_events + new tool events
+            # Error: result.events contains only initial_events (unchanged)
+            tool_generated_events_count = len(result.events) - len(initial_events)
+            span.set_attribute("tool_output_events_count", tool_generated_events_count)
+
+            instrument_provider = MetricInstrumentProvider()
+            if not instrument_provider.instruments:
+                logger.warning(
+                    "MetricInstrumentProvider has no instruments registered. "
+                    "MCP tool execution metrics will not be recorded."
+                )
+            else:
+                tool_metric = instrument_provider.get_instrument(
+                    MCP_TOOL_EXECUTION_DURATION_METRIC_NAME
+                )
+                if tool_metric is None:
+                    logger.warning(
+                        f"Failed to get instrument "
+                        f"'{MCP_TOOL_EXECUTION_DURATION_METRIC_NAME}'. "
+                        "MCP tool execution metrics will not be recorded."
+                    )
+                else:
+                    success = "true"
+                    if len(result.events) == len(initial_events):
+                        for frame in stack.frames:
+                            if isinstance(frame, InternalErrorPatternFlowStackFrame):
+                                success = "false"
+                                break
+                    tool_metric_attrs = {
+                        "tool_id": step.call,
+                        "mcp_server": step.mcp_server or "unknown",
+                        "execution_context": "flow",
+                        "success": success,
+                    }
+                    tool_metric.record(amount=duration_ns, attributes=tool_metric_attrs)
+
+            tool_output_events = []
+            if result.events and len(result.events) > len(initial_events):
+                for event in result.events[len(initial_events) :]:
+                    if hasattr(event, "key") and hasattr(event, "value"):
+                        tool_output_events.append(
+                            {
+                                "slot": str(event.key),
+                                "value": (
+                                    str(event.value)[:TOOL_OUTPUT_VALUE_MAX_LENGTH]
+                                    if event.value
+                                    else None
+                                ),
+                            }
+                        )
+
+            if tool_output_events:
+                span.set_attribute("tool_output_slots", json.dumps(tool_output_events))
+
+            return result
+
+    setattr(module, "_execute_mcp_tool_call", traced_execute_mcp_tool_call)
+    logger.debug(
+        f"Instrumented function '_execute_mcp_tool_call' in module '{module_name}'"
+    )
+
+
+def _instrument_execute_tool_call(
+    tracer: Tracer,
+    agent_class: Type[AgentProtocolType],
+) -> None:
+    """Instrument the agent's _execute_tool_call method."""
+    original_method = getattr(agent_class, "_execute_tool_call")
+
+    @functools.wraps(original_method)
+    async def traced_execute_tool_call(
+        self: AgentProtocolType, tool_name: str, arguments: Dict[str, Any]
+    ) -> Any:
+        tool_input_attrs = {
+            "tool_name": tool_name,
+            "tool_arguments": json.dumps(arguments, sort_keys=True),
+            "agent_name": getattr(self, "_name", None),
+            "protocol_type": str(self.protocol_type),
+            "execution_context": "agent",
+        }
+
+        span_name = f"{agent_class.__name__}._execute_tool_call"
+        with tracer.start_as_current_span(
+            span_name, attributes=tool_input_attrs
+        ) as span:
+            start_time = time.perf_counter_ns()
+            result = await original_method(self, tool_name, arguments)
+            end_time = time.perf_counter_ns()
+            duration_ns = end_time - start_time
+
+            # Set execution time
+            span.set_attribute("tool_execution_duration_ns", duration_ns)
+
+            # Set tool result attributes
+            span.set_attribute("tool_result_name", result.tool_name)
+            span.set_attribute("tool_result_is_error", result.is_error)
+
+            if result.result:
+                # Truncate result if too long
+                result_str = str(result.result)
+                if len(result_str) > TOOL_OUTPUT_VALUE_MAX_LENGTH:
+                    result_str = result_str[:TOOL_OUTPUT_VALUE_MAX_LENGTH] + "..."
+                span.set_attribute("tool_result_content", result_str)
+
+            if result.error_message:
+                span.set_attribute("tool_result_error_message", result.error_message)
+
+            # Record metrics
+            instrument_provider = MetricInstrumentProvider()
+            if instrument_provider.instruments:
+                tool_metric = instrument_provider.get_instrument(
+                    MCP_TOOL_EXECUTION_DURATION_METRIC_NAME
+                )
+                if tool_metric:
+                    tool_metric_attrs = {
+                        "tool_name": tool_name,
+                        "agent_name": getattr(self, "_name", None),
+                        "execution_context": "agent",
+                        "success": "false" if result.is_error else "true",
+                    }
+                    tool_metric.record(amount=duration_ns, attributes=tool_metric_attrs)
+
+            return result
+
+    setattr(agent_class, "_execute_tool_call", traced_execute_tool_call)
+    logger.debug(f"Instrumented '{agent_class.__name__}._execute_tool_call'.")
+
+
 def _instrument_method(
     tracer: Tracer,
     instrumented_class: Type,
@@ -1156,7 +1676,11 @@ def _instrument_function(
     module = importlib.import_module(module_name)
     function_to_trace = getattr(module, function_name)
     traced_function = _wrap_with_tracing_decorator(
-        function_to_trace, tracer, attr_extractor, header_extractor
+        function_to_trace,
+        tracer,
+        attr_extractor,
+        header_extractor,
+        is_module_function=True,
     )
 
     setattr(module, function_name, traced_function)
@@ -1172,15 +1696,27 @@ def _wrap_with_tracing_decorator(
     attr_extractor: Optional[Callable],
     header_extractor: Optional[Callable] = None,
     metrics_recorder: Optional[Callable] = None,
+    is_module_function: bool = False,
 ) -> Callable:
     if inspect.iscoroutinefunction(callable_to_trace):
-        traced_callable = traceable_async(
-            callable_to_trace,
-            tracer,
-            attr_extractor,
-            header_extractor,
-            metrics_recorder,
-        )
+        if is_module_function:
+            # This is a module-level async function
+            traced_callable = traceable_module_async(
+                callable_to_trace,
+                tracer,
+                attr_extractor,
+                header_extractor,
+                metrics_recorder,
+            )
+        else:
+            # This is a class method
+            traced_callable = traceable_async(
+                callable_to_trace,
+                tracer,
+                attr_extractor,
+                header_extractor,
+                metrics_recorder,
+            )
     else:
         traced_callable = traceable(
             callable_to_trace, tracer, attr_extractor, metrics_recorder
@@ -1223,7 +1759,7 @@ def _instrument_run_action(
 
         return wrapper
 
-    processor_class._run_action = tracing_run_action_wrapper(  # type: ignore[assignment]
+    processor_class._run_action = tracing_run_action_wrapper(  # type: ignore[method-assign]
         processor_class._run_action
     )
 
@@ -1282,7 +1818,7 @@ def _instrument_endpoint_config(
 
         return wrapper
 
-    endpoint_config_class.request = tracing_endpoint_config_wrapper(  # type: ignore[assignment]
+    endpoint_config_class.request = tracing_endpoint_config_wrapper(  # type: ignore[method-assign]
         endpoint_config_class.request
     )
 
@@ -1314,7 +1850,7 @@ def _instrument_grpc_custom_action_executor(
 
         return wrapper
 
-    grpc_custom_action_executor_class.run = tracing_grpc_custom_action_executor_wrapper(  # type: ignore[assignment]
+    grpc_custom_action_executor_class.run = tracing_grpc_custom_action_executor_wrapper(  # type: ignore[method-assign]
         grpc_custom_action_executor_class.run
     )
 
@@ -1411,3 +1947,72 @@ def mark_module_as_instrumented(module_name: Text) -> None:
     module = importlib.import_module(module_name)
     if not module_is_instrumented(module_name):
         setattr(module, _instrumented_module_boolean_attribute_name(module_name), True)
+
+
+def _instrument_agent_internal_state_transitions(
+    tracer: Tracer,
+    module_name: str,
+) -> None:
+    """Instrument agent internal state transitions."""
+    # Import agent stack frame
+    from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+        AgentStackFrame,
+    )
+
+    # Store original __setattr__ method
+    original_setattr = AgentStackFrame.__setattr__
+
+    def traced_setattr(self: object, name: str, value: Any) -> None:
+        # Type assertion: we know this is called only on AgentStackFrame instances
+        agent_frame = cast("AgentStackFrame", self)
+
+        # Check if we're setting the state field
+        if name == "state":
+            # Get current state before change
+            current_state = agent_frame.state
+
+            # Call original setattr
+            original_setattr(self, name, value)
+
+            # Track state transition if state actually changed
+            if current_state != value:
+                _track_agent_internal_state_transition(
+                    tracer=tracer,
+                    agent_id=agent_frame.agent_id,
+                    flow_id=agent_frame.flow_id,
+                    from_state=current_state.value,
+                    to_state=value.value,
+                    step_id=agent_frame.step_id,
+                )
+        else:
+            # For other attributes, just call original setattr
+            original_setattr(self, name, value)
+
+    # Replace the __setattr__ method with our traced version
+    AgentStackFrame.__setattr__ = traced_setattr  # type: ignore[method-assign]
+
+
+def _track_agent_internal_state_transition(
+    tracer: Tracer,
+    agent_id: str,
+    flow_id: str,
+    from_state: str,
+    to_state: str,
+    step_id: str,
+) -> None:
+    """Track an agent internal state transition."""
+    # Create span for state transition
+    span_name = "AgentStackFrame.state_transition"
+    with tracer.start_as_current_span(
+        span_name,
+        attributes={
+            "agent_id": agent_id,
+            "flow_id": flow_id,
+            "from_state": from_state,
+            "to_state": to_state,
+            "step_id": step_id,
+        },
+    ):
+        # Context manager ensures proper span lifecycle (start/end)
+        # No additional work needed - span attributes are set at creation
+        pass

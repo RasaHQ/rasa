@@ -77,7 +77,6 @@ def mappings_parsed(mappings) -> List[DSLMapping]:
 
 def test_load_valid_mapping(mappings: dict, tmp_path):
     """Test that a valid mapping file is parsed correctly using pytest's tmp_path."""
-
     with open(tmp_path / "mappings.yaml", "w", encoding="utf-8") as f:
         yaml.dump(mappings, f, sort_keys=False)
 

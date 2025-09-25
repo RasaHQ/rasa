@@ -291,7 +291,7 @@ class ConcatenateSparseDenseFeatures(RasaCustomLayer):
             [
                 config[DENSE_DIMENSION][attribute]
                 if signature.is_sparse
-                else signature.units
+                else (signature.units or 0)
                 for signature in feature_type_signature
             ]
         )
@@ -301,12 +301,12 @@ class ConcatenateSparseDenseFeatures(RasaCustomLayer):
     ) -> tf.Tensor:
         """Turns sparse tensor into dense, possibly adds dropout before and/or after."""
         if self.SPARSE_DROPOUT in self._tf_layers:
-            feature = self._tf_layers[self.SPARSE_DROPOUT](feature, training)
+            feature = self._tf_layers[self.SPARSE_DROPOUT](feature, training=training)
 
         feature = self._tf_layers[self.SPARSE_TO_DENSE](feature)
 
         if self.DENSE_DROPOUT in self._tf_layers:
-            feature = self._tf_layers[self.DENSE_DROPOUT](feature, training)
+            feature = self._tf_layers[self.DENSE_DROPOUT](feature, training=training)
 
         return feature
 
@@ -944,7 +944,7 @@ class RasaSequenceLayer(RasaCustomLayer):
         # Note that only sequence-level features are masked, nothing happens to the
         # sentence-level features in the combined features tensor.
         seq_sent_features, mlm_boolean_mask = self._tf_layers[self.MLM_INPUT_MASK](
-            seq_sent_features, mask_sequence, training
+            seq_sent_features, mask_sequence, training=training
         )
 
         return seq_sent_features, token_ids, mlm_boolean_mask
@@ -1002,7 +1002,9 @@ class RasaSequenceLayer(RasaCustomLayer):
         ]((sequence_features, sentence_features, sequence_feature_lengths))
 
         # Apply one or more dense layers.
-        seq_sent_features = self._tf_layers[self.FFNN](seq_sent_features, training)
+        seq_sent_features = self._tf_layers[self.FFNN](
+            seq_sent_features, training=training
+        )
 
         # If using masked language modeling, mask the transformer inputs and get labels
         # for the masked tokens and a boolean mask. Note that TED does not use MLM loss,
@@ -1031,7 +1033,7 @@ class RasaSequenceLayer(RasaCustomLayer):
         if self._has_transformer:
             mask_padding = 1 - mask_combined_sequence_sentence
             outputs, attention_weights = self._tf_layers[self.TRANSFORMER](
-                seq_sent_features_masked, mask_padding, training
+                seq_sent_features_masked, mask_padding, training=training
             )
             outputs = tf.nn.gelu(outputs)
         else:

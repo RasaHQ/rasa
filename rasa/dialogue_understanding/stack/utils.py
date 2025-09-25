@@ -17,6 +17,9 @@ from rasa.shared.core.flows.steps.constants import END_STEP
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
 
 if typing.TYPE_CHECKING:
+    from rasa.dialogue_understanding.patterns.continue_interrupted import (
+        ContinueInterruptedPatternFlowStackFrame,
+    )
     from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -171,8 +174,38 @@ def user_flows_on_the_stack(dialogue_stack: DialogueStack) -> Set[str]:
     All user flows that are currently on the stack.
     """
     return {
-        f.flow_id for f in dialogue_stack.frames if isinstance(f, UserFlowStackFrame)
+        frame.flow_id
+        for frame in user_frames_on_the_stack(
+            dialogue_stack, ignore_call_and_link_frames=False
+        )
     }
+
+
+def user_frames_on_the_stack(
+    dialogue_stack: DialogueStack, ignore_call_and_link_frames: bool = True
+) -> List[UserFlowStackFrame]:
+    """Get all user frames that are currently on the stack.
+
+    Args:
+        dialogue_stack: The dialogue stack.
+        ignore_call_and_link_frames: Whether to ignore user frames of type `call`
+            and `link`. By default, these frames are ignored.
+
+    Returns:
+    All user frames that are currently on the stack.
+    """
+    return [
+        frame
+        for frame in dialogue_stack.frames
+        if isinstance(frame, UserFlowStackFrame)
+        and (
+            not ignore_call_and_link_frames
+            or (
+                frame.frame_type != FlowStackFrameType.CALL
+                and frame.frame_type != FlowStackFrameType.LINK
+            )
+        )
+    ]
 
 
 def end_top_user_flow(stack: DialogueStack) -> DialogueStack:
@@ -198,8 +231,9 @@ def end_top_user_flow(stack: DialogueStack) -> DialogueStack:
 def get_collect_steps_excluding_ask_before_filling_for_active_flow(
     dialogue_stack: DialogueStack, all_flows: FlowsList
 ) -> Set[str]:
-    """Get all collect steps that are part of the current flow, without
-    considering the collect steps that has to be asked before filling.
+    """Get all collect steps that are part of the current flow.
+
+    Collect steps that have to be asked before filling are not considered.
 
     Args:
         dialogue_stack: The dialogue stack.
@@ -230,3 +264,23 @@ def get_collect_steps_excluding_ask_before_filling_for_active_flow(
         for step in active_flow.get_collect_steps()
         if not step.ask_before_filling
     )
+
+
+def is_continue_interrupted_flow_active(stack: DialogueStack) -> bool:
+    """Check if the continue interrupted flow is active."""
+    return get_active_continue_interrupted_pattern_frame(stack) is not None
+
+
+def get_active_continue_interrupted_pattern_frame(
+    stack: DialogueStack,
+) -> Optional["ContinueInterruptedPatternFlowStackFrame"]:
+    from rasa.dialogue_understanding.patterns.continue_interrupted import (
+        ContinueInterruptedPatternFlowStackFrame,
+    )
+
+    for frame in reversed(stack.frames):
+        if isinstance(frame, ContinueInterruptedPatternFlowStackFrame):
+            return frame
+        if isinstance(frame, UserFlowStackFrame):
+            return None
+    return None

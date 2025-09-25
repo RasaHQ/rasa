@@ -1,4 +1,7 @@
 import argparse
+
+# Check TensorFlow availability without importing the module
+import importlib.util
 import os
 import platform
 import sys
@@ -10,7 +13,6 @@ from rasa_sdk import __version__ as rasa_sdk_version
 import rasa.telemetry
 import rasa.utils.io
 import rasa.utils.licensing
-import rasa.utils.tensorflow.environment as tf_env
 from rasa import version
 from rasa.cli import (
     data,
@@ -39,6 +41,14 @@ from rasa.plugin import plugin_manager
 from rasa.shared.exceptions import RasaException
 from rasa.utils.common import configure_logging_and_warnings
 from rasa.utils.log_utils import configure_structlog
+
+TENSORFLOW_AVAILABLE = importlib.util.find_spec("tensorflow") is not None
+
+# Only import TensorFlow modules if TensorFlow is available
+if TENSORFLOW_AVAILABLE:
+    import rasa.utils.tensorflow.environment as tf_env
+else:
+    tf_env = None  # type: ignore[assignment]
 
 structlogger = structlog.get_logger()
 
@@ -123,8 +133,10 @@ def main(raw_arguments: Optional[List[str]] = None) -> None:
     rasa.utils.io.configure_colored_logging(log_level)
     configure_structlog(log_level)
 
-    tf_env.setup_tf_environment()
-    tf_env.check_deterministic_ops()
+    # Only setup TensorFlow environment if TensorFlow is available
+    if TENSORFLOW_AVAILABLE and tf_env is not None:
+        tf_env.setup_tf_environment()
+        tf_env.check_deterministic_ops()
 
     # insert current path in syspath so custom modules are found
     sys.path.insert(1, os.getcwd())

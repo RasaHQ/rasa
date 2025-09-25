@@ -21,7 +21,7 @@ from rasa.shared.providers._ssl_verification_utils import (
     ensure_ssl_certificates_for_litellm_non_openai_based_clients,
     ensure_ssl_certificates_for_litellm_openai_based_clients,
 )
-from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
+from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall, LLMUsage
 from rasa.shared.utils.io import resolve_environment_variables, suppress_logs
 
 structlogger = structlog.get_logger()
@@ -126,7 +126,9 @@ class _BaseLiteLLMClient:
             raise ProviderClientValidationError(event_info)
 
     @suppress_logs(log_level=logging.WARNING)
-    def completion(self, messages: Union[List[dict], List[str], str]) -> LLMResponse:
+    def completion(
+        self, messages: Union[List[dict], List[str], str], **kwargs: Any
+    ) -> LLMResponse:
         """Synchronously generate completions for given list of messages.
 
         Args:
@@ -138,6 +140,7 @@ class _BaseLiteLLMClient:
                 - a list of messages. Each message is a string and will be formatted
                     as a user message.
                 - a single message as a string which will be formatted as user message.
+            **kwargs: Additional parameters to pass to the completion call.
 
         Returns:
             List of message completions.
@@ -147,15 +150,19 @@ class _BaseLiteLLMClient:
         """
         try:
             formatted_messages = self._get_formatted_messages(messages)
-            arguments = resolve_environment_variables(self._completion_fn_args)
-            response = completion(messages=formatted_messages, **arguments)
+            arguments = cast(
+                Dict[str, Any], resolve_environment_variables(self._completion_fn_args)
+            )
+            response = completion(
+                messages=formatted_messages, **{**arguments, **kwargs}
+            )
             return self._format_response(response)
         except Exception as e:
-            raise ProviderClientAPIException(e)
+            raise ProviderClientAPIException(e) from e
 
     @suppress_logs(log_level=logging.WARNING)
     async def acompletion(
-        self, messages: Union[List[dict], List[str], str]
+        self, messages: Union[List[dict], List[str], str], **kwargs: Any
     ) -> LLMResponse:
         """Asynchronously generate completions for given list of messages.
 
@@ -168,6 +175,7 @@ class _BaseLiteLLMClient:
                 - a list of messages. Each message is a string and will be formatted
                     as a user message.
                 - a single message as a string which will be formatted as user message.
+            **kwargs: Additional parameters to pass to the completion call.
 
         Returns:
             List of message completions.
@@ -177,8 +185,12 @@ class _BaseLiteLLMClient:
         """
         try:
             formatted_messages = self._get_formatted_messages(messages)
-            arguments = resolve_environment_variables(self._completion_fn_args)
-            response = await acompletion(messages=formatted_messages, **arguments)
+            arguments = cast(
+                Dict[str, Any], resolve_environment_variables(self._completion_fn_args)
+            )
+            response = await acompletion(
+                messages=formatted_messages, **{**arguments, **kwargs}
+            )
             return self._format_response(response)
         except Exception as e:
             message = ""
@@ -197,7 +209,7 @@ class _BaseLiteLLMClient:
                     "In case you are getting OpenAI connection errors, such as missing "
                     "API key, your configuration is incorrect."
                 )
-            raise ProviderClientAPIException(e, message)
+            raise ProviderClientAPIException(e, message) from e
 
     def _get_formatted_messages(
         self, messages: Union[List[dict], List[str], str]
@@ -246,11 +258,31 @@ class _BaseLiteLLMClient:
                 else 0
             )
             formatted_response.usage = LLMUsage(prompt_tokens, completion_tokens)
+
+        # Extract tool calls from all choices
+        formatted_response.tool_calls = self._extract_tool_calls(response)
+
         structlogger.debug(
             "base_litellm_client.formatted_response",
             formatted_response=formatted_response.to_dict(),
         )
         return formatted_response
+
+    def _extract_tool_calls(self, response: Any) -> List[LLMToolCall]:
+        """Extract tool calls from response choices.
+
+        Args:
+            response: List of response choices from LiteLLM
+
+        Returns:
+            List of LLMToolCall objects, empty if no tool calls found
+        """
+        return [
+            LLMToolCall.from_litellm(tool_call)
+            for choice in response.choices
+            if choice.message.tool_calls
+            for tool_call in choice.message.tool_calls
+        ]
 
     def _format_text_completion_response(self, response: Any) -> LLMResponse:
         """Parses the LiteLLM text completion response to Rasa format."""

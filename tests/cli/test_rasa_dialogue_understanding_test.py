@@ -19,12 +19,12 @@ def test_rasa_test_dialogue_understanding_help(run: Callable[..., RunResult]) ->
     help_text = """usage: rasa test du [-h] [-v] [-vv] [--quiet]
                     [--logging-config-file LOGGING_CONFIG_FILE]
                     [--output-file OUTPUT_FILE] [--no-output]
-                    [-m MODEL] [--endpoints ENDPOINTS]
                     [--output-prompt]
-                    [--remote-storage REMOTE_STORAGE]
-                    [path-to-test-cases]
-                    [--remove-default-commands [REMOVE_DEFAULT_COMMANDS ...]]
                     [--additional-commands [ADDITIONAL_COMMANDS ...]]
+                    [--remove-default-commands [REMOVE_DEFAULT_COMMANDS ...]]
+                    [--sub-agents SUB_AGENTS] [-m MODEL]
+                    [--endpoints ENDPOINTS] [--remote-storage REMOTE_STORAGE]
+                    [path-to-test-cases]
 
 Runs dialogue understanding testing."""
     lines = help_text.split("\n")

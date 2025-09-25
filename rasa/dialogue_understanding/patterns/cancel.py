@@ -8,10 +8,12 @@ import structlog
 from rasa.core.actions import action
 from rasa.core.channels.channel import OutputChannel
 from rasa.core.nlg.generator import NaturalLanguageGenerator
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
     PatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import AgentStackFrame
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.constants import ACTION_CANCEL_FLOW
 from rasa.shared.core.domain import Domain
@@ -30,7 +32,8 @@ class CancelPatternFlowStackFrame(PatternFlowStackFrame):
     """A pattern flow stack frame which cancels a flow.
 
     The frame contains the information about the stack frames that should
-    be canceled."""
+    be canceled.
+    """
 
     flow_id: str = FLOW_PATTERN_CANCEL
     """The ID of the flow."""
@@ -93,19 +96,37 @@ class ActionCancelFlow(action.Action):
             structlogger.warning("action.cancel_flow.no_cancel_frame")
             return []
 
+        agent_frame_ids_to_cancel = []
         for canceled_frame_id in top.canceled_frames:
             for frame in stack.frames:
                 if frame.frame_id == canceled_frame_id and isinstance(
                     frame, BaseFlowStackFrame
                 ):
-                    # Setting the stack frame to the end step so it is properly
-                    # wrapped up by the flow policy
-                    frame.step_id = ContinueFlowStep.continue_step_for_id(END_STEP)
-                    break
+                    if isinstance(frame, AgentStackFrame):
+                        # When an AgentStackFrame needs to be canceled, we can
+                        # remove it directly from the stack. No extra logic is
+                        # required in the flow executor, since
+                        # the AgentCanceled event has already been created by
+                        # ActionCancelInterruptedFlows or CancelFlowCommand, and the
+                        # steps following the agentic call step should not be executed.
+                        agent_frame_ids_to_cancel.append(frame.frame_id)
+                        break
+                    else:
+                        # Setting the stack frame to the end step so it is
+                        # properly wrapped up by the flow policy
+                        frame.step_id = ContinueFlowStep.continue_step_for_id(END_STEP)
+                        break
             else:
                 structlogger.warning(
                     "action.cancel_flow.frame_not_found",
                     frame_id=canceled_frame_id,
                 )
 
-        return tracker.create_stack_updated_events(stack)
+        # Create a copy of the stack without the agentic frames that should
+        # be canceled
+        new_stack = DialogueStack.empty()
+        for frame in stack.frames:
+            if frame.frame_id not in agent_frame_ids_to_cancel:
+                new_stack.push(frame)
+
+        return tracker.create_stack_updated_events(new_stack)

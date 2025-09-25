@@ -29,6 +29,7 @@ def test_rasa_inspect_help(run: Callable[..., RunResult]) -> None:
                     [--syslog-port SYSLOG_PORT]
                     [--syslog-protocol SYSLOG_PROTOCOL]
                     [--endpoints ENDPOINTS] [-i INTERFACE] [-p PORT]
+                    [--sub-agents SUB_AGENTS]
                     [--response-timeout RESPONSE_TIMEOUT]
                     [--request-timeout REQUEST_TIMEOUT]
                     [--remote-storage REMOTE_STORAGE]

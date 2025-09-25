@@ -344,7 +344,6 @@ def does_not_raise():
     are expected to raise and others are not.
 
     Example:
-
         @pytest.mark.parametrize(
             "a,b,raises_context",
             [

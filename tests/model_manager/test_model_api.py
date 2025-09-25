@@ -23,7 +23,7 @@ from rasa.model_manager.model_api import (
     running_bots,
     trainings,
 )
-from rasa.model_manager.runner_service import BotSession
+from rasa.model_manager.runner_service import BotSession, BotSessionStatus
 from rasa.model_manager.trainer_service import TrainingSession, TrainingSessionStatus
 from rasa.model_manager.utils import models_base_path
 from rasa.studio.upload import CALMUserData
@@ -322,12 +322,14 @@ async def test_start_bot_but_not_enough_diskspace(
 
 
 async def test_get_bot(client: SanicASGITestClient) -> None:
-    running_bots["deployment_1"] = MagicMock(
-        deployment_id="deployment_1",
-        status="running",
-        url="http://localhost:8000",
-        log_id="test_42",
-    )
+    # Create a MagicMock with all required attributes to avoid serialization issues
+    running_bots["deployment_1"] = MagicMock()
+    running_bots["deployment_1"].deployment_id = "deployment_1"
+    running_bots["deployment_1"].status = BotSessionStatus.RUNNING
+    running_bots["deployment_1"].url = "http://localhost:8000"
+    running_bots["deployment_1"].log_id = "test_42"
+    running_bots["deployment_1"].returncode = None
+    running_bots["deployment_1"].process = MagicMock()
     _, response = await client.get("/bot/deployment_1")
     assert response.status == 200
     assert response.json == {
@@ -348,7 +350,7 @@ async def test_get_bot_not_found(client: SanicASGITestClient) -> None:
 async def test_stop_bot(client: SanicASGITestClient) -> None:
     running_bots["deployment_1"] = BotSession(
         deployment_id="deployment_1",
-        status="running",
+        status=BotSessionStatus.RUNNING,
         url="http://localhost:8000",
         internal_url="http://localhost:8000",
         port=8000,
@@ -377,14 +379,18 @@ async def test_get_training_with_logs(
     log_id = "test_42"
     setup_logs_path(tmp_path, log_id)
 
-    trainings[action_id] = MagicMock(
-        training_id=action_id,
-        assistant_id="assistant_1",
-        client_id="client_1",
-        progress=50,
-        status="running",
-        log_id=log_id,
-    )
+    # Create a MagicMock with all required attributes to avoid serialization issues
+    from rasa.model_manager.trainer_service import TrainingSessionStatus
+
+    trainings[action_id] = MagicMock()
+    trainings[action_id].training_id = action_id
+    trainings[action_id].assistant_id = "assistant_1"
+    trainings[action_id].client_id = "client_1"
+    trainings[action_id].progress = 50
+    trainings[action_id].status = TrainingSessionStatus.RUNNING
+    trainings[action_id].log_id = log_id
+    trainings[action_id].model_name = ""
+    trainings[action_id].process = MagicMock()
     _, response = await client.get(f"/training/{action_id}")
     assert response.status == 200
     assert response.json == {
@@ -392,8 +398,8 @@ async def test_get_training_with_logs(
         "assistant_id": "assistant_1",
         "client_id": "client_1",
         "progress": 50,
-        "status": "running",
-        "model_name": None,
+        "status": "running",  # This will be the string value from the enum
+        "model_name": "",  # Updated to match the empty string we set
         "logs": f"test logs for {log_id}",
     }
 
@@ -406,17 +412,19 @@ async def test_get_bot_with_logs(
     log_id = "test_42"
     setup_logs_path(tmp_path, log_id)
 
-    running_bots[action_id] = MagicMock(
-        deployment_id=action_id,
-        status="running",
-        url="http://localhost:8000",
-        log_id=log_id,
-    )
+    # Create a MagicMock with all required attributes to avoid serialization issues
+    running_bots[action_id] = MagicMock()
+    running_bots[action_id].deployment_id = action_id
+    running_bots[action_id].status = BotSessionStatus.RUNNING
+    running_bots[action_id].url = "http://localhost:8000"
+    running_bots[action_id].log_id = log_id
+    running_bots[action_id].returncode = None
+    running_bots[action_id].process = MagicMock()  # Add the missing process attribute
     _, response = await client.get(f"/bot/{action_id}")
     assert response.status == 200
     assert response.json == {
         "deployment_id": action_id,
-        "status": "running",
+        "status": "running",  # This will be the string value from the enum
         "url": "http://localhost:8000",
         "returncode": None,
         "logs": f"test logs for {log_id}",

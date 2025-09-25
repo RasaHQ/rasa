@@ -3127,3 +3127,73 @@ def test_flow_classes_comparison(cls, constructor_kwargs, excluded_fields):
             f"{cls.__name__}: excluded field '{field}' affects equality – "
             "remove it from __eq__ or the excluded list."
         )
+
+
+def test_call_flow_step_as_json_includes_exit_if() -> None:
+    # Given
+    step = CallFlowStep(
+        custom_id="step_with_exit_if",
+        idx=0,
+        description="call with exit_if",
+        metadata={},
+        flow_id="flow_with_exit_if",
+        next=FlowStepLinks(links=[StaticFlowStepLink(target_step_id="some-id")]),
+        call="some_agent",
+        exit_if=["slots.x is not None", "slots.age > 18"],
+    )
+    flow = Flow(
+        **{
+            "id": "flow_with_exit_if",
+            "custom_name": "name",
+            "description": "desc",
+            "guard_condition": None,
+            "step_sequence": FlowStepSequence(child_steps=[step]),
+            "nlu_triggers": None,
+            "always_include_in_prompt": False,
+            "persisted_slots": [],
+            "run_pattern_completed": True,
+        }
+    )
+
+    # When
+    json_output = flow.as_json()
+
+    # Then
+    assert "steps" in json_output
+    assert json_output["steps"][0]["exit_if"] == [
+        "slots.x is not None",
+        "slots.age > 18",
+    ]
+
+
+def test_call_flow_step_from_json_parses_exit_if() -> None:
+    # Given
+    json_input = {
+        "id": "flow_with_exit_if",
+        "description": "desc",
+        "steps": [
+            {
+                "id": "step_with_exit_if",
+                "description": "call with exit_if",
+                "next": "asasa",
+                "call": "some_agent",
+                "exit_if": ["slots.x is not None", "slots.age > 18"],
+            }
+        ],
+        "name": "name",
+        "if": None,
+        "nlu_trigger": [],
+        "always_include_in_prompt": False,
+        "run_pattern_completed": True,
+    }
+
+    # When
+    flow = Flow.from_json(flow_id="flow_with_exit_if", data=json_input)
+
+    # Then
+    first_step = next(
+        s
+        for s in flow.steps
+        if isinstance(s, CallFlowStep) and s.id == "step_with_exit_if"
+    )
+    assert first_step.exit_if == ["slots.x is not None", "slots.age > 18"]

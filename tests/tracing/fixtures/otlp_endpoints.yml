@@ -1,6 +1,6 @@
 tracing:
   type: otlp
-  endpoint: localhost:4317
+  endpoint: localhost:4319
   insecure: true
 
 action_endpoint:

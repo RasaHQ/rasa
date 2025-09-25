@@ -74,7 +74,7 @@ class RasaFileImporter(TrainingDataImporter):
     @cached_method
     def get_flows(self) -> FlowsList:
         """Retrieves training stories / rules (see parent class for full docstring)."""
-        return utils.flows_from_paths(self._flow_files)
+        return utils.flows_from_paths(self._flow_files, self.get_domain())
 
     @cached_method
     def get_conversation_tests(self) -> StoryGraph:

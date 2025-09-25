@@ -3,6 +3,12 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, Union
 
+if TYPE_CHECKING:
+    from rasa.agents.protocol.a2a.a2a_agent import A2AAgent
+    from rasa.agents.protocol.mcp.mcp_base_agent import MCPBaseAgent
+    from rasa.agents.schemas import AgentInput
+    from rasa.core.agent import Agent
+
 import tiktoken
 from numpy import ndarray
 from rasa_sdk.grpc_py import action_webhook_pb2
@@ -10,7 +16,8 @@ from rasa_sdk.grpc_py import action_webhook_pb2
 from rasa.core.actions.action import DirectCustomActionExecutor
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.core.actions.http_custom_action_executor import HTTPCustomActionExecutor
-from rasa.core.agent import Agent
+
+# Import moved inside function to avoid circular import
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import UserMessage
 from rasa.core.lock_store import LOCK_LIFETIME, LockStore
@@ -60,10 +67,13 @@ from rasa.shared.core.constants import REQUESTED_SLOT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import DialogueStackUpdated, Event
 from rasa.shared.core.flows import Flow, FlowsList, FlowStep
+from rasa.shared.core.flows.steps import CallFlowStep
+from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, SET_SLOT_COMMAND
+from rasa.shared.utils.health_check.health_check import is_api_health_check_enabled
 from rasa.shared.utils.llm import (
     combine_custom_and_default_config,
     resolve_model_client_config,
@@ -92,7 +102,7 @@ logger = logging.getLogger(__name__)
 
 
 def extract_attrs_for_agent(
-    self: Agent,
+    self: "Agent",
     message: UserMessage,
 ) -> Dict[str, Any]:
     """Extract the attributes for `Agent.handle_message`.
@@ -335,8 +345,12 @@ def extract_llm_config(
         # ContextualResponseRephraser is not a graph component, so it's
         # not having a full config.
         config = {"llm": self.llm_config}
-    else:
+    elif hasattr(self, "config"):
         config = self.config
+    else:
+        # For MCP agents and other components without a config attribute,
+        # create a config from the available llm_config
+        config = {"llm": getattr(self, "_llm_config", None)}
 
     llm_config = resolve_model_client_config(config.get(LLM_CONFIG_KEY))
     llm_property = combine_custom_and_default_config(llm_config, default_llm_config)
@@ -446,8 +460,6 @@ def extract_attrs_for_performing_health_check(
     log_source_method: str,
     log_source_component: str,
 ) -> Dict[str, Any]:
-    from rasa.shared.utils.health_check.health_check import is_api_health_check_enabled
-
     attrs = {
         "api_health_check_enabled": is_api_health_check_enabled(),
         "health_check_trigger_component": log_source_component,
@@ -457,6 +469,29 @@ def extract_attrs_for_performing_health_check(
         attrs["config"] = json.dumps(
             combine_custom_and_default_config(custom_config, default_config)
         )
+    return attrs
+
+
+def extract_attrs_for_a2a_agent_perform_health_check(
+    self: "A2AAgent",
+) -> Dict[str, Any]:
+    """Extract attributes for A2A agent health check method."""
+    attrs = {
+        "api_health_check_enabled": is_api_health_check_enabled(),
+        "health_check_trigger_component": "A2AAgent",
+        "health_check_trigger_method": "_perform_health_check",
+        "health_check_type": "a2a_agent_connectivity",
+    }
+
+    # A2A agents don't have config in the same way as LLM components,
+    # but we can include basic agent info for consistency
+    if is_api_health_check_enabled():
+        attrs["agent_name"] = getattr(self, "_name", "unknown")
+        agent_url = "unknown"
+        if hasattr(self, "agent_card") and self.agent_card:
+            agent_url = str(getattr(self.agent_card, "url", "unknown"))
+        attrs["agent_url"] = agent_url
+
     return attrs
 
 
@@ -585,7 +620,10 @@ def extract_attrs_for_check_commands_against_startable_flows(
 
 
 def extract_attrs_for_advance_flows(
-    tracker: DialogueStateTracker, available_actions: List[str], flows: FlowsList
+    tracker: DialogueStateTracker,
+    available_actions: List[str],
+    flows: FlowsList,
+    slots: List[Slot],
 ) -> Dict[str, Any]:
     from rasa.tracing.instrumentation.instrumentation import FLOW_EXECUTOR_MODULE_NAME
 
@@ -602,8 +640,10 @@ def extract_attrs_for_du_print_test_results(
     test_suite_result: DialogueUnderstandingTestSuiteResult,
     output_prompt: bool,
 ) -> Dict[str, Any]:
-    """Extract the attributes for
-    `rasa.dialogue_understanding_test.io.print_test_results` function.
+    """Extract the attributes for print_test_results function.
+
+    This function extracts tracing attributes for the dialogue understanding
+    test results printing functionality.
     """
     from rasa.tracing.instrumentation.instrumentation import (
         DIALOG_UNDERSTANDING_TEST_IO_MODULE_NAME,
@@ -683,6 +723,35 @@ def extract_attrs_for_du_print_test_results(
     return attributes_dict
 
 
+def extract_call_flow_step_attributes(step: "CallFlowStep") -> Dict[str, Any]:
+    """Extract common CallFlowStep attributes for tracing.
+
+    Args:
+        step: CallFlowStep instance
+
+    Returns:
+        Dictionary of CallFlowStep attributes for tracing
+    """
+    attrs = {
+        "step_type": "CallFlowStep",
+        "call_target": step.call,
+    }
+
+    # Add MCP server if present (for direct MCP tool calls)
+    if step.mcp_server:
+        attrs["mcp_server"] = step.mcp_server
+
+    # Add mapping configuration if present (for MCP tool calls)
+    if step.mapping:
+        attrs["mapping_config"] = json.dumps(step.mapping, sort_keys=True)
+
+    # Add exit conditions if present (for agent calls)
+    if step.exit_if:
+        attrs["exit_if_conditions"] = json.dumps(step.exit_if, sort_keys=True)
+
+    return attrs
+
+
 def extract_attrs_for_run_step(
     step: FlowStep,
     flow: Flow,
@@ -691,16 +760,23 @@ def extract_attrs_for_run_step(
     available_actions: List[str],
     flows: FlowsList,
     previous_step_id: Text,
+    slots: List[Slot],
 ) -> Dict[str, Any]:
     current_context = extract_current_context_attribute(stack)
 
-    return {
+    attrs = {
         "step_custom_id": step.custom_id if step.custom_id else "None",
         "step_description": step.description if step.description else "None",
         "current_flow_id": flow.id,
         "current_context": json.dumps(current_context),
         "previous_step_id": previous_step_id,
     }
+
+    # Add CallFlowStep specific attributes if this is a CallFlowStep
+    if hasattr(step, "call"):
+        attrs.update(extract_call_flow_step_attributes(step))
+
+    return attrs
 
 
 def extract_attrs_for_policy_prediction(
@@ -894,3 +970,60 @@ def extract_attrs_for_grpc_custom_action_executor_request(
     )
 
     return attrs
+
+
+def extract_attrs_for_mcp_agent_llm_call(
+    self: "MCPBaseAgent",
+    agent_input: "AgentInput",
+) -> Dict[str, Any]:
+    """Extract attributes for MCP agent LLM calls.
+
+    This function extracts tracing attributes specifically for MCP agent LLM calls,
+    including LLM configuration, prompt messages, and token counts.
+    """
+    # Extract LLM configuration using the actual resolved config from the LLM client
+    attributes = extract_llm_config(
+        self,
+        default_llm_config=self.llm_client.config,
+        default_embeddings_config={},  # MCP agents don't use embeddings
+    )
+
+    # Build messages
+    messages = self.build_messages_for_llm_request(agent_input)
+
+    attributes.update(
+        {
+            "prompt_messages_count": len(messages),
+        }
+    )
+
+    # Count tokens directly from messages
+    attributes = extend_attributes_with_prompt_tokens_length_for_mcp_agent(
+        self, attributes, messages
+    )
+
+    return attributes
+
+
+def extend_attributes_with_prompt_tokens_length_for_mcp_agent(
+    self: Any,
+    attributes: Dict[str, Any],
+    messages: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Extend attributes with prompt tokens length for MCP agents."""
+    # Count tokens for each message content and sum them up
+    total_tokens = 0
+    for message in messages:
+        content = message.get("content", "")
+        if content:
+            message_tokens = compute_prompt_tokens_length(
+                model_type=attributes["llm_type"],
+                model_name=attributes["llm_model"],
+                prompt=content,
+            )
+            if message_tokens is not None:
+                total_tokens += message_tokens
+
+    attributes[PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME] = str(total_tokens)
+
+    return attributes

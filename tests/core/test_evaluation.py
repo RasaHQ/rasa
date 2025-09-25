@@ -474,7 +474,6 @@ async def test_story_report(
     expected_results: Dict[Text, Dict[Text, Any]],
 ) -> None:
     """Check story_report.json file contains correct result keys/values."""
-
     stories_path = tmpdir / "stories.yml"
     stories_path.write_text(stories_yaml, "utf8")
     out_directory = tmpdir / "results"

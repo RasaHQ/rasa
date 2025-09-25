@@ -16,6 +16,7 @@ from rasa.cli.e2e_test import (
     execute_e2e_tests,
 )
 from rasa.core.agent import Agent
+from rasa.core.constants import DEFAULT_SUB_AGENTS
 from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
 from rasa.e2e_test.constants import (
     DEFAULT_E2E_INPUT_TESTS_PATH,
@@ -49,7 +50,8 @@ def test_rasa_test_e2e_help(run: Callable[..., RunResult]) -> None:
                     [--logging-config-file LOGGING_CONFIG_FILE] [--fail-fast]
                     [-o] [--remote-storage REMOTE_STORAGE]
                     [--coverage-report]
-                    [--coverage-output-path COVERAGE_OUTPUT_PATH] [-m MODEL]
+                    [--coverage-output-path COVERAGE_OUTPUT_PATH]
+                    [--sub-agents SUB_AGENTS] [-m MODEL]
                     [--endpoints ENDPOINTS]
                     [path-to-test-cases]
 
@@ -90,6 +92,7 @@ def test_execute_e2e_tests_fail_fast_true(
     cli_args.e2e_results = str(tmp_path / "e2e_results.yml")
     cli_args.remote_storage = None
     cli_args.coverage_report = False
+    cli_args.sub_agents = None
 
     def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
         domain = Domain.empty()
@@ -166,6 +169,7 @@ def test_execute_e2e_tests_fail_fast_false(
     cli_args.e2e_results = str(tmp_path / "e2e_results.yml")
     cli_args.remote_storage = None
     cli_args.coverage_report = False
+    cli_args.sub_agents = None
 
     def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
         domain = Domain.empty()
@@ -283,6 +287,13 @@ def test_e2e_cli_add_e2e_test_arguments(monkeypatch: MonkeyPatch) -> None:
                 default="e2e_coverage_results",
                 help="Directory where to save coverage report to.",
             ),
+            call(
+                "--sub-agents",
+                type=str,
+                default=DEFAULT_SUB_AGENTS,
+                help="Directory that specifies sub-agents to use "
+                "(default: %(default)s).",
+            ),
         ],
     )
 
@@ -304,6 +315,7 @@ def test_execute_e2e_tests_with_agent_not_ready(
     cli_args.e2e_results = str(tmp_path / "e2e_results.yml")
     cli_args.remote_storage = None
     cli_args.coverage_report = False
+    cli_args.sub_agents = "sub_agents"
 
     logging_msg = (
         "Agent needs to be prepared before usage. "

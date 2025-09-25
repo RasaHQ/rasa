@@ -2,6 +2,13 @@ from typing import List, Optional, Union
 
 import numpy as np
 import pytest
+
+# Skip all tests in this file if TensorFlow is not available
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if not TENSORFLOW_AVAILABLE:
+    pytest.skip("TensorFlow is not available", allow_module_level=True)
+
 import tensorflow as tf
 
 import rasa.utils.tensorflow.layers_utils as layers_utils

@@ -78,7 +78,13 @@ from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.storage import ModelStorage
 from rasa.model_training import train, train_nlu
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
+
+# Conditional import for spacy dependencies
+try:
+    from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyNLP
+except ImportError:
+    SpacyModel = None
+    SpacyNLP = None
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     CONFIG_LANGUAGE_KEY,
@@ -141,7 +147,6 @@ if TYPE_CHECKING:
 # we reuse a bit of pytest's own testing machinery, this should eventually come
 # from a separately installable pytest-cli plugin.
 pytest_plugins = ["pytester"]
-
 
 # these tests are run separately
 collect_ignore_glob = ["docs/*.py"]
@@ -257,6 +262,12 @@ PATH_PYTEST_MARKER_MAPPINGS = {
         Path("tests", "utils", "test_mapper.py").absolute(),
         Path("tests", "utils", "test_ml_utils.py").absolute(),
         Path("tests", "utils", "test_plotting.py").absolute(),
+    ],
+    "category_agents": [
+        Path("tests", "agents").absolute(),
+        Path("tests", "core", "test_available_agents.py").absolute(),
+        Path("tests", "shared", "agents").absolute(),
+        Path("tests", "shared", "utils", "mcp").absolute(),
     ],
 }
 
@@ -736,6 +747,7 @@ def moodbot_nlu_data_path() -> Path:
 @pytest.fixture
 def rasa_server(stack_agent: Agent) -> Sanic:
     app = server.create_app(agent=stack_agent)
+    app.ctx.sub_agents = None
     channel.register([RestInput()], app, "/webhooks/")
     return app
 
@@ -743,6 +755,7 @@ def rasa_server(stack_agent: Agent) -> Sanic:
 @pytest.fixture
 def rasa_non_trained_server(empty_agent: Agent) -> Sanic:
     app = server.create_app(agent=empty_agent)
+    app.ctx.sub_agents = None
     channel.register([RestInput()], app, "/webhooks/")
     return app
 
@@ -882,11 +895,15 @@ def project() -> Text:
 
 @pytest.fixture(scope="session")
 def spacy_nlp_component() -> SpacyNLP:
+    if SpacyNLP is None:
+        pytest.skip("SpacyNLP not available - spacy not installed")
     return SpacyNLP.create({"model": "en_core_web_md"}, Mock(), Mock(), Mock())
 
 
 @pytest.fixture(scope="session")
 def spacy_case_sensitive_nlp_component() -> SpacyNLP:
+    if SpacyNLP is None:
+        pytest.skip("SpacyNLP not available - spacy not installed")
     return SpacyNLP.create(
         {"model": "en_core_web_md", "case_sensitive": True}, Mock(), Mock(), Mock()
     )
@@ -894,11 +911,15 @@ def spacy_case_sensitive_nlp_component() -> SpacyNLP:
 
 @pytest.fixture(scope="session")
 def spacy_model(spacy_nlp_component: SpacyNLP) -> SpacyModel:
+    if SpacyModel is None:
+        pytest.skip("SpacyModel not available - spacy not installed")
     return spacy_nlp_component.provide()
 
 
 @pytest.fixture(scope="session")
 def spacy_nlp(spacy_model: SpacyModel) -> "Language":
+    if SpacyModel is None:
+        pytest.skip("SpacyModel not available - spacy not installed")
     return spacy_model.model
 
 
@@ -1184,17 +1205,17 @@ def sanic_test_mode(monkeypatch: MonkeyPatch):
 
 
 def filter_expected_warnings(records: WarningsRecorder) -> WarningsRecorder:
-    records_copy = copy.deepcopy(records.list)
+    remaining_records = list(records)
 
-    for record in records_copy:
-        for warning_type, warning_message in rasa.utils.common.EXPECTED_WARNINGS:
-            if type(record.message) == warning_type and re.search(
+    for warning_type, warning_message in rasa.utils.common.EXPECTED_WARNINGS:
+        for record in list(remaining_records):
+            if isinstance(record.message, warning_type) and re.search(
                 warning_message, str(record.message)
             ):
-                records.pop(type(record.message))
+                remaining_records.remove(record)
                 break
 
-    return records
+    return remaining_records
 
 
 @pytest.fixture
@@ -1713,6 +1734,7 @@ def llm_response_dict() -> Dict[Text, Any]:
             "total_tokens": 12,
         },
         "additional_info": None,
+        "tool_calls": None,
     }
 
 

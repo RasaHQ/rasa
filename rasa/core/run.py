@@ -30,6 +30,7 @@ from rasa import server, telemetry
 from rasa.constants import ENV_SANIC_BACKLOG
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
+from rasa.core.available_agents import AvailableAgents
 from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.development_inspector import DevelopmentInspectProxy
@@ -96,10 +97,32 @@ def _create_single_channel(
     """
     from rasa.core.channels import BUILTIN_CHANNELS
 
+    # Channels that have optional dependencies
+    channels_with_optional_deps = {
+        "facebook": "fbmessenger",
+        "slack": "slack-sdk",
+        "telegram": "aiogram",
+        "twilio": "twilio",
+        "twilio_voice": "twilio",
+        "twilio_media_streams": "twilio",
+        "webexteams": "webexteamssdk",
+        "vier_cvg": "cvg_sdk",
+    }
+
     if channel in BUILTIN_CHANNELS:
         channel_class = BUILTIN_CHANNELS[channel]
 
         return channel_class.from_credentials(credentials)
+    elif channel in channels_with_optional_deps:
+        # Channel is known but not available due to missing dependency
+        dependency = channels_with_optional_deps[channel]
+        raise RasaException(
+            f"Channel '{channel}' is not available "
+            f"due to missing '{dependency}' dependency. "
+            f"Please install the required extra by running: "
+            f"pip install 'rasa-pro[channels]' OR "
+            f"poetry add 'rasa-pro[channels]'"
+        )
     else:
         # try to load channel based on class name
         try:
@@ -151,6 +174,7 @@ def configure_app(
     route: Optional[Text] = "/webhooks/",
     port: int = constants.DEFAULT_SERVER_PORT,
     endpoints: Optional[AvailableEndpoints] = None,
+    sub_agents: Optional[AvailableAgents] = None,
     log_file: Optional[Text] = None,
     conversation_id: Optional[Text] = uuid.uuid4().hex,
     use_syslog: bool = False,
@@ -179,6 +203,7 @@ def configure_app(
                 jwt_private_key=jwt_private_key,
                 jwt_method=jwt_method,
                 endpoints=endpoints,
+                sub_agents=sub_agents,
                 is_inspector_enabled=is_inspector_enabled,
             )
         )
@@ -243,6 +268,7 @@ def serve_application(
     jwt_private_key: Optional[Text] = None,
     jwt_method: Optional[Text] = None,
     endpoints: Optional[AvailableEndpoints] = None,
+    sub_agents: Optional[AvailableAgents] = None,
     remote_storage: Optional[StorageType] = None,
     log_file: Optional[Text] = None,
     ssl_certificate: Optional[Text] = None,
@@ -283,6 +309,7 @@ def serve_application(
         jwt_method,
         port=port,
         endpoints=endpoints,
+        sub_agents=sub_agents,
         log_file=log_file,
         conversation_id=conversation_id,
         use_syslog=use_syslog,
@@ -302,7 +329,7 @@ def serve_application(
     logger.info(f"Starting Rasa server on {protocol}://{interface}:{port}")
 
     app.register_listener(
-        partial(load_agent_on_start, model_path, endpoints, remote_storage),
+        partial(load_agent_on_start, model_path, endpoints, remote_storage, sub_agents),
         "before_server_start",
     )
 
@@ -340,6 +367,7 @@ async def load_agent_on_start(
     model_path: Text,
     endpoints: AvailableEndpoints,
     remote_storage: Optional[StorageType],
+    sub_agents: Optional[AvailableAgents],
     app: Sanic,
     loop: AbstractEventLoop,
 ) -> Agent:
@@ -352,6 +380,7 @@ async def load_agent_on_start(
         model_path=model_path,
         remote_storage=remote_storage,
         endpoints=endpoints,
+        sub_agents=sub_agents,
         loop=loop,
     )
 

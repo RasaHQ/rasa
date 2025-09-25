@@ -849,7 +849,7 @@ class DialogueStateTracker:
         action_names_to_exclude: Optional[List[Text]] = None,
         skip: int = 0,
         event_verbosity: EventVerbosity = EventVerbosity.APPLIED,
-    ) -> Optional["EventTypeAlias"]:
+    ) -> Optional[Event]:
         """Gets the last event of a given type which was actually applied.
 
         Args:
@@ -889,8 +889,11 @@ class DialogueStateTracker:
         Returns:
             `True` if last executed action had name `name`, otherwise `False`.
         """
-        last: Optional[ActionExecuted] = self.get_last_event_for(
+        last_event = self.get_last_event_for(
             ActionExecuted, action_names_to_exclude=[ACTION_LISTEN_NAME], skip=skip
+        )
+        last: Optional[ActionExecuted] = (
+            last_event if isinstance(last_event, ActionExecuted) else None
         )
         return last is not None and last.action_name == name
 

@@ -14,6 +14,7 @@ import rasa.core
 import rasa.shared.utils.common
 from rasa.core.actions import action
 from rasa.core.actions.action import (
+    ActionAgentRequestUserInfo,
     ActionBack,
     ActionBotResponse,
     ActionDefaultAskAffirmation,
@@ -3207,6 +3208,18 @@ async def test_action_send_text_with_disabled_utterance_creation(
     # assert metadata remains unmodified through the bot utterance creation
     assert metadata == {"message": {"text": "foobar"}, "should_send_text": False}
     assert events == []
+
+
+async def test_action_agent_request_user_input(
+    default_channel, template_nlg, template_sender_tracker, domain: Domain
+):
+    metadata = {"message": {"text": "foobar"}}
+    events = await ActionAgentRequestUserInfo().run(
+        default_channel, template_nlg, template_sender_tracker, domain, metadata
+    )
+    # assert metadata remains unmodified through the bot utterance creation
+    assert metadata == {"message": {"text": "foobar"}}
+    assert events == [BotUttered("foobar")]
 
 
 def test_default_actions_and_names_consistency():

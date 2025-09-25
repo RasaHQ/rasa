@@ -2509,8 +2509,7 @@ def test_get_tested_flow_paths_and_commands(
 async def test_error_logging_with_partial_custom_action_stubbing(
     monkeypatch: MonkeyPatch, default_processor: MessageProcessor
 ):
-    """
-    This test verifies that when running an end-to-end test with custom action
+    """This test verifies that when running an end-to-end test with custom action
     stubbing enabled, and some custom actions are not stubbed, an appropriate
     error message is logged.
 
@@ -2592,8 +2591,7 @@ async def test_run_assertions_with_duplicate_user_messages_reusing_metadata(
     assertions_tracker_with_duplicate_user_msg: DialogueStateTracker,
     test_case_with_duplicate_messages: TestCase,
 ) -> None:
-    """
-    Test that the E2E test runner correctly handles duplicate user messages
+    """Test that the E2E test runner correctly handles duplicate user messages
     that reuse metadata and verifies the assertions without errors.
     """
 
@@ -2656,9 +2654,8 @@ async def test_run_assertions_with_duplicate_user_messages_reusing_metadata(
 async def test_fail_fast_user_bot_turn_failure_occurs(
     mock_e2e_test_runner: E2ETestRunner, monkeypatch: MonkeyPatch
 ):
-    """
-    Test that the test runner stops executing further steps when a failure occurs in a
-    regular user/bot turn test case.
+    """Test that the test runner stops executing further steps when a failure
+    occurs in a regular user/bot turn test case.
     """
     # Create a test case where the bot responds incorrectly at step 2
     test_case = TestCase(
@@ -2715,9 +2712,7 @@ async def test_fail_fast_user_bot_turn_no_failure(
     mock_e2e_test_runner: E2ETestRunner,
     monkeypatch: MonkeyPatch,
 ):
-    """
-    Test that the test runner executes all steps when there is no failure.
-    """
+    """Test that the test runner executes all steps when there is no failure."""
     # Create a test case where the bot responds correctly at all steps
     test_case = TestCase(
         name="test_fail_fast_user_bot_turn_no_failure",
@@ -2762,8 +2757,7 @@ async def test_fail_fast_assertions_failure_occurs(
     assertions_e2e_test_runner: E2ETestRunner,
     monkeypatch: MonkeyPatch,
 ):
-    """
-    Test that the test runner stops executing further
+    """Test that the test runner stops executing further
     assertions as soon as a failure occurs.
     """
     # Create a test case with assertions, where one assertion will fail
@@ -2849,9 +2843,7 @@ async def test_fail_fast_assertions_no_failure(
     assertions_e2e_test_runner: E2ETestRunner,
     monkeypatch: MonkeyPatch,
 ):
-    """
-    Test that the test runner executes all assertions when there is no failure.
-    """
+    """Test that the test runner executes all assertions when there is no failure."""
     # Create a test case with assertions, all of which will pass
     test_case = TestCase(
         name="test_fail_fast_assertions_no_failure",

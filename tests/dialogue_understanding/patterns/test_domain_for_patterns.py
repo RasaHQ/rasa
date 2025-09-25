@@ -99,8 +99,7 @@ def test_generate_domain_for_default_patterns_returns_valid_domain():
 
 
 def test_all_context_fields_are_mapped():
-    """
-    Guard test that makes sure:
+    """Guard test that makes sure:
         - No new context field slips in unnoticed.
         - If a new `categorical` field is added, the developer also adds the
           required entries to CONTEXT_FIELD_TYPES and CONTEXT_FIELD_VALUES.

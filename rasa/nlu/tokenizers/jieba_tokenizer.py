@@ -6,6 +6,9 @@ import os
 import shutil
 from typing import Any, Dict, List, Optional, Text
 
+# importing jieba at module level to ensure error is raised if jieba is not installed
+import jieba
+
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -81,8 +84,6 @@ class JiebaTokenizer(Tokenizer):
         be found in the documentation of jieba.
         https://github.com/fxsjy/jieba#load-dictionary
         """
-        import jieba
-
         jieba_userdicts = glob.glob(f"{path}/*")
         for jieba_userdict in jieba_userdicts:
             logger.info(f"Loading Jieba User Dictionary at {jieba_userdict}")
@@ -95,8 +96,6 @@ class JiebaTokenizer(Tokenizer):
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenizes the text of the provided attribute of the incoming message."""
-        import jieba
-
         text = message.get(attribute)
 
         tokenized = jieba.tokenize(text)

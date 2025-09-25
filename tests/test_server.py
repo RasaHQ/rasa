@@ -1671,6 +1671,7 @@ def test_list_routes(empty_agent: Agent):
         "unload_model",
         "get_domain",
         "get_flows",
+        "get_sub_agents",
     }
 
 

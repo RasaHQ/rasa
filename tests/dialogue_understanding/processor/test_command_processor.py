@@ -1,18 +1,21 @@
 import uuid
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 from unittest.mock import Mock, patch
 
 import pytest
-from pytest import MonkeyPatch
+from pytest import FixtureRequest, MonkeyPatch
 
+from rasa.core.available_agents import AvailableAgents
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     CannotHandleCommand,
     ChitChatAnswerCommand,
     ClarifyCommand,
     Command,
+    ContinueAgentCommand,
     CorrectSlotsCommand,
     FreeFormAnswerCommand,
+    RestartAgentCommand,
     SetSlotCommand,
     StartFlowCommand,
 )
@@ -20,6 +23,9 @@ from rasa.dialogue_understanding.commands.correct_slots_command import Corrected
 from rasa.dialogue_understanding.commands.set_slot_command import SetSlotExtractor
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
+)
+from rasa.dialogue_understanding.patterns.continue_interrupted import (
+    ContinueInterruptedPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.patterns.correction import (
     CorrectionPatternFlowStackFrame,
@@ -32,6 +38,7 @@ from rasa.dialogue_understanding.processor.command_processor import (
     calculate_flow_fingerprints,
     clean_up_commands,
     clean_up_slot_command,
+    clean_up_start_flow_command,
     contains_command,
     execute_commands,
     get_commands_from_tracker,
@@ -43,7 +50,12 @@ from rasa.dialogue_understanding.processor.command_processor import (
     validate_state_of_commands,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames.dialogue_stack_frame import (
+    DialogueStackFrame,
+)
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    AgentStackFrame,
+    AgentState,
     BaseFlowStackFrame,
     FlowStackFrameType,
     UserFlowStackFrame,
@@ -58,6 +70,7 @@ from rasa.shared.constants import (
 from rasa.shared.core.constants import ACTION_TRIGGER_CHITCHAT
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
+    AgentCompleted,
     BotUttered,
     DialogueStackUpdated,
     Event,
@@ -1824,9 +1837,7 @@ def test_reorder_commands_with_active_flow():
 
 
 def test_reorder_commands_with_active_flow_and_pattern_frames():
-    """Test that commands are returned unchanged when there is an
-    active flow with pattern frames.
-    """
+    """Test commands unchanged when there is an active flow with pattern frames."""
     # Arrange
     commands = [
         SetSlotCommand("slot1", "value1"),
@@ -1856,9 +1867,7 @@ def test_reorder_commands_with_active_flow_and_pattern_frames():
 
 
 def test_reorder_commands_with_call_and_link_frames():
-    """Test that commands are returned unchanged when there are call/link
-    frames but no active user flow.
-    """
+    """Test commands unchanged when there are call/link frames but no active flow."""
     # Arrange
     commands = [
         SetSlotCommand("slot1", "value1"),
@@ -1985,3 +1994,386 @@ def test_get_slots_eligible_for_correction(
 
     # Assert
     assert result == expected_slots
+
+
+@pytest.mark.parametrize(
+    "frames, command, expected_result",
+    [
+        ([], StartFlowCommand("foo"), [StartFlowCommand("foo")]),
+        (
+            [
+                UserFlowStackFrame(
+                    flow_id="foo", step_id="START", frame_id="user-frame-1"
+                )
+            ],
+            StartFlowCommand("foo"),
+            [],
+        ),
+        (
+            [
+                UserFlowStackFrame(
+                    flow_id="foo", step_id="START", frame_id="user-frame-1"
+                )
+            ],
+            StartFlowCommand("bar"),
+            [StartFlowCommand("bar")],
+        ),
+        (
+            [
+                UserFlowStackFrame(
+                    flow_id="foo", step_id="START", frame_id="user-frame-1"
+                ),
+                ContinueInterruptedPatternFlowStackFrame(
+                    frame_id="continue-pattern-frame",
+                    step_id="continue_step",
+                    interrupted_flow_ids=["previous_flow"],
+                    interrupted_flow_names=["previous_frame"],
+                    interrupted_flow_options="previous_flow",
+                ),
+            ],
+            StartFlowCommand("foo"),
+            [StartFlowCommand("foo")],
+        ),
+        (
+            [
+                UserFlowStackFrame(
+                    flow_id="foo", step_id="START", frame_id="user-frame-1"
+                ),
+                ContinueInterruptedPatternFlowStackFrame(
+                    frame_id="continue-pattern-frame",
+                    step_id="continue_step",
+                    interrupted_flow_ids=["previous_flow"],
+                    interrupted_flow_names=["previous_frame"],
+                    interrupted_flow_options="previous_flow",
+                ),
+            ],
+            StartFlowCommand("bar"),
+            [StartFlowCommand("bar")],
+        ),
+    ],
+)
+def test_clean_up_start_flow_command(
+    frames: List[DialogueStackFrame],
+    command: StartFlowCommand,
+    expected_result: List[Command],
+):
+    """Test clean_up_start_flow_command function."""
+    tracker = DialogueStateTracker.from_events(sender_id="test", evts=[])
+    tracker.update_stack(DialogueStack(frames=frames))
+
+    result = clean_up_start_flow_command([], tracker, command)
+
+    assert result == expected_result
+
+
+@pytest.fixture(autouse=True)
+def reset_available_agents_singleton() -> None:
+    """Reset the AvailableAgents singleton before each test."""
+    yield
+    AvailableAgents.reset_instance()
+
+
+@pytest.fixture
+def mock_available_agents(monkeypatch: MonkeyPatch) -> Mock:
+    """Mock AvailableAgents to control agent existence.
+
+    Returns:
+        Mock instance of AvailableAgents with configured agents.
+    """
+    # Create mock agent configs
+    mock_valid_agent = Mock()
+    mock_completed_agent = Mock()
+
+    # Create mock instance with agents
+    mock_instance = Mock()
+    mock_instance.agents = {
+        "valid_agent": mock_valid_agent,
+        "completed_agent": mock_completed_agent,
+    }
+
+    # Mock get_agent_config to return the appropriate agent or None
+    def mock_get_agent_config(agent_id: str):
+        return mock_instance.agents.get(agent_id)
+
+    mock_instance.get_agent_config = mock_get_agent_config
+
+    # Mock the get_instance method to return our mock instance
+    monkeypatch.setattr(
+        "rasa.core.available_agents.AvailableAgents.get_instance",
+        lambda: mock_instance,
+    )
+
+    return mock_instance
+
+
+@pytest.fixture
+def tracker_with_completed_agent() -> DialogueStateTracker:
+    """Create a tracker with a completed agent event."""
+    tracker = DialogueStateTracker.from_events(sender_id="test", evts=[])
+    # Add a completed agent event
+    completed_event = AgentCompleted(agent_id="completed_agent", flow_id="test_flow")
+    tracker.update_with_events([completed_event])
+    return tracker
+
+
+@pytest.fixture
+def tracker_with_no_agent() -> DialogueStateTracker:
+    """Create a tracker with no active agent."""
+    return DialogueStateTracker.from_events(sender_id="test", evts=[])
+
+
+@pytest.fixture
+def tracker_with_active_agent() -> DialogueStateTracker:
+    """Create a tracker with an active agent."""
+    tracker = DialogueStateTracker.from_events(sender_id="test", evts=[])
+    # Add an active agent frame to the stack
+    active_agent_frame = AgentStackFrame(
+        frame_id="active_agent_frame",
+        flow_id="test_flow",
+        step_id="test_step",
+        agent_id="active_agent",
+        state=AgentState.WAITING_FOR_INPUT,
+    )
+    tracker.update_stack(DialogueStack(frames=[active_agent_frame]))
+    return tracker
+
+
+@pytest.mark.parametrize(
+    "agent_id,expected_result",
+    [
+        ("invalid_agent", []),
+        ("valid_agent", []),
+        ("completed_agent", [RestartAgentCommand("completed_agent")]),
+    ],
+)
+def test_restart_agent_command_cleanup(
+    agent_id: str,
+    expected_result: List[Command],
+    mock_available_agents: Mock,
+    tracker_with_completed_agent: DialogueStateTracker,
+) -> None:
+    """Test RestartAgentCommand cleanup with various agent states."""
+    if agent_id == "completed_agent":
+        tracker: DialogueStateTracker = tracker_with_completed_agent
+    else:
+        tracker = DialogueStateTracker.from_events(sender_id="test", evts=[])
+
+    commands: List[Command] = [RestartAgentCommand(agent_id)]
+    result: List[Command] = clean_up_commands(commands, tracker, Mock(), Mock())
+
+    assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "tracker_fixture,expected_result",
+    [
+        ("tracker_with_no_agent", []),
+        ("tracker_with_active_agent", [ContinueAgentCommand()]),
+    ],
+)
+def test_continue_agent_command_cleanup(
+    tracker_fixture: str,
+    expected_result: List[Command],
+    request: FixtureRequest,
+) -> None:
+    """Test ContinueAgentCommand cleanup based on active agent status."""
+    tracker: DialogueStateTracker = request.getfixturevalue(tracker_fixture)
+    commands: List[Command] = [ContinueAgentCommand()]
+    result: List[Command] = clean_up_commands(commands, tracker, Mock(), Mock())
+
+    assert result == expected_result
+
+
+def _create_tracker_with_agent(
+    slots: Optional[List[Any]] = None,
+) -> DialogueStateTracker:
+    """Create a tracker with an active agent."""
+    domain = Domain.empty()
+    if slots:
+        domain.slots = slots
+    else:
+        # Add a slot with incompatible extractor mapping for testing
+        incompatible_slot = TextSlot(
+            "incompatible_extractor_slot",
+            mappings=[{"type": "from_entity", "entity": "name"}],
+        )
+        domain.slots = [incompatible_slot]
+
+    tracker = DialogueStateTracker.from_events("test", [], domain.slots)
+    agent_frame = AgentStackFrame(
+        frame_id="active_agent_frame",
+        flow_id="test_flow",
+        step_id="test_step",
+        agent_id="test_agent",
+        state=AgentState.WAITING_FOR_INPUT,
+    )
+    tracker.update_stack(DialogueStack(frames=[agent_frame]))
+    return tracker
+
+
+@pytest.fixture
+def tracker_with_agent() -> DialogueStateTracker:
+    """Create a tracker with an active agent."""
+    return _create_tracker_with_agent()
+
+
+@pytest.fixture
+def tracker_with_valid_slot_and_agent() -> DialogueStateTracker:
+    """Create a tracker with a valid slot and an active agent."""
+    return _create_tracker_with_agent([TextSlot("valid_slot", mappings=[])])
+
+
+def _create_commands_from_data(
+    command_data: List[Tuple[str, Dict[str, Any]]],
+) -> List[Command]:
+    """Create Command objects from command type and data."""
+    commands = []
+    for cmd_type, data in command_data:
+        if cmd_type == "SetSlotCommand":
+            slot_name = data.get("slot_name", "nonexistent_slot")
+            extractor = data.get("extractor", SetSlotExtractor.LLM.value)
+            commands.append(SetSlotCommand(slot_name, "some_value", extractor))
+        elif cmd_type == "ContinueAgentCommand":
+            commands.append(ContinueAgentCommand())
+        elif cmd_type == "CannotHandleCommand":
+            reason = data.get("reason")  # None if not provided
+            commands.append(CannotHandleCommand(reason=reason))
+        elif cmd_type == "ChitChatAnswerCommand":
+            commands.append(ChitChatAnswerCommand())
+    return commands
+
+
+@pytest.mark.parametrize(
+    "tracker_fixture,command_data,expected_length,expected_types,expected_details",
+    [
+        # Core functionality: Invalid commands with agent
+        (
+            "tracker_with_agent",
+            [("SetSlotCommand", {"slot_name": "nonexistent_slot"})],
+            1,
+            [ContinueAgentCommand],
+            None,
+        ),
+        # Core functionality: Invalid commands without agent
+        (
+            None,
+            [("SetSlotCommand", {"slot_name": "nonexistent_slot"})],
+            1,
+            [CannotHandleCommand],
+            None,
+        ),
+        # Mixed valid/invalid commands with agent
+        (
+            "tracker_with_valid_slot_and_agent",
+            [
+                ("SetSlotCommand", {"slot_name": "nonexistent_slot"}),
+                ("SetSlotCommand", {"slot_name": "valid_slot"}),
+            ],
+            2,
+            [SetSlotCommand, ContinueAgentCommand],
+            {"slot_name": "valid_slot"},
+        ),
+        # ChitChatAnswerCommand that generates CannotHandleCommand during cleanup
+        (
+            "tracker_with_agent",
+            [("ChitChatAnswerCommand", {})],
+            1,
+            [CannotHandleCommand],
+            None,
+        ),
+        # Empty commands with agent
+        ("tracker_with_agent", [], 1, [ContinueAgentCommand], None),
+        # Multiple CannotHandleCommands without agent (deduplicated)
+        (
+            None,
+            [
+                ("CannotHandleCommand", {"reason": "reason1"}),
+                ("CannotHandleCommand", {"reason": "reason2"}),
+            ],
+            1,
+            [CannotHandleCommand],
+            None,
+        ),
+        # LLM parsing failure CannotHandleCommand with agent (replaced)
+        (
+            "tracker_with_agent",
+            [("CannotHandleCommand", {})],
+            1,
+            [ContinueAgentCommand],
+            None,
+        ),
+        # CannotHandleCommand with default reason and agent (replaced)
+        (
+            "tracker_with_agent",
+            [("CannotHandleCommand", {"reason": "cannot_handle_default"})],
+            1,
+            [ContinueAgentCommand],
+            None,
+        ),
+        # Mixed scenario: LLM parsing failure + invalid command
+        (
+            "tracker_with_agent",
+            [
+                ("CannotHandleCommand", {}),
+                ("SetSlotCommand", {"slot_name": "nonexistent_slot"}),
+            ],
+            1,
+            [ContinueAgentCommand],
+            None,
+        ),
+        # Multiple invalid SetSlot commands with agent (all replaced)
+        (
+            "tracker_with_agent",
+            [
+                ("SetSlotCommand", {"slot_name": "nonexistent_slot1"}),
+                ("SetSlotCommand", {"slot_name": "nonexistent_slot2"}),
+            ],
+            1,
+            [ContinueAgentCommand],
+            None,
+        ),
+        # Invalid slot command with incompatible extractor and agent
+        (
+            "tracker_with_agent",
+            [("SetSlotCommand", {"slot_name": "incompatible_extractor_slot"})],
+            1,
+            [ContinueAgentCommand],
+            None,
+        ),
+    ],
+)
+def test_clean_up_commands_agent_behavior(
+    tracker_fixture: Optional[str],
+    command_data: List[Tuple[str, Dict[str, Any]]],
+    expected_length: int,
+    expected_types: List[type],
+    expected_details: Optional[Dict[str, Any]],
+    request: FixtureRequest,
+) -> None:
+    """Test various scenarios of command cleanup with agent behavior."""
+    # Create commands from data
+    commands = _create_commands_from_data(command_data)
+    # Create tracker
+    if tracker_fixture:
+        tracker = request.getfixturevalue(tracker_fixture)
+    else:
+        domain = Domain.empty()
+        tracker = DialogueStateTracker.from_events("test", [], domain.slots)
+
+    # Create flows inline
+    all_flows = FlowsList(underlying_flows=[])
+
+    # Clean up commands
+    cleaned_commands = clean_up_commands(commands, tracker, all_flows, Mock())
+
+    # Assertions
+    assert len(cleaned_commands) == expected_length
+
+    for i, expected_type in enumerate(expected_types):
+        assert isinstance(cleaned_commands[i], expected_type)
+
+    # Additional assertions based on expected details
+    if expected_details:
+        if "slot_name" in expected_details:
+            # Check first SetSlotCommand
+            assert cleaned_commands[0].name == expected_details["slot_name"]

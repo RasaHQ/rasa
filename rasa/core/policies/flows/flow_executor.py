@@ -4,12 +4,11 @@ from typing import Any, Dict, List, Optional, Text
 
 import structlog
 from jinja2 import Template
-from structlog.contextvars import (
-    bound_contextvars,
-)
+from structlog.contextvars import bound_contextvars
 
 from rasa.core.config.configuration import Configuration
 from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
+from rasa.core.policies.flows.agent_executor import run_agent
 from rasa.core.policies.flows.flow_exceptions import (
     FlowCircuitBreakerTrippedException,
     FlowException,
@@ -21,7 +20,7 @@ from rasa.core.policies.flows.flow_step_result import (
     FlowStepResult,
     PauseFlowReturnPrediction,
 )
-from rasa.dialogue_understanding.commands import CancelFlowCommand
+from rasa.core.policies.flows.mcp_tool_executor import call_mcp_tool
 from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.collect_information import (
     FLOW_PATTERN_COLLECT_INFORMATION,
@@ -48,11 +47,13 @@ from rasa.dialogue_understanding.stack.frames import (
     UserFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    AgentStackFrame,
     FlowStackFrameType,
 )
 from rasa.dialogue_understanding.stack.utils import (
-    top_user_flow_frame,
+    user_frames_on_the_stack,
 )
+from rasa.dialogue_understanding.utils import assemble_options_string
 from rasa.shared.constants import RASA_PATTERN_HUMAN_HANDOFF
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
@@ -68,11 +69,7 @@ from rasa.shared.core.events import (
     SlotSet,
 )
 from rasa.shared.core.flows import FlowsList
-from rasa.shared.core.flows.flow import (
-    END_STEP,
-    Flow,
-    FlowStep,
-)
+from rasa.shared.core.flows.flow import END_STEP, Flow, FlowStep
 from rasa.shared.core.flows.flow_step_links import (
     ElseFlowStepLink,
     IfFlowStepLink,
@@ -90,9 +87,7 @@ from rasa.shared.core.flows.steps import (
 )
 from rasa.shared.core.flows.steps.constants import START_STEP
 from rasa.shared.core.slots import Slot, SlotRejection
-from rasa.shared.core.trackers import (
-    DialogueStateTracker,
-)
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.pypred import Predicate
 
 structlogger = structlog.get_logger()
@@ -150,6 +145,13 @@ def select_next_step_id(
     tracker: DialogueStateTracker,
 ) -> Optional[Text]:
     """Selects the next step id based on the current step."""
+    # if the current step is a call step to an agent, and we already have an
+    # AgentStackFrame on top of the stack, we need to return the current
+    # step id again in order to loop back to the agent.
+    top_stack_frame = tracker.stack.top()
+    if top_stack_frame and isinstance(top_stack_frame, AgentStackFrame):
+        return current.id
+
     next_step = current.next
     if len(next_step.links) == 1 and isinstance(next_step.links[0], StaticFlowStepLink):
         return next_step.links[0].target
@@ -236,38 +238,58 @@ def trigger_pattern_continue_interrupted(
     stack: DialogueStack,
     flows: FlowsList,
     tracker: DialogueStateTracker,
-) -> List[Event]:
+) -> None:
     """Trigger the pattern to continue an interrupted flow if needed."""
-    events: List[Event] = []
-
-    # get previously started user flow that will be continued
-    interrupted_user_flow_frame = top_user_flow_frame(stack)
-    interrupted_user_flow_step = (
-        interrupted_user_flow_frame.step(flows) if interrupted_user_flow_frame else None
-    )
-    interrupted_user_flow = (
-        interrupted_user_flow_frame.flow(flows) if interrupted_user_flow_frame else None
-    )
-
+    # only trigger the pattern if the current frame is a user flow frame
+    # with a frame type of interrupt
     if (
-        isinstance(current_frame, UserFlowStackFrame)
-        and interrupted_user_flow_step is not None
-        and interrupted_user_flow is not None
-        and current_frame.frame_type == FlowStackFrameType.INTERRUPT
-        and not is_step_end_of_flow(interrupted_user_flow_step)
+        not isinstance(current_frame, UserFlowStackFrame)
+        or current_frame.frame_type != FlowStackFrameType.INTERRUPT
     ):
-        stack.push(
-            ContinueInterruptedPatternFlowStackFrame(
-                previous_flow_name=interrupted_user_flow.readable_name(
-                    language=tracker.current_language
-                ),
-            )
-        )
-        events.append(
-            FlowResumed(interrupted_user_flow.id, interrupted_user_flow_step.id)
-        )
+        return None
 
-    return events
+    # get all previously interrupted user flows
+    interrupted_user_flow_stack_frames = user_frames_on_the_stack(stack)
+
+    interrupted_user_flows_to_continue: List[UserFlowStackFrame] = []
+    # check if interrupted user flows can be continued
+    # i.e. the flow is not at the end of the flow
+    for frame in interrupted_user_flow_stack_frames:
+        interrupted_user_flow_step = frame.step(flows)
+        interrupted_user_flow = frame.flow(flows)
+        if (
+            interrupted_user_flow_step is not None
+            and interrupted_user_flow is not None
+            and not is_step_end_of_flow(interrupted_user_flow_step)
+        ):
+            interrupted_user_flows_to_continue.append(frame)
+
+    # if there are no interrupted user flows to continue,
+    # we don't need to trigger the pattern
+    if len(interrupted_user_flows_to_continue) == 0:
+        return None
+
+    # get the flow names and ids of the interrupted flows
+    # and assemble the options string
+    flow_names: List[str] = []
+    flow_ids: List[str] = []
+    for frame in interrupted_user_flows_to_continue:
+        flow_names.append(
+            frame.flow(flows).readable_name(language=tracker.current_language)
+        )
+        flow_ids.append(frame.flow_id)
+    options_string = assemble_options_string(flow_names)
+
+    # trigger the pattern to continue the interrupted flows
+    stack.push(
+        ContinueInterruptedPatternFlowStackFrame(
+            interrupted_flow_names=flow_names,
+            interrupted_flow_ids=flow_ids,
+            interrupted_flow_options=options_string,
+        )
+    )
+
+    return None
 
 
 def trigger_pattern_completed(
@@ -361,8 +383,11 @@ def reset_scoped_slots(
     return events
 
 
-def advance_flows(
-    tracker: DialogueStateTracker, available_actions: List[str], flows: FlowsList
+async def advance_flows(
+    tracker: DialogueStateTracker,
+    available_actions: List[str],
+    flows: FlowsList,
+    slots: List[Slot],
 ) -> FlowActionPrediction:
     """Advance the current flows until the next action.
 
@@ -370,6 +395,7 @@ def advance_flows(
         tracker: The tracker to get the next action for.
         available_actions: The actions that are available in the domain.
         flows: All flows.
+        slots: The slots that are available in the domain.
 
     Returns:
     The predicted action and the events to run.
@@ -379,13 +405,16 @@ def advance_flows(
         # if there are no flows, there is nothing to do
         return FlowActionPrediction(None, 0.0)
 
-    return advance_flows_until_next_action(tracker, available_actions, flows)
+    return await advance_flows_until_next_action(
+        tracker, available_actions, flows, slots
+    )
 
 
-def advance_flows_until_next_action(
+async def advance_flows_until_next_action(
     tracker: DialogueStateTracker,
     available_actions: List[str],
     flows: FlowsList,
+    slots: List[Slot],
 ) -> FlowActionPrediction:
     """Advance the flow and select the next action to execute.
 
@@ -443,7 +472,7 @@ def advance_flows_until_next_action(
 
             with bound_contextvars(step_id=next_step.id):
                 step_stack = tracker.stack
-                step_result = run_step(
+                step_result = await run_step(
                     next_step,
                     current_flow,
                     step_stack,
@@ -451,6 +480,7 @@ def advance_flows_until_next_action(
                     available_actions,
                     flows,
                     previous_step_id,
+                    slots,
                 )
                 new_events = step_result.events
                 if (
@@ -479,10 +509,9 @@ def advance_flows_until_next_action(
         # make sure we really return all events that got created during the
         # step execution of all steps (not only the last one)
         prediction.events = gathered_events
-        prediction.metadata = {
-            ACTIVE_FLOW_METADATA_KEY: tracker.active_flow,
-            STEP_ID_METADATA_KEY: tracker.current_step_id,
-        }
+        prediction.metadata = prediction.metadata or {}
+        prediction.metadata[ACTIVE_FLOW_METADATA_KEY] = tracker.active_flow
+        prediction.metadata[STEP_ID_METADATA_KEY] = tracker.current_step_id
         return prediction
     else:
         structlogger.warning("flow.step.execution.no_action")
@@ -524,6 +553,8 @@ def validate_collect_step(
 
 def cancel_flow_and_push_internal_error(stack: DialogueStack, flow_name: str) -> None:
     """Cancel the top user flow and push the internal error pattern."""
+    from rasa.dialogue_understanding.commands import CancelFlowCommand
+
     top_frame = stack.top()
 
     if isinstance(top_frame, BaseFlowStackFrame):
@@ -552,7 +583,7 @@ def attach_stack_metadata_to_events(
         event.metadata[ACTIVE_FLOW_METADATA_KEY] = flow_id
 
 
-def run_step(
+async def run_step(
     step: FlowStep,
     flow: Flow,
     stack: DialogueStack,
@@ -560,6 +591,7 @@ def run_step(
     available_actions: List[str],
     flows: FlowsList,
     previous_step_id: str,
+    slots: List[Slot],
 ) -> FlowStepResult:
     """Run a single step of a flow.
 
@@ -578,6 +610,7 @@ def run_step(
         available_actions: The actions that are available in the domain.
         flows: All flows.
         previous_step_id: The ID of the previous step.
+        slots: The slots that are available in the domain.
 
     Returns:
     A result of running the step describing where to transition to.
@@ -617,7 +650,7 @@ def run_step(
         return _run_link_step(initial_events, stack, step)
 
     elif isinstance(step, CallFlowStep):
-        return _run_call_step(initial_events, stack, step)
+        return await _run_call_step(initial_events, stack, step, tracker, slots)
 
     elif isinstance(step, SetSlotsFlowStep):
         return _run_set_slot_step(initial_events, step)
@@ -669,12 +702,10 @@ def _run_end_step(
     structlogger.debug("flow.step.run.flow_end")
     current_frame = stack.pop()
     trigger_pattern_completed(current_frame, stack, flows)
-    resumed_events = trigger_pattern_continue_interrupted(
-        current_frame, stack, flows, tracker
-    )
+    trigger_pattern_continue_interrupted(current_frame, stack, flows, tracker)
     reset_events: List[Event] = reset_scoped_slots(current_frame, flow, tracker)
     return ContinueFlowWithNextStep(
-        events=initial_events + reset_events + resumed_events, has_flow_ended=True
+        events=initial_events + reset_events, has_flow_ended=True
     )
 
 
@@ -686,17 +717,26 @@ def _run_set_slot_step(
     return ContinueFlowWithNextStep(events=initial_events + slot_events)
 
 
-def _run_call_step(
-    initial_events: List[Event], stack: DialogueStack, step: CallFlowStep
+async def _run_call_step(
+    initial_events: List[Event],
+    stack: DialogueStack,
+    step: CallFlowStep,
+    tracker: DialogueStateTracker,
+    slots: List[Slot],
 ) -> FlowStepResult:
     structlogger.debug("flow.step.run.call")
-    stack.push(
-        UserFlowStackFrame(
-            flow_id=step.call,
-            frame_type=FlowStackFrameType.CALL,
-        ),
-    )
-    return ContinueFlowWithNextStep(events=initial_events)
+    if step.is_calling_mcp_tool():
+        return await call_mcp_tool(initial_events, stack, step, tracker)
+    elif step.is_calling_agent():
+        return await run_agent(initial_events, stack, step, tracker, slots)
+    else:
+        stack.push(
+            UserFlowStackFrame(
+                flow_id=step.call,
+                frame_type=FlowStackFrameType.CALL,
+            ),
+        )
+        return ContinueFlowWithNextStep(events=initial_events)
 
 
 def _run_link_step(

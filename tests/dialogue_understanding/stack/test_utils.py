@@ -1,9 +1,17 @@
+from typing import List
+
 import pytest
 
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.patterns.continue_interrupted import (
+    ContinueInterruptedPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames.dialogue_stack_frame import (
+    DialogueStackFrame,
+)
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     FlowStackFrameType,
     UserFlowStackFrame,
@@ -11,7 +19,9 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
 from rasa.dialogue_understanding.stack.utils import (
     end_top_user_flow,
     filled_slots_for_active_flow,
+    get_active_continue_interrupted_pattern_frame,
     get_collect_steps_excluding_ask_before_filling_for_active_flow,
+    is_continue_interrupted_flow_active,
     top_flow_frame,
     top_user_flow_frame,
     user_flows_on_the_stack,
@@ -465,3 +475,201 @@ def test_get_collect_steps_excluding_ask_before_filling_empty_stack() -> None:
         stack, all_flows
     )
     assert slots == set()
+
+
+@pytest.mark.parametrize(
+    "frames_order, expected_result",
+    [
+        # Empty stack
+        ([], False),
+        # Single frame scenarios
+        ([UserFlowStackFrame("flow1", "step1", "frame1")], False),
+        (
+            [
+                ContinueInterruptedPatternFlowStackFrame(
+                    "rasa_pattern_continue_interrupted", "step1", "frame1"
+                )
+            ],
+            True,
+        ),
+        (
+            [
+                CollectInformationPatternFlowStackFrame(
+                    "other_pattern", "step1", "frame1"
+                )
+            ],
+            False,
+        ),
+        # Two frame scenarios
+        (
+            [
+                UserFlowStackFrame("flow1", "step1", "frame2"),
+                ContinueInterruptedPatternFlowStackFrame(
+                    "rasa_pattern_continue_interrupted", "step1", "frame1"
+                ),
+            ],
+            True,
+        ),
+        (
+            [
+                ContinueInterruptedPatternFlowStackFrame(
+                    "rasa_pattern_continue_interrupted", "step1", "frame2"
+                ),
+                UserFlowStackFrame("flow1", "step1", "frame1"),
+            ],
+            False,
+        ),
+        # Multiple frames
+        (
+            [
+                UserFlowStackFrame("flow1", "step1", "frame1"),
+                ContinueInterruptedPatternFlowStackFrame(
+                    "rasa_pattern_continue_interrupted", "step1", "frame2"
+                ),
+                CollectInformationPatternFlowStackFrame("slot1", "frame3"),
+            ],
+            True,
+        ),
+        (
+            [
+                UserFlowStackFrame("flow1", "step1", "frame1"),
+                ContinueInterruptedPatternFlowStackFrame(
+                    "rasa_pattern_continue_interrupted", "step1", "frame2"
+                ),
+                CollectInformationPatternFlowStackFrame("slot1", "frame3"),
+                CollectInformationPatternFlowStackFrame("slot1", "frame3"),
+            ],
+            True,
+        ),
+        (
+            [
+                ContinueInterruptedPatternFlowStackFrame(
+                    "rasa_pattern_continue_interrupted", "step1", "frame2"
+                ),
+                CollectInformationPatternFlowStackFrame("slot1", "frame3"),
+                CollectInformationPatternFlowStackFrame("slot1", "frame3"),
+                UserFlowStackFrame("flow1", "step1", "frame1"),
+            ],
+            False,
+        ),
+    ],
+)
+def test_is_continue_interrupted_flow_active(
+    frames_order: List[DialogueStackFrame], expected_result: bool
+):
+    stack = DialogueStack(frames=frames_order)
+
+    result = is_continue_interrupted_flow_active(stack)
+
+    assert result == expected_result
+
+
+# Tests for get_active_continue_interrupted_pattern_frame function
+@pytest.mark.parametrize(
+    "frames_order, expected_frame_id",
+    [
+        # Empty stack
+        ([], None),
+        # Single frame scenarios
+        ([UserFlowStackFrame("flow1", "step1", "frame1")], None),
+        (
+            [
+                ContinueInterruptedPatternFlowStackFrame(
+                    frame_id="frame1",
+                )
+            ],
+            "frame1",
+        ),
+        (
+            [
+                CollectInformationPatternFlowStackFrame(
+                    "other_pattern", "step1", "frame1"
+                )
+            ],
+            None,
+        ),
+        # Two frame scenarios - pattern frame on top
+        (
+            [
+                UserFlowStackFrame("flow1", "step1", "frame2"),
+                ContinueInterruptedPatternFlowStackFrame(
+                    frame_id="frame1",
+                ),
+            ],
+            "frame1",
+        ),
+        # Two frame scenarios - user frame on top (should return None)
+        (
+            [
+                ContinueInterruptedPatternFlowStackFrame(
+                    frame_id="frame2",
+                ),
+                UserFlowStackFrame("flow1", "step1", "frame1"),
+            ],
+            None,
+        ),
+        # Multiple frames - pattern frame in middle
+        (
+            [
+                UserFlowStackFrame("flow1", "step1", "frame1"),
+                ContinueInterruptedPatternFlowStackFrame(
+                    frame_id="frame2",
+                ),
+                CollectInformationPatternFlowStackFrame("slot1", "frame3"),
+            ],
+            "frame2",
+        ),
+        # Multiple frames - pattern frame on top
+        (
+            [
+                UserFlowStackFrame("flow1", "step1", "frame1"),
+                CollectInformationPatternFlowStackFrame("slot1", "frame2"),
+                ContinueInterruptedPatternFlowStackFrame(
+                    frame_id="frame3",
+                ),
+            ],
+            "frame3",
+        ),
+        # Multiple frames - user frame on top (should return None)
+        (
+            [
+                ContinueInterruptedPatternFlowStackFrame(
+                    frame_id="frame2",
+                ),
+                CollectInformationPatternFlowStackFrame("slot1", "frame3"),
+                UserFlowStackFrame("flow1", "step1", "frame1"),
+            ],
+            None,
+        ),
+        # Complex stack with multiple pattern frames - should return the topmost one
+        (
+            [
+                UserFlowStackFrame("flow1", "step1", "frame1"),
+                ContinueInterruptedPatternFlowStackFrame(
+                    frame_id="frame2",
+                ),
+                CollectInformationPatternFlowStackFrame("slot1", "frame3"),
+                ContinueInterruptedPatternFlowStackFrame(
+                    frame_id="frame4",
+                ),
+            ],
+            "frame4",
+        ),
+    ],
+)
+def test_get_active_continue_interrupted_pattern_frame(
+    frames_order: List[DialogueStackFrame], expected_frame_id: str
+):
+    """Test get_active_continue_interrupted_pattern_frame with various stack
+    configurations.
+    """
+    stack = DialogueStack(frames=frames_order)
+
+    result = get_active_continue_interrupted_pattern_frame(stack)
+
+    if expected_frame_id is None:
+        assert result is None
+    else:
+        assert result is not None
+        assert isinstance(result, ContinueInterruptedPatternFlowStackFrame)
+        assert result.frame_id == expected_frame_id

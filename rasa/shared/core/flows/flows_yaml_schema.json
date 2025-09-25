@@ -1,20 +1,12 @@
 {
     "type": "object",
-    "required": [
-        "flows"
-    ],
+    "required": ["flows"],
     "properties": {
-        "version": {
-            "type": "string"
-        },
+        "version": {"type": "string"},
         "flows": {
             "type": "object",
             "schema_name": "dictionary of flows",
-            "patternProperties": {
-                "^[A-Za-z_][A-Za-z0-9_]*$": {
-                    "$ref": "#/$defs/flow"
-                }
-            }
+            "patternProperties": {"^[A-Za-z_][A-Za-z0-9_]*$": {"$ref": "#/$defs/flow"}}
         }
     },
     "$defs": {
@@ -28,34 +20,22 @@
                     {
                         "schema_name": "intent trigger",
                         "type": "object",
-                        "required": [
-                            "intent"
-                        ],
+                        "required": ["intent"],
                         "additionalProperties": false,
                         "properties": {
                             "intent": {
                                 "type": "object",
                                 "properties": {
-                                    "confidence_threshold": {
-                                        "type": "number"
-                                    },
-                                    "name": {
-                                        "type": "string"
-                                    }
+                                    "confidence_threshold": {"type": "number"},
+                                    "name": {"type": "string"}
                                 },
-                                "required": [
-                                    "name"
-                                ]
+                                "required": ["name"]
                             }
                         }
                     },
                     {
                         "schema_name": "simple intent trigger",
-                        "properties": {
-                            "intent": {
-                                "type": "string"
-                            }
-                        }
+                        "properties": {"intent": {"type": "string"}}
                     }
                 ]
             }
@@ -66,9 +46,7 @@
             "items": {
                 "type": "object",
                 "properties": {
-                    "id": {
-                        "type": "string"
-                    },
+                    "id": {"type": "string"},
                     "next": {
                         "anyOf": [
                             {
@@ -79,16 +57,11 @@
                                     "oneOf": [
                                         {
                                             "schema_name": "if-then block",
-                                            "required": [
-                                                "if",
-                                                "then"
-                                            ]
+                                            "required": ["if", "then"]
                                         },
                                         {
                                             "schema_name": "else block",
-                                            "required": [
-                                                "else"
-                                            ]
+                                            "required": ["else"]
                                         }
                                     ],
                                     "properties": {
@@ -104,12 +77,7 @@
                                                 }
                                             ]
                                         },
-                                        "if": {
-                                            "type": [
-                                                "boolean",
-                                                "string"
-                                            ]
-                                        },
+                                        "if": {"type": ["boolean", "string"]},
                                         "then": {
                                             "oneOf": [
                                                 {
@@ -125,66 +93,25 @@
                                     }
                                 }
                             },
-                            {
-                                "type": "string",
-                                "schema_name": "step id"
-                            }
+                            {"type": "string", "schema_name": "step id"}
                         ]
                     },
-                    "action": {
-                        "type": "string"
-                    },
-                    "collect": {
-                        "type": "string"
-                    },
-                    "link": {
-                        "type": "string"
-                    },
-                    "call": {
-                        "type": "string"
-                    },
+                    "action": {"type": "string"},
+                    "collect": {"type": "string"},
+                    "link": {"type": "string"},
+                    "call": {"type": "string"},
                     "set_slots": {
                         "$ref": "#/$defs/set_slots",
                         "schema_name": "slot set"
                     }
                 },
                 "oneOf": [
-                    {
-                        "required": [
-                            "action"
-                        ],
-                        "schema_name": "action step"
-                    },
-                    {
-                        "required": [
-                            "collect"
-                        ],
-                        "schema_name": "collect step"
-                    },
-                    {
-                        "required": [
-                            "link"
-                        ],
-                        "schema_name": "link step"
-                    },
-                    {
-                        "required": [
-                            "call"
-                        ],
-                        "schema_name": "call step"
-                    },
-                    {
-                        "required": [
-                            "set_slots"
-                        ],
-                        "schema_name": "slot set step"
-                    },
-                    {
-                        "required": [
-                            "noop"
-                        ],
-                        "schema_name": ""
-                    }
+                    {"required": ["action"], "schema_name": "action step"},
+                    {"required": ["collect"], "schema_name": "collect step"},
+                    {"required": ["link"], "schema_name": "link step"},
+                    {"required": ["call"], "schema_name": "call step"},
+                    {"required": ["set_slots"], "schema_name": "slot set step"},
+                    {"required": ["noop"], "schema_name": ""}
                 ],
                 "dependentSchemas": {
                     "action": {
@@ -196,10 +123,23 @@
                             "metadata": {}
                         }
                     },
-                    "noop": {
-                        "required": [
-                            "next"
-                        ]
+                    "noop": {"required": ["next"]},
+                    "call": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "call": {"type": "string"},
+                            "id": {},
+                            "next": {},
+                            "metadata": {},
+                            "description": {"type": "string"},
+                            "mcp_server": {"type": "string"},
+                            "mapping": {"$ref": "#/$defs/call_step/properties/mapping"},
+                            "exit_if": {"$ref": "#/$defs/call_step/properties/exit_if"}
+                        },
+                        "dependentSchemas": {
+                            "mcp_server": {"required": ["mapping"]},
+                            "mapping": {"required": ["mcp_server"]}
+                        }
                     },
                     "collect": {
                         "additionalProperties": false,
@@ -208,40 +148,20 @@
                             "id": {},
                             "next": {},
                             "metadata": {},
-                            "description": {
-                                "type": "string"
-                            },
-                            "ask_before_filling": {
-                                "type": "boolean"
-                            },
-                            "reset_after_flow_ends": {
-                                "type": "boolean"
-                            },
-                            "utter": {
-                                "type": "string"
-                            },
-                            "force_slot_filling": {
-                                "type": "boolean"
-                            },
+                            "description": {"type": "string"},
+                            "ask_before_filling": {"type": "boolean"},
+                            "reset_after_flow_ends": {"type": "boolean"},
+                            "utter": {"type": "string"},
+                            "force_slot_filling": {"type": "boolean"},
                             "rejections": {
                                 "type": "array",
                                 "schema_name": "list of rejections",
                                 "items": {
                                     "type": "object",
-                                    "required": [
-                                        "if",
-                                        "utter"
-                                    ],
+                                    "required": ["if", "utter"],
                                     "properties": {
-                                        "if": {
-                                            "type": [
-                                                "boolean",
-                                                "string"
-                                            ]
-                                        },
-                                        "utter": {
-                                            "type": "string"
-                                        }
+                                        "if": {"type": ["boolean", "string"]},
+                                        "utter": {"type": "string"}
                                     }
                                 }
                             },
@@ -261,84 +181,92 @@
             }
         },
         "flow": {
-            "required": [
-                "steps",
-                "description"
-            ],
+            "required": ["steps", "description"],
             "type": "object",
             "additionalProperties": false,
             "schema_name": "dictionary with flow properties",
             "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
+                "name": {"type": "string"},
+                "description": {"type": "string"},
                 "translation": {
                     "type": "object",
+                    "additionalProperties": false,
                     "schema_name": "flow translation mapping",
-                    "properties": {
-                        "metadata": {
-                            "type": "object"
-                        }
-                    },
+                    "properties": {"metadata": {"type": "object"}},
                     "patternProperties": {
                         "^(?!metadata$).+": {
                             "type": "object",
                             "additionalProperties": false,
-                            "required": [
-                                "name"
-                            ],
-                            "properties": {
-                                "name": {
-                                    "type": "string"
-                                },
-                                "metadata": {}
-                            }
+                            "required": ["name"],
+                            "properties": {"name": {"type": "string"}, "metadata": {}}
                         }
-                    },
-                    "additionalProperties": false
+                    }
                 },
-                "if": {
-                    "type": [
-                        "string",
-                        "boolean"
-                    ]
-                },
-                "always_include_in_prompt": {
-                    "type": "boolean"
-                },
-                "nlu_trigger": {
-                    "$ref": "#/$defs/nlu_trigger"
-                },
-                "file_path": {
-                    "type": "string"
-                },
-                "steps": {
-                    "$ref": "#/$defs/steps"
-                },
-                "persisted_slots": {
-                    "$ref": "#/$defs/persisted_slots"
-                },
-                "run_pattern_completed": {
-                    "type": "boolean"
-                }
+                "if": {"type": ["string", "boolean"]},
+                "always_include_in_prompt": {"type": "boolean"},
+                "nlu_trigger": {"$ref": "#/$defs/nlu_trigger"},
+                "file_path": {"type": "string"},
+                "steps": {"$ref": "#/$defs/steps"},
+                "persisted_slots": {"$ref": "#/$defs/persisted_slots"},
+                "run_pattern_completed": {"type": "boolean"}
             }
         },
         "set_slots": {
             "type": "array",
             "schema_name": "list of slot sets",
-            "items": {
-                "type": "object"
+            "items": {"type": "object"}
+        },
+        "call_step": {
+            "type": "object",
+            "additionalProperties": false,
+            "schema_name": "dictionary with call properties",
+            "required": ["call"],
+            "properties": {
+                "call": {"type": "string"},
+                "mcp_server": {"type": "string"},
+                "mapping": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "schema_name": "input and output mapping for a MCP tool call",
+                    "required": ["input", "output"],
+                    "properties": {
+                        "input": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": ["slot", "param"],
+                                "properties": {
+                                    "slot": {"type": "string"},
+                                    "param": {"type": "string"}
+                                }
+                            }
+                        },
+                        "output": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": ["slot", "value"],
+                                "properties": {
+                                    "slot": {"type": "string"},
+                                    "value": {"type": "string"}
+                                }
+                            }
+                        }
+                    }
+                },
+                "exit_if": {
+                    "type": "array",
+                    "schema_name": "list of slot predicates to exit agent call",
+                    "items": {"type": ["string"]}
+                }
             }
         },
         "persisted_slots": {
             "type": "array",
             "schema_name": "list of slots",
-            "items": {
-                "type": "string"
-            }
+            "items": {"type": "string"}
         }
     }
 }

@@ -5,6 +5,7 @@ import dataclasses
 import enum
 import logging
 import math
+import sys
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set, Text, Tuple, Type, Union
 
@@ -180,7 +181,28 @@ class DefaultV1Recipe(Recipe):
     @classmethod
     def _from_registry(cls, name: Text) -> RegisteredComponent:
         # Importing all the default Rasa components will automatically register them
-        from rasa.engine.recipes.default_components import DEFAULT_COMPONENTS  # noqa
+        from rasa.engine.recipes.default_components import (
+            CONVERT_FEATURIZER_AVAILABLE,
+            CRF_ENTITY_EXTRACTOR_AVAILABLE,
+            DIET_CLASSIFIER_AVAILABLE,
+            JIEBA_TOKENIZER_AVAILABLE,
+            LANGUAGE_MODEL_FEATURIZER_AVAILABLE,
+            LEXICAL_SYNTACTIC_FEATURIZER_AVAILABLE,
+            LOGISTIC_REGRESSION_CLASSIFIER_AVAILABLE,
+            MITIE_ENTITY_EXTRACTOR_AVAILABLE,
+            MITIE_FEATURIZER_AVAILABLE,
+            MITIE_INTENT_CLASSIFIER_AVAILABLE,
+            MITIE_NLP_AVAILABLE,
+            MITIE_TOKENIZER_AVAILABLE,
+            RESPONSE_SELECTOR_AVAILABLE,
+            SKLEARN_INTENT_CLASSIFIER_AVAILABLE,
+            SPACY_ENTITY_EXTRACTOR_AVAILABLE,
+            SPACY_FEATURIZER_AVAILABLE,
+            SPACY_NLP_AVAILABLE,
+            SPACY_TOKENIZER_AVAILABLE,
+            TED_POLICY_AVAILABLE,
+            UNEXPECTED_INTENT_POLICY_AVAILABLE,
+        )
 
         if name in cls._registered_components:
             return cls._registered_components[name]
@@ -189,6 +211,56 @@ class DefaultV1Recipe(Recipe):
             clazz = class_from_module_path(name)
             if clazz.__name__ in cls._registered_components:
                 return cls._registered_components[clazz.__name__]
+
+        # Check Python version compatibility for TensorFlow components
+        # TensorFlow support was removed for Python 3.12+ due to compatibility issues
+        if sys.version_info >= (3, 12):
+            raise InvalidConfigException(
+                f"{name} is not available on Python 3.12+. "
+                "TensorFlow support has been removed for Python 3.12+ versions. "
+                "Please use Python 3.11 or earlier for TensorFlow-based components. "
+            )
+
+        # Check for nlu components that failed to load
+        # because conditional module import of those components did not succeed
+        nlu_components = {
+            # tensorflow-dependent components
+            "DIETClassifier": DIET_CLASSIFIER_AVAILABLE,
+            "TEDPolicy": TED_POLICY_AVAILABLE,
+            "UnexpecTEDIntentPolicy": UNEXPECTED_INTENT_POLICY_AVAILABLE,
+            "ResponseSelector": RESPONSE_SELECTOR_AVAILABLE,
+            "ConveRTFeaturizer": CONVERT_FEATURIZER_AVAILABLE,
+            "LanguageModelFeaturizer": LANGUAGE_MODEL_FEATURIZER_AVAILABLE,
+            # nlu components dependent on other dependencies than tensorflow
+            "LogisticRegressionClassifier": LOGISTIC_REGRESSION_CLASSIFIER_AVAILABLE,
+            "SklearnIntentClassifier": SKLEARN_INTENT_CLASSIFIER_AVAILABLE,
+            "LexicalSyntacticFeaturizer": LEXICAL_SYNTACTIC_FEATURIZER_AVAILABLE,
+            "MitieFeaturizer": MITIE_FEATURIZER_AVAILABLE,
+            "SpacyFeaturizer": SPACY_FEATURIZER_AVAILABLE,
+            "JiebaTokenizer": JIEBA_TOKENIZER_AVAILABLE,
+            "MitieTokenizer": MITIE_TOKENIZER_AVAILABLE,
+            "SpacyTokenizer": SPACY_TOKENIZER_AVAILABLE,
+            "MitieIntentClassifier": MITIE_INTENT_CLASSIFIER_AVAILABLE,
+            "MitieEntityExtractor": MITIE_ENTITY_EXTRACTOR_AVAILABLE,
+            "SpacyEntityExtractor": SPACY_ENTITY_EXTRACTOR_AVAILABLE,
+            "MitieNLP": MITIE_NLP_AVAILABLE,
+            "SpacyNLP": SPACY_NLP_AVAILABLE,
+            "CRFEntityExtractor": CRF_ENTITY_EXTRACTOR_AVAILABLE,
+        }
+
+        if name in nlu_components:
+            # nlu-dependent component failed to load
+            # because nlu dependency group not installed
+            if not nlu_components[name]:
+                from rasa.exceptions import MissingDependencyException
+
+                raise MissingDependencyException(
+                    f"The {name} component requires additional dependencies "
+                    f"which are not installed. "
+                    f"Please install the required extra by running: "
+                    f"pip install 'rasa-pro[nlu]' OR "
+                    f"poetry add 'rasa-pro[nlu]'"
+                )
 
         raise InvalidConfigException(
             f"Can't load class for name '{name}'. Please make sure to provide "
@@ -485,17 +557,42 @@ class DefaultV1Recipe(Recipe):
         component: Type[GraphComponent],
         component_config: Dict[Text, Any],
     ) -> Dict[Text, Any]:
-        from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
-        from rasa.nlu.classifiers.sklearn_intent_classifier import (
-            SklearnIntentClassifier,
-        )
-        from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+        # Try to import MitieIntentClassifier, but handle ImportError gracefully
+        # since the dependencies for it may not be installed
+        try:
+            from rasa.nlu.classifiers.mitie_intent_classifier import (
+                MitieIntentClassifier,
+            )
+        except ImportError:
+            MitieIntentClassifier = None  # type: ignore
 
-        cli_args_mapping: Dict[Type[GraphComponent], List[Text]] = {
-            MitieIntentClassifier: ["num_threads"],
-            MitieEntityExtractor: ["num_threads"],
-            SklearnIntentClassifier: ["num_threads"],
-        }
+        # Try to import MitieEntityExtractor, but handle ImportError gracefully
+        # since the dependencies for it may not be installed
+        try:
+            from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+        except ImportError:
+            MitieEntityExtractor = None  # type: ignore
+
+        # Try to import SklearnIntentClassifier, but handle ImportError gracefully
+        # since the dependencies for it may not be installed
+        try:
+            from rasa.nlu.classifiers.sklearn_intent_classifier import (
+                SklearnIntentClassifier,
+            )
+        except ImportError:
+            SklearnIntentClassifier = None  # type: ignore
+
+        cli_args_mapping: Dict[Type[GraphComponent], List[Text]] = {}
+
+        # Only add components if they were successfully imported
+        if MitieIntentClassifier is not None:
+            cli_args_mapping[MitieIntentClassifier] = ["num_threads"]
+
+        if MitieEntityExtractor is not None:
+            cli_args_mapping[MitieEntityExtractor] = ["num_threads"]
+
+        if SklearnIntentClassifier is not None:
+            cli_args_mapping[SklearnIntentClassifier] = ["num_threads"]
 
         config_from_cli = {
             param: cli_parameters[param]

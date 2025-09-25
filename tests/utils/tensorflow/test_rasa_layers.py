@@ -2,6 +2,13 @@ from typing import Any, Dict, List, Text, Type, Union
 
 import numpy as np
 import pytest
+
+# Skip all tests in this file if TensorFlow is not available
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if not TENSORFLOW_AVAILABLE:
+    pytest.skip("TensorFlow is not available", allow_module_level=True)
+
 import tensorflow as tf
 
 from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE, TEXT
@@ -880,7 +887,7 @@ def test_replace_dense_for_sparse_layers(
     layer = layers.DenseForSparse(
         units=output_units, kernel_initializer=kernel_initializer, use_bias=use_bias
     )
-    layer.build(input_shape=sum(old_sparse_feature_sizes))
+    layer.build(input_shape=(sum(old_sparse_feature_sizes),))
 
     new_layer = RasaCustomLayer._replace_dense_for_sparse_layer(
         layer_to_replace=layer,
@@ -890,7 +897,7 @@ def test_replace_dense_for_sparse_layers(
         feature_type=feature_type,
         reg_lambda=0.02,
     )
-    new_layer.build(input_shape=sum(new_sparse_feature_sizes))
+    new_layer.build(input_shape=(sum(new_sparse_feature_sizes),))
 
     # check dimensions
     assert new_layer.get_kernel().shape[0] == sum(new_sparse_feature_sizes)
@@ -954,7 +961,8 @@ def test_adjust_sparse_layers_for_incremental_training(
     old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
 ):
     """Tests if `adjust_sparse_layers_for_incremental_training` finds and updates
-    every `DenseForSparse` layer that has its sparse feature sizes increased."""
+    every `DenseForSparse` layer that has its sparse feature sizes increased.
+    """
 
     def init_sparse_to_dense_layer(
         attribute, feature_type, input_size, output_size, reg_lambda
@@ -968,7 +976,7 @@ def test_adjust_sparse_layers_for_incremental_training(
             reg_lambda=reg_lambda,
             units=output_size,
         )
-        layer.build(input_shape=input_size)
+        layer.build(input_shape=(input_size,))
         return layer
 
     units, reg_lambda = 10, 0.02
@@ -1024,7 +1032,9 @@ def test_adjust_sparse_layers_for_incremental_training(
         layer_expected_size = sum(
             new_sparse_feature_sizes[layer_attribute][layer_feature_type]
         )
-        dense_layer.build(input_shape=layer_expected_size)
+        # Build the layer if it's not built yet (after adjustment)
+        if not dense_layer.built:
+            dense_layer.build(input_shape=(layer_expected_size,))
         layer_final_size = dense_layer.get_kernel().shape[0]
         assert layer_attribute and layer_feature_type
         assert layer_final_size == layer_expected_size

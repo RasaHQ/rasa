@@ -7,6 +7,7 @@ from rasa.cli.arguments.default_arguments import (
     add_model_param,
     add_remote_storage_param,
     add_skip_validation_flag,
+    add_sub_agents_param,
 )
 from rasa.core import constants
 from rasa.env import (
@@ -24,6 +25,7 @@ def set_run_arguments(parser: argparse.ArgumentParser) -> None:
     add_server_arguments(parser)
     add_inspect_argument(parser)
     add_skip_validation_flag(parser)
+    add_sub_agents_param(parser)
 
 
 def set_run_action_arguments(parser: argparse.ArgumentParser) -> None:

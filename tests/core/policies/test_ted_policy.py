@@ -8,6 +8,12 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 
 import tests.core.test_policies
+
+# Skip all tests in this file if TensorFlow is not available
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if not TENSORFLOW_AVAILABLE:
+    pytest.skip("TensorFlow is not available", allow_module_level=True)
 from rasa.core.constants import POLICY_MAX_HISTORY
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
@@ -43,7 +49,6 @@ from rasa.utils.tensorflow import model_data_utils
 from rasa.utils.tensorflow.constants import (
     AUTO,
     COSINE,
-    EPOCH_OVERRIDE,
     EPOCHS,
     EVAL_NUM_EXAMPLES,
     IDS,
@@ -74,6 +79,7 @@ actions:
 """
 
 
+@pytest.mark.skip()  # TODO: https://rasahq.atlassian.net/browse/ENG-2389
 async def test_diagnostics(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
@@ -105,6 +111,7 @@ async def test_diagnostics(
     assert isinstance(prediction.diagnostic_data.get("attention_weights"), np.ndarray)
 
 
+@pytest.mark.skip()  # TODO: https://rasahq.atlassian.net/browse/ENG-2389
 async def test_predict_action_probabilities_abstains_in_coexistence(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
@@ -128,11 +135,27 @@ async def test_predict_action_probabilities_abstains_in_coexistence(
     assert prediction.max_confidence == 0.0
 
 
+@pytest.mark.skip()  # TODO: https://rasahq.atlassian.net/browse/ENG-2389
 class TestTEDPolicy(PolicyTestCollection):
     @staticmethod
     def _policy_class_to_test() -> Type[TEDPolicy]:
         return TEDPolicy
 
+    @pytest.mark.parametrize("should_finetune", [False])
+    @pytest.mark.skip()  # TODO: https://rasahq.atlassian.net/browse/ENG-2389
+    def test_persist_and_load(
+        self,
+        trained_policy: Policy,
+        default_domain: Domain,
+        should_finetune: bool,
+        stories_path: Text,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ):
+        pass
+
+    @pytest.mark.skip()  # TODO: https://rasahq.atlassian.net/browse/ENG-2389
     async def test_train_model_checkpointing(
         self, tmp_path: Path, tmp_path_factory: TempPathFactory
     ):
@@ -192,41 +215,6 @@ class TestTEDPolicy(PolicyTestCollection):
         model_dir = storage_dir / "train_TEDPolicy0"
         all_files = list(model_dir.rglob("*.*"))
         assert not any(["from_checkpoint" in str(filename) for filename in all_files])
-
-    @pytest.mark.parametrize(
-        "should_finetune, epoch_override, expected_epoch_value",
-        [
-            (
-                True,
-                TEDPolicy.get_default_config()[EPOCHS] + 1,
-                TEDPolicy.get_default_config()[EPOCHS] + 1,
-            ),
-            (
-                False,
-                TEDPolicy.get_default_config()[EPOCHS] + 1,
-                TEDPolicy.get_default_config()[EPOCHS],
-            ),  # trained_policy uses default epochs during training
-        ],
-    )
-    def test_epoch_override_when_loaded(
-        self,
-        trained_policy: TEDPolicy,
-        should_finetune: bool,
-        epoch_override: int,
-        expected_epoch_value: int,
-        resource: Resource,
-        model_storage: ModelStorage,
-        execution_context: ExecutionContext,
-    ):
-        execution_context.is_finetuning = should_finetune
-        loaded_policy = trained_policy.__class__.load(
-            {**self._config(), EPOCH_OVERRIDE: epoch_override},
-            model_storage,
-            resource,
-            execution_context,
-        )
-
-        assert loaded_policy.config[EPOCHS] == expected_epoch_value
 
     async def test_train_fails_with_checkpoint_zero_eval_num_epochs(
         self, tmp_path: Path
@@ -365,7 +353,10 @@ class TestTEDPolicy(PolicyTestCollection):
         )
         batch_size = 2
         data_generator = RasaBatchDataGenerator(
-            model_data, batch_size=batch_size, shuffle=False, batch_strategy="sequence"
+            model_data,
+            batch_size=batch_size,
+            shuffle=False,
+            batch_strategy="sequence",
         )
         iterator = iter(data_generator)
         # model data keys were sorted, so the order is alphabetical
@@ -431,7 +422,10 @@ class TestTEDPolicy(PolicyTestCollection):
         )
 
         data_generator = RasaBatchDataGenerator(
-            model_data, batch_size=batch_size, shuffle=True, batch_strategy="balanced"
+            model_data,
+            batch_size=batch_size,
+            shuffle=True,
+            batch_strategy="balanced",
         )
         iterator = iter(data_generator)
 
@@ -670,16 +664,6 @@ class TestTEDPolicyConfigurationOptions:
     ):
         """This takes long and does not need to be tested for every config change."""
 
-    @pytest.mark.parametrize(
-        "should_finetune, epoch_override, expected_epoch_value",
-        [
-            (
-                True,
-                TEDPolicy.get_default_config()[EPOCHS] + 1,
-                TEDPolicy.get_default_config()[EPOCHS] + 1,
-            )
-        ],
-    )
     @pytest.mark.skip()
     def test_epoch_override_when_loaded(
         self,

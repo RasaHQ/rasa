@@ -275,7 +275,7 @@ class GenesysInputChannel(VoiceInputChannel):
 
     def handle_ping(self, ws: Websocket, message: dict) -> None:
         """Handle ping message from Genesys."""
-        response = {
+        response: Dict[str, Any] = {
             "version": "2",
             "type": "pong",
             "seq": self._get_next_sequence(),

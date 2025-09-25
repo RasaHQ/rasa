@@ -14,6 +14,9 @@ from sanic import (  # type: ignore[attr-defined]
     response,
 )
 
+# Import twilio at module level to raise error if not installed
+from twilio.twiml.voice_response import VoiceResponse
+
 from rasa.core.channels import UserMessage
 from rasa.core.channels.channel import (
     create_auth_requested_response_provider,
@@ -145,7 +148,8 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
         """Get the sender ID for the channel.
 
         Twilio Media Streams uses the Stream ID as Sender ID because
-        it is required in OutputChannel.send_text_message to send messages."""
+        it is required in OutputChannel.send_text_message to send messages.
+        """
         return call_parameters.stream_id  # type: ignore[return-value]
 
     def channel_bytes_to_rasa_audio_bytes(self, input_bytes: bytes) -> RasaAudioBytes:

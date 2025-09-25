@@ -273,8 +273,7 @@ async def test_handle_no_user_input_event(
 
 
 async def test_on_activities_returns_immediately(monkeypatch: MonkeyPatch) -> None:
-    """
-    Test that on_activities endpoint returns immediately without
+    """Test that on_activities endpoint returns immediately without
     waiting for activity processing.
     """
 
@@ -325,11 +324,9 @@ async def test_on_activities_returns_immediately(monkeypatch: MonkeyPatch) -> No
 
 
 async def test_background_task_completes(monkeypatch: MonkeyPatch) -> None:
-    """
-    Test that background task created for activity handling
+    """Test that background task created for activity handling
     completes successfully.
     """
-
     processed_messages = []
 
     async def tracking_on_new_message(message: UserMessage) -> None:

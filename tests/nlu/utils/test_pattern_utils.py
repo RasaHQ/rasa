@@ -201,7 +201,6 @@ def test_regex_validation(
     use_regex_features: bool,
 ):
     """Tests if exception is raised when regex patterns are invalid."""
-
     training_data = TrainingData()
     if lookup_tables:
         training_data.lookup_tables = [lookup_tables]

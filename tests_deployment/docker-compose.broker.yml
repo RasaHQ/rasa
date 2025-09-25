@@ -24,6 +24,11 @@ services:
     ports:
       - "9092:9092"
     environment:
+      KAFKA_NUM_NETWORK_THREADS: 6         # Increase network threads
+      KAFKA_NUM_IO_THREADS: 8              # Increase I/O threads
+      KAFKA_SOCKET_SEND_BUFFER_BYTES: 102400 # Increase send buffer
+      KAFKA_SOCKET_RECEIVE_BUFFER_BYTES: 102400 # Increase receive buffer
+      KAFKA_SOCKET_REQUEST_MAX_BYTES: 104857600 # Allow larger requests
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_PLAINTEXT_HOST:SASL_PLAINTEXT

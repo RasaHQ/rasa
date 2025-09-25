@@ -1,0 +1,12 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: SearchReadyLLMCommandGenerator
+  llm:
+    model_group: llm-model
+
+policies:
+- name: FlowPolicy
+- name: EnterpriseSearchPolicy
+  check_relevancy: True
+assistant_id: 20241029-094733-smoked-anchovy

@@ -20,7 +20,7 @@ runs:
       env:
         COMPOSE_FILE: ${{ inputs.COMPOSE_FILE_PATH }}
       run: |
-        docker compose -f "$COMPOSE_FILE" logs kafka
+        docker compose -f "$COMPOSE_FILE" logs kafka --tail=all
       shell: bash
 
     - name: Check rabbitmq container logs

@@ -203,7 +203,6 @@ def test_transform_results_output_to_yaml() -> None:
     It should strip out white spaces from strings that starts with `\n`.
     It should also filter out all comments from the result output.
     """
-
     yaml_string = textwrap.dedent(
         """
     test_results:

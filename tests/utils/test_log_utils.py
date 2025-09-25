@@ -59,7 +59,6 @@ attribute = "some attribute text"
 )
 def test_log_llm(log_module, environment_variables, logging_output):
     """Check that environment variables control the llm logging as expected."""
-
     with capture_logs() as cap_logs:
         with mock.patch.dict(
             os.environ,

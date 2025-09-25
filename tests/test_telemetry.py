@@ -18,7 +18,14 @@ import rasa.constants
 import rasa.utils.licensing
 from rasa import telemetry
 from rasa.cli.inspect import inspect
+from rasa.core.available_agents import (
+    AgentConfig,
+    AgentConfiguration,
+    AgentInfo,
+    ProtocolConfig,
+)
 from rasa.core.brokers.kafka import KafkaEventBroker
+from rasa.core.config.available_endpoints import MCPServerConfig
 from rasa.dialogue_understanding.generator.constants import (
     DEFAULT_LLM_CONFIG as LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG,
 )
@@ -33,6 +40,11 @@ from rasa.shared.constants import (
     CONFIG_POLICIES_KEY,
     CONFIG_RECIPE_KEY,
 )
+from rasa.shared.core.flows.flow import Flow
+from rasa.shared.core.flows.flow_step_links import FlowStepLinks, StaticFlowStepLink
+from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
+from rasa.shared.core.flows.flows_list import FlowsList
+from rasa.shared.core.flows.steps import CallFlowStep
 from rasa.telemetry import (
     E2E_TEST_CONVERSION_FILE_TYPE,
     E2E_TEST_CONVERSION_TEST_CASE_COUNT,
@@ -91,7 +103,8 @@ ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA = {
 @pytest.fixture(autouse=True)
 def patch_global_config_path(tmp_path: Path) -> Generator[None, None, None]:
     """Ensure we use a unique config path for each test to avoid tests influencing
-    each other."""
+    each other.
+    """
     default_location = rasa.constants.GLOBAL_USER_CONFIG_PATH
     rasa.constants.GLOBAL_USER_CONFIG_PATH = str(tmp_path / "global.yml")
     yield
@@ -1707,3 +1720,357 @@ def test_track_privacy_enabled(
         mock_call.args[1]["deletion_cron_trigger"]
         == "cron[month='*', day='*', day_of_week='0', hour='0', minute='30']"
     )
+
+
+# Tests for agent configuration telemetry
+@patch("rasa.telemetry._track")
+def test_track_model_training_includes_agent_configuration(
+    mock_track: MagicMock,
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    domain_path: Text,
+    stories_path: Text,
+    stack_config_path: Text,
+    nlu_data_path: Text,
+):
+    """Test that track_model_training includes agent configuration data."""
+    monkeypatch.setattr("rasa.model_training._train_graph", AsyncMock())
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    output = str(tmp_path / "models")
+
+    rasa.api.train(
+        domain_path,
+        stack_config_path,
+        [stories_path, nlu_data_path],
+        output=output,
+    )
+
+    # Check that both TRAINING_STARTED and TRAINING_COMPLETED events were called
+    assert mock_track.call_count == 2
+
+    first_call, second_call = mock_track.mock_calls
+    assert first_call.args[0] == TRAINING_STARTED_EVENT
+
+    # Validate agent configuration is present in the tracking data
+    tracking_data = first_call.args[1]
+    assert "agents" in tracking_data
+    assert isinstance(tracking_data["agents"], dict)
+
+
+def test_collect_agent_configuration_empty_flows():
+    """Test _collect_agent_configuration with empty flows."""
+    # Create empty flows list
+    flows = FlowsList([])
+
+    result = telemetry._collect_agent_configuration(flows)
+
+    # Should return empty dict when no flows
+    assert result == {}
+
+
+def test_collect_agent_configuration_no_agents_or_servers():
+    """Test _collect_agent_configuration when no agents or MCP servers are available."""
+    # Create flows with steps but no agents/servers
+    flow = Flow(
+        id="test_flow",
+        step_sequence=FlowStepSequence(
+            [
+                CallFlowStep(
+                    call="another_flow",
+                    custom_id="id",
+                    idx=0,
+                    description="",
+                    metadata={},
+                    next=FlowStepLinks([StaticFlowStepLink("flow")]),
+                    flow_id="flow",
+                )
+            ]
+        ),
+    )
+    flows = FlowsList([flow])
+
+    # Mock AvailableAgents and Configuration to return empty
+    with (
+        patch("rasa.core.available_agents.AvailableAgents.get_instance") as mock_agents,
+        patch(
+            "rasa.core.config.configuration.Configuration.get_instance"
+        ) as mock_config,
+    ):
+        mock_agents.return_value.agents = {}
+        mock_config.return_value.endpoints.mcp_servers = []
+
+        result = telemetry._collect_agent_configuration(flows)
+
+        # Should return empty dict when no agents or servers
+        assert result == {}
+
+
+def test_collect_agent_configuration_with_mcp_tools():
+    """Test _collect_agent_configuration with MCP tool calls."""
+    # Create flow with MCP tool call
+
+    mcp_step = CallFlowStep(
+        call="mcp_tool_name",
+        mcp_server="test_server",
+        mapping={"param": "value"},
+        custom_id="id",
+        idx=0,
+        description="",
+        metadata={},
+        next=FlowStepLinks([StaticFlowStepLink("flow")]),
+        flow_id="flow",
+    )
+
+    flow = Flow(id="test_flow", step_sequence=FlowStepSequence([mcp_step]))
+    flows = FlowsList([flow])
+
+    # Mock agents and MCP servers
+    mock_agent_info = AgentInfo(
+        name="test_agent",
+        description="Test agent",
+        protocol=ProtocolConfig.RASA,
+    )
+    mock_mcp_server = MCPServerConfig(
+        name="test_server", url="http://localhost:8000", type="http"
+    )
+
+    with (
+        patch("rasa.core.available_agents.AvailableAgents.get_instance") as mock_agents,
+        patch(
+            "rasa.core.config.configuration.Configuration.get_instance"
+        ) as mock_config,
+    ):
+        mock_agents.return_value.agents = {"test_agent": mock_agent_info}
+        mock_config.return_value.endpoints.mcp_servers = [mock_mcp_server]
+
+        result = telemetry._collect_agent_configuration(flows)
+
+        # Should include usage data for MCP tool
+        assert "usage" in result
+        assert len(result["usage"]) == 1
+        assert result["usage"][0]["flow"] == "test_flow"
+        assert result["usage"][0]["mcp_tool"] == "mcp_tool_name"
+        assert result["usage"][0]["mcp_server"] == "test_server"
+        assert result["usage"][0]["mapping"] == {"param": "value"}
+
+        # Should include MCP servers and agents
+        assert "mcp_servers" in result
+        assert "agents" in result
+        assert len(result["mcp_servers"]) == 1
+        assert len(result["agents"]) == 1
+
+
+def test_collect_agent_configuration_with_agent_calls():
+    """Test _collect_agent_configuration with agent calls."""
+    # Create flow with agent call
+    agent_step = CallFlowStep(
+        call="test_agent",
+        exit_if=["some_condition"],
+        custom_id="id",
+        idx=0,
+        description="",
+        metadata={},
+        next=FlowStepLinks([StaticFlowStepLink("flow")]),
+        flow_id="flow",
+    )
+
+    flow = Flow(id="test_flow", step_sequence=FlowStepSequence([agent_step]))
+    flows = FlowsList([flow])
+
+    # Mock agents and MCP servers
+    mock_agent_info = AgentInfo(
+        name="test_agent",
+        description="Test agent",
+        protocol=ProtocolConfig.RASA,
+    )
+    mock_mcp_server = MCPServerConfig(
+        name="test_server", url="http://localhost:8000", type="http"
+    )
+
+    with (
+        patch("rasa.core.available_agents.AvailableAgents.get_instance") as mock_agents,
+        patch(
+            "rasa.core.config.configuration.Configuration.get_instance"
+        ) as mock_config,
+    ):
+        mock_agents.return_value.agents = {"test_agent": mock_agent_info}
+        mock_config.return_value.endpoints.mcp_servers = [mock_mcp_server]
+
+        result = telemetry._collect_agent_configuration(flows)
+
+        # Should include usage data for agent call
+        assert "usage" in result
+        assert len(result["usage"]) == 1
+        assert result["usage"][0]["flow"] == "test_flow"
+        assert result["usage"][0]["agent"] == "test_agent"
+        assert result["usage"][0]["exit_if"] == ["some_condition"]
+
+        # Should include MCP servers and agents
+        assert "mcp_servers" in result
+        assert "agents" in result
+
+
+def test_collect_agent_configuration_with_agent_calls_no_exit_if():
+    """Test _collect_agent_configuration with agent calls without exit_if."""
+    # Create flow with agent call without exit_if
+    agent_step = CallFlowStep(
+        call="test_agent",
+        custom_id="id",
+        idx=0,
+        description="",
+        metadata={},
+        next=FlowStepLinks([StaticFlowStepLink("flow")]),
+        flow_id="flow",
+    )
+
+    flow = Flow(id="test_flow", step_sequence=FlowStepSequence([agent_step]))
+    flows = FlowsList([flow])
+
+    # Mock agents and MCP servers
+    mock_agent_info = AgentInfo(
+        name="test_agent",
+        description="Test agent",
+        protocol=ProtocolConfig.RASA,
+    )
+    mock_mcp_server = MCPServerConfig(
+        name="test_server", url="http://localhost:8000", type="http"
+    )
+
+    with (
+        patch("rasa.core.available_agents.AvailableAgents.get_instance") as mock_agents,
+        patch(
+            "rasa.core.config.configuration.Configuration.get_instance"
+        ) as mock_config,
+    ):
+        mock_agents.return_value.agents = {"test_agent": mock_agent_info}
+        mock_config.return_value.endpoints.mcp_servers = [mock_mcp_server]
+
+        result = telemetry._collect_agent_configuration(flows)
+
+        # Should include usage data for agent call without exit_if
+        assert "usage" in result
+        assert len(result["usage"]) == 1
+        assert result["usage"][0]["flow"] == "test_flow"
+        assert result["usage"][0]["agent"] == "test_agent"
+        assert "exit_if" not in result["usage"][0]
+
+
+def test_collect_agent_configuration_skips_flow_calls():
+    """Test _collect_agent_configuration skips calls to other flows."""
+    # Create flow with call to another flow
+    flow_call_step = CallFlowStep(
+        call="other_flow",
+        custom_id="id",
+        idx=0,
+        description="",
+        metadata={},
+        next=FlowStepLinks([StaticFlowStepLink("flow")]),
+        flow_id="flow",
+    )
+
+    flow = Flow(id="test_flow", step_sequence=FlowStepSequence([flow_call_step]))
+    flows = FlowsList([flow])
+
+    # Mock flows to include the called flow
+    flows.underlying_flows.append(
+        Flow(id="other_flow", step_sequence=FlowStepSequence([]))
+    )
+
+    # Mock agents and MCP servers
+    mock_agent_info = AgentInfo(
+        name="test_agent",
+        description="Test agent",
+        protocol=ProtocolConfig.A2A,
+    )
+    mock_mcp_server = MCPServerConfig(
+        name="test_server", url="http://localhost:8000", type="http"
+    )
+
+    with (
+        patch("rasa.core.available_agents.AvailableAgents.get_instance") as mock_agents,
+        patch(
+            "rasa.core.config.configuration.Configuration.get_instance"
+        ) as mock_config,
+    ):
+        mock_agents.return_value.agents = {"test_agent": mock_agent_info}
+        mock_config.return_value.endpoints.mcp_servers = [mock_mcp_server]
+
+        result = telemetry._collect_agent_configuration(flows)
+
+        # Should not include usage data for flow calls
+        assert "usage" in result
+        assert len(result["usage"]) == 0
+
+
+def test_collect_agent_configuration_mcp_servers_serialization():
+    """Test that MCP servers are properly serialized."""
+    flows = FlowsList([])
+
+    # Create MCP server with some None values
+    mock_mcp_server = MCPServerConfig(
+        name="test_server",
+        url="http://localhost:8000",
+        type="http",
+        additional_params=None,
+    )
+
+    with (
+        patch("rasa.core.available_agents.AvailableAgents.get_instance") as mock_agents,
+        patch(
+            "rasa.core.config.configuration.Configuration.get_instance"
+        ) as mock_config,
+    ):
+        mock_agents.return_value.agents = {}
+        mock_config.return_value.endpoints.mcp_servers = [mock_mcp_server]
+
+        result = telemetry._collect_agent_configuration(flows)
+
+        # Should include MCP servers with None values excluded
+        assert "mcp_servers" in result
+        assert len(result["mcp_servers"]) == 1
+        mcp_server_data = result["mcp_servers"][0]
+        assert mcp_server_data["name"] == "test_server"
+        assert mcp_server_data["url"] == "http://localhost:8000"
+        assert mcp_server_data["additional_params"] == {}
+
+
+def test_collect_agent_configuration_agents_serialization():
+    """Test that agents are properly serialized."""
+    flows = FlowsList([])
+
+    # Create agent with some None values
+    mock_agent_info = AgentConfig(
+        agent=AgentInfo(
+            name="test_agent", description="Test agent", protocol=ProtocolConfig.A2A
+        ),
+        configuration=AgentConfiguration(
+            timeout=30,
+            max_retries=3,
+            agent_card=None,  # This should be excluded
+        ),
+    )
+
+    with (
+        patch("rasa.core.available_agents.AvailableAgents.get_instance") as mock_agents,
+        patch(
+            "rasa.core.config.configuration.Configuration.get_instance"
+        ) as mock_config,
+    ):
+        mock_agents.return_value.agents = {"test_agent": mock_agent_info}
+        mock_config.return_value.endpoints.mcp_servers = []
+
+        result = telemetry._collect_agent_configuration(flows)
+
+        # Should include agents with None values excluded
+        assert "agents" in result
+        assert len(result["agents"]) == 1
+        agent_data = result["agents"][0]
+        assert "test_agent" in agent_data
+        agent_config = agent_data["test_agent"]
+        assert agent_config["agent"]["name"] == "test_agent"
+        assert agent_config["agent"]["description"] == "Test agent"
+        assert agent_config["agent"]["protocol"] == "A2A"
+        assert agent_config["configuration"]["timeout"] == 30
+        assert agent_config["configuration"]["max_retries"] == 3
+        assert "agent_card" not in agent_config["configuration"]  # None values excluded

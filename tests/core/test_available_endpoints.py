@@ -6,6 +6,7 @@ import pytest
 
 from rasa.core.config.available_endpoints import (
     InteractionHandlingConfig,
+    MCPServerConfig,
 )
 from rasa.core.config.configuration import Configuration, EndpointsConfigPath
 from rasa.shared.core.constants import GLOBAL_SILENCE_TIMEOUT_KEY
@@ -24,6 +25,16 @@ def deserialized_endpoint_config() -> Dict[str, Any]:
         "lock_store": EndpointConfig(url="some/lock/url"),
         "event_broker": EndpointConfig(url="some/event/broker/url"),
         "vector_store": EndpointConfig(url="some/vector/store/url"),
+        "mcp_servers": [
+            {"name": "server_1", "url": "some/mcp/server_1/url", "type": "http"},
+            {"name": "server_2", "url": "some/mcp/server_2/url", "type": "http"},
+            {
+                "name": "server_3",
+                "url": "some/mcp/server_3/url",
+                "type": "https",
+                "api_key": "secret_api_key",
+            },
+        ],
         "model_groups": {
             "id": "default",
             "models": [{"provider": "openai"}],
@@ -94,7 +105,6 @@ def test_available_endpoints_read_endpoints(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test that the `AvailableEndpoints` class reads the endpoints correctly."""
-
     endpoint_file = "some/path/to/endpoints.yml"
 
     mock_endpoint_config_path = MagicMock(spec=EndpointsConfigPath)
@@ -124,6 +134,21 @@ def test_available_endpoints_read_endpoints(
     assert (
         available_endpoints.vector_store == deserialized_endpoint_config["vector_store"]
     )
+    expected_mcp_servers = [
+        MCPServerConfig(name="server_1", url="some/mcp/server_1/url", type="http"),
+        MCPServerConfig(name="server_2", url="some/mcp/server_2/url", type="http"),
+        MCPServerConfig(
+            name="server_3",
+            url="some/mcp/server_3/url",
+            type="https",
+            api_key="secret_api_key",
+        ),
+    ]
+    assert available_endpoints.mcp_servers == expected_mcp_servers
+    assert available_endpoints.mcp_servers[2].additional_params == {
+        "api_key": "secret_api_key"
+    }
+    assert expected_mcp_servers[2].additional_params == {"api_key": "secret_api_key"}
     assert (
         available_endpoints.model_groups == deserialized_endpoint_config["model_groups"]
     )

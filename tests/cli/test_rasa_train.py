@@ -21,6 +21,7 @@ from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE
 from rasa.core.policies.policy import Policy
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
+from rasa.exceptions import ValidationError
 from rasa.model_training import (
     CODE_FORCED_TRAINING,
     CODE_NEEDS_TO_BE_RETRAINED,
@@ -46,6 +47,7 @@ from tests.cli.conftest import RASA_EXE
         [],
     ],
 )
+@pytest.mark.timeout(240)
 def test_train(
     run_in_simple_project: Callable[..., RunResult],
     tmp_path: Path,
@@ -93,9 +95,15 @@ def test_train_finetune(
 ):
     output = run_in_simple_project("train", "--finetune")
     logs = output.outlines + output.errlines
-    assert [log for log in logs if "No model for finetuning found" in log]
+    assert [
+        log
+        for log in logs
+        if "Incremental training (--finetune) is not supported in Rasa 3.14.0 onwards"
+        in log
+    ]
 
 
+@pytest.mark.timeout(120)
 def test_train_persist_nlu_data(
     run_in_simple_project: Callable[..., RunResult], tmp_path: Path
 ):
@@ -131,6 +139,7 @@ def test_train_persist_nlu_data(
         assert (directory / DEFAULT_TRAINING_DATA_OUTPUT_PATH).exists()
 
 
+@pytest.mark.timeout(120)
 def test_train_no_domain_exists(
     run_in_simple_project: Callable[..., RunResult], tmp_path: Path
 ) -> None:
@@ -163,6 +172,7 @@ def test_train_no_domain_exists(
     )
 
 
+@pytest.mark.timeout(120)
 def test_train_skip_on_model_not_changed(
     run_in_simple_project_with_model: Callable[..., RunResult],
     tmp_path_factory: TempPathFactory,
@@ -523,7 +533,12 @@ def test_train_nlu_finetune_with_model(
     model_name = os.path.relpath(files[0])
     output = run_in_simple_project_with_model("train", "--finetune", model_name)
     logs = output.outlines + output.errlines
-    assert [log for log in logs if "Your Rasa model is trained and saved at" in log]
+    assert [
+        log
+        for log in logs
+        if "Incremental training (--finetune) is not supported in Rasa 3.14.0 onwards"
+        in log
+    ]
 
 
 def test_train_validation_debug_messages(
@@ -662,9 +677,72 @@ def test_train_validate_nlg_config_valid(monkeypatch: MonkeyPatch) -> None:
         remote_storage=None,
         keep_local_model_copy=False,
         remote_root_only=False,
+        sub_agents="sub_agents",
     )
 
-    with patch("rasa.api.train", return_value=TrainingResult(0)):
+    with patch("rasa.api.train", return_value=TrainingResult(0)) as mock_train:
+        run_training(args)
+        # Verify that sub_agents is passed to the training function
+        mock_train.assert_called_once()
+        call_args = mock_train.call_args
+        assert call_args[1]["sub_agents"] == "sub_agents"
+
+
+def test_train_with_sub_agents_flag(monkeypatch: MonkeyPatch) -> None:
+    """Test that the --sub-agents flag is properly passed through to training."""
+    args = argparse.Namespace(
+        domain="data/test_domains/default.yml",
+        config="data/test_config/config_defaults.yml",
+        data=["data/test_moodbot/data"],
+        endpoints=None,
+        skip_validation=True,
+        out="models",
+        force=False,
+        fixed_model_name=None,
+        persist_nlu_data=False,
+        epoch_fraction=1.0,
+        dry_run=False,
+        finetune=None,
+        remote_storage=None,
+        keep_local_model_copy=False,
+        remote_root_only=False,
+        sub_agents="custom_sub_agents",
+    )
+
+    with patch("rasa.api.train", return_value=TrainingResult(0)) as mock_train:
+        run_training(args)
+        # Verify that sub_agents is passed to the training function
+        mock_train.assert_called_once()
+        call_args = mock_train.call_args
+        assert call_args[1]["sub_agents"] == "custom_sub_agents"
+
+
+def test_train_with_invalid_sub_agents_fails(monkeypatch: MonkeyPatch) -> None:
+    """Test that training fails when sub-agents validation fails."""
+    args = argparse.Namespace(
+        domain="data/test_domains/default.yml",
+        config="data/test_config/config_defaults.yml",
+        data=["data/test_moodbot/data"],
+        endpoints=None,
+        skip_validation=False,  # Changed to False so validation runs
+        fail_on_validation_warnings=False,  # Added missing attribute
+        validation_max_history=None,  # Added missing attribute
+        out="models",
+        force=False,
+        fixed_model_name=None,
+        persist_nlu_data=False,
+        epoch_fraction=1.0,
+        dry_run=False,
+        finetune=None,
+        remote_storage=None,
+        keep_local_model_copy=False,
+        remote_root_only=False,
+        sub_agents="invalid_sub_agents_path",
+    )
+
+    with pytest.raises(
+        ValidationError, match="Project validation completed with errors."
+    ):
         run_training(args)
 
 
@@ -738,8 +816,7 @@ def test_train_check_nlg_endpoint_validity_api_type(
 def test_training_logs_domain_correctly_when_using_domain_dir(
     monkeypatch: MonkeyPatch, testdir: Testdir
 ) -> None:
-    """
-    Verify that when the domain is provided via the "domain" directory instead of
+    """Verify that when the domain is provided via the "domain" directory instead of
     the "domain.yml" file, the assistant does not raise any warning logs. Instead,
     it should emit a debug log notifying the user about the default domain source
     that was used.
@@ -776,6 +853,7 @@ def test_training_logs_domain_correctly_when_using_domain_dir(
         remote_storage=None,
         keep_local_model_copy=False,
         remote_root_only=False,
+        sub_agents=None,
     )
 
     expected_debug_log = {

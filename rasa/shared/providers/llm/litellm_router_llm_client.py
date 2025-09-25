@@ -122,7 +122,9 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
             raise ProviderClientAPIException(e)
 
     @suppress_logs(log_level=logging.WARNING)
-    def completion(self, messages: Union[List[dict], List[str], str]) -> LLMResponse:
+    def completion(
+        self, messages: Union[List[dict], List[str], str], **kwargs: Any
+    ) -> LLMResponse:
         """
         Synchronously generate completions for given list of messages.
 
@@ -140,6 +142,7 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
                 - a list of messages. Each message is a string and will be formatted
                     as a user message.
                 - a single message as a string which will be formatted as user message.
+            **kwargs: Additional parameters to pass to the completion call.
         Returns:
             List of message completions.
         Raises:
@@ -150,7 +153,7 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
         try:
             formatted_messages = self._format_messages(messages)
             response = self.router_client.completion(
-                messages=formatted_messages, **self._completion_fn_args
+                messages=formatted_messages, **{**self._completion_fn_args, **kwargs}
             )
             return self._format_response(response)
         except Exception as e:
@@ -158,7 +161,7 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
 
     @suppress_logs(log_level=logging.WARNING)
     async def acompletion(
-        self, messages: Union[List[dict], List[str], str]
+        self, messages: Union[List[dict], List[str], str], **kwargs: Any
     ) -> LLMResponse:
         """
         Asynchronously generate completions for given list of messages.
@@ -177,6 +180,7 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
                 - a list of messages. Each message is a string and will be formatted
                     as a user message.
                 - a single message as a string which will be formatted as user message.
+            **kwargs: Additional parameters to pass to the completion call.
         Returns:
             List of message completions.
         Raises:
@@ -187,7 +191,7 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
         try:
             formatted_messages = self._format_messages(messages)
             response = await self.router_client.acompletion(
-                messages=formatted_messages, **self._completion_fn_args
+                messages=formatted_messages, **{**self._completion_fn_args, **kwargs}
             )
             return self._format_response(response)
         except Exception as e:

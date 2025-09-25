@@ -42,9 +42,7 @@ def aws_credentials():
 
 @pytest.fixture
 def mock_dynamodb(aws_credentials):
-    """
-    Return a mocked S3 client
-    """
+    """Return a mocked S3 client"""
     with mock_aws():
         yield boto3.client("dynamodb", region_name="us-east-1")
 

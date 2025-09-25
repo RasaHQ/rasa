@@ -1,0 +1,11 @@
+recipe: default.v1
+language: en
+pipeline:
+- name: CompactLLMCommandGenerator
+  llm:
+    model_group: llm-model
+  prompt_template: /home/runner/work/rasa-private/rasa-private/data/test_e2e_mcp_config/compact-prompt-template.jinja2
+
+policies:
+- name: FlowPolicy
+assistant_id: 20241029-094733-smoked-anchovy

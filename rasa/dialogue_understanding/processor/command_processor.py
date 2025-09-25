@@ -2,16 +2,22 @@ from typing import Dict, List, Optional, Set, Type
 
 import structlog
 
+from rasa.agents.utils import (
+    is_agent_completed,
+    is_agent_valid,
+)
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     CannotHandleCommand,
     ChitChatAnswerCommand,
     ClarifyCommand,
     Command,
+    ContinueAgentCommand,
     CorrectedSlot,
     CorrectSlotsCommand,
     FreeFormAnswerCommand,
     RepeatBotMessagesCommand,
+    RestartAgentCommand,
     SetSlotCommand,
     StartFlowCommand,
 )
@@ -37,6 +43,7 @@ from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.utils import (
+    is_continue_interrupted_flow_active,
     top_flow_frame,
     top_user_flow_frame,
 )
@@ -428,22 +435,9 @@ def clean_up_commands(
             )
 
         elif isinstance(command, StartFlowCommand):
-            top_user_frame = top_user_flow_frame(
-                tracker.stack, ignore_call_and_link_frames=False
+            clean_commands = clean_up_start_flow_command(
+                clean_commands, tracker, command
             )
-            top_flow_id = top_user_frame.flow_id if top_user_frame else ""
-
-            if top_flow_id == command.flow:
-                # drop a start flow command if the starting flow is equal
-                # to the currently active flow
-                structlogger.debug(
-                    "command_processor.clean_up_commands."
-                    "skip_command_flow_already_active",
-                    command=command,
-                )
-                continue
-
-            clean_commands.append(command)
 
         # handle chitchat command differently from other free-form answer commands
         elif isinstance(command, ChitChatAnswerCommand):
@@ -473,8 +467,41 @@ def clean_up_commands(
                     "drop_clarify_given_other_commands",
                     command=command,
                 )
+
+        # Keep the Restart agent commands only if the command is referencing
+        # a valid agent that was already completed
+        elif isinstance(command, RestartAgentCommand):
+            if not is_agent_valid(command.agent_id):
+                structlogger.debug(
+                    "command_processor.clean_up_commands.skip_restart_agent_invalid_agent",
+                    agent_id=command.agent_id,
+                    command=command,
+                )
+            elif not is_agent_completed(tracker, command.agent_id):
+                structlogger.debug(
+                    "command_processor.clean_up_commands.skip_restart_agent_not_completed",
+                    agent_id=command.agent_id,
+                    command=command,
+                )
+            else:
+                clean_commands.append(command)
+
+        # Clean up Continue agent commands if there is currently no active agent
+        elif isinstance(command, ContinueAgentCommand):
+            if not tracker.stack.agent_is_active():
+                structlogger.debug(
+                    "command_processor.clean_up_commands.skip_continue_agent_no_active_agent",
+                    command=command,
+                )
+            else:
+                clean_commands.append(command)
+
         else:
             clean_commands.append(command)
+
+    # Replace CannotHandleCommands with ContinueAgentCommand when an agent is active
+    # to keep the agent running, but preserve chitchat
+    clean_commands = _replace_cannot_handle_with_continue_agent(clean_commands, tracker)
 
     # when coexistence is enabled, by default there will be a SetSlotCommand
     # for the ROUTE_TO_CALM_SLOT slot.
@@ -486,9 +513,14 @@ def clean_up_commands(
     clean_commands = ensure_max_number_of_command_type(
         clean_commands, RepeatBotMessagesCommand, 1
     )
+    clean_commands = ensure_max_number_of_command_type(
+        clean_commands, ContinueAgentCommand, 1
+    )
     structlogger.debug(
         "command_processor.clean_up_commands.final_commands",
         command=clean_commands,
+        event_info="Final commands",
+        highlight=True,
     )
 
     return clean_commands
@@ -527,6 +559,95 @@ def ensure_max_number_of_command_type(
                 count += 1
         filtered.append(c)
     return filtered
+
+
+def clean_up_start_flow_command(
+    clean_commands: List[Command],
+    tracker: DialogueStateTracker,
+    command: StartFlowCommand,
+) -> List[Command]:
+    """Clean up a start flow command."""
+    continue_interrupted_flow_active = is_continue_interrupted_flow_active(
+        tracker.stack
+    )
+
+    top_user_frame = top_user_flow_frame(
+        tracker.stack, ignore_call_and_link_frames=False
+    )
+    top_flow_id = top_user_frame.flow_id if top_user_frame else ""
+
+    if top_flow_id == command.flow and not continue_interrupted_flow_active:
+        # drop a start flow command if the starting flow is equal
+        # to the currently active flow
+        structlogger.debug(
+            "command_processor.clean_up_commands." "skip_command_flow_already_active",
+            command=command,
+        )
+        return clean_commands
+
+    clean_commands.append(command)
+    return clean_commands
+
+
+def _replace_cannot_handle_with_continue_agent(
+    clean_commands: List[Command],
+    tracker: DialogueStateTracker,
+) -> List[Command]:
+    """Replace CannotHandleCommands with ContinueAgentCommand when agent is active.
+
+    ContinueAgentCommand is added in the following cases:
+
+    1. LLM Command Generation Failures:
+       - LLM parsing failures (default reason)
+       - Force slot filling failures (default reason)
+
+    2. Invalid Commands During Cleanup:
+       - Invalid SetSlot commands:
+         - Slot not in domain
+         - Incompatible extractor
+       (Note: ChitChatAnswer command failures are preserved as CannotHandleCommand)
+
+    3. Empty Commands List:
+       - When all commands are filtered out during cleanup
+
+    Preserved as CannotHandleCommand (not replaced):
+    - Chitchat: CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_CHITCHAT)
+    """
+    if not tracker.stack.agent_is_active():
+        return clean_commands
+
+    # If no commands at all and agent is active, add ContinueAgentCommand
+    if not clean_commands:
+        clean_commands.append(ContinueAgentCommand())
+        return clean_commands
+
+    has_continue_agent = any(
+        isinstance(cmd, ContinueAgentCommand) for cmd in clean_commands
+    )
+
+    # Collect CannotHandleCommands that should be replaced with ContinueAgentCommand
+    cannot_handle_commands = [
+        cmd
+        for cmd in clean_commands
+        if isinstance(cmd, CannotHandleCommand)
+        and cmd.reason != RASA_PATTERN_CANNOT_HANDLE_CHITCHAT
+    ]
+
+    if cannot_handle_commands:
+        structlogger.debug(
+            "command_processor.clean_up_commands"
+            ".replace_cannot_handle_with_continue_agent",
+            original_commands=clean_commands,
+        )
+        # Remove the CannotHandleCommands we collected
+        for cmd in cannot_handle_commands:
+            clean_commands.remove(cmd)
+
+        # Add ContinueAgentCommand if not already present
+        if not has_continue_agent:
+            clean_commands.append(ContinueAgentCommand())
+
+    return clean_commands
 
 
 def clean_up_clarify_command(

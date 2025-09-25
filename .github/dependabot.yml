@@ -33,6 +33,8 @@ updates:
           - "onnxruntime"
           - "skops"
           - "safetensors"
+          - "mitie"
+          - "tf-keras"
       server-and-protocols:
         dependency-type: production
         patterns:
@@ -53,6 +55,9 @@ updates:
           - "confluent-kafka"
           - "pypred"
           - "jinja2"
+          - "mcp"
+          - "werkzeug"
+          - "a2a-sdk"
       cloud-and-channels:
         dependency-type: production
         patterns:

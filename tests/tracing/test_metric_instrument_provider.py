@@ -5,6 +5,7 @@ from opentelemetry.metrics import Histogram, Instrument
 from opentelemetry.sdk.metrics._internal.export import PeriodicExportingMetricReader
 
 from rasa.tracing.constants import (
+    AGENT_EXECUTION_DURATION_METRIC_NAME,
     CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_METRIC_NAME,
     ENTERPRISE_SEARCH_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
     INTENTLESS_POLICY_LLM_RESPONSE_DURATION_METRIC_NAME,
@@ -12,11 +13,20 @@ from rasa.tracing.constants import (
     LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    MCP_TOOL_EXECUTION_DURATION_METRIC_NAME,
     RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME,
     RASA_CLIENT_REQUEST_DURATION_METRIC_NAME,
 )
 from rasa.tracing.metric_instrument_provider import MetricInstrumentProvider
 from tests.tracing.conftest import set_up_test_meter_provider
+
+
+@pytest.fixture(autouse=True)
+def reset_metric_instrument_provider():
+    """Reset the MetricInstrumentProvider's instruments before each test."""
+    # Clear the instruments dictionary
+    MetricInstrumentProvider.instruments.clear()
+    yield
 
 
 def test_metric_instrument_provider_is_singleton() -> None:
@@ -58,6 +68,8 @@ def test_metric_instrument_provider_register_instruments(
             CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_METRIC_NAME,
             Histogram,
         ),
+        (AGENT_EXECUTION_DURATION_METRIC_NAME, Histogram),
+        (MCP_TOOL_EXECUTION_DURATION_METRIC_NAME, Histogram),
         (RASA_CLIENT_REQUEST_DURATION_METRIC_NAME, Histogram),
         (RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME, Histogram),
     ],

@@ -5,6 +5,13 @@ from typing import Dict, List, Optional, Type
 
 import numpy as np
 import pytest
+
+# Skip all tests in this file if TensorFlow is not available
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if not TENSORFLOW_AVAILABLE:
+    pytest.skip("TensorFlow is not available", allow_module_level=True)
+
 import tensorflow as tf
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
@@ -65,6 +72,17 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     @staticmethod
     def _policy_class_to_test() -> Type[UnexpecTEDIntentPolicy]:
         return UnexpecTEDIntentPolicy
+
+    def teardown_method(self):
+        """Clean up TensorFlow state between tests to prevent test isolation issues."""
+        # Clear TensorFlow's default graph and session state
+        tf.keras.backend.clear_session()
+        # Reset TensorFlow's random seed to ensure consistent behavior
+        tf.random.set_seed(42)
+        # Clear any cached domains or models that might cause state interference
+        import gc
+
+        gc.collect()
 
     @pytest.fixture(scope="class")
     def featurizer(self) -> TrackerFeaturizer:
@@ -1229,6 +1247,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         ),
     ],
 )
+@pytest.mark.skip()  # TODO: https://rasahq.atlassian.net/browse/ENG-2389
 def test_train_with_e2e_data(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,

@@ -87,7 +87,6 @@ def test_rasa_file_importer_cached_get_config(
     small_domain_file: Path,
 ) -> None:
     """Test that the cached result of get_config is used."""
-
     mock_read_model_configuration = MagicMock()
     monkeypatch.setattr(
         "rasa.shared.importers.rasa.read_model_configuration",
@@ -114,7 +113,6 @@ def test_rasa_file_importer_cached_get_stories(
     small_domain_file: Path,
 ) -> None:
     """Test that the cached result of get_stories is used."""
-
     mock_story_graph_from_paths = MagicMock()
     monkeypatch.setattr(
         "rasa.shared.importers.rasa.utils.story_graph_from_paths",
@@ -141,7 +139,6 @@ def test_rasa_file_importer_cached_get_flows(
     small_domain_file: Path,
 ) -> None:
     """Test that the cached result of get_flows is used."""
-
     mock_story_graph_from_paths = MagicMock()
     monkeypatch.setattr(
         "rasa.shared.importers.rasa.utils.flows_from_paths",
@@ -168,7 +165,6 @@ def test_rasa_file_importer_cached_get_conversation_tests(
     small_domain_file: Path,
 ) -> None:
     """Test that the cached result of get_conversation_tests is used."""
-
     mock_story_graph_from_paths = MagicMock()
     monkeypatch.setattr(
         "rasa.shared.importers.rasa.utils.story_graph_from_paths",
@@ -195,7 +191,6 @@ def test_rasa_file_importer_cached_get_nlu_data(
     small_domain_file: Path,
 ) -> None:
     """Test that the cached result of get_nlu_data is used."""
-
     mock_training_data_from_paths = MagicMock()
     monkeypatch.setattr(
         "rasa.shared.importers.rasa.utils.training_data_from_paths",

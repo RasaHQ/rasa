@@ -92,6 +92,7 @@ def test_rasa_finetune_llm_prepare_data(run: Callable[..., RunResult]) -> None:
     [--output-format [{instruction,conversational}]]
     [-m MODEL]
     [--endpoints ENDPOINTS]
+    [--sub-agents SUB_AGENTS]
     [path-to-e2e-test-cases]
     """
     lines = help_text.split("\n")
@@ -114,6 +115,7 @@ def args():
     mock_args.output_format = "alpaca"
     mock_args.model = "dummy_model"
     mock_args.endpoints = "dummy_endpoints"
+    mock_args.sub_agents = "dummy_subagents"
     mock_args.remote_storage = None
     mock_args.path_to_e2e_test_cases = "e2e_tests"
     return mock_args
@@ -144,6 +146,7 @@ def test_write_params(mock_write_yaml, args):
             "rephrase_config": rephrase_config,
             "model": args.model,
             "endpoints": args.endpoints,
+            "sub-agents": args.sub_agents,
             "remote-storage": args.remote_storage,
             "train_frac": args.train_frac,
             "output_format": args.output_format,

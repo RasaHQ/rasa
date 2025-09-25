@@ -1,6 +1,18 @@
 version: "3.1"
 responses:
 
+  utter_ask_continue_interrupted_flow_confirmation:
+    - text: "Would you like to continue with {{context.interrupted_flow_options}}?"
+      metadata:
+        rephrase: True
+        template: jinja
+
+  utter_ask_interrupted_flow_to_continue:
+    - text: "Would you like to resume {{context.interrupted_flow_options}}?"
+      metadata:
+        rephrase: True
+        template: jinja
+
   utter_ask_rephrase:
     - text: I’m sorry I am unable to understand you, could you please rephrase?
 
@@ -49,12 +61,6 @@ responses:
 
   utter_flow_cancelled_rasa:
     - text: "Okay, stopping {{ context.canceled_name }}."
-      metadata:
-        rephrase: True
-        template: jinja
-
-  utter_flow_continue_interrupted:
-    - text: "Let's continue with {{ context.previous_flow_name }}."
       metadata:
         rephrase: True
         template: jinja
@@ -124,6 +130,14 @@ slots:
     type: float
     initial_value: 0.0
     max_value: 1000000
+  interrupted_flow_to_continue:
+    type: text
+    mappings:
+      - type: from_llm
+  continue_interrupted_flow_confirmation:
+    type: bool
+    mappings:
+      - type: from_llm
 
 flows:
   pattern_cancel_flow:
@@ -210,7 +224,31 @@ flows:
     description: Conversation repair flow for managing when users switch between different flows
     name: pattern continue interrupted
     steps:
-      - action: utter_flow_continue_interrupted
+      - noop: true
+        next:
+          - if: context.multiple_flows_interrupted
+            then:
+              - collect: interrupted_flow_to_continue
+                description: "Fill this slot with the name of the flow the user wants to continue. If the user does not want to continue any of the interrupted flows, fill this slot with 'none'."
+                next:
+                  - if: slots.interrupted_flow_to_continue != "none"
+                    then:
+                      - action: action_continue_interrupted_flow
+                        next: END
+                  - else:
+                      - action: action_cancel_interrupted_flows
+                        next: END
+          - else:
+            - collect: continue_interrupted_flow_confirmation
+              description: "If the user wants to continue the interrupted flow, fill this slot with true. If the user does not want to continue the interrupted flow, fill this slot with false."
+              next:
+                - if: slots.continue_interrupted_flow_confirmation
+                  then:
+                    - action: action_continue_interrupted_flow
+                      next: END
+                - else:
+                    - action: action_cancel_interrupted_flows
+                      next: END
 
   pattern_correction:
     description: Conversation repair flow for managing user input changes or error corrections

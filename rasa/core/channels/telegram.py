@@ -4,6 +4,9 @@ import typing
 from copy import deepcopy
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
 
+# Import aiogram at module level to raise error if not installed
+from aiogram import Bot
+from aiogram.types import Message, Update
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
@@ -28,15 +31,7 @@ class TelegramOutput(OutputChannel):
         return "telegram"
 
     def __init__(self, access_token: Optional[Text]) -> None:
-        try:
-            from aiogram import Bot
-
-            self.bot = Bot(access_token)
-        except ImportError:
-            raise ImportError(
-                "To use the Telegram channel, please install the aiogram package "
-                "with 'pip install aiogram'"
-            )
+        self.bot = Bot(access_token)
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any

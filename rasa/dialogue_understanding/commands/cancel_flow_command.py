@@ -6,6 +6,9 @@ from typing import Any, Dict, List
 
 import structlog
 
+from rasa.core.policies.flows.agent_executor import (
+    remove_agent_stack_frame,
+)
 from rasa.dialogue_understanding.commands.command import Command
 from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
@@ -18,7 +21,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     UserFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
-from rasa.shared.core.events import Event, FlowCancelled
+from rasa.shared.core.events import AgentCancelled, Event, FlowCancelled
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -48,8 +51,7 @@ class CancelFlowCommand(Command):
         """Selects the frames that were canceled.
 
         Args:
-            dialogue_stack: The dialogue stack.
-            current_flow: The current flow.
+            stack: The dialogue stack.
 
         Returns:
         The frames that were canceled.
@@ -71,8 +73,7 @@ class CancelFlowCommand(Command):
             # we should never get here as we should always find the user flow
             # that was canceled.
             raise ValueError(
-                f"Could not find a user flow frame to cancel. "
-                f"Current stack: {stack}."
+                f"Could not find a user flow frame to cancel. Current stack: {stack}."
             )
 
     def run_command_on_tracker(
@@ -105,6 +106,19 @@ class CancelFlowCommand(Command):
                 "cancel_command.skip_cancel_flow.no_active_flow", command=self
             )
             return []
+
+        if agent_frame := original_tracker.stack.find_active_agent_stack_frame_for_flow(
+            current_flow.id
+        ):
+            structlogger.debug(
+                "cancel_command.remove_agent_stack_frame",
+                command=self,
+                frame=agent_frame,
+            )
+            remove_agent_stack_frame(stack, agent_frame.agent_id)
+            applied_events.append(
+                AgentCancelled(agent_id=agent_frame.agent_id, flow_id=current_flow.id)
+            )
 
         # we pass in the original dialogue stack (before any of the currently
         # predicted commands were applied) to make sure we don't cancel any

@@ -1,0 +1,202 @@
+name: E2E MCP and A2A tests
+
+on:
+    pull_request:
+        branches:
+            - beta-agentic-loops-in-flows # TODO: Change to main, once beta branch merged to main
+    push:
+        branches:
+            - beta-agentic-loops-in-flows # TODO: Change to main (or release branches), once beta branch merged to main
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+env:
+    RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    RASA_PRO_BETA_PREDICATES_IN_RESPONSE_CONDITIONS: true
+    CALM_BENCHMARKING_BOT_READ_TOKEN: ${{ secrets.CALM_BENCH_CLONE }}
+    AWS_REGION_NAME: us-east-1
+    DEFAULT_PYTHON_VERSION: "3.10"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+    e2e_mcp_tests:
+        runs-on: ubuntu-24.04
+        strategy:
+          fail-fast: false
+          matrix:
+            model:
+              - openai
+              - claude-3-5-sonnet-20240620 # Accessed via AWS Bedrock
+            command-generator:
+              - compact
+              - search-ready
+            test-type:
+              - tool-calling
+              - open-agent
+              - task-agent
+            exclude:
+              - model: claude-3-5-sonnet-20240620
+                command-generator: search-ready
+        name: MCP-${{ matrix.test-type }} ${{ matrix.model }} ${{ matrix.command-generator }}-CMD-gen
+        steps:
+            - name: Checkout `rasa-private` git repository 🕝
+              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+            - name: Checkout `calm-benchmarking-bot` git repository 🕝
+              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+              with:
+                repository: RasaHQ/calm-benchmarking-bot
+                path: calm-benchmarking-bot
+                token: ${{ env.CALM_BENCHMARKING_BOT_READ_TOKEN }}
+            - name: Free up disk-space
+              uses: ./.github/actions/free-disk-space
+            - name: Setup Python and install rasa-pro
+              uses: ./.github/actions/setup-python-env
+              with:
+                PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+                MATRIX_JOB: ${{ matrix.command-generator }}-${{ matrix.model }}-${{ matrix.test-type }}
+                RASA_DEFAULT_INSTALLATION_ONLY: "true"
+            - name: Run mock MCP finance server
+              working-directory: calm-benchmarking-bot
+              run: make run-finnhub-mock-mcp-server > mcp-server-logs.txt 2>&1 &
+            - name: Verify mock MCP server is up and healthy
+              run: curl -v --retry 7 --retry-all-errors http://127.0.0.1:8000/mcp/
+            - name: Configure AWS credentials
+              if: ${{ matrix.model == 'claude-3-5-sonnet-20240620' }}
+              uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+              with:
+                role-to-assume: arn:aws:iam::307946638045:role/GitHubAction-BedrockAndSagemakerAccess
+                aws-region: ${{ env.AWS_REGION_NAME }}
+            - name: Train model
+              working-directory: calm-benchmarking-bot
+              env:
+                MOCK_MCP_CONFIG_FILE: ${{ github.workspace }}/data/test_e2e_mcp_config/${{ matrix.command-generator }}-config.yml
+                MOCK_MCP_ENDPOINTS_FILE: ${{ github.workspace }}/data/test_e2e_mcp_config/${{ matrix.model }}-endpoints.yml
+              run: make train-with-mock-mcp-sub-agent
+            - name: E2E tests
+              uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
+              env:
+                MOCK_MCP_ENDPOINTS_FILE: ${{ github.workspace }}/data/test_e2e_mcp_config/${{ matrix.model }}-endpoints.yml
+                TEST_TYPE: ${{ matrix.test-type }}
+              with:
+                timeout_minutes: 60
+                max_attempts: 2
+                shell: bash
+                command: |
+                  cd calm-benchmarking-bot
+                  if [[ ! -d tests ]]; then
+                    mkdir tests;
+                  fi
+                  make e2e-test-mock-mcp-"${TEST_TYPE}"
+            - name: Save E2E test results
+              if: failure()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+              with:
+                name: ${{ matrix.test-type }}-e2e-results-${{ matrix.command-generator }}-${{ matrix.model }}
+                path: calm-benchmarking-bot/tests/e2e_results_failed.yml
+            - name: Save MCP server logs
+              if: failure()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+              with:
+                name: mcp-server-logs-${{ matrix.test-type }}-${{ matrix.command-generator }}-${{ matrix.model }}
+                path: calm-benchmarking-bot/mcp-server-logs.txt
+
+    e2e_a2a_tests:
+        runs-on: ubuntu-24.04
+        strategy:
+          fail-fast: false
+          matrix:
+            model:
+              - openai
+              - claude-3-5-sonnet-20240620 # Accessed via AWS Bedrock
+            command-generator:
+              - compact
+              - search-ready
+            test-type:
+              - happy-path
+              - digressions
+              - cancellations
+            exclude:
+              - model: claude-3-5-sonnet-20240620
+                command-generator: search-ready
+        name: A2A ${{ matrix.test-type }} ${{ matrix.model }} ${{ matrix.command-generator }}-CMD-gen
+        steps:
+            - name: Checkout `rasa-private` git repository 🕝
+              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+            - name: Checkout `calm-benchmarking-bot` git repository 🕝
+              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+              with:
+                repository: RasaHQ/calm-benchmarking-bot
+                path: calm-benchmarking-bot
+                token: ${{ env.CALM_BENCHMARKING_BOT_READ_TOKEN }}
+            - name: Free up disk-space
+              uses: ./.github/actions/free-disk-space
+            - name: Setup Python and install rasa-pro
+              uses: ./.github/actions/setup-python-env
+              with:
+                PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+                MATRIX_JOB: ${{ matrix.command-generator }}-${{ matrix.model }}-${{ matrix.test-type }}
+                RASA_DEFAULT_INSTALLATION_ONLY: "true"
+            - name: Install UV
+              run: curl -LsSf https://astral.sh/uv/install.sh | sh
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+              with:
+                role-to-assume: arn:aws:iam::307946638045:role/GitHubAction-BedrockAndSagemakerAccess
+                aws-region: ${{ env.AWS_REGION_NAME }}
+            - name: Run mock A2A Crypto-assistant server
+              working-directory: calm-benchmarking-bot
+              run: make run-crypto-ramp-mock-a2a-server > a2a-server-logs.txt 2>&1 &
+            - name: Verify mock A2A agent server is healthy
+              run: curl -v --retry 7 --retry-all-errors http://localhost:9000/.well-known/agent-card.json
+            - name: Train model
+              working-directory: calm-benchmarking-bot
+              env:
+                MOCK_A2A_CONFIG_FILE: ${{ github.workspace }}/data/test_e2e_a2a_config/${{ matrix.command-generator }}-config.yml
+                MOCK_A2A_ENDPOINTS_FILE: ${{ github.workspace }}/data/test_e2e_a2a_config/${{ matrix.model }}-endpoints.yml
+              run: |
+                rasa train \
+                  -c ${MOCK_A2A_CONFIG_FILE} \
+                  -d mock_a2a_server/domain \
+                  --data mock_a2a_server/data \
+                  --endpoints ${MOCK_A2A_ENDPOINTS_FILE} \
+                  --sub-agents sub_agents/mock_a2a_agent \
+                  --debug
+            - name: E2E tests
+              uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
+              env:
+                MOCK_A2A_ENDPOINTS_FILE: ${{ github.workspace }}/data/test_e2e_a2a_config/${{ matrix.model }}-endpoints.yml
+                TEST_TYPE: ${{ matrix.test-type }}
+              with:
+                timeout_minutes: 60
+                max_attempts: 2
+                shell: bash
+                command: |
+                  cd calm-benchmarking-bot
+                  if [[ ! -d tests ]]; then
+                    mkdir tests;
+                  fi
+                  make e2e-test-mock-a2a-agent-"${TEST_TYPE}"
+                # Restart mock A2A agent to clear conversation history, before re-running test(s)
+                on_retry_command: |
+                  cd calm-benchmarking-bot
+                  docker compose -f mock_a2a_server/crypto-ramp-mock-api-docker-compose-.yml down -v --remove-orphans --rmi all
+                  make run-crypto-ramp-mock-a2a-server > a2a-server-logs.txt 2>&1 &
+                  curl -v --retry 7 --retry-all-errors http://localhost:9000/.well-known/agent-card.json
+            - name: Save E2E test results
+              if: failure()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+              with:
+                name: a2a-e2e-results-${{ matrix.command-generator }}-${{ matrix.model }}-${{ matrix.test-type }}
+                path: calm-benchmarking-bot/tests/e2e_results_failed.yml
+            - name: Save A2A server logs
+              if: failure()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+              with:
+                name: a2a-server-logs-${{ matrix.command-generator }}-${{ matrix.model }}-${{ matrix.test-type }}
+                path: calm-benchmarking-bot/a2a-server-logs.txt

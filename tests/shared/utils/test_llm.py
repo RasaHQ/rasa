@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, List, Optional, Text
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
@@ -35,7 +35,13 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
+    AgentCancelled,
+    AgentCompleted,
+    AgentInterrupted,
+    AgentResumed,
+    AgentStarted,
     BotUttered,
+    Event,
     Restarted,
     SessionStarted,
     UserUttered,
@@ -263,6 +269,81 @@ def test_tracker_as_readable_transcript_with_messages_that_triggered_error(
         f"AI: Error response"
     )
     assert response.count("\n") == 3
+
+
+@pytest.mark.parametrize(
+    "events, expected_response",
+    [
+        # Agent started and completed
+        (
+            [
+                UserUttered("Hi"),
+                BotUttered("Hi, how can I help you"),
+                UserUttered("start agent 1"),
+                AgentStarted("agent_1", "flow_1"),
+                BotUttered("This is an agent message"),
+                UserUttered("stop agent 1"),
+                AgentCompleted("agent_1", "flow_1"),
+                BotUttered("What else can I help you with?"),
+            ],
+            "USER: Hi\nAI: Hi, how can I help you\nUSER: start agent 1\nagent_1: This is an agent message\nUSER: stop agent 1\nAI: What else can I help you with?",  # noqa: E501
+        ),
+        # Agent started, interrupted, resumed, and cancelled
+        (
+            [
+                UserUttered("Hi"),
+                BotUttered("Hi, how can I help you"),
+                UserUttered("start agent 1"),
+                AgentStarted("agent_1", "flow_1"),
+                BotUttered("This is an agent message"),
+                UserUttered("interrupt agent 1"),
+                AgentInterrupted("agent_1", "flow_1"),
+                UserUttered("some message"),
+                BotUttered("some response"),
+                UserUttered("resume agent 1"),
+                AgentResumed("agent_1", "flow_1"),
+                BotUttered("some response"),
+                UserUttered("cancel agent 1"),
+                AgentCancelled("agent_1", "flow_1"),
+            ],
+            "USER: Hi\nAI: Hi, how can I help you\nUSER: start agent 1\nagent_1: This is an agent message\nUSER: interrupt agent 1\nUSER: some message\nAI: some response\nUSER: resume agent 1\nagent_1: some response\nUSER: cancel agent 1",  # noqa: E501
+        ),
+        # One agent interrupted another agent
+        (
+            [
+                UserUttered("Hi"),
+                BotUttered("Hi, how can I help you"),
+                UserUttered("start agent 1"),
+                AgentStarted("agent_1", "flow_1"),
+                BotUttered("This is an agent message"),
+                UserUttered("start agent 2"),
+                AgentStarted("agent_2", "flow_2"),
+                BotUttered("This is an agent message"),
+                UserUttered("some message"),
+                BotUttered("some response"),
+                AgentCompleted("agent_2", "flow_2"),
+                AgentResumed("agent_1", "flow_1"),
+                BotUttered("This is an agent message"),
+                UserUttered("finished agent 1"),
+                AgentCompleted("agent_1", "flow_1"),
+            ],
+            "USER: Hi\nAI: Hi, how can I help you\nUSER: start agent 1\nagent_1: This is an agent message\nUSER: start agent 2\nagent_2: This is an agent message\nUSER: some message\nagent_2: some response\nagent_1: This is an agent message\nUSER: finished agent 1",  # noqa: E501
+        ),
+    ],
+)
+def test_tracker_as_readable_transcript_highlight_agent_turns(
+    events: List[Event],
+    expected_response: Text,
+    domain: Domain,
+):
+    tracker = DialogueStateTracker(sender_id="test", slots=domain.slots)
+    tracker.update_with_events(events)
+
+    # When
+    response = tracker_as_readable_transcript(tracker, highlight_agent_turns=True)
+
+    # Then
+    assert response.strip() == expected_response.strip()
 
 
 def test_sanitize_message_for_prompt_handles_none():

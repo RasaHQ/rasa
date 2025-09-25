@@ -1,6 +1,6 @@
 import asyncio
 import copy
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, cast
 
 import structlog
 
@@ -244,7 +244,10 @@ class GuardrailsPolicyChecker:
                     f"{log_prefix}.request_failed", error=str(response)
                 )
                 continue
-            if response.flagged:
+            # At this point, response is guaranteed to be GuardrailResponse
+            # Use typing.cast to explicitly cast the type
+            guardrail_response = cast(GuardrailResponse, response)
+            if guardrail_response.flagged:
                 flagged.update(indices_by_key.get(key, []))
 
         return flagged

@@ -31,7 +31,7 @@ jobs:
           - test-full-model-training
           - test-other-unit-tests
           - test-performance
-        python-version: [ 3.9]
+        python-version: ["3.10"]
 
     steps:
       - name: Checkout git repository 🕝
@@ -113,7 +113,7 @@ jobs:
       - name: Install ddtrace on Windows
         run: |
           .\.venv\Scripts\activate
-          py -m pip install -U 'ddtrace==2.10.5'
+          py -m pip install -U ddtrace
 
       - name: Test Code 🔍 (multi-process)
         env:
@@ -148,7 +148,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ 3.9]
+        python-version: ["3.10"]
 
     steps:
       - name: Checkout git repository 🕝
@@ -242,13 +242,13 @@ jobs:
             .\.venv\Scripts\activate
             git config --global credential.helper cache
             hf login --token ${{ env.HUGGINGFACE_API_KEY }} --add-to-git-credential
-            if (!(Test-Path models)) { mkdir models } 
+            if (!(Test-Path models)) { mkdir models }
             hf download urchade/gliner_multi_pii-v1 --repo-type model --local-dir models --cache-dir models
 
       - name: Install ddtrace on Windows
         run: |
           .\.venv\Scripts\activate
-          py -m pip install -U 'ddtrace==2.10.5'
+          py -m pip install -U ddtrace
 
       - name: Test Code 🔍 (multi-process)
         env:
@@ -272,7 +272,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9]
+        python-version: ["3.10"]
 
     steps:
       - name: Checkout git repository 🕝
@@ -352,7 +352,7 @@ jobs:
       - name: Install ddtrace on Windows
         run: |
           .\.venv\Scripts\activate
-          py -m pip install -U 'ddtrace==2.10.5'
+          py -m pip install -U ddtrace
 
       - name: Test Code 🔍 (multi-process)
         env:
@@ -381,4 +381,3 @@ jobs:
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
           args: "⛔️ *Windows Tests on Main failed* failed 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-

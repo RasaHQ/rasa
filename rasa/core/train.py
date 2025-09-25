@@ -46,7 +46,7 @@ async def train_comparison_models(
                     output=str(Path(output_path, f"run_{r +1}")),
                     fixed_model_name=config_name + PERCENTAGE_KEY + str(percentage),
                     additional_arguments={
-                        **additional_arguments,
+                        **(additional_arguments or {}),
                         "exclusion_percentage": percentage,
                     },
                 )

@@ -652,8 +652,16 @@ def test_response_filtering_default_flows() -> None:
     assert len(domain.responses) > 0
     assert len(default_flows.utterances) > 0
 
-    num_unused_default_utterances = len(domain.responses) - len(
-        default_flows.utterances
+    for utterance in default_flows.utterances:
+        if utterance in domain.responses:
+            del domain.responses[utterance]
+
+    num_unused_default_utterances = len(
+        [
+            response
+            for response in domain.responses
+            if response not in default_flows.utterances
+        ]
     )
 
     assert len(filtered_responses.data.keys()) == num_unused_default_utterances

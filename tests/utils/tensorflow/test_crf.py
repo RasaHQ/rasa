@@ -8,6 +8,13 @@ import itertools
 
 import numpy as np
 import pytest
+
+# Skip all tests in this file if TensorFlow is not available
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if not TENSORFLOW_AVAILABLE:
+    pytest.skip("TensorFlow is not available", allow_module_level=True)
+
 import tensorflow as tf
 
 from rasa.utils.tensorflow.crf import (
@@ -182,7 +189,8 @@ def test_crf_log_norm(dtype):
 @pytest.mark.parametrize("dtype", [np.float16, np.float32])
 def test_crf_log_norm_zero_seq_length(dtype):
     """Test `crf_log_norm` when `sequence_lengths` contains one or more
-    zeros."""
+    zeros.
+    """
     inputs = tf.constant(np.ones([2, 10, 5], dtype=dtype))
     transition_params = tf.constant(np.ones([5, 5], dtype=dtype))
     sequence_lengths = tf.constant(np.zeros([2], dtype=np.int32))

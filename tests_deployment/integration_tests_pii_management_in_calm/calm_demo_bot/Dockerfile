@@ -18,7 +18,9 @@ RUN python3 -m venv /opt/venv &&  \
 
 # Download HF model
 COPY ./gliner_model_download_script.py gliner_model_download_script.py
-RUN python3 -m gliner_model_download_script
+# Force slow tokenizers and use pure-Python protobuf only for the download step
+# This is needed to avoid Protobuf 5 compatibility issues with the fast tokenizers
+RUN TRANSFORMERS_NO_FAST_TOKENIZER=1 PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python python3 -m gliner_model_download_script
 
 FROM builder
 WORKDIR /app

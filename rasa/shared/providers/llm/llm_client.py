@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Protocol, Union, runtime_checkable
+from typing import Any, Dict, List, Protocol, Union, runtime_checkable
 
 from rasa.shared.providers.llm.llm_response import LLMResponse
 
@@ -32,7 +32,9 @@ class LLMClient(Protocol):
         """
         ...
 
-    def completion(self, messages: Union[List[dict], List[str], str]) -> LLMResponse:
+    def completion(
+        self, messages: Union[List[dict], List[str], str], **kwargs: Any
+    ) -> LLMResponse:
         """
         Synchronously generate completions for given list of messages.
 
@@ -48,13 +50,14 @@ class LLMClient(Protocol):
                 - a list of messages. Each message is a string and will be formatted
                     as a user message.
                 - a single message as a string which will be formatted as user message.
+            **kwargs: Additional parameters to pass to the completion call.
         Returns:
             LLMResponse
         """
         ...
 
     async def acompletion(
-        self, messages: Union[List[dict], List[str], str]
+        self, messages: Union[List[dict], List[str], str], **kwargs: Any
     ) -> LLMResponse:
         """
         Asynchronously generate completions for given list of messages.
@@ -71,6 +74,7 @@ class LLMClient(Protocol):
                 - a list of messages. Each message is a string and will be formatted
                     as a user message.
                 - a single message as a string which will be formatted as user message.
+            **kwargs: Additional parameters to pass to the completion call.
         Returns:
             LLMResponse
         """

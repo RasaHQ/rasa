@@ -7,6 +7,7 @@ from jinja2 import Environment, Template, select_autoescape
 
 import rasa.dialogue_understanding.generator.utils
 import rasa.shared.utils.io
+from rasa.core.available_agents import AvailableAgents
 from rasa.dialogue_understanding.commands import (
     Command,
     SetSlotCommand,
@@ -31,6 +32,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.constants import SetSlotExtractor
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import AgentStarted
 from rasa.shared.core.flows import Flow, FlowsList, FlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.slot_mappings import SlotFillingManager
@@ -225,8 +227,7 @@ class LLMBasedCommandGenerator(
 
     @lru_cache
     def compile_template(self, template: str) -> Template:
-        """
-        Compile the prompt template and register custom filters.
+        """Compile the prompt template and register custom filters.
 
         Compiling the template is an expensive operation,
         so we cache the result.
@@ -361,20 +362,24 @@ class LLMBasedCommandGenerator(
             )
 
     def prepare_flows_for_template(
-        self, flows: FlowsList, tracker: DialogueStateTracker
+        self,
+        flows: FlowsList,
+        tracker: DialogueStateTracker,
+        add_agent_info: bool = False,
     ) -> List[Dict[str, Any]]:
         """Format data on available flows for insertion into the prompt template.
 
         Args:
             flows: The flows available to the user.
             tracker: The tracker containing the current state of the conversation.
+            add_agent_info: Whether to add agent info to flows or not.
 
         Returns:
             The inputs for the prompt template.
         """
-        result = []
+        result: List[Dict[str, Any]] = []
         for flow in flows.user_flows:
-            slots_with_info = [
+            slots_with_info: List[Dict[str, Any]] = [
                 {
                     "name": q.collect,
                     "description": q.description,
@@ -383,13 +388,46 @@ class LLMBasedCommandGenerator(
                 for q in flow.get_collect_steps()
                 if self.is_extractable(q, tracker)
             ]
-            result.append(
-                {
-                    "name": flow.id,
-                    "description": flow.description,
-                    "slots": slots_with_info,
-                }
-            )
+
+            agent_info: List[Dict[str, Any]] = []
+            if add_agent_info:
+                # add information about agents that have been started for this flow
+                agent_events = [
+                    event
+                    for event in tracker.events
+                    if isinstance(event, AgentStarted) and event.flow_id == flow.id
+                ]
+                available_agents = [
+                    AvailableAgents.get_agent_config(event.agent_id)
+                    for event in agent_events
+                ]
+                if available_agents:
+                    agent_info = [
+                        {
+                            "name": available_agent.agent.name,
+                            "description": available_agent.agent.description,
+                        }
+                        for available_agent in available_agents
+                        if available_agent is not None
+                    ]
+
+            if agent_info:
+                result.append(
+                    {
+                        "name": flow.id,
+                        "description": flow.description,
+                        "slots": slots_with_info,
+                        "agent_info": agent_info,
+                    }
+                )
+            else:
+                result.append(
+                    {
+                        "name": flow.id,
+                        "description": flow.description,
+                        "slots": slots_with_info,
+                    }
+                )
         return result
 
     @staticmethod

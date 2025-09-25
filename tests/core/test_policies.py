@@ -21,7 +21,14 @@ from rasa.core.featurizers.tracker_featurizers import (
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.policy import InvalidPolicyConfig, Policy, SupportedData
 from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.ted_policy import TEDPolicy
+
+# Conditional import for TensorFlow-dependent modules
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if TENSORFLOW_AVAILABLE:
+    from rasa.core.policies.ted_policy import TEDPolicy
+else:
+    TEDPolicy: Optional[Type[Any]] = None
 from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
@@ -1032,6 +1039,8 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
     ],
 )
 def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
+    if policy == TEDPolicy and not TENSORFLOW_AVAILABLE:
+        pytest.skip("TensorFlow is not available")
     assert policy.supported_data() == supported_data
 
 

@@ -229,8 +229,8 @@ def test_exception_tracker_store_from_endpoint_config(
 
     If we can not create a tracker store by instantiating the
     expected type (e.g. due to an exception) we should fallback to
-    the default `InMemoryTrackerStore`."""
-
+    the default `InMemoryTrackerStore`.
+    """
     store = read_endpoint_config(endpoints_path, "tracker_store")
     mock = Mock(side_effect=Exception("test exception"))
     monkeypatch.setattr(

@@ -47,7 +47,6 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
     @app.route("/model", methods=["GET"])
     async def model(request: Request) -> ResponseStream:
         """Simple HTTP model server responding with a trained model."""
-
         if model_hash == request.headers.get("If-None-Match"):
             return response.text("", 204)
 

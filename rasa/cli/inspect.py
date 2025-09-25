@@ -9,6 +9,7 @@ from sanic import Sanic
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
+from rasa.cli.arguments.default_arguments import add_sub_agents_param
 from rasa.core import constants
 from rasa.core.config.configuration import Configuration
 from rasa.engine.storage.local_model_storage import LocalModelStorage
@@ -44,6 +45,8 @@ def add_subparser(
     inspect_parser.add_argument(
         "--voice", help="Enable voice", action="store_true", default=False
     )
+
+    add_sub_agents_param(inspect_parser)
 
     # it'd be confusing to expose those arguments to the user,
     # so we remove them

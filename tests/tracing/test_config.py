@@ -1,5 +1,4 @@
 import logging
-import socket
 import textwrap
 import threading
 from pathlib import Path
@@ -17,7 +16,6 @@ from rasa.tracing.config import (
 from rasa.tracing.constants import ENDPOINTS_METRICS_KEY
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.conftest import wait
-from tests.tracing import conftest
 from tests.tracing.conftest import (
     TRACING_TESTS_FIXTURES_DIRECTORY,
     CapturingTestSpanExporter,
@@ -111,7 +109,11 @@ def test_get_tracer_provider_tls_otlp_collector(
     assert spans[0].scope_spans[0].spans[0].name == "otlp_test_span"
 
 
-def test_get_tracer_provider_jaeger(udp_server: socket.socket) -> None:
+def test_get_tracer_provider_jaeger(
+    grpc_server: grpc.Server,
+    span_exporter: CapturingTestSpanExporter,
+    result_available_event: threading.Event,
+) -> None:
     endpoints_file = str(TRACING_TESTS_FIXTURES_DIRECTORY / "jaeger_endpoints.yml")
 
     tracer_provider = config.get_tracer_provider(endpoints_file)
@@ -124,14 +126,16 @@ def test_get_tracer_provider_jaeger(udp_server: socket.socket) -> None:
 
     tracer_provider.force_flush()
 
-    message, addr = udp_server.recvfrom(UDP_BUFFER_SIZE)
+    wait(
+        lambda: span_exporter.spans is not None,
+        result_available_event=result_available_event,
+        timeout_seconds=15,
+    )
 
-    batch = conftest.deserialize_jaeger_batch(bytearray(message))
-
-    assert batch.process.serviceName == "rasa"
-
-    assert len(batch.spans) == 1
-    assert batch.spans[0].operationName == "jaeger_test_span"
+    spans = span_exporter.spans
+    assert spans is not None
+    assert len(spans[0].scope_spans[0].spans) == 1
+    assert spans[0].scope_spans[0].spans[0].name == "jaeger_test_span"
 
 
 def test_configure_otlp_metric_exporter() -> None:

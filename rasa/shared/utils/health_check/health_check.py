@@ -1,7 +1,10 @@
 import os
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from rasa.exceptions import HealthCheckError
+
+if TYPE_CHECKING:
+    pass
 from rasa.shared.constants import (
     LLM_API_HEALTH_CHECK_DEFAULT_VALUE,
     LLM_API_HEALTH_CHECK_ENV_VAR,
@@ -63,6 +66,7 @@ def perform_llm_health_check(
     log_source_component: str,
 ) -> None:
     """Try to instantiate the LLM Client to validate the provided config.
+
     If the LLM_API_HEALTH_CHECK environment variable is true, perform a test call
     to the LLM API. If config contains multiple models, perform a test call for each
     model in the model group.
@@ -125,6 +129,7 @@ def perform_embeddings_health_check(
     log_source_component: str,
 ) -> None:
     """Try to instantiate the Embedder to validate the provided config.
+
     If the LLM_API_HEALTH_CHECK environment variable is true, perform a test call
     to the Embeddings API. If config contains multiple models, perform a test call for
     each model in the model group.
@@ -240,8 +245,7 @@ def send_test_embeddings_api_request(
 
 
 def is_api_health_check_enabled() -> bool:
-    """Determines whether the API health check is enabled based on an environment
-    variable.
+    """Determines whether the API health check is enabled.
 
     Returns:
         bool: True if the API health check is enabled, False otherwise.

@@ -51,8 +51,14 @@ def story_graph_from_paths(
     return StoryGraph(story_steps)
 
 
-def flows_from_paths(files: List[Text]) -> FlowsList:
-    """Returns the flows from paths."""
+def flows_from_paths(files: List[Text], domain: Optional[Domain] = None) -> FlowsList:
+    """Returns the flows from paths.
+
+    Args:
+        files: List of flow file paths to load.
+        domain: Optional domain for validation. If provided, exit_if conditions
+               will be validated against defined slots.
+    """
     from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 
     flows = FlowsList(underlying_flows=[])
@@ -60,7 +66,7 @@ def flows_from_paths(files: List[Text]) -> FlowsList:
         flows = flows.merge(
             YAMLFlowsReader.read_from_file(file), ignore_duplicates=False
         )
-    flows.validate()
+    flows.validate(domain)
     return flows
 
 

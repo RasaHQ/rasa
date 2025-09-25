@@ -101,7 +101,9 @@ async def test_formbot_example(form_bot_agent: Agent):
         '/inform{"cuisine": "mexican"}', "How many people?", slot="num_people"
     )
     await mock_form_happy_path(
-        '/inform{"number": "2"}', "Do you want to sit outside?", slot="outdoor_seating"
+        '/inform{"number": "2"}',
+        "Do you want to sit outside?",
+        slot="outdoor_seating",
     )
     await mock_form_happy_path(
         "/affirm", "Please provide additional preferences", slot="preferences"
@@ -121,7 +123,9 @@ async def test_formbot_example(form_bot_agent: Agent):
         '/inform{"cuisine": "mexican"}', "How many people?", slot="num_people"
     )
     await mock_form_happy_path(
-        '/inform{"number": "2"}', "Do you want to sit outside?", slot="outdoor_seating"
+        '/inform{"number": "2"}',
+        "Do you want to sit outside?",
+        slot="outdoor_seating",
     )
     await mock_form_unhappy_path(
         "/stop", "Do you want to continue?", slot="outdoor_seating"
@@ -133,7 +137,9 @@ async def test_formbot_example(form_bot_agent: Agent):
         "/affirm", "Please provide additional preferences", slot="preferences"
     )
     await mock_form_happy_path(
-        "/deny", "Please give your feedback on your experience so far", slot="feedback"
+        "/deny",
+        "Please give your feedback on your experience so far",
+        slot="feedback",
     )
     await mock_form_happy_path('/inform{"feedback": "great"}', "All done!")
 

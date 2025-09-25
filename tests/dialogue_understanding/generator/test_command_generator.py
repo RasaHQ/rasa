@@ -579,8 +579,7 @@ async def test_if_command_generator_should_abstain_in_coexistence(
     router_commands: List[Command],
     should_abstain: bool,
 ):
-    """
-    This test tests if the command generator should abstain from predicting
+    """This test tests if the command generator should abstain from predicting
     additional commands in the coexistence setup, where router (e.g IntentBasedRouter
     or LLMBasedRouter) generated some commands.
     """

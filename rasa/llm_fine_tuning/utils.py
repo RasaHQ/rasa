@@ -61,9 +61,9 @@ def patch_invoke_llm_in_generators(mock_impl: Callable) -> Generator:
     try:
         # apply the monkey-patch everywhere
         for cls in originals:
-            cls.invoke_llm = mock_impl  # type: ignore[assignment]
+            cls.invoke_llm = mock_impl  # type: ignore[method-assign]
         yield
     finally:
         # restore originals (even if an exception happened)
         for cls, orig in originals.items():
-            cls.invoke_llm = orig  # type: ignore[assignment]
+            cls.invoke_llm = orig  # type: ignore[method-assign]

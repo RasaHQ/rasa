@@ -5,6 +5,9 @@ import logging
 import typing
 from typing import Any, Dict, List, Optional, Text, Tuple
 
+# importing spacy at module level to ensure error is raised if spacy is not installed
+import spacy
+
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -76,8 +79,6 @@ class SpacyNLP(GraphComponent):
     @staticmethod
     def load_model(spacy_model_name: Text) -> SpacyModel:
         """Try loading the model, catching the OSError if missing."""
-        import spacy
-
         if not spacy_model_name:
             raise InvalidModelError(
                 f"Missing model configuration for `SpacyNLP` in `config.yml`.\n"

@@ -4,6 +4,7 @@ from opentelemetry.metrics import get_meter_provider
 from opentelemetry.sdk.metrics import Meter
 
 from rasa.tracing.constants import (
+    AGENT_EXECUTION_DURATION_METRIC_NAME,
     COMPACT_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     COMPACT_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     COMPACT_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
@@ -20,6 +21,11 @@ from rasa.tracing.constants import (
     LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    MCP_AGENT_LLM_CPU_USAGE_METRIC_NAME,
+    MCP_AGENT_LLM_MEMORY_USAGE_METRIC_NAME,
+    MCP_AGENT_LLM_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    MCP_AGENT_LLM_RESPONSE_DURATION_METRIC_NAME,
+    MCP_TOOL_EXECUTION_DURATION_METRIC_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
@@ -59,6 +65,8 @@ class MetricInstrumentProvider(metaclass=Singleton):
             **self._create_multi_step_llm_command_generator_instruments(meter),
             **self._create_enterprise_search_policy_instruments(meter),
             **self._create_llm_response_duration_instruments(meter),
+            **self._create_mcp_and_a2a_agent_instruments(meter),
+            **self._create_mcp_agent_llm_instruments(meter),
             **self._create_client_request_instruments(meter),
         }
 
@@ -296,6 +304,28 @@ class MetricInstrumentProvider(metaclass=Singleton):
         }
 
     @staticmethod
+    def _create_mcp_and_a2a_agent_instruments(
+        meter: Meter,
+    ) -> Dict[str, Any]:
+        """Create instruments for MCP tool execution and agent execution."""
+        mcp_tool_execution_duration = meter.create_histogram(
+            name=MCP_TOOL_EXECUTION_DURATION_METRIC_NAME,
+            description="The duration of MCP tool execution",
+            unit=DURATION_UNIT_NAME,
+        )
+
+        agent_execution_duration = meter.create_histogram(
+            name=AGENT_EXECUTION_DURATION_METRIC_NAME,
+            description="The duration of agent execution",
+            unit=DURATION_UNIT_NAME,
+        )
+
+        return {
+            MCP_TOOL_EXECUTION_DURATION_METRIC_NAME: mcp_tool_execution_duration,
+            AGENT_EXECUTION_DURATION_METRIC_NAME: agent_execution_duration,
+        }
+
+    @staticmethod
     def _create_client_request_instruments(
         meter: Meter,
     ) -> Dict[str, Any]:
@@ -314,4 +344,42 @@ class MetricInstrumentProvider(metaclass=Singleton):
         return {
             RASA_CLIENT_REQUEST_DURATION_METRIC_NAME: client_request_duration,
             RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME: client_request_body_size,
+        }
+
+    @staticmethod
+    def _create_mcp_agent_llm_instruments(meter: Meter) -> Dict[str, Any]:
+        """Create instruments for MCP agent LLM calls."""
+        mcp_agent_llm_cpu_usage = meter.create_histogram(
+            name=MCP_AGENT_LLM_CPU_USAGE_METRIC_NAME,
+            description="CPU usage during MCP agent LLM calls",
+            unit=LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+        )
+
+        mcp_agent_llm_memory_usage = meter.create_histogram(
+            name=MCP_AGENT_LLM_MEMORY_USAGE_METRIC_NAME,
+            description="Memory usage during MCP agent LLM calls",
+            unit=LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME,
+        )
+
+        mcp_agent_llm_prompt_token_usage = meter.create_histogram(
+            name=MCP_AGENT_LLM_PROMPT_TOKEN_USAGE_METRIC_NAME,
+            description="Prompt token usage for MCP agent LLM calls",
+            unit="token",
+        )
+
+        mcp_agent_llm_response_duration = meter.create_histogram(
+            name=MCP_AGENT_LLM_RESPONSE_DURATION_METRIC_NAME,
+            description="Duration of MCP agent LLM calls",
+            unit=DURATION_UNIT_NAME,
+        )
+
+        return {
+            MCP_AGENT_LLM_CPU_USAGE_METRIC_NAME: mcp_agent_llm_cpu_usage,
+            MCP_AGENT_LLM_MEMORY_USAGE_METRIC_NAME: mcp_agent_llm_memory_usage,
+            MCP_AGENT_LLM_PROMPT_TOKEN_USAGE_METRIC_NAME: (
+                mcp_agent_llm_prompt_token_usage
+            ),
+            MCP_AGENT_LLM_RESPONSE_DURATION_METRIC_NAME: (
+                mcp_agent_llm_response_duration
+            ),
         }

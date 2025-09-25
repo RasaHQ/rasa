@@ -7,7 +7,7 @@ import tempfile
 import textwrap
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Text, Type
+from typing import Any, Callable, Dict, List, Optional, Set, Text, Type
 
 import fakeredis
 import freezegun
@@ -30,7 +30,14 @@ from rasa.dialogue_understanding.patterns.completed import (
     CompletedPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
+from rasa.dialogue_understanding.stack.frames.dialogue_stack_frame import (
+    DialogueStackFrame,
+)
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    AgentStackFrame,
+    AgentState,
+    UserFlowStackFrame,
+)
 from rasa.shared.constants import (
     ASSISTANT_ID_KEY,
     DEFAULT_SENDER_ID,
@@ -2068,3 +2075,591 @@ def test_has_active_user_flow_returns_false():
     tracker.update_stack(stack)
 
     assert not tracker.has_active_user_flow
+
+
+def _agent_frame(
+    *,
+    frame_id: str,
+    agent_id: str,
+    state: AgentState,
+    flow_id: str = "agent_flow",
+    step_id: str = "agent_step",
+) -> AgentStackFrame:
+    """Create a fully-specified AgentStackFrame that is easy to read in tests."""
+    return AgentStackFrame(
+        frame_id=frame_id,
+        flow_id=flow_id,
+        step_id=step_id,
+        agent_id=agent_id,
+        state=state,
+    )
+
+
+agent_parameters = [
+    # 0) completely empty stack
+    pytest.param(lambda: [], None, id="empty_stack"),
+    # 1) no agent frames
+    pytest.param(
+        lambda: [UserFlowStackFrame() for _ in range(5)],
+        None,
+        id="dialogue_frames_only",
+    ),
+    # 2) agent frames exist, but none is active
+    pytest.param(
+        lambda: [
+            UserFlowStackFrame(),
+            _agent_frame(
+                frame_id="inactive_agent_frame_1",
+                agent_id="inactive_agent_1",
+                state=AgentState.INTERRUPTED,
+            ),
+            UserFlowStackFrame(),
+            _agent_frame(
+                frame_id="inactive_agent_frame_2",
+                agent_id="inactive_agent_2",
+                state=AgentState.INTERRUPTED,
+            ),
+            UserFlowStackFrame(),
+        ],
+        None,
+        id="agent_frames_but_none_active",
+    ),
+    # 3) exactly one active agent around the middle
+    pytest.param(
+        lambda: [
+            UserFlowStackFrame(),
+            _agent_frame(
+                frame_id="inactive_agent_frame",
+                agent_id="inactive_agent",
+                state=AgentState.INTERRUPTED,
+            ),
+            UserFlowStackFrame(),
+            _agent_frame(
+                frame_id="active_agent_frame",
+                agent_id="active_agent",
+                state=AgentState.WAITING_FOR_INPUT,
+            ),
+            UserFlowStackFrame(),
+        ],
+        "active_agent",
+        id="single_active_agent_mixed_with_dialogue_frames",
+    ),
+    # 4) active agent is the first element
+    pytest.param(
+        lambda: [
+            _agent_frame(
+                frame_id="active_agent_frame",
+                agent_id="active_agent",
+                state=AgentState.WAITING_FOR_INPUT,
+            ),
+            *[UserFlowStackFrame() for _ in range(3)],
+        ],
+        "active_agent",
+        id="active_agent_first",
+    ),
+    # 5) active agent is the last element
+    pytest.param(
+        lambda: [
+            *[UserFlowStackFrame() for _ in range(2)],
+            _agent_frame(
+                frame_id="active_agent_frame",
+                agent_id="active_agent",
+                state=AgentState.WAITING_FOR_INPUT,
+            ),
+        ],
+        "active_agent",
+        id="active_agent_last",
+    ),
+]
+
+
+@pytest.mark.parametrize("frames_factory, expected_id", agent_parameters)
+def test_find_active_agent_frame(
+    frames_factory: Callable[[], List[DialogueStackFrame]],
+    expected_id: Optional[str],
+):
+    tracker = get_tracker([])
+    tracker.update_stack(DialogueStack(frames_factory()))
+
+    frame = tracker.stack.find_active_agent_frame()
+
+    if expected_id is None:
+        assert frame is None
+    else:
+        assert frame.agent_id == expected_id
+        assert frame.state is AgentState.WAITING_FOR_INPUT
+
+
+@pytest.mark.parametrize("frames_factory, expected_id", agent_parameters)
+def test_agent_is_active(
+    frames_factory: Callable[[], List[DialogueStackFrame]], expected_id: Optional[str]
+):
+    tracker = get_tracker([])
+    tracker.update_stack(DialogueStack(frames_factory()))
+
+    assert tracker.stack.agent_is_active() is (expected_id is not None)
+
+
+@pytest.mark.parametrize("frames_factory, expected_id", agent_parameters)
+def test_get_active_agent_id(frames_factory, expected_id):
+    tracker = get_tracker([])
+    tracker.update_stack(DialogueStack(frames_factory()))
+
+    assert tracker.stack.get_active_agent_id() == expected_id
+
+
+# Additional tests for the highlighted methods
+@pytest.mark.parametrize(
+    "frames_factory, predicate, expected_frames",
+    [
+        # Test finding frames by agent state
+        pytest.param(
+            lambda: [
+                _agent_frame(
+                    frame_id="waiting_frame",
+                    agent_id="agent1",
+                    state=AgentState.WAITING_FOR_INPUT,
+                ),
+                _agent_frame(
+                    frame_id="interrupted_frame",
+                    agent_id="agent2",
+                    state=AgentState.INTERRUPTED,
+                ),
+                _agent_frame(
+                    frame_id="waiting_frame2",
+                    agent_id="agent3",
+                    state=AgentState.WAITING_FOR_INPUT,
+                ),
+            ],
+            lambda frame: frame.state == AgentState.WAITING_FOR_INPUT,
+            ["agent3", "agent1"],  # Should return in reverse order (most recent first)
+            id="find_waiting_frames",
+        ),
+        # Test finding frames by agent ID
+        pytest.param(
+            lambda: [
+                _agent_frame(
+                    frame_id="frame1",
+                    agent_id="agent1",
+                    state=AgentState.WAITING_FOR_INPUT,
+                ),
+                _agent_frame(
+                    frame_id="frame2",
+                    agent_id="agent2",
+                    state=AgentState.INTERRUPTED,
+                ),
+                _agent_frame(
+                    frame_id="frame3",
+                    agent_id="agent1",
+                    state=AgentState.INTERRUPTED,
+                ),
+            ],
+            lambda frame: frame.agent_id == "agent1",
+            ["agent1", "agent1"],  # Should return in reverse order
+            id="find_agent1_frames",
+        ),
+        # Test finding frames by flow ID
+        pytest.param(
+            lambda: [
+                _agent_frame(
+                    frame_id="frame1",
+                    agent_id="agent1",
+                    state=AgentState.WAITING_FOR_INPUT,
+                    flow_id="flow1",
+                ),
+                _agent_frame(
+                    frame_id="frame2",
+                    agent_id="agent2",
+                    state=AgentState.INTERRUPTED,
+                    flow_id="flow2",
+                ),
+                _agent_frame(
+                    frame_id="frame3",
+                    agent_id="agent3",
+                    state=AgentState.WAITING_FOR_INPUT,
+                    flow_id="flow1",
+                ),
+            ],
+            lambda frame: frame.flow_id == "flow1",
+            ["agent3", "agent1"],  # Should return in reverse order
+            id="find_flow1_frames",
+        ),
+        # Test with no matching frames
+        pytest.param(
+            lambda: [
+                _agent_frame(
+                    frame_id="frame1",
+                    agent_id="agent1",
+                    state=AgentState.WAITING_FOR_INPUT,
+                ),
+            ],
+            lambda frame: frame.agent_id == "nonexistent_agent",
+            [],
+            id="find_nonexistent_agent",
+        ),
+        # Test with empty stack
+        pytest.param(
+            lambda: [],
+            lambda frame: frame.state == AgentState.WAITING_FOR_INPUT,
+            [],
+            id="empty_stack",
+        ),
+        # Test with mixed frame types
+        pytest.param(
+            lambda: [
+                UserFlowStackFrame(),
+                _agent_frame(
+                    frame_id="agent_frame",
+                    agent_id="agent1",
+                    state=AgentState.WAITING_FOR_INPUT,
+                ),
+                UserFlowStackFrame(),
+            ],
+            lambda frame: frame.state == AgentState.WAITING_FOR_INPUT,
+            ["agent1"],
+            id="mixed_frame_types",
+        ),
+    ],
+)
+def test_find_agent_frame_by_predicate(
+    frames_factory: Callable[[], List[DialogueStackFrame]],
+    predicate: Callable[[DialogueStackFrame], bool],
+    expected_frames: List[str],
+):
+    """Test the _find_agent_frame_by_predicate method."""
+    tracker = get_tracker([])
+    tracker.update_stack(DialogueStack(frames_factory()))
+
+    frames = tracker.stack._find_agent_frame_by_predicate(predicate)
+
+    assert len(frames) == len(expected_frames)
+    for frame, expected_agent_id in zip(frames, expected_frames):
+        assert frame.agent_id == expected_agent_id
+
+
+@pytest.mark.parametrize(
+    "frames_factory, flow_id, expected_frame",
+    [
+        # Test finding active agent frame for specific flow
+        pytest.param(
+            lambda: [
+                _agent_frame(
+                    frame_id="frame1",
+                    agent_id="agent1",
+                    state=AgentState.WAITING_FOR_INPUT,
+                    flow_id="flow1",
+                ),
+                _agent_frame(
+                    frame_id="frame2",
+                    agent_id="agent2",
+                    state=AgentState.INTERRUPTED,
+                    flow_id="flow1",
+                ),
+                _agent_frame(
+                    frame_id="frame3",
+                    agent_id="agent3",
+                    state=AgentState.WAITING_FOR_INPUT,
+                    flow_id="flow2",
+                ),
+            ],
+            "flow1",
+            "agent1",  # Should return the first active frame for flow1
+            id="find_active_frame_for_flow1",
+        ),
+        # Test finding active agent frame for flow with multiple active frames
+        pytest.param(
+            lambda: [
+                _agent_frame(
+                    frame_id="frame1",
+                    agent_id="agent1",
+                    state=AgentState.WAITING_FOR_INPUT,
+                    flow_id="flow1",
+                ),
+                _agent_frame(
+                    frame_id="frame2",
+                    agent_id="agent2",
+                    state=AgentState.WAITING_FOR_INPUT,
+                    flow_id="flow1",
+                ),
+            ],
+            "flow1",
+            "agent2",  # Should return the most recent active frame
+            id="find_most_recent_active_frame",
+        ),
+        # Test finding active agent frame for flow with no active frames
+        pytest.param(
+            lambda: [
+                _agent_frame(
+                    frame_id="frame1",
+                    agent_id="agent1",
+                    state=AgentState.INTERRUPTED,
+                    flow_id="flow1",
+                ),
+                _agent_frame(
+                    frame_id="frame2",
+                    agent_id="agent2",
+                    state=AgentState.INTERRUPTED,
+                    flow_id="flow1",
+                ),
+            ],
+            "flow1",
+            None,  # No active frames for this flow
+            id="no_active_frames_for_flow",
+        ),
+        # Test finding active agent frame for nonexistent flow
+        pytest.param(
+            lambda: [
+                _agent_frame(
+                    frame_id="frame1",
+                    agent_id="agent1",
+                    state=AgentState.WAITING_FOR_INPUT,
+                    flow_id="flow1",
+                ),
+            ],
+            "nonexistent_flow",
+            None,
+            id="nonexistent_flow",
+        ),
+        # Test with empty stack
+        pytest.param(
+            lambda: [],
+            "flow1",
+            None,
+            id="empty_stack",
+        ),
+    ],
+)
+def test_find_active_agent_stack_frame_for_flow(
+    frames_factory: Callable[[], List[DialogueStackFrame]],
+    flow_id: str,
+    expected_frame: Optional[str],
+):
+    """Test the find_active_agent_stack_frame_for_flow method."""
+    tracker = get_tracker([])
+    tracker.update_stack(DialogueStack(frames_factory()))
+
+    frame = tracker.stack.find_active_agent_stack_frame_for_flow(flow_id)
+
+    if expected_frame is None:
+        assert frame is None
+    else:
+        assert frame.agent_id == expected_frame
+        assert frame.flow_id == flow_id
+        assert frame.state == AgentState.WAITING_FOR_INPUT
+
+
+@pytest.mark.parametrize(
+    "frames_factory, agent_id, expected_frame",
+    [
+        # Test finding agent frame by agent ID
+        pytest.param(
+            lambda: [
+                _agent_frame(
+                    frame_id="frame1",
+                    agent_id="agent1",
+                    state=AgentState.WAITING_FOR_INPUT,
+                ),
+                _agent_frame(
+                    frame_id="frame2",
+                    agent_id="agent2",
+                    state=AgentState.INTERRUPTED,
+                ),
+                _agent_frame(
+                    frame_id="frame3",
+                    agent_id="agent1",
+                    state=AgentState.INTERRUPTED,
+                ),
+            ],
+            "agent1",
+            "agent1",  # Should return the most recent frame for agent1
+            id="find_most_recent_agent1_frame",
+        ),
+        # Test finding agent frame by agent ID with only one frame
+        pytest.param(
+            lambda: [
+                _agent_frame(
+                    frame_id="frame1",
+                    agent_id="agent1",
+                    state=AgentState.WAITING_FOR_INPUT,
+                ),
+            ],
+            "agent1",
+            "agent1",
+            id="find_single_agent1_frame",
+        ),
+        # Test finding agent frame by agent ID with no matching frames
+        pytest.param(
+            lambda: [
+                _agent_frame(
+                    frame_id="frame1",
+                    agent_id="agent1",
+                    state=AgentState.WAITING_FOR_INPUT,
+                ),
+            ],
+            "nonexistent_agent",
+            None,
+            id="find_nonexistent_agent",
+        ),
+        # Test with empty stack
+        pytest.param(
+            lambda: [],
+            "agent1",
+            None,
+            id="empty_stack",
+        ),
+        # Test finding agent frame with mixed frame types
+        pytest.param(
+            lambda: [
+                UserFlowStackFrame(),
+                _agent_frame(
+                    frame_id="frame1",
+                    agent_id="agent1",
+                    state=AgentState.WAITING_FOR_INPUT,
+                ),
+                UserFlowStackFrame(),
+            ],
+            "agent1",
+            "agent1",
+            id="mixed_frame_types",
+        ),
+    ],
+)
+def test_find_agent_stack_frame_by_agent(
+    frames_factory: Callable[[], List[DialogueStackFrame]],
+    agent_id: str,
+    expected_frame: Optional[str],
+):
+    """Test the find_agent_stack_frame_by_agent method."""
+    tracker = get_tracker([])
+    tracker.update_stack(DialogueStack(frames_factory()))
+
+    frame = tracker.stack.find_agent_stack_frame_by_agent(agent_id)
+
+    if expected_frame is None:
+        assert frame is None
+    else:
+        assert frame.agent_id == expected_frame
+
+
+def test_find_agent_frame_by_predicate_with_complex_predicate():
+    """Test _find_agent_frame_by_predicate with a complex predicate."""
+    tracker = get_tracker([])
+    frames = [
+        _agent_frame(
+            frame_id="frame1",
+            agent_id="agent1",
+            state=AgentState.WAITING_FOR_INPUT,
+            flow_id="flow1",
+        ),
+        _agent_frame(
+            frame_id="frame2",
+            agent_id="agent2",
+            state=AgentState.WAITING_FOR_INPUT,
+            flow_id="flow2",
+        ),
+        _agent_frame(
+            frame_id="frame3",
+            agent_id="agent1",
+            state=AgentState.INTERRUPTED,
+            flow_id="flow1",
+        ),
+    ]
+    tracker.update_stack(DialogueStack(frames))
+
+    # Complex predicate: find frames that are waiting for input AND belong to flow1
+    complex_predicate = lambda frame: (  # noqa: E731
+        frame.state == AgentState.WAITING_FOR_INPUT and frame.flow_id == "flow1"
+    )
+
+    result_frames = tracker.stack._find_agent_frame_by_predicate(complex_predicate)
+
+    assert len(result_frames) == 1
+    assert result_frames[0].agent_id == "agent1"
+    assert result_frames[0].flow_id == "flow1"
+    assert result_frames[0].state == AgentState.WAITING_FOR_INPUT
+
+
+def test_find_active_agent_stack_frame_for_flow_with_multiple_flows():
+    """Test find_active_agent_stack_frame_for_flow with multiple flows."""
+    tracker = get_tracker([])
+    frames = [
+        _agent_frame(
+            frame_id="frame1",
+            agent_id="agent1",
+            state=AgentState.WAITING_FOR_INPUT,
+            flow_id="flow1",
+        ),
+        _agent_frame(
+            frame_id="frame2",
+            agent_id="agent2",
+            state=AgentState.WAITING_FOR_INPUT,
+            flow_id="flow2",
+        ),
+        _agent_frame(
+            frame_id="frame3",
+            agent_id="agent3",
+            state=AgentState.INTERRUPTED,
+            flow_id="flow1",
+        ),
+    ]
+    tracker.update_stack(DialogueStack(frames))
+
+    # Should find the active frame for flow1
+    flow1_frame = tracker.stack.find_active_agent_stack_frame_for_flow("flow1")
+    assert flow1_frame is not None
+    assert flow1_frame.agent_id == "agent1"
+    assert flow1_frame.flow_id == "flow1"
+
+    # Should find the active frame for flow2
+    flow2_frame = tracker.stack.find_active_agent_stack_frame_for_flow("flow2")
+    assert flow2_frame is not None
+    assert flow2_frame.agent_id == "agent2"
+    assert flow2_frame.flow_id == "flow2"
+
+
+def test_find_agent_stack_frame_by_agent_with_different_states():
+    """Test find_agent_stack_frame_by_agent with frames in different states."""
+    tracker = get_tracker([])
+    frames = [
+        _agent_frame(
+            frame_id="frame1",
+            agent_id="agent1",
+            state=AgentState.WAITING_FOR_INPUT,
+        ),
+        _agent_frame(
+            frame_id="frame2",
+            agent_id="agent1",
+            state=AgentState.INTERRUPTED,
+        ),
+        _agent_frame(
+            frame_id="frame3",
+            agent_id="agent1",
+            state=AgentState.WAITING_FOR_INPUT,
+        ),
+    ]
+    tracker.update_stack(DialogueStack(frames))
+
+    # Should return the most recent frame for agent1 (regardless of state)
+    frame = tracker.stack.find_agent_stack_frame_by_agent("agent1")
+    assert frame is not None
+    assert frame.agent_id == "agent1"
+    assert frame.frame_id == "frame3"  # Most recent frame
+
+
+def test_agent_methods_with_no_agent_frames():
+    """Test all agent methods when there are no agent frames in the stack."""
+    tracker = get_tracker([])
+    frames = [
+        UserFlowStackFrame(),
+        UserFlowStackFrame(),
+        UserFlowStackFrame(),
+    ]
+    tracker.update_stack(DialogueStack(frames))
+
+    # All methods should return None or empty lists when no agent frames exist
+    assert tracker.stack.find_active_agent_frame() is None
+    assert tracker.stack.agent_is_active() is False
+    assert tracker.stack.get_active_agent_id() is None
+    assert tracker.stack._find_agent_frame_by_predicate(lambda f: True) == []
+    assert tracker.stack.find_active_agent_stack_frame_for_flow("any_flow") is None
+    assert tracker.stack.find_agent_stack_frame_by_agent("any_agent") is None

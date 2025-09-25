@@ -158,6 +158,9 @@ and removes them from the ECR repositories.
 This workflow scans pull requests using the Semgrep tool to detect potential PII (Personally Identifiable Information) exposure.
 It scans only the newly added lines in the PR, posts inline comments on any PII findings, and provides a summary comment with the total results.
 
+### E2E MCP and A2A tests
+Workflow to run E2E tests involving MCP and A2A agent based Flows.
+
 ### Python EOL Check
 This workflow checks for the python versions supported in `pyproject.toml` and send a
 slack message if any of the version is reaching EOL within 90 days. It only sesnds

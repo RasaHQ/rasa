@@ -4,9 +4,17 @@ import tempfile
 from typing import Any, Dict, Optional, Text
 from unittest.mock import Mock
 
+import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.shared.utils.io
+
+# Skip all tests in this file if TensorFlow is not available
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if not TENSORFLOW_AVAILABLE:
+    pytest.skip("TensorFlow is not available", allow_module_level=True)
+
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
@@ -19,10 +27,14 @@ from tests.engine.training.test_components import FingerprintableText
 
 def test_fingerprint_stays_same():
     key1 = fingerprinting.calculate_fingerprint_key(
-        TEDPolicy, TEDPolicy.get_default_config(), {"input": FingerprintableText("Hi")}
+        TEDPolicy,
+        TEDPolicy.get_default_config(),
+        {"input": FingerprintableText("Hi")},
     )
     key2 = fingerprinting.calculate_fingerprint_key(
-        TEDPolicy, TEDPolicy.get_default_config(), {"input": FingerprintableText("Hi")}
+        TEDPolicy,
+        TEDPolicy.get_default_config(),
+        {"input": FingerprintableText("Hi")},
     )
 
     assert key1 == key2

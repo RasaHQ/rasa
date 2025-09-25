@@ -1,4 +1,4 @@
-# [Choice] Python version (use -bullseye variants on local arm64/Apple Silicon): 3, 3.10, 3.9, 3.8, 3.7, 3.6, 3-bullseye, 3.10-bullseye, 3.9-bullseye, 3.8-bullseye, 3.7-bullseye, 3.6-bullseye, 3-buster, 3.10-buster, 3.9-buster, 3.8-buster, 3.7-buster, 3.6-buster
+# [Choice] Python version (use -bullseye variants on local arm64/Apple Silicon): 3, 3.10, 3-bullseye, 3.10-bullseye, 3-buster, 3.10-buster
 ARG VARIANT=3-bullseye
 FROM mcr.microsoft.com/vscode/devcontainers/python:0-${VARIANT}
 
@@ -20,7 +20,7 @@ RUN if [ "${NODE_VERSION}" != "nne" ]; then su vscode -c "umask 0002 && . /usr/l
 RUN pip install poetry==1.1.10 pre-commit
 COPY ../poetry.lock ../pyproject.toml /tmp/pip-tmp/rasa/
 RUN cd /tmp/pip-tmp/rasa && poetry config virtualenvs.create false \
-  && poetry install --no-interaction --no-ansi --no-root
+  && poetry install -E full --no-interaction --no-ansi --no-root
 
 # [Optional] Uncomment this section to install additional OS packages.
 # RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \

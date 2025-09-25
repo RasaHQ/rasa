@@ -4,6 +4,8 @@ import logging
 import typing
 from typing import Any, Dict, List, Text, Tuple, Type
 
+# importing mitie at module level to ensure error is raised if mitie is not installed
+import mitie
 import numpy as np
 
 from rasa.engine.graph import ExecutionContext, GraphComponent

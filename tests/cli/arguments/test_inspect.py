@@ -14,6 +14,7 @@ def test_rasa_inspect_default_args(
     assert args.syslog_port == 514
     assert args.syslog_protocol == "UDP"
     assert args.endpoints == "endpoints.yml"
+    assert args.sub_agents == "sub_agents"
     assert args.interface == "0.0.0.0"
     assert args.port == 5005
     assert args.auth_token is None

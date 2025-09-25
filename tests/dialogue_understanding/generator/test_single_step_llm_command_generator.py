@@ -44,6 +44,7 @@ from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_g
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import AgentStackFrame
 from rasa.dialogue_understanding.utils import set_record_commands_and_prompts
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
@@ -59,7 +60,7 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.constants import SetSlotExtractor
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
+from rasa.shared.core.events import AgentCompleted, BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.slots import BooleanSlot, CategoricalSlot, TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -863,6 +864,81 @@ class TestSingleStepLLMCommandGenerator:
             'You have just asked the user for the slot "test_slot".'
             in rendered_template
         )
+
+    @pytest.mark.parametrize(
+        "agents_present",
+        [
+            True,
+            False,
+        ],
+    )
+    def test_render_template_agent_inputs_minimal_template(
+        self,
+        command_generator: SingleStepLLMCommandGenerator,
+        monkeypatch: MonkeyPatch,
+        agents_present: bool,
+    ) -> None:
+        # Toggle agents presence
+        class MockAvailableAgents:
+            agents = (
+                {"test-agent": Mock(), "test-agent-2": Mock()} if agents_present else {}
+            )
+
+        monkeypatch.setattr(
+            "rasa.core.available_agents.AvailableAgents.get_instance",
+            staticmethod(lambda *args, **kwargs: MockAvailableAgents()),
+        )
+        monkeypatch.setattr(
+            "rasa.core.available_agents.AvailableAgents.has_agents",
+            classmethod(lambda cls: agents_present),
+        )
+
+        # Use a minimal prompt that checks for variables being defined
+        command_generator.prompt_template = (
+            "{% if active_agent %}HAS_ACTIVE{% endif %}"
+            "{% if completed_agents %}HAS_COMPLETED{% endif %}"
+            "User input: {{ current_conversation }}"
+        )
+
+        # Prepare tracker/flows
+        test_message = Message.build(text="hi")
+        test_tracker = DialogueStateTracker.from_events(
+            "sender", [AgentCompleted("test-agent-2", "test_flow")]
+        )
+        if agents_present:
+            stack = DialogueStack(
+                frames=[
+                    AgentStackFrame(
+                        flow_id="test_flow",
+                        step_id="START",
+                        frame_id="some-frame-id",
+                        agent_id="test-agent",
+                    ),
+                ]
+            )
+            test_tracker.update_stack(stack)
+        test_flows = flows_from_str(
+            """
+            flows:
+              test_flow:
+                description: some description
+                steps:
+                  - id: step
+                    action: action_listen
+            """
+        )
+
+        # When
+        rendered = command_generator.render_template(
+            message=test_message,
+            tracker=test_tracker,
+            startable_flows=test_flows,
+            all_flows=test_flows,
+        )
+
+        # Then: agent fields are conditionally present
+        assert ("HAS_ACTIVE" in rendered) is agents_present
+        assert ("HAS_COMPLETED" in rendered) is agents_present
 
     @pytest.mark.parametrize(
         "input_action, expected_command",

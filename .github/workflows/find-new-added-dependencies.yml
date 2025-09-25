@@ -21,6 +21,9 @@ jobs:
           fetch-depth: 0
           ref: main
 
+      - name: Free up disk-space
+        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b # TODO: Change to `main` once the composite-action is merged to main
+
       - name: Prepare the job
         uses: RasaHQ/rasa-private/.github/actions/test-prerequisites@b8016beeb87d41e7288dcea419b80da36a241255 # 3.12.4
         with:

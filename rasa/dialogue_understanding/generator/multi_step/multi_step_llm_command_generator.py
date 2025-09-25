@@ -2,7 +2,7 @@ import importlib.resources
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
 import structlog
-from deprecated import deprecated  # type: ignore[import]
+from deprecated import deprecated  # type: ignore[import-untyped]
 from jinja2 import Template
 
 import rasa.shared.utils.io

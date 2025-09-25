@@ -1,10 +1,12 @@
 import asyncio
 import time
-from typing import Any, Dict, List, Optional, Text
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 import structlog
 from tqdm import tqdm
 
+from rasa.core.available_agents import AvailableAgents
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.exceptions import AgentNotReady
@@ -52,10 +54,11 @@ class DialogueUnderstandingTestRunner:
 
     def __init__(
         self,
-        model_path: Optional[Text] = None,
+        model_path: Optional[str] = None,
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[StorageType] = None,
         endpoints: Optional[AvailableEndpoints] = None,
+        sub_agents_path: Optional[Union[Path, str]] = None,
     ) -> None:
         """Initializes the Dialogue Understanding test suite runner.
 
@@ -68,6 +71,7 @@ class DialogueUnderstandingTestRunner:
         import rasa.core.agent
 
         self._check_action_server(endpoints)
+        sub_agents = AvailableAgents.get_instance(sub_agents_path)
 
         self.agent = asyncio.run(
             rasa.core.agent.load_agent(
@@ -75,6 +79,7 @@ class DialogueUnderstandingTestRunner:
                 model_server=model_server,
                 remote_storage=remote_storage,
                 endpoints=endpoints,
+                sub_agents=sub_agents,
             )
         )
         if not self.agent.is_ready():

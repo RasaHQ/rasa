@@ -19,19 +19,110 @@ from rasa.shared.constants import (
 )
 
 FORCE_JSON_LOGGING = os.environ.get("FORCE_JSON_LOGGING")
+ANSI_CYAN_BOLD = "\033[1;36m"
+ANSI_RESET = "\033[0m"
 
 
 class HumanConsoleRenderer(ConsoleRenderer):
     """Console renderer that outputs human-readable logs."""
 
     def __call__(self, logger: WrappedLogger, name: str, event_dict: EventDict) -> str:
+        should_highlight = event_dict.get("highlight", False)
+        terminal_width = self._get_terminal_width()
+
+        # Use event_info as title for the log entry
         if "event_info" in event_dict:
             event_key = event_dict["event"]
             event_dict["event"] = event_dict["event_info"]
             event_dict["event_key"] = event_key
-            del event_dict["event_info"]
+            event_dict.pop("event_info", None)
 
-        return super().__call__(logger, name, event_dict)
+        # In case the log entry should be highlighted
+        # make sure to surround the log entry with ===
+        event_dict = self._highlight_log_entry(
+            event_dict, terminal_width, should_highlight
+        )
+
+        # Format JSON data for better readability
+        event_dict = self._format_json_data(event_dict)
+
+        # Render the log entry first
+        result = super().__call__(logger, name, event_dict)
+
+        # ensure that newlines are properly rendered
+        result = "\n".join(result.split("\\n"))
+
+        # Add closing === if we highlighted this entry
+        if should_highlight:
+            result += f"\n{'=' * terminal_width}"
+
+        return result
+
+    def _highlight_log_entry(
+        self, event_dict: EventDict, terminal_width: int, should_highlight: bool
+    ) -> EventDict:
+        if should_highlight:
+            # Only highlight if log level is DEBUG
+            # structlog passes log level as 'level' or 'levelname'
+            level = event_dict.get("level", event_dict.get("levelname", "")).upper()
+            if level == "DEBUG":
+                # Add opening === before the event info
+                if "event" in event_dict and isinstance(event_dict["event"], str):
+                    event_info = event_dict["event"]
+                    event_dict["event"] = (
+                        f"\n{'=' * terminal_width}\n"
+                        f"{ANSI_CYAN_BOLD}{event_info}{ANSI_RESET}\n"
+                    )
+
+            event_dict.pop("highlight", None)
+
+        return event_dict
+
+    def _format_json_data(self, event_dict: EventDict) -> EventDict:
+        """Format JSON data in the event dict for better readability."""
+        # Get the list of fields to format from the event dict
+        fields_to_format = event_dict.get("json_formatting", [])
+
+        if not fields_to_format:
+            return event_dict
+
+        import json
+
+        # Format only the specified fields
+        for key in fields_to_format:
+            if key in event_dict:
+                value = event_dict[key]
+
+                try:
+                    # Try to parse as JSON if it's a string
+                    if isinstance(value, str):
+                        parsed = json.loads(value)
+                        # If it's a dict or list, format it nicely
+                        if isinstance(parsed, (dict, list)):
+                            formatted = json.dumps(parsed, indent=2, ensure_ascii=False)
+                            event_dict[key] = formatted
+                    elif isinstance(value, (dict, list)):
+                        # Format JSON with indentation for better readability
+                        formatted = json.dumps(value, indent=2, ensure_ascii=False)
+                        event_dict[key] = formatted
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    # If it's not JSON serializable or if it's not valid JSON,
+                    # leave it as is
+                    pass
+
+        # Remove the json_formatting key from the output
+        event_dict.pop("json_formatting", None)
+
+        return event_dict
+
+    def _get_terminal_width(self) -> int:
+        """Get the width of the terminal."""
+        import shutil
+
+        try:
+            return shutil.get_terminal_size((80, 20)).columns
+        except Exception:
+            return 80
 
 
 def configure_structlog(
@@ -52,7 +143,7 @@ def configure_structlog(
         level=log_level,
     )
 
-    shared_processors = [
+    shared_processors: List[structlog.typing.Processor] = [
         # Processors that have nothing to do with output,
         # e.g., add timestamps or log level names.
         # If log level is too low, abort pipeline and throw away log entry.
@@ -94,7 +185,7 @@ def configure_structlog(
         ]
 
     structlog.configure(
-        processors=processors,  # type: ignore
+        processors=processors,
         context_class=dict,
         # `logger_factory` is used to create wrapped loggers that are used for
         # OUTPUT. This one returns a `logging.Logger`. The final value (a JSON

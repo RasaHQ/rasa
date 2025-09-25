@@ -18,6 +18,10 @@ from typing import (
 import numpy as np
 import scipy.sparse
 
+# importing spacy at module level to ensure error is raised if spacy is not installed
+# spacy is needed when importing from rasa.nlu.tokenizers.spacy_tokenizer
+import spacy  # noqa: F401
+
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.engine.graph import ExecutionContext, GraphComponent

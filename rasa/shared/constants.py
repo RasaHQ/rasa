@@ -249,6 +249,9 @@ _VALIDATE_ENVIRONMENT_MISSING_KEYS_KEY = "missing_keys"
 LLM_API_HEALTH_CHECK_ENV_VAR = "LLM_API_HEALTH_CHECK"
 LLM_API_HEALTH_CHECK_DEFAULT_VALUE = "false"
 
+MCP_API_HEALTH_CHECK_ENV_VAR = "MCP_API_HEALTH_CHECK"
+MCP_API_HEALTH_CHECK_DEFAULT_VALUE = "false"
+
 AWS_REGION_NAME_CONFIG_KEY = "aws_region_name"
 AWS_ACCESS_KEY_ID_CONFIG_KEY = "aws_access_key_id"
 AWS_SECRET_ACCESS_KEY_CONFIG_KEY = "aws_secret_access_key"
@@ -345,6 +348,8 @@ PAYLOAD = "payload"
 # Used for LLM command generation
 ROLE_USER = "user"
 ROLE_SYSTEM = "system"
+ROLE_ASSISTANT = "assistant"
+ROLE_TOOL = "tool"
 
 # Used for key values in ValidateSlotPatternFlowStackFrame
 REFILL_UTTER = "refill_utter"
@@ -359,3 +364,6 @@ FAQ_INPUT_DATA_QUESTION_LINE_PREFIX = "Q:"
 FAQ_INPUT_DATA_ANSWER_LINE_PREFIX = "A:"
 FAQ_DOCUMENT_ENTRY_SEPARATOR = "\n\n"
 FAQ_DOCUMENT_LINE_SEPARATOR = "\n"
+
+# Constants for the MCP server
+KEY_TOOL_CALLS = "tool_calls"

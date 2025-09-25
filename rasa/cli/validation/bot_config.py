@@ -1,4 +1,5 @@
 import argparse
+import os
 from typing import TYPE_CHECKING, Optional
 
 import structlog
@@ -59,6 +60,86 @@ def _validate_story_structure(
     )
 
 
+def _validate_sub_agents(sub_agents_path: str) -> bool:
+    """Validates sub-agents configuration.
+
+    Args:
+        sub_agents_path: Path to the sub-agents directory.
+
+    Returns:
+        True if validation passes, False otherwise.
+    """
+    from rasa.agents.validation import validate_agent_folder
+    from rasa.core.constants import DEFAULT_SUB_AGENTS
+
+    try:
+        # Check if the sub-agents directory exists
+        if not os.path.isdir(sub_agents_path):
+            # If the sub-agents-path points to the default folder and it doesn't exist,
+            # no agents are available.
+            # AvailableAgents will handle the non-existing folder gracefully.
+
+            if sub_agents_path == DEFAULT_SUB_AGENTS:
+                structlogger.info(
+                    "cli.validate_files.sub_agents_validation",
+                    sub_agents_path=sub_agents_path,
+                    event_info="Default sub-agents directory does not exist, "
+                    "no sub-agents will be available.",
+                )
+                return True
+            else:
+                # For user-specified paths, the directory must exist
+                structlogger.error(
+                    "cli.validate_files.sub_agents_validation_error",
+                    sub_agents_path=sub_agents_path,
+                    event_info=f"Sub-agents directory '{sub_agents_path}' "
+                    "does not exist.",
+                )
+                return False
+
+        # Validate the actual config content using AvailableAgents
+        # This will validate file existence, structure, mandatory keys, etc.
+        try:
+            validate_agent_folder(sub_agents_path)
+
+        except ValidationError as e:
+            # This is a validation error - log it and return False
+            structlogger.error(
+                "cli.validate_files.sub_agents_validation_error",
+                sub_agents_path=sub_agents_path,
+                validation_error=str(e),
+                event_info=f"Sub-agents configuration validation failed: {e}",
+            )
+            return False
+
+        except Exception as e:
+            # This is an unexpected error
+            structlogger.error(
+                "cli.validate_files.sub_agents_validation_error",
+                sub_agents_path=sub_agents_path,
+                error=str(e),
+                event_info=f"Unexpected error during sub-agents validation: {e}",
+            )
+            return False
+
+        structlogger.info(
+            "cli.validate_files.sub_agents_validation_success",
+            sub_agents_path=sub_agents_path,
+            event_info="Sub-agents validation passed successfully.",
+        )
+        return True
+
+    except Exception as e:
+        # This is an unexpected error
+        structlogger.error(
+            "cli.validate_files.sub_agents_validation_error",
+            sub_agents_path=sub_agents_path,
+            error=str(e),
+            event_info="Sub-agents validation failed.",
+        )
+        return False
+
+
 def validate_files(
     fail_on_warnings: bool,
     max_history: Optional[int],
@@ -66,6 +147,7 @@ def validate_files(
     stories_only: bool = False,
     flows_only: bool = False,
     translations_only: bool = False,
+    sub_agents: Optional[str] = None,
 ) -> None:
     """Validates either the story structure or the entire project.
 
@@ -76,6 +158,7 @@ def validate_files(
         stories_only: If `True`, only the story structure is validated.
         flows_only: If `True`, only the flows are validated.
         translations_only: If `True`, only the translations data is validated.
+        sub_agents: Path to sub-agents directory for validation.
     """
     from rasa.validator import Validator
 
@@ -111,6 +194,9 @@ def validate_files(
             valid_translations = True
         valid_CALM_slot_mappings = validator.validate_CALM_slot_mappings()
 
+        # Validate sub-agents if specified
+        valid_sub_agents = _validate_sub_agents(sub_agents) if sub_agents else True
+
         all_good = (
             valid_domain
             and valid_nlu
@@ -118,6 +204,7 @@ def validate_files(
             and valid_flows
             and valid_translations
             and valid_CALM_slot_mappings
+            and valid_sub_agents
         )
 
     if validator.config:

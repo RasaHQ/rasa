@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple
 
 import structlog
 import tiktoken
-from deprecated import deprecated  # type: ignore[import]
+from deprecated import deprecated  # type: ignore[import-untyped]
 from jinja2 import Template
 from langchain.docstore.document import Document
 from langchain.schema.embeddings import Embeddings

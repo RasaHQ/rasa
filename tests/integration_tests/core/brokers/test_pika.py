@@ -13,18 +13,36 @@ from rasa.core.brokers.pika import RABBITMQ_EXCHANGE, PikaEventBroker
 from .conftest import (
     RABBITMQ_DEFAULT_QUEUE,
     RABBITMQ_HOST,
-    RABBITMQ_PASSWORD,
     RABBITMQ_PORT,
-    RABBITMQ_USER,
 )
 
 
 @pytest.mark.broker
-async def test_pika_event_broker_connect():
+async def test_pika_event_broker_connect(
+    docker_client: docker.DockerClient,
+    caplog: LogCaptureFixture,
+    rabbitmq_username: Text,
+    rabbitmq_password: Text,
+) -> None:
+    environment = {
+        "RABBITMQ_DEFAULT_USER": rabbitmq_username,
+        "RABBITMQ_DEFAULT_PASS": rabbitmq_password,
+    }
+
+    rabbitmq_container = docker_client.containers.run(
+        image="healthcheck/rabbitmq",
+        detach=True,
+        environment=environment,
+        name="rabbitmq",
+        ports={f"{RABBITMQ_PORT}/tcp": RABBITMQ_PORT},
+    )
+    rabbitmq_container.reload()
+    assert rabbitmq_container.status == "running"
+
     broker = PikaEventBroker(
         host=RABBITMQ_HOST,
-        username=RABBITMQ_USER,
-        password=RABBITMQ_PASSWORD,
+        username=rabbitmq_username,
+        password=rabbitmq_password,
         port=RABBITMQ_PORT,
         queues=[RABBITMQ_DEFAULT_QUEUE],
     )

@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Text, Tuple, Type
 
+import skops.io as sio
 import structlog
 from scipy.sparse import csr_matrix, hstack, vstack
 from sklearn.exceptions import NotFittedError
@@ -183,8 +184,6 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
 
     def persist(self) -> None:
         """Persist this model into the passed directory."""
-        import skops.io as sio
-
         with self._model_storage.write_to(self._resource) as model_dir:
             path = model_dir / f"{self._resource.name}.skops"
             sio.dump(self.clf, path)
@@ -203,8 +202,6 @@ class LogisticRegressionClassifier(IntentClassifier, GraphComponent):
         **kwargs: Any,
     ) -> "LogisticRegressionClassifier":
         """Loads trained component (see parent class for full docstring)."""
-        import skops.io as sio
-
         try:
             with model_storage.read_from(resource) as model_dir:
                 classifier_file = model_dir / f"{resource.name}.skops"

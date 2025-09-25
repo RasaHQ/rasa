@@ -11,6 +11,11 @@ ENDPOINTS_OTLP_BACKEND_TYPE = "otlp"
 PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME = "len_prompt_tokens"
 REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME = "request_body_size_in_bytes"
 
+# Tool output value truncation
+# Truncate slot values to prevent excessive memory usage in traces
+# while preserving enough context for debugging
+TOOL_OUTPUT_VALUE_MAX_LENGTH = 500
+
 # metrics constants
 LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME = "llm_command_generator_cpu_usage"
 LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME = "llm_command_generator_memory_usage"
@@ -88,5 +93,14 @@ CONTEXTUAL_RESPONSE_REPHRASER_LLM_RESPONSE_DURATION_METRIC_NAME = (
 RASA_CLIENT_REQUEST_DURATION_METRIC_NAME = "rasa_client_request_duration"
 RASA_CLIENT_REQUEST_BODY_SIZE_METRIC_NAME = "rasa_client_request_body_size"
 
+# Agent and MCP tool execution duration metrics
+AGENT_EXECUTION_DURATION_METRIC_NAME = "agent_execution_duration"
+MCP_TOOL_EXECUTION_DURATION_METRIC_NAME = "mcp_tool_execution_duration"
+
+# MCP Agent LLM metrics
+MCP_AGENT_LLM_CPU_USAGE_METRIC_NAME = "mcp_agent_llm_cpu_usage"
+MCP_AGENT_LLM_MEMORY_USAGE_METRIC_NAME = "mcp_agent_llm_memory_usage"
+MCP_AGENT_LLM_PROMPT_TOKEN_USAGE_METRIC_NAME = "mcp_agent_llm_prompt_token_usage"
+MCP_AGENT_LLM_RESPONSE_DURATION_METRIC_NAME = "mcp_agent_llm_response_duration"
 LLM_BASED_COMMAND_GENERATOR_CPU_MEMORY_USAGE_UNIT_NAME = "percentage"
 DURATION_UNIT_NAME = "ms"

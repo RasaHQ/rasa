@@ -1732,7 +1732,7 @@ def test_verify_categorical_predicate_invalid_value(
 def test_verify_categorical_predicate_with_apostrophe_valid(
     capsys: CaptureFixture,
 ) -> None:
-    """checks that a categorical slot with apostrophe is valid."""
+    """Checks that a categorical slot with apostrophe is valid."""
     flows = flows_from_str(
         """
         flows:
@@ -1777,7 +1777,7 @@ def test_verify_categorical_predicate_with_apostrophe_valid(
 
 
 def test_verify_categorical_predicate_with_double_quotes_valid() -> None:
-    """checks that a categorical slot with double quotes is invalid."""
+    """Checks that a categorical slot with double quotes is invalid."""
     flows = flows_from_str(
         """
         flows:
@@ -2933,7 +2933,7 @@ def test_validate_allow_nlu_correction_invalid(
 def test_verify_slot_validation_invalid(
     capsys: CaptureFixture,
 ) -> None:
-    """test that invalid slot validation configuration are detected."""
+    """Test that invalid slot validation configuration are detected."""
     test_domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -2975,7 +2975,7 @@ def test_verify_slot_validation_invalid(
 
 
 def test_verify_slot_validation_valid() -> None:
-    """test that valid slot validation configuration."""
+    """Test that valid slot validation configuration."""
     test_domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"

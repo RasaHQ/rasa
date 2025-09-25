@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 import psutil
 
+from rasa.agents.protocol.mcp.mcp_base_agent import MCPBaseAgent
 from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
 from rasa.core.policies.intentless_policy import IntentlessPolicy
@@ -27,6 +28,10 @@ from rasa.tracing.constants import (
     LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
     LLM_COMMAND_GENERATOR_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    MCP_AGENT_LLM_CPU_USAGE_METRIC_NAME,
+    MCP_AGENT_LLM_MEMORY_USAGE_METRIC_NAME,
+    MCP_AGENT_LLM_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    MCP_AGENT_LLM_RESPONSE_DURATION_METRIC_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_CPU_USAGE_METRIC_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_LLM_RESPONSE_DURATION_METRIC_NAME,
     MULTI_STEP_LLM_COMMAND_GENERATOR_MEMORY_USAGE_METRIC_NAME,
@@ -385,6 +390,11 @@ def record_callable_duration_metrics(
         )
         attributes = {"url": kwargs.get("url")}
 
+    if isinstance(self, MCPBaseAgent):
+        metric_instrument = instrument_provider.get_instrument(
+            MCP_AGENT_LLM_RESPONSE_DURATION_METRIC_NAME
+        )
+
     if not metric_instrument:
         return None
 
@@ -416,3 +426,25 @@ def record_request_size_in_bytes(attributes: Dict[str, Any]) -> None:
 
     request_body_size = attributes.pop(REQUEST_BODY_SIZE_IN_BYTES_ATTRIBUTE_NAME, 0)
     metric_instrument.record(amount=request_body_size, attributes=attributes)
+
+
+def record_mcp_agent_llm_metrics(attributes: Dict[str, Any]) -> None:
+    """Record MCP agent LLM metrics."""
+    instrument_provider = MetricInstrumentProvider()
+
+    if not instrument_provider.instruments:
+        return None
+
+    # Use MCP agent specific metric names
+    record_llm_based_component_cpu_usage(
+        instrument_provider, MCP_AGENT_LLM_CPU_USAGE_METRIC_NAME
+    )
+    record_llm_based_component_memory_usage(
+        instrument_provider, MCP_AGENT_LLM_MEMORY_USAGE_METRIC_NAME
+    )
+    record_llm_based_component_prompt_token(
+        instrument_provider,
+        attributes,
+        MCP_AGENT_LLM_PROMPT_TOKEN_USAGE_METRIC_NAME,
+    )
+    return None

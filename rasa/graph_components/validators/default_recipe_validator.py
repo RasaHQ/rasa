@@ -10,22 +10,13 @@ from rasa.core.policies.flow_policy import FlowPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-from rasa.nlu.extractors.crf_entity_extractor import (
-    CRFEntityExtractor,
-    CRFEntityExtractorOptions,
-)
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
-from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
-from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
@@ -45,11 +36,45 @@ from rasa.shared.core.training_data.structures import RuleStep, StoryGraph
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.common import conditional_import
 
-# TODO: Can we replace this with the registered types from the regitry?
-TRAINABLE_EXTRACTORS = [MitieEntityExtractor, CRFEntityExtractor, DIETClassifier]
+# Conditional imports for TensorFlow-dependent components
+TEDPolicy, TED_POLICY_AVAILABLE = conditional_import(
+    "rasa.core.policies.ted_policy", "TEDPolicy"
+)
+UnexpecTEDIntentPolicy, UNEXPECTED_INTENT_POLICY_AVAILABLE = conditional_import(
+    "rasa.core.policies.unexpected_intent_policy", "UnexpecTEDIntentPolicy"
+)
+DIETClassifier, DIET_CLASSIFIER_AVAILABLE = conditional_import(
+    "rasa.nlu.classifiers.diet_classifier", "DIETClassifier"
+)
+ResponseSelector, RESPONSE_SELECTOR_AVAILABLE = conditional_import(
+    "rasa.nlu.selectors.response_selector", "ResponseSelector"
+)
+
+# Conditional imports for nlu components requiring other dependencies than tensorflow
+MitieEntityExtractor, MITIE_ENTITY_EXTRACTOR_AVAILABLE = conditional_import(
+    "rasa.nlu.extractors.mitie_entity_extractor", "MitieEntityExtractor"
+)
+CRFEntityExtractor, CRF_ENTITY_EXTRACTOR_AVAILABLE = conditional_import(
+    "rasa.nlu.extractors.crf_entity_extractor", "CRFEntityExtractor"
+)
+CRFEntityExtractorOptions, _ = conditional_import(
+    "rasa.nlu.extractors.crf_entity_extractor", "CRFEntityExtractorOptions"
+)
+
+# TODO: Can we replace this with the registered types from the registry?
+TRAINABLE_EXTRACTORS = []
+if CRF_ENTITY_EXTRACTOR_AVAILABLE:
+    TRAINABLE_EXTRACTORS.append(CRFEntityExtractor)
+if MITIE_ENTITY_EXTRACTOR_AVAILABLE:
+    TRAINABLE_EXTRACTORS.append(MitieEntityExtractor)
+if DIET_CLASSIFIER_AVAILABLE:
+    TRAINABLE_EXTRACTORS.append(DIETClassifier)
 # TODO: replace these once the Recipe is merged (used in tests)
-POLICY_CLASSSES = {TEDPolicy, MemoizationPolicy, RulePolicy}
+POLICY_CLASSSES = {MemoizationPolicy, RulePolicy}
+if TED_POLICY_AVAILABLE:
+    POLICY_CLASSSES.add(TEDPolicy)
 
 
 def _types_to_str(types: Iterable[Type]) -> Text:
@@ -158,18 +183,27 @@ class DefaultV1RecipeValidator(GraphComponent):
                 docs=DOCS_URL_COMPONENTS,
             )
 
+        available_extractors = {DIETClassifier}
+        if CRF_ENTITY_EXTRACTOR_AVAILABLE:
+            available_extractors.add(CRFEntityExtractor)
+
         if training_data.entity_examples and self._component_types.isdisjoint(
-            {DIETClassifier, CRFEntityExtractor}
+            available_extractors
         ):
             if training_data.entity_roles_groups_used():
+                crf_name = (
+                    CRFEntityExtractor.__name__
+                    if CRFEntityExtractor
+                    else "CRFEntityExtractor"
+                )
                 rasa.shared.utils.io.raise_warning(
                     f"You have defined training data with entities that "
                     f"have roles/groups, but your NLU configuration does not "
                     f"include a '{DIETClassifier.__name__}' "
-                    f"or a '{CRFEntityExtractor.__name__}'. "
+                    f"or a '{crf_name}'. "
                     f"To train entities that have roles/groups, "
                     f"add either '{DIETClassifier.__name__}' "
-                    f"or '{CRFEntityExtractor.__name__}' to your "
+                    f"or '{crf_name}' to your "
                     f"configuration.",
                     docs=DOCS_URL_COMPONENTS,
                 )
@@ -203,7 +237,16 @@ class DefaultV1RecipeValidator(GraphComponent):
             )
 
         if training_data.lookup_tables:
-            if self._component_types.isdisjoint([CRFEntityExtractor, DIETClassifier]):
+            lookup_extractors = [DIETClassifier]
+            if CRF_ENTITY_EXTRACTOR_AVAILABLE:
+                lookup_extractors.append(CRFEntityExtractor)
+
+            if self._component_types.isdisjoint(lookup_extractors):
+                crf_name = (
+                    CRFEntityExtractor.__name__
+                    if CRFEntityExtractor
+                    else "CRFEntityExtractor"
+                )
                 rasa.shared.utils.io.raise_warning(
                     f"You have defined training data consisting of lookup tables, but "
                     f"your NLU configuration does not include any components "
@@ -211,33 +254,45 @@ class DefaultV1RecipeValidator(GraphComponent):
                     f"To make use of the features that are created with the "
                     f"help of the lookup tables, "
                     f"add a '{DIETClassifier.__name__}' or a "
-                    f"'{CRFEntityExtractor.__name__}' "
+                    f"'{crf_name}' "
                     f"with the 'pattern' feature "
                     f"to your configuration.",
                     docs=DOCS_URL_COMPONENTS,
                 )
 
-            elif CRFEntityExtractor in self._component_types:
+            elif (
+                CRF_ENTITY_EXTRACTOR_AVAILABLE
+                and CRFEntityExtractor in self._component_types
+            ):
                 crf_schema_nodes = [
                     schema_node
                     for schema_node in self._graph_schema.nodes.values()
                     if schema_node.uses == CRFEntityExtractor
                 ]
-                has_pattern_feature = any(
-                    CRFEntityExtractorOptions.PATTERN in feature_list
-                    for crf in crf_schema_nodes
-                    for feature_list in crf.config.get("features", [])
+                has_pattern_feature = (
+                    any(
+                        CRFEntityExtractorOptions.PATTERN in feature_list
+                        for crf in crf_schema_nodes
+                        for feature_list in crf.config.get("features", [])
+                    )
+                    if CRFEntityExtractorOptions
+                    else False
                 )
 
                 if not has_pattern_feature:
+                    crf_name = (
+                        CRFEntityExtractor.__name__
+                        if CRFEntityExtractor
+                        else "CRFEntityExtractor"
+                    )
                     rasa.shared.utils.io.raise_warning(
                         f"You have defined training data consisting of "
                         f"lookup tables, but your NLU configuration's "
-                        f"'{CRFEntityExtractor.__name__}' "
+                        f"'{crf_name}' "
                         f"does not include the "
                         f"'pattern' feature. To featurize lookup tables, "
                         f"add the 'pattern' feature to the "
-                        f"'{CRFEntityExtractor.__name__}' "
+                        f"'{crf_name}' "
                         "in your configuration.",
                         docs=DOCS_URL_COMPONENTS,
                     )
@@ -446,13 +501,16 @@ class DefaultV1RecipeValidator(GraphComponent):
             return
 
         # if we are using a flow policy, there shouldn't be any dm1 policies
-        dm1_policies = (
+        dm1_policies_list = [
             RulePolicy,
-            TEDPolicy,
             MemoizationPolicy,
             AugmentedMemoizationPolicy,
-            UnexpecTEDIntentPolicy,
-        )
+        ]
+        if TED_POLICY_AVAILABLE:
+            dm1_policies_list.append(TEDPolicy)
+        if UNEXPECTED_INTENT_POLICY_AVAILABLE:
+            dm1_policies_list.append(UnexpecTEDIntentPolicy)
+        dm1_policies = tuple(dm1_policies_list)
 
         for schema_node in self._graph_schema.nodes.values():
             if issubclass(schema_node.uses, dm1_policies):

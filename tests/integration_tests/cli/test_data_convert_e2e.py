@@ -54,8 +54,7 @@ def test_rasa_data_convert_e2e_feature_enabled_csv(
     request: FixtureRequest,
     monkeypatch: MonkeyPatch,
 ):
-    """
-    Test captures the subprocess output for the command run.
+    """Test captures the subprocess output for the command run.
     validates user message is displayed when `RASA_PRO_BETA_E2E_CONVERSION=true`
     validates yml file is created when cli command is successful run
     with sample .csv file
@@ -94,8 +93,7 @@ def test_rasa_data_convert_e2e_feature_enabled_xlsx(
     request: FixtureRequest,
     monkeypatch: MonkeyPatch,
 ):
-    """
-    Test captures the subprocess output for the command run.
+    """Test captures the subprocess output for the command run.
     validates user message is displayed when `RASA_PRO_BETA_E2E_CONVERSION=true`
     validates yml file is created when cli command is successful run
     with sample .xlsx file
@@ -132,8 +130,7 @@ def test_rasa_data_convert_e2e_feature_disabled(
     request: FixtureRequest,
     monkeypatch: MonkeyPatch,
 ):
-    """
-    Test captures the subprocess output for the command run.
+    """Test captures the subprocess output for the command run.
     validates user message is displayed when `RASA_PRO_BETA_E2E_CONVERSION=false`
     """
     monkeypatch.setenv("RASA_PRO_BETA_E2E_CONVERSION", "false")

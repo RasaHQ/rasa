@@ -12,6 +12,7 @@ from rasa import model
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import interactive as arguments
 from rasa.cli.validation.config_path_validation import get_validated_path
+from rasa.core.constants import DEFAULT_SUB_AGENTS
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
@@ -110,6 +111,7 @@ def _set_not_required_args(args: argparse.Namespace) -> None:
     args.validation_max_history = None
     args.remote_storage = None
     args.keep_local_model_copy = False
+    args.sub_agents = DEFAULT_SUB_AGENTS  # Default value for sub-agents
 
 
 def perform_interactive_learning(

@@ -127,16 +127,17 @@ async def train(
     output: Text = rasa.shared.constants.DEFAULT_MODELS_PATH,
     dry_run: bool = False,
     force_training: bool = False,
-    fixed_model_name: Optional[Text] = None,
+    fixed_model_name: Optional[str] = None,
     persist_nlu_training_data: bool = False,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
-    model_to_finetune: Optional[Text] = None,
+    model_to_finetune: Optional[str] = None,
     finetuning_epoch_fraction: float = 1.0,
     remote_storage: Optional[StorageType] = None,
     file_importer: Optional[TrainingDataImporter] = None,
     keep_local_model_copy: bool = False,
     remote_root_only: bool = False,
+    sub_agents: Optional[str] = None,
 ) -> TrainingResult:
     """Trains a Rasa model (Core and NLU).
 
@@ -167,6 +168,7 @@ async def train(
             remote storage is configured.
         remote_root_only: If `True`, the model will be stored in the root of the
             remote model storage.
+        sub_agents: Path to sub-agents directory.
 
     Returns:
         An instance of `TrainingResult`.
@@ -304,24 +306,19 @@ async def _train_graph(
     **kwargs: Any,
 ) -> TrainingResult:
     if model_to_finetune:
-        model_to_finetune = rasa.model.get_model_for_finetuning(model_to_finetune)
-        if not model_to_finetune:
-            structlogger.error(
-                "model_training.train.finetuning_model_not_found",
-                event_info=(
-                    f"No model for finetuning found. Please make sure to either "
-                    f"specify a path to a previous model or to have a finetunable "
-                    f"model within the directory '{output_path}'."
-                ),
-            )
-            rasa.shared.utils.common.display_research_study_prompt()
-            sys.exit(1)
-
-        rasa.shared.utils.common.mark_as_experimental_feature(
-            "Incremental Training feature"
+        structlogger.error(
+            "model_training.train.incremental_training_not_supported",
+            event_info=(
+                "Incremental training (--finetune) is "
+                "not supported in Rasa 3.14.0 onwards. "
+                "Please retrain your model from scratch "
+                "if you have updated your configuration. "
+            ),
         )
+        rasa.shared.utils.common.display_research_study_prompt()
+        sys.exit(1)
 
-    is_finetuning = model_to_finetune is not None
+    is_finetuning = False  # Incremental training is not supported in Rasa 3.14.0+
 
     config = file_importer.get_config()
     recipe = Recipe.recipe_for_name(config.get(CONFIG_RECIPE_KEY))

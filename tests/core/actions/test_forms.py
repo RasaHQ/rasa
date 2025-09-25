@@ -263,8 +263,8 @@ async def test_activate_with_prefilled_slot_with_mapping_conditions():
 async def test_switch_forms_with_same_slot(default_agent: Agent):
     """Tests switching of forms, where the first slot is the same in both forms.
 
-    Tests the fix for issue 7710"""
-
+    Tests the fix for issue 7710
+    """
     # Define two forms in the domain, with same first slot
     slot_a = "my_slot_a"
 
@@ -1892,8 +1892,7 @@ async def test_extract_slots_with_mapping_conditions_during_form_activation():
 
 
 async def test_form_validation_happens_once(caplog: LogCaptureFixture):
-    """
-    Tests if form validation happens once instead of twice.
+    """Tests if form validation happens once instead of twice.
     Solves the bug presented in https://rasahq.atlassian.net/browse/ENG-117
     """
     tracker = DialogueStateTracker.from_events(sender_id="bla", evts=[])

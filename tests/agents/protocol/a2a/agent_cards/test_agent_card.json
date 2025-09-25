@@ -1,0 +1,20 @@
+{
+    "name": "Test Agent",
+    "description": "A test agent for unit testing",
+    "url": "http://example.com",
+    "version": "1.0.0",
+    "defaultInputModes": ["text", "text/plain"],
+    "defaultOutputModes": ["text", "text/plain", "application/json"],
+    "capabilities": {
+        "streaming": true
+    },
+    "skills": [
+        {
+            "id": "skill_1",
+            "name": "Test Skill",
+            "description": "A skill for testing",
+            "tags": ["test"],
+            "examples": ["example 1", "example 2"]
+        }
+    ]
+}

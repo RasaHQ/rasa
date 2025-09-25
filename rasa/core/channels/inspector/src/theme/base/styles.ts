@@ -1,4 +1,19 @@
-import { mode, StyleFunctionProps } from '@chakra-ui/theme-tools'
+import {mode, StyleFunctionProps} from '@chakra-ui/theme-tools'
+import {keyframes} from "@chakra-ui/react";
+
+
+const pulse = keyframes`
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+`;
+
 
 export const styles = {
   global: {
@@ -9,5 +24,8 @@ export const styles = {
       fontSize: theme.rasaFontSizes.md,
       letterSpacing: '0.025rem',
     }),
+    '.pulse': {
+      animation: `${pulse} 2s infinite`,
+    },
   },
 }

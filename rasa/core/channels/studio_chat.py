@@ -93,12 +93,12 @@ class StudioTrackerUpdatePlugin:
         """Remove tasks that have already completed."""
         self.tasks = [task for task in self.tasks if not task.done()]
 
-    @hookimpl  # type: ignore[misc]
+    @hookimpl
     def after_new_user_message(self, tracker: "DialogueStateTracker") -> None:
         """Triggers a tracker update notification after a new user message."""
         self.handle_tracker_update(tracker)
 
-    @hookimpl  # type: ignore[misc]
+    @hookimpl
     def after_action_executed(self, tracker: "DialogueStateTracker") -> None:
         """Triggers a tracker update notification after an action is executed."""
         self.handle_tracker_update(tracker)
@@ -118,7 +118,7 @@ class StudioTrackerUpdatePlugin:
         self.tasks.append(task)
         self._cleanup_tasks()
 
-    @hookimpl  # type: ignore[misc]
+    @hookimpl
     def after_server_stop(self) -> None:
         """Cancels all remaining tasks when the server stops."""
         self._cancel_tasks()
@@ -438,7 +438,7 @@ class StudioChatInput(SocketIOInput, VoiceInputChannel):
         if sid in self.active_connections:
             del self.active_connections[sid]
 
-    @hookimpl  # type: ignore[misc]
+    @hookimpl
     def after_server_stop(self) -> None:
         """Cleanup background tasks and active connections when the server stops."""
         structlogger.info("studio_chat.after_server_stop.cleanup")
@@ -533,7 +533,7 @@ class StudioVoiceOutputChannel(VoiceOutputChannel):
 
     def create_marker_message(self, recipient_id: str) -> Tuple[str, str]:
         message_id = uuid.uuid4().hex
-        marker_data = {"marker": message_id}
+        marker_data: Dict[str, Any] = {"marker": message_id}
 
         # Include comprehensive latency information if available
         latency_data = {
@@ -548,7 +548,7 @@ class StudioVoiceOutputChannel(VoiceOutputChannel):
 
         # Add latency data to marker if any metrics are available
         if latency_data:
-            marker_data["latency"] = latency_data  # type: ignore[assignment]
+            marker_data["latency"] = latency_data
 
         return json.dumps(marker_data), message_id
 

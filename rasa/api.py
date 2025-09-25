@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 def run(
     model: Text,
+    sub_agents: Text,
     connector: Optional[Text] = None,
     **kwargs: Dict[Text, Any],
 ) -> None:
@@ -27,6 +28,7 @@ def run(
 
     Args:
         model: Path to model archive.
+        sub_agents: Path to sub-agents directory.
         connector: Connector which should be use (overwrites `credentials`
         field).
         **kwargs: Additional arguments which are passed to
@@ -35,8 +37,11 @@ def run(
     """
     import rasa.core.run
     import rasa.shared.utils.common
+    from rasa.core.available_agents import AvailableAgents
     from rasa.shared.constants import DOCS_BASE_URL
     from rasa.shared.utils.cli import print_warning
+
+    _sub_agents = AvailableAgents.get_instance(sub_agents)
 
     credentials = Configuration.get_instance().credentials
 
@@ -64,6 +69,7 @@ def run(
         channel=connector,
         credentials=credentials,
         endpoints=Configuration.get_instance().endpoints,
+        sub_agents=_sub_agents,
         **kwargs,
     )
 
@@ -76,16 +82,17 @@ def train(
     output: Text = rasa.shared.constants.DEFAULT_MODELS_PATH,
     dry_run: bool = False,
     force_training: bool = False,
-    fixed_model_name: Optional[Text] = None,
+    fixed_model_name: Optional[str] = None,
     persist_nlu_training_data: bool = False,
     core_additional_arguments: Optional[Dict] = None,
     nlu_additional_arguments: Optional[Dict] = None,
-    model_to_finetune: Optional[Text] = None,
+    model_to_finetune: Optional[str] = None,
     finetuning_epoch_fraction: float = 1.0,
     remote_storage: Optional[StorageType] = None,
     file_importer: Optional["TrainingDataImporter"] = None,
     keep_local_model_copy: bool = False,
     remote_root_only: bool = False,
+    sub_agents: Optional[str] = None,
 ) -> "TrainingResult":
     """Runs Rasa Core and NLU training in `async` loop.
 
@@ -116,6 +123,7 @@ def train(
             remote storage is configured.
         remote_root_only: If `True`, the model will be stored in the root of the
             remote model storage.
+        sub_agents: Path to sub-agents directory.
 
     Returns:
         An instance of `TrainingResult`.
@@ -141,6 +149,7 @@ def train(
             file_importer=file_importer,
             keep_local_model_copy=keep_local_model_copy,
             remote_root_only=remote_root_only,
+            sub_agents=sub_agents,
         )
     )
 

@@ -94,6 +94,18 @@ class InvalidFlowStepIdException(Exception):
         super().__init__(f"Invalid flow step ID '{step_id}' for flow '{flow_id}'.")
 
 
+class InvalidAgentState(RasaException):
+    """Raised if the agent state is invalid."""
+
+    def __init__(self, invalid_state: str) -> None:
+        """Creates a `InvalidAgentState`.
+
+        Args:
+            invalid_state: The invalid agent state.
+        """
+        super().__init__(f"Invalid agent state '{invalid_state}'.")
+
+
 @dataclass
 class BaseFlowStackFrame(DialogueStackFrame):
     flow_id: str = ""  # needed to avoid "default arg before non-default" error
@@ -170,4 +182,49 @@ class UserFlowStackFrame(BaseFlowStackFrame):
             flow_id=data["flow_id"],
             step_id=data["step_id"],
             frame_type=FlowStackFrameType.from_str(data.get("frame_type")),
+        )
+
+
+class AgentState(str, Enum):
+    INTERRUPTED = "interrupted"
+    WAITING_FOR_INPUT = "waiting_for_input"
+
+    @staticmethod
+    def from_str(state: Optional[str]) -> AgentState:
+        if state == AgentState.WAITING_FOR_INPUT.value:
+            return AgentState.WAITING_FOR_INPUT
+        elif state == AgentState.INTERRUPTED.value:
+            return AgentState.INTERRUPTED
+        else:
+            raise InvalidAgentState(state)
+
+
+@dataclass
+class AgentStackFrame(BaseFlowStackFrame):
+    agent_id: str = ""
+    state: AgentState = AgentState.WAITING_FOR_INPUT
+    metadata: Optional[Dict[str, Any]] = None
+
+    @classmethod
+    def type(cls) -> str:
+        """Returns the type of the frame."""
+        return "agent"
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> AgentStackFrame:
+        """Creates a `AgentStackFrame` from a dictionary.
+
+        Args:
+            data: The dictionary to create the `AgentStackFrame` from.
+
+        Returns:
+            The created `AgentStackFrame`.
+        """
+        return AgentStackFrame(
+            frame_id=data["frame_id"],
+            flow_id=data["flow_id"],
+            step_id=data["step_id"],
+            agent_id=data["agent_id"],
+            state=AgentState.from_str(data["state"]),
+            metadata=data.get("metadata"),
         )

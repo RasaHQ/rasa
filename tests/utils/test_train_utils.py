@@ -83,7 +83,9 @@ def test_rank_and_mask(
 ):
     confidences = np.array(input_values)
     indices, modified_confidences = train_utils.rank_and_mask(
-        confidences=confidences, ranking_length=ranking_length, renormalize=renormalize
+        confidences=confidences,
+        ranking_length=ranking_length,
+        renormalize=renormalize,
     )
     assert any(
         np.allclose(modified_confidences, np.array(possible_output))

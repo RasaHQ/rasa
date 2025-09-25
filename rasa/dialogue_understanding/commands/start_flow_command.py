@@ -11,15 +11,25 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
     CommandSyntaxVersion,
 )
+from rasa.dialogue_understanding.commands.utils import (
+    remove_pattern_continue_interrupted_frames,
+    resume_flow,
+)
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    AgentState,
     FlowStackFrameType,
     UserFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.utils import (
+    is_continue_interrupted_flow_active,
     top_user_flow_frame,
     user_flows_on_the_stack,
 )
-from rasa.shared.core.events import Event, FlowInterrupted
+from rasa.shared.core.events import (
+    AgentInterrupted,
+    Event,
+    FlowInterrupted,
+)
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -71,12 +81,7 @@ class StartFlowCommand(Command):
         original_stack = original_tracker.stack
         applied_events: List[Event] = []
 
-        if self.flow in user_flows_on_the_stack(stack):
-            structlogger.debug(
-                "start_flow_command.skip_command.already_started_flow", command=self
-            )
-            return []
-        elif self.flow not in all_flows.flow_ids:
+        if self.flow not in all_flows.flow_ids:
             structlogger.debug(
                 "start_flow_command.skip_command.start_invalid_flow_id", command=self
             )
@@ -87,15 +92,71 @@ class StartFlowCommand(Command):
             original_user_frame.flow(all_flows) if original_user_frame else None
         )
 
+        # if the original top flow is the same as the flow to start, the flow is
+        # already active, do nothing
+        if original_top_flow is not None and original_top_flow.id == self.flow:
+            # in case continue_interrupted is not active, skip the already active start
+            # flow command
+            if not is_continue_interrupted_flow_active(stack):
+                return []
+
+            # if the continue interrupted flow is active, and the command generator
+            # predicted a start flow command for the flow which is on top of the stack,
+            # we just need to remove the pattern_continue_interrupted frame(s) from the
+            # stack
+            stack = remove_pattern_continue_interrupted_frames(stack)
+            return applied_events + tracker.create_stack_updated_events(stack)
+
+        # if the flow is already on the stack, resume it
+        if (
+            self.flow in user_flows_on_the_stack(stack)
+            and original_user_frame is not None
+        ):
+            # if pattern_continue_interrupted is active, we need to remove it
+            # from the stack before resuming the flow
+            stack = remove_pattern_continue_interrupted_frames(stack)
+            applied_events.extend(resume_flow(self.flow, tracker, stack))
+            # the current active flow is interrupted
+            applied_events.append(
+                FlowInterrupted(
+                    original_user_frame.flow_id, original_user_frame.step_id
+                )
+            )
+            return applied_events
+
         frame_type = FlowStackFrameType.REGULAR
 
+        # remove the pattern_continue_interrupted frames from the stack
+        # if it is currently active but the user digressed from the pattern
+        stack = remove_pattern_continue_interrupted_frames(stack)
+
         if original_top_flow:
+            # if the original top flow is not the same as the flow to start,
+            # interrupt the current active flow
             frame_type = FlowStackFrameType.INTERRUPT
 
             if original_user_frame is not None:
                 applied_events.append(
                     FlowInterrupted(
                         original_user_frame.flow_id, original_user_frame.step_id
+                    )
+                )
+
+            # If there is an active agent frame, interrupt it
+            active_agent_stack_frame = stack.find_active_agent_frame()
+            if active_agent_stack_frame:
+                structlogger.debug(
+                    "start_flow_command.interrupt_agent",
+                    command=self,
+                    agent_id=active_agent_stack_frame.agent_id,
+                    frame_id=active_agent_stack_frame.frame_id,
+                    flow_id=active_agent_stack_frame.flow_id,
+                )
+                active_agent_stack_frame.state = AgentState.INTERRUPTED
+                applied_events.append(
+                    AgentInterrupted(
+                        active_agent_stack_frame.agent_id,
+                        active_agent_stack_frame.flow_id,
                     )
                 )
 

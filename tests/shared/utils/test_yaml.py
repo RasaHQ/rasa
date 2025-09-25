@@ -975,9 +975,7 @@ def help_test_yaml_validation_error_message(
     expected_error_line: int,
     expected_error_message: str,
 ):
-    """
-    Helper function used to split specific YAML validation cases.
-    """
+    """Helper function used to split specific YAML validation cases."""
     with pytest.raises(YamlValidationException) as e:
         yaml_data = parse_raw_yaml(faulty_yaml)
         validate_yaml_data_using_schema_with_assertions(

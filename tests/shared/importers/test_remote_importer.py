@@ -94,7 +94,6 @@ def s3_connection(region_name: str, aws_environment_variables: None) -> Any:
 
 def create_in_memory_tar_archive_from_paths(paths: List[Path]) -> bytes:
     """Create a tar archive from a directory."""
-
     file_paths: List[Path] = []
 
     for path in paths:

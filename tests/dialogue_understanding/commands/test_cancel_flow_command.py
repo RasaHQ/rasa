@@ -1,6 +1,11 @@
+from typing import Iterator
+from unittest.mock import MagicMock, Mock, patch
+
 import jsonpatch
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
+from rasa.core.available_agents import AvailableAgents
 from rasa.dialogue_understanding.commands.cancel_flow_command import CancelFlowCommand
 from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
@@ -12,14 +17,29 @@ from rasa.dialogue_understanding.patterns.collect_information import (
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    AgentStackFrame,
+    AgentState,
     FlowStackFrameType,
     UserFlowStackFrame,
 )
 from rasa.engine.language import Language
-from rasa.shared.core.events import DialogueStackUpdated, FlowCancelled
+from rasa.shared.core.events import AgentCancelled, DialogueStackUpdated, FlowCancelled
 from rasa.shared.core.slots import StrictCategoricalSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.utilities import flows_from_str
+
+
+@pytest.fixture
+def mock_available_agents(monkeypatch: MonkeyPatch) -> Iterator[MagicMock]:
+    mock_instance = MagicMock()
+    mock_instance.agents = {
+        "car-research": {},
+    }
+
+    with patch.object(
+        AvailableAgents, "get_instance", return_value=mock_instance
+    ) as mock_method:
+        yield mock_method
 
 
 def test_command_name():
@@ -224,6 +244,184 @@ def test_select_canceled_frames_cancels_only_top_user_flow():
     assert canceled_frames[0] == "some-foo-id"
 
 
+@pytest.mark.parametrize(
+    "agent_stack_frame, should_cancel_agent",
+    [
+        (
+            AgentStackFrame(
+                frame_id="agent-frame-id",
+                state=AgentState.WAITING_FOR_INPUT,
+                agent_id="car-research",
+                flow_id="bar",
+            ),
+            True,
+        ),
+        (
+            AgentStackFrame(
+                frame_id="agent-frame-id",
+                state=AgentState.INTERRUPTED,
+                agent_id="car-research",
+                flow_id="bar",
+            ),
+            False,
+        ),
+    ],
+)
+def test_cancel_agent_when_cancelling_flow(
+    agent_stack_frame: AgentStackFrame,
+    should_cancel_agent: bool,
+    mock_available_agents: Mock,
+) -> None:
+    all_flows = flows_from_str(
+        """
+            flows:
+              foo:
+                description: flow foo
+                name: foo flow
+                steps:
+                - collect: foo_slot
+              bar:
+                description: flow bar
+                name: bar flow
+                steps:
+                - id: first_step
+                  call: car-research
+            """
+    )
+
+    interrupted_flow_stack_frame = UserFlowStackFrame(
+        flow_id="foo", step_id="START", frame_id="interrupted-frame-id"
+    )
+    stack = DialogueStack(
+        frames=[
+            interrupted_flow_stack_frame,
+            UserFlowStackFrame(
+                flow_id="bar",
+                step_id="START",
+                frame_id="some-other-frame-id",
+                frame_type=FlowStackFrameType.INTERRUPT,
+            ),
+            agent_stack_frame,
+        ]
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[],
+    )
+    tracker.update_stack(stack)
+    tracker_before_command_execution = tracker.copy()
+
+    cancel_command = CancelFlowCommand()
+
+    events = cancel_command.run_command_on_tracker(tracker, all_flows, tracker)
+
+    if should_cancel_agent:
+        # The actual tracker stack should not be changed, we only expect an
+        # DialogueStackUpdated event that removes the agent frame to be emitted
+        assert tracker.stack == tracker_before_command_execution.stack
+        assert agent_stack_frame in tracker.stack.frames
+
+        # Check that DialogueStackUpdated event is present and correct
+        dialogue_stack_updated_events = [
+            e for e in events if isinstance(e, DialogueStackUpdated)
+        ]
+        assert len(dialogue_stack_updated_events) == 1
+        tracker_before_command_execution.update(dialogue_stack_updated_events[0])
+        # After we applied the produced event, the agent frame should be removed
+        # from the stack
+        assert agent_stack_frame not in tracker_before_command_execution.stack.frames
+
+        # Check that AgentCancelled event is present and correct
+        agent_cancelled_events = [e for e in events if isinstance(e, AgentCancelled)]
+        assert len(agent_cancelled_events) == 1
+        assert agent_cancelled_events[0].agent_id == agent_stack_frame.agent_id
+        assert agent_cancelled_events[0].flow_id == agent_stack_frame.flow_id
+
+    else:
+        assert agent_stack_frame in tracker.stack.frames
+        assert tracker.stack == tracker_before_command_execution.stack
+
+
+def test_interrupted_agent_of_other_flow_is_not_removed(
+    mock_available_agents: Mock,
+) -> None:
+    all_flows = flows_from_str(
+        """
+            flows:
+              foo:
+                description: flow foo
+                name: foo flow
+                steps:
+                - call: car-research
+              bar:
+                description: flow bar
+                name: bar flow
+                steps:
+                - call: car-research
+            """
+    )
+
+    foo_agent_stack_frame = AgentStackFrame(
+        frame_id="agent-frame-id-1",
+        state=AgentState.INTERRUPTED,
+        agent_id="car-research",
+        flow_id="foo",
+    )
+    bar_agent_stack_frame = AgentStackFrame(
+        frame_id="agent-frame-id-2",
+        state=AgentState.WAITING_FOR_INPUT,
+        agent_id="car-research",
+        flow_id="bar",
+    )
+
+    stack = DialogueStack(
+        frames=[
+            UserFlowStackFrame(
+                flow_id="foo", step_id="START", frame_id="interrupted-frame-id"
+            ),
+            foo_agent_stack_frame,
+            UserFlowStackFrame(
+                flow_id="bar",
+                step_id="START",
+                frame_id="some-other-frame-id",
+                frame_type=FlowStackFrameType.INTERRUPT,
+            ),
+            bar_agent_stack_frame,
+        ]
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[],
+    )
+    tracker.update_stack(stack)
+    tracker_before_command_execution = tracker.copy()
+
+    cancel_command = CancelFlowCommand()
+
+    events = cancel_command.run_command_on_tracker(tracker, all_flows, tracker)
+
+    # The actual tracker stack should not be changed, we only expect an
+    # DialogueStackUpdated event that removes the agent frame to be emitted
+    assert tracker.stack == tracker_before_command_execution.stack
+
+    # Check that DialogueStackUpdated event is present and correct
+    dialogue_stack_updated_events = [
+        e for e in events if isinstance(e, DialogueStackUpdated)
+    ]
+    assert len(dialogue_stack_updated_events) == 1
+    tracker_before_command_execution.update(dialogue_stack_updated_events[0])
+    # After we applied the produced event, the agent frame should be removed
+    # from the stack
+    assert foo_agent_stack_frame in tracker_before_command_execution.stack.frames
+    assert bar_agent_stack_frame not in tracker_before_command_execution.stack.frames
+
+    # Check that AgentCancelled event is present and correct
+    agent_cancelled_events = [e for e in events if isinstance(e, AgentCancelled)]
+    assert len(agent_cancelled_events) == 1
+    assert agent_cancelled_events[0].agent_id == bar_agent_stack_frame.agent_id
+    assert agent_cancelled_events[0].flow_id == bar_agent_stack_frame.flow_id
+
+
 def test_select_canceled_frames_empty_stack():
     stack = DialogueStack.empty()
 
@@ -237,7 +435,7 @@ def test_select_canceled_frames_raises_if_frame_not_found():
     stack = DialogueStack.empty()
 
     with pytest.raises(ValueError):
-        # can't cacenl if there is no user flow on the stack. in reality
+        # can't cancel if there is no user flow on the stack. in reality
         # this should never happen as the flow should always be on the stack
         # when this command is executed.
         CancelFlowCommand.select_canceled_frames(stack)

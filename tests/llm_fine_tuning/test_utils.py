@@ -28,11 +28,10 @@ async def test_make_mock_invoke_llm_returns_expected_response():
 
 @pytest.mark.asyncio
 async def test_patch_replaces_and_restores_everywhere() -> None:
-    """
-    patch_invoke_llm_in_generators must
-      • replace invoke_llm on the base class and on every subclass that exists
-        when the context manager is entered;
-      • restore the previous attributes when the context manager exits.
+    """patch_invoke_llm_in_generators must
+    • replace invoke_llm on the base class and on every subclass that exists
+      when the context manager is entered;
+    • restore the previous attributes when the context manager exits.
     """
 
     # Build an *abstract* hierarchy that the helper must walk through.
@@ -69,8 +68,7 @@ async def test_patch_replaces_and_restores_everywhere() -> None:
 
 
 def test_patch_restores_even_on_exception() -> None:
-    """
-    If user code raises while the patch is active, the helper still has to
+    """If user code raises while the patch is active, the helper still has to
     restore the original methods.  Use a meaningful command string and a
     clear exception message.
     """

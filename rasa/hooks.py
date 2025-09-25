@@ -19,7 +19,7 @@ hookimpl = pluggy.HookimplMarker("rasa")
 logger = logging.getLogger(__name__)
 
 
-@hookimpl  # type: ignore[misc]
+@hookimpl
 def refine_cli(
     subparsers: "SubParsersAction",
     parent_parsers: List[argparse.ArgumentParser],
@@ -37,7 +37,7 @@ def refine_cli(
     return None
 
 
-@hookimpl  # type: ignore[misc]
+@hookimpl
 def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Text]:
     from rasa.cli import x as rasa_x
     from rasa.tracing import config
@@ -59,21 +59,21 @@ def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Tex
     return endpoints_file
 
 
-@hookimpl  # type: ignore[misc]
+@hookimpl
 def init_telemetry(endpoints_file: Optional[Text]) -> None:
     import rasa.telemetry
 
     rasa.telemetry.identify_endpoint_config_traits(endpoints_file)
 
 
-@hookimpl  # type: ignore[misc]
+@hookimpl
 def init_managers(endpoints_file: Optional[Text]) -> None:
     from rasa.core.secrets_manager.factory import load_secret_manager
 
     load_secret_manager(endpoints_file)
 
 
-@hookimpl  # type: ignore[misc]
+@hookimpl
 def create_tracker_store(
     endpoint_config: Union["TrackerStore", "EndpointConfig"],
     domain: "Domain",

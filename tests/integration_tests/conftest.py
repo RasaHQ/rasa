@@ -19,8 +19,7 @@ def send_message_to_rasa_server(
 
 
 def get_conversation_tracker(server_location: str, conversation_id: str) -> dict:
-    """
-    Gets the tracker for a given conversation ID from the Rasa server.
+    """Gets the tracker for a given conversation ID from the Rasa server.
 
     Args:
         server_location (str): The base URL of the Rasa server (e.g., "http://localhost:5005").
@@ -49,8 +48,7 @@ def get_conversation_tracker(server_location: str, conversation_id: str) -> dict
 
 
 def was_enterprise_search_policy_used(tracker_json: Dict[str, Any]) -> bool:
-    """
-    Checks if the EnterpriseSearchPolicy was used in the conversation.
+    """Checks if the EnterpriseSearchPolicy was used in the conversation.
 
     Args:
         tracker_json (dict): The tracker JSON data.
@@ -71,8 +69,7 @@ def was_enterprise_search_policy_used(tracker_json: Dict[str, Any]) -> bool:
 
 
 def extract_enterprise_search_results(tracker_json: Dict[str, Any]) -> list:
-    """
-    Extracts the search results from the EnterpriseSearchPolicy response
+    """Extracts the search results from the EnterpriseSearchPolicy response
     in the tracker JSON.
 
     Args:

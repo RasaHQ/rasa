@@ -52,7 +52,7 @@ def get_validated_path(
             "Provide an existing model path."
         )
 
-    default_options: Union[List[str], List[Path]] = []  # type: ignore[assignment]
+    default_options: Union[List[str], List[Path]] = []
     # try to find a valid option among the defaults
     if isinstance(default, str) or isinstance(default, Path):
         default_options = [str(default)]

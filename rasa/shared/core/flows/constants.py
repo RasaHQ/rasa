@@ -11,3 +11,8 @@ KEY_RUN_PATTERN_COMPLETED = "run_pattern_completed"
 KEY_TRANSLATION = "translation"
 KEY_CALLED_FLOW = "called_flow"
 KEY_LINKED_FLOW = "linked_flow"
+
+# MCP mapping field names
+KEY_MAPPING_INPUT = "input"
+KEY_MAPPING_OUTPUT = "output"
+KEY_MAPPING_SLOT = "slot"

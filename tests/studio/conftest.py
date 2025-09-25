@@ -218,8 +218,7 @@ def mock_args(tmp_path: Path) -> MagicMock:
 def mock_studio_handler(
     system_prompts: Dict[Text, Text], monkeypatch: pytest.MonkeyPatch
 ) -> MagicMock:
-    """
-    Provide a fully-stubbed StudioDataHandler."""
+    """Provide a fully-stubbed StudioDataHandler."""
     handler = MagicMock(spec=StudioDataHandler)
 
     handler.request_all_data.return_value = None

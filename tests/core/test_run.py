@@ -9,6 +9,7 @@ from sanic import Sanic
 
 import rasa.shared.core.domain
 from rasa.core import run
+from rasa.core.available_agents import AvailableAgents
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.credentials import CredentialsConfig
@@ -64,7 +65,12 @@ async def test_load_agent_on_start_with_good_model_file(
     trained_rasa_model: Text, rasa_server: Sanic, loop: AbstractEventLoop
 ):
     agent = await run.load_agent_on_start(
-        trained_rasa_model, AvailableEndpoints(), None, rasa_server, loop
+        trained_rasa_model,
+        AvailableEndpoints(),
+        None,
+        AvailableAgents(),
+        rasa_server,
+        loop,
     )
 
     assert agent.is_ready()
@@ -80,7 +86,12 @@ async def test_load_agent_on_start_with_bad_model_file(
 
     with pytest.warns(UserWarning) as warnings:
         await run.load_agent_on_start(
-            fake_model_path, AvailableEndpoints(), None, rasa_non_trained_server, loop
+            fake_model_path,
+            AvailableEndpoints(),
+            None,
+            AvailableAgents(),
+            rasa_non_trained_server,
+            loop,
         )
         assert any("No valid model found at" in str(w.message) for w in warnings)
 

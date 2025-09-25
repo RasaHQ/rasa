@@ -4,13 +4,20 @@ import re
 import typing
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import List, Optional, Set, Text
+from typing import Iterator, List, Optional, Set, Text, Tuple
+
+from jinja2 import Template
 
 from rasa.shared.constants import (
     RASA_DEFAULT_FLOW_PATTERN_PREFIX,
     RASA_PATTERN_CHITCHAT,
     RASA_PATTERN_HUMAN_HANDOFF,
     RASA_PATTERN_INTERNAL_ERROR,
+)
+from rasa.shared.core.flows.constants import (
+    KEY_MAPPING_INPUT,
+    KEY_MAPPING_OUTPUT,
+    KEY_MAPPING_SLOT,
 )
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flow_step import (
@@ -35,6 +42,7 @@ from rasa.shared.core.flows.utils import (
 from rasa.shared.exceptions import RasaException
 
 if typing.TYPE_CHECKING:
+    from rasa.shared.core.domain import Domain
     from rasa.shared.core.flows.flows_list import FlowsList
 
 FLOW_ID_REGEX = r"""^[a-zA-Z0-9_][a-zA-Z0-9_-]*?$"""
@@ -104,6 +112,47 @@ class DuplicatedStepIdException(RasaException):
             f"Step '{self.step_id}' in flow '{self.flow_id}' is using the same id as "
             f"another step. Step ids must be unique across all steps of a flow. "
             f"Please use a different id for your step."
+        )
+
+
+class InvalidExitIfConditionException(RasaException):
+    """Raised when an exit_if condition is invalid."""
+
+    def __init__(self, step_id: str, flow_id: str, condition: str, reason: str) -> None:
+        """Initializes the exception."""
+        self.step_id = step_id
+        self.flow_id = flow_id
+        self.condition = condition
+        self.reason = reason
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return (
+            f"Invalid exit_if condition '{self.condition}' in step '{self.step_id}' "
+            f"of flow '{self.flow_id}': {self.reason}. "
+            f"Please ensure that exit_if conditions contain at least one slot "
+            f"reference and use only defined slots with valid predicates."
+        )
+
+
+class ExitIfExclusivityException(RasaException):
+    """Raised when a call step with exit_if has other properties."""
+
+    def __init__(
+        self, step_id: str, flow_id: str, conflicting_properties: List[str]
+    ) -> None:
+        """Initializes the exception."""
+        self.step_id = step_id
+        self.flow_id = flow_id
+        self.conflicting_properties = conflicting_properties
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        conflicting_properties_str = ", ".join(self.conflicting_properties)
+        return (
+            f"Call step '{self.step_id}' in flow '{self.flow_id}' has an 'exit_if' "
+            f"property but also has other properties: {conflicting_properties_str}. "
+            f"A call step with 'exit_if' cannot have any other properties."
         )
 
 
@@ -261,7 +310,7 @@ class NoLinkAllowedInCalledFlowException(RasaException):
         )
 
 
-class UnresolvedFlowException(RasaException):
+class UnresolvedLinkFlowException(RasaException):
     """Raised when a flow is called or linked from another flow but doesn't exist."""
 
     def __init__(self, flow_id: str, calling_flow_id: str, step_id: str) -> None:
@@ -273,10 +322,88 @@ class UnresolvedFlowException(RasaException):
     def __str__(self) -> str:
         """Return a string representation of the exception."""
         return (
-            f"Flow '{self.flow_id}' is called or linked from flow "
+            f"Flow '{self.flow_id}' is linked from flow "
             f"'{self.calling_flow_id}' in step '{self.step_id}', "
             f"but it doesn't exist. "
             f"Please make sure that a flow with id '{self.flow_id}' exists."
+        )
+
+
+class UnresolvedCallStepException(RasaException):
+    """Raised when a call step doesn't have a reference to an existing flow or agent."""
+
+    def __init__(
+        self, call_step_argument: str, calling_flow_id: str, step_id: str
+    ) -> None:
+        """Initializes the exception."""
+        self.call_step_argument = call_step_argument
+        self.calling_flow_id = calling_flow_id
+        self.step_id = step_id
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return (
+            f"The call step '{self.step_id}' in flow '{self.calling_flow_id}' "
+            f"is invalid: there is no flow or agent with the "
+            f"id '{self.call_step_argument}'. "
+            f"Please make sure that the call step argument is a valid flow id "
+            f"or an agent id."
+        )
+
+
+class InvalidMCPServerReferenceException(RasaException):
+    """Raised when a call step references a non-existent MCP server."""
+
+    def __init__(
+        self, mcp_server_name: str, calling_flow_id: str, step_id: str
+    ) -> None:
+        """Initializes the exception."""
+        self.mcp_server_name = mcp_server_name
+        self.calling_flow_id = calling_flow_id
+        self.step_id = step_id
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        return (
+            f"Call step '{self.step_id}' in flow '{self.calling_flow_id}' "
+            f"references MCP server '{self.mcp_server_name}' which does not exist "
+            f"in endpoints.yml. Please make sure that the MCP server is properly "
+            f"configured in endpoints.yml."
+        )
+
+
+class InvalidMCPMappingSlotException(RasaException):
+    """Raised when MCP tool mapping references non-existent slots."""
+
+    def __init__(
+        self,
+        step_id: str,
+        flow_id: str,
+        invalid_input_slots: Set[str],
+        invalid_output_slots: Set[str],
+    ) -> None:
+        """Initializes the exception."""
+        self.step_id = step_id
+        self.flow_id = flow_id
+        self.invalid_input_slots = invalid_input_slots
+        self.invalid_output_slots = invalid_output_slots
+
+    def __str__(self) -> str:
+        """Return a string representation of the exception."""
+        error_parts = []
+
+        if self.invalid_input_slots:
+            input_slots_str = ", ".join(sorted(self.invalid_input_slots))
+            error_parts.append(f"input slots: {input_slots_str}")
+
+        if self.invalid_output_slots:
+            output_slots_str = ", ".join(sorted(self.invalid_output_slots))
+            error_parts.append(f"output slots: {output_slots_str}")
+
+        slots_info = " ".join(error_parts)
+        return (
+            f"Call step '{self.step_id}' in flow '{self.flow_id}' has slots not "
+            f"defined in the domain: {slots_info}"
         )
 
 
@@ -562,15 +689,201 @@ def validate_link_in_call_restriction(flows: "FlowsList") -> None:
                 raise NoLinkAllowedInCalledFlowException(step.id, flow.id, step.call)
 
 
-def validate_called_flows_exists(flows: "FlowsList") -> None:
-    """Validates that all called flows exist."""
+def validate_call_steps(flows: "FlowsList") -> None:
+    """Validates that all called flows/agents exist and properties are valid."""
     for flow in flows.underlying_flows:
         for step in flow.steps:
             if not isinstance(step, CallFlowStep):
                 continue
 
-            if flows.flow_by_id(step.call) is None:
-                raise UnresolvedFlowException(step.call, flow.id, step.id)
+            _is_step_calling_agent = step.is_calling_agent()
+            _is_step_calling_mcp_tool = step.has_mcp_tool_properties()
+
+            if (
+                not _is_step_calling_agent
+                and flows.flow_by_id(step.call) is None
+                and not _is_step_calling_mcp_tool
+            ):
+                raise UnresolvedCallStepException(step.call, flow.id, step.id)
+
+            if step.exit_if and not _is_step_calling_agent:
+                # exit_if is only allowed for call steps that call an agent
+                raise RasaException(
+                    f"Call step '{step.id}' in flow '{flow.id}' has an 'exit_if' "
+                    f"condition, but it is not calling an agent. "
+                    f"'exit_if' is only allowed for call steps that call an agent."
+                )
+
+
+def validate_mcp_server_references(flows: "FlowsList") -> None:
+    """Validates that MCP server references in call steps are valid."""
+    for flow in flows.underlying_flows:
+        for step in flow.steps:
+            if not isinstance(step, CallFlowStep):
+                continue
+
+            # Only validate call steps that are trying to call MCP tools
+            if step.has_mcp_tool_properties():
+                # Check if the referenced MCP server exists
+                from rasa.shared.utils.mcp.utils import mcp_server_exists
+
+                if not mcp_server_exists(step.mcp_server):
+                    raise InvalidMCPServerReferenceException(
+                        step.mcp_server, flow.id, step.id
+                    )
+
+
+def validate_mcp_mapping_slots(
+    flows: "FlowsList", domain: Optional["Domain"] = None
+) -> None:
+    """Validates that slots referenced in MCP tool mapping are defined in the domain.
+
+    This function validates that all slots referenced in the input and output
+    mapping of MCP tool calls are defined in the domain.
+
+    Args:
+        flows: The flows to validate.
+        domain: The domain with slot definitions. If None, slot validation is skipped.
+
+    Raises:
+        InvalidMCPMappingSlotException: If any MCP mapping references undefined slots.
+    """
+    if domain is None:
+        return
+
+    domain_slots = {slot.name for slot in domain.slots}
+
+    for flow in flows.underlying_flows:
+        for step in flow.steps:
+            if not isinstance(step, CallFlowStep):
+                continue
+
+            # Only validate call steps that are calling MCP tools
+            if not step.has_mcp_tool_properties() or step.mapping is None:
+                continue
+
+            # Extract slot names from input mapping
+            input_slots = set()
+            if KEY_MAPPING_INPUT in step.mapping and isinstance(
+                step.mapping[KEY_MAPPING_INPUT], list
+            ):
+                for input_item in step.mapping[KEY_MAPPING_INPUT]:
+                    input_slots.add(input_item[KEY_MAPPING_SLOT])
+
+            # Extract slot names from output mapping
+            output_slots = set()
+            if KEY_MAPPING_OUTPUT in step.mapping and isinstance(
+                step.mapping[KEY_MAPPING_OUTPUT], list
+            ):
+                for output_item in step.mapping[KEY_MAPPING_OUTPUT]:
+                    output_slots.add(output_item[KEY_MAPPING_SLOT])
+
+            # Check for invalid slots in both input and output
+            invalid_input_slots = input_slots - domain_slots
+            invalid_output_slots = output_slots - domain_slots
+
+            # Raise exception if any invalid slots are found
+            if invalid_input_slots or invalid_output_slots:
+                raise InvalidMCPMappingSlotException(
+                    step.id, flow.id, invalid_input_slots, invalid_output_slots
+                )
+
+
+def _get_call_steps_with_exit_if(
+    flows: "FlowsList",
+) -> Iterator[Tuple["CallFlowStep", "Flow"]]:
+    """Helper function to get all call steps with exit_if properties.
+
+    Args:
+        flows: The flows to search through.
+
+    Yields:
+        Tuples of (call_step, flow) for steps that have exit_if properties.
+    """
+    for flow in flows.underlying_flows:
+        for step in flow.steps:
+            if isinstance(step, CallFlowStep) and step.exit_if:
+                yield step, flow
+
+
+def validate_exit_if_conditions(
+    flows: "FlowsList", domain: Optional["Domain"] = None
+) -> None:
+    """Validates that exit_if conditions are valid.
+
+    This function validates:
+    - Each condition contains at least one slot reference
+    - Only defined slots are used within the conditions
+    - The predicates are valid
+
+    Args:
+        flows: The flows to validate.
+        domain: The domain with slot definitions. If None, slot validation is skipped.
+
+    Raises:
+        InvalidExitIfConditionException: If any exit_if condition is invalid.
+    """
+    for step, flow in _get_call_steps_with_exit_if(flows):
+        for condition in step.exit_if:  # type: ignore[union-attr]
+            if not isinstance(condition, str):
+                raise InvalidExitIfConditionException(
+                    step.id, flow.id, str(condition), "Condition must be a string"
+                )
+
+            # Check if condition contains at least one slot reference
+            slot_references_regex = re.compile(r"\bslots\.\w+")
+            slot_references = slot_references_regex.findall(condition)
+            if not slot_references:
+                raise InvalidExitIfConditionException(
+                    step.id,
+                    flow.id,
+                    condition,
+                    "Condition must contain at least one slot reference "
+                    "(e.g., 'slots.slot_name')",
+                )
+
+            # Validate predicate syntax using pypred (always, regardless of domain)
+            _validate_predicate_syntax_with_pypred(step.id, flow.id, condition)
+
+            # Validate slot names if domain is provided
+            if domain:
+                domain_slots = {slot.name: slot for slot in domain.slots}
+                for slot_ref in slot_references:
+                    slot_name = slot_ref.split(".")[1]
+                    if slot_name not in domain_slots:
+                        raise InvalidExitIfConditionException(
+                            step.id,
+                            flow.id,
+                            condition,
+                            f"Slot '{slot_name}' is not defined in the domain",
+                        )
+
+
+def validate_exit_if_exclusivity(flows: "FlowsList") -> None:
+    """Validates that call steps with exit_if don't have other properties.
+
+    This function validates that call steps with an exit_if property cannot have
+    any other properties besides the required 'call' property and standard flow
+    step properties (id, next, metadata, description).
+
+    Args:
+        flows: The flows to validate.
+
+    Raises:
+        ExitIfExclusivityException: If a call step with exit_if has other properties.
+    """
+    for step, flow in _get_call_steps_with_exit_if(flows):
+        # Check for conflicting properties
+        conflicting_properties = []
+
+        # Check for MCP-related properties
+        if step.mcp_server is not None:
+            conflicting_properties.append("mcp_server")
+        if step.mapping is not None:
+            conflicting_properties.append("mapping")
+
+        if conflicting_properties:
+            raise ExitIfExclusivityException(step.id, flow.id, conflicting_properties)
 
 
 def validate_linked_flows_exists(flows: "FlowsList") -> None:
@@ -594,7 +907,7 @@ def validate_linked_flows_exists(flows: "FlowsList") -> None:
                     flow.is_rasa_default_flow and step.link == RASA_PATTERN_CHITCHAT
                 )
             ):
-                raise UnresolvedFlowException(step.link, flow.id, step.id)
+                raise UnresolvedLinkFlowException(step.link, flow.id, step.id)
 
 
 def validate_patterns_are_not_called_or_linked(flows: "FlowsList") -> None:
@@ -694,6 +1007,7 @@ def validate_slot_names_to_be_collected(flow: Flow) -> None:
 
 def validate_flow_id(flow: Flow) -> None:
     """Validates if the flow id comply with a specified regex.
+
     Flow IDs can start with an alphanumeric character or an underscore.
     Followed by zero or more alphanumeric characters, hyphens, or underscores.
 
@@ -751,3 +1065,53 @@ def validate_slot_persistence_configuration(flow: Flow) -> None:
         result = _is_persist_slots_valid(persist_slots, flow_slots)
         if not result.is_valid:
             raise InvalidPersistSlotsException(flow_id, result.invalid_slots)
+
+
+def _validate_predicate_syntax_with_pypred(
+    step_id: str, flow_id: str, condition: str
+) -> None:
+    """Validates predicate syntax using pypred.
+
+    This function validates that the exit_if condition has valid predicate syntax.
+    Pypred catches syntax errors like double operators, invalid expressions, etc.
+
+    Args:
+        step_id: The ID of the step containing the condition.
+        flow_id: The ID of the flow containing the step.
+        condition: The exit_if condition string.
+
+    Raises:
+        InvalidExitIfConditionException: If pypred detects syntax errors.
+    """
+    try:
+        from rasa.utils.pypred import Predicate
+
+        # Create a simple test context for syntax validation.
+        # This context works with all slot types since it's only used for:
+        # 1. Template rendering: Basic structure for Jinja2 template rendering
+        # 2. Syntax validation: Pypred validates predicate syntax
+        #    without actual slot values
+        test_context = {"slots": {"test_slot": "test_value"}}
+        rendered_template = Template(condition).render(test_context)
+
+        # Let pypred validate the predicate syntax
+        predicate = Predicate(rendered_template)
+        if not predicate.is_valid():
+            raise InvalidExitIfConditionException(
+                step_id,
+                flow_id,
+                condition,
+                "Invalid predicate syntax",
+            )
+
+    except ImportError:
+        # pypred not available, skip validation
+        pass
+    except Exception as e:
+        # Re-raise pypred errors as predicate syntax errors
+        raise InvalidExitIfConditionException(
+            step_id,
+            flow_id,
+            condition,
+            f"Invalid predicate syntax: {e}",
+        )

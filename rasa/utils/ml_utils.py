@@ -119,7 +119,7 @@ def response_for_template(
     rsps = responses.get(template_name, [])
     usuable_responses = [r for r in rsps if r.get(KEY_RESPONSES_TEXT)]
     if usuable_responses:
-        selected_response = np.random.choice(usuable_responses)  # type: ignore
+        selected_response = np.random.choice(usuable_responses)
         return selected_response.get(KEY_RESPONSES_TEXT)
     else:
         structlogger.warning(

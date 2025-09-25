@@ -2,10 +2,8 @@ from typing import Optional, Text, Tuple, Union
 
 import numpy as np
 import tensorflow as tf
-
-# TODO: The following is not (yet) available via tf.keras
-from keras.src.utils.control_flow_util import smart_cond
 from tensorflow.keras import backend as K
+from tensorflow.python.keras.utils.control_flow_util import smart_cond
 
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.layers import RandomlyConnectedDense
@@ -280,6 +278,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
             value: A tensor with shape (..., length, depth).
             pad_mask: Float tensor with shape broadcastable
                 to (..., length, length). Defaults to None.
+            training: A tensor
 
         Returns:
             output: A tensor with shape (..., length, depth).

@@ -72,12 +72,21 @@ class RasaDataGenerator(Sequence):
         return data
 
     @staticmethod
+    def _create_default_array() -> np.ndarray:
+        """Create a default empty array for missing features.
+
+        Returns:
+            A default empty array with shape (0, 1) and dtype float32.
+        """
+        return np.zeros((0, 1), dtype=np.float32)
+
+    @staticmethod
     def prepare_batch(
         data: Data,
         start: Optional[int] = None,
         end: Optional[int] = None,
         tuple_sizes: Optional[Dict[Text, int]] = None,
-    ) -> Tuple[Optional[np.ndarray], ...]:
+    ) -> Tuple[np.ndarray, ...]:
         """Slices model data into batch using given start and end value.
 
         Args:
@@ -85,8 +94,8 @@ class RasaDataGenerator(Sequence):
             start: The start index of the batch
             end: The end index of the batch
             tuple_sizes: In case the feature is not present we propagate the batch with
-              None. Tuple sizes contains the number of how many None values to add for
-              what kind of feature.
+              default arrays. Tuple sizes contains the number of how many default values
+              to add for what kind of feature.
 
         Returns:
             The features of the batch.
@@ -95,12 +104,14 @@ class RasaDataGenerator(Sequence):
 
         for key, attribute_data in data.items():
             for sub_key, f_data in attribute_data.items():
-                # add None for not present values during processing
+                # add default arrays for not present values during processing
                 if not f_data:
                     if tuple_sizes:
-                        batch_data += [None] * tuple_sizes[key]
+                        batch_data += [
+                            RasaDataGenerator._create_default_array()
+                        ] * tuple_sizes[key]
                     else:
-                        batch_data.append(None)
+                        batch_data.append(RasaDataGenerator._create_default_array())
                     continue
 
                 for v in f_data:
@@ -409,8 +420,10 @@ class RasaBatchDataGenerator(RasaDataGenerator):
         end = start + self._current_batch_size
 
         # return input and target data, as our target data is inside the input
-        # data return None for the target data
-        return self.prepare_batch(self._data, start, end), None
+        # data return default array for the target data
+        return self.prepare_batch(
+            self._data, start, end
+        ), RasaDataGenerator._create_default_array()
 
     def on_epoch_end(self) -> None:
         """Update the data after every epoch."""

@@ -1,5 +1,6 @@
 import copy
 import inspect
+import json
 import logging
 import logging.config
 import logging.handlers
@@ -34,7 +35,9 @@ from rasa.constants import (
     ENV_LOG_LEVEL_KAFKA,
     ENV_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_MATPLOTLIB,
+    ENV_LOG_LEVEL_MCP,
     ENV_LOG_LEVEL_RABBITMQ,
+    ENV_MCP_LOGGING_ENABLED,
 )
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL, TCP_PROTOCOL
 from rasa.shared.exceptions import RasaException
@@ -49,7 +52,7 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     # TODO (issue #9932)
     #  DM1 warnings
     (
-        np.VisibleDeprecationWarning,
+        np.exceptions.VisibleDeprecationWarning,
         "Creating an ndarray from ragged nested sequences.*",
     ),
     # raised by magic_filter, google rpc
@@ -128,6 +131,18 @@ EXPECTED_WARNINGS: List[Tuple[Type[Warning], str]] = [
     (
         FutureWarning,
         "'request_timeout' is deprecated and will be removed in 4.0.0. Use 'timeout'*",
+    ),
+    (
+        FutureWarning,
+        "TEDPolicy is deprecated and will be removed in a future version.*",
+    ),
+    (
+        FutureWarning,
+        "DIETClassifier is deprecated and will be removed in a future version.*",
+    ),
+    (
+        FutureWarning,
+        "ResponseSelector is deprecated and will be removed in a future version.*",
     ),
 ]
 
@@ -281,6 +296,7 @@ def configure_library_logging() -> None:
     update_kafka_log_level(library_log_level)
     update_rabbitmq_log_level(library_log_level)
     update_websockets_log_level(library_log_level)
+    update_mcp_log_level()
 
 
 def update_apscheduler_log_level() -> None:
@@ -413,6 +429,56 @@ def update_websockets_log_level(library_log_level: Text) -> None:
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, library_log_level)
     logging.getLogger("websockets").setLevel(log_level)
     logging.getLogger("websockets").propagate = False
+
+
+def update_mcp_log_level() -> None:
+    """Set the log level for MCP-related loggers.
+
+    This function configures logging levels for MCP (Model Context Protocol) related
+    loggers to reduce noise from HTTP and MCP client libraries.
+
+    Environment Variables:
+        LOG_LEVEL_MCP: Set the log level for MCP-related loggers.
+                       Valid values: DEBUG, INFO, WARNING, ERROR, CRITICAL
+                       Default: ERROR
+
+        MCP_LOGGING_ENABLED: Enable or disable MCP logging completely.
+                             Valid values: true, false
+                             Default: true
+
+    Examples:
+        # Show only ERROR and above for MCP logs
+        export LOG_LEVEL_MCP=ERROR
+
+        # Show DEBUG level MCP logs (very verbose)
+        export LOG_LEVEL_MCP=DEBUG
+
+        # Completely disable MCP logging
+        export MCP_LOGGING_ENABLED=false
+    """
+    # Check if MCP logging is completely disabled
+    mcp_logging_enabled = (
+        os.environ.get(ENV_MCP_LOGGING_ENABLED, "true").lower() == "true"
+    )
+
+    # Default to ERROR level for MCP logs to reduce noise
+    mcp_log_level: Union[int, str] = os.environ.get(ENV_LOG_LEVEL_MCP, "ERROR")
+    if not mcp_logging_enabled:
+        # Completely disable MCP logging
+        mcp_log_level = logging.CRITICAL + 1  # Higher than CRITICAL to disable all logs
+
+    # MCP client and HTTP-related loggers that are commonly noisy
+    mcp_loggers = [
+        "mcp.client.streamable_http",
+        "mcp.client",
+        "httpcore.connection",
+        "httpcore.http11",
+        "httpx",
+    ]
+
+    for logger_name in mcp_loggers:
+        logging.getLogger(logger_name).setLevel(mcp_log_level)
+        logging.getLogger(logger_name).propagate = False
 
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
@@ -646,3 +712,28 @@ def get_bool_env_variable(variable_name: str, default_variable_value: bool) -> b
             f"Available values are `{true_values + false_values}`"
         )
     return value.lower() in true_values
+
+
+def try_parse_json(value: Any) -> Any:
+    """If value is a JSON string, parse it into a dict/list, else return as-is."""
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return value
+    return value
+
+
+def ensure_jsonified_iterable(value: Any) -> Any:
+    """Convert iterables to JSON strings, flatten nested JSON strings in dicts/lists."""
+    if isinstance(value, dict):
+        # Recursively process dict values
+        return {
+            key: ensure_jsonified_iterable(try_parse_json(val))
+            for key, val in value.items()
+        }
+    elif isinstance(value, list):
+        # Recursively process each item
+        return [ensure_jsonified_iterable(try_parse_json(val)) for val in value]
+    # Keep primitives as-is
+    return value

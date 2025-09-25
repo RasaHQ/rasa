@@ -5,7 +5,7 @@ import logging
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Optional, Text, Tuple
+from typing import Any, List, Optional, Text, Tuple, Union
 
 import sqlalchemy as sa
 import sqlalchemy.orm
@@ -294,7 +294,7 @@ class LocalTrainingCache(TrainingCache):
 
     def _cache_output_to_disk(
         self, output: Cacheable, model_storage: ModelStorage
-    ) -> Tuple[Optional[Text], Optional[Text]]:
+    ) -> Tuple[Optional[Union[Path, Text]], Optional[Text]]:
         tempdir_name = rasa.utils.common.get_temp_dir_name()
 
         # Use `TempDirectoryPath` instead of `tempfile.TemporaryDirectory` as this

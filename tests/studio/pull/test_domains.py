@@ -33,8 +33,7 @@ def bigger_domain() -> Domain:
 
 @pytest.fixture
 def mock_data_importer() -> MagicMock:
-    """
-    Returns a mock TrainingDataImporter that can
+    """Returns a mock TrainingDataImporter that can
     return a desired 'user domain' and 'domain files'.
     """
     importer = MagicMock()

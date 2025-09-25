@@ -12,6 +12,7 @@ import rasa.utils.io
 import rasa.utils.json_utils
 from rasa.constants import ENV_SANIC_WORKERS
 from rasa.core import utils
+from rasa.core.config.available_endpoints import MCPServerConfig
 from rasa.core.config.configuration import Configuration
 from rasa.core.lock_store import InMemoryLockStore, LockStore, RedisLockStore
 from rasa.core.policies.policy import PolicyPrediction
@@ -177,6 +178,10 @@ def test_read_endpoints_from_path(tmp_path: Path):
         {
             "event_broker": {"type": "pika"},
             "tracker_store": {"type": "sql"},
+            "mcp_servers": [
+                {"name": "server_1", "url": "http://localhost:8000", "type": "http"},
+                {"name": "server_2", "url": "http://localhost:8001", "type": "http"},
+            ],
             "model_groups": [
                 {
                     "id": "def_llm",
@@ -195,6 +200,10 @@ def test_read_endpoints_from_path(tmp_path: Path):
 
     # assert event broker and tracker store are valid, others are not
     assert available_endpoints.tracker_store and available_endpoints.event_broker
+    assert available_endpoints.mcp_servers == [
+        MCPServerConfig(name="server_1", url="http://localhost:8000", type="http"),
+        MCPServerConfig(name="server_2", url="http://localhost:8001", type="http"),
+    ]
     assert available_endpoints.model_groups == [
         {
             "id": "def_llm",
@@ -230,6 +239,7 @@ def test_read_endpoints_from_wrong_path():
             available_endpoints.action,
             available_endpoints.model,
             available_endpoints.nlu,
+            available_endpoints.mcp_servers,
             available_endpoints.model_groups,
         )
     )

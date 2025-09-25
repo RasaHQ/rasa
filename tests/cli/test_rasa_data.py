@@ -344,7 +344,7 @@ flows:
     result = run_in_simple_project("data", "validate", "flows")
     assert any(
         [
-            "Flow 'non_existent_flow' is called or linked from flow "
+            "Flow 'non_existent_flow' is linked from flow "
             "'transfer_money' in step" in error
             for error in result.errlines
         ]

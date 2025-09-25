@@ -7,6 +7,7 @@ from typing import List
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import shell as arguments
+from rasa.cli.arguments.default_arguments import add_sub_agents_param
 from rasa.core.config.configuration import Configuration
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.exceptions import ModelNotFound
@@ -45,6 +46,8 @@ def add_subparser(
         required=False,
         help="Set the conversation ID.",
     )
+
+    add_sub_agents_param(shell_parser)
 
     run_subparsers = shell_parser.add_subparsers()
 

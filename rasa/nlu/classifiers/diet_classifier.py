@@ -8,7 +8,13 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Type, TypeVar, Union
 
 import numpy as np
 import scipy.sparse
-import tensorflow as tf
+
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if TENSORFLOW_AVAILABLE:
+    import tensorflow as tf
+else:
+    tf = None
 
 import rasa.nlu.utils.bilou_utils as bilou_utils
 import rasa.shared.utils.io
@@ -16,7 +22,6 @@ from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.exceptions import ModelNotFound
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.constants import DEFAULT_TRANSFORMER_SIZE, TOKENS_NAMES
@@ -38,77 +43,155 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.io import raise_deprecation_warning
 from rasa.utils import train_utils
-from rasa.utils.tensorflow import rasa_layers
-from rasa.utils.tensorflow.constants import (
-    AUTO,
-    BALANCED,
-    BATCH_SIZES,
-    BATCH_STRATEGY,
-    BILOU_FLAG,
-    CHECKPOINT_MODEL,
-    CONCAT_DIMENSION,
-    CONNECTION_DENSITY,
-    CONSTRAIN_SIMILARITIES,
-    CROSS_ENTROPY,
-    DENSE_DIMENSION,
-    DENSE_INPUT_DROPOUT,
-    DROP_RATE,
-    DROP_RATE_ATTENTION,
-    DROP_SMALL_LAST_BATCH,
-    EMBEDDING_DIMENSION,
-    ENTITY_RECOGNITION,
-    EPOCHS,
-    EVAL_NUM_EPOCHS,
-    EVAL_NUM_EXAMPLES,
-    FEATURIZERS,
-    HIDDEN_LAYERS_SIZES,
-    IDS,
-    INTENT_CLASSIFICATION,
-    KEY_RELATIVE_ATTENTION,
-    LABEL,
-    LEARNING_RATE,
-    LOSS_TYPE,
-    MASK,
-    MASKED_LM,
-    MAX_NEG_SIM,
-    MAX_POS_SIM,
-    MAX_RELATIVE_POSITION,
-    MODEL_CONFIDENCE,
-    NEGATIVE_MARGIN_SCALE,
-    NUM_HEADS,
-    NUM_NEG,
-    NUM_TRANSFORMER_LAYERS,
-    RANDOM_SEED,
-    RANKING_LENGTH,
-    REGULARIZATION_CONSTANT,
-    RENORMALIZE_CONFIDENCES,
-    RUN_EAGERLY,
-    SCALE_LOSS,
-    SENTENCE,
-    SEQUENCE,
-    SEQUENCE_LENGTH,
-    SHARE_HIDDEN_LAYERS,
-    SIMILARITY_TYPE,
-    SOFTMAX,
-    SPARSE_INPUT_DROPOUT,
-    TENSORBOARD_LOG_DIR,
-    TENSORBOARD_LOG_LEVEL,
-    TRANSFORMER_SIZE,
-    UNIDIRECTIONAL_ENCODER,
-    USE_MAX_NEG_SIM,
-    VALUE_RELATIVE_ATTENTION,
-)
-from rasa.utils.tensorflow.feature_array import (
-    FeatureArray,
-    deserialize_nested_feature_arrays,
-    serialize_nested_feature_arrays,
-)
-from rasa.utils.tensorflow.model_data import (
-    FeatureSignature,
-    RasaModelData,
-)
-from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
+
+if TENSORFLOW_AVAILABLE:
+    from rasa.utils.tensorflow import rasa_layers
+else:
+    rasa_layers = None  # type: ignore
+if TENSORFLOW_AVAILABLE:
+    from rasa.utils.tensorflow.constants import (
+        AUTO,
+        BALANCED,
+        BATCH_SIZES,
+        BATCH_STRATEGY,
+        BILOU_FLAG,
+        CHECKPOINT_MODEL,
+        CONCAT_DIMENSION,
+        CONNECTION_DENSITY,
+        CONSTRAIN_SIMILARITIES,
+        CROSS_ENTROPY,
+        DENSE_DIMENSION,
+        DENSE_INPUT_DROPOUT,
+        DROP_RATE,
+        DROP_RATE_ATTENTION,
+        DROP_SMALL_LAST_BATCH,
+        EMBEDDING_DIMENSION,
+        ENTITY_RECOGNITION,
+        EPOCHS,
+        EVAL_NUM_EPOCHS,
+        EVAL_NUM_EXAMPLES,
+        FEATURIZERS,
+        HIDDEN_LAYERS_SIZES,
+        IDS,
+        INTENT_CLASSIFICATION,
+        KEY_RELATIVE_ATTENTION,
+        LABEL,
+        LEARNING_RATE,
+        LOSS_TYPE,
+        MASK,
+        MASKED_LM,
+        MAX_NEG_SIM,
+        MAX_POS_SIM,
+        MAX_RELATIVE_POSITION,
+        MODEL_CONFIDENCE,
+        NEGATIVE_MARGIN_SCALE,
+        NUM_HEADS,
+        NUM_NEG,
+        NUM_TRANSFORMER_LAYERS,
+        RANDOM_SEED,
+        RANKING_LENGTH,
+        REGULARIZATION_CONSTANT,
+        RENORMALIZE_CONFIDENCES,
+        RUN_EAGERLY,
+        SCALE_LOSS,
+        SENTENCE,
+        SEQUENCE,
+        SEQUENCE_LENGTH,
+        SHARE_HIDDEN_LAYERS,
+        SIMILARITY_TYPE,
+        SOFTMAX,
+        SPARSE_INPUT_DROPOUT,
+        TENSORBOARD_LOG_DIR,
+        TENSORBOARD_LOG_LEVEL,
+        TRANSFORMER_SIZE,
+        UNIDIRECTIONAL_ENCODER,
+        USE_MAX_NEG_SIM,
+        VALUE_RELATIVE_ATTENTION,
+    )
+else:
+    # Placeholder values when TensorFlow is not available
+    AUTO = "auto"
+    BALANCED = "balanced"
+    BATCH_SIZES = "batch_sizes"
+    BATCH_STRATEGY = "batch_strategy"
+    BILOU_FLAG = "bilou_flag"
+    CHECKPOINT_MODEL = "checkpoint_model"
+    CONCAT_DIMENSION = "concat_dimension"
+    CONNECTION_DENSITY = "connection_density"
+    CONSTRAIN_SIMILARITIES = "constrain_similarities"
+    CROSS_ENTROPY = "cross_entropy"
+    DENSE_DIMENSION = "dense_dimension"
+    DENSE_INPUT_DROPOUT = "dense_input_dropout"
+    DROP_RATE = "drop_rate"
+    DROP_RATE_ATTENTION = "drop_rate_attention"
+    DROP_SMALL_LAST_BATCH = "drop_small_last_batch"
+    EMBEDDING_DIMENSION = "embedding_dimension"
+    ENTITY_RECOGNITION = "entity_recognition"
+    EPOCHS = "epochs"
+    EVAL_NUM_EPOCHS = "eval_num_epochs"
+    EVAL_NUM_EXAMPLES = "eval_num_examples"
+    FEATURIZERS = "featurizers"
+    HIDDEN_LAYERS_SIZES = "hidden_layers_sizes"
+    IDS = "ids"
+    INTENT_CLASSIFICATION = "intent_classification"
+    KEY_RELATIVE_ATTENTION = "key_relative_attention"
+    LABEL = "label"
+    LEARNING_RATE = "learning_rate"
+    LOSS_TYPE = "loss_type"
+    MASK = "mask"
+    MASKED_LM = "masked_lm"
+    MAX_NEG_SIM = "max_neg_sim"
+    MAX_POS_SIM = "max_pos_sim"
+    MAX_RELATIVE_POSITION = "max_relative_position"
+    MODEL_CONFIDENCE = "model_confidence"
+    NEGATIVE_MARGIN_SCALE = "negative_margin_scale"
+    NUM_HEADS = "num_heads"
+    NUM_NEG = "num_neg"
+    NUM_TRANSFORMER_LAYERS = "num_transformer_layers"
+    RANDOM_SEED = "random_seed"
+    RANKING_LENGTH = "ranking_length"
+    REGULARIZATION_CONSTANT = "regularization_constant"
+    RENORMALIZE_CONFIDENCES = "renormalize_confidences"
+    RUN_EAGERLY = "run_eagerly"
+    SCALE_LOSS = "scale_loss"
+    SENTENCE = "sentence"
+    SEQUENCE = "sequence"
+    SEQUENCE_LENGTH = "sequence_length"
+    SHARE_HIDDEN_LAYERS = "share_hidden_layers"
+    SIMILARITY_TYPE = "similarity_type"
+    SOFTMAX = "softmax"
+    SPARSE_INPUT_DROPOUT = "sparse_input_dropout"
+    TENSORBOARD_LOG_DIR = "tensorboard_log_dir"
+    TENSORBOARD_LOG_LEVEL = "tensorboard_log_level"
+    TRANSFORMER_SIZE = "transformer_size"
+    UNIDIRECTIONAL_ENCODER = "unidirectional_encoder"
+    USE_MAX_NEG_SIM = "use_max_neg_sim"
+    VALUE_RELATIVE_ATTENTION = "value_relative_attention"
+if TENSORFLOW_AVAILABLE:
+    from rasa.utils.tensorflow.feature_array import (
+        FeatureArray,
+        deserialize_nested_feature_arrays,
+        serialize_nested_feature_arrays,
+    )
+else:
+    FeatureArray = None  # type: ignore
+    deserialize_nested_feature_arrays = None  # type: ignore
+    serialize_nested_feature_arrays = None  # type: ignore
+if TENSORFLOW_AVAILABLE:
+    from rasa.utils.tensorflow.model_data import (
+        FeatureSignature,
+        RasaModelData,
+    )
+else:
+    FeatureSignature = None  # type: ignore
+    RasaModelData = None  # type: ignore
+if TENSORFLOW_AVAILABLE:
+    from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
+else:
+    RasaModel = None  # type: ignore
+    TransformerRasaModel = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -306,6 +389,9 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         sparse_feature_sizes: Optional[Dict[Text, Dict[Text, List[int]]]] = None,
     ) -> None:
         """Declare instance variables with default values."""
+        raise_deprecation_warning(
+            "DIETClassifier is deprecated and will be removed in a future version."
+        )
         if EPOCHS not in config:
             rasa.shared.utils.io.raise_warning(
                 f"Please configure the number of '{EPOCHS}' in your configuration file."
@@ -906,24 +992,16 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         # keep one example for persisting and loading
         self._data_example = model_data.first_data_example()
 
-        if not self.finetune_mode:
-            # No pre-trained model to load from. Create a new instance of the model.
-            self.model = self._instantiate_model_class(model_data)
-            self.model.compile(
-                optimizer=tf.keras.optimizers.Adam(
-                    self.component_config[LEARNING_RATE]
-                ),
-                run_eagerly=self.component_config[RUN_EAGERLY],
-            )
-        else:
-            if self.model is None:
-                raise ModelNotFound("Model could not be found. ")
+        # as the keras 2.15 does not allow updating a compiled model anymore,
+        # we cannot support finetune mode anymore
 
-            self.model.adjust_for_incremental_training(
-                data_example=self._data_example,
-                new_sparse_feature_sizes=model_data.get_sparse_feature_sizes(),
-                old_sparse_feature_sizes=self._sparse_feature_sizes,
-            )
+        # Create a new instance of the model.
+        self.model = self._instantiate_model_class(model_data)
+        self.model.compile(
+            optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE]),
+            run_eagerly=self.component_config[RUN_EAGERLY],
+        )
+
         self._sparse_feature_sizes = model_data.get_sparse_feature_sizes()
 
         data_generator, validation_data_generator = train_utils.create_data_generators(
@@ -1070,12 +1148,14 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
 
         with self._model_storage.write_to(self._resource) as model_path:
             file_name = self.__class__.__name__
-            tf_model_file = model_path / f"{file_name}.tf_model"
+            tf_model_file = model_path / f"{file_name}.weights.h5"
 
             rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
             if self.component_config[CHECKPOINT_MODEL] and self.tmp_checkpoint_dir:
-                self.model.load_weights(self.tmp_checkpoint_dir / "checkpoint.tf_model")
+                self.model.load_weights(
+                    self.tmp_checkpoint_dir / "checkpoint.weights.h5"
+                )
                 # Save an empty file to flag that this model has been
                 # produced using checkpointing
                 checkpoint_marker = model_path / f"{file_name}.from_checkpoint.pkl"
@@ -1247,7 +1327,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         finetune_mode: bool = False,
     ) -> "RasaModel":
         file_name = cls.__name__
-        tf_model_file = model_path / f"{file_name}.tf_model"
+        tf_model_file = model_path / f"{file_name}.weights.h5"
 
         label_key = LABEL_KEY if config[INTENT_CLASSIFICATION] else None
         label_sub_key = LABEL_SUB_KEY if config[INTENT_CLASSIFICATION] else None
@@ -1306,7 +1386,7 @@ class DIETClassifier(GraphComponent, IntentClassifier, EntityExtractorMixin):
         )
 
 
-class DIET(TransformerRasaModel):
+class DIET(TransformerRasaModel if TENSORFLOW_AVAILABLE else object):  # type: ignore[misc]
     def __init__(
         self,
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
@@ -1314,6 +1394,8 @@ class DIET(TransformerRasaModel):
         entity_tag_specs: Optional[List[EntityTagSpec]],
         config: Dict[Text, Any],
     ) -> None:
+        if not TENSORFLOW_AVAILABLE:
+            raise RuntimeError("DIET classifier requires TensorFlow to be installed")
         # create entity tag spec before calling super otherwise building the model
         # will fail
         super().__init__("DIET", config, data_signature, label_data)
@@ -1527,7 +1609,7 @@ class DIET(TransformerRasaModel):
         # convert to bag-of-words by summing along the sequence dimension
         x = tf.reduce_sum(x, axis=1)
 
-        return self._tf_layers[f"ffnn.{name}"](x, self._training)
+        return self._tf_layers[f"ffnn.{name}"](x, training=self._training)
 
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
@@ -1536,9 +1618,23 @@ class DIET(TransformerRasaModel):
             self.tf_label_data, LABEL
         )
 
+        # Check if SENTENCE features exist, if not use None
+        # This is needed for compatibility with tensorFlow=2.19.1, which
+        # has a transitive dependency on keras=3.11.3, which introduces
+        # stricter data validation
+        sentence_features = None
+        if SENTENCE in self.tf_label_data[LABEL]:
+            sentence_features = self.tf_label_data[LABEL][SENTENCE]
+
+        # Handle missing SEQUENCE features for Keras 3+ compatibility,
+        # which introduces stricter data validation
+        sequence_features = None
+        if SEQUENCE in self.tf_label_data[LABEL]:
+            sequence_features = self.tf_label_data[LABEL][SEQUENCE]
+
         x = self._create_bow(
-            self.tf_label_data[LABEL][SEQUENCE],
-            self.tf_label_data[LABEL][SENTENCE],
+            sequence_features,
+            sentence_features,
             sequence_feature_lengths,
             self.label_name,
         )
@@ -1797,8 +1893,12 @@ class DIET(TransformerRasaModel):
         )
         predictions = {
             DIAGNOSTIC_DATA: {
-                "attention_weights": attention_weights,
-                "text_transformed": text_transformed,
+                "attention_weights": attention_weights.numpy()
+                if hasattr(attention_weights, "numpy")
+                else attention_weights,
+                "text_transformed": text_transformed.numpy()
+                if hasattr(text_transformed, "numpy")
+                else text_transformed,
             }
         }
 

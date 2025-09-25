@@ -84,10 +84,13 @@ class MemoryLeakTest(abc.ABC):
             time.sleep(0.01)
 
         results = memory_profiler.memory_usage(
-            process, interval=PROFILING_INTERVAL, include_children=True, timestamps=True
+            process,
+            interval=PROFILING_INTERVAL,
+            include_children=True,
+            timestamps=True,
         )
 
-        # `memory-profiler` sometimes adds `None` values at the end which we don't need
+        # `memory-profiler` sometimes adds `None` values at the end which we don't need   # noqa: E501
         results = [
             memory_timestamp
             for memory_timestamp in results

@@ -1,0 +1,206 @@
+from typing import Dict, List, Optional
+
+import structlog
+
+from rasa.agents.agent_manager import AgentManager
+from rasa.agents.exceptions import AgentNotFoundException
+from rasa.agents.validation import validate_agent_names_not_conflicting_with_flows
+from rasa.core.available_agents import (
+    AgentConfig,
+    AgentMCPServerConfig,
+    AvailableAgents,
+)
+from rasa.core.config.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
+from rasa.shared.agents.utils import get_protocol_type
+from rasa.shared.core.events import AgentCompleted, AgentStarted
+from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows.steps import CallFlowStep
+from rasa.shared.core.trackers import DialogueStateTracker
+
+structlogger = structlog.get_logger()
+
+
+def resolve_agent_config(
+    agent_config: AgentConfig,
+    available_endpoints: AvailableEndpoints,
+) -> Optional[AgentConfig]:
+    if agent_config is None:
+        return None
+
+    connections = agent_config.connections
+    mcp_connections: List[AgentMCPServerConfig] = (
+        connections.mcp_servers
+        if connections and connections.mcp_servers is not None
+        else []
+    )
+
+    for mcp_server in mcp_connections:
+        for mcp_server_endpoint in available_endpoints.mcp_servers or []:
+            if mcp_server_endpoint.name == mcp_server.name:
+                mcp_server.url = mcp_server_endpoint.url
+                mcp_server.type = mcp_server_endpoint.type
+                mcp_server.additional_params = mcp_server_endpoint.additional_params
+
+    return agent_config
+
+
+async def initialize_agents(
+    flows: FlowsList,
+    sub_agents: AvailableAgents,
+) -> None:
+    """Iterate over flows and create/connect the referenced agents."""
+    agent_manager: AgentManager = AgentManager()
+    endpoints = Configuration.get_instance().endpoints
+
+    agent_used = False
+    mcp_tool_used = False
+
+    # Validate agent names don't conflict with flow names
+    flow_names = {flow.id for flow in flows.underlying_flows}
+    validate_agent_names_not_conflicting_with_flows(sub_agents.agents, flow_names)
+
+    for flow in flows.underlying_flows:
+        for step in flow.steps:
+            if isinstance(step, CallFlowStep):
+                if flows.flow_by_id(step.call) is not None:
+                    continue
+
+                if step.is_calling_mcp_tool():
+                    # The call step is calling an MCP tool, so we don't need to
+                    # initialize any agent.
+                    mcp_tool_used = True
+                    continue
+
+                if not step.is_calling_agent():
+                    raise AgentNotFoundException(step.call)
+
+                agent_used = True
+
+                agent_name = step.call
+                agent_config = sub_agents.get_agent_config(agent_name)
+                resolved_agent_config = resolve_agent_config(agent_config, endpoints)
+                protocol_type = get_protocol_type(step, agent_config)
+
+                await agent_manager.connect_agent(
+                    agent_name,
+                    protocol_type,
+                    resolved_agent_config,
+                )
+
+    _log_beta_feature_warning(mcp_tool_used, agent_used)
+
+
+def _log_beta_feature_warning(mcp_tool_used: bool, agent_used: bool) -> None:
+    """Log a warning if an agent or MCP tool is used in the flow(s)."""
+    if mcp_tool_used:
+        structlogger.info(
+            "rasa.agents.utils.initialize_agents",
+            event_info="Beta Feature",
+            message=(
+                "An MCP tool is being called in at least one of the flows. "
+                "This feature is currently under beta development. "
+                "It might undergo upgrades / breaking changes in future "
+                "releases to graduate it to GA."
+            ),
+        )
+
+    if agent_used:
+        structlogger.info(
+            "rasa.agents.utils.initialize_agents",
+            event_info="Beta Feature",
+            message=(
+                "A sub-agent is being called from a flow. "
+                "This feature is currently under beta development. "
+                "It might undergo upgrades / breaking changes in future "
+                "releases to graduate it to GA."
+            ),
+        )
+
+
+def is_agent_valid(agent_id: str) -> bool:
+    """Check if an agent ID references a valid agent.
+
+    Args:
+        agent_id: The agent ID to validate.
+
+    Returns:
+        True if the agent exists, False otherwise.
+    """
+    agent_config = AvailableAgents.get_agent_config(agent_id)
+    return agent_config is not None
+
+
+def is_agent_completed(tracker: DialogueStateTracker, agent_id: str) -> bool:
+    """Check if an agent has been completed.
+
+    Args:
+        tracker: The dialogue state tracker.
+        agent_id: The agent ID to check.
+
+    Returns:
+        True if the agent has been completed, False otherwise.
+    """
+    # Look for AgentCompleted events for this agent
+    for event in reversed(tracker.events):
+        if isinstance(event, AgentCompleted) and event.agent_id == agent_id:
+            return True
+        elif isinstance(event, AgentStarted) and event.agent_id == agent_id:
+            return False
+    return False
+
+
+def get_agent_info(agent_id: str) -> Optional[Dict[str, str]]:
+    """Get basic agent information (name and description).
+
+    Args:
+        agent_id: The agent ID to get information for.
+
+    Returns:
+        Dictionary with agent name and description if found, None otherwise.
+    """
+    agent_config = AvailableAgents.get_agent_config(agent_id)
+    if agent_config is None:
+        return None
+
+    return {
+        "name": agent_config.agent.name,
+        "description": agent_config.agent.description,
+    }
+
+
+def get_completed_agents_info(tracker: DialogueStateTracker) -> List[Dict[str, str]]:
+    """Get information for all completed agents.
+
+    Args:
+        tracker: The dialogue state tracker.
+
+    Returns:
+        List of dictionaries containing agent information for completed agents.
+    """
+    completed_agents = []
+    for event in reversed(tracker.events):
+        if isinstance(event, AgentCompleted):
+            agent_info = get_agent_info(event.agent_id)
+            if agent_info:
+                completed_agents.append(agent_info)
+    return completed_agents
+
+
+def get_active_agent_info(
+    tracker: DialogueStateTracker, flow_id: str
+) -> Optional[Dict[str, str]]:
+    """Get information for the active agent in a specific flow.
+
+    Args:
+        tracker: The dialogue state tracker.
+        flow_id: The flow ID to get the active agent for.
+
+    Returns:
+        Dictionary with agent name and description if an agent is active,
+        None otherwise.
+    """
+    agent_frame = tracker.stack.find_active_agent_stack_frame_for_flow(flow_id)
+    if agent_frame:
+        return get_agent_info(agent_frame.agent_id)
+    return None

@@ -68,9 +68,9 @@ class SlotRejection:
 
 
 class SlotValidation(BaseModel):
-    rejections: List[SlotRejection] = Field(alias=REJECTIONS)
+    rejections: List[SlotRejection] = Field(alias=REJECTIONS)  # type: ignore[literal-required]
     """how the slot value is validated using predicate evaluation."""
-    refill_utter: str = Field(alias=REFILL_UTTER)
+    refill_utter: str = Field(alias=REFILL_UTTER)  # type: ignore[literal-required]
     """The utterance that the assistant uses to ask for the slot."""
 
     @staticmethod

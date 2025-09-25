@@ -1,7 +1,7 @@
 import os.path
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Text
+from typing import Any, Callable, Dict, List, Optional, Set, Text
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
@@ -100,6 +100,16 @@ command_prompt_v3_fallback_other_models_template = rasa.shared.utils.io.read_fil
 command_prompt_v3_gpt_4o_2024_11_20_template = rasa.shared.utils.io.read_file(
     f"{TEST_PROMPT_TEMPLATE_DIR}/command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
 )
+# Agent versions of the prompt templates
+agent_command_prompt_v3_fallback_other_models_template = rasa.shared.utils.io.read_file(
+    f"{TEST_PROMPT_TEMPLATE_DIR}/agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
+)
+agent_command_prompt_v3_gpt_4o_2024_11_20_template = rasa.shared.utils.io.read_file(
+    f"{TEST_PROMPT_TEMPLATE_DIR}/agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
+)
+agent_command_prompt_v3_claude_3_5_sonnet_20240620_template = rasa.shared.utils.io.read_file(  # noqa: E501
+    f"{TEST_PROMPT_TEMPLATE_DIR}/agent_command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
+)
 
 
 @pytest.fixture(autouse=True)
@@ -177,6 +187,16 @@ class TestSearchReadyLLMCommandGenerator:
             ],
         )
 
+    @pytest.fixture
+    def set_agents_presence(self, monkeypatch: MonkeyPatch) -> Callable[[bool], None]:
+        def _setter(present: bool) -> None:
+            monkeypatch.setattr(
+                "rasa.core.available_agents.AvailableAgents.has_agents",
+                classmethod(lambda cls: present),
+            )
+
+        return _setter
+
     async def test_prompt_template_handling(self, model_storage):
         # Given
         resource = Resource("llmcmdgen")
@@ -193,10 +213,25 @@ class TestSearchReadyLLMCommandGenerator:
         # Then
         assert generator.prompt_template.startswith("This is a test prompt.")
 
+    @pytest.mark.parametrize(
+        "agents_present,expected_prompt_template",
+        [
+            (
+                False,
+                command_prompt_v3_gpt_4o_2024_11_20_template,
+            ),
+            (True, agent_command_prompt_v3_gpt_4o_2024_11_20_template),
+        ],
+    )
     async def test_default_template_when_no_prompt_template_provided(
-        self, model_storage
+        self,
+        model_storage,
+        set_agents_presence: Callable[[bool], None],
+        agents_present: bool,
+        expected_prompt_template: Any,
     ):
         # Given
+        set_agents_presence(agents_present)
         resource = Resource("llmcmdgen")
         config = {}  # No prompt or prompt_template provided
 
@@ -208,7 +243,7 @@ class TestSearchReadyLLMCommandGenerator:
         )
 
         # Then
-        assert generator.prompt_template == command_prompt_v3_gpt_4o_2024_11_20_template
+        assert generator.prompt_template == expected_prompt_template
 
     async def test_search_ready_llm_command_generator_init_custom(
         self,
@@ -1506,13 +1541,24 @@ class TestSearchReadyLLMCommandGenerator:
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
     )
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
+    @pytest.mark.parametrize(
+        "agents_present,expected_prompt_template",
+        [
+            (False, command_prompt_v3_gpt_4o_2024_11_20_template),
+            (True, agent_command_prompt_v3_gpt_4o_2024_11_20_template),
+        ],
+    )
     def test_load_with_default_prompt(
         self,
         mock_flow_retrieval_load: Mock,
         mock_flow_retrieval_populate: Mock,
         model_storage: ModelStorage,
+        set_agents_presence: Callable[[bool], None],
+        agents_present: bool,
+        expected_prompt_template: Any,
     ):
         # Given
+        set_agents_presence(agents_present)
         resource = Resource("llmcmdgen")
         generator = SearchReadyLLMCommandGenerator({}, model_storage, resource)
         resource = generator.train(Mock(), FlowsList(underlying_flows=[]), Mock())
@@ -1527,19 +1573,30 @@ class TestSearchReadyLLMCommandGenerator:
         assert loaded.prompt_template.find("## Available Flows and Slots\n") > 0
         assert loaded.prompt_template.find("```json\n") > 0
         assert loaded.prompt_template.find("| search and reply   |") > 0
-        assert loaded.prompt_template == command_prompt_v3_gpt_4o_2024_11_20_template
+        assert loaded.prompt_template == expected_prompt_template
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
     )
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
+    @pytest.mark.parametrize(
+        "agents_present,expected_prompt_template",
+        [
+            (False, command_prompt_v3_fallback_other_models_template),
+            (True, agent_command_prompt_v3_fallback_other_models_template),
+        ],
+    )
     def test_load_with_fallback_prompt(
         self,
         mock_flow_retrieval_load: Mock,
         mock_flow_retrieval_populate: Mock,
         model_storage: ModelStorage,
+        set_agents_presence: Callable[[bool], None],
+        agents_present: bool,
+        expected_prompt_template: Any,
     ):
         # Given
+        set_agents_presence(agents_present)
         resource = Resource("llmcmdgen")
         generator = SearchReadyLLMCommandGenerator(
             {"llm": {"provider": "unknown", "model": "test"}}, model_storage, resource
@@ -1561,23 +1618,32 @@ class TestSearchReadyLLMCommandGenerator:
             > 0
         )
         assert loaded.prompt_template.find("| search and reply   |") > 0
-        assert (
-            loaded.prompt_template == command_prompt_v3_fallback_other_models_template
-        )
+        assert loaded.prompt_template == expected_prompt_template
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
     )
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
     @patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
+    @pytest.mark.parametrize(
+        "agents_present,expected_prompt_template",
+        [
+            (False, command_prompt_v3_claude_3_5_sonnet_20240620_template),
+            (True, agent_command_prompt_v3_claude_3_5_sonnet_20240620_template),
+        ],
+    )
     def test_load_default_prompt_based_on_model_name_claude(
         self,
         mock_flow_retrieval_load: Mock,
         mock_flow_retrieval_populate: Mock,
         mock_perform_health_check: Mock,
         model_storage: ModelStorage,
+        set_agents_presence: Callable[[bool], None],
+        agents_present: bool,
+        expected_prompt_template: Any,
     ):
         # Given
+        set_agents_presence(agents_present)
         resource = Resource("llmcmdgen")
         config = {
             "llm": {
@@ -1603,16 +1669,20 @@ class TestSearchReadyLLMCommandGenerator:
         )
         assert """{"flows":[""" in loaded.prompt_template  # minified JSON
         assert "`search and reply`" in loaded.prompt_template  # correct DSL
-        assert (
-            loaded.prompt_template
-            == command_prompt_v3_claude_3_5_sonnet_20240620_template
-        )
+        assert loaded.prompt_template == expected_prompt_template
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
     )
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
     @patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
+    @pytest.mark.parametrize(
+        "agents_present,expected_prompt_template",
+        [
+            (False, command_prompt_v3_claude_3_5_sonnet_20240620_template),
+            (True, agent_command_prompt_v3_claude_3_5_sonnet_20240620_template),
+        ],
+    )
     def test_load_default_prompt_based_on_model_name_from_model_group_claude(
         self,
         mock_flow_retrieval_load: Mock,
@@ -1622,8 +1692,13 @@ class TestSearchReadyLLMCommandGenerator:
         mock_available_endpoints: MagicMock,
         mock_configuration: MagicMock,
         monkeypatch: pytest.MonkeyPatch,
+        set_agents_presence: Callable[[bool], None],
+        agents_present: bool,
+        expected_prompt_template: Any,
     ):
         # Given
+        set_agents_presence(agents_present)
+
         mock_available_endpoints.model_groups = [
             {
                 "id": "anthropic-claude-3-5",
@@ -1658,22 +1733,30 @@ class TestSearchReadyLLMCommandGenerator:
         )
         assert """{"flows":[""" in loaded.prompt_template  # minified JSON
         assert "`search and reply`" in loaded.prompt_template  # correct DSL
-        assert (
-            loaded.prompt_template
-            == command_prompt_v3_claude_3_5_sonnet_20240620_template
-        )
+        assert loaded.prompt_template == expected_prompt_template
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
     )
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
+    @pytest.mark.parametrize(
+        "agents_present,expected_prompt_template",
+        [
+            (False, command_prompt_v3_gpt_4o_2024_11_20_template),
+            (True, agent_command_prompt_v3_gpt_4o_2024_11_20_template),
+        ],
+    )
     def test_load_deafult_prompt_based_on_model_name_gpt_4o(
         self,
         mock_flow_retrieval_load: Mock,
         mock_flow_retrieval_populate: Mock,
         model_storage: ModelStorage,
+        set_agents_presence: Callable[[bool], None],
+        agents_present: bool,
+        expected_prompt_template: Any,
     ):
         # Given
+        set_agents_presence(agents_present)
         resource = Resource("llmcmdgen")
         config = {"llm": {"provider": "openai", "model": "gpt-4o-2024-11-20"}}
         generator = SearchReadyLLMCommandGenerator(config, model_storage, resource)
@@ -1693,13 +1776,20 @@ class TestSearchReadyLLMCommandGenerator:
             > 0
         )
         assert loaded.prompt_template.find("| search and reply   |") > 0
-        assert loaded.prompt_template == command_prompt_v3_gpt_4o_2024_11_20_template
+        assert loaded.prompt_template == expected_prompt_template
 
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.populate"
     )
     @patch("rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.load")
     @patch("rasa.shared.utils.health_check.health_check.try_instantiate_llm_client")
+    @pytest.mark.parametrize(
+        "agents_present,expected_prompt_template",
+        [
+            (False, command_prompt_v3_gpt_4o_2024_11_20_template),
+            (True, agent_command_prompt_v3_gpt_4o_2024_11_20_template),
+        ],
+    )
     def test_load_default_prompt_based_on_model_name_from_model_group_gpt_4o(
         self,
         mock_flow_retrieval_load: Mock,
@@ -1709,8 +1799,13 @@ class TestSearchReadyLLMCommandGenerator:
         mock_available_endpoints: MagicMock,
         mock_configuration: MagicMock,
         monkeypatch: pytest.MonkeyPatch,
+        set_agents_presence: Callable[[bool], None],
+        agents_present: bool,
+        expected_prompt_template: Any,
     ):
         # Given
+        set_agents_presence(agents_present)
+
         mock_available_endpoints.model_groups = [
             {
                 "id": "openai-gpt-4o-direct",
@@ -1744,7 +1839,7 @@ class TestSearchReadyLLMCommandGenerator:
             > 0
         )
         assert loaded.prompt_template.find("| search and reply   |") > 0
-        assert loaded.prompt_template == command_prompt_v3_gpt_4o_2024_11_20_template
+        assert loaded.prompt_template == expected_prompt_template
 
     async def test_search_ready_llm_command_generator_load_prompt_from_model_storage(
         self,
@@ -2195,23 +2290,52 @@ class TestSearchReadyLLMCommandGenerator:
         assert len(returned_message.get(COMMANDS)) == 1
         assert returned_message.get(COMMANDS) == [command]
 
-    def test_model_prompt_mapper(self):
-        model_prompt_mapper = SearchReadyLLMCommandGenerator.get_model_prompt_mapper()
+    @pytest.mark.parametrize(
+        "model,expected_prompt_template,expected_agent_prompt_template",
+        [
+            (
+                "openai/gpt-4o-2024-11-20",
+                "command_prompt_v3_gpt_4o_2024_11_20_template.jinja2",
+                "agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2",
+            ),
+            (
+                "azure/gpt-4o-2024-11-20",
+                "command_prompt_v3_gpt_4o_2024_11_20_template.jinja2",
+                "agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2",
+            ),
+            (
+                "anthropic/claude-3-5-sonnet-20240620",
+                "command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2",
+                "agent_command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2",
+            ),
+            (
+                "bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0",
+                "command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2",
+                "agent_command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2",
+            ),
+        ],
+    )
+    def test_model_prompt_mapper(
+        self,
+        model: str,
+        expected_prompt_template: str,
+        expected_agent_prompt_template: str,
+        set_agents_presence: Callable[[bool], None],
+    ):
+        # Given
+        set_agents_presence(False)
+        # Then
         assert (
-            model_prompt_mapper.get("openai/gpt-4o-2024-11-20")
-            == "command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
+            SearchReadyLLMCommandGenerator.get_model_prompt_mapper().get(model)
+            == expected_prompt_template
         )
+
+        # Given
+        set_agents_presence(True)
+        # Then
         assert (
-            model_prompt_mapper.get("azure/gpt-4o-2024-11-20")
-            == "command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
-        )
-        assert (
-            model_prompt_mapper.get("anthropic/claude-3-5-sonnet-20240620")
-            == "command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
-        )
-        assert (
-            model_prompt_mapper.get("bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0")
-            == "command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
+            SearchReadyLLMCommandGenerator.get_model_prompt_mapper().get(model)
+            == expected_agent_prompt_template
         )
 
     def test_command_syntax_version(self):

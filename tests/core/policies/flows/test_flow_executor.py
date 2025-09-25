@@ -1,12 +1,13 @@
 import uuid
 from pathlib import Path
-from typing import List, Optional, Tuple
-from unittest.mock import Mock
+from typing import Iterator, List, Optional, Tuple
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 import structlog
 from pytest import MonkeyPatch
 
+from rasa.core.available_agents import AvailableAgents
 from rasa.core.config.available_endpoints import (
     InteractionHandlingConfig,
 )
@@ -19,6 +20,7 @@ from rasa.core.policies.flows.flow_exceptions import (
 )
 from rasa.core.policies.flows.flow_executor import (
     select_next_step,
+    select_next_step_id,
     validate_collect_step,
 )
 from rasa.core.policies.flows.flow_step_result import (
@@ -42,6 +44,8 @@ from rasa.dialogue_understanding.patterns.search import SearchPatternFlowStackFr
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.chit_chat_frame import ChitChatStackFrame
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    AgentStackFrame,
+    AgentState,
     BaseFlowStackFrame,
     FlowStackFrameType,
     UserFlowStackFrame,
@@ -60,12 +64,11 @@ from rasa.shared.core.events import (
     DialogueStackUpdated,
     Event,
     FlowCompleted,
-    FlowResumed,
     FlowStarted,
     SlotSet,
     UserUttered,
 )
-from rasa.shared.core.flows import FlowsList
+from rasa.shared.core.flows import FlowsList, FlowStep
 from rasa.shared.core.flows.flow import (
     END_STEP,
     ContinueFlowStep,
@@ -457,6 +460,44 @@ def test_select_handles_current_node_being_link():
     )
 
 
+@pytest.mark.parametrize(
+    "agent_stack_frame",
+    [
+        AgentStackFrame(
+            frame_id="agent-frame-id",
+            state=AgentState.WAITING_FOR_INPUT,
+            agent_id="agent-1",
+            flow_id="flow-1",
+        ),
+        AgentStackFrame(
+            frame_id="agent-frame-id",
+            state=AgentState.INTERRUPTED,
+            agent_id="agent-1",
+            flow_id="flow-1",
+        ),
+    ],
+)
+def test_select_next_step_id_returns_current_id_when_agent_stack_frame_on_top(
+    agent_stack_frame: AgentStackFrame,
+):
+    # Create a dummy current step
+    step = FlowStep(
+        custom_id="my_step_id",
+        idx=0,
+        description=None,
+        metadata={},
+        next=FlowStepLinks(links=[]),
+        flow_id="my_flow",
+    )
+    # Create a stack with AgentStackFrame in WAITING_FOR_INPUT state
+    stack = DialogueStack(frames=[agent_stack_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+
+    result = select_next_step_id(step, stack.current_context(), tracker)
+    assert result == "my_step_id"
+
+
 def test_advance_top_flow_on_stack_handles_empty_stack():
     stack = DialogueStack.empty()
     flow_executor.update_top_flow_step_id("foo", stack)
@@ -519,7 +560,8 @@ def test_trigger_pattern_continue_interrupted_adds_stackframe():
     top = stack.top()
     assert top is not None
     assert isinstance(top, ContinueInterruptedPatternFlowStackFrame)
-    assert top.previous_flow_name == "bar flow"
+    assert top.interrupted_flow_names == ["bar flow"]
+    assert top.interrupted_flow_ids == ["bar_flow"]
 
 
 def test_trigger_pattern_continue_interrupted_does_not_trigger_if_no_interrupt():
@@ -701,24 +743,20 @@ def test_trigger_pattern_continue_interrupted_triggers_correctly_with_link_step(
         step_id="END",
         frame_id="some-id",
     )
-    flow_resumed = FlowResumed(
-        flow_id="flow_a", step_id="flow_a_0_collect_remove_contact_handle"
-    )
     continue_interrupted = ContinueInterruptedPatternFlowStackFrame(
         flow_id="pattern_continue_interrupted",
         step_id="START",
         frame_id="some-id",
-        previous_flow_name="remove a contact",
+        interrupted_flow_names=["remove a contact"],
+        interrupted_flow_ids=["flow_a"],
+        interrupted_flow_options="remove a contact",
+        multiple_flows_interrupted=False,
     )
 
-    resumed_events = flow_executor.trigger_pattern_continue_interrupted(
+    flow_executor.trigger_pattern_continue_interrupted(
         current_frame, stack, flows, tracker
     )
 
-    # if the `pattern_continue_interrupted` is correctly invoked, both the stack
-    # `resumed_events` will indicate the return to `flow_a`
-    assert len(resumed_events) == 1
-    assert resumed_events[0] == flow_resumed
     assert len(stack.frames) == 4
     assert stack.frames[-1] == continue_interrupted
 
@@ -1033,7 +1071,8 @@ def test_reset_scoped_slots_with_persisted_slots_set():
     assert events[0].metadata == {"reset": True}
 
 
-def test_run_step_collect():
+@pytest.mark.asyncio
+async def test_run_step_collect():
     flows = flows_from_str(
         """
         flows:
@@ -1058,7 +1097,7 @@ def test_run_step_collect():
 
     available_actions = ["utter_ask_foo"]
 
-    result = flow_executor.run_step(
+    result = await flow_executor.run_step(
         step,
         flow,
         stack,
@@ -1066,6 +1105,7 @@ def test_run_step_collect():
         available_actions,
         flows,
         previous_step_id=START_STEP,
+        slots=[],
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
@@ -1082,7 +1122,8 @@ def test_run_step_collect():
         (False, [FlowStarted(flow_id="my_flow")]),
     ],
 )
-def test_run_step_collect_with_ask_before_filling(
+@pytest.mark.asyncio
+async def test_run_step_collect_with_ask_before_filling(
     ask_before_filling: bool, expected_events: list[Event]
 ):
     flows = flows_from_str(
@@ -1108,8 +1149,15 @@ def test_run_step_collect_with_ask_before_filling(
     step = user_flow_frame.step(flows)
     flow = user_flow_frame.flow(flows)
 
-    result = flow_executor.run_step(
-        step, flow, stack, tracker, actions, flows, previous_step_id=START_STEP
+    result = await flow_executor.run_step(
+        step,
+        flow,
+        stack,
+        tracker,
+        actions,
+        flows,
+        previous_step_id=START_STEP,
+        slots=slots,
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
@@ -1134,7 +1182,8 @@ def test_trigger_pattern_ask_collect_information():
     assert data["collect_action"] == "action_ask_foo"
 
 
-def test_run_step_action():
+@pytest.mark.asyncio
+async def test_run_step_action():
     flows = flows_from_str(
         """
         flows:
@@ -1159,7 +1208,7 @@ def test_run_step_action():
 
     available_actions = ["utter_ask_foo"]
 
-    result = flow_executor.run_step(
+    result = await flow_executor.run_step(
         step,
         flow,
         stack,
@@ -1167,13 +1216,15 @@ def test_run_step_action():
         available_actions,
         flows,
         previous_step_id=START_STEP,
+        slots=[],
     )
 
     assert isinstance(result, PauseFlowReturnPrediction)
     assert result.action_prediction.action_name == "utter_ask_foo"
 
 
-def test_run_step_action_check_warnings():
+@pytest.mark.asyncio
+async def test_run_step_action_check_warnings():
     flows = flows_from_str(
         """
         flows:
@@ -1198,7 +1249,7 @@ def test_run_step_action_check_warnings():
 
     # Run the utter step of the collect.
     utter_step = flow.step_by_id("utter")
-    result = flow_executor.run_step(
+    result = await flow_executor.run_step(
         utter_step,
         flow,
         stack,
@@ -1206,6 +1257,7 @@ def test_run_step_action_check_warnings():
         available_actions,
         flows,
         previous_step_id=START_STEP,
+        slots=[],
     )
     assert isinstance(result, PauseFlowReturnPrediction)
     assert result.action_prediction.action_name == "utter_ask_foo"
@@ -1215,7 +1267,7 @@ def test_run_step_action_check_warnings():
     expected_event = "flow.step.run.action.unknown"
     expected_log_level = "warning"
     with structlog.testing.capture_logs() as caplog:
-        result = flow_executor.run_step(
+        result = await flow_executor.run_step(
             step,
             flow,
             stack,
@@ -1223,13 +1275,15 @@ def test_run_step_action_check_warnings():
             available_actions,
             flows,
             previous_step_id=utter_step.id,
+            slots=[],
         )
         logs = filter_logs(caplog, expected_event, expected_log_level)
         assert len(logs) == 1
         assert isinstance(result, ContinueFlowWithNextStep)
 
 
-def test_run_step_link():
+@pytest.mark.asyncio
+async def test_run_step_link():
     flows = flows_from_str(
         """
         flows:
@@ -1262,7 +1316,7 @@ def test_run_step_link():
 
     # test that my_flow is still on top to be wrapped up and that the linked
     # flow was inserted just below
-    result = flow_executor.run_step(
+    result = await flow_executor.run_step(
         step,
         flow,
         stack,
@@ -1270,6 +1324,7 @@ def test_run_step_link():
         available_actions,
         flows,
         previous_step_id=START_STEP,
+        slots=[],
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
@@ -1282,7 +1337,8 @@ def test_run_step_link():
     assert linked_flow.flow_id == "bar_flow"
 
 
-def test_run_step_link_human_handoff():
+@pytest.mark.asyncio
+async def test_run_step_link_human_handoff():
     flows = flows_from_str_including_defaults(
         """
         flows:
@@ -1309,7 +1365,7 @@ def test_run_step_link_human_handoff():
 
     # test that my_flow is still on top to be wrapped up and that the linked
     # flow was inserted just below
-    result = flow_executor.run_step(
+    result = await flow_executor.run_step(
         step,
         flow,
         stack,
@@ -1317,6 +1373,7 @@ def test_run_step_link_human_handoff():
         available_actions,
         flows,
         previous_step_id=START_STEP,
+        slots=[],
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
@@ -1327,7 +1384,8 @@ def test_run_step_link_human_handoff():
     assert isinstance(linked_flow, HumanHandoffPatternFlowStackFrame)
 
 
-def test_run_step_call():
+@pytest.mark.asyncio
+async def test_run_step_call(mock_available_agents):
     flows = flows_from_str(
         """
         flows:
@@ -1358,17 +1416,21 @@ def test_run_step_call():
 
     available_actions = []
 
-    # test that bar_flow is on top and my_flow is underneath to be continued
-    # after bar_flow finished
-    result = flow_executor.run_step(
-        step,
-        flow,
-        stack,
-        tracker,
-        available_actions,
-        flows,
-        previous_step_id=START_STEP,
-    )
+    with patch(
+        "rasa.core.policies.flows.flow_executor.run_agent", new_callable=AsyncMock
+    ) as mock_run_agent:
+        # test that bar_flow is on top and my_flow is underneath to be continued
+        # after bar_flow finished
+        result = await flow_executor.run_step(
+            step,
+            flow,
+            stack,
+            tracker,
+            available_actions,
+            flows,
+            previous_step_id=START_STEP,
+            slots=[],
+        )
 
     assert isinstance(result, ContinueFlowWithNextStep)
     assert result.events[0] == FlowStarted("my_flow")
@@ -1381,9 +1443,57 @@ def test_run_step_call():
     assert isinstance(parent_flow, UserFlowStackFrame)
     assert parent_flow.frame_type == FlowStackFrameType.REGULAR
     assert parent_flow.flow_id == "my_flow"
+    # Ensure that the agent was used
+    mock_run_agent.assert_not_awaited()
 
 
-def test_run_step_set_slot():
+@pytest.mark.asyncio
+async def test_run_step_call_when_agent_exists(
+    monkeypatch: MonkeyPatch, mock_available_agents
+):
+    flows = flows_from_str(
+        """
+        flows:
+          my_flow:
+            description: flow my_flow
+            steps:
+            - id: my-call-step
+              call: car-research
+        """
+    )
+
+    user_flow_frame = UserFlowStackFrame(
+        flow_id="my_flow", step_id="START", frame_id="some-frame-id"
+    )
+    stack = DialogueStack(frames=[user_flow_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+    tracker.update_stack(stack)
+    flow = flows.flow_by_id("my_flow")
+
+    assert flow is not None
+    step = flow.step_by_id("my-call-step")
+
+    with patch(
+        "rasa.core.policies.flows.flow_executor.run_agent", new_callable=AsyncMock
+    ) as mock_run_agent:
+        # WHEN
+        await flow_executor.run_step(
+            step,
+            flow,
+            stack,
+            tracker,
+            [],
+            flows,
+            previous_step_id=START_STEP,
+            slots=[],
+        )
+
+        # THEN
+        mock_run_agent.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_run_step_set_slot():
     flows = flows_from_str(
         """
         flows:
@@ -1409,7 +1519,7 @@ def test_run_step_set_slot():
 
     available_actions = []
 
-    result = flow_executor.run_step(
+    result = await flow_executor.run_step(
         step,
         flow,
         stack,
@@ -1417,6 +1527,7 @@ def test_run_step_set_slot():
         available_actions,
         flows,
         previous_step_id=START_STEP,
+        slots=[],
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
@@ -1427,7 +1538,8 @@ def test_run_step_set_slot():
     ]
 
 
-def test_run_step_end():
+@pytest.mark.asyncio
+async def test_run_step_end():
     flows = flows_from_str(
         """
         flows:
@@ -1452,7 +1564,7 @@ def test_run_step_end():
 
     available_actions = []
 
-    result = flow_executor.run_step(
+    result = await flow_executor.run_step(
         step,
         flow,
         stack,
@@ -1460,6 +1572,7 @@ def test_run_step_end():
         available_actions,
         flows,
         previous_step_id=START_STEP,
+        slots=[],
     )
     assert isinstance(result, ContinueFlowWithNextStep)
     assert result.events == [
@@ -1469,7 +1582,8 @@ def test_run_step_end():
     ]
 
 
-def test_executor_does_not_get_tripped_if_an_action_is_predicted_in_loop():
+@pytest.mark.asyncio
+async def test_executor_does_not_get_tripped_if_an_action_is_predicted_in_loop():
     flow_with_loop = flows_from_str(
         """
         flows:
@@ -1502,13 +1616,14 @@ def test_executor_does_not_get_tripped_if_an_action_is_predicted_in_loop():
 
     available_actions = ["action_listen"]
 
-    selection = flow_executor.advance_flows_until_next_action(
-        tracker, available_actions, flow_with_loop
+    selection = await flow_executor.advance_flows_until_next_action(
+        tracker, available_actions, flow_with_loop, slots=[]
     )
     assert selection.action_name == "action_listen"
 
 
-def test_executor_trips_internal_circuit_breaker():
+@pytest.mark.asyncio
+async def test_executor_trips_internal_circuit_breaker():
     flow_with_loop = flows_from_str(
         """
         flows:
@@ -1543,12 +1658,13 @@ def test_executor_trips_internal_circuit_breaker():
     available_actions = []
 
     with pytest.raises(FlowCircuitBreakerTrippedException):
-        flow_executor.advance_flows_until_next_action(
-            tracker, available_actions, flow_with_loop
+        await flow_executor.advance_flows_until_next_action(
+            tracker, available_actions, flow_with_loop, slots=[]
         )
 
 
-def test_executor_raises_no_next_step_in_flow_exception():
+@pytest.mark.asyncio
+async def test_executor_raises_no_next_step_in_flow_exception():
     flows = flows_from_str(
         """
         flows:
@@ -1590,10 +1706,13 @@ def test_executor_raises_no_next_step_in_flow_exception():
     available_actions = []
 
     with pytest.raises(NoNextStepInFlowException):
-        flow_executor.advance_flows_until_next_action(tracker, available_actions, flows)
+        await flow_executor.advance_flows_until_next_action(
+            tracker, available_actions, flows, slots=[]
+        )
 
 
-def test_advance_flows_empty_stack():
+@pytest.mark.asyncio
+async def test_advance_flows_empty_stack():
     flows = flows_from_str(
         """
         flows:
@@ -1617,11 +1736,14 @@ def test_advance_flows_empty_stack():
     )
     tracker.update_stack(stack)
     available_actions = []
-    prediction = flow_executor.advance_flows(tracker, available_actions, flows)
+    prediction = await flow_executor.advance_flows(
+        tracker, available_actions, flows, slots=[]
+    )
     assert prediction.action_name is None
 
 
-def test_advance_flows_selects_next_action():
+@pytest.mark.asyncio
+async def test_advance_flows_selects_next_action():
     flows = flows_from_str(
         """
         flows:
@@ -1643,7 +1765,9 @@ def test_advance_flows_selects_next_action():
     )
     tracker.update_stack(stack)
     available_actions = ["utter_goodbye"]
-    prediction = flow_executor.advance_flows(tracker, available_actions, flows)
+    prediction = await flow_executor.advance_flows(
+        tracker, available_actions, flows, slots=[]
+    )
     assert prediction.action_name == "utter_goodbye"
 
     assert len(prediction.events) == 1
@@ -1685,7 +1809,8 @@ def _run_flow_until_listen(
     return actions, events
 
 
-def test_flow_policy_events_after_flow_starts() -> None:
+@pytest.mark.asyncio
+async def test_flow_policy_events_after_flow_starts() -> None:
     flows = flows_from_str(
         """
         flows:
@@ -1714,7 +1839,7 @@ def test_flow_policy_events_after_flow_starts() -> None:
     flow = flows.flow_by_id("search_hotels")
     step = flow.step_by_id("1_collect_num_rooms")
     available_actions = []
-    step_result = flow_executor.run_step(
+    step_result = await flow_executor.run_step(
         step=step,
         flow=flow,
         stack=tracker.stack,
@@ -1722,12 +1847,14 @@ def test_flow_policy_events_after_flow_starts() -> None:
         available_actions=available_actions,
         flows=flows,
         previous_step_id=START_STEP,
+        slots=[],
     )
     assert step_result is not None
     assert step_result.events == [FlowStarted("search_hotels")]
 
 
-def test_flow_policy_events_after_flow_ends() -> None:
+@pytest.mark.asyncio
+async def test_flow_policy_events_after_flow_ends() -> None:
     flows = flows_from_str(
         """
         flows:
@@ -1778,10 +1905,11 @@ def test_flow_policy_events_after_flow_ends() -> None:
     tracker.update_stack(stack)
 
     available_actions = []
-    result = flow_executor.advance_flows_until_next_action(
+    result = await flow_executor.advance_flows_until_next_action(
         tracker=tracker,
         available_actions=available_actions,
         flows=flows,
+        slots=[],
     )
     assert result is not None
     assert (
@@ -1790,7 +1918,8 @@ def test_flow_policy_events_after_flow_ends() -> None:
     )
 
 
-def test_flow_policy_events_after_interruption() -> None:
+@pytest.mark.asyncio
+async def test_flow_policy_events_after_interruption() -> None:
     flows = flows_from_str(
         """
         flows:
@@ -1882,17 +2011,15 @@ def test_flow_policy_events_after_interruption() -> None:
         "utter_how_else_can_i_help",
         "utter_collect_information",
     ]
-    result = flow_executor.advance_flows_until_next_action(
+    result = await flow_executor.advance_flows_until_next_action(
         tracker=tracker,
         available_actions=available_actions,
         flows=flows,
+        slots=[],
     )
     assert result is not None
     assert result.events[2] == FlowCompleted(
         flow_id="check_balance", step_id="2_utter_current_balance"
-    )
-    assert result.events[3] == FlowResumed(
-        flow_id="search_hotels", step_id="1_collect_num_rooms"
     )
 
 
@@ -2033,7 +2160,8 @@ def test_flow_executor_validate_collect_step_with_initial_value_defined() -> Non
     assert stack.current_context().get("flow_id") == "my_flow"
 
 
-def test_run_step_adds_metadata_to_flow_started_event():
+@pytest.mark.asyncio
+async def test_run_step_adds_metadata_to_flow_started_event():
     flows = flows_from_str(
         """
         flows:
@@ -2059,7 +2187,7 @@ def test_run_step_adds_metadata_to_flow_started_event():
 
     available_actions = ["action_clarify_flows"]
 
-    result = flow_executor.run_step(
+    result = await flow_executor.run_step(
         step,
         flow,
         stack,
@@ -2067,6 +2195,7 @@ def test_run_step_adds_metadata_to_flow_started_event():
         available_actions,
         flows,
         previous_step_id=START_STEP,
+        slots=[],
     )
 
     expected_events = [
@@ -2078,7 +2207,8 @@ def test_run_step_adds_metadata_to_flow_started_event():
     assert expected_events[0].metadata.get("names") == ["foo", "bar"]
 
 
-def test_run_step_does_not_emit_flow_started_event_after_flow_has_started():
+@pytest.mark.asyncio
+async def test_run_step_does_not_emit_flow_started_event_after_flow_has_started():
     # we reenter the collect_foo step because there is a loop. in this case
     # no flow started event should be emitted - even if we are at the first
     # step of the flow
@@ -2107,8 +2237,15 @@ def test_run_step_does_not_emit_flow_started_event_after_flow_has_started():
     step = user_flow_frame.step(flows)
     flow = user_flow_frame.flow(flows)
 
-    result = flow_executor.run_step(
-        step, flow, stack, tracker, actions, flows, previous_step_id="utter_foo"
+    result = await flow_executor.run_step(
+        step,
+        flow,
+        stack,
+        tracker,
+        actions,
+        flows,
+        previous_step_id="utter_foo",
+        slots=slots,
     )
 
     assert isinstance(result, ContinueFlowWithNextStep)
@@ -2119,7 +2256,7 @@ def test_run_step_does_not_emit_flow_started_event_after_flow_has_started():
     ]
 
 
-async def test_correct_next_step_selected_with_call_step() -> None:
+async def test_correct_next_step_selected_with_call_step(mock_available_agents) -> None:
     """The flows from example below have a similar structure: `set_slots` step is
     located third in both flows, which may lead to name collision - in both flows this
     step will get the name `2_set_slots` in both flows.
@@ -2216,15 +2353,15 @@ def test_trigger_pattern_continue_interrupted_uses_localized_flow_name(
     top = stack.top()
     assert top is not None
     assert isinstance(top, ContinueInterruptedPatternFlowStackFrame)
-    assert top.previous_flow_name == german_flow_name
+    assert top.interrupted_flow_names == [german_flow_name]
 
 
-def test_set_silence_timeout_at_step_collect():
+@pytest.mark.asyncio
+async def test_set_silence_timeout_at_step_collect():
     """Test that silence timeout is set correctly when running a collect step.
 
     We assess that event SlotSet is emitted with the correct silence timeout
     """
-
     silence_timeout = 10
 
     flows = flows_from_str(
@@ -2253,7 +2390,7 @@ def test_set_silence_timeout_at_step_collect():
     available_actions = ["utter_ask_foo"]
 
     with structlog.testing.capture_logs() as caplog:
-        result = flow_executor.run_step(
+        result = await flow_executor.run_step(
             step,
             flow,
             stack,
@@ -2261,6 +2398,7 @@ def test_set_silence_timeout_at_step_collect():
             available_actions,
             flows,
             previous_step_id=START_STEP,
+            slots=[],
         )
 
         logs = filter_logs(caplog, "flow.step.run.using_step_silence_timeout", "debug")
@@ -2277,7 +2415,10 @@ def test_set_silence_timeout_at_step_collect():
     assert isinstance(stack.frames[1], CollectInformationPatternFlowStackFrame)
 
 
-def test_set_silence_timeout_at_step_collect_channel_specific(monkeypatch: MonkeyPatch):
+@pytest.mark.asyncio
+async def test_set_silence_timeout_at_step_collect_channel_specific(
+    monkeypatch: MonkeyPatch,
+):
     """Test that silence timeout is set correctly when running a collect step.
 
     We assess that event SlotSet is emitted with the correct silence timeout
@@ -2316,7 +2457,7 @@ def test_set_silence_timeout_at_step_collect_channel_specific(monkeypatch: Monke
     available_actions = ["utter_ask_foo"]
 
     with structlog.testing.capture_logs() as caplog:
-        result = flow_executor.run_step(
+        result = await flow_executor.run_step(
             step,
             flow,
             stack,
@@ -2324,6 +2465,7 @@ def test_set_silence_timeout_at_step_collect_channel_specific(monkeypatch: Monke
             available_actions,
             flows,
             previous_step_id=START_STEP,
+            slots=[],
         )
 
         logs = filter_logs(caplog, "flow.step.run.using_step_silence_timeout", "debug")
@@ -2345,7 +2487,21 @@ def interaction_handling_endpoint() -> InteractionHandlingConfig:
     return InteractionHandlingConfig(global_silence_timeout=10)
 
 
-def test_reset_silence_timeout_to_global_at_step_collect(
+@pytest.fixture
+def mock_available_agents(monkeypatch: MonkeyPatch) -> Iterator[MagicMock]:
+    mock_instance = MagicMock()
+    mock_instance.agents = {
+        "car-research": {},
+    }
+
+    with patch.object(
+        AvailableAgents, "get_instance", return_value=mock_instance
+    ) as mock_method:
+        yield mock_method
+
+
+@pytest.mark.asyncio
+async def test_reset_silence_timeout_to_global_at_step_collect(
     default_config: Configuration,
     monkeypatch: MonkeyPatch,
 ) -> None:
@@ -2354,7 +2510,6 @@ def test_reset_silence_timeout_to_global_at_step_collect(
     We assess that event SlotSet is emitted with the global silence timeout configured
     in the interaction_handling.
     """
-
     # We set a global silence timeout in the interaction_handling endpoint
     global_silence_timeout = 11
 
@@ -2405,7 +2560,7 @@ def test_reset_silence_timeout_to_global_at_step_collect(
     available_actions = ["utter_ask_foo"]
 
     with structlog.testing.capture_logs() as caplog:
-        result = flow_executor.run_step(
+        result = await flow_executor.run_step(
             step,
             flow,
             stack,
@@ -2413,6 +2568,7 @@ def test_reset_silence_timeout_to_global_at_step_collect(
             available_actions,
             flows,
             previous_step_id=START_STEP,
+            slots=[],
         )
 
         logs = filter_logs(caplog, "flow.step.run.use_channel_silence_timeout", "debug")

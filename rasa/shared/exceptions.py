@@ -163,9 +163,25 @@ class ProviderClientAPIException(RasaException):
         return s
 
 
+class LLMToolResponseDecodeError(ProviderClientAPIException):
+    """Raised when a JSON decoding error occurs in LLM tool response."""
+
+
 class ProviderClientValidationError(RasaException):
     """Raised for errors that occur during validation of the API client."""
 
 
 class FinetuningDataPreparationException(RasaException):
     """Raised when there is an error in data preparation for fine-tuning."""
+
+
+class AgentInitializationException(RasaException):
+    """Raised when there is an error during the initialization of an agent."""
+
+
+class AgentAuthInitializationException(RasaException):
+    """Raised when there is an error during the initialization of agent auth client."""
+
+
+class AuthenticationError(RasaException):
+    """Raised when there is an authentication error."""

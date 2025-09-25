@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Text
 
 import structlog
 
-import rasa.shared.utils.cli
 import rasa.shared.utils.io
 
 if TYPE_CHECKING:

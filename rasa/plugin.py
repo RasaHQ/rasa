@@ -37,7 +37,7 @@ def init_hooks(manager: pluggy.PluginManager) -> None:
     manager.register(hooks)
 
 
-@hookspec  # type: ignore[misc]
+@hookspec
 def refine_cli(
     subparsers: SubParsersAction,
     parent_parsers: List[argparse.ArgumentParser],
@@ -45,22 +45,22 @@ def refine_cli(
     """Customizable hook for adding CLI commands."""
 
 
-@hookspec  # type: ignore[misc]
+@hookspec
 def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Text]:
     """Hook specification for configuring plugin CLI."""
 
 
-@hookspec  # type: ignore[misc]
+@hookspec
 def init_telemetry(endpoints_file: Optional[Text]) -> None:
     """Hook specification for initialising plugin telemetry."""
 
 
-@hookspec  # type: ignore[misc]
+@hookspec
 def init_managers(endpoints_file: Optional[Text]) -> None:
     """Hook specification for initialising managers."""
 
 
-@hookspec(firstresult=True)  # type: ignore[misc]
+@hookspec(firstresult=True)
 def create_tracker_store(  # type: ignore[empty-body]
     endpoint_config: Union["TrackerStore", "EndpointConfig"],
     domain: "Domain",
@@ -69,7 +69,7 @@ def create_tracker_store(  # type: ignore[empty-body]
     """Hook specification for wrapping with AuthRetryTrackerStore."""
 
 
-@hookspec  # type: ignore[misc]
+@hookspec
 def after_server_stop() -> None:
     """Hook specification for stopping the server.
 
@@ -78,11 +78,11 @@ def after_server_stop() -> None:
     """
 
 
-@hookspec  # type: ignore[misc]
+@hookspec
 def after_new_user_message(tracker: "DialogueStateTracker") -> None:
     """Hook specification for after a new user message is received."""
 
 
-@hookspec  # type: ignore[misc]
+@hookspec
 def after_action_executed(tracker: "DialogueStateTracker") -> None:
     """Hook specification for after an action is executed."""

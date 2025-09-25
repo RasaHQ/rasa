@@ -6,7 +6,7 @@ on:
       # CI only runs tests for the lowest supported Python version
       python-versions:
         type: string
-        default: '[3.9]'
+        default: '["3.10"]'
         required: false
         description: "Python versions to run the tests on."
       # Code Quality checks are enabled by default
@@ -40,7 +40,7 @@ env:
   RASA_SDK_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-sdk-dev
   RASA_PRO_HELM_REPO: oci://europe-west3-docker.pkg.dev/rasa-releases/helm-charts/rasa
   RASA_PRO_HELM_VERSION: 1.2.0
-  DEFAULT_PYTHON_VERSION: "3.9"
+  DEFAULT_PYTHON_VERSION: "3.10"
   NODE_VERSION_INSPECTOR_BUILD: 20
   SONAR_ORGANIZATION: rasahq
   SONAR_PROJECT_KEY: RasaHQ_rasa-private
@@ -163,6 +163,80 @@ jobs:
           templates: ${{ env.TEMPLATES }}
           rasa_pro_license: ${{ secrets.RASA_PRO_LICENSE }}
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+
+  rasa-init-sanity-check:
+    runs-on: ubuntu-24.04
+    if: ${{ inputs.full_ci_mode != 'false' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+        template:
+          - default
+          - tutorial
+          - basic
+          - finance
+          - telco
+        exclude:
+          - python-version: "3.9"
+            template: tutorial
+          - python-version: "3.9"
+            template: basic
+          - python-version: "3.9"
+            template: finance
+          - python-version: "3.9"
+            template: telco
+    env:
+      RASA_INIT_TEST_DIRECTORY: test-rasa-init
+    steps:
+        - name: Check out code
+          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        - name: Setup Python and install rasa-pro
+          if: ${{ matrix.python-version != '3.9' }}
+          uses: ./.github/actions/setup-python-env
+          with:
+            PYTHON_VERSION: ${{ matrix.python-version }}
+            MATRIX_JOB: ${{ matrix.python-version }}
+            RASA_DEFAULT_INSTALLATION_ONLY: "true"
+        - name: Set up Python 3.9
+          if: ${{ matrix.python-version == '3.9' }}
+          uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+          with:
+            python-version: ${{ matrix.python-version }}
+        - name: Read Poetry Version 🔢
+          if: ${{ matrix.python-version == '3.9' }}
+          run: |
+            echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        - name: Install Poetry ${{ env.POETRY_VERSION }}
+          if: ${{ matrix.python-version == '3.9' }}
+          uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a # v1.4.1
+          with:
+            version: ${{ env.POETRY_VERSION }}
+            virtualenvs-create: true
+            virtualenvs-in-project: true
+            installer-parallel: true
+        - name: Check error warning on Rasa install if using Python 3.9
+          if: ${{ matrix.python-version == '3.9' }}
+          run: |
+            make install > error-log 2>&1 || true
+            cat error-log
+            grep 'Current Python version (3.9.23) is not allowed by the project (>=3.10.0,<3.14)' error-log
+        - name: Make empty directory for `rasa init`
+          run: mkdir "${RASA_INIT_TEST_DIRECTORY}"
+        - name: Sanity check of `rasa init`
+          if: ${{ matrix.python-version != '3.9' }}
+          working-directory: ${{ env.RASA_INIT_TEST_DIRECTORY }}
+          env:
+            LLM_API_HEALTH_CHECK: true
+            OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+            RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+            TEMPLATE: ${{ matrix.template }}
+          run: rasa init --template "${TEMPLATE}" --no-prompt --debug
 
   rasa-private-dev-docker-image:
     name: rasa-private dev docker image
@@ -295,7 +369,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Set up Python 3.9 🐍
+      - name: Set up Python 3.10 🐍
         id: setup-python
         uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
@@ -736,11 +810,11 @@ jobs:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Set up Python 3.9 🐍
+      - name: Set up Python 3.10 🐍
         id: setup-python
         uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
         with:
-          python-version: '3.9'
+          python-version: '3.10'
 
       - name: Read Poetry Version 🔢
         run: |
@@ -761,7 +835,7 @@ jobs:
         # in the `Install additional dependencies for Docs ingestion` step fails
         shell: bash
         run: |
-          make install
+          make install-full
 
       - name: Download image artifact
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e #v4.2.1
@@ -904,7 +978,7 @@ jobs:
 
         - name: Install Dependencies (Linux) 📦
           run: |
-            make install
+            make install-full
           shell: bash
 
         # these integration tests need to be run in a sequential fashion,
@@ -953,7 +1027,7 @@ jobs:
 
       - name: Install Dependencies (Linux) 📦
         run: |
-          make install
+          make install-full
         shell: bash
 
       - name: Run container for non-sequential integration testing
@@ -1019,7 +1093,7 @@ jobs:
 
       - name: Install Dependencies (Linux) 📦
         run: |
-          make install
+          make install-full
         shell: bash
 
       - name: Run containers for tracker store integration testing
@@ -1083,7 +1157,7 @@ jobs:
 
       - name: Install Dependencies (Linux) 📦
         run: |
-          make install
+          make install-full
         shell: bash
 
       - name: Run containers for tracker store integration testing
@@ -1146,7 +1220,7 @@ jobs:
 
       - name: Install Dependencies (Linux) 📦
         run: |
-          make install
+          make install-full
         shell: bash
 
       - name: Run container for concurrent lock store integration testing
@@ -1204,6 +1278,22 @@ jobs:
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
           make prepare-spacy
+
+      - name: Run the pika test separately
+        # these tests need to be run separately as they turn on and off docker container and interfere with the other broker tests
+        run: |
+          poetry run pytest tests/integration_tests/core/brokers/test_pika.py --junitxml=report_pika_test_integration.xml
+
+      - name: Prepare pika test results
+        if: always()
+        run: mv report_pika_test_integration.xml integration-results-pika-broker-integration.xml
+
+      - name: Save Test Results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+            name: Pika Broker Integration Test Results
+            path: integration-results-pika-broker-integration.xml
 
       - name: Run rabbitmq, kafka and zookeeper containers for integration testing
         run: |
@@ -1428,7 +1518,7 @@ jobs:
       matrix:
         test:
           - test-audio-manual
-        python-version: [ 3.9, "3.10", "3.11" ]
+        python-version: [ "3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - name: Check out code
@@ -1450,7 +1540,7 @@ jobs:
           make prepare-tests-ubuntu
 
       - name: Install ddtrace on Linux
-        run: poetry run pip install -U 'ddtrace==2.10.5'
+        run: poetry run pip install -U ddtrace
 
       - name: Install additional dependencies for voice tests
         if: matrix.test == 'test-audio-manual'
@@ -1502,6 +1592,7 @@ jobs:
           - test-other-unit-tests
           - test-performance
           - test-flaky
+          - test-agents
         python-version: ${{ fromJson(inputs.python-versions) }}
 
     steps:
@@ -1524,7 +1615,7 @@ jobs:
           make prepare-tests-ubuntu
 
       - name: Install ddtrace on Linux
-        run: poetry run pip install -U 'ddtrace==2.10.5'
+        run: poetry run pip install -U ddtrace
 
       - name: Make direcory for Swagger/OpenAPI coverage results
         if: matrix.test == 'test-other-unit-tests'
@@ -1607,7 +1698,7 @@ jobs:
         # This is a workaround for that issue
         run: |
           sudo apt-get -y install libpq-dev
-          make install-pii | tee .output
+          make install-full | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 
@@ -1637,7 +1728,7 @@ jobs:
         shell: bash
 
       - name: Install ddtrace on Linux
-        run: poetry run pip install -U 'ddtrace==2.10.5'
+        run: poetry run pip install -U ddtrace
 
       - name: Test Code 🔍 (multi-process)
         env:
@@ -1679,6 +1770,9 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Free up disk-space
+        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b # TODO: Change to `main` once the composite-action is merged to main
 
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env

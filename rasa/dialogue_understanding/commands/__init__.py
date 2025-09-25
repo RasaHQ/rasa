@@ -8,6 +8,9 @@ from rasa.dialogue_understanding.commands.chit_chat_answer_command import (
 )
 from rasa.dialogue_understanding.commands.clarify_command import ClarifyCommand
 from rasa.dialogue_understanding.commands.command import Command
+from rasa.dialogue_understanding.commands.continue_agent_command import (
+    ContinueAgentCommand,
+)
 from rasa.dialogue_understanding.commands.correct_slots_command import (
     CorrectedSlot,
     CorrectSlotsCommand,
@@ -28,6 +31,9 @@ from rasa.dialogue_understanding.commands.knowledge_answer_command import (
 from rasa.dialogue_understanding.commands.noop_command import NoopCommand
 from rasa.dialogue_understanding.commands.repeat_bot_messages_command import (
     RepeatBotMessagesCommand,
+)
+from rasa.dialogue_understanding.commands.restart_agent_command import (
+    RestartAgentCommand,
 )
 from rasa.dialogue_understanding.commands.restart_command import RestartCommand
 from rasa.dialogue_understanding.commands.session_end_command import SessionEndCommand
@@ -62,4 +68,6 @@ __all__ = [
     "SessionEndCommand",
     "RepeatBotMessagesCommand",
     "RestartCommand",
+    "ContinueAgentCommand",
+    "RestartAgentCommand",
 ]

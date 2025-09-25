@@ -2,9 +2,20 @@ from typing import Dict, List, Text, Tuple, Union
 
 import numpy as np
 import pytest
+
+# Skip all tests in this file if TensorFlow is not available
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if not TENSORFLOW_AVAILABLE:
+    pytest.skip("TensorFlow is not available", allow_module_level=True)
+
 import tensorflow as tf
 
-from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE, TEXT
+from rasa.shared.nlu.constants import (
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+    TEXT,
+)
 from rasa.utils.tensorflow.constants import IDS, LABEL, SENTENCE
 from rasa.utils.tensorflow.model_data import FeatureArray, RasaModelData
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
@@ -92,7 +103,8 @@ def test_batch_inference(
             TEXT: {
                 SENTENCE: [
                     FeatureArray(
-                        np.random.rand(number_of_data_points, 2), number_of_dimensions=2
+                        np.random.rand(number_of_data_points, 2),
+                        number_of_dimensions=2,
                     )
                 ]
             }
@@ -193,7 +205,8 @@ def test_raise_exception_decreased_sparse_feature_sizes(
     raise_exception: bool,
 ):
     """Tests if exception is raised when sparse feature sizes decrease
-    during incremental training."""
+    during incremental training.
+    """
     if raise_exception:
         with pytest.raises(Exception) as exec_info:
             TransformerRasaModel._check_if_sparse_feature_sizes_decreased(

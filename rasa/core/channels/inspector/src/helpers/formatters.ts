@@ -1,5 +1,5 @@
-import { rasaColors } from '../theme/base/colors'
-import type { Event, Flow, Slot, Stack } from '../types'
+import {rasaColors} from '../theme/base/colors'
+import type {Event, Flow, Slot, Stack} from '../types'
 
 export function formatSlots(slots: { [key: string]: unknown }) {
   if (!slots) {
@@ -13,7 +13,7 @@ export function formatSlots(slots: { [key: string]: unknown }) {
         slotDuple[0] !== 'flow_hashes' &&
         slotDuple[1] != null,
     )
-    .map((slotDuple) => ({ name: slotDuple[0], value: slotDuple[1] }))
+    .map((slotDuple) => ({name: slotDuple[0], value: slotDuple[1]}))
 }
 
 export const formatTestCases = (events: Event[], sessionId: string) => {
@@ -85,11 +85,14 @@ export const formatFlow = (
     `flowchart TD
 classDef collect stroke-width:1px
 classDef action fill:#FBFCFD,stroke:#A0B8CF
+classDef noop fill:#FBFCFD
+classDef callstep fill:#FBFCFD
 classDef link fill:#f43
 classDef slot fill:#e8f3db,stroke:#c5e1a5
 classDef endstep fill:#ccc,stroke:#444
 classDef previous stroke:${rasaColors.rasaOrange[400]},stroke-width:1px
 classDef active stroke:${rasaColors.rasaOrange[400]},stroke-width:3px,fill:${rasaColors.warning[50]}
+classDef pulse animation:pulse 2s infinite
 `,
   ]
   try {
@@ -208,6 +211,24 @@ function renderStepSequence(
       mermaidTextFragment += `${mermaidId}["✍️ ${encodeDoubleQuotes(
         stepId,
       )}"]:::slot\n`
+    }
+
+    if (step.call) {
+      const isAgentWaitingOnInput = !!currentStack?.agent_id && currentStack?.state === 'waiting_for_input'
+      mermaidTextFragment += `${mermaidId}["${encodeDoubleQuotes(
+        stepId,
+      )} 🤖"]:::callstep\n`
+
+      if (isAgentWaitingOnInput) {
+        mermaidTextFragment += `class ${mermaidId} pulse\n`
+      }
+    }
+
+    if (step.noop) {
+      mermaidTextFragment += `${mermaidId}["${parseFieldUsingStack(
+        stepId,
+        currentStack
+      )}"]:::noop\n`
     }
 
     if (activeStep && stepId === activeStep) {

@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Text, Tuple, Union
 import numpy as np
 import tensorflow as tf
 from keras import Model
-from keras.src.utils import tf_utils
 
 import rasa.utils.train_utils
 from rasa.shared.constants import DIAGNOSTIC_DATA
@@ -78,6 +77,7 @@ class RasaModel(Model):
 
         Args:
             random_seed: set the random seed to get reproducible results
+            **kwargs: Additional keyword arguments passed to the parent class
         """
         # make sure that keras releases resources from previously trained model
         tf.keras.backend.clear_session()
@@ -273,7 +273,8 @@ class RasaModel(Model):
         if self._run_eagerly:
             # Once we take advantage of TF's distributed training, this is where
             # scheduled functions will be forced to execute and return actual values.
-            outputs = tf_utils.sync_to_numpy_or_python_type(self.predict_step(batch_in))
+            step_output = self.predict_step(batch_in)
+            outputs = self._convert_tensors_to_numpy(step_output)
             if DIAGNOSTIC_DATA in outputs:
                 outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
                     outputs[DIAGNOSTIC_DATA]
@@ -287,9 +288,8 @@ class RasaModel(Model):
 
         # Once we take advantage of TF's distributed training, this is where
         # scheduled functions will be forced to execute and return actual values.
-        outputs = tf_utils.sync_to_numpy_or_python_type(
-            self._tf_predict_step(list(batch_in))
-        )
+        step_output = self._tf_predict_step(list(batch_in))
+        outputs = self._convert_tensors_to_numpy(step_output)
         if DIAGNOSTIC_DATA in outputs:
             outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
                 outputs[DIAGNOSTIC_DATA]
@@ -388,6 +388,35 @@ class RasaModel(Model):
 
         return {k: _recurse(v) for k, v in input_dict.items()}
 
+    def _convert_tensors_to_numpy(
+        self, step_output: Dict[Text, Any]
+    ) -> Dict[Text, Any]:
+        """ "Recursively convert TensorFlow tensors to numpy arrays for Keras 3.x
+        compatibility.
+        Replaces the deprecated tf_utils.sync_to_numpy_or_python_type() function.
+        Converts tensors (objects with 'numpy' method) to numpy arrays,
+        leaves others unchanged.
+        """
+
+        def to_numpy(obj: Any) -> Any:
+            if hasattr(obj, "numpy"):
+                try:
+                    return obj.numpy()
+                except Exception:
+                    # Fallback: return as-is if not convertible
+                    return obj
+            # Dict: recurse into values
+            if isinstance(obj, dict):
+                return {k: to_numpy(v) for k, v in obj.items()}
+            # List/Tuple: recurse preserving type
+            if isinstance(obj, list):
+                return [to_numpy(v) for v in obj]
+            if isinstance(obj, tuple):
+                return tuple(to_numpy(v) for v in obj)
+            return obj
+
+        return {key: to_numpy(value) for key, value in step_output.items()}
+
     def _get_metric_results(self, prefix: Optional[Text] = "") -> Dict[Text, float]:
         return {
             f"{prefix}{metric.name}": metric.result()
@@ -403,7 +432,21 @@ class RasaModel(Model):
             overwrite: If 'True' an already existing model with the same file name will
                        be overwritten.
         """
-        self.save_weights(model_file_name, overwrite=overwrite, save_format="tf")
+        # Ensure filename ends with .weights.h5 and model is built for Keras 3.x
+        # compatibility
+        model_file_name = str(model_file_name)
+        if not model_file_name.endswith(".weights.h5"):
+            model_file_name += ".weights.h5"
+
+        if not self.built:
+            import tensorflow as tf
+
+            _ = self(tf.zeros((1, 1)))
+
+        # TensorFlow 2.19: save weights with different file extension
+        if not model_file_name.endswith(".weights.h5"):
+            model_file_name += ".weights.h5"
+        self.save_weights(model_file_name, overwrite=overwrite)
 
     @classmethod
     def load(
@@ -438,18 +481,23 @@ class RasaModel(Model):
         learning_rate = kwargs.get("config", {}).get(LEARNING_RATE, 0.001)
         run_eagerly = kwargs.get("config", {}).get(RUN_EAGERLY)
 
-        # need to train on 1 example to build weights of the correct size
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate), run_eagerly=run_eagerly
         )
         data_generator = RasaBatchDataGenerator(model_data_example, batch_size=1)
         model.fit(data_generator, verbose=False)
+
+        # Ensure model is built before loading weights
+        if not model.built:
+            sample_batch = next(iter(data_generator))
+            _ = model(sample_batch)
+
         # load trained weights
         model.load_weights(model_file_name)
 
         # predict on one data example to speed up prediction during inference
         # the first prediction always takes a bit longer to trace tf function
-        if not finetune_mode and predict_data_example:
+        if predict_data_example:
             model.run_inference(predict_data_example)
 
         logger.debug("Finished loading the model.")

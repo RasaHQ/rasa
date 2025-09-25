@@ -294,6 +294,7 @@ describe('helpers', () => {
           step_id: 'step_id',
           collect: fieldValue,
           ended: false,
+          type: 'flow',
         }),
       ).toEqual(fieldValue)
     })
@@ -307,6 +308,7 @@ describe('helpers', () => {
           flow_id: 'flow_id',
           step_id: 'step_id',
           ended: false,
+          type: 'flow',
         }),
       ).toEqual(fieldValue)
     })
@@ -321,6 +323,7 @@ describe('helpers', () => {
           step_id: 'step_id',
           collect: fieldValue,
           ended: false,
+          type: 'flow',
         }),
       ).toEqual(`${fieldValue} is not null`)
     })
@@ -335,6 +338,7 @@ describe('helpers', () => {
           step_id: 'step_id',
           collect: fieldValue,
           ended: false,
+          type: 'flow',
         }),
       ).toEqual(`not ${fieldValue}`)
     })

@@ -4,6 +4,16 @@ export interface Slot {
   value: any
 }
 
+export const AGENT_EVENT_TYPES = [
+  'agent_started',
+  'agent_completed',
+  'agent_interrupted',
+  'agent_resumed',
+  'agent_cancelled',
+] as const
+
+export type AgentEvents = typeof AGENT_EVENT_TYPES[number];
+
 export interface Event {
   event:
     | 'user'
@@ -13,6 +23,7 @@ export interface Event {
     | 'stack'
     | 'restart'
     | 'session_ended'
+    | AgentEvents
   text?: string
   timestamp: string
   update?: string
@@ -41,6 +52,9 @@ export interface Stack {
   collect?: string
   utter?: string
   ended: boolean
+  type: "flow" | "agent"
+  agent_id?: string
+  state?: "waiting_for_input" | "interrupted"
 }
 
 export interface RasaLatency {
@@ -67,6 +81,11 @@ export interface Flow {
   description: string
   name: string
   steps: Step[]
+}
+
+export interface Agent {
+  name: string
+  status: "running" | "completed" | "interrupted" | "cancelled"
 }
 
 interface NextStepThen {
@@ -100,6 +119,8 @@ interface Step {
   reset_after_flow_ends: boolean
   utter: string
   set_slots?: unknown
+  call?: string
+  noop?: boolean
 }
 
 export function isRasaLatency(obj: any): obj is RasaLatency {

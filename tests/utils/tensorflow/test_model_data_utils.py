@@ -324,7 +324,10 @@ def test_convert_training_examples(
         (
             [
                 Features(
-                    np.random.rand(5, 14), FEATURE_TYPE_SEQUENCE, "role", TAG_ID_ORIGIN
+                    np.random.rand(5, 14),
+                    FEATURE_TYPE_SEQUENCE,
+                    "role",
+                    TAG_ID_ORIGIN,
                 ),
                 Features(
                     np.random.rand(5, 14),
@@ -336,7 +339,10 @@ def test_convert_training_examples(
             ["featurizer-b"],
             [
                 Features(
-                    np.random.rand(5, 14), FEATURE_TYPE_SEQUENCE, "role", TAG_ID_ORIGIN
+                    np.random.rand(5, 14),
+                    FEATURE_TYPE_SEQUENCE,
+                    "role",
+                    TAG_ID_ORIGIN,
                 ),
                 Features(
                     np.random.rand(5, 14),

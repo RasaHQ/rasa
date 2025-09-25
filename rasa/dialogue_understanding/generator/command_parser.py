@@ -9,9 +9,11 @@ from rasa.dialogue_understanding.commands import (
     ChitChatAnswerCommand,
     ClarifyCommand,
     Command,
+    ContinueAgentCommand,
     HumanHandoffCommand,
     KnowledgeAnswerCommand,
     RepeatBotMessagesCommand,
+    RestartAgentCommand,
     SetSlotCommand,
     SkipQuestionCommand,
     StartFlowCommand,
@@ -34,6 +36,8 @@ DEFAULT_COMMANDS = [
     HumanHandoffCommand,
     ClarifyCommand,
     RepeatBotMessagesCommand,
+    ContinueAgentCommand,
+    RestartAgentCommand,
 ]
 
 

@@ -13,6 +13,7 @@ import structlog
 from tqdm import tqdm
 
 import rasa.shared.utils.io
+from rasa.core.available_agents import AvailableAgents
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
@@ -65,6 +66,7 @@ class E2ETestRunner:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[StorageType] = None,
         endpoints: Optional[AvailableEndpoints] = None,
+        sub_agents_path: Optional[Text] = None,
         **kwargs: Any,
     ) -> None:
         """Initializes the E2E test suite runner.
@@ -94,12 +96,15 @@ class E2ETestRunner:
         if endpoints and not are_custom_actions_stubbed:
             self._action_server_is_reachable(endpoints)
 
+        sub_agents = AvailableAgents.get_instance(sub_agents_path)
+
         self.agent = asyncio.run(
             rasa.core.agent.load_agent(
                 model_path=model_path,
                 model_server=model_server,
                 remote_storage=remote_storage,
                 endpoints=endpoints,
+                sub_agents=sub_agents,
             )
         )
 
@@ -742,7 +747,7 @@ class E2ETestRunner:
             test_result = test_turns[index]
             if index in failure_points:
                 diff_test_text, diff_actual_text = cls._handle_fail_diff(
-                    test_result,  # type: ignore[arg-type]
+                    test_result,
                     latest_response,
                     cls._select_bot_utter_turns(test_turns, index),
                 )  # test_result can only be TestStep in failure_points
@@ -806,7 +811,12 @@ class E2ETestRunner:
         """
         # This will only be used when the TestCase is not started
         # with a user step
-        latest_response: ActualStepOutput = test_turns[-1]  # type: ignore[assignment]
+        latest_response_event = test_turns[-1]
+        if not isinstance(latest_response_event, ActualStepOutput):
+            raise ValueError(
+                f"Expected ActualStepOutput, got {type(latest_response_event)}"
+            )
+        latest_response: ActualStepOutput = latest_response_event
         failures = []
         match = None
         for position in range(last_user_step_position, len(test_turns) - 1):

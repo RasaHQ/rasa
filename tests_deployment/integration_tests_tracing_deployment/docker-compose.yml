@@ -7,7 +7,7 @@ configs:
     content: |
       action_endpoint:
         url: "http://action-server-jaeger:5056/webhook"
-      
+
       tracing:
         type: jaeger
         host: jaeger
@@ -36,7 +36,7 @@ configs:
     content: |
       action_endpoint:
         url: "http://action-server-otlp:5057/webhook"
-      
+
       tracing:
         type: otlp
         endpoint: otel-collector:4317
@@ -70,17 +70,17 @@ configs:
               tls_settings:
                 cert_file: /certs/cert.pem
                 key_file: /certs/cert-key.pem
-      
+
       exporters:
         jaeger:
           endpoint: "jaeger:14250"
           insecure: true
         logging:
-      
+
       processors:
         batch:
           timeout: 1s
-      
+
       service:
         pipelines:
           traces:

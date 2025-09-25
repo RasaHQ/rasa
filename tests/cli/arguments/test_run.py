@@ -251,3 +251,4 @@ def test_default_run_arguments(
     assert args.jwt_method == "HS256"
     assert args.jwt_private_key is None
     assert args.skip_yaml_validation == []
+    assert args.sub_agents == "sub_agents"

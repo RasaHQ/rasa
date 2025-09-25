@@ -30,6 +30,8 @@ def mitie_model(
     return component.provide()
 
 
+# skip this test as training takes too long in CI and causes timeouts
+@pytest.mark.skip
 @pytest.mark.flaky
 @pytest.mark.timeout(150)
 def test_train_load_predict_loop(

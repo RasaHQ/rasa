@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Text
 
+# importing mitie at module level to ensure error is raised if mitie is not installed
+import mitie
+
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
@@ -49,8 +52,6 @@ class MitieTokenizer(Tokenizer):
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
         """Tokenizes the text of the provided attribute of the incoming message."""
-        import mitie
-
         text = message.get(attribute)
 
         encoded_sentence = text.encode(DEFAULT_ENCODING)

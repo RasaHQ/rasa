@@ -2,6 +2,12 @@ import numpy as np
 import pytest
 import scipy.sparse
 
+# Skip all tests in this file if TensorFlow is not available
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if not TENSORFLOW_AVAILABLE:
+    pytest.skip("TensorFlow is not available", allow_module_level=True)
+
 from rasa.utils.tensorflow.data_generator import (
     RasaBatchDataGenerator,
     RasaDataGenerator,

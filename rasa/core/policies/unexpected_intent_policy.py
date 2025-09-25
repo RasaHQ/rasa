@@ -54,6 +54,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.utils import common
+from rasa.shared.utils.io import raise_deprecation_warning
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.constants import (
@@ -300,6 +301,10 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         label_quantiles: Optional[Dict[int, List[float]]] = None,
     ):
         """Declares instance variables with default values."""
+        raise_deprecation_warning(
+            "UnexpecTEDIntentPolicy is deprecated and "
+            "will be removed in a future version."
+        )
         # Set all invalid / non configurable parameters
         config[ENTITY_RECOGNITION] = False
         config[BILOU_FLAG] = False
@@ -624,6 +629,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         query_intent = (
             last_user_uttered_event.intent_name
             if last_user_uttered_event is not None
+            and isinstance(last_user_uttered_event, UserUttered)
             else ""
         )
         is_unlikely_intent = self._check_unlikely_intent(

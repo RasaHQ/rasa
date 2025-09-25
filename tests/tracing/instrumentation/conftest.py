@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 from asyncio import AbstractEventLoop
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -23,6 +24,11 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
+from rasa.agents.core.agent_protocol import AgentProtocol
+from rasa.agents.core.types import AgentStatus
+from rasa.agents.protocol.mcp.mcp_open_agent import MCPOpenAgent
+from rasa.agents.schemas import AgentInput, AgentOutput
+from rasa.agents.schemas.agent_tool_result import AgentToolResult
 from rasa.core.actions.action import (
     Action,
     CustomActionExecutor,
@@ -80,6 +86,11 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.data import TrainingType
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.yaml import read_yaml_file
+from rasa.tracing.instrumentation.instrumentation import (
+    FLOW_EXECUTOR_MODULE_NAME,
+    _instrumented_module_boolean_attribute_name,
+    _mangled_instrumented_boolean_attribute_name,
+)
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
@@ -98,10 +109,94 @@ def span_exporter(tracer_provider: TracerProvider) -> InMemorySpanExporter:
     return exporter
 
 
+@pytest.fixture(autouse=True)
+def clear_span_exporter(span_exporter: InMemorySpanExporter) -> None:
+    """Clear the span exporter before each test to ensure test isolation."""
+    span_exporter.clear()
+
+
 @pytest.fixture(scope="function")
 def previous_num_captured_spans(span_exporter: InMemorySpanExporter) -> int:
     captured_spans = span_exporter.get_finished_spans()  # type: ignore
     return len(captured_spans)
+
+
+@pytest.fixture(autouse=True)
+def reset_instrumentation_state():
+    """Reset instrumentation state between tests to ensure test isolation.
+
+    This fixture properly addresses the instrumentation reset challenge by:
+    1. Clearing instrumentation flags to allow re-instrumentation
+    2. Restoring original functions from __wrapped__ attributes (when available)
+    3. Using defensive programming to handle edge cases
+
+    This approach leverages both the instrumentation system's idempotency mechanisms
+    and the fact that functools.wraps creates __wrapped__ attributes for restoration.
+    """
+
+    def _restore_function_if_wrapped(module, func_name):
+        """Safely restore a function from its __wrapped__ attribute if it exists."""
+        if hasattr(module, func_name):
+            func = getattr(module, func_name)
+            if hasattr(func, "__wrapped__"):
+                # Function is wrapped, restore the original
+                original_func = func.__wrapped__
+                setattr(module, func_name, original_func)
+                return True
+        return False
+
+    # Reset module instrumentation flags and restore original functions
+    modules_to_reset = [
+        FLOW_EXECUTOR_MODULE_NAME,
+        "rasa.core.policies.flows.mcp_tool_executor",
+        "rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator",
+        "rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator",
+        "rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator",
+        "rasa.dialogue_understanding.generator.single_step.search_ready_llm_command_generator",
+        "rasa.dialogue_understanding.generator.llm_command_generator",
+    ]
+
+    for module_name in modules_to_reset:
+        try:
+            module = importlib.import_module(module_name)
+
+            # Clear instrumentation flag
+            flag_name = _instrumented_module_boolean_attribute_name(module_name)
+            if hasattr(module, flag_name):
+                delattr(module, flag_name)
+
+            # Restore original functions for flow executor module
+            if module_name == FLOW_EXECUTOR_MODULE_NAME:
+                functions_to_restore = [
+                    "advance_flows",
+                    "advance_flows_until_next_action",
+                    "run_step",
+                    "_call_agent_with_retry",
+                ]
+                for func_name in functions_to_restore:
+                    _restore_function_if_wrapped(module, func_name)
+
+            # Restore original functions for MCP tool executor module
+            elif module_name == "rasa.core.policies.flows.mcp_tool_executor":
+                _restore_function_if_wrapped(module, "_execute_mcp_tool_call")
+
+        except ImportError:
+            # Module doesn't exist, skip silently
+            pass
+
+    # Reset class instrumentation flags for any instrumented classes
+    try:
+        flow_executor_module = importlib.import_module(FLOW_EXECUTOR_MODULE_NAME)
+
+        # Reset any class-level instrumentation flags
+        for attr_name in dir(flow_executor_module):
+            attr_value = getattr(flow_executor_module, attr_name)
+            if isinstance(attr_value, type):  # It's a class
+                flag_name = _mangled_instrumented_boolean_attribute_name(attr_value)
+                if hasattr(attr_value, flag_name):
+                    delattr(attr_value, flag_name)
+    except ImportError:
+        pass
 
 
 @pytest.fixture()
@@ -175,6 +270,72 @@ class MockAgent(Agent):
             )
 
         return None
+
+    @property
+    def model_id(self) -> Optional[Text]:
+        return "model_id"
+
+
+class MockAgentWithToolCall(MockAgent):
+    """Mock agent that has _execute_tool_call method for testing."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._name = "test_agent"
+
+    @property
+    def protocol_type(self):
+        from rasa.agents.core.types import ProtocolType
+
+        return ProtocolType.MCP_OPEN
+
+    async def _execute_tool_call(
+        self, tool_name: str, arguments: dict
+    ) -> AgentToolResult:
+        """Mock tool call execution."""
+        return AgentToolResult(
+            tool_name=tool_name,
+            result=f"Result for {tool_name}",
+            is_error=False,
+        )
+
+
+class MockSubAgent(AgentProtocol):
+    """Mock for AgentProtocol classes (subagents)."""
+
+    def __init__(self) -> None:
+        self.processor = Mock(spec=MessageProcessor)
+        self.processor.model_filename = "model_filename"
+
+    @classmethod
+    def from_config(cls, config) -> "MockSubAgent":
+        return cls()
+
+    @property
+    def protocol_type(self):
+        from rasa.agents.core.types import ProtocolType
+
+        return ProtocolType.MCP_OPEN
+
+    async def connect(self) -> None:
+        pass
+
+    async def disconnect(self) -> None:
+        pass
+
+    async def process_input(self, input: AgentInput) -> AgentInput:
+        return input
+
+    async def run(self, input: AgentInput) -> AgentOutput:
+        """Send a message to Agent/server and return response."""
+        return AgentOutput(
+            id=input.id,
+            status=AgentStatus.COMPLETED,
+            response_message="Test response",
+        )
+
+    async def process_output(self, output: AgentOutput) -> AgentOutput:
+        return output
 
     @property
     def model_id(self) -> Optional[Text]:
@@ -971,3 +1132,32 @@ def mock_perform_embeddings_health_check() -> Mock:
     ) as mock_function:
         mock_function.return_value = None
         yield mock_function
+
+
+class MockMCPOpenAgent(MCPOpenAgent):
+    """Mock MCP Open Agent for testing instrumentation.
+
+    This class follows the same pattern as other mock classes in conftest.py
+    - it inherits from the real class to allow instrumentation to work
+    - it implements methods in a simple way for testing
+    """
+
+    def __init__(self) -> None:
+        from rasa.agents.protocol.mcp.mcp_base_agent import DEFAULT_LLM_CONFIG
+
+        self.llm_client = Mock()
+        self.llm_client.config = DEFAULT_LLM_CONFIG
+        self.build_messages_for_llm_request = Mock()
+        self.build_messages_for_llm_request.return_value = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Hello, help me with a task"},
+        ]
+        self._agent_output = None
+
+    def set_agent_output(self, agent_output: Optional["AgentOutput"]) -> None:
+        """Set the agent output to return from send_message."""
+        self._agent_output = agent_output
+
+    async def send_message(self, agent_input: "AgentInput") -> "AgentOutput":
+        """Mock send_message method that returns the configured agent output."""
+        return self._agent_output

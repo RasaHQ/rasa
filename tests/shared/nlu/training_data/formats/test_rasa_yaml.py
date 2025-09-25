@@ -510,7 +510,6 @@ def test_responses_text_multiline_is_preserved():
 
 def test_intent_examples_multiline_consistency(tmp_path: pathlib.Path):
     """Test that multiline examples are written back as multiline examples."""
-
     training_data_file = (
         pathlib.Path("data") / "test_multiline_intent_examples_yaml" / "nlu.yml"
     )

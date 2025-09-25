@@ -2,6 +2,7 @@ from typing import Any, Dict, Literal, Optional, Text
 
 import structlog
 
+from rasa.core.available_agents import AvailableAgents
 from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxVersion,
 )
@@ -44,6 +45,7 @@ DEFAULT_LLM_CONFIG = {
     TIMEOUT_CONFIG_KEY: 7,
 }
 
+# Non-agent defaults
 DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
     "command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
 )
@@ -63,6 +65,29 @@ MODEL_PROMPT_MAPPER = {
     ),
     f"{ANTHROPIC_PROVIDER}/{MODEL_NAME_CLAUDE_3_5_SONNET_20240620}": (
         "command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
+    ),
+}
+
+# Agentic mapping and defaults (used only when agents exist)
+AGENT_DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
+    "agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
+)
+AGENT_FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME = (
+    "agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
+)
+AGENT_MODEL_PROMPT_MAPPER = {
+    f"{OPENAI_PROVIDER}/{MODEL_NAME_GPT_4O_2024_11_20}": (
+        "agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
+    ),
+    f"{AZURE_OPENAI_PROVIDER}/{MODEL_NAME_GPT_4O_2024_11_20}": (
+        "agent_command_prompt_v3_gpt_4o_2024_11_20_template.jinja2"
+    ),
+    f"{AWS_BEDROCK_PROVIDER}/anthropic."
+    f"{MODEL_NAME_CLAUDE_3_5_SONNET_20240620}-v1:0": (
+        "agent_command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
+    ),
+    f"{ANTHROPIC_PROVIDER}/{MODEL_NAME_CLAUDE_3_5_SONNET_20240620}": (
+        "agent_command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
     ),
 }
 
@@ -100,17 +125,29 @@ class SearchReadyLLMCommandGenerator(SingleStepBasedLLMCommandGenerator):
     @staticmethod
     def get_default_prompt_template_file_name() -> str:
         """Get the default prompt template file name for the command generator."""
-        return DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME
+        return (
+            AGENT_DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME
+            if AvailableAgents.has_agents()
+            else DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME
+        )
 
     @staticmethod
     def get_fallback_prompt_template_file_name() -> str:
         """Get the fallback prompt template file name for the command generator."""
-        return FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME
+        return (
+            AGENT_FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME
+            if AvailableAgents.has_agents()
+            else FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME
+        )
 
     @staticmethod
     def get_model_prompt_mapper() -> Dict[str, str]:
         """Get the model prompt mapper for the command generator."""
-        return MODEL_PROMPT_MAPPER
+        return (
+            AGENT_MODEL_PROMPT_MAPPER
+            if AvailableAgents.has_agents()
+            else MODEL_PROMPT_MAPPER
+        )
 
     @staticmethod
     def get_component_command_syntax_version() -> CommandSyntaxVersion:

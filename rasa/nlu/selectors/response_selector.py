@@ -45,6 +45,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data import util
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.io import raise_deprecation_warning
 from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.constants import (
     AUTO,
@@ -295,6 +296,9 @@ class ResponseSelector(DIETClassifier):
                 otherwise initializes it with random weights.
             sparse_feature_sizes: Sizes of the sparse features the model was trained on.
         """
+        raise_deprecation_warning(
+            "ResponseSelector is deprecated and will be removed in a future version."
+        )
         component_config = config
 
         # the following properties cannot be adapted for the ResponseSelector
@@ -963,8 +967,12 @@ class DIET2DIET(DIET):
 
         predictions = {
             DIAGNOSTIC_DATA: {
-                "attention_weights": attention_weights,
-                "text_transformed": text_transformed,
+                "attention_weights": attention_weights.numpy()
+                if hasattr(attention_weights, "numpy")
+                else attention_weights,
+                "text_transformed": text_transformed.numpy()
+                if hasattr(text_transformed, "numpy")
+                else text_transformed,
             }
         }
 

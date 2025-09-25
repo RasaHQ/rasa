@@ -160,6 +160,43 @@ FLOW_CANCELLED = {
         "step_id": {"type": "string"},
     }
 }
+AGENT_STARTED = {
+    "properties": {
+        "event": {"const": "agent_started"},
+        "agent_id": {"type": "string"},
+        "flow_id": {"type": "string"},
+    }
+}
+AGENT_COMPLETED = {
+    "properties": {
+        "event": {"const": "agent_completed"},
+        "agent_id": {"type": "string"},
+        "flow_id": {"type": "string"},
+        "status": {"type": "string"},
+    }
+}
+AGENT_INTERRUPTED = {
+    "properties": {
+        "event": {"const": "agent_interrupted"},
+        "agent_id": {"type": "string"},
+        "flow_id": {"type": "string"},
+    }
+}
+AGENT_RESUMED = {
+    "properties": {
+        "event": {"const": "agent_resumed"},
+        "agent_id": {"type": "string"},
+        "flow_id": {"type": "string"},
+    }
+}
+AGENT_CANCELLED = {
+    "properties": {
+        "event": {"const": "agent_cancelled"},
+        "agent_id": {"type": "string"},
+        "flow_id": {"type": "string"},
+        "reason": {"type": "string"},
+    }
+}
 DIALOGUE_STACK_UPDATED = {
     "properties": {"event": {"const": "stack"}, "update": {"type": "string"}}
 }
@@ -204,6 +241,11 @@ EVENT_SCHEMA = {
         FLOW_RESUMED,
         FLOW_COMPLETED,
         FLOW_CANCELLED,
+        AGENT_STARTED,
+        AGENT_COMPLETED,
+        AGENT_INTERRUPTED,
+        AGENT_RESUMED,
+        AGENT_CANCELLED,
         DIALOGUE_STACK_UPDATED,
         ROUTING_SESSION_ENDED,
         SESSION_ENDED,

@@ -6,6 +6,7 @@ import warnings
 from typing import Any, Dict, List, Optional, Text, Tuple, Type
 
 import numpy as np
+import skops.io as sio
 
 import rasa.shared.utils.io
 from rasa.engine.graph import ExecutionContext, GraphComponent
@@ -266,8 +267,6 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
 
     def persist(self) -> None:
         """Persist this model into the passed directory."""
-        import skops.io as sio
-
         with self._model_storage.write_to(self._resource) as model_dir:
             file_name = self.__class__.__name__
             classifier_file_name = model_dir / f"{file_name}_classifier.skops"
@@ -291,7 +290,6 @@ class SklearnIntentClassifier(GraphComponent, IntentClassifier):
         **kwargs: Any,
     ) -> SklearnIntentClassifier:
         """Loads trained component (see parent class for full docstring)."""
-        import skops.io as sio
         from sklearn.preprocessing import LabelEncoder
 
         try:

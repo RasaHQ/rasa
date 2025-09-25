@@ -15,6 +15,7 @@ from rasa.cli.arguments.default_arguments import (
     add_endpoint_param,
     add_model_param,
     add_remote_storage_param,
+    add_sub_agents_param,
 )
 from rasa.cli.e2e_test import (
     RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME,
@@ -137,6 +138,8 @@ def add_data_preparation_arguments(parser: argparse.ArgumentParser) -> None:
         help="Input file or folder containing end-to-end test cases.",
         default=DEFAULT_INPUT_E2E_TEST_PATH,
     )
+
+    add_sub_agents_param(parser)
 
     add_remote_storage_param(parser)
 
@@ -377,6 +380,7 @@ def write_params(
             "rephrase_config": rephrase_config,
             "model": args.model,
             "endpoints": args.endpoints,
+            "sub-agents": args.sub_agents,
             "remote-storage": args.remote_storage,
             "train_frac": args.train_frac,
             "output_format": args.output_format,
@@ -420,6 +424,7 @@ def set_up_e2e_test_runner(args: argparse.Namespace) -> E2ETestRunner:
             model_path=args.model,
             model_server=endpoints.model,
             endpoints=endpoints,
+            sub_agents_path=args.sub_agents,
         )
     except AgentNotReady as error:
         structlogger.error(

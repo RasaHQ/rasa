@@ -1,6 +1,5 @@
 import copy
 import inspect
-import logging
 import os
 import re
 import tarfile
@@ -69,6 +68,7 @@ from rasa.shared.constants import (
     UTTER_PREFIX,
 )
 from rasa.shared.core.constants import (
+    ACTION_AGENT_REQUEST_USER_INPUT_NAME,
     ACTION_CORRECT_FLOW_SLOT,
     ACTION_EXTRACT_SLOTS,
     ACTION_LISTEN_NAME,
@@ -116,7 +116,6 @@ if TYPE_CHECKING:
     from rasa.core.config.available_endpoints import AvailableEndpoints
     from rasa.privacy.privacy_manager import BackgroundPrivacyManager
 
-logger = logging.getLogger(__name__)
 structlogger = structlog.get_logger()
 
 MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
@@ -190,7 +189,11 @@ class MessageProcessor:
         except TypeError:
             raise ModelNotFound(f"Model {model_path} can not be loaded.")
 
-        logger.info(f"Loading model {model_tar}...")
+        structlogger.info(
+            "rasa.core.processor.load_model",
+            event_info="Loading model.",
+            model_path=model_tar,
+        )
         with TempDirectoryPath(get_temp_dir_name()) as temporary_directory:
             try:
                 metadata, runner = loader.load_predict_graph_runner(
@@ -365,8 +368,10 @@ class MessageProcessor:
                 `ActionSessionStart`.
         """
         if not tracker.applied_events() or self._has_session_expired(tracker):
-            logger.debug(
-                f"Starting a new session for conversation ID '{tracker.sender_id}'."
+            structlogger.debug(
+                "rasa.core.processor._update_tracker_session",
+                event_info="Starting a new session.",
+                sender_id=tracker.sender_id,
             )
 
             action_session_start = self._get_action(ACTION_SESSION_START_NAME)
@@ -598,9 +603,11 @@ class MessageProcessor:
             prediction.max_confidence_index, self.domain, self.action_endpoint
         )
 
-        logger.debug(
-            f"Predicted next action '{action.name()}' with confidence "
-            f"{prediction.max_confidence:.2f}."
+        structlogger.debug(
+            "rasa.core.processor.predict_next_with_tracker_if_should",
+            event_info="Predicted next action.",
+            action=action.name(),
+            confidence=prediction.max_confidence,
         )
 
         return action, prediction
@@ -650,8 +657,10 @@ class MessageProcessor:
                 and self._has_message_after_reminder(tracker, reminder_event)
                 or not self._is_reminder_still_valid(tracker, reminder_event)
             ):
-                logger.debug(
-                    f"Canceled reminder because it is outdated ({reminder_event})."
+                structlogger.debug(
+                    "rasa.core.processor.handle_reminder",
+                    event_info="Canceled reminder because it is outdated.",
+                    reminder_event=reminder_event,
                 )
             else:
                 intent = reminder_event.intent
@@ -731,7 +740,7 @@ class MessageProcessor:
         if not self.domain or self.domain.is_empty():
             return
 
-        intent = parse_data["intent"][INTENT_NAME_KEY]
+        intent = parse_data[INTENT][INTENT_NAME_KEY]
         if intent and intent not in self.domain.intents:
             rasa.shared.utils.io.raise_warning(
                 f"Parsed an intent '{intent}' "
@@ -740,7 +749,7 @@ class MessageProcessor:
                 docs=DOCS_URL_DOMAINS,
             )
 
-        entities = parse_data["entities"] or []
+        entities = parse_data[ENTITIES] or []
         for element in entities:
             entity = element["entity"]
             if entity and entity not in self.domain.entities:
@@ -824,9 +833,9 @@ class MessageProcessor:
         self._update_full_retrieval_intent(parse_data)
         structlogger.debug(
             "processor.message.parse",
-            parse_data_text=copy.deepcopy(parse_data["text"]),
-            parse_data_intent=parse_data["intent"],
-            parse_data_entities=copy.deepcopy(parse_data["entities"]),
+            parse_data_text=copy.deepcopy(parse_data[TEXT]),
+            parse_data_intent=parse_data[INTENT],
+            parse_data_entities=copy.deepcopy(parse_data[ENTITIES]),
         )
 
         self._check_for_unseen_features(parse_data)
@@ -975,7 +984,7 @@ class MessageProcessor:
                     f"invalid intent: {parse_data[INTENT]['name']}. "
                     f"Returning CannotHandleCommand() as a fallback."
                 ),
-                invalid_intent=parse_data[INTENT]["name"],
+                invalid_intent=parse_data[INTENT][INTENT_NAME_KEY],
             )
             commands.append(
                 CannotHandleCommand(RASA_PATTERN_CANNOT_HANDLE_INVALID_INTENT)
@@ -985,7 +994,7 @@ class MessageProcessor:
 
     def _contains_undefined_intent(self, message: Message) -> bool:
         """Checks if the message contains an undefined intent."""
-        intent_name = message.get(INTENT, {}).get("name")
+        intent_name = message.get(INTENT, {}).get(INTENT_NAME_KEY)
         return intent_name is not None and intent_name not in self.domain.intents
 
     async def _parse_message_with_graph(
@@ -1035,8 +1044,8 @@ class MessageProcessor:
         tracker.update(
             UserUttered(
                 message.text,
-                parse_data["intent"],
-                parse_data["entities"],
+                parse_data[INTENT],
+                parse_data[ENTITIES],
                 parse_data,
                 input_channel=message.input_channel,
                 message_id=message.message_id,
@@ -1045,13 +1054,16 @@ class MessageProcessor:
             self.domain,
         )
 
-        if parse_data["entities"]:
+        if parse_data[ENTITIES]:
             self._log_slots(tracker)
 
         plugin_manager().hook.after_new_user_message(tracker=tracker)
 
-        logger.debug(
-            f"Logged UserUtterance - tracker now has {len(tracker.events)} events."
+        structlogger.debug(
+            "rasa.core.processor.handle_message_with_tracker",
+            event_info="Logged UserUtterance.",
+            user_message=message.text,
+            number_of_events=len(tracker.events),
         )
 
     @staticmethod
@@ -1166,9 +1178,11 @@ class MessageProcessor:
                     tracker
                 )
             except ActionLimitReached:
-                logger.warning(
-                    "Circuit breaker tripped. Stopped predicting "
-                    f"more actions for sender '{tracker.sender_id}'."
+                structlogger.warning(
+                    "rasa.core.processor.run_prediction_loop",
+                    event_info="Circuit breaker tripped. Stopped predicting more "
+                    "actions.",
+                    sender_id=tracker.sender_id,
                 )
                 if self.on_circuit_break:
                     # call a registered callback
@@ -1176,9 +1190,11 @@ class MessageProcessor:
                 break
 
             if prediction.is_end_to_end_prediction:
-                logger.debug(
-                    f"An end-to-end prediction was made which has triggered the 2nd "
-                    f"execution of the default action '{ACTION_EXTRACT_SLOTS}'."
+                structlogger.debug(
+                    "rasa.core.processor.run_prediction_loop",
+                    event_info="An end-to-end prediction was made which has "
+                    "triggered the 2nd execution of the default action.",
+                    action=ACTION_EXTRACT_SLOTS,
                 )
                 tracker = await self.run_action_extract_slots(output_channel, tracker)
 
@@ -1197,7 +1213,11 @@ class MessageProcessor:
             `False` if `action_name` is `ACTION_LISTEN_NAME` or
             `ACTION_SESSION_START_NAME`, otherwise `True`.
         """
-        return action_name not in (ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME)
+        return action_name not in (
+            ACTION_LISTEN_NAME,
+            ACTION_SESSION_START_NAME,
+            ACTION_AGENT_REQUEST_USER_INPUT_NAME,
+        )
 
     async def execute_side_effects(
         self,
@@ -1390,10 +1410,11 @@ class MessageProcessor:
             )
 
         if any(isinstance(e, UserUttered) for e in events):
-            logger.debug(
-                f"A `UserUttered` event was returned by executing "
+            structlogger.debug(
+                "rasa.core.processor.run_action",
+                message="A `UserUttered` event was returned by executing "
                 f"action '{action.name()}'. This will run the default action "
-                f"'{ACTION_EXTRACT_SLOTS}'."
+                f"'{ACTION_EXTRACT_SLOTS}'.",
             )
             tracker = await self.run_action_extract_slots(output_channel, tracker)
 
@@ -1499,11 +1520,9 @@ class MessageProcessor:
             # tracker has never expired if sessions are disabled
             return False
 
-        user_uttered_event: Optional[UserUttered] = tracker.get_last_event_for(
-            UserUttered
-        )
+        user_uttered_event = tracker.get_last_event_for(UserUttered)
 
-        if not user_uttered_event:
+        if not user_uttered_event or not isinstance(user_uttered_event, UserUttered):
             # there is no user event so far so the session should not be considered
             # expired
             return False
@@ -1514,9 +1533,10 @@ class MessageProcessor:
             > self.domain.session_config.session_expiration_time
         )
         if has_expired:
-            logger.debug(
-                f"The latest session for conversation ID '{tracker.sender_id}' has "
-                f"expired."
+            structlogger.debug(
+                "rasa.core.processor.has_session_expired",
+                event_info="The latest session has expired.",
+                sender_id=tracker.sender_id,
             )
 
         return has_expired
@@ -1542,10 +1562,14 @@ class MessageProcessor:
                 )
                 return prediction
 
-            logger.error(
-                f"Trying to run unknown follow-up action '{followup_action}'. "
-                "Instead of running that, Rasa Pro will ignore the action "
-                "and predict the next action."
+            structlogger.error(
+                "rasa.core.processor.predict_next_with_tracker",
+                event_info="Trying to run unknown follow-up action.",
+                message=(
+                    "Trying to run unknown follow-up action. Instead of running "
+                    "that, Rasa Pro will ignore the action and predict the next action."
+                ),
+                followup_action=followup_action,
             )
 
         target = self.model_metadata.core_target

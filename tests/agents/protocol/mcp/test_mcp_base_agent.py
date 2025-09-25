@@ -1,0 +1,878 @@
+"""Unit tests for MCPBaseAgent."""
+
+from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from pytest import MonkeyPatch
+
+from rasa.agents.core.types import AgentStatus
+from rasa.agents.protocol.mcp.mcp_base_agent import MCPBaseAgent
+from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentOutput, AgentToolResult
+from rasa.core.available_agents import (
+    AgentConfig,
+    AgentConfiguration,
+    AgentConnections,
+    AgentInfo,
+    AgentMCPServerConfig,
+    ProtocolConfig,
+)
+from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
+from rasa.shared.core.events import BotUttered, UserUttered
+from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall
+
+from .test_utils import TestMCPBaseAgentImpl
+
+
+class TestMCPBaseAgent:
+    """Test cases for MCPBaseAgent."""
+
+    @pytest.fixture
+    def mock_agent_input(self) -> AgentInput:
+        """Fixture for creating a mock AgentInput."""
+        return AgentInput(
+            id="test_id",
+            user_message="Hello, how can you help me?",
+            slots=[
+                AgentInputSlot(
+                    name="user_name", value="John", type="text", allowed_values=None
+                ),
+                AgentInputSlot(
+                    name="user_age", value=25, type="number", allowed_values=None
+                ),
+            ],
+            conversation_history="Previous conversation...",
+            events=[],
+            metadata={"key": "value", "nested": {"data": "test"}},
+            timestamp="2024-01-15T10:30:00Z",
+        )
+
+    @pytest.fixture
+    def mock_agent_config(self) -> AgentConfig:
+        """Fixture for creating a mock AgentConfig."""
+        return AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent for unit testing",
+                protocol=ProtocolConfig.RASA,
+            ),
+            configuration=AgentConfiguration(
+                llm={"provider": "openai", "model": "gpt-4"},
+                prompt_template="Test template: {{user_message}}",
+                timeout=30,
+                max_retries=3,
+            ),
+            connections=AgentConnections(
+                mcp_servers=[
+                    AgentMCPServerConfig(
+                        name="test_server",
+                        url="http://localhost:8000",
+                        include_tools=["tool1", "tool2"],
+                        exclude_tools=["tool3"],
+                    )
+                ]
+            ),
+        )
+
+    @pytest.fixture
+    def mock_mcp_base_agent(self, monkeypatch: MonkeyPatch) -> TestMCPBaseAgentImpl:
+        """Fixture for creating a mock MCPBaseAgent instance."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_mcp_base_agent")
+
+        return TestMCPBaseAgentImpl(
+            name="test_agent",
+            description="A test agent",
+            protocol_type=ProtocolConfig.RASA,
+            server_configs=[],
+        )
+
+    # ============================================================================
+    # Initialization & Setup Tests
+    # ============================================================================
+
+    def test_init_basic_initialization(self, monkeypatch: MonkeyPatch) -> None:
+        """Test basic initialization of MCPBaseAgent."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
+
+        agent = TestMCPBaseAgentImpl(
+            name="test_agent",
+            description="Test description",
+            protocol_type=ProtocolConfig.RASA,
+            server_configs=[],
+        )
+
+        assert agent._name == "test_agent"
+        assert agent._description == "Test description"
+        assert agent._protocol_type == ProtocolConfig.RASA
+        assert agent._server_configs == []
+        assert agent._mcp_tools == []
+        assert agent._custom_tools == []
+        assert agent._tool_to_server_mapper == {}
+        assert agent._server_connections == {}
+
+    def test_init_with_llm_config(self, monkeypatch: MonkeyPatch) -> None:
+        """Test initialization with custom LLM config."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
+
+        llm_config = {"provider": "openai", "model": "gpt-4", "temperature": 0.7}
+        agent = TestMCPBaseAgentImpl(
+            "test-agent", "test", ProtocolConfig.RASA, [], llm_config=llm_config
+        )
+
+        assert agent._llm_config is not None
+        assert agent.llm_client is not None
+
+    def test_from_config(
+        self, mock_agent_config: AgentConfig, monkeypatch: MonkeyPatch
+    ) -> None:
+        """Test from_config class method."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
+
+        agent = TestMCPBaseAgentImpl.from_config(mock_agent_config)
+
+        assert agent._name == "test_agent"
+        assert agent._description == "A test agent for unit testing"
+        assert agent._protocol_type == ProtocolConfig.RASA
+        assert len(agent._server_configs) == 1
+        assert agent._server_configs[0].name == "test_server"
+
+    # ============================================================================
+    # Class Configuration & Properties Tests
+    # ============================================================================
+
+    def test_agent_conforms_to(self, mock_mcp_base_agent: TestMCPBaseAgentImpl) -> None:
+        """Test agent_conforms_to property."""
+        assert mock_mcp_base_agent.agent_conforms_to == ProtocolConfig.RASA
+
+    def test_get_default_llm_config(self) -> None:
+        """Test get_default_llm_config static method."""
+        config = MCPBaseAgent.get_default_llm_config()
+
+        assert config["provider"] == "openai"
+        assert config["model"] == "gpt-4o-2024-11-20"
+        assert config["temperature"] == 0.0
+        assert config["max_completion_tokens"] == 256
+        assert config["timeout"] == 7
+
+    def test_get_agent_specific_built_in_tools(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """Test get_agent_specific_built_in_tools method."""
+        tools = mock_mcp_base_agent.get_agent_specific_built_in_tools(mock_agent_input)
+
+        assert isinstance(tools, list)
+        assert len(tools) == 0  # Default implementation returns empty list
+
+    def test_get_custom_tool_definitions(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test get_custom_tool_definitions method."""
+        tools = mock_mcp_base_agent.get_custom_tool_definitions()
+
+        assert isinstance(tools, list)
+        assert len(tools) == 0  # Default implementation returns empty list
+
+    # ============================================================================
+    # Connection Management Tests
+    # ============================================================================
+
+    @pytest.mark.asyncio
+    async def test_connect_success(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test successful connection to MCP servers."""
+        with (
+            patch.object(
+                mock_mcp_base_agent, "connect_to_servers"
+            ) as mock_connect_servers,
+            patch.object(
+                mock_mcp_base_agent, "fetch_and_store_available_tools"
+            ) as mock_fetch_tools,
+        ):
+            await mock_mcp_base_agent.connect()
+
+            mock_connect_servers.assert_called_once()
+            mock_fetch_tools.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_connect_connection_error_with_retries(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test connection with retries on ConnectionError."""
+        with patch.object(
+            mock_mcp_base_agent, "connect_to_servers"
+        ) as mock_connect_servers:
+            mock_connect_servers.side_effect = ConnectionError("Connection failed")
+
+            with pytest.raises(
+                Exception
+            ):  # Should raise AgentInitializationException after retries
+                await mock_mcp_base_agent.connect()
+
+    @pytest.mark.asyncio
+    async def test_connect_to_server_success(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test successful connection to a single server."""
+        server_config = AgentMCPServerConfig(
+            name="test_server",
+            url="http://localhost:8000",
+        )
+
+        mock_connection = MagicMock()
+        mock_connection.connect = AsyncMock()
+        mock_connection.server_url = "http://localhost:8000"
+
+        with patch(
+            "rasa.shared.utils.mcp.server_connection.MCPServerConnection.from_config"
+        ) as mock_from_config:
+            mock_from_config.return_value = mock_connection
+
+            await mock_mcp_base_agent.connect_to_server(server_config)
+
+            mock_connection.connect.assert_called_once()
+            assert "test_server" in mock_mcp_base_agent._server_connections
+
+    @pytest.mark.asyncio
+    async def test_connect_to_server_failure(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test connection failure to a single server."""
+        server_config = AgentMCPServerConfig(
+            name="test_server",
+            url="http://localhost:8000",
+        )
+
+        mock_connection = MagicMock()
+        mock_connection.connect = AsyncMock(side_effect=Exception("Connection failed"))
+
+        with patch(
+            "rasa.shared.utils.mcp.server_connection.MCPServerConnection.from_config"
+        ) as mock_from_config:
+            mock_from_config.return_value = mock_connection
+
+            with pytest.raises(Exception):
+                await mock_mcp_base_agent.connect_to_server(server_config)
+
+    @pytest.mark.asyncio
+    async def test_disconnect_server_success(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test successful disconnection from a server."""
+        mock_connection = MagicMock()
+        mock_connection.close = AsyncMock()
+        mock_mcp_base_agent._server_connections["test_server"] = mock_connection
+
+        await mock_mcp_base_agent.disconnect_server("test_server")
+
+        mock_connection.close.assert_called_once()
+        assert "test_server" not in mock_mcp_base_agent._server_connections
+
+    @pytest.mark.asyncio
+    async def test_disconnect_server_not_found(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test disconnection from a non-existent server."""
+        # Should not raise an exception
+        await mock_mcp_base_agent.disconnect_server("non_existent_server")
+
+    @pytest.mark.asyncio
+    async def test_disconnect_all_servers(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test disconnection from all servers."""
+        mock_connection1 = MagicMock()
+        mock_connection1.close = AsyncMock()
+        mock_connection2 = MagicMock()
+        mock_connection2.close = AsyncMock()
+
+        mock_mcp_base_agent._server_connections = {
+            "server1": mock_connection1,
+            "server2": mock_connection2,
+        }
+
+        await mock_mcp_base_agent.disconnect()
+
+        mock_connection1.close.assert_called_once()
+        mock_connection2.close.assert_called_once()
+        assert len(mock_mcp_base_agent._server_connections) == 0
+
+    # ============================================================================
+    # Tool Management Tests
+    # ============================================================================
+
+    @pytest.mark.asyncio
+    async def test_list_tools(self, mock_mcp_base_agent: TestMCPBaseAgentImpl) -> None:
+        """Test listing tools from MCP server."""
+        mock_connection = MagicMock()
+        mock_session = MagicMock()
+        mock_session.list_tools = AsyncMock(return_value=MagicMock())
+        mock_connection.ensure_active_session = AsyncMock(return_value=mock_session)
+
+        await mock_mcp_base_agent.list_tools(mock_connection)
+
+        mock_connection.ensure_active_session.assert_called_once()
+        mock_session.list_tools.assert_called_once()
+
+    def test_get_custom_tools(self, mock_mcp_base_agent: TestMCPBaseAgentImpl) -> None:
+        """Test getting custom tools."""
+        from rasa.agents.schemas import AgentToolSchema
+
+        # Add some custom tools using AgentToolSchema
+        tool1 = AgentToolSchema(
+            name="tool1",
+            description="Tool 1 description",
+            parameters={"type": "object", "properties": {}},
+            strict=False,
+            type="function",
+        )
+        tool2 = AgentToolSchema(
+            name="tool2",
+            description="Tool 2 description",
+            parameters={"type": "object", "properties": {}},
+            strict=False,
+            type="function",
+        )
+
+        # Create mock objects with tool_definition attribute
+        mock_tool1 = MagicMock()
+        mock_tool1.tool_definition = tool1
+        mock_tool2 = MagicMock()
+        mock_tool2.tool_definition = tool2
+
+        mock_mcp_base_agent._custom_tools = [mock_tool1, mock_tool2]
+
+        tools = mock_mcp_base_agent.get_custom_tools()
+
+        assert len(tools) == 2
+        assert tools[0].name == "tool1"
+        assert tools[1].name == "tool2"
+
+    def test_get_available_tools(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """Test getting all available tools."""
+        # Add some MCP tools
+        mock_mcp_tool = MagicMock()
+        mock_mcp_tool.name = "mcp_tool"
+        mock_mcp_base_agent._mcp_tools = [mock_mcp_tool]
+
+        # Add some custom tools
+        mock_custom_tool = MagicMock()
+        mock_custom_tool.tool_definition = {"name": "custom_tool"}
+        mock_mcp_base_agent._custom_tools = [mock_custom_tool]
+
+        with patch.object(
+            mock_mcp_base_agent, "get_agent_specific_built_in_tools"
+        ) as mock_built_in:
+            mock_built_in.return_value = []
+
+            tools = mock_mcp_base_agent.get_available_tools(mock_agent_input)
+
+            assert len(tools) == 2
+            assert tools[0].name == "mcp_tool"
+            assert tools[1]["name"] == "custom_tool"
+
+    @pytest.mark.asyncio
+    async def test_get_filtered_tools_from_server_include_tools(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test getting filtered tools with include_tools filter."""
+        mock_connection = MagicMock()
+        mock_tools_response = MagicMock()
+
+        # Create proper mock tools with all required attributes
+        mock_tool1 = MagicMock()
+        mock_tool1.name = "tool1"
+        mock_tool1.description = "Tool 1 description"
+        mock_tool1.inputSchema = {"type": "object", "properties": {}}
+
+        mock_tool2 = MagicMock()
+        mock_tool2.name = "tool2"
+        mock_tool2.description = "Tool 2 description"
+        mock_tool2.inputSchema = {"type": "object", "properties": {}}
+
+        mock_tool3 = MagicMock()
+        mock_tool3.name = "tool3"
+        mock_tool3.description = "Tool 3 description"
+        mock_tool3.inputSchema = {"type": "object", "properties": {}}
+
+        mock_tools_response.tools = [mock_tool1, mock_tool2, mock_tool3]
+
+        with patch.object(mock_mcp_base_agent, "list_tools") as mock_list_tools:
+            mock_list_tools.return_value = mock_tools_response
+
+            tools = await mock_mcp_base_agent._get_filtered_tools_from_server(
+                "test_server", mock_connection, include_tools=["tool1", "tool3"]
+            )
+
+            assert len(tools) == 2
+            assert tools[0].name == "tool1"
+            assert tools[1].name == "tool3"
+
+    @pytest.mark.asyncio
+    async def test_get_filtered_tools_from_server_exclude_tools(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test getting filtered tools with exclude_tools filter."""
+        mock_connection = MagicMock()
+        mock_tools_response = MagicMock()
+
+        # Create proper mock tools with all required attributes
+        mock_tool1 = MagicMock()
+        mock_tool1.name = "tool1"
+        mock_tool1.description = "Tool 1 description"
+        mock_tool1.inputSchema = {"type": "object", "properties": {}}
+
+        mock_tool2 = MagicMock()
+        mock_tool2.name = "tool2"
+        mock_tool2.description = "Tool 2 description"
+        mock_tool2.inputSchema = {"type": "object", "properties": {}}
+
+        mock_tool3 = MagicMock()
+        mock_tool3.name = "tool3"
+        mock_tool3.description = "Tool 3 description"
+        mock_tool3.inputSchema = {"type": "object", "properties": {}}
+
+        mock_tools_response.tools = [mock_tool1, mock_tool2, mock_tool3]
+
+        with patch.object(mock_mcp_base_agent, "list_tools") as mock_list_tools:
+            mock_list_tools.return_value = mock_tools_response
+
+            tools = await mock_mcp_base_agent._get_filtered_tools_from_server(
+                "test_server", mock_connection, exclude_tools=["tool2"]
+            )
+
+            assert len(tools) == 2
+            assert tools[0].name == "tool1"
+            assert tools[1].name == "tool3"
+
+    def test_get_include_exclude_tools_from_server_configs(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test getting include/exclude tools from server configs."""
+        server_config = AgentMCPServerConfig(
+            name="test_server",
+            url="http://localhost:8000",
+            include_tools=["tool1", "tool2"],
+            exclude_tools=["tool3"],
+        )
+        mock_mcp_base_agent._server_configs = [server_config]
+
+        include_tools, exclude_tools = (
+            mock_mcp_base_agent._get_include_exclude_tools_from_server_configs(
+                "test_server"
+            )
+        )
+
+        assert include_tools == ["tool1", "tool2"]
+        assert exclude_tools == ["tool3"]
+
+    def test_get_include_exclude_tools_from_server_configs_not_found(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test getting include/exclude tools for non-existent server."""
+        include_tools, exclude_tools = (
+            mock_mcp_base_agent._get_include_exclude_tools_from_server_configs(
+                "non_existent"
+            )
+        )
+
+        assert include_tools is None
+        assert exclude_tools is None
+
+    # ============================================================================
+    # LLM & Prompt Management Tests
+    # ============================================================================
+
+    def test_get_current_date_time_day(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test getting current date, time, and day."""
+        with patch("rasa.agents.protocol.mcp.mcp_base_agent.datetime") as mock_datetime:
+            mock_now = datetime(2024, 1, 15, 14, 30, 45)  # Monday
+            mock_datetime.now.return_value = mock_now
+
+            date, time, day = mock_mcp_base_agent._get_current_date_time_day()
+
+            assert date == "2024-01-15"
+            assert time == "14:30:45"
+            assert day == "Monday"
+
+    def test_render_prompt_template(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """Test rendering prompt template with context."""
+        with patch("rasa.agents.protocol.mcp.mcp_base_agent.datetime") as mock_datetime:
+            mock_now = datetime(2024, 1, 15, 14, 30, 45)
+            mock_datetime.now.return_value = mock_now
+
+            result = mock_mcp_base_agent.render_prompt_template(mock_agent_input)
+
+            assert "Hello, how can you help me?" in result
+            assert "Previous conversation..." in result
+            assert "2024-01-15" in result
+            assert "14:30:45" in result
+            assert "Monday" in result
+
+    def test_build_messages_for_llm_request(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """Test building messages for LLM request."""
+        # Add some events to the input
+        mock_agent_input.events = [
+            UserUttered(text="Hello"),
+            BotUttered(text="Hi there"),
+            UserUttered(text="How are you?"),
+        ]
+
+        with patch.object(mock_mcp_base_agent, "render_prompt_template") as mock_render:
+            mock_render.return_value = "System prompt"
+
+            messages = mock_mcp_base_agent.build_messages_for_llm_request(
+                mock_agent_input
+            )
+
+            assert len(messages) >= 1  # At least system message
+            assert messages[0]["role"] == "system"
+            assert messages[0]["content"] == "System prompt"
+
+    @pytest.mark.parametrize(
+        "tool_calls, expected_result_keys",
+        [
+            # With tool calls
+            (
+                [
+                    LLMToolCall(
+                        id="call_123",
+                        type="function",
+                        tool_name="test_tool",
+                        tool_args={"arg1": "value1"},
+                    )
+                ],
+                ["role", "content", "tool_calls"],
+            ),
+            # Without tool calls
+            ([], []),
+        ],
+    )
+    def test_get_assistant_message_with_tool_calls(
+        self,
+        mock_mcp_base_agent: TestMCPBaseAgentImpl,
+        tool_calls,
+        expected_result_keys,
+    ) -> None:
+        """Test getting assistant message with and without tool calls."""
+        llm_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Test response"],
+            tool_calls=tool_calls,
+        )
+
+        result = mock_mcp_base_agent._get_assistant_message_with_tool_calls(
+            llm_response
+        )
+
+        if expected_result_keys:
+            assert result["role"] == "assistant"
+            assert result["content"] == "Test response"
+            if "tool_calls" in expected_result_keys:
+                assert len(result["tool_calls"]) == 1
+                assert result["tool_calls"][0]["id"] == "call_123"
+                assert result["tool_calls"][0]["function"]["name"] == "test_tool"
+        else:
+            assert result == {}
+
+    def test_get_tool_call_message(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test getting tool call message."""
+        tool_response = AgentOutput(
+            id="call_123",
+            status=AgentStatus.COMPLETED,
+            response_message="Tool result",
+        )
+
+        result = mock_mcp_base_agent._get_tool_call_message(tool_response)
+
+        assert result["role"] == "tool"
+        assert result["tool_call_id"] == "call_123"
+        assert result["content"] == "Tool result"
+
+    def test_get_system_message_for_malformed_tool_response(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test getting system message for malformed tool response."""
+        result = mock_mcp_base_agent._get_system_message_for_malformed_tool_response()
+
+        assert result["role"] == "system"
+        assert "invalid" in result["content"].lower()
+        assert "JSON" in result["content"]
+
+    # ============================================================================
+    # Tool Execution Tests
+    # ============================================================================
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "tool_name, setup_connection, expected_success, expected_error_keyword",
+        [
+            # Success case
+            (
+                "test_tool",
+                True,
+                True,
+                None,
+            ),
+            # Tool not found
+            (
+                "non_existent_tool",
+                False,
+                False,
+                "not found",
+            ),
+            # Exception case
+            (
+                "test_tool",
+                "exception",
+                False,
+                "Failed to execute tool",
+            ),
+        ],
+    )
+    async def test_execute_mcp_tool_scenarios(
+        self,
+        mock_mcp_base_agent: TestMCPBaseAgentImpl,
+        tool_name,
+        setup_connection,
+        expected_success,
+        expected_error_keyword,
+    ) -> None:
+        """Test MCP tool execution in various scenarios."""
+        if setup_connection is True:
+            # Setup successful connection
+            mock_connection = MagicMock()
+            mock_session = MagicMock()
+            mock_session.call_tool = AsyncMock(return_value={"result": "success"})
+            mock_connection.ensure_active_session = AsyncMock(return_value=mock_session)
+            mock_connection.server_url = "http://localhost:8000"
+
+            mock_mcp_base_agent._tool_to_server_mapper["test_tool"] = "test_server"
+            mock_mcp_base_agent._server_connections["test_server"] = mock_connection
+
+            with patch(
+                "rasa.agents.schemas.AgentToolResult.from_mcp_tool_result"
+            ) as mock_from_mcp:
+                mock_from_mcp.return_value = AgentToolResult(
+                    tool_name="test_tool",
+                    result='{"result": "success"}',
+                    is_error=False,
+                )
+
+                result = await mock_mcp_base_agent._execute_mcp_tool(
+                    tool_name, {"arg": "value"}
+                )
+
+                if expected_success:
+                    mock_session.call_tool.assert_called_once_with(
+                        tool_name, {"arg": "value"}
+                    )
+                    assert result.tool_name == tool_name
+                    assert not result.is_error
+        elif setup_connection == "exception":
+            # Setup connection with exception
+            mock_connection = MagicMock()
+            mock_connection.ensure_active_session = AsyncMock(
+                side_effect=Exception("Connection failed")
+            )
+            mock_connection.server_url = "http://localhost:8000"
+
+            mock_mcp_base_agent._tool_to_server_mapper["test_tool"] = "test_server"
+            mock_mcp_base_agent._server_connections["test_server"] = mock_connection
+
+            result = await mock_mcp_base_agent._execute_mcp_tool(tool_name, {})
+
+            assert result.tool_name == tool_name
+            assert result.is_error
+            assert expected_error_keyword in result.error_message
+        else:
+            # Tool not found case
+            result = await mock_mcp_base_agent._execute_mcp_tool(tool_name, {})
+
+            assert result.tool_name == tool_name
+            assert result.is_error
+            assert expected_error_keyword in result.error_message
+
+    @pytest.mark.asyncio
+    async def test_execute_tool_call_custom_tool(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test executing custom tool call."""
+        mock_tool_executor = AsyncMock(
+            return_value=AgentToolResult(
+                tool_name="custom_tool",
+                result="custom_result",
+                is_error=False,
+            )
+        )
+
+        mock_custom_tool = MagicMock()
+        mock_custom_tool.tool_name = "custom_tool"
+        mock_custom_tool.tool_executor = mock_tool_executor
+        mock_mcp_base_agent._custom_tools = [mock_custom_tool]
+
+        result = await mock_mcp_base_agent._execute_tool_call(
+            "custom_tool", {"arg": "value"}
+        )
+
+        mock_tool_executor.assert_called_once_with({"arg": "value"})
+        assert result.tool_name == "custom_tool"
+        assert not result.is_error
+
+    @pytest.mark.asyncio
+    async def test_execute_tool_call_custom_tool_exception(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test executing custom tool call with exception."""
+        mock_tool_executor = MagicMock(side_effect=Exception("Custom tool failed"))
+
+        mock_custom_tool = MagicMock()
+        mock_custom_tool.tool_name = "custom_tool"
+        mock_custom_tool.tool_executor = mock_tool_executor
+        mock_mcp_base_agent._custom_tools = [mock_custom_tool]
+
+        result = await mock_mcp_base_agent._execute_tool_call("custom_tool", {})
+
+        assert result.tool_name == "custom_tool"
+        assert result.is_error
+        assert "Failed to execute built-in tool" in result.error_message
+
+    @pytest.mark.asyncio
+    async def test_execute_tool_call_mcp_tool(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+    ) -> None:
+        """Test executing MCP tool call."""
+        with patch.object(mock_mcp_base_agent, "_execute_mcp_tool") as mock_execute_mcp:
+            mock_execute_mcp.return_value = AgentToolResult(
+                tool_name="mcp_tool",
+                result="mcp_result",
+                is_error=False,
+            )
+
+            result = await mock_mcp_base_agent._execute_tool_call(
+                "mcp_tool", {"arg": "value"}
+            )
+
+            mock_execute_mcp.assert_called_once_with("mcp_tool", {"arg": "value"})
+            assert result.tool_name == "mcp_tool"
+
+    @pytest.mark.parametrize(
+        "is_error, error_message, expected_status",
+        [
+            (True, "Fatal error", "FATAL_ERROR"),
+            (False, "Recoverable error", "RECOVERABLE_ERROR"),
+        ],
+    )
+    def test_generate_agent_error_output(
+        self,
+        mock_mcp_base_agent: TestMCPBaseAgentImpl,
+        mock_agent_input: AgentInput,
+        is_error,
+        error_message,
+        expected_status,
+    ) -> None:
+        """Test generating agent error output for different error types."""
+        tool_output = AgentToolResult(
+            tool_name="test_tool",
+            result=None,
+            is_error=is_error,
+            error_message=error_message,
+        )
+
+        tool_call = LLMToolCall(
+            id="call_123",
+            type="function",
+            tool_name="test_tool",
+            tool_args={"arg": "value"},
+        )
+
+        result = mock_mcp_base_agent._generate_agent_error_output(
+            tool_output, mock_agent_input, tool_call
+        )
+
+        assert result.id == mock_agent_input.id
+        assert result.status.name == expected_status
+        assert result.error_message == error_message
+
+    def test_get_structured_results_for_agent_output(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """Test getting structured results for agent output."""
+        tool_results = {
+            "tool1": AgentToolResult(
+                tool_name="tool1",
+                result='{"data": "result1"}',
+                is_error=False,
+            ),
+            "tool2": AgentToolResult(
+                tool_name="tool2",
+                result='{"data": "result2"}',
+                is_error=False,
+            ),
+        }
+
+        result = mock_mcp_base_agent._get_structured_results_for_agent_output(
+            mock_agent_input, tool_results
+        )
+
+        assert len(result) == 1  # One iteration
+        assert len(result[0]) == 2  # Two tools
+        assert result[0][0]["name"] == "tool1"
+        assert result[0][0]["result"] == '{"data": "result1"}'
+        assert result[0][1]["name"] == "tool2"
+        assert result[0][1]["result"] == '{"data": "result2"}'
+
+    # ============================================================================
+    # Core Protocol Methods Tests
+    # ============================================================================
+
+    @pytest.mark.asyncio
+    async def test_run_calls_send_message(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """Test that run method calls send_message."""
+        with patch.object(mock_mcp_base_agent, "send_message") as mock_send_message:
+            mock_send_message.return_value = AgentOutput(
+                id="test_id",
+                status=AgentStatus.COMPLETED,
+            )
+
+            await mock_mcp_base_agent.run(mock_agent_input)
+
+            mock_send_message.assert_called_once_with(mock_agent_input)
+
+    # ============================================================================
+    # Message Processing Tests
+    # ============================================================================
+
+    @pytest.mark.asyncio
+    async def test_process_input_returns_same_input(
+        self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
+    ) -> None:
+        """Test that process_input returns the same input."""
+        result = await mock_mcp_base_agent.process_input(mock_agent_input)
+
+        assert result == mock_agent_input
+
+    @pytest.mark.asyncio
+    async def test_process_output_returns_same_output(self, mock_mcp_base_agent):
+        """Test that process_output returns the same output."""
+        output = AgentOutput(
+            id="test_id",
+            status=AgentStatus.COMPLETED,
+        )
+
+        result = await mock_mcp_base_agent.process_output(output)
+
+        assert result == output

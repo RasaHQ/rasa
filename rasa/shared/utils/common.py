@@ -17,6 +17,7 @@ from typing import (
     Optional,
     Sequence,
     Text,
+    Tuple,
     Type,
 )
 
@@ -102,9 +103,12 @@ def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
 
 def cached_method(f: Callable[..., Any]) -> Callable[..., Any]:
     """Caches method calls based on the call's `args` and `kwargs`.
+
     Works for `async` and `sync` methods. Don't apply this to functions.
+
     Args:
         f: The decorated method whose return value should be cached.
+
     Returns:
         The return value which the method gives for the first call with the given
         arguments.
@@ -358,6 +362,7 @@ def validate_environment(
     component_name: str,
 ) -> None:
     """Make sure all needed requirements for a component are met.
+
     Args:
          required_env_vars: List of environment variables that should be set
          required_packages: List of packages that should be installed
@@ -389,3 +394,22 @@ Sign up at: https://feedback.rasa.com
 {separator}
 """
     print_success(message)
+
+
+def conditional_import(module_name: str, class_name: str) -> Tuple[Any, bool]:
+    """Conditionally import a class, returning (class, is_available) tuple.
+
+    Args:
+        module_name: The module path to import from
+        class_name: The class name to import
+
+    Returns:
+        A tuple of (class, is_available) where class is the imported class
+        or None if import failed, and is_available is a boolean indicating
+        whether the import was successful.
+    """
+    try:
+        module = __import__(module_name, fromlist=[class_name])
+        return getattr(module, class_name), True
+    except ImportError:
+        return None, False

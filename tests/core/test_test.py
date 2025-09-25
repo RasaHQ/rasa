@@ -130,7 +130,9 @@ async def test_testing_warns_if_action_unknown(
 
 
 async def test_testing_with_utilizing_retrieval_intents(
-    response_selector_agent: Agent, response_selector_test_stories: Path, tmp_path: Path
+    response_selector_agent: Agent,
+    response_selector_test_stories: Path,
+    tmp_path: Path,
 ):
     result = await rasa.core.test.test(
         stories=response_selector_test_stories,

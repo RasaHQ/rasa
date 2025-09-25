@@ -4,6 +4,9 @@ import typing
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Text
 
+# importing mitie at module level to ensure error is raised if mitie is not installed
+import mitie
+
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource

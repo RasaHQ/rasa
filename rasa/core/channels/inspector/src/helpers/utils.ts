@@ -1,4 +1,4 @@
-import { SelectedStack, Stack, Event } from '../types'
+import {SelectedStack, Stack, Event, Agent, AGENT_EVENT_TYPES} from '../types'
 import { immutableJSONPatch } from 'immutable-json-patch'
 
 export const shouldShowTooltip = (text: string) => {
@@ -145,4 +145,69 @@ export const updatedActiveFrame = (
     }
     return previous
   }
+}
+
+export function updateAgentsStatus(agents: Agent[], events: Event[]): Agent[] {
+  if (!agents || agents.length === 0 || !events || events.length === 0) {
+    return agents || []
+  }
+
+  const agentEventTypes = new Set<Event['event']>(AGENT_EVENT_TYPES as unknown as Event['event'][] )
+
+  type AgentEventLite = Agent & {
+    agent_id: string
+    event: Event['event']
+    timestamp?: string | number | null
+  }
+  
+  const latestByAgent = new Map<string, AgentEventLite>()
+
+  for (let i = 0; i < events.length; i++) {
+    const event = events[i] as unknown as AgentEventLite
+    if (!event || !agentEventTypes.has(event.event)) continue
+
+    const agentId = event.agent_id
+    if (!agentId) continue
+
+    const previousEvent = latestByAgent.get(agentId)
+
+    const currentTimestamp = event.timestamp == null ? undefined : Number(event.timestamp)
+    const previousTimestamp = previousEvent?.timestamp == null ? undefined : Number(previousEvent.timestamp)
+
+    const isNewer =
+      previousEvent == null ||
+      (currentTimestamp != null && previousTimestamp != null && currentTimestamp > previousTimestamp) ||
+      (currentTimestamp != null && previousTimestamp == null)
+    // If both timestamps are missing, prefer later in the array (current)
+
+    if (isNewer || (currentTimestamp == null && previousTimestamp == null)) {
+      latestByAgent.set(agentId, event)
+    }
+  }
+
+  return agents.map((agent) => {
+    const latest = latestByAgent.get(agent.name)
+    if (!latest) return agent
+
+    let status = agent.status
+    switch (latest.event) {
+      case 'agent_started':
+      case 'agent_resumed':
+        status = 'running'
+        break
+      case 'agent_interrupted':
+        status = 'interrupted'
+        break
+      case 'agent_cancelled':
+        status = 'cancelled'
+        break
+      case 'agent_completed':
+        status = latest.status || 'completed'
+        break
+      default:
+        break
+    }
+
+    return { ...agent, status }
+  })
 }

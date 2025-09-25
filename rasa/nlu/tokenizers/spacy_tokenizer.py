@@ -1,6 +1,9 @@
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
+# importing spacy at module level to ensure error is raised if spacy is not installed
+import spacy
+
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
@@ -64,8 +67,6 @@ class SpacyTokenizer(Tokenizer):
 
     @staticmethod
     def _tag_of_token(token: Any) -> Text:
-        import spacy
-
         if spacy.about.__version__ > "2" and token._.has("tag"):
             return token._.get("tag")
         else:

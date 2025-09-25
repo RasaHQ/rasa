@@ -25,7 +25,8 @@ from rasa.shared.core.trackers import DialogueStateTracker
 class SlotTestCollection:
     """Tests every slot needs to fulfill.
 
-    Each slot can declare further tests on its own."""
+    Each slot can declare further tests on its own.
+    """
 
     def create_slot(
         self,
@@ -41,7 +42,8 @@ class SlotTestCollection:
 
     def invalid_value(self, request: SubRequest) -> Any:
         """Values, that should be handled gracefully but where the
-        featurization is not defined."""
+        featurization is not defined.
+        """
         raise NotImplementedError
 
     @pytest.fixture()

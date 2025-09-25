@@ -65,7 +65,7 @@ install-mitie:  ## Install mitie.
 	poetry run python -m pip install -U pip
 	poetry run python -m pip install -U git+https://github.com/tmbo/MITIE.git#egg=mitie
 
-install-full: install-mitie  ## Install rasa with all extras (transformers, tensorflow_text, spacy, jieba).
+install-full: install-mitie  ## Install rasa with all extras (transformers, tensorflow_text, spacy, jieba, agents, ...).
 	poetry install -E full
 
 install-pii:  ## Install rasa-pro with PII optional dependencies.
@@ -170,6 +170,7 @@ ifeq (,$(wildcard $(INTEGRATION_TEST_DEPLOYMENT_PATH)/.env))
 			--ignore $(CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH) \
 			--ignore $(CUSTOM_COMPONENT_INTEGRATION_TEST_PATH) \
 			--ignore $(CALM_PII_INTEGRATION_TEST_PATH) \
+			--ignore tests/integration_tests/core/brokers/test_pika.py \
 			--junitxml=report_integration.xml
 else
 	set -o allexport; \
@@ -186,6 +187,7 @@ else
 			--ignore $(ENTERPRISE_SEARCH_INTEGRATION_TEST_PATH) \
 			--ignore $(TRACKER_STORE_INTEGRATION_TEST_PATH) \
 			--ignore $(CHANNEL_CONNECTOR_INTEGRATION_TEST_PATH) \
+			--ignore tests/integration_tests/core/brokers/test_pika.py \
 			--junitxml=report_integration.xml && \
 	set +o allexport
 endif
@@ -203,23 +205,23 @@ test-cli: PYTEST_MARKER=category_cli and (not flaky) and (not acceptance) and (n
 test-cli: DD_ARGS := $(or $(DD_ARGS),)
 test-cli: test-marker  ## Run cli tests
 
-test-policies: PYTEST_MARKER=category_policies and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
+test-policies: PYTEST_MARKER=category_policies and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
 test-policies: DD_ARGS := $(or $(DD_ARGS),)
 test-policies: test-marker  ## Run policies tests
 
-test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
+test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
 test-nlu-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-featurizers: prepare-spacy prepare-mitie prepare-transformers test-marker  ## Run nlu featurizers tests
 
-test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
+test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
 test-nlu-predictors: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-predictors: prepare-spacy prepare-mitie test-marker  ## Run nlu predictors tests
 
-test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
+test-full-model-training: PYTEST_MARKER=category_full_model_training and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
 test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
 test-full-model-training: prepare-spacy prepare-mitie prepare-transformers test-marker  ## Run full model training tests
 
-test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
+test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests and (not flaky) and (not acceptance) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow) and (not category_agents)
 test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
 test-other-unit-tests: prepare-spacy prepare-mitie test-marker  ## Run other unit tests
 
@@ -238,6 +240,10 @@ test-acceptance: prepare-spacy prepare-mitie test-marker ## Run acceptance tests
 test-audio-manual: PYTEST_MARKER=category_audio_manual and (not flaky) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
 test-audio-manual: DD_ARGS := $(or $(DD_ARGS),)
 test-audio-manual: test-marker
+
+test-agents: PYTEST_MARKER=category_agents
+test-agents: DD_ARGS := $(or $(DD_ARGS),)
+test-agents: test-marker
 
 test-voice-integration: ## Run voice integration tests
 	poetry run \
@@ -318,8 +324,6 @@ stop-tracing-integration-containers: ## Stop the tracing integration test contai
 		down
 
 test-tracing-integration:  ## Run the tracing integration tests. Make sure to run run-tracing-integration-containers before running this target.
-	PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python \
-	PYTHONPATH=./vendor/jaeger-python-proto \
 	poetry run \
 		pytest $(TRACING_INTEGRATION_TEST_FOLDER) \
 			-n $(JOBS) \

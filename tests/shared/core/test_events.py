@@ -34,6 +34,11 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     ActionReverted,
     ActiveLoop,
+    AgentCancelled,
+    AgentCompleted,
+    AgentInterrupted,
+    AgentResumed,
+    AgentStarted,
     AgentUttered,
     AllSlotsReset,
     BotUttered,
@@ -125,6 +130,26 @@ from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_
             DialogueStackUpdated("someupdate"),
             DialogueStackUpdated("anotherupdate"),
         ),
+        (
+            AgentStarted("my_agent", "my_flow"),
+            AgentStarted("my_other_agent", "my_other_flow"),
+        ),
+        (
+            AgentInterrupted("my_agent", "my_flow"),
+            AgentInterrupted("my_other_agent", "my_other_flow"),
+        ),
+        (
+            AgentResumed("my_agent", "my_flow"),
+            AgentResumed("my_other_agent", "my_other_flow"),
+        ),
+        (
+            AgentCancelled("my_agent", "my_flow"),
+            AgentCancelled("my_other_agent", "my_other_flow"),
+        ),
+        (
+            AgentCompleted("my_agent", "my_flow"),
+            AgentCompleted("my_other_agent", "my_other_flow"),
+        ),
     ],
 )
 def test_event_has_proper_implementation(one_event, another_event):
@@ -176,6 +201,11 @@ def test_event_has_proper_implementation(one_event, another_event):
         FlowCompleted("my_flow", "my_step"),
         FlowCancelled("my_flow", "my_step"),
         DialogueStackUpdated("someupdate"),
+        AgentStarted("my_agent", "my_flow"),
+        AgentInterrupted("my_agent", "my_flow"),
+        AgentResumed("my_agent", "my_flow"),
+        AgentCancelled("my_agent", "my_flow"),
+        AgentCompleted("my_agent", "my_flow"),
     ],
 )
 def test_dict_serialisation(one_event):
@@ -338,6 +368,36 @@ def test_json_parse_flow_started() -> None:
 
 
 @pytest.mark.parametrize(
+    "event_type, event_class",
+    [
+        ("agent_started", AgentStarted),
+        ("agent_completed", AgentCompleted),
+        ("agent_interrupted", AgentInterrupted),
+        ("agent_cancelled", AgentCancelled),
+        ("agent_resumed", AgentResumed),
+    ],
+)
+def test_json_parse_agent_events(event_type: str, event_class: Any) -> None:
+    """Test JSON parsing of agent events."""
+    event_data = {
+        "event": event_type,
+        "agent_id": "test_agent",
+        "flow_id": "test_flow",
+        "timestamp": 1234567890.0,
+        "metadata": {"test_key": "test_value"},
+    }
+
+    events = rasa.shared.core.events.deserialise_events([event_data])
+    event = events[0]
+
+    assert isinstance(event, event_class)
+    assert event.agent_id == "test_agent"
+    assert event.flow_id == "test_flow"
+    assert event.timestamp == 1234567890.0
+    assert event.metadata == {"test_key": "test_value"}
+
+
+@pytest.mark.parametrize(
     "event_class",
     [
         UserUttered,
@@ -401,11 +461,20 @@ def test_event_metadata_dict(event_class: Type[Event]):
     # is not None if it is not an end-to-end predicted action
     if event_class.type_name in ["action", "wrong_action", "warning_predicted"]:
         parameters["name"] = "test"
+    if event_class.type_name in [
+        "agent_started",
+        "agent_completed",
+        "agent_interrupted",
+        "agent_cancelled",
+        "agent_resumed",
+    ]:
+        parameters["agent_id"] = "test_agent"
+        parameters["flow_id"] = "test_flow"
 
     # Create the event from a `dict` that will be accepted by the
     # `_from_parameters` method of any `Event` subclass (the values themselves
     # are not important).
-    event = Event.from_parameters(parameters)
+    event = Event.from_parameters(parameters=parameters)
     assert event.as_dict()["metadata"] == metadata
 
 
@@ -420,6 +489,16 @@ def test_event_default_metadata(event_class: Type[Event]):
     # is not None if it is not an end-to-end predicted action
     if event_class.type_name in ["action", "wrong_action", "warning_predicted"]:
         parameters["name"] = "test"
+
+    if event_class.type_name in [
+        "agent_started",
+        "agent_completed",
+        "agent_interrupted",
+        "agent_cancelled",
+        "agent_resumed",
+    ]:
+        parameters["agent_id"] = "test_agent"
+        parameters["flow_id"] = "test_flow"
 
     # Create an event without metadata. When converting the `Event` to a
     # `dict`, it should not include a `metadata` property - unless it's a
@@ -869,6 +948,11 @@ tested_events = [
     RoutingSessionEnded(),
     SessionEnded(metadata={"reason": "call disconnected"}),
     ErrorHandled(error_code=10),
+    AgentStarted("test_agent", "test_flow"),
+    AgentCompleted("test_agent", "test_flow"),
+    AgentInterrupted("test_agent", "test_flow"),
+    AgentCancelled("test_agent", "test_flow"),
+    AgentResumed("test_agent", "test_flow"),
 ]
 
 
@@ -1008,11 +1092,266 @@ def test_supported_events_anonymized_at_setter(event: Event) -> None:
     ],
 )
 def test_supported_events_anonymized_at_setter_invalid_value(event: Event) -> None:
-    """Test that anonymized_at is set correctly for supported events.
-
-    The supported events are user, bot and slot events.
-    """
-    assert event.anonymized_at is None
-
+    """Test that setting invalid anonymized_at values raises an error."""
     with pytest.raises(ValueError, match=INVALID_DATETIME_ERROR_MESSAGE):
-        event.anonymized_at = time.time()
+        event.anonymized_at = "invalid_value"
+
+
+# Agent Events Tests
+@pytest.mark.parametrize(
+    "agent_event_class,agent_id,flow_id",
+    [
+        (AgentStarted, "test_agent", "test_flow"),
+        (AgentCompleted, "test_agent", "test_flow"),
+        (AgentInterrupted, "test_agent", "test_flow"),
+        (AgentCancelled, "test_agent", "test_flow"),
+        (AgentResumed, "test_agent", "test_flow"),
+    ],
+)
+def test_agent_events_creation(agent_event_class, agent_id: str, flow_id: str) -> None:
+    """Test that agent events can be created with required parameters."""
+    event = agent_event_class(agent_id, flow_id)
+
+    assert event.agent_id == agent_id
+    assert event.flow_id == flow_id
+    assert event.timestamp is not None
+    assert event.metadata is not None
+
+
+@pytest.mark.parametrize(
+    "agent_event_class,agent_id,flow_id",
+    [
+        (AgentStarted, "test_agent", "test_flow"),
+        (AgentCompleted, "test_agent", "test_flow"),
+        (AgentInterrupted, "test_agent", "test_flow"),
+        (AgentCancelled, "test_agent", "test_flow"),
+        (AgentResumed, "test_agent", "test_flow"),
+    ],
+)
+def test_agent_events_with_timestamp_and_metadata(
+    agent_event_class, agent_id: str, flow_id: str
+) -> None:
+    """Test that agent events can be created with timestamp and metadata."""
+    timestamp = 1234567890.0
+    metadata = {"test_key": "test_value"}
+
+    event = agent_event_class(agent_id, flow_id, timestamp=timestamp, metadata=metadata)
+
+    assert event.agent_id == agent_id
+    assert event.flow_id == flow_id
+    assert event.timestamp == timestamp
+    assert event.metadata == metadata
+
+
+@pytest.mark.parametrize(
+    "agent_event_class",
+    [AgentStarted, AgentCompleted, AgentInterrupted, AgentCancelled, AgentResumed],
+)
+def test_agent_events_equality(agent_event_class) -> None:
+    """Test that agent events are equal when they have the same agent_id and flow_id."""
+    event1 = agent_event_class("agent1", "flow1")
+    event2 = agent_event_class("agent1", "flow1")
+    event3 = agent_event_class("agent2", "flow1")
+    event4 = agent_event_class("agent1", "flow2")
+
+    assert event1 == event2
+    assert event1 != event3
+    assert event1 != event4
+    assert event1 != "not_an_event"
+
+
+@pytest.mark.parametrize(
+    "agent_event_class",
+    [AgentStarted, AgentCompleted, AgentInterrupted, AgentCancelled, AgentResumed],
+)
+def test_agent_events_hash(agent_event_class) -> None:
+    """Test that agent events have consistent hash values."""
+    event1 = agent_event_class("agent1", "flow1")
+    event2 = agent_event_class("agent1", "flow1")
+    event3 = agent_event_class("agent2", "flow1")
+
+    assert hash(event1) == hash(event2)
+    assert hash(event1) != hash(event3)
+
+
+@pytest.mark.parametrize(
+    "agent_event_class,expected_type_name",
+    [
+        (AgentStarted, "agent_started"),
+        (AgentCompleted, "agent_completed"),
+        (AgentInterrupted, "agent_interrupted"),
+        (AgentCancelled, "agent_cancelled"),
+        (AgentResumed, "agent_resumed"),
+    ],
+)
+def test_agent_events_type_name(agent_event_class, expected_type_name: str) -> None:
+    """Test that agent events have the correct type_name."""
+    event = agent_event_class("test_agent", "test_flow")
+    assert event.type_name == expected_type_name
+
+
+@pytest.mark.parametrize(
+    "agent_event_class,expected_str_prefix",
+    [
+        (AgentStarted, "AgentStarted"),
+        (AgentCompleted, "AgentCompleted"),
+        (AgentInterrupted, "AgentInterrupted"),
+        (AgentCancelled, "AgentCancelled"),
+        (AgentResumed, "AgentResumed"),
+    ],
+)
+def test_agent_events_string_representation(
+    agent_event_class, expected_str_prefix: str
+) -> None:
+    """Test that agent events have correct string representation."""
+    event = agent_event_class("test_agent", "test_flow")
+    str_repr = str(event)
+
+    assert str_repr.startswith(expected_str_prefix)
+    assert "test_agent" in str_repr
+    assert "test_flow" in str_repr
+
+
+@pytest.mark.parametrize(
+    "agent_event_class,expected_repr_prefix",
+    [
+        (AgentStarted, "AgentStarted(agent: test_agent, flow: test_flow)"),
+        (
+            AgentCompleted,
+            "AgentCompleted(agent: test_agent, flow: test_flow, status: None)",
+        ),
+        (AgentInterrupted, "AgentInterrupted(agent: test_agent, flow: test_flow)"),
+        (
+            AgentCancelled,
+            "AgentCancelled(agent: test_agent, flow: test_flow, reason: None)",
+        ),
+        (AgentResumed, "AgentResumed(agent: test_agent, flow: test_flow)"),
+    ],
+)
+def test_agent_events_repr_representation(
+    agent_event_class, expected_repr_prefix: str
+) -> None:
+    """Test that agent events have correct repr representation."""
+    event = agent_event_class("test_agent", "test_flow")
+    repr_str = repr(event)
+
+    assert repr_str == expected_repr_prefix
+
+
+@pytest.mark.parametrize(
+    "agent_event_class",
+    [AgentStarted, AgentCompleted, AgentInterrupted, AgentCancelled, AgentResumed],
+)
+def test_agent_events_dict_serialization(agent_event_class) -> None:
+    """Test that agent events can be serialized to dictionary."""
+    timestamp = 1234567890.0
+    metadata = {"test_key": "test_value"}
+    event = agent_event_class(
+        "test_agent", "test_flow", timestamp=timestamp, metadata=metadata
+    )
+
+    event_dict = event.as_dict()
+
+    assert event_dict["event"] == event.type_name
+    assert event_dict["agent_id"] == "test_agent"
+    assert event_dict["flow_id"] == "test_flow"
+    assert event_dict["timestamp"] == timestamp
+    assert event_dict["metadata"] == metadata
+
+
+@pytest.mark.parametrize(
+    "agent_event_class",
+    [AgentStarted, AgentCompleted, AgentInterrupted, AgentCancelled, AgentResumed],
+)
+def test_agent_events_from_parameters(agent_event_class) -> None:
+    """Test that agent events can be created from parameters dictionary."""
+    parameters = {
+        "agent_id": "test_agent",
+        "flow_id": "test_flow",
+        "timestamp": 1234567890.0,
+        "metadata": {"test_key": "test_value"},
+    }
+
+    event = agent_event_class._from_parameters(parameters)
+
+    assert event.agent_id == "test_agent"
+    assert event.flow_id == "test_flow"
+    assert event.timestamp == 1234567890.0
+    assert event.metadata == {"test_key": "test_value"}
+
+
+@pytest.mark.parametrize(
+    "agent_event_class",
+    [AgentStarted, AgentCompleted, AgentInterrupted, AgentCancelled, AgentResumed],
+)
+def test_agent_events_apply_to_tracker(agent_event_class) -> None:
+    """Test that agent events can be applied to a tracker without errors."""
+    from rasa.shared.core.domain import Domain
+    from rasa.shared.core.trackers import DialogueStateTracker
+
+    domain = Domain.empty()
+    tracker = DialogueStateTracker("test_sender", domain.slots)
+    event = agent_event_class("test_agent", "test_flow")
+
+    # Should not raise any exceptions
+    event.apply_to(tracker)
+
+
+@pytest.mark.parametrize(
+    "agent_event_class",
+    [AgentStarted, AgentCompleted, AgentInterrupted, AgentCancelled, AgentResumed],
+)
+def test_agent_events_fingerprint(agent_event_class) -> None:
+    """Test that agent events have consistent fingerprints."""
+    event1 = agent_event_class("test_agent", "test_flow")
+    event2 = agent_event_class("test_agent", "test_flow")
+    event3 = agent_event_class("different_agent", "test_flow")
+
+    assert event1.fingerprint() == event2.fingerprint()
+    assert event1.fingerprint() != event3.fingerprint()
+
+
+@pytest.mark.parametrize(
+    "agent_event_class",
+    [AgentStarted, AgentCompleted, AgentInterrupted, AgentCancelled, AgentResumed],
+)
+def test_agent_events_skip_in_md_story(agent_event_class) -> None:
+    """Test that agent events are skipped in markdown story format."""
+    event = agent_event_class("test_agent", "test_flow")
+
+    # Agent events should return None for story string (they are skipped)
+    assert event.as_story_string() is None
+
+
+def test_agent_events_integration() -> None:
+    """Test integration of agent events in a sequence."""
+    events = [
+        AgentStarted("agent1", "flow1"),
+        AgentInterrupted("agent1", "flow1"),
+        AgentResumed("agent1", "flow1"),
+        AgentCompleted("agent1", "flow1"),
+    ]
+
+    # Test that all events can be serialized and deserialized
+    for event in events:
+        event_dict = event.as_dict()
+        assert event_dict["agent_id"] == "agent1"
+        assert event_dict["flow_id"] == "flow1"
+        assert event_dict["event"] in [
+            "agent_started",
+            "agent_interrupted",
+            "agent_resumed",
+            "agent_completed",
+        ]
+
+
+def test_agent_completed_with_status() -> None:
+    """Test that agent completed event can be created with status."""
+    event = AgentCompleted("test_agent", "test_flow", status="success")
+    assert event.status == "success"
+
+
+def test_agent_cancelled_with_reason() -> None:
+    """Test that agent cancelled event can be created with reason."""
+    event = AgentCancelled("test_agent", "test_flow", reason="user_cancelled")
+    assert event.reason == "user_cancelled"

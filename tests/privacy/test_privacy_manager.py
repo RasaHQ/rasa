@@ -797,8 +797,7 @@ async def test_privacy_manager_run_tracker_store_background_jobs_sequentially_bo
     pii_domain: Domain,
     privacy_config_data: Dict[str, Any],
 ) -> None:
-    """
-    We freeze time to ensure that the cron jobs for both anonymization and deletion
+    """We freeze time to ensure that the cron jobs for both anonymization and deletion
     are triggered at the same time, allowing us to test the sequential execution
     of both jobs in the `_run_tracker_store_background_jobs_sequentially` method.
     """

@@ -9,7 +9,7 @@ from tensorflow.types.experimental import TensorLike
 # (modified to our neeeds)
 
 
-class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
+class CrfDecodeForwardRnnCell(tf.keras.layers.Layer):
     """Computes the forward decoding in a linear-chain CRF."""
 
     def __init__(self, transition_params: TensorLike, **kwargs: Any) -> None:

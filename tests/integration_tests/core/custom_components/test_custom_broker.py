@@ -6,9 +6,7 @@ from tests.integration_tests.conftest import send_message_to_rasa_server
 
 
 def test_sql_broker_stores_events():
-    """
-    This test verifies that the SQL broker stores events in the database.
-    """
+    """This test verifies that the SQL broker stores events in the database."""
     # Send test message to Rasa
     sender_id, response = send_message_to_rasa_server(
         server_location="http://localhost:5005",

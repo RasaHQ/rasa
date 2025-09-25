@@ -50,7 +50,15 @@ from rasa.shared.constants import (
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG,
     ROUTER_CONFIG_KEY,
 )
-from rasa.shared.core.events import BotUttered, UserUttered
+from rasa.shared.core.events import (
+    AgentCancelled,
+    AgentCompleted,
+    AgentInterrupted,
+    AgentResumed,
+    AgentStarted,
+    BotUttered,
+    UserUttered,
+)
 from rasa.shared.core.slots import BooleanSlot, CategoricalSlot, Slot
 from rasa.shared.engine.caching import get_local_cache_location
 from rasa.shared.exceptions import (
@@ -113,7 +121,7 @@ DEPLOYMENT_CENTRIC_PROVIDERS = [AZURE_OPENAI_PROVIDER]
 
 # Placeholder messages used in the transcript for
 # instances where user input results in an error
-ERROR_PLACEHOLDER = {
+ERROR_PLACEHOLDER: Dict[str, str] = {
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_TOO_LONG: "[User sent really long message]",
     RASA_PATTERN_INTERNAL_ERROR_USER_INPUT_EMPTY: "",
     "default": "[User input triggered an error]",
@@ -226,6 +234,7 @@ def tracker_as_readable_transcript(
     ai_prefix: str = AI,
     max_turns: Optional[int] = 20,
     turns_wrapper: Optional[Callable[[List[str]], List[str]]] = None,
+    highlight_agent_turns: bool = False,
 ) -> str:
     """Creates a readable dialogue from a tracker.
 
@@ -235,6 +244,7 @@ def tracker_as_readable_transcript(
         ai_prefix: the prefix to use for ai utterances
         max_turns: the maximum number of turns to include in the transcript
         turns_wrapper: optional function to wrap the turns in a custom way
+        highlight_agent_turns: whether to highlight agent turns in the transcript
 
     Example:
         >>> tracker = Tracker(
@@ -252,7 +262,9 @@ def tracker_as_readable_transcript(
     Returns:
     A string representing the transcript of the tracker
     """
-    transcript = []
+    transcript: List[str] = []
+
+    current_ai_prefix = ai_prefix
 
     # using `applied_events` rather than `events` means that only events after the
     # most recent `Restart` or `SessionStarted` are included in the transcript
@@ -267,9 +279,20 @@ def tracker_as_readable_transcript(
             else:
                 message = sanitize_message_for_prompt(event.text)
             transcript.append(f"{human_prefix}: {message}")
-
         elif isinstance(event, BotUttered):
-            transcript.append(f"{ai_prefix}: {sanitize_message_for_prompt(event.text)}")
+            transcript.append(
+                f"{current_ai_prefix}: {sanitize_message_for_prompt(event.text)}"
+            )
+
+        if highlight_agent_turns:
+            if isinstance(event, AgentStarted) or isinstance(event, AgentResumed):
+                current_ai_prefix = event.agent_id
+            elif (
+                isinstance(event, AgentCompleted)
+                or isinstance(event, AgentCancelled)
+                or isinstance(event, AgentInterrupted)
+            ):
+                current_ai_prefix = ai_prefix
 
     # turns_wrapper to count multiple utterances by bot/user as single turn
     if turns_wrapper:
@@ -740,7 +763,7 @@ def get_prompt_template(
                 log_source_method=log_source_method,
             )
             return prompt_template
-    except (FileIOException, FileNotFoundException):
+    except (FileIOException, FileNotFoundException) as e:
         structlogger.warning(
             "utils.llm.get_prompt_template" ".failed_to_read_custom_prompt_template",
             event_info=(
@@ -748,6 +771,7 @@ def get_prompt_template(
             ),
             log_source_component=log_source_component,
             log_source_method=log_source_method,
+            error=str(e),
         )
     return default_prompt_template
 
@@ -1016,14 +1040,12 @@ def _get_llm_command_generator_config(
     return None
 
 
-def _get_command_generator_prompt(
+def _get_compact_llm_command_generator_prompt(
     config: Dict[Text, Any], endpoints: Dict[Text, Any]
 ) -> Text:
     """Get the command generator prompt based on the config."""
     from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
-        DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
-        FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
-        MODEL_PROMPT_MAPPER,
+        CompactLLMCommandGenerator,
     )
 
     model_config = _get_llm_command_generator_config(config)
@@ -1033,9 +1055,9 @@ def _get_command_generator_prompt(
     )
     return get_default_prompt_template_based_on_model(
         llm_config=llm_config or {},
-        model_prompt_mapping=MODEL_PROMPT_MAPPER,
-        default_prompt_path=DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
-        fallback_prompt_path=FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME,
+        model_prompt_mapping=CompactLLMCommandGenerator.get_model_prompt_mapper(),
+        default_prompt_path=CompactLLMCommandGenerator.get_default_prompt_template_file_name(),
+        fallback_prompt_path=CompactLLMCommandGenerator.get_fallback_prompt_template_file_name(),
     )
 
 
@@ -1074,7 +1096,7 @@ def get_system_default_prompts(
     )
 
     return SystemPrompts(
-        command_generator=_get_command_generator_prompt(config, endpoints),
+        command_generator=_get_compact_llm_command_generator_prompt(config, endpoints),
         enterprise_search=_get_enterprise_search_prompt(config),
         contextual_response_rephraser=DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE,
     )

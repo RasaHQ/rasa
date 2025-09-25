@@ -17,8 +17,8 @@ def nlg_app(base_url="/"):
     @app.route(base_url, methods=["POST"])
     async def generate(request):
         """Simple HTTP NLG generator, checks that the incoming request
-        is format according to the spec."""
-
+        is format according to the spec.
+        """
         nlg_request_format_spec = {
             "type": "object",
             "properties": {

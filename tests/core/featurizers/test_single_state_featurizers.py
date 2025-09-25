@@ -242,7 +242,6 @@ def test_encode_state__with_lookup__creates_features_for_intent_and_action_name(
     However, if no `action_listen` is in the given sub-state, then the user sub-state
     should not be featurized (hence, no features for intent) should be created.
     """
-
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1, ACTION_LISTEN_NAME: 2}

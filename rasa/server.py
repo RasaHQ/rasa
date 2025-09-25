@@ -44,6 +44,7 @@ import rasa.utils.endpoints
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.core.agent import Agent
+from rasa.core.available_agents import AvailableAgents
 from rasa.core.channels.channel import (
     CollectingOutputChannel,
     OutputChannel,
@@ -243,7 +244,7 @@ def requires_auth(
         @wraps(f)
         async def decorated(
             request: Request, *args: Any, **kwargs: Any
-        ) -> response.HTTPResponse:
+        ) -> Union[response.HTTPResponse, Coroutine[Any, Any, response.HTTPResponse]]:
             provided = request.args.get("token", None)
 
             # noinspection PyProtectedMember
@@ -676,7 +677,9 @@ def inject_temp_dir(f: Callable[..., Coroutine]) -> Callable:
     """
 
     @wraps(f)
-    async def decorated_function(*args: Any, **kwargs: Any) -> HTTPResponse:
+    async def decorated_function(
+        *args: Any, **kwargs: Any
+    ) -> Union[HTTPResponse, Coroutine[Any, Any, HTTPResponse]]:
         with TempDirectoryPath(get_temp_dir_name()) as directory:
             # Decorated request handles need to have a parameter `temporary_directory`
             return await f(*args, temporary_directory=Path(directory), **kwargs)
@@ -693,6 +696,7 @@ def create_app(
     jwt_private_key: Optional[Text] = None,
     jwt_method: Text = "HS256",
     endpoints: Optional[AvailableEndpoints] = None,
+    sub_agents: Optional[AvailableAgents] = None,
     is_inspector_enabled: bool = False,
 ) -> Sanic:
     """Class representing a Rasa HTTP server."""
@@ -728,6 +732,7 @@ def create_app(
             user_id="username",
         )
 
+    app.ctx.sub_agents = sub_agents
     app.ctx.agent = agent
     # Initialize shared object of type unsigned int for tracking
     # the number of active training processes
@@ -1462,6 +1467,13 @@ def create_app(
         processor = app.ctx.agent.processor
         flows = await processor.get_flows()
         return response.json(flows.as_json_list())
+
+    @app.get("/sub-agents")
+    @requires_auth(app, auth_token)
+    async def get_sub_agents(request: Request) -> HTTPResponse:
+        """Get all the sub-agents currently stored by the agent."""
+        sub_agents = app.ctx.sub_agents
+        return response.json(sub_agents.as_json_list())
 
     @app.get("/domain")
     @requires_auth(app, auth_token)

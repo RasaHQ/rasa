@@ -28,9 +28,9 @@ def test_shell_help(run: Callable[..., RunResult]):
     help_text = (
         f"""usage: {RASA_EXE} shell [-h] [-v] [-vv] [--quiet]
                   [--logging-config-file LOGGING_CONFIG_FILE]
-                  [--conversation-id CONVERSATION_ID] [-m MODEL]
-                  [--log-file LOG_FILE] [--use-syslog]
-                  [--syslog-address SYSLOG_ADDRESS]
+                  [--conversation-id CONVERSATION_ID]
+                  [--sub-agents SUB_AGENTS] [-m MODEL] [--log-file LOG_FILE]
+                  [--use-syslog] [--syslog-address SYSLOG_ADDRESS]
                   [--syslog-port SYSLOG_PORT]
                   [--syslog-protocol SYSLOG_PROTOCOL] [--endpoints ENDPOINTS]
                   """

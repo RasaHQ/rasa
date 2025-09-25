@@ -127,7 +127,7 @@ class YAMLFlowsReader:
             If a schema does not have a `schema_name` set, we will use the
             `type` instead as a fallback.
             """
-            return schema.get("schema_name", schema.get("type"))
+            return str(schema.get("schema_name", schema.get("type") or "unknown"))
 
         def schema_names(schemas: List[Dict[str, Any]]) -> List[str]:
             """Get the names of the schemas.
@@ -415,7 +415,8 @@ def process_yaml_content(yaml_content: Dict[str, Any]) -> Dict[str, Any]:
 
     # Under the "flows" key certain keys cannot have metadata
     _process_keys_recursively(
-        yaml_content["flows"], ["nlu_trigger", "set_slots", "metadata"]
+        yaml_content["flows"],
+        ["nlu_trigger", "set_slots", "metadata", "mapping", "exit_if"],
     )
 
     return yaml_content

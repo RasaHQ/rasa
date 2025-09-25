@@ -17,6 +17,7 @@ from rasa.cli.arguments.default_arguments import (
     add_endpoint_param,
     add_model_param,
     add_remote_storage_param,
+    add_sub_agents_param,
 )
 from rasa.core.config.configuration import Configuration, EndpointsConfigPath
 from rasa.core.exceptions import AgentNotReady
@@ -147,6 +148,8 @@ def add_e2e_test_arguments(parser: argparse.ArgumentParser) -> None:
         help="Directory where to save coverage report to.",
     )
 
+    add_sub_agents_param(parser)
+
 
 def execute_e2e_tests(args: argparse.Namespace) -> None:
     """Run the end-to-end tests.
@@ -191,6 +194,7 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
             model_server=endpoints.model,
             endpoints=endpoints,
             test_case_path=Path(test_case_path),
+            sub_agents_path=args.sub_agents,
         )
     except AgentNotReady as error:
         structlogger.error(

@@ -37,7 +37,7 @@ def _instrument_select_response_examples(
 
         return wrapper
 
-    policy_class.select_response_examples = tracing_select_response_examples_wrapper(  # type: ignore[assignment]
+    policy_class.select_response_examples = tracing_select_response_examples_wrapper(  # type: ignore[method-assign]
         policy_class.select_response_examples
     )
 
@@ -72,7 +72,7 @@ def _instrument_select_few_shot_conversations(
 
         return wrapper
 
-    policy_class.select_few_shot_conversations = (  # type: ignore[assignment]
+    policy_class.select_few_shot_conversations = (  # type: ignore[method-assign]
         tracing_select_few_shot_conversations_wrapper(
             policy_class.select_few_shot_conversations
         )
@@ -104,7 +104,7 @@ def _instrument_extract_ai_responses(
 
         return wrapper
 
-    policy_class.extract_ai_responses = tracing_extract_ai_responses_wrapper(  # type: ignore[assignment]
+    policy_class.extract_ai_responses = tracing_extract_ai_responses_wrapper(  # type: ignore[method-assign]
         policy_class.extract_ai_responses
     )
 
@@ -137,7 +137,7 @@ def _instrument_generate_answer(
 
         return wrapper
 
-    policy_class.generate_answer = tracing_generate_answer_wrapper(  # type: ignore[assignment]
+    policy_class.generate_answer = tracing_generate_answer_wrapper(  # type: ignore[method-assign]
         policy_class.generate_answer
     )
 

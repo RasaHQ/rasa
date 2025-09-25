@@ -4,6 +4,12 @@ from typing import Dict, Text
 import pytest
 from _pytest.tmpdir import TempPathFactory
 
+# Skip all tests in this file if TensorFlow is not available
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if not TENSORFLOW_AVAILABLE:
+    pytest.skip("TensorFlow is not available", allow_module_level=True)
+
 from rasa.core import training
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.engine.graph import ExecutionContext, GraphSchema
@@ -88,12 +94,12 @@ def test_on_epoch_end_saves_checkpoints_file(
     tmp_path: Path,
     trained_ted: TEDPolicy,
 ):
-    model_name = "checkpoint"
+    model_name = "checkpoint.weights.h5"
     best_model_file = tmp_path / model_name
     assert not best_model_file.exists()
     checkpoint = RasaModelCheckpoint(tmp_path)
     checkpoint.best_metrics_so_far = previous_best
-    checkpoint.model = trained_ted.model
+    checkpoint._model = trained_ted.model
     checkpoint.on_epoch_end(1, current_values)
     if improved:
         assert best_model_file.exists()

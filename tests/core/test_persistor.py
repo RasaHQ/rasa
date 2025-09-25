@@ -369,7 +369,6 @@ def test_create_file_key(
 
     File key is the file path in the storage bucket.
     """
-
     monkeypatch.delenv(REMOTE_STORAGE_PATH_ENV, raising=False)
     for key, value in envs.items():
         monkeypatch.setenv(key, value)

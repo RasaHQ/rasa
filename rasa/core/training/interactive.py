@@ -91,7 +91,7 @@ from rasa.shared.core.training_data.visualization import (
 )
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.importers.rasa import TrainingDataImporter
-from rasa.shared.nlu.constants import INTENT_NAME_KEY, TEXT
+from rasa.shared.nlu.constants import ENTITIES, INTENT, INTENT_NAME_KEY, TEXT
 
 # noinspection PyProtectedMember
 from rasa.shared.nlu.training_data import loading
@@ -789,7 +789,7 @@ def _collect_messages(events: List[Dict[Text, Any]]) -> List[Message]:
             data = event.get("parse_data", {})
             rasa_nlu_training_data_utils.remove_untrainable_entities_from(data)
             msg = Message.build(
-                data["text"], data["intent"][INTENT_NAME_KEY], data["entities"]
+                data[TEXT], data[INTENT][INTENT_NAME_KEY], data[ENTITIES]
             )
             messages.append(msg)
         elif event.get("event") == UserUtteranceReverted.type_name and messages:
@@ -901,13 +901,13 @@ def _get_nlu_target_format(export_path: Text) -> Text:
 
 def _entities_from_messages(messages: List[Message]) -> List[Text]:
     """Return all entities that occur in at least one of the messages."""
-    return list({e["entity"] for m in messages for e in m.data.get("entities", [])})
+    return list({e["entity"] for m in messages for e in m.data.get(ENTITIES, [])})
 
 
 def _intents_from_messages(messages: List[Message]) -> Set[Text]:
     """Return all intents that occur in at least one of the messages."""
     # set of distinct intents
-    distinct_intents = {m.data["intent"] for m in messages if "intent" in m.data}
+    distinct_intents = {m.data[INTENT] for m in messages if INTENT in m.data}
 
     return distinct_intents
 
@@ -1191,11 +1191,11 @@ def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     """Display the parse data of a message in markdown format."""
     from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 
-    if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
-        return parse_data["text"]
+    if parse_data.get(TEXT, "").startswith(INTENT_MESSAGE_PREFIX):
+        return parse_data[TEXT]
 
-    if not parse_data.get("entities"):
-        parse_data["entities"] = []
+    if not parse_data.get(ENTITIES):
+        parse_data[ENTITIES] = []
 
     return TrainingDataWriter.generate_message(parse_data)
 
@@ -1207,7 +1207,7 @@ def _validate_user_regex(latest_message: Dict[Text, Any], intents: List[Text]) -
     `/greet`. Return `True` if the intent is a known one.
     """
     parse_data = latest_message.get("parse_data", {})
-    intent = parse_data.get("intent", {}).get(INTENT_NAME_KEY)
+    intent = parse_data.get(INTENT, {}).get(INTENT_NAME_KEY)
 
     if intent in intents:
         return True
@@ -1224,8 +1224,8 @@ async def _validate_user_text(
     """
     parse_data = latest_message.get("parse_data", {})
     text = _as_md_message(parse_data)
-    intent = parse_data.get("intent", {}).get(INTENT_NAME_KEY)
-    entities = parse_data.get("entities", [])
+    intent = parse_data.get(INTENT, {}).get(INTENT_NAME_KEY)
+    entities = parse_data.get(ENTITIES, [])
     if entities:
         message = (
             f"Is the intent '{intent}' correct for '{text}' and are "
@@ -1276,9 +1276,9 @@ async def _validate_nlu(
 
         entities = await _correct_entities(latest_message, endpoint, conversation_id)
         corrected_nlu = {
-            "intent": corrected_intent,
-            "entities": entities,
-            "text": latest_message.get("text"),
+            INTENT: corrected_intent,
+            ENTITIES: entities,
+            TEXT: latest_message.get("text"),
         }
 
         await _correct_wrong_nlu(corrected_nlu, events, endpoint, conversation_id)
@@ -1315,9 +1315,9 @@ def _merge_annotated_and_original_entities(
     # overwrite entities which have already been
     # annotated in the original annotation to preserve
     # additional entity parser information
-    entities = parse_annotated.get("entities", [])[:]
+    entities = parse_annotated.get(ENTITIES, [])[:]
     for i, entity in enumerate(entities):
-        for original_entity in parse_original.get("entities", []):
+        for original_entity in parse_original.get(ENTITIES, []):
             if _is_same_entity_annotation(entity, original_entity):
                 entities[i] = original_entity
                 break

@@ -18,6 +18,7 @@ from rasa.dialogue_understanding.utils import (
     _handle_via_nlu_in_coexistence,
     add_commands_to_message_parse_data,
     add_prompt_to_message_parse_data,
+    assemble_options_string,
     set_record_commands_and_prompts,
 )
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
@@ -274,3 +275,47 @@ def test_handle_via_nlu_in_coexistence(
 
     # Then
     assert result is expected_output
+
+
+@pytest.mark.parametrize(
+    "names, conjunction, expected_output",
+    [
+        # Single item
+        (["apple"], "and", "apple"),
+        (["banana"], "or", "banana"),
+        # Two items
+        (["apple", "banana"], "and", "apple and banana"),
+        (["red", "blue"], "or", "red or blue"),
+        (["cat", "dog"], "but", "cat but dog"),
+        # Three items
+        (["apple", "banana", "cherry"], "and", "apple, banana and cherry"),
+        (["red", "blue", "green"], "or", "red, blue or green"),
+        (["cat", "dog", "bird"], "but", "cat, dog but bird"),
+        # Four items
+        (
+            ["winter", "spring", "summer", "fall"],
+            "and",
+            "winter, spring, summer and fall",
+        ),
+        (["north", "south", "east", "west"], "or", "north, south, east or west"),
+        # Empty list
+        ([], "and", ""),
+        # Custom conjunction
+        (["option1", "option2", "option3"], "plus", "option1, option2 plus option3"),
+        # Using default conjunction
+        (["apple"], None, "apple"),
+        (["apple", "banana"], None, "apple and banana"),
+        (["apple", "banana", "cherry"], None, "apple, banana and cherry"),
+        ([], None, ""),
+    ],
+)
+def test_assemble_options_string(
+    names: List[str], conjunction: Optional[str], expected_output: str
+):
+    """Test assemble_options_string function with various inputs."""
+    if conjunction is None:
+        result = assemble_options_string(names)
+    else:
+        result = assemble_options_string(names, conjunction)
+
+    assert result == expected_output

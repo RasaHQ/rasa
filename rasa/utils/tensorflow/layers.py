@@ -3,9 +3,7 @@ from typing import Any, Callable, List, Optional, Text, Tuple, Union
 
 import tensorflow as tf
 import tensorflow.keras.backend as K
-
-# TODO: The following is not (yet) available via tf.keras
-from keras.src.utils.control_flow_util import smart_cond
+from tensorflow.python.keras.utils.control_flow_util import smart_cond
 
 import rasa.utils.tensorflow.crf
 import rasa.utils.tensorflow.layers_utils as layers_utils
@@ -278,6 +276,7 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
             kernel_constraint: Constraint function applied to
                 the `kernel` weights matrix.
             bias_constraint: Constraint function applied to the bias vector.
+            **kwargs: Additional keyword arguments passed to the parent class.
         """
         super().__init__(**kwargs)
 
@@ -298,16 +297,19 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
             self.kernel_mask = None
             return
 
-        # Construct mask with given density and guarantee that every output is
-        # connected to at least one input
-        kernel_mask = self._minimal_mask() + self._random_mask()
+        # Use callable initializer for TensorFlow 2.19.1 compatibility
+        def kernel_mask_initializer() -> tf.Tensor:
+            # Construct mask with given density and guarantee that every output is
+            # connected to at least one input
+            kernel_mask = self._minimal_mask() + self._random_mask()
 
-        # We might accidently have added a random connection on top of
-        # a fixed connection
-        kernel_mask = tf.clip_by_value(kernel_mask, 0, 1)
+            # We might accidently have added a random connection on top of
+            # a fixed connection
+            kernel_mask = tf.clip_by_value(kernel_mask, 0, 1)
+            return kernel_mask
 
         self.kernel_mask = tf.Variable(
-            initial_value=kernel_mask, trainable=False, name="kernel_mask"
+            initial_value=kernel_mask_initializer, trainable=False, name="kernel_mask"
         )
 
     def _random_mask(self) -> tf.Tensor:
@@ -367,7 +369,12 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         Returns:
             The processed inputs.
         """
-        if self.density < 1.0:
+        # Apply kernel masking if needed (Keras 3.x compatibility check)
+        if (
+            self.density < 1.0
+            and hasattr(self, "kernel_mask")
+            and self.kernel_mask is not None
+        ):
             # Set fraction of the `kernel` weights to zero according to precomputed mask
             self.kernel.assign(self.kernel * self.kernel_mask)
         return super().call(inputs)
@@ -724,6 +731,7 @@ class DotProductLoss(tf.keras.layers.Layer):
                 Currently, the only possible value is `SOFTMAX`.
             similarity_type: Similarity measure to use, either `cosine` or `inner`.
             name: Optional name of the layer.
+            **kwargs: Additional keyword arguments passed to the parent class.
 
         Raises:
             TFLayerConfigException: When `similarity_type` is not one of `COSINE` or
@@ -883,6 +891,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
                 values are approximately bounded.
             model_confidence: Normalization of confidence values during inference.
                 Currently, the only possible value is `SOFTMAX`.
+            **kwargs: Additional keyword arguments passed to the parent class.
         """
         super().__init__(
             num_candidates,
@@ -1244,6 +1253,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
                 Used inside _loss_cross_entropy() only.
             model_confidence: Normalization of confidence values during inference.
                 Currently, the only possible value is `SOFTMAX`.
+            **kwargs: Additional keyword arguments passed to the parent class.
         """
         super().__init__(
             num_candidates,

@@ -9,8 +9,7 @@ from tests.cli.conftest import RASA_EXE
 
 
 def test_cli_start_is_fast(testdir: Testdir):
-    """
-    Checks that a call to ``rasa --help`` does not import any slow imports.
+    """Checks that a call to ``rasa --help`` does not import any slow imports.
 
     If this is failing this means, that a simple "rasa --help" commands imports
     `tensorflow` which makes our CLI extremely slow. In case this test is failing
@@ -26,7 +25,6 @@ def test_cli_start_is_fast(testdir: Testdir):
     to get the import chain.
     (make sure to run with python >= 3.7, and install tune (pip install tuna))
     """
-
     rasa_path = str(
         (Path(__file__).parent / ".." / ".." / "rasa" / "__main__.py").absolute()
     )

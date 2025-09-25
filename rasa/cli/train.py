@@ -148,6 +148,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
             args.fail_on_validation_warnings,
             args.validation_max_history,
             training_data_importer,
+            sub_agents=args.sub_agents,
         )
 
     training_result = train_all(
@@ -170,6 +171,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         file_importer=training_data_importer,
         keep_local_model_copy=args.keep_local_model_copy,
         remote_root_only=args.remote_root_only,
+        sub_agents=args.sub_agents,
     )
     if training_result.code != 0 and can_exit:
         display_research_study_prompt()
@@ -179,13 +181,19 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
 
 
 def _model_for_finetuning(args: argparse.Namespace) -> Optional[Text]:
-    if args.finetune == train_arguments.USE_LATEST_MODEL_FOR_FINE_TUNING:
-        # We use this constant to signal that the user specified `--finetune` but
-        # didn't provide a path to a model. In this case we try to load the latest
-        # model from the output directory (that's usually models/).
-        return args.out
-    else:
-        return args.finetune
+    if args.finetune is not None:
+        structlogger.error(
+            "cli.train.incremental_training_not_supported",
+            event_info=(
+                "Incremental training (--finetune) is "
+                "not supported in Rasa 3.14.0 onwards. "
+                "Please retrain your model from scratch "
+                "if you have updated your configuration. "
+            ),
+        )
+        display_research_study_prompt()
+        sys.exit(1)
+    return None
 
 
 def run_core_training(args: argparse.Namespace) -> Optional[Text]:

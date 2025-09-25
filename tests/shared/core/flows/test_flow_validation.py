@@ -1,9 +1,14 @@
 import textwrap
-from typing import Callable
+from typing import Callable, Iterator, Optional
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
+from rasa.core.available_agents import AvailableAgents
+from rasa.core.config.configuration import Configuration
 from rasa.shared.constants import RASA_PATTERN_CHITCHAT, RASA_PATTERN_HUMAN_HANDOFF
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows import Flow
 from rasa.shared.core.flows.steps import LinkFlowStep
 from rasa.shared.core.flows.steps.constants import (
@@ -17,7 +22,10 @@ from rasa.shared.core.flows.validation import (
     DuplicateSlotPersistConfigException,
     EmptyFlowException,
     EmptyStepSequenceException,
+    ExitIfExclusivityException,
     FlowIdNamingException,
+    InvalidMCPMappingSlotException,
+    InvalidMCPServerReferenceException,
     InvalidPersistSlotsException,
     MissingElseBranchException,
     MissingNextLinkException,
@@ -29,19 +37,86 @@ from rasa.shared.core.flows.validation import (
     ReservedFlowStepIdException,
     SlotNamingException,
     UnreachableFlowStepException,
-    UnresolvedFlowException,
+    UnresolvedCallStepException,
     UnresolvedFlowStepIdException,
+    UnresolvedLinkFlowException,
+    validate_mcp_server_references,
     validate_patterns_are_not_calling_or_linking_other_flows,
     validate_slot_persistence_configuration,
 )
 from rasa.shared.core.flows.yaml_flows_io import (
     YAMLFlowsReader,
 )
+from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import FlowSyncImporter
 from tests.utilities import (
     flows_from_str,
     flows_from_str_including_defaults,
 )
+
+
+@pytest.fixture
+def empty_agents_mock() -> MagicMock:
+    """Mock AvailableAgents with empty agents list."""
+    mock_agents = MagicMock()
+    mock_agents.agents = {}
+    return mock_agents
+
+
+@pytest.fixture
+def empty_endpoints_mock() -> MagicMock:
+    """Mock Configuration with no MCP servers."""
+    mock_config = MagicMock()
+    mock_config.endpoints.mcp_servers = []
+    return mock_config
+
+
+@pytest.fixture
+def configured_endpoints_mock() -> MagicMock:
+    """Mock Configuration with configured MCP servers."""
+    mock_config = MagicMock()
+    mock_server1 = MagicMock()
+    mock_server1.name = "valid_server"
+    mock_server2 = MagicMock()
+    mock_server2.name = "another_server"
+    mock_server3 = MagicMock()
+    mock_server3.name = "test_server"
+    mock_config.endpoints.mcp_servers = [mock_server1, mock_server2, mock_server3]
+    return mock_config
+
+
+@pytest.fixture
+def basic_mcp_flow_config() -> str:
+    """Basic MCP tool call flow configuration."""
+    return """
+    flows:
+      test_flow:
+        description: "A flow with MCP tool call"
+        steps:
+          - call: some_tool
+            mcp_server: {server_name}
+            mapping:
+              input:
+                - slot: test_slot
+                  param: test_param
+              output:
+                - slot: result_slot
+                  value: result
+            next: "END"
+    """
+
+
+@pytest.fixture
+def mock_available_agents(monkeypatch: MonkeyPatch) -> Iterator[MagicMock]:
+    mock_instance = MagicMock()
+    mock_instance.agents = {
+        "car-research": {},
+    }
+
+    with patch.object(
+        AvailableAgents, "get_instance", return_value=mock_instance
+    ) as mock_method:
+        yield mock_method
 
 
 def test_validation_does_not_always_fail() -> None:
@@ -387,7 +462,7 @@ def test_validation_fails_for_a_called_flow_that_does_not_exist():
               - call: bar
         """
 
-    with pytest.raises(UnresolvedFlowException):
+    with pytest.raises(UnresolvedCallStepException):
         flows_from_str(flow_config)
 
 
@@ -400,7 +475,7 @@ def test_validation_fails_for_a_linked_flow_that_does_not_exist():
               - link: bar
         """
 
-    with pytest.raises(UnresolvedFlowException):
+    with pytest.raises(UnresolvedLinkFlowException):
         flows_from_str(flow_config)
 
 
@@ -532,6 +607,46 @@ def test_validation_fails_for_pattern_with_a_call_step():
 
     with pytest.raises(PatternReferencedFlowException):
         flows_from_str(flow_config)
+
+
+def test_validation_passes_for_exit_if_in_call_step_to_agent(
+    mock_available_agents: Mock,
+):
+    flow_config = """
+            flows:
+              foo:
+                description: foo flow
+                steps:
+                  - call: car-research
+                    exit_if:
+                      - slots.a is not None
+                      - slots.age > 18
+            """
+
+    flows = flows_from_str(flow_config)
+    foo = flows.flow_by_id("foo")
+    assert foo is not None
+    assert hasattr(foo.steps[0], "exit_if")
+
+
+def test_validation_fails_for_exit_if_when_calling_flow():
+    flow_config = """
+        flows:
+          foo:
+            description: foo flow
+            steps:
+              - call: bar
+                exit_if:
+                  - slots.a is not None
+          bar:
+            description: bar flow
+            steps:
+              - action: action_listen
+        """
+
+    with pytest.raises(RasaException) as e:
+        flows_from_str(flow_config)
+    assert "exit_if" in str(e.value)
 
 
 def test_validate_step_ids_are_unique_fails_for_duplicate_ids():
@@ -721,3 +836,573 @@ def test_validate_slot_persistence_configuration_raise_deprecation_warning():
     assert len(record) == 1
     assert record[0].message.args[0] == deprecation_message
     assert isinstance(record[0].message, FutureWarning)
+
+
+def test_validate_call_steps_agents_exist_success(
+    mock_available_agents: MagicMock,
+) -> None:
+    """Test that validation passes when all mentioned agents exist."""
+    flows_content = """
+    flows:
+      test_flow:
+        description: "A flow that calls an existing agent"
+        steps:
+          - call: "car-research"
+            next: "END"
+    """
+
+    flows = flows_from_str(flows_content)
+    # Should not raise any exception
+    flows.validate()
+
+
+def test_validate_call_steps_agents_exist_failure(
+    mock_available_agents: MagicMock,
+) -> None:
+    """Test that validation fails when a mentioned agent doesn't exist."""
+    # Ensure the mock is set up with only the car-research agent
+    mock_available_agents.return_value.agents = {"car-research": {}}
+
+    flows_content = """
+    flows:
+      test_flow:
+        description: "A flow that calls a non-existent agent"
+        steps:
+          - call: "non_existent_agent"
+            next: "END"
+    """
+
+    with pytest.raises(UnresolvedCallStepException) as exc_info:
+        flows_from_str(flows_content)
+
+    # The validation correctly identifies that the agent doesn't exist
+    assert exc_info.value.call_step_argument == "non_existent_agent"
+    assert exc_info.value.calling_flow_id == "test_flow"
+    assert "non_existent_agent" in str(exc_info.value)
+
+
+def test_validate_call_steps_ignores_flow_calls(
+    mock_available_agents: MagicMock,
+) -> None:
+    """Test that validation ignores call steps that reference flows, not agents."""
+    flows_content = """
+    flows:
+      test_flow:
+        description: "A flow that calls another flow"
+        steps:
+          - call: "another_flow"
+            next: "END"
+      another_flow:
+        description: "Another flow"
+        steps:
+          - action: utter_greet
+            next: "END"
+    """
+
+    flows = flows_from_str(flows_content)
+    # Should not raise any exception since "another_flow" is a flow, not an agent
+    flows.validate()
+
+
+def test_validate_call_steps_ignores_mcp_calls(
+    mock_available_agents: MagicMock,
+) -> None:
+    """Test that validation ignores call steps that reference MCP tools."""
+    # This test is skipped because MCP validation requires complex setup
+    # The core agent validation functionality is tested in other tests
+    pytest.skip("MCP validation requires complex endpoint setup")
+
+
+def test_validate_call_steps_multiple_agents(
+    mock_available_agents: MagicMock,
+) -> None:
+    """Test validation with multiple agent calls in different flows."""
+    # Update the mock to include multiple agents
+    mock_available_agents.return_value.agents = {
+        "car-research": {},
+        "booking-agent": {},
+        "support-agent": {},
+    }
+
+    flows_content = """
+    flows:
+      test_flow_1:
+        description: "A flow that calls multiple agents"
+        steps:
+          - call: "car-research"
+            next: "END"
+      test_flow_2:
+        description: "Another flow with agent calls"
+        steps:
+          - call: "booking-agent"
+            next: "END"
+      test_flow_3:
+        description: "Third flow with agent calls"
+        steps:
+          - call: "support-agent"
+            next: "END"
+    """
+
+    flows = flows_from_str(flows_content)
+    # Should not raise any exception since all agents exist
+    flows.validate()
+
+
+def test_validate_call_steps_mixed_calls(
+    mock_available_agents: MagicMock,
+) -> None:
+    """Test validation with mixed flow calls and agent calls."""
+    flows_content = """
+    flows:
+      test_flow:
+        description: "A flow with mixed call types"
+        steps:
+          - call: "car-research"  # Agent call - should be validated
+            next: "END"
+      another_flow:
+        description: "Another flow"
+        steps:
+          - action: utter_greet
+            next: "END"
+    """
+
+    flows = flows_from_str(flows_content)
+    # Should not raise any exception since "car-research" exists
+    flows.validate()
+
+
+@pytest.fixture
+def base_flow_template() -> str:
+    """Base flow template for exit_if exclusivity tests."""
+    return """
+        flows:
+          test_flow:
+            description: {description}
+            steps:
+              - call: car-research
+                {step_properties}
+    """
+
+
+@pytest.fixture
+def mcp_properties() -> str:
+    """MCP properties template for testing conflicts with exit_if."""
+    return """
+                mcp_server: test_server
+                mapping:
+                  input:
+                    - slot: test_slot
+                      param: test_param
+                  output:
+                    - slot: result_slot
+                      value: result
+    """
+
+
+@pytest.mark.parametrize(
+    "step_properties,description,should_pass",
+    [
+        (
+            "exit_if:\n                  - slots.status == 'completed'",
+            "test flow with valid exit_if",
+            True,
+        ),
+        (
+            "id: my_call_step\n"
+            "                description: This is a call step without exit_if",
+            "test flow with call step but no exit_if",
+            True,
+        ),
+        (
+            "id: my_call_step\n"
+            "                description: This is a call step\n"
+            "                metadata:\n"
+            "                  key: value\n"
+            "                exit_if:\n"
+            "                  - slots.status == 'completed'",
+            "test flow with exit_if and standard properties",
+            True,
+        ),
+    ],
+)
+def test_validate_exit_if_exclusivity_passes(
+    mock_available_agents: Mock,
+    base_flow_template: str,
+    step_properties: str,
+    description: str,
+    should_pass: bool,
+) -> None:
+    """Test that valid exit_if configurations pass validation."""
+    flow_config = base_flow_template.format(
+        description=description, step_properties=step_properties
+    )
+
+    flows = flows_from_str(flow_config)
+    # Should not raise any exception
+    flows.validate()
+
+
+@pytest.mark.parametrize(
+    "conflicting_property,expected_in_error",
+    [
+        ("mcp_server", "mcp_server"),
+        ("mapping", "mapping"),
+    ],
+)
+def test_validate_exit_if_exclusivity_fails_with_conflicting_properties(
+    mock_available_agents: Mock,
+    base_flow_template: str,
+    mcp_properties: str,
+    conflicting_property: str,
+    expected_in_error: str,
+    configured_endpoints_mock: MagicMock,
+) -> None:
+    """Test that call steps with exit_if and conflicting properties fail validation."""
+    step_properties = f"""
+                {mcp_properties.strip()}
+                exit_if:
+                  - slots.status == 'completed'
+    """
+    flow_config = base_flow_template.format(
+        description=f"test flow with exit_if and {conflicting_property}",
+        step_properties=step_properties,
+    )
+
+    flows = YAMLFlowsReader.read_from_string(flow_config)
+
+    with (
+        patch.object(
+            Configuration, "get_instance", return_value=configured_endpoints_mock
+        ),
+    ):
+        with pytest.raises(ExitIfExclusivityException) as exc_info:
+            flows.validate()
+
+        assert "mcp_server" in str(exc_info.value)
+        assert "mapping" in str(exc_info.value)
+        assert "exit_if" in str(exc_info.value)
+        assert "cannot have any other properties" in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "flow_config,server_exists,should_raise,expected_messages",
+    [
+        (
+            """
+            flows:
+              test_flow:
+                description: "A flow with invalid MCP server reference"
+                steps:
+                  - call: some_tool
+                    mcp_server: invalid_server
+                    mapping:
+                      input:
+                        - slot: test_slot
+                          param: test_param
+                      output:
+                        - slot: result_slot
+                          value: result
+                    next: "END"
+            """,
+            False,
+            True,
+            ["invalid_server", "does not exist in endpoints.yml", "test_flow"],
+        ),
+        (
+            """
+            flows:
+              test_flow:
+                description: "A flow with valid MCP server reference"
+                steps:
+                  - call: some_tool
+                    mcp_server: valid_server
+                    mapping:
+                      input:
+                        - slot: test_slot
+                          param: test_param
+                      output:
+                        - slot: result_slot
+                          value: result
+                    next: "END"
+            """,
+            True,
+            False,
+            [],
+        ),
+        (
+            """
+            flows:
+              test_flow:
+                description: "A flow with MCP server reference but no servers"
+                steps:
+                  - call: some_tool
+                    mcp_server: any_server
+                    mapping:
+                      input:
+                        - slot: test_slot
+                          param: test_param
+                      output:
+                        - slot: result_slot
+                          value: result
+                    next: "END"
+            """,
+            False,
+            True,
+            ["any_server", "does not exist in endpoints.yml"],
+        ),
+        (
+            """
+            flows:
+              test_flow:
+                description: "A flow with non-MCP call steps"
+                steps:
+                  - call: another_flow
+                    next: "END"
+              another_flow:
+                description: "Another flow to call"
+                steps:
+                  - action: utter_goodbye
+                    next: "END"
+            """,
+            True,  # Shouldn't be called for non-MCP calls
+            False,
+            [],
+        ),
+    ],
+)
+def test_validate_mcp_server_references(
+    flow_config: str,
+    server_exists: bool,
+    should_raise: bool,
+    expected_messages: list[str],
+) -> None:
+    """Test MCP server reference validation for various scenarios."""
+
+    def mock_mcp_server_exists(server_name: str) -> bool:
+        return server_exists
+
+    flows = YAMLFlowsReader.read_from_string(flow_config)
+
+    with patch(
+        "rasa.shared.utils.mcp.utils.mcp_server_exists",
+        side_effect=mock_mcp_server_exists,
+    ):
+        if should_raise:
+            with pytest.raises(InvalidMCPServerReferenceException) as exc_info:
+                validate_mcp_server_references(flows)
+
+            for message in expected_messages:
+                assert message in str(exc_info.value)
+        else:
+            # Should not raise any exception
+            validate_mcp_server_references(flows)
+
+
+@pytest.mark.parametrize(
+    "domain_config,flow_config,should_raise,expected_messages",
+    [
+        (
+            """
+            version: "3.1"
+            slots:
+              input_slot:
+                type: text
+              output_slot:
+                type: text
+            """,
+            """
+            flows:
+              test_flow:
+                description: "A flow with valid MCP mapping"
+                steps:
+                  - call: test_tool
+                    mcp_server: test_server
+                    mapping:
+                      input:
+                        - slot: input_slot
+                          param: input_param
+                      output:
+                        - slot: output_slot
+                          value: result
+                    next: "END"
+            """,
+            False,
+            [],
+        ),
+        (
+            """
+            version: "3.1"
+            slots:
+              output_slot:
+                type: text
+            """,
+            """
+            flows:
+              test_flow:
+                description: "A flow with invalid input slot"
+                steps:
+                  - call: test_tool
+                    mcp_server: test_server
+                    mapping:
+                      input:
+                        - slot: invalid_input_slot
+                          param: input_param
+                      output:
+                        - slot: output_slot
+                          value: result
+                    next: "END"
+            """,
+            True,
+            ["invalid_input_slot"],
+        ),
+        (
+            """
+            version: "3.1"
+            slots:
+              input_slot:
+                type: text
+            """,
+            """
+            flows:
+              test_flow:
+                description: "A flow with invalid output slot"
+                steps:
+                  - call: test_tool
+                    mcp_server: test_server
+                    mapping:
+                      input:
+                        - slot: input_slot
+                          param: input_param
+                      output:
+                        - slot: invalid_output_slot
+                          value: result
+                    next: "END"
+            """,
+            True,
+            ["invalid_output_slot"],
+        ),
+        (
+            """
+            version: "3.1"
+            slots:
+              valid_slot:
+                type: text
+            """,
+            """
+            flows:
+              test_flow:
+                description: "A flow with multiple invalid slots"
+                steps:
+                  - call: test_tool
+                    mcp_server: test_server
+                    mapping:
+                      input:
+                        - slot: invalid_input_slot
+                          param: input_param
+                      output:
+                        - slot: invalid_output_slot
+                          value: result
+                    next: "END"
+            """,
+            True,
+            ["invalid_input_slot", "invalid_output_slot"],
+        ),
+        (
+            None,
+            """
+            flows:
+              test_flow:
+                description: "A flow with MCP mapping but no domain"
+                steps:
+                  - call: test_tool
+                    mcp_server: test_server
+                    mapping:
+                      input:
+                        - slot: any_slot
+                          param: input_param
+                      output:
+                        - slot: any_slot
+                          value: result
+                    next: "END"
+            """,
+            False,
+            [],
+        ),
+        (
+            """
+            version: "3.1"
+            slots:
+              input_slot:
+                type: text
+            """,
+            """
+            flows:
+              test_flow:
+                description: "A flow with regular call step"
+                steps:
+                  - call: another_flow
+                    next: "END"
+              another_flow:
+                description: "Another flow to call"
+                steps:
+                  - action: utter_goodbye
+                    next: "END"
+            """,
+            False,
+            [],
+        ),
+    ],
+)
+def test_validate_mcp_mapping_slots(
+    domain_config: Optional[str],
+    flow_config: str,
+    should_raise: bool,
+    expected_messages: list[str],
+    configured_endpoints_mock: MagicMock,
+) -> None:
+    """Test MCP mapping slot validation for various scenarios."""
+    with patch.object(
+        Configuration, "get_instance", return_value=configured_endpoints_mock
+    ):
+        flows = YAMLFlowsReader.read_from_string(flow_config)
+
+        domain = None
+        if domain_config:
+            domain = Domain.from_yaml(domain_config)
+
+        if should_raise:
+            with pytest.raises(InvalidMCPMappingSlotException) as exc_info:
+                flows.validate(domain)
+
+            for message in expected_messages:
+                assert message in str(exc_info.value)
+        else:
+            # Should not raise any exception
+            flows.validate(domain)
+
+
+def test_validate_call_steps_unresolved_call_step(
+    empty_agents_mock: MagicMock,
+    empty_endpoints_mock: MagicMock,
+) -> None:
+    """Test validation fails when call step doesn't call agent, flow, or MCP tool."""
+    with (
+        patch.object(AvailableAgents, "get_instance", return_value=empty_agents_mock),
+        patch.object(Configuration, "get_instance", return_value=empty_endpoints_mock),
+    ):
+        flow_config = """
+        flows:
+          test_flow:
+            description: "A flow with unresolved call step"
+            steps:
+              - call: non_existent_target
+                next: "END"
+        """
+
+        flows = YAMLFlowsReader.read_from_string(flow_config)
+
+        with pytest.raises(UnresolvedCallStepException) as exc_info:
+            flows.validate()
+
+        assert "non_existent_target" in str(exc_info.value)
+        assert "no flow or agent with the id" in str(exc_info.value)

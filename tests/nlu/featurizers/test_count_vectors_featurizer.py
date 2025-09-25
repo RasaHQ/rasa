@@ -729,6 +729,7 @@ def test_count_vector_featurizer_process_by_attribute(
         ("the coolest person", "person the coolest", 3, 3),
     ],
 )
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 def test_cvf_incremental_training(
     initial_train_text: Text,
     additional_train_text: Text,
@@ -784,7 +785,8 @@ def test_use_shared_vocab_exception(
     whitespace_tokenizer: WhitespaceTokenizer,
 ):
     """Tests if an exception is raised when `use_shared_vocab` is set to True
-    during incremental training."""
+    during incremental training.
+    """
     config = {"use_shared_vocab": use_shared_vocab}
     initial_cvf = create_featurizer(config)
     train_message = Message(data={"text": initial_train_text})

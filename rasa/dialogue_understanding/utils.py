@@ -1,9 +1,9 @@
+import typing
 from contextlib import contextmanager
 from typing import Any, Dict, Generator, List, Optional, Text
 
 import structlog
 
-from rasa.dialogue_understanding.commands import Command, NoopCommand, SetSlotCommand
 from rasa.dialogue_understanding.constants import (
     RASA_RECORD_COMMANDS_AND_PROMPTS_ENV_VAR_NAME,
 )
@@ -23,6 +23,9 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.utils.common import get_bool_env_variable
 
+if typing.TYPE_CHECKING:
+    from rasa.dialogue_understanding.commands import Command
+
 record_commands_and_prompts = get_bool_env_variable(
     RASA_RECORD_COMMANDS_AND_PROMPTS_ENV_VAR_NAME, False
 )
@@ -41,7 +44,7 @@ def set_record_commands_and_prompts() -> Generator:
 
 
 def add_commands_to_message_parse_data(
-    message: Message, component_name: str, commands: List[Command]
+    message: Message, component_name: str, commands: List["Command"]
 ) -> None:
     """Add commands to the message parse data.
 
@@ -144,6 +147,11 @@ def _handle_via_nlu_in_coexistence(
     tracker: Optional[DialogueStateTracker], message: Message
 ) -> bool:
     """Check if the message should be handled by the NLU subsystem in coexistence mode."""  # noqa: E501
+    from rasa.dialogue_understanding.commands import (
+        NoopCommand,
+        SetSlotCommand,
+    )
+
     if not tracker:
         return False
 
@@ -156,8 +164,7 @@ def _handle_via_nlu_in_coexistence(
             "utils.handle_via_nlu_in_coexistence"
             ".tracker_missing_route_session_to_calm_slot",
             event_info=(
-                f"Tracker doesn't have the '{ROUTE_TO_CALM_SLOT}' slot."
-                f"Routing to CALM."
+                f"Tracker doesn't have the '{ROUTE_TO_CALM_SLOT}' slot.Routing to CALM."
             ),
             route_session_to_calm=commands,
         )
@@ -218,3 +225,16 @@ def _handle_via_nlu_in_coexistence(
         commands=commands,
     )
     return False
+
+
+def assemble_options_string(names: List[str], conjunction: str = "and") -> str:
+    """Concatenate options to a human-readable string."""
+    option_message = ""
+    for i, name in enumerate(names):
+        if i == 0:
+            option_message += name
+        elif i == len(names) - 1:
+            option_message += f" {conjunction} {name}"
+        else:
+            option_message += f", {name}"
+    return option_message

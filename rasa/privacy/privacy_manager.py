@@ -264,10 +264,19 @@ class BackgroundPrivacyManager:
             )
             return None
 
-        latest_user_message = tracker.get_last_event_for(
+        latest_user_message_event = tracker.get_last_event_for(
             UserUttered, event_verbosity=EventVerbosity.ALL
         )
-        if latest_user_message is None or not latest_user_message.text:
+        if latest_user_message_event is None or not isinstance(
+            latest_user_message_event, UserUttered
+        ):
+            structlogger.debug(
+                "rasa.privacy_manager.no_user_message.skipping_processing",
+            )
+            return None
+
+        latest_user_message: UserUttered = latest_user_message_event
+        if not latest_user_message.text:
             structlogger.debug(
                 "rasa.privacy_manager.no_user_message.skipping_processing",
             )

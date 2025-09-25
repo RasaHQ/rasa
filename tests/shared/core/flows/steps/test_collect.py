@@ -68,7 +68,6 @@ def test_collect_step_from_json(
     data: Dict[str, Any], expected_silence_timeout: Optional[SilenceTimeout]
 ) -> None:
     """Test that CollectInformationFlowStep can be created from JSON."""
-
     step = CollectInformationFlowStep.from_json("flow_id", data)
 
     assert step.collect == "test_slot"
@@ -121,7 +120,6 @@ def test_collect_step_from_json_invalid_silence_timeout(
     data: Dict[str, Any], expected_exception: RasaException
 ) -> None:
     """Test that CollectInformationFlowStep can be created from JSON."""
-
     with pytest.raises(RasaException) as exc_info:
         CollectInformationFlowStep.from_json("flow_id", data)
         assert exc_info.value == expected_exception
@@ -143,7 +141,6 @@ def test_collect_step_as_json(
     silence_timeout: SilenceTimeout,
 ) -> None:
     """Test that CollectInformationFlowStep can be serialized to JSON."""
-
     step = CollectInformationFlowStep(
         flow_id="flow_id",
         collect="test_slot",
@@ -182,7 +179,6 @@ def test_collect_step_as_json_without_silence_timeout() -> None:
 
     This test checks the behavior when silence_timeout is not set.
     """
-
     step = CollectInformationFlowStep(
         flow_id="flow_id",
         collect="test_slot",
@@ -218,7 +214,6 @@ def test_collect_step_as_json_with_next_and_metadata() -> None:
 
     This test checks the behavior when next step and metadata are provided.
     """
-
     next_step = FlowStepLinks(
         links=[StaticFlowStepLink(target_step_id="some_next_step")]
     )

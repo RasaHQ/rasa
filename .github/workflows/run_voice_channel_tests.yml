@@ -73,7 +73,7 @@ jobs:
           make prepare-tests-ubuntu
 
       - name: Install ddtrace on Linux
-        run: poetry run pip install -U 'ddtrace==2.10.5'
+        run: poetry run pip install -U ddtrace
 
 
       - name: Install additional dependencies for voice tests

@@ -55,7 +55,6 @@ def test_oauth_config_wrapper_from_config(
     config: Dict[str, str], scopes: Union[str, List[str]]
 ) -> None:
     """Tests that the from_config method returns the correct instance of the OAuthConfigWrapper."""  # noqa: E501
-
     oauth_config = {**config, "scopes": scopes}
 
     # We need to deepcopy the config as from_config methods modify the input
@@ -188,7 +187,6 @@ def test_azure_open_ai_client_config_oauth_from_config(
 
 def test_azure_open_ai_client_config_from_config_api_key_and_oauth() -> None:
     """Tests that an error is raised when both api_key and oauth are provided."""
-
     config = {
         "deployment": "deployment_value",
         "model": "model_value",

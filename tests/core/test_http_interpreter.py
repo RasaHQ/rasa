@@ -18,8 +18,7 @@ from tests.utilities import json_of_latest_request, latest_request
     ],
 )
 async def test_http_interpreter(endpoint_url, joined_url):
-    """
-    GIVEN an endpoint url
+    """GIVEN an endpoint url
     WHEN a RasaNLUHttpInterpreter is created using the endpoint url
     THEN the parse method sends a request to the joined url.
     """
@@ -50,8 +49,7 @@ def nlu_interpreter():
 
 
 async def test_same_session_object_used(nlu_interpreter):
-    """
-    GIVEN a RasaNLUHttpInterpreter
+    """GIVEN a RasaNLUHttpInterpreter
     WHEN the parse() method is called multiple times
     THEN the same session object is used for all requests.
     """

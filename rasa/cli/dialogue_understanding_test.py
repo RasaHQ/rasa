@@ -15,6 +15,7 @@ from rasa.cli.arguments.default_arguments import (
     add_endpoint_param,
     add_model_param,
     add_remote_storage_param,
+    add_sub_agents_param,
 )
 from rasa.core.agent import Agent
 from rasa.core.config.available_endpoints import AvailableEndpoints
@@ -175,6 +176,8 @@ def add_du_test_arguments(parser: argparse.ArgumentParser) -> None:
         ),
     )
 
+    add_sub_agents_param(du_arguments)
+
 
 def ensure_calm_only_bot(agent: Agent) -> None:
     if agent.domain is None or agent.processor is None:
@@ -219,6 +222,7 @@ def execute_dialogue_understanding_tests(args: argparse.Namespace) -> None:
             model_path=args.model,
             model_server=endpoints.model,
             remote_storage=args.remote_storage,
+            sub_agents_path=args.sub_agents,
         )
     except AgentNotReady as error:
         structlogger.error(

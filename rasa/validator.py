@@ -69,7 +69,7 @@ from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.data import create_regex_pattern_reader
 from rasa.shared.exceptions import RasaException
 from rasa.shared.importers.importer import TrainingDataImporter
-from rasa.shared.nlu.constants import COMMANDS
+from rasa.shared.nlu.constants import COMMANDS, INTENT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.telemetry import track_validation_error_log
@@ -130,7 +130,7 @@ class Validator:
         """Compares list of intents in domain with intents in NLU training data."""
         everything_is_alright = True
 
-        nlu_data_intents = {e.data["intent"] for e in self.intents.intent_examples}
+        nlu_data_intents = {e.data[INTENT] for e in self.intents.intent_examples}
 
         for intent in self._non_default_intents():
             if intent not in nlu_data_intents:
@@ -172,7 +172,7 @@ class Validator:
         duplication_hash = defaultdict(set)
         for example in self.intents.intent_examples:
             text = example.get(rasa.shared.nlu.constants.TEXT)
-            duplication_hash[text].add(example.get("intent"))
+            duplication_hash[text].add(example.get(INTENT))
 
         for text, intents in duplication_hash.items():
             if len(duplication_hash[text]) > 1:
@@ -635,8 +635,8 @@ class Validator:
         Args:
             collect: the name of the slot to collect
             all_good: boolean value indicating the validation status
-            domain_slots: the slots of the domain
-            flow_id: the id of the flow
+            domain_slots: dictionary of domain slots
+            flow_id: the ID of the flow being validated
 
         Returns:
             False, if validation failed, true, otherwise

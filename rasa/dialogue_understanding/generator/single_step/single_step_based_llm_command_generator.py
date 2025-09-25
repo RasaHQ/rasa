@@ -5,6 +5,11 @@ from typing import Any, Dict, List, Literal, Optional, Text
 import structlog
 
 import rasa.shared.utils.io
+from rasa.agents.utils import (
+    get_active_agent_info,
+    get_completed_agents_info,
+)
+from rasa.core.available_agents import AvailableAgents
 from rasa.dialogue_understanding.commands import (
     CannotHandleCommand,
     Command,
@@ -232,6 +237,8 @@ class SingleStepBasedLLMCommandGenerator(LLMBasedCommandGenerator, ABC):
             log_module=self.__class__.__name__,
             log_event="llm_command_generator.predict_commands.finished",
             commands=commands,
+            event_info="Commands predictd by the Command Generator",
+            highlight=True,
         )
 
         domain = kwargs.get("domain")
@@ -396,13 +403,18 @@ class SingleStepBasedLLMCommandGenerator(LLMBasedCommandGenerator, ABC):
             current_slot_allowed_values = allowed_values_for_slot(
                 tracker.slots.get(current_slot)
             )
-        current_conversation = tracker_as_readable_transcript(tracker)
+        has_agents = AvailableAgents.has_agents()
+        current_conversation = tracker_as_readable_transcript(
+            tracker, highlight_agent_turns=has_agents
+        )
         latest_user_message = sanitize_message_for_prompt(message.get(TEXT))
         current_conversation += f"\nUSER: {latest_user_message}"
 
-        inputs = {
+        inputs: Dict[str, Any] = {
             "available_flows": self.prepare_flows_for_template(
-                startable_flows, tracker
+                startable_flows,
+                tracker,
+                add_agent_info=has_agents,
             ),
             "current_conversation": current_conversation,
             "flow_slots": flow_slots,
@@ -413,6 +425,11 @@ class SingleStepBasedLLMCommandGenerator(LLMBasedCommandGenerator, ABC):
             "current_slot_allowed_values": current_slot_allowed_values,
             "user_message": latest_user_message,
         }
+        if has_agents:
+            inputs["active_agent"] = (
+                get_active_agent_info(tracker, top_flow.id) if top_flow else None
+            )
+            inputs["completed_agents"] = get_completed_agents_info(tracker)
 
         return self.compile_template(self.prompt_template).render(**inputs)
 

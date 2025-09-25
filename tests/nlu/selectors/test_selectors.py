@@ -23,6 +23,13 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
     LexicalSyntacticFeaturizer,
 )
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
+
+# Skip all tests in this file if TensorFlow is not available
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if not TENSORFLOW_AVAILABLE:
+    pytest.skip("TensorFlow is not available", allow_module_level=True)
+
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.constants import DIAGNOSTIC_DATA
@@ -648,6 +655,7 @@ async def test_process_unfeaturized_input(
     assert not output.get(INTENT_RESPONSE_KEY)
 
 
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 @pytest.mark.timeout(120)
 async def test_adjusting_layers_incremental_training(
     create_response_selector: Callable[[Dict[Text, Any]], ResponseSelector],
@@ -811,11 +819,13 @@ async def test_adjusting_layers_incremental_training(
 @pytest.mark.parametrize(
     "iter1_path, iter2_path, should_raise_exception",
     [
-        (
-            "data/test_incremental_training/",
-            "data/test_incremental_training/iter1",
-            True,
-        ),
+        # we are anyway now retraining the model in finetune mode so this
+        # test is not needed
+        # (
+        #     "data/test_incremental_training/",
+        #     "data/test_incremental_training/iter1",
+        #     True,
+        # ),
         (
             "data/test_incremental_training/iter1",
             "data/test_incremental_training/",
@@ -823,6 +833,7 @@ async def test_adjusting_layers_incremental_training(
         ),
     ],
 )
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 async def test_sparse_feature_sizes_decreased_incremental_training(
     iter1_path: Text,
     iter2_path: Text,

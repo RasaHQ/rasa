@@ -12,24 +12,27 @@ import useWebSocket, { ReadyState } from 'react-use-websocket'
 import { Chat } from './components/Chat'
 import { DiagramFlow } from './components/DiagramFlow'
 import { DialougeInformation } from './components/DialogueInformation'
-import { DialogueStack } from './components/DialogueStack'
+import { DialogueHistoryStack } from './components/DialogueHistoryStack'
 import { LoadingSpinner } from './components/LoadingSpinner'
 import { RecruitmentPanel } from './components/RecruitmentPanel'
 import { Welcome } from './components/Welcome'
 import { formatSlots } from './helpers/formatters'
 import {
   createHistoricalStack,
-  flowStepTrail,
+  flowStepTrail, updateAgentsStatus,
   updatedActiveFrame,
 } from './helpers/utils'
 import { useOurTheme } from './theme'
-import { Event, Flow, SelectedStack, Slot, Stack, Tracker } from './types'
+import { Event, Flow, SelectedStack, Slot, Stack, Tracker, Agent } from './types'
+import {DialogueAgentStack} from "./components/DialogueAgentStack.tsx";
+
 
 export function App() {
   const toast = useToast()
   const { rasaSpace, rasaRadii } = useOurTheme()
   const [rasaChatSessionId, setRasaChatSessionId] = useState<string>('')
   const [flows, setFlows] = useState<Flow[]>([])
+  const [agents, setAgents] = useState<Agent[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
   const [events, setEvents] = useState<Event[]>([])
   const [story, setStory] = useState<string>('')
@@ -101,6 +104,23 @@ export function App() {
       })
   }, [toast])
 
+  useEffect(() => {
+    axios
+      .get('/sub-agents', { params: { token } })
+      .then((response) => setAgents((response.data)))
+      .catch((error) => {
+        if (toast.isActive('agents')) return
+        toast({
+          id: 'agents',
+          title: 'Agents could not be retrieved',
+          description: error?.message || 'An unknown error happened.',
+          status: 'error',
+          duration: 4000,
+          isClosable: true,
+        })
+      })
+  }, [toast])
+
   function fetchStory() {
     axios
       .get(`/conversations/${rasaChatSessionId}/story`, { params: { token } })
@@ -134,6 +154,7 @@ export function App() {
         lastJsonMessage.stack,
         lastJsonMessage.events,
       )
+      setAgents(prevAgents => updateAgentsStatus(prevAgents, lastJsonMessage.events))
       setStack(updatedStack)
       setFrame(updatedActiveFrame(frame, updatedStack, lastJsonMessage.events))
       setRasaChatSessionId(lastJsonMessage.sender_id)
@@ -217,12 +238,16 @@ export function App() {
           {showRecruitmentPanel && (
             <RecruitmentPanel onClose={handleCloseRecruitmentPanel} />
           )}
-          <DialogueStack
+          <DialogueHistoryStack
             sx={boxSx}
             stack={stack}
             active={frame?.stack}
             onItemClick={onFrameSelected}
           />
+          {agents.length > 0 ? (<DialogueAgentStack
+            sx={boxSx}
+            agents={agents}
+          />):null}
           <DialougeInformation
             sx={boxSx}
             rasaChatSessionId={rasaChatSessionId}

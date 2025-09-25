@@ -63,6 +63,8 @@ from rasa.shared.constants import (
 )
 from rasa.shared.core.constants import (
     ACTION_CANCEL_FLOW,
+    ACTION_METADATA_MESSAGE_KEY,
+    ACTION_METADATA_TEXT_KEY,
     ACTION_SEND_TEXT_NAME,
     DEFAULT_SLOT_NAMES,
 )
@@ -585,8 +587,8 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             return self._create_prediction_internal_error(domain, tracker)
 
         action_metadata = {
-            "message": {
-                "text": response,
+            ACTION_METADATA_MESSAGE_KEY: {
+                ACTION_METADATA_TEXT_KEY: response,
                 SEARCH_RESULTS_METADATA_KEY: [
                     result.text for result in documents.results
                 ],

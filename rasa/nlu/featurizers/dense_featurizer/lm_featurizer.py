@@ -23,6 +23,7 @@ from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.nlu.constants import ACTION_TEXT, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.io import raise_deprecation_warning
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.model_data import ragged_array_to_ndarray
 
@@ -61,6 +62,10 @@ class LanguageModelFeaturizer(DenseFeaturizer, GraphComponent):
         self, config: Dict[Text, Any], execution_context: ExecutionContext
     ) -> None:
         """Initializes the featurizer with the model in the config."""
+        raise_deprecation_warning(
+            "LanguageModelFeaturizer is deprecated and "
+            "will be removed in a future version."
+        )
         super(LanguageModelFeaturizer, self).__init__(
             execution_context.node_name, config
         )

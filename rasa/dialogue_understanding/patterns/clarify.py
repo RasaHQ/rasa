@@ -61,19 +61,6 @@ class ActionClarifyFlows(action.Action):
         """Return the flow name."""
         return ACTION_CLARIFY_FLOWS
 
-    @staticmethod
-    def assemble_options_string(names: List[str]) -> str:
-        """Concatenate options to a human-readable string."""
-        clarification_message = ""
-        for i, name in enumerate(names):
-            if i == 0:
-                clarification_message += name
-            elif i == len(names) - 1:
-                clarification_message += f" or {name}"
-            else:
-                clarification_message += f", {name}"
-        return clarification_message
-
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -83,6 +70,8 @@ class ActionClarifyFlows(action.Action):
         metadata: Optional[Dict[str, Any]] = None,
     ) -> List[Event]:
         """Correct the slots."""
+        from rasa.dialogue_understanding.utils import assemble_options_string
+
         stack = tracker.stack
         if not (top := stack.top()):
             structlogger.warning("action.clarify_flows.no_active_flow")
@@ -92,7 +81,7 @@ class ActionClarifyFlows(action.Action):
             structlogger.warning("action.clarify_flows.no_clarification_frame")
             return []
 
-        options_string = self.assemble_options_string(top.names)
+        options_string = assemble_options_string(top.names, conjunction="or")
         top.clarification_options = options_string
         # since we modified the stack frame, we need to update the stack
         return tracker.create_stack_updated_events(stack)

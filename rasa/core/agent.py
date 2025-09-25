@@ -12,7 +12,9 @@ import aiohttp
 from aiohttp import ClientError
 
 import rasa.shared.utils.io
+from rasa.agents.utils import initialize_agents
 from rasa.core import jobs
+from rasa.core.available_agents import AvailableAgents
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -34,7 +36,7 @@ from rasa.privacy.privacy_manager import BackgroundPrivacyManager
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import AgentInitializationException, RasaException
 from rasa.telemetry import track_privacy_enabled
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
 from rasa.utils.endpoints import EndpointConfig
@@ -202,6 +204,7 @@ async def load_agent(
     model_server: Optional[EndpointConfig] = None,
     remote_storage: Optional[StorageType] = None,
     endpoints: Optional[AvailableEndpoints] = None,
+    sub_agents: Optional[AvailableAgents] = None,
     loop: Optional[AbstractEventLoop] = None,
 ) -> Agent:
     """Loads agent from server, remote storage or disk.
@@ -211,6 +214,7 @@ async def load_agent(
         model_server: Configuration for a potential server which serves the model.
         remote_storage: Remote storage to use for loading the model.
         endpoints: Endpoint configuration.
+        sub_agents: Sub-agents configuration.
         loop: Optional async loop to pass to broker creation.
 
     Returns:
@@ -281,8 +285,19 @@ async def load_agent(
                 "No valid configuration given to load agent. "
                 "Agent loaded with no model!"
             )
+
+        if agent.processor and sub_agents:
+            flows = await agent.processor.get_flows()
+            # CLI commands that accept --sub-agents
+            # all route through this entry point.
+            # With all required data available,
+            # this is the best spot to initialize the subagents.
+            await initialize_agents(flows, sub_agents)
+
         return agent
 
+    except AgentInitializationException as e:
+        raise e
     except Exception as e:
         logger.error(f"Could not load model due to {e}.", exc_info=True)
         return agent
@@ -322,6 +337,7 @@ class Agent:
         remote_storage: Optional[StorageType] = None,
         http_interpreter: Optional[RasaNLUHttpInterpreter] = None,
         endpoints: Optional[AvailableEndpoints] = None,
+        sub_agents: Optional[AvailableAgents] = None,
         privacy_manager: Optional[BackgroundPrivacyManager] = None,
     ):
         """Initializes an `Agent`."""
@@ -334,6 +350,7 @@ class Agent:
         self.action_endpoint = action_endpoint
         self.http_interpreter = http_interpreter
         self.endpoints = endpoints
+        self.sub_agents = sub_agents
 
         self._set_fingerprint(fingerprint)
         self.model_server = model_server

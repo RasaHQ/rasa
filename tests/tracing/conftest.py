@@ -1,5 +1,4 @@
 import pathlib
-import socket
 import threading
 from concurrent import futures
 from typing import Callable, Generator, Optional, Text
@@ -9,8 +8,6 @@ import opentelemetry.metrics
 import opentelemetry.proto.collector.trace.v1.trace_service_pb2_grpc as trace_service
 import pytest
 from google.protobuf.internal.containers import RepeatedCompositeFieldContainer
-from opentelemetry.exporter.jaeger.thrift.gen.agent.Agent import emitBatch_args
-from opentelemetry.exporter.jaeger.thrift.gen.jaeger.ttypes import Batch
 from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
     ExportTraceServiceRequest,
     ExportTraceServiceResponse,
@@ -23,20 +20,10 @@ from opentelemetry.sdk.metrics.export import (
     PeriodicExportingMetricReader,
 )
 from pytest import MonkeyPatch
-from thrift.protocol.TCompactProtocol import TCompactProtocol
-from thrift.transport.TTransport import TMemoryBuffer
 
 from rasa.engine.caching import LocalTrainingCache
 
 TRACING_TESTS_FIXTURES_DIRECTORY = pathlib.Path(__file__).parent / "fixtures"
-
-
-@pytest.fixture
-def udp_server() -> Generator[socket.socket, None, None]:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("localhost", 6832))
-    yield sock
-    sock.close()
 
 
 class CapturingTestSpanExporter(trace_service.TraceServiceServicer):
@@ -66,7 +53,8 @@ def grpc_server(
         span_exporter, server
     )
 
-    server.add_insecure_port("[::]:4317")
+    # Use a different port to avoid conflicts
+    server.add_insecure_port("[::]:4319")
 
     server.start()
     yield server
@@ -89,7 +77,7 @@ def secured_grpc_server(
         cert_key = f.read()
 
     server.add_secure_port(
-        "[::]:4318",
+        "[::]:4321",
         grpc.ssl_server_credentials(
             private_key_certificate_chain_pairs=[(cert_key, cert)],
         ),
@@ -97,17 +85,6 @@ def secured_grpc_server(
     server.start()
     yield server
     server.stop(None)
-
-
-def deserialize_jaeger_batch(data: bytearray) -> Batch:
-    trans = TMemoryBuffer(data)
-    prot = TCompactProtocol(trans)
-    prot.readMessageBegin()
-    emitBatch = emitBatch_args()  # type: ignore
-    emitBatch.read(prot)  # type: ignore
-    prot.readMessageEnd()
-
-    return emitBatch.batch
 
 
 @pytest.fixture()

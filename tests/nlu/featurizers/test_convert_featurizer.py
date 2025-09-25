@@ -15,6 +15,13 @@ from rasa.nlu.constants import (
     NUMBER_OF_SUB_TOKENS,
     TOKENS_NAMES,
 )
+
+# Skip all tests in this file if TensorFlow is not available
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if not TENSORFLOW_AVAILABLE:
+    pytest.skip("TensorFlow is not available", allow_module_level=True)
+
 from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import (
     ORIGINAL_TF_HUB_MODULE_URL,
     RESTRICTED_ACCESS_URL,

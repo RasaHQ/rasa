@@ -1,0 +1,13 @@
+action_endpoint:
+  actions_module: "actions"
+
+model_groups:
+  - id: llm-model
+    models:
+      - provider: openai
+        model: gpt-4o-2024-11-20
+        timeout: 30
+        temperature: 0.0
+        top_p: 0.0
+        cache:
+          no-cache: true

@@ -6,7 +6,7 @@ import shutil
 import tempfile
 import textwrap
 from pathlib import Path
-from typing import Any, Dict, Text, Union
+from typing import Any, Dict, Optional, Text, Type, Union
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -23,7 +23,6 @@ import rasa.model_training
 import rasa.nlu
 import rasa.shared.utils.io
 from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.engine.graph import GraphModelConfiguration
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.local_model_storage import LocalModelStorage
@@ -36,7 +35,6 @@ from rasa.model_training import (
     _dry_run_result,
     determine_model_name,
 )
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.shared.constants import (
     CONFIG_PIPELINE_KEY,
     CONFIG_POLICIES_KEY,
@@ -48,7 +46,25 @@ from rasa.shared.core.training_data.structures import RuleStep, StoryGraph, Stor
 from rasa.shared.data import TrainingType
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.utils.yaml import read_yaml, read_yaml_file, write_yaml
-from rasa.utils.tensorflow.constants import EPOCHS
+
+# Conditional imports for TensorFlow-dependent modules
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if TENSORFLOW_AVAILABLE:
+    from rasa.core.policies.ted_policy import TEDPolicy
+    from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+    from rasa.utils.tensorflow.constants import EPOCHS
+else:
+    # Placeholder values when TensorFlow is not available
+    TEDPolicy: Optional[Type[Any]] = None
+    DIETClassifier: Optional[Type[Any]] = None
+    EPOCHS: Optional[str] = None
+
+
+def skip_if_tensorflow_not_available() -> None:
+    """Skip test if TensorFlow is not available."""
+    if not TENSORFLOW_AVAILABLE:
+        pytest.skip("TensorFlow is not available")
 
 
 def count_temp_rasa_files(directory: Text) -> int:
@@ -271,6 +287,10 @@ def new_model_path_in_same_dir(old_model_path: Text) -> Text:
 
 
 class TestE2e:
+    def setup_method(self):
+        """Skip all tests in this class if TensorFlow is not available."""
+        skip_if_tensorflow_not_available()
+
     def test_e2e_gives_experimental_warning(
         self,
         moodbot_domain_path: Path,
@@ -487,6 +507,7 @@ class TestE2e:
         ) in captured.out
 
 
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 @pytest.mark.timeout(300, func_only=True)
 @pytest.mark.parametrize("use_latest_model", [True, False])
 def test_model_finetuning(
@@ -517,6 +538,7 @@ def test_model_finetuning(
     assert Path(result.model).is_file()
 
 
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 @pytest.mark.timeout(300, func_only=True)
 @pytest.mark.parametrize("use_latest_model", [True, False])
 async def test_model_finetuning_core(
@@ -525,13 +547,14 @@ async def test_model_finetuning_core(
     use_latest_model: bool,
     tmp_path_factory: TempPathFactory,
 ):
+    skip_if_tensorflow_not_available()
     (tmp_path / "models").mkdir()
     output = tmp_path / "models"
 
     if use_latest_model:
         trained_moodbot_core_path = str(Path(trained_moodbot_core_path).parent)
 
-    # Typically models will be fine-tuned with a smaller number of epochs than training
+    # Typically models will be fine-tuned with a smaller number of epochs than training    # noqa: E501
     # from scratch.
     # Fine-tuning will use the number of epochs in the new config.
     old_config = read_yaml_file("data/test_moodbot/config.yml")
@@ -562,12 +585,14 @@ async def test_model_finetuning_core(
     assert metadata.training_type == TrainingType.CORE
 
 
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 async def test_model_finetuning_core_with_default_epochs(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
     trained_moodbot_core_path: Text,
     tmp_path_factory: TempPathFactory,
 ):
+    skip_if_tensorflow_not_available()
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
@@ -593,6 +618,7 @@ async def test_model_finetuning_core_with_default_epochs(
     assert metadata.train_schema.nodes["train_TEDPolicy0"].config[EPOCHS] == 2
 
 
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 async def test_model_finetuning_core_new_domain_label(
     tmp_path: Path,
     trained_default_agent_model: Text,
@@ -617,6 +643,7 @@ async def test_model_finetuning_core_new_domain_label(
         )
 
 
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 def test_model_finetuning_new_domain_label_stops_all_training(
     tmp_path: Path, trained_moodbot_path: Text
 ):
@@ -643,19 +670,21 @@ def test_model_finetuning_new_domain_label_stops_all_training(
 
 @pytest.mark.timeout(300, func_only=True)
 @pytest.mark.parametrize("use_latest_model", [True, False])
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 async def test_model_finetuning_nlu(
     tmp_path: Path,
     trained_nlu_moodbot_path: Text,
     use_latest_model: bool,
     tmp_path_factory: TempPathFactory,
 ):
+    skip_if_tensorflow_not_available()
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
     if use_latest_model:
         trained_nlu_moodbot_path = str(Path(trained_nlu_moodbot_path).parent)
 
-    # Typically models will be fine-tuned with a smaller number of epochs than training
+    # Typically models will be fine-tuned with a smaller number of epochs than training   # noqa: E501
     # from scratch.
     # Fine-tuning will use the number of epochs in the new config.
     old_config = read_yaml_file("data/test_moodbot/config.yml")
@@ -684,6 +713,7 @@ async def test_model_finetuning_nlu(
     assert metadata.training_type == TrainingType.NLU
 
 
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 async def test_model_finetuning_nlu_new_label(
     tmp_path: Path, trained_nlu_moodbot_path: Text
 ):
@@ -705,6 +735,7 @@ async def test_model_finetuning_nlu_new_label(
         )
 
 
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 async def test_model_finetuning_nlu_new_entity(
     tmp_path: Path, trained_nlu_moodbot_path: Text
 ):
@@ -726,6 +757,7 @@ async def test_model_finetuning_nlu_new_entity(
         )
 
 
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 async def test_model_finetuning_nlu_new_label_already_in_domain(
     tmp_path: Path,
     trained_rasa_model: Text,
@@ -752,6 +784,7 @@ async def test_model_finetuning_nlu_new_label_already_in_domain(
         )
 
 
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 async def test_model_finetuning_nlu_new_label_to_domain_only(
     tmp_path: Path, trained_nlu_moodbot_path: Text
 ):
@@ -775,12 +808,14 @@ async def test_model_finetuning_nlu_new_label_to_domain_only(
 
 
 @pytest.mark.timeout(200, func_only=True)
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 async def test_model_finetuning_nlu_with_default_epochs(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
     trained_nlu_moodbot_path: Text,
     tmp_path_factory: TempPathFactory,
 ):
+    skip_if_tensorflow_not_available()
     (tmp_path / "models").mkdir()
     output = str(tmp_path / "models")
 
@@ -806,6 +841,7 @@ async def test_model_finetuning_nlu_with_default_epochs(
 
 
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 def test_model_finetuning_with_invalid_model(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -835,6 +871,7 @@ def test_model_finetuning_with_invalid_model(
 
 
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 async def test_model_finetuning_with_invalid_model_core(
     tmp_path: Path,
     domain_path: Text,
@@ -860,6 +897,7 @@ async def test_model_finetuning_with_invalid_model_core(
 
 
 @pytest.mark.parametrize("model_to_fine_tune", ["invalid-path-to-model", "."])
+@pytest.mark.skip(reason="Incremental training is not supported in Rasa 3.14.0+")
 async def test_model_finetuning_with_invalid_model_nlu(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -920,6 +958,7 @@ def test_models_not_retrained_if_only_new_action(
 def test_invalid_graph_schema(
     tmp_path: Path, domain_path: Text, stories_path: Text, nlu_data_path: Text
 ):
+    skip_if_tensorflow_not_available()
     config = textwrap.dedent(
         """
     version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -1109,3 +1148,54 @@ def test_model_training_determine_model_name(model_name, expected):
         patch("time.strftime", return_value="20220101-120000"),
     ):
         assert determine_model_name(model_name, TrainingType.BOTH) == expected
+
+
+@pytest.mark.timeout(300, func_only=True)
+@pytest.mark.parametrize("use_latest_model", [True, False])
+def test_model_finetuning_blocked(
+    tmp_path: Path,
+    domain_path: Text,
+    stories_path: Text,
+    stack_config_path: Text,
+    nlu_data_path: Text,
+    trained_rasa_model: Text,
+    use_latest_model: bool,
+):
+    """Test that incremental training is blocked in Rasa 3.14.0+
+    and raises SystemExit"""
+    (tmp_path / "models").mkdir()
+    output = str(tmp_path / "models")
+
+    if use_latest_model:
+        trained_rasa_model = str(Path(trained_rasa_model).parent)
+
+    # Incremental training should be blocked
+    with pytest.raises(SystemExit):
+        rasa.api.train(
+            domain_path,
+            stack_config_path,
+            [stories_path, nlu_data_path],
+            output=output,
+            force_training=True,
+            model_to_finetune=trained_rasa_model,
+            finetuning_epoch_fraction=0.1,
+        )
+
+
+def test_incremental_training_blocked_system_exit():
+    """Test that incremental training raises SystemExit with proper error message"""
+    from unittest.mock import patch
+
+    # Test that the CLI properly blocks incremental training
+    with patch("sys.argv", ["rasa", "train", "--finetune"]):
+        with pytest.raises(SystemExit) as exc_info:
+            from argparse import Namespace
+
+            from rasa.cli.train import _model_for_finetuning
+
+            # Simulate the CLI argument parsing
+            args = Namespace(finetune="some_model_path")
+            _model_for_finetuning(args)
+
+    # Verify it exits with code 1
+    assert exc_info.value.code == 1

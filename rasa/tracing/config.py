@@ -6,7 +6,6 @@ import os
 from typing import Any, Dict, Optional, Text
 
 import grpc
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.metrics import set_meter_provider
@@ -16,6 +15,9 @@ from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+from rasa.agents.protocol.a2a.a2a_agent import A2AAgent
+from rasa.agents.protocol.mcp.mcp_open_agent import MCPOpenAgent
+from rasa.agents.protocol.mcp.mcp_task_agent import MCPTaskAgent
 from rasa.core.actions.custom_action_executor import (
     CustomActionExecutor,
     RetryCustomActionExecutor,
@@ -93,6 +95,9 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         if custom_action_executor_class != RetryCustomActionExecutor:
             custom_action_executor_subclasses.append(custom_action_executor_class)
 
+    # All agent classes to instrument (protocol agent classes)
+    agent_classes = [MCPOpenAgent, MCPTaskAgent, A2AAgent]
+
     instrumentation.instrument(
         tracer_provider=tracer_provider,
         agent_class=Agent,
@@ -114,6 +119,7 @@ def configure_tracing(tracer_provider: Optional[TracerProvider]) -> None:
         multi_step_llm_command_generator_class=MultiStepLLMCommandGenerator,
         custom_action_executor_subclasses=custom_action_executor_subclasses,
         flow_retrieval_class=FlowRetrieval,
+        subagent_classes=agent_classes,
     )
 
 
@@ -172,19 +178,35 @@ class TracerConfigurer(abc.ABC):
 
 
 class JaegerTracerConfigurer(TracerConfigurer):
-    """The `TracerConfigurer` for a Jaeger backend."""
+    """The `TracerConfigurer` for a Jaeger backend.
+
+    This class maintains backward compatibility with the old Jaeger configuration format
+    while internally using OTLP to avoid protobuf compatibility issues.
+    """
 
     @classmethod
     def configure_from_endpoint_config(cls, cfg: EndpointConfig) -> TracerProvider:
-        """Configure tracing for Jaeger.
+        """Configure tracing for Jaeger using OTLP under the hood.
 
-        This will read the Jaeger-specific configuration from the `EndpointConfig` and
-        create a corresponding `TracerProvider` that exports to the given Jaeger
-        backend.
+        This maintains backward compatibility with the old Jaeger configuration format
+        while using OTLP internally to avoid protobuf compatibility issues.
 
         :param cfg: The configuration to be read for configuring tracing.
         :return: The configured `TracerProvider`.
         """
+        # Extract Jaeger-specific configuration
+        jaeger_config = cls._extract_config(cfg)
+
+        # Map Jaeger configuration to OTLP endpoint
+        otlp_endpoint = f"http://{jaeger_config['agent_host_name']}:{jaeger_config.get('agent_port', 4317)}"  # noqa: E501
+
+        # Create OTLP exporter with Jaeger-compatible configuration
+        otlp_exporter = OTLPSpanExporter(
+            endpoint=otlp_endpoint,
+            insecure=True,  # Jaeger typically runs without TLS in development
+            headers=cls._build_headers(jaeger_config),
+        )
+
         provider = TracerProvider(
             resource=Resource.create(
                 {
@@ -195,25 +217,36 @@ class JaegerTracerConfigurer(TracerConfigurer):
             )
         )
 
-        jaeger_exporter = JaegerExporter(
-            **cls._extract_config(cfg), udp_split_oversized_batches=True
-        )
         logger.info(
-            f"Registered {cfg.type} endpoint for tracing. Traces will be exported to"
-            f" {jaeger_exporter.agent_host_name}:{jaeger_exporter.agent_port}"
+            f"Registered {cfg.type} endpoint for tracing using OTLP. "
+            f"Traces will be exported to {otlp_endpoint}."
         )
-        provider.add_span_processor(BatchSpanProcessor(jaeger_exporter))
+        provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
 
         return provider
 
     @classmethod
     def _extract_config(cls, cfg: EndpointConfig) -> Dict[str, Any]:
+        """Extract Jaeger configuration parameters."""
         return {
             "agent_host_name": (cfg.kwargs.get("host", "localhost")),
             "agent_port": (cfg.kwargs.get("port", 6831)),
             "username": cfg.kwargs.get("username"),
             "password": cfg.kwargs.get("password"),
         }
+
+    @classmethod
+    def _build_headers(cls, jaeger_config: Dict[str, Any]) -> Optional[Dict[str, str]]:
+        """Build OTLP headers from Jaeger authentication config."""
+        headers = {}
+        if jaeger_config.get("username") and jaeger_config.get("password"):
+            import base64
+
+            credentials = base64.b64encode(
+                f"{jaeger_config['username']}:{jaeger_config['password']}".encode()
+            ).decode()
+            headers["Authorization"] = f"Basic {credentials}"
+        return headers if headers else None
 
 
 class OTLPCollectorConfigurer(TracerConfigurer):

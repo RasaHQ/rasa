@@ -49,6 +49,7 @@ from rasa.shared.constants import (
     UTTER_ASK_PREFIX,
 )
 from rasa.shared.core.flows import Flow
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.flows.steps import (
     CallFlowStep,
     CollectInformationFlowStep,
@@ -1082,6 +1083,7 @@ def track_model_training(
         "num_regexes": len(nlu_data.regex_features),
         "is_finetuning": is_finetuning,
         "recipe": config.get(CONFIG_RECIPE_KEY),
+        "agents": _collect_agent_configuration(flows),
     }
 
     flow_statistics = _collect_flow_statistics(flows.underlying_flows)
@@ -1122,6 +1124,67 @@ def track_model_training(
             "runtime": int(runtime.total_seconds()),
         },
     )
+
+
+def _collect_agent_configuration(flows: FlowsList) -> Dict[str, Any]:
+    agent_data: Dict[str, Any] = {}
+
+    from rasa.core.available_agents import AvailableAgents
+    from rasa.core.config.configuration import Configuration
+
+    agents = AvailableAgents.get_instance().agents
+    mcp_servers = Configuration.get_instance().endpoints.mcp_servers
+
+    if not agents and not mcp_servers:
+        return agent_data
+
+    agent_data["usage"] = []
+
+    for flow in flows.underlying_flows:
+        for step in flow.steps:
+            if isinstance(step, CallFlowStep):
+                if flows.flow_by_id(step.call) is not None:
+                    continue
+
+                if step.is_calling_mcp_tool():
+                    agent_data["usage"].append(
+                        {
+                            "flow": flow.id,
+                            "mcp_tool": step.call,
+                            "mcp_server": step.mcp_server,
+                            "mapping": step.mapping,
+                        }
+                    )
+
+                if step.is_calling_agent():
+                    if step.exit_if:
+                        agent_data["usage"].append(
+                            {
+                                "flow": flow.id,
+                                "agent": step.call,
+                                "exit_if": step.exit_if,
+                            }
+                        )
+                    else:
+                        agent_data["usage"].append(
+                            {
+                                "flow": flow.id,
+                                "agent": step.call,
+                            }
+                        )
+
+    # dump mcp_servers and agents as json and exclude any values that are None
+    if mcp_servers:
+        agent_data["mcp_servers"] = [
+            mcp_server.model_dump(exclude_none=True) for mcp_server in mcp_servers
+        ]
+    if agents:
+        agent_data["agents"] = [
+            {agent_name: agent_info.model_dump(exclude_none=True)}
+            for agent_name, agent_info in agents.items()
+        ]
+
+    return agent_data
 
 
 def _collect_flow_statistics(flows: List[Flow]) -> Dict[str, Any]:

@@ -2648,6 +2648,333 @@ class FlowCancelled(SkipEventInMDStoryMixin):
             raise ValueError(f"Failed to parse flow_cancelled event. {e}")
 
 
+class AgentCompleted(SkipEventInMDStoryMixin):
+    """Mark the completion of an agent."""
+
+    type_name = "agent_completed"
+
+    def __init__(
+        self,
+        agent_id: str,
+        flow_id: str,
+        status: Optional[str] = None,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        self.agent_id = agent_id
+        self.flow_id = flow_id
+        self.status = status
+        super().__init__(timestamp, metadata)
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return (
+            f"AgentCompleted(agent: {self.agent_id}, flow: {self.flow_id}, "
+            f"status: {self.status})"
+        )
+
+    def __str__(self) -> str:
+        """Returns event as human-readable string."""
+        return (
+            f"{self.__class__.__name__}({self.agent_id}, {self.flow_id}, {self.status})"
+        )
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash((self.agent_id, self.flow_id, self.status))
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, AgentCompleted):
+            return NotImplemented
+        return (self.agent_id, self.flow_id, self.status) == (
+            other.agent_id,
+            other.flow_id,
+            other.status,
+        )
+
+    def as_dict(self) -> Dict[str, Any]:
+        """Returns serialized event."""
+        serialized = super().as_dict()
+        serialized.update(
+            {"agent_id": self.agent_id, "flow_id": self.flow_id, "status": self.status}
+        )
+        return serialized
+
+    @classmethod
+    def _from_parameters(cls, parameters: Dict[str, Any]) -> "AgentCompleted":
+        if "agent_id" not in parameters:
+            raise ValueError(
+                "Failed to parse agent_completed event: agent_id is required"
+            )
+        if "flow_id" not in parameters:
+            raise ValueError(
+                "Failed to parse agent_completed event: flow_id is required"
+            )
+
+        return AgentCompleted(
+            parameters["agent_id"],
+            parameters["flow_id"],
+            parameters.get("status"),
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
+
+
+class AgentStarted(SkipEventInMDStoryMixin):
+    """Mark the start of an agent."""
+
+    type_name = "agent_started"
+
+    def __init__(
+        self,
+        agent_id: str,
+        flow_id: str,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        context_id: Optional[str] = None,
+    ) -> None:
+        self.agent_id = agent_id
+        self.flow_id = flow_id
+        self.context_id = context_id
+        super().__init__(timestamp, metadata)
+
+    def __repr__(self) -> str:
+        """Returns event as string for debugging."""
+        if self.context_id:
+            return (
+                f"AgentStarted(agent: {self.agent_id}, flow: {self.flow_id}, "
+                f"context_id: {self.context_id})"
+            )
+        else:
+            return f"AgentStarted(agent: {self.agent_id}, flow: {self.flow_id})"
+
+    def __str__(self) -> str:
+        """Returns event as human-readable string."""
+        return f"{self.__class__.__name__}({self.agent_id}, {self.flow_id})"
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash((self.agent_id, self.flow_id))
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, AgentStarted):
+            return NotImplemented
+        return (self.agent_id, self.flow_id) == (other.agent_id, other.flow_id)
+
+    def as_dict(self) -> Dict[str, Any]:
+        """Returns serialized event."""
+        serialized = super().as_dict()
+        serialized.update({"agent_id": self.agent_id, "flow_id": self.flow_id})
+        return serialized
+
+    @classmethod
+    def _from_parameters(cls, parameters: Dict[str, Any]) -> "AgentStarted":
+        if "agent_id" not in parameters:
+            raise ValueError(
+                "Failed to parse agent_started event: agent_id is required"
+            )
+        if "flow_id" not in parameters:
+            raise ValueError("Failed to parse agent_started event: flow_id is required")
+
+        return AgentStarted(
+            parameters["agent_id"],
+            parameters["flow_id"],
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
+
+
+class AgentInterrupted(SkipEventInMDStoryMixin):
+    """Mark the interruption of an agent."""
+
+    type_name = "agent_interrupted"
+
+    def __init__(
+        self,
+        agent_id: str,
+        flow_id: str,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        self.agent_id = agent_id
+        self.flow_id = flow_id
+        super().__init__(timestamp, metadata)
+
+    def __repr__(self) -> str:
+        """Returns event as string for debugging."""
+        return f"AgentInterrupted(agent: {self.agent_id}, flow: {self.flow_id})"
+
+    def __str__(self) -> str:
+        """Returns event as human-readable string."""
+        return f"{self.__class__.__name__}({self.agent_id}, {self.flow_id})"
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash((self.agent_id, self.flow_id))
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, AgentInterrupted):
+            return NotImplemented
+        return (self.agent_id, self.flow_id) == (other.agent_id, other.flow_id)
+
+    def as_dict(self) -> Dict[str, Any]:
+        """Returns serialized event."""
+        serialized = super().as_dict()
+        serialized.update({"agent_id": self.agent_id, "flow_id": self.flow_id})
+        return serialized
+
+    @classmethod
+    def _from_parameters(cls, parameters: Dict[str, Any]) -> "AgentInterrupted":
+        if "agent_id" not in parameters:
+            raise ValueError(
+                "Failed to parse agent_interrupted event: agent_id is required"
+            )
+        if "flow_id" not in parameters:
+            raise ValueError(
+                "Failed to parse agent_interrupted event: flow_id is required"
+            )
+
+        return AgentInterrupted(
+            parameters["agent_id"],
+            parameters["flow_id"],
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
+
+
+class AgentCancelled(SkipEventInMDStoryMixin):
+    """Mark the cancellation of an agent."""
+
+    type_name = "agent_cancelled"
+
+    def __init__(
+        self,
+        agent_id: str,
+        flow_id: str,
+        reason: Optional[str] = None,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        self.agent_id = agent_id
+        self.flow_id = flow_id
+        self.reason = reason
+        super().__init__(timestamp, metadata)
+
+    def __repr__(self) -> str:
+        """Returns event as string for debugging."""
+        return (
+            f"AgentCancelled(agent: {self.agent_id}, flow: {self.flow_id}, "
+            f"reason: {self.reason})"
+        )
+
+    def __str__(self) -> str:
+        """Returns event as human-readable string."""
+        return (
+            f"{self.__class__.__name__}({self.agent_id}, {self.flow_id}, {self.reason})"
+        )
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash((self.agent_id, self.flow_id, self.reason))
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, AgentCancelled):
+            return NotImplemented
+        return (self.agent_id, self.flow_id, self.reason) == (
+            other.agent_id,
+            other.flow_id,
+            other.reason,
+        )
+
+    def as_dict(self) -> Dict[str, Any]:
+        """Returns serialized event."""
+        serialized = super().as_dict()
+        serialized.update(
+            {"agent_id": self.agent_id, "flow_id": self.flow_id, "reason": self.reason}
+        )
+        return serialized
+
+    @classmethod
+    def _from_parameters(cls, parameters: Dict[str, Any]) -> "AgentCancelled":
+        if "agent_id" not in parameters:
+            raise ValueError(
+                "Failed to parse agent_cancelled event: agent_id is required"
+            )
+        if "flow_id" not in parameters:
+            raise ValueError(
+                "Failed to parse agent_cancelled event: flow_id is required"
+            )
+
+        return AgentCancelled(
+            parameters["agent_id"],
+            parameters["flow_id"],
+            parameters.get("reason"),
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
+
+
+class AgentResumed(SkipEventInMDStoryMixin):
+    """Mark the resumption of an agent."""
+
+    type_name = "agent_resumed"
+
+    def __init__(
+        self,
+        agent_id: str,
+        flow_id: str,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        self.agent_id = agent_id
+        self.flow_id = flow_id
+        super().__init__(timestamp, metadata)
+
+    def __repr__(self) -> str:
+        """Returns event as string for debugging."""
+        return f"AgentResumed(agent: {self.agent_id}, flow: {self.flow_id})"
+
+    def __str__(self) -> str:
+        """Returns event as human-readable string."""
+        return f"{self.__class__.__name__}({self.agent_id}, {self.flow_id})"
+
+    def __hash__(self) -> int:
+        """Returns unique hash for event."""
+        return hash((self.agent_id, self.flow_id))
+
+    def __eq__(self, other: Any) -> bool:
+        """Compares object with other object."""
+        if not isinstance(other, AgentResumed):
+            return NotImplemented
+        return (self.agent_id, self.flow_id) == (other.agent_id, other.flow_id)
+
+    def as_dict(self) -> Dict[str, Any]:
+        """Returns serialized event."""
+        serialized = super().as_dict()
+        serialized.update({"agent_id": self.agent_id, "flow_id": self.flow_id})
+        return serialized
+
+    @classmethod
+    def _from_parameters(cls, parameters: Dict[str, Any]) -> "AgentResumed":
+        if "agent_id" not in parameters:
+            raise ValueError(
+                "Failed to parse agent_resumed event: agent_id is required"
+            )
+        if "flow_id" not in parameters:
+            raise ValueError("Failed to parse agent_resumed event: flow_id is required")
+
+        return AgentResumed(
+            parameters["agent_id"],
+            parameters["flow_id"],
+            parameters.get("timestamp"),
+            parameters.get("metadata"),
+        )
+
+
 class SessionEnded(AlwaysEqualEventMixin):
     """Mark the end of a conversation session."""
 

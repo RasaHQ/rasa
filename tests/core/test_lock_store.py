@@ -368,7 +368,6 @@ def create_ticket_lock(conversation_id: str, tickets: List[Ticket]) -> TicketLoc
 
 def create_serialized_lock(tickets: List[Ticket]) -> str:
     """Serialized lock for testing."""
-
     ticket_lock = create_ticket_lock(
         conversation_id="test_acquire_lock_debug_message",
         tickets=tickets,

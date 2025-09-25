@@ -2,23 +2,30 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Set, Text, Union
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Set, Text, Union
 
 import rasa.shared.utils.io
 from rasa.shared.core.flows import Flow
 from rasa.shared.core.flows.flow_path import FlowPathsList
 from rasa.shared.core.flows.validation import (
     DuplicatedFlowIdException,
-    validate_called_flows_exists,
+    validate_call_steps,
+    validate_exit_if_conditions,
+    validate_exit_if_exclusivity,
     validate_flow,
     validate_link_in_call_restriction,
     validate_linked_flows_exists,
+    validate_mcp_mapping_slots,
+    validate_mcp_server_references,
     validate_nlu_trigger,
     validate_patterns_are_not_called_or_linked,
     validate_patterns_are_not_calling_or_linking_other_flows,
     validate_step_ids_are_unique,
 )
 from rasa.shared.core.slots import Slot
+
+if TYPE_CHECKING:
+    from rasa.shared.core.domain import Domain
 
 
 @dataclass
@@ -160,17 +167,26 @@ class FlowsList:
         else:
             return None
 
-    def validate(self) -> None:
-        """Validate the flows."""
+    def validate(self, domain: Optional["Domain"] = None) -> None:
+        """Validate the flows.
+
+        Args:
+            domain: Optional domain containing slot definitions. If provided,
+                   exit_if conditions will be validated against defined slots.
+        """
         for flow in self.underlying_flows:
             validate_flow(flow)
         validate_nlu_trigger(self.underlying_flows)
         validate_link_in_call_restriction(self)
-        validate_called_flows_exists(self)
+        validate_call_steps(self)
+        validate_mcp_server_references(self)
+        validate_mcp_mapping_slots(self, domain)
         validate_linked_flows_exists(self)
         validate_patterns_are_not_called_or_linked(self)
         validate_patterns_are_not_calling_or_linking_other_flows(self)
         validate_step_ids_are_unique(self)
+        validate_exit_if_conditions(self, domain)
+        validate_exit_if_exclusivity(self)
 
     @property
     def user_flow_ids(self) -> Set[str]:

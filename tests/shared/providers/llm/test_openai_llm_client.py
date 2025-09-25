@@ -203,7 +203,6 @@ class TestOpenAILLMClient:
         mocked_lite_llm_completion: MagicMock,
     ) -> None:
         """Tests that the API base, version and key is resolved properly."""
-
         # Given
         api_key = "my key"
         monkeypatch.setenv("RASA_OPENAI_API_KEY", api_key)
@@ -264,7 +263,6 @@ class TestOpenAILLMClient:
         mocked_lite_llm_acompletion: MagicMock,
     ) -> None:
         """Tests that the API base, version and key is resolved properly for acompletion."""  # noqa: E501
-
         # Given
         api_key = "my key"
         monkeypatch.setenv("RASA_OPENAI_API_KEY", api_key)

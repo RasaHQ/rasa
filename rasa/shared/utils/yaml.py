@@ -335,7 +335,9 @@ class YamlValidationException(YamlException, ValueError):
                     )
                     if found_lc:
                         return line_offset
-                    return this_line + line_offset
+                    if this_line is not None:
+                        return this_line + line_offset
+                    return line_offset
                 return line
             elif isinstance(current, list) and head.isdigit():
                 return (

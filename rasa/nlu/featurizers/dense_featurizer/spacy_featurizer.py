@@ -4,6 +4,9 @@ from typing import Any, Dict, List, Text, Type
 
 import numpy as np
 
+# importing spacy at module level to ensure error is raised if spacy is not installed
+import spacy  # noqa: F401
+
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource

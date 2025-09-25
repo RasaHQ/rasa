@@ -28,6 +28,7 @@ from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.nlu.constants import ACTION_TEXT, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
+from rasa.shared.utils.io import raise_deprecation_warning
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +102,9 @@ class ConveRTFeaturizer(DenseFeaturizer, GraphComponent):
             name: An identifier for this featurizer.
             config: The configuration.
         """
+        raise_deprecation_warning(
+            "ConveRTFeaturizer is deprecated and will be removed in a future version."
+        )
         super().__init__(name=name, config=config)
 
         model_url = self._config["model_url"]

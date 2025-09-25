@@ -4,7 +4,9 @@ from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
-from rasa.dialogue_understanding.stack.frames.flow_stack_frame import UserFlowStackFrame
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    UserFlowStackFrame,
+)
 
 
 def test_dialogue_stack_from_dict():
@@ -39,6 +41,119 @@ def test_dialogue_stack_from_dict():
         utter="utter_ask_foo",
         collect_action="action_ask_foo",
     )
+
+
+def test_dialogue_stack_move_frames_to_top():
+    """Test moving frames to the top of the stack."""
+    stack = DialogueStack.from_dict(
+        [
+            {
+                "type": "flow",
+                "flow_id": "foo",
+                "step_id": "first_step",
+                "frame_id": "frame-1",
+            },
+            {
+                "type": "flow",
+                "flow_id": "bar",
+                "step_id": "second_step",
+                "frame_id": "frame-2",
+            },
+            {
+                "type": "flow",
+                "flow_id": "baz",
+                "step_id": "third_step",
+                "frame_id": "frame-3",
+            },
+        ]
+    )
+
+    # Move the first frame to the top
+    frame_to_move = stack.frames[0]
+    stack.move_frames_to_top([frame_to_move])
+
+    # Check that the moved frame is now at the top
+    assert stack.frames[-1] == frame_to_move
+    assert len(stack.frames) == 3  # All frames should still be present
+
+    # Move multiple frames to the top
+    frames_to_move = [stack.frames[0], stack.frames[1]]
+    stack.move_frames_to_top(frames_to_move)
+
+    # Check that the moved frames are at the top in the correct order
+    assert stack.frames[-2:] == frames_to_move
+
+
+def test_dialogue_stack_move_frames_to_top_preserves_order():
+    """Test that move_frames_to_top preserves the relative order of moved frames."""
+    stack = DialogueStack.from_dict(
+        [
+            {
+                "type": "flow",
+                "flow_id": "foo",
+                "step_id": "first_step",
+                "frame_id": "frame-1",
+            },
+            {
+                "type": "flow",
+                "flow_id": "bar",
+                "step_id": "second_step",
+                "frame_id": "frame-2",
+            },
+            {
+                "type": "flow",
+                "flow_id": "baz",
+                "step_id": "third_step",
+                "frame_id": "frame-3",
+            },
+        ]
+    )
+
+    # Move frames in reverse order to test order preservation
+    frames_to_move = [stack.frames[2], stack.frames[1]]  # baz, bar
+    stack.move_frames_to_top(frames_to_move)
+
+    # Check that the moved frames are at the top in the correct order
+    assert stack.frames[-2].flow_id == "baz"
+    assert stack.frames[-1].flow_id == "bar"
+
+
+def test_dialogue_stack_move_frames_to_top_with_pattern_frames():
+    """Test moving frames to the top when pattern frames are present."""
+    stack = DialogueStack.from_dict(
+        [
+            {
+                "type": "flow",
+                "flow_id": "foo",
+                "step_id": "first_step",
+                "frame_id": "frame-1",
+            },
+            {
+                "type": "pattern_collect_information",
+                "flow_id": "pattern_collect_information",
+                "step_id": "START",
+                "frame_id": "pattern-frame",
+                "collect": "first_step",
+                "collect_action": "action_ask_first_step",
+                "utter": "utter_ask_first_step",
+            },
+            {
+                "type": "flow",
+                "flow_id": "bar",
+                "step_id": "second_step",
+                "frame_id": "frame-2",
+            },
+        ]
+    )
+
+    # Move foo and pattern to the top
+    frames_to_move = [stack.frames[0], stack.frames[1]]  # foo, pattern
+    stack.move_frames_to_top(frames_to_move)
+
+    # Check that foo and pattern are at the top
+    assert stack.frames[-2].flow_id == "foo"
+    assert stack.frames[-1].flow_id == "pattern_collect_information"
+    assert stack.frames[0].flow_id == "bar"  # bar should be at bottom
 
 
 def test_dialogue_stack_from_dict_handles_empty():

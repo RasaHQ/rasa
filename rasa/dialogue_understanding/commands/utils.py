@@ -5,8 +5,23 @@ import structlog
 from rasa.dialogue_understanding.patterns.validate_slot import (
     ValidateSlotPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames.dialogue_stack_frame import (
+    DialogueStackFrame,
+)
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    AgentStackFrame,
+    FlowStackFrameType,
+    UserFlowStackFrame,
+)
+from rasa.dialogue_understanding.stack.frames.pattern_frame import PatternFlowStackFrame
 from rasa.shared.constants import ACTION_ASK_PREFIX, UTTER_ASK_PREFIX
-from rasa.shared.core.events import Event, SlotSet
+from rasa.shared.core.events import (
+    AgentResumed,
+    Event,
+    FlowResumed,
+    SlotSet,
+)
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -103,7 +118,8 @@ def create_validate_frames_from_slot_set_events(
     Args:
         tracker: The dialogue state tracker.
         events: List of events to process.
-        should_break:  whether or not to break after the first non-SlotSet event.
+        validate_frames: List to collect validation frames.
+        should_break:  whether to break after the first non-SlotSet event.
             if True, break out of the event loop as soon as the first non-SlotSet
             event is encountered.
             if False, continue processing the events until the end.
@@ -150,3 +166,109 @@ def find_default_flows_collecting_slot(
             for step in flow.get_collect_steps()
         )
     ]
+
+
+def resume_flow(
+    flow_to_resume: str,
+    tracker: DialogueStateTracker,
+    stack: DialogueStack,
+) -> List[Event]:
+    """Resumes a flow by reordering frames."""
+    applied_events: List[Event] = []
+
+    # Resume existing flow by reordering frames
+    frames_to_resume, user_frame_to_resume = collect_frames_to_resume(
+        stack, flow_to_resume
+    )
+
+    # if the flow is not on the stack, do nothing
+    # this should not happen, but just in case
+    if user_frame_to_resume is None:
+        structlogger.error(
+            "resume_flow.no_user_frame_to_resume",
+            flow_to_resume=flow_to_resume,
+        )
+        return []
+
+    # move the frames to the top of the stack, e.g. reorder the frames
+    # on the stack
+    stack.move_frames_to_top(frames_to_resume)
+
+    # create agent resumed events if the agent frame is now on top of the stack
+    agent_stack_frame = next(
+        (frame for frame in frames_to_resume if isinstance(frame, AgentStackFrame)),
+        None,
+    )
+    if agent_stack_frame:
+        agent_id = agent_stack_frame.agent_id
+        applied_events.append(AgentResumed(agent_id, agent_stack_frame.flow_id))
+
+    # Create flow interruption and resumption events
+    applied_events.extend(
+        [
+            # the flow, which was on the stack, is resumed
+            FlowResumed(user_frame_to_resume.flow_id, user_frame_to_resume.step_id),
+        ]
+    )
+
+    return applied_events + tracker.create_stack_updated_events(stack)
+
+
+def collect_frames_to_resume(
+    stack: DialogueStack,
+    target_flow_id: str,  # pyright: ignore[reportUndefinedVariable]
+) -> Tuple[List[DialogueStackFrame], Optional[UserFlowStackFrame]]:
+    """Collect frames that need to be resumed for the target flow.
+
+    Args:
+        stack: The stack to collect frames from.
+        target_flow_id: The ID of the flow to resume.
+
+    Returns:
+        A tuple containing (frames_to_resume, frame_to_resume).
+    """
+    frames_to_resume: List[DialogueStackFrame] = []
+    frame_found = False
+    frame_to_resume = None
+
+    for frame in stack.frames:
+        if isinstance(frame, UserFlowStackFrame) and (
+            frame.frame_type == FlowStackFrameType.REGULAR
+            or frame.frame_type == FlowStackFrameType.INTERRUPT
+        ):
+            if frame.flow_id == target_flow_id:
+                frames_to_resume.append(frame)
+                frame_to_resume = frame
+                frame_found = True
+                continue
+            elif frame_found:
+                break
+
+        if frame_found:
+            frames_to_resume.append(frame)
+
+    return list(frames_to_resume), frame_to_resume
+
+
+def remove_pattern_continue_interrupted_frames(stack: DialogueStack) -> DialogueStack:
+    """Remove pattern_continue_interrupted frames from the stack."""
+    from rasa.dialogue_understanding.stack.utils import (
+        is_continue_interrupted_flow_active,
+    )
+
+    if not is_continue_interrupted_flow_active(stack):
+        return stack
+
+    # remove pattern_continue_interrupted from the stack
+    top_frame = stack.top()
+    while isinstance(top_frame, PatternFlowStackFrame):
+        # If the top frame is a pattern frame, we need to remove it
+        # before continuing with the active user flow frame.
+        # This prevents the pattern frame
+        # from being left on the stack when the flow is started
+        # which would prevent pattern_completed to be triggered
+        # once the user flow is completed.
+        stack.pop()
+        top_frame = stack.top()
+
+    return stack

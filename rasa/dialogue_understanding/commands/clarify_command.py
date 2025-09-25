@@ -13,7 +13,11 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
 )
 from rasa.dialogue_understanding.commands.utils import extract_cleaned_options
 from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
-from rasa.shared.core.events import Event
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    AgentStackFrame,
+    AgentState,
+)
+from rasa.shared.core.events import AgentInterrupted, Event
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -85,8 +89,22 @@ class ClarifyCommand(Command):
             if flow is not None
         ]
 
+        applied_events: List[Event] = []
+
+        # if the top stack frame is an agent stack frame, we need to
+        # update the state to INTERRUPTED and add an AgentInterrupted event
+        if top_stack_frame := stack.top():
+            if isinstance(top_stack_frame, AgentStackFrame):
+                applied_events.append(
+                    AgentInterrupted(
+                        top_stack_frame.agent_id,
+                        top_stack_frame.flow_id,
+                    )
+                )
+                top_stack_frame.state = AgentState.INTERRUPTED
+
         stack.push(ClarifyPatternFlowStackFrame(names=names))
-        return tracker.create_stack_updated_events(stack)
+        return applied_events + tracker.create_stack_updated_events(stack)
 
     def __hash__(self) -> int:
         return hash(tuple(self.options))

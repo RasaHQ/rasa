@@ -65,6 +65,3 @@ repos:
         pass_filenames: false
         stages: [ commit ]
         args: [ "rasa", "tests", "--config-file", "pyproject.toml" ]
-
-
-

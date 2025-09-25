@@ -1,9 +1,15 @@
 import functools
+import json
 import time
 from dataclasses import asdict, dataclass, field
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Text, Union
 
 import structlog
+from litellm.utils import ChatCompletionMessageToolCall
+from pydantic import BaseModel
+
+from rasa.shared.constants import KEY_TOOL_CALLS
+from rasa.shared.exceptions import LLMToolResponseDecodeError
 
 structlogger = structlog.get_logger()
 
@@ -38,6 +44,53 @@ class LLMUsage:
         return asdict(self)
 
 
+class LLMToolCall(BaseModel):
+    """A class representing a response from an LLM tool call."""
+
+    id: str
+    """The ID of the tool call."""
+
+    tool_name: str
+    """The name of the tool that was called."""
+
+    tool_args: Dict[str, Any]
+    """The arguments passed to the tool call."""
+
+    type: str = "function"
+    """The type of the tool call."""
+
+    @classmethod
+    def from_dict(cls, data: Dict[Text, Any]) -> "LLMToolCall":
+        """Creates an LLMToolResponse from a dictionary."""
+        return cls(**data)
+
+    @classmethod
+    def from_litellm(cls, data: ChatCompletionMessageToolCall) -> "LLMToolCall":
+        """Creates an LLMToolResponse from a dictionary."""
+        try:
+            tool_args = json.loads(data.function.arguments)
+        except json.JSONDecodeError as e:
+            structlogger.error(
+                "llm_response.litellm_tool_call.invalid_arguments",
+                tool_name=data.function.name,
+                tool_call=data.function.arguments,
+            )
+            raise LLMToolResponseDecodeError(
+                original_exception=e,
+                message=(
+                    f"Invalid arguments for tool call - `{data.function.name}`: "
+                    f"`{data.function.arguments}`"
+                ),
+            ) from e
+
+        return cls(
+            id=data.id,
+            tool_name=data.function.name,
+            tool_args=tool_args,
+            type=data.type,
+        )
+
+
 @dataclass
 class LLMResponse:
     id: str
@@ -62,11 +115,21 @@ class LLMResponse:
     latency: Optional[float] = None
     """Optional field to store the latency of the LLM API call."""
 
+    tool_calls: Optional[List[LLMToolCall]] = None
+    """The list of tool calls the model generated for the input prompt."""
+
     @classmethod
     def from_dict(cls, data: Dict[Text, Any]) -> "LLMResponse":
         """Creates an LLMResponse from a dictionary."""
         usage_data = data.get("usage", {})
         usage_obj = LLMUsage.from_dict(usage_data) if usage_data else None
+
+        tool_calls_data = data.get(KEY_TOOL_CALLS, [])
+        tool_calls_obj = (
+            [LLMToolCall.from_dict(tool) for tool in tool_calls_data]
+            if tool_calls_data
+            else None
+        )
 
         return cls(
             id=data["id"],
@@ -76,6 +139,7 @@ class LLMResponse:
             usage=usage_obj,
             additional_info=data.get("additional_info"),
             latency=data.get("latency"),
+            tool_calls=tool_calls_obj,
         )
 
     @classmethod
@@ -92,6 +156,8 @@ class LLMResponse:
         result = asdict(self)
         if self.usage:
             result["usage"] = self.usage.to_dict()
+        if self.tool_calls:
+            result[KEY_TOOL_CALLS] = [tool.model_dump() for tool in self.tool_calls]
         return result
 
 

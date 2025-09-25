@@ -108,6 +108,7 @@ def run(args: argparse.Namespace) -> None:
     # configured
 
     import rasa.model
+    from rasa.core.available_agents import AvailableAgents
 
     # start server if remote storage is configured
     if args.remote_storage is not None:
@@ -120,6 +121,9 @@ def run(args: argparse.Namespace) -> None:
     if model_server is not None:
         rasa_run(**vars(args))
         return
+
+    # load sub-agents
+    AvailableAgents.get_instance(args.sub_agents)
 
     # start server if local model found
     args.model = _validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)

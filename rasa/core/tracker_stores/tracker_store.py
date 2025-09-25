@@ -542,7 +542,7 @@ class FailSafeTrackerStore(TrackerStore):
         return self._tracker_store.domain
 
     @domain.setter
-    def domain(self, domain: Domain) -> None:
+    def domain(self, domain: Optional[Domain]) -> None:
         self._tracker_store.domain = domain
 
         if self._fallback_tracker_store:
@@ -805,9 +805,7 @@ class AwaitableTrackerStore(TrackerStore):
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Wrapper to call `retrieve` method of primary tracker store."""
         result = self._tracker_store.retrieve(sender_id)
-        return (
-            await result if isawaitable(result) else result  # type: ignore[return-value, misc]
-        )
+        return await result if isawaitable(result) else result
 
     async def keys(self) -> Iterable[Text]:
         """Wrapper to call `keys` method of primary tracker store."""
@@ -834,6 +832,4 @@ class AwaitableTrackerStore(TrackerStore):
     ) -> Optional[DialogueStateTracker]:
         """Wrapper to call `retrieve_full_tracker` method of primary tracker store."""
         result = self._tracker_store.retrieve_full_tracker(conversation_id)
-        return (
-            await result if isawaitable(result) else result  # type: ignore[return-value, misc]
-        )
+        return await result if isawaitable(result) else result

@@ -39,7 +39,7 @@ from rasa.shared.constants import (
     TEMPERATURE_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
 )
-from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
+from rasa.shared.core.events import AgentStarted, BotUttered, SlotSet, UserUttered
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.flows.steps.collect import (
     CollectInformationFlowStep,
@@ -383,13 +383,372 @@ class TestLLMBasedCommandGenerator:
         generator.flow_retrieval.filter_flows.assert_called_once()
         assert len(result) == 1
 
+    # Tests for prepare_flows_for_template method
+    @pytest.fixture
+    def flows_with_collect_steps(self) -> FlowsList:
+        """Create a FlowsList with flows that have collect steps."""
+        return flows_from_str(
+            """
+            flows:
+              test_flow:
+                name: a test flow
+                description: some test flow
+                steps:
+                - id: first_step
+                  collect: test_slot
+                  description: test_slot
+                  ask_before_filling: false
+                - id: second_step
+                  collect: another_slot
+                  description: another_slot
+                  ask_before_filling: true
+              another_flow:
+                name: another flow
+                description: another test flow
+                steps:
+                - id: third_step
+                  collect: third_slot
+                  description: third_slot
+                  ask_before_filling: false
+            """
+        )
+
+    @pytest.fixture
+    def tracker_with_slots(self) -> DialogueStateTracker:
+        """Create a tracker with slots."""
+        slots = [
+            TextSlot(name="test_slot", mappings=[]),
+            TextSlot(name="another_slot", mappings=[]),
+            TextSlot(name="third_slot", mappings=[]),
+        ]
+        return DialogueStateTracker.from_events("test", evts=[], slots=slots)
+
+    @pytest.fixture
+    def tracker_with_set_slots(self) -> DialogueStateTracker:
+        """Create a tracker with some slots already set."""
+        slots = [
+            TextSlot(name="test_slot", mappings=[]),
+            TextSlot(name="another_slot", mappings=[]),
+            TextSlot(name="third_slot", mappings=[]),
+        ]
+        events = [SlotSet("another_slot", "already_set")]
+        return DialogueStateTracker.from_events("test", evts=events, slots=slots)
+
+    def test_prepare_flows_for_template_without_agent_info(
+        self,
+        base_command_generator_fixture,
+        flows_with_collect_steps: FlowsList,
+        tracker_with_slots: DialogueStateTracker,
+    ):
+        """Test prepare_flows_for_template when add_agent_info is False."""
+        generator = base_command_generator_fixture
+
+        result = generator.prepare_flows_for_template(
+            flows_with_collect_steps, tracker_with_slots, add_agent_info=False
+        )
+
+        assert len(result) == 2
+
+        # Check first flow
+        first_flow = result[0]
+        assert first_flow["name"] == "test_flow"
+        assert first_flow["description"] == "some test flow"
+        assert "agent_info" not in first_flow
+        # Only test_slot should be included (ask_before_filling=false)
+        # another_slot is not included because ask_before_filling=true and not set
+        assert len(first_flow["slots"]) == 1
+
+        # Check slots in first flow
+        test_slot = first_flow["slots"][0]
+        assert test_slot["name"] == "test_slot"
+        assert test_slot["description"] == "test_slot"
+
+        # Check second flow
+        second_flow = result[1]
+        assert second_flow["name"] == "another_flow"
+        assert second_flow["description"] == "another test flow"
+        assert "agent_info" not in second_flow
+        assert len(second_flow["slots"]) == 1
+
+    def test_prepare_flows_for_template_with_agent_info_no_agents(
+        self,
+        base_command_generator_fixture,
+        flows_with_collect_steps: FlowsList,
+        tracker_with_slots: DialogueStateTracker,
+    ):
+        """Test prepare_flows_for_template when add_agent_info is True but no
+        agents exist.
+        """
+        generator = base_command_generator_fixture
+
+        result = generator.prepare_flows_for_template(
+            flows_with_collect_steps, tracker_with_slots, add_agent_info=True
+        )
+
+        assert len(result) == 2
+
+        # Check that agent_info is not included when no agents exist
+        for flow in result:
+            assert "agent_info" not in flow
+
+    @patch("rasa.core.available_agents.AvailableAgents.get_agent_config")
+    def test_prepare_flows_for_template_with_agent_info_with_agents(
+        self,
+        mock_get_agent_config,
+        base_command_generator_fixture,
+        flows_with_collect_steps: FlowsList,
+        tracker_with_slots: DialogueStateTracker,
+    ):
+        """Test prepare_flows_for_template when add_agent_info is True and
+        agents exist.
+        """
+        generator = base_command_generator_fixture
+
+        # Mock agent configuration
+        mock_agent_config = Mock()
+        mock_agent_config.agent.name = "Test Agent"
+        mock_agent_config.agent.description = "A test agent"
+        mock_get_agent_config.return_value = mock_agent_config
+
+        # Add AgentStarted events to tracker
+        tracker_with_slots.update(AgentStarted("agent1", "test_flow"))
+        tracker_with_slots.update(AgentStarted("agent2", "another_flow"))
+
+        result = generator.prepare_flows_for_template(
+            flows_with_collect_steps, tracker_with_slots, add_agent_info=True
+        )
+
+        assert len(result) == 2
+
+        # Check first flow has agent_info
+        first_flow = result[0]
+        assert first_flow["name"] == "test_flow"
+        assert "agent_info" in first_flow
+        assert len(first_flow["agent_info"]) == 1
+        assert first_flow["agent_info"][0]["name"] == "Test Agent"
+        assert first_flow["agent_info"][0]["description"] == "A test agent"
+
+        # Check second flow has agent_info
+        second_flow = result[1]
+        assert second_flow["name"] == "another_flow"
+        assert "agent_info" in second_flow
+        assert len(second_flow["agent_info"]) == 1
+        assert second_flow["agent_info"][0]["name"] == "Test Agent"
+        assert second_flow["agent_info"][0]["description"] == "A test agent"
+
+        # Verify get_agent_config was called for each agent
+        assert mock_get_agent_config.call_count == 2
+        mock_get_agent_config.assert_any_call("agent1")
+        mock_get_agent_config.assert_any_call("agent2")
+
+    @patch("rasa.core.available_agents.AvailableAgents.get_agent_config")
+    def test_prepare_flows_for_template_with_agent_info_none_agent_config(
+        self,
+        mock_get_agent_config,
+        base_command_generator_fixture,
+        flows_with_collect_steps: FlowsList,
+        tracker_with_slots: DialogueStateTracker,
+    ):
+        """Test prepare_flows_for_template when agent config is None."""
+        generator = base_command_generator_fixture
+
+        # Mock agent configuration to return None
+        mock_get_agent_config.return_value = None
+
+        # Add AgentStarted events to tracker
+        tracker_with_slots.update(AgentStarted("agent1", "test_flow"))
+
+        result = generator.prepare_flows_for_template(
+            flows_with_collect_steps, tracker_with_slots, add_agent_info=True
+        )
+
+        assert len(result) == 2
+
+        # Check that agent_info is not included when agent config is None
+        for flow in result:
+            assert "agent_info" not in flow
+
+        # Verify get_agent_config was called
+        mock_get_agent_config.assert_called_once_with("agent1")
+
+    @patch("rasa.core.available_agents.AvailableAgents.get_agent_config")
+    def test_prepare_flows_for_template_with_agent_info_multiple_agents_same_flow(
+        self,
+        mock_get_agent_config: MagicMock,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
+        flows_with_collect_steps: FlowsList,
+        tracker_with_slots: DialogueStateTracker,
+    ):
+        """Test prepare_flows_for_template with multiple agents for the same flow."""
+        generator = base_command_generator_fixture
+
+        # Mock agent configurations
+        mock_agent_config1 = Mock()
+        mock_agent_config1.agent.name = "Agent 1"
+        mock_agent_config1.agent.description = "First agent"
+
+        mock_agent_config2 = Mock()
+        mock_agent_config2.agent.name = "Agent 2"
+        mock_agent_config2.agent.description = "Second agent"
+
+        mock_get_agent_config.side_effect = [mock_agent_config1, mock_agent_config2]
+
+        # Add multiple AgentStarted events for the same flow
+        tracker_with_slots.update(AgentStarted("agent1", "test_flow"))
+        tracker_with_slots.update(AgentStarted("agent2", "test_flow"))
+
+        result = generator.prepare_flows_for_template(
+            flows_with_collect_steps, tracker_with_slots, add_agent_info=True
+        )
+
+        assert len(result) == 2
+
+        # Check first flow has both agents in agent_info
+        first_flow = result[0]
+        assert first_flow["name"] == "test_flow"
+        assert "agent_info" in first_flow
+        assert len(first_flow["agent_info"]) == 2
+
+        agent_names = [agent["name"] for agent in first_flow["agent_info"]]
+        agent_descriptions = [
+            agent["description"] for agent in first_flow["agent_info"]
+        ]
+
+        assert "Agent 1" in agent_names
+        assert "Agent 2" in agent_names
+        assert "First agent" in agent_descriptions
+        assert "Second agent" in agent_descriptions
+
+        # Check second flow has no agent_info
+        second_flow = result[1]
+        assert second_flow["name"] == "another_flow"
+        assert "agent_info" not in second_flow
+
+    def test_prepare_flows_for_template_with_extractable_slots(
+        self,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
+        flows_with_collect_steps: FlowsList,
+        tracker_with_set_slots: DialogueStateTracker,
+    ):
+        """Test prepare_flows_for_template with slots that are extractable."""
+        generator = base_command_generator_fixture
+
+        result = generator.prepare_flows_for_template(
+            flows_with_collect_steps, tracker_with_set_slots, add_agent_info=False
+        )
+
+        assert len(result) == 2
+
+        # Check that slots are included based on extractability
+        first_flow = result[0]
+        # Both slots should be included:
+        # - test_slot (ask_before_filling=False)
+        # - another_slot (already set in tracker_with_set_slots)
+        assert len(first_flow["slots"]) == 2
+
+        # test_slot should be included (ask_before_filling=False)
+        test_slot = first_flow["slots"][0]
+        assert test_slot["name"] == "test_slot"
+
+        # another_slot should be included (already set)
+        another_slot = first_flow["slots"][1]
+        assert another_slot["name"] == "another_slot"
+
+    def test_prepare_flows_for_template_with_no_extractable_slots(
+        self,
+        base_command_generator_fixture,
+        flows_with_collect_steps: FlowsList,
+        tracker_with_slots: DialogueStateTracker,
+    ):
+        """Test prepare_flows_for_template with no extractable slots."""
+        generator = base_command_generator_fixture
+
+        # Create a flow with only non-extractable slots
+        flows_no_extractable = flows_from_str(
+            """
+            flows:
+              test_flow:
+                name: a test flow
+                description: some test flow
+                steps:
+                - id: first_step
+                  collect: test_slot
+                  description: test_slot
+                  ask_before_filling: true
+            """
+        )
+
+        result = generator.prepare_flows_for_template(
+            flows_no_extractable, tracker_with_slots, add_agent_info=False
+        )
+
+        assert len(result) == 1
+
+        # Check that no slots are included
+        first_flow = result[0]
+        assert first_flow["name"] == "test_flow"
+        assert len(first_flow["slots"]) == 0
+
+    def test_prepare_flows_for_template_empty_flows(
+        self,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
+        tracker_with_slots: DialogueStateTracker,
+    ):
+        """Test prepare_flows_for_template with empty flows list."""
+        generator = base_command_generator_fixture
+
+        empty_flows = FlowsList(underlying_flows=[])
+
+        result = generator.prepare_flows_for_template(
+            empty_flows, tracker_with_slots, add_agent_info=True
+        )
+
+        assert len(result) == 0
+
+    @patch("rasa.core.available_agents.AvailableAgents.get_agent_config")
+    def test_prepare_flows_for_template_agent_info_structure(
+        self,
+        mock_get_agent_config: MagicMock,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
+        flows_with_collect_steps: FlowsList,
+        tracker_with_slots: DialogueStateTracker,
+    ):
+        """Test that agent_info has the correct structure."""
+        generator = base_command_generator_fixture
+
+        # Mock agent configuration
+        mock_agent_config = Mock()
+        mock_agent_config.agent.name = "Test Agent"
+        mock_agent_config.agent.description = "A test agent description"
+        mock_get_agent_config.return_value = mock_agent_config
+
+        # Add AgentStarted event to tracker
+        tracker_with_slots.update(AgentStarted("agent1", "test_flow"))
+
+        result = generator.prepare_flows_for_template(
+            flows_with_collect_steps, tracker_with_slots, add_agent_info=True
+        )
+
+        # Check agent_info structure
+        first_flow = result[0]
+        agent_info = first_flow["agent_info"][0]
+
+        assert "name" in agent_info
+        assert "description" in agent_info
+        assert agent_info["name"] == "Test Agent"
+        assert agent_info["description"] == "A test agent description"
+
+        # Verify no extra fields are present
+        expected_keys = {"name", "description"}
+        assert set(agent_info.keys()) == expected_keys
+
     @patch(
         "rasa.dialogue_understanding.generator.flow_retrieval.FlowRetrieval.filter_flows"
     )
     async def test_predict_commands_and_flow_retrieval_api_error_throws_exception(
         self,
-        mock_flow_retrieval_filter_flows,
-        command_generator_fixture,
+        mock_flow_retrieval_filter_flows: MagicMock,
+        command_generator_fixture: LLMBasedCommandGenerator,
         tracker: DialogueStateTracker,
         flows: FlowsList,
     ) -> None:
@@ -419,12 +778,12 @@ class TestLLMBasedCommandGenerator:
     )
     def base_command_generator_fixture(
         self,
-        request,
-        base_class_fixture,
-        single_step_llm_command_generator_fixture,
-        multi_step_llm_command_generator_fixture,
-        model_storage,
-        resource,
+        request: pytest.FixtureRequest,
+        base_class_fixture: LLMBasedCommandGenerator,
+        single_step_llm_command_generator_fixture: LLMBasedCommandGenerator,
+        multi_step_llm_command_generator_fixture: LLMBasedCommandGenerator,
+        model_storage: ModelStorage,
+        resource: Resource,
     ):
         if request.param == "base_class":
             config = {
@@ -446,7 +805,7 @@ class TestLLMBasedCommandGenerator:
     async def test_generate_action_list_calls_llm_factory_correctly(
         self,
         mock_llm_factory: Mock,
-        base_command_generator_fixture,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
         llm_response_dict: Dict[Text, Any],
     ):
         """Test that _generate_action_list calls llm correctly."""
@@ -479,7 +838,7 @@ class TestLLMBasedCommandGenerator:
     async def test_generate_action_list_calls_llm_correctly(
         self,
         mock_llm_factory: Mock,
-        base_command_generator_fixture,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
         llm_response_dict: Dict[Text, Any],
     ):
         """Test that _generate_action_list calls llm correctly."""
@@ -503,7 +862,7 @@ class TestLLMBasedCommandGenerator:
     async def test_generate_action_list_catches_llm_exception(
         self,
         mock_llm_factory: Mock,
-        base_command_generator_fixture,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
     ):
         """Test that _generate_action_list calls llm correctly."""
         command_generator = base_command_generator_fixture
@@ -532,7 +891,7 @@ class TestLLMBasedCommandGenerator:
         slot: Slot,
         slot_name: str,
         expected_output: str,
-        base_command_generator_fixture,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
     ):
         """Test that slot_value returns the correct string."""
         command_generator = base_command_generator_fixture
@@ -562,7 +921,7 @@ class TestLLMBasedCommandGenerator:
 
     def test_is_extractable_with_no_slot(
         self,
-        base_command_generator_fixture,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
         collect_info_step: CollectInformationFlowStep,
     ):
         """Test that is_extractable returns False
@@ -578,7 +937,7 @@ class TestLLMBasedCommandGenerator:
 
     def test_is_extractable_when_slot_can_be_filled_without_asking(
         self,
-        base_command_generator_fixture,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
     ):
         """Test that is_extractable returns True when
         collect_information slot can be filled.
@@ -608,7 +967,7 @@ class TestLLMBasedCommandGenerator:
 
     def test_is_extractable_when_slot_has_already_been_set(
         self,
-        base_command_generator_fixture,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
         collect_info_step: CollectInformationFlowStep,
     ):
         """Test that is_extractable returns True
@@ -627,7 +986,7 @@ class TestLLMBasedCommandGenerator:
 
     def test_is_extractable_with_current_step(
         self,
-        base_command_generator_fixture,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
         collect_info_step: CollectInformationFlowStep,
     ):
         """Test that is_extractable returns True when the current step is a collect
@@ -660,7 +1019,7 @@ class TestLLMBasedCommandGenerator:
         message: Text,
         max_characters: int,
         expected_exceeds_limit: bool,
-        base_command_generator_fixture,
+        base_command_generator_fixture: LLMBasedCommandGenerator,
         model_storage: ModelStorage,
         resource: Resource,
     ):
@@ -682,7 +1041,7 @@ class TestLLMBasedCommandGenerator:
         assert exceeds_limit == expected_exceeds_limit
 
     def test_import_rasa_generators_from_generator_module(
-        self, model_storage, resource
+        self, model_storage: ModelStorage, resource: Resource
     ):
         """Test that rasa generator modules can be imported
         without errors from generator module.

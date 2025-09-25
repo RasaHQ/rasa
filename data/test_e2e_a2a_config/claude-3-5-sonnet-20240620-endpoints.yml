@@ -1,0 +1,15 @@
+action_endpoint:
+  actions_module: "actions"
+
+model_groups:
+  - id: llm-model
+    models:
+      - provider: bedrock
+        model: anthropic.claude-3-5-sonnet-20240620-v1:0
+        aws_access_key_id: ${AWS_ACCESS_KEY_ID} # reference secret environment variable.
+        aws_secret_access_key: ${AWS_SECRET_ACCESS_KEY} # reference secret environment variable.
+        aws_session_token: ${AWS_SESSION_TOKEN}
+        aws_region_name: ${AWS_REGION_NAME}
+        timeout: 30
+        temperature: 0.0
+        top_p: 0.0

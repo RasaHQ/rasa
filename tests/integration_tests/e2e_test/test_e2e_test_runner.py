@@ -17,6 +17,9 @@ from rasa.e2e_test.e2e_test_case import Fixture, TestCase, TestStep
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
 from tests.conftest import TrainedAsync
 
+# Path for subagents used in tests
+SUB_AGENTS_PATH = "sub_agents"
+
 
 @pytest.fixture
 def mock_model(tmp_path: Path) -> Path:
@@ -132,6 +135,7 @@ def test_e2e_test_runner_load_agent_from_remote_storage(
     test_runner = E2ETestRunner(
         model_path=model_name,
         remote_storage=RemoteStorageType.AWS,
+        sub_agents_path=SUB_AGENTS_PATH,
     )
 
     assert isinstance(test_runner.agent, Agent)

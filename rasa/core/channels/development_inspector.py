@@ -70,17 +70,17 @@ class DevelopmentInspectorPlugin:
         self.tasks.append(task)
         self._cleanup_completed_tasks()
 
-    @hookimpl  # type: ignore[misc]
+    @hookimpl
     def after_new_user_message(self, tracker: DialogueStateTracker) -> None:
         """Broadcasts tracker updates after a new user message."""
         self._create_broadcast_task(tracker)
 
-    @hookimpl  # type: ignore[misc]
+    @hookimpl
     def after_action_executed(self, tracker: DialogueStateTracker) -> None:
         """Broadcasts tracker updates after an action is executed."""
         self._create_broadcast_task(tracker)
 
-    @hookimpl  # type: ignore[misc]
+    @hookimpl
     def after_server_stop(self) -> None:
         """Cancels all remaining tasks when the server stops."""
         self._cancel_tasks()

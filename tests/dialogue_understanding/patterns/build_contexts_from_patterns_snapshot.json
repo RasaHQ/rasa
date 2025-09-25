@@ -97,13 +97,36 @@
     },
     "previous_flow_name": {
         "patterns": [
-            "pattern_completed",
-            "pattern_continue_interrupted"
+            "pattern_completed"
         ],
         "type": "categorical",
         "values": [
             "FLOW_NAME"
         ]
+    },
+    "interrupted_flow_names": {
+        "patterns": [
+            "pattern_continue_interrupted"
+        ],
+        "type": "list"
+    },
+    "interrupted_flow_ids": {
+        "patterns": [
+            "pattern_continue_interrupted"
+        ],
+        "type": "list"
+    },
+    "interrupted_flow_options": {
+        "patterns": [
+            "pattern_continue_interrupted"
+        ],
+        "type": "text"
+    },
+    "multiple_flows_interrupted": {
+        "patterns": [
+            "pattern_continue_interrupted"
+        ],
+        "type": "bool"
     },
     "canceled_name": {
         "patterns": [

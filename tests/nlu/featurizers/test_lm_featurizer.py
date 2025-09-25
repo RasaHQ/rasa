@@ -11,7 +11,16 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS, TOKENS_NAMES
-from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
+
+# Skip all tests in this file if TensorFlow is not available
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if not TENSORFLOW_AVAILABLE:
+    pytest.skip("TensorFlow is not available", allow_module_level=True)
+
+from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import (
+    LanguageModelFeaturizer,
+)
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.constants import INTENT, TEXT
@@ -595,7 +604,8 @@ class TestSubTokensTrainAndProcess:
         whitespace_tokenizer: WhitespaceTokenizer,
     ):
         """Tests the number of sub tokens when calling the function
-        process training data"""
+        process training data
+        """
         messages = process_training_text(
             texts,
             model_name,
@@ -621,7 +631,8 @@ class TestSubTokensTrainAndProcess:
         whitespace_tokenizer: WhitespaceTokenizer,
     ):
         """Tests the number of sub tokens when calling the function
-        process (messages)"""
+        process (messages)
+        """
         messages = process_messages(
             texts,
             model_name,

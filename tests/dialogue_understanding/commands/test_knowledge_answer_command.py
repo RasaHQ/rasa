@@ -6,7 +6,13 @@ from rasa.dialogue_understanding.commands.knowledge_answer_command import (
     KnowledgeAnswerCommand,
 )
 from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
-from rasa.shared.core.events import DialogueStackUpdated, UserUttered
+from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+    AgentStackFrame,
+    AgentState,
+)
+from rasa.shared.core.events import AgentInterrupted, DialogueStackUpdated, UserUttered
+from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -105,3 +111,30 @@ def test_regex_pattern_v3_command_syntax():
 
     # Reset the syntax version to the default, otherwise it will affect other tests.
     CommandSyntaxManager.reset_syntax_version()
+
+
+def test_run_command_on_tracker_interrupts_agent_and_adds_event():
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+
+    agent_frame = AgentStackFrame(
+        frame_id="agent-frame",
+        state=AgentState.WAITING_FOR_INPUT,
+        agent_id="car-research",
+        flow_id="car_research",
+    )
+    tracker.update_stack(DialogueStack(frames=[agent_frame]))
+
+    all_flows = FlowsList([])
+    original_tracker = tracker
+
+    command = KnowledgeAnswerCommand()
+    events = command.run_command_on_tracker(tracker, all_flows, original_tracker)
+
+    # Check that an AgentInterrupted event is created
+    assert any(
+        isinstance(e, AgentInterrupted)
+        and e.agent_id == "car-research"
+        and e.flow_id == "car_research"
+        for e in events
+        if isinstance(e, AgentInterrupted)
+    )

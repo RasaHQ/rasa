@@ -2,6 +2,7 @@ import os
 import tempfile
 import textwrap
 from dataclasses import MISSING, fields
+from typing import Any
 
 import pytest
 import yaml
@@ -10,6 +11,7 @@ from rasa.shared.core.flows.constants import KEY_TRANSLATION
 from rasa.shared.core.flows.flow import Flow, FlowLanguageTranslation
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
 from rasa.shared.core.flows.flow_step_sequence import FlowStepSequence
+from rasa.shared.core.flows.steps import CallFlowStep
 from rasa.shared.core.flows.steps.collect import CollectInformationFlowStep
 from rasa.shared.core.flows.yaml_flows_io import (
     YAMLFlowsReader,
@@ -461,8 +463,7 @@ def test_get_flow_as_json_removes_defaults():
 
 
 def test_collectinformationflowstep_defaults_cleaned_from_json():
-    """
-    Test if adding a new default field on CollectInformationFlowStep
+    """Test if adding a new default field on CollectInformationFlowStep
     is addressed in get_flow_as_json.
     """
     # Initialize the step
@@ -512,3 +513,53 @@ def test_collectinformationflowstep_defaults_cleaned_from_json():
     # Confirm a known default is definitely removed in cleaned
     assert "utter" in uncleaned_step_data
     assert "utter" not in cleaned_step_data
+
+
+def test_flow_validate_exit_if_valid() -> None:
+    data = textwrap.dedent(
+        """
+        flows:
+          my_flow:
+            description: test flow with exit_if
+            steps:
+              - call: some_agent
+                exit_if:
+                  - slots.x is not None
+                  - slots.age > 18
+        """
+    )
+
+    flows = YAMLFlowsReader.read_from_string(data)
+    flow = flows.flow_by_id("my_flow")
+    assert flow is not None
+    call_step = flow.steps[0]
+    assert isinstance(call_step, CallFlowStep)
+    assert call_step.exit_if == ["slots.x is not None", "slots.age > 18"]
+
+
+@pytest.mark.parametrize(
+    "predicate",
+    [
+        "true",
+        "false",
+        "True",
+        "False",
+        42,
+    ],
+)
+def test_flow_validate_exit_if_items_wrong_type_raises(predicate: Any) -> None:
+    data = textwrap.dedent(
+        f"""
+            flows:
+              my_flow:
+                description: test flow with exit_if only literals
+                steps:
+                  - call: some_agent
+                    exit_if:
+                      - {predicate}
+            """
+    )
+
+    with pytest.raises(YamlValidationException) as e:
+        YAMLFlowsReader.read_from_string(data)
+    assert "exit_if" in str(e.value)

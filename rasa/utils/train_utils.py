@@ -11,29 +11,57 @@ from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.constants import SPLIT_ENTITIES_BY_COMMA
-from rasa.utils.tensorflow.callback import RasaModelCheckpoint, RasaTrainingLogger
-from rasa.utils.tensorflow.constants import (
-    AUTO,
-    CHECKPOINT_MODEL,
-    CONSTRAIN_SIMILARITIES,
-    COSINE,
-    CROSS_ENTROPY,
-    EPOCHS,
-    EVAL_NUM_EPOCHS,
-    EVAL_NUM_EXAMPLES,
-    INNER,
-    LOSS_TYPE,
-    MARGIN,
-    MODEL_CONFIDENCE,
-    RANKING_LENGTH,
-    RENORMALIZE_CONFIDENCES,
-    SEQUENCE,
-    SIMILARITY_TYPE,
-    SOFTMAX,
-    TOLERANCE,
-)
-from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
-from rasa.utils.tensorflow.model_data import RasaModelData
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+# Conditional imports for TensorFlow-dependent modules
+if TENSORFLOW_AVAILABLE:
+    from rasa.utils.tensorflow.callback import RasaModelCheckpoint, RasaTrainingLogger
+    from rasa.utils.tensorflow.constants import (
+        AUTO,
+        CHECKPOINT_MODEL,
+        CONSTRAIN_SIMILARITIES,
+        COSINE,
+        CROSS_ENTROPY,
+        EPOCHS,
+        EVAL_NUM_EPOCHS,
+        EVAL_NUM_EXAMPLES,
+        INNER,
+        LOSS_TYPE,
+        MARGIN,
+        MODEL_CONFIDENCE,
+        RANKING_LENGTH,
+        RENORMALIZE_CONFIDENCES,
+        SEQUENCE,
+        SIMILARITY_TYPE,
+        SOFTMAX,
+        TOLERANCE,
+    )
+    from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
+    from rasa.utils.tensorflow.model_data import RasaModelData
+else:
+    # Placeholder values when TensorFlow is not available
+    RasaModelCheckpoint = None  # type: ignore
+    RasaTrainingLogger = None  # type: ignore
+    RasaBatchDataGenerator = None  # type: ignore
+    RasaModelData = None  # type: ignore
+    AUTO = "auto"
+    CHECKPOINT_MODEL = "checkpoint_model"
+    CONSTRAIN_SIMILARITIES = "constrain_similarities"
+    COSINE = "cosine"
+    CROSS_ENTROPY = "cross_entropy"
+    EPOCHS = "epochs"
+    EVAL_NUM_EPOCHS = "eval_num_epochs"
+    EVAL_NUM_EXAMPLES = "eval_num_examples"
+    INNER = "inner"
+    LOSS_TYPE = "loss_type"
+    MARGIN = "margin"
+    MODEL_CONFIDENCE = "model_confidence"
+    RANKING_LENGTH = "ranking_length"
+    RENORMALIZE_CONFIDENCES = "renormalize_confidences"
+    SEQUENCE = "sequence"
+    SIMILARITY_TYPE = "similarity_type"
+    SOFTMAX = "softmax"
+    TOLERANCE = "tolerance"
 
 if TYPE_CHECKING:
     from tensorflow.keras.callbacks import Callback
@@ -87,7 +115,9 @@ def rank_and_mask(
 
 
 def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
-    """If SIMILARITY_TYPE is set to 'auto', update the SIMILARITY_TYPE depending
+    """Function to update the similarity type in the model configuration.
+
+    If SIMILARITY_TYPE is set to 'auto', update the SIMILARITY_TYPE depending
     on the LOSS_TYPE.
 
     Args:

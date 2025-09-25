@@ -10,6 +10,7 @@ from rasa.cli.arguments.default_arguments import (
     add_remote_root_only_param,
     add_remote_storage_param,
     add_stories_param,
+    add_sub_agents_param,
 )
 from rasa.graph_components.providers.training_tracker_provider import (
     TrainingTrackerProvider,
@@ -43,6 +44,7 @@ def set_train_arguments(parser: argparse.ArgumentParser) -> None:
     )
     add_remote_storage_param(parser)
     add_remote_root_only_param(parser)
+    add_sub_agents_param(parser)
 
 
 def set_train_core_arguments(parser: argparse.ArgumentParser) -> None:

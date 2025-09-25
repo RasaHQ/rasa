@@ -37,27 +37,6 @@ async def test_clarify_pattern_flow_stack_frame_from_dict() -> None:
     assert frame.type() == "pattern_clarification"
 
 
-async def test_action_clarify_flows_assemble_options_string() -> None:
-    action = ActionClarifyFlows()
-
-    # empty name
-    assert action.assemble_options_string([]) == ""
-
-    # single name
-    assert action.assemble_options_string(["option1"]) == "option1"
-
-    # two names
-    assert (
-        action.assemble_options_string(["option1", "option2"]) == "option1 or option2"
-    )
-
-    # multiple names
-    assert (
-        action.assemble_options_string(["option1", "option2", "option3"])
-        == "option1, option2 or option3"
-    )
-
-
 async def test_action_clarify_flows_no_active_flow(capsys: CaptureFixture) -> None:
     tracker = DialogueStateTracker.from_events("test", [])
     action = ActionClarifyFlows()

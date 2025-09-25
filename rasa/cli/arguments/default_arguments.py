@@ -3,6 +3,7 @@ import logging
 from enum import Enum
 from typing import List, Optional, Text, Union
 
+from rasa.core.constants import DEFAULT_SUB_AGENTS
 from rasa.core.persistor import RemoteStorageType, StorageType, parse_remote_storage
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
@@ -216,4 +217,15 @@ def add_skip_validation_flag(
         choices=SkipYamlValidation.list(),
         action="append",
         help="Skip YAML validation for selected parts of the training data.",
+    )
+
+
+def add_sub_agents_param(
+    parser: Union[argparse.ArgumentParser, argparse._ActionsContainer],
+) -> None:
+    parser.add_argument(
+        "--sub-agents",
+        type=str,
+        default=DEFAULT_SUB_AGENTS,
+        help="Directory that specifies sub-agents to use (default: %(default)s).",
     )

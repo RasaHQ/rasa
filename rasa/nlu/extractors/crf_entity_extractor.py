@@ -10,6 +10,9 @@ from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Type
 
 import numpy as np
 
+# importing sklearn_crfsuite at module level to raise error if not installed
+import sklearn_crfsuite
+
 import rasa.nlu.utils.bilou_utils as bilou_utils
 import rasa.shared.utils.io
 import rasa.utils.train_utils
@@ -20,7 +23,6 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
 from rasa.nlu.test import determine_token_labels
-from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.shared.nlu.constants import (
@@ -36,6 +38,8 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.tensorflow.constants import BILOU_FLAG, FEATURIZERS
+
+POS_TAG_KEY = "pos"
 
 logger = logging.getLogger(__name__)
 
@@ -445,13 +449,11 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
     def _load_taggers(
         cls, model_dir: Path, config: Dict[Text, Any]
     ) -> Dict[str, "CRF"]:
-        """
-        Load taggers from model directory that persists trained binary
-        `model.crfsuite` files.
-        """
+        """Load taggers from model directory.
 
+        It persists trained binary `model.crfsuite` files.
+        """
         import pycrfsuite
-        import sklearn_crfsuite
 
         # Get tagger directories
         taggers_base = model_dir / TAGGERS_DIR
@@ -613,8 +615,7 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
 
     @staticmethod
     def _pattern_of_token(message: Message, idx: int) -> Dict[Text, bool]:
-        """Get the patterns of the token at the given index extracted by the
-        'RegexFeaturizer'.
+        """Get patterns of token at the given index extracted by 'RegexFeaturizer'.
 
         The 'RegexFeaturizer' adds all patterns listed in the training data to the
         token. The pattern name is mapped to either 'True' (pattern applies to token) or
@@ -728,8 +729,6 @@ class CRFEntityExtractor(GraphComponent, EntityExtractorMixin):
         crf_order: List[str],
     ) -> OrderedDict[str, CRF]:
         """Train the crf tagger based on the training data."""
-        import sklearn_crfsuite
-
         entity_taggers = OrderedDict()
 
         for tag_name in crf_order:

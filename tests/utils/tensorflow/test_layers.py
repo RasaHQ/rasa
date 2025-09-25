@@ -2,6 +2,13 @@ from typing import List, Optional, Text, Tuple, Union
 
 import numpy as np
 import pytest
+
+# Skip all tests in this file if TensorFlow is not available
+from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
+
+if not TENSORFLOW_AVAILABLE:
+    pytest.skip("TensorFlow is not available", allow_module_level=True)
+
 import tensorflow as tf
 from _pytest.monkeypatch import MonkeyPatch
 
@@ -76,7 +83,7 @@ def test_multi_label_dot_product_loss__construct_label_padding_mask(
 
     pos_label_columns = np.array(label_ids).shape[1]
 
-    # First check if the mask corresponding to guaranteed positive label ids is correct.
+    # First check if the mask corresponding to guaranteed positive label ids is correct.  # noqa: E501
     assert np.all(
         actual_label_mask[:, :pos_label_columns]
         == np.array(expected_pos_label_mask).astype(np.float32)
@@ -104,7 +111,8 @@ def test_multi_label_dot_product_loss__construct_label_padding_mask(
             np.array([[-1.1, -3], [2.1, -3.5]]),
             np.array([[1.0, 0.0], [1.0, 0.0]]),
             np.array(
-                [[1.0, 0.0, 1.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0, 1.0]], dtype=np.float32
+                [[1.0, 0.0, 1.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0, 1.0]],
+                dtype=np.float32,
             ),
             1.5972487,
         ),
@@ -144,7 +152,8 @@ def test_multi_label_dot_product_loss__compute_loss_with_and_without_mask(
             np.array([[-1.1, -3], [2.1, -3.5]]),
             np.array([[1.0, 0.0], [1.0, 0.0]]),
             np.array(
-                [[1.0, 0.0, 1.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0, 1.0]], dtype=np.float32
+                [[1.0, 0.0, 1.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0, 1.0]],
+                dtype=np.float32,
             ),
             0.5833334,
         ),
@@ -233,18 +242,21 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
     assert np.all(
         candidate_labels_embed.numpy() == np.array([[[l0, l2]], [[l0, l1]], [[l0, l3]]])
     )
-    # The `pos_neg_labels` contains `1`s wherever the vector in `candidate_labels_embed`
+    # The `pos_neg_labels` contains `1`s wherever the vector in `candidate_labels_embed`  # noqa: E501
     # of example `i` is actually in the possible lables of example `i`
     assert np.all(
         pos_neg_labels.numpy()
         == np.array(
             [
-                [1, 0],  # l0 is an actual positive example in `batch_labels_embed[0]`,
+                [
+                    1,
+                    0,
+                ],  # l0 is an actual positive example in `batch_labels_embed[0]`,   # noqa: E501
                 # whereas l2 is not
                 [
                     0,
                     0,
-                ],  # Neither l0 nor l3 are positive examples in `batch_labels_embed[1]`
+                ],  # Neither l0 nor l3 are positive examples in `batch_labels_embed[1]`  # noqa: E501
                 [
                     1,
                     1,
@@ -320,19 +332,25 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
     assert np.all(
         candidate_labels_embed.numpy() == np.array([[[l0, l2]], [[l0, l1]], [[l3, l1]]])
     )
-    # The `pos_neg_labels` contains `1`s wherever the vector in `candidate_labels_embed`
+    # The `pos_neg_labels` contains `1`s wherever the vector in `candidate_labels_embed`  # noqa: E501
     # of example `i` is actually in the possible lables of example `i`
     assert np.all(
         pos_neg_labels.numpy()
         == np.array(
             [
-                [1, 0],  # l0 is an actual positive example in `batch_labels_embed[0]`,
+                [
+                    1,
+                    0,
+                ],  # l0 is an actual positive example in `batch_labels_embed[0]`,   # noqa: E501
                 # whereas l2 is not
                 [
                     0,
                     0,
-                ],  # Neither l0 nor l1 are positive examples in `batch_labels_embed[1]`
-                [1, 0],  # l3 is an actual positive example in `batch_labels_embed[2]`,
+                ],  # Neither l0 nor l1 are positive examples in `batch_labels_embed[1]`  # noqa: E501
+                [
+                    1,
+                    0,
+                ],  # l3 is an actual positive example in `batch_labels_embed[2]`,   # noqa: E501
                 # whereas l1 is not
             ]
         )

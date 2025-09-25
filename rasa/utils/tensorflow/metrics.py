@@ -1,7 +1,6 @@
 from typing import Any, Dict, Optional
 
 import tensorflow as tf
-from tensorflow.keras import backend as K
 from tensorflow.types.experimental import TensorLike
 
 # original code taken from
@@ -118,7 +117,7 @@ class FBetaScore(tf.keras.metrics.Metric):
 
         def _zero_wt_init(name: Any) -> Any:
             return self.add_weight(
-                name, shape=self.init_shape, initializer="zeros", dtype=self.dtype
+                name=name, shape=self.init_shape, initializer="zeros", dtype=self.dtype
             )
 
         self.true_positives = _zero_wt_init("true_positives")
@@ -197,7 +196,12 @@ class FBetaScore(tf.keras.metrics.Metric):
 
     def reset_state(self) -> None:
         reset_value = tf.zeros(self.init_shape, dtype=self.dtype)
-        K.batch_set_value([(v, reset_value) for v in self.variables])
+        # In Keras 3.x, self.variables contains string names, not variable objects,
+        # so each metric variable is reset using assign() instead of K.batch_set_value()
+        self.true_positives.assign(reset_value)
+        self.false_positives.assign(reset_value)
+        self.false_negatives.assign(reset_value)
+        self.weights_intermediate.assign(reset_value)
 
     def reset_states(self) -> None:
         # Backwards compatibility alias of `reset_state`. New classes should
