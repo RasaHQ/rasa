@@ -1,0 +1,17 @@
+name: Run IAM Support Integration Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Rasa image tag'
+        required: true
+
+# TBD workflow
+jobs:
+
+  test-checkout:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
