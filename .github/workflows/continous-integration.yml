@@ -185,6 +185,11 @@ jobs:
           - basic
           - finance
           - telco
+        install-group:
+          - default
+          - nlu
+          - channels
+          - full
         exclude:
           - python-version: "3.9"
             template: tutorial
@@ -194,18 +199,26 @@ jobs:
             template: finance
           - python-version: "3.9"
             template: telco
+    name: rasa init Py${{ matrix.python-version }} ${{ matrix.install-group }}-install ${{ matrix.template }}-template
     env:
       RASA_INIT_TEST_DIRECTORY: test-rasa-init
     steps:
         - name: Check out code
           uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        - name: Setup Python and install rasa-pro
-          if: ${{ matrix.python-version != '3.9' }}
+        - name: Setup Python ${{ matrix.python-version }} and install rasa-pro with default installation
+          if: ${{ matrix.python-version != '3.9' && matrix.install-group == 'default' }}
           uses: ./.github/actions/setup-python-env
           with:
             PYTHON_VERSION: ${{ matrix.python-version }}
-            MATRIX_JOB: ${{ matrix.python-version }}
+            MATRIX_JOB: ${{ matrix.install-group }}-${{ matrix.template }}
             RASA_DEFAULT_INSTALLATION_ONLY: "true"
+        - name: Setup Python ${{ matrix.python-version }} and install rasa-pro with ${{ matrix.install-group }} group
+          if: ${{ matrix.python-version != '3.9' && matrix.install-group != 'default'  }}
+          uses: ./.github/actions/setup-python-env
+          with:
+            PYTHON_VERSION: ${{ matrix.python-version }}
+            MATRIX_JOB: ${{ matrix.install-group }}-${{ matrix.template }}
+            OPTIONAL_GROUP_TO_INSTALL: ${{ matrix.install-group }}
         - name: Set up Python 3.9
           if: ${{ matrix.python-version == '3.9' }}
           uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0

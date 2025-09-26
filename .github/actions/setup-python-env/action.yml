@@ -16,6 +16,10 @@ inputs:
     description: "Install via `make install` target, which does not include any additional groups"
     required: false
     default: "false"
+  OPTIONAL_GROUP_TO_INSTALL:
+    description: "Optional group to install, from: nlu, channels or full. Incompatible with `RASA_DEFAULT_INSTALLATION_ONLY` input"
+    required: false
+    default: "full"
 outputs:
   cache-hit:
     description: "Cache found or not"
@@ -58,12 +62,13 @@ runs:
         if: ${{ steps.cached-poetry-dependencies.outputs.cache-hit != 'true' }}
         env:
           RASA_DEFAULT_INSTALLATION_ONLY: ${{ inputs.RASA_DEFAULT_INSTALLATION_ONLY }}
+          OPTIONAL_GROUP_TO_INSTALL: ${{ inputs.OPTIONAL_GROUP_TO_INSTALL }}
         run: |
           if [[ "${RASA_DEFAULT_INSTALLATION_ONLY}" == "true" ]]; 
           then
-              make install
+              poetry sync --only-root
           else
-              make install-full
+              poetry sync -E "${OPTIONAL_GROUP_TO_INSTALL}" --only-root
           fi
         shell: bash
 
