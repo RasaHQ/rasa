@@ -329,3 +329,71 @@ def test_get_keys_by_pattern_handles_scan_exception():
     assert len(debug_logs) == 1
     assert "SCAN interrupted in cluster mode" in debug_logs[0]["event_info"]
     assert "2 keys found so far" in debug_logs[0]["event_info"]
+
+
+def test_get_keys_by_pattern_handles_dict_cursor_in_cluster_mode():
+    """Test that _get_keys_by_pattern handles dict cursor properly in cluster mode."""
+    conversation_id = "test_conversation"
+    endpoint_config = Mock()
+    endpoint_config.kwargs = {"deployment_mode": "cluster"}
+
+    with patch(
+        "rasa.core.redis_connection_factory.RedisConnectionFactory.create_connection"
+    ) as mock_create:
+        mock_redis = Mock()
+        mock_create.return_value = mock_redis
+        lock_store = ConcurrentRedisLockStore(endpoint_config)
+
+    # Mock Redis returning dict cursor
+    mock_redis.scan.side_effect = [
+        (
+            {"127.0.0.1:7000": 1, "127.0.0.1:7001": 1, "127.0.0.1:7002": 1},
+            ["key1", "key2"],
+        ),  # First call with active cursors
+        (
+            {"127.0.0.1:7000": 0, "127.0.0.1:7001": 0, "127.0.0.1:7002": 0},
+            ["key3"],
+        ),  # Second call - all done
+    ]
+
+    with structlog.testing.capture_logs() as caplog:
+        pattern = lock_store.key_prefix + conversation_id + ":[0-9]*"
+        result = lock_store._get_keys_by_pattern(pattern)
+
+    assert result == ["key1", "key2", "key3"]
+    assert mock_redis.scan.call_count == 2
+
+    # Verify no scan_interrupted warnings occurred
+    scan_warnings = filter_logs(
+        caplog,
+        "concurrent_redis_lock_store._get_keys_by_pattern.scan_interrupted",
+        "warning",
+    )
+    assert len(scan_warnings) == 0
+
+
+def test_get_keys_by_pattern_standard_mode_uses_keys():
+    """Test that _get_keys_by_pattern uses KEYS command in standard mode."""
+    conversation_id = "test_conversation"
+    endpoint_config = Mock()
+    endpoint_config.kwargs = {}
+
+    with patch(
+        "rasa.core.redis_connection_factory.RedisConnectionFactory.create_connection"
+    ) as mock_create:
+        mock_redis = Mock()
+        mock_create.return_value = mock_redis
+        lock_store = ConcurrentRedisLockStore(endpoint_config)
+
+    # Mock Redis KEYS response
+    expected_keys = ["key1", "key2", "key3"]
+    mock_redis.keys.return_value = expected_keys
+
+    pattern = lock_store.key_prefix + conversation_id + ":[0-9]*"
+
+    result = lock_store._get_keys_by_pattern(pattern)
+    assert result == expected_keys
+
+    # Verify KEYS was called, not SCAN
+    mock_redis.keys.assert_called_once_with(pattern)
+    mock_redis.scan.assert_not_called()

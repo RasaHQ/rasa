@@ -150,31 +150,44 @@ class ConcurrentRedisLockStore(LockStore):
                 ),
             )
 
+    def _scan_cluster_keys(self, pattern: Text) -> list:
+        """Scan keys in cluster mode with proper cursor handling."""
+        keys = []
+        cursor = 0
+
+        while True:
+            try:
+                cursor, batch_keys = self.red.scan(cursor, match=pattern, count=100)
+                keys.extend(batch_keys)
+
+                if isinstance(cursor, dict):
+                    # cursor is a dict mapping each node to its scan position. e.g
+                    # {'127.0.0.1:7000': 0, '127.0.0.1:7001': 5, '127.0.0.1:7002': 0}
+                    # A cursor value of 0 means that node has finished scanning
+                    # When all nodes show 0, the entire cluster scan is complete
+                    if all(v == 0 for v in cursor.values()):
+                        break
+                else:
+                    # if scan is complete
+                    if cursor == 0:
+                        break
+
+            except Exception as e:
+                structlogger.warning(
+                    "concurrent_redis_lock_store._get_keys_by_pattern.scan_interrupted",
+                    event_info=f"SCAN interrupted in cluster mode: {e}. "
+                    f"Returning {len(keys)} keys found so far.",
+                )
+                break
+
+        return keys
+
     def _get_keys_by_pattern(self, pattern: Text) -> list:
         """Get keys by pattern, using SCAN for cluster mode and KEYS for others."""
         if self.deployment_mode == DeploymentMode.CLUSTER.value:
-            # In cluster mode, use SCAN to get keys more reliably
-            keys = []
-            cursor = 0
-
-            while True:
-                try:
-                    cursor, batch_keys = self.red.scan(cursor, match=pattern, count=100)
-                    keys.extend(batch_keys)
-                    if cursor == 0:
-                        break
-                except Exception as e:
-                    structlogger.warning(
-                        "concurrent_redis_lock_store._get_keys_by_pattern.scan_interrupted",
-                        event_info=f"SCAN interrupted in cluster mode: {e}. "
-                        f"Returning {len(keys)} keys found so far.",
-                    )
-                    break
+            return self._scan_cluster_keys(pattern)
         else:
-            # Standard and sentinel modes use KEYS
-            keys = self.red.keys(pattern)
-
-        return keys
+            return self.red.keys(pattern)
 
     def issue_ticket(
         self, conversation_id: Text, lock_lifetime: float = LOCK_LIFETIME
