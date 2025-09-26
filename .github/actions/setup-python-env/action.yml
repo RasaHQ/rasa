@@ -66,9 +66,9 @@ runs:
         run: |
           if [[ "${RASA_DEFAULT_INSTALLATION_ONLY}" == "true" ]]; 
           then
-              poetry sync --only-root
+              poetry sync --only main
           else
-              poetry sync -E "${OPTIONAL_GROUP_TO_INSTALL}" --only-root
+              poetry sync -E "${OPTIONAL_GROUP_TO_INSTALL}" --without dev
           fi
         shell: bash
 
