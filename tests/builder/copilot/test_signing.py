@@ -15,6 +15,7 @@ from rasa.builder.copilot.models import (
     GeneratedContent,
     ResponseCategory,
     TextContent,
+    UserChatMessage,
 )
 from rasa.builder.copilot.signing import (
     _b64url_no_pad,
@@ -26,10 +27,8 @@ from rasa.builder.copilot.signing import (
 )
 
 
-def make_user_message(text: str) -> CopilotChatMessage:
-    return CopilotChatMessage(
-        role="user", content=[TextContent(type="text", text=text)]
-    )
+def make_user_message(text: str) -> UserChatMessage:
+    return UserChatMessage(role="user", content=[TextContent(type="text", text=text)])
 
 
 def make_copilot_message(

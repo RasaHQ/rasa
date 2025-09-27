@@ -181,7 +181,7 @@ async def test_template_loads_actions_module(
     # Initialize project from template, and fetch action names
     project_generator = setup_project_generator(tmp_path_str)
     await project_generator.init_from_template(ProjectTemplateName.TELCO)
-    project_action_names = Domain.from_path("").action_names_or_texts
+    project_action_names = Domain.from_path(tmp_path_str).action_names_or_texts
 
     # Set up action executor with mock endpoint, and fetch registered actions
     mock_endpoint = EndpointConfig.from_dict({"actions_module": "actions"})

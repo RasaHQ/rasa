@@ -1,29 +1,42 @@
 """Tests for rasa.builder.jobs module."""
 
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock, patch
+from typing import Any, Callable, Dict, List, Optional, Tuple
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
+from rasa.builder.copilot.models import (
+    CopilotGenerationContext,
+    GeneratedContent,
+    ReferenceEntry,
+    ReferenceSection,
+    ResponseCategory,
+    ResponseCompleteness,
+)
+from rasa.builder.document_retrieval.models import Document
 from rasa.builder.exceptions import TrainingError, ValidationError
 from rasa.builder.job_manager import JobInfo, job_manager
-from rasa.builder.jobs import run_replace_all_files_job
+from rasa.builder.jobs import (
+    run_copilot_training_error_analysis_job,
+    run_replace_all_files_job,
+)
 from rasa.builder.models import JobStatus
 from rasa.builder.project_generator import ProjectGenerator
 
 
 @pytest.fixture
-def mock_app():
+def mock_app() -> MagicMock:
     """Create a mock Sanic app for testing."""
     project_generator = Mock(spec=ProjectGenerator)
-    app = SimpleNamespace()
+    app = MagicMock()
     app.ctx = SimpleNamespace()
     app.ctx.project_generator = project_generator
     return app
 
 
 @pytest.fixture
-def sample_bot_files():
+def sample_bot_files() -> Dict[str, Any]:
     """Sample bot files for testing."""
     return {
         "config.yml": "version: '3.1'\npipeline: []",
@@ -32,11 +45,45 @@ def sample_bot_files():
     }
 
 
+@pytest.fixture
+def mock_job() -> JobInfo:
+    """Mock JobInfo."""
+    job = MagicMock(spec=JobInfo)
+    job.id = "test_job_123"
+    job.put = AsyncMock()
+    job._queue = MagicMock()
+    job._queue.put_nowait = MagicMock()
+    return job
+
+
 class TestRunReplaceAllFilesJob:
     """Test the run_replace_all_files_job function."""
 
+    @pytest.fixture
+    def job_status_tracker(self) -> Tuple[List[str], Callable]:
+        """Fixture to track status events while preserving original behavior."""
+        status_events = []
+
+        # Import the original function
+        from rasa.builder.jobs import (
+            push_job_status_event as original_push_job_status_event,
+        )
+
+        async def track_status_event(job_param, status, **kwargs):
+            # Handle both JobStatus enum and string values
+            if hasattr(status, "value"):
+                status_events.append(status.value)
+            else:
+                status_events.append(status)
+            # Call the original function to preserve its behavior
+            await original_push_job_status_event(job_param, status, **kwargs)
+
+        return status_events, track_status_event
+
     @pytest.mark.asyncio
-    async def test_successful_execution(self, mock_app, sample_bot_files):
+    async def test_successful_execution(
+        self, mock_app, sample_bot_files: Dict[str, Any]
+    ):
         """Test successful execution of replace_all_files_job."""
         job = job_manager.create_job()
 
@@ -77,9 +124,15 @@ class TestRunReplaceAllFilesJob:
         assert job.status == JobStatus.done.value
 
     @pytest.mark.asyncio
-    async def test_validation_error(self, mock_app, sample_bot_files):
+    async def test_validation_error(
+        self,
+        mock_app: MagicMock,
+        sample_bot_files: Dict[str, Any],
+        job_status_tracker: tuple[list[str], Callable],
+    ) -> None:
         """Test handling of validation errors."""
         job = job_manager.create_job()
+        status_events, track_status_event = job_status_tracker
 
         mock_app.ctx.project_generator.replace_all_bot_files = Mock()
         mock_training_input = Mock()
@@ -94,6 +147,7 @@ class TestRunReplaceAllFilesJob:
         ]
 
         with (
+            patch("rasa.builder.jobs.push_job_status_event", new=track_status_event),
             patch(
                 "rasa.builder.jobs.validate_project", new_callable=AsyncMock
             ) as mock_validate,
@@ -109,13 +163,24 @@ class TestRunReplaceAllFilesJob:
             )
             mock_validate.assert_called_once_with(mock_training_input.importer)
 
-        # Check job ended with validation error
+        # Check that the job ended with validation error status (with copilot job ID)
         assert job.status == JobStatus.validation_error.value
 
+        # Verify the sequence:
+        # last event should be validation_error (with copilot job ID)
+        assert len(status_events) >= 1
+        assert status_events[-1] == JobStatus.validation_error.value
+
     @pytest.mark.asyncio
-    async def test_training_error(self, mock_app, sample_bot_files):
+    async def test_training_error(
+        self,
+        mock_app: MagicMock,
+        sample_bot_files: Dict[str, Any],
+        job_status_tracker: Tuple[List[str], Callable],
+    ) -> None:
         """Test handling of training errors."""
         job = job_manager.create_job()
+        status_events, track_status_event = job_status_tracker
 
         mock_app.ctx.project_generator.replace_all_bot_files = Mock()
         mock_training_input = Mock()
@@ -126,6 +191,7 @@ class TestRunReplaceAllFilesJob:
         training_error = TrainingError("Training failed")
 
         with (
+            patch("rasa.builder.jobs.push_job_status_event", new=track_status_event),
             patch(
                 "rasa.builder.jobs.validate_project", new_callable=AsyncMock
             ) as mock_validate,
@@ -145,26 +211,45 @@ class TestRunReplaceAllFilesJob:
             mock_validate.assert_called_once_with(mock_training_input.importer)
             mock_train.assert_called_once_with(mock_training_input)
 
-        # Check job ended with training error
+        # Check that the job ended with training error status (with copilot job ID)
         assert job.status == JobStatus.train_error.value
 
+        # Verify the sequence:
+        # last event should be train_error (with copilot job ID)
+        assert len(status_events) >= 1
+        assert status_events[-1] == JobStatus.train_error.value
+
     @pytest.mark.asyncio
-    async def test_unexpected_error(self, mock_app, sample_bot_files):
+    async def test_unexpected_error(
+        self,
+        mock_app: MagicMock,
+        sample_bot_files: Dict[str, Any],
+        job_status_tracker: Tuple[List[str], Callable],
+    ) -> None:
         """Test handling of unexpected errors."""
         job = job_manager.create_job()
+        status_events, track_status_event = job_status_tracker
 
         # Mock an unexpected error during file replacement
         mock_app.ctx.project_generator.replace_all_bot_files.side_effect = Exception(
             "Unexpected error"
         )
 
-        await run_replace_all_files_job(mock_app, job, sample_bot_files)
+        with patch("rasa.builder.jobs.push_job_status_event", new=track_status_event):
+            await run_replace_all_files_job(mock_app, job, sample_bot_files)
 
-        # Check job ended with error
+        # Check that the job ended with error status (with copilot job ID)
         assert job.status == JobStatus.error.value
 
+        # Verify the sequence:
+        # last event should be error (with copilot job ID)
+        assert len(status_events) >= 1
+        assert status_events[-1] == JobStatus.error.value
+
     @pytest.mark.asyncio
-    async def test_job_status_progression(self, mock_app, sample_bot_files):
+    async def test_job_status_progression(
+        self, mock_app, sample_bot_files: Dict[str, Any]
+    ):
         job = job_manager.create_job()
         status_events = []
 
@@ -206,4 +291,221 @@ class TestRunReplaceAllFilesJob:
             JobStatus.train_success.value,
             JobStatus.done.value,
         ]
+
         assert status_events == expected_statuses
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "raised_exception,should_create_copilot_job",
+        [
+            (None, False),  # Success case
+            (TrainingError("Training failed"), True),
+            (ValidationError("Validation failed"), True),
+            (Exception("Unexpected error"), True),
+        ],
+    )
+    @patch("rasa.builder.jobs.update_agent")
+    @patch("rasa.builder.jobs.train_and_load_agent")
+    @patch("rasa.builder.jobs.validate_project")
+    @patch("rasa.builder.jobs.push_error_and_start_copilot_analysis")
+    async def test_run_update_files_job_creates_copilot_analysis_job(
+        self,
+        mock_push_error_and_start_copilot: MagicMock,
+        mock_validate: MagicMock,
+        mock_train: MagicMock,
+        mock_update_agent: MagicMock,
+        mock_app: MagicMock,
+        mock_job: JobInfo,
+        sample_bot_files: Dict[str, Any],
+        raised_exception: Optional[Exception],
+        should_create_copilot_job: bool,
+    ) -> None:
+        """Test run_update_files_job with different scenarios."""
+        # Given
+        mock_update_agent.return_value = None
+
+        if raised_exception is None:
+            mock_validate.return_value = None
+            mock_train.return_value = None
+        else:
+            mock_validate.side_effect = raised_exception
+
+        # When
+        await run_replace_all_files_job(mock_app, mock_job, sample_bot_files)
+
+        # Then
+
+        if should_create_copilot_job:
+            mock_push_error_and_start_copilot.assert_called_once()
+            call_args = mock_push_error_and_start_copilot.call_args
+            assert call_args[0][0] == mock_app
+            assert call_args[0][1] == mock_job
+            assert call_args[0][2] is not None  # error_message
+            assert call_args[0][3] is not None  # job_status
+            assert call_args[0][4] == sample_bot_files
+        else:
+            mock_push_error_and_start_copilot.assert_not_called()
+
+
+class TestRunCopilotTrainingErrorAnalysisJob:
+    """Test cases for run_copilot_training_error_analysis_job."""
+
+    @pytest.fixture
+    def mock_app(self) -> MagicMock:
+        """Mock Sanic app."""
+        return MagicMock()
+
+    @pytest.fixture
+    def mock_error_message(self) -> str:
+        """Mock error message."""
+        return "Training failed with error: Invalid configuration"
+
+    @pytest.mark.asyncio
+    @patch("rasa.builder.jobs.llm_service.instantiate_handler")
+    @patch("rasa.builder.jobs.llm_service.instantiate_copilot")
+    @patch("rasa.builder.jobs.push_job_status_event")
+    async def test_run_copilot_training_error_analysis_job_success(
+        self,
+        mock_push_event: MagicMock,
+        mock_instantiate_copilot: MagicMock,
+        mock_instantiate_handler: MagicMock,
+        mock_app: MagicMock,
+        mock_job: JobInfo,
+        sample_bot_files: Dict[str, Any],
+        mock_error_message: str,
+    ) -> None:
+        """Test successful copilot analysis job with content validation."""
+        # Given
+        mock_copilot = MagicMock()
+        mock_handler = MagicMock()
+        mock_instantiate_copilot.return_value = mock_copilot
+        mock_instantiate_handler.return_value = mock_handler
+
+        mock_token = GeneratedContent(
+            content="Analysis result",
+            response_category=ResponseCategory.COPILOT,
+            response_completeness=ResponseCompleteness.TOKEN,
+        )
+        mock_document = Document(
+            content="Test documentation content",
+            url="https://rasa.com/docs",
+            title="Test Doc",
+        )
+        mock_reference_section = ReferenceSection(
+            references=[
+                ReferenceEntry(index=1, title="Test Doc", url="https://rasa.com/docs")
+            ],
+            response_category=ResponseCategory.REFERENCE,
+            response_completeness=ResponseCompleteness.COMPLETE,
+        )
+        mock_generation_context = CopilotGenerationContext(
+            relevant_documents=[mock_document],
+            system_message={"role": "system", "content": "Test system message"},
+            chat_history=[],
+            last_user_message={"role": "user", "content": "Test user message"},
+        )
+
+        async def mock_response_stream():
+            yield "text"
+
+        async def mock_stream():
+            yield mock_token
+
+        mock_handler.handle_response.return_value = mock_stream()
+        mock_handler.extract_references.return_value = mock_reference_section
+        mock_copilot.generate_response = AsyncMock(
+            return_value=(mock_response_stream(), mock_generation_context)
+        )
+
+        # When
+        await run_copilot_training_error_analysis_job(
+            mock_app, mock_job, mock_error_message, sample_bot_files
+        )
+
+        # Then
+        # Updated to account for TrainingErrorLog event
+        assert mock_push_event.call_count >= 3
+        mock_copilot.generate_response.assert_called_once()
+        mock_handler.extract_references.assert_called_once_with([mock_document])
+
+        # Verify that generate_response was called with a context containing the
+        # internal message
+        call_args = mock_copilot.generate_response.call_args[0]
+        context = call_args[0]  # First argument is the context
+
+        # Verify the context has the expected structure
+        assert hasattr(context, "copilot_chat_history")
+        assert len(context.copilot_chat_history) == 1
+
+        internal_message = context.copilot_chat_history[0]
+        assert hasattr(internal_message, "content")
+        # Should have at least log + file content blocks
+        assert len(internal_message.content) >= 2
+
+        # Verify log content block exists
+        log_content = next(
+            (block for block in internal_message.content if block.type == "log"), None
+        )
+        assert log_content is not None
+        assert log_content.content == mock_error_message
+        assert log_content.context == "training_error"
+
+        # Verify file content blocks exist
+        file_content_blocks = [
+            block for block in internal_message.content if block.type == "file"
+        ]
+        assert len(file_content_blocks) == len(sample_bot_files)
+
+        # Verify each file from sample_bot_files has a corresponding content block
+        for file_path, file_content in sample_bot_files.items():
+            matching_block = next(
+                (
+                    block
+                    for block in file_content_blocks
+                    if block.file_path == file_path
+                ),
+                None,
+            )
+            assert matching_block is not None
+            assert matching_block.file_content == file_content
+
+        # Verify that TrainingErrorLog was sent as part of copilot_analyzing stream
+        training_error_log_calls = [
+            call
+            for call in mock_push_event.call_args_list
+            if (
+                call[0][1] == JobStatus.copilot_analyzing
+                and call[1].get("payload") is not None
+                and "logs" in call[1]["payload"]
+            )
+        ]
+        assert len(training_error_log_calls) >= 1
+
+    @pytest.mark.asyncio
+    @patch("rasa.builder.jobs.llm_service.instantiate_copilot")
+    @patch("rasa.builder.jobs.push_job_status_event")
+    async def test_run_copilot_training_error_analysis_job_error(
+        self,
+        mock_push_event: MagicMock,
+        mock_instantiate_copilot: MagicMock,
+        mock_app: MagicMock,
+        mock_job: JobInfo,
+        sample_bot_files: Dict[str, Any],
+        mock_error_message: str,
+    ) -> None:
+        """Test copilot analysis job with error."""
+        # Given
+        mock_instantiate_copilot.side_effect = Exception("Copilot error")
+
+        # When
+        await run_copilot_training_error_analysis_job(
+            mock_app, mock_job, mock_error_message, sample_bot_files
+        )
+
+        # Then
+        error_calls = [
+            call
+            for call in mock_push_event.call_args_list
+            if call[0][1] == JobStatus.copilot_analysis_error
+        ]
+        assert len(error_calls) == 1

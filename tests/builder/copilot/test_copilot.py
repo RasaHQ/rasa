@@ -3,12 +3,25 @@ from typing import Any, Dict, List
 
 import pytest
 
+from rasa.builder.copilot.constants import (
+    ROLE_COPILOT,
+    ROLE_COPILOT_INTERNAL,
+    ROLE_SYSTEM,
+)
 from rasa.builder.copilot.copilot import Copilot
 from rasa.builder.copilot.models import (
+    ChatMessage,
     CopilotChatMessage,
     CopilotContext,
+    CopilotSystemMessage,
+    FileContent,
+    InternalCopilotRequestChatMessage,
+    LogContent,
+    ResponseCategory,
     TextContent,
+    UserChatMessage,
 )
+from rasa.builder.document_retrieval.models import Document
 from rasa.builder.shared.tracker_context import (
     AssistantConversationTurn,
     AssistantMessage,
@@ -18,6 +31,7 @@ from rasa.builder.shared.tracker_context import (
     UserMessage,
 )
 from rasa.core.agent import Agent
+from rasa.shared.constants import ROLE_USER
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, SessionStarted, UserUttered
 from rasa.shared.core.flows.yaml_flows_io import YamlFlowsWriter
@@ -37,10 +51,10 @@ def sample_tracker(domain: Domain) -> DialogueStateTracker:
     )
 
 
-def sample_chat_history() -> list[CopilotChatMessage]:
+def sample_chat_history() -> list[UserChatMessage]:
     """Create sample chat history."""
     return [
-        CopilotChatMessage(
+        UserChatMessage(
             role="user",
             content=[
                 TextContent(
@@ -167,17 +181,19 @@ def test_format_conversation_history_empty():
         # Only one message
         (
             [
-                CopilotChatMessage(
+                UserChatMessage(
                     role="user",
                     content=[TextContent(type="text", text="Hello")],
                     response_category=None,
                 ),
             ],
             [
+                # System prompt
                 {
                     "role": "system",
                     "content": "[SYSTEM_PROMPT_PLACEHOLDER]",
-                },  # System prompt (content varies)
+                },
+                # Context + user message
                 {
                     "role": "user",
                     "content": [
@@ -187,48 +203,13 @@ def test_format_conversation_history_empty():
                         },
                         {"type": "text", "text": "Hello"},
                     ],
-                },  # Context + user message
-            ],
-        ),
-        # Two messages
-        (
-            [
-                CopilotChatMessage(
-                    role="user",
-                    content=[TextContent(type="text", text="Hello")],
-                    response_category=None,
-                ),
-                CopilotChatMessage(
-                    role="copilot",
-                    content=[TextContent(type="text", text="Hi there!")],
-                    response_category=None,
-                ),
-            ],
-            [
-                {
-                    "role": "system",
-                    "content": "[SYSTEM_PROMPT_PLACEHOLDER]",
-                },  # System prompt
-                {
-                    "role": "user",
-                    "content": "Hello",
-                },  # Chat history (only first message)
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "[LAST_USER_MESSAGE_CONTEXT_PROMPT_PLACEHOLDER]",
-                        },
-                        {"type": "text", "text": "Hi there!"},
-                    ],
-                },  # Last message with context
+                },
             ],
         ),
         # Multiple messages
         (
             [
-                CopilotChatMessage(
+                UserChatMessage(
                     role="user",
                     content=[TextContent(type="text", text="Hello")],
                     response_category=None,
@@ -238,26 +219,28 @@ def test_format_conversation_history_empty():
                     content=[TextContent(type="text", text="Hi there!")],
                     response_category=None,
                 ),
-                CopilotChatMessage(
+                UserChatMessage(
                     role="user",
-                    content=[
-                        TextContent(
-                            type="text", text="How do I create a custom action?"
-                        )
-                    ],
+                    content=[TextContent(type="text", text="How can I do...?")],
                     response_category=None,
                 ),
             ],
             [
+                # System prompt
                 {
                     "role": "system",
                     "content": "[SYSTEM_PROMPT_PLACEHOLDER]",
-                },  # System prompt
-                {"role": "user", "content": "Hello"},  # Chat history (first message)
+                },
+                # Chat history
+                {
+                    "role": "user",
+                    "content": "Hello",
+                },
                 {
                     "role": "assistant",
                     "content": "Hi there!",
-                },  # Chat history (second message)
+                },
+                # Last message with context
                 {
                     "role": "user",
                     "content": [
@@ -265,7 +248,7 @@ def test_format_conversation_history_empty():
                             "type": "text",
                             "text": "[LAST_USER_MESSAGE_CONTEXT_PROMPT_PLACEHOLDER]",
                         },
-                        {"type": "text", "text": "How do I create a custom action?"},
+                        {"type": "text", "text": "How can I do...?"},
                     ],
                 },  # Last message with context
             ],
@@ -274,7 +257,7 @@ def test_format_conversation_history_empty():
 )
 @pytest.mark.asyncio
 async def test_build_messages_openai_format(
-    chat_history: List[CopilotChatMessage],
+    chat_history: List[ChatMessage],
     expected_openai_format: List[Dict[str, Any]],
 ):
     """Test that _build_messages produces the exact OpenAI format structure."""
@@ -318,3 +301,209 @@ async def test_build_messages_openai_format(
 
             # Second content block should always be the actual user message
             assert actual["content"][1]["text"] == chat_history[-1].content[0].text
+
+
+@pytest.mark.parametrize(
+    "message, raises_error",
+    [
+        (
+            CopilotChatMessage(
+                role=ROLE_COPILOT,
+                content=[TextContent(type="text", text="This is a copilot response")],
+            ),
+            True,
+        ),
+        (
+            CopilotSystemMessage(role=ROLE_SYSTEM),
+            True,
+        ),
+        (
+            InternalCopilotRequestChatMessage(
+                role=ROLE_COPILOT_INTERNAL,
+                content=[LogContent(type="log", content="...")],
+                response_category=ResponseCategory.TRAINING_ERROR_LOG_ANALYSIS,
+            ),
+            False,
+        ),
+        (
+            UserChatMessage(
+                role=ROLE_USER, content=[TextContent(type="text", text="...")]
+            ),
+            False,
+        ),
+    ],
+)
+def test_process_latest_message_raises_error_for_unsupported_message_types(
+    message: ChatMessage, raises_error: bool
+):
+    """Test that _process_latest_message raises ValueError for unsupported types."""
+    # Given
+    copilot = Copilot()
+    context = CopilotContext(
+        copilot_chat_history=[],
+        assistant_logs="",
+        assistant_files={},
+        tracker_context=None,
+    )
+
+    # When / Then
+    if raises_error:
+        with pytest.raises(ValueError):
+            copilot._process_latest_message(message, context, [])
+    else:
+        copilot._process_latest_message(message, context, [])
+
+
+def test_process_latest_message_internal_copilot_request_uses_training_error_prompt():
+    # Given
+    copilot = Copilot()
+    context = CopilotContext(
+        tracker_context=None,
+        assistant_logs="",  # Part of the internal message
+        assistant_files={},  # Part of the internal message
+        copilot_chat_history=[
+            InternalCopilotRequestChatMessage(
+                role=ROLE_COPILOT_INTERNAL,
+                content=[
+                    LogContent(
+                        type="log", content="Training failed: Invalid YAML syntax"
+                    ),
+                    FileContent(
+                        type="file",
+                        file_path="domain.yml",
+                        file_content="version: '3.1'\nintents:\n  - greet",
+                    ),
+                ],
+                response_category=ResponseCategory.TRAINING_ERROR_LOG_ANALYSIS,
+            )
+        ],
+    )
+
+    mock_documents = [
+        Document(
+            content="Rasa training documentation content",
+            url="https://docs.rasa.com/training",
+            title="Rasa Training Guide",
+        )
+    ]
+
+    # When
+    result = copilot._process_latest_message(
+        context.copilot_chat_history[0], context, mock_documents
+    )
+
+    # Then
+    assert result["role"] == "user"
+    assert "content" in result
+    assert isinstance(result["content"], str)
+
+    # Check that the content contains the training error prompt elements
+    prompt_content = result["content"]
+    assert "Training failed: Invalid YAML syntax" in prompt_content  # from log content
+    assert "domain.yml" in prompt_content  # from file content
+    assert "Rasa training documentation content" in prompt_content  # documentation
+    assert "Relevant Documentation" in prompt_content  # documentation section
+
+
+@pytest.mark.parametrize(
+    "chat_history,expected_query",
+    [
+        # Empty chat history
+        ([], ""),
+        # Single user message
+        (
+            [
+                UserChatMessage(
+                    role=ROLE_USER,
+                    content=[TextContent(type="text", text="Hello")],
+                )
+            ],
+            "User: Hello",
+        ),
+        # Single internal copilot request message
+        (
+            [
+                InternalCopilotRequestChatMessage(
+                    role=ROLE_COPILOT_INTERNAL,
+                    content=[
+                        LogContent(type="log", content="Training error occurred"),
+                        FileContent(
+                            type="file",
+                            file_path="domain.yml",
+                            file_content="version: '3.1'",
+                        ),
+                    ],
+                    response_category=ResponseCategory.TRAINING_ERROR_LOG_ANALYSIS,
+                )
+            ],
+            "User: Logs: Training error occurred",
+        ),
+        # Multiple messages with guardrails violation (should be filtered out)
+        (
+            [
+                UserChatMessage(
+                    role=ROLE_USER,
+                    content=[TextContent(type="text", text="Hello")],
+                ),
+                CopilotChatMessage(
+                    role=ROLE_COPILOT,
+                    content=[TextContent(type="text", text="Hi there!")],
+                    response_category=ResponseCategory.GUARDRAILS_POLICY_VIOLATION,
+                ),
+                UserChatMessage(
+                    role=ROLE_USER,
+                    content=[TextContent(type="text", text="How can I help?")],
+                ),
+            ],
+            "User: Hello\nUser: How can I help?",
+        ),
+        # Mixed message types
+        (
+            [
+                UserChatMessage(
+                    role=ROLE_USER,
+                    content=[TextContent(type="text", text="What is Rasa?")],
+                ),
+                CopilotChatMessage(
+                    role=ROLE_COPILOT,
+                    content=[
+                        TextContent(
+                            type="text", text="Rasa is an open source framework"
+                        )
+                    ],
+                ),
+                InternalCopilotRequestChatMessage(
+                    role=ROLE_COPILOT_INTERNAL,
+                    content=[
+                        LogContent(type="log", content="Error in training"),
+                        FileContent(
+                            type="file",
+                            file_path="config.yml",
+                            file_content="language: en",
+                        ),
+                    ],
+                    response_category=ResponseCategory.TRAINING_ERROR_LOG_ANALYSIS,
+                ),
+            ],
+            "User: What is Rasa?\nAssistant: Rasa is an open source framework\n"
+            "User: Logs: Error in training",
+        ),
+    ],
+)
+def test_create_documentation_search_query(
+    chat_history: List[ChatMessage], expected_query: str
+):
+    """Test _create_documentation_search_query method with various chat histories."""
+    # Given
+    context = CopilotContext(
+        tracker_context=None,
+        assistant_logs="",
+        assistant_files={},
+        copilot_chat_history=chat_history,
+    )
+
+    # When
+    result = Copilot._create_documentation_search_query(context)
+
+    # Then
+    assert result == expected_query

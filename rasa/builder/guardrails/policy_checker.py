@@ -315,7 +315,7 @@ class GuardrailsPolicyChecker:
                 continue
             if message.role != ROLE_USER:
                 continue
-            formatted_message = message.to_openai_format()
+            formatted_message = message.build_openai_message()
             text = (formatted_message.get("content") or "").strip()
             if not text:
                 continue

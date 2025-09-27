@@ -532,7 +532,19 @@ async def get_bot_files(request: Request) -> HTTPResponse:
     "**Error Events (can occur at any time):**\n"
     "- `validation_error` - Bot configuration files are invalid\n"
     "- `train_error` - Files updated but training failed\n"
+    "- `copilot_analysis_start` - Copilot analysis started (includes `copilot_job_id` "
+    "in payload)\n"
     "- `error` - Unexpected error occurred\n\n"
+    "**Copilot Analysis Events:**\n"
+    "When training or validation fails, a separate copilot analysis job is "
+    "automatically started. The `copilot_analysis_start` event includes a "
+    "`copilot_job_id` in the payload.\nConnect to `/job-events/<copilot_job_id>` to "
+    "receive the following events:\n"
+    "- `copilot_analyzing` - Copilot is analyzing errors and providing suggestions. "
+    "Uses the same SSE event payload format as the `/copilot` endpoint with `content`, "
+    "`response_category`, and `completeness` fields.\n"
+    "- `copilot_analysis_success` - Copilot analysis completed with references.\n"
+    "- `copilot_analysis_error` - Copilot analysis failed\n\n"
     "**Usage:**\n"
     "1. Send POST request with Content-Type: application/json\n"
     "2. The response will be a JSON object `{job_id: ...}`\n"
@@ -1042,7 +1054,8 @@ async def copilot(request: Request) -> None:
             # Offload telemetry logging to a background task
             request.app.add_task(
                 asyncio.to_thread(
-                    telemetry.log_user_turn, req.last_message.get_text_content()
+                    telemetry.log_user_turn,
+                    req.last_message.get_flattened_text_content(),
                 )
             )
 
@@ -1159,7 +1172,7 @@ async def copilot(request: Request) -> None:
                 system_message=generation_context.system_message,
                 chat_history=generation_context.chat_history,
                 last_user_message=(
-                    req.last_message.get_text_content()
+                    req.last_message.get_flattened_text_content()
                     if (req.last_message and req.last_message.role == ROLE_USER)
                     else None
                 ),

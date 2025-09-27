@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from rasa.builder.models import (
     JobStatus,
     JobStatusEvent,
@@ -28,6 +30,10 @@ def test_job_status_members():
         JobStatus.validating.value,
         JobStatus.validation_success.value,
         JobStatus.validation_error.value,
+        JobStatus.copilot_analysis_start.value,
+        JobStatus.copilot_analyzing.value,
+        JobStatus.copilot_analysis_success.value,
+        JobStatus.copilot_analysis_error.value,
     }
     assert {s.value for s in JobStatus} == expected
 
@@ -71,3 +77,56 @@ def test_job_status_event_error():
         event.format()
         == 'event: error\ndata: {"status": "train_error", "message": "error"}\n\n'
     )
+
+
+def test_job_status_event_with_payload():
+    """Test JobStatusEvent.from_status with payload parameter."""
+    payload: Dict[str, Any] = {"custom_field": "custom_value", "number": 42}
+    event = JobStatusEvent.from_status(
+        status=JobStatus.training.value,
+        message="Custom message",
+        payload=payload,
+    )
+
+    assert isinstance(event, JobStatusEvent)
+    # When message is provided, event type becomes 'error'
+    assert event.event == ServerSentEventType.error.value
+    expected_data: Dict[str, Any] = {
+        "status": JobStatus.training.value,
+        "message": "Custom message",
+        "custom_field": "custom_value",
+        "number": 42,
+    }
+    assert event.data == expected_data
+
+    expected_format = (
+        "event: error\n"
+        'data: {"status": "training", "message": "Custom message", '
+        '"custom_field": "custom_value", "number": 42}\n\n'
+    )
+    assert event.format() == expected_format
+
+
+def test_job_status_event_with_payload_no_message():
+    """Test JobStatusEvent.from_status with payload parameter but no message."""
+    payload: Dict[str, Any] = {"custom_field": "custom_value", "number": 42}
+    event = JobStatusEvent.from_status(
+        status=JobStatus.training.value,
+        payload=payload,
+    )
+
+    assert isinstance(event, JobStatusEvent)
+    # When no message is provided, event type is 'progress'
+    assert event.event == ServerSentEventType.progress.value
+    expected_data: Dict[str, Any] = {
+        "status": JobStatus.training.value,
+        "custom_field": "custom_value",
+        "number": 42,
+    }
+    assert event.data == expected_data
+
+    expected_format = (
+        "event: progress\n"
+        'data: {"status": "training", "custom_field": "custom_value", "number": 42}\n\n'
+    )
+    assert event.format() == expected_format

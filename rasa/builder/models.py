@@ -136,12 +136,14 @@ class JobStatusEvent(ServerSentEvent):
         cls,
         status: str,
         message: Optional[str] = None,
+        payload: Optional[Dict[str, Any]] = None,
     ) -> "JobStatusEvent":
         """Factory for job-status events.
 
         Args:
             status: The job status (e.g. "training", "train_success").
             message: Optional error message for error events.
+            payload: Optional additional payload data to include in the event.
 
         Returns:
             A JobStatusEvent instance with the appropriate event type and data.
@@ -150,11 +152,13 @@ class JobStatusEvent(ServerSentEvent):
             ServerSentEventType.error if message else ServerSentEventType.progress
         )
 
-        payload: Dict[str, Any] = {"status": status}
+        event_payload: Dict[str, Any] = {"status": status}
         if message:
-            payload["message"] = message
+            event_payload["message"] = message
+        if payload:
+            event_payload.update(payload)
 
-        return cls(event=event_type.value, data=payload)
+        return cls(event=event_type.value, data=event_payload)
 
 
 class ValidationResult(BaseModel):
@@ -192,6 +196,11 @@ class JobStatus(str, Enum):
     validating = "validating"
     validation_success = "validation_success"
     validation_error = "validation_error"
+
+    copilot_analysis_start = "copilot_analysis_start"
+    copilot_analyzing = "copilot_analyzing"
+    copilot_analysis_success = "copilot_analysis_success"
+    copilot_analysis_error = "copilot_analysis_error"
 
 
 class JobCreateResponse(BaseModel):

@@ -12,6 +12,7 @@ from rasa.builder.copilot.models import (
     CopilotContext,
     ResponseCategory,
     TextContent,
+    UserChatMessage,
 )
 from rasa.builder.guardrails.clients import LakeraAIGuardrails
 from rasa.builder.guardrails.models import GuardrailResponse
@@ -98,11 +99,11 @@ async def test_check_copilot_chat_builds_request_and_redacts(
             role=ROLE_COPILOT,
             content=[TextContent(type="text", text="copilot says hi")],
         ),
-        CopilotChatMessage(
+        UserChatMessage(
             role=ROLE_USER,
             content=[TextContent(type="text", text="user says hello")],
         ),
-        CopilotChatMessage(
+        UserChatMessage(
             role=ROLE_USER,
             content=[TextContent(type="text", text="should be skipped")],
             response_category=ResponseCategory.GUARDRAILS_POLICY_VIOLATION,
@@ -138,7 +139,7 @@ async def test_check_copilot_chat_returns_violation_response(
 ):
     """Test that the policy checker returns violation response when flagged."""
     history = [
-        CopilotChatMessage(
+        UserChatMessage(
             role=ROLE_USER,
             content=[TextContent(type="text", text="unsafe prompt")],
         )
@@ -171,7 +172,7 @@ async def test_check_copilot_sanitizes_non_latest_flagged_user_message(
 ):
     """Test that the policy checker sanitizes non-latest flagged messages."""
     history = [
-        CopilotChatMessage(
+        UserChatMessage(
             role=ROLE_USER,
             content=[TextContent(type="text", text="ok-1")],  # safe
         ),
@@ -179,7 +180,7 @@ async def test_check_copilot_sanitizes_non_latest_flagged_user_message(
             role=ROLE_COPILOT,
             content=[TextContent(type="text", text="copilot to ok-1")],
         ),
-        CopilotChatMessage(
+        UserChatMessage(
             role=ROLE_USER,
             content=[TextContent(type="text", text="unsafe")],  # flagged
         ),
@@ -187,7 +188,7 @@ async def test_check_copilot_sanitizes_non_latest_flagged_user_message(
             role=ROLE_COPILOT,
             content=[TextContent(type="text", text="copilot to unsafe")],
         ),
-        CopilotChatMessage(
+        UserChatMessage(
             role=ROLE_USER,
             content=[TextContent(type="text", text="ok-2")],  # safe
         ),
@@ -215,7 +216,9 @@ async def test_check_copilot_sanitizes_non_latest_flagged_user_message(
 
     # History should be sanitized: remove "unsafe" message
     remaining = ctx.copilot_chat_history
-    assert [m.get_text_content() for m in remaining if m.role == ROLE_USER] == [
+    assert [
+        m.get_flattened_text_content() for m in remaining if m.role == ROLE_USER
+    ] == [
         "ok-1",
         "ok-2",
     ]
@@ -228,7 +231,7 @@ async def test_check_copilot_chat_blocks_when_latest_user_flagged_and_sanitizes(
     """Test that the policy checker blocks when latest user message is flagged."""
     # Latest user message is unsafe
     history = [
-        CopilotChatMessage(
+        UserChatMessage(
             role=ROLE_USER,
             content=[TextContent(type="text", text="ok")],  # safe
         ),
@@ -236,7 +239,7 @@ async def test_check_copilot_chat_blocks_when_latest_user_flagged_and_sanitizes(
             role=ROLE_COPILOT,
             content=[TextContent(type="text", text="copilot to ok")],
         ),
-        CopilotChatMessage(
+        UserChatMessage(
             role=ROLE_USER,
             content=[TextContent(type="text", text="unsafe")],  # flagged
         ),
@@ -265,7 +268,9 @@ async def test_check_copilot_chat_blocks_when_latest_user_flagged_and_sanitizes(
 
     # History sanitized - latest "unsafe" user message removed
     remaining_user_texts = [
-        m.get_text_content() for m in ctx.copilot_chat_history if m.role == ROLE_USER
+        m.get_flattened_text_content()
+        for m in ctx.copilot_chat_history
+        if m.role == ROLE_USER
     ]
     assert remaining_user_texts == ["ok"]
 

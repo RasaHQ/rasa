@@ -4,10 +4,12 @@ from typing import List
 
 import pytest
 
+from rasa.builder.copilot.constants import ROLE_COPILOT, ROLE_USER
 from rasa.builder.copilot.models import (
     CopilotChatMessage,
     ResponseCategory,
     TextContent,
+    UserChatMessage,
 )
 from rasa.builder.guardrails.clients import LakeraAIGuardrails
 from rasa.builder.guardrails.models import GuardrailType
@@ -17,8 +19,15 @@ from rasa.builder.guardrails.utils import (
 )
 
 
-def create_copilot_chat_message(role: str, text: str) -> CopilotChatMessage:
-    return CopilotChatMessage(role=role, content=[TextContent(type="text", text=text)])
+def create_copilot_chat_message(role: str, text: str):
+    if role == ROLE_USER:
+        return UserChatMessage(role=role, content=[TextContent(type="text", text=text)])
+    elif role == ROLE_COPILOT:
+        return CopilotChatMessage(
+            role=role, content=[TextContent(type="text", text=text)]
+        )
+    else:
+        raise ValueError(f"Unknown role: {role}")
 
 
 class TestMapLakeraDetectorTypeToGuardrailType:

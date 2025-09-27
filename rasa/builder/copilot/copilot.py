@@ -1,9 +1,8 @@
 import asyncio
-import copy
 import importlib
 import json
 from contextlib import asynccontextmanager
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import openai
 import structlog
@@ -16,9 +15,9 @@ from rasa.builder.copilot.constants import (
     COPILOT_LAST_USER_MESSAGE_CONTEXT_PROMPT_FILE,
     COPILOT_PROMPTS_DIR,
     COPILOT_PROMPTS_FILE,
+    COPILOT_TRAINING_ERROR_HANDLER_PROMPT_FILE,
     ROLE_COPILOT,
     ROLE_COPILOT_INTERNAL,
-    ROLE_SYSTEM,
     ROLE_USER,
 )
 from rasa.builder.copilot.exceptions import CopilotStreamError
@@ -26,9 +25,12 @@ from rasa.builder.copilot.models import (
     CopilotChatMessage,
     CopilotContext,
     CopilotGenerationContext,
+    CopilotSystemMessage,
+    FileContent,
+    InternalCopilotRequestChatMessage,
     ResponseCategory,
-    TextContent,
     UsageStatistics,
+    UserChatMessage,
 )
 from rasa.builder.document_retrieval.inkeep_document_retrieval import (
     InKeepDocumentRetrieval,
@@ -58,6 +60,12 @@ class Copilot:
             importlib.resources.read_text(
                 f"{PACKAGE_NAME}.{COPILOT_PROMPTS_DIR}",
                 COPILOT_LAST_USER_MESSAGE_CONTEXT_PROMPT_FILE,
+            )
+        )
+        self._training_error_handler_prompt_template = Template(
+            importlib.resources.read_text(
+                f"{PACKAGE_NAME}.{COPILOT_PROMPTS_DIR}",
+                COPILOT_TRAINING_ERROR_HANDLER_PROMPT_FILE,
             )
         )
 
@@ -205,86 +213,87 @@ class Copilot:
         Returns:
             A list of messages in OpenAI format.
         """
-        # Split chat history into past messages and latest message
-        past_messages = [
-            message
-            for message in context.copilot_chat_history[:-1]
-            if message.response_category != ResponseCategory.GUARDRAILS_POLICY_VIOLATION
-        ]
-        latest_message = context.copilot_chat_history[-1]
+        if not context.copilot_chat_history:
+            return []
 
-        # Create the system message
-        system_message = await self._create_system_message()
-        # Create the chat history messages (excludes the last message)
-        chat_history = self._create_chat_history_messages(past_messages)
-        # Create the last message and add the context to it
-        latest_message_with_context = self._create_last_user_message_with_context(
-            latest_message, context, relevant_documents
+        past_messages = self._create_chat_history_messages(
+            context.copilot_chat_history[:-1]
         )
-        return [system_message, *chat_history, latest_message_with_context]
 
-    async def _create_system_message(self) -> Dict[str, Any]:
-        """Render the correct Jinja template based on desired output_type."""
-        rendered_prompt = self._system_message_prompt_template.render()
-        return {"role": ROLE_SYSTEM, "content": rendered_prompt}
+        latest_message = self._process_latest_message(
+            context.copilot_chat_history[-1], context, relevant_documents
+        )
+        system_message = self._create_system_message()
+
+        return [system_message, *past_messages, latest_message]
 
     def _create_chat_history_messages(
-        self,
-        past_messages: List["CopilotChatMessage"],
+        self, chat_history: List[Union[UserChatMessage, CopilotChatMessage]]
     ) -> List[Dict[str, Any]]:
-        """Create the chat history messages for the copilot.
+        """Filter and convert past messages to OpenAI format.
 
-        Filter out messages with response_category of GUARDRAILS_POLICY_VIOLATION.
-        This will filter out all the user messages that were flagged by guardrails, but
-        also the copilot messages that were produced by guardrails.
+        Excludes guardrails policy violations and non-user/copilot messages.
 
         Args:
-            past_messages: List of past messages (excluding the latest message).
+            chat_history: List of chat messages to filter and convert.
 
         Returns:
-            List of messages in OpenAI format.
+            List of messages in OpenAI format
         """
-        return [
-            message.to_openai_format()
-            for message in past_messages
-            if message.response_category != ResponseCategory.GUARDRAILS_POLICY_VIOLATION
-        ]
+        filtered_messages = []
 
-    def _create_last_user_message_with_context(
+        for message in chat_history:
+            if (
+                message.response_category
+                != ResponseCategory.GUARDRAILS_POLICY_VIOLATION
+                and message.role in [ROLE_USER, ROLE_COPILOT]
+            ):
+                filtered_messages.append(message)
+
+        return [message.build_openai_message() for message in filtered_messages]
+
+    def _process_latest_message(
         self,
-        latest_message: "CopilotChatMessage",
+        latest_message: Any,
         context: CopilotContext,
         relevant_documents: List[Document],
     ) -> Dict[str, Any]:
-        """Create the last user message with context.
-
-        The last user message is the last message in the copilot chat history.
-        We add the context prompt with the current conversation, state, assistant logs,
-        assistant files, and relevant documents as a text content block to the beginning
-        of the message.
+        """Process the latest message and convert it to OpenAI format.
 
         Args:
-            context: The context of the copilot.
-            relevant_documents: The relevant documents to use in the context.
+            latest_message: The most recent message from the chat history.
+            context: The copilot context containing conversation state.
+            relevant_documents: List of relevant documents for context.
 
         Returns:
-            The last user message with context in the OpenAI format.
+            Message in OpenAI format.
+
+        Raises:
+            ValueError: If the message type is not supported.
         """
-        last_user_message = copy.deepcopy(latest_message)
-        context_prompt = self._render_last_user_message_context_prompt(
-            context, relevant_documents
-        )
-        last_user_message.content.insert(
-            0, TextContent(type="text", text=context_prompt)
-        )
-        return {
-            "role": ROLE_USER,
-            "content": [
-                {"type": "text", "text": content.text}
-                for content in last_user_message.content
-                if isinstance(content, TextContent)
-            ],
-        }
+        if isinstance(latest_message, UserChatMessage):
+            rendered_prompt = self._render_last_user_message_context_prompt(
+                context, relevant_documents
+            )
+            return latest_message.build_openai_message(prompt=rendered_prompt)
+
+        elif isinstance(latest_message, InternalCopilotRequestChatMessage):
+            rendered_prompt = self._render_training_error_handler_prompt(
+                latest_message, relevant_documents
+            )
+            return latest_message.build_openai_message(prompt=rendered_prompt)
+
+        else:
+            raise ValueError(f"Unexpected message type: {type(latest_message)}")
+
+    def _create_system_message(self) -> Dict[str, Any]:
+        """Create the system message for the conversation.
+
+        Returns:
+            System message in OpenAI format with rendered prompt template.
+        """
+        rendered_prompt = self._system_message_prompt_template.render()
+        return CopilotSystemMessage().build_openai_message(prompt=rendered_prompt)
 
     def _render_last_user_message_context_prompt(
         self,
@@ -307,32 +316,76 @@ class Copilot:
         )
         return rendered_prompt
 
+    def _render_training_error_handler_prompt(
+        self,
+        internal_request_message: InternalCopilotRequestChatMessage,
+        relevant_documents: List[Document],
+    ) -> str:
+        """Render the training error handler prompt with documentation and context.
+
+        Args:
+            internal_request_message: Internal request message.
+            context: The copilot context.
+            relevant_documents: List of relevant documents for context.
+
+        Returns:
+            Rendered prompt string for training error analysis.
+        """
+        modified_files_dicts: Dict[str, str] = {
+            file.file_path: file.file_content
+            for file in internal_request_message.get_content_blocks_by_type(FileContent)
+        }
+        rendered_prompt = self._training_error_handler_prompt_template.render(
+            logs=internal_request_message.get_flattened_log_content(),
+            modified_files=modified_files_dicts,
+            documentation_results=self._format_documents(relevant_documents),
+        )
+
+        return rendered_prompt
+
     @staticmethod
     def _create_documentation_search_query(context: CopilotContext) -> str:
-        """Format chat messages between user and copilot for documentation search."""
+        """Format chat messages between user and copilot for documentation search.
 
-        result = ""
+        Filters out guardrails policy violations and only includes messages with
+        USER or COPILOT roles, then takes the last N relevant messages.
+        """
         role_to_prefix = {
             ROLE_USER: "User",
             ROLE_COPILOT: "Assistant",
-            ROLE_COPILOT_INTERNAL: "Copilot Internal Request",
+            ROLE_COPILOT_INTERNAL: "User",
         }
+        allowed_message_types = (
+            UserChatMessage,
+            InternalCopilotRequestChatMessage,
+            CopilotChatMessage,
+        )
 
-        # Only use the last N messages for documentation search
-        messages_to_include = context.copilot_chat_history[
-            -COPILOT_DOCUMENTATION_SEARCH_QUERY_HISTORY_MESSAGES:
-        ]
+        query_chat_history: List[str] = []
 
-        for message in messages_to_include:
+        for message in reversed(context.copilot_chat_history):
+            if (
+                message.response_category
+                == ResponseCategory.GUARDRAILS_POLICY_VIOLATION
+                or not isinstance(message, allowed_message_types)
+            ):
+                continue
+
+            if (
+                len(query_chat_history)
+                >= COPILOT_DOCUMENTATION_SEARCH_QUERY_HISTORY_MESSAGES
+            ):
+                break
+
             prefix = role_to_prefix[message.role]
-            text = message.get_text_content().strip()
-            if text:
-                result += f"{prefix}: {text}\n"
-            log_content = message.get_log_content().strip()
-            if log_content:
-                result += f"{prefix}: {log_content}\n"
+            text = (
+                Copilot._format_internal_message_for_query_chat_history(message)
+                if isinstance(message, InternalCopilotRequestChatMessage)
+                else Copilot._format_normal_message_for_query_chat_history(message)
+            )
+            query_chat_history.insert(0, f"{prefix}: {text}")
 
-        return result
+        return "\n".join(query_chat_history)
 
     @staticmethod
     def _format_documents(results: List[Document]) -> Optional[str]:
@@ -340,7 +393,7 @@ class Copilot:
         if not results:
             return None
 
-        formatted_results = {
+        formatted_results: Dict[str, Any] = {
             "sources": [
                 {
                     # Start the reference from 1, not 0.
@@ -448,3 +501,26 @@ class Copilot:
             return json.dumps({}, ensure_ascii=False, indent=2)
         current_state = tracker_context.current_state.model_dump()
         return json.dumps(current_state, ensure_ascii=False, indent=2)
+
+    @staticmethod
+    def _format_normal_message_for_query_chat_history(
+        message: Union[UserChatMessage, CopilotChatMessage],
+    ) -> str:
+        """Format normal message for query chat history."""
+        return f"{message.get_flattened_text_content()}"
+
+    @staticmethod
+    def _format_internal_message_for_query_chat_history(
+        message: InternalCopilotRequestChatMessage,
+    ) -> str:
+        """Format internal copilot request message for query chat history."""
+        text_content = message.get_flattened_text_content()
+        log_content = message.get_flattened_log_content()
+        if text_content and log_content:
+            return f"{text_content}\nLogs: {log_content}"
+        elif text_content:
+            return text_content
+        elif log_content:
+            return f"Logs: {log_content}"
+        else:
+            return ""

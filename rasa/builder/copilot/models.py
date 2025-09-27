@@ -1,16 +1,23 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Type, TypeVar, Union
 
 import structlog
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
-from pydantic import BaseModel, Field, field_serializer, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 from typing_extensions import Annotated
 
 from rasa.builder.copilot.constants import (
     ROLE_ASSISTANT,
     ROLE_COPILOT,
     ROLE_COPILOT_INTERNAL,
+    ROLE_SYSTEM,
     ROLE_USER,
 )
 from rasa.builder.document_retrieval.models import Document
@@ -49,7 +56,8 @@ class ResponseCategory(Enum):
     # When Copilot analyzes error logs and provides suggestions
     TRAINING_ERROR_LOG_ANALYSIS = "training_error_log_analysis"
     E2E_TESTING_ERROR_LOG_ANALYSIS = "e2e_testing_error_log_analysis"
-
+    TRAINING_ERROR_LOG = "training_error_log"
+    E2E_TESTING_ERROR_LOG = "e2e_testing_error_log"
     # Conversation history signature
     SIGNATURE = "signature"
 
@@ -90,7 +98,7 @@ class LogContent(BaseContent):
     type: Literal["log"]
     content: str = Field(..., description="Logs, error messages, stack traces, etc.")
     context: Optional[str] = Field(
-        None,
+        default=None,
         description=(
             "Additional, optional context description for the logs "
             "(e.g., 'training session', 'e2e testing run', 'deployment process')"
@@ -144,53 +152,16 @@ ContentBlock = Annotated[
     ),
 ]
 
+TContentBlock = TypeVar("TContentBlock", bound=BaseContent)
 
-class CopilotChatMessage(BaseModel):
-    """Model for a single chat messages between the user and the copilot."""
 
-    role: str = Field(
-        ...,
-        pattern=f"^({ROLE_USER}|{ROLE_COPILOT}|{ROLE_COPILOT_INTERNAL})$",
-        description="The role of the message sender.",
-    )
-    content: List[ContentBlock]
-    response_category: Optional[ResponseCategory] = Field(
-        None,
-        description=(
-            "The category/source of this message. For user role messages, only `None` "
-            "or `GUARDRAILS_POLICY_VIOLATION` are allowed. For copilot role messages, "
-            "any category is permitted."
-        ),
-    )
+class BaseCopilotChatMessage(BaseModel, ABC):
+    role: str
+    response_category: Optional[ResponseCategory] = Field(default=None)
 
-    @model_validator(mode="after")
-    def validate_response_category_for_role(self) -> "CopilotChatMessage":
-        """Validate value of response_category for the role of the message.
-
-        For 'user' role messages, only None or GUARDRAILS_POLICY_VIOLATION are allowed.
-        For 'copilot' role messages, any category is permitted.
-        For 'rasa_internal' role messages, any category is permitted.
-        """
-        if (
-            self.role == ROLE_USER
-            and self.response_category is not None
-            and self.response_category != ResponseCategory.GUARDRAILS_POLICY_VIOLATION
-        ):
-            message = (
-                f"User role messages can only have response_category of `None` or "
-                f"`{ResponseCategory.GUARDRAILS_POLICY_VIOLATION}`, "
-                f"got `{self.response_category}`."
-            )
-            structlogger.error(
-                "copilot_chat_message.validate_response_category_for_role"
-                ".invalid_response_category",
-                event_info=message,
-                response_category=self.response_category,
-                role=self.role,
-            )
-            raise ValueError(message)
-
-        return self
+    @abstractmethod
+    def build_openai_message(self, *args, **kwargs) -> Dict[str, Any]:  # type: ignore[no-untyped-def]
+        pass
 
     @field_serializer("response_category", when_used="always")
     def _serialize_response_category(
@@ -199,70 +170,215 @@ class CopilotChatMessage(BaseModel):
         """Serializing CopilotChatMessage, response_category should be a string."""
         return None if v is None else v.value
 
-    def get_text_content(self) -> str:
-        """Concatenate all 'text' content blocks into a single string."""
+
+class CopilotSystemMessage(BaseCopilotChatMessage):
+    role: Literal["system"] = Field(
+        default=ROLE_SYSTEM,
+        pattern=f"^{ROLE_SYSTEM}",
+        description="The system message that sets the system instructions for the LLM.",
+    )
+
+    def build_openai_message(self, prompt: str, *args, **kwargs) -> Dict[str, Any]:  # type: ignore[no-untyped-def]
+        """Render the system message template and return OpenAI format."""
+        return {"role": ROLE_SYSTEM, "content": prompt}
+
+
+class UserChatMessage(BaseCopilotChatMessage):
+    role: Literal["user"] = Field(
+        default=ROLE_USER,
+        pattern=f"^{ROLE_USER}",
+        description="The user who sent the message.",
+    )
+    content: List[ContentBlock]
+
+    @classmethod
+    @field_validator("content")
+    def must_have_at_least_one_text(cls, v: List[ContentBlock]) -> List[ContentBlock]:
+        if not any(isinstance(content_block, TextContent) for content_block in v):
+            message = "User role messages must have at least one `TextContent` block."
+            structlogger.error(
+                "user_chat_message.missing_text_content",
+                event_info=message,
+                content=v,
+            )
+            raise ValueError(
+                "UserChatMessage must contain at least one TextContent block."
+            )
+        return v
+
+    @model_validator(mode="after")
+    def validate_response_category(self) -> "UserChatMessage":
+        """Validate value of response_category for user message.
+
+        For 'user' role messages, only None or GUARDRAILS_POLICY_VIOLATION are allowed.
+        """
+        allowed_response_categories = [ResponseCategory.GUARDRAILS_POLICY_VIOLATION]
+        if (
+            self.response_category is not None
+            and self.response_category not in allowed_response_categories
+        ):
+            message = (
+                f"User role messages can only have response_category of `None` or "
+                f"{', '.join(category.value for category in allowed_response_categories)}."  # noqa: E501
+                f"Got `{self.response_category}`."
+            )
+            structlogger.error(
+                "user_chat_message.validate_response_category"
+                ".invalid_response_category",
+                event_info=message,
+                response_category=self.response_category,
+                allowed_response_categories=allowed_response_categories,
+                role=self.role,
+            )
+            raise ValueError(message)
+
+        return self
+
+    def get_flattened_text_content(self) -> str:
+        """Get the text content from the message."""
         return "\n".join(
             content_block.text
             for content_block in self.content
             if isinstance(content_block, TextContent)
         )
 
-    def get_log_content(self) -> str:
-        """Concatenate all 'log' content blocks into a single string."""
+    def build_openai_message(  # type: ignore[no-untyped-def]
+        self, prompt: Optional[str] = None, *args, **kwargs
+    ) -> Dict[str, Any]:
+        # If a prompt is provided, add it to the message content as additional
+        # instructions
+        if prompt:
+            return {
+                "role": ROLE_USER,
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "text", "text": self.get_flattened_text_content()},
+                ],
+            }
+        # Return simple text content (useful for showing the history)
+        else:
+            return {"role": ROLE_USER, "content": self.get_flattened_text_content()}
+
+
+class CopilotChatMessage(BaseCopilotChatMessage):
+    role: Literal["copilot"]
+    content: List[ContentBlock]
+
+    def get_flattened_text_content(self) -> str:
+        """Get the text content from the message."""
+        return "\n".join(
+            content_block.text
+            for content_block in self.content
+            if isinstance(content_block, TextContent)
+        )
+
+    def build_openai_message(self, *args, **kwargs) -> Dict[str, Any]:  # type: ignore[no-untyped-def]
+        # For now the Copilot responds only with the text content and all the content
+        # is formatted as a markdown.
+        return {"role": ROLE_ASSISTANT, "content": self.get_flattened_text_content()}
+
+
+class InternalCopilotRequestChatMessage(BaseCopilotChatMessage):
+    role: Literal["internal_copilot_request"]
+    content: List[ContentBlock]
+
+    @model_validator(mode="after")
+    def validate_response_category(self) -> "InternalCopilotRequestChatMessage":
+        """Validate value of response_category for internal copilot request message.
+
+        For 'internal_copilot_request' role messages, only `TRAINING_ERROR_LOG_ANALYSIS`
+        and `E2E_TESTING_ERROR_LOG_ANALYSIS` response categories are allowed.
+        """
+        allowed_response_categories = [
+            ResponseCategory.TRAINING_ERROR_LOG_ANALYSIS,
+            ResponseCategory.E2E_TESTING_ERROR_LOG_ANALYSIS,
+        ]
+        if self.response_category not in allowed_response_categories:
+            message = (
+                f"Copilot Internal Roles request messages can only have of "
+                f"{', '.join(category.value for category in allowed_response_categories)}. "  # noqa: E501
+                f"Got `{self.response_category}`."
+            )
+            structlogger.error(
+                "internal_copilot_request_chat_message.validate_response_category"
+                ".invalid_response_category",
+                event_info=message,
+                response_category=self.response_category,
+                allowed_response_categories=allowed_response_categories,
+                role=self.role,
+            )
+            raise ValueError(message)
+
+        return self
+
+    def get_flattened_text_content(self) -> str:
+        """Get the text content from the message."""
+        return "\n".join(
+            content_block.text
+            for content_block in self.content
+            if isinstance(content_block, TextContent)
+        )
+
+    def get_flattened_log_content(self) -> str:
+        """Get the text content from the message."""
         return "\n".join(
             content_block.content
             for content_block in self.content
             if isinstance(content_block, LogContent)
         )
 
-    def to_openai_format(self) -> Dict[str, Any]:
-        """Convert to OpenAI message format for API calls."""
-        role_to_openai_format = {
-            ROLE_USER: self._user_message_to_openai_format,
-            ROLE_COPILOT: self._copilot_message_to_openai_format,
-            ROLE_COPILOT_INTERNAL: self._copilot_message_to_openai_format,
-        }
-        return role_to_openai_format[self.role]()
+    def get_content_blocks_by_type(
+        self, content_type: Type[TContentBlock]
+    ) -> List[TContentBlock]:
+        """Get the content blocks from the message by type."""
+        return [
+            content_block
+            for content_block in self.content
+            if isinstance(content_block, content_type)
+        ]
 
-    def _user_message_to_openai_format(self) -> Dict[str, Any]:
-        role = self._map_role_to_openai()
-        content = self.get_text_content()
-        return {"role": role, "content": content}
+    def build_openai_message(self, prompt: str, *args, **kwargs) -> Dict[str, Any]:  # type: ignore[no-untyped-def]
+        """Build OpenAI message with pre-rendered prompt.
 
-    def _copilot_message_to_openai_format(self) -> Dict[str, Any]:
-        role = self._map_role_to_openai()
-        # For now the Copilot responds only with the text content and all the content
-        # is formatted as a markdown.
-        # TODO: Once we start predicting the files, and expecting other content blocks
-        #       we should update this.
-        content = self.get_text_content()
-        return {"role": role, "content": content}
+        The prompt should be rendered externally using the content from this message
+        (logs, files, any additional context outside of this message, etc.) before
+        being passed to this method.
+        """
+        return {"role": ROLE_USER, "content": prompt}
 
-    def _map_role_to_openai(self) -> str:
-        """Map internal roles to OpenAI-compatible roles."""
-        role_mapping = {
-            ROLE_USER: ROLE_USER,
-            ROLE_COPILOT: ROLE_ASSISTANT,
-            ROLE_COPILOT_INTERNAL: ROLE_USER,
-        }
-        if self.role not in role_mapping.keys():
-            structlogger.error(
-                "copilot_chat_message.to_openai_format.invalid_role",
-                event_info=(
-                    f"Invalid role: `{self.role}`. "
-                    f"Only {', '.join(role_mapping.keys())} roles are supported."
-                ),
-                role=self.role,
-            )
-            raise ValueError(f"Invalid role: {self.role}")
 
-        return role_mapping[self.role]
+# Union type for all possible chat message types
+ChatMessage = Union[
+    CopilotSystemMessage,
+    UserChatMessage,
+    CopilotChatMessage,
+    InternalCopilotRequestChatMessage,
+]
+
+
+class CopilotContext(BaseModel):
+    """Model containing the context used by the copilot to generate a response."""
+
+    assistant_logs: str = Field(default="")
+    assistant_files: Dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "The assistant files. Key is the file path, value is the file content."
+        ),
+    )
+    copilot_chat_history: List[ChatMessage] = Field(default_factory=list)
+    tracker_context: Optional[TrackerContext] = Field(default=None)
+
+    class Config:
+        """Config for LLMBuilderContext."""
+
+        arbitrary_types_allowed = True
 
 
 class CopilotRequest(BaseModel):
     """Request model for the copilot endpoint."""
 
-    copilot_chat_history: List[CopilotChatMessage] = Field(
+    copilot_chat_history: List[ChatMessage] = Field(
         ...,
         description=(
             "The chat history between the user and the copilot. "
@@ -285,8 +401,43 @@ class CopilotRequest(BaseModel):
         description='Signature scheme version (e.g. "v1").',
     )
 
+    @field_validator("copilot_chat_history", mode="before")
+    @classmethod
+    def parse_chat_history(cls, v: List[Dict[str, Any]]) -> List[ChatMessage]:
+        """Manually parse chat history messages based on role field."""
+        parsed_messages: List[ChatMessage] = []
+        available_roles = [ROLE_USER, ROLE_COPILOT, ROLE_COPILOT_INTERNAL]
+        for message_data in v:
+            role = message_data.get("role")
+
+            if role == ROLE_USER:
+                parsed_messages.append(UserChatMessage(**message_data))
+
+            elif role == ROLE_COPILOT:
+                parsed_messages.append(CopilotChatMessage(**message_data))
+
+            elif role == ROLE_COPILOT_INTERNAL:
+                parsed_messages.append(
+                    InternalCopilotRequestChatMessage(**message_data)
+                )
+
+            else:
+                message = (
+                    f"Unknown role '{role}' in chat message. "
+                    f"Available roles are: {', '.join(available_roles)}."
+                )
+                structlogger.error(
+                    "copilot_request.parse_chat_history.unknown_role",
+                    event_info=message,
+                    role=role,
+                    available_roles=available_roles,
+                )
+                raise ValueError(message)
+
+        return parsed_messages
+
     @property
-    def last_message(self) -> Optional[CopilotChatMessage]:
+    def last_message(self) -> Optional[ChatMessage]:
         """Get the last message from the copilot chat history."""
         if not self.copilot_chat_history:
             return None
@@ -315,6 +466,12 @@ class CopilotOutput(BaseModel, ABC):
         """Convert to SSE event format."""
         pass
 
+    @property
+    @abstractmethod
+    def sse_data(self) -> Dict[str, Any]:
+        """Extract the SSE data payload."""
+        pass
+
 
 class GeneratedContent(CopilotOutput):
     """Represents generated content from the LLM to be streamed."""
@@ -327,12 +484,17 @@ class GeneratedContent(CopilotOutput):
         """Convert to SSE event format."""
         return ServerSentEvent(
             event="copilot_response",
-            data={
-                "content": self.content,
-                "response_category": self.response_category.value,
-                "completeness": self.response_completeness.value,
-            },
+            data=self.sse_data,
         )
+
+    @property
+    def sse_data(self) -> Dict[str, Any]:
+        """Extract the SSE data payload."""
+        return {
+            "content": self.content,
+            "response_category": self.response_category.value,
+            "completeness": self.response_completeness.value,
+        }
 
 
 class ReferenceEntry(CopilotOutput):
@@ -361,14 +523,19 @@ class ReferenceEntry(CopilotOutput):
         """Convert to SSE event format."""
         return ServerSentEvent(
             event="copilot_response",
-            data={
-                "index": self.index,
-                "title": self.title,
-                "url": self.url,
-                "response_category": self.response_category.value,
-                "completeness": self.response_completeness.value,
-            },
+            data=self.sse_data,
         )
+
+    @property
+    def sse_data(self) -> Dict[str, Any]:
+        """Extract the SSE data payload."""
+        return {
+            "index": self.index,
+            "title": self.title,
+            "url": self.url,
+            "response_category": self.response_category.value,
+            "completeness": self.response_completeness.value,
+        }
 
 
 class ReferenceSection(CopilotOutput):
@@ -395,15 +562,20 @@ class ReferenceSection(CopilotOutput):
         """Convert to SSE event format."""
         return ServerSentEvent(
             event="copilot_response",
-            data={
-                "references": [
-                    reference.model_dump(include={"index", "title", "url"})
-                    for reference in self.references
-                ],
-                "response_category": self.response_category.value,
-                "completeness": self.response_completeness.value,
-            },
+            data=self.sse_data,
         )
+
+    @property
+    def sse_data(self) -> Dict[str, Any]:
+        """Extract the SSE data payload."""
+        return {
+            "references": [
+                reference.model_dump(include={"index", "title", "url"})
+                for reference in self.references
+            ],
+            "response_category": self.response_category.value,
+            "completeness": self.response_completeness.value,
+        }
 
     def sort_references(self) -> None:
         """Sort references by index value."""
@@ -414,18 +586,42 @@ class ReferenceSection(CopilotOutput):
         self.references = sorted_references
 
 
-class CopilotContext(BaseModel):
-    """Model containing the context used by the copilot to generate a response."""
+class TrainingErrorLog(CopilotOutput):
+    """Represents an error log."""
 
-    assistant_logs: str = Field("")
-    assistant_files: Dict[str, str] = Field({})
-    copilot_chat_history: List["CopilotChatMessage"] = Field([])
-    tracker_context: Optional[TrackerContext] = Field(None)
+    logs: List[LogContent]
+    response_category: ResponseCategory = Field(
+        default=ResponseCategory.TRAINING_ERROR_LOG,
+        frozen=True,
+    )
+    response_completeness: ResponseCompleteness = ResponseCompleteness.COMPLETE
 
-    class Config:
-        """Config for LLMBuilderContext."""
+    @model_validator(mode="after")
+    def validate_response_category(self) -> "TrainingErrorLog":
+        """Validate that response_category has the correct default value."""
+        if self.response_category != ResponseCategory.TRAINING_ERROR_LOG:
+            raise ValueError(
+                f"TrainingErrorLog response_category must be "
+                f"{ResponseCategory.TRAINING_ERROR_LOG}, "
+                f"got `{self.response_category}`."
+            )
+        return self
 
-        arbitrary_types_allowed = True
+    def to_sse_event(self) -> ServerSentEvent:
+        """Convert to SSE event format."""
+        return ServerSentEvent(
+            event="copilot_response",
+            data=self.sse_data,
+        )
+
+    @property
+    def sse_data(self) -> Dict[str, Any]:
+        """Extract the SSE data payload."""
+        return {
+            "logs": [log.model_dump() for log in self.logs],
+            "response_category": self.response_category.value,
+            "completeness": self.response_completeness.value,
+        }
 
 
 class UsageStatistics(BaseModel):
