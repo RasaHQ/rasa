@@ -23,7 +23,10 @@ from rasa.core.brokers.file import FileEventBroker
 from rasa.core.brokers.kafka import KafkaEventBroker, KafkaProducerInitializationError
 from rasa.core.brokers.pika import DEFAULT_QUEUE_NAME, PikaEventBroker
 from rasa.core.brokers.sql import SQLEventBroker
-from rasa.core.constants import IAM_CLOUD_PROVIDER_ENV_VAR_NAME
+from rasa.core.constants import (
+    IAM_CLOUD_PROVIDER_ENV_VAR_NAME,
+    KAFKA_MSK_AWS_IAM_ENABLED_ENV_VAR_NAME,
+)
 from rasa.core.iam_credentials_providers.aws_iam_credentials_providers import (
     AWSMSKafkaIAMCredentialsProvider,
 )
@@ -522,6 +525,7 @@ async def test_kafka_broker_from_config_with_pii_attributes():
 
 def test_kafka_event_broker_iam_config(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+    monkeypatch.setenv(KAFKA_MSK_AWS_IAM_ENABLED_ENV_VAR_NAME, "True")
     monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
     broker = KafkaEventBroker(
         "localhost",

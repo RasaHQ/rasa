@@ -9,6 +9,14 @@ from moto import mock_aws
 from moto.core import set_initial_no_auth_action_count
 from pytest import CaptureFixture, MonkeyPatch
 
+from rasa.core.constants import (
+    ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME,
+    KAFKA_MSK_AWS_IAM_ENABLED_ENV_VAR_NAME,
+    KAFKA_SERVICE_NAME,
+    RDS_SQL_DB_AWS_IAM_ENABLED_ENV_VAR_NAME,
+    REDIS_SERVICE_NAME,
+    SQL_SERVICE_NAME,
+)
 from rasa.core.iam_credentials_providers.aws_iam_credentials_providers import (
     AWSElasticacheRedisIAMCredentialsProvider,
     AWSMSKafkaIAMCredentialsProvider,
@@ -25,9 +33,11 @@ from rasa.shared.exceptions import ConnectionException
 
 
 @pytest.fixture
-def aws_rds_iam_provider_input() -> IAMCredentialsProviderInput:
+def aws_rds_iam_provider_input(monkeypatch: MonkeyPatch) -> IAMCredentialsProviderInput:
+    monkeypatch.setenv(RDS_SQL_DB_AWS_IAM_ENABLED_ENV_VAR_NAME, "true")
     return IAMCredentialsProviderInput(
-        service_name=SupportedServiceType.TRACKER_STORE,
+        service_type=SupportedServiceType.TRACKER_STORE,
+        service_name=SQL_SERVICE_NAME,
         username="test_user",
         host="localhost",
         port=5432,
@@ -88,8 +98,10 @@ def test_aws_rds_iam_credentials_provider_get_credentials_missing_input(
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+    monkeypatch.setenv(RDS_SQL_DB_AWS_IAM_ENABLED_ENV_VAR_NAME, "true")
     provider_input = IAMCredentialsProviderInput(
-        service_name=SupportedServiceType.TRACKER_STORE,
+        service_type=SupportedServiceType.TRACKER_STORE,
+        service_name=SQL_SERVICE_NAME,
         username=username,
         host=host,
         port=port,
@@ -100,11 +112,20 @@ def test_aws_rds_iam_credentials_provider_get_credentials_missing_input(
     assert type(credentials.auth_token) == expected_token_type
 
 
-def test_create_aws_iam_credentials_provider_for_kafka_broker() -> None:
+@pytest.fixture
+def aws_msk_iam_provider_input(monkeypatch: MonkeyPatch) -> IAMCredentialsProviderInput:
+    monkeypatch.setenv(KAFKA_MSK_AWS_IAM_ENABLED_ENV_VAR_NAME, "true")
+    return IAMCredentialsProviderInput(
+        service_type=SupportedServiceType.EVENT_BROKER,
+        service_name=KAFKA_SERVICE_NAME,
+    )
+
+
+def test_create_aws_iam_credentials_provider_for_kafka_broker(
+    aws_msk_iam_provider_input: IAMCredentialsProviderInput,
+) -> None:
     iam_credentials_provider = create_aws_iam_credentials_provider(
-        IAMCredentialsProviderInput(
-            service_name=SupportedServiceType.EVENT_BROKER,
-        )
+        aws_msk_iam_provider_input
     )
     assert iam_credentials_provider is not None
     assert isinstance(iam_credentials_provider, IAMCredentialsProvider)
@@ -116,12 +137,11 @@ def test_create_aws_iam_credentials_provider_for_kafka_broker() -> None:
 def test_aws_msk_iam_credentials_provider_get_credentials(
     capsys: CaptureFixture,
     monkeypatch: MonkeyPatch,
+    aws_msk_iam_provider_input: IAMCredentialsProviderInput,
 ) -> None:
     monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
     aws_kafka_iam_provider = create_aws_iam_credentials_provider(
-        IAMCredentialsProviderInput(
-            service_name=SupportedServiceType.EVENT_BROKER,
-        )
+        aws_msk_iam_provider_input
     )
     assert aws_kafka_iam_provider is not None
     assert isinstance(aws_kafka_iam_provider, AWSMSKafkaIAMCredentialsProvider)
@@ -147,12 +167,11 @@ def test_aws_msk_iam_credentials_provider_get_credentials(
 def test_aws_msk_iam_credentials_provider_get_credentials_refresh_token(
     capsys: CaptureFixture,
     monkeypatch: MonkeyPatch,
+    aws_msk_iam_provider_input: IAMCredentialsProviderInput,
 ) -> None:
     monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
     aws_kafka_iam_provider = create_aws_iam_credentials_provider(
-        IAMCredentialsProviderInput(
-            service_name=SupportedServiceType.EVENT_BROKER,
-        )
+        aws_msk_iam_provider_input
     )
     assert aws_kafka_iam_provider is not None
     assert isinstance(aws_kafka_iam_provider, AWSMSKafkaIAMCredentialsProvider)
@@ -182,12 +201,11 @@ def test_aws_msk_iam_credentials_provider_get_credentials_refresh_token(
 def test_aws_msk_iam_credentials_provider_get_credentials_do_not_refresh_token(
     capsys: CaptureFixture,
     monkeypatch: MonkeyPatch,
+    aws_msk_iam_provider_input: IAMCredentialsProviderInput,
 ) -> None:
     monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
     aws_kafka_iam_provider = create_aws_iam_credentials_provider(
-        IAMCredentialsProviderInput(
-            service_name=SupportedServiceType.EVENT_BROKER,
-        )
+        aws_msk_iam_provider_input
     )
     assert aws_kafka_iam_provider is not None
     assert isinstance(aws_kafka_iam_provider, AWSMSKafkaIAMCredentialsProvider)
@@ -210,6 +228,7 @@ def test_aws_msk_iam_credentials_provider_get_credentials_do_not_refresh_token(
 def test_aws_msk_iam_credentials_provider_get_credentials_raises_exception(
     capsys: CaptureFixture,
     monkeypatch: MonkeyPatch,
+    aws_msk_iam_provider_input: IAMCredentialsProviderInput,
 ) -> None:
     monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
     mock_msk_auth_token_provider = MagicMock(
@@ -220,9 +239,7 @@ def test_aws_msk_iam_credentials_provider_get_credentials_raises_exception(
     )
 
     aws_kafka_iam_provider = create_aws_iam_credentials_provider(
-        IAMCredentialsProviderInput(
-            service_name=SupportedServiceType.EVENT_BROKER,
-        )
+        aws_msk_iam_provider_input
     )
     assert aws_kafka_iam_provider is not None
     assert isinstance(aws_kafka_iam_provider, AWSMSKafkaIAMCredentialsProvider)
@@ -235,13 +252,24 @@ def test_aws_msk_iam_credentials_provider_get_credentials_raises_exception(
         aws_kafka_iam_provider.get_temporary_credentials()
 
 
-def test_create_aws_iam_credentials_provider_for_redis_lock_store() -> None:
+@pytest.fixture
+def aws_elasticache_redis_iam_provider_input(
+    monkeypatch: MonkeyPatch,
+) -> IAMCredentialsProviderInput:
+    monkeypatch.setenv(ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME, "true")
+    return IAMCredentialsProviderInput(
+        service_type=SupportedServiceType.LOCK_STORE,
+        service_name=REDIS_SERVICE_NAME,
+        username="test_user",
+        cluster_name="test_cluster",
+    )
+
+
+def test_create_aws_iam_credentials_provider_for_redis_lock_store(
+    aws_elasticache_redis_iam_provider_input: IAMCredentialsProviderInput,
+) -> None:
     iam_credentials_provider = create_aws_iam_credentials_provider(
-        IAMCredentialsProviderInput(
-            service_name=SupportedServiceType.LOCK_STORE,
-            username="test_user",
-            cluster_name="test_cluster",
-        )
+        aws_elasticache_redis_iam_provider_input
     )
     assert iam_credentials_provider is not None
     assert isinstance(iam_credentials_provider, IAMCredentialsProvider)
@@ -255,14 +283,11 @@ def test_create_aws_iam_credentials_provider_for_redis_lock_store() -> None:
 def test_aws_elasticache_redis_credentials_provider_get_temp_credentials(
     capsys: CaptureFixture,
     monkeypatch: MonkeyPatch,
+    aws_elasticache_redis_iam_provider_input: IAMCredentialsProviderInput,
 ) -> None:
     monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
     aws_elasticache_redis_iam_provider = create_aws_iam_credentials_provider(
-        IAMCredentialsProviderInput(
-            service_name=SupportedServiceType.LOCK_STORE,
-            username="test_user",
-            cluster_name="test_cluster",
-        )
+        aws_elasticache_redis_iam_provider_input
     )
     assert aws_elasticache_redis_iam_provider is not None
     assert isinstance(
@@ -297,14 +322,11 @@ def test_aws_elasticache_redis_credentials_provider_get_temp_credentials(
 @mock_aws
 def test_aws_elasticache_redis_credentials_provider_caches_credentials(
     monkeypatch: MonkeyPatch,
+    aws_elasticache_redis_iam_provider_input: IAMCredentialsProviderInput,
 ) -> None:
     monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
     aws_elasticache_redis_iam_provider = create_aws_iam_credentials_provider(
-        IAMCredentialsProviderInput(
-            service_name=SupportedServiceType.LOCK_STORE,
-            username="test_user",
-            cluster_name="test_cluster",
-        )
+        aws_elasticache_redis_iam_provider_input
     )
     assert aws_elasticache_redis_iam_provider is not None
     assert isinstance(

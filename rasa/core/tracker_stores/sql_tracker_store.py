@@ -27,6 +27,7 @@ from rasa.core.constants import (
     POSTGRESQL_MAX_OVERFLOW,
     POSTGRESQL_POOL_SIZE,
     POSTGRESQL_SCHEMA,
+    SQL_SERVICE_NAME,
     SQL_TRACKER_STORE_SSL_MODE_ENV_VAR_NAME,
     SQL_TRACKER_STORE_SSL_ROOT_CERTIFICATE_ENV_VAR_NAME,
 )
@@ -229,7 +230,8 @@ class SQLTrackerStore(TrackerStore, SerializedTrackerAsText):
 
         iam_credentials_provider = create_iam_credentials_provider(
             IAMCredentialsProviderInput(
-                service_name=SupportedServiceType.TRACKER_STORE,
+                service_type=SupportedServiceType.TRACKER_STORE,
+                service_name=SQL_SERVICE_NAME,
                 username=username,
                 host=host,
                 port=port,

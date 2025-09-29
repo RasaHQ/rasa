@@ -1,16 +1,23 @@
 from pathlib import Path
 from typing import List, Optional, Union
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import structlog.testing
-from _pytest.logging import LogCaptureFixture
+from pytest import LogCaptureFixture, MonkeyPatch
 from redis.exceptions import DataError
 
 import rasa.utils.endpoints
 from rasa.core.concurrent_lock_store import (
     DEFAULT_CONCURRENT_REDIS_LOCK_STORE_KEY_PREFIX,
     ConcurrentRedisLockStore,
+)
+from rasa.core.constants import (
+    ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME,
+    IAM_CLOUD_PROVIDER_ENV_VAR_NAME,
+)
+from rasa.core.iam_credentials_providers.aws_iam_credentials_providers import (
+    AWSElasticacheRedisIAMCredentialsProvider,
 )
 from rasa.core.lock_store import LockStore
 from rasa.core.redis_connection_factory import DeploymentMode
@@ -397,3 +404,68 @@ def test_get_keys_by_pattern_standard_mode_uses_keys():
     # Verify KEYS was called, not SCAN
     mock_redis.keys.assert_called_once_with(pattern)
     mock_redis.scan.assert_not_called()
+
+
+def test_create_concurrent_redis_lock_store_with_iam_enabled(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test creating ConcurrentRedisLockStore with IAM authentication enabled."""
+    monkeypatch.setenv(ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME, "true")
+    monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
+    mock_redis = MagicMock()
+    monkeypatch.setattr("redis.StrictRedis", mock_redis)
+
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        f"""
+        version: {LATEST_TRAINING_DATA_FORMAT_VERSION}
+        lock_store:
+            type: rasa.core.concurrent_lock_store.ConcurrentRedisLockStore
+            host: localhost
+            port: 6379
+        """
+    )
+    endpoint_config = rasa.utils.endpoints.read_endpoint_config(
+        str(endpoints_file), "lock_store"
+    )
+    lock_store = LockStore.create(endpoint_config)
+
+    assert isinstance(lock_store, ConcurrentRedisLockStore)
+    mock_redis.assert_called_once()
+    assert mock_redis.call_args[1].get("credential_provider") is not None
+    assert isinstance(
+        mock_redis.call_args[1].get("credential_provider"),
+        AWSElasticacheRedisIAMCredentialsProvider,
+    )
+
+
+def test_create_concurrent_redis_lock_store_with_iam_disabled(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test creating ConcurrentRedisLockStore with IAM authentication disabled."""
+    monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
+    mock_redis = MagicMock()
+    monkeypatch.setattr("redis.StrictRedis", mock_redis)
+
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        f"""
+        version: {LATEST_TRAINING_DATA_FORMAT_VERSION}
+        lock_store:
+            type: rasa.core.concurrent_lock_store.ConcurrentRedisLockStore
+            host: localhost
+            port: 6379
+            username: username
+            password: password
+        """
+    )
+    endpoint_config = rasa.utils.endpoints.read_endpoint_config(
+        str(endpoints_file), "lock_store"
+    )
+    lock_store = LockStore.create(endpoint_config)
+
+    assert isinstance(lock_store, ConcurrentRedisLockStore)
+    mock_redis.assert_called_once()
+    assert mock_redis.call_args[1].get("credential_provider") is None

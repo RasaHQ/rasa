@@ -1,7 +1,7 @@
 import os
 import threading
 import time
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 from urllib.parse import ParseResult, urlencode, urlunparse
 
 import boto3
@@ -14,6 +14,14 @@ from botocore.session import get_session
 from botocore.signers import RequestSigner
 from cachetools import TTLCache, cached
 
+from rasa.core.constants import (
+    ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME,
+    KAFKA_MSK_AWS_IAM_ENABLED_ENV_VAR_NAME,
+    KAFKA_SERVICE_NAME,
+    RDS_SQL_DB_AWS_IAM_ENABLED_ENV_VAR_NAME,
+    REDIS_SERVICE_NAME,
+    SQL_SERVICE_NAME,
+)
 from rasa.core.iam_credentials_providers.credentials_provider_protocol import (
     IAMCredentialsProvider,
     IAMCredentialsProviderInput,
@@ -23,6 +31,25 @@ from rasa.core.iam_credentials_providers.credentials_provider_protocol import (
 from rasa.shared.exceptions import ConnectionException
 
 structlogger = structlog.get_logger(__name__)
+
+SERVICE_CONFIG: Dict[Tuple[SupportedServiceType, str], str] = {
+    (
+        SupportedServiceType.TRACKER_STORE,
+        SQL_SERVICE_NAME,
+    ): RDS_SQL_DB_AWS_IAM_ENABLED_ENV_VAR_NAME,
+    (
+        SupportedServiceType.TRACKER_STORE,
+        REDIS_SERVICE_NAME,
+    ): ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME,
+    (
+        SupportedServiceType.EVENT_BROKER,
+        KAFKA_SERVICE_NAME,
+    ): KAFKA_MSK_AWS_IAM_ENABLED_ENV_VAR_NAME,
+    (
+        SupportedServiceType.LOCK_STORE,
+        REDIS_SERVICE_NAME,
+    ): ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME,
+}
 
 
 class AWSRDSIAMCredentialsProvider(IAMCredentialsProvider):
@@ -203,21 +230,59 @@ class AWSElasticacheRedisIAMCredentialsProvider(redis.CredentialProvider):
             return TemporaryCredentials()
 
 
+def is_iam_enabled(provider_input: "IAMCredentialsProviderInput") -> bool:
+    """Checks if IAM authentication is enabled for the given service."""
+    service_type = provider_input.service_type
+    service_name = provider_input.service_name
+    iam_enabled_env_var_name = SERVICE_CONFIG.get((service_type, service_name))
+
+    if not iam_enabled_env_var_name:
+        structlogger.warning(
+            "rasa.core.aws_iam_credentials_providers.is_iam_enabled.unsupported_service",
+            event_info=f"IAM authentication check requested for unsupported service: "
+            f"{service_name}",
+        )
+        return False
+
+    return os.getenv(iam_enabled_env_var_name, "false").lower() == "true"
+
+
 def create_aws_iam_credentials_provider(
     provider_input: "IAMCredentialsProviderInput",
 ) -> Optional["IAMCredentialsProvider"]:
     """Factory function to create an AWS IAM credentials provider."""
-    if provider_input.service_name == SupportedServiceType.TRACKER_STORE:
+    iam_enabled = is_iam_enabled(provider_input)
+    if not iam_enabled:
+        structlogger.debug(
+            "rasa.core.aws_iam_credentials_providers.create_provider.iam_not_enabled",
+            event_info=f"IAM authentication not enabled for service: "
+            f"{provider_input.service_type}",
+        )
+        return None
+
+    if (
+        provider_input.service_type == SupportedServiceType.TRACKER_STORE
+        and provider_input.service_name == SQL_SERVICE_NAME
+    ):
         return AWSRDSIAMCredentialsProvider(
             username=provider_input.username,
             host=provider_input.host,
             port=provider_input.port,
         )
 
-    if provider_input.service_name == SupportedServiceType.EVENT_BROKER:
+    if (
+        provider_input.service_type == SupportedServiceType.TRACKER_STORE
+        and provider_input.service_name == REDIS_SERVICE_NAME
+    ):
+        return AWSElasticacheRedisIAMCredentialsProvider(
+            username=provider_input.username,
+            cluster_name=provider_input.cluster_name,
+        )
+
+    if provider_input.service_type == SupportedServiceType.EVENT_BROKER:
         return AWSMSKafkaIAMCredentialsProvider()
 
-    if provider_input.service_name == SupportedServiceType.LOCK_STORE:
+    if provider_input.service_type == SupportedServiceType.LOCK_STORE:
         return AWSElasticacheRedisIAMCredentialsProvider(
             username=provider_input.username,
             cluster_name=provider_input.cluster_name,

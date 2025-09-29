@@ -1,13 +1,20 @@
 import uuid
 import warnings
 from typing import List
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import fakeredis
 import pytest
 from pytest import MonkeyPatch
 from structlog.testing import capture_logs
 
+from rasa.core.constants import (
+    ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME,
+    IAM_CLOUD_PROVIDER_ENV_VAR_NAME,
+)
+from rasa.core.iam_credentials_providers.aws_iam_credentials_providers import (
+    AWSElasticacheRedisIAMCredentialsProvider,
+)
 from rasa.core.redis_connection_factory import DeploymentMode, RedisConfig
 from rasa.core.tracker_stores.redis_tracker_store import (
     DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX,
@@ -568,3 +575,38 @@ async def test_redis_tracker_store_update_tracker_with_prefix(domain: Domain) ->
     # Then
     updated_tracker = await tracker_store.retrieve(sender_id)
     assert updated_tracker.events == new_tracker.events
+
+
+async def test_redis_tracker_store_create_with_iam_enabled(
+    domain: Domain,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    # Given
+    monkeypatch.setenv(ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME, "true")
+    monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
+    mock_redis = MagicMock()
+    monkeypatch.setattr("redis.StrictRedis", mock_redis)
+
+    tracker_store = RedisTrackerStore(domain)
+    assert isinstance(tracker_store, RedisTrackerStore)
+    mock_redis.assert_called_once()
+    assert mock_redis.call_args[1].get("credential_provider") is not None
+    assert isinstance(
+        mock_redis.call_args[1].get("credential_provider"),
+        AWSElasticacheRedisIAMCredentialsProvider,
+    )
+
+
+async def test_redis_tracker_store_create_with_iam_disabled_for_elasticache(
+    domain: Domain,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    # Given
+    monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
+    mock_redis = MagicMock()
+    monkeypatch.setattr("redis.StrictRedis", mock_redis)
+
+    tracker_store = RedisTrackerStore(domain)
+    assert isinstance(tracker_store, RedisTrackerStore)
+    mock_redis.assert_called_once()
+    assert mock_redis.call_args[1].get("credential_provider") is None

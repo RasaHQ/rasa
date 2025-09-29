@@ -17,7 +17,14 @@ from pydantic import ValidationError
 import rasa.core.lock_store
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage
-from rasa.core.constants import DEFAULT_LOCK_LIFETIME, IAM_CLOUD_PROVIDER_ENV_VAR_NAME
+from rasa.core.constants import (
+    DEFAULT_LOCK_LIFETIME,
+    ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME,
+    IAM_CLOUD_PROVIDER_ENV_VAR_NAME,
+)
+from rasa.core.iam_credentials_providers.aws_iam_credentials_providers import (
+    AWSElasticacheRedisIAMCredentialsProvider,
+)
 from rasa.core.lock import Ticket, TicketLock
 from rasa.core.lock_store import (
     DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX,
@@ -837,7 +844,11 @@ def test_create_from_endpoint_iam_config_no_username_and_password(
     monkeypatch: MonkeyPatch,
 ) -> None:
     """Username and password not required when using IAM auth."""
+    monkeypatch.setenv(ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME, "true")
     monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
+    mock_redis = MagicMock()
+    monkeypatch.setattr("redis.StrictRedis", mock_redis)
+
     partial_redis_lock_store_config["host"] = "localhost"
     del partial_redis_lock_store_config["username"]
     del partial_redis_lock_store_config["password"]
@@ -846,3 +857,29 @@ def test_create_from_endpoint_iam_config_no_username_and_password(
 
     with not_raises(Exception):
         LockStore.create(endpoint_config)
+
+    mock_redis.assert_called_once()
+    assert mock_redis.call_args[1].get("credential_provider") is not None
+    assert isinstance(
+        mock_redis.call_args[1].get("credential_provider"),
+        AWSElasticacheRedisIAMCredentialsProvider,
+    )
+
+
+def test_create_from_endpoint_iam_disabled(
+    partial_redis_lock_store_config: Dict[str, Any],
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Tests that username and password are required when IAM auth is disabled."""
+    monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
+    mock_redis = MagicMock()
+    monkeypatch.setattr("redis.StrictRedis", mock_redis)
+    partial_redis_lock_store_config["host"] = "localhost"
+
+    endpoint_config = EndpointConfig(**partial_redis_lock_store_config)
+
+    with not_raises(Exception):
+        LockStore.create(endpoint_config)
+
+    mock_redis.assert_called_once()
+    assert mock_redis.call_args[1].get("credential_provider") is None

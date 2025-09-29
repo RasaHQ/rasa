@@ -6,7 +6,10 @@ import redis
 import structlog
 from pydantic import BaseModel, ConfigDict
 
-from rasa.core.constants import AWS_ELASTICACHE_CLUSTER_NAME_ENV_VAR_NAME
+from rasa.core.constants import (
+    AWS_ELASTICACHE_CLUSTER_NAME_ENV_VAR_NAME,
+    REDIS_SERVICE_NAME,
+)
 from rasa.core.iam_credentials_providers.credentials_provider_protocol import (
     IAMCredentialsProvider,
     IAMCredentialsProviderInput,
@@ -65,6 +68,7 @@ class RedisConfig(BaseModel):
 
     host: Text = "localhost"
     port: int = 6379
+    service_type: SupportedServiceType
     username: Optional[Text] = None
     password: Optional[Text] = None
     use_ssl: bool = False
@@ -117,7 +121,8 @@ class RedisConnectionFactory:
 
         iam_credentials_provider = create_iam_credentials_provider(
             IAMCredentialsProviderInput(
-                service_name=SupportedServiceType.LOCK_STORE,
+                service_type=config.service_type,
+                service_name=REDIS_SERVICE_NAME,
                 username=config.username,
                 cluster_name=os.getenv(AWS_ELASTICACHE_CLUSTER_NAME_ENV_VAR_NAME),
             )

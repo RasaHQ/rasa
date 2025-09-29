@@ -8,6 +8,9 @@ from pydantic import ValidationError
 
 import rasa.shared
 from rasa.core.brokers.broker import EventBroker
+from rasa.core.iam_credentials_providers.credentials_provider_protocol import (
+    SupportedServiceType,
+)
 from rasa.core.redis_connection_factory import (
     DeploymentMode,
     RedisConfig,
@@ -54,6 +57,7 @@ class RedisTrackerStore(TrackerStore, SerializedTrackerAsText):
             config = RedisConfig(
                 host=host,
                 port=port,
+                service_type=SupportedServiceType.TRACKER_STORE,
                 db=db,
                 username=username,
                 password=password,

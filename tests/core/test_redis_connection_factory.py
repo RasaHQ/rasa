@@ -11,10 +11,14 @@ from redis.cluster import ClusterNode
 
 from rasa.core.constants import (
     AWS_ELASTICACHE_CLUSTER_NAME_ENV_VAR_NAME,
+    ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME,
     IAM_CLOUD_PROVIDER_ENV_VAR_NAME,
 )
 from rasa.core.iam_credentials_providers.aws_iam_credentials_providers import (
     AWSElasticacheRedisIAMCredentialsProvider,
+)
+from rasa.core.iam_credentials_providers.credentials_provider_protocol import (
+    SupportedServiceType,
 )
 from rasa.core.redis_connection_factory import (
     DeploymentMode,
@@ -104,7 +108,9 @@ class TestStandardMode:
             mock_connection = Mock()
             mock_redis.return_value = mock_connection
 
-            config = RedisConfig(**config_params)
+            config = RedisConfig(
+                service_type=SupportedServiceType.LOCK_STORE, **config_params
+            )
             result = RedisConnectionFactory.create_connection(config)
 
             assert result == mock_connection
@@ -181,11 +187,14 @@ class TestStandardMode:
         """Test standard Redis connection with various configurations."""
         monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
         monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+        monkeypatch.setenv(ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME, "true")
         with patch("redis.StrictRedis") as mock_redis:
             mock_connection = Mock()
             mock_redis.return_value = mock_connection
 
-            config = RedisConfig(**config_params)
+            config = RedisConfig(
+                service_type=SupportedServiceType.TRACKER_STORE, **config_params
+            )
             result = RedisConnectionFactory.create_connection(config)
 
             assert result == mock_connection
@@ -289,7 +298,9 @@ class TestClusterMode:
             mock_connection = Mock()
             mock_cluster.return_value = mock_connection
 
-            config = RedisConfig(**config_params)
+            config = RedisConfig(
+                service_type=SupportedServiceType.LOCK_STORE, **config_params
+            )
             result = RedisConnectionFactory.create_connection(config)
 
             assert result == mock_connection
@@ -390,12 +401,15 @@ class TestClusterMode:
         monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
         monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
         monkeypatch.setenv(AWS_ELASTICACHE_CLUSTER_NAME_ENV_VAR_NAME, "foo")
+        monkeypatch.setenv(ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME, "true")
 
         with patch("redis.RedisCluster") as mock_cluster:
             mock_connection = Mock()
             mock_cluster.return_value = mock_connection
 
-            config = RedisConfig(**config_params)
+            config = RedisConfig(
+                service_type=SupportedServiceType.LOCK_STORE, **config_params
+            )
             result = RedisConnectionFactory.create_connection(config)
 
             assert result == mock_connection
@@ -441,7 +455,9 @@ class TestClusterMode:
             mock_connection = Mock()
             mock_cluster.return_value = mock_connection
 
-            config = RedisConfig(**config_params)
+            config = RedisConfig(
+                service_type=SupportedServiceType.LOCK_STORE, **config_params
+            )
             result = RedisConnectionFactory.create_connection(config)
 
             assert result == mock_connection
@@ -572,7 +588,9 @@ class TestSentinelMode:
             mock_sentinel_class.return_value = mock_sentinel
             mock_sentinel.master_for.return_value = mock_master
 
-            config = RedisConfig(**config_params)
+            config = RedisConfig(
+                service_type=SupportedServiceType.TRACKER_STORE, **config_params
+            )
             result = RedisConnectionFactory.create_connection(config)
 
             assert result == mock_master
@@ -688,6 +706,7 @@ class TestSentinelMode:
         """Test sentinel connection with various configurations."""
         monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
         monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+        monkeypatch.setenv(ELASTICACHE_REDIS_AWS_IAM_ENABLED_ENV_VAR_NAME, "true")
 
         with patch("redis.sentinel.Sentinel") as mock_sentinel_class:
             mock_sentinel = Mock()
@@ -695,7 +714,9 @@ class TestSentinelMode:
             mock_sentinel_class.return_value = mock_sentinel
             mock_sentinel.master_for.return_value = mock_master
 
-            config = RedisConfig(**config_params)
+            config = RedisConfig(
+                service_type=SupportedServiceType.LOCK_STORE, **config_params
+            )
             result = RedisConnectionFactory.create_connection(config)
 
             assert result == mock_master
@@ -753,7 +774,9 @@ class TestErrorHandling:
     def test_error_scenarios(self, config_params, expected_error_message):
         """Test various error scenarios."""
         with pytest.raises(RasaException) as exc_info:
-            config = RedisConfig(**config_params)
+            config = RedisConfig(
+                service_type=SupportedServiceType.LOCK_STORE, **config_params
+            )
             RedisConnectionFactory.create_connection(config)
 
         assert expected_error_message in str(exc_info.value)
@@ -843,7 +866,9 @@ class TestEndpointParsing:
         }
 
         with patch("redis.RedisCluster"):
-            config = RedisConfig(**config_params)
+            config = RedisConfig(
+                service_type=SupportedServiceType.LOCK_STORE, **config_params
+            )
             RedisConnectionFactory.create_connection(config)
             captured = capsys.readouterr()
             assert "warning" in captured.out
@@ -998,7 +1023,9 @@ class TestLogging:
         }
 
         with patch("redis.RedisCluster"):
-            config = RedisConfig(**config_params)
+            config = RedisConfig(
+                service_type=SupportedServiceType.LOCK_STORE, **config_params
+            )
             RedisConnectionFactory.create_connection(config)
 
             captured = capsys.readouterr()
@@ -1014,7 +1041,9 @@ class TestLogging:
         }
 
         with patch("redis.sentinel.Sentinel"):
-            config = RedisConfig(**config_params)
+            config = RedisConfig(
+                service_type=SupportedServiceType.LOCK_STORE, **config_params
+            )
             RedisConnectionFactory.create_connection(config)
 
             captured = capsys.readouterr()
@@ -1029,7 +1058,9 @@ class TestLogging:
         }
 
         with patch("redis.StrictRedis"):
-            config = RedisConfig(**config_params)
+            config = RedisConfig(
+                service_type=SupportedServiceType.LOCK_STORE, **config_params
+            )
             RedisConnectionFactory.create_connection(config)
 
             captured = capsys.readouterr()
@@ -1050,7 +1081,9 @@ class TestEdgeCases:
 
         with patch("redis.RedisCluster") as mock_cluster:
             # When
-            config = RedisConfig(**config_params)
+            config = RedisConfig(
+                service_type=SupportedServiceType.LOCK_STORE, **config_params
+            )
             RedisConnectionFactory.create_connection(config)
 
             # Then
@@ -1076,7 +1109,9 @@ class TestEdgeCases:
             mock_sentinel_class.return_value = mock_sentinel
 
             # When
-            config = RedisConfig(**config_params)
+            config = RedisConfig(
+                service_type=SupportedServiceType.LOCK_STORE, **config_params
+            )
             RedisConnectionFactory.create_connection(config)
 
             # Then
@@ -1099,7 +1134,9 @@ class TestConnectionExceptionHandling:
             mock_redis.side_effect = Exception("Connection failed")
 
             with pytest.raises(ConnectionException) as exc_info:
-                config = RedisConfig(**config_params)
+                config = RedisConfig(
+                    service_type=SupportedServiceType.LOCK_STORE, **config_params
+                )
                 RedisConnectionFactory.create_connection(config)
 
             assert "Error initializing Redis connection" in str(exc_info.value)
@@ -1116,7 +1153,9 @@ class TestConnectionExceptionHandling:
             mock_cluster.side_effect = Exception("Connection failed")
 
             with pytest.raises(ConnectionException) as exc_info:
-                config = RedisConfig(**config_params)
+                config = RedisConfig(
+                    service_type=SupportedServiceType.LOCK_STORE, **config_params
+                )
                 RedisConnectionFactory.create_connection(config)
 
             assert "Error initializing Redis Cluster" in str(exc_info.value)
@@ -1135,7 +1174,9 @@ class TestConnectionExceptionHandling:
             mock_sentinel.return_value.master_for.return_value = mock_master
 
             with pytest.raises(ConnectionException) as exc_info:
-                config = RedisConfig(**config_params)
+                config = RedisConfig(
+                    service_type=SupportedServiceType.LOCK_STORE, **config_params
+                )
                 RedisConnectionFactory.create_connection(config)
 
             assert "Error initializing Redis Sentinel" in str(exc_info.value)

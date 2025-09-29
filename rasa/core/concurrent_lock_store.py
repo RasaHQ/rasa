@@ -6,6 +6,9 @@ from typing import Deque, Optional, Text
 import structlog
 from pydantic import ValidationError
 
+from rasa.core.iam_credentials_providers.credentials_provider_protocol import (
+    SupportedServiceType,
+)
 from rasa.core.lock import Ticket, TicketLock
 from rasa.core.lock_store import (
     DEFAULT_SOCKET_TIMEOUT_IN_SECONDS,
@@ -108,6 +111,7 @@ class ConcurrentRedisLockStore(LockStore):
             redis_config = RedisConfig(
                 host=host,
                 port=port,
+                service_type=SupportedServiceType.LOCK_STORE,
                 db=db,
                 username=username,
                 password=password,

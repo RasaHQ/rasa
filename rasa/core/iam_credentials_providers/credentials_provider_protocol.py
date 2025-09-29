@@ -47,7 +47,8 @@ class SupportedServiceType(Enum):
 class IAMCredentialsProviderInput(BaseModel):
     """Input data for creating an IAM credentials provider."""
 
-    service_name: SupportedServiceType
+    service_type: SupportedServiceType
+    service_name: str
     username: Optional[str] = None
     host: Optional[str] = None
     port: Optional[int] = None

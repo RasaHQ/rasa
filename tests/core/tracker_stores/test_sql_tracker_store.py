@@ -20,6 +20,7 @@ from rasa.core.agent import Agent
 from rasa.core.constants import (
     IAM_CLOUD_PROVIDER_ENV_VAR_NAME,
     POSTGRESQL_SCHEMA,
+    RDS_SQL_DB_AWS_IAM_ENABLED_ENV_VAR_NAME,
     SQL_TRACKER_STORE_SSL_MODE_ENV_VAR_NAME,
     SQL_TRACKER_STORE_SSL_ROOT_CERTIFICATE_ENV_VAR_NAME,
 )
@@ -687,6 +688,7 @@ def test_sql_tracker_store_creation_with_iam_enabled(
 ):
     monkeypatch.setenv(IAM_CLOUD_PROVIDER_ENV_VAR_NAME, "aws")
     monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+    monkeypatch.setenv(RDS_SQL_DB_AWS_IAM_ENABLED_ENV_VAR_NAME, "true")
     # intentionally do not pass password input
     tracker_store = TrackerStore.create(
         EndpointConfig(
@@ -708,8 +710,8 @@ def test_sql_tracker_store_creation_with_iam_enabled(
         "rasa.core.aws_rds_iam_credentials_provider.generated_credentials"
         in captured.out
     )
+    assert "sql_tracker_store.iam_credentials_provider " in captured.out
     assert (
-        "sql_tracker_store.iam_credentials_provider "
         "event_info='Using temporary auth token from "
         "IAM credentials provider.'" in captured.out
     )

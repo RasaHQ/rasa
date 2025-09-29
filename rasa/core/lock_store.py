@@ -18,6 +18,9 @@ from pydantic import (
 
 import rasa.shared.utils.common
 from rasa.core.constants import DEFAULT_LOCK_LIFETIME, IAM_CLOUD_PROVIDER_ENV_VAR_NAME
+from rasa.core.iam_credentials_providers.credentials_provider_protocol import (
+    SupportedServiceType,
+)
 from rasa.core.lock import TicketLock
 from rasa.core.redis_connection_factory import (
     DeploymentMode,
@@ -336,6 +339,7 @@ class RedisLockStore(LockStore):
             redis_config = RedisConfig(
                 host=str(self.config.host),
                 port=self.config.port,
+                service_type=SupportedServiceType.LOCK_STORE,
                 db=self.config.db,
                 username=self.config.username,
                 password=self.config.password,

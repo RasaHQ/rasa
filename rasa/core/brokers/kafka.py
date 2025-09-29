@@ -12,6 +12,7 @@ import structlog
 
 import rasa.shared.utils.common
 from rasa.core.brokers.broker import EventBroker
+from rasa.core.constants import KAFKA_SERVICE_NAME
 from rasa.core.exceptions import KafkaProducerInitializationError
 from rasa.core.iam_credentials_providers.credentials_provider_protocol import (
     IAMCredentialsProviderInput,
@@ -99,7 +100,10 @@ class KafkaEventBroker(EventBroker):
         self.queue_size = kwargs.get("queue_size")
         self.ssl_check_hostname = "https" if ssl_check_hostname else None
         self.iam_credentials_provider = create_iam_credentials_provider(
-            IAMCredentialsProviderInput(service_name=SupportedServiceType.EVENT_BROKER)
+            IAMCredentialsProviderInput(
+                service_type=SupportedServiceType.EVENT_BROKER,
+                service_name=KAFKA_SERVICE_NAME,
+            )
         )
 
         # PII management attributes
