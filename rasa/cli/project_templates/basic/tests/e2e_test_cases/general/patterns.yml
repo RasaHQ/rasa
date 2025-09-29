@@ -1,0 +1,32 @@
+test_cases:
+- test_case: test pattern session start
+  steps:
+    - user: "/session_start"
+      assertions:
+        - flow_started: "pattern_session_start"
+        - bot_uttered:
+            utter_name: "utter_welcome"
+#
+- test_case: test basic conversation flow
+  steps:
+    - user: "hello"
+      assertions:
+        - flow_started: "hello"
+        - bot_uttered:
+            utter_name: "utter_hello"
+    - user: "what can you help me with?"
+      assertions:
+        - flow_started: "help"
+        - bot_uttered:
+            utter_name: "utter_what_can_you_do"
+    - user: "show me faqs"
+      assertions:
+        - flow_started: "show_faqs"
+        - bot_uttered:
+            utter_name: "utter_top_faqs"
+    - user: "goodbye"
+      assertions:
+        - flow_started: "goodbye_flow"
+        - bot_uttered:
+            utter_name: "utter_goodbye"
+        - flow_started: "leave_feedback"

@@ -1,0 +1,41 @@
+test_cases:
+  - test_case: human handoff happy path
+    steps:
+    - user: "I would like to speak with a human"
+      assertions:
+        - flow_started: "human_handoff"
+        - bot_uttered:
+            utter_name: "utter_ask_confirm_human_handoff"
+            buttons:
+              - payload: "/SetSlots(confirm_human_handoff=Yes)"
+                title: "Yes"
+              - payload: "/SetSlots(confirm_human_handoff=No)"
+                title: "No"
+    - user: "/SetSlots(confirm_human_handoff=Yes)"
+      assertions:
+        - slot_was_set:
+            - name: "confirm_human_handoff"
+              value: "Yes"
+        - bot_uttered:
+            utter_name: "utter_transferring_to_human"
+        - action_executed: action_human_handoff
+# ====================================================>
+  - test_case: human handoff unhappy path
+    steps:
+    - user: "I would like to speak with a human"
+      assertions:
+        - flow_started: "human_handoff"
+        - bot_uttered:
+            utter_name: "utter_ask_confirm_human_handoff"
+            buttons:
+              - payload: "/SetSlots(confirm_human_handoff=Yes)"
+                title: "Yes"
+              - payload: "/SetSlots(confirm_human_handoff=No)"
+                title: "No"
+    - user: "/SetSlots(confirm_human_handoff=No)"
+      assertions:
+        - slot_was_set:
+            - name: "confirm_human_handoff"
+              value: "No"
+        - bot_uttered:
+            utter_name: "utter_human_handoff_cancelled"

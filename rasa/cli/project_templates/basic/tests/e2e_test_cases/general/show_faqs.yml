@@ -1,0 +1,8 @@
+test_cases:
+  - test_case: show faqs
+    steps:
+    - user: "show me the faqs"
+      assertions:
+        - flow_started: "show_faqs"
+        - bot_uttered:
+            utter_name: "utter_top_faqs"

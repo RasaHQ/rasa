@@ -1,0 +1,8 @@
+test_cases:
+  - test_case: hello
+    steps:
+    - user: "hello"
+      assertions:
+        - flow_started: "hello"
+        - bot_uttered:
+            utter_name: "utter_hello"

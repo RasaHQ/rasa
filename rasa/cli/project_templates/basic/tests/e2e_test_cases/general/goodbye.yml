@@ -1,0 +1,9 @@
+test_cases:
+  - test_case: goodbye
+    steps:
+    - user: "goodbye"
+      assertions:
+        - flow_started: "goodbye_flow"
+        - bot_uttered:
+            utter_name: "utter_goodbye"
+        - flow_started: "leave_feedback"

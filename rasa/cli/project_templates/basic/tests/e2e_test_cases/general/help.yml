@@ -1,0 +1,8 @@
+test_cases:
+  - test_case: help
+    steps:
+    - user: "help"
+      assertions:
+        - flow_started: "help"
+        - bot_uttered:
+            utter_name: "utter_what_can_you_do"
