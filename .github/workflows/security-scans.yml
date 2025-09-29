@@ -123,7 +123,7 @@ jobs:
 
       - name: Install Dependencies (Linux) 📦
         if: needs.changes.outputs.backend == 'true'
-        run: make install-full
+        run: make install
 
       - name: Run Bandit 🔪
         if: needs.changes.outputs.backend == 'true'

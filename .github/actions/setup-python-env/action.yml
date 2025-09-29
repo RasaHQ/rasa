@@ -15,7 +15,7 @@ inputs:
   RASA_DEFAULT_INSTALLATION_ONLY:
     description: "Install via `make install` target, which does not include any additional groups"
     required: false
-    default: "false"
+    default: "true"
   OPTIONAL_GROUP_TO_INSTALL:
     description: "Optional group to install, from: nlu, channels or full. Incompatible with `RASA_DEFAULT_INSTALLATION_ONLY` input"
     required: false

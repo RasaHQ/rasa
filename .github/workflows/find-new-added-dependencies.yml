@@ -33,7 +33,7 @@ jobs:
       - name: Install Dependencies 📦
         run: |
           sudo apt-get -y install libpq-dev
-          make install-full
+          make install
 
       - name: Save main branch dependencies
         id: main_dependencies
