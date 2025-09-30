@@ -104,7 +104,10 @@ class StartFlowCommand(Command):
             # predicted a start flow command for the flow which is on top of the stack,
             # we just need to remove the pattern_continue_interrupted frame(s) from the
             # stack
-            stack = remove_pattern_continue_interrupted_frames(stack)
+            stack, flow_completed_events = remove_pattern_continue_interrupted_frames(
+                stack
+            )
+            applied_events.extend(flow_completed_events)
             return applied_events + tracker.create_stack_updated_events(stack)
 
         # if the flow is already on the stack, resume it
@@ -114,7 +117,10 @@ class StartFlowCommand(Command):
         ):
             # if pattern_continue_interrupted is active, we need to remove it
             # from the stack before resuming the flow
-            stack = remove_pattern_continue_interrupted_frames(stack)
+            stack, flow_completed_events = remove_pattern_continue_interrupted_frames(
+                stack
+            )
+            applied_events.extend(flow_completed_events)
             applied_events.extend(resume_flow(self.flow, tracker, stack))
             # the current active flow is interrupted
             applied_events.append(
@@ -128,7 +134,8 @@ class StartFlowCommand(Command):
 
         # remove the pattern_continue_interrupted frames from the stack
         # if it is currently active but the user digressed from the pattern
-        stack = remove_pattern_continue_interrupted_frames(stack)
+        stack, flow_completed_events = remove_pattern_continue_interrupted_frames(stack)
+        applied_events.extend(flow_completed_events)
 
         if original_top_flow:
             # if the original top flow is not the same as the flow to start,

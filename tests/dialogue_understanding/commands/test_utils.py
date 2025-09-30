@@ -425,7 +425,7 @@ def test_remove_pattern_continue_interrupted_frames(
     )
 
     stack = DialogueStack(frames=initial_frames)
-    result = remove_pattern_continue_interrupted_frames(stack)
+    result, events = remove_pattern_continue_interrupted_frames(stack)
 
     assert len(result.frames) == expected_frame_count
 
@@ -453,7 +453,7 @@ def test_remove_pattern_continue_interrupted_frames_preserves_original_stack():
     original_stack = DialogueStack(frames=[user_frame, pattern_frame])
     stack_copy = original_stack.copy()
 
-    result = remove_pattern_continue_interrupted_frames(stack_copy)
+    result, events = remove_pattern_continue_interrupted_frames(stack_copy)
 
     # Original stack should remain unchanged
     assert len(original_stack.frames) == 2
@@ -504,7 +504,7 @@ def test_remove_pattern_continue_interrupted_frames_complex_stack():
         ]
     )
 
-    result = remove_pattern_continue_interrupted_frames(stack)
+    result, events = remove_pattern_continue_interrupted_frames(stack)
 
     assert len(result.frames) == 3
     assert result.frames[0] == user_frame_1

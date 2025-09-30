@@ -19,6 +19,7 @@ from rasa.shared.constants import ACTION_ASK_PREFIX, UTTER_ASK_PREFIX
 from rasa.shared.core.events import (
     AgentResumed,
     Event,
+    FlowCompleted,
     FlowResumed,
     SlotSet,
 )
@@ -250,18 +251,28 @@ def collect_frames_to_resume(
     return list(frames_to_resume), frame_to_resume
 
 
-def remove_pattern_continue_interrupted_frames(stack: DialogueStack) -> DialogueStack:
-    """Remove pattern_continue_interrupted frames from the stack."""
+def remove_pattern_continue_interrupted_frames(
+    stack: DialogueStack,
+) -> Tuple[DialogueStack, List[FlowCompleted]]:
+    """Remove pattern_continue_interrupted frames from the stack and return events.
+
+    Returns:
+        A tuple containing (updated_stack, flow_completed_events)
+    """
     from rasa.dialogue_understanding.stack.utils import (
         is_continue_interrupted_flow_active,
     )
 
     if not is_continue_interrupted_flow_active(stack):
-        return stack
+        return stack, []
 
+    events = []
     # remove pattern_continue_interrupted from the stack
     top_frame = stack.top()
     while isinstance(top_frame, PatternFlowStackFrame):
+        # Create FlowCompleted event for the pattern frame being removed
+        events.append(FlowCompleted(top_frame.flow_id, top_frame.step_id))
+
         # If the top frame is a pattern frame, we need to remove it
         # before continuing with the active user flow frame.
         # This prevents the pattern frame
@@ -271,4 +282,4 @@ def remove_pattern_continue_interrupted_frames(stack: DialogueStack) -> Dialogue
         stack.pop()
         top_frame = stack.top()
 
-    return stack
+    return stack, events

@@ -23,6 +23,7 @@ from rasa.shared.core.events import (
     AgentInterrupted,
     AgentResumed,
     DialogueStackUpdated,
+    FlowCompleted,
     FlowInterrupted,
     FlowResumed,
 )
@@ -1013,11 +1014,13 @@ def test_start_flow_removes_continue_interrupted_frames_when_same_flow():
     # WHEN: starting the same flow that's already on top
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
 
-    # Should return a dialogue stack updated event
-    assert len(events) == 1
-    assert isinstance(events[0], DialogueStackUpdated)
+    # Should return FlowCompleted and dialogue stack updated events
+    assert len(events) == 2
+    assert isinstance(events[0], FlowCompleted)
+    assert isinstance(events[1], DialogueStackUpdated)
 
-    updated_stack = tracker.stack.update_from_patch(events[0].update)
+    dialogue_stack_event = events[1]
+    updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
     assert len(updated_stack.frames) == 1
     assert updated_stack.top() == user_stack_frame
 
@@ -1074,10 +1077,12 @@ def test_start_flow_resumes_flow_and_removes_continue_interrupted_frames():
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
 
     # Should return events for resuming the flow
-    assert len(events) == 3  # FlowResumed, DialogueStackUpdated, FlowInterrupted
+    assert (
+        len(events) == 4
+    )  # FlowCompleted, FlowResumed, DialogueStackUpdated, FlowInterrupted
 
     # Check that the continue interrupted frame is removed and bar flow is resumed
-    dialogue_stack_event = events[1]
+    dialogue_stack_event = events[2]
     updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
 
     # Should have 2 frames: bar (resumed) and foo (interrupted)
@@ -1137,10 +1142,21 @@ def test_start_flow_removes_pattern_continue_interrupted_frames_when_active():
     events = command.run_command_on_tracker(tracker, all_flows, tracker)
 
     # Should return events for starting the new flow
-    assert len(events) == 2  # FlowInterrupted, DialogueStackUpdated
+    assert len(events) == 3  # FlowCompleted, FlowInterrupted, DialogueStackUpdated
+
+    # Check that FlowCompleted event is created for the pattern frame
+    flow_completed_event = events[0]
+    assert isinstance(flow_completed_event, FlowCompleted)
+    assert flow_completed_event.flow_id == "pattern_continue_interrupted"
+    assert flow_completed_event.step_id == "pattern_step"
+
+    # Check that FlowInterrupted event is created for the original flow
+    flow_interrupted_event = events[1]
+    assert isinstance(flow_interrupted_event, FlowInterrupted)
+    assert flow_interrupted_event.flow_id == "foo"
 
     # Check that the pattern frame has been removed and new flow is started
-    dialogue_stack_event = events[1]
+    dialogue_stack_event = events[2]
     assert isinstance(dialogue_stack_event, DialogueStackUpdated)
 
     updated_stack = tracker.stack.update_from_patch(dialogue_stack_event.update)
