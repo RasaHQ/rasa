@@ -1327,6 +1327,47 @@ def test_prepare_agent_input_without_agent_stack_frame():
     assert result.metadata == {}
 
 
+def test_prepare_agent_input_events_populated():
+    """Test _prepare_agent_input populates events correctly."""
+    from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
+
+    step = CallFlowStep(
+        custom_id="test_call",
+        idx=0,
+        description="Test call step",
+        call="test_agent",
+        next=FlowStepLinks(links=[]),
+        flow_id="test_flow",
+        metadata={},
+    )
+
+    # Create tracker with some events
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        [
+            UserUttered("i want to book an appointment"),
+            BotUttered(
+                "to help you book an appointment, please provide further details"
+            ),
+            SlotSet("booking_complete", "false"),
+            UserUttered("next week, mornings, any doctor, can't do wednesdays"),
+        ],
+    )
+    slots = []
+
+    result = _prepare_agent_input(None, step, tracker, slots)
+
+    # Verify that events are populated (not empty)
+    assert result.events is not None
+    assert len(result.events) > 0
+
+    # Verify that events contain expected event types
+    event_types = [event.type_name for event in result.events]
+    assert "user" in event_types
+    assert "bot" in event_types
+    assert "slot" in event_types
+
+
 # ============================================================================
 # Tests for remove_agent_stack_frame function
 # ============================================================================

@@ -47,12 +47,13 @@ from rasa.shared.core.events import (
     AgentStarted,
     Event,
     SlotSet,
+    deserialise_events,
 )
 from rasa.shared.core.flows.steps import (
     CallFlowStep,
 )
 from rasa.shared.core.slots import CategoricalSlot, Slot
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.utils.llm import tracker_as_readable_transcript
 
 structlogger = structlog.get_logger()
@@ -61,8 +62,9 @@ MAX_AGENT_RETRIES = 3
 
 
 def remove_agent_stack_frame(stack: DialogueStack, agent_id: str) -> None:
-    """Finishes the agentic loop by popping the agent stack frame from the
-    provided `stack`. The `tracker.stack` is NOT modified.
+    """Finishes the agentic loop by popping the agent stack frame from provided `stack`.
+
+    The `tracker.stack` is NOT modified.
     """
     agent_stack_frame = stack.find_agent_stack_frame_by_agent(agent_id)
     if not agent_stack_frame:
@@ -473,8 +475,9 @@ def _create_action_prediction(
 def _create_agent_request_user_input_prediction(
     message: Optional[str], events: Optional[List[Event]]
 ) -> FlowActionPrediction:
-    """Create a prediction for requesting user input from the agent
-    and waiting for it.
+    """Create a prediction for requesting user input from the agent and waiting for it.
+
+    This function creates a prediction that will pause the flow and wait for user input.
     """
     return _create_action_prediction(
         ACTION_AGENT_REQUEST_USER_INPUT_NAME, message, events
@@ -531,7 +534,9 @@ def _prepare_agent_input(
             tracker.current_slot_values(), slots, step.exit_if
         ),
         conversation_history=tracker_as_readable_transcript(tracker),
-        events=tracker.current_state().get("events") or [],
+        events=deserialise_events(
+            tracker.current_state(EventVerbosity.ALL).get("events") or []
+        ),
         metadata=agent_input_metadata,
     )
 
@@ -552,6 +557,7 @@ def _prepare_slots_for_agent(
     Args:
         slot_values: The full slot dictionary from the tracker.
         slot_definitions: The slot definitions from the domain.
+        exit_if: Optional list of exit conditions that determine which slots to keep.
 
     Returns:
         A list of slots containing the name, current value, type, and allowed values.
