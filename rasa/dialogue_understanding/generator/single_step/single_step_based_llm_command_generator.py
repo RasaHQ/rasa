@@ -9,7 +9,7 @@ from rasa.agents.utils import (
     get_active_agent_info,
     get_completed_agents_info,
 )
-from rasa.core.available_agents import AvailableAgents
+from rasa.core.config.configuration import Configuration
 from rasa.dialogue_understanding.commands import (
     CannotHandleCommand,
     Command,
@@ -403,7 +403,7 @@ class SingleStepBasedLLMCommandGenerator(LLMBasedCommandGenerator, ABC):
             current_slot_allowed_values = allowed_values_for_slot(
                 tracker.slots.get(current_slot)
             )
-        has_agents = AvailableAgents.has_agents()
+        has_agents = Configuration.get_instance().available_agents.has_agents()
         current_conversation = tracker_as_readable_transcript(
             tracker, highlight_agent_turns=has_agents
         )

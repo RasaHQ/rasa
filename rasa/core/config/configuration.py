@@ -7,6 +7,7 @@ from typing import Literal, Optional
 import structlog
 
 from rasa.cli.validation.config_path_validation import get_validated_path
+from rasa.core.available_agents import DEFAULT_AGENTS_CONFIG_FOLDER, AvailableAgents
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.credentials import CredentialsConfig
 from rasa.core.config.message_procesing_config import MessageProcessingConfig
@@ -146,10 +147,12 @@ class Configuration:
     def __init__(
         self,
         endpoints: AvailableEndpoints,
+        available_agents: AvailableAgents,
         credentials: Optional[CredentialsConfig] = None,
         message_processing_config: Optional[MessageProcessingConfig] = None,
     ):
         self.credentials = credentials
+        self.available_agents = available_agents
         self.endpoints = endpoints
         self.message_processing_config = message_processing_config
 
@@ -159,6 +162,7 @@ class Configuration:
             cls._instance = Configuration(
                 credentials=None,
                 endpoints=AvailableEndpoints(),
+                available_agents=AvailableAgents(),
                 message_processing_config=None,
             )
         return cls._instance
@@ -177,7 +181,10 @@ class Configuration:
         )
         if cls._instance is None:
             cls._instance = Configuration(
-                endpoints=endpoints, credentials=None, message_processing_config=None
+                endpoints=endpoints,
+                available_agents=AvailableAgents(),
+                credentials=None,
+                message_processing_config=None,
             )
         else:
             cls._instance.endpoints = endpoints
@@ -189,6 +196,7 @@ class Configuration:
         if cls._instance is None:
             cls._instance = Configuration(
                 endpoints=AvailableEndpoints(),
+                available_agents=AvailableAgents(),
                 credentials=None,
                 message_processing_config=None,
             )
@@ -217,6 +225,7 @@ class Configuration:
                 message_processing_config=message_processing_config,
                 credentials=None,
                 endpoints=AvailableEndpoints(),
+                available_agents=AvailableAgents(),
             )
         else:
             cls._instance.message_processing_config = message_processing_config
@@ -240,10 +249,35 @@ class Configuration:
             cls._instance = Configuration(
                 credentials=credentials,
                 endpoints=AvailableEndpoints(),
+                available_agents=AvailableAgents(),
                 message_processing_config=None,
             )
         else:
             cls._instance.credentials = credentials
+        return cls._instance
+
+    @classmethod
+    def initialise_sub_agents(cls, sub_agents_path: Optional[Path]) -> Configuration:
+        sub_agents_folder = (
+            str(sub_agents_path)
+            if sub_agents_path is not None
+            else DEFAULT_AGENTS_CONFIG_FOLDER
+        )
+        logger.debug(
+            "configuration.initialise_sub_agents.start",
+            sub_agents_folder=sub_agents_folder,
+        )
+        available_agents = AvailableAgents.read_from_folder(sub_agents_folder)
+
+        if cls._instance is None:
+            cls._instance = Configuration(
+                endpoints=AvailableEndpoints(),
+                available_agents=available_agents,
+                credentials=None,
+                message_processing_config=None,
+            )
+        else:
+            cls._instance.available_agents = available_agents
         return cls._instance
 
     @classmethod
@@ -254,6 +288,7 @@ class Configuration:
                 "Call appropriate 'initialise' methods to "
                 "load the config when Rasa Pro starts: "
                 "initialise_endpoints(), "
+                "initialise_sub_agents(), "
                 "initialise_credentials(), "
                 "initialise_message_processing()"
             )

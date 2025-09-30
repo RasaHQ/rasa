@@ -6,9 +6,9 @@ from typing import Any, Dict, List, Optional, Union
 import structlog
 from tqdm import tqdm
 
-from rasa.core.available_agents import AvailableAgents
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.config.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.persistor import StorageType
 from rasa.dialogue_understanding.commands import Command
@@ -71,7 +71,7 @@ class DialogueUnderstandingTestRunner:
         import rasa.core.agent
 
         self._check_action_server(endpoints)
-        sub_agents = AvailableAgents.get_instance(sub_agents_path)
+        sub_agents = Configuration.get_instance().available_agents
 
         self.agent = asyncio.run(
             rasa.core.agent.load_agent(

@@ -10,6 +10,7 @@ from _pytest.tmpdir import TempPathFactory
 from pytest import MonkeyPatch
 
 import rasa.shared.utils.io
+from rasa.core.config.configuration import Configuration
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     CannotHandleCommand,
@@ -94,6 +95,14 @@ def set_mock_openai_api_key(monkeypatch: MonkeyPatch):
     monkeypatch.setenv(
         OPENAI_API_KEY_ENV_VAR, "mock key in test_single_step_llm_command_generator"
     )
+
+
+@pytest.fixture(autouse=True)
+def mock_configuration_available_agents(monkeypatch: MonkeyPatch) -> None:
+    """Use empty, but initialised configuration for all tests by default.
+    AvailableAgents will be empty unless explicitly set otherwise in a test.
+    """
+    Configuration.initialise_empty()
 
 
 class TestSingleStepLLMCommandGenerator:
@@ -879,18 +888,17 @@ class TestSingleStepLLMCommandGenerator:
         agents_present: bool,
     ) -> None:
         # Toggle agents presence
-        class MockAvailableAgents:
-            agents = (
-                {"test-agent": Mock(), "test-agent-2": Mock()} if agents_present else {}
-            )
-
-        monkeypatch.setattr(
-            "rasa.core.available_agents.AvailableAgents.get_instance",
-            staticmethod(lambda *args, **kwargs: MockAvailableAgents()),
+        mock_available_agents = Mock()
+        mock_available_agents.agents = (
+            {"test-agent": Mock(), "test-agent-2": Mock()} if agents_present else {}
         )
+        mock_available_agents.has_agents.return_value = agents_present
+
+        mock_configuration_instance = Mock()
+        mock_configuration_instance.available_agents = mock_available_agents
         monkeypatch.setattr(
-            "rasa.core.available_agents.AvailableAgents.has_agents",
-            classmethod(lambda cls: agents_present),
+            "rasa.core.config.configuration.Configuration.get_instance",
+            Mock(return_value=mock_configuration_instance),
         )
 
         # Use a minimal prompt that checks for variables being defined

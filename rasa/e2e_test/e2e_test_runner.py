@@ -13,9 +13,9 @@ import structlog
 from tqdm import tqdm
 
 import rasa.shared.utils.io
-from rasa.core.available_agents import AvailableAgents
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.config.available_endpoints import AvailableEndpoints
+from rasa.core.config.configuration import Configuration
 from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.persistor import StorageType
@@ -96,7 +96,7 @@ class E2ETestRunner:
         if endpoints and not are_custom_actions_stubbed:
             self._action_server_is_reachable(endpoints)
 
-        sub_agents = AvailableAgents.get_instance(sub_agents_path)
+        sub_agents = Configuration.get_instance().available_agents
 
         self.agent = asyncio.run(
             rasa.core.agent.load_agent(

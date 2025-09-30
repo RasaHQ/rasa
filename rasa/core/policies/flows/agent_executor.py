@@ -16,7 +16,7 @@ from rasa.agents.constants import (
 from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.schemas import AgentInput, AgentOutput
 from rasa.agents.schemas.agent_input import AgentInputSlot
-from rasa.core.available_agents import AvailableAgents
+from rasa.core.config.configuration import Configuration
 from rasa.core.policies.flows.flow_step_result import (
     ContinueFlowWithNextStep,
     FlowActionPrediction,
@@ -136,7 +136,9 @@ async def run_agent(
     final_events.append(AgentStarted(step.call, step.flow_id))
 
     # send the input to the agent and wait for a response
-    protocol_type = get_protocol_type(step, AvailableAgents.get_agent_config(step.call))
+    protocol_type = get_protocol_type(
+        step, Configuration.get_instance().available_agents.get_agent_config(step.call)
+    )
     output: AgentOutput = await _call_agent_with_retry(
         agent_name=step.call,
         protocol_type=protocol_type,

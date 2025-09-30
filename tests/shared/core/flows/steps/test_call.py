@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rasa.core.available_agents import AvailableAgents
 from rasa.core.config.available_endpoints import MCPServerConfig
 from rasa.core.config.configuration import Configuration
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
@@ -85,14 +84,13 @@ def test_is_calling_methods_mutually_exclusive(
         ]
         mock_get_instance.return_value = mock_instance
 
-        with patch.object(AvailableAgents, "get_instance") as mock_get_instance:
-            mock_instance = MagicMock()
-            mock_instance.agents = agents_dict
-            mock_get_instance.return_value = mock_instance
+        mock_available_agents = MagicMock()
+        mock_available_agents.agents = agents_dict
+        mock_instance.available_agents = mock_available_agents
 
-            assert step.is_calling_flow() == expected_flow
-            assert step.is_calling_mcp_tool() == expected_mcp
-            assert step.is_calling_agent() == expected_agent
+        assert step.is_calling_flow() == expected_flow
+        assert step.is_calling_mcp_tool() == expected_mcp
+        assert step.is_calling_agent() == expected_agent
 
 
 @pytest.mark.parametrize(
@@ -135,15 +133,14 @@ def test_is_calling_flow_and_mcp_tool_conditions(
         ]
         mock_get_instance.return_value = mock_instance
 
-        # Mock the AvailableAgents singleton
-        with patch.object(AvailableAgents, "get_instance") as mock_get_instance:
-            mock_instance = MagicMock()
-            mock_instance.agents = {"test_agent": {}}
-            mock_get_instance.return_value = mock_instance
+        # Mock available agents via Configuration singleton instance
+        mock_available_agents = MagicMock()
+        mock_available_agents.agents = {"test_agent": {}}
+        mock_instance.available_agents = mock_available_agents
 
-            assert step.is_calling_flow() == expected_flow
-            assert step.is_calling_mcp_tool() == expected_mcp
-            assert step.is_calling_agent() == expected_agent
+        assert step.is_calling_flow() == expected_flow
+        assert step.is_calling_mcp_tool() == expected_mcp
+        assert step.is_calling_agent() == expected_agent
 
 
 @pytest.mark.parametrize(
@@ -171,28 +168,13 @@ def test_is_calling_agent_conditions(
         call=call,
     )
 
-    with patch.object(AvailableAgents, "get_instance") as mock_get_instance:
-        mock_instance = MagicMock()
-        mock_instance.agents = agents_dict
-        mock_get_instance.return_value = mock_instance
+    with patch.object(Configuration, "get_instance") as mock_get_instance:
+        cfg = MagicMock()
+        cfg.available_agents = MagicMock()
+        cfg.available_agents.agents = agents_dict
+        mock_get_instance.return_value = cfg
 
         assert step.is_calling_agent() == expected_agent
-
-
-def test_is_calling_agent_singleton_behavior(agent_call_step: CallFlowStep):
-    """Test that the AvailableAgents singleton is used correctly."""
-    with patch.object(AvailableAgents, "get_instance") as mock_get_instance:
-        mock_instance = MagicMock()
-        mock_instance.agents = {"test_agent": {}}
-        mock_get_instance.return_value = mock_instance
-
-        # Call the method multiple times to ensure singleton behavior
-        result1 = agent_call_step.is_calling_agent()
-        result2 = agent_call_step.is_calling_agent()
-
-        assert result1 is True
-        assert result2 is True
-        mock_get_instance.assert_called()
 
 
 @pytest.mark.parametrize(

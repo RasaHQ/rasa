@@ -128,6 +128,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
     # Validates and loads endpoints with proper endpoint file location
     # TODO(Radovan): this should be probably be done in Configuration
     _check_nlg_endpoint_validity(args.endpoints)
+    Configuration.initialise_sub_agents(args.sub_agents)
 
     training_files = [
         get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)

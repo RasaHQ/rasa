@@ -1792,13 +1792,12 @@ def test_collect_agent_configuration_no_agents_or_servers():
 
     # Mock AvailableAgents and Configuration to return empty
     with (
-        patch("rasa.core.available_agents.AvailableAgents.get_instance") as mock_agents,
         patch(
             "rasa.core.config.configuration.Configuration.get_instance"
         ) as mock_config,
     ):
-        mock_agents.return_value.agents = {}
         mock_config.return_value.endpoints.mcp_servers = []
+        mock_config.return_value.available_agents.agents = {}
 
         result = telemetry._collect_agent_configuration(flows)
 
@@ -1836,12 +1835,13 @@ def test_collect_agent_configuration_with_mcp_tools():
     )
 
     with (
-        patch("rasa.core.available_agents.AvailableAgents.get_instance") as mock_agents,
         patch(
             "rasa.core.config.configuration.Configuration.get_instance"
         ) as mock_config,
     ):
-        mock_agents.return_value.agents = {"test_agent": mock_agent_info}
+        mock_config.return_value.available_agents.agents = {
+            "test_agent": mock_agent_info
+        }
         mock_config.return_value.endpoints.mcp_servers = [mock_mcp_server]
 
         result = telemetry._collect_agent_configuration(flows)
@@ -1889,12 +1889,13 @@ def test_collect_agent_configuration_with_agent_calls():
     )
 
     with (
-        patch("rasa.core.available_agents.AvailableAgents.get_instance") as mock_agents,
         patch(
             "rasa.core.config.configuration.Configuration.get_instance"
         ) as mock_config,
     ):
-        mock_agents.return_value.agents = {"test_agent": mock_agent_info}
+        mock_config.return_value.available_agents.agents = {
+            "test_agent": mock_agent_info
+        }
         mock_config.return_value.endpoints.mcp_servers = [mock_mcp_server]
 
         result = telemetry._collect_agent_configuration(flows)
@@ -1938,12 +1939,13 @@ def test_collect_agent_configuration_with_agent_calls_no_exit_if():
     )
 
     with (
-        patch("rasa.core.available_agents.AvailableAgents.get_instance") as mock_agents,
         patch(
             "rasa.core.config.configuration.Configuration.get_instance"
         ) as mock_config,
     ):
-        mock_agents.return_value.agents = {"test_agent": mock_agent_info}
+        mock_config.return_value.available_agents.agents = {
+            "test_agent": mock_agent_info
+        }
         mock_config.return_value.endpoints.mcp_servers = [mock_mcp_server]
 
         result = telemetry._collect_agent_configuration(flows)
@@ -1988,12 +1990,13 @@ def test_collect_agent_configuration_skips_flow_calls():
     )
 
     with (
-        patch("rasa.core.available_agents.AvailableAgents.get_instance") as mock_agents,
         patch(
             "rasa.core.config.configuration.Configuration.get_instance"
         ) as mock_config,
     ):
-        mock_agents.return_value.agents = {"test_agent": mock_agent_info}
+        mock_config.return_value.available_agents.agents = {
+            "test_agent": mock_agent_info
+        }
         mock_config.return_value.endpoints.mcp_servers = [mock_mcp_server]
 
         result = telemetry._collect_agent_configuration(flows)
@@ -2016,12 +2019,11 @@ def test_collect_agent_configuration_mcp_servers_serialization():
     )
 
     with (
-        patch("rasa.core.available_agents.AvailableAgents.get_instance") as mock_agents,
         patch(
             "rasa.core.config.configuration.Configuration.get_instance"
         ) as mock_config,
     ):
-        mock_agents.return_value.agents = {}
+        mock_config.return_value.available_agents.agents = {}
         mock_config.return_value.endpoints.mcp_servers = [mock_mcp_server]
 
         result = telemetry._collect_agent_configuration(flows)
@@ -2052,12 +2054,13 @@ def test_collect_agent_configuration_agents_serialization():
     )
 
     with (
-        patch("rasa.core.available_agents.AvailableAgents.get_instance") as mock_agents,
         patch(
             "rasa.core.config.configuration.Configuration.get_instance"
         ) as mock_config,
     ):
-        mock_agents.return_value.agents = {"test_agent": mock_agent_info}
+        mock_config.return_value.available_agents.agents = {
+            "test_agent": mock_agent_info
+        }
         mock_config.return_value.endpoints.mcp_servers = []
 
         result = telemetry._collect_agent_configuration(flows)

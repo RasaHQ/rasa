@@ -688,8 +688,10 @@ def test_train_validate_nlg_config_valid(monkeypatch: MonkeyPatch) -> None:
         assert call_args[1]["sub_agents"] == "sub_agents"
 
 
-def test_train_with_sub_agents_flag(monkeypatch: MonkeyPatch) -> None:
+def test_train_with_sub_agents_flag(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
     """Test that the --sub-agents flag is properly passed through to training."""
+    custom_sub_agents_dir = tmp_path / "custom_sub_agents"
+    custom_sub_agents_dir.mkdir(parents=True, exist_ok=True)
     args = argparse.Namespace(
         domain="data/test_domains/default.yml",
         config="data/test_config/config_defaults.yml",
@@ -706,7 +708,7 @@ def test_train_with_sub_agents_flag(monkeypatch: MonkeyPatch) -> None:
         remote_storage=None,
         keep_local_model_copy=False,
         remote_root_only=False,
-        sub_agents="custom_sub_agents",
+        sub_agents=str(custom_sub_agents_dir),
     )
 
     with patch("rasa.api.train", return_value=TrainingResult(0)) as mock_train:
@@ -714,10 +716,12 @@ def test_train_with_sub_agents_flag(monkeypatch: MonkeyPatch) -> None:
         # Verify that sub_agents is passed to the training function
         mock_train.assert_called_once()
         call_args = mock_train.call_args
-        assert call_args[1]["sub_agents"] == "custom_sub_agents"
+        assert call_args[1]["sub_agents"] == str(custom_sub_agents_dir)
 
 
-def test_train_with_invalid_sub_agents_fails(monkeypatch: MonkeyPatch) -> None:
+def test_train_with_non_existent_sub_agents_folder_fails(
+    monkeypatch: MonkeyPatch,
+) -> None:
     """Test that training fails when sub-agents validation fails."""
     args = argparse.Namespace(
         domain="data/test_domains/default.yml",
@@ -737,11 +741,13 @@ def test_train_with_invalid_sub_agents_fails(monkeypatch: MonkeyPatch) -> None:
         remote_storage=None,
         keep_local_model_copy=False,
         remote_root_only=False,
-        sub_agents="invalid_sub_agents_path",
+        sub_agents="non_existent_sub_agents_folder",
     )
 
     with pytest.raises(
-        ValidationError, match="Project validation completed with errors."
+        ValidationError,
+        match="The specified agents config folder 'non_existent_sub_agents_folder' "
+        "does not exist",
     ):
         run_training(args)
 

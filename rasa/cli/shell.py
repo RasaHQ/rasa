@@ -115,6 +115,7 @@ def shell(args: argparse.Namespace) -> None:
     # it can be used safely throughout the codebase with
     # `Configuration.get_instance().endpoints`
     Configuration.initialise_endpoints(endpoints_path=Path(args.endpoints))
+    Configuration.initialise_sub_agents(args.sub_agents)
     model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
 
     try:

@@ -8,6 +8,7 @@ import pytest
 import structlog
 from pytest import CaptureFixture, MonkeyPatch
 
+from rasa.core.config.configuration import Configuration
 from rasa.shared.constants import (
     CONFIG_ADDITIONAL_LANGUAGES_KEY,
     CONFIG_LANGUAGE_KEY,
@@ -27,6 +28,11 @@ from rasa.telemetry import (
 )
 from rasa.validator import Validator
 from tests.utilities import filter_logs, flows_from_str
+
+
+@pytest.fixture(autouse=True)
+def default_config() -> Configuration:
+    return Configuration.initialise_empty()
 
 
 @pytest.fixture(scope="class")

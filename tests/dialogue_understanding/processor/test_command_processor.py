@@ -1,11 +1,10 @@
 import uuid
-from typing import Any, Dict, List, Optional, Set, Tuple
-from unittest.mock import Mock, patch
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from pytest import FixtureRequest, MonkeyPatch
 
-from rasa.core.available_agents import AvailableAgents
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     CannotHandleCommand,
@@ -2066,44 +2065,28 @@ def test_clean_up_start_flow_command(
     assert result == expected_result
 
 
-@pytest.fixture(autouse=True)
-def reset_available_agents_singleton() -> None:
-    """Reset the AvailableAgents singleton before each test."""
-    yield
-    AvailableAgents.reset_instance()
-
-
 @pytest.fixture
-def mock_available_agents(monkeypatch: MonkeyPatch) -> Mock:
-    """Mock AvailableAgents to control agent existence.
-
-    Returns:
-        Mock instance of AvailableAgents with configured agents.
-    """
-    # Create mock agent configs
-    mock_valid_agent = Mock()
-    mock_completed_agent = Mock()
-
-    # Create mock instance with agents
-    mock_instance = Mock()
-    mock_instance.agents = {
-        "valid_agent": mock_valid_agent,
-        "completed_agent": mock_completed_agent,
+def mock_available_agents(monkeypatch: MonkeyPatch) -> Iterator[MagicMock]:
+    mock_available_agents = MagicMock()
+    mock_available_agents.agents = {
+        "valid_agent": Mock(),
+        "completed_agent": Mock(),
     }
+
+    mock_configuration_instance = MagicMock()
+    mock_configuration_instance.available_agents = mock_available_agents
 
     # Mock get_agent_config to return the appropriate agent or None
     def mock_get_agent_config(agent_id: str):
-        return mock_instance.agents.get(agent_id)
+        return mock_available_agents.agents.get(agent_id)
 
-    mock_instance.get_agent_config = mock_get_agent_config
+    mock_available_agents.get_agent_config = mock_get_agent_config
 
-    # Mock the get_instance method to return our mock instance
-    monkeypatch.setattr(
-        "rasa.core.available_agents.AvailableAgents.get_instance",
-        lambda: mock_instance,
-    )
-
-    return mock_instance
+    with patch(
+        "rasa.core.config.configuration.Configuration.get_instance",
+        return_value=mock_configuration_instance,
+    ) as mock_method:
+        yield mock_method
 
 
 @pytest.fixture

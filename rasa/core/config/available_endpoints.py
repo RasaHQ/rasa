@@ -94,12 +94,9 @@ class MCPServerConfig(BaseModel):
 class AvailableEndpoints:
     """Collection of configured endpoints."""
 
-    _instance = None
-
     @classmethod
     def read_endpoints(cls, endpoint_file: Path) -> AvailableEndpoints:
         """Read the different endpoints from a yaml file."""
-
         nlg = read_endpoint_config(endpoint_file, endpoint_type="nlg")
         nlu = read_endpoint_config(endpoint_file, endpoint_type="nlu")
         action = read_endpoint_config(endpoint_file, endpoint_type="action_endpoint")

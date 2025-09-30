@@ -339,6 +339,7 @@ def test_execute_e2e_tests_with_invalid_model_path(
     cli_args = argparse.Namespace()
     cli_args.endpoints = str(tmp_path / "endpoints.yml")
     cli_args.model = str(tmp_path / "model.tar.gz")
+    cli_args.sub_agents = "sub_agents"
     setattr(
         cli_args,
         "path-to-test-cases",

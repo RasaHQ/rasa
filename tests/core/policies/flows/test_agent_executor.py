@@ -8,7 +8,6 @@ from rasa.agents.constants import A2A_AGENT_CONTEXT_ID_KEY
 from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.schemas import AgentOutput
 from rasa.agents.schemas.agent_input import AgentInput, AgentInputSlot
-from rasa.core.available_agents import AvailableAgents
 from rasa.core.policies.flows.agent_executor import (
     AGENT_METADATA_AGENT_RESPONSE_KEY,
     MAX_AGENT_RETRIES,
@@ -84,15 +83,21 @@ from tests.utilities import (
 
 @pytest.fixture
 def mock_available_agents(monkeypatch: MonkeyPatch) -> Iterator[MagicMock]:
-    mock_instance = MagicMock()
-    mock_instance.agents = {
+    # Mock available agents accessed via Configuration singleton
+    mock_available_agents_instance = MagicMock()
+    mock_available_agents_instance.agents = {
         "car-research": {},
         "agent-1": {},
         "agent-2": {},
     }
+    mock_available_agents_instance.get_agent_config.return_value = None
 
-    with patch.object(
-        AvailableAgents, "get_instance", return_value=mock_instance
+    mock_configuration_instance = MagicMock()
+    mock_configuration_instance.available_agents = mock_available_agents_instance
+
+    with patch(
+        "rasa.core.config.configuration.Configuration.get_instance",
+        return_value=mock_configuration_instance,
     ) as mock_method:
         # Also patch the step validation to always return True for agent calls
         with patch(

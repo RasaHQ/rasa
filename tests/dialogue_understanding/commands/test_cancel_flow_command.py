@@ -5,7 +5,7 @@ import jsonpatch
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.core.available_agents import AvailableAgents
+from rasa.core.config.configuration import Configuration
 from rasa.dialogue_understanding.commands.cancel_flow_command import CancelFlowCommand
 from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
@@ -29,15 +29,21 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from tests.utilities import flows_from_str
 
 
+@pytest.fixture(autouse=True)
+def init_empty_configuration(monkeypatch: MonkeyPatch) -> None:
+    Configuration.initialise_empty()
+
+
 @pytest.fixture
 def mock_available_agents(monkeypatch: MonkeyPatch) -> Iterator[MagicMock]:
-    mock_instance = MagicMock()
-    mock_instance.agents = {
-        "car-research": {},
-    }
+    mock_available_agents = MagicMock()
+    mock_available_agents.agents = {"car-research": {}}
+    mock_configuration_instance = MagicMock()
+    mock_configuration_instance.available_agents = mock_available_agents
 
-    with patch.object(
-        AvailableAgents, "get_instance", return_value=mock_instance
+    with patch(
+        "rasa.core.config.configuration.Configuration.get_instance",
+        return_value=mock_configuration_instance,
     ) as mock_method:
         yield mock_method
 

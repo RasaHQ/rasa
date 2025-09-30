@@ -127,7 +127,9 @@ def is_agent_valid(agent_id: str) -> bool:
     Returns:
         True if the agent exists, False otherwise.
     """
-    agent_config = AvailableAgents.get_agent_config(agent_id)
+    agent_config = Configuration.get_instance().available_agents.get_agent_config(
+        agent_id
+    )
     return agent_config is not None
 
 
@@ -159,7 +161,9 @@ def get_agent_info(agent_id: str) -> Optional[Dict[str, str]]:
     Returns:
         Dictionary with agent name and description if found, None otherwise.
     """
-    agent_config = AvailableAgents.get_agent_config(agent_id)
+    agent_config = Configuration.get_instance().available_agents.get_agent_config(
+        agent_id
+    )
     if agent_config is None:
         return None
 

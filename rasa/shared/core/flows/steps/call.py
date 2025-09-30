@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional, Text
 
-from rasa.core.available_agents import AvailableAgents
+from rasa.core.config.configuration import Configuration
 from rasa.shared.core.flows.flow_step import FlowStep
 
 if TYPE_CHECKING:
@@ -102,7 +102,7 @@ class CallFlowStep(FlowStep):
 
     def is_calling_agent(self) -> bool:
         """Returns True if the call references an agent."""
-        return self.call in AvailableAgents.get_instance().agents
+        return self.call in Configuration.get_instance().available_agents.agents
 
     @property
     def default_id_postfix(self) -> str:

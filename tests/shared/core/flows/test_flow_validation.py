@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from rasa.core.available_agents import AvailableAgents
 from rasa.core.config.configuration import Configuration
 from rasa.shared.constants import RASA_PATTERN_CHITCHAT, RASA_PATTERN_HUMAN_HANDOFF
 from rasa.shared.core.domain import Domain
@@ -56,14 +55,6 @@ from tests.utilities import (
 
 
 @pytest.fixture
-def empty_agents_mock() -> MagicMock:
-    """Mock AvailableAgents with empty agents list."""
-    mock_agents = MagicMock()
-    mock_agents.agents = {}
-    return mock_agents
-
-
-@pytest.fixture
 def empty_endpoints_mock() -> MagicMock:
     """Mock Configuration with no MCP servers."""
     mock_config = MagicMock()
@@ -108,13 +99,15 @@ def basic_mcp_flow_config() -> str:
 
 @pytest.fixture
 def mock_available_agents(monkeypatch: MonkeyPatch) -> Iterator[MagicMock]:
-    mock_instance = MagicMock()
-    mock_instance.agents = {
-        "car-research": {},
-    }
+    mock_available_agents = MagicMock()
+    mock_available_agents.agents = {"car-research": {}}
 
-    with patch.object(
-        AvailableAgents, "get_instance", return_value=mock_instance
+    mock_configuration_instance = MagicMock()
+    mock_configuration_instance.available_agents = mock_available_agents
+
+    with patch(
+        "rasa.core.config.configuration.Configuration.get_instance",
+        return_value=mock_configuration_instance,
     ) as mock_method:
         yield mock_method
 
@@ -453,7 +446,7 @@ def test_validation_fails_for_a_called_flow_with_a_link():
         flows_from_str(flow_config)
 
 
-def test_validation_fails_for_a_called_flow_that_does_not_exist():
+def test_validation_fails_for_a_called_flow_that_does_not_exist(mock_available_agents):
     flow_config = """
         flows:
           foo:
@@ -517,7 +510,7 @@ def test_validation_fails_for_a_linked_pattern():
         flows_from_str_including_defaults(flow_config)
 
 
-def test_validation_fails_for_a_called_pattern():
+def test_validation_fails_for_a_called_pattern(mock_available_agents):
     flow_config = """
         flows:
           foo:
@@ -591,7 +584,7 @@ def test_validation_pattern_with_a_link_step_to_a_user_flow():
     assert flows.underlying_flows[1].id == "pattern_correction"
 
 
-def test_validation_fails_for_pattern_with_a_call_step():
+def test_validation_fails_for_pattern_with_a_call_step(mock_available_agents):
     flow_config = """
         flows:
           foo:
@@ -629,7 +622,7 @@ def test_validation_passes_for_exit_if_in_call_step_to_agent(
     assert hasattr(foo.steps[0], "exit_if")
 
 
-def test_validation_fails_for_exit_if_when_calling_flow():
+def test_validation_fails_for_exit_if_when_calling_flow(mock_available_agents):
     flow_config = """
         flows:
           foo:
@@ -918,7 +911,7 @@ def test_validate_call_steps_multiple_agents(
 ) -> None:
     """Test validation with multiple agent calls in different flows."""
     # Update the mock to include multiple agents
-    mock_available_agents.return_value.agents = {
+    mock_available_agents.return_value.available_agents.agents = {
         "car-research": {},
         "booking-agent": {},
         "support-agent": {},
@@ -1073,6 +1066,10 @@ def test_validate_exit_if_exclusivity_fails_with_conflicting_properties(
     with (
         patch.object(
             Configuration, "get_instance", return_value=configured_endpoints_mock
+        ),
+        patch(
+            "rasa.shared.core.flows.steps.call.CallFlowStep.is_calling_agent",
+            return_value=True,
         ),
     ):
         with pytest.raises(ExitIfExclusivityException) as exc_info:
@@ -1382,12 +1379,10 @@ def test_validate_mcp_mapping_slots(
 
 
 def test_validate_call_steps_unresolved_call_step(
-    empty_agents_mock: MagicMock,
     empty_endpoints_mock: MagicMock,
 ) -> None:
     """Test validation fails when call step doesn't call agent, flow, or MCP tool."""
     with (
-        patch.object(AvailableAgents, "get_instance", return_value=empty_agents_mock),
         patch.object(Configuration, "get_instance", return_value=empty_endpoints_mock),
     ):
         flow_config = """

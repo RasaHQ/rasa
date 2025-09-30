@@ -37,11 +37,10 @@ def run(
     """
     import rasa.core.run
     import rasa.shared.utils.common
-    from rasa.core.available_agents import AvailableAgents
     from rasa.shared.constants import DOCS_BASE_URL
     from rasa.shared.utils.cli import print_warning
 
-    _sub_agents = AvailableAgents.get_instance(sub_agents)
+    _sub_agents = Configuration.get_instance().available_agents
 
     credentials = Configuration.get_instance().credentials
 

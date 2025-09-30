@@ -92,13 +92,6 @@ def patch_listdir(monkeypatch: pytest.MonkeyPatch) -> Any:
     return _patch
 
 
-@pytest.fixture(autouse=True)
-def reset_available_agents_singleton() -> Any:
-    """Reset the AvailableAgents singleton before each test."""
-    yield
-    AvailableAgents.reset_instance()
-
-
 @pytest.mark.parametrize(
     "agent_name,expected_protocol",
     [
@@ -131,8 +124,7 @@ def test_read_agent_folder(
     )
     monkeypatch.setattr("os.path.isfile", lambda path: True)
 
-    AvailableAgents.reset_instance()
-    agents = AvailableAgents.get_instance("sub_agents")
+    agents = AvailableAgents.read_from_folder("sub_agents")
     assert isinstance(agents, AvailableAgents)
     assert agent_name in agents.agents
     assert agents.agents[agent_name].agent.protocol == expected_protocol
@@ -184,7 +176,7 @@ def test_read_agent_config_error(
     with pytest.raises(
         ValidationError, match="Failed to load agent 'agent_a': Read error"
     ):
-        AvailableAgents._read_agent_folder("sub_agents/")
+        AvailableAgents.read_from_folder("sub_agents/")
 
 
 def test_custom_agents_config_folder_does_not_exist(
@@ -192,8 +184,8 @@ def test_custom_agents_config_folder_does_not_exist(
 ) -> None:
     """Test that an error is raised when a custom agents config folder doesn't exist."""
     monkeypatch.setattr("os.path.isdir", lambda path: False)
-    with pytest.raises(ValueError, match="does not exist or is not a directory"):
-        AvailableAgents._read_agent_folder("non_existent_folder")
+    with pytest.raises(ValidationError, match="does not exist or is not a directory"):
+        AvailableAgents.read_from_folder("non_existent_folder")
 
 
 @pytest.mark.parametrize(
@@ -285,27 +277,6 @@ def test_agent_config_protocol_required_fields(
             connections=connections,
         )
         assert isinstance(agent_config, AgentConfig)
-
-
-def test_get_instance_returns_singleton_and_initializes_agents(
-    monkeypatch: pytest.MonkeyPatch,
-    patch_listdir: Any,
-    deserialized_agent_config_mcp: AgentConfig,
-) -> None:
-    """Test singleton pattern and agent initialization."""
-    patch_listdir(["agent_a"])
-    monkeypatch.setattr(
-        AvailableAgents,
-        "_read_agent_config",
-        MagicMock(return_value=deserialized_agent_config_mcp),
-    )
-    monkeypatch.setattr("os.path.isfile", lambda path: True)
-
-    instance1 = AvailableAgents.get_instance("sub_agents")
-    instance2 = AvailableAgents.get_instance("sub_agents")
-    assert instance1 is instance2
-    assert "mcp_test_agent" in instance1.agents
-    assert instance1.agents["mcp_test_agent"].agent.name == "mcp_test_agent"
 
 
 @pytest.mark.parametrize(

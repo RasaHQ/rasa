@@ -12,6 +12,7 @@ from opentelemetry.sdk.metrics.export import InMemoryMetricReader, MetricReader
 from opentelemetry.sdk.trace import TracerProvider
 from pytest import MonkeyPatch
 
+from rasa.core.config.configuration import Configuration
 from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.policies.enterprise_search_policy import EnterpriseSearchPolicy
 from rasa.core.policies.intentless_policy import IntentlessPolicy
@@ -432,6 +433,8 @@ async def test_record_callable_duration_metrics(
         tracer_provider,
         **instrumentation_kwargs,
     )
+
+    Configuration.initialise_empty()
 
     # act
     kwargs = {}

@@ -9,6 +9,7 @@ from rasa.cli.project_templates.defaults import (
     get_rasa_defaults,
 )
 from rasa.cli.scaffold import ProjectTemplateName, scaffold_path
+from rasa.core.config.configuration import Configuration
 from rasa.dialogue_understanding.patterns.domain_for_patterns import (
     generate_domain_for_default_patterns,
 )
@@ -22,6 +23,7 @@ from rasa.shared.utils.yaml import read_yaml
 
 
 def test_get_rasa_defaults_contents_are_consistent():
+    Configuration.initialise_empty()
     calm_dir = Path(scaffold_path(ProjectTemplateName.DEFAULT))
     config_yaml = (calm_dir / "config.yml").read_text(encoding="utf-8")
     endpoints_yaml = (calm_dir / "endpoints.yml").read_text(encoding="utf-8")

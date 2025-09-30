@@ -10,6 +10,7 @@ from _pytest.tmpdir import TempPathFactory
 from pytest import LogCaptureFixture, MonkeyPatch
 
 import rasa.shared.utils.io
+from rasa.core.config.configuration import Configuration
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     CannotHandleCommand,
@@ -110,6 +111,14 @@ agent_command_prompt_v3_gpt_4o_2024_11_20_template = rasa.shared.utils.io.read_f
 agent_command_prompt_v3_claude_3_5_sonnet_20240620_template = rasa.shared.utils.io.read_file(  # noqa: E501
     f"{TEST_PROMPT_TEMPLATE_DIR}/agent_command_prompt_v3_claude_3_5_sonnet_20240620_template.jinja2"
 )
+
+
+@pytest.fixture(autouse=True)
+def mock_configuration_available_agents(monkeypatch: MonkeyPatch) -> None:
+    """Use empty, but initialised configuration for all tests by default.
+    AvailableAgents will be empty unless explicitly set otherwise in a test.
+    """
+    Configuration.initialise_empty()
 
 
 @pytest.fixture(autouse=True)

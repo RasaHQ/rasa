@@ -93,6 +93,7 @@ def inspect(args: argparse.Namespace) -> None:
     # it can be used safely throughout the codebase with
     # `Configuration.get_instance().endpoints`
     Configuration.initialise_endpoints(endpoints_path=Path(args.endpoints))
+    Configuration.initialise_sub_agents(args.sub_agents)
 
     try:
         model = get_local_model(model)

@@ -214,6 +214,7 @@ def execute_dialogue_understanding_tests(args: argparse.Namespace) -> None:
 
     # initialization of endpoints
     endpoints = set_up_available_endpoints(args)
+    Configuration.initialise_sub_agents(args.sub_agents)
 
     # set up the test runner, e.g. start the agent
     try:

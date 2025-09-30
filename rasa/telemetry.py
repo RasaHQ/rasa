@@ -1129,11 +1129,11 @@ def track_model_training(
 def _collect_agent_configuration(flows: FlowsList) -> Dict[str, Any]:
     agent_data: Dict[str, Any] = {}
 
-    from rasa.core.available_agents import AvailableAgents
     from rasa.core.config.configuration import Configuration
 
-    agents = AvailableAgents.get_instance().agents
-    mcp_servers = Configuration.get_instance().endpoints.mcp_servers
+    configuration = Configuration.get_instance()
+    agents = configuration.available_agents.agents
+    mcp_servers = configuration.endpoints.mcp_servers
 
     if not agents and not mcp_servers:
         return agent_data

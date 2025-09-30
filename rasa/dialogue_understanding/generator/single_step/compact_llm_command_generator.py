@@ -2,7 +2,7 @@ from typing import Any, Dict, Literal, Optional, Text
 
 import structlog
 
-from rasa.core.available_agents import AvailableAgents
+from rasa.core.config.configuration import Configuration
 from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxVersion,
 )
@@ -125,7 +125,7 @@ class CompactLLMCommandGenerator(SingleStepBasedLLMCommandGenerator):
         """Get the default prompt template file name for the command generator."""
         return (
             AGENT_DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME
-            if AvailableAgents.has_agents()
+            if Configuration.get_instance().available_agents.has_agents()
             else DEFAULT_COMMAND_PROMPT_TEMPLATE_FILE_NAME
         )
 
@@ -134,7 +134,7 @@ class CompactLLMCommandGenerator(SingleStepBasedLLMCommandGenerator):
         """Get the fallback prompt template file name for the command generator."""
         return (
             AGENT_FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME
-            if AvailableAgents.has_agents()
+            if Configuration.get_instance().available_agents.has_agents()
             else FALLBACK_COMMAND_PROMPT_TEMPLATE_FILE_NAME
         )
 
@@ -143,7 +143,7 @@ class CompactLLMCommandGenerator(SingleStepBasedLLMCommandGenerator):
         """Get the model prompt mapper for the command generator."""
         return (
             AGENT_MODEL_PROMPT_MAPPER
-            if AvailableAgents.has_agents()
+            if Configuration.get_instance().available_agents.has_agents()
             else MODEL_PROMPT_MAPPER
         )
 

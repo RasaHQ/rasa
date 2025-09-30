@@ -61,6 +61,10 @@ install:  ## Install rasa and it's dependencies without extras.
 	poetry run python -m pip install -U pip
 	poetry install
 
+install-nlu:   ## Install rasa and it's dependencies and NLU extras (spacy, mitie, transformers, ...).
+	poetry run python -m pip install -U pip
+	poetry install --extras nlu
+
 install-mitie:  ## Install mitie.
 	poetry run python -m pip install -U pip
 	poetry run python -m pip install -U git+https://github.com/tmbo/MITIE.git#egg=mitie
@@ -70,7 +74,15 @@ install-full: install-mitie  ## Install rasa with all extras (transformers, tens
 
 install-pii:  ## Install rasa-pro with PII optional dependencies.
 	poetry run python -m pip install -U pip
-	poetry install -E pii
+	poetry install --extras pii
+
+install-nlu-pii:   ## Install rasa and it's dependencies and NLU and PII extras
+	poetry run python -m pip install -U pip
+	poetry install --extras "nlu pii"
+
+install-nlu-pii-channels:   ## Install rasa and it's dependencies and NLU and PII and Channels extras
+	poetry run python -m pip install -U pip
+	poetry install --extras "nlu pii channels"
 
 format: ## Apply ruff formatting to code.
 	poetry run ruff format rasa tests

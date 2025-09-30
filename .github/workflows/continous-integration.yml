@@ -1047,7 +1047,7 @@ jobs:
 
       - name: Install Dependencies (Linux) 📦
         run: |
-          make install
+          make install-nlu
         shell: bash
 
       - name: Run container for non-sequential integration testing
@@ -1718,7 +1718,8 @@ jobs:
         # This is a workaround for that issue
         run: |
           sudo apt-get -y install libpq-dev
-          make install | tee .output
+          make install-mitie
+          make install-nlu-pii-channels | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 

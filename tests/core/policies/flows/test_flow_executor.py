@@ -7,7 +7,6 @@ import pytest
 import structlog
 from pytest import MonkeyPatch
 
-from rasa.core.available_agents import AvailableAgents
 from rasa.core.config.available_endpoints import (
     InteractionHandlingConfig,
 )
@@ -2424,7 +2423,6 @@ async def test_set_silence_timeout_at_step_collect_channel_specific(
     We assess that event SlotSet is emitted with the correct silence timeout
     set for a specific channel.
     """
-
     silence_timeout = 10
     channel_name = "my_channel"
 
@@ -2489,13 +2487,21 @@ def interaction_handling_endpoint() -> InteractionHandlingConfig:
 
 @pytest.fixture
 def mock_available_agents(monkeypatch: MonkeyPatch) -> Iterator[MagicMock]:
-    mock_instance = MagicMock()
-    mock_instance.agents = {
+    # Mock available agents accessed via Configuration singleton
+    mock_available_agents_instance = MagicMock()
+    mock_available_agents_instance.agents = {
         "car-research": {},
+        "agent-1": {},
+        "agent-2": {},
     }
+    mock_available_agents_instance.get_agent_config.return_value = None
 
-    with patch.object(
-        AvailableAgents, "get_instance", return_value=mock_instance
+    mock_configuration_instance = MagicMock()
+    mock_configuration_instance.available_agents = mock_available_agents_instance
+
+    with patch(
+        "rasa.core.config.configuration.Configuration.get_instance",
+        return_value=mock_configuration_instance,
     ) as mock_method:
         yield mock_method
 

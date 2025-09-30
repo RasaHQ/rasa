@@ -6,7 +6,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rasa.core.available_agents import AvailableAgents
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.flows.validation import InvalidExitIfConditionException
 from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
@@ -15,14 +14,17 @@ from rasa.shared.core.flows.yaml_flows_io import YAMLFlowsReader
 @pytest.fixture
 def mock_available_agents(monkeypatch: pytest.MonkeyPatch) -> Iterator[MagicMock]:
     """Mock available agents for testing."""
-    mock_instance = MagicMock()
-    mock_instance.agents = {
+    mock_available_agents = MagicMock()
+    mock_available_agents.agents = {
         "some_agent": {},
         "car-research": {},
     }
+    mock_configuration_instance = MagicMock()
+    mock_configuration_instance.available_agents = mock_available_agents
 
-    with patch.object(
-        AvailableAgents, "get_instance", return_value=mock_instance
+    with patch(
+        "rasa.core.config.configuration.Configuration.get_instance",
+        return_value=mock_configuration_instance,
     ) as mock_method:
         yield mock_method
 

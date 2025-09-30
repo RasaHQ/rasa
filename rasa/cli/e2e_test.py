@@ -160,6 +160,7 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
     endpoints = Configuration.initialise_endpoints(
         endpoints_path=EndpointsConfigPath.validate(args.endpoints)
     ).endpoints
+    Configuration.initialise_sub_agents(args.sub_agents)
 
     # Ignore all endpoints apart from action server, model, nlu and nlg
     # to ensure InMemoryTrackerStore is being used instead of production

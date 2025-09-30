@@ -7,7 +7,7 @@ from jinja2 import Environment, Template, select_autoescape
 
 import rasa.dialogue_understanding.generator.utils
 import rasa.shared.utils.io
-from rasa.core.available_agents import AvailableAgents
+from rasa.core.config.configuration import Configuration
 from rasa.dialogue_understanding.commands import (
     Command,
     SetSlotCommand,
@@ -398,7 +398,9 @@ class LLMBasedCommandGenerator(
                     if isinstance(event, AgentStarted) and event.flow_id == flow.id
                 ]
                 available_agents = [
-                    AvailableAgents.get_agent_config(event.agent_id)
+                    Configuration.get_instance().available_agents.get_agent_config(
+                        event.agent_id
+                    )
                     for event in agent_events
                 ]
                 if available_agents:

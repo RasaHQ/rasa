@@ -171,7 +171,7 @@ jobs:
                   -d mock_a2a_server/domain \
                   --data mock_a2a_server/data \
                   --endpoints ${MOCK_A2A_ENDPOINTS_FILE} \
-                  --sub-agents sub_agents/mock_a2a_agent \
+                  --sub-agents test_e2e_a2a_sub_agents \
                   --debug
             - name: E2E tests
               uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0

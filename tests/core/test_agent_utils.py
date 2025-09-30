@@ -89,9 +89,12 @@ def sub_agents(monkeypatch: MonkeyPatch) -> MagicMock:
         side_effect=lambda agent_name: mock_agents.get(agent_name)
     )
 
+    # Patch Configuration singleton to return our mocked available agents
+    mock_configuration_instance = MagicMock()
+    mock_configuration_instance.available_agents = mock_instance
     monkeypatch.setattr(
-        "rasa.core.available_agents.AvailableAgents.get_instance",
-        lambda path: mock_instance,
+        "rasa.core.config.configuration.Configuration.get_instance",
+        lambda: mock_configuration_instance,
     )
     return mock_instance
 
@@ -182,10 +185,16 @@ def test_resolve_agent_config():
 
 
 @pytest.fixture
-def mock_agent_config() -> MagicMock:
-    """Fixture for mocking agent config."""
-    with patch("rasa.agents.utils.AvailableAgents.get_agent_config") as mock_get_config:
-        yield mock_get_config
+def mock_agent_config(monkeypatch: MonkeyPatch) -> MagicMock:
+    """Fixture for mocking agent config via Configuration.available_agents."""
+    mock_available_agents = MagicMock()
+    mock_configuration_instance = MagicMock()
+    mock_configuration_instance.available_agents = mock_available_agents
+    monkeypatch.setattr(
+        "rasa.core.config.configuration.Configuration.get_instance",
+        lambda: mock_configuration_instance,
+    )
+    return mock_available_agents.get_agent_config
 
 
 @pytest.mark.parametrize(

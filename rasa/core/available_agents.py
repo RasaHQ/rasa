@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field, model_validator
 from ruamel import yaml as yaml
 
 from rasa.exceptions import ValidationError
-from rasa.utils.singleton import Singleton
 
 DEFAULT_AGENTS_CONFIG_FOLDER = "sub_agents"
 
@@ -89,46 +88,66 @@ class AgentConfig(BaseModel):
     connections: Optional[AgentConnections] = None
 
 
-class AvailableAgents(metaclass=Singleton):
+class AvailableAgents:
     """Collection of configured agents."""
-
-    _instance = None
 
     def __init__(self, agents: Optional[Dict[str, AgentConfig]] = None) -> None:
         """Create an `AvailableAgents` object."""
-        self.agents = agents or {}
+        self.agents: Dict[str, AgentConfig] = agents or {}
 
     @classmethod
-    def _read_agent_folder(cls, agent_folder: str) -> AvailableAgents:
+    def read_from_folder(cls, sub_agents_folder: str) -> AvailableAgents:
         """Read the different agents from the given folder."""
         agents: Dict[str, AgentConfig] = {}
 
-        if not os.path.isdir(agent_folder):
-            if agent_folder != DEFAULT_AGENTS_CONFIG_FOLDER:
+        if not os.path.isdir(sub_agents_folder):
+            if sub_agents_folder != DEFAULT_AGENTS_CONFIG_FOLDER:
                 # User explicitly specified a folder, it should exist
-                structlogger.error(
-                    f"The specified agents config folder '{agent_folder}' does not "
-                    f"exist or is not a directory."
-                )
-                raise ValueError(
-                    f"The specified agents config folder '{agent_folder}' does not "
-                    f"exist or is not a directory."
+                raise ValidationError(
+                    code="agent.sub_agents_folder_not_found",
+                    event_info=f"The specified agents config folder "
+                    f"'{sub_agents_folder}' does not exist or is not a "
+                    f"directory.",
+                    details={"folder": sub_agents_folder},
                 )
             else:
                 # We are using the default folder, it may not be created yet
                 # Init with an empty agents in this case
                 structlogger.info(
-                    f"Default agents config folder '{agent_folder}' does not exist. "
-                    f"Agent configurations won't be loaded."
+                    f"Default agents config folder '{sub_agents_folder}' does not "
+                    f"exist. Agent configurations won't be loaded."
                 )
                 return cls(agents)
 
         # First, load all agent configs into a temporary list for validation
         agent_configs: List[AgentConfig] = []
-        for agent_name in os.listdir(agent_folder):
-            config_path = os.path.join(agent_folder, agent_name, "config.yml")
+        for agent_name in os.listdir(sub_agents_folder):
+            agent_folder = os.path.join(sub_agents_folder, agent_name)
+            if not os.path.isdir(agent_folder):
+                raise ValidationError(
+                    code="agent.invalid_directory_structure",
+                    event_info=f"Invalid structure: '{agent_folder}' is not a folder. "
+                    f"Each agent must be stored in its own folder inside "
+                    f"'{sub_agents_folder}'. Expected structure: "
+                    f"{sub_agents_folder}/<agent_name>/config.yml",
+                    details={
+                        "agent_name": agent_name,
+                        "sub_agents_folder": sub_agents_folder,
+                    },
+                )
+            config_path = os.path.join(agent_folder, "config.yml")
             if not os.path.isfile(config_path):
-                continue
+                raise ValidationError(
+                    code="agent.missing_config_file",
+                    event_info=f"Missing config file for agent '{agent_name}'. "
+                    f"Expected file: '{config_path}'. "
+                    f"Each agent folder must contain a 'config.yml' file.",
+                    details={
+                        "agent_name": agent_name,
+                        "expected_config_file": config_path,
+                        "sub_agents_folder": sub_agents_folder,
+                    },
+                )
             try:
                 agent_config = cls._read_agent_config(config_path)
                 if not isinstance(agent_config, AgentConfig):
@@ -140,7 +159,7 @@ class AvailableAgents(metaclass=Singleton):
                     event_info=f"Failed to load agent '{agent_name}': {e}",
                     details={
                         "agent_name": agent_name,
-                        "agent_folder": agent_folder,
+                        "sub_agents_folder": sub_agents_folder,
                         "error": str(e),
                     },
                 )
@@ -153,6 +172,7 @@ class AvailableAgents(metaclass=Singleton):
         for agent_config in agent_configs:
             agents[agent_config.agent.name] = agent_config
 
+        structlogger.info(f"Loaded agent configs: {[k for k in agents.keys()]}")
         return cls(agents)
 
     @staticmethod
@@ -185,23 +205,6 @@ class AvailableAgents(metaclass=Singleton):
 
         return agent_config
 
-    @classmethod
-    def get_instance(
-        cls, agent_folder: Optional[str] = DEFAULT_AGENTS_CONFIG_FOLDER
-    ) -> AvailableAgents:
-        """Get the singleton instance of `AvailableAgents`."""
-        if cls._instance is None:
-            cls._instance = cls._read_agent_folder(agent_folder)
-
-        return cls._instance
-
-    @classmethod
-    def reset_instance(cls) -> None:
-        cls._instance = None
-        # Also clear the metaclass singleton instances
-        if hasattr(type(cls), "_instances"):
-            type(cls)._instances.clear()
-
     def as_json_list(self) -> List[Dict[str, Any]]:
         """Convert the available agents to a JSON-serializable list."""
         return [
@@ -218,12 +221,8 @@ class AvailableAgents(metaclass=Singleton):
             for agent_name, agent_config in self.agents.items()
         ]
 
-    @classmethod
-    def get_agent_config(cls, agent_id: str) -> Optional[AgentConfig]:
-        instance = cls.get_instance()
-        return instance.agents.get(agent_id)
+    def get_agent_config(self, agent_id: str) -> Optional[AgentConfig]:
+        return self.agents.get(agent_id)
 
-    @classmethod
-    def has_agents(cls) -> bool:
-        instance = cls.get_instance()
-        return len(instance.agents) > 0
+    def has_agents(self) -> bool:
+        return len(self.agents) > 0
