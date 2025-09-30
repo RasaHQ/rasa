@@ -174,7 +174,7 @@ def get_agent_info(agent_id: str) -> Optional[Dict[str, str]]:
 
 
 def get_completed_agents_info(tracker: DialogueStateTracker) -> List[Dict[str, str]]:
-    """Get information for all completed agents.
+    """Get information for all completed agents in the currently active flow.
 
     Args:
         tracker: The dialogue state tracker.
@@ -182,12 +182,30 @@ def get_completed_agents_info(tracker: DialogueStateTracker) -> List[Dict[str, s
     Returns:
         List of dictionaries containing agent information for completed agents.
     """
+    from rasa.dialogue_understanding.stack.utils import top_user_flow_frame
+
+    # Get the currently active flow
+    top_flow_frame = top_user_flow_frame(tracker.stack)
+    if not top_flow_frame:
+        # No active flow, return empty list
+        return []
+
+    current_flow_id = top_flow_frame.flow_id
     completed_agents = []
+
+    # Get all agents that completed in the current flow
+    agents_completed_in_current_flow = set()
     for event in reversed(tracker.events):
-        if isinstance(event, AgentCompleted):
-            agent_info = get_agent_info(event.agent_id)
+        if isinstance(event, AgentCompleted) and event.flow_id == current_flow_id:
+            agents_completed_in_current_flow.add(event.agent_id)
+
+    # Only include agents that are completed (not currently running)
+    for agent_id in agents_completed_in_current_flow:
+        if is_agent_completed(tracker, agent_id):
+            agent_info = get_agent_info(agent_id)
             if agent_info:
                 completed_agents.append(agent_info)
+
     return completed_agents
 
 

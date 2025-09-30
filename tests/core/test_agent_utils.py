@@ -342,17 +342,83 @@ def tracker_with_multiple_completed_agents() -> DialogueStateTracker:
     return tracker
 
 
+@pytest.fixture
+def tracker_multiple_flows_only_active_flow_agents() -> DialogueStateTracker:
+    """Test that only agents from the active flow are returned, not from other flows."""
+    from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
+    from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+        FlowStackFrameType,
+    )
+
+    domain = Domain.empty()
+    tracker = DialogueStateTracker.from_events("test", [], domain.slots)
+
+    # Add completed agents in different flows
+    tracker.update(AgentCompleted("agent1", "flow1"))
+    tracker.update(AgentCompleted("agent2", "flow2"))
+    tracker.update(AgentCompleted("agent3", "active_flow"))
+
+    # Set active_flow as the currently active flow
+    active_flow_frame = UserFlowStackFrame(
+        frame_id="active_flow_frame",
+        flow_id="active_flow",
+        step_id="test_step",
+        frame_type=FlowStackFrameType.REGULAR,
+    )
+    tracker.update_stack(DialogueStack(frames=[active_flow_frame]))
+    return tracker
+
+
+@pytest.fixture
+def tracker_flow_restart_agent_running() -> DialogueStateTracker:
+    """Test edge case: flow restart with an agent currently running,
+    that has completed in a previous flow.
+    """
+    from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
+    from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+        FlowStackFrameType,
+    )
+
+    domain = Domain.empty()
+    tracker = DialogueStateTracker.from_events("test", [], domain.slots)
+
+    # First flow execution - agent completed
+    tracker.update(AgentCompleted("agent1", "test_flow"))
+
+    # Flow restarted - agent is running again (but not completed yet)
+    tracker.update(AgentStarted("agent1", "test_flow"))
+
+    # Set test_flow as the currently active flow
+    active_flow_frame = UserFlowStackFrame(
+        frame_id="restarted_flow_frame",
+        flow_id="test_flow",
+        step_id="test_step",
+        frame_type=FlowStackFrameType.REGULAR,
+    )
+    tracker.update_stack(DialogueStack(frames=[active_flow_frame]))
+    return tracker
+
+
 @pytest.mark.parametrize(
     "tracker_fixture,expected_count,expected_agents",
     [
         ("empty_tracker", 0, []),
         (
             "tracker_with_multiple_completed_agents",
-            2,
+            0,  # No active flow, so should return 0 agents
+            [],
+        ),
+        (
+            "tracker_multiple_flows_only_active_flow_agents",
+            1,  # Should return only 1 agent from active flow, not all 3 from all flows
             [
-                {"name": "Agent 1", "description": "First agent"},
-                {"name": "Agent 2", "description": "Second agent"},
+                {"name": "Agent 3", "description": "Third agent"},
             ],
+        ),
+        (
+            "tracker_flow_restart_agent_running",
+            0,  # Should return 0 because agent is currently running / not completed yet
+            [],
         ),
     ],
 )
