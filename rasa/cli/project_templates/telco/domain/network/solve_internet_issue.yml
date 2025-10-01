@@ -9,25 +9,24 @@ slots:
       - type: from_llm
 
 responses:
-
   utter_acknowledge_issue:
     - text: |
         I see.
         Let me try to identify the root cause of the issue you are facing.
-  utter_communicate_run_diagnosticss:
+  utter_communicate_run_diagnostics:
     - text: |
         I will run a network diagnostics for you 🛜
         Wait a moment please...
       image: "https://static.vecteezy.com/system/resources/previews/002/785/641/non_2x/speed-test-internet-measure-icon-illustration-free-vector.jpg"
   utter_acknowledge_speed_test_not_good:
-  - text: |
-      Your network download speed is {network_speed} Mbps.
-      That's definitely not good.
+    - text: |
+        Your network download speed is {network_speed} Mbps.
+        That's definitely not good.
 
   utter_propose_reboot_router_solution:
-  - text: |
-      Let's reboot your router.
-      It helps resolving most issues with speed.
+    - text: |
+        Let's reboot your router.
+        It helps resolving most issues with speed.
   utter_speed_issue_resolved:
     - text: |
         {network_speed} Mbps, Awesome! 🚀
@@ -72,4 +71,3 @@ responses:
 actions:
   - actions_run_speed_test
   - action_sleep_few_sec
-

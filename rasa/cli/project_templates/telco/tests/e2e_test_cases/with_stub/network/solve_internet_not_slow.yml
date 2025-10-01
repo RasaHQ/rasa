@@ -1,0 +1,33 @@
+stub_custom_actions:
+  actions_run_speed_test:
+    events:
+      - event: slot
+        name: network_speed
+        value: 150.0
+    responses:
+      - text: "Thank you for waiting... ✅ "
+  action_sleep_few_sec:
+    events: []
+    responses: []
+
+test_cases:
+  - test_case: Solving Internet issue not slow
+    steps:
+      - user: "Hey, my internet is very slow. What's going on?"
+        assertions:
+          - flow_started: "fix_internet_slow"
+          - bot_uttered:
+              utter_name: "utter_acknowledge_issue"
+          - action_executed: action_sleep_few_sec
+          - flow_started: "run_diagnostics"
+          - bot_uttered:
+              utter_name: "utter_speed_network_not_issue"
+          - action_executed: "actions_run_speed_test"
+          - bot_uttered:
+              utter_name: "utter_propose_other_solutions"
+          - action_executed: "action_sleep_few_sec"
+          - bot_uttered:
+              utter_name: "utter_ask_more_help_needed"
+      - user: "/SetSlots(more_help_needed=True)"
+        assertions:
+          - flow_started: "human_handoff"

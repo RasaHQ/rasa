@@ -1,0 +1,91 @@
+name: Rasa E2E Tests for Hello Rasa templates
+
+on:
+  pull_request:
+    paths:
+      - "rasa/**"
+      - "!rasa/version.py"
+  push:
+    branches: [main]
+    paths:
+      - "rasa/**"
+      - "!rasa/version.py"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  e2e-tests:
+    name: Run Rasa E2E Tests - ${{ matrix.template }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        template: [telco, finance, basic]
+        python_version: ["3.10"]
+    env:
+      WORKING_DIRECTORY: rasa/cli/project_templates/${{ matrix.template }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Python environment
+        uses: ./.github/actions/setup-python-env
+        with:
+          PYTHON_VERSION: ${{ matrix.python_version }}
+          MATRIX_JOB: e2e-tests-${{ matrix.template }}
+          RASA_DEFAULT_INSTALLATION_ONLY: "true"
+
+      - name: Train Rasa model
+        run: |
+          echo "Training Rasa model..."
+          rasa train
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Start Rasa actions server
+        run: |
+          echo "Starting Rasa actions server in background..."
+          rasa run actions --debug > actions.log 2>&1 &
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+      - name: Run regular E2E tests
+        run: |
+          echo "Running regular E2E tests..."
+          rasa test e2e tests/e2e_test_cases/without_stub/
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Check if stubbed tests exist
+        id: check_stubbed_tests
+        run: |
+          if [ -d "tests/e2e_test_cases/with_stub" ]; then
+            echo "stubbed_tests_exist=true" >> $GITHUB_OUTPUT
+            echo "Stubbed tests directory found"
+          else
+            echo "stubbed_tests_exist=false" >> $GITHUB_OUTPUT
+            echo "No stubbed tests directory found, skipping stubbed tests"
+          fi
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+      - name: Run stubbed E2E tests
+        if: steps.check_stubbed_tests.outputs.stubbed_tests_exist == 'true'
+        run: |
+          echo "Running stubbed E2E tests..."
+          rasa test e2e tests/e2e_test_cases/with_stub/
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        env:
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_BETA_STUB_CUSTOM_ACTION: true

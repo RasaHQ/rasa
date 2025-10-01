@@ -1,0 +1,47 @@
+stub_custom_actions:
+  actions_run_speed_test:
+    events:
+      - event: slot
+        name: network_speed
+        value: 50.0
+    responses:
+      - text: "Thank you for waiting... ✅ "
+  action_sleep_few_sec:
+    events: []
+    responses: []
+
+test_cases:
+  - test_case: Solving Internet slow issue
+    steps:
+      - user: "Hey, my internet is very slow. What's going on?"
+        assertions:
+          - flow_started: "fix_internet_slow"
+          - bot_uttered:
+              utter_name: "utter_acknowledge_issue"
+          - action_executed: action_sleep_few_sec
+          - flow_started: "run_diagnostics"
+          - bot_uttered:
+              utter_name: "utter_communicate_run_diagnostics"
+          - action_executed: "actions_run_speed_test"
+          - bot_uttered:
+              utter_name: "utter_acknowledge_speed_test_not_good"
+          - action_executed: "action_sleep_few_sec"
+          - bot_uttered:
+              utter_name: "utter_propose_reboot_router_solution"
+          - action_executed: "action_sleep_few_sec"
+          - flow_started: "reboot_router"
+          - bot_uttered:
+              utter_name: "utter_explain_reboot_router"
+          - bot_uttered:
+              utter_name: "utter_ask_reboot_router"
+              buttons:
+                - title: "Done"
+                  payload: "/SetSlots(reboot_router=True)"
+                - title: "Facing a problem"
+                  payload: "/SetSlots(reboot_router=False)"
+      - user: "/SetSlots(reboot_router=False)"
+        assertions:
+          - slot_was_set:
+              - name: "reboot_router"
+                value: False
+          - flow_started: "human_handoff"
