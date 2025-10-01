@@ -914,8 +914,22 @@ class TestSingleStepLLMCommandGenerator:
             "sender", [AgentCompleted("test-agent-2", "test_flow")]
         )
         if agents_present:
+            from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
+            from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
+                FlowStackFrameType,
+            )
+
+            # Create a user flow frame to represent the active flow
+            user_flow_frame = UserFlowStackFrame(
+                frame_id="user_flow_frame",
+                flow_id="test_flow",
+                step_id="START",
+                frame_type=FlowStackFrameType.REGULAR,
+            )
+
             stack = DialogueStack(
                 frames=[
+                    user_flow_frame,
                     AgentStackFrame(
                         flow_id="test_flow",
                         step_id="START",
