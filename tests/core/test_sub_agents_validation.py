@@ -479,3 +479,39 @@ def test_validate_sub_agents_endpoint_references_success(
         with patch.object(Configuration, "get_instance", return_value=mock_instance):
             create_agent_config(temp_dir, test_name, config_content)
             validate_agent_folder(temp_dir)
+
+
+def test_auth_key_in_allowed_keys() -> None:
+    """Test that 'auth' key is included in ALLOWED_KEYS for configuration section."""
+    from rasa.agents.validation import ALLOWED_KEYS
+
+    assert "auth" in ALLOWED_KEYS["configuration"]
+
+
+def test_validate_agent_with_auth_configuration() -> None:
+    """Test validation succeeds for agent configuration with auth key."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config_content = dedent("""
+            agent:
+              name: "agent_with_auth"
+              protocol: "A2A"
+              description: "An agent with auth configuration"
+            configuration:
+              agent_card: "https://example.com/agent-card.json"
+              auth:
+                token: "test_token"
+            connections:
+              mcp_servers:
+                - name: "test_mcp_server"
+        """)
+
+        mock_instance = MagicMock()
+        mock_instance.endpoints.mcp_servers = [
+            type("MCPServerConfig", (), {"name": "test_mcp_server"})()
+        ]
+        mock_instance.endpoints.model_groups = []
+
+        with patch.object(Configuration, "get_instance", return_value=mock_instance):
+            create_agent_config(temp_dir, "agent_with_auth", config_content)
+            # This should not raise any validation errors
+            validate_agent_folder(temp_dir)

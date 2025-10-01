@@ -6,7 +6,6 @@ from collections import Counter
 from typing import Any, Dict, List, NoReturn, Set
 
 from pydantic import ValidationError as PydanticValidationError
-from ruamel import yaml
 
 from rasa.agents.exceptions import (
     AgentNameFlowConflictException,
@@ -18,11 +17,13 @@ from rasa.core.available_agents import (
     AgentConfiguration,
     AgentConnections,
     AgentInfo,
+    AvailableAgents,
     ProtocolConfig,
 )
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
 from rasa.exceptions import ValidationError
+from rasa.shared.utils.yaml import read_config_file
 
 # Centralized allowed keys configuration to eliminate duplication
 ALLOWED_KEYS = {
@@ -34,6 +35,7 @@ ALLOWED_KEYS = {
         "timeout",
         "max_retries",
         "agent_card",
+        "auth",
     },
     "connections": {"mcp_servers"},
 }
@@ -433,8 +435,7 @@ def validate_agent_folder(agent_folder: str = DEFAULT_AGENTS_CONFIG_FOLDER) -> N
         # Read and validate the config content
         try:
             # First read the raw YAML data to validate structure
-            with open(config_path, "r") as f:
-                data = yaml.safe_load(f)
+            data = read_config_file(config_path)
 
             # Validate no additional keys
             _validate_no_additional_keys_raw_data(data)
@@ -442,10 +443,7 @@ def validate_agent_folder(agent_folder: str = DEFAULT_AGENTS_CONFIG_FOLDER) -> N
             # Validate mandatory fields before creating Pydantic models
             _validate_mandatory_fields(data, agent_folder_name)
 
-            # Create the agent config using AvailableAgents
-            from rasa.core.available_agents import AvailableAgents
-
-            agent_config = AvailableAgents._read_agent_config(config_path)
+            agent_config = AvailableAgents.from_dict(data)
 
             # Validate the agent config (protocol-specific and endpoint references)
             validate_agent_config(agent_config)

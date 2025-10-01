@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, model_validator
 from ruamel import yaml as yaml
 
 from rasa.exceptions import ValidationError
+from rasa.shared.utils.yaml import read_config_file
 
 DEFAULT_AGENTS_CONFIG_FOLDER = "sub_agents"
 
@@ -149,7 +150,7 @@ class AvailableAgents:
                     },
                 )
             try:
-                agent_config = cls._read_agent_config(config_path)
+                agent_config = cls._read_agent_config_file(config_path)
                 if not isinstance(agent_config, AgentConfig):
                     raise ValueError(f"Invalid agent config type for {agent_name}")
                 agent_configs.append(agent_config)
@@ -176,7 +177,30 @@ class AvailableAgents:
         return cls(agents)
 
     @staticmethod
-    def _read_agent_config(config_path: str) -> AgentConfig:
+    def from_dict(data: Dict[str, Any]) -> AgentConfig:
+        """Parse the agent config from raw data into Pydantic models.
+
+        Args:
+            data: Raw data from the config file as a dictionary.
+
+        Returns:
+            The parsed AgentConfig as a Pydantic model.
+
+        Raises:
+            ValueError: If the data structure is invalid for Pydantic models.
+        """
+        return AgentConfig(
+            agent=AgentInfo(**data.get("agent", {})),
+            configuration=AgentConfiguration(**data.get("configuration", {}))
+            if data.get("configuration")
+            else None,
+            connections=AgentConnections(**data.get("connections", {}))
+            if data.get("connections")
+            else None,
+        )
+
+    @classmethod
+    def _read_agent_config_file(cls, config_path: str) -> AgentConfig:
         """Read the agent config from a yaml file into Pydantic models.
 
         Args:
@@ -187,23 +211,10 @@ class AvailableAgents:
 
         Raises:
             yaml.YAMLError: If the YAML file is invalid.
-            ValueError: If the data structure is invalid for Pydantic models.
+            ValidationError: If the data structure is invalid for Pydantic models.
         """
-        with open(config_path, "r") as f:
-            data = yaml.safe_load(f)
-
-        # Create the agent config (this will trigger Pydantic validation)
-        agent_config = AgentConfig(
-            agent=AgentInfo(**data.get("agent", {})),
-            configuration=AgentConfiguration(**data.get("configuration", {}))
-            if data.get("configuration")
-            else None,
-            connections=AgentConnections(**data.get("connections", {}))
-            if data.get("connections")
-            else None,
-        )
-
-        return agent_config
+        data = read_config_file(config_path)
+        return cls.from_dict(data)
 
     def as_json_list(self) -> List[Dict[str, Any]]:
         """Convert the available agents to a JSON-serializable list."""

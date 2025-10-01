@@ -119,7 +119,7 @@ def test_read_agent_folder(
     }
     monkeypatch.setattr(
         AvailableAgents,
-        "_read_agent_config",
+        "_read_agent_config_file",
         MagicMock(side_effect=lambda path: config_map[path]),
     )
     monkeypatch.setattr("os.path.isfile", lambda path: True)
@@ -148,18 +148,20 @@ def test_read_agent_config(
     agent_config = request.getfixturevalue(agent_config_fixture)
     monkeypatch.setattr(
         AvailableAgents,
-        "_read_agent_config",
+        "_read_agent_config_file",
         MagicMock(return_value=agent_config),
     )
-    config = AvailableAgents._read_agent_config(f"sub_agents/{agent_name}/config.yml")
+    config = AvailableAgents._read_agent_config_file(
+        f"sub_agents/{agent_name}/config.yml"
+    )
     assert isinstance(config, AgentConfig)
     assert config.agent.protocol == expected_protocol
 
 
 def test_read_agent_config_file_not_found() -> None:
-    """Test that _read_agent_config raises FileNotFoundError for missing file."""
+    """Test that _read_agent_config_file raises FileNotFoundError for missing file."""
     with pytest.raises(FileNotFoundError):
-        AvailableAgents._read_agent_config("nonexistent_file.yml")
+        AvailableAgents._read_agent_config_file("nonexistent_file.yml")
 
 
 def test_read_agent_config_error(
@@ -169,7 +171,7 @@ def test_read_agent_config_error(
     patch_listdir(["agent_a"])
     monkeypatch.setattr(
         AvailableAgents,
-        "_read_agent_config",
+        "_read_agent_config_file",
         MagicMock(side_effect=Exception("Read error")),
     )
     monkeypatch.setattr("os.path.isfile", lambda path: True)
@@ -572,7 +574,7 @@ class TestAgentConfigurationAuthField:
         """Test auth field works alongside other AgentConfiguration fields."""
         auth_config = {
             "username": "test_user",
-            "password": "test_password",
+            "password": "${PASS}",
         }
 
         config = AgentConfiguration(
