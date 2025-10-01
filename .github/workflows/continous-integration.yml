@@ -190,6 +190,10 @@ jobs:
           - nlu
           - channels
           - full
+        install-method:
+          - poetry
+          - pip
+          - uv
         exclude:
           - python-version: "3.9"
             template: tutorial
@@ -199,7 +203,11 @@ jobs:
             template: finance
           - python-version: "3.9"
             template: telco
-    name: rasa init Py${{ matrix.python-version }} ${{ matrix.install-group }}-install ${{ matrix.template }}-template
+          - python-version: "3.9"
+            install-method: pip
+          - python-version: "3.9"
+            install-method: uv
+    name: rasa init Py${{ matrix.python-version }} ${{ matrix.install-group }}-group (with ${{ matrix.install-method }} install) ${{ matrix.template }}-template
     env:
       RASA_INIT_TEST_DIRECTORY: test-rasa-init
     steps:
@@ -208,21 +216,23 @@ jobs:
         - name: Free up disk-space
           if: ${{ matrix.install-group == 'full' || matrix.install-group == 'nlu' }}
           uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b
-        - name: Setup Python ${{ matrix.python-version }} and install rasa-pro with default installation
+        - name: Setup Python ${{ matrix.python-version }} and install rasa-pro (via ${{ matrix.install-method }}) with default installation
           if: ${{ matrix.python-version != '3.9' && matrix.install-group == 'default' }}
           uses: ./.github/actions/setup-python-env
           with:
             PYTHON_VERSION: ${{ matrix.python-version }}
-            MATRIX_JOB: ${{ matrix.install-group }}-${{ matrix.template }}
+            MATRIX_JOB: ${{ matrix.install-group }}-${{ matrix.install-method }}-${{ matrix.template }}
             RASA_DEFAULT_INSTALLATION_ONLY: "true"
-        - name: Setup Python ${{ matrix.python-version }} and install rasa-pro with ${{ matrix.install-group }} group
+            DEPENDENCIES_AND_PACKAGE_MANAGEMENT_TOOL: ${{ matrix.install-method }}
+        - name: Setup Python ${{ matrix.python-version }} and install rasa-pro (via ${{ matrix.install-method }}) with ${{ matrix.install-group }} group
           if: ${{ matrix.python-version != '3.9' && matrix.install-group != 'default'  }}
           uses: ./.github/actions/setup-python-env
           with:
             PYTHON_VERSION: ${{ matrix.python-version }}
-            MATRIX_JOB: ${{ matrix.install-group }}-${{ matrix.template }}
+            MATRIX_JOB: ${{ matrix.install-group }}-${{ matrix.install-method }}-${{ matrix.template }}
             OPTIONAL_GROUP_TO_INSTALL: ${{ matrix.install-group }}
             RASA_DEFAULT_INSTALLATION_ONLY: "false"
+            DEPENDENCIES_AND_PACKAGE_MANAGEMENT_TOOL: ${{ matrix.install-method }}
         - name: Set up Python 3.9
           if: ${{ matrix.python-version == '3.9' }}
           uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0

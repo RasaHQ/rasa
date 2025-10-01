@@ -20,6 +20,10 @@ inputs:
     description: "Optional group to install, from: nlu, channels or full. Incompatible with `RASA_DEFAULT_INSTALLATION_ONLY` input"
     required: false
     default: "full"
+  DEPENDENCIES_AND_PACKAGE_MANAGEMENT_TOOL:
+    description: "Tool to use for dependencies and package management: Poetry, UV or Pip. Default = Poetry"
+    required: false
+    default: "Poetry"
 outputs:
   cache-hit:
     description: "Cache found or not"
@@ -35,6 +39,7 @@ runs:
           python-version: ${{ inputs.PYTHON_VERSION }}
 
       - name: Read Poetry Version 🔢
+        if: ${{ inputs.DEPENDENCIES_AND_PACKAGE_MANAGEMENT_TOOL == 'Poetry' }}
         working-directory: ${{ inputs.WORKING_DIRECTORY }}
         run: |
           echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
@@ -42,12 +47,19 @@ runs:
 
       # Install & configure poetry
       -  name: Install Poetry ${{ env.POETRY_VERSION }}
+         if: ${{ inputs.DEPENDENCIES_AND_PACKAGE_MANAGEMENT_TOOL == 'Poetry' }}
          uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a # v1.4.1
          with:
           version: ${{ env.POETRY_VERSION }}
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
+
+      # If required, install UV
+      - name: Install UV
+        if: ${{ inputs.DEPENDENCIES_AND_PACKAGE_MANAGEMENT_TOOL == 'UV' }}
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+        shell: bash
 
       # Load cached venv if cache exists
       - name: Load cached venv
@@ -57,18 +69,54 @@ runs:
           path: ${{ github.workspace }}/**/.venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock', '**/requirements.txt') }}-${{ inputs.MATRIX_JOB }}
 
-      - name: Install Dependencies (Linux) 📦
+      - name: Install Dependencies via poetry (Linux) 📦
         working-directory: ${{ inputs.WORKING_DIRECTORY }}
-        if: ${{ steps.cached-poetry-dependencies.outputs.cache-hit != 'true' }}
+        if: ${{ steps.cached-poetry-dependencies.outputs.cache-hit != 'true' && inputs.DEPENDENCIES_AND_PACKAGE_MANAGEMENT_TOOL == 'Poetry' }}
         env:
           RASA_DEFAULT_INSTALLATION_ONLY: ${{ inputs.RASA_DEFAULT_INSTALLATION_ONLY }}
           OPTIONAL_GROUP_TO_INSTALL: ${{ inputs.OPTIONAL_GROUP_TO_INSTALL }}
         run: |
           if [[ "${RASA_DEFAULT_INSTALLATION_ONLY}" == "true" ]]; 
           then
-              poetry sync --only main
+              poetry sync --only main --without dev
           else
               poetry sync -E "${OPTIONAL_GROUP_TO_INSTALL}" --without dev
+          fi
+        shell: bash
+
+      - name: Install Dependencies via pip (Linux) 📦
+        working-directory: ${{ inputs.WORKING_DIRECTORY }}
+        if: ${{ steps.cached-poetry-dependencies.outputs.cache-hit != 'true' && inputs.DEPENDENCIES_AND_PACKAGE_MANAGEMENT_TOOL == 'Pip' }}
+        env:
+          RASA_DEFAULT_INSTALLATION_ONLY: ${{ inputs.RASA_DEFAULT_INSTALLATION_ONLY }}
+          OPTIONAL_GROUP_TO_INSTALL: ${{ inputs.OPTIONAL_GROUP_TO_INSTALL }}
+          PYTHON_VERSION: ${{ inputs.PYTHON_VERSION }}
+        run: |
+          python"${PYTHON_VERSION}" -m venv .venv
+          . .venv/bin/activate
+          if [[ "${RASA_DEFAULT_INSTALLATION_ONLY}" == "true" ]]; 
+          then
+              pip install . -v
+          else
+              pip install .["${OPTIONAL_GROUP_TO_INSTALL}"] -v
+          fi
+        shell: bash
+
+      - name: Install Dependencies via uv (Linux) 📦
+        working-directory: ${{ inputs.WORKING_DIRECTORY }}
+        if: ${{ steps.cached-poetry-dependencies.outputs.cache-hit != 'true' && inputs.DEPENDENCIES_AND_PACKAGE_MANAGEMENT_TOOL == 'UV' }}
+        env:
+          RASA_DEFAULT_INSTALLATION_ONLY: ${{ inputs.RASA_DEFAULT_INSTALLATION_ONLY }}
+          OPTIONAL_GROUP_TO_INSTALL: ${{ inputs.OPTIONAL_GROUP_TO_INSTALL }}
+          PYTHON_VERSION: ${{ inputs.PYTHON_VERSION }}
+        run: |
+          uv venv --python "${PYTHON_VERSION}"
+          . .venv/bin/activate
+          if [[ "${RASA_DEFAULT_INSTALLATION_ONLY}" == "true" ]]; 
+          then
+              uv pip install . -v
+          else
+              uv pip install .["${OPTIONAL_GROUP_TO_INSTALL}"] -v
           fi
         shell: bash
 
