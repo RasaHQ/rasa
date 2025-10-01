@@ -1,0 +1,31 @@
+flows:
+  add_contact:
+    description: add a contact to your contact list
+    name: add a contact
+    steps:
+      - collect: "add_contact_handle"
+        description: "a user handle starting with @"
+      - collect: "add_contact_name"
+        description: "a name of a person"
+      - collect: "add_contact_confirmation"
+        ask_before_filling: true
+        next:
+          - if: "slots.add_contact_confirmation is not true"
+            then:
+              - action: utter_add_contact_cancelled
+                next: END
+          - else: add_contact
+      - id: add_contact
+        action: add_contact
+        next:
+          - if: "slots.return_value = 'success'"
+            then:
+              - action: utter_contact_added
+                next: END
+          - if: "slots.return_value = 'already_exists'"
+            then:
+              - action: utter_contact_already_exists
+                next: END
+          - else:
+              - action: utter_add_contact_error
+                next: END

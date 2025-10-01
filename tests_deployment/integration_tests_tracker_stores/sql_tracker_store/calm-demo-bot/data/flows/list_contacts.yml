@@ -1,0 +1,14 @@
+flows:
+  list_contacts:
+    name: list your contacts
+    description: show your contact list
+    steps:
+      - action: list_contacts
+        next:
+          - if: "slots.contacts_list"
+            then:
+              - action: utter_list_contacts
+                next: END
+          - else:
+              - action: utter_no_contacts
+                next: END

@@ -1,0 +1,37 @@
+version: "3.1"
+
+actions:
+  - remove_contact
+
+slots:
+  remove_contact_name:
+    type: text
+    mappings:
+      - type: controlled
+  remove_contact_handle:
+    type: text
+    mappings:
+      - type: from_llm
+  remove_contact_confirmation:
+    type: text
+    mappings:
+      - type: from_llm
+
+responses:
+  utter_ask_remove_contact_handle:
+    - text: What's the handle of the user you want to remove?
+  utter_contact_not_in_list:
+    - text: "That contact is not in your list."
+  utter_remove_contact_error:
+    - text: "Something went wrong, please try again."
+  utter_remove_contact_success:
+     - text: "Removed {remove_contact_handle}({remove_contact_name}) from your contacts."
+  utter_ask_remove_contact_confirmation:
+    - buttons:
+        - payload: "/SetSlots(remove_contact_confirmation=true)"
+          title: Yes
+        - payload: "/SetSlots(remove_contact_confirmation=false)"
+          title: No, cancel the removal
+      text: "Should I remove {remove_contact_handle} from your contact list?"
+  utter_remove_contact_cancelled:
+    - text: "Okay, I am cancelling this removal of a contact."

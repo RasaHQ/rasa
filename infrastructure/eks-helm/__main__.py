@@ -7,6 +7,7 @@ import pulumi_kubernetes.meta.v1 as meta
 import pulumi_aws as aws
 import pulumi.runtime
 import os
+import uuid
 
 def get_config(key: str, default: str = None) -> str:
     config = pulumi.Config()
@@ -24,6 +25,12 @@ openai_api_key = get_config("OPENAI_API_KEY")
 certificate_arn = get_config("CERTIFICATE_ARN")
 hosted_zone_id = get_config("HOSTED_ZONE_ID")
 domain_name = get_config("DOMAIN_NAME")
+# Variables for Postgres tracker store
+postgres_user = get_config("POSTGRES_USER")
+postgres_password = get_config("POSTGRES_PASSWORD")
+postgres_host = get_config("POSTGRES_HOST")
+postgres_port = get_config("POSTGRES_PORT")
+postgres_db = get_config("POSTGRES_DB")
 # Variables for pulling the model from s3 bucket
 model_file_name = get_config("MODEL_FILE_NAME")
 aws_model_s3_bucket = get_config("AWS_MODEL_S3_BUCKET")
@@ -91,8 +98,29 @@ rasa_pro_chart = helm.Chart(
                 },
                 "settings": {
                     "debugMode": True,
+                    "endpoints": {
+                        "trackerStore": {
+                                "enabled": True,
+                                "type": "sql",
+                                "dialect": "postgresql",
+                                "url": f"postgresql://{postgres_user}:{postgres_password}@{postgres_host}:{postgres_port}/{postgres_db}",
+                                "port": 5432,
+                                "db": postgres_db,
+                                "username": postgres_user,
+                                "password": postgres_password,
+                                },
+                        "actionEndpoint": {
+                                "actions_module": "actions"
+                                },
+                        },
+                    "credentials": {
+                        "enabled": True,
+                        "additionalChannelCredentials": {
+                            "rest": {},
+                        },
+                    },
                 },
-                "additionalArgs": ["--model", model_file_name, "--remote-storage", "aws"],
+                "additionalArgs": ["--model", model_file_name, "--remote-storage", "aws",],
                 "additionalEnv": [
                     {"name": "AWS_DEFAULT_REGION", "value": aws_default_region},
                     {"name": "BUCKET_NAME", "value": aws_model_s3_bucket},
@@ -100,6 +128,11 @@ rasa_pro_chart = helm.Chart(
                     {"name": "AWS_SECRET_ACCESS_KEY", "value": aws_model_s3_secret_access_key},
                     {"name": "AWS_ACCESS_KEY_ID", "value": aws_model_s3_access_key_id},
                     {"name": "OPENAI_API_KEY", "value": openai_api_key},
+                    {"name": "POSTGRES_HOST", "value": postgres_host},
+                    {"name": "POSTGRES_PORT", "value": postgres_port},
+                    {"name": "POSTGRES_USER", "value": postgres_user},
+                    {"name": "POSTGRES_PASSWORD", "value": postgres_password},
+                    {"name": "POSTGRES_DB", "value": postgres_db},
                 ],
                 "resources": {
                     "requests": {

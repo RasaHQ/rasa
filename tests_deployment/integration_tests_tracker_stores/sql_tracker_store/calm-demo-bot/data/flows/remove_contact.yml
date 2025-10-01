@@ -1,0 +1,29 @@
+flows:
+  remove_contact:
+    name: remove a contact
+    description: remove a contact from your contact list
+    steps:
+      - collect: "remove_contact_handle"
+        description: "a contact handle starting with @"
+      - collect: "remove_contact_confirmation"
+        ask_before_filling: true
+        next:
+          - if: "slots.remove_contact_confirmation is not true"
+            then:
+              - action: utter_remove_contact_cancelled
+                next: END
+          - else: remove_contact
+      - id: "remove_contact"
+        action: remove_contact
+        next:
+          - if: "slots.return_value == 'success'"
+            then:
+              - action: utter_remove_contact_success
+                next: END
+          - if: "slots.return_value == 'not_found'"
+            then:
+              - action: utter_contact_not_in_list
+                next: END
+          - else:
+              - action: utter_remove_contact_error
+                next: END

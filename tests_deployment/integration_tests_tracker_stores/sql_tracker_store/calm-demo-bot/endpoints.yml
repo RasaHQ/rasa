@@ -1,0 +1,25 @@
+# This file contains the different endpoints your bot can use.
+action_endpoint:
+  actions_module: "actions"
+
+# Tracker store which is used to store the conversations.
+# By default the conversations are stored in memory.
+# https://rasa.com/docs/rasa-pro/production/tracker-stores
+
+#tracker_store:
+#    type: redis
+#    url: <host of the redis instance, e.g. localhost>
+#    port: <port of your redis instance, usually 6379>
+#    db: <number of your database within redis, e.g. 0>
+#    password: <password used for authentication>
+#    use_ssl: <whether or not the communication is encrypted, default false>
+
+tracker_store:
+    type: sql
+    dialect: "postgresql"
+    url: ${DB_HOST}
+    db: ${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+    port: ${DB_PORT}
+

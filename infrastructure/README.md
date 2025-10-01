@@ -1,11 +1,13 @@
 # Infrastructure Architecture
 
-The infrastructure setup is divided into three separate Pulumi projects (micro-stacks):
+The infrastructure setup is divided into six separate Pulumi projects (micro-stacks):
 
 - **eks-base**
 - **eks-lb-controller**
 - **eks-dashboard**
+- **eks-headlamp**
 - **eks-helm**
+- **eks-integration-tests**
 
 ## 1. eks-base
 
@@ -38,7 +40,10 @@ EKS has an **Amazon CloudWatch Observability** add-on, which automatically takes
 ## 3. eks-dashboard
 The **EKS Dashboard** stack is responsible for deploying Kubernetes Dashboard.  It creates all necessary Kubernetes resources - including a namespace, service account with admin privileges, token secret, cluster role binding, and an ingress configured with an AWS Application Load Balancer (ALB). Additionally, it creates a DNS record in AWS Route53 to expose the dashboard externally.
 
-## 4. eks-helm
+## 4. eks-headlamp
+The **EKS Headlamp** stack is responsible for deploying Headlamp, a modern Kubernetes dashboard and cluster management tool. It creates all necessary Kubernetes resources including a namespace, service account, cluster role binding, and an ingress configured with an AWS Application Load Balancer (ALB). Additionally, it creates a DNS record in AWS Route53 to expose the Headlamp interface externally.
+
+## 5. eks-helm
 
 The **eks-helm** stack is responsible for deploying the **Rasa Pro application container** using the **Rasa Pro Helm chart** into the EKS stack created in **eks-base**, with the **load balancing resources & Fargate profile** created in the **eks-lb-controller** stack.
 
@@ -52,3 +57,13 @@ oci://europe-west3-docker.pkg.dev/rasa-releases/helm-charts/rasa
 ### Pull Request Deployments
 
 For every **Pull Request** created in the **Rasa Private repo**, a new deployment of the **eks-rasa-pro-helm** is initiated on the common **EKS cluster**.
+
+## 6. eks-integration-tests
+
+The **eks-integration-tests** stack is responsible for creating and managing all infrastructure resources required for integration testing. This includes:
+
+- **RDS Database**: PostgreSQL database instance used for Tracker Store testing
+- **Pulumi Secrets**: Database credentials managed through Pulumi's built-in secrets management system
+- **VPC Integration**: Database deployed within the same VPC as the EKS cluster for secure connectivity
+
+This infrastructure provides a dedicated testing environment with persistent database resources that can be used across multiple integration test runs, ensuring reliable and consistent testing conditions for Rasa Pro components.

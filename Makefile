@@ -3,7 +3,7 @@
 ## It is intended to be used by developers working on Rasa and Rasa CI.
 ## When adding a new command, please make sure to add a description for it.
 ## You can run `make help` to see all available commands.
-.PHONY: clean test lint init docs format formatter build-docker
+.PHONY: clean test lint init docs format formatter build-docker train-rds-tracker-bot
 
 # If makefile_vars is not included, include it.
 # It is a good practice to check if common variables are included across all makefiles.
@@ -396,13 +396,18 @@ TRAIN_BOT_COMMAND = docker run --rm \
 		$(RASA_REPOSITORY):$(RASA_IMAGE_TAG) \
 		train --fixed-model-name $(MODEL_NAME)
 
+train-rds-tracker-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=$(RASA_PRO_LICENSE) -e OPENAI_API_KEY=$(OPENAI_API_KEY) -e DB_HOST=$(DB_HOST) -e DB_PORT=$(DB_PORT) -e DB_USER=$(DB_USER) -e DB_PASS=$(DB_PASS) -e DB_NAME=$(DB_NAME)
+train-rds-tracker-bot: CONTAINER_NAME = rasa-pro-training-rds-tracker-bot-$(RASA_IMAGE_TAG)
+train-rds-tracker-bot: BOT_PATH = $(INTEGRATION_TEST_DEPLOYMENT_PATH)/integration_tests_tracker_stores/sql_tracker_store/calm-demo-bot
+train-rds-tracker-bot: ## Train the RDS tracker bot for iam tracker store integration tests.
+	$(TRAIN_BOT_COMMAND)
+
+
 train-action-server-nlu-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=$(RASA_PRO_LICENSE)
 train-action-server-nlu-bot: CONTAINER_NAME = rasa-pro-training-nlu-bot-$(RASA_IMAGE_TAG)
 train-action-server-nlu-bot: BOT_PATH = $(ACTION_SERVER_INTEGRATION_TESTS_DEPLOYMENT_PATH)/$(NLU_BOT_DIRECTORY)
 train-action-server-nlu-bot: ## Train the NLU bot for action server integration tests.
 	$(TRAIN_BOT_COMMAND)
-
-
 
 train-action-server-calm-bot: DOCKER_ENV_VARS = -e RASA_PRO_LICENSE=$(RASA_PRO_LICENSE) -e OPENAI_API_KEY=$(OPENAI_API_KEY)
 train-action-server-calm-bot: CONTAINER_NAME = rasa-pro-training-calm-bot-$(RASA_IMAGE_TAG)

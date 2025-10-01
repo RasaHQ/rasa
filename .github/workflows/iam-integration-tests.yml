@@ -7,11 +7,164 @@ on:
         description: 'Rasa image tag'
         required: true
 
-# TBD workflow
+
+env:
+  DEFAULT_PYTHON_VERSION: '3.10'
+  RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+  AWS_REGION: eu-west-1
+  RASA_PRO_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-private-dev
+  RASA_SDK_DEV_REPOSITORY: 329710836760.dkr.ecr.eu-west-1.amazonaws.com/rasa/rasa-sdk-dev
+  RASA_PRO_HELM_REPO: oci://europe-west3-docker.pkg.dev/rasa-releases/helm-charts/rasa
+  RASA_PRO_HELM_VERSION: 1.2.0
+  POSTGRES_HOST: rasa-pro-integration-tests-db.cvgblmmqghrx.eu-west-1.rds.amazonaws.com
+  POSTGRES_PORT: '5432'
+  POSTGRES_USER: integration_tests_user
+  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD_AWS }}
+  POSTGRES_DB: integrationtestsdb
+  PLATFORM: linux/amd64
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
 jobs:
 
-  test-checkout:
+  rasa-private-dev-train-the-model:
+    name: Train the model and upload to S3
+    runs-on: ubuntu-24.04
+    env:
+      PLATFORM: linux/amd64
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Read Poetry Version 🔢
+        run: |
+          echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 #v2.0.1
+          
+      - name: Pull Rasa Private Dev Docker Image
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+        run: |
+          docker pull ${{ env.RASA_PRO_DEV_REPOSITORY }}:${{ env.IMAGE_TAG }}
+
+      # Leverage GitHub Actions artifact upload/download to share Docker images between jobs,
+      # reducing dependency on ECR and minimizing AWS costs
+      - name: Save docker image
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+        run: docker save ${{ env.RASA_PRO_DEV_REPOSITORY }}:${{ env.IMAGE_TAG }} | gzip > image-${{ env.IMAGE_TAG }}.tar.gz
+
+      - name: Upload image as artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+        with:
+          name: docker-image-${{ env.IMAGE_TAG }}.tar.gz
+          path: image-${{ env.IMAGE_TAG }}.tar.gz
+          retention-days: 5
+
+      - name: Rasa Train
+        run: |
+          make train-rds-tracker-bot
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+          RASA_REPOSITORY: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          RASA_IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+          MODEL_NAME: model-${{ github.event.inputs.image_tag }}.tar.gz
+          DB_HOST: ${{ env.POSTGRES_HOST }}
+          DB_PORT: ${{ env.POSTGRES_PORT }}
+          DB_USER: ${{ env.POSTGRES_USER }}
+          DB_PASS: ${{ env.POSTGRES_PASSWORD }}
+          DB_NAME: ${{ env.POSTGRES_DB }}
+
+      - name: Upload the model to S3
+        run: |
+          aws s3 cp $MODEL_FILE_PATH s3://rasa-pro-ci-trained-models/ \
+          --region eu-west-1 \
+          --endpoint-url https://s3.eu-west-1.amazonaws.com
+        env:
+          MODEL_FILE_PATH: tests_deployment/integration_tests_tracker_stores/sql_tracker_store/calm-demo-bot/models/model-${{ github.event.inputs.image_tag }}.tar.gz
+
+
+  deploy-rasa-private-helm-chart:
+    name: Deploy rasa private helm chart
+    runs-on: ubuntu-24.04
+    needs: [ rasa-private-dev-train-the-model ]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python 3.10 🐍
+        id: setup-python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Deploy Rasa Pro Dev Helm Chart
+        uses: ./.github/actions/setup-build-for-helm-deploy
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          aws-region: ${{ env.AWS_REGION }}
+          aws-assume-role-session-token: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          rasa-pro-helm-repo: ${{ env.RASA_PRO_HELM_REPO }}
+          rasa-pro-helm-version: ${{ env.RASA_PRO_HELM_VERSION }}
+          rasa-pro-version: ${{ github.event.inputs.image_tag }}
+          rasa-pro-dev-repository: ${{ env.RASA_PRO_DEV_REPOSITORY }}
+          helm-deploy-rasa-pro-license: ${{ secrets.HELM_DEPLOY_RASA_PRO_LICENSE }}
+          helm-deploy-openai-api-key: ${{ secrets.HELM_DEPLOY_OPENAI_API_KEY }}
+          helm-deploy-certificate-arn: ${{ secrets.HELM_DEPLOY_CERTIFICATE_ARN }}
+          helm-deploy-hosted-zone-id: ${{ secrets.HELM_DEPLOY_HOSTED_ZONE_ID }}
+          helm-deploy-pulumi-access-token: ${{ secrets.HELM_DEPLOY_PULUMI_ACCESS_TOKEN }}
+          model-file-name: model-${{ github.event.inputs.image_tag }}.tar.gz
+          aws-model-s3-bucket: rasa-pro-ci-trained-models
+          aws-model-s3-endpoint-url: https://s3.eu-west-1.amazonaws.com
+          aws-model-s3-access-key-id: ${{ secrets.AWS_MODEL_S3_ACCESS_KEY_ID }}
+          aws-model-s3-secret-access-key: ${{ secrets.AWS_MODEL_S3_SECRET_ACCESS_KEY }}
+          stack-name: ${{ github.event.inputs.image_tag }}
+          # Use the image tag as project name and PR name to distinguish deployments
+          project-name: rasa-pro-${{ github.event.inputs.image_tag }}-${{ github.run_id }} # adding run ID to ensure uniqueness
+          pr-name: ${{ github.event.inputs.image_tag }}
+          domain-name: rasapro.rasa-dev.io
+          postgres-host: ${{ env.POSTGRES_HOST }} # required if tracker-store-type is sql
+          postgres-port: ${{ env.POSTGRES_PORT }} # required if tracker-store-type is sql
+          postgres-user:  ${{ env.POSTGRES_USER }} # required if tracker-store-type is sql
+          postgres-password: ${{ env.POSTGRES_PASSWORD }} # required if tracker-store-type is sql
+          postgres-db: ${{ env.POSTGRES_DB }} # required if tracker-store-type is sql
+
+# test step to be added here
+#  iam_rds_integration_test:
+
+
+#Comment out to keep the deployment up while testing
+  pulumi-destroy:
+    if: ${{ needs.deploy-rasa-private-helm-chart.result == 'success' }}
+    name: Destroy pulumi resources
+    needs: [ rasa-private-dev-train-the-model, deploy-rasa-private-helm-chart ]
     runs-on: ubuntu-24.04
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Destroy Pulumi resources
+        uses: ./.github/actions/destroy-pulumi-resources
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_SESSION_TOKEN }}
+          pulumi-access-token: ${{ secrets.HELM_DEPLOY_PULUMI_ACCESS_TOKEN }}
+          stack-name: ${{ github.event.inputs.image_tag }}
