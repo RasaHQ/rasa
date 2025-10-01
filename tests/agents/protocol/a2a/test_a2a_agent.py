@@ -1,5 +1,5 @@
 import asyncio
-from typing import List
+from typing import Any, AsyncGenerator, Callable, List
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -42,6 +42,37 @@ from rasa.shared.exceptions import (
     AgentInitializationException,
     InvalidParameterException,
 )
+
+
+class StreamTracker:
+    """Tracks async generator behavior for testing aclosing() fix."""
+
+    def __init__(self) -> None:
+        self.events_yielded = 0
+        self.was_closed_properly = False
+
+    def create_stream(
+        self, event_to_yield: Any, max_yields: int = 3
+    ) -> Callable[[], AsyncGenerator[Any, None]]:
+        """Create an async generator that tracks behavior."""
+
+        async def stream():
+            try:
+                for _ in range(max_yields):
+                    self.events_yielded += 1
+                    yield event_to_yield
+            except GeneratorExit:
+                # This indicates the generator was properly closed by aclosing()
+                self.was_closed_properly = True
+                raise
+
+        return stream
+
+
+@pytest.fixture
+def stream_tracker() -> StreamTracker:
+    """Fixture for tracking async generator behavior."""
+    return StreamTracker()
 
 
 @pytest.fixture(autouse=True)
@@ -1149,6 +1180,102 @@ async def test_health_check_no_events_raises_agent_init_error():
     with pytest.raises(AgentInitializationException) as exc:
         await agent._perform_health_check()
     assert "no events received" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_health_check_properly_closes_async_generator(
+    stream_tracker: StreamTracker,
+) -> None:
+    """Test that health check properly closes async generator."""
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    agent.agent_card = MagicMock()
+
+    response_message = Message(
+        role=Role.user,
+        parts=[Part(root=TextPart(text="ok"))],
+        message_id="m1",
+        context_id=None,
+        task_id=None,
+    )
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream_tracker.create_stream(
+        response_message
+    )()
+    agent._client = mock_client
+
+    # This should succeed and properly close the generator
+    await agent._perform_health_check()
+
+    # Verify the generator was properly closed by aclosing()
+    assert (
+        stream_tracker.was_closed_properly
+    ), "Generator should be properly closed by aclosing()"
+    assert (
+        stream_tracker.events_yielded == 1
+    ), "Only the first event should be yielded before generator is closed"
+    mock_client.send_message.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_run_method_properly_closes_async_generator(
+    stream_tracker: StreamTracker,
+) -> None:
+    """Test run method properly closes async generator."""
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    agent.agent_card = MagicMock()
+
+    # Create a task that will be returned immediately
+    task = Task(
+        context_id="ctx",
+        id="t1",
+        status=TaskStatus(state=TaskState.completed),
+        artifacts=[Artifact(artifact_id="artifact-1", parts=[])],
+    )
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream_tracker.create_stream((task, None))()
+    agent._client = mock_client
+
+    # This should succeed and properly close the generator
+    output = await agent.run(
+        AgentInput(
+            id="abc",
+            metadata={},
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+        )
+    )
+
+    # Verify the generator was properly closed by aclosing()
+    assert (
+        stream_tracker.was_closed_properly
+    ), "Generator should be properly closed by aclosing()"
+    assert (
+        stream_tracker.events_yielded == 1
+    ), "Only the first event should be yielded before generator is closed"
+    assert output.status == AgentStatus.COMPLETED
+    mock_client.send_message.assert_called_once()
 
 
 class TestA2AAgentAuthIntegration:

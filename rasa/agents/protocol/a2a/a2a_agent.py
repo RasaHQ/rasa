@@ -3,6 +3,7 @@ import json
 import os
 import time
 import uuid
+from contextlib import aclosing
 from typing import Any, ClassVar, Dict, List, Optional
 from urllib.parse import urlparse
 
@@ -168,8 +169,7 @@ class A2AAgent(AgentProtocol):
                 error=str(exception),
             )
             raise AgentInitializationException(
-                f"Failed to initialize A2A client for agent "
-                f"'{self._name}': {exception}"
+                f"Failed to initialize A2A client for agent '{self._name}': {exception}"
             ) from exception
 
         await self._perform_health_check()
@@ -215,21 +215,26 @@ class A2AAgent(AgentProtocol):
         task_id: Optional[str] = None
         events_received = 0
         try:
-            async for event in self._client.send_message(message):
-                events_received += 1
-                agent_output = self._handle_send_message_response(agent_input, event)
-                if agent_output is not None:
-                    return agent_output
-                else:
-                    # Not a terminal response, save taskID (in case that's the only
-                    # event, and we need to pool) and continue waiting for next events
-                    if (
-                        isinstance(event, tuple)
-                        and len(event) == 2
-                        and isinstance(event[0], Task)
-                    ):
-                        task_id = event[0].id
-                    continue
+            # Use aclosing to ensure proper cleanup of the async generator
+            stream = self._client.send_message(message)
+            async with aclosing(stream) as stream:  # type: ignore[type-var]
+                async for event in stream:
+                    events_received += 1
+                    agent_output = self._handle_send_message_response(
+                        agent_input, event
+                    )
+                    if agent_output is not None:
+                        return agent_output
+                    else:
+                        # Not a terminal response, save taskID (in case that's the only
+                        # event, and we need to pool) and continue waiting for events
+                        if (
+                            isinstance(event, tuple)
+                            and len(event) == 2
+                            and isinstance(event[0], Task)
+                        ):
+                            task_id = event[0].id
+                        continue
         except A2AClientJSONRPCError as e:
             return self._handle_json_rpc_error_response(agent_input, e.error)
         except A2AClientError as exception:
@@ -833,37 +838,40 @@ class A2AAgent(AgentProtocol):
                 parts=[Part(root=TextPart(text="hello"))],
                 message_id=str(uuid.uuid4()),
             )
-            async for event in self._client.send_message(test_message):
-                if (
-                    isinstance(event, Message)
-                    or isinstance(event, tuple)
-                    and len(event) == 2
-                    and isinstance(event[0], Task)
-                ):
-                    # We got a valid response, health check succeeded
-                    return
+            # Use aclosing to ensure proper cleanup of the async generator
+            stream = self._client.send_message(test_message)
+            async with aclosing(stream) as stream:  # type: ignore[type-var]
+                async for event in stream:
+                    if (
+                        isinstance(event, Message)
+                        or isinstance(event, tuple)
+                        and len(event) == 2
+                        and isinstance(event[0], Task)
+                    ):
+                        # We got a valid response, health check succeeded
+                        return
 
-                event_info = "Unexpected response type during health check"
+                    event_info = "Unexpected response type during health check"
+                    structlogger.error(
+                        "a2a_agent.health_check.unexpected_response",
+                        event_info=event_info,
+                        agent_name=self._name,
+                        response=event,
+                        url=str(self.agent_card.url),
+                    )
+                    raise AgentInitializationException(f"{event_info}: {event}")
+                # If the loop completes with no return, no events were received
+                event_info = (
+                    f"Health check failed for A2A agent '{self._name}' "
+                    f"at {self.agent_card.url}: no events received"
+                )
                 structlogger.error(
-                    "a2a_agent.health_check.unexpected_response",
+                    "a2a_agent.health_check.no_events",
                     event_info=event_info,
                     agent_name=self._name,
-                    response=event,
                     url=str(self.agent_card.url),
                 )
-                raise AgentInitializationException(f"{event_info}: {event}")
-            # If the loop completes with no return, no events were received
-            event_info = (
-                f"Health check failed for A2A agent '{self._name}' "
-                f"at {self.agent_card.url}: no events received"
-            )
-            structlogger.error(
-                "a2a_agent.health_check.no_events",
-                event_info=event_info,
-                agent_name=self._name,
-                url=str(self.agent_card.url),
-            )
-            raise AgentInitializationException(event_info)
+                raise AgentInitializationException(event_info)
         except Exception as exception:
             event_info = (
                 f"Health check failed for A2A agent '{self._name}' at "
