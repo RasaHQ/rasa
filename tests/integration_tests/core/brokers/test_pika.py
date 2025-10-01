@@ -142,8 +142,15 @@ async def test_pika_event_broker_connect_with_path_and_query_params_in_url(
         "RABBITMQ_DEFAULT_VHOST": vhost,
     }
 
+    docker_image = None
+    try:
+        docker_image = docker_client.images.get("rabbitmq:3-management")
+    except docker.errors.ImageNotFound:
+        print("Error: Docker image 'rabbitmq:3-management' not found.")
+        return
+
     rabbitmq_container = docker_client.containers.run(
-        image="rabbitmq:3-management",
+        image=docker_image,
         detach=True,
         environment=environment,
         name=f"rabbitmq_{randomname.generate(5)}",
