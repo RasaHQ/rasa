@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional
 import structlog
 
 from rasa import telemetry
+from rasa.core.constants import DEFAULT_SUB_AGENTS
 from rasa.exceptions import ValidationError
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.common import display_research_study_prompt
@@ -194,8 +195,12 @@ def validate_files(
             valid_translations = True
         valid_CALM_slot_mappings = validator.validate_CALM_slot_mappings()
 
-        # Validate sub-agents if specified
-        valid_sub_agents = _validate_sub_agents(sub_agents) if sub_agents else True
+        # Validate sub-agents
+        sub_agents_path = sub_agents or DEFAULT_SUB_AGENTS
+        valid_sub_agents = _validate_sub_agents(sub_agents_path)
+
+        if valid_sub_agents:
+            valid_sub_agents = validator.validate_agent_flow_conflicts(sub_agents_path)
 
         all_good = (
             valid_domain

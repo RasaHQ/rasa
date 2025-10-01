@@ -6,8 +6,9 @@ import os
 import pathlib
 import sys
 import tempfile
+import textwrap
 from pathlib import Path
-from typing import Any, Callable, Dict, Text
+from typing import Any, Callable, Dict, Generator, Text
 from unittest.mock import AsyncMock
 
 import pytest
@@ -24,6 +25,7 @@ from rasa.cli.validation.config_path_validation import (
     validate_assistant_id_in_config,
     validate_config_path,
 )
+from rasa.core.config.configuration import Configuration
 from rasa.exceptions import ModelNotFound, ValidationError
 from rasa.shared.constants import (
     ASSISTANT_ID_DEFAULT_VALUE,
@@ -40,9 +42,19 @@ from rasa.shared.constants import (
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.yaml import read_yaml_file, write_yaml
 from rasa.utils.common import TempDirectoryPath, get_temp_dir_name
+from rasa.validator import Validator
 from tests.cli.conftest import RASA_EXE
 from tests.conftest import filter_expected_warnings
 from tests.utilities import filter_logs
+
+
+@pytest.fixture(autouse=True)
+def reset_configuration_singleton() -> Generator[None, None, None]:
+    """Reset the Configuration singleton before each test."""
+    yield
+    from rasa.core.config.configuration import Configuration
+
+    Configuration._instance = None
 
 
 @contextlib.contextmanager
@@ -766,3 +778,128 @@ def test_is_skip_validation_flag_set(argv, expected):
     result = rasa.cli.utils.is_skip_validation_flag_set()
 
     assert result == expected
+
+
+def test_validator_detects_agent_flow_conflicts() -> None:
+    """Test that validator detects agent-flow conflicts correctly.
+
+    This test verifies that the agent-flow conflict validation is integrated
+    into the validate_files pipeline by testing the validator directly.
+    """
+
+    # Use existing test data
+    importer = TrainingDataImporter.load_from_config(
+        "data/test_domains/default.yml",
+        "data/test_config/config_defaults.yml",
+        ["data/test_calm_slot_mappings/data"],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        agent_folder = Path(temp_dir) / "sub_agents"
+        agent_folder.mkdir()
+
+        conflicting_agent_dir = agent_folder / "order_pizza"  # conflicts with flow
+        conflicting_agent_dir.mkdir()
+
+        agent_config_content = textwrap.dedent("""
+            agent:
+              name: order_pizza
+              protocol: A2A
+              description: "Test order pizza agent"
+            configuration:
+              agent_card: "Test agent card"
+        """).strip()
+        agent_config_file = conflicting_agent_dir / "config.yml"
+        agent_config_file.write_text(agent_config_content)
+
+        agent_card_file = conflicting_agent_dir / "Test agent card"
+        agent_card_file.write_text("Agent card content")
+
+        updated_config = agent_config_content.replace(
+            'agent_card: "Test agent card"',
+            f'agent_card: "{agent_card_file.absolute()}"',
+        )
+        agent_config_file.write_text(updated_config)
+
+        # Initialize Configuration with sub-agents before validation
+        Configuration.initialise_sub_agents(str(agent_folder))
+
+        result = validator.validate_agent_flow_conflicts(str(agent_folder))
+
+        assert result is False
+
+
+def test_validator_passes_without_conflicts() -> None:
+    """Test that validator passes when there are no agent-flow conflicts.
+
+    Uses existing test data to ensure both agents and flows are present
+    in the validation process.
+    """
+    importer = TrainingDataImporter.load_from_config(
+        "data/test_domains/default.yml",
+        "data/test_config/config_defaults.yml",
+        ["data/test_calm_slot_mappings/data"],  # Contains flows with "order_pizza"
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        agent_folder = Path(temp_dir) / "sub_agents"
+        agent_folder.mkdir()
+
+        agent_dir = agent_folder / "support_agent"
+        agent_dir.mkdir()
+
+        agent_config_content = textwrap.dedent("""
+            agent:
+              name: support_agent
+              protocol: A2A
+              description: "Test support agent"
+            configuration:
+              agent_card: "Test agent card"
+        """).strip()
+        agent_config_file = agent_dir / "config.yml"
+        agent_config_file.write_text(agent_config_content)
+
+        agent_card_file = agent_dir / "Test agent card"
+        agent_card_file.write_text("Agent card content")
+
+        updated_config = agent_config_content.replace(
+            'agent_card: "Test agent card"',
+            f'agent_card: "{agent_card_file.absolute()}"',
+        )
+        agent_config_file.write_text(updated_config)
+
+        # Initialize Configuration with sub-agents before validation
+        Configuration.initialise_sub_agents(str(agent_folder))
+
+        result = validator.validate_agent_flow_conflicts(str(agent_folder))
+
+        assert result is True
+
+
+def test_validator_handles_empty_agent_folder() -> None:
+    """Test that validator handles empty agent folder correctly.
+
+    Uses existing test data to ensure flows are present while testing
+    with an empty agent folder.
+    """
+    importer = TrainingDataImporter.load_from_config(
+        "data/test_domains/default.yml",
+        "data/test_config/config_defaults.yml",
+        ["data/test_calm_slot_mappings/data"],
+    )
+
+    validator = Validator.from_importer(importer)
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        agent_folder = Path(temp_dir) / "sub_agents"
+        agent_folder.mkdir()
+
+        Configuration.initialise_sub_agents(str(agent_folder))
+
+        result = validator.validate_agent_flow_conflicts(str(agent_folder))
+
+        assert result is True

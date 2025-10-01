@@ -329,11 +329,25 @@ def sample_agent_configs() -> Dict[str, AgentConfig]:
                 name="agent_2", protocol=ProtocolConfig.A2A, description="Test agent 2"
             )
         ),
-        "duplicate_agent": AgentConfig(
+        "Agent_1": AgentConfig(
             agent=AgentInfo(
-                name="duplicate_agent",
+                name="Agent_1",
                 protocol=ProtocolConfig.RASA,
-                description="Test agent",
+                description="Test Agent 1 (case-sensitive)",
+            )
+        ),
+        "conflicting_a": AgentConfig(
+            agent=AgentInfo(
+                name="conflicting_a",
+                protocol=ProtocolConfig.RASA,
+                description="Test conflicting agent A",
+            )
+        ),
+        "conflicting_b": AgentConfig(
+            agent=AgentInfo(
+                name="conflicting_b",
+                protocol=ProtocolConfig.RASA,
+                description="Test conflicting agent B",
             )
         ),
     }
@@ -396,10 +410,10 @@ def test_agent_names_unique_validation(
     "agent_names,flow_names,expected_conflicts",
     [
         # Single conflict
-        (["conflicting_agent"], ["conflicting_agent"], ["conflicting_agent"]),
+        (["agent_1"], ["agent_1"], ["agent_1"]),
         # Multiple conflicts
         (
-            ["conflicting_a", "conflicting_b", "valid_agent"],
+            ["conflicting_a", "conflicting_b", "agent_1"],
             ["conflicting_a", "conflicting_b", "other_flow"],
             ["conflicting_a", "conflicting_b"],
         ),
@@ -407,6 +421,18 @@ def test_agent_names_unique_validation(
         (["agent_1", "agent_2"], ["flow_1", "flow_2"], []),
         # Empty flow names
         (["agent_1"], [], []),
+        # No agents
+        (
+            [],
+            ["customer_service"],
+            [],
+        ),
+        # Case-sensitive conflicts
+        (
+            ["agent_1", "Agent_1"],
+            ["Agent_1"],
+            ["Agent_1"],
+        ),
     ],
 )
 def test_agent_names_flow_conflict_validation(
@@ -419,11 +445,7 @@ def test_agent_names_flow_conflict_validation(
     # Create agents dictionary with the specified names
     agents = {}
     for name in agent_names:
-        agents[name] = AgentConfig(
-            agent=AgentInfo(
-                name=name, protocol=ProtocolConfig.RASA, description=f"Test {name}"
-            )
-        )
+        agents[name] = sample_agent_configs[name]
 
     if expected_conflicts:
         # Should raise AgentNameFlowConflictException

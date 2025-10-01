@@ -12,7 +12,9 @@ import rasa.core.training.story_conflict
 import rasa.shared.nlu.constants
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
+from rasa.agents.validation import validate_agent_names_not_conflicting_with_flows
 from rasa.core.channels import UserMessage
+from rasa.core.config.configuration import Configuration
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
 from rasa.engine.language import Language
 from rasa.exceptions import ValidationError
@@ -1287,6 +1289,41 @@ class Validator:
         structlogger.info("validation.flows.ended")
 
         return all_good
+
+    def validate_agent_flow_conflicts(self, sub_agents_path: str) -> bool:
+        """Validates that agent names don't conflict with flow names.
+
+        Args:
+            sub_agents_path: Path to the sub-agents directory.
+
+        Returns:
+            True if validation passes, False otherwise.
+        """
+        if self.flows.is_empty():
+            return True
+
+        try:
+            configuration = Configuration.get_instance()
+            available_agents = configuration.available_agents
+            flow_names = {flow.id for flow in self.flows.underlying_flows}
+
+            structlogger.debug(
+                "validator.agent_flow_conflicts.debug",
+                event_info="Checking conflicts between agents and flows",
+            )
+
+            validate_agent_names_not_conflicting_with_flows(
+                available_agents.agents, flow_names
+            )
+            return True
+        except Exception as e:
+            structlogger.error(
+                "validator.agent_flow_conflicts",
+                sub_agents_path=sub_agents_path,
+                error=str(e),
+                event_info=f"Agent-flow name conflict validation failed: {e}",
+            )
+            return False
 
     def _get_response_translation_warnings(self) -> list:
         """Collect warnings for responses missing translations.
