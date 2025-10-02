@@ -52,12 +52,6 @@ jobs:
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
-      - name: Start Rasa actions server
-        run: |
-          echo "Starting Rasa actions server in background..."
-          rasa run actions --debug > actions.log 2>&1 &
-        working-directory: ${{ env.WORKING_DIRECTORY }}
-
       - name: Run regular E2E tests
         run: |
           echo "Running regular E2E tests..."
