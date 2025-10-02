@@ -1176,6 +1176,7 @@ async def copilot(request: Request) -> None:
                     if (req.last_message and req.last_message.role == ROLE_USER)
                     else None
                 ),
+                tracker_event_attachments=generation_context.tracker_event_attachments,
                 **copilot_client.usage_statistics.model_dump(),
             )
         )

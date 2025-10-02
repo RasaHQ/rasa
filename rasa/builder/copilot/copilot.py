@@ -22,10 +22,12 @@ from rasa.builder.copilot.constants import (
 )
 from rasa.builder.copilot.exceptions import CopilotStreamError
 from rasa.builder.copilot.models import (
+    ChatMessage,
     CopilotChatMessage,
     CopilotContext,
     CopilotGenerationContext,
     CopilotSystemMessage,
+    EventContent,
     FileContent,
     InternalCopilotRequestChatMessage,
     ResponseCategory,
@@ -144,12 +146,16 @@ class Copilot:
         """
         relevant_documents = await self.search_rasa_documentation(context)
         messages = await self._build_messages(context, relevant_documents)
+        tracker_event_attachments = self._extract_tracker_event_attachments(
+            context.copilot_chat_history[-1]
+        )
 
         support_evidence = CopilotGenerationContext(
             relevant_documents=relevant_documents,
             system_message=messages[0],
             chat_history=messages[1:-1],
             last_user_message=messages[-1],
+            tracker_event_attachments=tracker_event_attachments,
         )
 
         return (
@@ -272,8 +278,11 @@ class Copilot:
             ValueError: If the message type is not supported.
         """
         if isinstance(latest_message, UserChatMessage):
+            tracker_event_attachments = latest_message.get_content_blocks_by_type(
+                EventContent
+            )
             rendered_prompt = self._render_last_user_message_context_prompt(
-                context, relevant_documents
+                context, relevant_documents, tracker_event_attachments
             )
             return latest_message.build_openai_message(prompt=rendered_prompt)
 
@@ -299,6 +308,7 @@ class Copilot:
         self,
         context: CopilotContext,
         relevant_documents: List[Document],
+        tracker_event_attachments: List[EventContent],
     ) -> str:
         # Format relevant documentation
         documents = [doc.model_dump() for doc in relevant_documents]
@@ -306,6 +316,8 @@ class Copilot:
         conversation = self._format_conversation_history(context.tracker_context)
         # Format current state
         current_state = self._format_current_state(context.tracker_context)
+        # Format tracker events
+        attachments = self._format_tracker_event_attachments(tracker_event_attachments)
 
         rendered_prompt = self._last_user_message_context_prompt_template.render(
             current_conversation=conversation,
@@ -313,6 +325,7 @@ class Copilot:
             assistant_logs=context.assistant_logs,
             assistant_files=context.assistant_files,
             documentation_results=documents,
+            attachments=attachments,
         )
         return rendered_prompt
 
@@ -390,6 +403,8 @@ class Copilot:
     @staticmethod
     def _format_documents(results: List[Document]) -> Optional[str]:
         """Format documentation search results as JSON dump to be used in the prompt."""
+        # We want the special message that indicates no relevant documentation source
+        # found if there are no results.
         if not results:
             return None
 
@@ -524,3 +539,24 @@ class Copilot:
             return f"Logs: {log_content}"
         else:
             return ""
+
+    @staticmethod
+    def _format_tracker_event_attachments(events: List[EventContent]) -> Optional[str]:
+        """Format tracker events as JSON dump to be used in the prompt."""
+        # We don't want to display the attachment sectin in the last user message
+        # context prompt if there are no attachments.
+        if not events:
+            return None
+        # If there are attachments, return the formatted JSON dump.
+        return json.dumps(
+            [event_content.model_dump() for event_content in events],
+            ensure_ascii=False,
+            indent=2,
+        )
+
+    @staticmethod
+    def _extract_tracker_event_attachments(message: ChatMessage) -> List[EventContent]:
+        """Extract the tracker event attachments from the message."""
+        if not isinstance(message, UserChatMessage):
+            return []
+        return message.get_content_blocks_by_type(EventContent)

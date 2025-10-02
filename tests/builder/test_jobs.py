@@ -405,6 +405,7 @@ class TestRunCopilotTrainingErrorAnalysisJob:
             system_message={"role": "system", "content": "Test system message"},
             chat_history=[],
             last_user_message={"role": "user", "content": "Test user message"},
+            tracker_event_attachments=[],
         )
 
         async def mock_response_stream():

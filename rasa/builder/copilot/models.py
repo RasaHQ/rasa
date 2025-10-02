@@ -110,7 +110,7 @@ class LogContent(BaseContent):
     )
 
 
-class EventContent(BaseModel):
+class EventContent(BaseContent):
     type: Literal["event"]
     event: str = Field(..., description="The event's type_name")
 
@@ -171,6 +171,38 @@ class BaseCopilotChatMessage(BaseModel, ABC):
         return None if v is None else v.value
 
 
+class BaseContentBlockCopilotChatMessage(BaseCopilotChatMessage, ABC):
+    """Base class for messages that contain ContentBlock lists."""
+
+    content: List[ContentBlock]
+
+    def get_flattened_text_content(self) -> str:
+        """Get the text content from the message."""
+        return "\n".join(
+            content_block.text
+            for content_block in self.content
+            if isinstance(content_block, TextContent)
+        )
+
+    def get_flattened_log_content(self) -> str:
+        """Get the log content from the message."""
+        return "\n".join(
+            content_block.content
+            for content_block in self.content
+            if isinstance(content_block, LogContent)
+        )
+
+    def get_content_blocks_by_type(
+        self, content_type: Type[TContentBlock]
+    ) -> List[TContentBlock]:
+        """Get the content blocks from the message by type."""
+        return [
+            content_block
+            for content_block in self.content
+            if isinstance(content_block, content_type)
+        ]
+
+
 class CopilotSystemMessage(BaseCopilotChatMessage):
     role: Literal["system"] = Field(
         default=ROLE_SYSTEM,
@@ -183,13 +215,12 @@ class CopilotSystemMessage(BaseCopilotChatMessage):
         return {"role": ROLE_SYSTEM, "content": prompt}
 
 
-class UserChatMessage(BaseCopilotChatMessage):
+class UserChatMessage(BaseContentBlockCopilotChatMessage):
     role: Literal["user"] = Field(
         default=ROLE_USER,
         pattern=f"^{ROLE_USER}",
         description="The user who sent the message.",
     )
-    content: List[ContentBlock]
 
     @classmethod
     @field_validator("content")
@@ -234,14 +265,6 @@ class UserChatMessage(BaseCopilotChatMessage):
 
         return self
 
-    def get_flattened_text_content(self) -> str:
-        """Get the text content from the message."""
-        return "\n".join(
-            content_block.text
-            for content_block in self.content
-            if isinstance(content_block, TextContent)
-        )
-
     def build_openai_message(  # type: ignore[no-untyped-def]
         self, prompt: Optional[str] = None, *args, **kwargs
     ) -> Dict[str, Any]:
@@ -260,17 +283,8 @@ class UserChatMessage(BaseCopilotChatMessage):
             return {"role": ROLE_USER, "content": self.get_flattened_text_content()}
 
 
-class CopilotChatMessage(BaseCopilotChatMessage):
+class CopilotChatMessage(BaseContentBlockCopilotChatMessage):
     role: Literal["copilot"]
-    content: List[ContentBlock]
-
-    def get_flattened_text_content(self) -> str:
-        """Get the text content from the message."""
-        return "\n".join(
-            content_block.text
-            for content_block in self.content
-            if isinstance(content_block, TextContent)
-        )
 
     def build_openai_message(self, *args, **kwargs) -> Dict[str, Any]:  # type: ignore[no-untyped-def]
         # For now the Copilot responds only with the text content and all the content
@@ -278,9 +292,8 @@ class CopilotChatMessage(BaseCopilotChatMessage):
         return {"role": ROLE_ASSISTANT, "content": self.get_flattened_text_content()}
 
 
-class InternalCopilotRequestChatMessage(BaseCopilotChatMessage):
+class InternalCopilotRequestChatMessage(BaseContentBlockCopilotChatMessage):
     role: Literal["internal_copilot_request"]
-    content: List[ContentBlock]
 
     @model_validator(mode="after")
     def validate_response_category(self) -> "InternalCopilotRequestChatMessage":
@@ -310,32 +323,6 @@ class InternalCopilotRequestChatMessage(BaseCopilotChatMessage):
             raise ValueError(message)
 
         return self
-
-    def get_flattened_text_content(self) -> str:
-        """Get the text content from the message."""
-        return "\n".join(
-            content_block.text
-            for content_block in self.content
-            if isinstance(content_block, TextContent)
-        )
-
-    def get_flattened_log_content(self) -> str:
-        """Get the text content from the message."""
-        return "\n".join(
-            content_block.content
-            for content_block in self.content
-            if isinstance(content_block, LogContent)
-        )
-
-    def get_content_blocks_by_type(
-        self, content_type: Type[TContentBlock]
-    ) -> List[TContentBlock]:
-        """Get the content blocks from the message by type."""
-        return [
-            content_block
-            for content_block in self.content
-            if isinstance(content_block, content_type)
-        ]
 
     def build_openai_message(self, prompt: str, *args, **kwargs) -> Dict[str, Any]:  # type: ignore[no-untyped-def]
         """Build OpenAI message with pre-rendered prompt.
@@ -688,6 +675,13 @@ class CopilotGenerationContext(BaseModel):
     )
     last_user_message: Optional[Dict[str, Any]] = Field(
         None, description="The last user message with context that was processed."
+    )
+    tracker_event_attachments: List[EventContent] = Field(
+        ...,
+        description=(
+            "The tracker event attachments passed with the user message used as "
+            "an additional context."
+        ),
     )
 
     class Config:

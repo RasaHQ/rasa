@@ -8,7 +8,7 @@ import pytest
 from pydantic import BaseModel
 
 from rasa.builder.config import OPENAI_MODEL
-from rasa.builder.copilot.models import ResponseCategory
+from rasa.builder.copilot.models import EventContent, ResponseCategory
 from rasa.builder.copilot.telemetry import (
     COPILOT_BOT_MESSAGE_EVENT,
     COPILOT_USER_MESSAGE_EVENT,
@@ -130,6 +130,22 @@ def test_log_copilot_from_handler_combines_everything(
 
     docs = [MagicMock(url="https://example.org/doc")]
 
+    # Create sample tracker event attachments
+    tracker_event_attachments = [
+        EventContent(
+            type="event",
+            event="user",
+            text="Hello, I need help with my bot",
+            timestamp="2024-01-01T10:00:00Z",
+        ),
+        EventContent(
+            type="event",
+            event="action",
+            action_name="utter_greet",
+            timestamp="2024-01-01T10:00:01Z",
+        ),
+    ]
+
     telemetry.log_copilot_from_handler(
         handler=handler,
         used_documents=docs,
@@ -141,6 +157,7 @@ def test_log_copilot_from_handler_combines_everything(
         system_message=system_message,
         chat_history=chat_history,
         last_user_message=last_user_message,
+        tracker_event_attachments=tracker_event_attachments,
     )
 
     # Third recorded call: index 2
@@ -156,3 +173,14 @@ def test_log_copilot_from_handler_combines_everything(
     # assert event.properties["system_message"] == system_message
     assert event.properties["chat_history"] == chat_history
     assert event.properties["last_user_message"] == last_user_message
+    # Verify tracker event attachments are included
+    assert "tracker_event_attachments" in event.properties
+    assert len(event.properties["tracker_event_attachments"]) == 2
+    # Check that the attachments are properly serialized
+    attachments = event.properties["tracker_event_attachments"]
+    assert attachments[0]["event"] == "user"
+    assert attachments[0]["event_data"]["text"] == "Hello, I need help with my bot"
+    assert attachments[0]["event_data"]["timestamp"] == "2024-01-01T10:00:00Z"
+    assert attachments[1]["event"] == "action"
+    assert attachments[1]["event_data"]["action_name"] == "utter_greet"
+    assert attachments[1]["event_data"]["timestamp"] == "2024-01-01T10:00:01Z"

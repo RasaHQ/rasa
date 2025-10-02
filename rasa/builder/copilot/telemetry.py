@@ -8,6 +8,7 @@ import structlog
 from rasa import telemetry
 from rasa.builder.copilot.constants import COPILOT_SEGMENT_WRITE_KEY_ENV_VAR
 from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
+from rasa.builder.copilot.models import EventContent
 from rasa.builder.document_retrieval.models import Document
 from rasa.telemetry import (
     SEGMENT_TRACK_ENDPOINT,
@@ -100,6 +101,7 @@ class CopilotTelemetry:
         system_message: Optional[dict[str, Any]] = None,
         chat_history: Optional[list[dict[str, Any]]] = None,
         last_user_message: Optional[str] = None,
+        tracker_event_attachments: Optional[list[dict[str, Any]]] = None,
     ) -> None:
         """Track a copilot message in the conversation.
 
@@ -115,6 +117,7 @@ class CopilotTelemetry:
             system_message: The system message used (optional).
             chat_history: The chat history messages used (optional).
             last_user_message: The last user message used (optional).
+            tracker_event_attachments: The tracker event attachments used (optional).
         """
         structlogger.debug("builder.telemetry.log_copilot_turn", text=text)
 
@@ -136,6 +139,7 @@ class CopilotTelemetry:
             "total_tokens": total_tokens,
             "chat_history": chat_history,
             "last_user_message": last_user_message,
+            "tracker_event_attachments": tracker_event_attachments,
             "timestamp": dt.datetime.utcnow().isoformat(),
         }
 
@@ -194,6 +198,7 @@ class CopilotTelemetry:
         system_message: dict[str, Any],
         chat_history: list[dict[str, Any]],
         last_user_message: Optional[str],
+        tracker_event_attachments: list[EventContent],
     ) -> None:
         """Log a copilot message from the response handler.
 
@@ -223,4 +228,7 @@ class CopilotTelemetry:
             system_message=system_message,
             chat_history=chat_history,
             last_user_message=last_user_message,
+            tracker_event_attachments=[
+                attachment.model_dump() for attachment in tracker_event_attachments
+            ],
         )

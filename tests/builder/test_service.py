@@ -78,6 +78,7 @@ def patch_copilot_dependencies(monkeypatch):
                     system_message={"role": "system", "content": "test system message"},
                     chat_history=[{"role": "user", "content": "test history"}],
                     last_user_message={"role": "user", "content": "test user message"},
+                    tracker_event_attachments=[],
                 ),
             )
         ),
