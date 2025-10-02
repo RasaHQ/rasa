@@ -350,9 +350,9 @@ def _validate_mandatory_fields(data: Dict[str, Any], agent_name: str) -> None:
             ),
         )
 
-    # Check for required fields
+    # Check for required fields (protocol is optional due to default in model)
     missing_fields = []
-    for field in ["name", "protocol", "description"]:
+    for field in ["name", "description"]:
         if field not in agent_data or not agent_data[field]:
             missing_fields.append(field)
 

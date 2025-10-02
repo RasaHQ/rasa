@@ -63,6 +63,17 @@ def create_mock_endpoints(
             """),
         ),
         (
+            "valid_mcp_agent_no_protocol",
+            dedent("""
+                agent:
+                  name: "valid_mcp_agent_no_protocol"
+                  description: "A valid MCP agent without explicit protocol"
+                connections:
+                  mcp_servers:
+                    - name: "test_mcp_server"
+            """),
+        ),
+        (
             "valid_a2a_agent",
             dedent("""
                 agent:

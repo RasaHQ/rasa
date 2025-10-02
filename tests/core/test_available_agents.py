@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import ValidationError as PydanticValidationError
@@ -22,6 +22,7 @@ from rasa.core.available_agents import (
     AvailableAgents,
     ProtocolConfig,
 )
+from rasa.core.config.available_endpoints import MCPServerConfig
 from rasa.exceptions import ValidationError
 
 
@@ -213,6 +214,36 @@ def test_agent_info_fields_are_mandatory_with_default_protocol() -> None:
         **{"name": "test_agent", "description": "example description"}
     )
     assert agent_info.protocol == ProtocolConfig.RASA
+
+
+def test_validate_agent_config_without_protocol_passes() -> None:
+    """Config without explicit protocol should default to RASA and validate."""
+    agent_config = AgentConfig(
+        agent=AgentInfo(
+            name="test_agent_no_protocol",
+            description="Agent without explicit protocol",
+        ),
+        connections=AgentConnections(
+            mcp_servers=[AgentMCPServerConfig(name="test_mcp_server")]
+        ),
+    )
+    # Should not raise
+    with (
+        patch(
+            "rasa.core.config.configuration.Configuration.get_instance"
+        ) as mock_config,
+    ):
+        mock_mcp_server = MCPServerConfig(
+            name="test_mcp_server", url="http://localhost:8000", type="http"
+        )
+        mock_config.return_value.available_agents.agents = {}
+        mock_config.return_value.endpoints.mcp_servers = [mock_mcp_server]
+
+        validate_agent_config(agent_config)
+    # And should resolve to the default protocol
+    assert isinstance(agent_config.agent.protocol, ProtocolConfig)
+    assert agent_config.agent.protocol == ProtocolConfig.RASA
+    assert agent_config.agent.protocol.value == "RASA"
 
 
 @pytest.mark.parametrize(
