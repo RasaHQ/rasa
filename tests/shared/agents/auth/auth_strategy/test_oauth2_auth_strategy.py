@@ -27,6 +27,7 @@ class TestOAuth2AuthStrategy:
                 "client_id": "test_client_id",
                 "client_secret": "test_client_secret",
                 "scope": "read write",
+                "audience": "test_audience",
             }
         }
 
@@ -47,12 +48,14 @@ class TestOAuth2AuthStrategy:
             client_id="test_client_id",
             client_secret="test_client_secret",
             scope="read write",
+            audience="test_audience",
         )
 
         assert strategy.token_url == "https://auth.example.com/oauth/token"
         assert strategy.client_id == "test_client_id"
         assert strategy.client_secret == "test_client_secret"
         assert strategy.scope == "read write"
+        assert strategy.audience == "test_audience"
         assert strategy.timeout == 5
         assert strategy._grant_type == "client_credentials"
         assert strategy._access_token is None
@@ -65,6 +68,7 @@ class TestOAuth2AuthStrategy:
             client_id="test_client_id",
             client_secret="test_client_secret",
             scope="read write",
+            audience="test_audience",
             timeout=10,
         )
 
@@ -72,6 +76,7 @@ class TestOAuth2AuthStrategy:
         assert strategy.client_id == "test_client_id"
         assert strategy.client_secret == "test_client_secret"
         assert strategy.scope == "read write"
+        assert strategy.audience == "test_audience"
         assert strategy.timeout == 10
         assert strategy._grant_type == "client_credentials"
         assert strategy._access_token is None
@@ -87,7 +92,6 @@ class TestOAuth2AuthStrategy:
             ("token_url", "Token URL is required for OAuth2 authentication"),
             ("client_id", "Client ID is required for OAuth2 authentication"),
             ("client_secret", "Client secret is required for OAuth2 authentication"),
-            ("scope", "Scope is required for OAuth2 authentication"),
         ],
     )
     def test_from_config_missing_required_fields(self, missing_field, expected_error):
@@ -109,7 +113,6 @@ class TestOAuth2AuthStrategy:
             ("token_url", "Token URL is required for OAuth2 authentication"),
             ("client_id", "Client ID is required for OAuth2 authentication"),
             ("client_secret", "Client secret is required for OAuth2 authentication"),
-            ("scope", "Scope is required for OAuth2 authentication"),
         ],
     )
     def test_from_config_with_empty_token_url(self, missing_field, expected_error):
@@ -132,12 +135,14 @@ class TestOAuth2AuthStrategy:
         monkeypatch.setenv("OAUTH_CLIENT_ID", "env_client_id")
         monkeypatch.setenv("OAUTH_CLIENT_SECRET", "env_client_secret")
         monkeypatch.setenv("OAUTH_SCOPE", "env_scope")
+        monkeypatch.setenv("OAUTH_AUDIENCE", "env_audience")
 
         config = {
             "token_url": "${OAUTH_TOKEN_URL}",
             "client_id": "${OAUTH_CLIENT_ID}",
             "client_secret": "${OAUTH_CLIENT_SECRET}",
             "scope": "${OAUTH_SCOPE}",
+            "audience": "${OAUTH_AUDIENCE}",
         }
 
         strategy = OAuth2AuthStrategy.from_config(config)
@@ -148,6 +153,7 @@ class TestOAuth2AuthStrategy:
         assert strategy.client_id == "${OAUTH_CLIENT_ID}"
         assert strategy.client_secret == "${OAUTH_CLIENT_SECRET}"
         assert strategy.scope == "${OAUTH_SCOPE}"
+        assert strategy.audience == "${OAUTH_AUDIENCE}"
 
     def test_token_expiration_logic(self, oauth2_strategy: OAuth2AuthStrategy):
         """Test token expiration logic."""
@@ -258,6 +264,7 @@ class TestOAuth2AuthStrategy:
         monkeypatch.setenv("TEST_CLIENT_ID", "env_client_id")
         monkeypatch.setenv("TEST_CLIENT_SECRET", "env_client_secret")
         monkeypatch.setenv("TEST_SCOPE", "env_scope")
+        monkeypatch.setenv("TEST_AUDIENCE", "env_audience")
 
         # Create strategy with environment variables in config
         strategy = OAuth2AuthStrategy(
@@ -265,6 +272,7 @@ class TestOAuth2AuthStrategy:
             client_id="${TEST_CLIENT_ID}",
             client_secret="${TEST_CLIENT_SECRET}",
             scope="${TEST_SCOPE}",
+            audience="${TEST_AUDIENCE}",
         )
 
         # Set a valid token (simulating successful token refresh)
@@ -355,6 +363,7 @@ class TestOAuth2AuthStrategy:
         monkeypatch.setenv("TEST_CLIENT_ID", "resolved_client_id")
         monkeypatch.setenv("TEST_CLIENT_SECRET", "resolved_client_secret")
         monkeypatch.setenv("TEST_SCOPE", "resolved_scope")
+        monkeypatch.setenv("TEST_AUDIENCE", "resolved_audience")
 
         # Create strategy with environment variables in config
         strategy = OAuth2AuthStrategy(
@@ -362,6 +371,7 @@ class TestOAuth2AuthStrategy:
             client_id="${TEST_CLIENT_ID}",
             client_secret="${TEST_CLIENT_SECRET}",
             scope="${TEST_SCOPE}",
+            audience="${TEST_AUDIENCE}",
         )
 
         # Mock httpx response
@@ -387,6 +397,7 @@ class TestOAuth2AuthStrategy:
             assert resolved_data["client_id"] == "resolved_client_id"
             assert resolved_data["client_secret"] == "resolved_client_secret"
             assert resolved_data["scope"] == "resolved_scope"
+            assert resolved_data["audience"] == "resolved_audience"
             assert resolved_data["grant_type"] == "client_credentials"
 
     @pytest.mark.asyncio
@@ -397,6 +408,7 @@ class TestOAuth2AuthStrategy:
         # Set environment variables
         monkeypatch.setenv("TEST_CLIENT_ID", "resolved_client_id")
         monkeypatch.setenv("TEST_SCOPE", "resolved_scope")
+        monkeypatch.setenv("TEST_AUDIENCE", "resolved_audience")
 
         # Create strategy with mixed environment variables and static values
         strategy = OAuth2AuthStrategy(
@@ -404,6 +416,7 @@ class TestOAuth2AuthStrategy:
             client_id="${TEST_CLIENT_ID}",
             client_secret="static_secret",  # No environment variable
             scope="${TEST_SCOPE}",
+            audience="${TEST_AUDIENCE}",
         )
 
         # Mock httpx response
@@ -427,6 +440,7 @@ class TestOAuth2AuthStrategy:
             assert resolved_data["client_id"] == "resolved_client_id"
             assert resolved_data["client_secret"] == "static_secret"
             assert resolved_data["scope"] == "resolved_scope"
+            assert resolved_data["audience"] == "resolved_audience"
             assert resolved_data["grant_type"] == "client_credentials"
 
     @pytest.mark.asyncio
@@ -501,6 +515,7 @@ class TestOAuth2AuthStrategy:
             client_id="test_client_id",
             client_secret="test_client_secret",
             scope="read write",
+            audience="test_audience",
         )
 
         # Verify lock is initialized

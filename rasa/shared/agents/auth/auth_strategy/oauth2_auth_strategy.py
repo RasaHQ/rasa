@@ -8,6 +8,7 @@ import httpx
 
 from rasa.shared.agents.auth.auth_strategy import AgentAuthStrategy
 from rasa.shared.agents.auth.constants import (
+    CONFIG_AUDIENCE_KEY,
     CONFIG_CLIENT_ID_KEY,
     CONFIG_CLIENT_SECRET_KEY,
     CONFIG_OAUTH_KEY,
@@ -35,12 +36,14 @@ class OAuth2AuthStrategy(AgentAuthStrategy):
         token_url: str,
         client_id: str,
         client_secret: str,
-        scope: str,
+        audience: Optional[str] = None,
+        scope: Optional[str] = None,
         timeout: Optional[int] = None,
     ):
         self.token_url = token_url
         self.client_id = client_id
         self.client_secret = client_secret
+        self.audience = audience
         self.scope = scope
         self.timeout = timeout or self.DEFAULT_ACCESS_TOKEN_TIMEOUT
 
@@ -65,6 +68,7 @@ class OAuth2AuthStrategy(AgentAuthStrategy):
         token_url = oauth_config.get(CONFIG_TOKEN_URL_KEY)
         client_id = oauth_config.get(CONFIG_CLIENT_ID_KEY)
         client_secret = oauth_config.get(CONFIG_CLIENT_SECRET_KEY)
+        audience = oauth_config.get(CONFIG_AUDIENCE_KEY)
         scope = oauth_config.get(CONFIG_SCOPE_KEY)
         timeout = (
             oauth_config.get(CONFIG_TIMEOUT_KEY) or cls.DEFAULT_ACCESS_TOKEN_TIMEOUT
@@ -76,13 +80,12 @@ class OAuth2AuthStrategy(AgentAuthStrategy):
             raise ValueError("Client ID is required for OAuth2 authentication")
         if not client_secret:
             raise ValueError("Client secret is required for OAuth2 authentication")
-        if not scope:
-            raise ValueError("Scope is required for OAuth2 authentication")
 
         return cls(
             token_url=token_url,
             client_id=client_id,
             client_secret=client_secret,
+            audience=audience,
             scope=scope,
             timeout=timeout,
         )
@@ -118,8 +121,11 @@ class OAuth2AuthStrategy(AgentAuthStrategy):
             "grant_type": self._grant_type,
             "client_id": self.client_id,
             "client_secret": self.client_secret,
-            "scope": self.scope,
         }
+        if self.scope:
+            data["scope"] = self.scope
+        if self.audience:
+            data["audience"] = self.audience
 
         # Resolve environment variables in data.
         resolved_data = resolve_environment_variables(data)
