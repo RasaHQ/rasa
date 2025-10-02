@@ -1358,6 +1358,20 @@ def clear_read_yaml_file_cache() -> None:
     read_yaml_file.cache_clear()
 
 
+@pytest.fixture(autouse=True)
+def clear_direct_custom_action_executor_cache() -> None:
+    """Clear the DirectCustomActionExecutor cache before each test.
+
+    Prevents cross-test contamination from cached actions.
+    """
+    from rasa.core.actions.direct_custom_actions_executor import (
+        DirectCustomActionExecutor,
+    )
+
+    DirectCustomActionExecutor._actions_module_registered = False
+    DirectCustomActionExecutor._create_action_executor.cache_clear()
+
+
 @pytest.fixture
 def fake_llm_client() -> LLMClient:
     class FakeLLMClient(_BaseLiteLLMClient):

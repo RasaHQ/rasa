@@ -305,14 +305,17 @@ class TestRunReplaceAllFilesJob:
         ],
     )
     @patch("rasa.builder.jobs.update_agent")
-    @patch("rasa.builder.jobs.train_and_load_agent")
-    @patch("rasa.builder.jobs.validate_project")
-    @patch("rasa.builder.jobs.push_error_and_start_copilot_analysis")
+    @patch("rasa.builder.jobs.train_and_load_agent", new_callable=AsyncMock)
+    @patch("rasa.builder.jobs.validate_project", new_callable=AsyncMock)
+    @patch(
+        "rasa.builder.jobs.push_error_and_start_copilot_analysis",
+        new_callable=AsyncMock,
+    )
     async def test_run_update_files_job_creates_copilot_analysis_job(
         self,
-        mock_push_error_and_start_copilot: MagicMock,
-        mock_validate: MagicMock,
-        mock_train: MagicMock,
+        mock_push_error_and_start_copilot: AsyncMock,
+        mock_validate: AsyncMock,
+        mock_train: AsyncMock,
         mock_update_agent: MagicMock,
         mock_app: MagicMock,
         mock_job: JobInfo,
@@ -334,7 +337,6 @@ class TestRunReplaceAllFilesJob:
         await run_replace_all_files_job(mock_app, mock_job, sample_bot_files)
 
         # Then
-
         if should_create_copilot_job:
             mock_push_error_and_start_copilot.assert_called_once()
             call_args = mock_push_error_and_start_copilot.call_args
@@ -363,10 +365,10 @@ class TestRunCopilotTrainingErrorAnalysisJob:
     @pytest.mark.asyncio
     @patch("rasa.builder.jobs.llm_service.instantiate_handler")
     @patch("rasa.builder.jobs.llm_service.instantiate_copilot")
-    @patch("rasa.builder.jobs.push_job_status_event")
+    @patch("rasa.builder.jobs.push_job_status_event", new_callable=AsyncMock)
     async def test_run_copilot_training_error_analysis_job_success(
         self,
-        mock_push_event: MagicMock,
+        mock_push_event: AsyncMock,
         mock_instantiate_copilot: MagicMock,
         mock_instantiate_handler: MagicMock,
         mock_app: MagicMock,
@@ -483,10 +485,10 @@ class TestRunCopilotTrainingErrorAnalysisJob:
 
     @pytest.mark.asyncio
     @patch("rasa.builder.jobs.llm_service.instantiate_copilot")
-    @patch("rasa.builder.jobs.push_job_status_event")
+    @patch("rasa.builder.jobs.push_job_status_event", new_callable=AsyncMock)
     async def test_run_copilot_training_error_analysis_job_error(
         self,
-        mock_push_event: MagicMock,
+        mock_push_event: AsyncMock,
         mock_instantiate_copilot: MagicMock,
         mock_app: MagicMock,
         mock_job: JobInfo,

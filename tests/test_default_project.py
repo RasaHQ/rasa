@@ -1,5 +1,6 @@
 import copy
 import re
+import warnings
 from typing import Any, Dict, Text
 
 import pytest
@@ -45,8 +46,13 @@ def test_default_project_has_no_warnings(
         MessageProcessingConfigPath.default_file_path(),
     )
 
+    # Clear any existing warnings before starting the test
+    warnings.resetwarnings()
+
     # Record warnings, but do not raise exception if no warnings are recorded.
-    with pytest.warns(None) as warning_recorder:
+    # Use a more specific warning filter to avoid catching warnings from other tests
+    with warnings.catch_warnings(record=True) as warning_recorder:
+        warnings.simplefilter("always")
         arg_namespace = parser.parse_args(["data", "validate"])
         validate_files(
             arg_namespace.fail_on_warnings,
@@ -55,13 +61,16 @@ def test_default_project_has_no_warnings(
         )
         rasa.cli.train.run_training(parser.parse_args(["train"]))
 
-    # pytest.warns would override any warning filters that we could set
-    assert not [
+    # Filter out expected warnings and check for unexpected ones
+    unexpected_warnings = [
         warning.message
-        for warning in warning_recorder.list
+        for warning in warning_recorder
         if not any(
             type(warning.message) == warning_type
             and re.search(warning_message, str(warning.message))
             for warning_type, warning_message in EXPECTED_WARNINGS
         )
     ]
+
+    # Only fail if there are unexpected warnings
+    assert not unexpected_warnings
