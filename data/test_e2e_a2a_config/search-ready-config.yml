@@ -4,6 +4,7 @@ pipeline:
 - name: SearchReadyLLMCommandGenerator
   llm:
     model_group: llm-model
+  prompt_template: /home/runner/work/rasa-private/rasa-private/data/test_e2e_a2a_config/custom-prompt-template.jinja2
 
 policies:
 - name: FlowPolicy
