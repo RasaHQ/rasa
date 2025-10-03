@@ -292,7 +292,7 @@ def test_validate_prompt_template_success() -> None:
               protocol: "RASA"
               description: "An MCP agent with valid prompt template"
             configuration:
-              prompt_template: "{file_path}"
+              prompt_template: '{file_path}'
             connections:
               mcp_servers:
                 - name: "test_mcp_server"

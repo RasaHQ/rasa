@@ -439,6 +439,9 @@ def test_extract_archive_fallback_on_exception(mock_tar_open: Mock):
 
 
 @patch("tarsafe.TarSafe.open")
+@pytest.mark.skipif(
+    sys.platform.startswith("win"), reason="Test only applies to non-Windows platforms"
+)
 def test_extract_archive_no_filter(mock_tar_open: Mock):
     """Test that no special handling occurs on non-Windows platforms"""
     # Given

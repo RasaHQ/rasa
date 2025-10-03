@@ -29,6 +29,7 @@ async def test_loader_loads_graph_runner(
     tmp_path_factory: TempPathFactory,
     domain_path: Path,
     additional_languages: List[Text],
+    default_configuration,
 ):
     graph_trainer = GraphTrainer(
         model_storage=default_model_storage,
