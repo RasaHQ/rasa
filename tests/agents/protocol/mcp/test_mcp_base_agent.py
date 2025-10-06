@@ -136,6 +136,42 @@ class TestMCPBaseAgent:
         assert len(agent._server_configs) == 1
         assert agent._server_configs[0].name == "test_server"
 
+    def test_from_config_timeout_warning(
+        self, monkeypatch: MonkeyPatch, capsys
+    ) -> None:
+        """Test that from_config warns when configuration.timeout is set."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
+
+        # Create agent config with timeout
+        agent_config = AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="Test agent",
+                protocol=ProtocolConfig.RASA,
+            ),
+            configuration=AgentConfiguration(
+                llm={"provider": "openai", "model": "gpt-4"},
+                timeout=30,
+            ),
+            connections=AgentConnections(),
+        )
+
+        # Create agent
+        agent = TestMCPBaseAgentImpl.from_config(agent_config)
+
+        # Capture output
+        captured = capsys.readouterr()
+
+        # Verify warning was logged
+        assert "mcp_agent.configuration.timeout.not_implemented" in captured.out
+        assert "configuration.timeout is not implemented for MCP agents" in captured.out
+        assert "MCP agents do not establish external connections" in captured.out
+        assert "configure 'timeout' in the model_group" in captured.out
+        assert "configuration.llm.model_group" in captured.out
+
+        # Verify agent was still created successfully
+        assert agent._name == "test_agent"
+
     # ============================================================================
     # Class Configuration & Properties Tests
     # ============================================================================

@@ -71,7 +71,7 @@ structlogger = structlog.get_logger()
 
 
 class MCPBaseAgent(AgentProtocol):
-    """MCP protocol implementation"""
+    """MCP protocol implementation."""
 
     MAX_ITERATIONS = 10
 
@@ -135,6 +135,20 @@ class MCPBaseAgent(AgentProtocol):
     @classmethod
     def from_config(cls, config: AgentConfig) -> "MCPBaseAgent":
         """Initialize the MCP Open Agent with the given configuration."""
+        # Warn if configuration.timeout is set for MCP agents
+        if config.configuration and config.configuration.timeout is not None:
+            structlogger.warning(
+                "mcp_agent.configuration.timeout.not_implemented",
+                event_info="configuration.timeout is not implemented for MCP agents. "
+                "MCP agents do not establish external connections, "
+                "so agent-level timeout is not used. "
+                "To set timeout for LLM requests, "
+                "configure 'timeout' in the model_group "
+                "in endpoints.yml and reference it via configuration.llm.model_group.",
+                agent_name=config.agent.name,
+                timeout_value=config.configuration.timeout,
+            )
+
         return cls(
             name=config.agent.name,
             description=config.agent.description,
