@@ -35,11 +35,13 @@ def deserialized_endpoint_config() -> Dict[str, Any]:
                 "api_key": "secret_api_key",
             },
         ],
-        "model_groups": {
-            "id": "default",
-            "models": [{"provider": "openai"}],
-            "router": {"routing_strategy": "round_robin"},
-        },
+        "model_groups": [
+            {
+                "id": "default",
+                "models": [{"provider": "openai"}],
+                "router": {"routing_strategy": "simple-shuffle"},
+            }
+        ],
         "privacy": {
             "enabled": True,
             "anonymization": {
