@@ -4,6 +4,12 @@ import structlog
 from sanic import Sanic
 
 from rasa.builder import config
+from rasa.builder.copilot.constants import (
+    PROMPT_TO_BOT_KEY,
+)
+from rasa.builder.copilot.copilot_templated_message_provider import (
+    load_copilot_welcome_messages,
+)
 from rasa.builder.copilot.models import (
     CopilotContext,
     FileContent,
@@ -80,11 +86,20 @@ async def run_prompt_to_bot_job(
         update_agent(agent, app)
         await push_job_status_event(job, JobStatus.train_success)
 
+        # 3. Create copilot welcome message job
+        copilot_welcome_job = job_manager.create_job()
+        app.add_task(run_copilot_welcome_message_job(app, copilot_welcome_job))
+
         structlogger.info(
             "bot_builder_service.prompt_to_bot.success",
             files_generated=list(bot_files.keys()),
+            copilot_welcome_job_id=copilot_welcome_job.id,
         )
-        await push_job_status_event(job, JobStatus.done)
+        await push_job_status_event(
+            job=job,
+            status=JobStatus.done,
+            payload={"copilot_welcome_job_id": copilot_welcome_job.id},
+        )
         job_manager.mark_done(job)
 
     except TrainingError as exc:
@@ -165,12 +180,23 @@ async def run_template_to_bot_job(
         update_agent(agent, app)
         await push_job_status_event(job, JobStatus.train_success)
 
-        # 3) Done
+        # 3) Create copilot welcome message job
+        copilot_welcome_job = job_manager.create_job()
+        app.add_task(
+            run_copilot_welcome_message_job(app, copilot_welcome_job, template_name)
+        )
+
+        # 4) Done - include welcome job ID in payload
         structlogger.info(
             "bot_builder_service.template_to_bot.success",
             files_generated=list(bot_files.keys()),
+            copilot_welcome_job_id=copilot_welcome_job.id,
         )
-        await push_job_status_event(job, JobStatus.done)
+        await push_job_status_event(
+            job=job,
+            status=JobStatus.done,
+            payload={"copilot_welcome_job_id": copilot_welcome_job.id},
+        )
         job_manager.mark_done(job)
 
     except TrainingError as exc:
@@ -449,4 +475,64 @@ async def run_copilot_training_error_analysis_job(
         await push_job_status_event(
             job, JobStatus.copilot_analysis_error, message=str(exc)
         )
+        job_manager.mark_done(job, error=str(exc))
+
+
+async def run_copilot_welcome_message_job(
+    app: "Sanic",
+    job: JobInfo,
+    template_name: Optional[ProjectTemplateName] = None,
+) -> None:
+    """Run the welcome message job in the background.
+
+    This job sends a welcome message to the user after successful bot creation.
+    For template-based bots, it sends a predefined message.
+    For prompt-based bots, it can be extended to stream generated messages.
+
+    Args:
+        app: The Sanic application instance.
+        job: The job information instance.
+        template_name: The template name for template-based bots, None for prompt-based.
+    """
+    try:
+        # Load welcome messages from YAML
+        welcome_messages = load_copilot_welcome_messages()
+
+        # Get the appropriate welcome message
+        if template_name:
+            welcome_message = welcome_messages.get(
+                template_name.value,
+                welcome_messages.get(PROMPT_TO_BOT_KEY),
+            )
+        else:
+            welcome_message = welcome_messages.get(PROMPT_TO_BOT_KEY)
+
+        # Send the welcome message as a single event
+        await push_job_status_event(
+            job,
+            JobStatus.copilot_welcome_message,
+            payload={
+                "content": welcome_message,
+                "response_category": "copilot",
+                "completeness": "complete",
+            },
+        )
+
+        # Mark job as done
+        await push_job_status_event(job, JobStatus.done)
+        job_manager.mark_done(job)
+
+        structlogger.info(
+            "copilot_welcome_message_job.success",
+            job_id=job.id,
+            template=template_name.value if template_name else PROMPT_TO_BOT_KEY,
+        )
+
+    except Exception as exc:
+        structlogger.exception(
+            "welcome_message_job.error",
+            job_id=job.id,
+            error=str(exc),
+        )
+        await push_job_status_event(job, JobStatus.error, message=str(exc))
         job_manager.mark_done(job, error=str(exc))

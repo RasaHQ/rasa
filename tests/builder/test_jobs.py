@@ -15,14 +15,21 @@ from rasa.builder.copilot.models import (
     ResponseCompleteness,
 )
 from rasa.builder.document_retrieval.models import Document
-from rasa.builder.exceptions import TrainingError, ValidationError
+from rasa.builder.exceptions import (
+    TrainingError,
+    ValidationError,
+)
 from rasa.builder.job_manager import JobInfo, job_manager
 from rasa.builder.jobs import (
     run_copilot_training_error_analysis_job,
+    run_copilot_welcome_message_job,
+    run_prompt_to_bot_job,
     run_replace_all_files_job,
+    run_template_to_bot_job,
 )
 from rasa.builder.models import JobStatus
 from rasa.builder.project_generator import ProjectGenerator
+from rasa.cli.scaffold import ProjectTemplateName
 
 
 @pytest.fixture
@@ -512,3 +519,160 @@ class TestRunCopilotTrainingErrorAnalysisJob:
             if call[0][1] == JobStatus.copilot_analysis_error
         ]
         assert len(error_calls) == 1
+
+
+class TestCopilotWelcomeMessage:
+    @pytest.fixture(autouse=True)
+    def setup_mocks(self, monkeypatch):
+        # Create mocks for welcome message job
+        self.mock_push_event = AsyncMock()
+        self.mock_job_manager = MagicMock()
+
+        # Create welcome job mock
+        welcome_job = MagicMock()
+        welcome_job.id = "welcome_job_123"
+        self.mock_job_manager.create_job.return_value = welcome_job
+
+        # Create training mocks
+        self.mock_train = AsyncMock(return_value=MagicMock())
+        self.mock_load = AsyncMock(return_value=None)
+        self.mock_update = MagicMock()
+
+        # Apply all mocks
+        monkeypatch.setattr(
+            "rasa.builder.jobs.push_job_status_event", self.mock_push_event
+        )
+        monkeypatch.setattr("rasa.builder.jobs.job_manager", self.mock_job_manager)
+        monkeypatch.setattr("rasa.builder.jobs.train_and_load_agent", self.mock_train)
+        monkeypatch.setattr("rasa.builder.jobs.try_load_existing_agent", self.mock_load)
+        monkeypatch.setattr("rasa.builder.jobs.update_agent", self.mock_update)
+
+    @pytest.fixture
+    def mock_template_app(self, mock_app):
+        mock_app.ctx.project_generator.get_training_input.return_value = Mock()
+        mock_app.ctx.project_generator.project_folder = "/tmp/test_project"
+        mock_app.add_task = MagicMock()
+
+        mock_app.ctx.project_generator.init_from_template = AsyncMock()
+        mock_app.ctx.project_generator.get_bot_files.return_value = {
+            "config.yml": "test"
+        }
+        return mock_app
+
+    @pytest.fixture
+    def mock_prompt_app(self, mock_app):
+        mock_app.ctx.project_generator.get_training_input.return_value = Mock()
+        mock_app.ctx.project_generator.project_folder = "/tmp/test_project"
+        mock_app.add_task = MagicMock()
+
+        mock_app.ctx.project_generator.generate_project_with_retries = AsyncMock(
+            return_value={"config.yml": "test"}
+        )
+        return mock_app
+
+    @staticmethod
+    def _verify_welcome_message_call(mock_push_event, expected_content_snippets):
+        welcome_calls = [
+            call
+            for call in mock_push_event.call_args_list
+            if call[0][1] == JobStatus.copilot_welcome_message
+        ]
+        assert len(welcome_calls) == 1
+
+        welcome_payload = welcome_calls[0][1]["payload"]
+        assert "content" in welcome_payload
+        assert "response_category" in welcome_payload
+        assert "completeness" in welcome_payload
+        assert welcome_payload["response_category"] == "copilot"
+        assert welcome_payload["completeness"] == "complete"
+        for snippet in expected_content_snippets:
+            assert snippet in welcome_payload["content"]
+
+    @staticmethod
+    def _verify_done_event_sent(mock_push_event):
+        done_calls = [
+            call
+            for call in mock_push_event.call_args_list
+            if call[0][1] == JobStatus.done
+        ]
+        assert len(done_calls) == 1
+
+    @pytest.mark.parametrize(
+        "template_name,expected_snippets",
+        [
+            (
+                ProjectTemplateName.FINANCE,
+                ["Banking Agent template", "What's my current balance?"],
+            ),
+            (
+                ProjectTemplateName.TELCO,
+                ["Telecom Support Agent template", "Why is my internet slow?"],
+            ),
+            (
+                ProjectTemplateName.BASIC,
+                ["Starter Agent template", "What can you do?"],
+            ),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_template_welcome_message(
+        self, mock_app, mock_job, template_name, expected_snippets
+    ):
+        await run_copilot_welcome_message_job(mock_app, mock_job, template_name)
+        self._verify_welcome_message_call(self.mock_push_event, expected_snippets)
+        self._verify_done_event_sent(self.mock_push_event)
+
+    @pytest.mark.asyncio
+    async def test_prompt_to_bot_welcome_message(self, mock_app, mock_job):
+        await run_copilot_welcome_message_job(mock_app, mock_job)
+        self._verify_welcome_message_call(
+            self.mock_push_event, ["custom agent has been created"]
+        )
+
+    @pytest.mark.asyncio
+    async def test_template_job_creates_welcome_job(self, mock_template_app):
+        job = job_manager.create_job()
+        await run_template_to_bot_job(
+            mock_template_app, job, ProjectTemplateName.FINANCE
+        )
+
+        self.mock_job_manager.create_job.assert_called_once()
+        assert mock_template_app.add_task.called
+
+    @pytest.mark.asyncio
+    async def test_prompt_job_creates_welcome_job(self, mock_prompt_app):
+        job = job_manager.create_job()
+        await run_prompt_to_bot_job(
+            mock_prompt_app, job, "Build me a banking assistant"
+        )
+
+        self.mock_job_manager.create_job.assert_called_once()
+        assert mock_prompt_app.add_task.called
+
+    @pytest.mark.asyncio
+    async def test_training_error_prevents_welcome_job(self, mock_template_app):
+        job = job_manager.create_job()
+        self.mock_train.side_effect = TrainingError("Training failed")
+        await run_template_to_bot_job(
+            mock_template_app, job, ProjectTemplateName.FINANCE
+        )
+
+        self.mock_job_manager.create_job.assert_not_called()
+        mock_template_app.add_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_done_event_includes_welcome_job_id(self, mock_template_app):
+        job = MagicMock(spec=JobInfo)
+        job.put = AsyncMock()
+
+        await run_template_to_bot_job(mock_template_app, job, ProjectTemplateName.BASIC)
+
+        done_calls = [
+            call
+            for call in self.mock_push_event.call_args_list
+            if call[1].get("status") == JobStatus.done
+        ]
+        assert len(done_calls) == 1
+        assert (
+            done_calls[0][1]["payload"]["copilot_welcome_job_id"] == "welcome_job_123"
+        )

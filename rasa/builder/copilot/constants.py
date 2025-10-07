@@ -14,6 +14,7 @@ COPILOT_TRAINING_ERROR_HANDLER_PROMPT_FILE = (
 COPILOT_MESSAGE_TEMPLATES_DIR = "builder.copilot.templated_messages"
 RASA_INTERNAL_MESSAGES_TEMPLATES_FILE = "copilot_internal_messages_templates.yml"
 COPILOT_HANDLER_RESPONSES_FILE = "copilot_templated_responses.yml"
+COPILOT_WELCOME_MESSAGES_FILE = "copilot_welcome_messages.yml"
 
 # OpenAI roles copilot utilizes - Use literal types to avoid type errors with OpenAI
 ROLE_USER: Literal["user"] = "user"
@@ -32,3 +33,6 @@ COPILOT_SEGMENT_WRITE_KEY_ENV_VAR = "COPILOT_SEGMENT_WRITE_KEY"
 
 # Copilot signing
 SIGNATURE_VERSION_V1 = "v1"
+
+# Welcome message key for prompt-to-bot (not a template enum)
+PROMPT_TO_BOT_KEY = "prompt_to_bot"

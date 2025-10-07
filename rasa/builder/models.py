@@ -202,6 +202,8 @@ class JobStatus(str, Enum):
     copilot_analysis_success = "copilot_analysis_success"
     copilot_analysis_error = "copilot_analysis_error"
 
+    copilot_welcome_message = "copilot_welcome_message"
+
 
 class JobCreateResponse(BaseModel):
     job_id: str = Field(...)

@@ -1,0 +1,56 @@
+welcome_messages:
+  copilot_intro: |
+    👋 Welcome to Hello Rasa!
+
+    I'm your **Copilot** — here to help you explore Rasa and start customizing your agent.
+    You can ask me how your agent works, how to add new skills, or how to connect integrations.
+
+  finance: |
+    👋 Welcome to Hello Rasa!
+
+    I'm your **Copilot** — here to help you explore Rasa and start customizing your agent.
+    You can ask me how your agent works, how to add new skills, or how to connect integrations.
+
+    Your **Banking Agent template** is now live.
+
+    ### ▶️ **First step: try it out**
+    Ask your agent (in the chat preview on the right):
+    - *What's my current balance?*
+    - *Send 100 dollars to James.*
+
+  telco: |
+    👋 Welcome to Hello Rasa!
+
+    I'm your **Copilot** — here to help you explore Rasa and start customizing your agent.
+    You can ask me how your agent works, how to add new skills, or how to connect integrations.
+
+    Your **Telecom Support Agent template** is now live.
+
+    ### ▶️ **First step: try it out**
+    Ask your agent (in the chat preview on the right):
+    - *Why is my internet slow?*
+    - *How do i reboot my router?*
+
+  basic: |
+    👋 Welcome to Hello Rasa!
+
+    I'm your **Copilot** — here to help you explore Rasa and start customizing your agent.
+    You can ask me how your agent works, how to add new skills, or how to connect integrations.
+
+    Your **Starter Agent template** is now live.
+
+    ### ▶️ **First step: try it out**
+    Ask your agent (in the chat preview on the right):
+    - *What can you do?*
+    - *Can I talk to a human?*
+
+  prompt_to_bot: |
+    👋 Welcome to Hello Rasa!
+
+    I'm your **Copilot** — here to help you explore Rasa and start customizing your agent.
+    You can ask me how your agent works, how to add new skills, or how to connect integrations.
+
+    Your custom agent has been created and trained successfully.
+
+    ### ▶️ **First step: try it out**
+    Test your agent in the chat preview on the right to see how it responds to your users.

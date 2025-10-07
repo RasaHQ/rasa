@@ -7,6 +7,7 @@ import yaml  # type: ignore
 from rasa.builder.copilot.constants import (
     COPILOT_HANDLER_RESPONSES_FILE,
     COPILOT_MESSAGE_TEMPLATES_DIR,
+    COPILOT_WELCOME_MESSAGES_FILE,
     RASA_INTERNAL_MESSAGES_TEMPLATES_FILE,
 )
 from rasa.shared.constants import PACKAGE_NAME
@@ -53,6 +54,28 @@ def load_copilot_handler_default_responses() -> Dict[str, str]:
     except Exception as e:
         structlogger.error(
             "copilot_response_handler.failed_to_load_responses",
+            error=e,
+        )
+        return dict()
+
+
+def load_copilot_welcome_messages() -> Dict[str, str]:
+    """Load welcome message templates from the YAML configuration file.
+
+    Returns:
+        Dictionary mapping template names to welcome message text.
+    """
+    try:
+        config = yaml.safe_load(
+            importlib.resources.read_text(
+                f"{PACKAGE_NAME}.{COPILOT_MESSAGE_TEMPLATES_DIR}",
+                COPILOT_WELCOME_MESSAGES_FILE,
+            )
+        )
+        return config.get("welcome_messages", {})
+    except Exception as e:
+        structlogger.error(
+            "copilot_templated_message_provider.failed_to_load_welcome_messages",
             error=e,
         )
         return dict()
