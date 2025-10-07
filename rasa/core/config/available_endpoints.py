@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from rasa.core.constants import MCP_SERVERS_KEY
+from rasa.shared.agents.auth.utils import validate_secrets_in_params
 from rasa.shared.core.constants import (
     GLOBAL_SILENCE_TIMEOUT_DEFAULT_VALUE,
     GLOBAL_SILENCE_TIMEOUT_KEY,
@@ -77,6 +78,11 @@ class MCPServerConfig(BaseModel):
         # validate that name and url are not empty
         if not self.name or not self.url:
             raise ValueError("Name and URL cannot be empty")
+        # validate secrets in additional_params
+        if self.additional_params:
+            validate_secrets_in_params(
+                self.additional_params, f"MCP server - '{self.name}'"
+            )
         return self
 
     @model_validator(mode="before")

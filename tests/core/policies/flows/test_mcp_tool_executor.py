@@ -398,7 +398,7 @@ async def test_connect_to_mcp_server_success_with_auth(
             name="test_server",
             url="http://test:8080",
             type="http",
-            api_key="test_token",
+            api_key="${TEST_TOKEN}",
         )
     ]
 
@@ -420,7 +420,7 @@ async def test_connect_to_mcp_server_success_with_auth(
                     "name": "test_server",
                     "url": "http://test:8080",
                     "type": "http",
-                    "additional_params": {"api_key": "test_token"},
+                    "additional_params": {"api_key": "${TEST_TOKEN}"},
                 }
             )
 

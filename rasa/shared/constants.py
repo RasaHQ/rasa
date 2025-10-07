@@ -367,3 +367,6 @@ FAQ_DOCUMENT_LINE_SEPARATOR = "\n"
 
 # Constants for the MCP server
 KEY_TOOL_CALLS = "tool_calls"
+
+# Regex pattern for secrets data validation
+SECRET_DATA_FORMAT_PATTERN = r"\${(\w+)}"

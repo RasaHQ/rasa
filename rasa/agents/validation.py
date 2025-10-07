@@ -25,6 +25,7 @@ from rasa.core.available_agents import (
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
 from rasa.exceptions import ValidationError
+from rasa.shared.agents.auth.utils import validate_secrets_in_params
 from rasa.shared.utils.llm import get_prompt_template, validate_jinja2_template
 from rasa.shared.utils.yaml import read_config_file
 
@@ -156,6 +157,12 @@ def _validate_a2a_config(agent_config: AgentConfig) -> None:
                 event_info=f"Agent '{agent_name}' has 'agent_card' file that doesn't "
                 f"exist: {agent_card}",
             )
+
+    # Validate right use of secrets in auth configuration
+    if agent_config.configuration.auth:
+        validate_secrets_in_params(
+            agent_config.configuration.auth, f"agent '{agent_name}'"
+        )
 
 
 def _validate_prompt_template_syntax(prompt_path: str, agent_name: str) -> None:

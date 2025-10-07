@@ -518,8 +518,64 @@ def test_auth_key_in_allowed_keys() -> None:
     assert "auth" in ALLOWED_KEYS["configuration"]
 
 
-def test_validate_agent_with_auth_configuration() -> None:
+def test_validate_agent_with_valid_auth_configuration() -> None:
     """Test validation succeeds for agent configuration with auth key."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config_content = dedent("""
+            agent:
+              name: "agent_with_auth"
+              protocol: "A2A"
+              description: "An agent with auth configuration"
+            configuration:
+              agent_card: "https://example.com/agent-card.json"
+              auth:
+                token: "${TOKEN}"
+            connections:
+              mcp_servers:
+                - name: "test_mcp_server"
+        """)
+
+        mock_instance = MagicMock()
+        mock_instance.endpoints.mcp_servers = [
+            type("MCPServerConfig", (), {"name": "test_mcp_server"})()
+        ]
+        mock_instance.endpoints.model_groups = []
+
+        with patch.object(Configuration, "get_instance", return_value=mock_instance):
+            create_agent_config(temp_dir, "agent_with_auth", config_content)
+            # This should not raise any validation errors
+            validate_agent_folder(temp_dir)
+
+
+def test_validate_agent_valid_with_no_auth_configuration() -> None:
+    """Test validation succeeds for agent configuration with no auth key."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config_content = dedent("""
+            agent:
+              name: "agent_with_no_auth"
+              protocol: "A2A"
+              description: "An agent with auth configuration"
+            configuration:
+              agent_card: "https://example.com/agent-card.json"
+            connections:
+              mcp_servers:
+                - name: "test_mcp_server"
+        """)
+
+        mock_instance = MagicMock()
+        mock_instance.endpoints.mcp_servers = [
+            type("MCPServerConfig", (), {"name": "test_mcp_server"})()
+        ]
+        mock_instance.endpoints.model_groups = []
+
+        with patch.object(Configuration, "get_instance", return_value=mock_instance):
+            create_agent_config(temp_dir, "agent_with_no_auth", config_content)
+            # This should not raise any validation errors
+            validate_agent_folder(temp_dir)
+
+
+def test_validate_agent_with_invalid_auth_token_configuration() -> None:
+    """Test validation fails for agent configuration with invalid auth token."""
     with tempfile.TemporaryDirectory() as temp_dir:
         config_content = dedent("""
             agent:
@@ -543,8 +599,61 @@ def test_validate_agent_with_auth_configuration() -> None:
 
         with patch.object(Configuration, "get_instance", return_value=mock_instance):
             create_agent_config(temp_dir, "agent_with_auth", config_content)
-            # This should not raise any validation errors
-            validate_agent_folder(temp_dir)
+            with pytest.raises(ValidationError) as exc_info:
+                validate_agent_folder(temp_dir)
+
+            # Verify the specific error message
+            error_message = str(exc_info.value)
+            assert (
+                "You defined the 'token' in agent 'agent_with_auth' as a string"
+                in error_message
+            )
+            assert "The 'token' must be set as an environment variable" in error_message
+
+
+def test_validate_agent_with_invalid_oauth_configuration() -> None:
+    """Test validation fails for agent configuration with invalid auth oauth."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config_content = dedent("""
+            agent:
+              name: "agent_with_auth"
+              protocol: "A2A"
+              description: "An agent with auth configuration"
+            configuration:
+              agent_card: "https://example.com/agent-card.json"
+              auth:
+                oauth:
+                  token_url: "https://example.com/oauth/token"
+                  client_id: "test_client_id"
+                  client_secret: "test_client_secret"
+                  scope: "test_scope"
+                  audience: "test_audience"
+            connections:
+              mcp_servers:
+                - name: "test_mcp_server"
+        """)
+
+        mock_instance = MagicMock()
+        mock_instance.endpoints.mcp_servers = [
+            type("MCPServerConfig", (), {"name": "test_mcp_server"})()
+        ]
+        mock_instance.endpoints.model_groups = []
+
+        with patch.object(Configuration, "get_instance", return_value=mock_instance):
+            create_agent_config(temp_dir, "agent_with_auth", config_content)
+            with pytest.raises(ValidationError) as exc_info:
+                validate_agent_folder(temp_dir)
+
+            # Verify the specific error message
+            error_message = str(exc_info.value)
+            assert (
+                "You defined the 'client_secret' in agent 'agent_with_auth' as a string"
+                in error_message
+            )
+            assert (
+                "The 'client_secret' must be set as an environment variable"
+                in error_message
+            )
 
 
 @pytest.fixture

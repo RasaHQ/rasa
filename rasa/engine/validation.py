@@ -81,6 +81,7 @@ from rasa.shared.constants import (
     ROUTING_STRATEGIES_NOT_REQUIRING_CACHE,
     ROUTING_STRATEGIES_REQUIRING_REDIS_CACHE,
     ROUTING_STRATEGY_CONFIG_KEY,
+    SECRET_DATA_FORMAT_PATTERN,
     SENSITIVE_DATA,
     USE_CHAT_COMPLETIONS_ENDPOINT_CONFIG_KEY,
     VALID_PROVIDERS_FOR_API_TYPE_CONFIG_KEY,
@@ -1359,7 +1360,10 @@ def _validate_usage_of_environment_variables_in_model_group_config(
         for model_config in model_group[MODELS_CONFIG_KEY]:
             for key, value in model_config.items():
                 if isinstance(value, str):
-                    if re.match(r"\${(\w+)}", value) and key not in allowed_env_vars:
+                    if (
+                        re.match(SECRET_DATA_FORMAT_PATTERN, value)
+                        and key not in allowed_env_vars
+                    ):
                         raise ValidationError(
                             code="engine.validation.validate_model_group_configuration_setup"
                             ".invalid_use_of_environment_variables",
@@ -1386,7 +1390,7 @@ def _validate_sensitive_keys_are_an_environment_variables_for_model_groups(
             for key, value in model_config.items():
                 if key in SENSITIVE_DATA:
                     if isinstance(value, str):
-                        if not re.match(r"\${(\w+)}", value):
+                        if not re.match(SECRET_DATA_FORMAT_PATTERN, value):
                             raise ValidationError(
                                 code="engine.validation.validate_model_group_configuration_setup"
                                 ".sensitive_key_string_value_must_be_set_as_env_var",

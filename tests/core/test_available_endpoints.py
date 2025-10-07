@@ -9,6 +9,7 @@ from rasa.core.config.available_endpoints import (
     MCPServerConfig,
 )
 from rasa.core.config.configuration import Configuration, EndpointsConfigPath
+from rasa.exceptions import ValidationError
 from rasa.shared.core.constants import GLOBAL_SILENCE_TIMEOUT_KEY
 from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
@@ -32,7 +33,7 @@ def deserialized_endpoint_config() -> Dict[str, Any]:
                 "name": "server_3",
                 "url": "some/mcp/server_3/url",
                 "type": "https",
-                "api_key": "secret_api_key",
+                "api_key": "${SECRET_API_KEY}",
             },
         ],
         "model_groups": [
@@ -143,14 +144,14 @@ def test_available_endpoints_read_endpoints(
             name="server_3",
             url="some/mcp/server_3/url",
             type="https",
-            api_key="secret_api_key",
+            api_key="${SECRET_API_KEY}",
         ),
     ]
     assert available_endpoints.mcp_servers == expected_mcp_servers
     assert available_endpoints.mcp_servers[2].additional_params == {
-        "api_key": "secret_api_key"
+        "api_key": "${SECRET_API_KEY}"
     }
-    assert expected_mcp_servers[2].additional_params == {"api_key": "secret_api_key"}
+    assert expected_mcp_servers[2].additional_params == {"api_key": "${SECRET_API_KEY}"}
     assert (
         available_endpoints.model_groups == deserialized_endpoint_config["model_groups"]
     )
@@ -184,3 +185,118 @@ def test_interaction_handling_config_from_dict_wrong_data_type(bad_value: Any):
     }
     with pytest.raises(RasaException):
         InteractionHandlingConfig.from_dict(interaction_handling)
+
+
+def test_validate_mcp_server_with_invalid_api_key():
+    """Test validation fails for MCP server configuration with invalid api_key."""
+    with pytest.raises(ValidationError) as exc_info:
+        MCPServerConfig(
+            name="server_3",
+            url="https://example.com/mcp",
+            type="https",
+            api_key="some_key",
+        )
+
+    # Verify the specific error message
+    error_message = str(exc_info.value)
+    assert (
+        "You defined the 'api_key' in MCP server - 'server_3' as a string"
+        in error_message
+    )
+    assert "The 'api_key' must be set as an environment variable" in error_message
+
+
+def test_validate_mcp_server_with_invalid_token():
+    """Test validation fails for MCP server configuration with invalid token."""
+    with pytest.raises(ValidationError) as exc_info:
+        MCPServerConfig(
+            name="server_4",
+            url="https://example.com/mcp",
+            type="https",
+            token="some_token",
+        )
+
+    # Verify the specific error message
+    error_message = str(exc_info.value)
+    assert (
+        "You defined the 'token' in MCP server - 'server_4' as a string"
+        in error_message
+    )
+    assert "The 'token' must be set as an environment variable" in error_message
+
+
+def test_validate_mcp_server_with_invalid_oauth_client_secret():
+    """Test validation fails for MCP server configuration with invalid oauth."""
+    with pytest.raises(ValidationError) as exc_info:
+        MCPServerConfig(
+            name="server_5",
+            url="https://example.com/mcp",
+            type="https",
+            oauth={
+                "token_url": "https://example.com/oauth/token",
+                "client_id": "test_client_id",
+                "client_secret": "test_client_secret",
+                "scope": "test_scope",
+                "audience": "test_audience",
+            },
+        )
+
+    # Verify the specific error message
+    error_message = str(exc_info.value)
+    assert (
+        "You defined the 'client_secret' in MCP server - 'server_5' as a string"
+        in error_message
+    )
+    assert "The 'client_secret' must be set as an environment variable" in error_message
+
+
+def test_validate_mcp_server_with_valid_api_key():
+    """Test validation succeeds for MCP server configuration with valid api_key."""
+    server_config = MCPServerConfig(
+        name="server_6",
+        url="https://example.com/mcp",
+        type="https",
+        api_key="${SECRET_API_KEY}",
+    )
+
+    # Verify the configuration was created successfully
+    assert server_config.name == "server_6"
+    assert server_config.additional_params["api_key"] == "${SECRET_API_KEY}"
+
+
+def test_validate_mcp_server_with_valid_token():
+    """Test validation succeeds for MCP server configuration with valid token."""
+    server_config = MCPServerConfig(
+        name="server_7",
+        url="https://example.com/mcp",
+        type="https",
+        token="${SECRET_TOKEN}",
+    )
+
+    # Verify the configuration was created successfully
+    assert server_config.name == "server_7"
+    assert server_config.additional_params["token"] == "${SECRET_TOKEN}"
+
+
+def test_validate_mcp_server_with_valid_oauth_client_secret():
+    """Test validation succeeds for MCP server configuration with valid oauth."""
+    # This should not raise any validation errors when using environment variable format
+    server_config = MCPServerConfig(
+        name="server_8",
+        url="https://example.com/mcp",
+        type="https",
+        oauth={
+            "token_url": "https://example.com/oauth/token",
+            "client_id": "test_client_id",
+            "client_secret": "${SECRET_CLIENT_SECRET}",
+            "scope": "test_scope",
+            "audience": "test_audience",
+        },
+    )
+
+    # Verify the configuration was created successfully
+    assert server_config.name == "server_8"
+    assert (
+        server_config.additional_params["oauth"]["client_secret"]
+        == "${SECRET_CLIENT_SECRET}"
+    )
