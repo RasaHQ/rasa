@@ -5,6 +5,8 @@ import urllib.parse
 from collections import Counter
 from typing import Any, Dict, List, NoReturn, Set
 
+import jinja2.exceptions
+import structlog
 from pydantic import ValidationError as PydanticValidationError
 
 from rasa.agents.exceptions import (
@@ -23,7 +25,11 @@ from rasa.core.available_agents import (
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
 from rasa.exceptions import ValidationError
+from rasa.shared.utils.llm import get_prompt_template, validate_jinja2_template
 from rasa.shared.utils.yaml import read_config_file
+
+# Initialize logger
+structlogger = structlog.get_logger()
 
 # Centralized allowed keys configuration to eliminate duplication
 ALLOWED_KEYS = {
@@ -152,6 +158,35 @@ def _validate_a2a_config(agent_config: AgentConfig) -> None:
             )
 
 
+def _validate_prompt_template_syntax(prompt_path: str, agent_name: str) -> None:
+    """Validate Jinja2 syntax of a prompt template file."""
+    try:
+        # Use a simple default template, as we're assuming
+        # that the default templates are valid
+        default_template = "{{ content }}"
+        template_content = get_prompt_template(
+            prompt_path,
+            default_template,
+            log_source_component=f"agent.validation.{agent_name}",
+            log_source_method="init",
+        )
+        validate_jinja2_template(template_content)
+
+    except jinja2.exceptions.TemplateSyntaxError as e:
+        raise ValidationError(
+            code="agent.validation.prompt_template_syntax_error",
+            event_info=(
+                f"Agent '{agent_name}' has invalid Jinja2 template syntax at line "
+                f"{e.lineno}: {e.message}"
+            ),
+        ) from e
+    except Exception as e:
+        raise ValidationError(
+            code="agent.validation.optional.prompt_template_error",
+            event_info=(f"Agent '{agent_name}' has error reading prompt template: {e}"),
+        ) from e
+
+
 def _validate_optional_keys(agent_config: AgentConfig) -> None:
     """Validate optional keys in agent configuration."""
     agent_name = agent_config.agent.name
@@ -160,11 +195,22 @@ def _validate_optional_keys(agent_config: AgentConfig) -> None:
     if agent_config.configuration and agent_config.configuration.prompt_template:
         prompt_path = agent_config.configuration.prompt_template
         if not os.path.exists(prompt_path):
-            raise ValidationError(
-                code="agent.validation.optional.prompt_template_not_found",
-                event_info=f"Agent '{agent_name}' has prompt template that "
-                f"does not exist: {prompt_path}",
+            # If reading the custom prompt fails,
+            # allow fallback to default prompt template
+            structlogger.warning(
+                "agent.validation.optional.prompt_template_file_not_found",
+                agent_name=agent_name,
+                prompt_path=prompt_path,
+                event_info=(
+                    f"Prompt template file not found: {prompt_path}. "
+                    f"Agent will use default template."
+                ),
             )
+            # Don't raise ValidationError, allow fallback to default template
+            return
+
+        # Validate Jinja2 syntax
+        _validate_prompt_template_syntax(prompt_path, agent_name)
 
     # Validate module if present
     if agent_config.configuration and agent_config.configuration.module:

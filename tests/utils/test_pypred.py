@@ -17,11 +17,7 @@ def test_pypred_patched_predicate_still_works():
 def test_pypred_patch_disables_write_tables():
     """Test that the patched yacc function disables write_tables."""
     with patch("rasa.utils.pypred._original_yacc") as mock_yacc:
-        import rasa.utils.pypred
         from rasa.utils.pypred import patched_yacc
-
-        # Reset the cached parser to ensure _original_yacc is called
-        rasa.utils.pypred._cached_parser = None
 
         # Call the patched function
         patched_yacc()

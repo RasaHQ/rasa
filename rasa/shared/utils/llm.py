@@ -23,6 +23,7 @@ from typing import (
 )
 
 import structlog
+from jinja2 import Environment, select_autoescape
 from pydantic import BaseModel, Field
 
 import rasa.cli.telemetry
@@ -716,6 +717,38 @@ def embedder_client_factory(
     )
     client = client_clazz.from_config(config)
     return client
+
+
+def validate_jinja2_template(template_content: Text) -> None:
+    """Validate that a template string has valid Jinja2 syntax.
+
+    Args:
+        template_content: The template content to validate
+
+    Raises:
+        jinja2.exceptions.TemplateSyntaxError: If the template has invalid syntax
+        Exception: If there's an error during validation
+    """
+    # Create environment with custom filters
+    env = Environment(
+        autoescape=select_autoescape(
+            disabled_extensions=["jinja2"],
+            default_for_string=False,
+            default=True,
+        )
+    )
+    # Register filters - lazy import to avoid circular dependencies
+    from rasa.dialogue_understanding.generator._jinja_filters import (
+        to_json_escaped_string,
+    )
+    from rasa.dialogue_understanding.generator.constants import (
+        TO_JSON_ESCAPED_STRING_JINJA_FILTER,
+    )
+
+    env.filters[TO_JSON_ESCAPED_STRING_JINJA_FILTER] = to_json_escaped_string
+
+    # Validate Jinja2 syntax
+    env.from_string(template_content)
 
 
 def get_prompt_template(

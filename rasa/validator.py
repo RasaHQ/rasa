@@ -4,14 +4,13 @@ import string
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
+import jinja2.exceptions
 import structlog
 from jinja2 import Template
 from pypred.ast import CompareOperator, Literal, NegateOperator
 
 import rasa.core.training.story_conflict
 import rasa.shared.nlu.constants
-import rasa.shared.utils.cli
-import rasa.shared.utils.io
 from rasa.agents.validation import validate_agent_names_not_conflicting_with_flows
 from rasa.core.channels import UserMessage
 from rasa.core.config.configuration import Configuration
@@ -1976,6 +1975,95 @@ class Validator:
             all_good = False
 
         return all_good
+
+    def verify_prompt_templates(self) -> bool:
+        """Verify that all prompt templates have valid Jinja2 syntax.
+
+        Returns:
+            True if all templates are valid, False otherwise.
+        """
+        all_good = True
+
+        # Check the components in the pipeline and policies for prompt templates
+        pipeline = self.config.get(CONFIG_PIPELINE_KEY, [])
+        for component in pipeline:
+            if isinstance(component, dict):
+                component_name = component.get("name", "")
+                prompt_template = component.get("prompt_template")
+                if prompt_template:
+                    all_good = (
+                        self._validate_template_file(
+                            prompt_template, component_name, "pipeline component"
+                        )
+                        and all_good
+                    )
+
+        # Check policies for prompt templates
+        policies = self.config.get("policies") or []
+        for policy in policies:
+            if isinstance(policy, dict):
+                policy_name = policy.get("name", "")
+                prompt_template = policy.get("prompt_template")
+                if prompt_template:
+                    all_good = (
+                        self._validate_template_file(
+                            prompt_template, policy_name, "policy"
+                        )
+                        and all_good
+                    )
+
+        return all_good
+
+    def _validate_template_file(
+        self, prompt_template: str, component_name: str, component_type: str
+    ) -> bool:
+        """Validate a single prompt template file.
+
+        Args:
+            prompt_template: The template file path to validate
+            component_name: Name of the component using the template
+            component_type: Type of component (e.g., "policy", "pipeline component")
+
+        Returns:
+            True if template is valid, False otherwise.
+        """
+        try:
+            # Use a simple default template, as we're assuming
+            # that the default templates are valid
+            default_template = "{{ content }}"
+            template_content = rasa.shared.utils.llm.get_prompt_template(
+                prompt_template,
+                default_template,
+                log_source_component=f"validator.{component_name}",
+                log_source_method="init",
+            )
+
+            # Validate Jinja2 syntax using the shared validation function
+            rasa.shared.utils.llm.validate_jinja2_template(template_content)
+            return True
+        except jinja2.exceptions.TemplateSyntaxError as e:
+            structlogger.error(
+                "validator.verify_prompt_templates.syntax_error",
+                component=component_name,
+                component_type=component_type,
+                event_info=(
+                    f"Invalid Jinja2 template syntax in file {prompt_template} "
+                    f"at line {e.lineno}: {e.message}"
+                ),
+                error=str(e),
+                template_line=e.lineno,
+                template_file=prompt_template,
+            )
+            return False
+        except Exception as e:
+            structlogger.error(
+                "validator.verify_prompt_templates.error",
+                component=component_name,
+                component_type=component_type,
+                event_info=f"Error validating prompt template: {e}",
+                error=str(e),
+            )
+            return False
 
     def validate_conditional_response_variation_predicates(self) -> bool:
         """Validate the conditional response variation predicates."""

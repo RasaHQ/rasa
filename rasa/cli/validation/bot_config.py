@@ -189,6 +189,7 @@ def validate_files(
             validator, max_history, fail_on_warnings
         )
         valid_flows = validator.verify_flows()
+        valid_prompt_templates = validator.verify_prompt_templates()
         if validator.config:
             valid_translations = validator.verify_translations(summary_mode=True)
         else:
@@ -207,6 +208,7 @@ def validate_files(
             and valid_nlu
             and valid_stories
             and valid_flows
+            and valid_prompt_templates
             and valid_translations
             and valid_CALM_slot_mappings
             and valid_sub_agents

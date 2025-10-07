@@ -1,6 +1,7 @@
 import textwrap
 import warnings
 from pathlib import Path
+from textwrap import dedent
 from typing import Any, Dict, List, Text, Union
 from unittest.mock import MagicMock, patch
 
@@ -3442,3 +3443,214 @@ def test_verify_translations_with_summary_mode_warnings(
         assert len(logs) == 2
         assert "missing_response_translation_summary" in logs[0]["event"]
         assert "missing_flow_translation_summary" in logs[1]["event"]
+
+
+@pytest.fixture
+def validator() -> Validator:
+    """Create a validator instance for testing."""
+    return Validator(Domain.empty(), TrainingData(), StoryGraph([]), FlowsList([]), {})
+
+
+@pytest.fixture
+def valid_template_file(tmp_path: Path) -> Path:
+    """Create a valid template file."""
+    template_file = tmp_path / "valid_template.jinja2"
+    template_file.write_text("Valid template: {{ user_message }}")
+    return template_file
+
+
+@pytest.fixture
+def invalid_template_file(tmp_path: Path) -> Path:
+    """Create an invalid template file."""
+    template_file = tmp_path / "invalid_template.jinja2"
+    template_file.write_text("Invalid: {% if condition %}")
+    return template_file
+
+
+def test_verify_prompt_templates_valid(valid_template_file: Path) -> None:
+    """Test validation with valid templates."""
+    config = {
+        "pipeline": [
+            {
+                "name": "CompactLLMCommandGenerator",
+                "prompt_template": str(valid_template_file),
+            }
+        ]
+    }
+
+    validator = Validator(
+        Domain.empty(), TrainingData(), StoryGraph([]), FlowsList([]), config
+    )
+    assert validator.verify_prompt_templates() is True
+
+
+def test_verify_prompt_templates_invalid(invalid_template_file: Path) -> None:
+    """Test validation with invalid templates."""
+    config = {
+        "pipeline": [
+            {
+                "name": "CompactLLMCommandGenerator",
+                "prompt_template": str(invalid_template_file),
+            }
+        ]
+    }
+
+    validator = Validator(
+        Domain.empty(), TrainingData(), StoryGraph([]), FlowsList([]), config
+    )
+    assert validator.verify_prompt_templates() is False
+
+
+def test_verify_prompt_templates_mixed(
+    valid_template_file: Path, invalid_template_file: Path
+) -> None:
+    """Test validation with mixed valid/invalid templates."""
+    config = {
+        "pipeline": [
+            {
+                "name": "ValidComponent",
+                "prompt_template": str(valid_template_file),
+            },
+            {
+                "name": "InvalidComponent",
+                "prompt_template": str(invalid_template_file),
+            },
+        ]
+    }
+
+    validator = Validator(
+        Domain.empty(), TrainingData(), StoryGraph([]), FlowsList([]), config
+    )
+    assert validator.verify_prompt_templates() is False
+
+
+def test_verify_prompt_templates_no_templates() -> None:
+    """Test validation with no templates."""
+    config = {
+        "pipeline": [{"name": "SomeComponent"}],
+        "policies": [{"name": "SomePolicy"}],
+    }
+
+    validator = Validator(
+        Domain.empty(), TrainingData(), StoryGraph([]), FlowsList([]), config
+    )
+    assert validator.verify_prompt_templates() is True
+
+
+def test_verify_prompt_templates_with_custom_filter(tmp_path: Path) -> None:
+    """Test validation with templates using custom Jinja2 filters."""
+    # Create a template that uses the custom filter
+    template_file = tmp_path / "custom_filter_template.jinja2"
+    template_file.write_text("{{ user_message | to_json_escaped_string }}")
+
+    config = {
+        "pipeline": [
+            {
+                "name": "CompactLLMCommandGenerator",
+                "prompt_template": str(template_file),
+            }
+        ]
+    }
+
+    validator = Validator(
+        Domain.empty(), TrainingData(), StoryGraph([]), FlowsList([]), config
+    )
+    assert validator.verify_prompt_templates() is True
+
+
+@pytest.mark.parametrize(
+    "template,expected_result",
+    [
+        # Simple valid templates
+        ("Valid template: {{ message }}", True),
+        ("{% if condition %}true{% endif %}", True),
+        ("{% for item in items %}{{ item }}{% endfor %}", True),
+        # Simple invalid templates
+        ("Invalid: {% if condition %}", False),  # Missing endif
+        ("Invalid: {{ unclosed_variable", False),  # Missing closing brace
+        ("Invalid: {% for item in items %}{{ item }}", False),  # Missing endfor
+        # Complex valid templates
+        (
+            """
+            {% if user_message %}
+                User said: {{ user_message }}
+                {% if tracker.slots %}
+                    {% for slot_name, slot_value in tracker.slots.items() %}
+                        Slot {{ slot_name }}: {{ slot_value }}
+                    {% endfor %}
+                {% endif %}
+            {% else %}
+                No message provided
+            {% endif %}
+            """,
+            True,
+        ),
+        # Complex invalid templates
+        (
+            """
+                {% if user_message %}
+                    User said: {{ user_message }}
+                    {% if tracker.slots %}
+                        {% for slot_name, slot_value in tracker.slots.items() %}
+                            Slot {{ slot_name }}: {{ slot_value }}
+                        {% endfor %}
+                    {% endif %}
+                {% else %}
+                    No message provided
+                <!-- Actually missing endif for outer if -->
+                """,
+            False,
+        ),
+    ],
+)
+def test_validate_single_template(
+    validator: Validator, template: str, expected_result: bool, tmp_path: Path
+) -> None:
+    """Test _validate_single_template with various templates (simple and complex)."""
+    # Convert template string to file path
+    template_file = tmp_path / "template.jinja2"
+    template_file.write_text(template)
+
+    result = validator._validate_template_file(
+        str(template_file), "TestComponent", "pipeline component"
+    )
+    assert result is expected_result
+
+
+def test_validate_single_template_error_details(
+    validator: Validator, tmp_path: Path
+) -> None:
+    """Test that error details (line numbers, messages) are captured correctly."""
+    invalid_template = dedent("""
+        Line 1: {{ user_message }}
+        Line 2: {% if condition %}
+        Line 3:   Some content
+        Line 4: {% endif %}
+        Line 5: {% if missing_endif %}
+        Line 6:   This will cause error
+    """).strip()
+
+    # Convert template to file
+    template_file = tmp_path / "invalid_template.jinja2"
+    template_file.write_text(invalid_template)
+
+    with patch("rasa.validator.structlogger") as mock_logger:
+        result = validator._validate_template_file(
+            str(template_file), "TestComponent", "pipeline component"
+        )
+
+        assert result is False
+        mock_logger.error.assert_called_once()
+
+        # Check that the error call contains the expected details
+        call_args = mock_logger.error.call_args
+        assert call_args[0][0] == "validator.verify_prompt_templates.syntax_error"
+
+        # Check keyword arguments
+        kwargs = call_args[1]
+        assert kwargs["component"] == "TestComponent"
+        assert kwargs["component_type"] == "pipeline component"
+        assert "line 5" in kwargs["event_info"].lower()
+        assert kwargs["template_line"] == 5
+        assert "unexpected end of template" in kwargs["error"].lower()
+        assert kwargs["template_file"] == str(template_file)

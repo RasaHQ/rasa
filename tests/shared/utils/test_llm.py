@@ -2919,3 +2919,94 @@ def test_get_system_default_prompts_returns_expected_values():
 def test_get_enterprise_search_prompt_returns_correct_template(config, expected_prompt):
     prompt = _get_enterprise_search_prompt(config)
     assert prompt == expected_prompt
+
+
+@pytest.mark.parametrize(
+    "template_content,should_raise",
+    [
+        # Valid templates
+        ("Valid template: {{ user_message }}", False),
+        ("{% if condition %}true{% endif %}", False),
+        ("{% for item in items %}{{ item }}{% endfor %}", False),
+        # Invalid templates
+        ("Invalid: {% if condition %}", True),  # Missing endif
+        ("Invalid: {{ unclosed_variable", True),  # Missing closing brace
+        ("Invalid: {% for item in items %}{{ item }}", True),  # Missing endfor
+        # Complex valid template
+        (
+            """
+            {% if user_message %}
+                User said: {{ user_message }}
+                {% if tracker.slots %}
+                    {% for slot_name, slot_value in tracker.slots.items() %}
+                        Slot {{ slot_name }}: {{ slot_value }}
+                    {% endfor %}
+                {% endif %}
+            {% else %}
+                No message provided
+            {% endif %}
+            """,
+            False,
+        ),
+        # Complex invalid template
+        (
+            """
+            {% if user_message %}
+                User said: {{ user_message }}
+                {% if tracker.slots %}
+                    {% for slot_name, slot_value in tracker.slots.items() %}
+                        Slot {{ slot_name }}: {{ slot_value }}
+                    {% endfor %}
+                {% endif %}
+            {% else %}
+                No message provided
+            <!-- Missing endif for outer if -->
+            """,
+            True,
+        ),
+    ],
+)
+def test_validate_jinja2_template(template_content: str, should_raise: bool) -> None:
+    """Test validate_jinja2_template function with various templates."""
+    from rasa.shared.utils.llm import validate_jinja2_template
+
+    if should_raise:
+        with pytest.raises(
+            Exception
+        ):  # Could be jinja2.exceptions.TemplateSyntaxError or other exceptions
+            validate_jinja2_template(template_content)
+    else:
+        # Should not raise any exception
+        validate_jinja2_template(template_content)
+
+
+def test_validate_jinja2_template_with_custom_filter() -> None:
+    """Test validate_jinja2_template function with custom Jinja2 filter."""
+    from rasa.shared.utils.llm import validate_jinja2_template
+
+    # Template using the custom filter should be valid
+    template_with_filter = "{{ user_message | to_json_escaped_string }}"
+    validate_jinja2_template(template_with_filter)
+
+
+def test_validate_jinja2_template_error_details() -> None:
+    """Test that validate_jinja2_template provides detailed error information."""
+    import jinja2.exceptions
+
+    from rasa.shared.utils.llm import validate_jinja2_template
+
+    invalid_template = """
+        Line 1: {{ user_message }}
+        Line 2: {% if condition %}
+        Line 3:   Some content
+        Line 4: {% endif %}
+        Line 5: {% if missing_endif %}
+        Line 6:   This will cause error
+    """.strip()
+
+    with pytest.raises(jinja2.exceptions.TemplateSyntaxError) as exc_info:
+        validate_jinja2_template(invalid_template)
+
+    error = exc_info.value
+    assert error.lineno == 5
+    assert "unexpected end of template" in str(error).lower()

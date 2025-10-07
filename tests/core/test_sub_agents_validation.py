@@ -1,12 +1,15 @@
 import os
 import tempfile
 from textwrap import dedent
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Generator, List, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rasa.agents.validation import validate_agent_folder
+from rasa.agents.validation import (
+    _validate_prompt_template_syntax,
+    validate_agent_folder,
+)
 from rasa.cli.validation.bot_config import _validate_sub_agents
 from rasa.core.config.configuration import Configuration
 from rasa.exceptions import ValidationError
@@ -234,21 +237,6 @@ def test_validate_sub_agents_protocol_normalization(protocol_input: str) -> None
     "test_name,config_content,expected_error_patterns",
     [
         (
-            "invalid_prompt_template",
-            dedent("""
-                agent:
-                  name: "invalid_prompt_mcp_agent"
-                  protocol: "RASA"
-                  description: "An MCP agent with non-existent prompt template"
-                configuration:
-                  prompt_template: "non_existent_prompt.jinja2"
-                connections:
-                  mcp_servers:
-                    - name: "test_mcp_server"
-            """),
-            ["prompt template", "does not exist"],
-        ),
-        (
             "invalid_module_path",
             dedent("""
                 agent:
@@ -306,6 +294,37 @@ def test_validate_prompt_template_success() -> None:
 
         with patch.object(Configuration, "get_instance", return_value=mock_instance):
             create_agent_config(temp_dir, "valid_prompt", config_content)
+            validate_agent_folder(temp_dir)
+
+
+def test_validate_prompt_template_with_custom_filter() -> None:
+    """Test validation succeeds for prompt template using custom Jinja2 filters."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create a prompt template file that uses the custom filter
+        prompt_file = os.path.join(temp_dir, "custom_filter_template.jinja2")
+        with open(prompt_file, "w") as f:
+            f.write("{{ user_message | to_json_escaped_string }}")
+
+        config_content = dedent("""
+            agent:
+              name: "custom_filter_agent"
+              protocol: "RASA"
+              description: "An MCP agent with custom filter template"
+            configuration:
+              prompt_template: "{file_path}"
+            connections:
+              mcp_servers:
+                - name: "test_mcp_server"
+        """).format(file_path=prompt_file)
+
+        mock_instance = MagicMock()
+        mock_instance.endpoints.mcp_servers = [
+            type("MCPServerConfig", (), {"name": "test_mcp_server"})()
+        ]
+        mock_instance.endpoints.model_groups = []
+
+        with patch.object(Configuration, "get_instance", return_value=mock_instance):
+            create_agent_config(temp_dir, "custom_filter", config_content)
             validate_agent_folder(temp_dir)
 
 
@@ -526,3 +545,107 @@ def test_validate_agent_with_auth_configuration() -> None:
             create_agent_config(temp_dir, "agent_with_auth", config_content)
             # This should not raise any validation errors
             validate_agent_folder(temp_dir)
+
+
+@pytest.fixture
+def temp_template_file() -> Generator[str, None, None]:
+    """Create a temporary template file for testing."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".jinja2", delete=False) as f:
+        yield f.name
+    # Cleanup is handled by the test methods
+
+
+def test_validate_prompt_template_syntax_error_codes(temp_template_file: str) -> None:
+    """Test that _validate_prompt_template_syntax maps errors to correct error codes."""
+    # Test invalid template - should map to specific error code
+    invalid_template = "Invalid: {% if condition %}"
+    with open(temp_template_file, "w") as f:
+        f.write(invalid_template)
+
+    with pytest.raises(ValidationError) as exc_info:
+        _validate_prompt_template_syntax(temp_template_file, "test_agent")
+
+    # Verify the error code mapping
+    assert exc_info.value.code == "agent.validation.prompt_template_syntax_error"
+    assert "test_agent" in exc_info.value.info
+    assert "line" in exc_info.value.info.lower()
+
+
+@pytest.mark.parametrize(
+    "template_content,should_raise,expected_error_code",
+    [
+        # Valid template
+        ("Valid template: {{ user_message }}", False, None),
+        # Invalid template
+        (
+            "Invalid: {% if condition %}",
+            True,
+            "prompt_template_syntax_error",
+        ),
+    ],
+)
+def test_validate_optional_keys_with_prompt_template(
+    temp_template_file: str,
+    template_content: str,
+    should_raise: bool,
+    expected_error_code: Optional[str],
+) -> None:
+    """Test _validate_optional_keys with various prompt template scenarios."""
+    from rasa.agents.validation import _validate_optional_keys
+    from rasa.core.available_agents import (
+        AgentConfig,
+        AgentConfiguration,
+        AgentInfo,
+    )
+
+    # Write template content to file
+    with open(temp_template_file, "w") as f:
+        f.write(template_content)
+    template_path = temp_template_file
+
+    agent_config = AgentConfig(
+        agent=AgentInfo(name="test_agent", description="Test agent"),
+        configuration=AgentConfiguration(prompt_template=template_path),
+    )
+
+    try:
+        if should_raise:
+            with pytest.raises(ValidationError) as exc_info:
+                _validate_optional_keys(agent_config)
+            assert expected_error_code in exc_info.value.code
+        else:
+            # Should not raise any exception
+            _validate_optional_keys(agent_config)
+    finally:
+        if template_path == temp_template_file:
+            os.unlink(temp_template_file)
+
+
+def test_validate_prompt_template_file_not_found_fallback() -> None:
+    """Test that validation succeeds when prompt template file is not found
+    and falls back to default template."""
+    from rasa.agents.validation import _validate_optional_keys
+    from rasa.core.available_agents import (
+        AgentConfig,
+        AgentConfiguration,
+        AgentInfo,
+        ProtocolConfig,
+    )
+
+    # Create a non-existent file path
+    non_existent_file = "/non/existent/template.jinja2"
+
+    # Create an agent config with non-existent prompt template
+    agent_config = AgentConfig(
+        agent=AgentInfo(
+            name="fallback_test_agent",
+            protocol=ProtocolConfig.RASA,
+            description="An agent with non-existent prompt template",
+        ),
+        configuration=AgentConfiguration(prompt_template=non_existent_file),
+        connections=None,
+    )
+
+    # The validation should succeed because it falls back to default template
+    # This should not raise any ValidationError
+    _validate_optional_keys(agent_config)
