@@ -227,28 +227,30 @@ flows:
       - noop: true
         next:
           - if: context.multiple_flows_interrupted
+            then: collect_interrupted_flow_to_continue
+          - else: collect_continue_interrupted_flow_confirmation
+      - id: collect_interrupted_flow_to_continue
+        collect: interrupted_flow_to_continue
+        description: "Fill this slot with the name of the flow the user wants to continue. If the user does not want to continue any of the interrupted flows, fill this slot with 'none'."
+        next:
+          - if: slots.interrupted_flow_to_continue != "none"
             then:
-              - collect: interrupted_flow_to_continue
-                description: "Fill this slot with the name of the flow the user wants to continue. If the user does not want to continue any of the interrupted flows, fill this slot with 'none'."
-                next:
-                  - if: slots.interrupted_flow_to_continue != "none"
-                    then:
-                      - action: action_continue_interrupted_flow
-                        next: END
-                  - else:
-                      - action: action_cancel_interrupted_flows
-                        next: END
+              - action: action_continue_interrupted_flow
+                next: END
           - else:
-            - collect: continue_interrupted_flow_confirmation
-              description: "If the user wants to continue the interrupted flow, fill this slot with true. If the user does not want to continue the interrupted flow, fill this slot with false."
-              next:
-                - if: slots.continue_interrupted_flow_confirmation
-                  then:
-                    - action: action_continue_interrupted_flow
-                      next: END
-                - else:
-                    - action: action_cancel_interrupted_flows
-                      next: END
+              - action: action_cancel_interrupted_flows
+                next: END
+      - id: collect_continue_interrupted_flow_confirmation
+        collect: continue_interrupted_flow_confirmation
+        description: "If the user wants to continue the interrupted flow, fill this slot with true. If the user does not want to continue the interrupted flow, fill this slot with false."
+        next:
+          - if: slots.continue_interrupted_flow_confirmation
+            then:
+              - action: action_continue_interrupted_flow
+                next: END
+          - else:
+              - action: action_cancel_interrupted_flows
+                next: END
 
   pattern_correction:
     description: Conversation repair flow for managing user input changes or error corrections
