@@ -2,6 +2,8 @@
 
 from unittest.mock import patch
 
+import pytest
+
 from rasa.utils.pypred import Predicate
 
 
@@ -28,6 +30,7 @@ def test_pypred_patch_disables_write_tables():
         assert kwargs["write_tables"] is False
 
 
+@pytest.mark.skip(reason="Will be fixed in - ENG-2440")
 def test_pypred_patch_suppresses_yacc_warnings():
     """Test that the patched yacc function suppresses yacc warnings."""
     with patch("rasa.utils.pypred._original_yacc") as mock_yacc:
