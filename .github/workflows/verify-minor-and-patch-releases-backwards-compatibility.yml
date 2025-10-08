@@ -39,7 +39,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DEFAULT_PYTHON_VERSION: "3.11"
+  DEFAULT_PYTHON_VERSION: "3.10"
   RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   RASA_PRO_BETA_E2E_ASSERTIONS: true
@@ -100,7 +100,7 @@ jobs:
 
           # User specified an older supported version of Rasa, then install that for testing
           if [[ -n "${RASA_OLD_VERSION}" ]]; then
-            uv pip install rasa-pro=="${RASA_OLD_VERSION}" --prerelease=allow --extra-index-url=https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/simple
+            uv pip install rasa-pro[nlu]=="${RASA_OLD_VERSION}" --prerelease=allow --extra-index-url=https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/simple
             echo "RASA_PRO_OLDER_VERSION=${RASA_OLD_VERSION}" >> "${GITHUB_OUTPUT}"
           else # Otherwise install oldest supported version
             latest_version="$(poetry version | awk '{print $2}')"
@@ -117,7 +117,7 @@ jobs:
               oldest_version="${latest_version%.*}.0"
             fi
             
-            uv pip install rasa-pro=="${oldest_version}" --prerelease=allow --extra-index-url=https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/simple
+            uv pip install rasa-pro[nlu]=="${oldest_version}" --prerelease=allow --extra-index-url=https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/simple
             echo "RASA_PRO_OLDER_VERSION=${oldest_version}" >> "${GITHUB_OUTPUT}"
           fi
           rasa --version
@@ -200,9 +200,9 @@ jobs:
           source ./venv/bin/activate
           curl -LsSf https://astral.sh/uv/install.sh | sh
           if [[ -n "${RASA_PRO_NEW_VERSION}" ]]; then
-            uv pip install rasa-pro=="${RASA_PRO_NEW_VERSION}" --prerelease=allow --extra-index-url=https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/simple
+            uv pip install rasa-pro[nlu]=="${RASA_PRO_NEW_VERSION}" --prerelease=allow --extra-index-url=https://europe-west3-python.pkg.dev/rasa-releases/rasa-pro-python/simple
           else
-            make install-full
+            make install-nlu
           fi
           rasa --version
           echo "PATH=${PATH}" >> "${GITHUB_ENV}"
