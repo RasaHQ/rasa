@@ -1,9 +1,10 @@
 import json
 from abc import abstractmethod
-from datetime import datetime
+from datetime import datetime, timedelta
 from inspect import isawaitable
 from typing import Any, Dict, List, Optional, Tuple
 
+import anyio
 import structlog
 from jinja2 import Template
 from mcp import ListToolsResult
@@ -74,6 +75,8 @@ class MCPBaseAgent(AgentProtocol):
     """MCP protocol implementation."""
 
     MAX_ITERATIONS = 10
+
+    TOOL_CALL_DEFAULT_TIMEOUT = 10  # seconds
 
     # ============================================================================
     # Initialization & Setup
@@ -624,7 +627,11 @@ class MCPBaseAgent(AgentProtocol):
         connection = self._server_connections[server_id]
         try:
             session = await connection.ensure_active_session()
-            result = await session.call_tool(tool_name, arguments)
+            result = await session.call_tool(
+                tool_name,
+                arguments,
+                read_timeout_seconds=timedelta(seconds=self.TOOL_CALL_DEFAULT_TIMEOUT),
+            )
             return AgentToolResult.from_mcp_tool_result(tool_name, result)
         except Exception as e:
             return AgentToolResult(
@@ -636,6 +643,21 @@ class MCPBaseAgent(AgentProtocol):
                     f" @ `{connection.server_url}`: {e!s}"
                 ),
             )
+
+    async def _run_custom_tool(
+        self, custom_tool: CustomToolSchema, arguments: Dict[str, Any]
+    ) -> AgentToolResult:
+        """Run a custom tool and return the result.
+
+        Args:
+            custom_tool: The custom tool schema containing the tool executor.
+            arguments: The arguments to pass to the tool executor.
+
+        Returns:
+            The result of the tool execution as an AgentToolResult.
+        """
+        result = custom_tool.tool_executor(arguments)
+        return await result if isawaitable(result) else result
 
     async def _execute_tool_call(
         self, tool_name: str, arguments: Dict[str, Any]
@@ -655,8 +677,20 @@ class MCPBaseAgent(AgentProtocol):
         try:
             for custom_tool in self._custom_tools:
                 if custom_tool.tool_name == tool_name:
-                    result = custom_tool.tool_executor(arguments)
-                    return await result if isawaitable(result) else result
+                    try:
+                        with anyio.fail_after(self.TOOL_CALL_DEFAULT_TIMEOUT):
+                            return await self._run_custom_tool(custom_tool, arguments)
+
+                    except TimeoutError:
+                        return AgentToolResult(
+                            tool_name=tool_name,
+                            result=None,
+                            is_error=True,
+                            error_message=(
+                                f"Built-in tool `{tool_name}` timed out after "
+                                f"{self.TOOL_CALL_DEFAULT_TIMEOUT} seconds."
+                            ),
+                        )
         except Exception as e:
             return AgentToolResult(
                 tool_name=tool_name,

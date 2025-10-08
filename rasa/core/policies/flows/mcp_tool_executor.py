@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
 import structlog
@@ -24,6 +25,7 @@ structlogger = structlog.get_logger()
 
 CONFIG_VALUE = "value"
 CONFIG_SLOT = "slot"
+TOOL_CALL_DEFATULT_TIMEOUT = 10  # seconds
 
 
 async def call_mcp_tool(
@@ -102,7 +104,11 @@ async def _execute_mcp_tool_call(
 
         # Call the tool with parameters
         mcp_server = await mcp_server_connection.ensure_active_session()
-        result = await mcp_server.call_tool(step.call, arguments)
+        result = await mcp_server.call_tool(
+            step.call,
+            arguments,
+            read_timeout_seconds=timedelta(seconds=TOOL_CALL_DEFATULT_TIMEOUT),
+        )
 
         # Handle tool execution result
         if result is None or result.isError:

@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Any, Dict, List
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -522,7 +523,9 @@ async def test_execute_mcp_tool_call_success(
                 assert isinstance(result.events[0], SlotSet)
                 mock_connection.ensure_active_session.assert_called_once()
                 mock_mcp_server.call_tool.assert_called_once_with(
-                    "test_tool", {"test_param": "test_value"}
+                    "test_tool",
+                    {"test_param": "test_value"},
+                    read_timeout_seconds=timedelta(seconds=10),
                 )
                 # Verify connection cleanup
                 mock_connection.close.assert_called_once()
@@ -734,11 +737,15 @@ def test_execute_mcp_tool_call_with_different_mappings(
                     }
                     mock_connection.ensure_active_session.assert_called_once()
                     mock_mcp_server.call_tool.assert_called_once_with(
-                        "test_tool", expected_args
+                        "test_tool",
+                        expected_args,
+                        read_timeout_seconds=timedelta(seconds=10),
                     )
                 else:
                     mock_connection.ensure_active_session.assert_called_once()
-                    mock_mcp_server.call_tool.assert_called_once_with("test_tool", {})
+                    mock_mcp_server.call_tool.assert_called_once_with(
+                        "test_tool", {}, read_timeout_seconds=timedelta(seconds=10)
+                    )
 
                 # Verify connection cleanup
                 mock_connection.close.assert_called_once()

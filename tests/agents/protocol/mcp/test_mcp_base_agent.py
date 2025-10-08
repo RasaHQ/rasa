@@ -1,8 +1,9 @@
 """Unit tests for MCPBaseAgent."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import anyio
 import pytest
 from pytest import MonkeyPatch
 
@@ -712,7 +713,9 @@ class TestMCPBaseAgent:
 
                 if expected_success:
                     mock_session.call_tool.assert_called_once_with(
-                        tool_name, {"arg": "value"}
+                        tool_name,
+                        {"arg": "value"},
+                        read_timeout_seconds=timedelta(seconds=10),
                     )
                     assert result.tool_name == tool_name
                     assert not result.is_error
@@ -912,3 +915,106 @@ class TestMCPBaseAgent:
         result = await mock_mcp_base_agent.process_output(output)
 
         assert result == output
+
+    # ============================================================================
+    # Timeout Tests
+    # ============================================================================
+
+    @pytest.mark.asyncio
+    async def test_custom_tool_timeout_with_anyio_fail_after(self, mock_mcp_base_agent):
+        """Test that custom tool times out using anyio.fail_after()."""
+
+        # Setup custom tool that will timeout
+        mock_custom_tool = MagicMock()
+        mock_custom_tool.tool_name = "timeout_tool"
+
+        # Set short timeout for test
+        mock_mcp_base_agent.TOOL_CALL_DEFAULT_TIMEOUT = 0.1
+
+        # Mock tool executor that sleeps longer than timeout
+        async def slow_tool_executor(args):
+            await anyio.sleep(0.2)  # Sleep longer than TOOL_CALL_DEFAULT_TIMEOUT
+            return AgentToolResult(
+                tool_name="timeout_tool",
+                result="result",
+                is_error=False,
+                error_message=None,
+            )
+
+        mock_custom_tool.tool_executor = slow_tool_executor
+        mock_mcp_base_agent._custom_tools = [mock_custom_tool]
+
+        # Execute
+        result = await mock_mcp_base_agent._execute_tool_call(
+            "timeout_tool", {"arg": "value"}
+        )
+
+        # Assert timeout error
+        assert result.tool_name == "timeout_tool"
+        assert result.is_error is True
+        assert "timed out after" in result.error_message
+        assert "seconds" in result.error_message
+        # Assert error message format
+        expected_message = (
+            "Built-in tool `timeout_tool` timed out after "
+            f"{mock_mcp_base_agent.TOOL_CALL_DEFAULT_TIMEOUT} seconds."
+        )
+        assert result.error_message == expected_message
+
+    @pytest.mark.asyncio
+    async def test_custom_tool_success_within_timeout(self, mock_mcp_base_agent):
+        """Test that custom tool executes successfully within timeout."""
+        # Setup custom tool that completes quickly
+
+        mock_custom_tool = MagicMock()
+        mock_custom_tool.tool_name = "fast_tool"
+
+        # Set short timeout for test
+        mock_mcp_base_agent.TOOL_CALL_DEFAULT_TIMEOUT = 0.1
+
+        # Mock tool executor that completes quickly
+        async def fast_tool_executor(args):
+            return AgentToolResult(
+                tool_name="fast_tool",
+                result="success",
+                is_error=False,
+                error_message=None,
+            )
+
+        mock_custom_tool.tool_executor = fast_tool_executor
+        mock_mcp_base_agent._custom_tools = [mock_custom_tool]
+
+        # Execute
+        result = await mock_mcp_base_agent._execute_tool_call(
+            "fast_tool", {"arg": "value"}
+        )
+
+        # Assert success
+        assert result.tool_name == "fast_tool"
+        assert result.is_error is False
+        assert result.result == "success"
+
+    @pytest.mark.asyncio
+    async def test_custom_tool_exception_during_execution(self, mock_mcp_base_agent):
+        """Test that exceptions during tool execution are handled properly."""
+        # Setup custom tool that raises exception
+        mock_custom_tool = MagicMock()
+        mock_custom_tool.tool_name = "failing_tool"
+
+        # Mock tool executor that raises exception
+        async def failing_tool_executor(args):
+            raise ValueError("Tool execution failed")
+
+        mock_custom_tool.tool_executor = failing_tool_executor
+        mock_mcp_base_agent._custom_tools = [mock_custom_tool]
+
+        # Execute
+        result = await mock_mcp_base_agent._execute_tool_call(
+            "failing_tool", {"arg": "value"}
+        )
+
+        # Assert error handling
+        assert result.tool_name == "failing_tool"
+        assert result.is_error is True
+        assert "Failed to execute built-in tool" in result.error_message
+        assert "Tool execution failed" in result.error_message
