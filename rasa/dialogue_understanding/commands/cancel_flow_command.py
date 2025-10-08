@@ -56,7 +56,7 @@ class CancelFlowCommand(Command):
         Returns:
         The frames that were canceled.
         """
-        canceled_frames = []
+        canceled_frames: List[str] = []
         # we need to go through the original stack dump in reverse order
         # to find the frames that were canceled. we cancel everything from
         # the top of the stack until we hit the user flow that was canceled.

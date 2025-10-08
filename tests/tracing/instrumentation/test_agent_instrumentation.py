@@ -10,6 +10,7 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.shared.core.events import SessionStarted
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.flows.steps import CallFlowStep
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -31,6 +32,11 @@ def tracker() -> DialogueStateTracker:
 @pytest.fixture
 def slots() -> List[Slot]:
     return []
+
+
+@pytest.fixture
+def flows() -> FlowsList:
+    return FlowsList(underlying_flows=[])
 
 
 @pytest.fixture
@@ -61,6 +67,7 @@ async def test_tracing_agent_execution(
     call_flow_step: CallFlowStep,
     dialogue_stack: DialogueStack,
     slots: List[Slot],
+    flows: FlowsList,
 ) -> None:
     """Test tracing for agent execution in flow steps."""
     with patch(
@@ -82,7 +89,9 @@ async def test_tracing_agent_execution(
         run_agent = getattr(module, "run_agent")
 
         initial_events: List[Any] = []
-        await run_agent(initial_events, dialogue_stack, call_flow_step, tracker, slots)
+        await run_agent(
+            initial_events, dialogue_stack, call_flow_step, tracker, slots, flows
+        )
 
         captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
         num_captured_spans = len(captured_spans) - previous_num_captured_spans
@@ -118,6 +127,7 @@ async def test_histogram_recording_agent_execution(
     call_flow_step: CallFlowStep,
     dialogue_stack: DialogueStack,
     slots: List[Slot],
+    flows: FlowsList,
 ) -> None:
     """Test that histogram recording actually works for agent execution."""
     # Mock the histogram to verify record() is called
@@ -149,7 +159,12 @@ async def test_histogram_recording_agent_execution(
 
                 initial_events: List[Any] = []
                 await run_agent(
-                    initial_events, dialogue_stack, call_flow_step, tracker, slots
+                    initial_events,
+                    dialogue_stack,
+                    call_flow_step,
+                    tracker,
+                    slots,
+                    flows,
                 )
 
                 # Check that histogram was called

@@ -650,7 +650,7 @@ async def run_step(
         return _run_link_step(initial_events, stack, step)
 
     elif isinstance(step, CallFlowStep):
-        return await _run_call_step(initial_events, stack, step, tracker, slots)
+        return await _run_call_step(initial_events, stack, step, tracker, slots, flows)
 
     elif isinstance(step, SetSlotsFlowStep):
         return _run_set_slot_step(initial_events, step)
@@ -723,12 +723,13 @@ async def _run_call_step(
     step: CallFlowStep,
     tracker: DialogueStateTracker,
     slots: List[Slot],
+    flows: FlowsList,
 ) -> FlowStepResult:
     structlogger.debug("flow.step.run.call")
     if step.is_calling_mcp_tool():
         return await call_mcp_tool(initial_events, stack, step, tracker)
     elif step.is_calling_agent():
-        return await run_agent(initial_events, stack, step, tracker, slots)
+        return await run_agent(initial_events, stack, step, tracker, slots, flows)
     else:
         stack.push(
             UserFlowStackFrame(

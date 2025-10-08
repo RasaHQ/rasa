@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import structlog
 
@@ -24,6 +24,7 @@ from rasa.core.policies.flows.flow_step_result import (
     PauseFlowReturnPrediction,
 )
 from rasa.core.utils import get_slot_names_from_exit_conditions
+from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
@@ -31,6 +32,7 @@ from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     AgentStackFrame,
     AgentState,
+    BaseFlowStackFrame,
 )
 from rasa.shared.agents.utils import get_protocol_type
 from rasa.shared.core.constants import (
@@ -46,9 +48,11 @@ from rasa.shared.core.events import (
     AgentResumed,
     AgentStarted,
     Event,
+    FlowCancelled,
     SlotSet,
     deserialise_events,
 )
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.flows.steps import (
     CallFlowStep,
 )
@@ -85,6 +89,7 @@ async def run_agent(
     step: CallFlowStep,
     tracker: DialogueStateTracker,
     slots: List[Slot],
+    flows: FlowsList,
 ) -> FlowStepResult:
     """Run an agent call step."""
     structlogger.debug(
@@ -177,9 +182,13 @@ async def run_agent(
     elif output.status == AgentStatus.COMPLETED:
         return _handle_agent_completed(output, final_events, stack, step)
     elif output.status == AgentStatus.FATAL_ERROR:
-        return _handle_agent_fatal_error(output, final_events, stack, step)
+        return _handle_agent_fatal_error(
+            output, final_events, stack, step, flows, tracker
+        )
     else:
-        return _handle_agent_unknown_status(output, final_events, stack, step)
+        return _handle_agent_unknown_status(
+            output, final_events, stack, step, flows, tracker
+        )
 
 
 async def _call_agent_with_retry(
@@ -299,6 +308,8 @@ def _handle_agent_unknown_status(
     final_events: List[Event],
     stack: DialogueStack,
     step: CallFlowStep,
+    flows: FlowsList,
+    tracker: DialogueStateTracker,
 ) -> FlowStepResult:
     """Handle unknown agent status.
 
@@ -307,6 +318,8 @@ def _handle_agent_unknown_status(
         final_events: List of events to be added to the final result
         stack: The dialogue stack
         step: The flow step that called the agent
+        flows: All flows
+        tracker: The dialogue state tracker
 
     Returns:
         FlowStepResult indicating to continue with internal error pattern
@@ -320,8 +333,21 @@ def _handle_agent_unknown_status(
         flow_id=step.flow_id,
         status=output.status,
     )
+    # remove the agent stack frame
     remove_agent_stack_frame(stack, step.call)
     final_events.append(AgentCancelled(agent_id=step.call, flow_id=step.flow_id))
+
+    # cancel the current active flow:
+    # push the cancel pattern stack frame and add the flow cancelled event
+    cancel_pattern_stack_frame, flow_cancelled_event = _cancel_flow(
+        stack, flows, tracker, step
+    )
+    if cancel_pattern_stack_frame:
+        stack.push(cancel_pattern_stack_frame)
+    if flow_cancelled_event:
+        final_events.append(flow_cancelled_event)
+
+    # trigger the internal error pattern
     stack.push(InternalErrorPatternFlowStackFrame())
     return ContinueFlowWithNextStep(events=final_events)
 
@@ -418,6 +444,8 @@ def _handle_agent_fatal_error(
     final_events: List[Event],
     stack: DialogueStack,
     step: CallFlowStep,
+    flows: FlowsList,
+    tracker: DialogueStateTracker,
 ) -> FlowStepResult:
     """Handle fatal error from agent execution.
 
@@ -426,13 +454,15 @@ def _handle_agent_fatal_error(
         final_events: List of events to be added to the final result
         stack: The dialogue stack
         step: The flow step that called the agent
+        flows: All flows
+        tracker: The dialogue state tracker
 
     Returns:
         FlowStepResult indicating to continue with internal error pattern
     """
     output.metadata = output.metadata or {}
     _update_agent_events(final_events, output.metadata)
-    # the agent failed, trigger pattern_internal_error
+    # the agent failed, cancel the current flow and trigger pattern_internal_error
     structlogger.error(
         "flow.step.run_agent.fatal_error",
         agent_name=step.call,
@@ -440,14 +470,64 @@ def _handle_agent_fatal_error(
         flow_id=step.flow_id,
         error_message=output.error_message,
     )
+    # remove the agent stack frame
     remove_agent_stack_frame(stack, step.call)
     final_events.append(
         AgentCancelled(
             agent_id=step.call, flow_id=step.flow_id, reason=output.error_message
         )
     )
+
+    # cancel the current active flow:
+    # push the cancel pattern stack frame and add the flow cancelled event
+    cancel_pattern_stack_frame, flow_cancelled_event = _cancel_flow(
+        stack, flows, tracker, step
+    )
+    if cancel_pattern_stack_frame:
+        stack.push(cancel_pattern_stack_frame)
+    if flow_cancelled_event:
+        final_events.append(flow_cancelled_event)
+
+    # push the internal error pattern stack frame
     stack.push(InternalErrorPatternFlowStackFrame())
     return ContinueFlowWithNextStep(events=final_events)
+
+
+def _cancel_flow(
+    stack: DialogueStack,
+    flows: FlowsList,
+    tracker: DialogueStateTracker,
+    step: CallFlowStep,
+) -> Tuple[Optional[CancelPatternFlowStackFrame], Optional[FlowCancelled]]:
+    """Cancel the current active flow.
+
+    Creates a cancel pattern stack frame and a flow cancelled event.
+    """
+    from rasa.dialogue_understanding.commands import CancelFlowCommand
+
+    cancel_pattern_stack_frame = None
+    flow_cancelled_event = None
+
+    top_frame = stack.top()
+
+    if isinstance(top_frame, BaseFlowStackFrame):
+        flow = flows.flow_by_id(step.flow_id)
+        flow_name = (
+            flow.readable_name(language=tracker.current_language)
+            if flow
+            else step.flow_id
+        )
+
+        canceled_frames = CancelFlowCommand.select_canceled_frames(stack)
+
+        cancel_pattern_stack_frame = CancelPatternFlowStackFrame(
+            canceled_name=flow_name,
+            canceled_frames=canceled_frames,
+        )
+
+        flow_cancelled_event = FlowCancelled(step.flow_id, step.id)
+
+    return cancel_pattern_stack_frame, flow_cancelled_event
 
 
 ################################################################################

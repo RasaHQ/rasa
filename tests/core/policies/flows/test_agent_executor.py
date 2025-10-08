@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterator, List, Optional, cast
+from typing import Any, Dict, Iterator, List, Optional, Tuple, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -13,6 +13,7 @@ from rasa.core.policies.flows.agent_executor import (
     MAX_AGENT_RETRIES,
     SLOTS_EXCLUDED_FOR_AGENT,
     _call_agent_with_retry,
+    _cancel_flow,
     _create_action_prediction,
     _create_agent_request_user_input_prediction,
     _create_send_text_prediction,
@@ -33,10 +34,14 @@ from rasa.core.policies.flows.flow_step_result import (
     ContinueFlowWithNextStep,
     PauseFlowReturnPrediction,
 )
+from rasa.dialogue_understanding.patterns.cancel import CancelPatternFlowStackFrame
 from rasa.dialogue_understanding.patterns.internal_error import (
     InternalErrorPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
+from rasa.dialogue_understanding.stack.frames.dialogue_stack_frame import (
+    DialogueStackFrame,
+)
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     AgentStackFrame,
     AgentState,
@@ -64,9 +69,12 @@ from rasa.shared.core.events import (
     AgentCompleted,
     AgentResumed,
     AgentStarted,
+    FlowCancelled,
     SlotSet,
 )
+from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks
+from rasa.shared.core.flows.flows_list import FlowsList
 from rasa.shared.core.flows.steps import CallFlowStep
 from rasa.shared.core.slots import (
     BooleanSlot,
@@ -108,7 +116,9 @@ def mock_available_agents(monkeypatch: MonkeyPatch) -> Iterator[MagicMock]:
 
 
 @pytest.fixture
-def basic_flow_setup(mock_available_agents):
+def basic_flow_setup(
+    mock_available_agents: MagicMock,
+) -> Tuple[FlowsList, DialogueStack, DialogueStateTracker, Flow, CallFlowStep]:
     """Common setup for agent tests."""
     flows = flows_from_str(
         """
@@ -132,7 +142,7 @@ def basic_flow_setup(mock_available_agents):
 
 
 @pytest.fixture
-def agent_stack_frame_setup():
+def agent_stack_frame_setup() -> AgentStackFrame:
     """Setup for agent stack frame tests."""
     return AgentStackFrame(
         frame_id="test_frame",
@@ -175,7 +185,12 @@ async def test_run_agent_continue_with_user_input(
     )
 
     flow_step_result = await run_agent(
-        initial_events=[], stack=stack, step=step, tracker=tracker, slots=[]
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
     )
 
     # Assertions
@@ -222,7 +237,12 @@ async def test_run_agent_continue_interrupted_agent(
     step = flow.step_by_id("my-call-step")
 
     flow_step_result = await run_agent(
-        initial_events=[], stack=stack, step=step, tracker=tracker, slots=[]
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
     )
 
     # Assertions
@@ -278,7 +298,12 @@ async def test_run_agent_started(
     step = flow.step_by_id("my-call-step")
 
     flow_step_result = await run_agent(
-        initial_events=[], stack=stack, step=step, tracker=tracker, slots=[]
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
     )
 
     assert any(
@@ -321,7 +346,12 @@ async def test_run_agent_resumed(
     step = flow.step_by_id("my-call-step")
 
     flow_step_result = await run_agent(
-        initial_events=[], stack=stack, step=step, tracker=tracker, slots=[]
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
     )
 
     assert any(
@@ -366,7 +396,12 @@ async def test_run_agent_completed(
     )
 
     flow_step_result = await run_agent(
-        initial_events=[], stack=stack, step=step, tracker=tracker, slots=[]
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
     )
 
     assert any(
@@ -433,7 +468,12 @@ async def test_run_agent_restart_resets_exit_if_slots_before_agent_call(
     )
 
     await run_agent(
-        initial_events=[], stack=stack, step=step, tracker=tracker, slots=[]
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
     )
 
     # Verify that the agent was called
@@ -513,7 +553,12 @@ async def test_run_step_saves_context_id_to_agent_started_event(
     step = flow.step_by_id("my-call-step")
 
     flow_step_result = await run_agent(
-        initial_events=[], stack=stack, step=step, tracker=tracker, slots=[]
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
     )
 
     # Assertions
@@ -566,7 +611,12 @@ async def test_context_id_included_in_metadata_when_restarting_agent(
     step = flow.step_by_id("my-call-step")
 
     await run_agent(
-        initial_events=[], stack=stack, step=step, tracker=tracker, slots=[]
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
     )
 
     # Assertions
@@ -610,11 +660,20 @@ async def test_run_agent_fatal_error(
     )
 
     flow_step_result = await run_agent(
-        initial_events=[], stack=stack, step=step, tracker=tracker, slots=[]
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
     )
 
     assert any(
         isinstance(e, AgentCancelled) and e.agent_id == "car-research"
+        for e in flow_step_result.events
+    )
+    assert any(
+        isinstance(e, FlowCancelled) and e.flow_id == "my_flow"
         for e in flow_step_result.events
     )
 
@@ -622,6 +681,7 @@ async def test_run_agent_fatal_error(
     assert isinstance(flow_step_result, ContinueFlowWithNextStep)
     # Top frame should be an InternalErrorPatternFlowStackFrame
     assert isinstance(stack.frames[-1], InternalErrorPatternFlowStackFrame)
+    assert isinstance(stack.frames[-2], CancelPatternFlowStackFrame)
     # No retries should be made in case of fatal error
     assert mock_run_agent.call_count == 1
     # If the AgentStackFrame was on the stack, it should be removed
@@ -664,7 +724,12 @@ async def test_run_agent_recoverable_error(
     )
 
     flow_step_result = await run_agent(
-        initial_events=[], stack=stack, step=step, tracker=tracker, slots=[]
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
     )
 
     assert any(
@@ -719,7 +784,12 @@ async def test_run_agent_request_user_input(
     )
 
     flow_step_result = await run_agent(
-        initial_events=[], stack=stack, step=step, tracker=tracker, slots=[]
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
     )
 
     # Assertions
@@ -792,6 +862,7 @@ async def test_run_agent_filters_slots_for_agent(
         step=step,
         tracker=tracker,
         slots=[TextSlot("keep_me", [])],
+        flows=flows,
     )
 
     # Verify that slots sent to the agent exclude FLOW_HASHES_SLOT
@@ -845,7 +916,12 @@ async def test_run_agent_passes_exit_if_in_metadata(
     )
 
     await run_agent(
-        initial_events=[], stack=stack, step=step, tracker=tracker, slots=[]
+        initial_events=[],
+        stack=stack,
+        step=step,
+        tracker=tracker,
+        slots=[],
+        flows=flows,
     )
 
     # Verify that exit_if made it into the metadata sent to the agent
@@ -861,7 +937,9 @@ async def test_run_agent_passes_exit_if_in_metadata(
 
 
 @pytest.mark.asyncio
-async def test_agent_metadata_handling_edge_cases(mock_available_agents):
+async def test_agent_metadata_handling_edge_cases(
+    mock_available_agents: MagicMock,
+) -> None:
     """Test agent metadata handling with various edge cases."""
     flows = flows_from_str(
         """
@@ -898,7 +976,12 @@ async def test_agent_metadata_handling_edge_cases(mock_available_agents):
         )
 
         await run_agent(
-            initial_events=[], stack=stack, step=step, tracker=tracker, slots=[]
+            initial_events=[],
+            stack=stack,
+            step=step,
+            tracker=tracker,
+            slots=[],
+            flows=flows,
         )
 
     # Should not crash and should handle malformed metadata gracefully
@@ -906,7 +989,9 @@ async def test_agent_metadata_handling_edge_cases(mock_available_agents):
 
 
 @pytest.mark.asyncio
-async def test_multiple_agent_calls_in_sequence(mock_available_agents):
+async def test_multiple_agent_calls_in_sequence(
+    mock_available_agents: MagicMock,
+) -> None:
     """Test multiple agent calls in sequence."""
     flows = flows_from_str(
         """
@@ -941,7 +1026,12 @@ async def test_multiple_agent_calls_in_sequence(mock_available_agents):
 
         first_step = flow.step_by_id("first-call")
         result1 = await run_agent(
-            initial_events=[], stack=stack, step=first_step, tracker=tracker, slots=[]
+            initial_events=[],
+            stack=stack,
+            step=first_step,
+            tracker=tracker,
+            slots=[],
+            flows=flows,
         )
 
         # Second agent call
@@ -953,7 +1043,12 @@ async def test_multiple_agent_calls_in_sequence(mock_available_agents):
 
         second_step = flow.step_by_id("second-call")
         result2 = await run_agent(
-            initial_events=[], stack=stack, step=second_step, tracker=tracker, slots=[]
+            initial_events=[],
+            stack=stack,
+            step=second_step,
+            tracker=tracker,
+            slots=[],
+            flows=flows,
         )
 
         # Verify both calls were made
@@ -1146,14 +1241,14 @@ def test_prepare_slots_for_agent(
     slot_definitions: List[Slot],
     expected_result: List[AgentInputSlot],
     exit_if: Optional[List[str]],
-):
+) -> None:
     """Test _prepare_slots_for_agent with various input combinations."""
     result = _prepare_slots_for_agent(slot_values, slot_definitions, exit_if)
 
     assert result == expected_result
 
 
-def test_prepare_slots_for_agent_excludes_slots_from_slots_excluded_for_agent():
+def test_prepare_slots_for_agent_excludes_slots_from_slots_excluded_for_agent() -> None:
     """Test that SLOTS_EXCLUDED_FOR_AGENT is used to exclude slots."""
     # Create slot values that include all types of excluded slots
     slot_values = {
@@ -1239,7 +1334,7 @@ def test_prepare_slots_for_agent_excludes_slots_from_slots_excluded_for_agent():
     assert SLOTS_EXCLUDED_FOR_AGENT == expected_excluded_slots
 
 
-def test_reset_slots_covered_by_exit_if():
+def test_reset_slots_covered_by_exit_if() -> None:
     """Test _reset_slots_covered_by_exit_if function."""
     tracker = DialogueStateTracker.from_events(
         "test",
@@ -1274,7 +1369,9 @@ def test_reset_slots_covered_by_exit_if():
 # ============================================================================
 
 
-def test_prepare_agent_input_with_exit_if(agent_stack_frame_setup):
+def test_prepare_agent_input_with_exit_if(
+    agent_stack_frame_setup: AgentStackFrame,
+) -> None:
     """Test _prepare_agent_input with exit_if conditions."""
     # Create a mock step with exit_if
     step = CallFlowStep(
@@ -1306,7 +1403,7 @@ def test_prepare_agent_input_with_exit_if(agent_stack_frame_setup):
     assert result.metadata["existing"] == "data"
 
 
-def test_prepare_agent_input_without_agent_stack_frame():
+def test_prepare_agent_input_without_agent_stack_frame() -> None:
     """Test _prepare_agent_input without existing agent stack frame."""
     step = CallFlowStep(
         custom_id="test_call",
@@ -1327,7 +1424,7 @@ def test_prepare_agent_input_without_agent_stack_frame():
     assert result.metadata == {}
 
 
-def test_prepare_agent_input_events_populated():
+def test_prepare_agent_input_events_populated() -> None:
     """Test _prepare_agent_input populates events correctly."""
     from rasa.shared.core.events import BotUttered, SlotSet, UserUttered
 
@@ -1373,7 +1470,7 @@ def test_prepare_agent_input_events_populated():
 # ============================================================================
 
 
-def test_remove_agent_stack_frame():
+def test_remove_agent_stack_frame() -> None:
     """Test remove_agent_stack_frame function."""
     # Create a stack with multiple frames including an agent frame
     user_frame = UserFlowStackFrame(flow_id="test_flow", step_id="test_step")
@@ -1397,7 +1494,7 @@ def test_remove_agent_stack_frame():
     assert not any(isinstance(frame, AgentStackFrame) for frame in stack.frames)
 
 
-def test_remove_agent_stack_frame_no_agent_frame():
+def test_remove_agent_stack_frame_no_agent_frame() -> None:
     """Test remove_agent_stack_frame when no agent frame exists."""
     user_frame = UserFlowStackFrame(flow_id="test_flow", step_id="test_step")
     stack = DialogueStack(frames=[user_frame])
@@ -1414,7 +1511,7 @@ def test_remove_agent_stack_frame_no_agent_frame():
 # ============================================================================
 
 
-def test_create_action_prediction():
+def test_create_action_prediction() -> None:
     """Test _create_action_prediction function."""
     message = "Test message"
     events = [SlotSet("test_slot", "test_value")]
@@ -1429,7 +1526,7 @@ def test_create_action_prediction():
     assert result.events == events
 
 
-def test_create_agent_request_user_input_prediction():
+def test_create_agent_request_user_input_prediction() -> None:
     """Test _create_agent_request_user_input_prediction function."""
     message = "Please provide more information"
     events = [SlotSet("test_slot", "test_value")]
@@ -1444,7 +1541,7 @@ def test_create_agent_request_user_input_prediction():
     assert result.events == events
 
 
-def test_create_send_text_prediction():
+def test_create_send_text_prediction() -> None:
     """Test _create_send_text_prediction function."""
     message = "Hello world"
     events = [SlotSet("test_slot", "test_value")]
@@ -1464,7 +1561,7 @@ def test_create_send_text_prediction():
 # ============================================================================
 
 
-def test_update_agent_events():
+def test_update_agent_events() -> None:
     """Test _update_agent_events function."""
     event = AgentStarted("agent", "flow")
     metadata = {A2A_AGENT_CONTEXT_ID_KEY: "context123"}
@@ -1477,7 +1574,7 @@ def test_update_agent_events():
     assert event.context_id == "context123"
 
 
-def test_update_agent_input_metadata_with_events():
+def test_update_agent_input_metadata_with_events() -> None:
     """Test _update_agent_input_metadata_with_events function."""
     tracker = DialogueStateTracker.from_events(
         "test",
@@ -1503,7 +1600,7 @@ def test_update_agent_input_metadata_with_events():
 
 
 @pytest.mark.asyncio
-async def test_handle_resume_interrupted_agent():
+async def test_handle_resume_interrupted_agent() -> None:
     """Test _handle_resume_interrupted_agent function."""
     # Create mock objects
     agent_stack_frame = AgentStackFrame(
@@ -1544,7 +1641,7 @@ async def test_handle_resume_interrupted_agent():
     assert cast(AgentStackFrame, stack.frames[-1]).state == AgentState.WAITING_FOR_INPUT
 
 
-def test_handle_agent_input_required():
+def test_handle_agent_input_required() -> None:
     """Test _handle_agent_input_required function."""
     # Create mock objects
     output = AgentOutput(
@@ -1587,7 +1684,7 @@ def test_handle_agent_input_required():
     )
 
 
-def test_handle_agent_completed():
+def test_handle_agent_completed() -> None:
     """Test _handle_agent_completed function."""
     # Create mock objects
     output = AgentOutput(
@@ -1622,7 +1719,7 @@ def test_handle_agent_completed():
     assert not any(isinstance(frame, AgentStackFrame) for frame in stack.frames)
 
 
-def test_handle_agent_fatal_error():
+def test_handle_agent_fatal_error() -> None:
     """Test _handle_agent_fatal_error function."""
     # Create mock objects
     output = AgentOutput(
@@ -1643,8 +1740,12 @@ def test_handle_agent_fatal_error():
         flow_id="test_flow",
         metadata={},
     )
+    flows = FlowsList([Flow(id="test_flow")])
+    tracker = DialogueStateTracker.from_events("test", [])
 
-    result = _handle_agent_fatal_error(output, final_events, stack, step)
+    result = _handle_agent_fatal_error(
+        output, final_events, stack, step, flows, tracker
+    )
 
     # Verify the result
     assert isinstance(result, ContinueFlowWithNextStep)
@@ -1657,7 +1758,7 @@ def test_handle_agent_fatal_error():
     assert not any(isinstance(frame, AgentStackFrame) for frame in stack.frames)
 
 
-def test_handle_agent_unknown_status():
+def test_handle_agent_unknown_status() -> None:
     """Test handling of unknown agent status."""
     # Create mock objects
     output = AgentOutput(
@@ -1678,8 +1779,12 @@ def test_handle_agent_unknown_status():
         flow_id="test_flow",
         metadata={},
     )
+    flows = FlowsList([Flow(id="test_flow")])
+    tracker = DialogueStateTracker.from_events("test", [])
 
-    result = _handle_agent_unknown_status(output, final_events, stack, step)
+    result = _handle_agent_unknown_status(
+        output, final_events, stack, step, flows, tracker
+    )
 
     # Verify the result
     assert isinstance(result, ContinueFlowWithNextStep)
@@ -1687,6 +1792,10 @@ def test_handle_agent_unknown_status():
         isinstance(e, AgentCancelled) and e.agent_id == "test_agent"
         for e in result.events
     )
+    assert any(
+        isinstance(e, FlowCancelled) and e.flow_id == "test_flow" for e in result.events
+    )
+    assert isinstance(stack.frames[-2], CancelPatternFlowStackFrame)
     assert isinstance(stack.frames[-1], InternalErrorPatternFlowStackFrame)
 
 
@@ -1697,7 +1806,7 @@ def test_handle_agent_unknown_status():
 
 @pytest.mark.asyncio
 @patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
-async def test_call_agent_with_retry_success(mock_run_agent: AsyncMock):
+async def test_call_agent_with_retry_success(mock_run_agent: AsyncMock) -> None:
     """Test _call_agent_with_retry with successful agent call."""
     mock_run_agent.return_value = AgentOutput(
         id="test_agent",
@@ -1727,7 +1836,9 @@ async def test_call_agent_with_retry_success(mock_run_agent: AsyncMock):
 
 @pytest.mark.asyncio
 @patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
-async def test_call_agent_with_retry_recoverable_error(mock_run_agent: AsyncMock):
+async def test_call_agent_with_retry_recoverable_error(
+    mock_run_agent: AsyncMock,
+) -> None:
     """Test _call_agent_with_retry with recoverable error that eventually succeeds."""
     # First call fails with recoverable error, second succeeds
     mock_run_agent.side_effect = [
@@ -1765,7 +1876,7 @@ async def test_call_agent_with_retry_recoverable_error(mock_run_agent: AsyncMock
 
 @pytest.mark.asyncio
 @patch("rasa.core.policies.flows.agent_executor.AgentManager.run_agent")
-async def test_call_agent_with_retry_exception(mock_run_agent: AsyncMock):
+async def test_call_agent_with_retry_exception(mock_run_agent: AsyncMock) -> None:
     """Test _call_agent_with_retry when agent call raises an exception."""
     mock_run_agent.side_effect = Exception("Network error")
 
@@ -1787,3 +1898,184 @@ async def test_call_agent_with_retry_exception(mock_run_agent: AsyncMock):
 
     assert result.status == AgentStatus.FATAL_ERROR
     assert mock_run_agent.call_count == 1
+
+
+@pytest.mark.parametrize(
+    "stack_frames,expected_canceled_name,expected_canceled_frames,expected_flow_id,expected_step_id",
+    [
+        # Test case 1: UserFlowStackFrame only
+        (
+            [
+                UserFlowStackFrame(
+                    flow_id="test_flow", step_id="test_step", frame_id="user-frame-1"
+                )
+            ],
+            "Test flow",
+            ["user-frame-1"],
+            "test_flow",
+            "test_call",
+        ),
+        # Test case 2: AgentStackFrame on top of UserFlowStackFrame
+        (
+            [
+                UserFlowStackFrame(
+                    flow_id="test_flow", step_id="test_step", frame_id="user-frame-1"
+                ),
+                AgentStackFrame(
+                    frame_id="agent-frame-1",
+                    flow_id="test_flow",
+                    agent_id="test_agent",
+                    state=AgentState.WAITING_FOR_INPUT,
+                ),
+            ],
+            "Test flow",
+            ["agent-frame-1", "user-frame-1"],
+            "test_flow",
+            "test_call",
+        ),
+        # Test case 3: Multiple frames
+        (
+            [
+                UserFlowStackFrame(
+                    flow_id="test_flow", step_id="test_step", frame_id="user-frame-2"
+                ),
+                UserFlowStackFrame(
+                    flow_id="test_flow", step_id="test_step", frame_id="user-frame-1"
+                ),
+                AgentStackFrame(
+                    frame_id="agent-frame-1",
+                    flow_id="test_flow",
+                    agent_id="test_agent",
+                    state=AgentState.WAITING_FOR_INPUT,
+                ),
+            ],
+            "Test flow",
+            ["agent-frame-1", "user-frame-1"],
+            "test_flow",
+            "test_call",
+        ),
+    ],
+)
+def test_cancel_flow_with_different_stack_configurations(
+    stack_frames: List[DialogueStackFrame],
+    expected_canceled_name: Optional[str],
+    expected_canceled_frames: Optional[List[str]],
+    expected_flow_id: Optional[str],
+    expected_step_id: Optional[str],
+) -> None:
+    """Test _cancel_flow with different stack configurations."""
+    flows = flows_from_str(
+        """
+        flows:
+          test_flow:
+            description: Test flow
+            steps:
+            - id: test_step
+              action: action_listen
+        """
+    )
+
+    # Create stack with provided frames
+    stack = DialogueStack(frames=stack_frames)
+    tracker = DialogueStateTracker.from_events("test", [])
+
+    # Create a CallFlowStep
+    step = CallFlowStep(
+        custom_id="test_call",
+        idx=0,
+        description="Test call step",
+        call="test_agent",
+        next=FlowStepLinks(links=[]),
+        flow_id="test_flow",
+        metadata={},
+    )
+
+    # Call _cancel_flow
+    cancel_pattern_frame, flow_cancelled_event = _cancel_flow(
+        stack, flows, tracker, step
+    )
+
+    # Verify CancelPatternFlowStackFrame
+    assert cancel_pattern_frame is not None
+    assert isinstance(cancel_pattern_frame, CancelPatternFlowStackFrame)
+    assert cancel_pattern_frame.canceled_name.lower() == expected_canceled_name.lower()
+    assert cancel_pattern_frame.canceled_frames == expected_canceled_frames
+
+    # Verify FlowCancelled event
+    assert flow_cancelled_event is not None
+    assert isinstance(flow_cancelled_event, FlowCancelled)
+    assert flow_cancelled_event.flow_id == expected_flow_id
+    assert flow_cancelled_event.step_id == expected_step_id
+    assert flow_cancelled_event.type_name == "flow_cancelled"
+
+
+@pytest.mark.parametrize(
+    "flow_id,flows_config,expected_canceled_name",
+    [
+        # Test case 1: Existing flow with readable name
+        (
+            "test_flow",
+            """
+            flows:
+              test_flow:
+                description: Test flow
+                steps:
+                - id: test_step
+                  action: action_listen
+            """,
+            "Test flow",
+        ),
+        # Test case 2: Non-existent flow (should use flow_id as name)
+        (
+            "nonexistent_flow",
+            """
+            flows:
+              other_flow:
+                description: Other flow
+                steps:
+                - id: test_step
+                  action: action_listen
+            """,
+            "nonexistent_flow",
+        ),
+    ],
+)
+def test_cancel_flow_with_different_flows(
+    flow_id: str, flows_config: str, expected_canceled_name: str
+) -> None:
+    """Test _cancel_flow with different flow configurations."""
+    flows = flows_from_str(flows_config)
+
+    # Create a stack with a UserFlowStackFrame
+    user_frame = UserFlowStackFrame(
+        flow_id=flow_id, step_id="test_step", frame_id="user-frame-1"
+    )
+    stack = DialogueStack(frames=[user_frame])
+    tracker = DialogueStateTracker.from_events("test", [])
+
+    # Create a CallFlowStep
+    step = CallFlowStep(
+        custom_id="test_call",
+        idx=0,
+        description="Test call step",
+        call="test_agent",
+        next=FlowStepLinks(links=[]),
+        flow_id=flow_id,
+        metadata={},
+    )
+
+    # Call _cancel_flow
+    cancel_pattern_frame, flow_cancelled_event = _cancel_flow(
+        stack, flows, tracker, step
+    )
+
+    # Verify results
+    assert cancel_pattern_frame is not None
+    assert isinstance(cancel_pattern_frame, CancelPatternFlowStackFrame)
+    assert cancel_pattern_frame.canceled_name.lower() == expected_canceled_name.lower()
+    assert cancel_pattern_frame.canceled_frames == ["user-frame-1"]
+
+    assert flow_cancelled_event is not None
+    assert isinstance(flow_cancelled_event, FlowCancelled)
+    assert flow_cancelled_event.flow_id == flow_id
+    assert flow_cancelled_event.step_id == "test_call"
