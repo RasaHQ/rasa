@@ -210,10 +210,16 @@ jobs:
           templates: ${{ env.TEMPLATES }}
 
       - name: Build Docker base images 🛠
-        run: |
-          RASA_BASE_REPOSITORY=${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa \
-          RASA_BASE_IMAGE_TAG=${{ steps.set-tag-version.outputs.tag_version }} \
-          make build-multi-platform-base-docker
+        uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
+        with:
+          timeout_minutes: 60
+          max_attempts: 2
+          retry_wait_seconds: 60
+          shell: bash
+          command: |
+            RASA_BASE_REPOSITORY=${{ env.GCP_TARGET_IMAGE_REGISTRY }}/rasa \
+            RASA_BASE_IMAGE_TAG=${{ steps.set-tag-version.outputs.tag_version }} \
+            make build-multi-platform-base-docker
 
       - name: Copy Segment write key to the package
         env:
