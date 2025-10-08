@@ -10,6 +10,7 @@ https://rasahq.atlassian.net/browse/ATO-1925
 The solution is based on https://github.com/FreeCAD/FreeCAD/issues/6315
 """
 
+import logging
 from typing import Any
 
 import ply.yacc
@@ -19,12 +20,18 @@ from pypred import Predicate as OriginalPredicate  # noqa: TID251
 # Store the original yacc function
 _original_yacc = ply.yacc.yacc
 
+# Create a logger that suppresses warnings to avoid yacc table file version warnings
+_yacc_logger = logging.getLogger("ply.yacc")
+_yacc_logger.setLevel(logging.ERROR)
+
 
 def patched_yacc(*args: Any, **kwargs: Any) -> Any:
     # Disable generation of debug ('parser.out') and table
     # cache ('parsetab.py'), as it requires a writable location.
     kwargs["write_tables"] = False
     kwargs["module"] = pypred.parser
+    # Suppress yacc warnings by using a logger that only shows errors
+    kwargs["errorlog"] = _yacc_logger
     return _original_yacc(*args, **kwargs)
 
 
