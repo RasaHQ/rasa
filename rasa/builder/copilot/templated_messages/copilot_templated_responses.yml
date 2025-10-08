@@ -36,3 +36,6 @@ responses:
   guardrail_blocked_project_response: |
     Your Copilot access has been temporarily blocked due to repeated policy violations.
     If you believe this is an error or would like to request a review, please reach out to support@rasa.com.
+
+  training_success_response: |
+    Your changes have been saved successfully.

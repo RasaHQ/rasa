@@ -8,6 +8,7 @@ from rasa.builder.copilot.constants import (
     PROMPT_TO_BOT_KEY,
 )
 from rasa.builder.copilot.copilot_templated_message_provider import (
+    load_copilot_handler_default_responses,
     load_copilot_welcome_messages,
 )
 from rasa.builder.copilot.models import (
@@ -282,8 +283,19 @@ async def run_replace_all_files_job(
         update_agent(agent, app)
         await push_job_status_event(job, JobStatus.train_success)
 
-        # Send final done event
-        await push_job_status_event(job, JobStatus.done)
+        # Send final done event with copilot training success response job ID
+        copilot_training_success_job = job_manager.create_job()
+        app.add_task(
+            run_copilot_training_success_job(app, copilot_training_success_job)
+        )
+
+        await push_job_status_event(
+            job=job,
+            status=JobStatus.done,
+            payload={
+                "copilot_training_success_job_id": copilot_training_success_job.id
+            },
+        )
         job_manager.mark_done(job)
 
     except ValidationError as exc:
@@ -531,6 +543,65 @@ async def run_copilot_welcome_message_job(
     except Exception as exc:
         structlogger.exception(
             "welcome_message_job.error",
+            job_id=job.id,
+            error=str(exc),
+        )
+        await push_job_status_event(job, JobStatus.error, message=str(exc))
+        job_manager.mark_done(job, error=str(exc))
+
+
+async def run_copilot_training_success_job(
+    app: "Sanic",
+    job: JobInfo,
+) -> None:
+    """Run the training success job in the background.
+
+    This job sends a training success message to the user after successful bot training.
+
+    Args:
+        app: The Sanic application instance.
+        job: The job information instance.
+    """
+    try:
+        # Load copilot default messages from YAML
+        internal_messages = load_copilot_handler_default_responses()
+
+        # Get the appropriate training success message
+        training_success_message = internal_messages.get("training_success_response")
+
+        # Send the training success message
+        await push_job_status_event(
+            job,
+            JobStatus.train_success_message,
+            payload={
+                "content": training_success_message,
+                "response_category": "copilot",
+                "completeness": "complete",
+            },
+        )
+
+        # Send the training success category
+        await push_job_status_event(
+            job,
+            JobStatus.train_success_message,
+            payload={
+                "response_category": "copilot_training_success",
+                "completeness": "complete",
+            },
+        )
+
+        # Mark job as done
+        await push_job_status_event(job, JobStatus.done)
+        job_manager.mark_done(job)
+
+        structlogger.info(
+            "copilot_training_success_job.success",
+            job_id=job.id,
+        )
+
+    except Exception as exc:
+        structlogger.exception(
+            "copilot_training_success_job.error",
             job_id=job.id,
             error=str(exc),
         )

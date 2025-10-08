@@ -191,6 +191,7 @@ class JobStatus(str, Enum):
 
     training = "training"
     train_success = "train_success"
+    train_success_message = "train_success_message"
     train_error = "train_error"
 
     validating = "validating"

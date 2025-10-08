@@ -22,6 +22,7 @@ from rasa.builder.exceptions import (
 from rasa.builder.job_manager import JobInfo, job_manager
 from rasa.builder.jobs import (
     run_copilot_training_error_analysis_job,
+    run_copilot_training_success_job,
     run_copilot_welcome_message_job,
     run_prompt_to_bot_job,
     run_replace_all_files_job,
@@ -676,3 +677,113 @@ class TestCopilotWelcomeMessage:
         assert (
             done_calls[0][1]["payload"]["copilot_welcome_job_id"] == "welcome_job_123"
         )
+
+
+class TestCopilotTrainingSuccessJob:
+    @pytest.fixture(autouse=True)
+    def setup_mocks(self, monkeypatch):
+        # Create mocks for copilot training success message job
+        self.mock_push_event = AsyncMock()
+        self.mock_job_manager = MagicMock()
+
+        # Create training success job mock
+        training_success_job = MagicMock()
+        training_success_job.id = "training_success_job_123"
+        self.mock_job_manager.create_job.return_value = training_success_job
+
+        # Create training mocks
+        self.mock_train = AsyncMock(return_value=MagicMock())
+        self.mock_load = AsyncMock(return_value=None)
+        self.mock_update = MagicMock()
+
+        # Apply all mocks
+        monkeypatch.setattr(
+            "rasa.builder.jobs.push_job_status_event", self.mock_push_event
+        )
+        monkeypatch.setattr("rasa.builder.jobs.job_manager", self.mock_job_manager)
+        monkeypatch.setattr("rasa.builder.jobs.train_and_load_agent", self.mock_train)
+        monkeypatch.setattr("rasa.builder.jobs.try_load_existing_agent", self.mock_load)
+        monkeypatch.setattr("rasa.builder.jobs.update_agent", self.mock_update)
+
+    @staticmethod
+    def _verify_training_success_message_call(
+        mock_push_event, expected_content_snippets
+    ):
+        training_success_calls = [
+            call
+            for call in mock_push_event.call_args_list
+            if call[0][1] == JobStatus.train_success_message
+        ]
+        assert len(training_success_calls) == 2
+
+        training_success_payload = training_success_calls[0][1]["payload"]
+        assert "content" in training_success_payload
+        assert "response_category" in training_success_payload
+        assert "completeness" in training_success_payload
+        assert training_success_payload["response_category"] == "copilot"
+        assert training_success_payload["completeness"] == "complete"
+        for snippet in expected_content_snippets:
+            assert snippet in training_success_payload["content"]
+
+        training_success_payload = training_success_calls[1][1]["payload"]
+        assert "response_category" in training_success_payload
+        assert "completeness" in training_success_payload
+        assert (
+            training_success_payload["response_category"] == "copilot_training_success"
+        )
+        assert training_success_payload["completeness"] == "complete"
+
+    @staticmethod
+    def _verify_done_event_sent(mock_push_event):
+        done_calls = [
+            call
+            for call in mock_push_event.call_args_list
+            if call[0][1] == JobStatus.done
+        ]
+        assert len(done_calls) == 1
+
+    @pytest.mark.asyncio
+    async def test_training_success_message(self, mock_app, mock_job):
+        await run_copilot_training_success_job(mock_app, mock_job)
+
+        expected_snippets = ["Your changes have been saved successfully."]
+        self._verify_training_success_message_call(
+            self.mock_push_event, expected_snippets
+        )
+        self._verify_done_event_sent(self.mock_push_event)
+
+    @pytest.mark.asyncio
+    async def test_training_error_prevents_training_success_job(
+        self, mock_app, sample_bot_files
+    ):
+        """Test that training errors don't create training success job."""
+        job = job_manager.create_job()
+
+        # Mock the project generator methods
+        mock_app.ctx.project_generator.replace_all_bot_files = Mock()
+        mock_training_input = Mock()
+        mock_app.ctx.project_generator.get_training_input.return_value = (
+            mock_training_input
+        )
+
+        # Set up training to fail
+        self.mock_train.side_effect = TrainingError("Training failed")
+
+        with (
+            patch(
+                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
+            ) as mock_validate,
+        ):
+            mock_validate.return_value = None  # No validation error
+
+            # Call run_replace_all_files_job which should handle the training error
+            await run_replace_all_files_job(mock_app, job, sample_bot_files)
+
+        # Verify that create_job was called once for copilot error analysis,
+        # but NOT for a training success job
+        # mock_job_manager.create_job is called in
+        # push_error_and_start_copilot_analysis for the copilot analysis job
+        assert self.mock_job_manager.create_job.call_count == 1
+
+        # Verify add_task was called once for the copilot error analysis job
+        assert mock_app.add_task.call_count == 1
