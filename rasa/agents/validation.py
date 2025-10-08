@@ -347,9 +347,11 @@ def _handle_pydantic_validation_error(
 def _validate_endpoint_references(agent_config: AgentConfig) -> None:
     """Validate that LLM and MCP server references in agent config are valid."""
     agent_name = agent_config.agent.name
-
-    # Get available endpoints
     endpoints = Configuration.get_instance().endpoints
+    if not endpoints.config_file_path:
+        # If no endpoints were loaded (e.g., `data validate` without --endpoints), skip
+        # endpoint reference checks
+        return
 
     # Validate LLM configuration references
     if agent_config.configuration and agent_config.configuration.llm:

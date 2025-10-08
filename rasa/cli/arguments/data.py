@@ -4,8 +4,10 @@ from typing import Text
 from rasa.cli.arguments.default_arguments import (
     add_data_param,
     add_domain_param,
+    add_endpoint_param,
     add_nlu_data_param,
     add_out_param,
+    add_sub_agents_param,
 )
 from rasa.shared.constants import DEFAULT_CONVERTED_DATA_PATH
 
@@ -91,6 +93,13 @@ def set_validator_arguments(parser: argparse.ArgumentParser) -> None:
     )
     add_domain_param(parser)
     add_data_param(parser)
+    add_sub_agents_param(parser)
+    # Endpoints are optional for `data validate` command
+    add_endpoint_param(
+        parser,
+        help_text="Configuration file for the connectors as a yml file.",
+        default=None,
+    )
 
 
 def set_migrate_arguments(parser: argparse.ArgumentParser) -> None:

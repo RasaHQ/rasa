@@ -1,4 +1,5 @@
 import argparse
+import sys
 import types
 from pathlib import Path
 
@@ -18,7 +19,7 @@ def reset_configuration_singleton() -> None:
 
 
 @pytest.fixture
-def sentinel_agents() -> AvailableAgents:
+def empty_available_agents() -> AvailableAgents:
     return AvailableAgents(agents={})
 
 
@@ -44,12 +45,14 @@ def _setup_monkeypatch_for_config(
 
 
 def test_shell_initializes_sub_agents_with_custom_path(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sentinel_agents: AvailableAgents
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    empty_available_agents: AvailableAgents,
 ) -> None:
     from rasa.cli.shell import shell
 
     captured: dict = {}
-    _setup_monkeypatch_for_config(monkeypatch, sentinel_agents, captured)
+    _setup_monkeypatch_for_config(monkeypatch, empty_available_agents, captured)
 
     # prevent loading a model; make it fail fast after init
     monkeypatch.setattr(
@@ -77,16 +80,18 @@ def test_shell_initializes_sub_agents_with_custom_path(
         pass
 
     assert captured["folder"] == str(tmp_path / "custom_sub_agents")
-    assert Configuration.get_instance().available_agents is sentinel_agents
+    assert Configuration.get_instance().available_agents is empty_available_agents
 
 
 def test_run_initializes_sub_agents_with_custom_path(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sentinel_agents: AvailableAgents
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    empty_available_agents: AvailableAgents,
 ) -> None:
     from rasa.cli.run import run
 
     captured: dict = {}
-    _setup_monkeypatch_for_config(monkeypatch, sentinel_agents, captured)
+    _setup_monkeypatch_for_config(monkeypatch, empty_available_agents, captured)
 
     # prevent server launch by stubbing the alias used inside cli.run
     monkeypatch.setattr("rasa.cli.run.rasa_run", lambda **kwargs: None, raising=True)
@@ -104,16 +109,18 @@ def test_run_initializes_sub_agents_with_custom_path(
     run(args)
 
     assert captured["folder"] == str(tmp_path / "custom_sub_agents")
-    assert Configuration.get_instance().available_agents is sentinel_agents
+    assert Configuration.get_instance().available_agents is empty_available_agents
 
 
 def test_inspect_initializes_sub_agents_with_custom_path(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sentinel_agents: AvailableAgents
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    empty_available_agents: AvailableAgents,
 ) -> None:
     from rasa.cli.inspect import inspect
 
     captured: dict = {}
-    _setup_monkeypatch_for_config(monkeypatch, sentinel_agents, captured)
+    _setup_monkeypatch_for_config(monkeypatch, empty_available_agents, captured)
 
     # prevent opening browser and model loading
     monkeypatch.setattr(
@@ -147,16 +154,18 @@ def test_inspect_initializes_sub_agents_with_custom_path(
         pass
 
     assert captured["folder"] == str(tmp_path / "custom_sub_agents")
-    assert Configuration.get_instance().available_agents is sentinel_agents
+    assert Configuration.get_instance().available_agents is empty_available_agents
 
 
 def test_train_initializes_sub_agents_with_custom_path(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sentinel_agents: AvailableAgents
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    empty_available_agents: AvailableAgents,
 ) -> None:
     from rasa.cli.train import run_training
 
     captured: dict = {}
-    _setup_monkeypatch_for_config(monkeypatch, sentinel_agents, captured)
+    _setup_monkeypatch_for_config(monkeypatch, empty_available_agents, captured)
 
     # bypass actual training
     class DummyTrainingResult:
@@ -217,4 +226,47 @@ def test_train_initializes_sub_agents_with_custom_path(
     run_training(args, can_exit=False)
 
     assert captured["folder"] == str(tmp_path / "custom_sub_agents")
-    assert Configuration.get_instance().available_agents is sentinel_agents
+    assert Configuration.get_instance().available_agents is empty_available_agents
+
+
+def test_data_validate_initializes_sub_agents_with_custom_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    empty_available_agents: AvailableAgents,
+) -> None:
+    """Test that `rasa data validate` initializes sub-agents with a custom path."""
+    from rasa.cli.validation.bot_config import validate_files
+
+    captured: dict = {}
+    _setup_monkeypatch_for_config(monkeypatch, empty_available_agents, captured)
+
+    # Mock Validator to keep validation lightweight
+    class MockValidator:
+        config = None
+
+        @staticmethod
+        def from_importer(_importer):  # type: ignore[no-untyped-def]
+            return MockValidator()
+
+        def verify_story_structure(self, *_args, **_kwargs):  # type: ignore[no-untyped-def]
+            return True
+
+    # Provide a mock module for `rasa.validator` so the in-function import resolves
+    mock_validator_module = types.ModuleType("rasa.validator")
+    mock_validator_module.Validator = MockValidator  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "rasa.validator", mock_validator_module)
+
+    # Call validate_files with custom sub-agents and endpoints
+    validate_files(
+        fail_on_warnings=False,
+        max_history=None,
+        importer=object(),  # not used by dummy validator
+        stories_only=True,
+        flows_only=False,
+        translations_only=False,
+        sub_agents=str(tmp_path / "custom_sub_agents"),
+        endpoints=str(tmp_path / "endpoints.yml"),
+    )
+
+    assert captured["folder"] == str(tmp_path / "custom_sub_agents")
+    assert Configuration.get_instance().available_agents is empty_available_agents

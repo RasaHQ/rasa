@@ -140,7 +140,11 @@ def _add_data_validate_parsers(
     _append_story_structure_arguments(validate_parser)
     validate_parser.set_defaults(
         func=lambda args: validate_files(
-            args.fail_on_warnings, args.max_history, _build_training_data_importer(args)
+            args.fail_on_warnings,
+            args.max_history,
+            _build_training_data_importer(args),
+            sub_agents=args.sub_agents,
+            endpoints=args.endpoints,
         )
     )
     arguments.set_validator_arguments(validate_parser)
@@ -160,6 +164,8 @@ def _add_data_validate_parsers(
             args.max_history,
             _build_training_data_importer(args),
             stories_only=True,
+            sub_agents=args.sub_agents,
+            endpoints=args.endpoints,
         )
     )
     arguments.set_validator_arguments(story_structure_parser)
@@ -176,6 +182,8 @@ def _add_data_validate_parsers(
             args.max_history,
             _build_training_data_importer(args),
             flows_only=True,
+            sub_agents=args.sub_agents,
+            endpoints=args.endpoints,
         )
     )
     arguments.set_validator_arguments(flows_structure_parser)
@@ -192,6 +200,8 @@ def _add_data_validate_parsers(
             args.max_history,
             _build_training_data_importer(args),
             translations_only=True,
+            sub_agents=args.sub_agents,
+            endpoints=args.endpoints,
         )
     )
     arguments.set_validator_arguments(translations_structure_parser)

@@ -140,7 +140,8 @@ def test_data_validate_help(run: Callable[..., RunResult]):
                           [--logging-config-file LOGGING_CONFIG_FILE]
                           [--max-history MAX_HISTORY] [-c CONFIG]
                           [--fail-on-warnings] [-d DOMAIN]
-                          [--data DATA [DATA ...]]
+                          [--data DATA [DATA ...]] [--sub-agents SUB_AGENTS]
+                          [--endpoints ENDPOINTS]
                           {{stories,flows,translations}} ..."""
 
     lines = help_text.split("\n")
@@ -206,6 +207,27 @@ def test_data_validate_not_used_debug_message(
     )
     message = "The intent 'goodbye' is not used in any story, rule or flow."
     assert message in str(result.stderr)
+
+
+def test_data_validate_flows_accepts_endpoints_and_sub_agents_flags(
+    run_in_simple_project: Callable[..., RunResult], tmp_path: Path
+):
+    # Ensure flags are accepted and do not cause CLI parsing errors for flows subcommand
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text("nlg:\n  type: rasa\n")
+
+    custom_sub_agents_dir = tmp_path / "custom_sub_agents"
+    custom_sub_agents_dir.mkdir(parents=True, exist_ok=True)
+
+    run_in_simple_project(
+        "data",
+        "validate",
+        "flows",
+        "--sub-agents",
+        str(custom_sub_agents_dir),
+        "--endpoints",
+        str(endpoints_file),
+    )
 
 
 def test_data_validate_failed_to_load_domain(

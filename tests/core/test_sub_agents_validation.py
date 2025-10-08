@@ -152,12 +152,12 @@ def test_validate_sub_agents_valid_configs(test_name: str, config_content: str) 
             ["Missing mandatory fields"],
         ),
         (
-            "valid_mcp_agent_lowercase_protocol",
+            "invalid_mcp_agent_invalid_protocol",
             dedent("""
                 agent:
-                  name: "valid_mcp_agent_lowercase"
-                  protocol: "rasa"
-                  description: "A valid MCP agent with lowercase protocol"
+                  name: "invalid_mcp_agent_invalid_protocol"
+                  protocol: "raasaa"
+                  description: "An invalid MCP agent with invalid protocol"
                 connections:
                   mcp_servers:
                     - name: "test_mcp_server"
@@ -170,6 +170,7 @@ def test_validate_sub_agents_invalid_configs(
     test_name: str, config_content: str, expected_error_patterns: List[str]
 ) -> None:
     """Test validation fails for various invalid agent configurations."""
+    Configuration.initialise_empty()
     with tempfile.TemporaryDirectory() as temp_dir:
         create_agent_config(temp_dir, test_name, config_content)
         result = _validate_sub_agents(temp_dir)
@@ -447,6 +448,10 @@ def test_validate_sub_agents_endpoint_references_failures(
         create_mock_endpoints(temp_dir, ["test_mcp_server"], ["valid_model_group"])
 
         mock_instance = MagicMock()
+        # Ensure endpoints are considered explicitly loaded by setting config_file_path
+        mock_instance.endpoints.config_file_path = os.path.join(
+            temp_dir, "endpoints.yml"
+        )
         mock_instance.endpoints.mcp_servers = [
             type("MCPServerConfig", (), {"name": "test_mcp_server"})(),
         ]
@@ -501,6 +506,10 @@ def test_validate_sub_agents_endpoint_references_success(
         create_mock_endpoints(temp_dir, ["valid_mcp_server"], ["valid_model_group"])
 
         mock_instance = MagicMock()
+        # Ensure endpoints are considered explicitly loaded by setting config_file_path
+        mock_instance.endpoints.config_file_path = os.path.join(
+            temp_dir, "endpoints.yml"
+        )
         mock_instance.endpoints.mcp_servers = [
             type("MCPServerConfig", (), {"name": "valid_mcp_server"})(),
         ]
@@ -654,6 +663,54 @@ def test_validate_agent_with_invalid_oauth_configuration() -> None:
                 "The 'client_secret' must be set as an environment variable"
                 in error_message
             )
+
+
+@pytest.mark.parametrize(
+    "with_endpoints, assert_called",
+    [
+        (False, False),  # skipped when no endpoints provided
+        (True, True),  # triggered when endpoints are provided
+    ],
+)
+def test_endpoint_reference_validation_depends_on_endpoints_flag(
+    with_endpoints: bool, assert_called: bool
+) -> None:
+    """Verify endpoint reference checks depend on whether endpoints were provided."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create an agent that references an MCP server
+        config_content = dedent(
+            """
+            agent:
+              name: "agent_parametrized"
+              protocol: "RASA"
+              description: "Agent with MCP refs"
+            connections:
+              mcp_servers:
+                - name: "some_mcp_server"
+            """
+        )
+        create_agent_config(temp_dir, "agent_parametrized", config_content)
+
+        # Mock Configuration.get_instance to return endpoints reflecting the flag
+        from rasa.core.config.available_endpoints import AvailableEndpoints
+
+        mock_instance = MagicMock()
+        if with_endpoints:
+            mock_instance.endpoints.config_file_path = os.path.join(
+                temp_dir, "endpoints.yml"
+            )
+        else:
+            mock_instance.endpoints = AvailableEndpoints()  # config_file_path is None
+
+        with patch.object(Configuration, "get_instance", return_value=mock_instance):
+            with patch(
+                "rasa.agents.validation._validate_mcp_server_references"
+            ) as validate_mcp_mock:
+                validate_agent_folder(temp_dir)
+                if assert_called:
+                    validate_mcp_mock.assert_called_once()
+                else:
+                    validate_mcp_mock.assert_not_called()
 
 
 @pytest.fixture
