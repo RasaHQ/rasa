@@ -5,14 +5,17 @@ from rasa.shared.exceptions import RasaException
 class FlowException(RasaException):
     """Exception that is raised when there is a problem with a flow."""
 
-    pass
+    def __init__(self, message: str = "Flow error occurred") -> None:
+        """Initialize FlowException with a message."""
+        super().__init__(message)
 
 
 class FlowCircuitBreakerTrippedException(FlowException):
     """Exception that is raised when the flow circuit breaker tripped.
 
     The circuit breaker gets tripped when a flow seems to be stuck in
-    executing steps and does not make any progress."""
+    executing steps and does not make any progress.
+    """
 
     def __init__(
         self, dialogue_stack: DialogueStack, number_of_steps_taken: int

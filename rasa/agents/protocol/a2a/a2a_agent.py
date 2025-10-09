@@ -65,7 +65,7 @@ structlogger = structlog.get_logger()
 
 
 class A2AAgent(AgentProtocol):
-    """A2A client implementation"""
+    """A2A client implementation."""
 
     __SUPPORTED_OUTPUT_MODES: ClassVar[list[str]] = [
         "text",
@@ -169,7 +169,8 @@ class A2AAgent(AgentProtocol):
                 error=str(exception),
             )
             raise AgentInitializationException(
-                f"Failed to initialize A2A client for agent '{self._name}': {exception}"
+                f"Failed to initialize A2A client "
+                f"for agent '{self._name}': {exception}",
             ) from exception
 
         await self._perform_health_check()
@@ -180,7 +181,7 @@ class A2AAgent(AgentProtocol):
         )
 
     async def disconnect(self) -> None:
-        """We don't need to explicitly disconnect the A2A client"""
+        """We don't need to explicitly disconnect the A2A client."""
         return
 
     # ============================================================================
@@ -297,7 +298,7 @@ class A2AAgent(AgentProtocol):
     def _handle_send_message_response(
         self, agent_input: AgentInput, response: ClientEvent | Message
     ) -> Optional[AgentOutput]:
-        """Handle possible response types from the A2A client:
+        """Handle possible response types from the A2A client.
 
         In case of streaming, the response can be either exactly *one* Message,
         or a *series* of tuples of (Task, Optional[TaskUpdateEvent]).
@@ -410,8 +411,8 @@ class A2AAgent(AgentProtocol):
         agent_input: AgentInput,
         task: Task,
     ) -> Optional[AgentOutput]:
-        """If the task status is terminal (i.e., completed, failed, etc.),
-        return an AgentOutput.
+        """If task status is terminal (e.g. completed, failed) return AgentOutput.
+
         If the task is still in progress (i.e., submitted, working), return None,
         so that the streaming or pooling agent can continue to wait for updates.
         """
@@ -655,6 +656,7 @@ class A2AAgent(AgentProtocol):
     @staticmethod
     def _generate_completed_response_message(task: Task) -> str:
         """Generate a response message for a completed task.
+
         In case of completed tasks, the final message might be in
         the task status message or in the artifacts (or both).
         """
@@ -728,19 +730,19 @@ class A2AAgent(AgentProtocol):
 
         except FileNotFoundError as e:
             raise AgentInitializationException(
-                f"Agent card file not found: {agent_card_path}"
+                f"Agent card file not found: {agent_card_path}",
             ) from e
         except (IOError, PermissionError) as e:
             raise AgentInitializationException(
-                f"Error reading agent card file {agent_card_path}: {e}"
+                f"Error reading agent card file {agent_card_path}: {e}",
             ) from e
         except json.JSONDecodeError as e:
             raise AgentInitializationException(
-                f"Invalid JSON in agent card file {agent_card_path}: {e}"
+                f"Invalid JSON in agent card file {agent_card_path}: {e}",
             ) from e
         except ValidationError as e:
             raise AgentInitializationException(
-                f"Failed to load agent card from {agent_card_path}: {e}"
+                f"Failed to load agent card from {agent_card_path}: {e}",
             ) from e
 
     @staticmethod
@@ -798,7 +800,7 @@ class A2AAgent(AgentProtocol):
 
         raise AgentInitializationException(
             f"Failed to resolve agent card from {agent_card_path} after "
-            f"{max_retries} attempts."
+            f"{max_retries} attempts.",
         )
 
     # ============================================================================

@@ -2,7 +2,7 @@ import importlib.resources
 from typing import Dict
 
 import structlog
-import yaml  # type: ignore
+import yaml  # type: ignore[import-untyped]
 
 from rasa.builder.copilot.constants import (
     COPILOT_HANDLER_RESPONSES_FILE,

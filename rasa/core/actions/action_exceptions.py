@@ -12,7 +12,7 @@ class ActionExecutionRejection(RasaException):
         self.message = message or "Custom action '{}' rejected to run".format(
             action_name
         )
-        super(ActionExecutionRejection, self).__init__()
+        super(ActionExecutionRejection, self).__init__(self.message)
 
     def __str__(self) -> str:
         return self.message

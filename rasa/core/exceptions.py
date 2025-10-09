@@ -14,7 +14,7 @@ class AgentNotReady(RasaCoreException):
     def __init__(self, message: Text) -> None:
         """Initialize message attribute."""
         self.message = message
-        super(AgentNotReady, self).__init__()
+        super(AgentNotReady, self).__init__(message)
 
 
 class ChannelConfigError(RasaCoreException):

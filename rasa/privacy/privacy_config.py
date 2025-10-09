@@ -211,7 +211,7 @@ def get_cron_trigger(cron_expression: str) -> CronTrigger:
             "privacy_config.invalid_cron_expression",
             cron=cron_expression,
         )
-        raise RasaException from exc
+        raise RasaException("Invalid cron expression") from exc
 
     return cron
 

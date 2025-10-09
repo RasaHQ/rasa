@@ -84,7 +84,7 @@ class InvalidRule(RasaException):
     """Exception that can be raised when rules are not valid."""
 
     def __init__(self, message: Text) -> None:
-        super().__init__()
+        super().__init__(message)
         self.message = message
 
     def __str__(self) -> Text:

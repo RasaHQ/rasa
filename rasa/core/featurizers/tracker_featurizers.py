@@ -58,7 +58,7 @@ class InvalidStory(RasaException):
           message: a custom exception message.
         """
         self.message = message
-        super(InvalidStory, self).__init__()
+        super(InvalidStory, self).__init__(message)
 
     def __str__(self) -> Text:
         return self.message
@@ -174,6 +174,7 @@ class TrackerFeaturizer:
 
         Args:
             trackers_as_actions: A list of tracker labels.
+            domain: The domain containing action names.
 
         Returns:
             Label IDs for each tracker
@@ -854,7 +855,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         """Creates an iterator over training examples from a tracker.
 
         Args:
-            trackers: The tracker from which to extract training examples.
+            tracker: The tracker from which to extract training examples.
             domain: The domain of the training data.
             omit_unset_slots: If `True` do not include the initial values of slots.
             ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`

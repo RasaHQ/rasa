@@ -297,7 +297,10 @@ async def load_agent(
         return agent
 
     except AgentInitializationException as e:
-        raise e
+        if e.suppress_stack_trace:
+            raise e from None
+        else:
+            raise e
     except Exception as e:
         logger.error(f"Could not load model due to {e}.", exc_info=True)
         return agent

@@ -23,6 +23,25 @@ ANSI_CYAN_BOLD = "\033[1;36m"
 ANSI_RESET = "\033[0m"
 
 
+def conditional_set_exc_info(
+    logger: WrappedLogger, name: str, event_dict: EventDict
+) -> EventDict:
+    """Set exception info only if exception does not have suppress_stack_trace flag."""
+    exc_info = event_dict.get("exc_info")
+    if exc_info is not None:
+        is_debug_mode = logger.isEnabledFor(logging.DEBUG)
+
+        if (
+            hasattr(exc_info, "suppress_stack_trace")
+            and exc_info.suppress_stack_trace
+            and not is_debug_mode
+        ):
+            event_dict.pop("exc_info", None)
+        else:
+            return structlog.dev.set_exc_info(logger, name, event_dict)
+    return event_dict
+
+
 class HumanConsoleRenderer(ConsoleRenderer):
     """Console renderer that outputs human-readable logs."""
 
@@ -158,7 +177,7 @@ def configure_structlog(
         structlog.processors.StackInfoRenderer(),
         # If some value is in bytes, decode it to a unicode str.
         structlog.processors.UnicodeDecoder(),
-        structlog.dev.set_exc_info,
+        conditional_set_exc_info,
         # add structlog sentry integration. only log fatal log entries
         # as events as we are tracking exceptions anyways
         SentryProcessor(event_level=logging.FATAL),

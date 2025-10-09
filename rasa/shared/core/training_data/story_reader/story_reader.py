@@ -126,4 +126,4 @@ class StoryParseError(RasaCoreException, ValueError):
 
     def __init__(self, message: Text) -> None:
         self.message = message
-        super(StoryParseError, self).__init__()
+        super(StoryParseError, self).__init__(message)

@@ -16,6 +16,17 @@ class RasaException(Exception):
     to the users, but will be ignored in telemetry.
     """
 
+    def __init__(self, message: str, suppress_stack_trace: bool = False, **kwargs: Any):
+        """Initialize the exception.
+
+        Args:
+            message: The error message.
+            suppress_stack_trace: If True, the stack trace will be suppressed in logs.
+            **kwargs: Additional keyword arguments (e.g., cause for exception chaining).
+        """
+        Exception.__init__(self, message)
+        self.suppress_stack_trace = suppress_stack_trace
+
 
 class RasaCoreException(RasaException):
     """Basic exception for errors raised by Rasa Core."""
@@ -113,6 +124,17 @@ class SchemaValidationError(RasaException, jsonschema.ValidationError):
 class InvalidEntityFormatException(RasaException, json.JSONDecodeError):
     """Raised if the format of an entity is invalid."""
 
+    def __init__(self, msg: str, doc: str = "", pos: int = 0):
+        """Initialize the exception.
+
+        Args:
+            msg: The error message.
+            doc: The document that caused the error.
+            pos: The position in the document where the error occurred.
+        """
+        RasaException.__init__(self, msg)
+        json.JSONDecodeError.__init__(self, msg, doc, pos)
+
     @classmethod
     def create_from(
         cls, other: json.JSONDecodeError, msg: Text
@@ -130,8 +152,7 @@ class ConnectionException(RasaException):
 
 
 class ProviderClientAPIException(RasaException):
-    """Raised for errors that occur during API interactions
-    with LLM / embedding providers.
+    """For errors during API interactions with LLM / embedding providers.
 
     Attributes:
         original_exception (Exception): The original exception that was

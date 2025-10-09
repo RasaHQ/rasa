@@ -15,7 +15,7 @@ structlogger = structlog.get_logger()
 
 
 class AgentManager(metaclass=Singleton):
-    """High-level agent management with protocol abstraction"""
+    """High-level agent management with protocol abstraction."""
 
     agents: ClassVar[Dict[AgentIdentifier, AgentProtocol]] = {}
 
@@ -66,9 +66,11 @@ class AgentManager(metaclass=Singleton):
     async def connect_agent(
         self, agent_name: str, protocol_type: ProtocolType, config: AgentConfig
     ) -> None:
-        """Connect to agent using specified protocol, load the default resources
-        and persist the agent to the manager in a ready-to-use state so that
-        it can be used immediately to send messages to the agent.
+        """Connect to agent using specified protocol.
+
+        Also, load the default resources and persist the agent to the manager
+        in a ready-to-use state so that it can be used immediately
+        to send messages to the agent.
 
         Args:
             agent_name: The name of the agent.
@@ -109,7 +111,7 @@ class AgentManager(metaclass=Singleton):
                 agent_id=str(agent_identifier),
                 event_info=event_info,
             )
-            raise AgentInitializationException(e) from e
+            raise AgentInitializationException(e, suppress_stack_trace=True) from e
 
     async def run_agent(
         self, agent_name: str, protocol_type: ProtocolType, context: AgentInput

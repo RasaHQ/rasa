@@ -314,7 +314,7 @@ class AWSPersistor(Persistor):
             obj = self.s3.Object(self.bucket_name, model_path)
             return obj.content_length
         except Exception:
-            raise ModelNotFound()
+            raise ModelNotFound("Model not found")
 
     def _retrieve_tar(
         self, target_filename: str, target_path: Optional[str] = None
@@ -349,7 +349,7 @@ class AWSPersistor(Persistor):
                     target_filename=target_filename,
                     event_info=log,
                 )
-                raise ModelNotFound() from exc
+                raise ModelNotFound("Model not found") from exc
         except exceptions.BotoCoreError as exc:
             structlogger.error(
                 "aws_persistor.retrieve_tar.model_download_error",
@@ -357,7 +357,7 @@ class AWSPersistor(Persistor):
                 target_filename=target_filename,
                 event_info=log,
             )
-            raise ModelNotFound() from exc
+            raise ModelNotFound("Model not found") from exc
 
 
 class GCSPersistor(Persistor):
@@ -447,7 +447,7 @@ class GCSPersistor(Persistor):
             blob = self.bucket.blob(target_filename)
             return blob.size
         except Exception:
-            raise ModelNotFound()
+            raise ModelNotFound("Model not found")
 
     def _retrieve_tar(
         self, target_filename: str, target_path: Optional[str] = None
@@ -481,7 +481,7 @@ class GCSPersistor(Persistor):
                 target_filename=target_filename,
                 event_info=log,
             )
-            raise ModelNotFound() from exc
+            raise ModelNotFound("Model not found") from exc
 
 
 class AzurePersistor(Persistor):
@@ -534,7 +534,7 @@ class AzurePersistor(Persistor):
             properties = blob_client.get_blob_properties()
             return properties.size
         except Exception:
-            raise ModelNotFound()
+            raise ModelNotFound("Model not found")
 
     def _retrieve_tar(
         self, target_filename: Text, target_path: Optional[str] = None
@@ -570,4 +570,4 @@ class AzurePersistor(Persistor):
                 event_info=log,
                 exception=exc,
             )
-            raise ModelNotFound() from exc
+            raise ModelNotFound("Model not found") from exc

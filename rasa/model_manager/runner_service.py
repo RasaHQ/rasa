@@ -195,7 +195,7 @@ def fetch_remote_model_to_dir(
     try:
         return persistor.retrieve(model_name=model_name, target_path=target_path)
     except FileNotFoundError as e:
-        raise ModelNotFound() from e
+        raise ModelNotFound("Model not found") from e
 
 
 def fetch_size_of_remote_model(
