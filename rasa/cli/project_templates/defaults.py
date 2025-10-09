@@ -138,6 +138,7 @@ def get_rasa_defaults(config_yaml: Text, endpoints_yaml: Text) -> RasaDefaults:
         A RasaDefaults object containing the default values for the project.
     """
     config = read_yaml(config_yaml)
+    # Does not read from file, it converts the YAML content to a dictionary.
     endpoints = read_yaml(endpoints_yaml)
 
     prompts = get_system_default_prompts(config, endpoints)

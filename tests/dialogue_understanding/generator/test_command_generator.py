@@ -3,8 +3,9 @@ from typing import List, Optional, Text, Type
 from unittest.mock import Mock, patch
 
 import pytest
-from pytest import CaptureFixture
+from pytest import CaptureFixture, MonkeyPatch
 
+from rasa.core.config.configuration import Configuration
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     CannotHandleCommand,
@@ -45,6 +46,14 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from tests.utilities import flows_from_str
+
+
+@pytest.fixture(autouse=True)
+def mock_configuration_available_agents(monkeypatch: MonkeyPatch) -> None:
+    """Use empty, but initialised configuration for all tests by default.
+    AvailableAgents will be empty unless explicitly set otherwise in a test.
+    """
+    Configuration.initialise_empty()
 
 
 class WackyCommandGenerator(CommandGenerator):

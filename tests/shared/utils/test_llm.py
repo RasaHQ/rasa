@@ -8,6 +8,7 @@ import pytest
 from pytest import MonkeyPatch
 
 from rasa.core.agent import Agent
+from rasa.core.config.configuration import Configuration
 from rasa.core.nlg.contextual_response_rephraser import (
     DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE,
 )
@@ -2863,6 +2864,9 @@ def test_get_system_default_prompts_returns_expected_values():
 
     config_yaml = (default_template_path / "config.yml").read_text()
     endpoints_yaml = (default_template_path / "endpoints.yml").read_text()
+
+    # Reset configuration
+    Configuration._instance = None
 
     prompts = get_system_default_prompts(
         config=read_yaml(config_yaml), endpoints=read_yaml(endpoints_yaml)

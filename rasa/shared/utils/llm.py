@@ -1074,7 +1074,7 @@ def _get_llm_command_generator_config(
 
 
 def _get_compact_llm_command_generator_prompt(
-    config: Dict[Text, Any], endpoints: Dict[Text, Any]
+    config: Dict[Text, Any], model_groups: Dict[Text, Any]
 ) -> Text:
     """Get the command generator prompt based on the config."""
     from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
@@ -1084,7 +1084,7 @@ def _get_compact_llm_command_generator_prompt(
     model_config = _get_llm_command_generator_config(config)
     llm_config = resolve_model_client_config(
         model_config=model_config,
-        model_groups=endpoints.get(MODEL_GROUPS_CONFIG_KEY),
+        model_groups=model_groups,
     )
     return get_default_prompt_template_based_on_model(
         llm_config=llm_config or {},
@@ -1119,7 +1119,7 @@ def get_system_default_prompts(
 
     Args:
         config: The config.yml file data.
-        endpoints: The endpoints.yml file data.
+        endpoints: The endpoints configuration dictionary.
 
     Returns:
         SystemPrompts: A Pydantic model containing all default prompts.
@@ -1128,8 +1128,25 @@ def get_system_default_prompts(
         DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE,
     )
 
+    # The Model Manager / Model API service receives the endpoints configuration
+    # as raw YAML text rather than as a file path. However, both
+    # Configuration.initialise_endpoints() and AvailableEndpoints.read_endpoints()
+    # currently only accept a Path input and do not support loading from in-memory
+    # YAML content.
+
+    # Since these classes only support file-based initialization today, we need
+    # to bootstrap the Configuration with an empty AvailableEndpoints instance for now.
+
+    # IMPORTANT: This configuration must be properly initialized with valid endpoints
+    # and available agents once Studio introduces full support for Agent configurations
+    # (A2A and MCP).
+    Configuration.initialise_empty()
+
+    model_groups = endpoints.get(MODEL_GROUPS_CONFIG_KEY)
     return SystemPrompts(
-        command_generator=_get_compact_llm_command_generator_prompt(config, endpoints),
+        command_generator=_get_compact_llm_command_generator_prompt(
+            config, model_groups
+        ),
         enterprise_search=_get_enterprise_search_prompt(config),
         contextual_response_rephraser=DEFAULT_RESPONSE_VARIATION_PROMPT_TEMPLATE,
     )

@@ -43,6 +43,7 @@ def handle_prompts(prompts: Dict[Text, Text], root: Path) -> None:
     config: Dict = read_yaml(config_path)
     endpoints: Dict = read_yaml(endpoints_path)
 
+    # System default prompts are dependent on the endpoints
     system_prompts = get_system_default_prompts(config, endpoints)
 
     _handle_contextual_response_rephraser(
