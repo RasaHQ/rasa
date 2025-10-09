@@ -93,6 +93,8 @@ jobs:
               env:
                 MOCK_MCP_ENDPOINTS_FILE: ${{ github.workspace }}/data/test_e2e_mcp_config/${{ matrix.model }}-endpoints.yml
                 TEST_TYPE: ${{ matrix.test-type }}
+                AGENT_CLIENT_ID: google-id-123
+                AGENT_CLIENT_SECRET: dummy-google-secret
               with:
                 timeout_minutes: 60
                 max_attempts: 2
