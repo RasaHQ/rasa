@@ -1,0 +1,52 @@
+action_endpoint:
+  actions_module: "actions"
+  
+mcp_servers:
+  - name: finnhub_mock_mcp_server
+    url: http://127.0.0.1:8000/mcp/
+    type: http
+    oauth:
+      client_id: "${AGENT_CLIENT_ID}"
+      client_secret: "${AGENT_CLIENT_SECRET}"
+      token_url: https://oauth-mock.mock.beeceptor.com/oauth/token/google # Using free online mock Oauth2.0 server (mocking Google provider) from Beeceptor
+      scope: "read:users"
+
+model_groups:
+  - id: azure_model
+    models:
+    # Same LLM models across multiple deployments
+      - provider: azure
+        deployment: ${AZURE_DEPLOYMENT_GPT4o_CA}
+        api_base: ${AZURE_API_BASE_GPT4o_CA}
+        api_key: ${AZURE_API_KEY_CA}
+        api_version: ${AZURE_API_VERSION_GPT4o_CA}
+        timeout: 30
+        num_retries: 5
+      - provider: azure
+        deployment: ${AZURE_DEPLOYMENT_GPT4o_FR}
+        api_base: ${AZURE_API_BASE_GPT4o_FR}
+        api_key: ${AZURE_API_KEY_FR}
+        api_version: ${AZURE_API_VERSION_GPT4o_FR}
+        timeout: 30
+        num_retries: 5
+    router:
+      routing_strategy: cost-based-routing
+      num_retries: 5
+      timeout: 30
+      allowed_fails: 3
+      cooldown_time: 30
+      retry_after: 5
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
+      cache_responses: True
+      set_verbose: True
+      debug_level: DEBUG
+  - id: llm-model
+    models:
+      - provider: openai
+        model: gpt-4o-2024-11-20
+        timeout: 30
+        temperature: 0.0
+        top_p: 0.0
+        cache:
+          no-cache: true

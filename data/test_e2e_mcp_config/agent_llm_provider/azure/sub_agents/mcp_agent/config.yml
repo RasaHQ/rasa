@@ -1,0 +1,17 @@
+agent:
+  name: mock_finnhub_mcp_agent
+  description: Conduct financial research via mock Finnhub Stock API
+
+connections:
+  mcp_servers:
+    - name: finnhub_mock_mcp_server
+      url: http://127.0.0.1:8000/mcp/
+      oauth:
+        client_id: "${AGENT_CLIENT_ID}"
+        client_secret: "${AGENT_CLIENT_SECRET}"
+        token_url: https://oauth-mock.mock.beeceptor.com/oauth/token/google # Using free online mock Oauth2.0 server (mocking Google provider) from Beeceptor
+        scope: "read:users"
+
+configuration:
+  llm:
+    model_group: azure_model

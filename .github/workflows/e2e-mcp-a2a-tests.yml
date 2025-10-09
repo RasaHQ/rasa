@@ -226,3 +226,115 @@ jobs:
               with:
                 name: a2a-server-logs-${{ matrix.command-generator }}-${{ matrix.model }}-${{ matrix.test-type }}
                 path: calm-benchmarking-bot/a2a-server-logs.txt
+
+    # Pipeline to test - via one happy-path E2E - MCP agent with major LLM providers in 
+    # `agent.configuration.llm`, as providers-e2e-tests pipeline does not cover this aspect.
+    e2e_mcp_provider_test:
+        runs-on: ubuntu-24.04
+        services:
+          redis:
+            image: redis:6
+            # Set health checks to wait until redis has started
+            options: >-
+              --health-cmd "redis-cli ping"
+              --health-interval 10s
+              --health-timeout 5s
+              --health-retries 5
+            ports:
+              - 6379:6379
+        strategy:
+          fail-fast: false
+          matrix:
+            agent_llm_provider:
+              - azure
+              - bedrock
+        steps:
+            - name: Checkout `rasa-private` git repository 🕝
+              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+            - name: Checkout `calm-benchmarking-bot` git repository 🕝
+              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+              with:
+                repository: RasaHQ/calm-benchmarking-bot
+                path: calm-benchmarking-bot
+                ref: ${{ inputs.calm-benchmarking-bot-branch || 'main' }}
+                token: ${{ env.CALM_BENCHMARKING_BOT_READ_TOKEN }}
+            - name: Setup Python and install rasa-pro
+              uses: ./.github/actions/setup-python-env
+              with:
+                PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+                MATRIX_JOB: ${{ matrix.agent_llm_provider }}
+                RASA_DEFAULT_INSTALLATION_ONLY: "true"
+            - name: Run mock MCP finance server
+              working-directory: calm-benchmarking-bot
+              run: make run-finnhub-mock-mcp-server > mcp-server-logs.txt 2>&1 &
+            - name: Verify mock MCP server is up and healthy
+              run: curl -v --retry 7 --retry-all-errors http://127.0.0.1:8000/mcp/
+            - name: Configure AWS credentials
+              if: ${{ matrix.agent_llm_provider == 'bedrock' }}
+              uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+              with:
+                role-to-assume: arn:aws:iam::307946638045:role/GitHubAction-BedrockAndSagemakerAccess
+                aws-region: ${{ env.AWS_REGION_NAME }}
+            - name: Configure Azure credentials
+              if: ${{ matrix.agent_llm_provider == 'azure' }}
+              env:
+                AZURE_DEPLOYMENT_GPT4o_CA: "test-gpt-4o"
+                AZURE_API_BASE_GPT4o_CA: "https://devtribe-testing-canada-east.openai.azure.com/"
+                AZURE_API_VERSION_GPT4o_CA: "2024-02-01"
+                AZURE_API_KEY_CA: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING_CANADA_EAST }}
+                AZURE_DEPLOYMENT_GPT4o_FR: "test-gpt-4o"
+                AZURE_API_BASE_GPT4o_FR: "https://devtribe-testing.openai.azure.com/"
+                AZURE_API_VERSION_GPT4o_FR: "2024-02-01"
+                AZURE_API_KEY_FR: ${{ secrets.AZURE_OPENAI_API_KEY_DEVTRIBE_TESTING }}
+                REDIS_HOST: localhost
+                REDIS_PORT: 6379
+              run: |
+                echo "AZURE_DEPLOYMENT_GPT4o_CA=${AZURE_DEPLOYMENT_GPT4o_CA}" >> "${GITHUB_ENV}"
+                echo "AZURE_API_BASE_GPT4o_CA=${AZURE_API_BASE_GPT4o_CA}" >> "${GITHUB_ENV}"
+                echo "AZURE_API_VERSION_GPT4o_CA=${AZURE_API_VERSION_GPT4o_CA}" >> "${GITHUB_ENV}"
+                echo "AZURE_API_KEY_CA=${AZURE_API_KEY_CA}" >> "${GITHUB_ENV}"
+                echo "AZURE_DEPLOYMENT_GPT4o_FR=${AZURE_DEPLOYMENT_GPT4o_FR}" >> "${GITHUB_ENV}"
+                echo "AZURE_API_BASE_GPT4o_FR=${AZURE_API_BASE_GPT4o_FR}" >> "${GITHUB_ENV}"
+                echo "AZURE_API_VERSION_GPT4o_FR=${AZURE_API_VERSION_GPT4o_FR}" >> "${GITHUB_ENV}"
+                echo "AZURE_API_KEY_FR=${AZURE_API_KEY_FR}" >> "${GITHUB_ENV}"
+                echo "REDIS_HOST=${REDIS_HOST}" >> "${GITHUB_ENV}"
+                echo "REDIS_PORT=${REDIS_PORT}" >> "${GITHUB_ENV}"
+            - name: Train model
+              working-directory: calm-benchmarking-bot
+              env:
+                MOCK_MCP_CONFIG_FILE: ${{ github.workspace }}/data/test_e2e_mcp_config/compact-config.yml
+                MOCK_MCP_ENDPOINTS_FILE: ${{ github.workspace }}/data/test_e2e_mcp_config/agent_llm_provider/${{ matrix.agent_llm_provider }}/sub_agents/mcp_agent/endpoints.yml
+                MOCK_MCP_SUB_AGENTS_DIRECTORY: ${{ github.workspace }}/data/test_e2e_mcp_config/agent_llm_provider/${{ matrix.agent_llm_provider }}/sub_agents
+              run: make train-with-mock-mcp-sub-agent
+            - name: E2E tests
+              uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
+              env:
+                MOCK_MCP_ENDPOINTS_FILE: ${{ github.workspace }}/data/test_e2e_mcp_config/agent_llm_provider/${{ matrix.agent_llm_provider }}/sub_agents/mcp_agent/endpoints.yml
+                MOCK_MCP_SUB_AGENTS_DIRECTORY: ${{ github.workspace }}/data/test_e2e_mcp_config/agent_llm_provider/${{ matrix.agent_llm_provider }}/sub_agents
+                AGENT_CLIENT_ID: google-id-123
+                AGENT_CLIENT_SECRET: dummy-google-secret
+              with:
+                timeout_minutes: 60
+                max_attempts: 2
+                shell: bash
+                command: |
+                  cd calm-benchmarking-bot
+                  if [[ ! -d tests ]]; then
+                    mkdir tests;
+                  fi
+                  rasa test e2e e2e/e2e_tests_with_assertions/mock_mcp/agents/open_ended/happy_path/conduct_company_finance_research.yml \
+                    --e2e-results --endpoints "${MOCK_MCP_ENDPOINTS_FILE}" \
+                    --sub-agents "${MOCK_MCP_SUB_AGENTS_DIRECTORY}" \
+                    --debug
+            - name: Save E2E test results
+              if: failure()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+              with:
+                name: e2e-results-${{ matrix.agent_llm_provider }}
+                path: calm-benchmarking-bot/tests/e2e_results_failed.yml
+            - name: Save MCP server logs
+              if: failure()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+              with:
+                name: mcp-server-logs-${{ matrix.agent_llm_provider }}
+                path: calm-benchmarking-bot/mcp-server-logs.txt
