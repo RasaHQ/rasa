@@ -151,7 +151,7 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
         if not self._use_chat_completions_endpoint:
             return self._text_completion(messages)
         try:
-            formatted_messages = self._format_messages(messages)
+            formatted_messages = self._get_formatted_messages(messages)
             response = self.router_client.completion(
                 messages=formatted_messages, **{**self._completion_fn_args, **kwargs}
             )
@@ -189,7 +189,7 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
         if not self._use_chat_completions_endpoint:
             return await self._atext_completion(messages)
         try:
-            formatted_messages = self._format_messages(messages)
+            formatted_messages = self._get_formatted_messages(messages)
             response = await self.router_client.acompletion(
                 messages=formatted_messages, **{**self._completion_fn_args, **kwargs}
             )
