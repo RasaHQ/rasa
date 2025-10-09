@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Optional
 import structlog
 
 from rasa import telemetry
-from rasa.core.config.configuration import Configuration
 from rasa.core.constants import DEFAULT_SUB_AGENTS
 from rasa.exceptions import ValidationError
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -164,13 +163,6 @@ def validate_files(
         sub_agents: Path to sub-agents directory for validation.
         endpoints: Path to the endpoints configuration file.
     """
-    if endpoints:
-        Configuration.initialise_endpoints(endpoints_path=endpoints)
-    if sub_agents:
-        Configuration.initialise_sub_agents(sub_agents)
-    if not endpoints and not sub_agents:
-        Configuration.initialise_empty()
-
     from rasa.validator import Validator
 
     validator = Validator.from_importer(importer)

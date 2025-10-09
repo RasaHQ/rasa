@@ -256,6 +256,10 @@ def test_data_validate_initializes_sub_agents_with_custom_path(
     mock_validator_module.Validator = MockValidator  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "rasa.validator", mock_validator_module)
 
+    # Ensure Configuration is initialized with the custom sub-agents path before
+    # validate_files is called
+    Configuration.initialise_sub_agents(Path(str(tmp_path / "custom_sub_agents")))
+
     # Call validate_files with custom sub-agents and endpoints
     validate_files(
         fail_on_warnings=False,

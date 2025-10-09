@@ -47,6 +47,10 @@ async def validate_project(importer: TrainingDataImporter) -> Optional[str]:
     with capture_validation_logs() as captured_logs:
         try:
             with _mock_sys_exit() as exit_tracker:
+                from rasa.core.config.configuration import Configuration
+
+                Configuration.initialise_empty()
+
                 validate_files(
                     fail_on_warnings=config.VALIDATION_FAIL_ON_WARNINGS,
                     max_history=config.VALIDATION_MAX_HISTORY,

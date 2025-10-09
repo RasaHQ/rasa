@@ -114,7 +114,7 @@ class AvailableAgents:
             else:
                 # We are using the default folder, it may not be created yet
                 # Init with an empty agents in this case
-                structlogger.info(
+                structlogger.debug(
                     f"Default agents config folder '{sub_agents_folder}' does not "
                     f"exist. Agent configurations won't be loaded."
                 )

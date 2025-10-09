@@ -1,7 +1,7 @@
 import argparse
 import logging
 import pathlib
-from typing import List
+from typing import List, Optional
 
 import rasa.cli.utils
 import rasa.shared.core.domain
@@ -17,6 +17,7 @@ from rasa.cli.arguments import data as arguments
 from rasa.cli.arguments import default_arguments
 from rasa.cli.validation.bot_config import validate_files
 from rasa.cli.validation.config_path_validation import get_validated_path
+from rasa.core.config.configuration import Configuration
 from rasa.e2e_test.e2e_config import create_llm_e2e_test_converter_config
 from rasa.e2e_test.e2e_test_converter import E2ETestConverter
 from rasa.e2e_test.utils.e2e_yaml_utils import E2ETestYAMLWriter
@@ -139,7 +140,7 @@ def _add_data_validate_parsers(
     )
     _append_story_structure_arguments(validate_parser)
     validate_parser.set_defaults(
-        func=lambda args: validate_files(
+        func=lambda args: _validate_files_with_configuration(
             args.fail_on_warnings,
             args.max_history,
             _build_training_data_importer(args),
@@ -159,13 +160,13 @@ def _add_data_validate_parsers(
     _append_story_structure_arguments(story_structure_parser)
 
     story_structure_parser.set_defaults(
-        func=lambda args: validate_files(
+        func=lambda args: _validate_files_with_configuration(
             args.fail_on_warnings,
             args.max_history,
             _build_training_data_importer(args),
-            stories_only=True,
             sub_agents=args.sub_agents,
             endpoints=args.endpoints,
+            stories_only=True,
         )
     )
     arguments.set_validator_arguments(story_structure_parser)
@@ -177,13 +178,13 @@ def _add_data_validate_parsers(
         help="Checks for inconsistencies in the flows files.",
     )
     flows_structure_parser.set_defaults(
-        func=lambda args: validate_files(
+        func=lambda args: _validate_files_with_configuration(
             args.fail_on_warnings,
             args.max_history,
             _build_training_data_importer(args),
-            flows_only=True,
             sub_agents=args.sub_agents,
             endpoints=args.endpoints,
+            flows_only=True,
         )
     )
     arguments.set_validator_arguments(flows_structure_parser)
@@ -195,13 +196,13 @@ def _add_data_validate_parsers(
         help="Checks for inconsistencies of the flow and response translation.",
     )
     translations_structure_parser.set_defaults(
-        func=lambda args: validate_files(
+        func=lambda args: _validate_files_with_configuration(
             args.fail_on_warnings,
             args.max_history,
             _build_training_data_importer(args),
-            translations_only=True,
             sub_agents=args.sub_agents,
             endpoints=args.endpoints,
+            translations_only=True,
         )
     )
     arguments.set_validator_arguments(translations_structure_parser)
@@ -386,3 +387,58 @@ def convert_data_to_e2e_tests(args: argparse.Namespace) -> None:
         rasa.shared.utils.cli.print_error_and_exit(
             f"Failed to convert the data into E2E tests. Error: {exc}"
         )
+
+
+def _initialize_configuration_for_validation(
+    sub_agents: Optional[str] = None, endpoints: Optional[str] = None
+) -> None:
+    """Initialize Configuration before validation.
+
+    Args:
+        sub_agents: Path to sub-agents directory for validation.
+        endpoints: Path to the endpoints configuration file.
+    """
+    if endpoints:
+        Configuration.initialise_endpoints(endpoints_path=pathlib.Path(endpoints))
+    if sub_agents:
+        Configuration.initialise_sub_agents(pathlib.Path(sub_agents))
+    if not endpoints and not sub_agents:
+        Configuration.initialise_empty()
+
+
+def _validate_files_with_configuration(
+    fail_on_warnings: bool,
+    max_history: int,
+    importer: TrainingDataImporter,
+    sub_agents: Optional[str] = None,
+    endpoints: Optional[str] = None,
+    stories_only: bool = False,
+    flows_only: bool = False,
+    translations_only: bool = False,
+) -> None:
+    """Wrapper for validate_files that ensures Configuration is initialized first.
+
+    Args:
+        fail_on_warnings: `True` if the process should exit with a non-zero status
+        max_history: The max history to use when validating the story structure.
+        importer: The `TrainingDataImporter` to use to load the training data.
+        sub_agents: Path to sub-agents directory for validation.
+        endpoints: Path to the endpoints configuration file.
+        stories_only: If `True`, only the story structure is validated.
+        flows_only: If `True`, only the flows are validated.
+        translations_only: If `True`, only the translations data is validated.
+    """
+    # Initialize Configuration before calling validate_files
+    _initialize_configuration_for_validation(sub_agents=sub_agents, endpoints=endpoints)
+
+    # Call the original validate_files function
+    validate_files(
+        fail_on_warnings=fail_on_warnings,
+        max_history=max_history,
+        importer=importer,
+        stories_only=stories_only,
+        flows_only=flows_only,
+        translations_only=translations_only,
+        sub_agents=sub_agents,
+        endpoints=endpoints,
+    )
