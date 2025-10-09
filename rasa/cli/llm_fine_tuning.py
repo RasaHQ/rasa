@@ -414,6 +414,7 @@ def get_valid_endpoints(endpoints_file: str) -> AvailableEndpoints:
 
 def set_up_e2e_test_runner(args: argparse.Namespace) -> E2ETestRunner:
     endpoints = get_valid_endpoints(args.endpoints)
+    Configuration.initialise_sub_agents(args.sub_agents)
 
     if endpoints.model is None:
         args.model = validate_model_path(args.model, "model", DEFAULT_MODELS_PATH)

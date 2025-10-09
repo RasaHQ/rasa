@@ -12,6 +12,7 @@ from rasa import model
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import interactive as arguments
 from rasa.cli.validation.config_path_validation import get_validated_path
+from rasa.core.config.configuration import Configuration
 from rasa.core.constants import DEFAULT_SUB_AGENTS
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.shared.constants import (
@@ -139,6 +140,8 @@ def perform_interactive_learning(
     args.endpoints = get_validated_path(
         args.endpoints, "endpoints", DEFAULT_ENDPOINTS_PATH, True
     )
+
+    Configuration.initialise_endpoints(endpoints_path=Path(args.endpoints))
 
     do_interactive_learning(args, file_importer)
 

@@ -10,6 +10,7 @@ from ruamel.yaml.scalarstring import LiteralScalarString
 
 import rasa.cli.utils
 import rasa.shared.utils.cli
+from rasa.core.config.configuration import Configuration
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
@@ -115,6 +116,8 @@ def _handle_endpoints(handler: StudioDataHandler, root: Path) -> None:
 
     endpoints_path = root / DEFAULT_ENDPOINTS_PATH
     endpoints_path.write_text(endpoints_data, encoding="utf-8")
+
+    Configuration.initialise_endpoints(endpoints_path=endpoints_path)
 
 
 def _handle_domain(handler: StudioDataHandler, root: Path) -> None:
