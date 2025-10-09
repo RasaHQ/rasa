@@ -10,6 +10,358 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.14.0] - 2025-10-09
+                        
+Rasa Pro 3.14.0 (2025-10-09)                             
+### Features
+- [#2075](https://github.com/rasahq/rasa-private/issues/2075): Added the possibility to call an agent from within a flow via a `call` step.
+  We support two types of ReAct style agents:
+
+  1. An open ended exploratory agent - Here the user’s goal is loosely defined,
+  for example researching about stocks to invest in. There is no pre-defined criteria
+  which can be used to know when the goal is reached. Hence the agent itself needs
+  to figure out when it has helped the user to the best of its capabilities.
+
+      ```yaml
+      flows:
+        stock_investment_research:
+          description: helps research and analyze stock investment options
+          steps:
+            - call: stock_explorer  # runs until agent signals completion
+      ```
+
+  2. A task specific agent - Here we can come up with conditions, which when true,
+  signals the completion of a user goal. For example, helping the user find an
+  appointment slot based on their preferences - you know the agent can exit once
+  all user’s preferences have been met and they have agreed to a slot.
+
+      ```yaml
+      flows:
+        book_appointment:
+          description: helps users book appointments
+          steps:
+            - call: ticket_agent
+              exit_if:
+                - slots.chosen_appointment is not null
+                - slots.booking_completed is True**
+            - collect: user_confirmation
+      ```
+
+
+  To configure the agents you need to create a folder structure like this:
+
+  ```
+  your_project/
+  ├── config.yml
+  ├── domain/
+  ├── data/flows/
+  └── sub_agents/
+      └── stock_explorer/
+          ├── config.yml  # mandatory
+          └── prompt_template.jinja2  # optional
+  ```
+
+  The `config.yml` file for each agent is mandatory and should look, for example,
+  like this:
+
+  ```yaml
+  # Basic agent information
+  agent:
+    name: stock_explorer # name of the agent
+    protocol: RASA # protocol for its connections either RASA or A2A
+    description: "Agent that helps users research and analyze stock options" # a brief description used by the command generator to continue / stop the agent and the agent during its execution
+
+  # Core configuration
+  configuration:
+    llm:  # (optional) Same format as other Rasa LLM configs
+      type: openai
+      model: gpt-4
+    prompt_template: sub_agents/stock_explorer/prompt_template.jinja2  # (optional) prompt template file containing a customized prompt
+    timeout: 30  # (optional) seconds before timing out
+    max_retries: 3  # (optional) connection retry attempts
+
+  # MCP server connections
+  connections:
+    mcp_servers:
+      - name: trade_server
+        include_tools:  # optional: specify which tools to include
+          - find_symbol
+          - get_company_news
+          - apply_technical_analysis
+          - fetch_live_price
+        exclude_tools:  # optional: tools to exclude; helpful to not allow the agent to execute critical tools.
+          - place_buy_order
+          - view_positions
+  ```
+- [#2103](https://github.com/rasahq/rasa-private/issues/2103): Added the possibility to call an MCP tool directly from a flow step via a `call` step.
+
+  Example:
+
+  ```yaml
+    - call: place_buy_order  # MCP tool name
+      mcp_server: trade_server # MCP server where tool is available
+      mapping:
+        input:
+        - param: ticker_symbol    # tool parameter name
+          slot: stock_name     # slot to send as value
+        - param: quantity
+          slot: order_quantity
+        output:
+        - slot: order_status    # slot to store results
+          result_key: result.structuredContent.order_status.success
+  ```
+
+  The MCP server needs to be defined in the `endpoints.yml` file
+
+  ```yaml
+  mcp_servers:
+    - name: trade_server
+      url: http://localhost:8080
+      type: http
+  ```
+- [#2181](https://github.com/rasahq/rasa-private/issues/2181): We updated the inspector
+
+  - to highlight when a call step is calling an agent or an MCP tool using a little icon in the flow view.
+  - and added an additional agent widget that shows the available agents and their corresponding status in the conversation.
+- [#2212](https://github.com/rasahq/rasa-private/issues/2212): Whenever agents are configured, the `SearchReadyLLMCommandGenerator` and the
+  `CompactLLMCommandGenerator` will use new default prompt templates that contain
+  new agent specific commands (`RestartAgent` and `ContinueAgent`) and instructions.
+- [#2500](https://github.com/rasahq/rasa-private/issues/2500): Adds Interruption Handling Support (beta) in Voice Stream Channels, namely Browser Audio, Twilio Media Streams and Jambonz Stream. Interruptions are identified from partial transcripts sent by the Automatic Speech Recogintion (ASR) Engine. Interruption Handling is disabled by defaulat and can be configured using the optional `interruptions` key in `credentials.yml`.
+
+  ```
+  browser_audio:
+    server_url: localhost
+    interruptions: 
+      enabled: True
+      min_words: 3
+    asr:
+      name: "deepgram"
+    tts:
+      name: cartesia
+  ```
+
+  The configuration property `min_words` (default 3) requires the partial transcript to have at least 3 words to interrupt the bot. This is a rudimentary way to filter backchannels (brief responses like "hmm", "yeah", "ok").
+
+  Interruptions can be disabled for certain responses using the domain response property `allow_interruptions` (default true). Example,
+
+  ```
+  responses:
+    utter_current_balance:
+      - text: You still have {current_balance} in your account.
+        allow_interruptions: false
+  ```
+- [#2988](https://github.com/rasahq/rasa-private/issues/2988): Added the following new events to capture the state of any agent used within a
+  conversation:
+
+  - `AgentStarted`
+  - `AgentCompleted`
+  - `AgentCancelled`
+  - `AgentResumed`
+  - `AgentInterrupted`
+- [#3126](https://github.com/rasahq/rasa-private/issues/3126): Added support for Redis Cluster mode in the tracker store for horizontal scaling and cloud compatibility.
+
+  Added support for Redis Sentinel mode in the tracker store for high availability with automatic failover.
+
+  Added 3 new configuration parameters to `RedisTrackerStore`:
+  - `deployment_mode`: String value specifying Redis deployment type ("standard", "cluster", or "sentinel"). Defaults to "standard".
+  - `endpoints`: List of strings in "host:port" format defining cluster nodes or sentinel instances.
+  - `sentinel_service`: String value specifying the sentinel service name to connect to. Only used in sentinel mode, defaults to "mymaster".
+- [#3200](https://github.com/rasahq/rasa-private/issues/3200): Add support for IAM authentication to AWS RDS SQL tracker store.
+  To enable this feature:
+  - set the `IAM_CLOUD_PROVIDER` environment variable to `aws`.
+  - set the `AWS_DEFAULT_REGION` environment variable to your desired AWS region.
+  - if you want to enforce SSL verification, you can set the `SQL_TRACKER_STORE_SSL_MODE` environment variable
+  (for example, to `verify-full` or `verify-ca`) and provide the path to the CA certificate using the
+  `SQL_TRACKER_STORE_SSL_ROOT_CERTIFICATE` environment variable.
+- [#3244](https://github.com/rasahq/rasa-private/issues/3244): Add support for IAM authentication to AWS Managed Streaming for Kafka event broker.
+  This allows secure authentication to an AWS MSK cluster without the need for static credentials.
+  To enable this feature:
+  - set the `IAM_CLOUD_PROVIDER` environment variable to `aws`.
+  - set the `AWS_DEFAULT_REGION` environment variable to your desired AWS region.
+  - ensure that your application has the necessary IAM permissions to access the AWS Managed Service Kafka cluster.
+  - ensure the topic is created on the MSK cluster.
+  - use the `SASL_SSL` security protocol and `OAUTHBEARER` SASL mechanism in your Kafka configuration in `endpoints.yml`.
+  - download the root certificate from Amazon Trust Services: https://www.amazontrust.com/repository/ and provide its path
+  to the `ssl_cafile` event broker yaml property.
+- [#3251](https://github.com/rasahq/rasa-private/issues/3251): Added support for Redis Cluster mode in `RedisLockStore` for horizontal scaling and cloud compatibility.
+
+  Added support for Redis Sentinel mode in `RedisLockStore` for high availability with automatic failover.
+
+  Added 3 new configuration parameters to `RedisLockStore`:
+  - `deployment_mode`: String value specifying Redis deployment type ("standard", "cluster", or "sentinel"). Defaults to "standard".
+  - `endpoints`: List of strings in "host:port" format defining cluster nodes or sentinel instances.
+  - `sentinel_service`: String value specifying the sentinel service name to connect to. Only used in sentinel mode, defaults to "mymaster".
+- [#3273](https://github.com/rasahq/rasa-private/issues/3273): Added support for Redis Cluster mode in `ConcurrentRedisLockStore` for horizontal scaling and cloud compatibility.
+
+  Added support for Redis Sentinel mode in `ConcurrentRedisLockStore` for high availability with automatic failover.
+
+  Added 3 new configuration parameters to `ConcurrentRedisLockStore`:
+  - `deployment_mode`: String value specifying Redis deployment type ("standard", "cluster", or "sentinel"). Defaults to "standard".
+  - `endpoints`: List of strings in "host:port" format defining cluster nodes or sentinel instances.
+  - `sentinel_service`: String value specifying the sentinel service name to connect to. Only used in sentinel mode, defaults to "mymaster".
+- [#3305](https://github.com/rasahq/rasa-private/issues/3305): Add support for IAM authentication to AWS ElastiCache for Redis lock store.
+  This allows secure authentication to an AWS ElastiCache without the need for static credentials.
+  To enable this feature:
+  - set the `IAM_CLOUD_PROVIDER` environment variable to `aws`.
+  - set the `AWS_DEFAULT_REGION` environment variable to your desired AWS region.
+  - download the root certificate from Amazon Trust Services and provide its path to the `ssl_ca_certs` lock store yaml property.
+  - if enabling cluster mode, set the `AWS_ELASTICACHE_CLUSTER_NAME` environment variable to your ElastiCache cluster name.
+  - ensure that your application has the necessary IAM permissions to access the AWS ElastiCache for Redis cluster.
+- [#3306](https://github.com/rasahq/rasa-private/issues/3306): Default silence timeout is now configurable per channel.
+  Default silence timeout is read from channel configuration in credentials file.
+  Example:
+  ```yaml
+  audiocodes_stream:
+      server_url: "humble-arguably-stork.ngrok-free.app"
+      asr:
+          name: deepgram
+      tts:
+          name: cartesia
+
+      silence_timeout: 5
+  ```
+
+  Silence timeout at collect step is also configurable per channel:
+  ```yaml
+  flows:
+      - name: example_flow
+        steps:
+          - collect:
+              silence_timeout:
+                  - audiocodes_stream: 5
+  ```
+
+  If not configured, default silence timeout is 7 seconds for each channel.
+- [#3324](https://github.com/rasahq/rasa-private/issues/3324): Adds support for Deepgram TTS
+  Adds `browser_audio` channel to the credentials.yml in `tutorial` template
+
+### Improvements
+- [#2060](https://github.com/rasahq/rasa-private/issues/2060): In case a `StartFlowCommand` for a flow, that is already on the stack, is predicted,
+  we now resume the flow and interrupt the current active flow instead of ignoring the
+  `StartFlowCommand`.
+- [#2070](https://github.com/rasahq/rasa-private/issues/2070): Updated `pattern_continue_interrupted` to ask the user if they want to proceed with
+  any of the interrupted flows before resuming that particular flow.
+- [#2168](https://github.com/rasahq/rasa-private/issues/2168): We have isolated the dependencies that are only required for NLU components.
+  These include:
+  - `transformers` (version: `"~4.38.2"`)
+  - `tensorflow` (version: `"^2.19.0`, only available for `"python_version < '3.12'`)
+  - `tensorflow-text` (version `"^2.19.0"`, only available for `"python_version < '3.12'`)
+  - `tensorflow-hub` (version: `"^0.13.0"`, only available for `"python_version < '3.12'`)
+  - `tensorflow-io-gcs-filesystem` (version: `"==0.31"` for `sys_platform == 'win32'`, version: `"==0.34"` for `sys_platform == 'linux'`, version: `"==0.34"` for `sys_platform == 'linux'` for `"sys_platform == 'darwin' and platform_machine != 'arm64'`; all only available for `"python_version < '3.12'`)
+  - `tensorflow-metal` (version: `"^1.2.0"`, only available for `"python_version < '3.12'`)
+  - `tf-keras` (version: `"^2.15.0"`, only available for `"python_version < '3.12'`)
+  - `spacy` (version: `"^3.5.4"`)
+  - `sentencepiece` (version: `"~0.1.99"`, only available for `"python_version < '3.12'`)
+  - `skops` (version: `"~0.13.0"`)
+  - `mitie` (version: `"^0.7.36"`, added for consistency)
+  - `jieba` (version: `">=0.42.1, <0.43"`)
+  - `sklearn-crfsuite` (version: `"~0.5.0"`)
+
+  The dependencies for those components are now in their own extra, called `nlu` and can be installed via:
+  `poetry install --extras nlu`, `pip install 'rasa-pro[nlu]'` or `uv pip install 'rasa-pro[nlu]'`.
+- [#2169](https://github.com/rasahq/rasa-private/issues/2169): We added dependencies for agent orchestration, `mcp` (`"~1.12.0"`) and `a2a-sdk` (`"~0.3.4"`), to the list of default dependencies.
+  As a result, they get installed via:
+  `poetry install`, `pip install 'rasa-pro'` or `uv pip install 'rasa-pro'`.
+
+  To ensure compatibility between `a2a-sdk` and `tensorflow`, `tensorflow` and its related dependencies were updated. These include:
+  - `tensorflow` (from `"2.14.1"` to `"^2.19.0"`)
+  - `tensorflow-text` (from `"2.14.0"` to `^2.19.0`)
+  - `tensorflow-metal` (from `"1.1.0"` to `"^1.2.0"`)
+  - instead of `keras` (`"2.14.0"`), we now use `tf-keras` (`"^2.15.0"`)
+
+  Additionally, tensorflow dependencies that are incompatible with the upgraded `tensorflow` version were removed.
+  These include: `tensorflow-intel`, `tensorflow-cpu-aws`, `tensorflow-macos`.
+
+  Because tensorflow and related packages were upgraded, tensorflow code was also updated.
+  As a consequence, the incremental training feature is not supported anymore.
+  This is because `tf-keras` (`"^2.15.0"`) does not allow a compiled model to be updated.
+- [#2171](https://github.com/rasahq/rasa-private/issues/2171): We updated the supported Python versions:
+  - Dropped support for Python 3.9.
+  - Added support for Python 3.12 and Python 3.13.
+  So, whilst we previously supported `python = ">=3.9.2,<3.12"`, we now support `python = ">=3.10.0,<3.14"`.
+
+  To ensure compatibility with the newly supported Python versions, existing dependencies had to be updated.
+  These include:
+  - `protobuf` (from `"~4.25.8"` to `"~5.29.5"`)
+  - `importlib-resources` (from `"6.1.3"` to `"^6.5.2"`)
+  - `opentelemetry-sdk` (from `"~1.16.0"` to `"~1.33.0"`)
+  - `opentelemetry-exporter-jaeger` (`"~1.16.0"`) - has been removed
+  - `opentelemetry-exporter-otlp` (from `"~1.16.0"` to `"~1.33.0"`)
+  - `opentelemetry-api` (from `"~1.16.0"` to `"~1.33.0"`)
+  - `pep440-version-utils` - only available for `"python_version < '3.13'"`
+  - `pymilvus` (from `">=2.4.1,<2.4.2"` to `"^2.6.1"`)
+  - `numpy` (from `"~1.26.4"` to `"~2.1.3"`)
+  - `scipy` (`"~1.13.1"` for `"python_version < '3.12'"`; `"~1.14.0"` for `"python_version >= '3.12'"`)
+  - `tensorflow` (version: `"^2.19.0`, only available for `"python_version < '3.12'`)
+  - `tensorflow-text` (version `"^2.19.0"`, only available for `"python_version < '3.12'`)
+  - `tensorflow-hub` (version: `"^0.13.0"`, only available for `"python_version < '3.12'`)
+  - `tensorflow-io-gcs-filesystem` (version: `"==0.31"` for `sys_platform == 'win32'`, version: `"==0.34"` for `sys_platform == 'linux'`, version: `"==0.34"` for `sys_platform == 'linux'` for `"sys_platform == 'darwin' and platform_machine != 'arm64'`; all only available for `"python_version < '3.12'`)
+  - `tensorflow-metal` (version: `"^1.2.0"`, only available for `"python_version < '3.12'`)
+  - `tf-keras` (version: `"^2.15.0"`, only available for `"python_version < '3.12'`)
+  - `sentencepiece` (version: `"~0.1.99"`, only available for `"python_version < '3.12'`)
+
+  Note that `tensorflow` and related dependencies are only supported for Python < 3.12.
+  As a result, components requiring those dependencies are not available for Python >= 3.12.
+  These are: `DIETClassifier` , `TEDPolicy` , `UnexpecTEDIntentPolicy` , `ResponseSelector` , `ConveRTFeaturizer`  and `LanguageModelFeaturizer` .
+- [#2258](https://github.com/rasahq/rasa-private/issues/2258): We have isolated the dependencies required for channel connectors.
+  These include:
+  - `fbmessenger` (version: `"~6.0.0"`)
+  - `twilio` (version: `"~9.7.2"`)
+  - `webexteamssdk` (version: `">=1.6.1,<1.7.0"`)
+  - `mattermostwrapper` (version: `"~2.2"`)
+  - `rocketchat_API` (version: `">=1.32.0,<1.33.0"`)
+  - `aiogram` (version: `"~3.22.0"`)
+  - `slack-sdk` (version: `"~3.36.0"`)
+  - `cvg-python-sdk` (version: `"^0.5.1"`)
+
+  The dependencies for those channels are now in their own extra, called `channels` and can be installed via:
+  `poetry install --extras channels`, `pip install 'rasa-pro[channels]'` or `uv pip install 'rasa-pro[channels]'`.
+  Note that the dependencies for the channels `browser_audio`, `studio_chat`, `socketIO` and `rest` are not included and remain in the main list of dependencies.
+- [#2828](https://github.com/rasahq/rasa-private/issues/2828): Validation errors now raise meaningful exceptions instead of calling sys.exit(1),
+  producing clearer and more actionable log messages while allowing custom error handling.
+- [#2880](https://github.com/rasahq/rasa-private/issues/2880): Engine-related modules now raise structured exceptions instead of calling
+  `sys.exit(1)` or `print_error_and_exit`, providing clearer, more actionable log
+  messages and enabling custom error handling.
+- [#2998](https://github.com/rasahq/rasa-private/issues/2998): Enable connection to AWS services for LLMs (e.g. Bedrock, Sagemaker) via multiple additional methods to environment variables,
+  for example by using IAM roles or AWS credentials file.
+- [#3076](https://github.com/rasahq/rasa-private/issues/3076): Relocate `latency display` in Inspector
+- [#3126](https://github.com/rasahq/rasa-private/issues/3126): Implement Redis connection factory class to handle different Redis deployment modes. This class abstracts Redis connection creation and automatically selects the appropriate redis-py client (Redis, RedisCluster, or Sentinel) based on configuration.
+  - In `standard` mode, connects to a single Redis instance.
+  - In `cluster` mode, connects to a Redis Cluster using the provided endpoints.
+  - In `sentinel` mode, connects to a Redis Sentinel setup for high availability.
+- [#3164](https://github.com/rasahq/rasa-private/issues/3164): Metadata of `action_listen` event in the tracker contains the execution
+  times for Command Processor and Prediction Loop for the previous turn.
+  This information is present in the key `execution_times` in the metadata
+  and the times are in milliseconds.
+- [#3285](https://github.com/rasahq/rasa-private/issues/3285): Rasa Voice Inspector (browser_audio channel) used to require a Rasa License with a specific voice scope. This scope requirement has been dropped.
+- [#3390](https://github.com/rasahq/rasa-private/issues/3390): Add new environment variables for each AWS service integration (RDS, ElastiCache for Redis, MSK) that indicates whether
+  to use IAM authentication when connecting to the service:
+  - `KAFKA_MSK_AWS_IAM_ENABLED` - set to `true` to enable IAM authentication for MSK connections.
+  - `RDS_SQL_DB_AWS_IAM_ENABLED` - set to `true` to enable IAM authentication for RDS connections.
+  - `ELASTICACHE_REDIS_AWS_IAM_ENABLED` - set to `true` to enable IAM authentication for ElastiCache for Redis connections.
+
+### Bugfixes
+- [#2053](https://github.com/rasahq/rasa-private/issues/2053): Pass all flows to `find_updated_flows` to avoid creating a `HandleCodeChangeCommand` in situations
+  where flows were not updated.
+- [#2178](https://github.com/rasahq/rasa-private/issues/2178): The .devcontainer docker-compose file now uses the new `docker.io/bitnamilegacy` repository for images, rather than the old `docker.io/bitnami`.
+  This change was made in response to Bitnami's announcement that they will be putting all of their public Helm Chart container images behind a paywall starting August 28th, 2025.
+  Existing public images are moved to the new legacy repository - `bitnamilegacy` - which is only intended for short-term migration purposes.
+- [#2434](https://github.com/rasahq/rasa-private/issues/2434): In case an agents fails with an fatal error or returns an unkown state, we now cancel
+  the current active flow next to triggering `pattern_internal_error`.
+- [#2839](https://github.com/rasahq/rasa-private/issues/2839): Bugfix for Jambonz Stream channel Websocket URL path which resulted in failed Websocket Connections
+- [#2971](https://github.com/rasahq/rasa-private/issues/2971): Fixed the contextual response rephraser to use and update the correct translated response text for the current language, instead of falling back to the default response.
+- [#2978](https://github.com/rasahq/rasa-private/issues/2978): Refactored `validate_argument_paths` to accept list values and aggregate all missing paths before exiting.
+- [#2998](https://github.com/rasahq/rasa-private/issues/2998): Fix expansion of referenced environment variables in `endpoints.yml` during Bedrock model config validation.
+- [#3022](https://github.com/rasahq/rasa-private/issues/3022): Enabled the data argument to support both string and list inputs, normalizing to a list for consistent handling.
+- [#3092](https://github.com/rasahq/rasa-private/issues/3092): Fixed model loading failures on Windows systems running recent Python versions (3.9.23+, 3.10.18+, 3.11.13+) due to tarfile security fix incompatibility with Windows long path prefix.
+- [#3150](https://github.com/rasahq/rasa-private/issues/3150): Fixes the silence handling bug in Audiocodes Stream Channel where consecutive bot responses could trip silence timeout pattern while the bot is speaking. Audiocodes Stream channel now forecefully cancels the silence timeout watcher whenever it sends the bot response audio.
+- [#3460](https://github.com/rasahq/rasa-private/issues/3460): Use correct formatting method for messages in `completion` and `acompletion`
+  functions of `LiteLLMRouterLLMClient`.
+
+### Miscellaneous internal changes
+- [#1892](https://github.com/rasahq/rasa-private/issues/1892), [#2184](https://github.com/rasahq/rasa-private/issues/2184), [#2767](https://github.com/rasahq/rasa-private/issues/2767), [#2814](https://github.com/rasahq/rasa-private/issues/2814), [#2863](https://github.com/rasahq/rasa-private/issues/2863), [#2911](https://github.com/rasahq/rasa-private/issues/2911), [#2913](https://github.com/rasahq/rasa-private/issues/2913), [#2916](https://github.com/rasahq/rasa-private/issues/2916), [#2957](https://github.com/rasahq/rasa-private/issues/2957), [#2990](https://github.com/rasahq/rasa-private/issues/2990), [#3018](https://github.com/rasahq/rasa-private/issues/3018), [#3019](https://github.com/rasahq/rasa-private/issues/3019), [#3052](https://github.com/rasahq/rasa-private/issues/3052), [#3078](https://github.com/rasahq/rasa-private/issues/3078), [#3094](https://github.com/rasahq/rasa-private/issues/3094), [#3121](https://github.com/rasahq/rasa-private/issues/3121), [#3125](https://github.com/rasahq/rasa-private/issues/3125), [#3207](https://github.com/rasahq/rasa-private/issues/3207), [#3208](https://github.com/rasahq/rasa-private/issues/3208), [#3260](https://github.com/rasahq/rasa-private/issues/3260), [#3289](https://github.com/rasahq/rasa-private/issues/3289), [#3319](https://github.com/rasahq/rasa-private/issues/3319), [#3374](https://github.com/rasahq/rasa-private/issues/3374), [#3375](https://github.com/rasahq/rasa-private/issues/3375), [#3411](https://github.com/rasahq/rasa-private/issues/3411)
+
+
 ## [3.13.12] - 2025-09-17
                          
 Rasa Pro 3.13.12 (2025-09-17)                              
