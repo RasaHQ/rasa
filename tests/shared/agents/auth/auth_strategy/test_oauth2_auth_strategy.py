@@ -331,9 +331,7 @@ class TestOAuth2AuthStrategy:
                 )
             )
 
-            with pytest.raises(
-                ValueError, match="OAuth2 token request failed with status 401"
-            ):
+            with pytest.raises(httpx.HTTPStatusError):
                 await oauth2_strategy._refresh_access_token()
 
     @pytest.mark.asyncio
@@ -351,7 +349,9 @@ class TestOAuth2AuthStrategy:
                 return_value=mock_response
             )
 
-            with pytest.raises(ValueError, match="No access_token in OAuth2 response"):
+            with pytest.raises(
+                ValueError, match="No `access_token` in OAuth2 response"
+            ):
                 await oauth2_strategy._refresh_access_token()
 
     @pytest.mark.asyncio

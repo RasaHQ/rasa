@@ -291,14 +291,16 @@ class MCPBaseAgent(AgentProtocol):
                         event_info="All connection attempts failed.",
                     )
                     raise AgentInitializationException(
-                        f"Failed to connect to MCP servers after {self._max_retries} "
-                        f"attempts. Agent `{self._name}` failed to initialize."
+                        f"Agent `{self._name}` failed to initialize. Failed to connect "
+                        f"to MCP servers after {self._max_retries} attempts. {ce!s}"
                     ) from ce
             except (Exception, AuthenticationError) as e:
                 if isinstance(e, AuthenticationError):
-                    event_info = "Authentication error during agent initialization."
+                    event_info = (
+                        f"Authentication error during agent initialization. {e!s}"
+                    )
                 else:
-                    event_info = "Unexpected error during agent initialization."
+                    event_info = f"Unexpected error during agent initialization. {e!s}"
                 structlogger.error(
                     "mcp_agent.connect.unexpected_exception",
                     event_info=event_info,
@@ -306,7 +308,7 @@ class MCPBaseAgent(AgentProtocol):
                     agent_name=self._name,
                     agent_id=str(make_agent_identifier(self._name, self.protocol_type)),
                 )
-                raise AgentInitializationException(e) from e
+                raise AgentInitializationException(event_info) from e
 
     async def connect_to_server(self, server_config: AgentMCPServerConfig) -> None:
         server_name = server_config.name
@@ -328,7 +330,7 @@ class MCPBaseAgent(AgentProtocol):
         except Exception as e:
             event_info = (
                 f"Agent `{self._name}` failed to connect to MCP server - "
-                f"`{server_name}` @ `{server_config.url}`: {e!s}"
+                f"`{server_name}` @ `{server_config.url}`"
             )
             structlogger.error(
                 "mcp_agent.connect.failed_to_connect",
@@ -338,7 +340,9 @@ class MCPBaseAgent(AgentProtocol):
                 agent_name=self._name,
                 agent_id=str(make_agent_identifier(self._name, self.protocol_type)),
             )
-            raise e
+
+            # Wrap exceptions with extra info and raise the same type of exception.
+            raise type(e)(f"{event_info} : {e!s}") from e
 
     async def connect_to_servers(self) -> None:
         """Connect to MCP servers."""

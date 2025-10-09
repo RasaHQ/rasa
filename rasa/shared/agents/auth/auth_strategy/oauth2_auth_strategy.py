@@ -139,20 +139,17 @@ class OAuth2AuthStrategy(AgentAuthStrategy):
                 resp.raise_for_status()
                 token_data = resp.json()
         except httpx.HTTPStatusError as e:
-            raise ValueError(
-                f"OAuth2 token request failed with status {e.response.status_code}: "
-                f"{e.response.text}"
-            ) from e
+            raise e
         except httpx.RequestError as e:
-            raise ValueError(f"OAuth2 token request failed: {e}") from e
+            raise ValueError(f"OAuth2 token request failed - {e}") from e
         except Exception as e:
             raise ValueError(
-                f"Unexpected error during OAuth2 token request: {e}"
+                f"Unexpected error during OAuth2 token request - {e}"
             ) from e
 
         # Validate token data
         if KEY_ACCESS_TOKEN not in token_data:
-            raise ValueError(f"No {KEY_ACCESS_TOKEN} in OAuth2 response")
+            raise ValueError(f"No `{KEY_ACCESS_TOKEN}` in OAuth2 response")
 
         # Set access token and expires at
         self._access_token = token_data[KEY_ACCESS_TOKEN]

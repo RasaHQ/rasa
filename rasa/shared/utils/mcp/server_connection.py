@@ -121,7 +121,8 @@ class MCPServerConnection:
         except Exception as eg:
             for exc in getattr(eg, "exceptions", [eg]):
                 event_info = (
-                    f"Failed to connect to MCP server `{self.server_name}`: {exc!s}"
+                    f"Failed to connect to MCP server `{self.server_name}`. \nOriginal "
+                    f"error: {exc!s}"
                 )
                 if isinstance(exc, HTTPStatusError):
                     status_code = exc.response.status_code
@@ -135,9 +136,11 @@ class MCPServerConnection:
                     )
                     await self._cleanup()
                     if status_code in [400, 401, 403]:
-                        raise AuthenticationError(eg) from eg
+                        raise AuthenticationError(str(exc)) from eg
+                    elif status_code == 404:
+                        raise Exception(str(exc)) from eg
                     else:
-                        raise ConnectionError(eg) from eg
+                        raise ConnectionError(str(exc)) from eg
                 else:
                     structlogger.error(
                         "mcp_server_connection.connect.other_exception",
@@ -147,7 +150,7 @@ class MCPServerConnection:
                         error=str(exc),
                     )
             await self._cleanup()
-            raise ConnectionError(eg) from eg
+            raise ConnectionError(str(exc)) from eg
 
         except asyncio.CancelledError as e:
             event_info = f"Connection to MCP server `{self.server_name}` was cancelled."
