@@ -154,6 +154,10 @@ def handle_upload(args: argparse.Namespace) -> None:
             "Authentication is invalid or expired. Please run `rasa studio login`."
         )
 
+    from rasa.core.config.configuration import Configuration
+
+    Configuration.initialise_empty()
+
     structlogger.info("rasa.studio.upload.loading_data", event_info="Loading data...")
 
     args.domain = get_validated_path(args.domain, "domain", DEFAULT_DOMAIN_PATHS)
