@@ -68,6 +68,8 @@ runs:
         PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
         WORKING_DIRECTORY: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
         MATRIX_JOB: ${{ inputs.provider }}-${{ inputs.train-and-test }}
+        RASA_DEFAULT_INSTALLATION_ONLY: False
+        OPTIONAL_GROUP_TO_INSTALL: nlu
 
     - name: Install google-generative-ai package
       working-directory: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
