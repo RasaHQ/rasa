@@ -259,8 +259,10 @@ jobs:
           if: ${{ matrix.python-version == '3.9' }}
           run: |
             make install > error-log 2>&1 || true
+            echo 'Error log:'
             cat error-log
-            grep 'Current Python version (3.9.23) is not allowed by the project (>=3.10.0,<3.14)' error-log
+            echo 'Search log for error, on Rasa installation in Python 3.9 environment:'
+            grep -E 'Current Python version \(3.9.[0-9]+\) is not allowed by the project \(>=3.10.0,<3.14\)' error-log
         - name: Make empty directory for `rasa init`
           run: mkdir "${RASA_INIT_TEST_DIRECTORY}"
         - name: Sanity check of `rasa init`
