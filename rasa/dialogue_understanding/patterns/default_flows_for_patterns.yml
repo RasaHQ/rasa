@@ -233,7 +233,7 @@ flows:
         collect: interrupted_flow_to_continue
         description: "Fill this slot with the name of the flow the user wants to continue. If the user does not want to continue any of the interrupted flows, fill this slot with 'none'."
         next:
-          - if: slots.interrupted_flow_to_continue != "none"
+          - if: slots.interrupted_flow_to_continue is not "none"
             then:
               - action: action_continue_interrupted_flow
                 next: END
