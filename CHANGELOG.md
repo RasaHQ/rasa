@@ -11,15 +11,15 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 <!-- TOWNCRIER -->
 
 ## [3.14.1] - 2025-10-10
-                        
-Rasa Pro 3.14.1 (2025-10-10)                             
+
+Rasa Pro 3.14.1 (2025-10-10)
 ### Miscellaneous internal changes
 - [#3467](https://github.com/rasahq/rasa-private/issues/3467)
 
 
 ## [3.14.0] - 2025-10-09
-                        
-Rasa Pro 3.14.0 (2025-10-09)                             
+
+Rasa Pro 3.14.0 (2025-10-09)
 ### Features
 - [#2075](https://github.com/rasahq/rasa-private/issues/2075): Added the possibility to call an agent from within a flow via a `call` step.
   We support two types of ReAct style agents:
@@ -138,7 +138,7 @@ Rasa Pro 3.14.0 (2025-10-09)
   ```
   browser_audio:
     server_url: localhost
-    interruptions: 
+    interruptions:
       enabled: True
       min_words: 3
     asr:
@@ -369,9 +369,17 @@ Rasa Pro 3.14.0 (2025-10-09)
 - [#1892](https://github.com/rasahq/rasa-private/issues/1892), [#2184](https://github.com/rasahq/rasa-private/issues/2184), [#2767](https://github.com/rasahq/rasa-private/issues/2767), [#2814](https://github.com/rasahq/rasa-private/issues/2814), [#2863](https://github.com/rasahq/rasa-private/issues/2863), [#2911](https://github.com/rasahq/rasa-private/issues/2911), [#2913](https://github.com/rasahq/rasa-private/issues/2913), [#2916](https://github.com/rasahq/rasa-private/issues/2916), [#2957](https://github.com/rasahq/rasa-private/issues/2957), [#2990](https://github.com/rasahq/rasa-private/issues/2990), [#3018](https://github.com/rasahq/rasa-private/issues/3018), [#3019](https://github.com/rasahq/rasa-private/issues/3019), [#3052](https://github.com/rasahq/rasa-private/issues/3052), [#3078](https://github.com/rasahq/rasa-private/issues/3078), [#3094](https://github.com/rasahq/rasa-private/issues/3094), [#3121](https://github.com/rasahq/rasa-private/issues/3121), [#3125](https://github.com/rasahq/rasa-private/issues/3125), [#3207](https://github.com/rasahq/rasa-private/issues/3207), [#3208](https://github.com/rasahq/rasa-private/issues/3208), [#3260](https://github.com/rasahq/rasa-private/issues/3260), [#3289](https://github.com/rasahq/rasa-private/issues/3289), [#3319](https://github.com/rasahq/rasa-private/issues/3319), [#3374](https://github.com/rasahq/rasa-private/issues/3374), [#3375](https://github.com/rasahq/rasa-private/issues/3375), [#3411](https://github.com/rasahq/rasa-private/issues/3411)
 
 
+## [3.13.13] - 2025-10-13
+
+Rasa Pro 3.13.13 (2025-10-13)
+### Bugfixes
+- [#3460](https://github.com/rasahq/rasa-private/issues/3460): Use correct formatting method for messages in `completion` and `acompletion`
+  functions of `LiteLLMRouterLLMClient`.
+
+
 ## [3.13.12] - 2025-09-17
-                         
-Rasa Pro 3.13.12 (2025-09-17)                              
+
+Rasa Pro 3.13.12 (2025-09-17)
 ### Improvements
 - [#2810](https://github.com/rasahq/rasa-private/issues/2810): Accept either `RASA_PRO_LICENSE` or `RASA_LICENSE` as a valid Environment Variable for providing the Rasa License. Also deprecates `RASA_PRO_LICENSE` Environment Variable.
 
@@ -383,15 +391,15 @@ Rasa Pro 3.13.12 (2025-09-17)
 
 
 ## [3.13.11] - 2025-09-15
-                         
-Rasa Pro 3.13.11 (2025-09-15)                               
+
+Rasa Pro 3.13.11 (2025-09-15)
 
 No significant changes.
 
 
 ## [3.13.10] - 2025-09-12
-                         
-Rasa Pro 3.13.10 (2025-09-12)                              
+
+Rasa Pro 3.13.10 (2025-09-12)
 ### Bugfixes
 - [#3150](https://github.com/rasahq/rasa-private/issues/3150): Fixes the silence handling bug in Audiocodes Stream Channel where consecutive bot responses could trip silence timeout pattern while the bot is speaking. Audiocodes Stream channel now forcefully cancels the silence timeout watcher whenever it sends the bot response audio.
 - [#3214](https://github.com/rasahq/rasa-private/issues/3214): Update `langchain` to `0.3.27` and `langchain-community` to `0.3.29` to fix CVE-2025-6984 vulnerability in
@@ -399,8 +407,8 @@ Rasa Pro 3.13.10 (2025-09-12)
 
 
 ## [3.13.9] - 2025-09-03
-                        
-Rasa Pro 3.13.9 (2025-09-03)                             
+
+Rasa Pro 3.13.9 (2025-09-03)
 ### Bugfixes
 - [#3149](https://github.com/rasahq/rasa-private/issues/3149): Upgrade `skops` to version `0.13.0` and `requests` to version `2.32.5` to fix vulnerabilities.
 - [#3154](https://github.com/rasahq/rasa-private/issues/3154): Fixed flow retrieval to skip vector store population when there are no flows to embed.
@@ -694,8 +702,8 @@ Rasa Pro 3.13.0 (2025-07-07)
 
 
 ## [3.12.33] - 2025-09-12
-                         
-Rasa Pro 3.12.33 (2025-09-12)                              
+
+Rasa Pro 3.12.33 (2025-09-12)
 ### Bugfixes
 - [#3150](https://github.com/rasahq/rasa-private/issues/3150): Fixes the silence handling bug in Audiocodes Stream Channel where consecutive bot responses could trip silence timeout pattern while the bot is speaking. Audiocodes Stream channel now forcefully cancels the silence timeout watcher whenever it sends the bot response audio.
 - [#3154](https://github.com/rasahq/rasa-private/issues/3154): Fixed flow retrieval to skip vector store population when there are no flows to embed.
