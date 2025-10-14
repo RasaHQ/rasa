@@ -11,6 +11,7 @@ from rasa.cli.arguments.default_arguments import (
     add_endpoint_param,
     add_model_param,
     add_remote_storage_param,
+    add_sub_agents_param
 )
 from rasa.cli.llm_fine_tuning import DEFAULT_INPUT_E2E_TEST_PATH, set_up_e2e_test_runner
 from rasa.core.agent import Agent
@@ -487,6 +488,9 @@ def _parse_arguments():
         "yml file.",
     )
     add_remote_storage_param(parser)
+
+    # Sub-agents
+    add_sub_agents_param(parser)
 
     return parser.parse_args()
 
