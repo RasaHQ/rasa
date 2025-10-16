@@ -1,5 +1,6 @@
 import os
 import ssl
+from functools import lru_cache
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Text, Union
@@ -16,6 +17,7 @@ from rasa.shared.utils.yaml import read_config_file
 structlogger = structlog.get_logger()
 
 
+@lru_cache(maxsize=10)
 def read_endpoint_config(
     filename: Union[str, Path], endpoint_type: Text
 ) -> Optional["EndpointConfig"]:
