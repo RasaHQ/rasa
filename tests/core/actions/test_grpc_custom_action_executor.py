@@ -1298,7 +1298,7 @@ def create_float_slot() -> FloatSlot:
         ],
         initial_value=2.0,
         value_reset_delay=3,
-        max_value=1.0,
+        max_value=4.0,
         min_value=0.0,
         influence_conversation=True,
         is_builtin=False,

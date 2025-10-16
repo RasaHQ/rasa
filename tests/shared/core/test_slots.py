@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 import pytest
@@ -274,12 +275,18 @@ class TestFloatSlot(SlotTestCollection):
         mappings: List[Dict[Text, Any]],
         influence_conversation: bool = False,
         validation: Optional[Dict[Text, Any]] = None,
+        initial_value: Optional[float] = None,
+        min_value: Optional[float] = None,
+        max_value: Optional[float] = None,
     ) -> Slot:
         return FloatSlot(
             "test",
             mappings=mappings,
             influence_conversation=influence_conversation,
             validation=validation,
+            initial_value=initial_value,
+            min_value=min_value,
+            max_value=max_value,
         )
 
     @pytest.fixture(params=[{"a": "b"}, [], "asd", "🌴"])
@@ -299,6 +306,69 @@ class TestFloatSlot(SlotTestCollection):
     )
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
+
+    @pytest.mark.parametrize(
+        "min_value, max_value, error_msg",
+        [
+            (
+                5.0,
+                1.0,
+                "Float slot ('test') created with an invalid range "
+                "using min (5.0) and max (1.0) values. ",
+            ),
+            (
+                1.0,
+                1.0,
+                "Float slot ('test') created with an invalid range "
+                "using min (1.0) and max (1.0) values. ",
+            ),
+        ],
+    )
+    def test_validate_min_greater_or_equal_to_max_raises(
+        self, min_value: float, max_value: float, error_msg: str
+    ) -> None:
+        error_msg += "Make sure min is smaller than max."
+        with pytest.raises(InvalidSlotConfigError, match=re.escape(error_msg)):
+            self.create_slot(mappings=[], min_value=min_value, max_value=max_value)
+
+    @pytest.mark.parametrize(
+        "initial_value, error_msg",
+        [
+            (6.0, "Float slot ('test') created with an initial value 6.0. "),
+            (1.0, "Float slot ('test') created with an initial value 1.0. "),
+        ],
+    )
+    def test_validate_min_max_range_of_initial_value_raises(
+        self, initial_value: float, error_msg: str
+    ) -> None:
+        error_msg += (
+            "This value is outside of the configured min (1.5) and max (5.0) values."
+        )
+        with pytest.raises(InvalidSlotConfigError, match=re.escape(error_msg)):
+            self.create_slot(
+                mappings=[], initial_value=initial_value, min_value=1.5, max_value=5.0
+            )
+
+    def test_is_valid_value(self):
+        slot = self.create_slot(mappings=[], min_value=1.5, max_value=5.0)
+        assert slot.is_valid_value(1.5)
+        assert slot.is_valid_value(3.0)
+        assert slot.is_valid_value(5.0)
+        assert not slot.is_valid_value(1.4)
+        assert not slot.is_valid_value(5.1)
+
+    def test_as_feature(self):
+        slot = self.create_slot(
+            mappings=[], min_value=1.5, max_value=5.0, influence_conversation=True
+        )
+        slot.value = 3.0
+        assert slot.as_feature() == [1, (3.0 - 1.5) / (5.0 - 1.5)]
+        slot.value = 1.5
+        assert slot.as_feature() == [1, 0.0]
+        slot.value = 5.0
+        assert slot.as_feature() == [1, 1.0]
+        slot.value = 1.4
+        assert slot.as_feature() == [1, 0.0]
 
 
 class TestListSlot(SlotTestCollection):

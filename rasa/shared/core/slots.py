@@ -355,8 +355,8 @@ class FloatSlot(Slot):
         mappings: List[Dict[Text, Any]],
         initial_value: Optional[float] = None,
         value_reset_delay: Optional[int] = None,
-        max_value: float = 1.0,
-        min_value: float = 0.0,
+        max_value: Optional[float] = None,
+        min_value: Optional[float] = None,
         influence_conversation: bool = True,
         is_builtin: bool = False,
         shared_for_coexistence: bool = False,
@@ -380,32 +380,24 @@ class FloatSlot(Slot):
             filled_by=filled_by,
             validation=validation,
         )
+        self.validate_min_max_range(min_value, max_value)
+
         self.max_value = max_value
         self.min_value = min_value
 
-        if min_value >= max_value:
-            raise InvalidSlotConfigError(
-                "Float slot ('{}') created with an invalid range "
-                "using min ({}) and max ({}) values. Make sure "
-                "min is smaller than max."
-                "".format(self.name, self.min_value, self.max_value)
-            )
-
-        if initial_value is not None and not (min_value <= initial_value <= max_value):
-            rasa.shared.utils.io.raise_warning(
-                f"Float slot ('{self.name}') created with an initial value "
-                f"{self.value}. This value is outside of the configured min "
-                f"({self.min_value}) and max ({self.max_value}) values."
-            )
-
     def _as_feature(self) -> List[float]:
+        # set default min and max values used in prior releases
+        # to prevent regressions for existing models
+        min_value = self.min_value or 0.0
+        max_value = self.max_value or 1.0
+
         try:
-            capped_value = max(self.min_value, min(self.max_value, float(self.value)))
-            if abs(self.max_value - self.min_value) > 0:
-                covered_range = abs(self.max_value - self.min_value)
+            capped_value = max(min_value, min(max_value, float(self.value)))
+            if abs(max_value - min_value) > 0:
+                covered_range = abs(max_value - min_value)
             else:
                 covered_range = 1
-            return [1.0, (capped_value - self.min_value) / covered_range]
+            return [1.0, (capped_value - min_value) / covered_range]
         except (TypeError, ValueError):
             return [0.0, 0.0]
 
@@ -424,12 +416,51 @@ class FloatSlot(Slot):
             return value
 
     def is_valid_value(self, value: Any) -> bool:
-        """Checks if the slot contains the value."""
-        # check that coerced type is float
-        return value is None or isinstance(self.coerce_value(value), float)
+        """Checks if the slot value is valid."""
+        if value is None:
+            return True
+
+        if not isinstance(self.coerce_value(value), float):
+            return False
+
+        if (
+            self.min_value is not None
+            and self.max_value is not None
+            and not (self.min_value <= value <= self.max_value)
+        ):
+            return False
+
+        return True
 
     def _feature_dimensionality(self) -> int:
         return len(self.as_feature())
+
+    def validate_min_max_range(
+        self, min_value: Optional[float], max_value: Optional[float]
+    ) -> None:
+        """Validates the min-max range for the slot.
+
+        Raises:
+            InvalidSlotConfigError, if the min-max range is invalid.
+        """
+        if min_value is not None and max_value is not None and min_value >= max_value:
+            raise InvalidSlotConfigError(
+                f"Float slot ('{self.name}') created with an invalid range "
+                f"using min ({min_value}) and max ({max_value}) values. Make sure "
+                f"min is smaller than max."
+            )
+
+        if (
+            self.initial_value is not None
+            and min_value is not None
+            and max_value is not None
+            and not (min_value <= self.initial_value <= max_value)
+        ):
+            raise InvalidSlotConfigError(
+                f"Float slot ('{self.name}') created with an initial value "
+                f"{self.initial_value}. This value is outside of the configured min "
+                f"({min_value}) and max ({max_value}) values."
+            )
 
 
 class BooleanSlot(Slot):
