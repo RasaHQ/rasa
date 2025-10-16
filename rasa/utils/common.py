@@ -36,6 +36,7 @@ from rasa.constants import (
     ENV_LOG_LEVEL_LIBRARIES,
     ENV_LOG_LEVEL_MATPLOTLIB,
     ENV_LOG_LEVEL_MCP,
+    ENV_LOG_LEVEL_PYMONGO,
     ENV_LOG_LEVEL_RABBITMQ,
     ENV_MCP_LOGGING_ENABLED,
 )
@@ -297,6 +298,7 @@ def configure_library_logging() -> None:
     update_rabbitmq_log_level(library_log_level)
     update_websockets_log_level(library_log_level)
     update_mcp_log_level()
+    update_pymongo_log_level(library_log_level)
 
 
 def update_apscheduler_log_level() -> None:
@@ -479,6 +481,13 @@ def update_mcp_log_level() -> None:
     for logger_name in mcp_loggers:
         logging.getLogger(logger_name).setLevel(mcp_log_level)
         logging.getLogger(logger_name).propagate = False
+
+
+def update_pymongo_log_level(library_log_level: str) -> None:
+    """Set the log level of pymongo."""
+    log_level = os.environ.get(ENV_LOG_LEVEL_PYMONGO, library_log_level)
+    logging.getLogger("pymongo").setLevel(log_level)
+    logging.getLogger("pymongo").propagate = False
 
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:

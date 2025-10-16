@@ -14,13 +14,6 @@ from pytest import LogCaptureFixture, MonkeyPatch
 import rasa.utils.common
 import tests.conftest
 from rasa.core.agent import Agent
-
-# Skip all tests in this file if TensorFlow is not available
-from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
-
-if not TENSORFLOW_AVAILABLE:
-    pytest.skip("TensorFlow is not available", allow_module_level=True)
-
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.shared.exceptions import RasaException
 from rasa.utils.common import (
@@ -433,3 +426,25 @@ def test_get_bool_env_variable_with_invalid_value(
 
     with pytest.raises(RasaException):
         get_bool_env_variable(env_name, default_value)
+
+
+@pytest.mark.parametrize(
+    "env_var_name",
+    [
+        "LOG_LEVEL_LIBRARIES",
+        "LOG_LEVEL_PYMONGO",
+    ],
+)
+def test_configure_logging_for_pymongo(
+    monkeypatch: MonkeyPatch, env_var_name: str
+) -> None:
+    monkeypatch.setenv(env_var_name, "WARNING")
+    configure_logging_and_warnings()
+    pymongo_logger = logging.getLogger("pymongo")
+    assert pymongo_logger.level == logging.WARNING
+    pymongo_sublogger_connection = logging.getLogger("pymongo.connection")
+    assert pymongo_sublogger_connection.getEffectiveLevel() == logging.WARNING
+    pymongo_sublogger_topology = logging.getLogger("pymongo.topology")
+    assert pymongo_sublogger_topology.getEffectiveLevel() == logging.WARNING
+    pymongo_sublogger_server_selection = logging.getLogger("pymongo.serverSelection")
+    assert pymongo_sublogger_server_selection.getEffectiveLevel() == logging.WARNING
