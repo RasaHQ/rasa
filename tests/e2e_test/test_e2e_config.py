@@ -15,7 +15,11 @@ from rasa.e2e_test.e2e_config import (
     get_conftest_path,
     read_conftest_file,
 )
-from rasa.shared.constants import HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER, OPENAI_PROVIDER
+from rasa.shared.constants import (
+    AZURE_OPENAI_PROVIDER,
+    HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
+    OPENAI_PROVIDER,
+)
 from rasa.shared.utils.yaml import YamlValidationException, write_yaml
 
 
@@ -266,6 +270,115 @@ def test_create_llm_judge_config_conftest_with_model_groups(
                 "model_kwargs": {"device": "cpu"},
                 "encode_kwargs": {"normalize_embeddings": True},
                 "timeout": 7,
+            },
+        ),
+    )
+
+
+@pytest.mark.parametrize("conftest_file_name", ["conftest.yaml", "conftest.yml"])
+def test_create_llm_judge_config_with_deployment_conftest_with_model_groups(
+    tmp_path: Path, monkeypatch: MonkeyPatch, conftest_file_name: str
+) -> None:
+    test_case_path = tmp_path / conftest_file_name
+    test_case_path.write_text("""
+    llm_judge:
+        llm:
+            model_group: azure_4o_model_group
+        embeddings:
+            model_group: azure_embedding_model_group
+    """)
+
+    endpoints_path = tmp_path / "endpoints.yml"
+    endpoints_path.write_text("""
+    model_groups:
+        - id: azure_4o_model_group
+          models:
+            - provider: azure
+              deployment: gpt-4o-rasa-dev-samllm
+              timeout: 25
+              api_version: 2024-06-01
+              api_key: test
+              api_base: https://my-azure-base/
+        - id: azure_embedding_model_group
+          models:
+            - provider: azure
+              deployment: text-embedding-3-large
+              timeout: 20
+              api_version: 2024-06-01
+              api_key: test
+              api_base: https://my-azure-base/
+    """)
+    endpoints = Configuration.initialise_endpoints(
+        endpoints_path=endpoints_path
+    ).endpoints
+    assert endpoints.model_groups is not None
+
+    assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
+        llm_config=BaseModelConfig(
+            provider=AZURE_OPENAI_PROVIDER,
+            extra_parameters={
+                "deployment": "gpt-4o-rasa-dev-samllm",
+                "timeout": 25,
+                "api_version": "2024-06-01",
+                "api_key": "test",
+                "api_base": "https://my-azure-base/",
+            },
+        ),
+        embeddings=BaseModelConfig(
+            provider=AZURE_OPENAI_PROVIDER,
+            extra_parameters={
+                "deployment": "text-embedding-3-large",
+                "timeout": 20,
+                "api_version": "2024-06-01",
+                "api_key": "test",
+                "api_base": "https://my-azure-base/",
+            },
+        ),
+    )
+
+
+@pytest.mark.parametrize("conftest_file_name", ["conftest.yaml", "conftest.yml"])
+def test_create_llm_judge_config_with_deployment_conftest_without_model_groups(
+    tmp_path: Path, monkeypatch: MonkeyPatch, conftest_file_name: str
+) -> None:
+    test_case_path = tmp_path / conftest_file_name
+    test_case_path.write_text("""
+    llm_judge:
+        llm:
+            provider: azure
+            deployment: gpt-4o-rasa-dev-samllm
+            timeout: 25
+            api_version: 2024-06-01
+            api_key: test
+            api_base: https://my-azure-base/
+        embeddings:
+            provider: azure
+            deployment: text-embedding-3-large
+            timeout: 20
+            api_version: 2024-06-01
+            api_key: test
+            api_base: https://my-azure-base/
+    """)
+
+    assert create_llm_judge_config(test_case_path) == LLMJudgeConfig(
+        llm_config=BaseModelConfig(
+            provider=AZURE_OPENAI_PROVIDER,
+            extra_parameters={
+                "deployment": "gpt-4o-rasa-dev-samllm",
+                "timeout": 25,
+                "api_version": "2024-06-01",
+                "api_key": "test",
+                "api_base": "https://my-azure-base/",
+            },
+        ),
+        embeddings=BaseModelConfig(
+            provider=AZURE_OPENAI_PROVIDER,
+            extra_parameters={
+                "deployment": "text-embedding-3-large",
+                "timeout": 20,
+                "api_version": "2024-06-01",
+                "api_key": "test",
+                "api_base": "https://my-azure-base/",
             },
         ),
     )

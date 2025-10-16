@@ -72,9 +72,10 @@ class LLMJudgeConfig(BaseModel):
 
         llm_config = resolve_model_client_config(llm_config)
         llm_config, llm_extra_parameters = cls.extract_attributes(llm_config)
-        llm_config = combine_custom_and_default_config(
-            llm_config, cls.get_default_llm_config()
-        )
+        if not llm_config:
+            llm_config = combine_custom_and_default_config(
+                llm_config, cls.get_default_llm_config()
+            )
         embeddings_config = resolve_model_client_config(embeddings)
         embeddings_config, embeddings_extra_parameters = cls.extract_attributes(
             embeddings_config
