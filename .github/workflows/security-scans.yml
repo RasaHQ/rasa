@@ -24,7 +24,7 @@ jobs:
           filters: .github/change_filters.yml
 
   trivy:
-    name: Detecting hardcoded secrets
+    name: Detecting hardcoded secrets using Trivy
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -40,25 +40,6 @@ jobs:
         scan-type: 'fs'
         exit-code: '1'
         scanners: 'secret'
-    - name: Alert on secret finding
-      if: steps.trivy.outcome == 'failure'
-      uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
-      with:
-        webhook: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
-        webhook-type: incoming-webhook
-        payload: |
-          {
-            "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
-            "blocks": [
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "*A secret was detected in a GitHub commit in the repo ${{ github.repository }}.*\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
-                }
-              }
-            ]
-          }
 
     - name: Fail build if a secret is found
       if: steps.trivy.outcome == 'failure'
@@ -71,7 +52,11 @@ jobs:
         echo "3. If the finding is valid, the security team can help advise your next steps."
         exit 1
 
-
+  gitleaks:
+    uses: RasaHQ/infrasec-workflows/.github/workflows/scan-secret-gitleaks.yml@main
+    secrets:
+      GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+      
   bandit:
     name: Detect python security issues
     runs-on: ubuntu-24.04
@@ -128,3 +113,55 @@ jobs:
       - name: Run Bandit 🔪
         if: needs.changes.outputs.backend == 'true'
         run: make lint-security
+
+  alert_on_failures:
+    name: "Alert on failures (Slack on #infrasec-alert)"
+    needs: [trivy, gitleaks, bandit]
+    runs-on: ubuntu-24.04
+    if: always()
+  
+    steps:
+      - name: Check job failures and create summary
+        id: summary
+        run: |
+          failed_jobs=""
+          if [ "${{ needs.trivy.result }}" == "failure" ]; then
+            failed_jobs="${failed_jobs}• Trivy: ${{ needs.trivy.result }}\n"
+          fi
+          if [ "${{ needs.gitleaks.result }}" == "failure" ]; then
+            failed_jobs="${failed_jobs}• Gitleaks: ${{ needs.gitleaks.result }}\n"
+          fi
+          if [ "${{ needs.bandit.result }}" == "failure" ]; then
+            failed_jobs="${failed_jobs}• Bandit: ${{ needs.bandit.result }}\n"
+          fi
+          
+          if [ -n "$failed_jobs" ]; then
+            echo "failed=true" >> $GITHUB_OUTPUT
+            echo "summary<<EOF" >> $GITHUB_OUTPUT
+            echo "Failed jobs:" >> $GITHUB_OUTPUT
+            echo "$failed_jobs" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "failed=false" >> $GITHUB_OUTPUT
+            echo "summary=All security scans passed successfully" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Send Slack notification
+        if: steps.summary.outputs.failed == 'true'
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_CODESECURITY_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "*Security scans:* some jobs failed :rotating_light:\nRepository: ${{ github.repository }}\nRun: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Open run>\n\n${{ steps.summary.outputs.summary }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Security scans:* some jobs failed :rotating_light:\n*Repository:* `${{ github.repository }}`\n*Run:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Open run>\n\n${{ steps.summary.outputs.summary }}"
+                  }
+                }
+              ]
+            }
