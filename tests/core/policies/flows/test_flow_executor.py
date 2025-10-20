@@ -1070,6 +1070,75 @@ def test_reset_scoped_slots_with_persisted_slots_set():
     assert events[0].metadata == {"reset": True}
 
 
+def test_reset_scoped_slots_with_persisted_slots_set_in_called_flow():
+    flows = flows_from_str(
+        """
+        flows:
+          parent_flow:
+            description: parent flow
+            name: parent flow
+            steps:
+            - id: "1"
+              call: child_flow
+
+          child_flow:
+            description: child flow
+            name: child flow
+            persisted_slots:
+            - foo
+            - bar
+            steps:
+            - id: "1"
+              collect: foo
+            - id: "2"
+              collect: bar
+            - id: "3"
+              collect: baz
+            - id: "4"
+              set_slots:
+              - foo: foo2
+        """
+    )
+    current_flow = flows.flow_by_id("parent_flow")
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        [
+            SlotSet("foo", "foo"),
+            SlotSet("bar", "bar"),
+            SlotSet("baz", "baz"),
+        ],
+    )
+    tracker.update_stack(
+        DialogueStack.from_dict(
+            [
+                {
+                    "type": "flow",
+                    "frame_type": "regular",
+                    "flow_id": "parent_flow",
+                    "step_id": "first_step",
+                    "frame_id": "some-frame-id",
+                },
+                {
+                    "type": "flow",
+                    "frame_type": "call",
+                    "flow_id": "child_flow",
+                    "step_id": "second_step",
+                    "frame_id": "some-other-frame-id",
+                },
+            ],
+        )
+    )
+    # update tracker with the steps taken in the called flow
+    update_tracker_with_path_through_flow(tracker, "foo_flow", ["1", "2", "3", "4"])
+
+    events = flow_executor.reset_scoped_slots(
+        tracker.stack.top(), current_flow, tracker
+    )
+    # we expect only the baz slot to be reset since it wasn't defined to be persisted
+    assert events == [SlotSet("baz", None)]
+    assert events[0].metadata == {"reset": True}
+
+
 @pytest.mark.asyncio
 async def test_run_step_collect():
     flows = flows_from_str(

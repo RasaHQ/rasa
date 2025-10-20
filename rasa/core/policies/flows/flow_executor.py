@@ -357,6 +357,10 @@ def reset_scoped_slots(
     flow_persistable_slots = current_flow.persisted_slots
 
     for step in current_flow.steps_with_calls_resolved:
+        # take persisted slots from called flows into consideration
+        # before resetting slots
+        if isinstance(step, CallFlowStep) and step.called_flow_reference:
+            flow_persistable_slots.extend(step.called_flow_reference.persisted_slots)
         if isinstance(step, CollectInformationFlowStep):
             # reset all slots scoped to the flow
             slot_name = step.collect
@@ -368,7 +372,22 @@ def reset_scoped_slots(
     # slots set by the set slots step should be reset after the flow ends
     # unless they are also used in a collect step where `reset_after_flow_ends`
     # is set to `False` or set in the `persisted_slots` list.
-    resettable_set_slots = [
+    resettable_set_slots = _get_resettable_set_slots(
+        current_flow, not_resettable_slot_names, flow_persistable_slots
+    )
+    for name in resettable_set_slots:
+        _reset_slot(name, tracker)
+
+    return events
+
+
+def _get_resettable_set_slots(
+    current_flow: Flow,
+    not_resettable_slot_names: set[Text],
+    flow_persistable_slots: List[Text],
+) -> List[Text]:
+    """Get list of slot names from SetSlotsFlowStep that should be reset."""
+    return [
         slot["key"]
         for step in current_flow.steps_with_calls_resolved
         if isinstance(step, SetSlotsFlowStep)
@@ -376,11 +395,6 @@ def reset_scoped_slots(
         if slot["key"] not in not_resettable_slot_names
         and slot["key"] not in flow_persistable_slots
     ]
-
-    for name in resettable_set_slots:
-        _reset_slot(name, tracker)
-
-    return events
 
 
 async def advance_flows(
