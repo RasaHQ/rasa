@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional
+from unittest.mock import Mock
 
 import pytest
 from pydantic import ValidationError
@@ -10,6 +11,7 @@ from rasa.builder.copilot.models import (
     ReferenceSection,
     ResponseCategory,
     ResponseCompleteness,
+    UsageStatistics,
 )
 
 
@@ -363,3 +365,376 @@ class TestCopilotRequest:
                 )
 
                 assert isinstance(parsed_message, InternalCopilotRequestChatMessage)
+
+    def test_parse_chat_history_unknown_role_error(self) -> None:
+        """Test that parsing chat history with unknown role raises ValueError."""
+        # Given
+        chat_history: List[Dict[str, Any]] = [
+            {"role": "user", "content": [{"type": "text", "text": "Hello"}]},
+            {
+                "role": "unknown_role",
+                "content": [{"type": "text", "text": "Invalid role"}],
+            },
+        ]
+
+        # When / Then
+        with pytest.raises(ValueError):
+            CopilotRequest.parse_chat_history(chat_history)
+
+
+class TestUsageStatistics:
+    """Test class for UsageStatistics cost calculations and methods."""
+
+    @pytest.mark.parametrize(
+        "prompt_tokens,cached_prompt_tokens,completion_tokens,"
+        "input_token_price,cached_token_price,output_token_price,"
+        "expected_non_cached_tokens,"
+        "expected_non_cached_cost,expected_cached_cost,"
+        "expected_input_cost,expected_output_cost,"
+        "expected_total_cost",
+        [
+            # Basic case with all tokens and prices
+            (
+                1000,
+                200,
+                500,  # tokens
+                0.01,
+                0.005,
+                0.02,  # prices: input, cached, output
+                800,
+                0.008,  # non-cached tokens and cost
+                0.001,
+                0.009,  # cached cost and input cost
+                0.01,
+                0.019,  # output cost and total cost
+            ),
+            # No cached tokens (0)
+            (
+                1000,
+                0,
+                500,  # tokens
+                0.01,
+                0.005,
+                0.02,  # prices: input, cached, output
+                1000,
+                0.01,  # non-cached tokens and cost
+                0.0,
+                0.01,  # cached cost and input cost
+                0.01,
+                0.02,  # output cost and total cost
+            ),
+            # No cached tokens (None)
+            (
+                1000,
+                None,
+                500,  # tokens
+                0.01,
+                0.005,
+                0.02,  # prices: input, cached, output
+                1000,
+                0.01,  # non-cached tokens and cost
+                None,
+                0.01,  # cached cost and input cost
+                0.01,
+                0.02,  # output cost and total cost
+            ),
+            # All cached tokens
+            (
+                1000,
+                1000,
+                500,  # tokens
+                0.01,
+                0.005,
+                0.02,  # prices: input, cached, output
+                0,
+                0.0,  # non-cached tokens and cost
+                0.005,
+                0.005,  # cached cost and input cost
+                0.01,
+                0.015,  # output cost and total cost
+            ),
+            # Missing prompt tokens
+            (
+                None,
+                200,
+                500,  # tokens
+                0.01,
+                0.005,
+                0.02,  # prices: input, cached, output
+                None,
+                None,  # non-cached tokens and cost
+                0.001,
+                0.001,  # cached cost and input cost
+                0.01,
+                0.011,  # output cost and total cost
+            ),
+            # Missing completion tokens
+            (
+                1000,
+                200,
+                None,  # tokens
+                0.01,
+                0.005,
+                0.02,  # prices: input, cached, output
+                800,
+                0.008,  # non-cached tokens and cost
+                0.001,
+                0.009,  # cached cost and input cost
+                None,
+                None,  # output cost and total cost
+            ),
+            # Zero prices
+            (
+                1000,
+                200,
+                500,  # tokens
+                0.0,
+                0.0,
+                0.0,  # prices: input, cached, output
+                800,
+                0.0,  # non-cached tokens and cost
+                0.0,
+                0.0,  # cached cost and input cost
+                0.0,
+                0.0,  # output cost and total cost
+            ),
+            # Cached tokens > prompt tokens (should handle gracefully)
+            (
+                1000,
+                1200,
+                500,  # tokens
+                0.01,
+                0.005,
+                0.02,  # prices: input, cached, output
+                -200,
+                -0.002,  # non-cached tokens and cost
+                0.006,
+                0.004,  # cached cost and input cost
+                0.01,
+                0.014,  # output cost and total cost
+            ),
+            # Zero token counts (should return 0.0 costs, not None)
+            (
+                0,
+                0,
+                0,  # tokens
+                0.01,
+                0.005,
+                0.02,  # prices: input, cached, output
+                0,
+                0.0,  # non-cached tokens and cost
+                0.0,
+                0.0,  # cached cost and input cost
+                0.0,
+                0.0,  # output cost and total cost
+            ),
+            # Only cached tokens (non_cached_cost=None, cached_cost=0.001)
+            (
+                None,
+                200,
+                500,  # tokens
+                0.01,
+                0.005,
+                0.02,  # prices: input, cached, output
+                None,
+                None,  # non-cached tokens and cost
+                0.001,
+                0.001,  # cached cost and input cost
+                0.01,
+                0.011,  # output cost and total cost
+            ),
+        ],
+    )
+    def test_usage_statistics_cost_calculations(
+        self,
+        prompt_tokens: Optional[int],
+        cached_prompt_tokens: Optional[int],
+        completion_tokens: Optional[int],
+        input_token_price: float,
+        cached_token_price: float,
+        output_token_price: float,
+        expected_non_cached_tokens: Optional[int],
+        expected_non_cached_cost: Optional[float],
+        expected_cached_cost: Optional[float],
+        expected_input_cost: Optional[float],
+        expected_output_cost: Optional[float],
+        expected_total_cost: Optional[float],
+    ) -> None:
+        # Given / When
+        usage_stats = UsageStatistics(
+            prompt_tokens=prompt_tokens,
+            cached_prompt_tokens=cached_prompt_tokens,
+            completion_tokens=completion_tokens,
+            input_token_price=input_token_price,
+            output_token_price=output_token_price,
+            cached_token_price=cached_token_price,
+        )
+
+        # Then
+        assert usage_stats.non_cached_prompt_tokens == expected_non_cached_tokens
+        if expected_non_cached_cost is not None:
+            assert usage_stats.non_cached_cost == pytest.approx(
+                expected_non_cached_cost
+            )
+        else:
+            assert usage_stats.non_cached_cost == expected_non_cached_cost
+        if expected_cached_cost is not None:
+            assert usage_stats.cached_cost == pytest.approx(expected_cached_cost)
+        else:
+            assert usage_stats.cached_cost == expected_cached_cost
+        if expected_input_cost is not None:
+            assert usage_stats.input_cost == pytest.approx(expected_input_cost)
+        else:
+            assert usage_stats.input_cost == expected_input_cost
+        if expected_output_cost is not None:
+            assert usage_stats.output_cost == pytest.approx(expected_output_cost)
+        else:
+            assert usage_stats.output_cost == expected_output_cost
+        if expected_total_cost is not None:
+            assert usage_stats.total_cost == pytest.approx(expected_total_cost)
+        else:
+            assert usage_stats.total_cost == expected_total_cost
+
+    def test_update_token_prices(self):
+        """Test updating token prices."""
+        # Given / When
+        usage_stats = UsageStatistics()
+
+        # When / Then
+        usage_stats.update_token_prices(0.01, 0.02, 0.005)
+
+        assert usage_stats.input_token_price == 0.01
+        assert usage_stats.output_token_price == 0.02
+        assert usage_stats.cached_token_price == 0.005
+
+    def test_reset(self):
+        """Test resetting usage statistics."""
+        # Given
+        usage_stats = UsageStatistics(
+            prompt_tokens=1000,
+            cached_prompt_tokens=200,
+            completion_tokens=500,
+            total_tokens=1500,
+            model="gpt-4",
+        )
+
+        # When
+        usage_stats.reset()
+
+        # Then
+        assert usage_stats.prompt_tokens is None
+        assert usage_stats.cached_prompt_tokens is None
+        assert usage_stats.completion_tokens is None
+        assert usage_stats.total_tokens is None
+        assert usage_stats.model is None
+
+    def test_from_chat_completion_response(self) -> None:
+        """Test creating UsageStatistics from ChatCompletion response."""
+        from unittest.mock import Mock
+
+        # Test with usage data and cached tokens
+        mock_prompt_tokens_details = Mock()
+        mock_prompt_tokens_details.cached_tokens = 200
+
+        mock_usage = Mock()
+        mock_usage.prompt_tokens = 1000
+        mock_usage.completion_tokens = 500
+        mock_usage.total_tokens = 1500
+        mock_usage.prompt_tokens_details = mock_prompt_tokens_details
+
+        mock_response = Mock()
+        mock_response.usage = mock_usage
+        mock_response.model = "gpt-4"
+
+        usage_stats = UsageStatistics.from_chat_completion_response(
+            mock_response, 0.01, 0.02, 0.005
+        )
+
+        assert usage_stats is not None
+        assert usage_stats.prompt_tokens == 1000
+        assert usage_stats.completion_tokens == 500
+        assert usage_stats.total_tokens == 1500
+        assert usage_stats.cached_prompt_tokens == 200
+        assert usage_stats.model == "gpt-4"
+        assert usage_stats.input_token_price == 0.01
+        assert usage_stats.output_token_price == 0.02
+        assert usage_stats.cached_token_price == 0.005
+
+        # Test without usage data
+        mock_response_no_usage = Mock()
+        mock_response_no_usage.usage = None
+
+        usage_stats_no_usage = UsageStatistics.from_chat_completion_response(
+            mock_response_no_usage
+        )
+
+        assert usage_stats_no_usage is None
+
+    @pytest.mark.parametrize(
+        "initial_stats,chunk_usage,chunk_model,expected_stats",
+        [
+            # Test with usage data and cached tokens
+            (
+                UsageStatistics(),
+                {
+                    "prompt_tokens": 1000,
+                    "completion_tokens": 500,
+                    "total_tokens": 1500,
+                    "cached_tokens": 200,
+                },
+                "gpt-4",
+                UsageStatistics(
+                    prompt_tokens=1000,
+                    completion_tokens=500,
+                    total_tokens=1500,
+                    cached_prompt_tokens=200,
+                    model="gpt-4",
+                ),
+            ),
+            # Test without usage data (should reset existing values)
+            (
+                UsageStatistics(
+                    prompt_tokens=500,
+                    completion_tokens=300,
+                    total_tokens=800,
+                ),
+                None,
+                None,
+                UsageStatistics(),
+            ),
+        ],
+    )
+    def test_update_from_stream_chunk(
+        self,
+        initial_stats: UsageStatistics,
+        chunk_usage: Optional[Dict[str, Any]],
+        chunk_model: Optional[str],
+        expected_stats: UsageStatistics,
+    ) -> None:
+        """Test updating UsageStatistics from stream chunk."""
+        # Setup mock chunk
+        mock_chunk = Mock()
+        mock_chunk.model = chunk_model
+
+        if chunk_usage:
+            mock_prompt_tokens_details = Mock()
+            mock_prompt_tokens_details.cached_tokens = chunk_usage.get("cached_tokens")
+
+            mock_usage = Mock()
+            mock_usage.prompt_tokens = chunk_usage["prompt_tokens"]
+            mock_usage.completion_tokens = chunk_usage["completion_tokens"]
+            mock_usage.total_tokens = chunk_usage["total_tokens"]
+            mock_usage.prompt_tokens_details = mock_prompt_tokens_details
+            mock_chunk.usage = mock_usage
+        else:
+            mock_chunk.usage = None
+
+        # Update usage statistics
+        initial_stats.update_from_stream_chunk(mock_chunk)
+
+        # Assertions - compare the two UsageStatistics objects
+        assert initial_stats.prompt_tokens == expected_stats.prompt_tokens
+        assert initial_stats.completion_tokens == expected_stats.completion_tokens
+        assert initial_stats.total_tokens == expected_stats.total_tokens
+        assert initial_stats.cached_prompt_tokens == expected_stats.cached_prompt_tokens
+        assert initial_stats.model == expected_stats.model

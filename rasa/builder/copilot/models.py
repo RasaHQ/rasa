@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Type, TypeVar, Union
 
 import structlog
+from openai.types.chat import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 from pydantic import (
     BaseModel,
@@ -612,16 +613,171 @@ class TrainingErrorLog(CopilotOutput):
 
 
 class UsageStatistics(BaseModel):
-    prompt_tokens: Optional[int] = None
-    completion_tokens: Optional[int] = None
-    total_tokens: Optional[int] = None
-    model: Optional[str] = None
+    """Usage statistics for a copilot generation."""
+
+    # Token usage statistics
+    prompt_tokens: Optional[int] = Field(
+        default=None,
+        description=(
+            "Total number of prompt tokens used to generate completion. "
+            "Should include cached prompt tokens."
+        ),
+    )
+    completion_tokens: Optional[int] = Field(
+        default=None,
+        description="Number of generated tokens.",
+    )
+    total_tokens: Optional[int] = Field(
+        default=None,
+        description="Total number of tokens used (input + output).",
+    )
+    cached_prompt_tokens: Optional[int] = Field(
+        default=None,
+        description="Number of cached prompt tokens.",
+    )
+    model: Optional[str] = Field(
+        default=None,
+        description="The model used to generate the response.",
+    )
+
+    # Token prices
+    input_token_price: float = Field(
+        default=0.0,
+        description="Price per 1K input tokens in dollars.",
+    )
+    output_token_price: float = Field(
+        default=0.0,
+        description="Price per 1K output tokens in dollars.",
+    )
+    cached_token_price: float = Field(
+        default=0.0,
+        description="Price per 1K cached tokens in dollars.",
+    )
+
+    @property
+    def non_cached_prompt_tokens(self) -> Optional[int]:
+        """Get the non-cached prompt tokens."""
+        if self.cached_prompt_tokens is not None and self.prompt_tokens is not None:
+            return self.prompt_tokens - self.cached_prompt_tokens
+        return self.prompt_tokens
+
+    @property
+    def non_cached_cost(self) -> Optional[float]:
+        """Calculate the non-cached token cost based on configured pricing."""
+        if self.non_cached_prompt_tokens is None:
+            return None
+        if self.non_cached_prompt_tokens == 0:
+            return 0.0
+
+        return (self.non_cached_prompt_tokens / 1000.0) * self.input_token_price
+
+    @property
+    def cached_cost(self) -> Optional[float]:
+        """Calculate the cached token cost based on configured pricing."""
+        if self.cached_prompt_tokens is None:
+            return None
+        if self.cached_prompt_tokens == 0:
+            return 0.0
+
+        return (self.cached_prompt_tokens / 1000.0) * self.cached_token_price
+
+    @property
+    def input_cost(self) -> Optional[float]:
+        """Calculate the input token cost based on configured pricing.
+
+        The calculation takes into account the cached prompt tokens (if available) too.
+        """
+        # If both non-cached and cached costs are None, there's no input cost
+        if self.non_cached_cost is None and self.cached_cost is None:
+            return None
+
+        # If only non-cached cost is available, return it
+        if self.non_cached_cost is not None and self.cached_cost is None:
+            return self.non_cached_cost
+
+        # If only cached cost is available, return it
+        if self.non_cached_cost is None and self.cached_cost is not None:
+            return self.cached_cost
+
+        # If both are available, return the sum
+        return self.non_cached_cost + self.cached_cost  # type: ignore[operator]
+
+    @property
+    def output_cost(self) -> Optional[float]:
+        """Calculate the output token cost based on configured pricing."""
+        if self.completion_tokens is None:
+            return None
+        if self.completion_tokens == 0:
+            return 0.0
+
+        return (self.completion_tokens / 1000.0) * self.output_token_price
+
+    @property
+    def total_cost(self) -> Optional[float]:
+        """Calculate the total cost based on configured pricing.
+
+        Returns:
+            Total cost in dollars, or None if insufficient data.
+        """
+        if self.input_cost is None or self.output_cost is None:
+            return None
+
+        return self.input_cost + self.output_cost
+
+    def update_token_prices(
+        self,
+        input_token_price: float,
+        output_token_price: float,
+        cached_token_price: float,
+    ) -> None:
+        """Update token prices with provided values.
+
+        Args:
+            input_token_price: Price per 1K input tokens in dollars.
+            output_token_price: Price per 1K output tokens in dollars.
+            cached_token_price: Price per 1K cached tokens in dollars.
+        """
+        self.input_token_price = input_token_price
+        self.output_token_price = output_token_price
+        self.cached_token_price = cached_token_price
+
+    @classmethod
+    def from_chat_completion_response(
+        cls,
+        response: ChatCompletion,
+        input_token_price: float = 0.0,
+        output_token_price: float = 0.0,
+        cached_token_price: float = 0.0,
+    ) -> Optional["UsageStatistics"]:
+        """Create a UsageStatistics object from a ChatCompletionChunk."""
+        if not (usage := getattr(response, "usage", None)):
+            return None
+
+        usage_statistics = cls(
+            input_token_price=input_token_price,
+            output_token_price=output_token_price,
+            cached_token_price=cached_token_price,
+        )
+
+        usage_statistics.prompt_tokens = usage.prompt_tokens
+        usage_statistics.completion_tokens = usage.completion_tokens
+        usage_statistics.total_tokens = usage.total_tokens
+        usage_statistics.model = getattr(response, "model", None)
+
+        # Extract cached tokens if available
+        if hasattr(usage, "prompt_tokens_details") and usage.prompt_tokens_details:
+            usage_statistics.cached_prompt_tokens = getattr(
+                usage.prompt_tokens_details, "cached_tokens", None
+            )
+
+        return usage_statistics
 
     def reset(self) -> None:
         """Reset usage statistics to their default values."""
         self.prompt_tokens = None
         self.completion_tokens = None
         self.total_tokens = None
+        self.cached_prompt_tokens = None
         self.model = None
 
     def update_from_stream_chunk(self, chunk: ChatCompletionChunk) -> None:
@@ -630,13 +786,24 @@ class UsageStatistics(BaseModel):
         Args:
             chunk: The OpenAI stream chunk containing usage statistics.
         """
+        # Reset the usage statistics to their default values
+        self.reset()
+
+        # If the chunk has no usage statistics, return
         if not (usage := getattr(chunk, "usage", None)):
             return
 
+        # Update the usage statistics with the values from the chunk
         self.prompt_tokens = usage.prompt_tokens
         self.completion_tokens = usage.completion_tokens
         self.total_tokens = usage.total_tokens
         self.model = getattr(chunk, "model", None)
+
+        # Extract cached tokens if available
+        if hasattr(usage, "prompt_tokens_details") and usage.prompt_tokens_details:
+            self.cached_prompt_tokens = getattr(
+                usage.prompt_tokens_details, "cached_tokens", None
+            )
 
 
 class SigningContext(BaseModel):

@@ -5,6 +5,7 @@ import time
 from http import HTTPStatus
 from typing import Any, Optional
 
+import langfuse
 import structlog
 from sanic import Blueprint, HTTPResponse, response
 from sanic.request import Request
@@ -41,7 +42,6 @@ from rasa.builder.copilot.signing import (
     create_signature_envelope_for_text,
     verify_signature,
 )
-from rasa.builder.copilot.telemetry import CopilotTelemetry
 from rasa.builder.download import create_bot_project_archive
 from rasa.builder.guardrails.constants import (
     BLOCK_SCOPE_PROJECT,
@@ -65,6 +65,7 @@ from rasa.builder.models import (
     ApiErrorResponse,
     AssistantInfo,
     BotData,
+    BotFiles,
     JobCreateResponse,
     JobStatus,
     JobStatusEvent,
@@ -74,6 +75,8 @@ from rasa.builder.models import (
 )
 from rasa.builder.project_generator import ProjectGenerator
 from rasa.builder.shared.tracker_context import TrackerContext
+from rasa.builder.telemetry.copilot_langfuse_telemetry import CopilotLangfuseTelemetry
+from rasa.builder.telemetry.copilot_segment_telemetry import CopilotSegmentTelemetry
 from rasa.core.agent import Agent
 from rasa.core.channels.studio_chat import StudioChatInput
 from rasa.core.exceptions import AgentNotReady
@@ -1020,6 +1023,9 @@ async def download_bot_project(request: Request) -> HTTPResponse:
     schema=str,
 )
 @protected()
+# Disable automatic input/output capture for langfuse tracing
+# This allows manual control over what data is sent to langfuse
+@langfuse.observe(capture_input=False, capture_output=False)
 async def copilot(request: Request) -> None:
     """Handle copilot requests with streaming markdown responses."""
     sse = await request.respond(content_type="text/event-stream")
@@ -1046,9 +1052,12 @@ async def copilot(request: Request) -> None:
             )
             return
 
-        telemetry = CopilotTelemetry(project_id=HELLO_RASA_PROJECT_ID, user_id=user_id)
+        telemetry = CopilotSegmentTelemetry(
+            project_id=HELLO_RASA_PROJECT_ID, user_id=user_id
+        )
         structlogger.debug("builder.copilot.telemetry.request.init")
 
+        # TODO: This can be removed once Langfuse is completed.
         if req.last_message and req.last_message.role == ROLE_USER:
             structlogger.debug("builder.copilot.telemetry.request.user_turn")
             # Offload telemetry logging to a background task
@@ -1088,26 +1097,9 @@ async def copilot(request: Request) -> None:
             return
 
         # 4. Get the necessary context for the copilot
-        tracker = await current_tracker_from_input_channel(request.app, req.session_id)
-        tracker_context = TrackerContext.from_tracker(
-            tracker, max_turns=COPILOT_ASSISTANT_TRACKER_MAX_TURNS
-        )
-        if (
-            tracker_context is not None
-            and llm_service.guardrails_policy_checker is not None
-        ):
-            tracker_context = await llm_service.guardrails_policy_checker.check_assistant_chat_for_policy_violations(  # noqa: E501
-                tracker_context=tracker_context,
-                hello_rasa_user_id=user_id,
-                hello_rasa_project_id=HELLO_RASA_PROJECT_ID,
-                lakera_project_id=LAKERA_ASSISTANT_HISTORY_GUARDRAIL_PROJECT_ID,
-            )
-
-        # Copilot doesn't need to know about the docs and any file that is not a core
-        # assistant file
-        relevant_assistant_files = project_generator.get_bot_files(
-            exclude_docs_directory=True,
-            allowed_file_extensions=["yaml", "yml", "py", "jinja", "jinja2"],
+        tracker_context = await get_tracker_context_for_copilot(request, req, user_id)
+        relevant_assistant_files = get_relevant_assistant_files_for_copilot(
+            project_generator,
         )
         context = CopilotContext(
             tracker_context=tracker_context,
@@ -1162,7 +1154,7 @@ async def copilot(request: Request) -> None:
         async for token in intercepted_stream:
             await sse.send(token.to_sse_event().format())
 
-        # 8. Offload telemetry logging to a background task
+        # 8a. Offload metabase telemetry logging to a background task
         request.app.add_task(
             asyncio.to_thread(
                 telemetry.log_copilot_from_handler,
@@ -1179,6 +1171,16 @@ async def copilot(request: Request) -> None:
                 tracker_event_attachments=generation_context.tracker_event_attachments,
                 **copilot_client.usage_statistics.model_dump(),
             )
+        )
+        # 8b. Setup output trace attributes for Langfuse
+        CopilotLangfuseTelemetry.setup_copilot_endpoint_call_trace_attributes(
+            hello_rasa_project_id=HELLO_RASA_PROJECT_ID or "N/A",
+            chat_id=req.session_id or "N/A",
+            user_id=user_id,
+            request=req,
+            handler=copilot_response_handler,
+            relevant_documents=generation_context.relevant_documents,
+            copilot_context=context,
         )
 
         # 9. Once the stream is over, extract and send references
@@ -1365,3 +1367,70 @@ async def _handle_guardrail_violation_and_maybe_block(
 
     await sse.send(message.to_sse_event().format())
     return message
+
+
+@langfuse.observe(capture_input=False, capture_output=False)
+async def get_tracker_context_for_copilot(
+    request: Request,
+    req: CopilotRequest,
+    user_id: str,
+) -> Optional[TrackerContext]:
+    """Check the assistant chat for guardrail policy violations.
+
+    Args:
+        request: The request object.
+        req: The CopilotRequest object.
+        user_id: The user ID.
+
+    Returns:
+        The tracker context if the tracker is available.
+    """
+    tracker = await current_tracker_from_input_channel(request.app, req.session_id)
+    tracker_context = TrackerContext.from_tracker(
+        tracker, max_turns=COPILOT_ASSISTANT_TRACKER_MAX_TURNS
+    )
+    if (
+        tracker_context is not None
+        and llm_service.guardrails_policy_checker is not None
+    ):
+        tracker_context = await llm_service.guardrails_policy_checker.check_assistant_chat_for_policy_violations(  # noqa: E501
+            tracker_context=tracker_context,
+            hello_rasa_user_id=user_id,
+            hello_rasa_project_id=HELLO_RASA_PROJECT_ID,
+            lakera_project_id=LAKERA_ASSISTANT_HISTORY_GUARDRAIL_PROJECT_ID,
+        )
+
+    # Track the retrieved tracker context
+    CopilotLangfuseTelemetry.trace_copilot_tracker_context(
+        tracker_context=tracker_context,
+        max_conversation_turns=COPILOT_ASSISTANT_TRACKER_MAX_TURNS,
+        session_id=req.session_id,
+    )
+
+    return tracker_context
+
+
+@langfuse.observe(capture_input=False, capture_output=False)
+def get_relevant_assistant_files_for_copilot(
+    project_generator: ProjectGenerator,
+) -> BotFiles:
+    """Get the relevant assistant files for the copilot.
+
+    Args:
+        project_generator: The project generator.
+
+    Returns:
+        The relevant assistant files.
+    """
+    # Copilot doesn't need to know about the docs and any file that is not a core
+    # assistant file
+    files = project_generator.get_bot_files(
+        exclude_docs_directory=True,
+        allowed_file_extensions=["yaml", "yml", "py", "jinja", "jinja2"],
+    )
+
+    # Track the retrieved assistant files
+    CopilotLangfuseTelemetry.trace_copilot_relevant_assistant_files(
+        relevant_assistant_files=files,
+    )
+    return files

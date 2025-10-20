@@ -214,6 +214,10 @@ class TestInKeepDocumentRetrieval:
         mock_response.choices = (
             [mock_choice] if api_response and "choices" in api_response else []
         )
+
+        # Explicitly set usage to None to avoid Mock object issues
+        mock_response.usage = None
+
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai_class.return_value = mock_client
 
@@ -285,6 +289,9 @@ class TestInKeepDocumentRetrieval:
             mock_message.content = None
             mock_choice.message = mock_message
             mock_response.choices = []
+
+        # Explicitly set usage to None to avoid Mock object issues
+        mock_response.usage = None
 
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai_class.return_value = mock_client

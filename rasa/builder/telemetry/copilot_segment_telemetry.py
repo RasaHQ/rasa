@@ -1,14 +1,25 @@
 import datetime as dt
 import os
 import uuid
-from typing import Any, Iterable, Optional, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    Optional,
+    Sequence,
+)
+
+if TYPE_CHECKING:
+    pass
 
 import structlog
 
 from rasa import telemetry
 from rasa.builder.copilot.constants import COPILOT_SEGMENT_WRITE_KEY_ENV_VAR
 from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
-from rasa.builder.copilot.models import EventContent
+from rasa.builder.copilot.models import (
+    EventContent,
+)
 from rasa.builder.document_retrieval.models import Document
 from rasa.telemetry import (
     SEGMENT_TRACK_ENDPOINT,
@@ -56,7 +67,7 @@ def _track(event: str, user_id: str, properties: dict) -> None:
         structlogger.warning("builder.telemetry.track_failed", error=str(e))
 
 
-class CopilotTelemetry:
+class CopilotSegmentTelemetry:
     def __init__(
         self,
         *,

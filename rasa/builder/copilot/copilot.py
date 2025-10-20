@@ -42,6 +42,7 @@ from rasa.builder.exceptions import (
     DocumentRetrievalError,
 )
 from rasa.builder.shared.tracker_context import TrackerContext
+from rasa.builder.telemetry.copilot_langfuse_telemetry import CopilotLangfuseTelemetry
 from rasa.shared.constants import PACKAGE_NAME
 
 structlogger = structlog.get_logger()
@@ -72,7 +73,11 @@ class Copilot:
         )
 
         # The final stream chunk includes usage statistics.
-        self.usage_statistics = UsageStatistics()
+        self.usage_statistics = UsageStatistics(
+            input_token_price=config.COPILOT_INPUT_TOKEN_PRICE,
+            output_token_price=config.COPILOT_OUTPUT_TOKEN_PRICE,
+            cached_token_price=config.COPILOT_CACHED_TOKEN_PRICE,
+        )
 
     @asynccontextmanager
     async def _get_client(self) -> AsyncGenerator[openai.AsyncOpenAI, None]:
@@ -94,6 +99,16 @@ class Copilot:
                     error=str(exc),
                 )
 
+    @property
+    def llm_config(self) -> Dict[str, Any]:
+        """The LLM config used to generate the response."""
+        return {
+            "model": config.OPENAI_MODEL,
+            "temperature": config.OPENAI_TEMPERATURE,
+            "stream": True,
+            "stream_options": {"include_usage": True},
+        }
+
     async def search_rasa_documentation(
         self,
         context: CopilotContext,
@@ -108,7 +123,9 @@ class Copilot:
         """
         try:
             query = self._create_documentation_search_query(context)
-            return await self._inkeep_document_retrieval.retrieve_documents(query)
+            documents = await self._inkeep_document_retrieval.retrieve_documents(query)
+            # TODO: Log documentation retrieval to Langfuse
+            return documents
         except DocumentRetrievalError as e:
             structlogger.error(
                 "copilot.search_rasa_documentation.error",
@@ -145,11 +162,12 @@ class Copilot:
             Exception: If an unexpected error occurs.
         """
         relevant_documents = await self.search_rasa_documentation(context)
-        messages = await self._build_messages(context, relevant_documents)
         tracker_event_attachments = self._extract_tracker_event_attachments(
             context.copilot_chat_history[-1]
         )
+        messages = await self._build_messages(context, relevant_documents)
 
+        # TODO: Delete this after Langfuse is implemented
         support_evidence = CopilotGenerationContext(
             relevant_documents=relevant_documents,
             system_message=messages[0],
@@ -163,6 +181,7 @@ class Copilot:
             support_evidence,
         )
 
+    @CopilotLangfuseTelemetry.trace_copilot_streaming_generation
     async def _stream_response(
         self, messages: List[Dict[str, Any]]
     ) -> AsyncGenerator[str, None]:
@@ -172,13 +191,10 @@ class Copilot:
         try:
             async with self._get_client() as client:
                 stream = await client.chat.completions.create(
-                    model=config.OPENAI_MODEL,
-                    messages=messages,  # type: ignore
-                    temperature=config.OPENAI_TEMPERATURE,
-                    stream=True,
-                    stream_options={"include_usage": True},
+                    messages=messages,
+                    **self.llm_config,
                 )
-                async for chunk in stream:
+                async for chunk in stream:  # type: ignore[attr-defined]
                     # The final chunk, which contains the usage statistics,
                     # arrives with an empty `choices` list.
                     if not chunk.choices:
@@ -189,6 +205,7 @@ class Copilot:
                     delta = chunk.choices[0].delta
                     if delta and delta.content:
                         yield delta.content
+
         except openai.OpenAIError as e:
             structlogger.exception("copilot.stream_response.api_error", error=str(e))
             raise CopilotStreamError(
@@ -559,4 +576,6 @@ class Copilot:
         """Extract the tracker event attachments from the message."""
         if not isinstance(message, UserChatMessage):
             return []
+        # TODO: Log tracker event attachments to Langfuse only in the case of the
+        #       User chat message.
         return message.get_content_blocks_by_type(EventContent)

@@ -155,6 +155,10 @@ updates:
           - "google-auth"
           - "sanic-jwt"
           - "PyJWT"
+      monitoring:
+        dependency-type: production
+        patterns:
+          - "langfuse"
       logging-observability:
         dependency-type: production
         patterns:

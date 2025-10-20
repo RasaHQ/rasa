@@ -1722,6 +1722,7 @@ jobs:
           sudo apt-get -y install libpq-dev
           make install-mitie
           make install-nlu-pii-channels | tee .output
+          make install-monitoring | tee .output
           if grep 'The lock file is not up to date' .output; then exit 1; fi
           make prepare-tests-ubuntu
 

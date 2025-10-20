@@ -9,10 +9,10 @@ from pydantic import BaseModel
 
 from rasa.builder.config import OPENAI_MODEL
 from rasa.builder.copilot.models import EventContent, ResponseCategory
-from rasa.builder.copilot.telemetry import (
+from rasa.builder.telemetry.copilot_segment_telemetry import (
     COPILOT_BOT_MESSAGE_EVENT,
     COPILOT_USER_MESSAGE_EVENT,
-    CopilotTelemetry,
+    CopilotSegmentTelemetry,
 )
 
 
@@ -23,20 +23,22 @@ class TrackedEvent(BaseModel):
 
 
 @pytest.fixture
-def telemetry_events(monkeypatch) -> tuple[CopilotTelemetry, list[TrackedEvent]]:
+def telemetry_events(monkeypatch) -> tuple[CopilotSegmentTelemetry, list[TrackedEvent]]:
     """Telemetry instance with _track patched to capture payloads."""
     events: list[TrackedEvent] = []
 
     def fake_track(event: str, user_id: str, properties: dict) -> None:
         events.append(TrackedEvent(event=event, user_id=user_id, properties=properties))
 
-    monkeypatch.setattr("rasa.builder.copilot.telemetry._track", fake_track)
-    telemetry = CopilotTelemetry(project_id="proj-123", user_id="user-xyz")
+    monkeypatch.setattr(
+        "rasa.builder.telemetry.copilot_segment_telemetry._track", fake_track
+    )
+    telemetry = CopilotSegmentTelemetry(project_id="proj-123", user_id="user-xyz")
     return telemetry, events
 
 
 def test_log_user_turn_sends_minimal_fields(
-    telemetry_events: tuple[CopilotTelemetry, list[TrackedEvent]],
+    telemetry_events: tuple[CopilotSegmentTelemetry, list[TrackedEvent]],
 ):
     telemetry, events = telemetry_events
     telemetry.log_user_turn("hi there")
@@ -63,7 +65,7 @@ def test_extract_flags():
         ]
     )
 
-    flags = CopilotTelemetry._extract_flags(handler)
+    flags = CopilotSegmentTelemetry._extract_flags(handler)
     assert set(flags) == {category.value for category in response_categories}
 
 
@@ -78,11 +80,11 @@ def test_full_text_concatenates_only_non_empty_content():
         ]
     )
 
-    assert CopilotTelemetry._full_text(handler) == "Hello World"
+    assert CopilotSegmentTelemetry._full_text(handler) == "Hello World"
 
 
 def test_log_copilot_turn_emits_complete_payload(
-    telemetry_events: tuple[CopilotTelemetry, list[TrackedEvent]],
+    telemetry_events: tuple[CopilotSegmentTelemetry, list[TrackedEvent]],
 ):
     telemetry, events = telemetry_events
     telemetry.log_copilot_turn(
@@ -108,7 +110,7 @@ def test_log_copilot_turn_emits_complete_payload(
 
 
 def test_log_copilot_from_handler_combines_everything(
-    telemetry_events: tuple[CopilotTelemetry, list[TrackedEvent]],
+    telemetry_events: tuple[CopilotSegmentTelemetry, list[TrackedEvent]],
 ):
     # Given
     system_message = {"role": "system", "content": "system message"}

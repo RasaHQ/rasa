@@ -13,6 +13,10 @@ OPENAI_VECTOR_STORE_ID = os.getenv(
 )
 OPENAI_MAX_VECTOR_RESULTS = int(os.getenv("OPENAI_MAX_VECTOR_RESULTS", "10"))
 OPENAI_TIMEOUT = int(os.getenv("OPENAI_TIMEOUT", "30"))
+# OpenAI Token Pricing Configuration (per 1,000 tokens)
+COPILOT_INPUT_TOKEN_PRICE = float(os.getenv("COPILOT_INPUT_TOKEN_PRICE", "0.002"))
+COPILOT_OUTPUT_TOKEN_PRICE = float(os.getenv("COPILOT_OUTPUT_TOKEN_PRICE", "0.0005"))
+COPILOT_CACHED_TOKEN_PRICE = float(os.getenv("COPILOT_CACHED_TOKEN_PRICE", "0.002"))
 
 # Server Configuration
 BUILDER_SERVER_HOST = os.getenv("SERVER_HOST", "0.0.0.0")

@@ -17,6 +17,7 @@ from rasa.builder.document_retrieval.constants import (
 )
 from rasa.builder.document_retrieval.models import Document
 from rasa.builder.exceptions import DocumentRetrievalError
+from rasa.builder.telemetry.copilot_langfuse_telemetry import CopilotLangfuseTelemetry
 from rasa.shared.utils.io import read_json_file
 
 structlogger = structlog.get_logger()
@@ -88,6 +89,7 @@ class InKeepDocumentRetrieval:
             )
             raise e
 
+    @CopilotLangfuseTelemetry.trace_document_retrieval_generation
     async def _call_inkeep_rag_api(
         self, query: str, temperature: float, timeout: float
     ) -> ChatCompletion:

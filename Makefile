@@ -84,6 +84,10 @@ install-nlu-pii-channels:   ## Install rasa and it's dependencies and NLU and PI
 	poetry run python -m pip install -U pip
 	poetry install --extras "nlu pii channels"
 
+install-monitoring:  ## Install rasa with monitoring extras (langfuse)
+	poetry run python -m pip install -U pip
+	poetry install --extras monitoring
+
 format: ## Apply ruff formatting to code.
 	poetry run ruff format rasa tests
 	poetry run ruff check rasa tests --ignore D --fix
