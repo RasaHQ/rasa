@@ -5,7 +5,7 @@ pipeline:
 - name: SingleStepLLMCommandGenerator
   llm:
     provider: ollama
-    model: llama3.2
+    model: gemma3
     api_base: "http://localhost:11434"
 
 policies:

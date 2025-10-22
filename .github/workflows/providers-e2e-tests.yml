@@ -95,7 +95,7 @@ on:
         default: "e2e_tests/tests_for_github_workflows/chitchat_during_flow.yml"
 
       send-results-notification-to-slack:
-        description: "Send results notifications to Slack's #dev-tribe-alerts channel"
+        description: "Send results notifications to Slack's #rasa-pro-alerts channel"
         type: boolean
         required: false
         default: false

@@ -5,7 +5,7 @@ pipeline:
     prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
       provider: groq
-      model: llama3-8b-8192
+      model: openai/gpt-oss-120b
       timeout: 7
     calm_entry:
       sticky: "handles everything else, including finance, transactions, transfers, balance, contacts and pizza orders"
@@ -35,7 +35,7 @@ pipeline:
     prompt_template: rasa-private/data/test_config/providers/command_prompt.jinja2
     llm:
       provider: groq
-      model: llama3-8b-8192
+      model: openai/gpt-oss-120b
       timeout: 7
 
 policies:
@@ -52,12 +52,12 @@ policies:
       source: data-repo/docs/
     llm:
       provider: groq
-      model: llama3-8b-8192
+      model: openai/gpt-oss-120b
       timeout: 7
   - name: IntentlessPolicy
     llm:
       provider: groq
-      model: llama3-8b-8192
+      model: openai/gpt-oss-120b
       timeout: 7
 
 assistant_id: 20240418-073244-narrow-archive

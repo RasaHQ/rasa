@@ -5,7 +5,7 @@ nlg:
  type: rephrase
  llm:
    provider: self-hosted
-   model: Qwen/Qwen2.5-Coder-1.5B-Instruct
+   model: ibm-granite/granite-3.3-2b-instruct
    api_base: "http://localhost:8080/v1"
    timeout: 900
    temperature: 0.0

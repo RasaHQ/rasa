@@ -32,12 +32,10 @@ pipeline:
     flow_retrieval:
       embeddings:
         model_group: openai_embeddings
-    prompt_template: rasa-private/data/test_config/providers/custom-search-ready-llm-command-generator-prompt-with-modified-dsl
+    prompt_template: rasa-private/data/test_config/providers/custom-search-ready-llm-command-generator-prompt-with-modified-dsl.jinja2
 
 policies:
   - name: RulePolicy
-  - name: TEDPolicy
-    constrain_similarities: true
   - name: FlowPolicy
   - name: EnterpriseSearchPolicy
     llm:

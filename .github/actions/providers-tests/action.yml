@@ -108,7 +108,7 @@ runs:
       if: ${{ inputs.provider == 'ollama' }}
       run: |
         : Pull Ollama LLM model
-        ollama pull llama3.2
+        ollama pull gemma3
       shell: bash
 
     - name: Ollama API health-check
@@ -116,7 +116,7 @@ runs:
       run: |
         : Ollama API health-check
         curl http://localhost:11434/api/generate -d '{
-          "model": "llama3.2",
+          "model": "gemma3",
           "prompt": "Why is the sky blue?"
         }'
       shell: bash
@@ -145,19 +145,19 @@ runs:
         source $VENV && pip install -r ./data/test_config/providers/"${PROVIDER}"/requirements.txt
       shell: bash
 
-    - name: Cache model to be used with self-hosted providers
-      if: ${{ contains(inputs.provider, 'self-hosted') }}
+    - name: Cache model to be used with vLLM
+      if: ${{ inputs.provider == 'self-hosted-vllm' }}
       uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-      id: self-hosted-model-cache
+      id: self-hosted-vllm-model-cache
       with:
         path: models
-        key: ${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ inputs.provider }}-${{ inputs.train-and-test }}-model-${{ hashFiles('rasa-private/data/test_config/providers/self-hosted-vllm/*', 'rasa-private/data/test_config/providers/self-hosted-llama-cpp/*') }}
+        key: ${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ inputs.provider }}-${{ inputs.train-and-test }}-model-${{ hashFiles('rasa-private/data/test_config/providers/self-hosted-vllm/*') }}
 
     - name: Download model to be used with vLLM
-      if: ${{ inputs.provider == 'self-hosted-vllm' && steps.self-hosted-model-cache.outputs.cache-hit != 'true' }}
+      if: ${{ inputs.provider == 'self-hosted-vllm' && steps.self-hosted-vllm-model-cache.outputs.cache-hit != 'true' }}
       uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
       env:
-        LLM_MODEL_NAME: ${{ env.LLM_MODEL_NAME || 'Qwen/Qwen2.5-Coder-1.5B-Instruct' }}
+        LLM_MODEL_NAME: ${{ env.LLM_MODEL_NAME || 'ibm-granite/granite-3.3-2b-instruct' }}
       with:
         timeout_minutes: 60
         max_attempts: 2
@@ -185,7 +185,7 @@ runs:
     - name: Run vLLM Docker container with model
       id: run-vllm-docker-container
       env:
-        LLM_MODEL_NAME: ${{ env.LLM_MODEL_NAME || 'Qwen/Qwen2.5-Coder-1.5B-Instruct' }}
+        LLM_MODEL_NAME: ${{ env.LLM_MODEL_NAME || 'ibm-granite/granite-3.3-2b-instruct' }}
       if: ${{ inputs.provider == 'self-hosted-vllm' }}
       run: |
         : Run vLLM Docker container with model
@@ -199,12 +199,20 @@ runs:
         --served-model-name ${{ env.LLM_MODEL_NAME }} \
         --swap-space 0 \
         --port 8080 \
-        --max_model_len 2048 \
+        --max_model_len 4096 \
         --trust-remote-code
       shell: bash
 
+    - name: Cache model to be used with Llama-CPP
+      if: ${{ inputs.provider == 'self-hosted-llama-cpp' }}
+      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      id: self-hosted-llama-cpp-model-cache
+      with:
+        path: models
+        key: ${{ runner.os }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ inputs.provider }}-${{ inputs.train-and-test }}-model-${{ hashFiles('rasa-private/data/test_config/providers/self-hosted-llama-cpp/*') }}
+
     - name: Download model to be used with llama.cpp
-      if: ${{ inputs.provider == 'self-hosted-llama-cpp' && steps.self-hosted-model-cache.outputs.cache-hit != 'true' }}
+      if: ${{ inputs.provider == 'self-hosted-llama-cpp' && steps.self-hosted-llama-cpp-model-cache.outputs.cache-hit != 'true' }}
       uses: nick-fields/retry@3f757583fb1b1f940bc8ef4bf4734c8dc02a5847 #v3.0.0
       env:
         LLM_MODEL_NAME: ${{ env.LLM_MODEL_NAME || 'ggml-org/Meta-Llama-3.1-8B-Instruct-Q4_0-GGUF' }}
@@ -243,13 +251,16 @@ runs:
       shell: bash
 
     - name: Install LiteLLM proxy with instrumentation
-      working-directory: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
-      if: ${{ inputs.provider == 'litellm-proxy-multiple-deployments-with-routing' && steps.setup-python.outputs.cache-hit != 'true' }}
+      if: ${{ inputs.provider == 'litellm-proxy-multiple-deployments-with-routing' }}
       env:
         PROVIDER: ${{ inputs.provider }}
+        RASA_PRO_DIRECTORY: ${{ env.RASA_PRO_VERSION != '' && 'rasa-pro' || 'rasa-private' }}
       run: |
         : Install LiteLLM proxy with instrumentation
-        source $VENV && pip install -r ./data/test_config/providers/"${PROVIDER}"/requirements.txt
+        python -m venv "${GITHUB_WORKSPACE}"/litellm-proxy-venv # Install LiteLLM-Proxy in separate virtual-environment to avoid clashes with Rasa dependencies (using Pipx is still causing errors)
+        . "${GITHUB_WORKSPACE}"/litellm-proxy-venv/bin/activate
+        pip install -r "${RASA_PRO_DIRECTORY}"/data/test_config/providers/"${PROVIDER}"/requirements.txt
+        litellm --version
         echo "OTEL_TRACER_NAME=litellm-proxy-multiple-deployments-with-routing" >> $GITHUB_ENV
       shell: bash
 
@@ -275,6 +286,7 @@ runs:
       working-directory: rasa-private/data/test_config/providers/litellm-proxy-multiple-deployments-with-routing
       run: |
         : Start LiteLLM proxy for training
+        . "${GITHUB_WORKSPACE}"/litellm-proxy-venv/bin/activate
         litellm --config proxy_config_training.yaml --detailed_debug --debug & pid=$!
         litellm --config proxy_config_training.yaml --detailed_debug --debug --health --test || (sleep 5 && litellm --config proxy_config_training.yaml --detailed_debug --debug --health --test)
         echo "LITELLM_PROXY=http://0.0.0.0:4000" >> $GITHUB_ENV
@@ -356,6 +368,7 @@ runs:
       working-directory: rasa-private/data/test_config/providers/litellm-proxy-multiple-deployments-with-routing
       run: |
         : Start LiteLLM proxy 1 for inference
+        . "${GITHUB_WORKSPACE}"/litellm-proxy-venv/bin/activate
         litellm --config proxy_config_inference_ca_deployment.yaml --detailed_debug --debug 2>&1 > proxy-log-1 &
         litellm --config proxy_config_inference_ca_deployment.yaml --detailed_debug --debug --health --test || (sleep 5 && litellm --config proxy_config_inference_ca_deployment.yaml --detailed_debug --debug --health --test)
         echo "LITELLM_PROXY_1=http://0.0.0.0:4000" >> $GITHUB_ENV
@@ -366,6 +379,7 @@ runs:
       working-directory: rasa-private/data/test_config/providers/litellm-proxy-multiple-deployments-with-routing
       run: |
         : Start LiteLLM proxy 2 for inference
+        . "${GITHUB_WORKSPACE}"/litellm-proxy-venv/bin/activate
         litellm --port 4001 --config proxy_config_inference_fr_deployment.yaml --detailed_debug --debug 2>&1 > proxy-log-2 &
         litellm --config proxy_config_inference_fa_deployment.yaml --detailed_debug --debug --health --test || (sleep 5 && litellm --config proxy_config_inference_fa_deployment.yaml --detailed_debug --debug --health --test)
         echo "LITELLM_PROXY_2=http://0.0.0.0:4001" >> $GITHUB_ENV
@@ -387,6 +401,7 @@ runs:
         command: |
           : Run e2e test on CompactLLMCommandGenerator model
           set -Eeuxov pipefail
+          rm -rf .rasa
           if [[ ! -d tests ]]; then
             mkdir tests;
           fi
@@ -414,6 +429,7 @@ runs:
         command: |
           : Run e2e test on SearchReadyLLMCommandGenerator model
           set -Eeuxov pipefail
+          rm -rf .rasa
           if [[ ! -d tests ]]; then
             mkdir tests;
           fi

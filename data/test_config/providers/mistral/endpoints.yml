@@ -10,7 +10,7 @@ model_groups:
   - id: mistral_llm
     models:
       - provider: mistral
-        model: open-codestral-mamba
+        model: open-mixtral-8x22b
         timeout: 20
         temperature: 0.0
         top_p: 1

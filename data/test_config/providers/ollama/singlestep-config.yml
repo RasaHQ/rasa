@@ -5,7 +5,7 @@ pipeline:
     prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
       provider: ollama
-      model: llama3.2
+      model: gemma3
       api_base: "http://localhost:11434"
       timeout: 300
     calm_entry:
@@ -36,7 +36,7 @@ pipeline:
     prompt_template: rasa-private/data/test_config/providers/command_prompt.jinja2
     llm:
       provider: ollama
-      model: llama3.2
+      model: gemma3
       api_base: "http://localhost:11434"
       timeout: 300
       temperature: 0.0
@@ -56,13 +56,13 @@ policies:
       source: data-repo/docs/
     llm:
       provider: ollama
-      model: llama3.2
+      model: gemma3
       api_base: "http://localhost:11434"
       timeout: 300
   - name: IntentlessPolicy
     llm:
       provider: ollama
-      model: llama3.2
+      model: gemma3
       api_base: "http://localhost:11434"
       timeout: 300
 

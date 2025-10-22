@@ -5,7 +5,7 @@ pipeline:
     prompt: rasa-private/data/test_config/providers/router_template.jinja2
     llm:
       provider: self-hosted
-      model: Qwen/Qwen2.5-Coder-1.5B-Instruct
+      model: ibm-granite/granite-3.3-2b-instruct
       api_base: "http://localhost:8080/v1"
       timeout: 900
       temperature: 0.0
@@ -37,7 +37,7 @@ pipeline:
     prompt_template: rasa-private/data/test_config/providers/command_prompt.jinja2
     llm:
       provider: self-hosted
-      model: Qwen/Qwen2.5-Coder-1.5B-Instruct
+      model: ibm-granite/granite-3.3-2b-instruct
       api_base: "http://localhost:8080/v1"
       timeout: 900
       temperature: 0.0
@@ -57,14 +57,14 @@ policies:
       source: data-repo/docs/
     llm:
       provider: self-hosted
-      model: Qwen/Qwen2.5-Coder-1.5B-Instruct
+      model: ibm-granite/granite-3.3-2b-instruct
       api_base: "http://localhost:8080/v1"
       timeout: 900
       temperature: 0.2
   - name: IntentlessPolicy
     llm:
       provider: self-hosted
-      model: Qwen/Qwen2.5-Coder-1.5B-Instruct
+      model: ibm-granite/granite-3.3-2b-instruct
       api_base: "http://localhost:8080/v1"
       timeout: 900
       temperature: 0.2

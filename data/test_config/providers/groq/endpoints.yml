@@ -5,7 +5,7 @@ nlg:
  type: rephrase
  llm:
    provider: groq
-   model: llama3-8b-8192
+   model: openai/gpt-oss-120b
    timeout: 7
 
 tracing:
