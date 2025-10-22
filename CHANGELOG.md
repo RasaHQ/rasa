@@ -701,6 +701,28 @@ Rasa Pro 3.13.0 (2025-07-07)
 - [#2125](https://github.com/rasahq/rasa-private/issues/2125), [#2134](https://github.com/rasahq/rasa-private/issues/2134), [#2361](https://github.com/rasahq/rasa-private/issues/2361), [#2419](https://github.com/rasahq/rasa-private/issues/2419), [#2471](https://github.com/rasahq/rasa-private/issues/2471), [#2496](https://github.com/rasahq/rasa-private/issues/2496), [#2506](https://github.com/rasahq/rasa-private/issues/2506), [#2513](https://github.com/rasahq/rasa-private/issues/2513), [#2538](https://github.com/rasahq/rasa-private/issues/2538), [#2571](https://github.com/rasahq/rasa-private/issues/2571), [#2615](https://github.com/rasahq/rasa-private/issues/2615), [#2629](https://github.com/rasahq/rasa-private/issues/2629), [#2668](https://github.com/rasahq/rasa-private/issues/2668), [#2672](https://github.com/rasahq/rasa-private/issues/2672), [#2682](https://github.com/rasahq/rasa-private/issues/2682), [#2707](https://github.com/rasahq/rasa-private/issues/2707), [#2712](https://github.com/rasahq/rasa-private/issues/2712), [#2720](https://github.com/rasahq/rasa-private/issues/2720), [#2745](https://github.com/rasahq/rasa-private/issues/2745), [#2769](https://github.com/rasahq/rasa-private/issues/2769)
 
 
+## [3.12.35] - 2025-10-21
+                         
+Rasa Pro 3.12.35 (2025-10-21)                              
+### Improvements
+- [#3504](https://github.com/rasahq/rasa-private/issues/3504): Add new environment variable `LOG_LEVEL_PYMONGO` to control the logging level of PyMongo dependency of Rasa.
+  This can be useful to reduce the verbosity of logs. Default value is `INFO`.
+
+  The logging level of PyMongo can also be set via the `LOG_LEVEL_LIBRARIES` environment variable, which provides
+  the default logging level for a selection of third-party libraries used by Rasa.
+  If both variables are set, `LOG_LEVEL_PYMONGO` takes precedence.
+
+### Bugfixes
+- [#3498](https://github.com/rasahq/rasa-private/issues/3498): If a FloatSlot does not have min and max values set in the domain, the slot will not be validated against any range.
+  If the slot defines an initial value, as well as min and max values, the initial value will be validated against the range
+  and an error will be raised if the initial value is out of range.
+  Enhance run-time validation for new values assigned to FloatSlot instances, ensuring they fall within the defined min and max range
+  if these are set. If min and max are not set, no range validation is performed.
+- [#3500](https://github.com/rasahq/rasa-private/issues/3500): Fixed bug preventing `deployment` parameter from being used in generative response LLM judge configuration.
+- [#3502](https://github.com/rasahq/rasa-private/issues/3502): Fixed bug where `persisted_slots` defined in called flows were incorrectly reset when the parent flow ended, unless they were also explicitly defined in the parent flow.
+  Persisted slots now only need to be defined in the called flow to remain persisted after the parent flow ends.
+
+
 ## [3.12.34] - 2025-10-13
 
 Rasa Pro 3.12.34 (2025-10-13)
