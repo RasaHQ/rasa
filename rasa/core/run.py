@@ -328,10 +328,21 @@ def serve_application(
 
     logger.info(f"Starting Rasa server on {protocol}://{interface}:{port}")
 
-    app.register_listener(
-        partial(load_agent_on_start, model_path, endpoints, remote_storage, sub_agents),
-        "before_server_start",
-    )
+    async def load_agent_and_check_failure(app: Sanic, loop: AbstractEventLoop) -> None:
+        """Load agent and exit if it fails in non-debug mode."""
+        try:
+            await load_agent_on_start(
+                model_path, endpoints, remote_storage, sub_agents, app, loop
+            )
+        except Exception as e:
+            is_debug = logger.isEnabledFor(logging.DEBUG)
+            if is_debug:
+                raise e  # show traceback in debug
+            # non-debug: log and exit without starting server
+            logger.error(f"Failed to load agent: {e}")
+            os._exit(1)  # Any other exit method would show a traceback.
+
+    app.register_listener(load_agent_and_check_failure, "before_server_start")
 
     app.register_listener(
         licensing.validate_limited_server_license, "after_server_start"
