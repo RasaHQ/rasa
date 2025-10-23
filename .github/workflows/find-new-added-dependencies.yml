@@ -69,3 +69,5 @@ jobs:
           body: |
             You have added new dependencies in your PR: `${{ steps.compare_dependencies.outputs.new_dependencies }}` .
             Please update the `.github/dependabot.yml` configuration file by adding the new dependencies to the corresponding group.
+
+            Make sure to add a comment to `pyproject.toml` next to the new dependencies explaining why they were added.
