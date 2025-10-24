@@ -5,13 +5,17 @@ import pytest
 from pydantic import ValidationError
 
 from rasa.builder.copilot.models import (
+    CopilotChatMessage,
     CopilotRequest,
     GeneratedContent,
+    InternalCopilotRequestChatMessage,
     ReferenceEntry,
     ReferenceSection,
     ResponseCategory,
     ResponseCompleteness,
     UsageStatistics,
+    UserChatMessage,
+    create_chat_message_from_dict,
 )
 
 
@@ -738,3 +742,97 @@ class TestUsageStatistics:
         assert initial_stats.total_tokens == expected_stats.total_tokens
         assert initial_stats.cached_prompt_tokens == expected_stats.cached_prompt_tokens
         assert initial_stats.model == expected_stats.model
+
+
+class TestCreateChatMessageFromDict:
+    """Test class for parse_chat_message_from_dict utility function."""
+
+    @pytest.mark.parametrize(
+        "message_data,expected_type,expected_role,should_raise,expected_error",
+        [
+            # Test case 1: Parsing user chat message
+            (
+                {
+                    "role": "user",
+                    "content": [{"type": "text", "text": "Hello, how can I help you?"}],
+                },
+                UserChatMessage,
+                "user",
+                False,
+                None,
+            ),
+            # Test case 2: Parsing Copilot chat message
+            (
+                {
+                    "role": "copilot",
+                    "content": [{"type": "text", "text": "I can help you with that!"}],
+                },
+                CopilotChatMessage,
+                "copilot",
+                False,
+                None,
+            ),
+            # Test case 3: Parsing internal copilot chat message
+            (
+                {
+                    "role": "internal_copilot_request",
+                    "content": [
+                        {"type": "text", "text": "Analyzing training error logs"}
+                    ],
+                    "response_category": "training_error_log_analysis",
+                },
+                InternalCopilotRequestChatMessage,
+                "internal_copilot_request",
+                False,
+                None,
+            ),
+            # Test case 4: Parsing unknown role
+            (
+                {
+                    "role": "unknown_role",
+                    "content": [{"type": "text", "text": "This should fail"}],
+                },
+                None,
+                None,
+                True,
+                ValueError,
+            ),
+            # Test case 5: Handling errors with correct role but wrong info
+            (
+                {
+                    "role": "user",
+                    "content": "invalid_content_format",  # Should be a list
+                },
+                None,
+                None,
+                True,
+                ValidationError,
+            ),
+            # Test case 6: Missing role field
+            (
+                {
+                    "content": [{"type": "text", "text": "This should fail"}],
+                },
+                None,
+                None,
+                True,
+                ValueError,
+            ),
+        ],
+    )
+    def test_parse_chat_message_from_dict(
+        self,
+        message_data: Dict[str, Any],
+        expected_type: type,
+        expected_role: str,
+        should_raise: bool,
+        expected_error: type,
+    ) -> None:
+        """Test parse_chat_message_from_dict with various message types and errors."""
+        if should_raise:
+            with pytest.raises(expected_error):
+                create_chat_message_from_dict(message_data)
+        else:
+            message = create_chat_message_from_dict(message_data)
+            assert isinstance(message, expected_type)
+            assert message.role == expected_role

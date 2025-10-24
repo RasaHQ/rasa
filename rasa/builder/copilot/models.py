@@ -344,6 +344,55 @@ ChatMessage = Union[
 ]
 
 
+def create_chat_message_from_dict(message_data: Dict[str, Any]) -> ChatMessage:
+    """Parse a single chat message dictionary into a ChatMessage object.
+
+    This utility function manually parses a chat message dictionary into the
+    appropriate ChatMessage type based on its role field.
+
+    Args:
+        message_data: Dictionary containing chat message data
+
+    Returns:
+        Parsed ChatMessage object
+
+    Raises:
+        ValueError: If an unknown role is encountered
+
+    Example:
+        >>> message_data = {
+        ...     "role": "user",
+        ...     "content": [{"type": "text", "text": "Hello"}]
+        ... }
+        >>> message = parse_chat_message_from_dict(message_data)
+        >>> isinstance(message, UserChatMessage)
+        True
+        >>> message.role
+        'user'
+    """
+    available_roles = [ROLE_USER, ROLE_COPILOT, ROLE_COPILOT_INTERNAL]
+    role = message_data.get("role")
+
+    if role == ROLE_USER:
+        return UserChatMessage(**message_data)
+    elif role == ROLE_COPILOT:
+        return CopilotChatMessage(**message_data)
+    elif role == ROLE_COPILOT_INTERNAL:
+        return InternalCopilotRequestChatMessage(**message_data)
+    else:
+        message = (
+            f"Unknown role '{role}' in chat message. "
+            f"Available roles are: {', '.join(available_roles)}."
+        )
+        structlogger.error(
+            "models.create_chat_message_from_dict.unknown_role",
+            event_info=message,
+            role=role,
+            available_roles=available_roles,
+        )
+        raise ValueError(message)
+
+
 class CopilotContext(BaseModel):
     """Model containing the context used by the copilot to generate a response."""
 
@@ -391,37 +440,40 @@ class CopilotRequest(BaseModel):
 
     @field_validator("copilot_chat_history", mode="before")
     @classmethod
-    def parse_chat_history(cls, v: List[Dict[str, Any]]) -> List[ChatMessage]:
+    def parse_chat_history(
+        cls, v: Union[List[Dict[str, Any]], List[ChatMessage]]
+    ) -> List[ChatMessage]:
         """Manually parse chat history messages based on role field."""
+        # If already parsed ChatMessage objects, return them as-is
+        if (
+            v
+            and isinstance(v, list)
+            and all(isinstance(item, ChatMessage) for item in v)
+        ):
+            return v  # type: ignore[return-value]
+
+        # Check for mixed types (some ChatMessage, some not)
+        if (
+            v
+            and isinstance(v, list)
+            and any(isinstance(item, ChatMessage) for item in v)
+        ):
+            message = (
+                "Mixed types in copilot_chat_history: cannot mix ChatMessage objects"
+                "with other types."
+            )
+            structlog.get_logger().error(
+                "copilot_request.parse_chat_history.mixed_types",
+                event_info=message,
+                chat_history_types=[type(item) for item in v],
+            )
+            raise ValueError(message)
+
+        # Otherwise, parse from dictionaries
         parsed_messages: List[ChatMessage] = []
-        available_roles = [ROLE_USER, ROLE_COPILOT, ROLE_COPILOT_INTERNAL]
         for message_data in v:
-            role = message_data.get("role")
-
-            if role == ROLE_USER:
-                parsed_messages.append(UserChatMessage(**message_data))
-
-            elif role == ROLE_COPILOT:
-                parsed_messages.append(CopilotChatMessage(**message_data))
-
-            elif role == ROLE_COPILOT_INTERNAL:
-                parsed_messages.append(
-                    InternalCopilotRequestChatMessage(**message_data)
-                )
-
-            else:
-                message = (
-                    f"Unknown role '{role}' in chat message. "
-                    f"Available roles are: {', '.join(available_roles)}."
-                )
-                structlogger.error(
-                    "copilot_request.parse_chat_history.unknown_role",
-                    event_info=message,
-                    role=role,
-                    available_roles=available_roles,
-                )
-                raise ValueError(message)
-
+            chat_message = create_chat_message_from_dict(message_data)
+            parsed_messages.append(chat_message)
         return parsed_messages
 
     @property
