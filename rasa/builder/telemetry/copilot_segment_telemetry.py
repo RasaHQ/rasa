@@ -107,6 +107,7 @@ class CopilotSegmentTelemetry:
         latency_ms: int,
         model: str,
         input_tokens: Optional[int] = None,
+        cached_prompt_tokens: Optional[int] = None,
         output_tokens: Optional[int] = None,
         total_tokens: Optional[int] = None,
         system_message: Optional[dict[str, Any]] = None,
@@ -123,6 +124,7 @@ class CopilotSegmentTelemetry:
             latency_ms: End-to-end Copilot latency to produce this response.
             model: The model used to generate the response.
             input_tokens: Number of input tokens used (optional).
+            cached_prompt_tokens: Number of cached prompt tokens.
             output_tokens: Number of output tokens generated (optional).
             total_tokens: Total number of tokens used (input + output) (optional).
             system_message: The system message used (optional).
@@ -146,6 +148,7 @@ class CopilotSegmentTelemetry:
             "latency_ms": latency_ms,
             "model": model,
             "input_tokens": input_tokens,
+            "cached_prompt_tokens": cached_prompt_tokens,
             "output_tokens": output_tokens,
             "total_tokens": total_tokens,
             "chat_history": chat_history,
@@ -204,6 +207,7 @@ class CopilotSegmentTelemetry:
         latency_ms: int,
         model: str,
         prompt_tokens: int,
+        cached_prompt_tokens: int,
         completion_tokens: int,
         total_tokens: int,
         system_message: dict[str, Any],
@@ -219,11 +223,13 @@ class CopilotSegmentTelemetry:
             latency_ms: End-to-end Copilot latency to produce this response.
             model: The model used to generate the response.
             prompt_tokens: Number of input tokens used.
+            cached_prompt_tokens: Number of cached prompt tokens.
             completion_tokens: Number of output tokens generated.
             total_tokens: Total number of tokens used (input + output).
             system_message: The system message used.
             chat_history: The chat history messages used.
             last_user_message: The last user message used.
+            tracker_event_attachments: List of tracker event attachments.
         """
         structlogger.debug("builder.telemetry.log_copilot_from_handler")
         text = self._full_text(handler)
@@ -234,6 +240,7 @@ class CopilotSegmentTelemetry:
             latency_ms=latency_ms,
             model=model,
             input_tokens=prompt_tokens,
+            cached_prompt_tokens=cached_prompt_tokens,
             output_tokens=completion_tokens,
             total_tokens=total_tokens,
             system_message=system_message,

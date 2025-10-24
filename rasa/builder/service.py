@@ -1169,7 +1169,15 @@ async def copilot(request: Request) -> None:
                     else None
                 ),
                 tracker_event_attachments=generation_context.tracker_event_attachments,
-                **copilot_client.usage_statistics.model_dump(),
+                model=copilot_client.usage_statistics.model or "N/A",
+                prompt_tokens=copilot_client.usage_statistics.prompt_tokens or 0,
+                cached_prompt_tokens=(
+                    copilot_client.usage_statistics.cached_prompt_tokens or 0
+                ),
+                completion_tokens=(
+                    copilot_client.usage_statistics.completion_tokens or 0
+                ),
+                total_tokens=copilot_client.usage_statistics.total_tokens or 0,
             )
         )
         # 8b. Setup output trace attributes for Langfuse

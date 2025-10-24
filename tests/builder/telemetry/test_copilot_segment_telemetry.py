@@ -94,6 +94,7 @@ def test_log_copilot_turn_emits_complete_payload(
         model=OPENAI_MODEL,
         latency_ms=123,
         input_tokens=10,
+        cached_prompt_tokens=5,
         output_tokens=20,
         total_tokens=30,
     )
@@ -105,6 +106,7 @@ def test_log_copilot_turn_emits_complete_payload(
     assert event.properties["source_urls"] == ["https://rasa.com"]
     assert event.properties["flags"] == ["roleplay_detection"]
     assert event.properties["input_tokens"] == 10
+    assert event.properties["cached_prompt_tokens"] == 5
     assert event.properties["output_tokens"] == 20
     assert event.properties["total_tokens"] == 30
 
@@ -154,6 +156,7 @@ def test_log_copilot_from_handler_combines_everything(
         latency_ms=321,
         model=OPENAI_MODEL,
         prompt_tokens=10,
+        cached_prompt_tokens=5,
         completion_tokens=20,
         total_tokens=30,
         system_message=system_message,
@@ -170,6 +173,7 @@ def test_log_copilot_from_handler_combines_everything(
     assert sorted(event.properties["flags"]) == ["copilot", "out_of_scope_detection"]
     assert event.properties["latency_ms"] == 321
     assert event.properties["input_tokens"] == 10
+    assert event.properties["cached_prompt_tokens"] == 5
     assert event.properties["output_tokens"] == 20
     assert event.properties["total_tokens"] == 30
     # assert event.properties["system_message"] == system_message
