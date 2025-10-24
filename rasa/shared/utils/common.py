@@ -26,6 +26,7 @@ from rasa.exceptions import MissingDependencyException
 from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.exceptions import ProviderClientValidationError, RasaException
 from rasa.shared.utils.cli import print_success
+from rasa.utils.installation_utils import check_for_installation_issues
 
 logger = logging.getLogger(__name__)
 
@@ -396,7 +397,11 @@ Sign up at: https://feedback.rasa.com
     print_success(message)
 
 
-def conditional_import(module_name: str, class_name: str) -> Tuple[Any, bool]:
+def conditional_import(
+    module_name: str,
+    class_name: str,
+    check_installation_setup: bool = False,
+) -> Tuple[Any, bool]:
     """Conditionally import a class, returning (class, is_available) tuple.
 
     Args:
@@ -408,6 +413,9 @@ def conditional_import(module_name: str, class_name: str) -> Tuple[Any, bool]:
         or None if import failed, and is_available is a boolean indicating
         whether the import was successful.
     """
+    if check_installation_setup:
+        check_for_installation_issues()
+
     try:
         module = __import__(module_name, fromlist=[class_name])
         return getattr(module, class_name), True

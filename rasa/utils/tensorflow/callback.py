@@ -2,9 +2,11 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Optional, Text
 
+from rasa.utils.installation_utils import check_for_installation_issues
 from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
 
 if TENSORFLOW_AVAILABLE:
+    check_for_installation_issues()
     import tensorflow as tf
     from tqdm import tqdm
 else:

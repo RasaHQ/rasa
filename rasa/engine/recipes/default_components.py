@@ -27,22 +27,32 @@ from rasa.shared.utils.common import conditional_import
 
 # components dependent on tensorflow
 TEDPolicy, TED_POLICY_AVAILABLE = conditional_import(
-    "rasa.core.policies.ted_policy", "TEDPolicy"
+    "rasa.core.policies.ted_policy", "TEDPolicy", check_installation_setup=True
 )
 UnexpecTEDIntentPolicy, UNEXPECTED_INTENT_POLICY_AVAILABLE = conditional_import(
-    "rasa.core.policies.unexpected_intent_policy", "UnexpecTEDIntentPolicy"
+    "rasa.core.policies.unexpected_intent_policy",
+    "UnexpecTEDIntentPolicy",
+    check_installation_setup=True,
 )
 DIETClassifier, DIET_CLASSIFIER_AVAILABLE = conditional_import(
-    "rasa.nlu.classifiers.diet_classifier", "DIETClassifier"
+    "rasa.nlu.classifiers.diet_classifier",
+    "DIETClassifier",
+    check_installation_setup=True,
 )
 ConveRTFeaturizer, CONVERT_FEATURIZER_AVAILABLE = conditional_import(
-    "rasa.nlu.featurizers.dense_featurizer.convert_featurizer", "ConveRTFeaturizer"
+    "rasa.nlu.featurizers.dense_featurizer.convert_featurizer",
+    "ConveRTFeaturizer",
+    check_installation_setup=True,
 )
 LanguageModelFeaturizer, LANGUAGE_MODEL_FEATURIZER_AVAILABLE = conditional_import(
-    "rasa.nlu.featurizers.dense_featurizer.lm_featurizer", "LanguageModelFeaturizer"
+    "rasa.nlu.featurizers.dense_featurizer.lm_featurizer",
+    "LanguageModelFeaturizer",
+    check_installation_setup=True,
 )
 ResponseSelector, RESPONSE_SELECTOR_AVAILABLE = conditional_import(
-    "rasa.nlu.selectors.response_selector", "ResponseSelector"
+    "rasa.nlu.selectors.response_selector",
+    "ResponseSelector",
+    check_installation_setup=True,
 )
 
 # components dependent on skops

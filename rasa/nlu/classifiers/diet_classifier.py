@@ -9,9 +9,11 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Type, TypeVar, Union
 import numpy as np
 import scipy.sparse
 
+from rasa.utils.installation_utils import check_for_installation_issues
 from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
 
 if TENSORFLOW_AVAILABLE:
+    check_for_installation_issues()
     import tensorflow as tf
 else:
     tf = None

@@ -11,10 +11,12 @@ from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.constants import SPLIT_ENTITIES_BY_COMMA
+from rasa.utils.installation_utils import check_for_installation_issues
 from rasa.utils.tensorflow import TENSORFLOW_AVAILABLE
 
 # Conditional imports for TensorFlow-dependent modules
 if TENSORFLOW_AVAILABLE:
+    check_for_installation_issues()
     from rasa.utils.tensorflow.callback import RasaModelCheckpoint, RasaTrainingLogger
     from rasa.utils.tensorflow.constants import (
         AUTO,
