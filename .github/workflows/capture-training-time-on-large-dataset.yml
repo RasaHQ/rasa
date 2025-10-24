@@ -48,17 +48,26 @@ jobs:
           sudo apt-get install bc
           training_time=$(cat training_time.txt)
           echo "Training time: $training_time seconds"
-          echo "::set-output name=training_time::$training_time" >> $GITHUB_ENV
+          echo "training_time=$training_time" >> $GITHUB_ENV
+          echo "training_time=$training_time" >> $GITHUB_OUTPUT
           if (( $(echo "$training_time > 60" | bc -l) )); then
             echo "Training time exceeded 1 minute"
-            exit 1
           fi
 
       - name: Notify Slack of training time ⛔️
         # send notification if 'training_time' is greater than 1 min
-        if: env.training_time > 60
+        if: steps.read_training_time.outputs.training_time > 60
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
-          args: "⛔️ *Training time with large dataset is > 1min 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          args: "⛔️ Training time with large dataset is > 1min 😱! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Notify Slack of training time failure ⛔️
+        # send notification if any step fails
+        if: failure()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_RELEASE_ASSISTANT_ATOM_ALERTS_WEBHOOK }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "⛔️ Training time with large dataset failed! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

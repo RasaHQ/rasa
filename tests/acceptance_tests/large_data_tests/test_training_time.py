@@ -2,7 +2,10 @@ import os
 import subprocess
 import time
 
+import pytest
 
+
+@pytest.mark.timeout(300)
 def test_run_rasa_train_and_capture_time():
     start_time = time.time()
     result = subprocess.run(

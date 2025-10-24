@@ -250,7 +250,7 @@ def validate_code_is_release_ready(version: Version) -> None:
         print(
             f"\033[91m There is a mismatch between the Rasa SDK version ({sdk}) "
             f"and the version you want to release ({version}). Before you can "
-            f"release Rasa OSS, you need to release the SDK and update "
+            f"release Rasa Pro, you need to release the SDK and update "
             f"the dependency. \033[0m"
         )
         print()

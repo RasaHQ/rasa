@@ -31,3 +31,14 @@ jobs:
         env:
           # Add the rules that Semgrep uses by setting the SEMGREP_RULES environment variable.
           SEMGREP_RULES: p/github-actions
+
+      - name: Notify Slack on failure (main branch) ⛔️
+        if: failure() && github.ref == 'refs/heads/main'
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d #v 2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          # Send notification to #prodeng-internal slack channel
+          payload: |
+            channel: "C36SS4N8M"
+            text: "⛔️ *Semgrep scan failed on main branch! Please check out GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

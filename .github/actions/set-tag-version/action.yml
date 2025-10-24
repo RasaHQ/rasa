@@ -17,10 +17,12 @@ runs:
     - name: Set tag version
       id: set-tag-version
       shell: bash
+      env:
+        TAG_VERSION_INPUT: ${{ inputs.tag_version_input }}
       run: |
-        if [[ -n "${{ inputs.tag_version_input }}" ]]; then
+        if [[ -n "$TAG_VERSION_INPUT" ]]; then
           # Manual input takes highest priority
-          TAG_VERSION="${{ inputs.tag_version_input }}"
+          TAG_VERSION="$TAG_VERSION_INPUT"
           echo "TAG_VERSION=${TAG_VERSION}" >> $GITHUB_ENV
           echo "tag_version=${TAG_VERSION}" >> $GITHUB_OUTPUT
           echo "Resolved tag version from input: ${TAG_VERSION}"

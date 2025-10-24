@@ -22,10 +22,24 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           ref: main # update this to branch to test
 
+      - name: Free up disk-space
+        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b # TODO: Change to `main` once the composite-action is merged to main
+
       - name: Setup Python Environment
         uses: ./.github/actions/setup-python-env
         with:
           PYTHON_VERSION: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+      - name: Install Rasa dev dependencies
+        run: |
+          echo "Installing Rasa dev dependencies..."
+          source .venv/bin/activate
+          poetry sync --with dev
+
+      - name: Check if tomlkit is installed in venv
+        run: |
+          source .venv/bin/activate
+          python -c "import tomlkit" && echo 'tomlkit is installed.' || (echo 'tomlkit is NOT installed.' && exit 1)
 
       - name: Compose tag name
         id: set_tagname
