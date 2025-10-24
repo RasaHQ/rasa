@@ -9,8 +9,6 @@ on:
           default: main
   
     pull_request:
-        branches:
-            - main
         paths:
           - 'rasa/agents/**'
           - 'rasa/dialogue_understanding/**'
@@ -18,6 +16,10 @@ on:
           - 'rasa/core/**/*agent*.py'
           - 'rasa/cli/**/train.py'
           - 'rasa/core/policies/flows/**'
+          - 'rasa/shared/agents/**'
+          - 'rasa/shared/core/**'
+          - 'rasa/shared/engine/**'
+          - 'rasa/shared/utils/mcp/**'
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
