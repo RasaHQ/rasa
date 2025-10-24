@@ -1822,21 +1822,23 @@ jobs:
             RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
             OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
-      - name: Display max memory consumption
-        uses: marocchino/sticky-pull-request-comment@52423e01640425a022ef5fd42c6fb5f633a02728 #v2.9.1
+      - name: Display max memory consumption for `rasa init` and `rasa train` exceeding threshold on PR
         if: github.event_name == 'pull_request' && success()
-        with:
-          header: memory consumption for rasa init and rasa train
-          recreate: true
-          message: |
-            🎉 The maximum resident set size (memory consumption) during `rasa init` is **${{ steps.read-max-rss.outputs.max_rss_mb }} MB**.
-            🎉 The maximum resident set size (memory consumption) during `rasa train` is **${{ steps.read-max-rss.outputs.max_rss_train_mb }} MB**.
+        run: |
+            if [ "${{ steps.read-max-rss.outputs.max_rss_mb }}" -gt 30 ]; then
+                gh pr comment ${{ github.event.pull_request.number }} --body "💔 The maximum resident set size (memory consumption) during \`rasa init\` is **${{ steps.read-max-rss.outputs.max_rss_mb }} MB**, which exceeds the average threshold of 30MB." --edit-last
+            fi
+            if [ "${{ steps.read-max-rss.outputs.max_rss_train_mb }}" -gt 30 ]; then
+                gh pr comment ${{ github.event.pull_request.number }} --body "💔 The maximum resident set size (memory consumption) during \`rasa train\` is **${{ steps.read-max-rss.outputs.max_rss_train_mb }} MB**, which exceeds the average threshold of 30MB." --edit-last
+            fi
+        env:
+          GH_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}
+        shell: bash
 
       - name: Remove tmp directory
         if: always()
         run: |
             rm -rf /tmp/rasa-memory-test
-
 
   publish-test-results:
     runs-on: ubuntu-24.04
