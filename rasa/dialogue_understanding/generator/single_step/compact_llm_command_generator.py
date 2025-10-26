@@ -168,6 +168,20 @@ class CompactLLMCommandGenerator(SingleStepBasedLLMCommandGenerator):
         if prompt_template is not None:
             return prompt_template
 
+        # Try to load the template from the given path or fallback to the default for
+        # the component.
+        custom_prompt_template_path = config.get(PROMPT_TEMPLATE_CONFIG_KEY)
+        if custom_prompt_template_path is not None:
+            custom_prompt_template = get_prompt_template(
+                custom_prompt_template_path,
+                None,  # Default will be based on the model
+                log_source_component=log_source_component,
+                log_source_method=log_context,
+            )
+            if custom_prompt_template is not None:
+                return custom_prompt_template
+
+        # Fallback to the default prompt template based on the model.
         default_command_prompt_template = get_default_prompt_template_based_on_model(
             llm_config=config.get(LLM_CONFIG_KEY, {}) or {},
             model_prompt_mapping=cls.get_model_prompt_mapper(),
@@ -177,10 +191,4 @@ class CompactLLMCommandGenerator(SingleStepBasedLLMCommandGenerator):
             log_source_method=log_context,
         )
 
-        # Return the prompt template either from the config or the default prompt.
-        return get_prompt_template(
-            config.get(PROMPT_TEMPLATE_CONFIG_KEY),
-            default_command_prompt_template,
-            log_source_component=log_source_component,
-            log_source_method=log_context,
-        )
+        return default_command_prompt_template

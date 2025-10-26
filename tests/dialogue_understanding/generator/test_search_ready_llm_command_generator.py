@@ -2555,3 +2555,139 @@ class TestSearchReadyLLMCommandGenerator:
 
         # Check if the validation log is not found as the command parser is working now.
         assert found_validation_log is False
+
+    def test_resolve_component_prompt_template_custom_prompt_success(self):
+        """Test that custom prompt template is used when custom prompt template is provided and loads successfully."""  # noqa: E501
+        # Given
+        config = {"prompt_template": "custom_prompt.jinja2", "llm": {"model": "gpt-4o"}}
+
+        # Mock get_prompt_template to return custom content
+        with patch(
+            "rasa.dialogue_understanding.generator.single_step.search_ready_llm_command_generator.get_prompt_template"
+        ) as mock_get_prompt_template:
+            mock_get_prompt_template.return_value = "Custom prompt template content"
+
+            # Mock get_default_prompt_template_based_on_model (should not be called)
+            with patch(
+                "rasa.dialogue_understanding.generator.single_step.search_ready_llm_command_generator.get_default_prompt_template_based_on_model"
+            ) as mock_get_default:
+                mock_get_default.return_value = "Default prompt template"
+
+                # When
+                result = (
+                    SearchReadyLLMCommandGenerator._resolve_component_prompt_template(
+                        config
+                    )
+                )
+                # Then
+                assert result == "Custom prompt template content"
+
+                mock_get_prompt_template.assert_called_once()
+                mock_get_default.assert_not_called()
+
+    def test_resolve_component_prompt_template_custom_prompt_read_error(self):
+        """Test that default prompt template is used when custom prompt template path is provided but fails to load."""  # noqa: E501
+        # Given
+        config = {
+            "prompt_template": "nonexistent_prompt.jinja2",
+            "llm": {"model": "gpt-4o"},
+        }
+
+        # Mock get_prompt_template to return None (read error)
+        with patch(
+            "rasa.dialogue_understanding.generator.single_step.search_ready_llm_command_generator.get_prompt_template"
+        ) as mock_get_prompt_template:
+            mock_get_prompt_template.return_value = None
+
+            # Mock get_default_prompt_template_based_on_model to return default content
+            with patch(
+                "rasa.dialogue_understanding.generator.single_step.search_ready_llm_command_generator.get_default_prompt_template_based_on_model"
+            ) as mock_get_default:
+                mock_get_default.return_value = "Default prompt template"
+
+                # When
+                result = (
+                    SearchReadyLLMCommandGenerator._resolve_component_prompt_template(
+                        config
+                    )
+                )
+
+                # Then
+                assert result == "Default prompt template"
+                mock_get_prompt_template.assert_called_once()
+                mock_get_default.assert_called_once()
+
+    def test_resolve_component_prompt_template_no_custom_prompt(self):
+        """Test that default prompt template is used when no custom prompt template is provided."""  # noqa: E501
+        # Given
+        config = {"llm": {"model": "gpt-4o"}}
+
+        # Mock get_default_prompt_template_based_on_model to return default content
+        with patch(
+            "rasa.dialogue_understanding.generator.single_step.search_ready_llm_command_generator.get_default_prompt_template_based_on_model"
+        ) as mock_get_default:
+            mock_get_default.return_value = "Default prompt template"
+
+            # When
+            result = SearchReadyLLMCommandGenerator._resolve_component_prompt_template(
+                config
+            )
+
+            # Then
+            assert result == "Default prompt template"
+            mock_get_default.assert_called_once()
+
+    def test_resolve_component_prompt_template_model_specific_prompt(self):
+        """Test that model-specific prompt is used when model is found in prompt mapper."""  # noqa: E501
+        # Given
+        config = {"llm": {"model": "gpt-4o"}}
+
+        # Mock get_default_prompt_template_based_on_model to return
+        # model-specific prompt template
+        with patch(
+            "rasa.dialogue_understanding.generator.single_step.search_ready_llm_command_generator.get_default_prompt_template_based_on_model"
+        ) as mock_get_default:
+            mock_get_default.return_value = "GPT-4o specific prompt template"
+
+            # When
+            result = SearchReadyLLMCommandGenerator._resolve_component_prompt_template(
+                config
+            )
+
+            # Then
+            assert result == "GPT-4o specific prompt template"
+            mock_get_default.assert_called_once()
+
+    def test_resolve_component_prompt_template_fallback_prompt(self):
+        """Test that fallback prompt is used when model is not found in prompt mapper."""  # noqa: E501
+        # Given
+        config = {"llm": {"model": "unknown-model"}}
+
+        # Mock get_default_prompt_template_based_on_model to return fallback content
+        with patch(
+            "rasa.dialogue_understanding.generator.single_step.search_ready_llm_command_generator.get_default_prompt_template_based_on_model"
+        ) as mock_get_default:
+            mock_get_default.return_value = "Fallback prompt template"
+
+            # When
+            result = SearchReadyLLMCommandGenerator._resolve_component_prompt_template(
+                config
+            )
+
+            # Then
+            assert result == "Fallback prompt template"
+            mock_get_default.assert_called_once()
+
+    def test_resolve_component_prompt_template_direct_prompt_parameter(self):
+        """Test that direct prompt_template parameter takes precedence over config."""
+        # Given
+        config = {"prompt_template": "config_prompt.jinja2", "llm": {"model": "gpt-4o"}}
+        direct_prompt = "Direct prompt template content"
+
+        # When
+        result = SearchReadyLLMCommandGenerator._resolve_component_prompt_template(
+            config=config, prompt_template=direct_prompt
+        )
+
+        # Then
+        assert result == "Direct prompt template content"
