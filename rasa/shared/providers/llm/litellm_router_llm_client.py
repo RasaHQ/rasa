@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any, Dict, List, Union
 
 import structlog
 
+from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers._configs.litellm_router_client_config import (
     LiteLLMRouterClientConfig,
@@ -79,13 +81,14 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
 
     @suppress_logs(log_level=logging.WARNING)
     def _text_completion(self, prompt: Union[List[str], str]) -> LLMResponse:
-        """
-        Synchronously generate completions for given prompt.
+        """Synchronously generate completions for given prompt.
 
         Args:
             prompt: Prompt to generate the completion for.
+
         Returns:
             List of message completions.
+
         Raises:
             ProviderClientAPIException: If the API request fails.
         """
@@ -103,21 +106,30 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
 
     @suppress_logs(log_level=logging.WARNING)
     async def _atext_completion(self, prompt: Union[List[str], str]) -> LLMResponse:
-        """
-        Asynchronously generate completions for given prompt.
+        """Asynchronously generate completions for given prompt.
 
         Args:
             prompt: Prompt to generate the completion for.
+
         Returns:
             List of message completions.
+
         Raises:
             ProviderClientAPIException: If the API request fails.
         """
         try:
-            response = await self.router_client.atext_completion(
-                prompt=prompt, **self._completion_fn_args
+            timeout = self._litellm_extra_parameters.get(
+                "timeout", DEFAULT_REQUEST_TIMEOUT
+            )
+            response = await asyncio.wait_for(
+                self.router_client.atext_completion(
+                    prompt=prompt, **self._completion_fn_args
+                ),
+                timeout=timeout,
             )
             return self._format_text_completion_response(response)
+        except asyncio.TimeoutError:
+            self._handle_timeout_error()
         except Exception as e:
             raise ProviderClientAPIException(e)
 
@@ -125,8 +137,7 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
     def completion(
         self, messages: Union[List[dict], List[str], str], **kwargs: Any
     ) -> LLMResponse:
-        """
-        Synchronously generate completions for given list of messages.
+        """Synchronously generate completions for given list of messages.
 
         Method overrides the base class method to call the appropriate
         completion method based on the configuration. If the chat completions
@@ -143,8 +154,10 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
                     as a user message.
                 - a single message as a string which will be formatted as user message.
             **kwargs: Additional parameters to pass to the completion call.
+
         Returns:
             List of message completions.
+
         Raises:
             ProviderClientAPIException: If the API request fails.
         """
@@ -163,8 +176,7 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
     async def acompletion(
         self, messages: Union[List[dict], List[str], str], **kwargs: Any
     ) -> LLMResponse:
-        """
-        Asynchronously generate completions for given list of messages.
+        """Asynchronously generate completions for given list of messages.
 
         Method overrides the base class method to call the appropriate
         completion method based on the configuration. If the chat completions
@@ -181,8 +193,10 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
                     as a user message.
                 - a single message as a string which will be formatted as user message.
             **kwargs: Additional parameters to pass to the completion call.
+
         Returns:
             List of message completions.
+
         Raises:
             ProviderClientAPIException: If the API request fails.
         """
@@ -190,19 +204,28 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
             return await self._atext_completion(messages)
         try:
             formatted_messages = self._get_formatted_messages(messages)
-            response = await self.router_client.acompletion(
-                messages=formatted_messages, **{**self._completion_fn_args, **kwargs}
+            timeout = self._litellm_extra_parameters.get(
+                "timeout", DEFAULT_REQUEST_TIMEOUT
+            )
+            response = await asyncio.wait_for(
+                self.router_client.acompletion(
+                    messages=formatted_messages,
+                    **{**self._completion_fn_args, **kwargs},
+                ),
+                timeout=timeout,
             )
             return self._format_response(response)
+        except asyncio.TimeoutError:
+            self._handle_timeout_error()
         except Exception as e:
             raise ProviderClientAPIException(e)
 
     @property
     def _completion_fn_args(self) -> Dict[str, Any]:
-        """Returns the completion arguments for invoking a call through
-        LiteLLM's completion functions.
-        """
+        """Returns the completion arguments.
 
+        For invoking a call through LiteLLM's completion functions.
+        """
         return {
             **self._litellm_extra_parameters,
             LITE_LLM_MODEL_FIELD: self.model_group_id,

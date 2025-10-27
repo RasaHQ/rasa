@@ -8,8 +8,7 @@ structlogger = structlog.get_logger()
 
 
 def resolve_aliases(config: dict, deprecated_alias_mapping: dict) -> dict:
-    """
-    Resolve aliases in the configuration to standard keys.
+    """Resolve aliases in the configuration to standard keys.
 
     Args:
         config: Dictionary containing the configuration.
@@ -37,13 +36,13 @@ def raise_deprecation_warnings(
     deprecated_alias_mapping: dict,
     source: Optional[str] = None,
 ) -> None:
-    """
-    Raises warnings for deprecated keys in the configuration.
+    """Raises warnings for deprecated keys in the configuration.
 
     Args:
         config: Dictionary containing the configuration.
         deprecated_alias_mapping: Dictionary mapping deprecated keys to
             their standard keys.
+        source: Optional source context for the deprecation warning.
 
     Raises:
         DeprecationWarning: If any deprecated key is found in the config.
@@ -61,8 +60,7 @@ def raise_deprecation_warnings(
 
 
 def validate_required_keys(config: dict, required_keys: list) -> None:
-    """
-    Validates that the passed config contains all the required keys.
+    """Validates that the passed config contains all the required keys.
 
     Args:
         config: Dictionary containing the configuration.
@@ -84,8 +82,7 @@ def validate_required_keys(config: dict, required_keys: list) -> None:
 
 
 def validate_forbidden_keys(config: dict, forbidden_keys: list) -> None:
-    """
-    Validates that the passed config doesn't contain any forbidden keys.
+    """Validates that the passed config doesn't contain any forbidden keys.
 
     Args:
         config: Dictionary containing the configuration.

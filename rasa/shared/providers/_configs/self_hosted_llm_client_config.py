@@ -61,8 +61,9 @@ FORBIDDEN_KEYS = [
 
 @dataclass
 class SelfHostedLLMClientConfig:
-    """Parses configuration for Self Hosted LiteLLM client, resolves aliases and
-    raises deprecation warnings.
+    """Parses configuration for Self Hosted LiteLLM client.
+
+    Resolves aliases and raises deprecation warnings.
 
     Raises:
         ValueError: Raised in cases of invalid configuration:
@@ -116,8 +117,7 @@ class SelfHostedLLMClientConfig:
 
     @classmethod
     def from_dict(cls, config: dict) -> SelfHostedLLMClientConfig:
-        """
-        Initializes a dataclass from the passed config.
+        """Initializes a dataclass from the passed config.
 
         Args:
             config: (dict) The config from which to initialize.

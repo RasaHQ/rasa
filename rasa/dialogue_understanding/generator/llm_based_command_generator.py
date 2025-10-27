@@ -62,7 +62,9 @@ structlogger = structlog.get_logger()
 class LLMBasedCommandGenerator(
     LLMHealthCheckMixin, GraphComponent, CommandGenerator, ABC
 ):
-    """An abstract class defining interface and common functionality
+    """This class provides common functionality for all LLM-based command generators.
+
+    An abstract class defining interface and common functionality
     of an LLM-based command generators.
     """
 
@@ -174,8 +176,9 @@ class LLMBasedCommandGenerator(
     def train(
         self, training_data: TrainingData, flows: FlowsList, domain: Domain
     ) -> Resource:
-        """Train the llm based command generator. Stores all flows into a vector
-        store.
+        """Trains the LLM-based command generator and prepares flow retrieval data.
+
+        Stores all flows into a vector store.
         """
         self.perform_llm_health_check(
             self.config.get(LLM_CONFIG_KEY),

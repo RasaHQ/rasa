@@ -38,8 +38,9 @@ _LITELLM_UNSUPPORTED_KEYS = [
 
 @dataclass
 class LiteLLMRouterClientConfig:
-    """Parses configuration for a LiteLLM Router client. The configuration is expected
-    to be in the following format:
+    """Parses configuration for a LiteLLM Router client.
+
+    The configuration is expected to be in the following format:
 
     {
         "id": "model_group_id",

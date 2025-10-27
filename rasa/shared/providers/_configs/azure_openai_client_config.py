@@ -167,8 +167,9 @@ class OAuthConfigWrapper(OAuth, BaseModel):
 
 @dataclass
 class AzureOpenAIClientConfig:
-    """Parses configuration for Azure OpenAI client, resolves aliases and
-    raises deprecation warnings.
+    """Parses configuration for Azure OpenAI client.
+
+    Resolves aliases and raises deprecation warnings.
 
     Raises:
         ValueError: Raised in cases of invalid configuration:
@@ -301,9 +302,7 @@ class AzureOpenAIClientConfig:
 
 
 def is_azure_openai_config(config: dict) -> bool:
-    """Check whether the configuration is meant to configure
-    an Azure OpenAI client.
-    """
+    """Check whether the configuration is meant to configure an Azure OpenAI client."""
     # Resolve any aliases that are specific to Azure OpenAI configuration
     config = AzureOpenAIClientConfig.resolve_config_aliases(config)
 

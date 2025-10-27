@@ -40,8 +40,9 @@ FORBIDDEN_KEYS = [
 
 @dataclass
 class DefaultLiteLLMClientConfig:
-    """Parses configuration for default LiteLLM client, resolves aliases and
-    raises deprecation warnings.
+    """Parses configuration for default LiteLLM client.
+
+    Resolves aliases and raises deprecation warnings.
 
     Raises:
         ValueError: Raised in cases of invalid configuration:
@@ -72,8 +73,7 @@ class DefaultLiteLLMClientConfig:
 
     @classmethod
     def from_dict(cls, config: dict) -> DefaultLiteLLMClientConfig:
-        """
-        Initializes a dataclass from the passed config.
+        """Initializes a dataclass from the passed config.
 
         Args:
             config: (dict) The config from which to initialize.

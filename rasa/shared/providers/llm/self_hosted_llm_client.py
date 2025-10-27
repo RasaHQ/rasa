@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from typing import Any, Dict, List, Optional, Union
@@ -7,6 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 import structlog
 from litellm import atext_completion, text_completion
 
+from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.shared.constants import (
     API_KEY,
     SELF_HOSTED_VLLM_API_KEY_ENV_VAR,
@@ -28,7 +30,7 @@ structlogger = structlog.get_logger()
 
 
 class SelfHostedLLMClient(_BaseLiteLLMClient):
-    """A client for interfacing with Self Hosted LLM endpoints that uses
+    """A client for interfacing with Self Hosted LLM endpoints.
 
     Parameters:
         model (str): The model or deployment name.
@@ -95,8 +97,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
 
     @property
     def provider(self) -> str:
-        """
-        Returns the provider name for the self hosted llm client.
+        """Returns the provider name for the self hosted llm client.
 
         Returns:
             String representing the provider name.
@@ -105,8 +106,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
 
     @property
     def model(self) -> str:
-        """
-        Returns the model name for the self hosted llm client.
+        """Returns the model name for the self hosted llm client.
 
         Returns:
             String representing the model name.
@@ -115,8 +115,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
 
     @property
     def api_base(self) -> str:
-        """
-        Returns the base URL for the API endpoint.
+        """Returns the base URL for the API endpoint.
 
         Returns:
             String representing the base URL.
@@ -125,8 +124,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
 
     @property
     def api_type(self) -> Optional[str]:
-        """
-        Returns the type of the API endpoint. Currently only OpenAI is supported.
+        """Returns the type of the API endpoint. Currently only OpenAI is supported.
 
         Returns:
             String representing the API type.
@@ -135,8 +133,7 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
 
     @property
     def api_version(self) -> Optional[str]:
-        """
-        Returns the version of the API endpoint.
+        """Returns the version of the API endpoint.
 
         Returns:
             String representing the API version.
@@ -145,8 +142,8 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
 
     @property
     def config(self) -> Dict:
-        """
-        Returns the configuration for the self hosted llm client.
+        """Returns the configuration for the self hosted llm client.
+
         Returns:
             Dictionary containing the configuration.
         """
@@ -163,9 +160,9 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
 
     @property
     def _litellm_model_name(self) -> str:
-        """Returns the value of LiteLLM's model parameter to be used in
-        completion/acompletion in LiteLLM format:
+        """Returns the value of LiteLLM's model parameter.
 
+        To be used in completion/acompletion in LiteLLM format:
         <hosted_vllm>/<model or deployment name>
         """
         if self.model and f"{SELF_HOSTED_VLLM_PREFIX}/" not in self.model:
@@ -174,15 +171,17 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
 
     @property
     def _litellm_extra_parameters(self) -> Dict[str, Any]:
-        """Returns optional configuration parameters specific
-        to the client provider and deployed model.
+        """Returns optional configuration parameters.
+
+        Specific to the client provider and deployed model.
         """
         return self._extra_parameters
 
     @property
     def _completion_fn_args(self) -> Dict[str, Any]:
-        """Returns the completion arguments for invoking a call through
-        LiteLLM's completion functions.
+        """Returns the completion arguments.
+
+        For invoking a call through LiteLLM's completion functions.
         """
         fn_args = super()._completion_fn_args
         fn_args.update(
@@ -195,13 +194,14 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
 
     @suppress_logs(log_level=logging.WARNING)
     def _text_completion(self, prompt: Union[List[str], str]) -> LLMResponse:
-        """
-        Synchronously generate completions for given prompt.
+        """Synchronously generate completions for given prompt.
 
         Args:
             prompt: Prompt to generate the completion for.
+
         Returns:
             List of message completions.
+
         Raises:
             ProviderClientAPIException: If the API request fails.
         """
@@ -213,26 +213,28 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
 
     @suppress_logs(log_level=logging.WARNING)
     async def _atext_completion(self, prompt: Union[List[str], str]) -> LLMResponse:
-        """
-        Asynchronously generate completions for given prompt.
+        """Asynchronously generate completions for given prompt.
 
         Args:
-            messages: The message can be,
-                - a list of preformatted messages. Each message should be a dictionary
-                    with the following keys:
-                    - content: The message content.
-                    - role: The role of the message (e.g. user or system).
-                - a list of messages. Each message is a string and will be formatted
-                    as a user message.
-                - a single message as a string which will be formatted as user message.
+            prompt: Prompt to generate the completion for.
+
         Returns:
             List of message completions.
+
         Raises:
             ProviderClientAPIException: If the API request fails.
         """
         try:
-            response = await atext_completion(prompt=prompt, **self._completion_fn_args)
+            timeout = self._litellm_extra_parameters.get(
+                "timeout", DEFAULT_REQUEST_TIMEOUT
+            )
+            response = await asyncio.wait_for(
+                atext_completion(prompt=prompt, **self._completion_fn_args),
+                timeout=timeout,
+            )
             return self._format_text_completion_response(response)
+        except asyncio.TimeoutError:
+            self._handle_timeout_error()
         except Exception as e:
             raise ProviderClientAPIException(e)
 

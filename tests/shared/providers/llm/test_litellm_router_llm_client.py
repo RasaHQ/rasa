@@ -260,6 +260,46 @@ class TestLiteLLMRouterLLMClient:
         assert response.usage.completion_tokens == 7
         assert response.usage.total_tokens == 12
 
+    @pytest.mark.asyncio
+    async def test_acompletion_timeout_enforcement(
+        self, client: LiteLLMRouterLLMClient, monkeypatch: MonkeyPatch
+    ):
+        """Test that timeout error message correctly shows
+        'time taken' is equivalent to 'timeout value' defined in 'endpoints.yml'."""
+        import asyncio
+        from unittest.mock import AsyncMock, PropertyMock
+
+        from rasa.shared.exceptions import ProviderClientAPIException
+
+        # Set small timeout value for timeout
+        timeout_value = 0.00001
+        monkeypatch.setattr(
+            type(client),
+            "_litellm_extra_parameters",
+            PropertyMock(return_value={"timeout": timeout_value}),
+        )
+
+        # Mock router_client.acompletion with a slow operation that will timeout
+        async def slow_operation(*args, **kwargs):
+            await asyncio.sleep(1)
+
+        monkeypatch.setattr(
+            client.router_client,
+            "acompletion",
+            AsyncMock(side_effect=slow_operation),
+        )
+
+        # Verify timeout is enforced and error message is correct
+        with pytest.raises(ProviderClientAPIException) as exc_info:
+            await client.acompletion("test message")
+
+        # Verify error message shows 'time taken' to be
+        # equivalent to 'timeout value'
+        error_message = str(exc_info.value.original_exception)
+        assert "APITimeoutError" in error_message
+        assert f"timeout value={timeout_value:.6f}" in error_message
+        assert f"time taken={timeout_value:.6f} seconds" in error_message
+
 
 @pytest.mark.parametrize(
     "config",

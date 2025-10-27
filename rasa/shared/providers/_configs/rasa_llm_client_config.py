@@ -22,8 +22,9 @@ structlogger = structlog.get_logger()
 
 @dataclass
 class RasaLLMClientConfig:
-    """Parses configuration for a Rasa Hosted LiteLLM client,
-    checks required keys present.
+    """Parses configuration for a Rasa Hosted LiteLLM client.
+
+    Checks required keys present.
 
     Raises:
         ValueError: Raised in cases of invalid configuration:
@@ -40,8 +41,7 @@ class RasaLLMClientConfig:
 
     @classmethod
     def from_dict(cls, config: dict) -> RasaLLMClientConfig:
-        """
-        Initializes a dataclass from the passed config.
+        """Initializes a dataclass from the passed config.
 
         Args:
             config: (dict) The config from which to initialize.

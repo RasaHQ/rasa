@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from abc import abstractmethod
-from typing import Any, Dict, List, Union, cast
+from typing import Any, Dict, List, NoReturn, Union, cast
 
 import structlog
 from litellm import acompletion, completion, validate_environment
 
+from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.shared.constants import (
     _VALIDATE_ENVIRONMENT_MISSING_KEYS_KEY,
     API_BASE_CONFIG_KEY,
@@ -57,26 +59,24 @@ class _BaseLiteLLMClient:
     @property
     @abstractmethod
     def config(self) -> dict:
-        """Returns the configuration for that the llm client
-        in dictionary form.
-        """
+        """Returns the configuration for that the llm client in dictionary form."""
         pass
 
     @property
     @abstractmethod
     def _litellm_model_name(self) -> str:
-        """Returns the value of LiteLLM's model parameter to be used in
-        completion/acompletion in LiteLLM format:
+        """Returns the value of LiteLLM's model parameter.
 
+        To be used in completion/acompletion in LiteLLM format:
         <provider>/<model or deployment name>
         """
         pass
 
     @property
     def _litellm_extra_parameters(self) -> Dict[str, Any]:
-        """Returns a dictionary of extra parameters which include model
-        parameters as well as LiteLLM specific input parameters.
+        """Returns a dictionary of extra parameters.
 
+        Includes model parameters as well as LiteLLM specific input parameters.
         By default, this returns an empty dictionary (no extra parameters).
         """
         return {}
@@ -96,8 +96,9 @@ class _BaseLiteLLMClient:
         }
 
     def validate_client_setup(self) -> None:
-        """Perform client validation. By default only environment variables
-        are validated.
+        """Perform client validation.
+
+        By default only environment variables are validated.
 
         Raises:
             ProviderClientValidationError if validation fails.
@@ -188,10 +189,17 @@ class _BaseLiteLLMClient:
             arguments = cast(
                 Dict[str, Any], resolve_environment_variables(self._completion_fn_args)
             )
-            response = await acompletion(
-                messages=formatted_messages, **{**arguments, **kwargs}
+
+            timeout = self._litellm_extra_parameters.get(
+                "timeout", DEFAULT_REQUEST_TIMEOUT
+            )
+            response = await asyncio.wait_for(
+                acompletion(messages=formatted_messages, **{**arguments, **kwargs}),
+                timeout=timeout,
             )
             return self._format_response(response)
+        except asyncio.TimeoutError:
+            self._handle_timeout_error()
         except Exception as e:
             message = ""
             from rasa.shared.providers.llm.self_hosted_llm_client import (
@@ -210,6 +218,25 @@ class _BaseLiteLLMClient:
                     "API key, your configuration is incorrect."
                 )
             raise ProviderClientAPIException(e, message) from e
+
+    def _handle_timeout_error(self) -> NoReturn:
+        """Handle asyncio.TimeoutError and raise ProviderClientAPIException.
+
+        Raises:
+            ProviderClientAPIException: Always raised with formatted timeout error.
+        """
+        timeout = self._litellm_extra_parameters.get("timeout", DEFAULT_REQUEST_TIMEOUT)
+        error_message = (
+            f"APITimeoutError - Request timed out. Error_str: "
+            f"Request timed out. - timeout value={timeout:.6f}, "
+            f"time taken={timeout:.6f} seconds"
+        )
+        # nosemgrep: semgrep.rules.pii-positional-arguments-in-logging
+        # Error message contains only numeric timeout values, not PII
+        structlogger.error(
+            f"{self.__class__.__name__.lower()}.llm.timeout", error=error_message
+        )
+        raise ProviderClientAPIException(asyncio.TimeoutError(error_message)) from None
 
     def _get_formatted_messages(
         self, messages: Union[List[dict], List[str], str]
@@ -312,8 +339,9 @@ class _BaseLiteLLMClient:
 
     @staticmethod
     def _ensure_certificates() -> None:
-        """Configures SSL certificates for LiteLLM. This method is invoked during
-        client initialization.
+        """Configures SSL certificates for LiteLLM.
+
+        This method is invoked during client initialization.
 
         LiteLLM may utilize `openai` clients or other providers that require
         SSL verification settings through the `SSL_VERIFY` / `SSL_CERTIFICATE`

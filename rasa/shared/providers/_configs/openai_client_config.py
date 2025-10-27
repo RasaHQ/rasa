@@ -64,8 +64,9 @@ FORBIDDEN_KEYS = [
 
 @dataclass
 class OpenAIClientConfig:
-    """Parses configuration for Azure OpenAI client, resolves aliases and
-    raises deprecation warnings.
+    """Parses configuration for OpenAI client.
+
+    Resolves aliases and raises deprecation warnings.
 
     Raises:
         ValueError: Raised in cases of invalid configuration:
@@ -118,8 +119,7 @@ class OpenAIClientConfig:
 
     @classmethod
     def from_dict(cls, config: dict) -> OpenAIClientConfig:
-        """
-        Initializes a dataclass from the passed config.
+        """Initializes a dataclass from the passed config.
 
         Args:
             config: (dict) The config from which to initialize.
@@ -168,9 +168,7 @@ class OpenAIClientConfig:
 
 
 def is_openai_config(config: dict) -> bool:
-    """Check whether the configuration is meant to configure
-    an OpenAI client.
-    """
+    """Check whether the configuration is meant to configure an OpenAI client."""
     # Process the config to handle all the aliases
     config = OpenAIClientConfig.resolve_config_aliases(config)
 
