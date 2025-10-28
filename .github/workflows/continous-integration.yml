@@ -1744,11 +1744,11 @@ jobs:
           HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
         run: |
           git config --global credential.helper cache
-          huggingface-cli login --token ${{ env.HUGGINGFACE_API_KEY }} --add-to-git-credential
+          hf auth login --token ${{ env.HUGGINGFACE_API_KEY }} --add-to-git-credential
           if [[ ! -d models ]]; then
             mkdir models;
           fi
-          huggingface-cli download urchade/gliner_multi_pii-v1 --repo-type model --local-dir models --cache-dir models
+          hf download urchade/gliner_multi_pii-v1 --repo-type model --local-dir models --cache-dir models
         shell: bash
 
       - name: Install ddtrace on Linux

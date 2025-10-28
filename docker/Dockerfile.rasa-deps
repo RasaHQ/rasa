@@ -24,7 +24,7 @@ ENV PATH "/root/.local/bin:${PATH}"
 RUN python3 -m venv /opt/venv && \
   . /opt/venv/bin/activate && \
   poetry config virtualenvs.create false && \
-  pip install --no-cache-dir -U "pip==22.*" -U "wheel>0.38.0" && \
+  pip install --no-cache-dir -U "pip==23.*" -U "wheel>0.38.0" && \
   poetry install -E nlu -E channels -E monitoring --only main --no-root --no-interaction
 
 FROM ${IMAGE_BASE_NAME}:${BASE_BUILDER_IMAGE_HASH}
