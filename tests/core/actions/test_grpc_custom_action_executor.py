@@ -17,7 +17,11 @@ from rasa.core.actions.constants import (
     SSL_CLIENT_CERT_FIELD,
     SSL_CLIENT_KEY_FIELD,
 )
-from rasa.core.actions.custom_action_executor import CustomActionRequestWriter
+from rasa.core.actions.custom_action_executor import (
+    ActionResult,
+    ActionResultType,
+    CustomActionRequestWriter,
+)
 from rasa.core.actions.grpc_custom_action_executor import GRPCCustomActionExecutor
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.slots import (
@@ -1896,3 +1900,89 @@ async def test_grpc_custom_action_executor_run_without_response_validation(
     monkeypatch.setattr(RemoteActionJSONValidator, "validate", mock_validate)
     await grpc_custom_action_executor.run(tracker=tracker_without_tuple, domain=domain)
     mock_validate.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_grpc_run_with_result_returns_retry_on_domain_not_found(
+    grpc_client: MagicMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+) -> None:
+    action_name = "test_action"
+    resource_not_found = ResourceNotFound(
+        action_name=action_name,
+        message="Domain not found",
+        resource_type=ResourceNotFoundType.DOMAIN,
+    )
+    details = resource_not_found.model_dump_json()
+
+    grpc_client.Webhook.side_effect = StubGrpcCallException(
+        grpc.StatusCode.NOT_FOUND, details
+    )
+
+    # Calling run_with_result should not raise an exception
+    result = await grpc_custom_action_executor.run_with_result(
+        tracker_without_tuple, domain, include_domain=False
+    )
+
+    # Verify the result
+    assert isinstance(result, ActionResult)
+    assert result.result_type == ActionResultType.RETRY_WITH_DOMAIN
+    assert result.response is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_grpc_run_with_result_returns_success_on_valid_response(
+    grpc_client: MagicMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+    grpc_payload: action_webhook_pb2.WebhookRequest,
+) -> None:
+    # Mock a successful response
+    response_data = action_webhook_pb2.WebhookResponse()
+    grpc_client.Webhook.return_value = response_data
+
+    # Call run_with_result
+    result = await grpc_custom_action_executor.run_with_result(
+        tracker_without_tuple, domain, include_domain=False
+    )
+
+    # Verify the result
+    assert isinstance(result, ActionResult)
+    assert result.result_type == ActionResultType.SUCCESS
+    assert result.response is not None
+
+    # Verify the client was called once
+    grpc_client.Webhook.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("grpc_insecure_channel", "grpc_action_servicer_stub")
+async def test_grpc_run_returns_empty_dict_for_missing_domain(
+    grpc_client: MagicMock,
+    grpc_custom_action_executor: GRPCCustomActionExecutor,
+    tracker_without_tuple: DialogueStateTracker,
+    domain: Domain,
+) -> None:
+    """Test that run() returns empty dict instead of raising DomainNotFound."""
+    action_name = "test_action"
+    resource_not_found = ResourceNotFound(
+        action_name=action_name,
+        message="Domain not found",
+        resource_type=ResourceNotFoundType.DOMAIN,
+    )
+    details = resource_not_found.model_dump_json()
+
+    grpc_client.Webhook.side_effect = StubGrpcCallException(
+        grpc.StatusCode.NOT_FOUND, details
+    )
+
+    # Call run() - should return empty dict, not raise exception
+    result = await grpc_custom_action_executor.run(
+        tracker_without_tuple, domain, include_domain=False
+    )
+    assert result == {}

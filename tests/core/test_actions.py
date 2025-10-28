@@ -113,6 +113,24 @@ from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 from tests.utilities import json_of_latest_request, latest_request
 
 
+@pytest.fixture(autouse=True)
+def clear_remote_action_cache():
+    """Clear the RemoteAction._create_executor LRU cache after each test.
+
+    This prevents cache pollution between tests where the same action name
+    is used with different endpoint configurations.
+    """
+    yield
+    # Clear the cache after the test
+    # Access the underlying lru_cache function to clear it
+    if hasattr(RemoteAction._create_executor, "cache_clear"):
+        RemoteAction._create_executor.cache_clear()
+    # For bound methods, we need to access the cache through __func__
+    elif hasattr(RemoteAction._create_executor, "__func__"):
+        if hasattr(RemoteAction._create_executor.__func__, "cache_clear"):
+            RemoteAction._create_executor.__func__.cache_clear()
+
+
 @pytest.fixture(scope="module")
 def template_nlg() -> TemplatedNaturalLanguageGenerator:
     responses = {

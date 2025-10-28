@@ -4,8 +4,11 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import aiohttp
 
-from rasa.core.actions.action_exceptions import ActionExecutionRejection, DomainNotFound
+from rasa.core.actions.action_exceptions import ActionExecutionRejection
+from rasa.core.actions.constants import MISSING_DOMAIN_MARKER
 from rasa.core.actions.custom_action_executor import (
+    ActionResult,
+    ActionResultType,
     CustomActionExecutor,
     CustomActionRequestWriter,
 )
@@ -18,12 +21,12 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaException
 from rasa.utils.common import get_bool_env_variable
+from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 
 if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
     from rasa.shared.core.trackers import DialogueStateTracker
 
-from rasa.utils.endpoints import ClientResponseError, EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +65,40 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
 
         Returns:
             A dictionary containing the response from the custom action endpoint.
+            Returns empty dict if domain is missing (449 status).
 
         Raises:
-            RasaException: If an error occurs while making the HTTP request.
+            RasaException: If an error occurs while making the HTTP request
+                (other than missing domain).
+        """
+        result = await self.run_with_result(tracker, domain, include_domain)
+
+        # Return empty dict for retry cases to avoid raising exceptions
+        # RetryCustomActionExecutor will handle the retry logic
+        if result.result_type == ActionResultType.RETRY_WITH_DOMAIN:
+            return {}
+
+        return result.response if result.response is not None else {}
+
+    async def run_with_result(
+        self,
+        tracker: "DialogueStateTracker",
+        domain: Optional["Domain"] = None,
+        include_domain: bool = False,
+    ) -> ActionResult:
+        """Execute the custom action and return an ActionResult.
+
+        This method avoids raising DomainNotFound exception for 449 status code,
+        instead returning an ActionResult with RETRY_WITH_DOMAIN type.
+        This prevents tracing from capturing this expected condition as an error.
+
+        Args:
+            tracker: The current state of the dialogue.
+            domain: The domain object containing domain-specific information.
+            include_domain: If True, the domain is included in the request.
+
+        Returns:
+            ActionResult containing the response and result type.
         """
         from rasa.core.actions.action import RemoteActionJSONValidator
 
@@ -77,14 +111,23 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
                 tracker=tracker, domain=domain, include_domain=include_domain
             )
 
-            response = await self._perform_request_with_retries(json_body)
+            assert self.action_endpoint is not None
+            response = await self.action_endpoint.request(
+                json=json_body,
+                method="post",
+                timeout=DEFAULT_REQUEST_TIMEOUT,
+                compress=self.should_compress,
+            )
+
+            # Check if we got the special marker for 449 status (missing domain)
+            if isinstance(response, dict) and response.get(MISSING_DOMAIN_MARKER):
+                return ActionResult(result_type=ActionResultType.RETRY_WITH_DOMAIN)
 
             if response is None:
                 response = {}
 
             RemoteActionJSONValidator.validate(response)
-
-            return response
+            return ActionResult(result_type=ActionResultType.SUCCESS, response=response)
 
         except ClientResponseError as e:
             if e.status == 400:
@@ -131,22 +174,3 @@ class HTTPCustomActionExecutor(CustomActionExecutor):
                 "and returns a 200 once the action is executed. "
                 "Error: {}".format(self.action_name, status, e)
             )
-
-    async def _perform_request_with_retries(
-        self,
-        json_body: Dict[str, Any],
-    ) -> Any:
-        """Attempts to perform the request with retries if necessary."""
-        assert self.action_endpoint is not None
-        try:
-            return await self.action_endpoint.request(
-                json=json_body,
-                method="post",
-                timeout=DEFAULT_REQUEST_TIMEOUT,
-                compress=self.should_compress,
-            )
-        except ClientResponseError as e:
-            # Repeat the request because Domain was not in the payload
-            if e.status == 449:
-                raise DomainNotFound()
-            raise e

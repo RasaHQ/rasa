@@ -10,6 +10,7 @@ import structlog
 from aiohttp.client_exceptions import ContentTypeError
 from sanic.request import Request
 
+from rasa.core.actions.constants import MISSING_DOMAIN_MARKER
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.shared.exceptions import FileNotFoundException
 from rasa.shared.utils.yaml import read_config_file
@@ -224,6 +225,11 @@ class EndpointConfig:
                 ssl=sslcontext,
                 **kwargs,
             ) as response:
+                if response.status == 449:
+                    # Return a special marker that HTTPCustomActionExecutor can detect
+                    # This avoids raising an exception for this expected case
+                    return {MISSING_DOMAIN_MARKER: True}
+
                 if response.status >= 400:
                     raise ClientResponseError(
                         response.status,

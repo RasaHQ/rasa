@@ -11,6 +11,8 @@ from rasa_sdk.grpc_py import action_webhook_pb2, action_webhook_pb2_grpc
 from rasa.core.actions.action_exceptions import DomainNotFound
 from rasa.core.actions.constants import SSL_CLIENT_CERT_FIELD, SSL_CLIENT_KEY_FIELD
 from rasa.core.actions.custom_action_executor import (
+    ActionResult,
+    ActionResultType,
     CustomActionExecutor,
     CustomActionRequestWriter,
 )
@@ -101,13 +103,51 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
 
         Returns:
             Response from the action server.
-        """
+            Returns empty dict if domain is missing.
 
+        Raises:
+            RasaException: If an error occurs while making the gRPC request
+                (other than missing domain).
+        """
+        result = await self.run_with_result(tracker, domain, include_domain)
+
+        # Return empty dict for retry cases to avoid raising exceptions
+        # RetryCustomActionExecutor will handle the retry logic
+        if result.result_type == ActionResultType.RETRY_WITH_DOMAIN:
+            return {}
+
+        return result.response if result.response is not None else {}
+
+    async def run_with_result(
+        self,
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        include_domain: bool = False,
+    ) -> ActionResult:
+        """Execute the custom action and return an ActionResult.
+
+        This method avoids raising DomainNotFound exception for missing domain,
+        instead returning an ActionResult with RETRY_WITH_DOMAIN type.
+        This prevents tracing from capturing this expected condition as an error.
+
+        Args:
+            tracker: Tracker for the current conversation.
+            domain: Domain of the assistant.
+            include_domain: If True, the domain is included in the request.
+
+        Returns:
+            ActionResult containing the response and result type.
+        """
         request = self._create_payload(
             tracker=tracker, domain=domain, include_domain=include_domain
         )
 
-        return self._request(request)
+        try:
+            response = self._request(request)
+            return ActionResult(result_type=ActionResultType.SUCCESS, response=response)
+        except DomainNotFound:
+            # Return retry result instead of raising DomainNotFound
+            return ActionResult(result_type=ActionResultType.RETRY_WITH_DOMAIN)
 
     def _request(
         self,
@@ -121,7 +161,6 @@ class GRPCCustomActionExecutor(CustomActionExecutor):
         Returns:
             Response from the action server.
         """
-
         client = self._create_grpc_client()
         metadata = self._build_metadata()
         try:

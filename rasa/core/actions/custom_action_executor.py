@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import abc
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Text
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Dict, Optional, Text
+
+from pydantic import BaseModel
 
 import rasa
 from rasa.core.actions.action_exceptions import DomainNotFound
@@ -17,6 +20,23 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+class ActionResultType(Enum):
+    SUCCESS = "success"
+    RETRY_WITH_DOMAIN = "retry_with_domain"
+
+
+class ActionResult(BaseModel):
+    """Result of custom action execution.
+
+    This is used to avoid raising exceptions for expected conditions
+    like missing domain (449 status code), which would otherwise be
+    captured by tracing as errors.
+    """
+
+    result_type: ActionResultType
+    response: Optional[Dict[Text, Any]] = None
 
 
 class CustomActionExecutor(abc.ABC):
@@ -44,6 +64,34 @@ class CustomActionExecutor(abc.ABC):
             The response from the execution of the custom action.
         """
         pass
+
+    async def run_with_result(
+        self,
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+        include_domain: bool = False,
+    ) -> ActionResult:
+        """Executes the custom action and returns a result.
+
+        This method is used to avoid raising exceptions for expected conditions
+        like missing domain, which would otherwise be captured by tracing as errors.
+
+        By default, this method calls the run method and wraps the response
+        for backward compatibility.
+
+        Args:
+            tracker: The current state of the dialogue.
+            domain: The domain object containing domain-specific information.
+            include_domain: If True, the domain is included in the request.
+
+        Returns:
+            ActionResult containing the response and result type.
+        """
+        try:
+            response = await self.run(tracker, domain, include_domain)
+            return ActionResult(result_type=ActionResultType.SUCCESS, response=response)
+        except DomainNotFound:
+            return ActionResult(result_type=ActionResultType.RETRY_WITH_DOMAIN)
 
 
 class NoEndpointCustomActionExecutor(CustomActionExecutor):
@@ -163,13 +211,13 @@ class RetryCustomActionExecutor(CustomActionExecutor):
         domain: "Domain",
         include_domain: bool = False,
     ) -> Dict[Text, Any]:
-        """Runs the wrapped custom action executor.
+        """Runs the wrapped custom action executor with retry logic.
 
         First request to the action server is made with/without the domain
         as specified by the `include_domain` parameter.
 
-        If the action server responds with a `DomainNotFound` error, by running the
-        custom action executor again with the domain information.
+        If the action server responds with a missing domain indication,
+        retries the request with the domain included.
 
         Args:
             tracker: The current state of the dialogue.
@@ -178,14 +226,24 @@ class RetryCustomActionExecutor(CustomActionExecutor):
 
         Returns:
             The response from the execution of the custom action.
+
+        Raises:
+            DomainNotFound: If the action server still requires domain after retry.
         """
-        try:
-            return await self._custom_action_executor.run(
-                tracker,
-                domain,
-                include_domain=include_domain,
-            )
-        except DomainNotFound:
-            return await self._custom_action_executor.run(
+        result = await self._custom_action_executor.run_with_result(
+            tracker,
+            domain,
+            include_domain=include_domain,
+        )
+
+        if result.result_type == ActionResultType.RETRY_WITH_DOMAIN:
+            # Retry with domain included
+            result = await self._custom_action_executor.run_with_result(
                 tracker, domain, include_domain=True
             )
+
+            # If still missing domain after retry, raise error
+            if result.result_type == ActionResultType.RETRY_WITH_DOMAIN:
+                raise DomainNotFound()
+
+        return result.response if result.response is not None else {}

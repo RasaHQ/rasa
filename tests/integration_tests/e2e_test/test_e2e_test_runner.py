@@ -132,6 +132,14 @@ def test_e2e_test_runner_load_agent_from_remote_storage(
     monkeypatch.setattr("rasa.core.persistor.get_persistor", mock_aws_persistor)
     monkeypatch.setattr("rasa.core.agent.Agent.load_model", mock_load_model)
 
+    # Mock Configuration.get_instance() to avoid initialization requirement
+    mock_config = MagicMock()
+    mock_config.available_agents = None
+    monkeypatch.setattr(
+        "rasa.core.config.configuration.Configuration.get_instance",
+        lambda: mock_config,
+    )
+
     test_runner = E2ETestRunner(
         model_path=model_name,
         remote_storage=RemoteStorageType.AWS,
@@ -223,8 +231,9 @@ async def test_e2e_test_runner_with_customized_action_session_start(
     async def mock_run(self, *args, **kwargs) -> Dict[str, Any]:
         return {"responses": [dispatched_response]}
 
+    # Mock RetryCustomActionExecutor instead, HTTPCustomActionExecutor is now wrapped
     monkeypatch.setattr(
-        "rasa.core.actions.http_custom_action_executor.HTTPCustomActionExecutor.run",
+        "rasa.core.actions.custom_action_executor.RetryCustomActionExecutor.run",
         mock_run,
     )
 
