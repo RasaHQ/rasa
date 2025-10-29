@@ -18,6 +18,7 @@ from rasa.builder import config
 from rasa.builder.logging_utils import (
     attach_request_id_processor,
     collecting_logs_processor,
+    collecting_validation_logs_processor,
     log_request_end,
     log_request_start,
 )
@@ -47,7 +48,11 @@ def setup_logging() -> None:
     configure_structlog(
         log_level,
         include_time=True,
-        additional_processors=[attach_request_id_processor, collecting_logs_processor],
+        additional_processors=[
+            attach_request_id_processor,
+            collecting_logs_processor,
+            collecting_validation_logs_processor,
+        ],
     )
 
 

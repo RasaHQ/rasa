@@ -1,6 +1,7 @@
 """Logging and Sentry utilities for the builder service."""
 
 import collections
+import contextvars
 import logging
 import threading
 import time
@@ -20,8 +21,10 @@ structlogger = structlog.get_logger()
 # Thread-safe deque for collecting recent logs
 _recent_logs: Deque[str] = collections.deque(maxlen=config.MAX_LOG_ENTRIES)
 _logs_lock = threading.RLock()
-# Thread-local storage for validation logs
-_validation_logs = threading.local()
+# Context variable for validation logs (async-safe)
+_validation_logs: contextvars.ContextVar[Optional[List[Dict[str, Any]]]] = (
+    contextvars.ContextVar("validation_logs", default=None)
+)
 
 
 def collecting_logs_processor(
@@ -42,11 +45,12 @@ def collecting_logs_processor(
 
 
 def collecting_validation_logs_processor(
-    logger: Any, method_name: str, event_dict: Dict[str, Any]
-) -> Dict[str, Any]:
-    """Structlog processor that captures validation logs in thread-local storage.
+    logger: Any, method_name: str, event_dict: MutableMapping[str, Any]
+) -> MutableMapping[str, Any]:
+    """Structlog processor that captures validation logs in context variable storage.
 
     It's designed to be used with the capture_validation_logs context manager.
+    Uses contextvars for async-safe log capture across async tasks.
 
     Args:
         logger: The structlog logger instance
@@ -57,41 +61,38 @@ def collecting_validation_logs_processor(
         The unmodified event_dict (this processor doesn't modify the log data)
     """
     # Only capture logs if we're in a validation context
-    # (logs list exists for this thread)
-    if hasattr(_validation_logs, "logs"):
+    # (logs list exists in the current context)
+    logs = _validation_logs.get()
+    if logs is not None:
         log_entry = {"log_level": method_name, **event_dict}
-        _validation_logs.logs.append(log_entry)
+        logs.append(log_entry)
 
     return event_dict
 
 
 @contextmanager
 def capture_validation_logs() -> Generator[List[Dict[str, Any]], Any, None]:
-    """Context manager to capture validation logs using thread-local storage.
+    """Context manager to capture validation logs using context variables.
 
-    This context manager temporarily reconfigures structlog to capture all logs
-    during validation and stores them in thread-local storage. It's thread-safe
-    and automatically cleans up after use.
+    This context manager stores logs in a context variable WITHOUT reconfiguring
+    structlog globally. The processor checks the context variable and captures
+    logs if present. This avoids race conditions with concurrent requests.
 
     Yields:
         A list of captured log entries, each containing the log level and all
         original log data from the event_dict.
     """
-    # Temporarily reconfigure structlog to add our capture processor
-    original_processors = structlog.get_config()["processors"]
-    new_processors = [collecting_validation_logs_processor] + original_processors
-    structlog.configure(processors=new_processors)
-
-    # Initialize thread-local logs storage
-    _validation_logs.logs = []
+    # Initialize context variable logs storage
+    # The processor is ALWAYS installed (see module init), it just checks
+    # this context var
+    logs: List[Dict[str, Any]] = []
+    token = _validation_logs.set(logs)
 
     try:
-        yield _validation_logs.logs
+        yield logs
     finally:
-        # Restore original configuration and clean up thread-local storage
-        structlog.configure(processors=original_processors)
-        if hasattr(_validation_logs, "logs"):
-            delattr(_validation_logs, "logs")
+        # Clean up context variable
+        _validation_logs.reset(token)
 
 
 def attach_request_id_processor(

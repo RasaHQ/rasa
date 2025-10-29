@@ -24,7 +24,7 @@ def _mock_sys_exit() -> Generator[Dict[str, bool], Any, None]:
         was_sys_exit_called["value"] = True
 
     original_exit = sys.exit
-    sys.exit = sys_exit_mock  # type: ignore[assignment]
+    sys.exit = sys_exit_mock  # type: ignore
 
     try:
         yield was_sys_exit_called

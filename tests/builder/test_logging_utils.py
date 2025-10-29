@@ -7,7 +7,27 @@ from typing import Any, Dict, List
 import pytest
 import structlog
 
-from rasa.builder.logging_utils import capture_validation_logs
+from rasa.builder.logging_utils import (
+    capture_validation_logs,
+    collecting_validation_logs_processor,
+)
+
+
+@pytest.fixture(scope="function", autouse=True)
+def configure_structlog_for_tests():
+    """Ensure structlog is configured with our validation log processor for tests."""
+    original_config = structlog.get_config()
+    original_processors = original_config["processors"]
+
+    # Add our processor if it's not already there
+    if collecting_validation_logs_processor not in original_processors:
+        new_processors = [collecting_validation_logs_processor] + original_processors
+        structlog.configure(processors=new_processors)
+
+    yield
+
+    # Restore original config
+    structlog.configure(processors=original_processors)
 
 
 class TestValidationLogCapture:
