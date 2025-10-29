@@ -378,3 +378,163 @@ class TestProjectGenerator:
         # Should exclude restricted files
         assert ".hidden_file" not in bot_files
         assert "models/model.tar.gz" not in bot_files
+
+    def test_get_bot_files_excludes_models_by_default(self, tmp_path: Path) -> None:
+        # Create test files
+        (tmp_path / "config.yml").write_text("version: '3.1'")
+        (tmp_path / "domain.yml").write_text("version: '3.1'")
+
+        # Create models directory with files
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "model.tar.gz").write_text("model data")
+        (models_dir / "another_model.tar.gz").write_text("another model")
+
+        generator = ProjectGenerator(str(tmp_path))
+        bot_files = generator.get_bot_files()
+
+        # Should include config and domain but not models
+        assert "config.yml" in bot_files
+        assert "domain.yml" in bot_files
+        assert "models/model.tar.gz" not in bot_files
+        assert "models/another_model.tar.gz" not in bot_files
+
+    def test_get_bot_files_excludes_models_explicitly_true(
+        self, tmp_path: Path
+    ) -> None:
+        # Create test files
+        (tmp_path / "config.yml").write_text("version: '3.1'")
+
+        # Create models directory with files
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "model.tar.gz").write_text("model data")
+
+        generator = ProjectGenerator(str(tmp_path))
+        bot_files = generator.get_bot_files(exclude_models_directory=True)
+
+        # Should exclude models
+        assert "config.yml" in bot_files
+        assert "models/model.tar.gz" not in bot_files
+
+    def test_get_bot_files_includes_models_when_false(self, tmp_path: Path) -> None:
+        # Create test files
+        (tmp_path / "config.yml").write_text("version: '3.1'")
+
+        # Create models directory with files
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "model.tar.gz").write_text("model data")
+        subdir = models_dir / "subdir"
+        subdir.mkdir()
+        (subdir / "nested_model.tar.gz").write_text("nested model")
+
+        generator = ProjectGenerator(str(tmp_path))
+        bot_files = generator.get_bot_files(exclude_models_directory=False)
+
+        # Should include both config and models
+        assert "config.yml" in bot_files
+        assert "models/model.tar.gz" in bot_files
+        assert "models/subdir/nested_model.tar.gz" in bot_files
+
+    def test_get_bot_files_still_excludes_hidden_files(self, tmp_path: Path) -> None:
+        """Test get_bot_files still excludes hidden files even when including models."""
+        # Create test files including hidden ones
+        (tmp_path / "config.yml").write_text("version: '3.1'")
+        (tmp_path / ".hidden_file").write_text("hidden")
+
+        # Create models directory with hidden files
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "model.tar.gz").write_text("model data")
+        (models_dir / ".hidden_model").write_text("hidden model")
+
+        # Create hidden directory in models
+        hidden_dir = models_dir / ".hidden_dir"
+        hidden_dir.mkdir()
+        (hidden_dir / "file.txt").write_text("file in hidden dir")
+
+        generator = ProjectGenerator(tmp_path)
+        bot_files = generator.get_bot_files(exclude_models_directory=False)
+
+        # Should include visible files but exclude hidden ones
+        assert "config.yml" in bot_files
+        assert "models/model.tar.gz" in bot_files
+        assert ".hidden_file" not in bot_files
+        assert "models/.hidden_model" not in bot_files
+        assert "models/.hidden_dir/file.txt" not in bot_files
+
+    def test_get_bot_files_excludes_pycache(self, tmp_path: Path) -> None:
+        """Test get_bot_files excludes __pycache__ directories."""
+        # Create test files
+        (tmp_path / "config.yml").write_text("version: '3.1'")
+
+        # Create __pycache__ directory
+        pycache_dir = tmp_path / "__pycache__"
+        pycache_dir.mkdir()
+        (pycache_dir / "module.pyc").write_text("compiled python")
+
+        # Create models directory with __pycache__
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "model.tar.gz").write_text("model data")
+        models_pycache = models_dir / "__pycache__"
+        models_pycache.mkdir()
+        (models_pycache / "model_module.pyc").write_text("compiled model")
+
+        generator = ProjectGenerator(tmp_path)
+
+        # Test with models excluded
+        bot_files_no_models = generator.get_bot_files(exclude_models_directory=True)
+        assert "config.yml" in bot_files_no_models
+        assert "__pycache__/module.pyc" not in bot_files_no_models
+        assert "models/model.tar.gz" not in bot_files_no_models
+
+        # Test with models included
+        bot_files_with_models = generator.get_bot_files(exclude_models_directory=False)
+        assert "config.yml" in bot_files_with_models
+        assert "models/model.tar.gz" in bot_files_with_models
+        assert "__pycache__/module.pyc" not in bot_files_with_models
+        assert "models/__pycache__/model_module.pyc" not in bot_files_with_models
+
+    def test_get_bot_files_works_with_no_models_directory(self, tmp_path: Path) -> None:
+        """Test get_bot_files works when no models directory exists."""
+        # Create test files without models directory
+        (tmp_path / "config.yml").write_text("version: '3.1'")
+        (tmp_path / "domain.yml").write_text("version: '3.1'")
+
+        generator = ProjectGenerator(tmp_path)
+
+        # Both settings should work fine
+        bot_files_exclude = generator.get_bot_files(exclude_models_directory=True)
+        bot_files_include = generator.get_bot_files(exclude_models_directory=False)
+
+        # Should have same files in both cases
+        assert bot_files_exclude == bot_files_include
+        assert "config.yml" in bot_files_exclude
+        assert "domain.yml" in bot_files_exclude
+
+    def test_get_bot_files_models_directory_not_at_root(self, tmp_path: Path) -> None:
+        """Test get_bot_files only excludes models directory at project root."""
+        # Create test files
+        (tmp_path / "config.yml").write_text("version: '3.1'")
+
+        # Create models directory at root
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "model.tar.gz").write_text("model data")
+
+        # Create a subdirectory also named "models" (should not be excluded)
+        subdir = tmp_path / "data"
+        subdir.mkdir()
+        sub_models = subdir / "models"
+        sub_models.mkdir()
+        (sub_models / "data_model.json").write_text("data model")
+
+        generator = ProjectGenerator(tmp_path)
+        bot_files = generator.get_bot_files(exclude_models_directory=True)
+
+        # Should exclude root models but include nested models directory
+        assert "config.yml" in bot_files
+        assert "models/model.tar.gz" not in bot_files  # Root models excluded
+        assert "data/models/data_model.json" in bot_files  # Nested models included

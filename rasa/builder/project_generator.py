@@ -226,6 +226,7 @@ class ProjectGenerator:
         self,
         allowed_file_extensions: Optional[List[str]] = None,
         exclude_docs_directory: bool = False,
+        exclude_models_directory: bool = True,
     ) -> BotFiles:
         """Get the current bot files by reading from disk.
 
@@ -234,13 +235,14 @@ class ProjectGenerator:
                 If None, fetch all files. If provided, only fetch files with matching
                 extensions. Use `""` empty string to allow files with no extensions.
             exclude_docs_directory: Optional boolean indicating whether to exclude.
+            exclude_models_directory: Optional boolean indicating whether to exclude.
 
         Returns:
             Dictionary of file contents with relative paths as keys
         """
         bot_files: BotFiles = {}
 
-        for file in self.bot_file_paths():
+        for file in self.bot_file_paths(exclude_models_directory):
             relative_path = file.relative_to(self.project_folder)
 
             # Exclude the docs directory if specified
@@ -266,7 +268,9 @@ class ProjectGenerator:
                 bot_files[relative_path.as_posix()] = None
         return bot_files
 
-    def is_restricted_path(self, path: Path) -> bool:
+    def is_restricted_path(
+        self, path: Path, exclude_models_directory: bool = True
+    ) -> bool:
         """Check if the path is restricted.
 
         These paths are excluded from deletion and editing by the user.
@@ -281,19 +285,21 @@ class ProjectGenerator:
         if "__pycache__" in relative_path.parts:
             return True
 
-        # exclude the project_folder / models folder
-        if relative_path.parts[0] == DEFAULT_MODELS_PATH:
+        # exclude the project_folder / models folder if specified
+        if exclude_models_directory and relative_path.parts[0] == DEFAULT_MODELS_PATH:
             return True
 
         return False
 
     def bot_file_paths(
-        self,
+        self, exclude_models_directory: bool = True
     ) -> Generator[Path, None, None]:
         """Get the paths of all bot files."""
         for file in self.project_folder.glob("**/*"):
             # Skip directories
-            if not file.is_file() or self.is_restricted_path(file):
+            if not file.is_file() or self.is_restricted_path(
+                file, exclude_models_directory
+            ):
                 continue
 
             yield file
@@ -373,7 +379,10 @@ class ProjectGenerator:
         self.ensure_all_files_are_writable(files)
         # Collect all existing files - any files not in the new `files` dict will be
         # deleted from this set
-        existing_files = set(path.as_posix() for path in self.bot_file_paths())
+        existing_files = set(
+            path.as_posix()
+            for path in self.bot_file_paths(exclude_models_directory=True)
+        )
 
         # Write all new files
         for filename, content in files.items():
@@ -442,14 +451,24 @@ class ProjectGenerator:
                     extra={"directory": relative_path.as_posix()},
                 )
 
-    def cleanup(self) -> None:
-        """Cleanup the project folder."""
+    def cleanup(self, skip_files: Optional[List[str]] = None) -> None:
+        """Cleanup the project folder.
+
+        Args:
+            skip_files: List of file/directory names to skip during cleanup.
+        """
+        if skip_files is None:
+            skip_files = []
+
+        # Always include "lost+found" in skip files
+        skip_files = list(skip_files) + ["lost+found"]
+
         # remove all the files and folders in the project folder resulting
         # in an empty folder
         for filename in os.listdir(self.project_folder):
             file_path = os.path.join(self.project_folder, filename)
             try:
-                if filename == "lost+found":
+                if filename in skip_files:
                     continue
                 if os.path.isfile(file_path) or os.path.islink(file_path):
                     os.unlink(file_path)

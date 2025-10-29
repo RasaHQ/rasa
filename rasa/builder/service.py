@@ -51,6 +51,7 @@ from rasa.builder.guardrails.constants import (
 from rasa.builder.guardrails.store import guardrails_store
 from rasa.builder.job_manager import job_manager
 from rasa.builder.jobs import (
+    run_backup_to_bot_job,
     run_prompt_to_bot_job,
     run_replace_all_files_job,
     run_template_to_bot_job,
@@ -70,6 +71,7 @@ from rasa.builder.models import (
     JobStatus,
     JobStatusEvent,
     PromptRequest,
+    RestoreFromBackupRequest,
     ServerSentEvent,
     TemplateRequest,
 )
@@ -466,6 +468,95 @@ async def handle_template_to_bot(request: Request) -> HTTPResponse:
         )
 
 
+@bp.route("/backup-to-bot", methods=["POST"])
+@openapi.summary("Generate bot from backup archive")
+@openapi.description(
+    "Creates a complete conversational AI bot from a backup tar.gz archive. "
+    "Returns immediately with a job ID. Connect to `/job-events/<job_id>` to "
+    "receive server-sent events (SSE) for real-time progress tracking "
+    "throughout the bot restoration process.\n\n"
+    "**SSE Event Flow** (via `/job-events/<job_id>`):\n"
+    "1. `received` - Request received by server\n"
+    "2. `generating` - Extracting and restoring bot from backup\n"
+    "3. `generation_success` - Backup restoration completed successfully\n"
+    "4. `training` - Training the bot model (if no existing model found)\n"
+    "5. `train_success` - Model training completed (if training was needed)\n"
+    "6. `done` - Bot restoration completed\n\n"
+    "**Error Events:**\n"
+    "- `generation_error` - Failed to restore bot from backup\n"
+    "- `train_error` - Backup restored but training failed\n"
+    "- `validation_error` - Restored bot configuration is invalid\n"
+    "- `error` - Unexpected error occurred\n\n"
+    "**Usage:**\n"
+    "1. Send POST request with Content-Type: application/json\n"
+    "2. The response will be a JSON object `{job_id: ...}`\n"
+    "3. Connect to `/job-events/<job_id>` for a server-sent event stream of progress."
+)
+@openapi.tag("bot-generation")
+@openapi.body(
+    {"application/json": model_to_schema(RestoreFromBackupRequest)},
+    description="Backup request with presigned URL to tar.gz archive.",
+    required=True,
+    example={"presigned_url": "https://s3.amazonaws.com/bucket/path?signature=..."},
+)
+@openapi.response(
+    200,
+    {"application/json": model_to_schema(JobCreateResponse)},
+    description="Job created. Poll or subscribe to /job-events/<job_id> for progress.",
+)
+@openapi.response(
+    400,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Validation error in request payload or invalid presigned URL",
+)
+@openapi.response(
+    500,
+    {"application/json": model_to_schema(ApiErrorResponse)},
+    description="Internal server error",
+)
+@openapi.parameter(
+    HEADER_USER_ID,
+    description=(
+        "Optional user id to associate requests (e.g., for telemetry/guardrails)."
+    ),
+    _in="header",
+    required=False,
+    schema=str,
+)
+async def handle_backup_to_bot(request: Request) -> HTTPResponse:
+    """Handle backup-to-bot restoration requests."""
+    try:
+        payload = RestoreFromBackupRequest(**request.json)
+    except Exception as exc:
+        return response.json(
+            ApiErrorResponse(
+                error="Invalid request", details={"error": str(exc)}
+            ).model_dump(),
+            status=400,
+        )
+
+    try:
+        # Allocate job and schedule background task
+        job = job_manager.create_job()
+        request.app.add_task(
+            run_backup_to_bot_job(request.app, job, payload.presigned_url)
+        )
+        return response.json(JobCreateResponse(job_id=job.id).model_dump(), status=200)
+    except Exception as exc:
+        capture_exception_with_context(
+            exc,
+            "bot_builder_service.backup_to_bot.unexpected_error",
+            tags={"endpoint": "/api/backup-to-bot"},
+        )
+        return response.json(
+            ApiErrorResponse(
+                error="Failed to create backup-to-bot job",
+                details={"error": str(exc)},
+            ).model_dump(),
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
 @bp.route("/files", methods=["GET"])
 @openapi.summary("Get bot files")
 @openapi.description(
@@ -801,16 +892,14 @@ async def get_bot_info(request: Request) -> HTTPResponse:
 @openapi.summary("Download bot project as tar.gz")
 @openapi.description(
     "Downloads the current bot project files as a compressed tar.gz archive. "
-    "Includes all configuration files and a .env file with RASA_PRO_LICENSE. "
-    "Requires valid JWT token in Authorization header."
+    "Includes all configuration files and a .env file with RASA_PRO_LICENSE."
 )
 @openapi.tag("bot-files")
 @openapi.parameter(
-    "Authorization",
-    description=("Bearer token for authentication. Always required for this endpoint."),
-    _in="header",
-    required=True,
-    schema=str,
+    "exclude_models_directory",
+    bool,
+    location="query",
+    description="Whether to exclude the models directory",
 )
 @openapi.parameter(
     HEADER_USER_ID,
@@ -834,31 +923,24 @@ async def get_bot_info(request: Request) -> HTTPResponse:
     description="Bot project downloaded successfully as tar.gz",
 )
 @openapi.response(
-    401,
-    {"application/json": model_to_schema(ApiErrorResponse)},
-    description=(
-        "Authentication failed - Authorization header missing or invalid. "
-        "Authentication is always required for this endpoint."
-    ),
-)
-@openapi.response(
     500,
     {"application/json": model_to_schema(ApiErrorResponse)},
     description="Internal server error",
 )
-@protected(always_required=True)
 async def download_bot_project(request: Request) -> HTTPResponse:
     """Download bot project as tar.gz archive."""
     try:
-        # Token verification is enforced by the
-        # protected(always_required=True) decorator.
+        # Get query parameters
+        exclude_models_directory = (
+            request.args.get("exclude_models_directory", "true").lower() == "true"
+        )
+        project_name = request.args.get("project_name", "bot-project")
 
         # Get bot files
         project_generator = get_project_generator(request)
-        bot_files = project_generator.get_bot_files()
-
-        # Get project name from query parameters, default to "bot-project"
-        project_name = request.args.get("project_name", "bot-project")
+        bot_files = project_generator.get_bot_files(
+            exclude_models_directory=exclude_models_directory
+        )
 
         # Create tar.gz archive
         tar_data = create_bot_project_archive(bot_files, project_name)

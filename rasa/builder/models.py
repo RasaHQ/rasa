@@ -49,6 +49,29 @@ class TemplateRequest(BaseModel):
         return v
 
 
+class RestoreFromBackupRequest(BaseModel):
+    """Request model for backup-to-bot endpoint."""
+
+    presigned_url: str = Field(
+        ...,
+        min_length=1,
+        description="Presigned URL to download tar.gz backup file.",
+    )
+
+    @field_validator("presigned_url")
+    @classmethod
+    def validate_presigned_url(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("Presigned URL cannot be empty or whitespace only")
+
+        # Basic URL validation
+        url = v.strip()
+        if not url.startswith(("http://", "https://")):
+            raise ValueError("Presigned URL must be a valid HTTP/HTTPS URL")
+
+        return url
+
+
 class BotDataUpdateRequest(BaseModel):
     """Request model for bot data updates."""
 

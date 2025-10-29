@@ -1,9 +1,13 @@
+import base64
+import io
 import json
 import shutil
 import sys
+import tarfile
+import tempfile
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Generator
+from typing import Any, Dict, Generator
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
@@ -502,3 +506,156 @@ class TestFilesEndpointIntegration:
             # Verify new files were written
             assert (temp_project_dir / "config.yml").read_text() == "new config"
             assert (temp_project_dir / "domain.yml").read_text() == "new domain"
+
+
+class TestBackupToBotEndpoint:
+    """Test /backup-to-bot endpoint."""
+
+    @staticmethod
+    def create_test_backup_data(files: Dict[str, str]) -> str:
+        # Create a valid tar.gz backup data for testing
+        with tempfile.NamedTemporaryFile(suffix=".tar.gz") as temp_file:
+            with tarfile.open(temp_file.name, "w:gz") as tar:
+                for filename, content in files.items():
+                    info = tarfile.TarInfo(filename)
+                    info.size = len(content.encode("utf-8"))
+                    tar.addfile(info, fileobj=io.BytesIO(content.encode("utf-8")))
+
+            temp_file.seek(0)
+            backup_bytes = temp_file.read()
+            return base64.b64encode(backup_bytes).decode("utf-8")
+
+    async def test_backup_to_bot_endpoint_success(self, sanic_app, monkeypatch):
+        mock_run_job = AsyncMock()
+        monkeypatch.setattr("rasa.builder.service.run_backup_to_bot_job", mock_run_job)
+
+        request_data = {
+            "presigned_url": "https://s3.amazonaws.com/bucket/path?signature=test"
+        }
+
+        request, response = await sanic_app.asgi_client.post(
+            "/api/backup-to-bot", json=request_data
+        )
+
+        assert response.status == 200
+        response_data = response.json
+        assert "job_id" in response_data
+        mock_run_job.assert_called_once()
+
+    async def test_backup_to_bot_endpoint_invalid_json(self, sanic_app):
+        request, response = await sanic_app.asgi_client.post(
+            "/api/backup-to-bot", data="invalid json"
+        )
+
+        assert response.status == 400
+        response_data = response.json
+        assert "error" in response_data
+        assert "Invalid request" in response_data["error"]
+
+    async def test_backup_to_bot_endpoint_missing_presigned_url(self, sanic_app):
+        request_data = {}
+
+        request, response = await sanic_app.asgi_client.post(
+            "/api/backup-to-bot", json=request_data
+        )
+
+        assert response.status == 400
+        response_data = response.json
+        assert "error" in response_data
+
+    async def test_backup_to_bot_endpoint_empty_presigned_url(self, sanic_app):
+        request_data = {"presigned_url": ""}
+
+        request, response = await sanic_app.asgi_client.post(
+            "/api/backup-to-bot", json=request_data
+        )
+
+        assert response.status == 400
+        response_data = response.json
+        assert "error" in response_data
+        assert "String should have at least 1 character" in str(response_data)
+
+    async def test_backup_to_bot_endpoint_whitespace_presigned_url(self, sanic_app):
+        request_data = {"presigned_url": "   "}
+
+        request, response = await sanic_app.asgi_client.post(
+            "/api/backup-to-bot", json=request_data
+        )
+
+        assert response.status == 400
+        response_data = response.json
+        assert "error" in response_data
+        assert "Presigned URL cannot be empty" in str(response_data)
+
+    async def test_backup_to_bot_endpoint_invalid_url_format(self, sanic_app):
+        request_data = {"presigned_url": "not-a-valid-url"}
+
+        request, response = await sanic_app.asgi_client.post(
+            "/api/backup-to-bot", json=request_data
+        )
+
+        assert response.status == 400
+        response_data = response.json
+        assert "error" in response_data
+        assert "must be a valid HTTP/HTTPS URL" in str(response_data)
+
+
+class TestDownloadEndpoint:
+    """Test download endpoint query parameter handling."""
+
+    @pytest.fixture(autouse=True)
+    def setup_download_mocks(self, monkeypatch):
+        # Mock authentication to bypass auth requirements
+        def mock_is_auth_required(**kwargs):
+            return False
+
+        monkeypatch.setattr(
+            "rasa.builder.auth.is_auth_required_now", mock_is_auth_required
+        )
+
+        # Setup service mocks
+        self.mock_pg = MagicMock()
+        self.mock_pg.get_bot_files.return_value = {"config.yml": "version: '3.1'"}
+        self.mock_get_pg = MagicMock(return_value=self.mock_pg)
+        self.mock_create_archive = MagicMock(return_value=b"fake archive data")
+
+        monkeypatch.setattr(
+            "rasa.builder.service.get_project_generator", self.mock_get_pg
+        )
+        monkeypatch.setattr(
+            "rasa.builder.service.create_bot_project_archive", self.mock_create_archive
+        )
+
+    async def test_download_exclude_models_default(self, sanic_app):
+        # Make request without query parameters
+        request, response = await sanic_app.asgi_client.get("/api/download")
+        assert response.status == 200
+
+        # Verify get_bot_files was called with default exclude_models_directory=True
+        self.mock_pg.get_bot_files.assert_called_once_with(
+            exclude_models_directory=True
+        )
+
+    async def test_download_exclude_models_true(self, sanic_app):
+        request, response = await sanic_app.asgi_client.get(
+            "/api/download?exclude_models_directory=true"
+        )
+
+        assert response.status == 200
+        self.mock_pg.get_bot_files.assert_called_once_with(
+            exclude_models_directory=True
+        )
+
+    async def test_download_combined_parameters(self, sanic_app):
+        # Make request with both parameters
+        request, response = await sanic_app.asgi_client.get(
+            "/api/download?exclude_models_directory=false&project_name=full-bot"
+        )
+        assert response.status == 200
+
+        # Verify both parameters are respected
+        self.mock_pg.get_bot_files.assert_called_once_with(
+            exclude_models_directory=False
+        )
+        call_args = self.mock_create_archive.call_args
+        assert call_args[0][1] == "full-bot"

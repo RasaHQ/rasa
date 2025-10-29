@@ -1,5 +1,9 @@
 """Tests for rasa.builder.jobs module."""
 
+import io
+import tarfile
+import tempfile
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
@@ -21,6 +25,8 @@ from rasa.builder.exceptions import (
 )
 from rasa.builder.job_manager import JobInfo, job_manager
 from rasa.builder.jobs import (
+    _safe_tar_members,
+    run_backup_to_bot_job,
     run_copilot_training_error_analysis_job,
     run_copilot_training_success_job,
     run_copilot_welcome_message_job,
@@ -31,6 +37,7 @@ from rasa.builder.jobs import (
 from rasa.builder.models import JobStatus
 from rasa.builder.project_generator import ProjectGenerator
 from rasa.cli.scaffold import ProjectTemplateName
+from rasa.model import ModelNotFound
 
 
 @pytest.fixture
@@ -90,7 +97,7 @@ class TestRunReplaceAllFilesJob:
 
     @pytest.mark.asyncio
     async def test_successful_execution(
-        self, mock_app, sample_bot_files: Dict[str, Any]
+        self, mock_app, sample_bot_files: Dict[str, Any], monkeypatch
     ):
         """Test successful execution of replace_all_files_job."""
         job = job_manager.create_job()
@@ -104,29 +111,28 @@ class TestRunReplaceAllFilesJob:
             mock_training_input
         )
 
-        # Mock successful validation and training
-        with (
-            patch(
-                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
-            ) as mock_validate,
-            patch(
-                "rasa.builder.jobs.train_and_load_agent", new_callable=AsyncMock
-            ) as mock_train,
-            patch("rasa.builder.jobs.update_agent") as mock_update_agent,
-        ):
-            mock_validate.return_value = None  # No validation error
-            mock_agent = Mock()
-            mock_train.return_value = mock_agent
+        # Setup mocks using monkeypatch
+        mock_validate = AsyncMock()
+        mock_train = AsyncMock()
+        mock_update_agent = MagicMock()
 
-            await run_replace_all_files_job(mock_app, job, sample_bot_files)
+        monkeypatch.setattr("rasa.builder.jobs.validate_project", mock_validate)
+        monkeypatch.setattr("rasa.builder.jobs.train_and_load_agent", mock_train)
+        monkeypatch.setattr("rasa.builder.jobs.update_agent", mock_update_agent)
 
-            # Verify the flow
-            mock_app.ctx.project_generator.replace_all_bot_files.assert_called_once_with(
-                sample_bot_files
-            )
-            mock_validate.assert_called_once_with(mock_training_input.importer)
-            mock_train.assert_called_once_with(mock_training_input)
-            mock_update_agent.assert_called_once_with(mock_agent, mock_app)
+        mock_validate.return_value = None  # No validation error
+        mock_agent = Mock()
+        mock_train.return_value = mock_agent
+
+        await run_replace_all_files_job(mock_app, job, sample_bot_files)
+
+        # Verify the flow
+        mock_app.ctx.project_generator.replace_all_bot_files.assert_called_once_with(
+            sample_bot_files
+        )
+        mock_validate.assert_called_once_with(mock_training_input.importer)
+        mock_train.assert_called_once_with(mock_training_input)
+        mock_update_agent.assert_called_once_with(mock_agent, mock_app)
 
         # Check job status
         assert job.status == JobStatus.done.value
@@ -137,6 +143,7 @@ class TestRunReplaceAllFilesJob:
         mock_app: MagicMock,
         sample_bot_files: Dict[str, Any],
         job_status_tracker: tuple[list[str], Callable],
+        monkeypatch,
     ) -> None:
         """Test handling of validation errors."""
         job = job_manager.create_job()
@@ -154,22 +161,25 @@ class TestRunReplaceAllFilesJob:
             {"log_level": "error", "message": "Error 2", "file": "stories.yml"},
         ]
 
-        with (
-            patch("rasa.builder.jobs.push_job_status_event", new=track_status_event),
-            patch(
-                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
-            ) as mock_validate,
-            patch("rasa.builder.jobs.config.VALIDATION_FAIL_ON_WARNINGS", False),
-        ):
-            mock_validate.side_effect = validation_error
+        # Setup mocks using monkeypatch
+        mock_validate = AsyncMock()
+        mock_validate.side_effect = validation_error
 
-            await run_replace_all_files_job(mock_app, job, sample_bot_files)
+        monkeypatch.setattr(
+            "rasa.builder.jobs.push_job_status_event", track_status_event
+        )
+        monkeypatch.setattr("rasa.builder.jobs.validate_project", mock_validate)
+        monkeypatch.setattr(
+            "rasa.builder.jobs.config.VALIDATION_FAIL_ON_WARNINGS", False
+        )
 
-            # Verify file replacement was called
-            mock_app.ctx.project_generator.replace_all_bot_files.assert_called_once_with(
-                sample_bot_files
-            )
-            mock_validate.assert_called_once_with(mock_training_input.importer)
+        await run_replace_all_files_job(mock_app, job, sample_bot_files)
+
+        # Verify file replacement was called
+        mock_app.ctx.project_generator.replace_all_bot_files.assert_called_once_with(
+            sample_bot_files
+        )
+        mock_validate.assert_called_once_with(mock_training_input.importer)
 
         # Check that the job ended with validation error status (with copilot job ID)
         assert job.status == JobStatus.validation_error.value
@@ -185,6 +195,7 @@ class TestRunReplaceAllFilesJob:
         mock_app: MagicMock,
         sample_bot_files: Dict[str, Any],
         job_status_tracker: Tuple[List[str], Callable],
+        monkeypatch,
     ) -> None:
         """Test handling of training errors."""
         job = job_manager.create_job()
@@ -198,26 +209,27 @@ class TestRunReplaceAllFilesJob:
 
         training_error = TrainingError("Training failed")
 
-        with (
-            patch("rasa.builder.jobs.push_job_status_event", new=track_status_event),
-            patch(
-                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
-            ) as mock_validate,
-            patch(
-                "rasa.builder.jobs.train_and_load_agent", new_callable=AsyncMock
-            ) as mock_train,
-        ):
-            mock_validate.return_value = None  # No validation error
-            mock_train.side_effect = training_error
+        # Setup mocks using monkeypatch
+        mock_validate = AsyncMock()
+        mock_train = AsyncMock()
 
-            await run_replace_all_files_job(mock_app, job, sample_bot_files)
+        mock_validate.return_value = None  # No validation error
+        mock_train.side_effect = training_error
 
-            # Verify the flow up to training
-            mock_app.ctx.project_generator.replace_all_bot_files.assert_called_once_with(
-                sample_bot_files
-            )
-            mock_validate.assert_called_once_with(mock_training_input.importer)
-            mock_train.assert_called_once_with(mock_training_input)
+        monkeypatch.setattr(
+            "rasa.builder.jobs.push_job_status_event", track_status_event
+        )
+        monkeypatch.setattr("rasa.builder.jobs.validate_project", mock_validate)
+        monkeypatch.setattr("rasa.builder.jobs.train_and_load_agent", mock_train)
+
+        await run_replace_all_files_job(mock_app, job, sample_bot_files)
+
+        # Verify the flow up to training
+        mock_app.ctx.project_generator.replace_all_bot_files.assert_called_once_with(
+            sample_bot_files
+        )
+        mock_validate.assert_called_once_with(mock_training_input.importer)
+        mock_train.assert_called_once_with(mock_training_input)
 
         # Check that the job ended with training error status (with copilot job ID)
         assert job.status == JobStatus.train_error.value
@@ -233,6 +245,7 @@ class TestRunReplaceAllFilesJob:
         mock_app: MagicMock,
         sample_bot_files: Dict[str, Any],
         job_status_tracker: Tuple[List[str], Callable],
+        monkeypatch,
     ) -> None:
         """Test handling of unexpected errors."""
         job = job_manager.create_job()
@@ -243,8 +256,12 @@ class TestRunReplaceAllFilesJob:
             "Unexpected error"
         )
 
-        with patch("rasa.builder.jobs.push_job_status_event", new=track_status_event):
-            await run_replace_all_files_job(mock_app, job, sample_bot_files)
+        # Setup mocks using monkeypatch
+        monkeypatch.setattr(
+            "rasa.builder.jobs.push_job_status_event", track_status_event
+        )
+
+        await run_replace_all_files_job(mock_app, job, sample_bot_files)
 
         # Check that the job ended with error status (with copilot job ID)
         assert job.status == JobStatus.error.value
@@ -256,7 +273,7 @@ class TestRunReplaceAllFilesJob:
 
     @pytest.mark.asyncio
     async def test_job_status_progression(
-        self, mock_app, sample_bot_files: Dict[str, Any]
+        self, mock_app, sample_bot_files: Dict[str, Any], monkeypatch
     ):
         job = job_manager.create_job()
         status_events = []
@@ -275,20 +292,20 @@ class TestRunReplaceAllFilesJob:
             mock_training_input
         )
 
-        with (
-            patch.object(JobInfo, "put", new=track_status),
-            patch(
-                "rasa.builder.jobs.validate_project", new_callable=AsyncMock
-            ) as mock_validate,
-            patch(
-                "rasa.builder.jobs.train_and_load_agent", new_callable=AsyncMock
-            ) as mock_train,
-            patch("rasa.builder.jobs.update_agent"),
-        ):
-            mock_validate.return_value = None
-            mock_train.return_value = Mock()
+        # Setup mocks using monkeypatch
+        mock_validate = AsyncMock()
+        mock_train = AsyncMock()
+        mock_update_agent = MagicMock()
 
-            await run_replace_all_files_job(mock_app, job, sample_bot_files)
+        mock_validate.return_value = None
+        mock_train.return_value = Mock()
+
+        monkeypatch.setattr(JobInfo, "put", track_status)
+        monkeypatch.setattr("rasa.builder.jobs.validate_project", mock_validate)
+        monkeypatch.setattr("rasa.builder.jobs.train_and_load_agent", mock_train)
+        monkeypatch.setattr("rasa.builder.jobs.update_agent", mock_update_agent)
+
+        await run_replace_all_files_job(mock_app, job, sample_bot_files)
 
         # Verify status progression
         expected_statuses = [
@@ -312,26 +329,34 @@ class TestRunReplaceAllFilesJob:
             (Exception("Unexpected error"), True),
         ],
     )
-    @patch("rasa.builder.jobs.update_agent")
-    @patch("rasa.builder.jobs.train_and_load_agent", new_callable=AsyncMock)
-    @patch("rasa.builder.jobs.validate_project", new_callable=AsyncMock)
-    @patch(
-        "rasa.builder.jobs.push_error_and_start_copilot_analysis",
-        new_callable=AsyncMock,
-    )
     async def test_run_update_files_job_creates_copilot_analysis_job(
         self,
-        mock_push_error_and_start_copilot: AsyncMock,
-        mock_validate: AsyncMock,
-        mock_train: AsyncMock,
-        mock_update_agent: MagicMock,
         mock_app: MagicMock,
         mock_job: JobInfo,
         sample_bot_files: Dict[str, Any],
         raised_exception: Optional[Exception],
         should_create_copilot_job: bool,
+        monkeypatch,
     ) -> None:
         """Test run_update_files_job with different scenarios."""
+        # Setup mocks
+        mock_push_job_status_event = AsyncMock()
+        mock_push_error_and_start_copilot = AsyncMock()
+        mock_validate = AsyncMock()
+        mock_train = AsyncMock()
+        mock_update_agent = MagicMock()
+
+        monkeypatch.setattr(
+            "rasa.builder.jobs.push_job_status_event", mock_push_job_status_event
+        )
+        monkeypatch.setattr("rasa.builder.jobs.update_agent", mock_update_agent)
+        monkeypatch.setattr("rasa.builder.jobs.train_and_load_agent", mock_train)
+        monkeypatch.setattr("rasa.builder.jobs.validate_project", mock_validate)
+        monkeypatch.setattr(
+            "rasa.builder.jobs.push_error_and_start_copilot_analysis",
+            mock_push_error_and_start_copilot,
+        )
+
         # Given
         mock_update_agent.return_value = None
 
@@ -371,20 +396,30 @@ class TestRunCopilotTrainingErrorAnalysisJob:
         return "Training failed with error: Invalid configuration"
 
     @pytest.mark.asyncio
-    @patch("rasa.builder.jobs.llm_service.instantiate_handler")
-    @patch("rasa.builder.jobs.llm_service.instantiate_copilot")
-    @patch("rasa.builder.jobs.push_job_status_event", new_callable=AsyncMock)
     async def test_run_copilot_training_error_analysis_job_success(
         self,
-        mock_push_event: AsyncMock,
-        mock_instantiate_copilot: MagicMock,
-        mock_instantiate_handler: MagicMock,
         mock_app: MagicMock,
         mock_job: JobInfo,
         sample_bot_files: Dict[str, Any],
+        monkeypatch,
         mock_error_message: str,
     ) -> None:
         """Test successful copilot analysis job with content validation."""
+        # Setup mocks
+        mock_push_event = AsyncMock()
+        mock_instantiate_copilot = MagicMock()
+        mock_instantiate_handler = MagicMock()
+
+        monkeypatch.setattr("rasa.builder.jobs.push_job_status_event", mock_push_event)
+        monkeypatch.setattr(
+            "rasa.builder.jobs.llm_service.instantiate_copilot",
+            mock_instantiate_copilot,
+        )
+        monkeypatch.setattr(
+            "rasa.builder.jobs.llm_service.instantiate_handler",
+            mock_instantiate_handler,
+        )
+
         # Given
         mock_copilot = MagicMock()
         mock_handler = MagicMock()
@@ -493,18 +528,25 @@ class TestRunCopilotTrainingErrorAnalysisJob:
         assert len(training_error_log_calls) >= 1
 
     @pytest.mark.asyncio
-    @patch("rasa.builder.jobs.llm_service.instantiate_copilot")
-    @patch("rasa.builder.jobs.push_job_status_event", new_callable=AsyncMock)
     async def test_run_copilot_training_error_analysis_job_error(
         self,
-        mock_push_event: AsyncMock,
-        mock_instantiate_copilot: MagicMock,
         mock_app: MagicMock,
         mock_job: JobInfo,
         sample_bot_files: Dict[str, Any],
         mock_error_message: str,
+        monkeypatch,
     ) -> None:
         """Test copilot analysis job with error."""
+        # Setup mocks
+        mock_push_event = AsyncMock()
+        mock_instantiate_copilot = MagicMock()
+
+        monkeypatch.setattr("rasa.builder.jobs.push_job_status_event", mock_push_event)
+        monkeypatch.setattr(
+            "rasa.builder.jobs.llm_service.instantiate_copilot",
+            mock_instantiate_copilot,
+        )
+
         # Given
         mock_instantiate_copilot.side_effect = Exception("Copilot error")
 
@@ -787,3 +829,263 @@ class TestCopilotTrainingSuccessJob:
 
         # Verify add_task was called once for the copilot error analysis job
         assert mock_app.add_task.call_count == 1
+
+
+class TestSafeTarMembers:
+    """Test _safe_tar_members function for security."""
+
+    def test_safe_tar_members_normal_files(self, tmp_path: Path):
+        # Create a test tar file with normal files
+        tar_path = tmp_path / "test.tar.gz"
+        with tarfile.open(tar_path, "w:gz") as tar:
+            # Add a normal file
+            config = tarfile.TarInfo("config.yml")
+            content1 = b"version: '3.1'"
+            config.size = len(content1)
+            tar.addfile(config, fileobj=io.BytesIO(content1))
+
+            # Add a file in subdirectory
+            nlu = tarfile.TarInfo("data/nlu.yml")
+            content2 = b"nlu: []"
+            nlu.size = len(content2)
+            tar.addfile(nlu, fileobj=io.BytesIO(content2))
+
+        # Test extraction
+        with tarfile.open(tar_path, "r:gz") as tar:
+            safe_members = _safe_tar_members(tar, tmp_path)
+
+        assert len(safe_members) == 2
+        assert safe_members[0].name == "config.yml"
+        assert safe_members[1].name == "data/nlu.yml"
+
+    def test_safe_tar_members_blocks_absolute_paths(self, tmp_path: Path):
+        tar_path = tmp_path / "test.tar.gz"
+        with tarfile.open(tar_path, "w:gz") as tar:
+            # Add file with absolute path
+            info = tarfile.TarInfo("/etc/passwd")
+            info.size = 10
+            tar.addfile(info, fileobj=None)
+
+        with tarfile.open(tar_path, "r:gz") as tar:
+            safe_members = _safe_tar_members(tar, tmp_path)
+
+        assert len(safe_members) == 0
+
+    def test_safe_tar_members_blocks_path_traversal(self, tmp_path: Path):
+        tar_path = tmp_path / "test.tar.gz"
+        with tarfile.open(tar_path, "w:gz") as tar:
+            # Add file with path traversal
+            info = tarfile.TarInfo("../../../etc/passwd")
+            info.size = 10
+            tar.addfile(info, fileobj=None)
+
+        with tarfile.open(tar_path, "r:gz") as tar:
+            safe_members = _safe_tar_members(tar, tmp_path)
+
+        assert len(safe_members) == 0
+
+    def test_safe_tar_members_blocks_symlinks(self, tmp_path: Path):
+        tar_path = tmp_path / "test.tar.gz"
+        with tarfile.open(tar_path, "w:gz") as tar:
+            # Add symbolic link
+            info = tarfile.TarInfo("symlink")
+            info.type = tarfile.SYMTYPE
+            info.linkname = "/etc/passwd"
+            tar.addfile(info, fileobj=None)
+
+        with tarfile.open(tar_path, "r:gz") as tar:
+            safe_members = _safe_tar_members(tar, tmp_path)
+
+        assert len(safe_members) == 0
+
+    def test_safe_tar_members_blocks_hardlinks(self, tmp_path: Path):
+        tar_path = tmp_path / "test.tar.gz"
+        with tarfile.open(tar_path, "w:gz") as tar:
+            # Add hard link
+            info = tarfile.TarInfo("hardlink")
+            info.type = tarfile.LNKTYPE
+            info.linkname = "/etc/passwd"
+            tar.addfile(info, fileobj=None)
+
+        with tarfile.open(tar_path, "r:gz") as tar:
+            safe_members = _safe_tar_members(tar, tmp_path)
+
+        assert len(safe_members) == 0
+
+
+class TestBackupToBotJob:
+    """Test run_backup_to_bot_job function."""
+
+    @pytest.fixture(autouse=True)
+    def setup_backup_job_mocks(self, monkeypatch):
+        """Setup common mocks for backup-to-bot job tests."""
+        # Create all the common mocks
+        self.mock_push_event = AsyncMock()
+        self.mock_job_manager = MagicMock()
+        self.mock_get_local_model = MagicMock()
+        self.mock_load_agent = AsyncMock()
+        self.mock_train_and_load_agent = AsyncMock()
+        self.mock_update_agent = MagicMock()
+        self.mock_init_endpoints = MagicMock()
+        self.mock_download_backup = AsyncMock()
+
+        # Apply the monkeypatches
+        monkeypatch.setattr(
+            "rasa.builder.jobs.push_job_status_event", self.mock_push_event
+        )
+        monkeypatch.setattr("rasa.builder.jobs.job_manager", self.mock_job_manager)
+        monkeypatch.setattr(
+            "rasa.builder.jobs.get_local_model", self.mock_get_local_model
+        )
+        monkeypatch.setattr("rasa.builder.jobs.load_agent", self.mock_load_agent)
+        monkeypatch.setattr(
+            "rasa.builder.jobs.train_and_load_agent", self.mock_train_and_load_agent
+        )
+        monkeypatch.setattr("rasa.builder.jobs.update_agent", self.mock_update_agent)
+        monkeypatch.setattr(
+            "rasa.builder.jobs.Configuration.initialise_endpoints",
+            self.mock_init_endpoints,
+        )
+        monkeypatch.setattr(
+            "rasa.builder.jobs.download_backup_from_url", self.mock_download_backup
+        )
+
+    @pytest.fixture
+    def mock_project_generator(self) -> MagicMock:
+        mock_pg = MagicMock()
+        mock_pg.project_folder = "/tmp/test_project"
+        mock_pg.get_training_input.return_value = MagicMock()
+        mock_pg.get_bot_files.return_value = {"config.yml": "version: '3.1'"}
+        return mock_pg
+
+    @pytest.fixture
+    def mock_job(self) -> MagicMock:
+        mock_job = MagicMock()
+        mock_job.id = "test-job-123"
+        return mock_job
+
+    @staticmethod
+    def create_test_backup_file(files: Dict[str, str]) -> str:
+        temp_file = tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False)
+        temp_file_path = temp_file.name
+        temp_file.close()
+
+        with tarfile.open(temp_file_path, "w:gz") as tar:
+            for filename, content in files.items():
+                info = tarfile.TarInfo(filename)
+                info.size = len(content.encode("utf-8"))
+                tar.addfile(info, fileobj=io.BytesIO(content.encode("utf-8")))
+
+        return temp_file_path
+
+    async def test_backup_to_bot_job_with_existing_model(
+        self,
+        mock_project_generator,
+        mock_job,
+        tmp_path: Path,
+    ):
+        # Setup
+        mock_project_generator.project_folder = str(tmp_path)
+        mock_app = MagicMock()
+        mock_app.ctx.project_generator = mock_project_generator
+
+        # Create models directory with a model file
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "model.tar.gz").write_bytes(b"fake model")
+
+        self.mock_get_local_model.return_value = str(models_dir / "model.tar.gz")
+        mock_agent = MagicMock()
+        self.mock_load_agent.return_value = mock_agent
+        mock_endpoints = MagicMock()
+        self.mock_init_endpoints.return_value.endpoints = mock_endpoints
+
+        # Create test backup file with model file
+        backup_file_path = self.create_test_backup_file(
+            {
+                "config.yml": "version: '3.1'",
+                "domain.yml": "version: '3.1'",
+                "models/model.tar.gz": "fake model data",
+            }
+        )
+
+        try:
+            # Mock the download function to return our test file
+            self.mock_download_backup.return_value = backup_file_path
+
+            presigned_url = "https://s3.amazonaws.com/bucket/path?signature=test"
+
+            # Execute
+            await run_backup_to_bot_job(mock_app, mock_job, presigned_url)
+        finally:
+            # Clean up test backup file
+            try:
+                Path(backup_file_path).unlink(missing_ok=True)
+            except Exception:
+                pass
+
+        # Should load existing model, not train
+        self.mock_load_agent.assert_called_once()
+        self.mock_update_agent.assert_called_once_with(mock_agent, mock_app)
+
+        # Check job events
+        event_calls = self.mock_push_event.call_args_list
+        statuses = [call[0][1] for call in event_calls]
+        assert JobStatus.received in statuses
+        assert JobStatus.generating in statuses
+        assert JobStatus.generation_success in statuses
+        assert JobStatus.done in statuses
+
+        # Should NOT have training events since model exists
+        # assert JobStatus.training not in statuses
+
+    async def test_backup_to_bot_job_without_model(
+        self,
+        mock_project_generator,
+        mock_job,
+        tmp_path: Path,
+    ):
+        # Setup
+        mock_project_generator.project_folder = str(tmp_path)
+        mock_app = MagicMock()
+        mock_app.ctx.project_generator = mock_project_generator
+
+        # No models directory - simulate ModelNotFound exception
+        self.mock_get_local_model.side_effect = ModelNotFound("No model found")
+        mock_agent = MagicMock()
+        self.mock_train_and_load_agent.return_value = mock_agent
+
+        # Create test backup file
+        backup_file_path = self.create_test_backup_file(
+            {"config.yml": "version: '3.1'", "domain.yml": "version: '3.1'"}
+        )
+
+        try:
+            # Mock the download function to return our test file
+            self.mock_download_backup.return_value = backup_file_path
+
+            presigned_url = "https://s3.amazonaws.com/bucket/path?signature=test"
+
+            # Execute
+            await run_backup_to_bot_job(mock_app, mock_job, presigned_url)
+        finally:
+            # Clean up test backup file
+            try:
+                Path(backup_file_path).unlink(missing_ok=True)
+            except Exception:
+                pass
+
+        # Verify
+        # Should train new model
+        self.mock_train_and_load_agent.assert_called_once()
+        self.mock_update_agent.assert_called_once_with(mock_agent, mock_app)
+
+        # Check job events
+        event_calls = self.mock_push_event.call_args_list
+        statuses = [call[0][1] for call in event_calls]
+        assert JobStatus.received in statuses
+        assert JobStatus.generating in statuses
+        assert JobStatus.generation_success in statuses
+        assert JobStatus.training in statuses
+        assert JobStatus.train_success in statuses
+        assert JobStatus.done in statuses

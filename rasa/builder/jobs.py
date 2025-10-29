@@ -1,9 +1,16 @@
-from typing import Any, Dict, Optional
+import tarfile
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import structlog
 from sanic import Sanic
 
 from rasa.builder import config
+from rasa.builder.constants import (
+    MAX_ARCHIVE_FILE_SIZE,
+    MAX_ARCHIVE_FILES,
+    MAX_ARCHIVE_TOTAL_SIZE,
+)
 from rasa.builder.copilot.constants import (
     PROMPT_TO_BOT_KEY,
 )
@@ -19,6 +26,7 @@ from rasa.builder.copilot.models import (
     ResponseCategory,
     TrainingErrorLog,
 )
+from rasa.builder.download import download_backup_from_url
 from rasa.builder.exceptions import (
     LLMGenerationError,
     ProjectGenerationError,
@@ -39,6 +47,11 @@ from rasa.builder.training_service import (
 )
 from rasa.builder.validation_service import validate_project
 from rasa.cli.scaffold import ProjectTemplateName
+from rasa.core.agent import load_agent
+from rasa.core.config.configuration import Configuration
+from rasa.exceptions import ModelNotFound
+from rasa.model import get_local_model
+from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
 
 structlogger = structlog.get_logger()
 
@@ -607,3 +620,197 @@ async def run_copilot_training_success_job(
         )
         await push_job_status_event(job, JobStatus.error, message=str(exc))
         job_manager.mark_done(job, error=str(exc))
+
+
+def _safe_tar_members(
+    tar: tarfile.TarFile, destination_directory: Path
+) -> List[tarfile.TarInfo]:
+    """Get safe members for extraction to prevent path traversal and resource attacks.
+
+    Args:
+        tar: Open tar file handle
+        destination_directory: Directory to which files will be extracted
+
+    Returns:
+        List of members that are safe to extract within destination_directory
+
+    Raises:
+        ProjectGenerationError: If archive violates security constraints
+    """
+    base_path = destination_directory.resolve()
+    safe_members = []
+    total_size = 0
+    file_count = 0
+
+    for member in tar.getmembers():
+        name = member.name
+
+        # Check file count limit
+        file_count += 1
+        if file_count > MAX_ARCHIVE_FILES:
+            raise ProjectGenerationError(
+                f"Archive contains too many files (>{MAX_ARCHIVE_FILES}).", attempts=1
+            )
+
+        # Skip empty names and absolute paths
+        if not name or name.startswith("/") or name.startswith("\\"):
+            continue
+
+        # Disallow symlinks and hardlinks
+        if member.issym() or member.islnk():
+            continue
+
+        # Check individual file size limit
+        if member.size > MAX_ARCHIVE_FILE_SIZE:
+            raise ProjectGenerationError(
+                f"Archive contains file '{name}' that is too large "
+                f"({member.size} bytes > {MAX_ARCHIVE_FILE_SIZE} bytes).",
+                attempts=1,
+            )
+
+        # Check total size limit
+        total_size += member.size
+        if total_size > MAX_ARCHIVE_TOTAL_SIZE:
+            raise ProjectGenerationError(
+                "Archive total size too large "
+                f"({total_size} bytes > {MAX_ARCHIVE_TOTAL_SIZE} bytes).",
+                attempts=1,
+            )
+
+        # Compute the final path and ensure it's within base_path
+        target_path = (base_path / name).resolve()
+        try:
+            target_path.relative_to(base_path)
+        except ValueError:
+            # Member would escape the destination directory
+            continue
+
+        safe_members.append(member)
+
+    return safe_members
+
+
+async def run_backup_to_bot_job(
+    app: "Sanic",
+    job: JobInfo,
+    presigned_url: str,
+) -> None:
+    """Run the backup-to-bot job in the background.
+
+    Args:
+        app: The Sanic application instance.
+        job: The job information instance.
+        presigned_url: Presigned URL to download tar.gz backup data.
+    """
+    project_generator: ProjectGenerator = app.ctx.project_generator
+    await push_job_status_event(job, JobStatus.received)
+
+    temp_file_path = None
+    try:
+        # 1) Download and extract backup
+        await push_job_status_event(job, JobStatus.generating)
+        temp_file_path = await download_backup_from_url(presigned_url)
+
+        # Clear existing project files, keeping .rasa and __pycache__
+        project_path = Path(project_generator.project_folder)
+        project_generator.cleanup(skip_files=[".rasa", "__pycache__"])
+
+        # Extract the backup archive
+        with tarfile.open(temp_file_path, "r:gz") as tar:
+            safe_members = _safe_tar_members(tar, project_path)
+            tar.extractall(path=project_path, members=safe_members)
+
+        await push_job_status_event(job, JobStatus.generation_success)
+
+        # 2) Load existing model or train new one
+        models_dir = project_path / "models"
+        try:
+            latest_model = get_local_model(str(models_dir))
+        except ModelNotFound:
+            latest_model = None
+
+        if latest_model:
+            # Load existing model
+            structlogger.info(
+                "backup_to_bot_job.loading_existing_model",
+                job_id=job.id,
+                model_path=latest_model,
+            )
+            await push_job_status_event(job, JobStatus.training)
+            available_endpoints = Configuration.initialise_endpoints(
+                endpoints_path=project_path / DEFAULT_ENDPOINTS_PATH
+            ).endpoints
+            agent = await load_agent(
+                model_path=latest_model, endpoints=available_endpoints
+            )
+            update_agent(agent, app)
+            await push_job_status_event(job, JobStatus.train_success)
+        else:
+            # Train new model
+            await push_job_status_event(job, JobStatus.training)
+            training_input = project_generator.get_training_input()
+            agent = await train_and_load_agent(training_input)
+            update_agent(agent, app)
+            await push_job_status_event(job, JobStatus.train_success)
+
+        # 3) Complete successfully
+        bot_files = project_generator.get_bot_files()
+        structlogger.info(
+            "bot_builder_service.backup_to_bot.success",
+            files_restored=list(bot_files.keys()),
+            had_existing_model=bool(latest_model),
+        )
+        await push_job_status_event(job, JobStatus.done)
+        job_manager.mark_done(job)
+
+    except tarfile.ReadError as exc:
+        raise ProjectGenerationError(
+            f"Failed to extract backup archive: {exc}. "
+            f"Please ensure the backup file is a valid tar.gz archive.",
+            attempts=1,
+        )
+    except TrainingError as exc:
+        structlogger.debug(
+            "backup_to_bot_job.training_error", job_id=job.id, error=str(exc)
+        )
+        await push_job_status_event(job, JobStatus.train_error, message=str(exc))
+        job_manager.mark_done(job, error=str(exc))
+
+    except ValidationError as exc:
+        log_levels = ["error"]
+        if config.VALIDATION_FAIL_ON_WARNINGS:
+            log_levels.append("warning")
+
+        structlogger.debug(
+            "backup_to_bot_job.validation_error",
+            job_id=job.id,
+            error=str(exc),
+            all_validation_logs=exc.validation_logs,
+            included_log_levels=log_levels,
+        )
+        error_message = exc.get_error_message_with_logs(log_levels=log_levels)
+        await push_job_status_event(
+            job, JobStatus.validation_error, message=error_message
+        )
+        job_manager.mark_done(job, error=error_message)
+
+    except ProjectGenerationError as exc:
+        structlogger.debug(
+            "backup_to_bot_job.generation_error", job_id=job.id, error=str(exc)
+        )
+        await push_job_status_event(job, JobStatus.generation_error, message=str(exc))
+        job_manager.mark_done(job, error=str(exc))
+
+    except Exception as exc:
+        structlogger.exception(
+            "backup_to_bot_job.unexpected_error", job_id=job.id, error=str(exc)
+        )
+        await push_job_status_event(job, JobStatus.error, message=str(exc))
+        job_manager.mark_done(job, error=str(exc))
+    finally:
+        # Always clean up temp file
+        if temp_file_path:
+            try:
+                Path(temp_file_path).unlink(missing_ok=True)
+            except Exception:
+                pass

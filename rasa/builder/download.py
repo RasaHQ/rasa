@@ -1,11 +1,21 @@
 """Download utilities for bot projects."""
 
+import asyncio
 import io
 import os
 import sys
 import tarfile
+import tempfile
+from pathlib import Path
 from textwrap import dedent
 from typing import Dict, Optional
+from urllib.parse import urlparse
+
+import aiofiles
+import aiohttp
+
+from rasa.builder.constants import MAX_BACKUP_SIZE
+from rasa.builder.exceptions import ProjectGenerationError
 
 
 def _get_env_content() -> str:
@@ -138,3 +148,103 @@ def create_bot_project_archive(
 
     tar_buffer.seek(0)
     return tar_buffer.getvalue()
+
+
+def validate_s3_url(url: str) -> None:
+    """Validate that the URL is from an expected S3 domain for security.
+
+    Args:
+        url: The URL to validate
+
+    Raises:
+        ValueError: If the URL is not from an expected S3 domain
+    """
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+
+    if not hostname:
+        raise ValueError("URL must have a valid hostname")
+
+    hostname = hostname.lower()
+    if not ("s3" in hostname and hostname.endswith(".amazonaws.com")):
+        raise ValueError(f"URL must be from an AWS S3 domain, got: {hostname}")
+
+
+async def download_backup_from_url(url: str) -> str:
+    """Download backup file from presigned URL to a temporary file.
+
+    Args:
+        url: Presigned URL to download from
+
+    Returns:
+        Path to the downloaded temporary file
+
+    Raises:
+        ProjectGenerationError: If download fails or file is too large
+    """
+    # Validate URL for security
+    validate_s3_url(url)
+
+    # Create temporary file path (using mktemp for path only, not creating the file)
+    temp_file_fd, temp_file_path = tempfile.mkstemp(suffix=".tar.gz")
+    os.close(temp_file_fd)  # Close the file descriptor immediately
+
+    try:
+        timeout = aiohttp.ClientTimeout(total=60)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(url) as response:
+                if response.status != 200:
+                    raise ProjectGenerationError(
+                        f"Failed to download backup from presigned URL. "
+                        f"HTTP {response.status}: {response.reason}",
+                        attempts=1,
+                    )
+
+                # Check content length if available
+                content_length = response.headers.get("Content-Length")
+                if content_length and int(content_length) > MAX_BACKUP_SIZE:
+                    raise ProjectGenerationError(
+                        f"Backup file too large "
+                        f"({content_length} bytes > {MAX_BACKUP_SIZE} bytes). "
+                        f"Please provide a smaller backup file.",
+                        attempts=1,
+                    )
+
+                # Stream download to file using async file operations
+                downloaded_size = 0
+                async with aiofiles.open(temp_file_path, "wb") as f:
+                    async for chunk in response.content.iter_chunked(8192):
+                        downloaded_size += len(chunk)
+
+                        # Check size limit during download
+                        if downloaded_size > MAX_BACKUP_SIZE:
+                            raise ProjectGenerationError(
+                                f"Backup file too large "
+                                f"({downloaded_size} bytes > {MAX_BACKUP_SIZE} bytes).",
+                                attempts=1,
+                            )
+
+                        await f.write(chunk)
+
+                return temp_file_path
+
+    except ProjectGenerationError:
+        # Clean up temp file and re-raise ProjectGenerationError as-is
+        try:
+            Path(temp_file_path).unlink(missing_ok=True)
+        except Exception:
+            pass
+        raise
+    except asyncio.TimeoutError:
+        error_message = "Download timeout: Presigned URL may have expired."
+    except aiohttp.ClientError as exc:
+        error_message = f"Network error downloading backup: {exc}"
+    except Exception as exc:
+        error_message = f"Unexpected error downloading backup: {exc}"
+
+    # Clean up temp file and raise error
+    try:
+        Path(temp_file_path).unlink(missing_ok=True)
+    except Exception:
+        pass
+    raise ProjectGenerationError(error_message, attempts=1)

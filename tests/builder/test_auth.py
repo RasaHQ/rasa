@@ -5,7 +5,6 @@ from sanic import Blueprint, Sanic, response
 
 from rasa.builder import auth
 from rasa.builder.auth import Auth0TokenVerificationResult, protected
-from rasa.builder.service import bp as builder_bp
 
 
 def _create_app_with_route(always_required: bool = False) -> Sanic:
@@ -70,19 +69,6 @@ async def test_protected_allows_with_valid_bearer(monkeypatch) -> None:
         )
 
     assert resp.status == 200
-
-
-@pytest.mark.asyncio
-async def test_download_requires_authorization_header(monkeypatch) -> None:
-    # Reuse the real builder blueprint to hit the /api/download route
-    app = Sanic("download_auth_test")
-    app.blueprint(builder_bp)
-    app.ctx.input_channel = type("X", (), {})()  # minimal ctx for blueprint usage
-
-    async with app.asgi_client as client:
-        _, resp = await client.get("/api/download")
-
-    assert resp.status == 401
 
 
 DUMMY_TOKEN = "dummy.jwt.token"

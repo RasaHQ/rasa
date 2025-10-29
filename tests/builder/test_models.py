@@ -1,8 +1,11 @@
 from typing import Any, Dict
 
+import pytest
+
 from rasa.builder.models import (
     JobStatus,
     JobStatusEvent,
+    RestoreFromBackupRequest,
     ServerSentEvent,
     ServerSentEventType,
 )
@@ -132,3 +135,29 @@ def test_job_status_event_with_payload_no_message():
         'data: {"status": "training", "custom_field": "custom_value", "number": 42}\n\n'
     )
     assert event.format() == expected_format
+
+
+class TestRestoreFromBackupRequest:
+    """Test RestoreFromBackupRequest model validation."""
+
+    def test_valid_presigned_url_request(self):
+        valid_url = "https://s3.amazonaws.com/bucket/path?signature=test"
+        request = RestoreFromBackupRequest(presigned_url=valid_url)
+        assert request.presigned_url == valid_url
+
+    def test_presigned_url_request_strips_whitespace(self):
+        valid_url = "https://s3.amazonaws.com/bucket/path?signature=test"
+        request = RestoreFromBackupRequest(presigned_url=f"  {valid_url}  ")
+        assert request.presigned_url == valid_url
+
+    def test_presigned_url_request_empty_data_fails(self):
+        with pytest.raises(ValueError, match="String should have at least 1 character"):
+            RestoreFromBackupRequest(presigned_url="")
+
+    def test_presigned_url_request_whitespace_only_fails(self):
+        with pytest.raises(ValueError, match="Presigned URL cannot be empty"):
+            RestoreFromBackupRequest(presigned_url="   ")
+
+    def test_presigned_url_request_invalid_url_fails(self):
+        with pytest.raises(ValueError, match="must be a valid HTTP/HTTPS URL"):
+            RestoreFromBackupRequest(presigned_url="not-a-valid-url")
