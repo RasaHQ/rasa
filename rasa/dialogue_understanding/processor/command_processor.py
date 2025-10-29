@@ -1,3 +1,4 @@
+import os
 from typing import Dict, List, Optional, Set, Type
 
 import structlog
@@ -69,6 +70,8 @@ from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.nlu.constants import COMMANDS
 
 structlogger = structlog.get_logger()
+
+CLARIFY_ON_MULTIPLE_START_FLOWS_ENV_VAR_NAME = "CLARIFY_ON_MULTIPLE_START_FLOWS"
 
 
 def contains_command(commands: List[Command], typ: Type[Command]) -> bool:
@@ -499,6 +502,8 @@ def clean_up_commands(
         else:
             clean_commands.append(command)
 
+    clean_commands = _process_multiple_start_flow_commands(clean_commands, tracker)
+
     # ensure that there is only one command of a certain command type
     clean_commands = ensure_max_number_of_command_type(
         clean_commands, CannotHandleCommand, 1
@@ -530,6 +535,37 @@ def clean_up_commands(
     )
 
     return clean_commands
+
+
+def _process_multiple_start_flow_commands(
+    commands: List[Command],
+    tracker: DialogueStateTracker,
+) -> List[Command]:
+    """Process multiple start flow commands.
+
+    If there are multiple start flow commands, no active flows and the
+    CLARIFY_ON_MULTIPLE_START_FLOWS env var is enabled, we replace the
+    start flow commands with a clarify command.
+    """
+    start_flow_candidates = filter_start_flow_commands(commands)
+    clarify_enabled = (
+        os.getenv("CLARIFY_ON_MULTIPLE_START_FLOWS", "false").lower() == "true"
+    )
+
+    if clarify_enabled and len(start_flow_candidates) > 1 and tracker.stack.is_empty():
+        # replace the start flow commands with a clarify command
+        commands = [
+            command for command in commands if not isinstance(command, StartFlowCommand)
+        ]
+        # avoid adding duplicate clarify commands
+        if not any(isinstance(c, ClarifyCommand) for c in commands):
+            structlogger.debug(
+                "command_processor.clean_up_commands.trigger_clarify_for_multiple_start_flows",
+                candidate_flows=start_flow_candidates,
+            )
+            commands.append(ClarifyCommand(options=start_flow_candidates))
+
+    return commands
 
 
 def _get_slots_eligible_for_correction(tracker: DialogueStateTracker) -> Set[str]:

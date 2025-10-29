@@ -33,6 +33,7 @@ from rasa.dialogue_understanding.patterns.validate_slot import (
     ValidateSlotPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.processor.command_processor import (
+    CLARIFY_ON_MULTIPLE_START_FLOWS_ENV_VAR_NAME,
     _get_slots_eligible_for_correction,
     calculate_flow_fingerprints,
     clean_up_commands,
@@ -2360,6 +2361,68 @@ def test_clean_up_commands_agent_behavior(
         if "slot_name" in expected_details:
             # Check first SetSlotCommand
             assert cleaned_commands[0].name == expected_details["slot_name"]
+
+
+def test_clarify_on_multiple_start_flows_is_not_triggered_when_not_enabled():
+    # Given
+    commands = [StartFlowCommand("flow_a"), StartFlowCommand("flow_b")]
+    tracker = DialogueStateTracker.from_events(sender_id="test", evts=[])
+    # make sure the stack is empty (no active flow)
+    tracker.update_stack(DialogueStack.empty())
+
+    all_flows = FlowsList(underlying_flows=[])
+
+    # When
+    cleaned = clean_up_commands(commands, tracker, all_flows, Mock(), None, None)
+
+    # Then: by default Clarify should NOT be present and StartFlowCommands should remain
+    assert not any(isinstance(c, ClarifyCommand) for c in cleaned)
+    assert any(isinstance(c, StartFlowCommand) for c in cleaned)
+
+
+def test_clarify_on_multiple_start_flows_is_triggered_when_enabled(
+    monkeypatch: MonkeyPatch,
+):
+    # Given
+    monkeypatch.setenv(CLARIFY_ON_MULTIPLE_START_FLOWS_ENV_VAR_NAME, "true")
+
+    commands = [StartFlowCommand("flow_a"), StartFlowCommand("flow_b")]
+    tracker = DialogueStateTracker.from_events(sender_id="test", evts=[])
+    tracker.update_stack(DialogueStack.empty())
+
+    all_flows = FlowsList(underlying_flows=[])
+
+    # When
+    cleaned = clean_up_commands(commands, tracker, all_flows, Mock(), None, None)
+
+    # Then: ClarifyCommand should be present and StartFlowCommands removed
+    assert any(isinstance(c, ClarifyCommand) for c in cleaned)
+    assert not any(isinstance(c, StartFlowCommand) for c in cleaned)
+
+
+def test_clarify_on_multiple_start_flows_is_not_triggered_in_an_active_flow(
+    monkeypatch: MonkeyPatch,
+):
+    # Given
+    monkeypatch.setenv(CLARIFY_ON_MULTIPLE_START_FLOWS_ENV_VAR_NAME, "true")
+    user_frame = UserFlowStackFrame(
+        flow_id="parent_flow", step_id="START", frame_id="user1"
+    )
+    pattern_frame = CollectInformationPatternFlowStackFrame(
+        collect="some_slot", frame_id="pattern1"
+    )
+
+    tracker = DialogueStateTracker.from_events(sender_id="test", evts=[])
+    tracker.update_stack(DialogueStack(frames=[user_frame, pattern_frame]))
+
+    commands = [StartFlowCommand("flow_a"), StartFlowCommand("flow_b")]
+    all_flows = FlowsList(underlying_flows=[])
+
+    # When
+    cleaned = clean_up_commands(commands, tracker, all_flows, Mock(), None, None)
+
+    # Then: Clarify should NOT be present as we are already in an active flow
+    assert not any(isinstance(c, ClarifyCommand) for c in cleaned)
 
 
 def test_clean_up_duplicate_chit_chat_answer_commands(collect_info_flow: FlowsList):
