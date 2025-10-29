@@ -373,6 +373,14 @@ class VoiceOutputChannel(OutputChannel):
     async def hangup(self, recipient_id: str, **kwargs: Any) -> None:
         call_state.should_hangup = True
 
+    async def send_turn_end_marker(self, recipient_id: str) -> None:
+        """Send a marker to indicate the bot has finished its turn.
+
+        Used internally by Rasa during conversation simulations.
+        This is called after all bot messages in a turn have been sent.
+        """
+        pass
+
 
 class VoiceInputChannel(InputChannel):
     # All children of this class require a voice license to be used.
@@ -471,14 +479,16 @@ class VoiceInputChannel(InputChannel):
         call_parameters: CallParameters,
     ) -> None:
         output_channel = self.create_output_channel(channel_websocket, tts_engine)
+        sender_id = self.get_sender_id(call_parameters)
         message = UserMessage(
             text=USER_CONVERSATION_SESSION_START,
             output_channel=output_channel,
-            sender_id=self.get_sender_id(call_parameters),
+            sender_id=sender_id,
             input_channel=self.name(),
             metadata=asdict(call_parameters),
         )
         await on_new_message(message)
+        await output_channel.send_turn_end_marker(sender_id)
 
     def map_input_message(
         self,
@@ -646,14 +656,16 @@ class VoiceInputChannel(InputChannel):
             call_state.rasa_processing_start_time = time.time()
 
             output_channel = self.create_output_channel(voice_websocket, tts_engine)
+            sender_id = self.get_sender_id(call_parameters)
             message = UserMessage(
                 text=e.text,
                 output_channel=output_channel,
-                sender_id=self.get_sender_id(call_parameters),
+                sender_id=sender_id,
                 input_channel=self.name(),
                 metadata=asdict(call_parameters),
             )
             await on_new_message(message)
+            await output_channel.send_turn_end_marker(sender_id)
         elif isinstance(e, UserIsSpeaking):
             # Track when user starts speaking for ASR latency calculation
             if not call_state.is_user_speaking:

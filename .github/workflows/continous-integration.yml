@@ -1533,18 +1533,19 @@ jobs:
     name: Run Voice Unit Tests
     needs: [ check-voice-code-changes ]
     if: ${{ inputs.full_ci_mode != 'false' && (needs.check-voice-code-changes.outputs.voice-files == 'true') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-4core
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        test:
-          - test-audio-manual
         python-version: [ "3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - name: Check out code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Free up disk-space
+        uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b
 
       - name: Prepare the job for unit tests
         uses: ./.github/actions/test-prerequisites
@@ -1573,17 +1574,13 @@ jobs:
         env:
           JOBS: 6
           PYTHONUTF8: 1
-          DD_ENV: ${{ matrix.test }}
-          DD_SERVICE: rasa
-          DD_ARGS: --ddtrace --ddtrace-patch-all --junitxml=unit-tests-results.xml
-          DD_API_KEY: ${{ secrets.DD_API_KEY }}
           RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
           CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
           DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
           AZURE_SPEECH_API_KEY: ${{ secrets.AZURE_SPEECH_API_KEY }}
           API_DOCS_FORMAT: yaml
         run: |
-          make ${{ matrix.test }}
+          make test-audio-manual
         shell: bash # bash shell is a way to make code run for both Linux and Windows
 
       - name: Prepare test results

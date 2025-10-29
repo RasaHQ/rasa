@@ -253,9 +253,16 @@ test-acceptance: PYTEST_MARKER=acceptance and (not flaky) and (not category_anon
 test-acceptance: DD_ARGS := $(or $(DD_ARGS),)
 test-acceptance: prepare-spacy prepare-mitie test-marker ## Run acceptance tests
 
-test-audio-manual: PYTEST_MARKER=category_audio_manual and (not flaky) and (not category_anonymization) and (not category_large_data_tests) and (not category_dm1_tensorflow)
-test-audio-manual: DD_ARGS := $(or $(DD_ARGS),)
-test-audio-manual: test-marker
+test-audio-manual:  ## Run audio manual tests
+	OMP_NUM_THREADS=1 \
+	TF_CPP_MIN_LOG_LEVEL=2 \
+	poetry run \
+		pytest tests/core/channels/voice_ready tests/core/channels/voice_stream \
+			-n $(JOBS) \
+			--dist loadscope \
+			--cov rasa \
+			--cov-report=xml \
+			--cov-branch \
 
 test-agents: PYTEST_MARKER=category_agents
 test-agents: DD_ARGS := $(or $(DD_ARGS),)
