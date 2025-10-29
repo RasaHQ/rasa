@@ -50,6 +50,7 @@ async def validate_project(importer: TrainingDataImporter) -> Optional[str]:
                 from rasa.core.config.configuration import Configuration
 
                 Configuration.initialise_empty()
+                Configuration.initialise_sub_agents(sub_agents_path=None)
 
                 validate_files(
                     fail_on_warnings=config.VALIDATION_FAIL_ON_WARNINGS,

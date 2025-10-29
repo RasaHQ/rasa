@@ -133,6 +133,9 @@ async def _train_model(
     try:
         structlogger.info("training.started")
 
+        # init sub agents using the default path
+        Configuration.initialise_sub_agents(sub_agents_path=None)
+
         training_result = await train(
             domain="",
             config=str(config_file),
