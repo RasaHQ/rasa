@@ -99,10 +99,16 @@ async def try_load_existing_agent(project_folder: str) -> Optional[Agent]:
         available_endpoints = Configuration.initialise_endpoints(
             endpoints_path=Path(project_folder) / DEFAULT_ENDPOINTS_PATH
         ).endpoints
+        # Get available sub agents for agent loading
+        _sub_agents = Configuration.initialise_sub_agents(
+            sub_agents_path=None
+        ).available_agents
 
         # Load the agent
         agent = await load_agent(
-            model_path=latest_model_path, endpoints=available_endpoints
+            model_path=latest_model_path,
+            endpoints=available_endpoints,
+            sub_agents=_sub_agents,
         )
 
         if agent and agent.is_ready():
@@ -163,6 +169,8 @@ async def _load_agent(model_path: str, endpoints_file: Path) -> Agent:
         available_endpoints = Configuration.initialise_endpoints(
             endpoints_path=endpoints_file
         ).endpoints
+        _sub_agents = Configuration.get_instance().available_agents
+
         if available_endpoints is None:
             raise AgentLoadError("No endpoints available for agent loading")
 
@@ -176,6 +184,7 @@ async def _load_agent(model_path: str, endpoints_file: Path) -> Agent:
             model_path=model_path,
             remote_storage=None,
             endpoints=available_endpoints,
+            sub_agents=_sub_agents,
         )
 
         if agent_instance is None:
