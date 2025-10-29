@@ -2360,3 +2360,39 @@ def test_clean_up_commands_agent_behavior(
         if "slot_name" in expected_details:
             # Check first SetSlotCommand
             assert cleaned_commands[0].name == expected_details["slot_name"]
+
+
+def test_clean_up_duplicate_chit_chat_answer_commands(collect_info_flow: FlowsList):
+    """Test clean_up_commands function with duplicate chit chat answer commands."""
+    commands: List[Command] = [ChitChatAnswerCommand(), ChitChatAnswerCommand()]
+    tracker = DialogueStateTracker.from_events(sender_id="test", evts=[])
+
+    # patch the clean_up_chitchat_command function to return the same commands
+    # from input
+    with patch(
+        "rasa.dialogue_understanding.processor.command_processor.clean_up_chitchat_command",
+        side_effect=lambda cmds, command, *args, **kwargs: cmds + [command],
+    ):
+        result = clean_up_commands(commands, tracker, collect_info_flow, Mock())
+
+    # Assert
+    assert result == [ChitChatAnswerCommand()]
+
+
+def test_clean_up_commands_keeps_one_cannot_handle_command(
+    collect_info_flow: FlowsList,
+):
+    """Test clean_up_commands function with multiple cannot handle commands."""
+    commands: List[Command] = [ChitChatAnswerCommand(), ChitChatAnswerCommand()]
+    tracker = DialogueStateTracker.from_events(sender_id="test", evts=[])
+
+    # patch the clean_up_chitchat_command function to return CannotHandleCommand
+    with patch(
+        "rasa.dialogue_understanding.processor.command_processor.clean_up_chitchat_command",
+        side_effect=lambda cmds, command, *args, **kwargs: cmds
+        + [CannotHandleCommand()],
+    ):
+        result = clean_up_commands(commands, tracker, collect_info_flow, Mock())
+
+    # Assert
+    assert result == [CannotHandleCommand()]

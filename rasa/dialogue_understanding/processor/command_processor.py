@@ -499,10 +499,22 @@ def clean_up_commands(
         else:
             clean_commands.append(command)
 
+    # ensure that there is only one command of a certain command type
+    clean_commands = ensure_max_number_of_command_type(
+        clean_commands, CannotHandleCommand, 1
+    )
+    clean_commands = ensure_max_number_of_command_type(
+        clean_commands, RepeatBotMessagesCommand, 1
+    )
+    clean_commands = ensure_max_number_of_command_type(
+        clean_commands, ChitChatAnswerCommand, 1
+    )
+
     # Replace CannotHandleCommands with ContinueAgentCommand when an agent is active
     # to keep the agent running, but preserve chitchat
     clean_commands = _replace_cannot_handle_with_continue_agent(clean_commands, tracker)
 
+    # filter out cannot handle commands if there are other commands present
     # when coexistence is enabled, by default there will be a SetSlotCommand
     # for the ROUTE_TO_CALM_SLOT slot.
     if tracker.has_coexistence_routing_slot and len(clean_commands) > 2:
@@ -510,12 +522,6 @@ def clean_up_commands(
     elif not tracker.has_coexistence_routing_slot and len(clean_commands) > 1:
         clean_commands = filter_cannot_handle_command(clean_commands)
 
-    clean_commands = ensure_max_number_of_command_type(
-        clean_commands, RepeatBotMessagesCommand, 1
-    )
-    clean_commands = ensure_max_number_of_command_type(
-        clean_commands, ContinueAgentCommand, 1
-    )
     structlogger.debug(
         "command_processor.clean_up_commands.final_commands",
         command=clean_commands,
@@ -580,7 +586,7 @@ def clean_up_start_flow_command(
         # drop a start flow command if the starting flow is equal
         # to the currently active flow
         structlogger.debug(
-            "command_processor.clean_up_commands." "skip_command_flow_already_active",
+            "command_processor.clean_up_commands.skip_command_flow_already_active",
             command=command,
         )
         return clean_commands
