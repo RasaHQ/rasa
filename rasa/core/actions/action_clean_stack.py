@@ -4,9 +4,11 @@ from typing import Any, Dict, List, Optional
 
 import structlog
 
+import rasa.dialogue_understanding.stack.utils
 from rasa.core.actions.action import Action
 from rasa.core.channels import OutputChannel
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.dialogue_understanding.patterns.code_change import FLOW_PATTERN_CODE_CHANGE_ID
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
@@ -41,6 +43,15 @@ class ActionCleanStack(Action):
         """Clean the stack."""
         structlogger.debug("action_clean_stack.run")
         new_frames = []
+        top_flow_frame = rasa.dialogue_understanding.stack.utils.top_flow_frame(
+            tracker.stack, ignore_call_frames=False
+        )
+        top_user_flow_frame = (
+            rasa.dialogue_understanding.stack.utils.top_user_flow_frame(
+                tracker.stack, ignore_call_and_link_frames=False
+            )
+        )
+
         # Set all frames to their end step, filter out any non-BaseFlowStackFrames
         for frame in tracker.stack.frames:
             if isinstance(frame, BaseFlowStackFrame):
@@ -55,5 +66,26 @@ class ActionCleanStack(Action):
                     frame.frame_type = FlowStackFrameType.REGULAR
                 new_frames.append(frame)
         new_stack = DialogueStack.from_dict([frame.as_dict() for frame in new_frames])
+
+        # Check if the action is being called from within a user flow
+        if (
+            top_flow_frame
+            and top_flow_frame.flow_id != FLOW_PATTERN_CODE_CHANGE_ID
+            and top_user_flow_frame
+            and top_user_flow_frame.flow_id == top_flow_frame.flow_id
+        ):
+            # The action is being called from within a user flow on the stack.
+            # If there are other frames on the stack, we need to make sure
+            # the last executed frame is the end step of the current user flow so
+            # that we can trigger pattern_completed for this user flow.
+            new_stack.pop()
+            structlogger.debug(
+                "action_clean_stack.pushing_user_frame_at_the_bottom_of_stack",
+                flow_id=top_user_flow_frame.flow_id,
+            )
+            new_stack.push(
+                top_user_flow_frame,
+                index=0,
+            )
 
         return tracker.create_stack_updated_events(new_stack)
