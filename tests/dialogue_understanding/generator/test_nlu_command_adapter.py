@@ -528,6 +528,18 @@ class TestNLUCommandAdapter:
 
         tracker = DialogueStateTracker.from_events(sender_id, [], slots=domain.slots)
 
+        tracker.update_stack(
+            DialogueStack(
+                [
+                    UserFlowStackFrame(
+                        flow_id="test_flow",
+                        step_id="test_step_id",
+                        frame_id="test_frame_id",
+                    ),
+                ]
+            )
+        )
+
         predicted_commands = await command_generator.predict_commands(
             Message(
                 data={

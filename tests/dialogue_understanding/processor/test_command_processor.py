@@ -523,6 +523,24 @@ def test_clean_up_commands(
     assert clean_commands == expected_clean_commands
 
 
+def test_clean_up_commands_cancel_flow_no_active_flow(collect_info_flow: FlowsList):
+    """Test CancelFlowCommand replaced with CannotHandleCommand when no flows active."""
+    # Create a tracker with no active flows (empty stack)
+    tracker = DialogueStateTracker.from_events(sender_id="test", evts=[])
+    commands = [CancelFlowCommand()]
+
+    # When
+    clean_commands = clean_up_commands(commands, tracker, collect_info_flow, Mock())
+
+    # Then
+    assert len(clean_commands) == 1
+    assert isinstance(clean_commands[0], CannotHandleCommand)
+    assert (
+        clean_commands[0].reason
+        == "CancelFlowCommand was predicted but no flows are active."
+    )
+
+
 @pytest.mark.parametrize(
     "slot_name, value, commands, expected_clean_commands",
     [

@@ -416,13 +416,9 @@ def clean_up_commands(
                 clean_commands, command, tracker, all_flows
             )
 
-        elif isinstance(command, CancelFlowCommand) and contains_command(
-            clean_commands, CancelFlowCommand
-        ):
-            structlogger.debug(
-                "command_processor.clean_up_commands"
-                ".skip_command_flow_already_cancelled",
-                command=command,
+        elif isinstance(command, CancelFlowCommand):
+            clean_commands = clean_up_cancel_flow_command(
+                clean_commands, tracker, command
             )
 
         # if there is a cannot handle command after the previous step,
@@ -628,6 +624,39 @@ def clean_up_start_flow_command(
         return clean_commands
 
     clean_commands.append(command)
+    return clean_commands
+
+
+def clean_up_cancel_flow_command(
+    clean_commands: List[Command],
+    tracker: DialogueStateTracker,
+    command: CancelFlowCommand,
+) -> List[Command]:
+    """Clean up a cancel flow command."""
+    # If there's no active flow, replace CancelFlowCommand with CannotHandleCommand
+    if tracker.active_flow is None:
+        structlogger.debug(
+            "command_processor.clean_up_commands"
+            ".replace_cancel_flow_with_cannot_handle_no_active_flow",
+            command=command,
+        )
+        if not contains_command(clean_commands, CannotHandleCommand):
+            clean_commands.append(
+                CannotHandleCommand(
+                    reason=("CancelFlowCommand was predicted but no flows are active.")
+                )
+            )
+    elif contains_command(clean_commands, CancelFlowCommand):
+        # Skip duplicate CancelFlowCommand
+        structlogger.debug(
+            "command_processor.clean_up_commands"
+            ".skip_command_flow_already_cancelled",
+            command=command,
+        )
+    else:
+        # Otherwise add the CancelFlowCommand
+        clean_commands.append(command)
+
     return clean_commands
 
 
