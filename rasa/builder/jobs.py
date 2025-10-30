@@ -718,7 +718,7 @@ async def run_backup_to_bot_job(
         # Extract the backup archive
         with tarfile.open(temp_file_path, "r:gz") as tar:
             safe_members = _safe_tar_members(tar, project_path)
-            tar.extractall(path=project_path, members=safe_members)
+            tar.extractall(path=project_path, members=safe_members)  # nosec B202:tarfile_unsafe_members
 
         await push_job_status_event(job, JobStatus.generation_success)
 
