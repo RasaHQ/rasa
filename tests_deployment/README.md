@@ -25,3 +25,21 @@ Ensure that the `csr.json` includes the OTEL collector's container name used in 
   ]
 }
 ```
+
+### Renewing MongoDB TLS certificates
+
+If you encounter TLS issues with MongoDB, you may need to renew the TLS certificates.
+Follow these steps to renew the certificates:
+1. Navigate to the `tests_deployment/integration_tests_tracker_stores/mongo_db_tracker_store` directory.
+2. Delete the existing certificates in `./tls` directory:
+```bash
+   rm -rf ./tls/*
+```
+3. Generate new certificates by running the certificate generation script:
+```bash
+chmod +x renew_mongodb_certs.sh
+./renew_mongodb_certs.sh
+```
+4. Restart the MongoDB container to apply the new certificates and run the integration tests again.
+
+This should resolve any TLS-related issues with MongoDB.

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 MONGODB_PARENT_PATH_NAME = (
-    "tests_deployment/integration_tests_tracker_stores/" "mongo_db_tracker_store"
+    "tests_deployment/integration_tests_tracker_stores/mongo_db_tracker_store"
 )
 
 
@@ -23,7 +23,7 @@ def mongodb_credentials() -> Tuple[str, str, str]:
     """Get the MongoDB credentials from the .env file.
 
     For local testing, you should create a .env file in the path
-    tests_deployment/integration_tests_tracker_stores.
+    tests_deployment/integration_tests_tracker_stores/mongo_db_tracker_store.
     """
     load_dotenv(Path(f"{MONGODB_PARENT_PATH_NAME}/.env"))
 
