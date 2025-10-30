@@ -26,6 +26,7 @@ from rasa.e2e_test.aggregate_test_stats_calculator import (
 )
 from rasa.e2e_test.constants import (
     DEFAULT_COVERAGE_OUTPUT_PATH,
+    DEFAULT_E2E_FAILED_TESTS_PATH,
     DEFAULT_E2E_INPUT_TESTS_PATH,
     DEFAULT_E2E_OUTPUT_TESTS_PATH,
     STATUS_FAILED,
@@ -47,6 +48,7 @@ from rasa.e2e_test.utils.io import (
     read_test_cases,
     save_test_cases_to_yaml,
     split_into_passed_failed,
+    write_failed_tests_to_file,
     write_test_results_to_file,
 )
 from rasa.e2e_test.utils.validation import validate_model_path
@@ -131,6 +133,18 @@ def add_e2e_test_arguments(parser: argparse.ArgumentParser) -> None:
         action="store_const",
         const=DEFAULT_E2E_OUTPUT_TESTS_PATH,
         help="Results file containing end-to-end testing summary.",
+    )
+
+    parser.add_argument(
+        "-f",
+        "--e2e-failed-tests",
+        nargs="?",
+        const=DEFAULT_E2E_FAILED_TESTS_PATH,
+        default=None,
+        help=(
+            "Test file containing failed end-to-end tests."
+            "If provided without a value, the default path is used."
+        ),
     )
 
     add_remote_storage_param(parser)
@@ -218,15 +232,28 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
     if args.e2e_results is not None:
         results_path = Path(args.e2e_results)
 
-        passed_file = rasa.cli.utils.get_e2e_results_file_name(
+        passed_result_file = rasa.cli.utils.get_e2e_results_file_name(
             results_path, STATUS_PASSED
         )
-        write_test_results_to_file(passed, passed_file)
+        write_test_results_to_file(passed, passed_result_file)
 
-        failed_file = rasa.cli.utils.get_e2e_results_file_name(
+        failed_result_file = rasa.cli.utils.get_e2e_results_file_name(
             results_path, STATUS_FAILED
         )
-        write_test_results_to_file(failed, failed_file)
+        write_test_results_to_file(failed, failed_result_file)
+
+    if failed and args.e2e_failed_tests is not None:
+        failed_tests_path = Path(args.e2e_failed_tests)
+        failed_tests_file = rasa.cli.utils.get_failed_e2e_tests_file_name(
+            failed_tests_path
+        )
+        write_failed_tests_to_file(
+            test_suite.test_cases,
+            test_suite.fixtures,
+            test_suite.metadata,
+            failed,
+            failed_tests_file,
+        )
 
     aggregate_stats_calculator = AggregateTestStatsCalculator(
         passed_results=passed, failed_results=failed, test_cases=test_suite.test_cases

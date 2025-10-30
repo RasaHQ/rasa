@@ -4,7 +4,10 @@ from typing import Any, List, Text
 import pytest
 
 from rasa.cli import SubParsersAction, e2e_test, test
-from rasa.cli.e2e_test import DEFAULT_E2E_OUTPUT_TESTS_PATH
+from rasa.cli.e2e_test import (
+    DEFAULT_E2E_FAILED_TESTS_PATH,
+    DEFAULT_E2E_OUTPUT_TESTS_PATH,
+)
 from rasa.core.persistor import RemoteStorageType
 
 
@@ -130,6 +133,36 @@ def e2e_test_parser(
                 fail_fast=False,
                 remote_storage=None,
                 model="tests/data/test_models/test_moodbot.tar.gz",
+                **{"path-to-test-cases": "tests/data/test_e2e_stories/"},
+            ),
+        ),
+        (
+            [
+                "test",
+                "e2e",
+                "tests/data/test_e2e_stories/",
+                "--e2e-failed-tests",
+            ],
+            argparse.Namespace(
+                fail_fast=False,
+                remote_storage=None,
+                e2e_failed_tests=DEFAULT_E2E_FAILED_TESTS_PATH,
+                **{"path-to-test-cases": "tests/data/test_e2e_stories/"},
+            ),
+        ),
+        # explicit filename for --e2e-failed-tests
+        (
+            [
+                "test",
+                "e2e",
+                "tests/data/test_e2e_stories/",
+                "--e2e-failed-tests",
+                "failed.yml",
+            ],
+            argparse.Namespace(
+                fail_fast=False,
+                remote_storage=None,
+                e2e_failed_tests="failed.yml",
                 **{"path-to-test-cases": "tests/data/test_e2e_stories/"},
             ),
         ),

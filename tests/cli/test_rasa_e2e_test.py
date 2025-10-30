@@ -5,6 +5,7 @@ from typing import Any, Callable, Text
 from unittest.mock import MagicMock, call
 
 import pytest
+from freezegun import freeze_time
 from pytest import MonkeyPatch, RunResult
 from structlog.testing import capture_logs
 
@@ -19,6 +20,7 @@ from rasa.core.agent import Agent
 from rasa.core.constants import DEFAULT_SUB_AGENTS
 from rasa.core.tracker_stores.tracker_store import InMemoryTrackerStore
 from rasa.e2e_test.constants import (
+    DEFAULT_E2E_FAILED_TESTS_PATH,
     DEFAULT_E2E_INPUT_TESTS_PATH,
     DEFAULT_E2E_OUTPUT_TESTS_PATH,
     STATUS_FAILED,
@@ -47,14 +49,13 @@ def fake_model_path(
 
 def test_rasa_test_e2e_help(run: Callable[..., RunResult]) -> None:
     help_text = """usage: rasa test e2e [-h] [-v] [-vv] [--quiet]
-                    [--logging-config-file LOGGING_CONFIG_FILE] [--fail-fast]
-                    [-o] [--remote-storage REMOTE_STORAGE]
-                    [--coverage-report]
-                    [--coverage-output-path COVERAGE_OUTPUT_PATH]
-                    [--sub-agents SUB_AGENTS] [-m MODEL]
-                    [--endpoints ENDPOINTS]
-                    [path-to-test-cases]
-
+                     [--logging-config-file LOGGING_CONFIG_FILE] [--fail-fast]
+                     [-o] [-f [E2E_FAILED_TESTS]]
+                     [--remote-storage REMOTE_STORAGE] [--coverage-report]
+                     [--coverage-output-path COVERAGE_OUTPUT_PATH]
+                     [--sub-agents SUB_AGENTS] [-m MODEL]
+                     [--endpoints ENDPOINTS]
+                     [path-to-test-cases]
                    Runs end-to-end testing."""
     lines = help_text.split("\n")
 
@@ -73,6 +74,7 @@ def test_add_subparser_fails_if_not_found() -> None:
         add_subparser(subparsers, [])
 
 
+@freeze_time("2025-01-29 14:30:45", ignore=["transformers"])
 def test_execute_e2e_tests_fail_fast_true(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -90,6 +92,7 @@ def test_execute_e2e_tests_fail_fast_true(
     )
     cli_args.fail_fast = True
     cli_args.e2e_results = str(tmp_path / "e2e_results.yml")
+    cli_args.e2e_failed_tests = str(tmp_path / "e2e_failed_tests.yml")
     cli_args.remote_storage = None
     cli_args.coverage_report = False
     cli_args.sub_agents = None
@@ -136,6 +139,9 @@ def test_execute_e2e_tests_fail_fast_true(
     failed_results_path = rasa.cli.utils.get_e2e_results_file_name(
         Path(cli_args.e2e_results), STATUS_FAILED
     )
+    failed_tests_path = rasa.cli.utils.get_failed_e2e_tests_file_name(
+        Path(cli_args.e2e_failed_tests)
+    )
 
     assert (
         f"Passing test results have been saved at path: {passed_results_path}."
@@ -145,11 +151,15 @@ def test_execute_e2e_tests_fail_fast_true(
         f"Failing test results have been saved at path: {failed_results_path}."
         in captured.out
     )
+    assert (
+        f"Failing tests have been saved at path: {failed_tests_path}." in captured.out
+    )
     assert f"'test_failure' in {path_to_test_cases}:1 failed" in captured.out
     assert f"FAILED {path_to_test_cases}::test_failure" in captured.out
     assert "stopping after 1 failure" in captured.out
 
 
+@freeze_time("2025-01-29 14:30:45", ignore=["transformers"])
 def test_execute_e2e_tests_fail_fast_false(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
@@ -167,6 +177,7 @@ def test_execute_e2e_tests_fail_fast_false(
     )
     cli_args.fail_fast = False
     cli_args.e2e_results = str(tmp_path / "e2e_results.yml")
+    cli_args.e2e_failed_tests = str(tmp_path / "e2e_failed_tests.yml")
     cli_args.remote_storage = None
     cli_args.coverage_report = False
     cli_args.sub_agents = None
@@ -211,6 +222,9 @@ def test_execute_e2e_tests_fail_fast_false(
     failed_results_path = rasa.cli.utils.get_e2e_results_file_name(
         Path(cli_args.e2e_results), STATUS_FAILED
     )
+    failed_tests_path = rasa.cli.utils.get_failed_e2e_tests_file_name(
+        Path(cli_args.e2e_failed_tests)
+    )
 
     assert (
         f"Passing test results have been saved at path: {passed_results_path}."
@@ -220,10 +234,87 @@ def test_execute_e2e_tests_fail_fast_false(
         f"Failing test results have been saved at path: {failed_results_path}."
         in captured.out
     )
+    assert (
+        f"Failing tests have been saved at path: {failed_tests_path}." in captured.out
+    )
     assert f"'test_failure' in {path_to_test_cases}:1 failed" in captured.out
     assert f"FAILED {path_to_test_cases}::test_failure" in captured.out
     assert "stopping after 1 failure" not in captured.out
     assert "1 failed, 1 passed" in captured.out
+
+
+def test_execute_e2e_tests_fail_fast_false_no_failure(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    capsys: Any,
+    e2e_input_folder: Path,
+    fake_model_path: Text,
+) -> None:
+    cli_args = argparse.Namespace()
+    cli_args.endpoints = str(tmp_path / "endpoints.yml")
+    cli_args.model = fake_model_path
+    setattr(
+        cli_args,
+        "path-to-test-cases",
+        e2e_input_folder,
+    )
+    cli_args.fail_fast = False
+    cli_args.e2e_results = str(tmp_path / "e2e_results.yml")
+    cli_args.e2e_failed_tests = None
+    cli_args.remote_storage = None
+    cli_args.coverage_report = False
+    cli_args.sub_agents = None
+
+    def mock_init(self: Any, *args: Any, **kwargs: Any) -> None:
+        domain = Domain.empty()
+        self.agent = Agent(
+            domain=domain, tracker_store=InMemoryTrackerStore(domain=domain)
+        )
+
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.__init__", mock_init
+    )
+
+    run_tests_mock = AsyncMock()
+    path_to_test_cases = getattr(cli_args, "path-to-test-cases")
+    run_tests_mock.return_value = [
+        TestResult(TestCase("test_success", [], path_to_test_cases, 10), True, []),
+    ]
+    monkeypatch.setattr(
+        "rasa.e2e_test.e2e_test_runner.E2ETestRunner.run_tests", run_tests_mock
+    )
+
+    with pytest.raises(SystemExit):
+        execute_e2e_tests(cli_args)
+
+    test_suite = read_test_cases(path_to_test_cases)
+
+    run_tests_mock.assert_called_once_with(
+        test_suite.test_cases,
+        test_suite.fixtures,
+        cli_args.fail_fast,
+        input_metadata=test_suite.metadata,
+        coverage=cli_args.coverage_report,
+    )
+    captured = capsys.readouterr()
+
+    passed_results_path = rasa.cli.utils.get_e2e_results_file_name(
+        Path(cli_args.e2e_results), STATUS_PASSED
+    )
+    failed_results_path = rasa.cli.utils.get_e2e_results_file_name(
+        Path(cli_args.e2e_results), STATUS_FAILED
+    )
+
+    assert (
+        f"Passing test results have been saved at path: {passed_results_path}."
+        in captured.out
+    )
+    assert (
+        f"Failing test results have been saved at path: {failed_results_path}."
+        in captured.out
+    )
+    assert "Failing tests have been saved at path" not in captured.out
+    assert "0 failed, 1 passed" in captured.out
 
 
 def test_e2e_cli_add_e2e_test_arguments(monkeypatch: MonkeyPatch) -> None:
@@ -266,6 +357,17 @@ def test_e2e_cli_add_e2e_test_arguments(monkeypatch: MonkeyPatch) -> None:
                 action="store_const",
                 const=DEFAULT_E2E_OUTPUT_TESTS_PATH,
                 help="Results file containing end-to-end testing summary.",
+            ),
+            call(
+                "-f",
+                "--e2e-failed-tests",
+                nargs="?",
+                const=DEFAULT_E2E_FAILED_TESTS_PATH,
+                default=None,
+                help=(
+                    "Test file containing failed end-to-end tests."
+                    "If provided without a value, the default path is used."
+                ),
             ),
             call(
                 "--remote-storage",

@@ -38,6 +38,7 @@ from rasa.e2e_test.utils.io import (
     save_test_cases_to_yaml,
     split_into_passed_failed,
     transform_results_output_to_yaml,
+    write_failed_tests_to_file,
     write_test_results_to_file,
 )
 
@@ -732,3 +733,151 @@ def test_read_test_cases_with_utf_characters(tmp_path: Path):
     test_case = test_suite.test_cases[0]
     for idx, step in enumerate(test_case.steps):
         assert step.text == utterances[idx]
+
+
+@pytest.mark.parametrize(
+    "fixtures, metadata, expected_result",
+    [
+        ([], [], {"test_cases": [TestCase(name="test case 1", steps=[]).as_dict()]}),
+        (
+            [Fixture(name="premium", slots_set={"membership_type": "premium"})],
+            [],
+            {
+                "test_cases": [TestCase(name="test case 1", steps=[]).as_dict()],
+                "fixtures": [
+                    Fixture(
+                        name="premium", slots_set={"membership_type": "premium"}
+                    ).as_dict()
+                ],
+            },
+        ),
+        (
+            [],
+            [Metadata(name="device_info", metadata={"os": "linux"})],
+            {
+                "test_cases": [TestCase(name="test case 1", steps=[]).as_dict()],
+                "metadata": [
+                    Metadata(name="device_info", metadata={"os": "linux"}).as_dict()
+                ],
+            },
+        ),
+        (
+            [Fixture(name="premium", slots_set={"membership_type": "premium"})],
+            [Metadata(name="device_info", metadata={"os": "linux"})],
+            {
+                "test_cases": [TestCase(name="test case 1", steps=[]).as_dict()],
+                "fixtures": [
+                    Fixture(
+                        name="premium", slots_set={"membership_type": "premium"}
+                    ).as_dict()
+                ],
+                "metadata": [
+                    Metadata(name="device_info", metadata={"os": "linux"}).as_dict()
+                ],
+            },
+        ),
+    ],
+)
+@patch("rasa.shared.utils.cli.print_info")
+@patch("rasa.utils.io.write_yaml")
+@patch("rasa.e2e_test.utils.io.Path")
+def test_write_failed_tests_to_file(
+    mock_path: MagicMock,
+    mock_write_yaml: MagicMock,
+    mock_print_info: MagicMock,
+    fixtures: List[Fixture],
+    metadata: List[Metadata],
+    expected_result: Dict[str, List[Dict[str, str]]],
+) -> None:
+    """Test writing failed tests to file."""
+
+    path_instance = mock_path.return_value
+    path_instance.touch = MagicMock()
+    results = [
+        TestResult(
+            test_case=TestCase(name="test case 1", steps=[]),
+            pass_status=True,
+            difference=[],
+        ),
+    ]
+    test_file = "some/file/path/e2e_failed_tests.yml"
+    test_cases = [
+        TestCase(name="test case 1", steps=[]),
+        TestCase(name="test case 2", steps=[]),
+        TestCase(name="test case 3", steps=[]),
+    ]
+
+    write_failed_tests_to_file(test_cases, fixtures, metadata, results, test_file)
+
+    mock_path.assert_called_with(test_file)
+
+    mock_write_yaml.assert_called_with(
+        expected_result, target=test_file, transform=transform_results_output_to_yaml
+    )
+
+    mock_print_info.assert_called_with(
+        f"Failing tests have been saved at path: {test_file}."
+    )
+
+
+def test_write_failed_tests_to_file_creates_parent_directories(tmp_path: Path) -> None:
+    """Test that parent directories are created if they don't exist."""
+    test_file = tmp_path / "my_tests" / "failed_runs" / "failed.yml"
+
+    results = [
+        TestResult(
+            test_case=TestCase(name="test case 1", steps=[]),
+            pass_status=False,
+            difference=[],
+        ),
+    ]
+    test_cases = [TestCase(name="test case 1", steps=[])]
+
+    write_failed_tests_to_file(test_cases, [], [], results, str(test_file))
+
+    assert test_file.exists()
+    assert test_file.parent.exists()
+
+
+@patch("rasa.utils.io.write_yaml")
+@patch("rasa.e2e_test.utils.io.Path")
+def test_write_failed_tests_to_file_filters_only_failed_tests(
+    mock_path: MagicMock,
+    mock_write_yaml: MagicMock,
+) -> None:
+    """Test that only failed tests are written to the file."""
+    path_instance = mock_path.return_value
+    path_instance.touch = MagicMock()
+    path_instance.parent.mkdir = MagicMock()
+
+    test_cases = [
+        TestCase(name="test case 1", steps=[]),
+        TestCase(name="test case 2", steps=[]),
+        TestCase(name="test case 3", steps=[]),
+    ]
+
+    # Only test case 1 and 3 failed
+    results = [
+        TestResult(
+            test_case=TestCase(name="test case 1", steps=[]),
+            pass_status=False,
+            difference=[],
+        ),
+        TestResult(
+            test_case=TestCase(name="test case 3", steps=[]),
+            pass_status=False,
+            difference=[],
+        ),
+    ]
+
+    write_failed_tests_to_file(test_cases, [], [], results, "failed.yml")
+
+    written_data = mock_write_yaml.call_args[0][0]
+    written_test_cases = [
+        test_case.get("test_case") for test_case in written_data["test_cases"]
+    ]
+
+    assert len(written_test_cases) == 2
+    assert "test case 1" in written_test_cases
+    assert "test case 3" in written_test_cases
+    assert "test case 2" not in written_test_cases

@@ -520,6 +520,49 @@ def write_test_results_to_file(results: List["TestResult"], output_file: str) ->
         )
 
 
+def write_failed_tests_to_file(
+    test_cases: List["TestCase"],
+    fixtures: List["Fixture"],
+    metadata: List["Metadata"],
+    results: List["TestResult"],
+    output_file: str,
+) -> None:
+    """Write failed tests to a file.
+
+    Args:
+        test_cases: List of test cases.
+        fixtures: List of fixtures.
+        metadata: List of metadata.
+        results: List of failed test results.
+        output_file: Path to the output file.
+    """
+    output_path = Path(output_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.touch()
+
+    fixture_list = [fixture.as_dict() for fixture in fixtures]
+    metadata_list = [m_data.as_dict() for m_data in metadata]
+
+    data = {
+        f"{KEY_TEST_CASES}": [
+            test_case.as_dict()
+            for test_case in test_cases
+            if test_case.name in [result.test_case.name for result in results]
+        ],
+    }
+    if fixture_list:
+        data[KEY_FIXTURES] = fixture_list
+    if metadata_list:
+        data[KEY_METADATA] = metadata_list
+
+    rasa.utils.io.write_yaml(
+        data, target=output_file, transform=transform_results_output_to_yaml
+    )
+    rasa.shared.utils.cli.print_info(
+        f"Failing tests have been saved at path: {output_file}."
+    )
+
+
 def transform_results_output_to_yaml(yaml_string: str) -> str:
     """Transform the output of the YAML writer to make it more readable.
 

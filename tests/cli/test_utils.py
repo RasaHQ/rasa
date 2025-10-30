@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 import structlog
+from freezegun import freeze_time
 from pytest import CaptureFixture, RunResult, WarningsRecorder
 from ruamel.yaml import YAML
 
@@ -903,3 +904,71 @@ def test_validator_handles_empty_agent_folder() -> None:
         result = validator.validate_agent_flow_conflicts(str(agent_folder))
 
         assert result is True
+
+
+@freeze_time("2025-01-29 14:30:45", ignore=["transformers"])
+@pytest.mark.parametrize(
+    "path_setup, input_path, expected_filename",
+    [
+        # Existing directory
+        (
+            lambda tmp_path: (tmp_path / "failed_tests").mkdir(),
+            lambda tmp_path: tmp_path / "failed_tests",
+            lambda tmp_path: str(
+                tmp_path / "failed_tests" / "e2e_failed_tests_20250129_143045.yml"
+            ),
+        ),
+        # Non-existent directory (no extension, treated as directory)
+        (
+            lambda tmp_path: None,  # Don't create anything
+            lambda tmp_path: tmp_path / "failed_tests",
+            lambda tmp_path: str(
+                tmp_path / "failed_tests" / "e2e_failed_tests_20250129_143045.yml"
+            ),
+        ),
+        # Existing file path with extension
+        (
+            lambda tmp_path: (tmp_path / "my_failed_tests.yml").touch(),
+            lambda tmp_path: tmp_path / "my_failed_tests.yml",
+            lambda tmp_path: str(tmp_path / "my_failed_tests_20250129_143045.yml"),
+        ),
+        # Non-existent file path with extension
+        (
+            lambda tmp_path: None,
+            lambda tmp_path: tmp_path / "my_failed_tests.yml",
+            lambda tmp_path: str(tmp_path / "my_failed_tests_20250129_143045.yml"),
+        ),
+    ],
+)
+def test_get_failed_e2e_tests_file_name(
+    tmp_path: Path,
+    path_setup: Callable,
+    input_path: Callable,
+    expected_filename: Callable,
+) -> None:
+    """Test that file names are generated correctly for different path types."""
+    path_setup(tmp_path)
+    test_path = input_path(tmp_path)
+
+    result = rasa.cli.utils.get_failed_e2e_tests_file_name(test_path)
+
+    assert result == expected_filename(tmp_path)
+
+
+def test_get_failed_e2e_tests_file_name_unique_timestamps(tmp_path: Path) -> None:
+    """Test that consecutive calls generate unique filenames."""
+    test_dir = tmp_path / "failed_tests"
+    test_dir.mkdir()
+
+    with freeze_time("2025-01-29 14:30:45"):
+        result1 = rasa.cli.utils.get_failed_e2e_tests_file_name(test_dir)
+
+    with freeze_time("2025-01-29 14:30:46"):
+        result2 = rasa.cli.utils.get_failed_e2e_tests_file_name(test_dir)
+
+    expected1 = str(test_dir / "e2e_failed_tests_20250129_143045.yml")
+    expected2 = str(test_dir / "e2e_failed_tests_20250129_143046.yml")
+
+    assert result1 == expected1
+    assert result2 == expected2
+    assert result1 != result2

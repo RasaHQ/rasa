@@ -2,6 +2,7 @@ import importlib
 import json
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 from types import FrameType
 from typing import TYPE_CHECKING, Any, Dict, List, Text
@@ -133,3 +134,27 @@ def get_e2e_results_file_name(
 def is_skip_validation_flag_set() -> bool:
     """Checks if the skip validation flag is set."""
     return "--skip-validation" in sys.argv
+
+
+def get_failed_e2e_tests_file_name(
+    failed_tests_path: Path,
+) -> str:
+    """Returns the name of the e2e failed tests file with timestamp.
+
+    Args:
+        failed_tests_path: Path provided by the user via CLI for failed tests output.
+
+    Returns:
+        Path to the failed tests file with timestamp as a string.
+    """
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    if failed_tests_path.is_dir() or not failed_tests_path.suffix:
+        file_name = failed_tests_path / f"e2e_failed_tests_{timestamp}.yml"
+    else:
+        parent = failed_tests_path.parent
+        stem = failed_tests_path.stem
+        suffix = failed_tests_path.suffix
+        file_name = parent / f"{stem}_{timestamp}{suffix}"
+
+    return str(file_name)
