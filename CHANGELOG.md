@@ -10,6 +10,45 @@ https://github.com/RasaHQ/rasa-private/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [3.14.2] - 2025-10-30
+                        
+Rasa Pro 3.14.2 (2025-10-30)                             
+### Improvements
+- [#3504](https://github.com/rasahq/rasa-private/issues/3504): Add new environment variable `LOG_LEVEL_PYMONGO` to control the logging level of PyMongo dependency of Rasa.
+  This can be useful to reduce the verbosity of logs. Default value is `INFO`.
+
+  The logging level of PyMongo can also be set via the `LOG_LEVEL_LIBRARIES` environment variable, which provides
+  the default logging level for a selection of third-party libraries used by Rasa.
+  If both variables are set, `LOG_LEVEL_PYMONGO` takes precedence.
+
+### Bugfixes
+- [#2004](https://github.com/rasahq/rasa-private/issues/2004): Clean up duplicated `ChitChatAnswerCommands` in command processor.
+
+  Ensure that one `CannotHandleCommand` remains if only multiple `CannotHandleCommands` were present.
+- [#2191](https://github.com/rasahq/rasa-private/issues/2191): LLM request timeouts are now enforced at the event loop level using `asyncio.wait_for`.
+
+  Previously, timeout values configured in `endpoints.yml` could be overridden by the HTTP client's internal timeout behavior. This fix ensures that when a specific timeout value is configured for LLM requests, the request respects that exact timing regardless of the underlying HTTP client implementation.
+- [#2463](https://github.com/rasahq/rasa-private/issues/2463): Fixed an issue where duplicate collect steps in a flow could cause rendering problems, such as exceeding token limits. This occurred when a flow called another flow multiple times. Now, each collect step is listed only once when retrieving all collect steps for a flow.
+- [#3498](https://github.com/rasahq/rasa-private/issues/3498): If a FloatSlot does not have min and max values set in the domain, the slot will not be validated against any range.
+  If the slot defines an initial value, as well as min and max values, the initial value will be validated against the range
+  and an error will be raised if the initial value is out of range.
+  Enhance run-time validation for new values assigned to FloatSlot instances, ensuring they fall within the defined min and max range
+  if these are set. If min and max are not set, no range validation is performed.
+- [#3500](https://github.com/rasahq/rasa-private/issues/3500): Fixed bug preventing `deployment` parameter from being used in generative response LLM judge configuration.
+- [#3502](https://github.com/rasahq/rasa-private/issues/3502): Fixed bug where `persisted_slots` defined in called flows were incorrectly reset when the parent flow ended, unless they were also explicitly defined in the parent flow.
+  Persisted slots now only need to be defined in the called flow to remain persisted after the parent flow ends.
+- [#3561](https://github.com/rasahq/rasa-private/issues/3561): Fixes the prompt template resolution logic in the CompactLLMCommandGenerator and SearchReadyLLMCommandGenerator classes.
+- [#3570](https://github.com/rasahq/rasa-private/issues/3570): When `action_clean_stack` is used in a user flow, allow `pattern_completed` to be triggered even if there are pattern flows
+  at the bottom of the dialogue stack below the top user flow frame. Previously, `pattern_completed` would only trigger
+  if there were no other frames below the top user flow frame. This assumes that the `action_clean_stack` is the last
+  action called in the user flow.
+- [#3650](https://github.com/rasahq/rasa-private/issues/3650): Update `pip` version used in Dockerfile to `23.*` to address security vulnerability CVE-2023-5752.
+  Update `python-socketio` version to `5.14.0` to address security vulnerability CVE-2025-61765.
+
+### Miscellaneous internal changes
+- [#2435](https://github.com/rasahq/rasa-private/issues/2435), [#3534](https://github.com/rasahq/rasa-private/issues/3534), [#3564](https://github.com/rasahq/rasa-private/issues/3564)
+
+
 ## [3.14.1] - 2025-10-10
 
 Rasa Pro 3.14.1 (2025-10-10)
