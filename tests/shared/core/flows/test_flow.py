@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Set, Text, Tuple, Union
 
 import pytest
 
+from rasa.core.config.configuration import Configuration
 from rasa.dialogue_understanding.stack.utils import (
     previous_collect_steps_for_active_flow,
 )
@@ -494,6 +495,44 @@ def test_get_collect_steps(add_contact_flow: Flow):
     collect_steps = add_contact_flow.get_collect_steps()
     assert len(collect_steps) == 3
     assert set(add_contact_flow_collects) == {s.collect for s in collect_steps}
+
+
+def test_get_collect_steps_duplicate_collect_steps():
+    """Ensure that collect steps from calles flows are only returned once."""
+    Configuration.initialise_empty()
+
+    flows = flows_from_str(
+        """
+        flows:
+          foo:
+            description: a test flow
+            steps:
+            - collect: slot_1
+              description: "slot 1 description"
+            - call: called_flow
+            - collect: slot_2
+              description: "slot 2 description"
+            - call: called_flow
+            - collect: slot_3
+              description: "slot 3 description"
+
+          called_flow:
+            description: a test pattern
+            steps:
+            - collect: another_slot
+              description: "another slot description"
+        """
+    )
+
+    foo_flow = flows.flow_by_id("foo")
+    assert foo_flow is not None
+
+    collect_steps = foo_flow.get_collect_steps()
+
+    assert len(collect_steps) == 4
+    assert {"slot_1", "slot_2", "slot_3", "another_slot"} == {
+        s.collect for s in collect_steps
+    }
 
 
 def test_previous_collect_steps_collect(add_contact_flow: Flow):

@@ -322,9 +322,15 @@ class Flow:
 
     def get_collect_steps(self) -> List[CollectInformationFlowStep]:
         """Return all CollectInformationFlowSteps in the flow."""
-        collect_steps = []
+        collect_steps: List[CollectInformationFlowStep] = []
         for step in self.steps_with_calls_resolved:
-            if isinstance(step, CollectInformationFlowStep):
+            # Only add collect steps that are not already in the list.
+            # This is to avoid returning duplicate collect steps from called flows
+            # in case the called flow is called multiple times.
+            if (
+                isinstance(step, CollectInformationFlowStep)
+                and step not in collect_steps
+            ):
                 collect_steps.append(step)
         return collect_steps
 
