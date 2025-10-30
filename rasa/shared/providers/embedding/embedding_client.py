@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Dict, List, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from rasa.shared.providers.embedding.embedding_response import EmbeddingResponse
@@ -26,7 +26,7 @@ class EmbeddingClient(Protocol):
         """
         ...
 
-    def embed(self, documents: List[str]) -> "EmbeddingResponse":
+    def embed(self, documents: List[str], **kwargs: Any) -> "EmbeddingResponse":
         """
         Embeds a list of documents synchronously.
 
@@ -35,6 +35,8 @@ class EmbeddingClient(Protocol):
 
         Args:
             documents: List of documents to be embedded.
+            **kwargs: Additional parameters forwarded to the underlying provider call
+                (e.g. tracing metadata or provider-specific options).
 
         Returns:
             List of embedding vectors.
@@ -44,7 +46,7 @@ class EmbeddingClient(Protocol):
         """
         ...
 
-    async def aembed(self, documents: List[str]) -> "EmbeddingResponse":
+    async def aembed(self, documents: List[str], **kwargs: Any) -> "EmbeddingResponse":
         """
         Embeds a list of documents asynchronously.
 
@@ -53,6 +55,8 @@ class EmbeddingClient(Protocol):
 
         Args:
             documents: List of documents to be embedded.
+            **kwargs: Additional parameters forwarded to the underlying provider call
+                (e.g. tracing metadata or provider-specific options).
 
         Returns:
             List of embedding vectors.

@@ -156,6 +156,27 @@ class TestBaseLiteLLMEmbeddingClient:
         assert isinstance(response, EmbeddingResponse)
         assert response.data == [litellm_embedding_response.data[0]["embedding"]]
 
+    def test_embed_forwards_kwargs(
+        self,
+        client: TestLiteLLMEmbeddingClient,
+        litellm_embedding_response: litellm.EmbeddingResponse,
+        mock_embed: Mock,
+    ) -> None:
+        # Given
+        documents = ["Test document for embedding"]
+
+        # When
+        client.embed(documents, metadata={"trace_id": "t-123"}, user="alice")
+
+        # Then
+        mock_embed.assert_called_once_with(
+            input=documents,
+            model=client._litellm_model_name,
+            test_parameter="test_value",
+            metadata={"trace_id": "t-123"},
+            user="alice",
+        )
+
     def test_embed_encounters_an_error(
         self, client: EmbeddingClient, mock_embed: Mock
     ) -> None:
@@ -183,6 +204,27 @@ class TestBaseLiteLLMEmbeddingClient:
         )
         assert isinstance(response, EmbeddingResponse)
         assert response.data == [litellm_embedding_response.data[0]["embedding"]]
+
+    async def test_aembed_forwards_kwargs(
+        self,
+        client: TestLiteLLMEmbeddingClient,
+        litellm_embedding_response: litellm.EmbeddingResponse,
+        mock_aembed: AsyncMock,
+    ) -> None:
+        # Given
+        documents = ["Test document for embedding"]
+
+        # When
+        await client.aembed(documents, metadata={"trace_id": "t-456"}, user="bob")
+
+        # Then
+        mock_aembed.assert_called_once_with(
+            input=documents,
+            model=client._litellm_model_name,
+            test_parameter="test_value",
+            metadata={"trace_id": "t-456"},
+            user="bob",
+        )
 
     async def test_aembed_encounters_an_error(
         self, client: EmbeddingClient, mock_aembed: Mock

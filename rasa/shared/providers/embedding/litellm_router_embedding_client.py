@@ -80,7 +80,7 @@ class LiteLLMRouterEmbeddingClient(
         )
 
     @suppress_logs(log_level=logging.WARNING)
-    def embed(self, documents: List[str]) -> EmbeddingResponse:
+    def embed(self, documents: List[str], **kwargs: Any) -> EmbeddingResponse:
         """
         Embeds a list of documents synchronously.
 
@@ -96,7 +96,7 @@ class LiteLLMRouterEmbeddingClient(
         self.validate_documents(documents)
         try:
             response = self.router_client.embedding(
-                input=documents, **self._embedding_fn_args
+                input=documents, **{**self._embedding_fn_args, **kwargs}
             )
             return self._format_response(response)
         except Exception as e:
@@ -105,7 +105,7 @@ class LiteLLMRouterEmbeddingClient(
             )
 
     @suppress_logs(log_level=logging.WARNING)
-    async def aembed(self, documents: List[str]) -> EmbeddingResponse:
+    async def aembed(self, documents: List[str], **kwargs: Any) -> EmbeddingResponse:
         """
         Embeds a list of documents asynchronously.
 
@@ -121,7 +121,7 @@ class LiteLLMRouterEmbeddingClient(
         self.validate_documents(documents)
         try:
             response = await self.router_client.aembedding(
-                input=documents, **self._embedding_fn_args
+                input=documents, **{**self._embedding_fn_args, **kwargs}
             )
             return self._format_response(response)
         except Exception as e:

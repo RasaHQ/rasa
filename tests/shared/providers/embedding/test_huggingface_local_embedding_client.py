@@ -67,6 +67,17 @@ class TestHuggingFaceLocalEmbeddingClient:
         assert response.model == "BAAI/bge-small-en-v1.5"
         assert response.usage is None
 
+    def test_embed_accepts_kwargs(
+        self, client: HuggingFaceLocalEmbeddingClient
+    ) -> None:
+        # Given
+        test_doc = "this is a test doc."
+        # When (kwargs are ignored by the client, but must not error)
+        response = client.embed([test_doc], metadata={"trace_id": "hf-1"}, user="u")
+        # Then
+        assert len(response.data) == 1
+        assert response.model == "BAAI/bge-small-en-v1.5"
+
     async def test_aembed(
         self,
         client: HuggingFaceLocalEmbeddingClient,
@@ -83,6 +94,19 @@ class TestHuggingFaceLocalEmbeddingClient:
         assert all(isinstance(item, float) for item in response.data[0])
         assert response.model == "BAAI/bge-small-en-v1.5"
         assert response.usage is None
+
+    async def test_aembed_accepts_kwargs(
+        self, client: HuggingFaceLocalEmbeddingClient
+    ) -> None:
+        # Given
+        test_doc = "this is a test doc."
+        # When (kwargs are ignored by the client, but must not error)
+        response = await client.aembed(
+            [test_doc], metadata={"trace_id": "hf-2"}, user="v"
+        )
+        # Then
+        assert len(response.data) == 1
+        assert response.model == "BAAI/bge-small-en-v1.5"
 
     def test_from_config_client_validation_error(self) -> None:
         # Given

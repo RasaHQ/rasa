@@ -1,4 +1,5 @@
 import asyncio
+import functools
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -116,7 +117,7 @@ class HuggingFaceLocalEmbeddingClient:
             )
             raise ImportError(message) from exc
 
-    def embed(self, documents: List[str]) -> EmbeddingResponse:
+    def embed(self, documents: List[str], **kwargs: Any) -> EmbeddingResponse:
         """Compute doc embeddings using a HuggingFace transformer model.
 
         Args:
@@ -155,7 +156,7 @@ class HuggingFaceLocalEmbeddingClient:
         SentenceTransformer.stop_multi_process_pool(pool)
         return embeddings
 
-    async def aembed(self, documents: List[str]) -> EmbeddingResponse:
+    async def aembed(self, documents: List[str], **kwargs: Any) -> EmbeddingResponse:
         """Asynchronous Embed search docs.
 
         Args:
@@ -167,7 +168,9 @@ class HuggingFaceLocalEmbeddingClient:
         loop = asyncio.get_running_loop()
         # Using run_in_executor to execute the synchronous embedding function
         # in a separate thread
-        embeddings = await loop.run_in_executor(None, self.embed, documents)
+        embeddings = await loop.run_in_executor(
+            None, functools.partial(self.embed, documents, **kwargs)
+        )
         return embeddings
 
     def validate_documents(self, documents: List[str]) -> None:

@@ -239,6 +239,34 @@ class TestLiteLLMRouterEmbeddingClient:
         assert response.usage.completion_tokens == 20
         assert response.usage.total_tokens == 30
 
+    def test_embed_forwards_kwargs_to_router(
+        self,
+        client: LiteLLMRouterEmbeddingClient,
+        embedding_response,
+        monkeypatch: MonkeyPatch,
+    ) -> None:
+        # Given
+        called_kwargs: Dict[str, Any] = {}
+
+        def fake_embedding(*, input, **kwargs):  # type: ignore
+            called_kwargs.update(kwargs)
+            return embedding_response
+
+        # Patch router client's embedding
+        monkeypatch.setattr(client.router_client, "embedding", fake_embedding)
+
+        # When
+        docs = ["this is a test doc."]
+        response = client.embed(docs, metadata={"trace_id": "r-123"}, user="eve")
+
+        # Then
+        assert response.model == "gpt-1000"
+        # kwargs are forwarded
+        assert called_kwargs.get("metadata") == {"trace_id": "r-123"}
+        assert called_kwargs.get("user") == "eve"
+        # base args preserved/merged
+        assert called_kwargs.get("model") == client.model_group_id
+
     @patch.object(LiteLLMRouterEmbeddingClient, "aembed")
     async def test_aembed(
         self,
@@ -258,6 +286,34 @@ class TestLiteLLMRouterEmbeddingClient:
         assert response.usage.prompt_tokens == 10
         assert response.usage.completion_tokens == 20
         assert response.usage.total_tokens == 30
+
+    async def test_aembed_forwards_kwargs_to_router(
+        self,
+        client: LiteLLMRouterEmbeddingClient,
+        embedding_response,
+        monkeypatch: MonkeyPatch,
+    ) -> None:
+        # Given
+        called_kwargs: Dict[str, Any] = {}
+
+        async def fake_aembedding(*, input, **kwargs):  # type: ignore
+            called_kwargs.update(kwargs)
+            return embedding_response
+
+        # Patch router client's aembedding
+        monkeypatch.setattr(client.router_client, "aembedding", fake_aembedding)
+
+        # When
+        docs = ["this is a test doc."]
+        response = await client.aembed(docs, metadata={"trace_id": "r-456"}, user="zoe")
+
+        # Then
+        assert response.model == "gpt-1000"
+        # kwargs are forwarded
+        assert called_kwargs.get("metadata") == {"trace_id": "r-456"}
+        assert called_kwargs.get("user") == "zoe"
+        # base args preserved/merged
+        assert called_kwargs.get("model") == client.model_group_id
 
 
 @pytest.mark.parametrize(

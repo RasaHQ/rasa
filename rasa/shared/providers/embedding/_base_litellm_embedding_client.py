@@ -1,6 +1,6 @@
 import logging
 from abc import abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 import litellm
 import structlog
@@ -123,7 +123,7 @@ class _BaseLiteLLMEmbeddingClient:
                 raise ValueError("Documents cannot be empty or whitespace.")
 
     @suppress_logs(log_level=logging.WARNING)
-    def embed(self, documents: List[str]) -> EmbeddingResponse:
+    def embed(self, documents: List[str], **kwargs: Any) -> EmbeddingResponse:
         """Embeds a list of documents synchronously.
 
         Args:
@@ -137,8 +137,10 @@ class _BaseLiteLLMEmbeddingClient:
         """
         self.validate_documents(documents)
         try:
-            arguments = resolve_environment_variables(self._embedding_fn_args)
-            response = embedding(input=documents, **arguments)
+            arguments = cast(
+                Dict[str, Any], resolve_environment_variables(self._embedding_fn_args)
+            )
+            response = embedding(input=documents, **{**arguments, **kwargs})
             return self._format_response(response)
         except Exception as e:
             raise ProviderClientAPIException(
@@ -146,7 +148,7 @@ class _BaseLiteLLMEmbeddingClient:
             )
 
     @suppress_logs(log_level=logging.WARNING)
-    async def aembed(self, documents: List[str]) -> EmbeddingResponse:
+    async def aembed(self, documents: List[str], **kwargs: Any) -> EmbeddingResponse:
         """Embeds a list of documents asynchronously.
 
         Args:
@@ -160,8 +162,10 @@ class _BaseLiteLLMEmbeddingClient:
         """
         self.validate_documents(documents)
         try:
-            arguments = resolve_environment_variables(self._embedding_fn_args)
-            response = await aembedding(input=documents, **arguments)
+            arguments = cast(
+                Dict[str, Any], resolve_environment_variables(self._embedding_fn_args)
+            )
+            response = await aembedding(input=documents, **{**arguments, **kwargs})
             return self._format_response(response)
         except Exception as e:
             raise ProviderClientAPIException(
