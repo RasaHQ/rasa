@@ -498,7 +498,10 @@ class RasaModel(Model):
         # predict on one data example to speed up prediction during inference
         # the first prediction always takes a bit longer to trace tf function
         if predict_data_example:
+            # Warm-up to build any lazily created variables/branches
             model.run_inference(predict_data_example)
+            # Reload weights so newly created variables are restored as well
+            model.load_weights(model_file_name)
 
         logger.debug("Finished loading the model.")
         return model

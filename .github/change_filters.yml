@@ -47,7 +47,7 @@ dm1-tensorflow-files:
   - rasa/nlu/utils/mitie_utils.py
   - rasa/shared/core/training_data/
   - rasa/shared/nlu/**
-  - rasa/utils/tensorflow/
+  - rasa/utils/tensorflow/**
   - rasa/utils/plotting.py
 
 docker:

@@ -1247,7 +1247,6 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         ),
     ],
 )
-@pytest.mark.skip()  # TODO: https://rasahq.atlassian.net/browse/ENG-2389
 def test_train_with_e2e_data(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,

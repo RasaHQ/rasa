@@ -1076,3 +1076,90 @@ async def test_dropping_of_last_partial_batch_empty_data(
     )
 
     assert len(data_generator) == 0
+
+
+def _get_model_weights(model) -> Dict[Text, Dict[Text, np.ndarray]]:
+    """Extract all weights from a model, grouped by layer with tensor names."""
+    weights = {}
+
+    for layer in model.layers:
+        layer_weights = {}
+
+        for weight in layer.trainable_weights:
+            layer_weights[weight.name] = weight.numpy()
+        for weight in layer.non_trainable_weights:
+            layer_weights[weight.name] = weight.numpy()
+
+        if layer_weights:
+            weights[layer.name] = layer_weights
+
+    return weights
+
+
+def _layers_with_different_weights(
+    weights1: Dict[Text, Dict[Text, np.ndarray]],
+    weights2: Dict[Text, Dict[Text, np.ndarray]],
+) -> List[Text]:
+    """Compare weights and return list of layer names with different weights."""
+    different_layers = []
+
+    for layer_name in sorted(set(weights1.keys()) | set(weights2.keys())):
+        if layer_name not in weights1 or layer_name not in weights2:
+            different_layers.append(layer_name)
+            continue
+
+        w1_dict = weights1[layer_name]
+        w2_dict = weights2[layer_name]
+
+        if len(w1_dict) != len(w2_dict):
+            different_layers.append(layer_name)
+            continue
+
+        for tensor_name in w1_dict:
+            w1, w2 = w1_dict[tensor_name], w2_dict[tensor_name]
+            if w1.shape != w2.shape or np.mean(np.abs(w1 - w2)) >= 1e-6:
+                different_layers.append(layer_name)
+                break
+
+    return different_layers
+
+
+@pytest.mark.timeout(240, func_only=True)
+async def test_persist_and_load(
+    create_diet: Callable[..., DIETClassifier],
+    train_and_preprocess: Callable[..., Tuple[TrainingData, List[GraphComponent]]],
+):
+    """Test DIETClassifier predictions and weights consistency before/after load."""
+    pipeline = [
+        {"component": WhitespaceTokenizer},
+        {"component": CountVectorsFeaturizer},
+    ]
+
+    # Train a DIETClassifier
+    classifier = create_diet(
+        {RANDOM_SEED: 42, EPOCHS: 1, ENTITY_RECOGNITION: False, RUN_EAGERLY: True}
+    )
+    training_data, loaded_pipeline = train_and_preprocess(
+        pipeline, training_data="data/examples/rasa/demo-rasa.yml"
+    )
+
+    classifier.train(training_data=training_data)
+
+    # Get weights after training
+    trained_weights = _get_model_weights(classifier.model)
+
+    # Load the classifier from storage
+    loaded_classifier = create_diet(
+        {RANDOM_SEED: 42, EPOCHS: 1, ENTITY_RECOGNITION: False, RUN_EAGERLY: True},
+        load=True,
+    )
+
+    # Get weights after loading and compare
+    loaded_weights = _get_model_weights(loaded_classifier.model)
+    different_layers = _layers_with_different_weights(trained_weights, loaded_weights)
+
+    # Assert that all weights are the same after loading
+    assert len(different_layers) == 0, (
+        f"Found {len(different_layers)} layer(s) with different weights after load: "
+        f"{', '.join(different_layers)}"
+    )

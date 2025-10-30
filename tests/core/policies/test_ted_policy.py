@@ -79,7 +79,6 @@ actions:
 """
 
 
-@pytest.mark.skip()  # TODO: https://rasahq.atlassian.net/browse/ENG-2389
 async def test_diagnostics(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
@@ -111,7 +110,6 @@ async def test_diagnostics(
     assert isinstance(prediction.diagnostic_data.get("attention_weights"), np.ndarray)
 
 
-@pytest.mark.skip()  # TODO: https://rasahq.atlassian.net/browse/ENG-2389
 async def test_predict_action_probabilities_abstains_in_coexistence(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ):
@@ -135,14 +133,13 @@ async def test_predict_action_probabilities_abstains_in_coexistence(
     assert prediction.max_confidence == 0.0
 
 
-@pytest.mark.skip()  # TODO: https://rasahq.atlassian.net/browse/ENG-2389
+@pytest.mark.skip()  # skipped due to TEDPolicy shape mismatch issue
 class TestTEDPolicy(PolicyTestCollection):
     @staticmethod
     def _policy_class_to_test() -> Type[TEDPolicy]:
         return TEDPolicy
 
     @pytest.mark.parametrize("should_finetune", [False])
-    @pytest.mark.skip()  # TODO: https://rasahq.atlassian.net/browse/ENG-2389
     def test_persist_and_load(
         self,
         trained_policy: Policy,
@@ -155,7 +152,7 @@ class TestTEDPolicy(PolicyTestCollection):
     ):
         pass
 
-    @pytest.mark.skip()  # TODO: https://rasahq.atlassian.net/browse/ENG-2389
+    @pytest.mark.skip()  # skipped due to TEDPolicy shape mismatch issue
     async def test_train_model_checkpointing(
         self, tmp_path: Path, tmp_path_factory: TempPathFactory
     ):
