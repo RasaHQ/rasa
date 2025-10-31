@@ -1,5 +1,6 @@
 """Tests for ResponseClassificationLangfuseRunner."""
 
+from pathlib import Path
 from typing import List
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -50,6 +51,7 @@ class TestResponseClassificationLangfuseRunner:
     def test_run_experiment(
         self,
         mock_get_client: MagicMock,
+        tmp_path: Path,
         mock_langfuse_client: MagicMock,
         mock_dataset: MagicMock,
         mock_experiment_result: MagicMock,
@@ -60,7 +62,7 @@ class TestResponseClassificationLangfuseRunner:
         mock_langfuse_client.get_dataset.return_value = mock_dataset
         mock_dataset.run_experiment.return_value = mock_experiment_result
 
-        runner = ResponseClassificationLangfuseRunner("test_dataset")
+        runner = ResponseClassificationLangfuseRunner("test_dataset", str(tmp_path))
 
         # When
         runner.run_experiment()
@@ -87,13 +89,14 @@ class TestResponseClassificationLangfuseRunner:
         self,
         mock_get_client: MagicMock,
         mock_run_copilot_with_response_handler: MagicMock,
+        tmp_path: Path,
         mock_langfuse_client: MagicMock,
         mock_dataset: MagicMock,
     ) -> None:
         """Test _run_copilot_task method with successful execution."""
         # Given
 
-        runner = ResponseClassificationLangfuseRunner("test_dataset")
+        runner = ResponseClassificationLangfuseRunner("test_dataset", str(tmp_path))
         mock_get_client.return_value = mock_langfuse_client
         mock_langfuse_client.get_dataset.return_value = mock_dataset
         # Mock the return result of the run_copilot_with_response_handler function
@@ -149,6 +152,7 @@ class TestResponseClassificationLangfuseRunner:
         self,
         mock_get_client: MagicMock,
         mock_from_raw_data: MagicMock,
+        tmp_path: Path,
         mock_langfuse_client: MagicMock,
         mock_dataset: MagicMock,
     ) -> None:
@@ -158,7 +162,7 @@ class TestResponseClassificationLangfuseRunner:
         mock_langfuse_client.get_dataset.return_value = mock_dataset
         mock_from_raw_data.side_effect = Exception("Context creation failed")
 
-        runner = ResponseClassificationLangfuseRunner("test_dataset")
+        runner = ResponseClassificationLangfuseRunner("test_dataset", str(tmp_path))
 
         experiment_item = MagicMock(spec=ExperimentItem)
         experiment_item.id = "test_item_1"
@@ -190,6 +194,7 @@ class TestResponseClassificationLangfuseRunner:
         mock_get_client: MagicMock,
         mock_from_raw_data: MagicMock,
         mock_run_copilot: MagicMock,
+        tmp_path: Path,
         mock_langfuse_client: MagicMock,
         mock_dataset: MagicMock,
     ) -> None:
@@ -204,7 +209,7 @@ class TestResponseClassificationLangfuseRunner:
         mock_from_raw_data.return_value = mock_dataset_entry
         mock_run_copilot.side_effect = Exception("Copilot run failed")
 
-        runner = ResponseClassificationLangfuseRunner("test_dataset")
+        runner = ResponseClassificationLangfuseRunner("test_dataset", str(tmp_path))
 
         experiment_item = MagicMock(spec=ExperimentItem)
         experiment_item.id = "test_item_1"
@@ -225,6 +230,7 @@ class TestResponseClassificationLangfuseRunner:
     def test_run_classification_metrics_evaluator(
         self,
         mock_get_client: MagicMock,
+        tmp_path: Path,
         mock_langfuse_client: MagicMock,
         mock_dataset: MagicMock,
     ) -> None:
@@ -233,7 +239,7 @@ class TestResponseClassificationLangfuseRunner:
         mock_get_client.return_value = mock_langfuse_client
         mock_langfuse_client.get_dataset.return_value = mock_dataset
 
-        runner = ResponseClassificationLangfuseRunner("test_dataset")
+        runner = ResponseClassificationLangfuseRunner("test_dataset", str(tmp_path))
 
         # Create 2 good item results (valid data)
         good_item_result_1 = MagicMock(spec=ExperimentItemResult)
@@ -298,6 +304,7 @@ class TestResponseClassificationLangfuseRunner:
     def test_create_classification_results_from_dataset_items_success(
         self,
         mock_get_client: MagicMock,
+        tmp_path: Path,
         mock_langfuse_client: MagicMock,
         mock_dataset: MagicMock,
     ) -> None:
@@ -306,7 +313,7 @@ class TestResponseClassificationLangfuseRunner:
         mock_get_client.return_value = mock_langfuse_client
         mock_langfuse_client.get_dataset.return_value = mock_dataset
 
-        runner = ResponseClassificationLangfuseRunner("test_dataset")
+        runner = ResponseClassificationLangfuseRunner("test_dataset", str(tmp_path))
 
         # Create 2 valid item results
         valid_item_result_1 = MagicMock(spec=ExperimentItemResult)
@@ -377,7 +384,7 @@ class TestResponseClassificationLangfuseRunner:
     def test_report_run_results(
         self,
         mock_get_client: MagicMock,
-        tmp_path,
+        tmp_path: Path,
         mock_langfuse_client: MagicMock,
         mock_dataset: MagicMock,
         mock_experiment_result: MagicMock,
@@ -406,7 +413,7 @@ class TestResponseClassificationLangfuseRunner:
     def test_report_yaml_structured_results(
         self,
         mock_get_client: MagicMock,
-        tmp_path,
+        tmp_path: Path,
         mock_langfuse_client: MagicMock,
         mock_dataset: MagicMock,
     ) -> None:

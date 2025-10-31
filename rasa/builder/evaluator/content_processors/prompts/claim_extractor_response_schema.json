@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "properties": {
+    "claims": {
+      "type": "array",
+      "description": "List of atomic, verifiable claims extracted from the Copilot response",
+      "items": {
+        "type": "object",
+        "properties": {
+          "importance": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "Importance level of the claim"
+          },
+          "text": {
+            "type": "string",
+            "description": "Short textual content of the claim"
+          }
+        },
+        "required": ["importance", "text"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["claims"],
+  "additionalProperties": false
+}
+

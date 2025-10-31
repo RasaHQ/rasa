@@ -1,0 +1,7 @@
+import os
+
+# The configuration for the evaluator module.
+CLAIM_EXTRACTOR_MODEL = os.getenv("CLAIM_EXTRACTOR_MODEL", "gpt-4.1-2025-04-14")
+CLAIM_EXTRACTOR_TEMPERATURE = float(os.getenv("CLAIM_EXTRACTOR_TEMPERATURE", "0"))
+CLAIM_EXTRACTOR_TIMEOUT = int(os.getenv("CLAIM_EXTRACTOR_TIMEOUT", "100"))
+CLAIM_EXTRACTOR_MAX_TOKENS = int(os.getenv("CLAIM_EXTRACTOR_MAX_TOKENS", "2000"))
