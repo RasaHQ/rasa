@@ -1762,6 +1762,7 @@ jobs:
           GLINER_MODEL_PATH: ${{ github.workspace }}/models
           TRANSFORMERS_OFFLINE: 0
           HF_TOKEN: ${{ secrets.HUGGINGFACE_API_KEY }}
+          PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION: python
         run: |
           make test-anonymization
         shell: bash # bash shell is a way to make code run for both Linux and Windows
