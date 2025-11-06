@@ -31,8 +31,8 @@ ROLE_COPILOT_INTERNAL: Literal["internal_copilot_request"] = "internal_copilot_r
 # Copilot Telemetry
 COPILOT_SEGMENT_WRITE_KEY_ENV_VAR = "COPILOT_SEGMENT_WRITE_KEY"
 
-# Copilot signing
-SIGNATURE_VERSION_V1 = "v1"
+# Chat ID used to store default copilot history when no specific chat ID is provided.
+DEFAULT_COPILOT_CHAT_ID = "default"
 
 # Welcome message key for prompt-to-bot (not a template enum)
 PROMPT_TO_BOT_KEY = "prompt_to_bot"

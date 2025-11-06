@@ -1,18 +1,20 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from unittest.mock import Mock
 
 import pytest
 from pydantic import ValidationError
 
+from rasa.builder.copilot.constants import ROLE_COPILOT, ROLE_USER
 from rasa.builder.copilot.models import (
     CopilotChatMessage,
-    CopilotRequest,
+    CopilotTurnRequest,
     GeneratedContent,
     InternalCopilotRequestChatMessage,
     ReferenceEntry,
     ReferenceSection,
     ResponseCategory,
     ResponseCompleteness,
+    TextContent,
     UsageStatistics,
     UserChatMessage,
     create_chat_message_from_dict,
@@ -31,7 +33,7 @@ def payload_with_button_and_link() -> Dict[str, Any]:
                         "text": "Build me a friendly banking assistant...",
                     }
                 ],
-                "timestamp": "2025-08-22T09:32:52.745Z",
+                "timestamp": 1724319172.745,
             },
             {
                 "role": "copilot",
@@ -41,7 +43,7 @@ def payload_with_button_and_link() -> Dict[str, Any]:
                         "text": "Welcome. Here are some next steps...",
                     }
                 ],
-                "timestamp": "2025-08-22T09:32:52.746Z",
+                "timestamp": 1724319172.746,
             },
             {
                 "role": "copilot",
@@ -50,12 +52,12 @@ def payload_with_button_and_link() -> Dict[str, Any]:
                     {"type": "button", "label": "Try assistant", "payload": "chat"},
                     {"type": "link", "label": "Docs", "url": "https://rasa.com/docs"},
                 ],
-                "timestamp": "2025-08-22T09:33:06.973Z",
+                "timestamp": 1724319186.973,
             },
             {
                 "role": "user",
                 "content": [{"type": "text", "text": "how to try assistant"}],
-                "timestamp": "2025-08-22T09:33:21.761Z",
+                "timestamp": 1724319201.761,
             },
         ],
         "session_id": "751b572b-95a9-43ad-bb0e-816ccda73526",
@@ -240,150 +242,50 @@ class TestReferenceSection:
         assert sse_event.data["completeness"] == ResponseCompleteness.COMPLETE.value
 
 
-def test_copilot_request_accepts_button_and_link(
-    payload_with_button_and_link: Dict[str, Any],
-):
-    req = CopilotRequest(**payload_with_button_and_link)
-    message = req.copilot_chat_history[2]
-    button = message.content[1]
-    link = message.content[2]
+class TestCopilotTurnRequest:
+    def test_valid_user_message_accepted(self):
+        request = CopilotTurnRequest(
+            session_id="test-session",
+            message=UserChatMessage(
+                role=ROLE_USER,
+                content=[TextContent(type="text", text="Hello, can you help me?")],
+            ),
+        )
 
-    # Discriminator should yield the correct types/fields
-    assert getattr(button, "type", None) == "button"
-    assert getattr(button, "label", None) == "Try assistant"
-    assert getattr(button, "payload", None) == "chat"
+        assert request.session_id == "test-session"
+        assert request.message.role == ROLE_USER
+        assert request.chat_id is None
 
-    assert getattr(link, "type", None) == "link"
-    assert getattr(link, "label", None) == "Docs"
-    assert getattr(link, "url", None) == "https://rasa.com/docs"
+    def test_valid_user_message_with_chat_id_accepted(self):
+        request = CopilotTurnRequest(
+            session_id="test-session",
+            message=UserChatMessage(
+                role=ROLE_USER,
+                content=[TextContent(type="text", text="Hello with chat_id")],
+            ),
+            chat_id="custom-chat",
+        )
 
+        assert request.session_id == "test-session"
+        assert request.message.role == ROLE_USER
+        assert request.chat_id == "custom-chat"
 
-def test_copilot_request_rejects_bad_button_missing_fields(
-    payload_with_button_and_link: Dict[str, Any],
-):
-    bad = payload_with_button_and_link
-    # Remove label from the button
-    bad["copilot_chat_history"][2]["content"][1] = {"type": "button", "payload": "chat"}
-    with pytest.raises(ValidationError):
-        CopilotRequest(**bad)
-
-
-class TestCopilotRequest:
-    """Test cases for CopilotRequest model initialization from dict/JSON data."""
-
-    @pytest.mark.parametrize(
-        "chat_history",
-        [
-            # User message
-            [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "Hello, how can I create a custom action?",
-                        }
+    def test_copilot_role_message_rejected(self):
+        with pytest.raises(ValidationError) as exc_info:
+            CopilotTurnRequest(
+                session_id="test-session",
+                message=CopilotChatMessage(
+                    role=ROLE_COPILOT,
+                    content=[
+                        TextContent(type="text", text="This should not be allowed")
                     ],
-                    "response_category": None,
-                }
-            ],
-            # Copilot message
-            [
-                {
-                    "role": "copilot",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "To create a custom action, you need to...",
-                        }
-                    ],
-                    "response_category": "copilot",
-                }
-            ],
-            # Internal copilot request message
-            [
-                {
-                    "role": "internal_copilot_request",
-                    "content": [{"type": "text", "text": "Internal system message"}],
-                    "response_category": "training_error_log_analysis",
-                }
-            ],
-            # Mixed message types
-            [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": "Help me with training errors"}
-                    ],
-                    "response_category": None,
-                },
-                {
-                    "role": "copilot",
-                    "content": [{"type": "text", "text": "I can help you with that"}],
-                    "response_category": "copilot",
-                },
-                {
-                    "role": "internal_copilot_request",
-                    "content": [{"type": "text", "text": "Analyzing training logs..."}],
-                    "response_category": "e2e_testing_error_log_analysis",
-                },
-            ],
-        ],
-    )
-    def test_copilot_request_from_dict_parses_correctly(
-        self, chat_history: List[Dict[str, Any]]
-    ):
-        """Test that CopilotRequest can be initialized from dict/JSON data."""
-        # Test that CopilotRequest can be created from dict data
-        request_data: Dict[str, Any] = {
-            "copilot_chat_history": chat_history,
-            "session_id": "test-session",
-        }
-        request = CopilotRequest(**request_data)
+                ),
+            )
 
-        # Verify chat history was parsed correctly
-        assert len(request.copilot_chat_history) == len(chat_history)
-
-        # Check that each message was parsed into the correct type based on role
-        for i, original_message in enumerate(chat_history):
-            parsed_message = request.copilot_chat_history[i]
-            expected_role = original_message["role"]
-
-            # Verify the role matches
-            assert parsed_message.role == expected_role
-
-            # Verify the message was parsed into the correct type
-            if expected_role == "user":
-                from rasa.builder.copilot.models import UserChatMessage
-
-                assert isinstance(parsed_message, UserChatMessage)
-                assert isinstance(parsed_message.get_flattened_text_content(), str)
-            elif expected_role == "copilot":
-                from rasa.builder.copilot.models import CopilotChatMessage
-
-                assert isinstance(parsed_message, CopilotChatMessage)
-                assert isinstance(parsed_message.get_flattened_text_content(), str)
-            elif expected_role == "internal_copilot_request":
-                from rasa.builder.copilot.models import (
-                    InternalCopilotRequestChatMessage,
-                )
-
-                assert isinstance(parsed_message, InternalCopilotRequestChatMessage)
-
-    def test_parse_chat_history_unknown_role_error(self) -> None:
-        """Test that parsing chat history with unknown role raises ValueError."""
-        # Given
-        chat_history: List[Dict[str, Any]] = [
-            {"role": "user", "content": [{"type": "text", "text": "Hello"}]},
-            {
-                "role": "unknown_role",
-                "content": [{"type": "text", "text": "Invalid role"}],
-            },
-        ]
-
-        # When / Then
-        with pytest.raises(ValueError):
-            CopilotRequest.parse_chat_history(chat_history)
+        error = exc_info.value
+        # The error should indicate that the message field expects UserChatMessage
+        assert "message" in str(error)
+        assert "UserChatMessage" in str(error)
 
 
 class TestUsageStatistics:

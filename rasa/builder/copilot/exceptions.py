@@ -20,13 +20,7 @@ class CopilotStreamError(Exception):
     pass
 
 
-class InvalidCopilotChatHistorySignature(Exception):
-    """Raised when the provided history signature does not match."""
-
-    pass
-
-
-class MissingCopilotChatHistorySignature(Exception):
-    """Raised when a required history signature is missing."""
+class CopilotHistoryDatabaseError(Exception):
+    """Raised when database operations fail."""
 
     pass

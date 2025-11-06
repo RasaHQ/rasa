@@ -21,26 +21,22 @@ from rasa.builder.config import (
     LAKERA_ASSISTANT_HISTORY_GUARDRAIL_PROJECT_ID,
     LAKERA_COPILOT_HISTORY_GUARDRAIL_PROJECT_ID,
 )
-from rasa.builder.copilot.constants import ROLE_USER, SIGNATURE_VERSION_V1
+from rasa.builder.copilot.constants import DEFAULT_COPILOT_CHAT_ID, ROLE_USER
 from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
-from rasa.builder.copilot.exceptions import (
-    CopilotStreamError,
-    InvalidCopilotChatHistorySignature,
-    MissingCopilotChatHistorySignature,
-)
+from rasa.builder.copilot.exceptions import CopilotStreamError
+from rasa.builder.copilot.history_store import persist_copilot_message_to_history
 from rasa.builder.copilot.models import (
+    ConversationKey,
+    CopilotChatMessage,
     CopilotContext,
-    CopilotRequest,
+    CopilotHistoryResponse,
+    CopilotTurnRequest,
     GeneratedContent,
     ReferenceEntry,
     ReferenceSection,
     ResponseCategory,
     ResponseCompleteness,
-)
-from rasa.builder.copilot.signing import (
-    create_signature_envelope_for_handler,
-    create_signature_envelope_for_text,
-    verify_signature,
+    TextContent,
 )
 from rasa.builder.download import create_bot_project_archive
 from rasa.builder.guardrails.constants import (
@@ -987,11 +983,14 @@ async def download_bot_project(request: Request) -> HTTPResponse:
 )
 @openapi.tag("copilot")
 @openapi.body(
-    {"application/json": model_to_schema(CopilotRequest)},
+    {"application/json": model_to_schema(CopilotTurnRequest)},
     description=(
         "Copilot request containing: "
-        "1. conversation history between user and copilot, "
-        "2. session ID for tracking conversation context with the bot being built."
+        "1. a single user message, "
+        "2. session ID for tracking conversation context with the bot being built, "
+        "3. optional chat ID for copilot conversation (defaults to 'default'), "
+        "4. optional project ID for conversation isolation, "
+        "Conversation history is stored and managed on the server."
     ),
     required=True,
 )
@@ -1115,7 +1114,7 @@ async def copilot(request: Request) -> None:
 
     try:
         # 1. Validate and unpack input
-        req = CopilotRequest(**request.json)
+        req = CopilotTurnRequest(**request.json)
 
         # Require user identifier via header and fail fast if missing
         user_id = (request.headers.get(HEADER_USER_ID) or "").strip()
@@ -1140,13 +1139,13 @@ async def copilot(request: Request) -> None:
         structlogger.debug("builder.copilot.telemetry.request.init")
 
         # TODO: This can be removed once Langfuse is completed.
-        if req.last_message and req.last_message.role == ROLE_USER:
+        if req.message and req.message.role == ROLE_USER:
             structlogger.debug("builder.copilot.telemetry.request.user_turn")
             # Offload telemetry logging to a background task
             request.app.add_task(
                 asyncio.to_thread(
                     telemetry.log_user_turn,
-                    req.last_message.get_flattened_text_content(),
+                    req.message.get_flattened_text_content(),
                 )
             )
 
@@ -1156,27 +1155,14 @@ async def copilot(request: Request) -> None:
             await sse.send(message.to_sse_event().format())
             return
 
-        # 3 Verify the request signature
-        try:
-            await verify_signature(req)
-        except InvalidCopilotChatHistorySignature:
-            version = getattr(req, "signature_version", None) or SIGNATURE_VERSION_V1
-            await sse.send(
-                ServerSentEvent(
-                    event="copilot_response",
-                    data={"error": "invalid_history_signature", "version": version},
-                ).format()
-            )
-            return
-        except MissingCopilotChatHistorySignature:
-            version = getattr(req, "signature_version", None) or SIGNATURE_VERSION_V1
-            await sse.send(
-                ServerSentEvent(
-                    event="copilot_response",
-                    data={"error": "missing_history_signature", "version": version},
-                ).format()
-            )
-            return
+        # 3. Load existing server-side history and build candidate turn
+        # Use chat_id from payload if provided, otherwise use default
+        chat_id = (req.chat_id or "").strip() or DEFAULT_COPILOT_CHAT_ID
+        conversation_key = ConversationKey(chat_id=chat_id)
+        existing_history = await llm_service.history_store.get(conversation_key)
+
+        # Build the full history for context (existing + new user message)
+        candidate_history = [*existing_history, req.message]
 
         # 4. Get the necessary context for the copilot
         tracker_context = await get_tracker_context_for_copilot(request, req, user_id)
@@ -1187,8 +1173,16 @@ async def copilot(request: Request) -> None:
             tracker_context=tracker_context,
             assistant_logs=get_recent_logs(),
             assistant_files=relevant_assistant_files,
-            copilot_chat_history=req.copilot_chat_history,
+            copilot_chat_history=candidate_history,
         )
+
+        # Persist the user message to history
+        try:
+            await llm_service.history_store.append(conversation_key, req.message)
+        except Exception as exc:
+            structlogger.error(
+                "builder.copilot.history.user_message_persist_failed", error=str(exc)
+            )
 
         # 5. Run guardrail policy checks. If any policy violations are detected,
         #    send a response and end the stream.
@@ -1209,14 +1203,23 @@ async def copilot(request: Request) -> None:
                 )
             )
 
-            # Send signature for the guardrail response
-            if envelope := await create_signature_envelope_for_text(
-                req=req,
-                text=blocked_or_violation_message.content,
-                category=blocked_or_violation_message.response_category,
-            ):
-                await sse.send(envelope.format())
-
+            # Persist the guardrail response as well
+            guardrail_chat_message = CopilotChatMessage(
+                role="copilot",
+                content=[
+                    TextContent(type="text", text=blocked_or_violation_message.content)
+                ],
+                response_category=blocked_or_violation_message.response_category,
+            )
+            try:
+                await llm_service.history_store.append(
+                    conversation_key, guardrail_chat_message
+                )
+            except Exception as exc:
+                structlogger.error(
+                    "builder.copilot.history.guardrail_response_persist_failed",
+                    error=str(exc),
+                )
             return
 
         # 6. Get the original response stream from copilot and handle it with the
@@ -1237,6 +1240,7 @@ async def copilot(request: Request) -> None:
             await sse.send(token.to_sse_event().format())
 
         # 8a. Offload metabase telemetry logging to a background task
+        usage_stats = copilot_client.usage_statistics
         request.app.add_task(
             asyncio.to_thread(
                 telemetry.log_copilot_from_handler,
@@ -1246,20 +1250,18 @@ async def copilot(request: Request) -> None:
                 system_message=generation_context.system_message,
                 chat_history=generation_context.chat_history,
                 last_user_message=(
-                    req.last_message.get_flattened_text_content()
-                    if (req.last_message and req.last_message.role == ROLE_USER)
+                    req.message.get_flattened_text_content()
+                    if (req.message and req.message.role == ROLE_USER)
                     else None
                 ),
                 tracker_event_attachments=generation_context.tracker_event_attachments,
-                model=copilot_client.usage_statistics.model or "N/A",
-                prompt_tokens=copilot_client.usage_statistics.prompt_tokens or 0,
+                model=usage_stats.model or "N/A",
+                prompt_tokens=usage_stats.prompt_tokens or 0,
+                completion_tokens=usage_stats.completion_tokens or 0,
+                total_tokens=usage_stats.total_tokens or 0,
                 cached_prompt_tokens=(
                     copilot_client.usage_statistics.cached_prompt_tokens or 0
                 ),
-                completion_tokens=(
-                    copilot_client.usage_statistics.completion_tokens or 0
-                ),
-                total_tokens=copilot_client.usage_statistics.total_tokens or 0,
             )
         )
         # 8b. Setup output trace attributes for Langfuse
@@ -1275,17 +1277,34 @@ async def copilot(request: Request) -> None:
 
         # 9. Once the stream is over, extract and send references
         #    if any documents were used
+        reference_section = None
         if generation_context.relevant_documents:
             reference_section = copilot_response_handler.extract_references(
                 generation_context.relevant_documents
             )
             await sse.send(reference_section.to_sse_event().format())
 
-        # 10. Sign the next history
-        if envelope := await create_signature_envelope_for_handler(
-            req, copilot_response_handler
-        ):
-            await sse.send(envelope.format())
+        # 10. Append final assistant message to server-side history
+        full_text, category = copilot_response_handler.extract_full_text_and_category()
+        if full_text:
+            try:
+                # Pass references directly if they exist
+                references = reference_section.references if reference_section else None
+                await persist_copilot_message_to_history(
+                    text=full_text,
+                    chat_id=chat_id,
+                    response_category=category,
+                    references=references,
+                )
+            except Exception as exc:
+                structlogger.error(
+                    "builder.copilot.history.persist_failed", error=str(exc)
+                )
+        else:
+            structlogger.warning(
+                "builder.copilot.history.no_assistant_text",
+                session_id=req.session_id,
+            )
 
     except CopilotStreamError as e:
         capture_exception_with_context(
@@ -1400,6 +1419,63 @@ async def get_copilot_internal_message_template(
         )
 
 
+@bp.route("/copilot/history", methods=["GET"])
+@openapi.summary("Get Copilot chat history")
+@openapi.description("Return stored copilot chat history.")
+@openapi.tag("copilot")
+@openapi.parameter(
+    "chat_id",
+    description="Optional chat ID to get history for (defaults to 'default').",
+    _in="query",
+    required=False,
+    schema=str,
+)
+@openapi.response(
+    200,
+    {"application/json": model_to_schema(CopilotHistoryResponse)},
+    description="Chat history retrieved successfully",
+)
+async def get_copilot_history(request: Request) -> HTTPResponse:
+    """Get copilot chat history."""
+    # Use chat_id from query parameter if provided, otherwise use default
+    chat_id = (request.args.get("chat_id") or "").strip() or DEFAULT_COPILOT_CHAT_ID
+    conversation_key = ConversationKey(chat_id=chat_id)
+    messages = await llm_service.history_store.get(conversation_key)
+    return response.json(CopilotHistoryResponse(messages=messages).model_dump())
+
+
+@bp.route("/copilot/history", methods=["DELETE"])
+@openapi.summary("Delete Copilot chat history")
+@openapi.description("Delete stored copilot chat history.")
+@openapi.tag("copilot")
+@openapi.parameter(
+    "chat_id",
+    description="Optional chat ID to delete history for (defaults to 'default').",
+    _in="query",
+    required=False,
+    schema=str,
+)
+@openapi.response(
+    200,
+    {
+        "application/json": {
+            "type": "object",
+            "properties": {
+                "status": {"type": "string"},
+            },
+        }
+    },
+    description="History deleted successfully",
+)
+async def delete_copilot_history(request: Request) -> HTTPResponse:
+    """Delete copilot chat history."""
+    # Use chat_id from query parameter if provided, otherwise use default
+    chat_id = (request.args.get("chat_id") or "").strip() or DEFAULT_COPILOT_CHAT_ID
+    conversation_key = ConversationKey(chat_id=chat_id)
+    await llm_service.history_store.delete(conversation_key)
+    return response.json({"status": "deleted"})
+
+
 async def current_tracker_from_input_channel(
     app: Any, session_id: str
 ) -> Optional[DialogueStateTracker]:
@@ -1462,14 +1538,14 @@ async def _handle_guardrail_violation_and_maybe_block(
 @langfuse.observe(capture_input=False, capture_output=False)
 async def get_tracker_context_for_copilot(
     request: Request,
-    req: CopilotRequest,
+    req: CopilotTurnRequest,
     user_id: str,
 ) -> Optional[TrackerContext]:
     """Check the assistant chat for guardrail policy violations.
 
     Args:
         request: The request object.
-        req: The CopilotRequest object.
+        req: The CopilotTurnRequest object.
         user_id: The user ID.
 
     Returns:

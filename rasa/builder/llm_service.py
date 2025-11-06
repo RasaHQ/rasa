@@ -18,6 +18,10 @@ from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
 from rasa.builder.copilot.copilot_templated_message_provider import (
     load_copilot_internal_message_templates,
 )
+from rasa.builder.copilot.history_store import (
+    CopilotHistoryStore,
+    SQLiteCopilotHistoryStore,
+)
 from rasa.builder.exceptions import LLMGenerationError
 from rasa.builder.guardrails.clients import (
     GuardrailsClient,
@@ -45,6 +49,7 @@ class LLMService:
         self._guardrails_policy_checker: Optional[GuardrailsPolicyChecker] = None
         self._copilot_response_handler: Optional[CopilotResponseHandler] = None
         self._copilot_internal_message_templates: Optional[Dict[str, str]] = None
+        self._history_store: Optional[CopilotHistoryStore] = None
 
     @property
     def copilot(self) -> Copilot:
@@ -126,6 +131,24 @@ class LLMService:
                 load_copilot_internal_message_templates()
             )
         return self._copilot_internal_message_templates
+
+    @property
+    def history_store(self) -> CopilotHistoryStore:
+        """Get or lazy create history store instance."""
+        if self._history_store is None:
+            database_path = config.COPILOT_HISTORY_SQLITE_PATH
+            structlogger.info("llm_service.history_store.backend", path=database_path)
+            self._history_store = SQLiteCopilotHistoryStore(database_path)
+
+        try:
+            return self._history_store
+        except Exception as e:
+            structlogger.error(
+                "llm_service.history_store.error",
+                event_info="LLM Service: Error getting history store instance.",
+                error=str(e),
+            )
+            raise
 
     @staticmethod
     def instantiate_copilot() -> Copilot:

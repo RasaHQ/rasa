@@ -6,6 +6,7 @@ from openai.types.chat import ChatCompletion
 
 from rasa.builder.copilot.models import (
     CopilotChatMessage,
+    CopilotTurnRequest,
     TextContent,
     UsageStatistics,
     UserChatMessage,
@@ -113,8 +114,23 @@ class TestCopilotLangfuseTelemetry:
         chat_id = "chat-456"
         user_id = "user-789"
 
-        # Mock request and handler
-        request = Mock()
+        # Create a proper CopilotTurnRequest with a UserChatMessage
+        user_message = UserChatMessage(
+            role="user",
+            content=[
+                TextContent(
+                    type="text", text="Can you show me how to create a new intent?"
+                )
+            ],
+        )
+        request = CopilotTurnRequest(
+            session_id="test-session",
+            message=user_message,
+            chat_id=chat_id,
+            project_id=hello_rasa_project_id,
+        )
+
+        # Mock handler
         handler = Mock()
         mock_response = Mock()
         mock_response.content = "Response text"

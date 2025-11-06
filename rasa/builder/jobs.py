@@ -18,6 +18,10 @@ from rasa.builder.copilot.copilot_templated_message_provider import (
     load_copilot_handler_default_responses,
     load_copilot_welcome_messages,
 )
+from rasa.builder.copilot.history_store import (
+    persist_copilot_message_to_history,
+    persist_training_error_analysis_to_history,
+)
 from rasa.builder.copilot.models import (
     CopilotContext,
     FileContent,
@@ -485,6 +489,26 @@ async def run_copilot_training_error_analysis_job(
             job, JobStatus.copilot_analyzing, payload=training_error_log.sse_data
         )
 
+        # Persist the training error analysis to history
+        full_text, _ = copilot_response_handler.extract_full_text_and_category()
+
+        # Extract references if available
+        references = None
+        if generation_context.relevant_documents:
+            reference_section = copilot_response_handler.extract_references(
+                generation_context.relevant_documents
+            )
+            references = (
+                reference_section.references if reference_section.references else None
+            )
+
+        await persist_training_error_analysis_to_history(
+            text=full_text,
+            logs=[log_content_block] if log_content_block else None,
+            references=references,
+            response_category=ResponseCategory.TRAINING_ERROR_LOG_ANALYSIS,
+        )
+
         # Send success status
         await push_job_status_event(job, JobStatus.copilot_analysis_success)
 
@@ -542,6 +566,9 @@ async def run_copilot_welcome_message_job(
                 "completeness": "complete",
             },
         )
+
+        # Persist the welcome message to conversation history
+        await persist_copilot_message_to_history(text=welcome_message)
 
         # Mark job as done
         await push_job_status_event(job, JobStatus.done)
@@ -602,6 +629,9 @@ async def run_copilot_training_success_job(
                 "completeness": "complete",
             },
         )
+
+        # Persist the training success message to conversation history
+        await persist_copilot_message_to_history(text=training_success_message)
 
         # Mark job as done
         await push_job_status_event(job, JobStatus.done)

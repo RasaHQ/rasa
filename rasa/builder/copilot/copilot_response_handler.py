@@ -1,7 +1,7 @@
 import copy
 import re
 from collections import deque
-from typing import AsyncGenerator, Deque, Dict, List, Optional
+from typing import AsyncGenerator, Deque, Dict, List, Optional, Tuple
 
 import structlog
 
@@ -520,3 +520,48 @@ class CopilotResponseHandler:
         reference_section = ReferenceSection(references=list(used_references.values()))
         reference_section.sort_references()
         return reference_section
+
+    def extract_full_text(self) -> str:
+        """Extract and join all text content from the handler's responses.
+
+        Returns:
+            str: Concatenated text from all generated content responses.
+        """
+        text_parts: List[str] = []
+
+        for response in self.generated_responses or []:
+            if isinstance(response, GeneratedContent) and response.content:
+                text_parts.append(response.content)
+
+        return "".join(text_parts)
+
+    def extract_response_category(self) -> ResponseCategory:
+        """Extract the last non-reference response category from the handler.
+
+        Returns:
+            ResponseCategory: The last response category, excluding REFERENCE and
+            REFERENCE_ENTRY categories. Defaults to COPILOT if none found.
+        """
+        last_category: Optional[ResponseCategory] = None
+
+        for response in self.generated_responses or []:
+            if (
+                isinstance(response, GeneratedContent)
+                and response.content
+                and response.response_category
+                not in {
+                    ResponseCategory.REFERENCE,
+                    ResponseCategory.REFERENCE_ENTRY,
+                }
+            ):
+                last_category = response.response_category
+
+        return last_category or ResponseCategory.COPILOT
+
+    def extract_full_text_and_category(self) -> Tuple[str, ResponseCategory]:
+        """Extract full text and response category from the handler's responses.
+
+        Returns:
+            Tuple[str, ResponseCategory]: Text and the last response category.
+        """
+        return self.extract_full_text(), self.extract_response_category()

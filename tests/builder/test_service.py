@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import os
 import shutil
 import sys
 import tarfile
@@ -8,16 +9,23 @@ import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict, Generator
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, PropertyMock, patch
 
 import pytest
 from pytest import MonkeyPatch
 from sanic import Sanic
 
+from rasa.builder import config
+from rasa.builder.copilot.history_store import SQLiteCopilotHistoryStore
 from rasa.builder.copilot.models import (
+    ConversationKey,
+    CopilotChatMessage,
     CopilotGenerationContext,
+    GeneratedContent,
     ResponseCategory,
     ResponseCompleteness,
+    TextContent,
+    UserChatMessage,
 )
 from rasa.builder.document_retrieval.models import Document
 from rasa.builder.guardrails.clients import LakeraAIGuardrails
@@ -50,7 +58,9 @@ def patch_copilot_dependencies(monkeypatch):
     """
     # 1. Patch project generator to return a mock project
     project_folder = SimpleNamespace(name="proj")
-    pg = SimpleNamespace(project_folder=project_folder, get_bot_files=lambda: {})
+    pg = SimpleNamespace(
+        project_folder=project_folder, get_bot_files=lambda *args, **kwargs: {}
+    )
     monkeypatch.setattr("rasa.builder.service.get_project_generator", lambda _: pg)
 
     # 2. Patch Copilot's generate_response method to return a mock stream
@@ -151,6 +161,64 @@ def self_removable_path(tmp_path: Path) -> Generator[Path, Any, None]:
     # Remove all occurrences safely
     for _ in range(sys.path.count(tmp_path_str)):
         sys.path.remove(tmp_path_str)
+
+
+def _setup_copilot_mocks(monkeypatch: MonkeyPatch, expected_response: str) -> None:
+    # Mock response handler
+    mock_generated_response = GeneratedContent(
+        content=expected_response, response_category=ResponseCategory.COPILOT
+    )
+
+    async def mock_handle_response(stream):
+        async for item in stream:
+            yield item
+
+    def mock_instantiate_handler(*args, **kwargs):
+        handler = MagicMock()
+        handler.generated_responses = [mock_generated_response]
+        handler.handle_response = mock_handle_response
+        mock_reference = MagicMock()
+        mock_reference.to_sse_event.return_value.format.return_value = ""
+        handler.extract_references.return_value = mock_reference
+        handler.extract_full_text_and_category.return_value = (
+            expected_response,
+            ResponseCategory.COPILOT,
+        )
+        return handler
+
+    # Mock copilot client
+    async def mock_generate_response(context):
+        async def mock_stream():
+            for text in expected_response.split():
+                token = MagicMock()
+                token.to_sse_event.return_value.format.return_value = (
+                    f"data: {text}\n\n"
+                )
+                yield token
+
+        # Return the stream and a proper generation context
+        mock_generation_context = MagicMock()
+        mock_generation_context.relevant_documents = []
+        return mock_stream(), mock_generation_context
+
+    mock_copilot = MagicMock()
+    mock_copilot.generate_response = mock_generate_response
+
+    mock_llm_service = MagicMock()
+    mock_llm_service.instantiate_handler = mock_instantiate_handler
+    mock_llm_service.instantiate_copilot.return_value = mock_copilot
+
+    # Mock guardrails_policy_checker to return None (no violations)
+    mock_guardrails_checker = MagicMock()
+    mock_guardrails_checker.check_copilot_chat_for_policy_violations = AsyncMock(
+        return_value=None
+    )
+    mock_guardrails_checker.check_assistant_chat_for_policy_violations = AsyncMock(
+        return_value=None
+    )
+    mock_llm_service.guardrails_policy_checker = mock_guardrails_checker
+
+    monkeypatch.setattr("rasa.builder.service.llm_service", mock_llm_service)
 
 
 def test_setup_project_generator_adds_to_sys_path(self_removable_path: Path):
@@ -506,6 +574,209 @@ class TestFilesEndpointIntegration:
             # Verify new files were written
             assert (temp_project_dir / "config.yml").read_text() == "new config"
             assert (temp_project_dir / "domain.yml").read_text() == "new domain"
+
+
+@pytest.mark.asyncio
+async def test_copilot_endpoint_stores_messages_to_sqlite(
+    sanic_app: Sanic, monkeypatch: MonkeyPatch
+) -> None:
+    """Test that /api/copilot stores both user and copilot messages to SQLite."""
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as temp_db:
+        temp_db_path = temp_db.name
+
+    try:
+        # Configure SQLite backend
+        monkeypatch.setattr(config, "COPILOT_HISTORY_SQLITE_PATH", temp_db_path)
+        monkeypatch.setattr(config, "HELLO_RASA_PROJECT_ID", "hello-rasa")
+        monkeypatch.setattr("rasa.builder.service.HELLO_RASA_PROJECT_ID", "hello-rasa")
+
+        # Setup mocks and store
+        expected_response = "Hello! I can help you build a bot."
+        _setup_copilot_mocks(monkeypatch, expected_response)
+        test_store = SQLiteCopilotHistoryStore(temp_db_path)
+
+        # Configure the mocked llm_service to use our test store
+        from rasa.builder.service import llm_service
+
+        type(llm_service).history_store = PropertyMock(return_value=test_store)
+
+        # Make request
+        user_id, session_id = "test-user", "test-session"
+        user_message_text = "Hello, can you help me build a bot?"
+        payload = {
+            "session_id": session_id,
+            "message": {
+                "role": "user",
+                "content": [{"type": "text", "text": user_message_text}],
+            },
+        }
+
+        _, response = await sanic_app.asgi_client.post(
+            "/api/copilot",
+            json=payload,
+            headers={"X-User-Id": user_id, "Accept": "text/event-stream"},
+        )
+        assert response.status == 200
+
+        # Verify both messages stored
+        conv_key = ConversationKey(chat_id="default")
+        stored_messages = await test_store.get(conv_key)
+        assert len(stored_messages) == 2
+
+        # Verify user message
+        user_msg = stored_messages[0]
+        assert user_msg.role == "user"
+        assert user_msg.content[0].text == user_message_text
+        assert user_msg.response_category is None
+
+        # Verify copilot message
+        copilot_msg = stored_messages[1]
+        assert copilot_msg.role == "copilot"
+        assert copilot_msg.content[0].text == expected_response
+        assert copilot_msg.response_category == ResponseCategory.COPILOT
+    finally:
+        if os.path.exists(temp_db_path):
+            os.remove(temp_db_path)
+
+
+@pytest.mark.asyncio
+async def test_get_copilot_history_success(
+    sanic_app: Sanic, monkeypatch: MonkeyPatch
+) -> None:
+    """Test GET /api/copilot/history returns stored messages successfully."""
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as temp_db:
+        temp_db_path = temp_db.name
+
+    try:
+        # Configure SQLite backend
+        monkeypatch.setattr(config, "COPILOT_HISTORY_SQLITE_PATH", temp_db_path)
+        monkeypatch.setattr(config, "HELLO_RASA_PROJECT_ID", "hello-rasa")
+        monkeypatch.setattr("rasa.builder.service.HELLO_RASA_PROJECT_ID", "hello-rasa")
+
+        # Create store and add test messages
+        test_store = SQLiteCopilotHistoryStore(temp_db_path)
+        monkeypatch.setattr(
+            "rasa.builder.service.llm_service._history_store", test_store
+        )
+
+        # Make GET request
+        _, response = await sanic_app.asgi_client.get(
+            "/api/copilot/history",
+            headers={"X-User-Id": "test-user"},
+        )
+
+        # Verify response
+        assert response.status == 200
+        response_data = response.json
+        assert response_data["messages"] == []
+
+        conversation_key = ConversationKey(chat_id="default")
+
+        # Add test messages
+        user_message = UserChatMessage(
+            role="user",
+            content=[TextContent(type="text", text="Hello, how are you?")],
+        )
+        await test_store.append(conversation_key, user_message)
+
+        copilot_message = CopilotChatMessage(
+            role="copilot",
+            content=[TextContent(type="text", text="I'm doing well, thank you!")],
+            response_category=ResponseCategory.COPILOT,
+        )
+        await test_store.append(conversation_key, copilot_message)
+
+        # Make GET request
+        _, response = await sanic_app.asgi_client.get(
+            "/api/copilot/history",
+            headers={"X-User-Id": "test-user"},
+        )
+
+        # Verify response
+        assert response.status == 200
+        response_data = response.json
+        assert len(response_data["messages"]) == 2
+
+        # Verify user message
+        assert response_data["messages"][0]["role"] == "user"
+        assert (
+            response_data["messages"][0]["content"][0]["text"] == "Hello, how are you?"
+        )
+        assert response_data["messages"][0]["response_category"] is None
+
+        # Verify copilot message
+        assert response_data["messages"][1]["role"] == "copilot"
+        assert (
+            response_data["messages"][1]["content"][0]["text"]
+            == "I'm doing well, thank you!"
+        )
+        assert response_data["messages"][1]["response_category"] == "copilot"
+    finally:
+        if os.path.exists(temp_db_path):
+            os.remove(temp_db_path)
+
+
+@pytest.mark.asyncio
+async def test_delete_copilot_history_success(
+    sanic_app: Sanic, monkeypatch: MonkeyPatch
+) -> None:
+    """Test DELETE /api/copilot/history successfully deletes stored messages."""
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as temp_db:
+        temp_db_path = temp_db.name
+
+    try:
+        # Configure SQLite backend
+        monkeypatch.setattr(config, "COPILOT_HISTORY_SQLITE_PATH", temp_db_path)
+        monkeypatch.setattr(config, "HELLO_RASA_PROJECT_ID", "hello-rasa")
+        monkeypatch.setattr("rasa.builder.service.HELLO_RASA_PROJECT_ID", "hello-rasa")
+
+        # Create store and add test messages
+        test_store = SQLiteCopilotHistoryStore(temp_db_path)
+        monkeypatch.setattr(
+            "rasa.builder.service.llm_service._history_store", test_store
+        )
+
+        conv_key = ConversationKey(chat_id="default")
+
+        # Make DELETE request
+        _, response = await sanic_app.asgi_client.delete(
+            "/api/copilot/history",
+            headers={"X-User-Id": "test-user"},
+        )
+
+        # Verify response (should succeed)
+        assert response.status == 200
+        response_data = response.json
+        assert response_data["status"] == "deleted"
+
+        # Add test messages
+        user_message = UserChatMessage(
+            role="user",
+            content=[TextContent(type="text", text="Hello, how are you?")],
+        )
+        await test_store.append(conv_key, user_message)
+
+        # Verify messages exist before deletion
+        messages_before = await test_store.get(conv_key)
+        assert len(messages_before) == 1
+
+        # Make DELETE request
+        _, response = await sanic_app.asgi_client.delete(
+            "/api/copilot/history",
+            headers={"X-User-Id": "test-user"},
+        )
+
+        # Verify response
+        assert response.status == 200
+        response_data = response.json
+        assert response_data["status"] == "deleted"
+
+        # Verify messages are actually deleted
+        messages_after = await test_store.get(conv_key)
+        assert len(messages_after) == 0
+    finally:
+        if os.path.exists(temp_db_path):
+            os.remove(temp_db_path)
 
 
 class TestBackupToBotEndpoint:

@@ -581,6 +581,18 @@ class TestCopilotWelcomeMessage:
         self.mock_load = AsyncMock(return_value=None)
         self.mock_update = MagicMock()
 
+        # Mock history store
+        self.mock_history_store = MagicMock()
+        self.mock_history_store.append = AsyncMock()
+
+        # Mock llm_service with history_store property
+        mock_llm_service = MagicMock()
+        mock_llm_service.history_store = self.mock_history_store
+
+        # Patch llm_service
+        monkeypatch.setattr("rasa.builder.llm_service.llm_service", mock_llm_service)
+        monkeypatch.setattr("rasa.builder.jobs.llm_service", mock_llm_service)
+
         # Apply all mocks
         monkeypatch.setattr(
             "rasa.builder.jobs.push_job_status_event", self.mock_push_event
@@ -673,6 +685,27 @@ class TestCopilotWelcomeMessage:
         )
 
     @pytest.mark.asyncio
+    async def test_welcome_message_persisted_to_history(self, mock_app, mock_job):
+        await run_copilot_welcome_message_job(
+            mock_app, mock_job, ProjectTemplateName.FINANCE
+        )
+
+        # Verify history store append was called
+        self.mock_history_store.append.assert_called_once()
+
+        # Verify the conversation key is correct
+        call_args = self.mock_history_store.append.call_args
+        conversation_key = call_args[0][0]
+        assert conversation_key.chat_id == "default"
+
+        # Verify the message content
+        message = call_args[0][1]
+        assert message.role == "copilot"
+        assert len(message.content) == 1
+        assert message.content[0].type == "text"
+        assert "Banking Agent template" in message.content[0].text
+
+    @pytest.mark.asyncio
     async def test_template_job_creates_welcome_job(self, mock_template_app):
         job = job_manager.create_job()
         await run_template_to_bot_job(
@@ -738,6 +771,18 @@ class TestCopilotTrainingSuccessJob:
         self.mock_load = AsyncMock(return_value=None)
         self.mock_update = MagicMock()
 
+        # Mock history store
+        self.mock_history_store = MagicMock()
+        self.mock_history_store.append = AsyncMock()
+
+        # Mock llm_service with history_store property
+        mock_llm_service = MagicMock()
+        mock_llm_service.history_store = self.mock_history_store
+
+        # Patch llm_service
+        monkeypatch.setattr("rasa.builder.llm_service.llm_service", mock_llm_service)
+        monkeypatch.setattr("rasa.builder.jobs.llm_service", mock_llm_service)
+
         # Apply all mocks
         monkeypatch.setattr(
             "rasa.builder.jobs.push_job_status_event", self.mock_push_event
@@ -793,6 +838,27 @@ class TestCopilotTrainingSuccessJob:
             self.mock_push_event, expected_snippets
         )
         self._verify_done_event_sent(self.mock_push_event)
+
+    @pytest.mark.asyncio
+    async def test_training_success_message_persisted_to_history(
+        self, mock_app, mock_job
+    ):
+        await run_copilot_training_success_job(mock_app, mock_job)
+
+        # Verify history store append was called
+        self.mock_history_store.append.assert_called_once()
+
+        # Verify the conversation key is correct
+        call_args = self.mock_history_store.append.call_args
+        conversation_key = call_args[0][0]
+        assert conversation_key.chat_id == "default"
+
+        # Verify the message content
+        message = call_args[0][1]
+        assert message.role == "copilot"
+        assert len(message.content) == 1
+        assert message.content[0].type == "text"
+        assert "Your changes have been saved successfully" in message.content[0].text
 
     @pytest.mark.asyncio
     async def test_training_error_prevents_training_success_job(

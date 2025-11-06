@@ -9,6 +9,8 @@ from typing import (
     Optional,
 )
 
+from rasa.builder.copilot.models import CopilotTurnRequest
+
 if TYPE_CHECKING:
     from rasa.builder.copilot.copilot import Copilot
     from rasa.builder.copilot.models import CopilotContext
@@ -21,10 +23,8 @@ import structlog
 
 from rasa.builder.copilot.copilot_response_handler import CopilotResponseHandler
 from rasa.builder.copilot.models import (
-    CopilotRequest,
     EventContent,
     UsageStatistics,
-    UserChatMessage,
 )
 from rasa.builder.document_retrieval.models import Document
 from rasa.builder.models import BotFiles
@@ -84,7 +84,7 @@ class CopilotLangfuseTelemetry:
         hello_rasa_project_id: str,
         chat_id: str,
         user_id: str,
-        request: CopilotRequest,
+        request: CopilotTurnRequest,
         handler: CopilotResponseHandler,
         relevant_documents: list[Document],
         copilot_context: "CopilotContext",
@@ -95,16 +95,16 @@ class CopilotLangfuseTelemetry:
             hello_rasa_project_id: The Hello Rasa project ID.
             chat_id: The chat/conversation ID.
             user_id: The user ID.
-            request: The parsed CopilotRequest object.
+            request: The parsed CopilotTurnRequest object.
             handler: The response handler containing generated responses.
             relevant_documents: The relevant documents used to generate the response.
         """
         langfuse_client = langfuse.get_client()
-        user_message = CopilotLangfuseTelemetry._extract_last_user_message_content(
-            request
-        )
+        user_message = request.message.get_flattened_text_content()
         tracker_event_attachments = (
-            CopilotLangfuseTelemetry._extract_tracker_event_attachments(request)
+            CopilotLangfuseTelemetry._extract_tracker_event_attachments_from_turn(
+                request
+            )
         )
         response_category = CopilotLangfuseTelemetry._extract_response_category(handler)
         reference_section_entries = CopilotLangfuseTelemetry._extract_references(
@@ -248,35 +248,21 @@ class CopilotLangfuseTelemetry:
         return wrapper
 
     @staticmethod
-    def _extract_last_user_message_content(request: CopilotRequest) -> Optional[str]:
-        """Extract the last user message from the CopilotRequest object.
-
-        Args:
-            request: The CopilotRequest object.
-        """
-        if not isinstance(request.last_message, UserChatMessage):
-            return None
-        return request.last_message.get_flattened_text_content()
-
-    @staticmethod
-    def _extract_tracker_event_attachments(
-        request: CopilotRequest,
+    def _extract_tracker_event_attachments_from_turn(
+        request: CopilotTurnRequest,
     ) -> list[Dict[str, Any]]:
-        """Extract tracker event attachments from the last user message.
+        """Extract tracker event attachments from the user message.
 
         Args:
-            request: The CopilotRequest object.
+            request: The CopilotTurnRequest object.
 
         Returns:
-            The event content block sent with the last user message in the
+            The event content block sent with the user message in the
             dictionary format.
         """
-        last_message = request.last_message
-        if not isinstance(last_message, UserChatMessage):
-            return []
         return [
             attachment.model_dump()
-            for attachment in last_message.get_content_blocks_by_type(EventContent)
+            for attachment in request.message.get_content_blocks_by_type(EventContent)
         ]
 
     @staticmethod
