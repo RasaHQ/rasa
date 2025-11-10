@@ -1,11 +1,19 @@
 from itertools import groupby
-from typing import Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import structlog
 from jinja2 import Template
 
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
+)
 from rasa.shared.utils.llm import (
     tracker_as_readable_transcript,
 )
@@ -72,6 +80,18 @@ def _create_summarization_prompt(
     )
 
 
+def get_llm_tracing_metadata(tracker: DialogueStateTracker) -> Dict[str, Any]:
+    return {
+        LANGFUSE_METADATA_SESSION_ID: tracker.sender_id,
+        LANGFUSE_METADATA_TAGS: ["ContextualResponseRephraser Summarizer"],
+        LANGFUSE_METADATA_CUSTOM_METADATA: {
+            LANGFUSE_METADATA_AGENT_ID: tracker.assistant_id,
+            LANGFUSE_METADATA_MODEL_ID: tracker.model_id,
+            LANGFUSE_METADATA_COMPONENT_NAME: "ContextualResponseRephraser Summarizer",
+        },
+    }
+
+
 async def summarize_conversation(
     tracker: DialogueStateTracker,
     llm: LLMClient,
@@ -91,7 +111,9 @@ async def summarize_conversation(
     """
     prompt = _create_summarization_prompt(tracker, max_turns, turns_wrapper)
     try:
-        llm_response = await llm.acompletion(prompt)
+        llm_response = await llm.acompletion(
+            prompt, metadata=get_llm_tracing_metadata(tracker)
+        )
         summarization = llm_response.choices[0].strip()
         structlogger.debug(
             "summarization.success", summarization=summarization, prompt=prompt

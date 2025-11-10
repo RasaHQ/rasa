@@ -33,6 +33,15 @@ from rasa.shared.nlu.constants import (
     PROMPTS,
 )
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
+from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
+)
+from rasa.shared.utils.llm import LLMInput
 from rasa.utils.endpoints import EndpointConfig
 
 
@@ -204,7 +213,9 @@ class MockedContextualResponseRephraser(ContextualResponseRephraser):
     async def _create_history(self, tracker: DialogueStateTracker) -> str:
         return "User said hello"
 
-    async def _generate_llm_response(self, prompt: str) -> Optional[LLMResponse]:
+    async def _generate_llm_response(
+        self, llm_input: LLMInput
+    ) -> Optional[LLMResponse]:
         return LLMResponse(
             id="mock-id",
             created=123456,
@@ -310,7 +321,9 @@ async def test_rephraser_uses_template_from_response(
         async def _create_history(self, tracker: DialogueStateTracker) -> str:
             return "User said hello"
 
-        async def _generate_llm_response(self, prompt: str) -> Optional[LLMResponse]:
+        async def _generate_llm_response(
+            self, llm_input: LLMInput
+        ) -> Optional[LLMResponse]:
             llm_response_object.choices = ["hello foobar"]
             return llm_response_object
 
@@ -341,8 +354,10 @@ async def test_rephraser_default_template(
         async def _create_history(self, tracker: DialogueStateTracker) -> str:
             return "User said hello"
 
-        async def _generate_llm_response(self, prompt: str) -> Optional[LLMResponse]:
-            assert prompt == (
+        async def _generate_llm_response(
+            self, llm_input: LLMInput
+        ) -> Optional[LLMResponse]:
+            assert llm_input.prompt == (
                 "The following is a conversation with\n"
                 "an AI assistant. The assistant is helpful, creative, "
                 "clever, and very friendly.\n"
@@ -493,8 +508,10 @@ async def test_rephraser_template_summarisation(
         async def _create_history(self, tracker: DialogueStateTracker) -> str:
             return "User said hello"
 
-        async def _generate_llm_response(self, prompt: str) -> Optional[LLMResponse]:
-            assert prompt == expected_prompt
+        async def _generate_llm_response(
+            self, llm_input: LLMInput
+        ) -> Optional[LLMResponse]:
+            assert llm_input.prompt == expected_prompt
             llm_response_object.choices = ["hello foobar"]
             return llm_response_object
 
@@ -727,7 +744,9 @@ async def test_rephraser_prompt_conv_history_amended_by_turn_wrapper(
 ):
     # MockedContextualResponseRephraser to mock LLM response, but not to set history
     class MockedContextualResponseRephraser(ContextualResponseRephraser):
-        async def _generate_llm_response(self, prompt: str) -> Optional[LLMResponse]:
+        async def _generate_llm_response(
+            self, llm_input: LLMInput
+        ) -> Optional[LLMResponse]:
             llm_response_object.choices = ["hello foobar"]
             return llm_response_object
 
@@ -915,3 +934,215 @@ async def test_rephrase_language_handling(
 
     assert rephrased_response["text"] == expected_text
     assert rephrased_response["translation"]["de"] == expected_translation_de
+
+
+@pytest.mark.parametrize(
+    "sender_id, assistant_id, model_id, expected_metadata",
+    [
+        (
+            "user123",
+            "assistant456",
+            "model789",
+            {
+                LANGFUSE_METADATA_SESSION_ID: "user123",
+                LANGFUSE_METADATA_TAGS: [ContextualResponseRephraser.__name__],
+                LANGFUSE_METADATA_CUSTOM_METADATA: {
+                    LANGFUSE_METADATA_AGENT_ID: "assistant456",
+                    LANGFUSE_METADATA_MODEL_ID: "model789",
+                    LANGFUSE_METADATA_COMPONENT_NAME: ContextualResponseRephraser.__name__,  # noqa: E501
+                },
+            },
+        ),
+        (
+            "user123",
+            None,
+            None,
+            {
+                LANGFUSE_METADATA_SESSION_ID: "user123",
+                LANGFUSE_METADATA_TAGS: [ContextualResponseRephraser.__name__],
+                LANGFUSE_METADATA_CUSTOM_METADATA: {
+                    LANGFUSE_METADATA_AGENT_ID: None,
+                    LANGFUSE_METADATA_MODEL_ID: None,
+                    LANGFUSE_METADATA_COMPONENT_NAME: ContextualResponseRephraser.__name__,  # noqa: E501
+                },
+            },
+        ),
+        (
+            "user123",
+            "assistant456",
+            None,
+            {
+                LANGFUSE_METADATA_SESSION_ID: "user123",
+                LANGFUSE_METADATA_TAGS: [ContextualResponseRephraser.__name__],
+                LANGFUSE_METADATA_CUSTOM_METADATA: {
+                    LANGFUSE_METADATA_AGENT_ID: "assistant456",
+                    LANGFUSE_METADATA_MODEL_ID: None,
+                    LANGFUSE_METADATA_COMPONENT_NAME: ContextualResponseRephraser.__name__,  # noqa: E501
+                },
+            },
+        ),
+    ],
+)
+def test_get_llm_tracing_metadata(
+    empty_rephraser: ContextualResponseRephraser,
+    sender_id: str,
+    assistant_id: Optional[str],
+    model_id: Optional[str],
+    expected_metadata: Dict[str, Any],
+) -> None:
+    """Test that get_llm_tracing_metadata returns correct metadata from tracker."""
+    tracker = DialogueStateTracker(sender_id=sender_id, slots=[])
+    tracker.assistant_id = assistant_id
+    tracker.model_id = model_id
+
+    metadata = empty_rephraser.get_llm_tracing_metadata(tracker)
+
+    assert metadata == expected_metadata
+
+
+async def test_generate_llm_response_receives_llm_input_with_metadata(
+    monkeypatch: MonkeyPatch,
+    greet_tracker: DialogueStateTracker,
+    domain_with_responses: Domain,
+    patch_default_language: None,
+) -> None:
+    """Test that _generate_llm_response receives LLMInput with correct prompt and
+    metadata."""
+    captured_llm_input: Optional[LLMInput] = None
+
+    class TestContextualResponseRephraser(ContextualResponseRephraser):
+        async def _create_history(self, tracker: DialogueStateTracker) -> str:
+            return "User said hello"
+
+        async def _generate_llm_response(
+            self, llm_input: LLMInput
+        ) -> Optional[LLMResponse]:
+            nonlocal captured_llm_input
+            captured_llm_input = llm_input
+            return LLMResponse(
+                id="test-id",
+                created=123456,
+                choices=["rephrased response"],
+                model="test-model",
+                usage=LLMUsage(prompt_tokens=5, completion_tokens=7),
+            )
+
+    endpoint_config = EndpointConfig.from_dict({})
+    rephraser = TestContextualResponseRephraser(
+        endpoint_config=endpoint_config, domain=domain_with_responses
+    )
+
+    # Set tracker metadata
+    greet_tracker.assistant_id = "test_assistant"
+    greet_tracker.model_id = "test_model"
+
+    await rephraser.generate(
+        "utter_allows_rephrasing",
+        greet_tracker,
+        output_channel="callback",
+    )
+
+    # Verify LLMInput was captured
+    assert captured_llm_input is not None
+    assert isinstance(captured_llm_input, LLMInput)
+    assert captured_llm_input.prompt is not None
+    assert len(captured_llm_input.prompt) > 0
+    assert "Hey there! How can I help you?" in captured_llm_input.prompt
+
+    # Verify metadata
+    assert captured_llm_input.metadata is not None
+    assert (
+        captured_llm_input.metadata[LANGFUSE_METADATA_SESSION_ID]
+        == greet_tracker.sender_id
+    )
+    assert (
+        captured_llm_input.metadata[LANGFUSE_METADATA_CUSTOM_METADATA][
+            LANGFUSE_METADATA_AGENT_ID
+        ]
+        == "test_assistant"
+    )
+    assert (
+        captured_llm_input.metadata[LANGFUSE_METADATA_CUSTOM_METADATA][
+            LANGFUSE_METADATA_MODEL_ID
+        ]
+        == "test_model"
+    )
+    assert (
+        captured_llm_input.metadata[LANGFUSE_METADATA_CUSTOM_METADATA][
+            LANGFUSE_METADATA_COMPONENT_NAME
+        ]
+        == TestContextualResponseRephraser.__name__
+    )
+    assert captured_llm_input.metadata[LANGFUSE_METADATA_TAGS] == [
+        TestContextualResponseRephraser.__name__
+    ]
+
+
+async def test_generate_llm_response_receives_llm_input_with_none_metadata(
+    monkeypatch: MonkeyPatch,
+    greet_tracker: DialogueStateTracker,
+    domain_with_responses: Domain,
+    patch_default_language: None,
+) -> None:
+    """Test that _generate_llm_response receives LLMInput with None metadata values."""
+    captured_llm_input: Optional[LLMInput] = None
+
+    class TestContextualResponseRephraser(ContextualResponseRephraser):
+        async def _create_history(self, tracker: DialogueStateTracker) -> str:
+            return "User said hello"
+
+        async def _generate_llm_response(
+            self, llm_input: LLMInput
+        ) -> Optional[LLMResponse]:
+            nonlocal captured_llm_input
+            captured_llm_input = llm_input
+            return LLMResponse(
+                id="test-id",
+                created=123456,
+                choices=["rephrased response"],
+                model="test-model",
+                usage=LLMUsage(prompt_tokens=5, completion_tokens=7),
+            )
+
+    endpoint_config = EndpointConfig.from_dict({})
+    rephraser = TestContextualResponseRephraser(
+        endpoint_config=endpoint_config, domain=domain_with_responses
+    )
+
+    # Ensure tracker has None metadata
+    greet_tracker.assistant_id = None
+    greet_tracker.model_id = None
+
+    await rephraser.generate(
+        "utter_allows_rephrasing",
+        greet_tracker,
+        output_channel="callback",
+    )
+
+    # Verify metadata with None values
+    assert captured_llm_input is not None
+    assert (
+        captured_llm_input.metadata[LANGFUSE_METADATA_SESSION_ID]
+        == greet_tracker.sender_id
+    )
+    assert (
+        captured_llm_input.metadata[LANGFUSE_METADATA_CUSTOM_METADATA][
+            LANGFUSE_METADATA_AGENT_ID
+        ]
+        is None
+    )
+    assert (
+        captured_llm_input.metadata[LANGFUSE_METADATA_CUSTOM_METADATA][
+            LANGFUSE_METADATA_MODEL_ID
+        ]
+        is None
+    )
+    assert (
+        captured_llm_input.metadata[LANGFUSE_METADATA_CUSTOM_METADATA][
+            LANGFUSE_METADATA_COMPONENT_NAME
+        ]
+        == TestContextualResponseRephraser.__name__
+    )
+    assert captured_llm_input.metadata[LANGFUSE_METADATA_TAGS] == [
+        TestContextualResponseRephraser.__name__
+    ]

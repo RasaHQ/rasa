@@ -150,6 +150,13 @@ class SystemPrompts(BaseModel):
     )
 
 
+class LLMInput(BaseModel):
+    prompt: str = Field(..., description="The prompt to send to the LLM.")
+    metadata: Dict[str, Any] = Field(
+        ..., description="The metadata to send to the LLM."
+    )
+
+
 def _compute_hash_for_cache_from_configs(
     config_x: Dict[str, Any], config_y: Dict[str, Any]
 ) -> int:

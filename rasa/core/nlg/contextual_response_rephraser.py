@@ -34,12 +34,21 @@ from rasa.shared.nlu.constants import (
     PROMPTS,
 )
 from rasa.shared.providers.llm.llm_response import LLMResponse, measure_llm_latency
-from rasa.shared.utils.constants import LOG_COMPONENT_SOURCE_METHOD_INIT
+from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
+    LOG_COMPONENT_SOURCE_METHOD_INIT,
+)
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_GENERATE_MODEL_NAME,
     DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
     USER,
+    LLMInput,
     check_prompt_config_keys_and_warn_if_deprecated,
     combine_custom_and_default_config,
     get_prompt_template,
@@ -223,8 +232,21 @@ class ContextualResponseRephraser(
                 return None
         return None
 
+    def get_llm_tracing_metadata(self, tracker: DialogueStateTracker) -> Dict[str, Any]:
+        return {
+            LANGFUSE_METADATA_SESSION_ID: tracker.sender_id,
+            LANGFUSE_METADATA_TAGS: [self.__class__.__name__],
+            LANGFUSE_METADATA_CUSTOM_METADATA: {
+                LANGFUSE_METADATA_AGENT_ID: tracker.assistant_id,
+                LANGFUSE_METADATA_MODEL_ID: tracker.model_id,
+                LANGFUSE_METADATA_COMPONENT_NAME: self.__class__.__name__,
+            },
+        }
+
     @measure_llm_latency
-    async def _generate_llm_response(self, prompt: str) -> Optional[LLMResponse]:
+    async def _generate_llm_response(
+        self, llm_input: LLMInput
+    ) -> Optional[LLMResponse]:
         """Use LLM to generate a response.
 
         Returns an LLMResponse object containing both the generated text
@@ -239,7 +261,9 @@ class ContextualResponseRephraser(
         llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
 
         try:
-            return await llm.acompletion(prompt)
+            return await llm.acompletion(
+                messages=llm_input.prompt, metadata=llm_input.metadata
+            )
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
@@ -360,7 +384,9 @@ class ContextualResponseRephraser(
             or self.llm_property(MODEL_NAME_CONFIG_KEY),
             llm_model_group_id=self.llm_property(MODEL_GROUP_ID_CONFIG_KEY),
         )
-        llm_response = await self._generate_llm_response(prompt)
+        llm_response = await self._generate_llm_response(
+            LLMInput(prompt=prompt, metadata=self.get_llm_tracing_metadata(tracker))
+        )
         llm_response = LLMResponse.ensure_llm_response(llm_response)
 
         response = self._add_prompt_and_llm_metadata_to_response(
