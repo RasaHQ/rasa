@@ -2,22 +2,22 @@ action_endpoint:
   url: "http://localhost:5055/webhook"
 
 nlg:
- type: rephrase
- llm:
-   provider: anthropic
-   model: claude-3-5-sonnet-latest
-   timeout: 7
+  type: rephrase
+  llm:
+    provider: anthropic
+    model: claude-sonnet-4-5
+    timeout: 7
 
 tracing:
- type: otlp
- endpoint: localhost:4317
- insecure: true
- host: localhost
- service_name: e2e-tests-anthropic
+  type: otlp
+  endpoint: localhost:4317
+  insecure: true
+  host: localhost
+  service_name: e2e-tests-anthropic
 
 metrics:
- type: otlp
- endpoint: localhost:4317
- insecure: true
- host: localhost
- service_name: e2e-tests-anthropic
+  type: otlp
+  endpoint: localhost:4317
+  insecure: true
+  host: localhost
+  service_name: e2e-tests-anthropic

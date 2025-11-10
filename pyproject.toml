@@ -201,7 +201,7 @@ structlog-sentry = "~2.2.1"
 langchain = "~0.3.27"
 langchain-community = "~0.3.29"
 jinja2 = "~3.1.6"
-openai = "~1.68.2"
+openai = "~1.99.5"
 dnspython = "2.6.1"
 wheel = ">=0.40.0"
 certifi = ">=2025.10.5,<2025.11.0"
@@ -223,7 +223,7 @@ qdrant-client = "~1.9.1"
 psutil = "^5.9.5"
 tenacity = "~8.4.1"  # pinned down because of langchain
 types-protobuf = "4.25.0.20240417"
-litellm = "~1.69.0"
+litellm = "~1.79.3"
 openpyxl = "^3.1.5"
 diskcache = "~5.6.3"
 safetensors = "~0.4.5"  # required by calm assistant
@@ -333,7 +333,7 @@ optional = true
 # --------------------------------------------------------------------------------------
 
 [tool.poetry.dependencies.langfuse]
-version = "~3.6.0"
+version = "~3.8.1"
 optional = true
 
 # --------------------------------------------------------------------------------------
