@@ -9,13 +9,21 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxVersion,
 )
 from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
+from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
+from rasa.dialogue_understanding.patterns.completed import (
+    CompletedPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.stack.dialogue_stack import DialogueStack
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     AgentStackFrame,
     AgentState,
 )
 from rasa.engine.language import Language
-from rasa.shared.core.events import AgentInterrupted, DialogueStackUpdated
+from rasa.shared.core.events import (
+    AgentInterrupted,
+    DialogueStackUpdated,
+    FlowCompleted,
+)
 from rasa.shared.core.slots import StrictCategoricalSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.utilities import flows_from_str
@@ -300,3 +308,40 @@ def test_run_command_on_tracker_interrupts_agent_and_adds_event():
         for e in events
         if isinstance(e, AgentInterrupted)
     )
+
+
+def test_run_command_on_tracker_removes_pattern_completed_frames():
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+
+    all_flows = flows_from_str(
+        """
+        flows:
+          flow-a:
+            description: flow a
+            steps:
+            - id: first_step
+              action: action_listen
+          flow-b:
+            description: flow b
+            steps:
+            - id: first_step
+              action: action_listen
+        """
+    )
+
+    pattern_completed_frame = CompletedPatternFlowStackFrame(
+        frame_id="pattern-completed-frame",
+    )
+    tracker.update_stack(DialogueStack(frames=[pattern_completed_frame]))
+
+    command = ClarifyCommand(options=["flow-a", "flow-b"])
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+
+    assert len(events) == 2
+    assert isinstance(events[0], FlowCompleted)
+    assert events[0].flow_id == "pattern_completed"
+    assert isinstance(events[1], DialogueStackUpdated)
+
+    updated_stack = tracker.stack.update_from_patch(events[1].update)
+    assert len(updated_stack.frames) == 1
+    assert isinstance(updated_stack.frames[0], ClarifyPatternFlowStackFrame)

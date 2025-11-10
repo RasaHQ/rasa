@@ -179,7 +179,7 @@ class TestActionContinueInterruptedFlow:
         # Mock the utility function to return None
         with patch(
             "rasa.dialogue_understanding.patterns.continue_interrupted."
-            "get_active_continue_interrupted_pattern_frame"
+            "get_active_pattern_frame"
         ) as mock_get:
             mock_get.return_value = None
 
@@ -187,7 +187,9 @@ class TestActionContinueInterruptedFlow:
             events = await action.run(output_channel, nlg, tracker, domain)
 
             assert events == []
-            mock_get.assert_called_once_with(tracker.stack)
+            mock_get.assert_called_once_with(
+                tracker.stack, ContinueInterruptedPatternFlowStackFrame
+            )
 
     @pytest.mark.asyncio
     async def test_run_single_flow_interrupted(self):
@@ -199,7 +201,7 @@ class TestActionContinueInterruptedFlow:
         domain = MagicMock()
 
         # Mock pattern frame
-        pattern_frame = MagicMock()
+        pattern_frame = ContinueInterruptedPatternFlowStackFrame()
         pattern_frame.interrupted_flow_ids = ["flow1"]
         pattern_frame.interrupted_flow_names = ["Flow 1"]
         pattern_frame.multiple_flows_interrupted = False
@@ -208,7 +210,7 @@ class TestActionContinueInterruptedFlow:
         with (
             patch(
                 "rasa.dialogue_understanding.patterns.continue_interrupted."
-                "get_active_continue_interrupted_pattern_frame"
+                "get_active_pattern_frame"
             ) as mock_get,
             patch(
                 "rasa.dialogue_understanding.patterns.continue_interrupted.resume_flow"
@@ -245,7 +247,7 @@ class TestActionContinueInterruptedFlow:
         domain = MagicMock()
 
         # Mock pattern frame
-        pattern_frame = MagicMock()
+        pattern_frame = ContinueInterruptedPatternFlowStackFrame()
         pattern_frame.interrupted_flow_ids = ["flow1", "flow2"]
         pattern_frame.interrupted_flow_names = ["Flow 1", "Flow 2"]
         pattern_frame.multiple_flows_interrupted = True
@@ -257,7 +259,7 @@ class TestActionContinueInterruptedFlow:
         with (
             patch(
                 "rasa.dialogue_understanding.patterns.continue_interrupted."
-                "get_active_continue_interrupted_pattern_frame"
+                "get_active_pattern_frame"
             ) as mock_get,
             patch(
                 "rasa.dialogue_understanding.patterns.continue_interrupted.resume_flow"
@@ -287,7 +289,7 @@ class TestActionContinueInterruptedFlow:
         domain = MagicMock()
 
         # Mock pattern frame
-        pattern_frame = MagicMock()
+        pattern_frame = ContinueInterruptedPatternFlowStackFrame()
         pattern_frame.interrupted_flow_ids = ["flow1", "flow2"]
         pattern_frame.interrupted_flow_names = ["Flow 1", "Flow 2"]
         pattern_frame.multiple_flows_interrupted = True
@@ -299,7 +301,7 @@ class TestActionContinueInterruptedFlow:
         with (
             patch(
                 "rasa.dialogue_understanding.patterns.continue_interrupted."
-                "get_active_continue_interrupted_pattern_frame"
+                "get_active_pattern_frame"
             ) as mock_get,
             patch(
                 "rasa.dialogue_understanding.patterns.continue_interrupted.resume_flow"
@@ -329,7 +331,7 @@ class TestActionContinueInterruptedFlow:
         domain = MagicMock()
 
         # Mock pattern frame
-        pattern_frame = MagicMock()
+        pattern_frame = ContinueInterruptedPatternFlowStackFrame()
         pattern_frame.interrupted_flow_ids = ["flow1", "flow2"]
         pattern_frame.interrupted_flow_names = ["Flow 1", "Flow 2"]
         pattern_frame.multiple_flows_interrupted = True
@@ -340,7 +342,7 @@ class TestActionContinueInterruptedFlow:
         # Mock utility functions
         with patch(
             "rasa.dialogue_understanding.patterns.continue_interrupted."
-            "get_active_continue_interrupted_pattern_frame"
+            "get_active_pattern_frame"
         ) as mock_get:
             mock_get.return_value = pattern_frame
 
@@ -376,7 +378,7 @@ class TestActionCancelInterruptedFlows:
         # Mock the utility function to return None
         with patch(
             "rasa.dialogue_understanding.patterns.continue_interrupted."
-            "get_active_continue_interrupted_pattern_frame"
+            "get_active_pattern_frame"
         ) as mock_get:
             mock_get.return_value = None
 
@@ -384,7 +386,9 @@ class TestActionCancelInterruptedFlows:
             events = await action.run(output_channel, nlg, tracker, domain)
 
             assert events == []
-            mock_get.assert_called_once_with(tracker.stack)
+            mock_get.assert_called_once_with(
+                tracker.stack, ContinueInterruptedPatternFlowStackFrame
+            )
 
     @pytest.mark.asyncio
     async def test_run_with_interrupted_flows(self):
@@ -396,14 +400,14 @@ class TestActionCancelInterruptedFlows:
         domain = MagicMock()
 
         # Mock pattern frame
-        pattern_frame = MagicMock()
+        pattern_frame = ContinueInterruptedPatternFlowStackFrame()
         pattern_frame.interrupted_flow_ids = ["flow1", "flow2"]
 
         # Mock utility functions
         with (
             patch(
                 "rasa.dialogue_understanding.patterns.continue_interrupted."
-                "get_active_continue_interrupted_pattern_frame"
+                "get_active_pattern_frame"
             ) as mock_get,
             patch(
                 "rasa.dialogue_understanding.patterns.continue_interrupted.ActionCancelInterruptedFlows.cancel_flow"
@@ -444,13 +448,13 @@ class TestActionCancelInterruptedFlows:
         domain = MagicMock()
 
         # Mock pattern frame
-        pattern_frame = MagicMock()
+        pattern_frame = ContinueInterruptedPatternFlowStackFrame()
         pattern_frame.interrupted_flow_ids = []
 
         # Mock utility functions
         with patch(
             "rasa.dialogue_understanding.patterns.continue_interrupted."
-            "get_active_continue_interrupted_pattern_frame"
+            "get_active_pattern_frame"
         ) as mock_get:
             mock_get.return_value = pattern_frame
 

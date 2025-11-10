@@ -12,8 +12,12 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxVersion,
 )
 from rasa.dialogue_understanding.commands.utils import (
+    remove_pattern_completed_frames,
     remove_pattern_continue_interrupted_frames,
     resume_flow,
+)
+from rasa.dialogue_understanding.patterns.continue_interrupted import (
+    ContinueInterruptedPatternFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     AgentState,
@@ -21,7 +25,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     UserFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.utils import (
-    is_continue_interrupted_flow_active,
+    is_pattern_active,
     top_user_flow_frame,
     user_flows_on_the_stack,
 )
@@ -92,13 +96,17 @@ class StartFlowCommand(Command):
             original_user_frame.flow(all_flows) if original_user_frame else None
         )
 
+        # if pattern_completed is active, we need to remove it from the stack
+        stack, flow_completed_events = remove_pattern_completed_frames(stack)
+        applied_events.extend(flow_completed_events)
+
         # if the original top flow is the same as the flow to start, the flow is
         # already active, do nothing
         if original_top_flow is not None and original_top_flow.id == self.flow:
             # in case continue_interrupted is not active, skip the already active start
             # flow command
-            if not is_continue_interrupted_flow_active(stack):
-                return []
+            if not is_pattern_active(stack, ContinueInterruptedPatternFlowStackFrame):
+                return applied_events + tracker.create_stack_updated_events(stack)
 
             # if the continue interrupted flow is active, and the command generator
             # predicted a start flow command for the flow which is on top of the stack,

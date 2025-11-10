@@ -44,7 +44,7 @@ from rasa.dialogue_understanding.stack.frames import (
     BaseFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.utils import (
-    is_continue_interrupted_flow_active,
+    is_pattern_active,
     top_flow_frame,
     top_user_flow_frame,
 )
@@ -605,8 +605,12 @@ def clean_up_start_flow_command(
     command: StartFlowCommand,
 ) -> List[Command]:
     """Clean up a start flow command."""
-    continue_interrupted_flow_active = is_continue_interrupted_flow_active(
-        tracker.stack
+    from rasa.dialogue_understanding.patterns.continue_interrupted import (
+        ContinueInterruptedPatternFlowStackFrame,
+    )
+
+    continue_interrupted_flow_active = is_pattern_active(
+        tracker.stack, ContinueInterruptedPatternFlowStackFrame
     )
 
     top_user_frame = top_user_flow_frame(

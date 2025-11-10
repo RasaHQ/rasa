@@ -259,20 +259,48 @@ def remove_pattern_continue_interrupted_frames(
     Returns:
         A tuple containing (updated_stack, flow_completed_events)
     """
+    from rasa.dialogue_understanding.patterns.continue_interrupted import (
+        ContinueInterruptedPatternFlowStackFrame,
+    )
     from rasa.dialogue_understanding.stack.utils import (
-        is_continue_interrupted_flow_active,
+        is_pattern_active,
     )
 
-    if not is_continue_interrupted_flow_active(stack):
+    if not is_pattern_active(stack, ContinueInterruptedPatternFlowStackFrame):
         return stack, []
 
-    events = []
-    # remove pattern_continue_interrupted from the stack
+    return _remove_pattern_frames_from_stack(stack)
+
+
+def remove_pattern_completed_frames(
+    stack: DialogueStack,
+) -> Tuple[DialogueStack, List[FlowCompleted]]:
+    """Remove pattern_completed frames from the stack and return events.
+
+    Returns:
+        A tuple containing (updated_stack, flow_completed_events)
+    """
+    from rasa.dialogue_understanding.patterns.completed import (
+        CompletedPatternFlowStackFrame,
+    )
+    from rasa.dialogue_understanding.stack.utils import (
+        is_pattern_active,
+    )
+
+    if not is_pattern_active(stack, CompletedPatternFlowStackFrame):
+        return stack, []
+
+    return _remove_pattern_frames_from_stack(stack)
+
+
+def _remove_pattern_frames_from_stack(
+    stack: DialogueStack,
+) -> Tuple[DialogueStack, List[FlowCompleted]]:
+    events: List[FlowCompleted] = []
     top_frame = stack.top()
     while isinstance(top_frame, PatternFlowStackFrame):
         # Create FlowCompleted event for the pattern frame being removed
         events.append(FlowCompleted(top_frame.flow_id, top_frame.step_id))
-
         # If the top frame is a pattern frame, we need to remove it
         # before continuing with the active user flow frame.
         # This prevents the pattern frame
@@ -281,5 +309,4 @@ def remove_pattern_continue_interrupted_frames(
         # once the user flow is completed.
         stack.pop()
         top_frame = stack.top()
-
     return stack, events

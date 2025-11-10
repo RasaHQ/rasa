@@ -11,7 +11,10 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
     CommandSyntaxVersion,
 )
-from rasa.dialogue_understanding.commands.utils import extract_cleaned_options
+from rasa.dialogue_understanding.commands.utils import (
+    extract_cleaned_options,
+    remove_pattern_completed_frames,
+)
 from rasa.dialogue_understanding.patterns.clarify import ClarifyPatternFlowStackFrame
 from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     AgentStackFrame,
@@ -90,6 +93,10 @@ class ClarifyCommand(Command):
         ]
 
         applied_events: List[Event] = []
+
+        # if pattern_completed is active, we need to remove it from the stack
+        stack, flow_completed_events = remove_pattern_completed_frames(stack)
+        applied_events.extend(flow_completed_events)
 
         # if the top stack frame is an agent stack frame, we need to
         # update the state to INTERRUPTED and add an AgentInterrupted event

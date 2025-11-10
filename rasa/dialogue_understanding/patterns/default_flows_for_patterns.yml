@@ -1,6 +1,11 @@
 version: "3.1"
 responses:
 
+  utter_ask_continue_conversation:
+    - text: "Is there anything else I can help you with?"
+      metadata:
+        rephrase: True
+
   utter_ask_continue_interrupted_flow_confirmation:
     - text: "Would you like to continue with {{context.interrupted_flow_options}}?"
       metadata:
@@ -28,7 +33,7 @@ responses:
         template: jinja
 
   utter_can_do_something_else:
-    - text: "What else can I help you with?"
+    - text: "What exactly can I help you with?"
       metadata:
         rephrase: True
 
@@ -46,6 +51,11 @@ responses:
       metadata:
         rephrase: True
         template: jinja
+
+  utter_closing_words:
+    - text: "Okay, I'll be around in case you need further help."
+      metadata:
+        rephrase: True
 
   utter_corrected_previous_input:
     - text: "Ok, I am updating {{ context.corrected_slots.keys()|join(', ') }} to {{ context.new_slot_values | join(', ') }} respectively."
@@ -138,6 +148,10 @@ slots:
     type: bool
     mappings:
       - type: from_llm
+  continue_conversation:
+    type: bool
+    mappings:
+      - type: from_llm
 
 flows:
   pattern_cancel_flow:
@@ -218,7 +232,17 @@ flows:
     description: Flow that asks if the user needs more help after completing their initiated use cases
     name: pattern completed
     steps:
-      - action: utter_can_do_something_else
+      - collect: continue_conversation
+        description: Set this slot to `True` if the user needs further help and wants to continue the conversation. Set it to `False` otherwise.
+        ask_before_filling: true
+        next:
+          - if: slots.continue_conversation is True
+            then:
+            - action: utter_can_do_something_else
+              next: END
+          - else:
+            - action: utter_closing_words
+              next: END
 
   pattern_continue_interrupted:
     description: Conversation repair flow for managing when users switch between different flows

@@ -13,6 +13,9 @@ from rasa.dialogue_understanding.commands.utils import (
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
 )
+from rasa.dialogue_understanding.patterns.completed import (
+    CompletedPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.patterns.continue_interrupted import (
     ContinueInterruptedPatternFlowStackFrame,
 )
@@ -511,3 +514,177 @@ def test_remove_pattern_continue_interrupted_frames_complex_stack():
     assert result.frames[1] == user_frame_2
     assert result.frames[2] == agent_frame
     assert result.frames[2].frame_id == "agent-frame-1"
+
+
+def test_remove_pattern_completed_frames():
+    """Test removing pattern_completed frames."""
+    from rasa.dialogue_understanding.commands.start_flow_command import (
+        remove_pattern_completed_frames,
+    )
+
+    # Setup frames
+    user_frame = UserFlowStackFrame(
+        flow_id="flow", step_id="START", frame_id="userframe"
+    )
+    pattern_completed = CompletedPatternFlowStackFrame(frame_id="completed-pattern")
+
+    stack = DialogueStack(
+        frames=[
+            user_frame,
+            pattern_completed,
+        ]
+    )
+
+    result_stack, events = remove_pattern_completed_frames(stack)
+
+    # Should remove all pattern_completed frames from the top
+    assert len(result_stack.frames) == 1
+    assert result_stack.frames[0] == user_frame
+
+    # Should create FlowCompleted event for the pattern_completed frame removed
+    assert len(events) == 1
+    assert all(event.flow_id == "pattern_completed" for event in events)
+
+
+def test_remove_pattern_completed_frames_preserves_original_stack():
+    """Test that the original stack is not modified."""
+    from rasa.dialogue_understanding.commands.start_flow_command import (
+        remove_pattern_completed_frames,
+    )
+
+    # Setup frames
+    user_frame = UserFlowStackFrame(
+        flow_id="flow_x", step_id="FIRST", frame_id="userframe-x"
+    )
+    pattern_completed = CompletedPatternFlowStackFrame(frame_id="completed-pattern-1")
+
+    stack = DialogueStack(
+        frames=[
+            user_frame,
+            pattern_completed,
+        ]
+    )
+    stack_copy = stack.copy()
+
+    result_stack, events = remove_pattern_completed_frames(stack_copy)
+
+    # Original stack should remain unchanged
+    assert len(stack.frames) == 2
+    assert stack.frames[1] == pattern_completed
+
+    # Result should have pattern frame removed
+    assert len(result_stack.frames) == 1
+    assert result_stack.frames[0] == user_frame
+
+
+def test_remove_pattern_completed_frames_complex_stack():
+    """Test removing pattern_completed frames from a complex stack with multiple
+    frame types."""
+    from rasa.dialogue_understanding.commands.start_flow_command import (
+        remove_pattern_completed_frames,
+    )
+
+    user_frame_1 = UserFlowStackFrame(
+        flow_id="flow_1", step_id="START", frame_id="user-frame-1"
+    )
+    user_frame_2 = UserFlowStackFrame(
+        flow_id="flow_2", step_id="START", frame_id="user-frame-2"
+    )
+    agent_frame = AgentStackFrame(
+        frame_id="agent-frame-1",
+        state=AgentState.WAITING_FOR_INPUT,
+        agent_id="test_agent",
+        flow_id="flow_2",
+    )
+    pattern_completed_1 = CompletedPatternFlowStackFrame(frame_id="pattern-completed-1")
+    pattern_completed_2 = CompletedPatternFlowStackFrame(frame_id="pattern-completed-2")
+    pattern_collect = CollectInformationPatternFlowStackFrame(
+        frame_id="pattern-collect",
+    )
+
+    stack = DialogueStack(
+        frames=[
+            user_frame_1,
+            user_frame_2,
+            agent_frame,
+            pattern_completed_1,
+            pattern_completed_2,
+            pattern_collect,
+        ]
+    )
+
+    result, events = remove_pattern_completed_frames(stack)
+
+    # Should remove all pattern frames from the top
+    assert len(result.frames) == 3
+    assert result.frames[0] == user_frame_1
+    assert result.frames[1] == user_frame_2
+    assert result.frames[2] == agent_frame
+
+    # Should create FlowCompleted events for all pattern frames
+    assert len(events) == 3
+    assert events[0].flow_id == "pattern_collect_information"
+    assert events[1].flow_id == "pattern_completed"
+    assert events[2].flow_id == "pattern_completed"
+
+
+def test_remove_pattern_completed_frames_with_collect_information():
+    """Test that remove_pattern_completed_frames removes pattern_collect_information
+    frames as well.
+    """
+    from rasa.dialogue_understanding.commands.start_flow_command import (
+        remove_pattern_completed_frames,
+    )
+
+    user_frame = UserFlowStackFrame(
+        flow_id="test_flow", step_id="START", frame_id="user-frame-1"
+    )
+    pattern_collect = CollectInformationPatternFlowStackFrame(
+        frame_id="pattern-collect",
+    )
+    pattern_completed = CompletedPatternFlowStackFrame(frame_id="pattern-completed-1")
+
+    stack = DialogueStack(
+        frames=[
+            user_frame,
+            pattern_collect,
+            pattern_completed,
+        ]
+    )
+
+    result, events = remove_pattern_completed_frames(stack)
+
+    assert len(result.frames) == 1
+    assert result.frames[0] == user_frame
+
+    assert len(events) == 2
+    assert events[0].flow_id == "pattern_completed"
+    assert events[1].flow_id == "pattern_collect_information"
+
+
+def test_remove_pattern_completed_frames_no_completed_pattern():
+    """Test that remove_pattern_completed_frames does nothing when no completed
+    pattern exists."""
+    from rasa.dialogue_understanding.commands.start_flow_command import (
+        remove_pattern_completed_frames,
+    )
+
+    user_frame = UserFlowStackFrame(
+        flow_id="test_flow", step_id="START", frame_id="user-frame-1"
+    )
+    pattern_collect = CollectInformationPatternFlowStackFrame(
+        frame_id="pattern-collect",
+    )
+
+    stack = DialogueStack(
+        frames=[
+            user_frame,
+            pattern_collect,
+        ]
+    )
+
+    result, events = remove_pattern_completed_frames(stack)
+
+    # Should not modify the stack since there's no pattern_completed
+    assert len(result.frames) == len(stack.frames)
+    assert len(events) == 0

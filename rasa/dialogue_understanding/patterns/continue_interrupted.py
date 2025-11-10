@@ -23,7 +23,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     UserFlowStackFrame,
 )
 from rasa.dialogue_understanding.stack.utils import (
-    get_active_continue_interrupted_pattern_frame,
+    get_active_pattern_frame,
 )
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.constants import (
@@ -108,9 +108,13 @@ class ActionContinueInterruptedFlow(Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         # get the pattern frame from the stack
-        pattern_frame = get_active_continue_interrupted_pattern_frame(tracker.stack)
+        pattern_frame = get_active_pattern_frame(
+            tracker.stack, ContinueInterruptedPatternFlowStackFrame
+        )
 
-        if pattern_frame is None:
+        if pattern_frame is None or not isinstance(
+            pattern_frame, ContinueInterruptedPatternFlowStackFrame
+        ):
             structlogger.warning(
                 "action.continue_interrupted_flows.no_continue_interrupted_frame"
             )
@@ -172,9 +176,13 @@ class ActionCancelInterruptedFlows(Action):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> List[Event]:
         # get the pattern frame from the stack
-        pattern_frame = get_active_continue_interrupted_pattern_frame(tracker.stack)
+        pattern_frame = get_active_pattern_frame(
+            tracker.stack, ContinueInterruptedPatternFlowStackFrame
+        )
 
-        if pattern_frame is None:
+        if pattern_frame is None or not isinstance(
+            pattern_frame, ContinueInterruptedPatternFlowStackFrame
+        ):
             structlogger.warning(
                 "action.continue_interrupted_flows.no_continue_interrupted_frame"
             )

@@ -9,6 +9,9 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
 )
 from rasa.dialogue_understanding.commands.prompt_command import PromptCommand
 from rasa.dialogue_understanding.commands.start_flow_command import StartFlowCommand
+from rasa.dialogue_understanding.patterns.completed import (
+    CompletedPatternFlowStackFrame,
+)
 from rasa.dialogue_understanding.patterns.continue_interrupted import (
     ContinueInterruptedPatternFlowStackFrame,
 )
@@ -1174,3 +1177,35 @@ def test_start_flow_removes_pattern_continue_interrupted_frames_when_active():
     # The original foo flow should be below
     assert updated_stack.frames[0].flow_id == "foo"
     assert updated_stack.frames[0].frame_type == FlowStackFrameType.REGULAR
+
+
+def test_run_command_on_tracker_removes_pattern_completed_frames():
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+
+    all_flows = flows_from_str(
+        """
+        flows:
+          flow-a:
+            description: flow a
+            steps:
+            - id: first_step
+              action: action_listen
+        """
+    )
+
+    pattern_completed_frame = CompletedPatternFlowStackFrame(
+        frame_id="pattern-completed-frame",
+    )
+    tracker.update_stack(DialogueStack(frames=[pattern_completed_frame]))
+
+    command = StartFlowCommand(flow="flow-a")
+    events = command.run_command_on_tracker(tracker, all_flows, tracker)
+
+    assert len(events) == 2
+    assert isinstance(events[0], FlowCompleted)
+    assert events[0].flow_id == "pattern_completed"
+    assert isinstance(events[1], DialogueStackUpdated)
+
+    updated_stack = tracker.stack.update_from_patch(events[1].update)
+    assert len(updated_stack.frames) == 1
+    assert isinstance(updated_stack.frames[0], UserFlowStackFrame)

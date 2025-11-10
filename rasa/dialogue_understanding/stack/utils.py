@@ -1,5 +1,5 @@
 import typing
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Set, Tuple, Type
 
 from rasa.dialogue_understanding.patterns.collect_information import (
     CollectInformationPatternFlowStackFrame,
@@ -17,9 +17,6 @@ from rasa.shared.core.flows.steps.constants import END_STEP
 from rasa.shared.core.flows.steps.continuation import ContinueFlowStep
 
 if typing.TYPE_CHECKING:
-    from rasa.dialogue_understanding.patterns.continue_interrupted import (
-        ContinueInterruptedPatternFlowStackFrame,
-    )
     from rasa.shared.core.trackers import DialogueStateTracker
 
 
@@ -266,20 +263,20 @@ def get_collect_steps_excluding_ask_before_filling_for_active_flow(
     )
 
 
-def is_continue_interrupted_flow_active(stack: DialogueStack) -> bool:
-    """Check if the continue interrupted flow is active."""
-    return get_active_continue_interrupted_pattern_frame(stack) is not None
+def is_pattern_active(
+    stack: DialogueStack, pattern_type: Type[PatternFlowStackFrame]
+) -> bool:
+    """Check if the pattern frame of the given type is active."""
+    return get_active_pattern_frame(stack, pattern_type) is not None
 
 
-def get_active_continue_interrupted_pattern_frame(
+def get_active_pattern_frame(
     stack: DialogueStack,
-) -> Optional["ContinueInterruptedPatternFlowStackFrame"]:
-    from rasa.dialogue_understanding.patterns.continue_interrupted import (
-        ContinueInterruptedPatternFlowStackFrame,
-    )
-
+    pattern_type: Type[PatternFlowStackFrame],
+) -> Optional[PatternFlowStackFrame]:
+    """Get the active pattern frame of the given type."""
     for frame in reversed(stack.frames):
-        if isinstance(frame, ContinueInterruptedPatternFlowStackFrame):
+        if isinstance(frame, pattern_type):
             return frame
         if isinstance(frame, UserFlowStackFrame):
             return None
