@@ -1910,3 +1910,142 @@ jobs:
           name: |
             docker-image-*
             template-artifacts
+
+  analyse-and-fix-test-errors-in-ci:
+      runs-on: ubuntu-24.04
+      permissions:
+        checks: write
+        id-token: write
+        pull-requests: write
+        contents: write
+        issues: read
+        actions: write
+      if: ${{ always() && github.event_name == 'pull_request' && contains(join(needs.*.result, ','), 'failure') }}
+      needs: 
+        - unit-test
+        - test-anonymization
+        - sequential-integration-test
+        - non-sequential-integration-test
+        - broker_integration_test
+        - concurrent-lockstore-integration-test
+        - tracing-integration-test
+        - metric-integration-test
+        - enterprise-search-integration-tests
+        - custom-action-integration-tests
+        - mongo-tracker-store-integration-test
+        - channel_connector_integration_tests
+        - voice_unit_tests
+        - pii-management-in-calm-integration-tests
+        - dynamo-tracker-store-integration-test
+        - rasa-init-sanity-check
+        - run-test-to-monitor-memory-consumption-and-display-on-PR
+        - quality
+      steps:
+        - name: Check out code
+          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+          with:
+            token: ${{ secrets.WORKFLOW_TOKEN }} # Use fine-grained PAT with `workflows` permission, to allow updates to CI config in `.github/workflows/**` also if required
+        - name: Free up disk-space
+          uses: RasaHQ/rasa-private/.github/actions/free-disk-space@fe77d93db58f0412e2162fdaa34e2ed596f8536b
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 # v4.1.0
+          with:
+              role-to-assume: arn:aws:iam::307946638045:role/GitHubAction-BedrockAndSagemakerAccess
+              aws-region: us-east-1
+        - name: Analyse and fix failures
+          uses: anthropics/claude-code-action@ac1a3207f3f00b4a37e2f3a6f0935733c7c64651 # v1.0.11
+          env:
+              GH_TOKEN: ${{ secrets.RASABOT_GITHUB_TOKEN }}
+              RASA_PRO_LICENSE: ${{ secrets.RASA_PRO_LICENSE }}
+              OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          with:
+              use_bedrock: "true"
+              base_branch: ${{ github.head_ref }}
+              github_token: ${{ secrets.WORKFLOW_TOKEN }}
+              use_sticky_comment: true
+              additional_permissions: |
+                actions: write
+              prompt: |
+                <Task>
+                  Troubleshoot and fix test failures encountered in this PR's CI pipeline's current run.
+
+                  <PR and CI details>
+                    1. PR number: ${{ github.event.number }}
+                    2. CI workflow run ID: ${{ github.run_id }}
+                    3. CI workflow run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+                  </PR and CI details>
+
+                  <Instructions>
+                    Systematically think and reason step-by-step - in <thinking> blocks - to logically plan and perform the following steps:
+                      1. Identify all test errors and failures in this CI pipeline's run.
+                        a. CI run details are available in the <PR and CI details> tag. You must exclusively focus on failures from this run only.
+                      2. For each error or failure issue, perform the following steps:
+                        a. Analyse the error/failure issue.
+                        b. Diagnose and determine if the issue is:
+                          i. Either, a "False Positive" i.e. the error/failure is due to deficiencies in the test or its underlying environment itself.
+                          ii. Or, a "True positive" i.e. the test failure uncovers a genuine defect/bug in the source code - located in `${{ github.workspace }}/rasa` directory - being tested.
+                        c. If the issue is a "False Positive", then:
+                          i. Fix the test.
+                            - Test code: Tests are located in `${{ github.workspace }}/tests` directory. You are only allowed to update Python test code in this directory. You are not authorised to
+                            make any changes to the Python source code (in `${{ github.workspace }}/rasa` directory and the sub-directories and files within) itself.
+                              - If updating Python test code in `${{ github.workspace }}/tests` directory, ensure code is properly formatted and no lint errors occur. This can be 
+                              done by running `Makefile` rule `make lint`.
+                            - Test setup and configuration in CI: This is handled in following places, which are the only other places you are authorised to update the code in:
+                              - CI workflow file: `${{ github.workspace }}/.github/workflows/continous-integration.yml`
+                              - Directory for composite actions used by CI: `${{ github.workspace }}/.github/actions`
+                              - Infrastructure for integration tests:
+                                - `${{ github.workspace }}/test_environments`
+                                - `${{ github.workspace }}/tests_deployment`
+                              - Data for some tests: `${{ github.workspace }}/data/test*
+                              - Makefile: `${{ github.workspace }}/Makefile`
+                          ii. Verify that the fix is working correctly and that the test would now continuously run reliably in CI.
+                              - This must include running the failed test with the fix, and verifying that the test passes with the fix.
+                          iii. Verify no lint errors introduced. This can be done by running `Makefile` target: `make lint`.
+                          iv. Open a PR - in 'Draft' status, targeting current branch (i.e. ${{ github.head_ref }}) and assigned to ${{ github.event.pull_request.user.login }} - with your 
+                          fix, with the PR description describing:
+                            - What the fix is?
+                            - Why the fix is required?
+                            - How was it verfied that the fix is working correctly?
+                            - How does this fix ensure that the test will now reliably run continuously in CI?
+                          v. Comment on this PR (i.e. PR #${{ github.event.number }}), in Markdown format, to explain and inform:
+                            - What test failures you identified in this CI run ${{ github.run_id }}?
+                            - How did you diagnose and determine that those failures are definitely false positives?
+                            - The 'Draft' status PR that you have created to fix these issues.
+                        d. If the issue is a "True Positive", then comment on this PR (i.e. PR #${{ github.event.number }}) in Markdown format, to explain:
+                          i. What genuine issue(s), in the source code being tested, does the test failure uncover?
+                          ii. How to reproduce the issue with a minimal example?
+                    Continuously engage in self reflection and self critique, to evaluate and refine your work, to ensure you correctly fulfill all the instruction steps.
+                  </Instructions
+
+                  <Acceptance Criteria>
+                      1. All test errors and failures identified in CI run ${{ github.run_id }}.
+                      2. All test errors and failures and correctly diagnosed as:
+                        a. Either, "False positive"
+                        b. Or, "True positive"
+                      3. For all "False positive" issues:
+                        a. PR - in 'Draft' status, targeting current branch (i.e. ${{ github.head_ref }}), assigned to ${{ github.event.pull_request.user.login }}, and with correct 
+                        description - created with fixes.
+                          i. Fixes contain changes to test code or tests' setup, configuration or data code only.
+                            - No changes/updates made in following unauthorised areas, as you are unauthorised to make changes there:
+                              - Source code in `${{ github.workspace }}/rasa` directory and the sub-directories and files within.
+                              - Installation and packaging:
+                                - `${{ github.workspace }}/pyproject.toml`
+                                - `${{ github.workspace }}/poetry.lock`
+                                - `${{ github.workspace }}/Dockerfile`
+                                - `${{ github.workspace }}/Makefile.docker`
+                                - `${{ github.workspace }}/makefile_vars`
+                              - Changelogs in `${{ github.workspace }}/changelog` directory.
+                          ii. All fixes verified: No more test failures after fixes applied.
+                          iii. Linting passed and no lint errors introduced.
+                          iv. All tests pass in CI run on the Draft PR. In case of any false-positive failures in Draft-PR's CI run, update the Draft PR further to
+                          include the correct fixes.
+                        b. comment made on this PR (i.e. PR #${{ github.event.number }}), in Markdown format, with correct explanations and information.
+                      4. For all "True positive" issues, comment made on this PR (i.e. PR #${{ github.event.number }}), in Markdown format, with correct explanation.
+                  </Acceptance Criteria>
+                </Task>
+              claude_args: |
+                --model us.anthropic.claude-sonnet-4-5-20250929-v1:0
+                --verbose
+                --mcp-config '{"mcpServers": {"sequential-thinking": {"command": "npx", "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]}}}'
+                --allowedTools mcp__github,Bash,Read,Write,Edit,View,GlobTool,GrepTool,BatchTool,mcp__sequential-thinking__sequentialthinking,BashOutput,KillBash,TodoWrite,Search,MultiEdit,Task,WebFetch
+                --system-prompt "You are an expert of troubleshooting CI test failures, adept at spotting and fixing failures that are 'false positives'"
