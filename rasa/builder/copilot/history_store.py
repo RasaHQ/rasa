@@ -112,9 +112,6 @@ class SQLiteCopilotHistoryStore(CopilotHistoryStore):
     def _initialize_database(self) -> None:
         """Create the database schema if it doesn't exist."""
         with self._database_connection() as connection:
-            # Enable WAL mode for better concurrent access
-            connection.execute("PRAGMA journal_mode=WAL;")
-
             # Create the messages table
             connection.execute(
                 """
@@ -401,6 +398,21 @@ class SQLiteCopilotHistoryStore(CopilotHistoryStore):
             )
             connection.commit()
 
+    def _handle_missing_table_error(self, exc: sqlite3.OperationalError) -> bool:
+        """Check if error is due to missing table and reinitialize if needed.
+
+        Args:
+            exc: The SQLite operational error.
+
+        Returns:
+            True if table was missing and reinitialized, False otherwise.
+        """
+        if "no such table" in str(exc).lower():
+            structlogger.warning("copilot_history_store.table_missing", error=str(exc))
+            self._initialize_database()
+            return True
+        return False
+
     async def get(self, key: ConversationKey) -> List[ChatMessage]:
         """Get conversation history from SQLite database.
 
@@ -415,6 +427,12 @@ class SQLiteCopilotHistoryStore(CopilotHistoryStore):
         """
         try:
             return await asyncio.to_thread(self._read_conversation_from_database, key)
+        except sqlite3.OperationalError as exc:
+            if self._handle_missing_table_error(exc):
+                return []
+            raise CopilotHistoryDatabaseError(
+                f"Failed to get conversation {key.chat_id}: {exc}"
+            )
         except Exception as exc:
             structlogger.error(
                 "copilot_history_store.get_failed",
@@ -440,6 +458,15 @@ class SQLiteCopilotHistoryStore(CopilotHistoryStore):
                 self._write_single_message_to_database,
                 key,
                 message,
+            )
+        except sqlite3.OperationalError as exc:
+            if self._handle_missing_table_error(exc):
+                await asyncio.to_thread(
+                    self._write_single_message_to_database, key, message
+                )
+                return
+            raise CopilotHistoryDatabaseError(
+                f"Failed to append to conversation {key.chat_id}: {exc}"
             )
         except Exception as exc:
             structlogger.error(

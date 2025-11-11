@@ -448,19 +448,6 @@ class TestSQLiteCopilotHistoryStore:
             assert os.path.exists(nested_path)
 
     @pytest.mark.asyncio
-    async def test_wal_mode_enabled(self, temp_db_path: str):
-        # Create store to trigger database initialization
-        SQLiteCopilotHistoryStore(temp_db_path)
-
-        conn = sqlite3.connect(temp_db_path)
-        try:
-            cursor = conn.execute("PRAGMA journal_mode")
-            journal_mode = cursor.fetchone()[0]
-            assert journal_mode.lower() == "wal"
-        finally:
-            conn.close()
-
-    @pytest.mark.asyncio
     async def test_empty_and_none_content_handling(
         self, store: SQLiteCopilotHistoryStore, conversation_key: ConversationKey
     ):
@@ -559,6 +546,104 @@ class TestSQLiteCopilotHistoryStore:
         finally:
             # Restore permissions for cleanup
             os.chmod(temp_db_path, 0o644)
+
+    @pytest.mark.asyncio
+    async def test_auto_recovery_on_missing_table_get(
+        self, temp_db_path: str, conversation_key: ConversationKey
+    ):
+        # Create store and verify it initializes properly
+        store = SQLiteCopilotHistoryStore(temp_db_path)
+
+        # Add a message to verify the table exists
+        user_message = UserChatMessage(
+            role="user",
+            content=[TextContent(type="text", text="Test message")],
+        )
+        await store.append(conversation_key, user_message)
+
+        # Manually drop the table to simulate the issue
+        with store._database_connection() as connection:
+            connection.execute("DROP TABLE copilot_messages")
+            connection.commit()
+
+        # Verify table is gone
+        with store._database_connection() as connection:
+            cursor = connection.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type='table' AND name='copilot_messages'"
+            )
+            assert cursor.fetchone() is None
+
+        # The get() should auto-recover and return empty list
+        messages = await store.get(conversation_key)
+        assert messages == []
+
+        # Verify the table was recreated
+        with store._database_connection() as connection:
+            cursor = connection.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type='table' AND name='copilot_messages'"
+            )
+            assert cursor.fetchone() is not None
+
+    @pytest.mark.asyncio
+    async def test_auto_recovery_on_missing_table_append(
+        self, temp_db_path: str, conversation_key: ConversationKey
+    ):
+        # Create store and verify it initializes properly
+        store = SQLiteCopilotHistoryStore(temp_db_path)
+
+        # Manually drop the table to simulate the issue
+        with store._database_connection() as connection:
+            connection.execute("DROP TABLE copilot_messages")
+            connection.commit()
+
+        # Create a new message
+        user_message = UserChatMessage(
+            role="user",
+            content=[TextContent(type="text", text="Test after recovery")],
+        )
+
+        # The append() should auto-recover and successfully write
+        await store.append(conversation_key, user_message)
+
+        # Verify the table was recreated and message was saved
+        messages = await store.get(conversation_key)
+        assert len(messages) == 1
+        assert messages[0].role == "user"
+        assert messages[0].content[0].text == "Test after recovery"
+
+    @pytest.mark.asyncio
+    async def test_handle_missing_table_error_helper(self, temp_db_path: str):
+        # Create store
+        store = SQLiteCopilotHistoryStore(temp_db_path)
+
+        # Drop the table
+        with store._database_connection() as connection:
+            connection.execute("DROP TABLE copilot_messages")
+            connection.commit()
+
+        # Create an OperationalError similar to what SQLite raises
+        try:
+            with store._database_connection() as connection:
+                connection.execute("SELECT * FROM copilot_messages")
+        except sqlite3.OperationalError as exc:
+            # Test that the helper correctly identifies and handles the error
+            result = store._handle_missing_table_error(exc)
+            assert result is True
+
+            # Verify table was recreated
+            with store._database_connection() as connection:
+                cursor = connection.execute(
+                    "SELECT name FROM sqlite_master "
+                    "WHERE type='table' AND name='copilot_messages'"
+                )
+                assert cursor.fetchone() is not None
+
+        # Test with a different operational error (should return False)
+        other_error = sqlite3.OperationalError("database is locked")
+        result = store._handle_missing_table_error(other_error)
+        assert result is False
 
     def test_llm_service_history_store_integration(self):
         # Create a fresh LLMService instance
