@@ -151,9 +151,11 @@ class SystemPrompts(BaseModel):
 
 
 class LLMInput(BaseModel):
-    prompt: str = Field(..., description="The prompt to send to the LLM.")
+    prompt: Union[List[dict], List[str], str] = Field(
+        ..., description="The prompt to send to the LLM."
+    )
     metadata: Dict[str, Any] = Field(
-        ..., description="The metadata to send to the LLM."
+        default_factory=dict, description="The metadata to send to the LLM."
     )
 
 

@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, ClassVar, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
@@ -7,6 +7,7 @@ from _pytest.tmpdir import TempPathFactory
 from pytest import MonkeyPatch
 from structlog.testing import capture_logs
 
+from rasa.core.config.configuration import Configuration
 from rasa.dialogue_understanding.commands import (
     ChitChatAnswerCommand,
     Command,
@@ -17,9 +18,11 @@ from rasa.dialogue_understanding.commands.command_syntax_manager import (
     CommandSyntaxManager,
 )
 from rasa.dialogue_understanding.generator import (
+    CompactLLMCommandGenerator,
     LLMBasedCommandGenerator,
     LLMCommandGenerator,
     MultiStepLLMCommandGenerator,
+    SearchReadyLLMCommandGenerator,
     SingleStepLLMCommandGenerator,
 )
 from rasa.dialogue_understanding.generator.constants import (
@@ -53,7 +56,25 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
+from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
+)
+from rasa.shared.utils.llm import LLMInput
 from tests.utilities import flows_from_str
+
+TEST_BASE_CLASSES: List[type] = [
+    LLMCommandGenerator,
+    SingleStepLLMCommandGenerator,
+    MultiStepLLMCommandGenerator,
+    CompactLLMCommandGenerator,
+    SearchReadyLLMCommandGenerator,
+]
 
 
 class TestLLMBasedCommandGenerator:
@@ -82,6 +103,10 @@ class TestLLMBasedCommandGenerator:
     @pytest.fixture(scope="session")
     def resource(self) -> Resource:
         return Resource(uuid.uuid4().hex)
+
+    @pytest.fixture(autouse=True, scope="function")
+    def empty_configuration(self) -> None:
+        Configuration.initialise_empty()
 
     @pytest.fixture(scope="session")
     def model_storage(self, tmp_path_factory: TempPathFactory) -> ModelStorage:
@@ -827,7 +852,7 @@ class TestLLMBasedCommandGenerator:
         mock_llm_factory.return_value = mock_llm_client
 
         # When
-        await command_generator.invoke_llm("some prompt")
+        await command_generator.invoke_llm(LLMInput(prompt="some prompt", metadata={}))
 
         # Then
         mock_llm_factory.assert_called_once_with(None, expected_llm_config)
@@ -852,9 +877,9 @@ class TestLLMBasedCommandGenerator:
         mock_llm_factory.return_value = mock_llm_client
 
         # When
-        await command_generator.invoke_llm("some prompt")
+        await command_generator.invoke_llm(LLMInput(prompt="some prompt", metadata={}))
         # Then
-        mock_llm_client.acompletion.assert_called_once_with("some prompt")
+        mock_llm_client.acompletion.assert_called_once_with("some prompt", metadata={})
 
     @patch(
         "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
@@ -873,7 +898,9 @@ class TestLLMBasedCommandGenerator:
         # When
         with capture_logs() as logs:
             with pytest.raises(ProviderClientAPIException):
-                await command_generator.invoke_llm("some prompt")
+                await command_generator.invoke_llm(
+                    LLMInput(prompt="some prompt", metadata={})
+                )
 
             # Then
             assert len(logs) == 1
@@ -1071,6 +1098,131 @@ class TestLLMBasedCommandGenerator:
             execution_context=Mock(spec=ExecutionContext),
         )
 
+    @pytest.mark.parametrize("generator_class", TEST_BASE_CLASSES)
+    def test_get_llm_tracing_metadata_in_command_generators(
+        self, generator_class, model_storage: ModelStorage, resource: Resource
+    ) -> None:
+        """Ensure get_llm_tracing_metadata returns correct metadata for generators."""
+        generator = generator_class.create(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+
+        sender_id = "user123"
+        assistant_id = "assistant456"
+        model_id = "model789"
+
+        tracker = DialogueStateTracker(sender_id=sender_id, slots=[])
+        tracker.assistant_id = assistant_id
+        tracker.model_id = model_id
+
+        metadata = generator.get_llm_tracing_metadata(tracker)
+        assert metadata == {
+            LANGFUSE_METADATA_SESSION_ID: sender_id,
+            LANGFUSE_METADATA_TAGS: [generator.__class__.__name__],
+            LANGFUSE_METADATA_CUSTOM_METADATA: {
+                LANGFUSE_METADATA_AGENT_ID: assistant_id,
+                LANGFUSE_METADATA_MODEL_ID: model_id,
+                LANGFUSE_METADATA_COMPONENT_NAME: generator.__class__.__name__,
+            },
+        }
+
+    @pytest.mark.parametrize("generator_class", TEST_BASE_CLASSES)
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
+    async def test_invoke_llm_success_command_generators(
+        self,
+        mock_llm_factory: Mock,
+        generator_class,
+        model_storage: ModelStorage,
+        resource: Resource,
+    ) -> None:
+        """Ensure invoke_llm calls LLM with metadata and returns response."""
+        generator = generator_class.create(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+
+        test_prompt = "Test prompt"
+        test_metadata = {
+            LANGFUSE_METADATA_SESSION_ID: "test_session",
+            LANGFUSE_METADATA_TAGS: ["test_tag"],
+            LANGFUSE_METADATA_CUSTOM_METADATA: {"key": "value"},
+        }
+        llm_input = LLMInput(prompt=test_prompt, metadata=test_metadata)
+
+        mock_llm = Mock()
+        mock_llm_response = LLMResponse(
+            id="test-id",
+            created=123456,
+            choices=["Test response"],
+            model="test-model",
+            usage=LLMUsage(prompt_tokens=5, completion_tokens=2),
+        )
+        mock_llm.acompletion = AsyncMock(return_value=mock_llm_response)
+        mock_llm_factory.return_value = mock_llm
+
+        result = await generator.invoke_llm(llm_input)
+
+        mock_llm.acompletion.assert_called_once_with(
+            test_prompt, metadata=test_metadata
+        )
+        assert result is not None
+        assert result.choices == ["Test response"]
+
+    @pytest.mark.parametrize("generator_class", TEST_BASE_CLASSES)
+    @patch(
+        "rasa.dialogue_understanding.generator.llm_based_command_generator.llm_factory"
+    )
+    async def test_invoke_llm_passes_metadata_command_generators(
+        self,
+        mock_llm_factory: Mock,
+        generator_class,
+        model_storage: ModelStorage,
+        resource: Resource,
+    ) -> None:
+        """Ensure invoke_llm forwards provided metadata to the LLM client."""
+        generator = generator_class.create(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+
+        test_prompt = "Test prompt"
+        test_metadata = {
+            LANGFUSE_METADATA_SESSION_ID: "test_session_id",
+            LANGFUSE_METADATA_TAGS: [generator.__class__.__name__],
+            LANGFUSE_METADATA_CUSTOM_METADATA: {
+                LANGFUSE_METADATA_AGENT_ID: "test_agent",
+                LANGFUSE_METADATA_MODEL_ID: "test_model",
+                LANGFUSE_METADATA_COMPONENT_NAME: generator.__class__.__name__,
+            },
+        }
+        llm_input = LLMInput(prompt=test_prompt, metadata=test_metadata)
+
+        mock_llm = Mock()
+        mock_llm_response = LLMResponse(
+            id="test-id",
+            created=123456,
+            choices=["Test response"],
+            model="test-model",
+            usage=LLMUsage(prompt_tokens=5, completion_tokens=2),
+        )
+        mock_llm.acompletion = AsyncMock(return_value=mock_llm_response)
+        mock_llm_factory.return_value = mock_llm
+
+        await generator.invoke_llm(llm_input)
+
+        call_args = mock_llm.acompletion.call_args
+        assert call_args[0][0] == test_prompt
+        assert call_args[1]["metadata"] == test_metadata
+
     def test_import_rasa_generators_directly(self, model_storage, resource):
         """Test that rasa generator modules can be imported
         without errors directly.
@@ -1080,6 +1232,12 @@ class TestLLMBasedCommandGenerator:
         )
         from rasa.dialogue_understanding.generator.multi_step.multi_step_llm_command_generator import (  # noqa: E501
             MultiStepLLMCommandGenerator,
+        )
+        from rasa.dialogue_understanding.generator.single_step.compact_llm_command_generator import (  # noqa: E501
+            CompactLLMCommandGenerator,
+        )
+        from rasa.dialogue_understanding.generator.single_step.search_ready_llm_command_generator import (  # noqa: E501
+            SearchReadyLLMCommandGenerator,
         )
         from rasa.dialogue_understanding.generator.single_step.single_step_llm_command_generator import (  # noqa: E501
             SingleStepLLMCommandGenerator,
@@ -1103,14 +1261,20 @@ class TestLLMBasedCommandGenerator:
             resource=resource,
             execution_context=Mock(spec=ExecutionContext),
         )
+        assert CompactLLMCommandGenerator(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
+        assert SearchReadyLLMCommandGenerator(
+            config={},
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=Mock(spec=ExecutionContext),
+        )
 
-    base_classes: ClassVar[List[type]] = [
-        LLMCommandGenerator,
-        SingleStepLLMCommandGenerator,
-        MultiStepLLMCommandGenerator,
-    ]
-
-    @pytest.mark.parametrize("base_class", base_classes)
+    @pytest.mark.parametrize("base_class", TEST_BASE_CLASSES)
     async def test_new_subclass_uses_own_predict_commands(
         self, base_class, flows, model_storage, resource
     ):

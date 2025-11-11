@@ -51,7 +51,17 @@ from rasa.shared.importers.importer import FlowSyncImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
+from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
+)
 from rasa.shared.utils.llm import (
+    LLMInput,
     combine_custom_and_default_config,
     tracker_as_readable_transcript,
 )
@@ -399,6 +409,99 @@ async def test_intentless_policy_predicts(
     assert policy_prediction.action_metadata == {
         UTTER_SOURCE_METADATA_KEY: intentless_policy.__class__.__name__
     }
+
+
+async def test_intentless_policy_generate_llm_answer_success(
+    intentless_policy: IntentlessPolicy,
+) -> None:
+    """Ensure _generate_llm_answer calls LLM with metadata and returns
+    the first choice.
+    """
+    test_prompt = "Test prompt"
+    test_metadata = {
+        LANGFUSE_METADATA_SESSION_ID: "test_session",
+        LANGFUSE_METADATA_TAGS: ["test_tag"],
+        LANGFUSE_METADATA_CUSTOM_METADATA: {"key": "value"},
+    }
+    llm_input = LLMInput(prompt=test_prompt, metadata=test_metadata)
+
+    mock_llm = Mock()
+    mock_llm_response = LLMResponse(
+        id="test-id",
+        created=123456,
+        choices=["Test response"],
+        model="test-model",
+        usage=LLMUsage(prompt_tokens=5, completion_tokens=2),
+    )
+    mock_llm.acompletion = AsyncMock(return_value=mock_llm_response)
+
+    result = await intentless_policy._generate_llm_answer(mock_llm, llm_input)
+
+    mock_llm.acompletion.assert_called_once_with(test_prompt, metadata=test_metadata)
+    assert result == "Test response"
+
+
+@patch("rasa.core.policies.intentless_policy.llm_factory")
+@patch("rasa.core.policies.intentless_policy.embedder_factory")
+async def test_intentless_policy_generate_answer_passes_metadata(
+    mock_embedder_factory: Mock,
+    mock_llm_factory: Mock,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+) -> None:
+    """Ensure generate_answer forwards constructed metadata to the LLM client."""
+    # Given: mock LLM and embedding clients
+    mock_llm = Mock()
+    mock_llm_response = LLMResponse(
+        id="test-id",
+        created=123456,
+        choices=["LLM answer"],
+        model="test-model",
+        usage=LLMUsage(prompt_tokens=5, completion_tokens=2),
+    )
+    mock_llm.acompletion = AsyncMock(return_value=mock_llm_response)
+    mock_llm_factory.return_value = mock_llm
+    mock_embedder_factory.return_value = Mock()
+
+    # Create policy with minimal config
+    policy = IntentlessPolicy.create(
+        IntentlessPolicy.get_default_config(),
+        default_model_storage,
+        Resource("intentless_policy"),
+        default_execution_context,
+    )
+    # Set a deterministic prompt template
+    policy.prompt_template = "Prompt: {{ current_conversation }}"
+
+    # Tracker and metadata
+    tracker = DialogueStateTracker(sender_id="test_session", slots=[])
+    tracker.assistant_id = "test_agent"
+    tracker.model_id = "test_model"
+
+    # Inputs that render into prompt
+    response_examples = ["R1"]
+    conversation_samples = ["C1"]
+    history = "Hello there"
+
+    # When
+    await policy.generate_answer(
+        response_examples, conversation_samples, history, tracker
+    )
+
+    # Then
+    expected_prompt = "Prompt: Hello there"
+    expected_metadata = {
+        LANGFUSE_METADATA_SESSION_ID: "test_session",
+        LANGFUSE_METADATA_TAGS: [IntentlessPolicy.__name__],
+        LANGFUSE_METADATA_CUSTOM_METADATA: {
+            LANGFUSE_METADATA_AGENT_ID: "test_agent",
+            LANGFUSE_METADATA_MODEL_ID: "test_model",
+            LANGFUSE_METADATA_COMPONENT_NAME: IntentlessPolicy.__name__,
+        },
+    }
+    call_args = mock_llm.acompletion.call_args
+    assert call_args[0][0] == expected_prompt
+    assert call_args[1]["metadata"] == expected_metadata
 
 
 async def test_intentless_policy_predicts_loop(

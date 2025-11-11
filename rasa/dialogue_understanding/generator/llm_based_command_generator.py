@@ -42,8 +42,17 @@ from rasa.shared.nlu.constants import FLOWS_IN_PROMPT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.providers.llm.llm_response import LLMResponse, measure_llm_latency
+from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
+)
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.llm import (
+    LLMInput,
     allowed_values_for_slot,
     llm_factory,
     resolve_model_client_config,
@@ -330,9 +339,7 @@ class LLMBasedCommandGenerator(
         return filtered_flows
 
     @measure_llm_latency
-    async def invoke_llm(
-        self, prompt: Union[List[dict], List[str], str]
-    ) -> Optional[LLMResponse]:
+    async def invoke_llm(self, llm_input: LLMInput) -> Optional[LLMResponse]:
         """Use LLM to generate a response.
 
         Args:
@@ -355,7 +362,7 @@ class LLMBasedCommandGenerator(
             self.config.get(LLM_CONFIG_KEY), self.get_default_llm_config()
         )
         try:
-            return await llm.acompletion(prompt)
+            return await llm.acompletion(llm_input.prompt, metadata=llm_input.metadata)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
             # we have to catch all exceptions here
@@ -697,3 +704,14 @@ class LLMBasedCommandGenerator(
     def get_default_llm_config() -> Dict[str, Any]:
         """Get the default LLM config for the command generator."""
         return DEFAULT_LLM_CONFIG
+
+    def get_llm_tracing_metadata(self, tracker: DialogueStateTracker) -> Dict[str, Any]:
+        return {
+            LANGFUSE_METADATA_SESSION_ID: tracker.sender_id,
+            LANGFUSE_METADATA_TAGS: [self.__class__.__name__],
+            LANGFUSE_METADATA_CUSTOM_METADATA: {
+                LANGFUSE_METADATA_AGENT_ID: tracker.assistant_id,
+                LANGFUSE_METADATA_MODEL_ID: tracker.model_id,
+                LANGFUSE_METADATA_COMPONENT_NAME: self.__class__.__name__,
+            },
+        }

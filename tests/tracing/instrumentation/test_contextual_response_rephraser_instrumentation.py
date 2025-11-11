@@ -11,7 +11,7 @@ from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR, OPENAI_API_KEY_E
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.utils.llm import DEFAULT_OPENAI_GENERATE_MODEL_NAME
+from rasa.shared.utils.llm import DEFAULT_OPENAI_GENERATE_MODEL_NAME, LLMInput
 from rasa.tracing.instrumentation import instrumentation
 from rasa.utils.endpoints import EndpointConfig
 from tests.tracing.instrumentation.conftest import (
@@ -325,7 +325,9 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
         endpoint_config=endpoint_config, domain=domain_with_responses
     )
 
-    await mock_rephraser._generate_llm_response("This is a test prompt.")
+    await mock_rephraser._generate_llm_response(
+        LLMInput(prompt="This is a test prompt.", metadata={})
+    )
 
     captured_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans(
         ignore_substrings
@@ -385,7 +387,9 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
     )
 
     with caplog.at_level(logging.WARNING):
-        await mock_rephraser._generate_llm_response("This is a test prompt.")
+        await mock_rephraser._generate_llm_response(
+            LLMInput(prompt="This is a test prompt.", metadata={})
+        )
         assert (
             "Tracing prompt tokens is only supported for OpenAI models. Skipping."
             in caplog.text

@@ -61,6 +61,7 @@ from rasa.shared.utils.constants import (
 )
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
+    LLMInput,
     allowed_values_for_slot,
     resolve_model_client_config,
     sanitize_message_for_prompt,
@@ -276,7 +277,10 @@ class SingleStepBasedLLMCommandGenerator(LLMBasedCommandGenerator, ABC):
             prompt=flow_prompt,
         )
 
-        response = await self.invoke_llm(flow_prompt)
+        llm_input = LLMInput(
+            prompt=flow_prompt, metadata=self.get_llm_tracing_metadata(tracker)
+        )
+        response = await self.invoke_llm(llm_input)
         llm_response = LLMResponse.ensure_llm_response(response)
         # The check for 'None' maintains compatibility with older versions
         # of LLMCommandGenerator. In previous implementations, 'invoke_llm'

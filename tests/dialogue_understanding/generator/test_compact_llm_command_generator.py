@@ -564,6 +564,7 @@ class TestCompactLLMCommandGenerator:
         )
         mock_message = Message()
         mock_message.data = {TEXT: "some_message"}
+        mock_render_template.return_value = "some_rendered_template"
         # regardless of flow retrieval we want to make sure we are calling the
         # prompt rendering only with startable flows.
         config = {"flow_retrieval": {"active": False}}

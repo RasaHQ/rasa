@@ -21,6 +21,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import LLM_API_HEALTH_CHECK_ENV_VAR
 from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.utils.llm import LLMInput
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.instrumentation.conftest import (
     MockInformationRetrieval,
@@ -84,7 +85,7 @@ async def test_tracing_enterprise_search_policy_invoke_llm_default_config(
     mock_llm_client.acompletion = AsyncMock(return_value=llm_response_object)
     mock_llm_factory.return_value = mock_llm_client
 
-    await policy._invoke_llm("")
+    await policy._invoke_llm(LLMInput(prompt="", metadata={}))
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -271,7 +272,7 @@ async def test_tracing_enterprise_search_policy_invoke_llm_len_prompt_tokens(
         mock_llm_client = Mock()
         mock_llm_client.acompletion = AsyncMock(return_value=llm_response_object)
         mock_llm_factory.return_value = Mock()
-        await policy._invoke_llm("This is a test prompt.")
+        await policy._invoke_llm(LLMInput(prompt="This is a test prompt.", metadata={}))
 
         captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -343,7 +344,9 @@ async def test_tracing_enterprise_search_policy_invoke_llm_len_prompt_tokens_non
             mock_llm_client = Mock()
             mock_llm_client.acompletion = AsyncMock(return_value=llm_response_object)
             mock_llm_factory.return_value = mock_llm_client
-            await policy._invoke_llm("This is a test prompt.")
+            await policy._invoke_llm(
+                LLMInput(prompt="This is a test prompt.", metadata={})
+            )
             assert (
                 "Tracing prompt tokens is only supported for OpenAI models. Skipping."
                 in caplog.text

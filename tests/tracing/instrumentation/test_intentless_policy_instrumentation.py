@@ -23,6 +23,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.utils.llm import LLMInput
 from rasa.tracing.instrumentation import instrumentation
 from tests.core.policies.test_intentless_policy import TEST_DOMAIN
 
@@ -92,11 +93,10 @@ async def test_tracing_intentless_policy_generate_answer(
         tracer_provider,
         policy_subclasses=[component_class],
     )
+    mock_tracker = Mock()
 
     await intentless_policy_generator.generate_answer(
-        ["Howdy!"],
-        [""],
-        "",
+        ["Howdy!"], [""], "", mock_tracker
     )
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
@@ -342,7 +342,7 @@ async def test_tracing_intentless_policy_generate_llm_answer_len_prompt_tokens(
     intentless_policy_generator.trace_prompt_tokens = True
 
     await intentless_policy_generator._generate_llm_answer(
-        Mock(), "This is a test prompt."
+        Mock(), LLMInput(prompt="This is a test prompt.", metadata={})
     )
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
@@ -405,7 +405,7 @@ async def test_intentless_policy_generate_llm_answer_len_prompt_tokens_non_opena
 
     with caplog.at_level(logging.WARNING):
         await intentless_policy_generator._generate_llm_answer(
-            Mock(), "This is a test prompt."
+            Mock(), LLMInput(prompt="This is a test prompt.", metadata={})
         )
         assert (
             "Tracing prompt tokens is only supported for OpenAI models. Skipping."

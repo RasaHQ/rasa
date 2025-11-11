@@ -20,6 +20,7 @@ from rasa.shared.core.flows import Flow, FlowsList
 from rasa.shared.core.slots import TextSlot
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.utils.llm import LLMInput
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.conftest import TRACING_TESTS_FIXTURES_DIRECTORY
 from tests.tracing.instrumentation.conftest import (
@@ -418,7 +419,9 @@ async def test_tracing_single_step_llm_command_generator_prompt_tokens(
         model_storage=default_model_storage,
         resource=Resource("llm-command-generator"),
     )
-    await mock_single_step_llm_command_generator.invoke_llm("This is a test prompt.")
+    await mock_single_step_llm_command_generator.invoke_llm(
+        LLMInput(prompt="This is a test prompt.", metadata={})
+    )
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -482,7 +485,7 @@ async def test_tracing_single_step_llm_command_generator_prompt_tokens_non_opena
 
     with caplog.at_level(logging.WARNING):
         await mock_single_step_llm_command_generator.invoke_llm(
-            "This is a test prompt."
+            LLMInput(prompt="This is a test prompt.", metadata={})
         )
         assert (
             "Tracing prompt tokens is only supported for OpenAI models. Skipping."

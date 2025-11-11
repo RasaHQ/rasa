@@ -1,7 +1,7 @@
 import textwrap
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 import structlog
@@ -67,8 +67,16 @@ from rasa.shared.nlu.constants import (
     KEY_USER_PROMPT,
     PROMPTS,
 )
-from rasa.shared.providers.llm.llm_response import LLMResponse
-from rasa.shared.utils.llm import get_prompt_template
+from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
+from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
+)
+from rasa.shared.utils.llm import LLMInput, get_prompt_template
 from tests.utilities import filter_logs
 
 
@@ -2288,3 +2296,185 @@ def test_train_and_load_calls_faiss_store_with_parsed_faq_when_use_generative_ll
     for call_args in mock_faiss_store.call_args_list:
         kwargs = call_args.kwargs
         assert kwargs["parse_as_faq_pairs"] is expected_parse_as_faq_pairs
+
+
+@pytest.mark.parametrize(
+    "sender_id, assistant_id, model_id, expected_metadata",
+    [
+        (
+            "user123",
+            "assistant456",
+            "model789",
+            {
+                LANGFUSE_METADATA_SESSION_ID: "user123",
+                LANGFUSE_METADATA_TAGS: [EnterpriseSearchPolicy.__name__],
+                LANGFUSE_METADATA_CUSTOM_METADATA: {
+                    LANGFUSE_METADATA_AGENT_ID: "assistant456",
+                    LANGFUSE_METADATA_MODEL_ID: "model789",
+                    LANGFUSE_METADATA_COMPONENT_NAME: EnterpriseSearchPolicy.__name__,
+                },
+            },
+        ),
+        (
+            "user123",
+            None,
+            None,
+            {
+                LANGFUSE_METADATA_SESSION_ID: "user123",
+                LANGFUSE_METADATA_TAGS: [EnterpriseSearchPolicy.__name__],
+                LANGFUSE_METADATA_CUSTOM_METADATA: {
+                    LANGFUSE_METADATA_AGENT_ID: None,
+                    LANGFUSE_METADATA_MODEL_ID: None,
+                    LANGFUSE_METADATA_COMPONENT_NAME: EnterpriseSearchPolicy.__name__,
+                },
+            },
+        ),
+        (
+            "user123",
+            "assistant456",
+            None,
+            {
+                LANGFUSE_METADATA_SESSION_ID: "user123",
+                LANGFUSE_METADATA_TAGS: [EnterpriseSearchPolicy.__name__],
+                LANGFUSE_METADATA_CUSTOM_METADATA: {
+                    LANGFUSE_METADATA_AGENT_ID: "assistant456",
+                    LANGFUSE_METADATA_MODEL_ID: None,
+                    LANGFUSE_METADATA_COMPONENT_NAME: EnterpriseSearchPolicy.__name__,
+                },
+            },
+        ),
+        (
+            "user123",
+            None,
+            "model789",
+            {
+                LANGFUSE_METADATA_SESSION_ID: "user123",
+                LANGFUSE_METADATA_TAGS: [EnterpriseSearchPolicy.__name__],
+                LANGFUSE_METADATA_CUSTOM_METADATA: {
+                    LANGFUSE_METADATA_AGENT_ID: None,
+                    LANGFUSE_METADATA_MODEL_ID: "model789",
+                    LANGFUSE_METADATA_COMPONENT_NAME: EnterpriseSearchPolicy.__name__,
+                },
+            },
+        ),
+    ],
+)
+def test_get_llm_tracing_metadata(
+    default_enterprise_search_policy: EnterpriseSearchPolicy,
+    sender_id: str,
+    assistant_id: Optional[str],
+    model_id: Optional[str],
+    expected_metadata: Dict[str, Any],
+) -> None:
+    """Test that get_llm_tracing_metadata returns correct metadata from tracker."""
+    tracker = DialogueStateTracker(sender_id=sender_id, slots=[])
+    tracker.assistant_id = assistant_id
+    tracker.model_id = model_id
+
+    metadata = default_enterprise_search_policy.get_llm_tracing_metadata(tracker)
+
+    assert metadata == expected_metadata
+
+
+@patch("rasa.core.policies.enterprise_search_policy.llm_factory")
+async def test_invoke_llm_success(
+    mock_llm_factory: Mock,
+    default_enterprise_search_policy: EnterpriseSearchPolicy,
+) -> None:
+    """Test that _invoke_llm successfully calls LLM and returns response."""
+    # Given
+    test_prompt = "Test prompt"
+    test_metadata = {
+        LANGFUSE_METADATA_SESSION_ID: "test_session",
+        LANGFUSE_METADATA_TAGS: ["test_tag"],
+        LANGFUSE_METADATA_CUSTOM_METADATA: {"key": "value"},
+    }
+    llm_input = LLMInput(prompt=test_prompt, metadata=test_metadata)
+
+    mock_llm = Mock()
+    mock_llm_response = LLMResponse(
+        id="test-id",
+        created=123456,
+        choices=["Test response"],
+        model="test-model",
+        usage=LLMUsage(prompt_tokens=5, completion_tokens=2),
+    )
+    mock_llm.acompletion = AsyncMock(return_value=mock_llm_response)
+    mock_llm_factory.return_value = mock_llm
+
+    # When
+    result = await default_enterprise_search_policy._invoke_llm(llm_input)
+
+    # Then
+    mock_llm.acompletion.assert_called_once_with(test_prompt, metadata=test_metadata)
+    assert result is not None
+    assert result.choices == ["Test response"]
+
+
+@patch("rasa.core.policies.enterprise_search_policy.llm_factory")
+async def test_invoke_llm_with_error(
+    mock_llm_factory: Mock,
+    default_enterprise_search_policy: EnterpriseSearchPolicy,
+) -> None:
+    """Test that _invoke_llm handles exceptions and returns None."""
+    # Given
+    test_prompt = "Test prompt"
+    test_metadata = {
+        LANGFUSE_METADATA_SESSION_ID: "test_session",
+        LANGFUSE_METADATA_TAGS: ["test_tag"],
+    }
+    llm_input = LLMInput(prompt=test_prompt, metadata=test_metadata)
+
+    mock_llm = Mock()
+    mock_llm.acompletion = AsyncMock(side_effect=Exception("LLM error"))
+    mock_llm_factory.return_value = mock_llm
+
+    # When
+    with patch(
+        "rasa.core.policies.enterprise_search_policy.structlogger.error"
+    ) as mock_error:
+        result = await default_enterprise_search_policy._invoke_llm(llm_input)
+
+    # Then
+    assert result is None
+    mock_error.assert_called_once()
+    assert "llm_error" in mock_error.call_args[0][0]
+
+
+@patch("rasa.core.policies.enterprise_search_policy.llm_factory")
+async def test_invoke_llm_passes_metadata(
+    mock_llm_factory: Mock,
+    default_enterprise_search_policy: EnterpriseSearchPolicy,
+) -> None:
+    """Test that _invoke_llm passes metadata to LLM."""
+    # Given
+    test_prompt = "Test prompt"
+    test_metadata = {
+        LANGFUSE_METADATA_SESSION_ID: "test_session_id",
+        LANGFUSE_METADATA_TAGS: [EnterpriseSearchPolicy.__name__],
+        LANGFUSE_METADATA_CUSTOM_METADATA: {
+            LANGFUSE_METADATA_AGENT_ID: "test_agent",
+            LANGFUSE_METADATA_MODEL_ID: "test_model",
+            LANGFUSE_METADATA_COMPONENT_NAME: EnterpriseSearchPolicy.__name__,
+        },
+    }
+    llm_input = LLMInput(prompt=test_prompt, metadata=test_metadata)
+
+    mock_llm = Mock()
+    mock_llm_response = LLMResponse(
+        id="test-id",
+        created=123456,
+        choices=["Test response"],
+        model="test-model",
+        usage=LLMUsage(prompt_tokens=5, completion_tokens=2),
+    )
+    mock_llm.acompletion = AsyncMock(return_value=mock_llm_response)
+    mock_llm_factory.return_value = mock_llm
+
+    # When
+    await default_enterprise_search_policy._invoke_llm(llm_input)
+
+    # Then
+    call_args = mock_llm.acompletion.call_args
+    assert call_args[0][0] == test_prompt
+    assert call_args[1]["metadata"] == test_metadata

@@ -1,5 +1,5 @@
 import argparse
-from typing import Any, Callable, Dict, List, Optional, Text, Union
+from typing import Any, Callable, Dict, Optional, Text
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -28,7 +28,7 @@ from rasa.llm_fine_tuning.storage import (
     StorageContext,
     StorageType,
 )
-from rasa.shared.utils.llm import combine_custom_and_default_config
+from rasa.shared.utils.llm import LLMInput, combine_custom_and_default_config
 from tests.conftest import get_model_groups
 
 
@@ -47,9 +47,7 @@ class MockSingleStepLLMCommandGenerator(SingleStepLLMCommandGenerator):
     ) -> None:
         super().__init__(config, model_storage, resource, prompt_template)
 
-    async def invoke_llm(
-        self, prompt: Union[List[dict], List[str], str]
-    ) -> Optional[str]:
+    async def invoke_llm(self, llm_input: LLMInput) -> Optional[str]:
         pass
 
 

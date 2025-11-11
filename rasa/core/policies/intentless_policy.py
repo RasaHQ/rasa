@@ -58,6 +58,12 @@ from rasa.shared.providers.embedding._langchain_embedding_client_adapter import 
 )
 from rasa.shared.providers.llm.llm_client import LLMClient
 from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
     LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
     LOG_COMPONENT_SOURCE_METHOD_INIT,
 )
@@ -72,6 +78,7 @@ from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
     DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
     USER,
+    LLMInput,
     check_prompt_config_keys_and_warn_if_deprecated,
     combine_custom_and_default_config,
     embedder_factory,
@@ -668,6 +675,7 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
         response_examples: List[str],
         conversation_samples: List[str],
         history: str,
+        tracker: DialogueStateTracker,
     ) -> Optional[str]:
         """Make the llm call to generate an answer."""
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
@@ -683,11 +691,18 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
             log_event="intentless_policy.generate_answer.prompt_rendered",
             prompt=prompt,
         )
-        return await self._generate_llm_answer(llm, prompt)
+        llm_input = LLMInput(
+            prompt=prompt, metadata=self.get_llm_tracing_metadata(tracker)
+        )
+        return await self._generate_llm_answer(llm, llm_input)
 
-    async def _generate_llm_answer(self, llm: LLMClient, prompt: str) -> Optional[str]:
+    async def _generate_llm_answer(
+        self, llm: LLMClient, llm_input: LLMInput
+    ) -> Optional[str]:
         try:
-            llm_response = await llm.acompletion(prompt)
+            llm_response = await llm.acompletion(
+                llm_input.prompt, metadata=llm_input.metadata
+            )
             return llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
@@ -763,7 +778,7 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
                 final_response_examples.append(resp)
 
         llm_response = await self.generate_answer(
-            final_response_examples, conversation_samples, history
+            final_response_examples, conversation_samples, history, tracker
         )
         if not llm_response:
             structlogger.debug("intentless_policy.prediction.skip_llm_fail")
@@ -1023,3 +1038,14 @@ class IntentlessPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Policy):
             log_source_method,
             IntentlessPolicy.__name__,
         )
+
+    def get_llm_tracing_metadata(self, tracker: DialogueStateTracker) -> Dict[str, Any]:
+        return {
+            LANGFUSE_METADATA_SESSION_ID: tracker.sender_id,
+            LANGFUSE_METADATA_TAGS: [self.__class__.__name__],
+            LANGFUSE_METADATA_CUSTOM_METADATA: {
+                LANGFUSE_METADATA_AGENT_ID: tracker.assistant_id,
+                LANGFUSE_METADATA_MODEL_ID: tracker.model_id,
+                LANGFUSE_METADATA_COMPONENT_NAME: self.__class__.__name__,
+            },
+        }

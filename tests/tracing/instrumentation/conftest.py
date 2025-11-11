@@ -15,7 +15,6 @@ from typing import (
     Text,
     Tuple,
     Type,
-    Union,
 )
 from unittest.mock import MagicMock, Mock, patch
 
@@ -85,6 +84,7 @@ from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.data import TrainingType
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils.llm import LLMInput
 from rasa.shared.utils.yaml import read_yaml_file
 from rasa.tracing.instrumentation.instrumentation import (
     FLOW_EXECUTOR_MODULE_NAME,
@@ -540,9 +540,7 @@ class MockLLMCommandgenerator(LLMCommandGenerator):
                 f"instrumentation needs to be adapted!"
             )
 
-    async def invoke_llm(
-        self, prompt: Union[List[dict], List[str], str]
-    ) -> Optional[str]:
+    async def invoke_llm(self, llm_input: LLMInput) -> Optional[str]:
         pass
 
 
@@ -569,9 +567,7 @@ class MockSingleStepLLMCommandGenerator(SingleStepLLMCommandGenerator):
                 f"instrumentation needs to be adapted!"
             )
 
-    async def invoke_llm(
-        self, prompt: Union[List[dict], List[str], str]
-    ) -> Optional[str]:
+    async def invoke_llm(self, llm_input: LLMInput) -> Optional[str]:
         pass
 
 
@@ -598,7 +594,7 @@ class MockCompactLLMCommandGenerator(CompactLLMCommandGenerator):
                 f"instrumentation needs to be adapted!"
             )
 
-    async def invoke_llm(self, prompt: str) -> Optional[str]:
+    async def invoke_llm(self, llm_input: LLMInput) -> Optional[str]:
         pass
 
 
@@ -625,7 +621,7 @@ class MockSearchReadyLLMCommandGenerator(SearchReadyLLMCommandGenerator):
                 f"instrumentation needs to be adapted!"
             )
 
-    async def invoke_llm(self, prompt: str) -> Optional[str]:
+    async def invoke_llm(self, llm_input: LLMInput) -> Optional[str]:
         pass
 
 
@@ -651,9 +647,7 @@ class MockMultiStepLLMCommandGenerator(MultiStepLLMCommandGenerator):
                 f"instrumentation needs to be adapted!"
             )
 
-    async def invoke_llm(
-        self, prompt: Union[List[dict], List[str], str]
-    ) -> Optional[str]:
+    async def invoke_llm(self, llm_input: LLMInput) -> Optional[str]:
         pass
 
 
@@ -708,7 +702,7 @@ class MockContextualResponseRephraser(ContextualResponseRephraser):
                 f"instrumentation needs to be adapted!"
             )
 
-    async def _generate_llm_response(self, prompt: str) -> Optional[str]:
+    async def _generate_llm_response(self, llm_input: LLMInput) -> Optional[str]:
         pass
 
     async def _create_history(self, tracker: DialogueStateTracker) -> Optional[str]:

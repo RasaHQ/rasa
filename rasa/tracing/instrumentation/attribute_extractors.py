@@ -75,6 +75,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import INTENT_NAME_KEY, SET_SLOT_COMMAND
 from rasa.shared.utils.health_check.health_check import is_api_health_check_enabled
 from rasa.shared.utils.llm import (
+    LLMInput,
     combine_custom_and_default_config,
     resolve_model_client_config,
 )
@@ -396,7 +397,7 @@ def extract_llm_config(
 
 def extract_attrs_for_llm_based_command_generator(
     self: "LLMBasedCommandGenerator",
-    prompt: str,
+    llm_input: LLMInput,
 ) -> Dict[str, Any]:
     from rasa.dialogue_understanding.generator.flow_retrieval import (
         DEFAULT_EMBEDDINGS_CONFIG,
@@ -408,12 +409,12 @@ def extract_attrs_for_llm_based_command_generator(
         default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
     )
 
-    return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
+    return extend_attributes_with_prompt_tokens_length(self, attributes, llm_input)
 
 
 def extract_attrs_for_contextual_response_rephraser(
     self: Any,
-    prompt: str,
+    llm_input: LLMInput,
 ) -> Dict[str, Any]:
     from rasa.core.nlg.contextual_response_rephraser import DEFAULT_LLM_CONFIG
 
@@ -424,7 +425,7 @@ def extract_attrs_for_contextual_response_rephraser(
         default_embeddings_config={},
     )
 
-    return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
+    return extend_attributes_with_prompt_tokens_length(self, attributes, llm_input)
 
 
 def extract_attrs_for_create_history(
@@ -832,7 +833,9 @@ def extract_attrs_for_intentless_policy_find_closest_response(
 
 
 def extract_attrs_for_intentless_policy_generate_llm_answer(
-    self: "IntentlessPolicy", llm: "BaseLLM", prompt: str
+    self: "IntentlessPolicy",
+    llm: "BaseLLM",
+    llm_input: LLMInput,
 ) -> Dict[str, Any]:
     from rasa.core.policies.intentless_policy import (
         DEFAULT_EMBEDDINGS_CONFIG,
@@ -845,11 +848,11 @@ def extract_attrs_for_intentless_policy_generate_llm_answer(
         default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
     )
 
-    return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
+    return extend_attributes_with_prompt_tokens_length(self, attributes, llm_input)
 
 
 def extract_attrs_for_enterprise_search_invoke_llm(
-    self: "EnterpriseSearchPolicy", prompt: str
+    self: "EnterpriseSearchPolicy", llm_input: LLMInput
 ) -> Dict[str, Any]:
     from rasa.core.policies.enterprise_search_policy import (
         DEFAULT_EMBEDDINGS_CONFIG,
@@ -862,7 +865,7 @@ def extract_attrs_for_enterprise_search_invoke_llm(
         default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
     )
 
-    return extend_attributes_with_prompt_tokens_length(self, attributes, prompt)
+    return extend_attributes_with_prompt_tokens_length(self, attributes, llm_input)
 
 
 def extract_attrs_for_enterprise_search_parse_llm_relevancy_check_response(
@@ -918,7 +921,7 @@ def compute_prompt_tokens_length(
 def extend_attributes_with_prompt_tokens_length(
     self: Any,
     attributes: Dict[str, Any],
-    prompt: str,
+    llm_input: LLMInput,
 ) -> Dict[str, Any]:
     if not self.trace_prompt_tokens:
         return attributes
@@ -926,7 +929,7 @@ def extend_attributes_with_prompt_tokens_length(
     len_prompt_tokens = compute_prompt_tokens_length(
         model_type=attributes["llm_type"],
         model_name=attributes["llm_model"],
-        prompt=prompt,
+        prompt=llm_input.prompt,
     )
 
     attributes[PROMPT_TOKEN_LENGTH_ATTRIBUTE_NAME] = str(len_prompt_tokens)

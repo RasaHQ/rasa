@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, Callable, List, Optional, Type
 
 from opentelemetry.trace import Tracer
 
+from rasa.shared.core.trackers import DialogueStateTracker
+
 if TYPE_CHECKING:
     from rasa.core.policies.intentless_policy import IntentlessPolicy
 
@@ -121,12 +123,13 @@ def _instrument_generate_answer(
             response_examples: List[str],
             conversation_samples: List[str],
             history: str,
+            tracker: DialogueStateTracker,
         ) -> Optional[str]:
             with tracer.start_as_current_span(
                 f"{self.__class__.__name__}.{fn.__name__}"
             ) as span:
                 llm_response = await fn(
-                    self, response_examples, conversation_samples, history
+                    self, response_examples, conversation_samples, history, tracker
                 )
                 span.set_attributes(
                     {

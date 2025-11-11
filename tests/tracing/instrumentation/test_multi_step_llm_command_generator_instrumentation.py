@@ -18,6 +18,7 @@ from rasa.shared.core.slots import TextSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.utils.llm import LLMInput
 from rasa.tracing.instrumentation import instrumentation
 from tests.tracing.conftest import TRACING_TESTS_FIXTURES_DIRECTORY
 from tests.tracing.instrumentation.conftest import (
@@ -134,7 +135,9 @@ async def test_tracing_multi_step_llm_command_generator_default_attrs(
         model_storage=default_model_storage,
         resource=None,
     )
-    await mock_multi_step_llm_command_generator.invoke_llm("some text")
+    await mock_multi_step_llm_command_generator.invoke_llm(
+        LLMInput(prompt="some text", metadata={})
+    )
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -202,7 +205,9 @@ async def test_tracing_multi_step_llm_command_generator_azure_attrs(
         model_storage=default_model_storage,
         resource=None,
     )
-    await mock_multi_step_llm_command_generator.invoke_llm("some text")
+    await mock_multi_step_llm_command_generator.invoke_llm(
+        LLMInput(prompt="some text", metadata={})
+    )
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -332,7 +337,9 @@ async def test_tracing_multi_step_llm_command_generator_non_default_llm_attrs(
         model_storage=default_model_storage,
         resource=None,
     )
-    await mock_multi_step_llm_command_generator.invoke_llm("some text")
+    await mock_multi_step_llm_command_generator.invoke_llm(
+        LLMInput(prompt="some text", metadata={})
+    )
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -448,7 +455,9 @@ async def test_tracing_multi_step_llm_command_generator_prompt_tokens(
         model_storage=default_model_storage,
         resource=Resource("multi-step-llm-command-generator"),
     )
-    await mock_multi_step_llm_command_generator.invoke_llm("This is a test prompt.")
+    await mock_multi_step_llm_command_generator.invoke_llm(
+        LLMInput(prompt="This is a test prompt.", metadata={})
+    )
 
     captured_spans: Sequence[ReadableSpan] = span_exporter.get_finished_spans()  # type: ignore
 
@@ -511,7 +520,9 @@ async def test_tracing_multi_step_llm_command_generator_prompt_tokens_non_openai
     )
 
     with caplog.at_level(logging.WARNING):
-        await mock_multi_step_llm_command_generator.invoke_llm("This is a test prompt.")
+        await mock_multi_step_llm_command_generator.invoke_llm(
+            LLMInput(prompt="some text", metadata={})
+        )
         assert (
             "Tracing prompt tokens is only supported for OpenAI models. Skipping."
             in caplog.text

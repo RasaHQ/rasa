@@ -58,6 +58,7 @@ from rasa.shared.utils.constants import (
 )
 from rasa.shared.utils.io import deep_container_fingerprint, raise_deprecation_warning
 from rasa.shared.utils.llm import (
+    LLMInput,
     allowed_values_for_slot,
     get_prompt_template,
     resolve_model_client_config,
@@ -492,8 +493,10 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             ".prompt_rendered",
             prompt=prompt,
         )
-
-        response = await self.invoke_llm(prompt)
+        llm_input = LLMInput(
+            prompt=prompt, metadata=self.get_llm_tracing_metadata(tracker)
+        )
+        response = await self.invoke_llm(llm_input)
         llm_response = LLMResponse.ensure_llm_response(response)
         actions = None
         if llm_response and llm_response.choices:
@@ -548,7 +551,10 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             prompt=prompt,
         )
 
-        response = await self.invoke_llm(prompt)
+        llm_input = LLMInput(
+            prompt=prompt, metadata=self.get_llm_tracing_metadata(tracker)
+        )
+        response = await self.invoke_llm(llm_input)
         llm_response = LLMResponse.ensure_llm_response(response)
         actions = None
         if llm_response and llm_response.choices:
@@ -638,7 +644,10 @@ class MultiStepLLMCommandGenerator(LLMBasedCommandGenerator):
             prompt=prompt,
         )
 
-        response = await self.invoke_llm(prompt)
+        llm_input = LLMInput(
+            prompt=prompt, metadata=self.get_llm_tracing_metadata(tracker)
+        )
+        response = await self.invoke_llm(llm_input)
         llm_response = LLMResponse.ensure_llm_response(response)
         actions = None
         if llm_response and llm_response.choices:

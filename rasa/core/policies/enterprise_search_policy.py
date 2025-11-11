@@ -86,6 +86,12 @@ from rasa.shared.providers.embedding._langchain_embedding_client_adapter import 
 )
 from rasa.shared.providers.llm.llm_response import LLMResponse, measure_llm_latency
 from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
     LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
     LOG_COMPONENT_SOURCE_METHOD_INIT,
 )
@@ -95,6 +101,7 @@ from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
 from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheckMixin
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
+    LLMInput,
     embedder_factory,
     get_prompt_template,
     llm_factory,
@@ -478,6 +485,17 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         structlogger.debug("search_query", search_query=search_query)
         return search_query
 
+    def get_llm_tracing_metadata(self, tracker: DialogueStateTracker) -> Dict[str, Any]:
+        return {
+            LANGFUSE_METADATA_SESSION_ID: tracker.sender_id,
+            LANGFUSE_METADATA_TAGS: [self.__class__.__name__],
+            LANGFUSE_METADATA_CUSTOM_METADATA: {
+                LANGFUSE_METADATA_AGENT_ID: tracker.assistant_id,
+                LANGFUSE_METADATA_MODEL_ID: tracker.model_id,
+                LANGFUSE_METADATA_COMPONENT_NAME: self.__class__.__name__,
+            },
+        }
+
     async def predict_action_probabilities(  # type: ignore[override]
         self,
         tracker: DialogueStateTracker,
@@ -538,7 +556,9 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
 
         if self.use_llm:
             prompt = self._render_prompt(tracker, documents.results)
-            llm_response = await self._invoke_llm(prompt)
+            llm_response = await self._invoke_llm(
+                LLMInput(prompt=prompt, metadata=self.get_llm_tracing_metadata(tracker))
+            )
 
             self._add_prompt_and_llm_response_to_latest_message(
                 tracker=tracker,
@@ -648,19 +668,20 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         return prompt
 
     @measure_llm_latency
-    async def _invoke_llm(self, prompt: Text) -> Optional[LLMResponse]:
+    async def _invoke_llm(self, llm_input: LLMInput) -> Optional[LLMResponse]:
         """Fetches an LLM completion for the provided prompt.
 
         Args:
-            llm: The LLM client used to get the completion.
-            prompt: The prompt text to send to the model.
+            llm_input: The LLM input containing the prompt and metadata.
 
         Returns:
             An LLMResponse object, or None if the call fails.
         """
         llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
         try:
-            response = await llm.acompletion(prompt)
+            response = await llm.acompletion(
+                llm_input.prompt, metadata=llm_input.metadata
+            )
             return LLMResponse.ensure_llm_response(response)
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means

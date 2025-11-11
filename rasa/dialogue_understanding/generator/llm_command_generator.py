@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Text, Union
+from typing import Any, Dict, Optional, Text
 
 import structlog
 from deprecated import deprecated  # type: ignore[import-untyped]
@@ -12,6 +12,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.exceptions import ProviderClientAPIException
 from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.io import raise_deprecation_warning
+from rasa.shared.utils.llm import LLMInput
 
 structlogger = structlog.get_logger()
 
@@ -54,11 +55,9 @@ class LLMCommandGenerator(SingleStepLLMCommandGenerator):
             **kwargs,
         )
 
-    async def invoke_llm(
-        self, prompt: Union[List[dict], List[str], str]
-    ) -> Optional[LLMResponse]:
+    async def invoke_llm(self, llm_input: LLMInput) -> Optional[LLMResponse]:
         try:
-            return await super().invoke_llm(prompt)
+            return await super().invoke_llm(llm_input)
         except ProviderClientAPIException:
             # Returning 'None' in case of a ProviderClientAPIException ensures
             # backward compatibility with previous versions. In earlier
