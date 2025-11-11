@@ -36,7 +36,16 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.providers.llm.llm_response import LLMResponse, LLMUsage
+from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
+)
+from rasa.shared.utils.llm import LLMInput
 
 EXPECTED_PROMPT_PATH = "./tests/dialogue_understanding/coexistence/rendered_prompt.txt"
 
@@ -533,3 +542,187 @@ class TestLLMBasedRouter:
                 "Please use the config parameter 'prompt_template' instead. "
             ),
         )
+
+    @pytest.mark.parametrize(
+        "sender_id, assistant_id, model_id, expected_metadata",
+        [
+            (
+                "user123",
+                "assistant456",
+                "model789",
+                {
+                    LANGFUSE_METADATA_SESSION_ID: "user123",
+                    LANGFUSE_METADATA_TAGS: [LLMBasedRouter.__name__],
+                    LANGFUSE_METADATA_CUSTOM_METADATA: {
+                        LANGFUSE_METADATA_AGENT_ID: "assistant456",
+                        LANGFUSE_METADATA_MODEL_ID: "model789",
+                        LANGFUSE_METADATA_COMPONENT_NAME: LLMBasedRouter.__name__,
+                    },
+                },
+            ),
+            (
+                "user123",
+                None,
+                None,
+                {
+                    LANGFUSE_METADATA_SESSION_ID: "user123",
+                    LANGFUSE_METADATA_TAGS: [LLMBasedRouter.__name__],
+                    LANGFUSE_METADATA_CUSTOM_METADATA: {
+                        LANGFUSE_METADATA_AGENT_ID: None,
+                        LANGFUSE_METADATA_MODEL_ID: None,
+                        LANGFUSE_METADATA_COMPONENT_NAME: LLMBasedRouter.__name__,
+                    },
+                },
+            ),
+            (
+                "user123",
+                "assistant456",
+                None,
+                {
+                    LANGFUSE_METADATA_SESSION_ID: "user123",
+                    LANGFUSE_METADATA_TAGS: [LLMBasedRouter.__name__],
+                    LANGFUSE_METADATA_CUSTOM_METADATA: {
+                        LANGFUSE_METADATA_AGENT_ID: "assistant456",
+                        LANGFUSE_METADATA_MODEL_ID: None,
+                        LANGFUSE_METADATA_COMPONENT_NAME: LLMBasedRouter.__name__,
+                    },
+                },
+            ),
+            (
+                "user123",
+                None,
+                "model789",
+                {
+                    LANGFUSE_METADATA_SESSION_ID: "user123",
+                    LANGFUSE_METADATA_TAGS: [LLMBasedRouter.__name__],
+                    LANGFUSE_METADATA_CUSTOM_METADATA: {
+                        LANGFUSE_METADATA_AGENT_ID: None,
+                        LANGFUSE_METADATA_MODEL_ID: "model789",
+                        LANGFUSE_METADATA_COMPONENT_NAME: LLMBasedRouter.__name__,
+                    },
+                },
+            ),
+        ],
+    )
+    def test_get_llm_tracing_metadata(
+        self,
+        llm_based_router: LLMBasedRouter,
+        sender_id: str,
+        assistant_id: Optional[str],
+        model_id: Optional[str],
+        expected_metadata: Dict[str, Any],
+    ) -> None:
+        """Test that get_llm_tracing_metadata returns correct metadata from tracker."""
+        tracker = DialogueStateTracker(sender_id=sender_id, slots=[])
+        tracker.assistant_id = assistant_id
+        tracker.model_id = model_id
+
+        metadata = llm_based_router.get_llm_tracing_metadata(tracker)
+
+        assert metadata == expected_metadata
+
+    @patch("rasa.dialogue_understanding.coexistence.llm_based_router.llm_factory")
+    async def test_generate_answer_using_llm_success(
+        self,
+        mock_llm_factory: Mock,
+        llm_based_router: LLMBasedRouter,
+    ) -> None:
+        """Test that _generate_answer_using_llm successfully calls LLM and returns
+        response."""
+        # Given
+        test_prompt = "Test prompt"
+        test_metadata = {
+            LANGFUSE_METADATA_SESSION_ID: "test_session",
+            LANGFUSE_METADATA_TAGS: ["test_tag"],
+            LANGFUSE_METADATA_CUSTOM_METADATA: {"key": "value"},
+        }
+        llm_input = LLMInput(prompt=test_prompt, metadata=test_metadata)
+
+        mock_llm = Mock()
+        mock_llm_response = LLMResponse(
+            id="test-id",
+            created=123456,
+            choices=["A"],
+            model="test-model",
+            usage=LLMUsage(prompt_tokens=5, completion_tokens=1),
+        )
+        mock_llm.acompletion = AsyncMock(return_value=mock_llm_response)
+        mock_llm_factory.return_value = mock_llm
+
+        # When
+        result = await llm_based_router._generate_answer_using_llm(llm_input)
+
+        # Then
+        mock_llm_factory.assert_called_once_with(None, DEFAULT_LLM_CONFIG)
+        mock_llm.acompletion.assert_called_once_with(
+            test_prompt, metadata=test_metadata
+        )
+        assert result == "A"
+
+    @patch("rasa.dialogue_understanding.coexistence.llm_based_router.llm_factory")
+    async def test_generate_answer_using_llm_with_error(
+        self,
+        mock_llm_factory: Mock,
+        llm_based_router: LLMBasedRouter,
+    ) -> None:
+        """Test that _generate_answer_using_llm handles exceptions and returns None."""
+        # Given
+        test_prompt = "Test prompt"
+        test_metadata = {
+            LANGFUSE_METADATA_SESSION_ID: "test_session",
+            LANGFUSE_METADATA_TAGS: ["test_tag"],
+        }
+        llm_input = LLMInput(prompt=test_prompt, metadata=test_metadata)
+
+        mock_llm = Mock()
+        mock_llm.acompletion = AsyncMock(side_effect=Exception("LLM error"))
+        mock_llm_factory.return_value = mock_llm
+
+        # When
+        with capture_logs() as logs:
+            result = await llm_based_router._generate_answer_using_llm(llm_input)
+
+        # Then
+        assert result is None
+        assert len(logs) == 1
+        assert logs[0]["event"] == "llm_based_router.llm.error"
+        assert "LLM error" in str(logs[0]["error"])
+
+    @patch("rasa.dialogue_understanding.coexistence.llm_based_router.llm_factory")
+    async def test_generate_answer_using_llm_passes_metadata(
+        self,
+        mock_llm_factory: Mock,
+        llm_based_router: LLMBasedRouter,
+    ) -> None:
+        """Test that _generate_answer_using_llm passes metadata to LLM."""
+        # Given
+        test_prompt = "Test prompt"
+        test_metadata = {
+            LANGFUSE_METADATA_SESSION_ID: "test_session_id",
+            LANGFUSE_METADATA_TAGS: [LLMBasedRouter.__name__],
+            LANGFUSE_METADATA_CUSTOM_METADATA: {
+                LANGFUSE_METADATA_AGENT_ID: "test_agent",
+                LANGFUSE_METADATA_MODEL_ID: "test_model",
+                LANGFUSE_METADATA_COMPONENT_NAME: LLMBasedRouter.__name__,
+            },
+        }
+        llm_input = LLMInput(prompt=test_prompt, metadata=test_metadata)
+
+        mock_llm = Mock()
+        mock_llm_response = LLMResponse(
+            id="test-id",
+            created=123456,
+            choices=["B"],
+            model="test-model",
+            usage=LLMUsage(prompt_tokens=5, completion_tokens=1),
+        )
+        mock_llm.acompletion = AsyncMock(return_value=mock_llm_response)
+        mock_llm_factory.return_value = mock_llm
+
+        # When
+        await llm_based_router._generate_answer_using_llm(llm_input)
+
+        # Then
+        call_args = mock_llm.acompletion.call_args
+        assert call_args[0][0] == test_prompt
+        assert call_args[1]["metadata"] == test_metadata

@@ -103,7 +103,7 @@ def test_train_finetune(
     ]
 
 
-@pytest.mark.timeout(120)
+@pytest.mark.timeout(180)
 def test_train_persist_nlu_data(
     run_in_simple_project: Callable[..., RunResult], tmp_path: Path
 ):

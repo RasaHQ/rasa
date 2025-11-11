@@ -38,6 +38,12 @@ from rasa.shared.nlu.constants import COMMANDS, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
     LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
     LOG_COMPONENT_SOURCE_METHOD_INIT,
 )
@@ -45,6 +51,7 @@ from rasa.shared.utils.health_check.llm_health_check_mixin import LLMHealthCheck
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_CHAT_MODEL_NAME,
+    LLMInput,
     check_prompt_config_keys_and_warn_if_deprecated,
     get_prompt_template,
     llm_factory,
@@ -224,6 +231,17 @@ class LLMBasedRouter(LLMHealthCheckMixin, GraphComponent):
 
         return messages
 
+    def get_llm_tracing_metadata(self, tracker: DialogueStateTracker) -> Dict[str, Any]:
+        return {
+            LANGFUSE_METADATA_SESSION_ID: tracker.sender_id,
+            LANGFUSE_METADATA_TAGS: [self.__class__.__name__],
+            LANGFUSE_METADATA_CUSTOM_METADATA: {
+                LANGFUSE_METADATA_AGENT_ID: tracker.assistant_id,
+                LANGFUSE_METADATA_MODEL_ID: tracker.model_id,
+                LANGFUSE_METADATA_COMPONENT_NAME: self.__class__.__name__,
+            },
+        }
+
     async def predict_commands(
         self,
         message: Message,
@@ -245,7 +263,9 @@ class LLMBasedRouter(LLMHealthCheckMixin, GraphComponent):
                 prompt=prompt,
             )
             # generating answer
-            answer = await self._generate_answer_using_llm(prompt)
+            answer = await self._generate_answer_using_llm(
+                LLMInput(prompt=prompt, metadata=self.get_llm_tracing_metadata(tracker))
+            )
             log_llm(
                 logger=structlogger,
                 log_module="LLMBasedRouter",
@@ -305,7 +325,7 @@ class LLMBasedRouter(LLMHealthCheckMixin, GraphComponent):
 
         return Template(self.prompt_template).render(**inputs)
 
-    async def _generate_answer_using_llm(self, prompt: str) -> Optional[str]:
+    async def _generate_answer_using_llm(self, llm_input: LLMInput) -> Optional[str]:
         """Use LLM to generate a response.
 
         Args:
@@ -317,7 +337,9 @@ class LLMBasedRouter(LLMHealthCheckMixin, GraphComponent):
         llm = llm_factory(self.config.get(LLM_CONFIG_KEY), DEFAULT_LLM_CONFIG)
 
         try:
-            llm_response = await llm.acompletion(prompt)
+            llm_response = await llm.acompletion(
+                llm_input.prompt, metadata=llm_input.metadata
+            )
             return llm_response.choices[0]
         except Exception as e:
             # unfortunately, langchain does not wrap LLM exceptions which means
