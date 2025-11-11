@@ -40,7 +40,9 @@ def refine_cli(
 @hookimpl
 def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Text]:
     from rasa.cli import x as rasa_x
-    from rasa.tracing import config
+    from rasa.tracing.backend_tracing_config import configure_backend_tracing
+    from rasa.tracing.langfuse_config import configure_langfuse
+    from rasa.tracing.metrics_config import configure_metrics
 
     endpoints_file = None
 
@@ -52,9 +54,9 @@ def configure_commandline(cmdline_arguments: argparse.Namespace) -> Optional[Tex
         endpoints_file = cmdline_arguments.endpoints
 
     if endpoints_file is not None:
-        tracer_provider = config.get_tracer_provider(endpoints_file)
-        config.configure_tracing(tracer_provider)
-        config.configure_metrics(endpoints_file)
+        configure_backend_tracing(endpoints_file)
+        configure_langfuse(endpoints_file)
+        configure_metrics(endpoints_file)
 
     return endpoints_file
 

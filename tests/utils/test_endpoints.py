@@ -1,3 +1,4 @@
+import textwrap
 from pathlib import Path
 from typing import Optional, Text, Union
 from unittest.mock import Mock
@@ -8,6 +9,8 @@ from aioresponses import aioresponses
 
 import rasa.utils.endpoints as endpoint_utils
 from rasa.shared.exceptions import FileNotFoundException
+from rasa.tracing.constants import ENDPOINTS_TRACING_KEY
+from rasa.tracing.exceptions import DuplicateTracingConfigException
 from tests.utilities import json_of_latest_request, latest_request
 
 
@@ -232,3 +235,312 @@ def test_int_arg(value: Optional[Union[int, str]], default: int, expected_result
     if value is not None:
         request.args = {"key": value}
     assert endpoint_utils.int_arg(request, "key", default) == expected_result
+
+
+# ------------------------------------------------------------
+# read_backend_tracing_configuration tests
+# ------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "filename,expected",
+    [
+        ("", None),
+        (None, None),
+    ],
+)
+def test_read_backend_tracing_configuration_empty_filename(
+    filename: str, expected: Optional[Text]
+) -> None:
+    """Test that read_backend_tracing_configuration returns None for
+    empty/None filename.
+    """
+    result = endpoint_utils.read_backend_tracing_configuration(
+        filename, ENDPOINTS_TRACING_KEY
+    )
+    assert result == expected
+
+
+def test_read_backend_tracing_configuration_file_not_found() -> None:
+    """Test that read_backend_tracing_configuration returns None when file is not
+    found."""
+    result = endpoint_utils.read_backend_tracing_configuration(
+        "/nonexistent/path/endpoints.yml", ENDPOINTS_TRACING_KEY
+    )
+    assert result is None
+
+
+def test_read_backend_tracing_configuration_no_tracing_key(
+    tmp_path: Path,
+) -> None:
+    """Test that read_backend_tracing_configuration returns None when tracing
+    key is missing.
+    """
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            action_endpoint:
+                url: "http://localhost:5056/webhook"
+            """
+        )
+    )
+    result = endpoint_utils.read_backend_tracing_configuration(
+        str(endpoints_file), ENDPOINTS_TRACING_KEY
+    )
+    assert result is None
+
+
+def test_read_backend_tracing_configuration_config_is_none(
+    tmp_path: Path,
+) -> None:
+    """Test that read_backend_tracing_configuration returns None when config value
+    is None."""
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            tracing: null
+            """
+        )
+    )
+    result = endpoint_utils.read_backend_tracing_configuration(
+        str(endpoints_file), ENDPOINTS_TRACING_KEY
+    )
+    assert result is None
+
+
+def test_read_backend_tracing_configuration_single_dict(tmp_path: Path) -> None:
+    """Test that read_backend_tracing_configuration returns config when single
+    dict provided.
+    """
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            tracing:
+                type: jaeger
+                host: localhost
+                port: 6831
+            """
+        )
+    )
+    result = endpoint_utils.read_backend_tracing_configuration(
+        str(endpoints_file), ENDPOINTS_TRACING_KEY
+    )
+    assert result is not None
+    assert result.type == "jaeger"
+    assert result.kwargs["host"] == "localhost"
+    assert result.kwargs["port"] == 6831
+
+
+def test_read_backend_tracing_configuration_list_single_config(tmp_path: Path) -> None:
+    """Test that read_backend_tracing_configuration returns config when list with
+    one config.
+    """
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            tracing:
+                - type: jaeger
+                  host: localhost
+                  port: 6831
+            """
+        )
+    )
+    result = endpoint_utils.read_backend_tracing_configuration(
+        str(endpoints_file), ENDPOINTS_TRACING_KEY
+    )
+    assert result is not None
+    assert result.type == "jaeger"
+    assert result.kwargs["host"] == "localhost"
+
+
+def test_read_backend_tracing_configuration_multiple_configs(tmp_path: Path) -> None:
+    """Test that read_backend_tracing_configuration raises exception for
+    multiple configs.
+    """
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            tracing:
+                - type: jaeger
+                  host: localhost
+                  port: 6831
+                - type: otlp
+                  endpoint: http://localhost:4317
+            """
+        )
+    )
+    with pytest.raises(DuplicateTracingConfigException) as exc_info:
+        endpoint_utils.read_backend_tracing_configuration(
+            str(endpoints_file), ENDPOINTS_TRACING_KEY
+        )
+    assert "Multiple tracing configs found" in str(exc_info.value)
+
+
+def test_read_backend_tracing_configuration_filters_langfuse(
+    tmp_path: Path,
+) -> None:
+    """Test that read_backend_tracing_configuration filters out langfuse configs."""
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            tracing:
+                - type: langfuse
+                  public_key: $LANGFUSE_PUBLIC_KEY
+                  private_key: $LANGFUSE_SECRET_KEY
+                  host: https://cloud.langfuse.com
+                - type: jaeger
+                  host: localhost
+                  port: 6831
+            """
+        )
+    )
+    result = endpoint_utils.read_backend_tracing_configuration(
+        str(endpoints_file), ENDPOINTS_TRACING_KEY
+    )
+    assert result is not None
+    assert result.type == "jaeger"
+    assert result.kwargs["host"] == "localhost"
+
+
+def test_read_backend_tracing_configuration_only_langfuse(
+    tmp_path: Path,
+) -> None:
+    """Test that read_backend_tracing_configuration returns None when only
+    langfuse config exists.
+    """
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            tracing:
+                type: langfuse
+                public_key: $LANGFUSE_PUBLIC_KEY
+                private_key: $LANGFUSE_SECRET_KEY
+                host: https://cloud.langfuse.com
+            """
+        )
+    )
+    result = endpoint_utils.read_backend_tracing_configuration(
+        str(endpoints_file), ENDPOINTS_TRACING_KEY
+    )
+    assert result is None
+
+
+def test_read_backend_tracing_configuration_langfuse_in_list(
+    tmp_path: Path,
+) -> None:
+    """Test that read_backend_tracing_configuration filters langfuse from list."""
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            tracing:
+                - type: langfuse
+                  public_key: $LANGFUSE_PUBLIC_KEY
+                  private_key: $LANGFUSE_SECRET_KEY
+                  host: https://cloud.langfuse.com
+            """
+        )
+    )
+    result = endpoint_utils.read_backend_tracing_configuration(
+        str(endpoints_file), ENDPOINTS_TRACING_KEY
+    )
+    assert result is None
+
+
+def test_read_backend_tracing_configuration_otlp_config(tmp_path: Path) -> None:
+    """Test that read_backend_tracing_configuration handles otlp config correctly."""
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            tracing:
+                type: otlp
+                endpoint: http://localhost:4317
+                service_name: test-service
+            """
+        )
+    )
+    result = endpoint_utils.read_backend_tracing_configuration(
+        str(endpoints_file), ENDPOINTS_TRACING_KEY
+    )
+    assert result is not None
+    assert result.type == "otlp"
+    assert result.kwargs["endpoint"] == "http://localhost:4317"
+    assert result.kwargs["service_name"] == "test-service"
+
+
+def test_read_backend_tracing_configuration_multiple_after_filtering(
+    tmp_path: Path,
+) -> None:
+    """Test that read_backend_tracing_configuration raises exception when
+    multiple non-langfuse configs exist.
+    """
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            tracing:
+                - type: langfuse
+                  public_key: $LANGFUSE_PUBLIC_KEY
+                  private_key: $LANGFUSE_SECRET_KEY
+                  host: https://cloud.langfuse.com
+                - type: jaeger
+                  host: localhost
+                  port: 6831
+                - type: otlp
+                  endpoint: http://localhost:4317
+            """
+        )
+    )
+    with pytest.raises(DuplicateTracingConfigException) as exc_info:
+        endpoint_utils.read_backend_tracing_configuration(
+            str(endpoints_file), ENDPOINTS_TRACING_KEY
+        )
+    assert "Multiple tracing configs found" in str(exc_info.value)
+
+
+def test_read_backend_tracing_configuration_empty_list(tmp_path: Path) -> None:
+    """Test that read_backend_tracing_configuration returns None when config is
+    empty list."""
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            tracing: []
+            """
+        )
+    )
+    result = endpoint_utils.read_backend_tracing_configuration(
+        str(endpoints_file), ENDPOINTS_TRACING_KEY
+    )
+    assert result is None
+
+
+def test_read_backend_tracing_configuration_custom_endpoint_type(
+    tmp_path: Path,
+) -> None:
+    """Test that read_backend_tracing_configuration works with custom endpoint types."""
+    endpoints_file = tmp_path / "endpoints.yml"
+    endpoints_file.write_text(
+        textwrap.dedent(
+            """
+            custom_endpoint:
+                type: jaeger
+                host: localhost
+                port: 6831
+            """
+        )
+    )
+    result = endpoint_utils.read_backend_tracing_configuration(
+        str(endpoints_file), "custom_endpoint"
+    )
+    assert result is not None
+    assert result.type == "jaeger"
+    assert result.kwargs["host"] == "localhost"

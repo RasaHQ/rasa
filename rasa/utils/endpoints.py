@@ -14,6 +14,8 @@ from rasa.core.actions.constants import MISSING_DOMAIN_MARKER
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.shared.exceptions import FileNotFoundException
 from rasa.shared.utils.yaml import read_config_file
+from rasa.tracing.constants import TRACING_TYPE_LANGFUSE
+from rasa.tracing.exceptions import DuplicateTracingConfigException
 
 structlogger = structlog.get_logger()
 
@@ -46,11 +48,83 @@ def read_endpoint_config(
             "endpoint.read.failed_no_such_file",
             filename=os.path.abspath(filename),
             event_info=(
-                "Failed to read endpoint configuration file - "
-                "the file was not found."
+                "Failed to read endpoint configuration file - the file was not found."
             ),
         )
         return None
+
+
+@lru_cache(maxsize=10)
+def read_backend_tracing_configuration(
+    filename: Union[str, Path], endpoint_type: str
+) -> Optional["EndpointConfig"]:
+    """Read a list of endpoint configurations from a yaml file."""
+    if not filename:
+        return None
+
+    try:
+        content = read_config_file(filename)
+    except FileNotFoundError:
+        structlogger.error(
+            "endpoint.read_backend_tracing_configuration.error",
+            filename=os.path.abspath(filename),
+            event_info=(
+                "Failed to read endpoint configuration file - the file was not found."
+            ),
+        )
+        return None
+
+    structlogger.debug(
+        "endpoint.read.success",
+        filename=os.path.abspath(filename),
+        endpoint_type=endpoint_type,
+        event_info="Successfully read endpoint configuration file.",
+        content=content,
+    )
+
+    if content.get(endpoint_type) is None:
+        return None
+
+    config: Optional[Union[List[Dict[Text, Any]], Dict[Text, Any]]] = content.get(
+        endpoint_type, None
+    )
+
+    if config is None:
+        return None
+
+    tracing_configs: List[EndpointConfig] = []
+    if isinstance(config, list):
+        tracing_configs = [EndpointConfig.from_dict(item) for item in config]
+    else:
+        tracing_configs = [EndpointConfig.from_dict(config)]
+
+    # remove tracing config for langfuse as it is handled differently
+    tracing_configs = [
+        tracing_config
+        for tracing_config in tracing_configs
+        if tracing_config.type != TRACING_TYPE_LANGFUSE
+    ]
+
+    # if there are no tracing configs, return None
+    if len(tracing_configs) == 0:
+        return None
+
+    # if there are multiple tracing configs, raise an error
+    if len(tracing_configs) > 1:
+        structlogger.error(
+            "endpoint.read.multiple_tracing_configs",
+            filename=os.path.abspath(filename),
+            event_info=(
+                "Multiple tracing configs found in the endpoints file, which is not "
+                "supported. Only one tracing config is allowed.",
+            ),
+            tracing_configs=tracing_configs,
+        )
+        raise DuplicateTracingConfigException(
+            f"Multiple tracing configs found in {filename}: {tracing_configs}"
+        )
+
+    return tracing_configs[0]
 
 
 def read_property_config_from_endpoints_file(
@@ -72,8 +146,7 @@ def read_property_config_from_endpoints_file(
             "endpoint.read.failed_no_such_file",
             filename=os.path.abspath(filename),
             event_info=(
-                "Failed to read endpoint configuration file - "
-                "the file was not found."
+                "Failed to read endpoint configuration file - the file was not found."
             ),
         )
         return None

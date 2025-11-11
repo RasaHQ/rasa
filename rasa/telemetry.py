@@ -1898,7 +1898,7 @@ def append_tracing_trait(
     import rasa.utils.endpoints
     from rasa.tracing.constants import ENDPOINTS_TRACING_KEY
 
-    tracing_config = rasa.utils.endpoints.read_endpoint_config(
+    tracing_config = rasa.utils.endpoints.read_backend_tracing_configuration(
         endpoints_file, ENDPOINTS_TRACING_KEY
     )
     traits[TRACING_BACKEND] = (
