@@ -97,6 +97,23 @@ def e2e_test_parser(
                 "test",
                 "e2e",
                 "tests/data/test_e2e_stories/",
+                "-o",
+                "custom_e2e_results/test_run_1/",
+            ],
+            argparse.Namespace(
+                fail_fast=False,
+                remote_storage=None,
+                e2e_results="custom_e2e_results/test_run_1/",
+                **{
+                    "path-to-test-cases": "tests/data/test_e2e_stories/",
+                },
+            ),
+        ),
+        (
+            [
+                "test",
+                "e2e",
+                "tests/data/test_e2e_stories/",
                 "--remote-storage",
                 "gcs",
             ],

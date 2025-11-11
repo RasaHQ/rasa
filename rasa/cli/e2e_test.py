@@ -130,8 +130,10 @@ def add_e2e_test_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "-o",
         "--e2e-results",
-        action="store_const",
+        nargs="?",
+        type=str,
         const=DEFAULT_E2E_OUTPUT_TESTS_PATH,
+        default=None,
         help="Results file containing end-to-end testing summary.",
     )
 

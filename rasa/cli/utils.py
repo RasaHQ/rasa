@@ -121,7 +121,7 @@ def get_e2e_results_file_name(
     result_type: str,
 ) -> str:
     """Returns the name of the e2e results file."""
-    if results_output_path.is_dir():
+    if results_output_path.is_dir() or not results_output_path.suffix:
         file_name = results_output_path / f"e2e_results_{result_type}.yml"
     else:
         parent = results_output_path.parent

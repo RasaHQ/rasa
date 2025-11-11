@@ -50,7 +50,7 @@ def fake_model_path(
 def test_rasa_test_e2e_help(run: Callable[..., RunResult]) -> None:
     help_text = """usage: rasa test e2e [-h] [-v] [-vv] [--quiet]
                      [--logging-config-file LOGGING_CONFIG_FILE] [--fail-fast]
-                     [-o] [-f [E2E_FAILED_TESTS]]
+                     [-o [E2E_RESULTS]] [-f [E2E_FAILED_TESTS]]
                      [--remote-storage REMOTE_STORAGE] [--coverage-report]
                      [--coverage-output-path COVERAGE_OUTPUT_PATH]
                      [--sub-agents SUB_AGENTS] [-m MODEL]
@@ -354,8 +354,10 @@ def test_e2e_cli_add_e2e_test_arguments(monkeypatch: MonkeyPatch) -> None:
             call(
                 "-o",
                 "--e2e-results",
-                action="store_const",
+                nargs="?",
+                type=str,
                 const=DEFAULT_E2E_OUTPUT_TESTS_PATH,
+                default=None,
                 help="Results file containing end-to-end testing summary.",
             ),
             call(

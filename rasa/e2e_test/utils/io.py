@@ -502,7 +502,9 @@ def write_test_results_to_file(results: List["TestResult"], output_file: str) ->
         results: List of test results.
         output_file: Path to the output file.
     """
-    Path(output_file).touch()
+    results_path = Path(output_file)
+    results_path.parent.mkdir(parents=True, exist_ok=True)
+    results_path.touch()
 
     data = {"test_results": [test_result.as_dict() for test_result in results]}
 
