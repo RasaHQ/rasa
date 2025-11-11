@@ -8,6 +8,10 @@ from rasa.core.channels.voice_stream.genesys import (
     GenesysInputChannel,
     map_call_params,
 )
+from rasa.core.channels.voice_stream.voice_channel import (
+    ContinueConversationAction,
+    DTMFInputAction,
+)
 from rasa.shared.exceptions import RasaException
 
 
@@ -184,3 +188,72 @@ def test_invalid_credentials(
     """Test creation of GenesysInputChannel with invalid credentials."""
     with pytest.raises(RasaException):
         GenesysInputChannel.from_credentials(config)
+
+
+def test_map_input_message_dtmf(input_channel: GenesysInputChannel, setup_call_state):
+    """Test handling of DTMF input messages."""
+    import json
+
+    dtmf_message = {
+        "version": "2",
+        "id": "test-id",
+        "type": "dtmf",
+        "seq": 10,
+        "position": "PT5.0S",
+        "parameters": {
+            "digit": "5",
+        },
+        "serverseq": 5,
+    }
+    websocket = AsyncMock()
+    action = input_channel.map_input_message(json.dumps(dtmf_message), websocket)
+
+    assert isinstance(action, DTMFInputAction)
+    assert action.digit == "5"
+
+
+@pytest.mark.parametrize(
+    "dtmf_digit",
+    ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "#", "*"],
+)
+def test_map_input_message_dtmf_all_digits(
+    input_channel: GenesysInputChannel, dtmf_digit: str, setup_call_state
+):
+    """Test handling of all valid DTMF digits."""
+    import json
+
+    dtmf_message = {
+        "version": "2",
+        "id": "test-id",
+        "type": "dtmf",
+        "seq": 10,
+        "position": "PT5.0S",
+        "parameters": {
+            "digit": dtmf_digit,
+        },
+        "serverseq": 5,
+    }
+    websocket = AsyncMock()
+    action = input_channel.map_input_message(json.dumps(dtmf_message), websocket)
+
+    assert isinstance(action, DTMFInputAction)
+    assert action.digit == dtmf_digit
+
+
+def test_map_input_message_unknown_type(
+    input_channel: GenesysInputChannel, setup_call_state
+):
+    """Test handling of unknown message types."""
+    import json
+
+    unknown_message = {
+        "version": "2",
+        "id": "test-id",
+        "type": "unknown_type",
+        "seq": 10,
+        "serverseq": 5,
+    }
+    websocket = AsyncMock()
+    action = input_channel.map_input_message(json.dumps(unknown_message), websocket)
+
+    assert isinstance(action, ContinueConversationAction)

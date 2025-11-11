@@ -26,6 +26,7 @@ from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
 from rasa.core.channels.voice_stream.util import repack_voice_credentials
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
+    DTMFInputAction,
     EndConversationAction,
     NewAudioAction,
     VoiceChannelAction,
@@ -186,8 +187,7 @@ class AudiocodesVoiceInputChannel(VoiceInputChannel):
                     # handled in collect_call_parameters
                     pass
                 elif activity["name"] == "dtmf":
-                    logger.info("audiocodes_stream.dtmf_ignored", data=activity)
-                    pass
+                    return DTMFInputAction(digit=activity["value"])
                 elif activity["name"] == "playFinished":
                     logger.debug("audiocodes_stream.playFinished", data=activity)
                     call_state.is_bot_speaking = False

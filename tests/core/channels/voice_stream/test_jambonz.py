@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
-from rasa.core.channels.voice_stream.call_state import CallState, _call_state
+from rasa.core.channels.voice_stream.call_state import _call_state
 from rasa.core.channels.voice_stream.jambonz import (
     JAMBONZ_STREAMS_WEBSOCKET_PATH,
     JambonzStreamInputChannel,
@@ -13,6 +13,7 @@ from rasa.core.channels.voice_stream.jambonz import (
 )
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
+    DTMFInputAction,
     EndConversationAction,
     NewAudioAction,
 )
@@ -77,16 +78,6 @@ def mock_websocket(call_metadata):
 def sample_audio_bytes():
     # Create 1 second of silence at 8kHz
     return bytes([0xFF] * 8000)
-
-
-@pytest.fixture
-def setup_call_state():
-    """Setup and teardown call state for tests."""
-    # Initialize a new call state
-    _call_state.set(CallState())
-    yield
-    # Cleanup after test
-    _call_state.set(None)
 
 
 def test_map_call_params(call_metadata):
@@ -252,3 +243,35 @@ def test_websocket_stream_url(server_url: str, expected_ws_url: str):
         tts_config={"name": "azure"},
     )
     assert channel._websocket_stream_url() == expected_ws_url
+
+
+def test_map_input_message_dtmf(input_channel, mock_websocket):
+    """Test handling of DTMF input messages."""
+    dtmf_message = {"event": "dtmf", "dtmf": "5", "duration": "1600"}
+    action = input_channel.map_input_message(json.dumps(dtmf_message), mock_websocket)
+
+    assert isinstance(action, DTMFInputAction)
+    assert action.digit == "5"
+
+
+@pytest.mark.parametrize(
+    "dtmf_digit",
+    ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "#", "*"],
+)
+def test_map_input_message_dtmf_all_digits(input_channel, mock_websocket, dtmf_digit):
+    """Test handling of all valid DTMF digits."""
+    dtmf_message = {"event": "dtmf", "dtmf": dtmf_digit, "duration": "1600"}
+    action = input_channel.map_input_message(json.dumps(dtmf_message), mock_websocket)
+
+    assert isinstance(action, DTMFInputAction)
+    assert action.digit == dtmf_digit
+
+
+def test_map_input_message_unknown_event(input_channel, mock_websocket):
+    """Test handling of unknown event types."""
+    unknown_message = {"event": "unknown_event", "data": "something"}
+    action = input_channel.map_input_message(
+        json.dumps(unknown_message), mock_websocket
+    )
+
+    assert isinstance(action, ContinueConversationAction)

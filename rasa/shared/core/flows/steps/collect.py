@@ -108,6 +108,40 @@ class PerChannelSilenceTimeout(SilenceTimeout):
 
 
 @dataclass
+class DTMFConfig:
+    """DTMF configuration for collect steps."""
+
+    length: Optional[int] = None
+    """Maximum number of DTMF digits to accept."""
+    finish_on_key: Optional[Text] = None
+    """Key that indicates the end of DTMF input."""
+    allow_audio_input: bool = True
+    """Whether to allow audio input alongside DTMF."""
+
+    @classmethod
+    def from_json(cls, data: Dict[Text, Any]) -> DTMFConfig:
+        """Cannot have both length and finish_on_key."""
+        if "length" in data and "finish_on_key" in data:
+            raise RasaException(
+                "DTMF configuration cannot have both 'length' and 'finish_on_key'."
+            )
+        return cls(
+            length=data.get("length"),
+            finish_on_key=data.get("finish_on_key"),
+            allow_audio_input=data.get("allow_audio_input", True),
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, DTMFConfig):
+            return (
+                self.length == other.length
+                and self.finish_on_key == other.finish_on_key
+                and self.allow_audio_input == other.allow_audio_input
+            )
+        return False
+
+
+@dataclass
 class CollectInformationFlowStep(FlowStep):
     """A flow step for asking the user for information to fill a specific slot."""
 
@@ -127,6 +161,8 @@ class CollectInformationFlowStep(FlowStep):
     """Whether to keep only the SetSlot command for the collected slot."""
     silence_timeout: Optional[SilenceTimeout] = None
     """The silence timeout for the collect information step."""
+    dtmf: Optional[DTMFConfig] = None
+    """DTMF configuration for the collect information step."""
 
     @classmethod
     def from_json(
@@ -146,6 +182,10 @@ class CollectInformationFlowStep(FlowStep):
             data.get("silence_timeout", None)
         )
 
+        dtmf = None
+        if "dtmf" in data:
+            dtmf = DTMFConfig.from_json(data["dtmf"])
+
         base = super().from_json(flow_id, data)
         return CollectInformationFlowStep(
             collect=data["collect"],
@@ -161,6 +201,7 @@ class CollectInformationFlowStep(FlowStep):
             ],
             force_slot_filling=data.get("force_slot_filling", False),
             silence_timeout=silence_timeout,
+            dtmf=dtmf,
             **base.__dict__,
         )
 
@@ -229,6 +270,7 @@ class CollectInformationFlowStep(FlowStep):
                 and self.reset_after_flow_ends == other.reset_after_flow_ends
                 and self.force_slot_filling == other.force_slot_filling
                 and self.silence_timeout == other.silence_timeout
+                and self.dtmf == other.dtmf
                 and super().__eq__(other)
             )
         return False

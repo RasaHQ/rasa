@@ -84,6 +84,11 @@ class ContinueConversationAction(VoiceChannelAction):
     pass
 
 
+@dataclass
+class DTMFInputAction(VoiceChannelAction):
+    digit: str
+
+
 def asr_engine_from_config(asr_config: Dict) -> ASREngine:
     if not asr_config:
         raise ValueError("ASR configuration dictionary cannot be empty")
@@ -574,6 +579,14 @@ class VoiceInputChannel(InputChannel):
                     )
                 if isinstance(channel_action, NewAudioAction):
                     await asr_engine.send_audio_chunks(channel_action.audio_bytes)
+                if isinstance(channel_action, DTMFInputAction):
+                    await self.gather_dtmf_input(
+                        channel_websocket,
+                        tts_engine,
+                        on_new_message,
+                        call_parameters,
+                        channel_action,
+                    )
                 elif isinstance(channel_action, EndConversationAction):
                     # end stream event came from the other side
                     await self.handle_disconnect(
@@ -655,6 +668,17 @@ class VoiceInputChannel(InputChannel):
             self._track_asr_latency()
             call_state.rasa_processing_start_time = time.time()
 
+            if (
+                call_state.is_collecting_dtmf
+                and call_state.dtmf_config
+                and not call_state.dtmf_config.allow_audio_input
+            ):
+                # currently collecting DTMF input, ignore audio input
+                logger.info(
+                    "VoiceInputChannel.handle_asr_event.ignoring_audio_during_dtmf_collection"
+                )
+                return
+
             output_channel = self.create_output_channel(voice_websocket, tts_engine)
             sender_id = self.get_sender_id(call_parameters)
             message = UserMessage(
@@ -684,6 +708,63 @@ class VoiceInputChannel(InputChannel):
                 metadata=asdict(call_parameters),
             )
             await on_new_message(message)
+
+    async def gather_dtmf_input(
+        self,
+        channel_websocket: Websocket,
+        tts_engine: TTSEngine,
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        call_parameters: CallParameters,
+        dtmf_action: DTMFInputAction,
+    ) -> None:
+        """Handle DTMF input gathering."""
+        if not call_state.is_collecting_dtmf or not call_state.dtmf_config:
+            return
+        logger.debug(
+            "voice_channel.dtmf_input_received",
+            digit=dtmf_action.digit,
+            buffer=call_state.dtmf_buffer,
+        )
+        call_state.dtmf_buffer += dtmf_action.digit
+
+        # check completion criteria
+        config = call_state.dtmf_config
+        if config.length and len(call_state.dtmf_buffer) >= config.length:
+            await self.submit_dtmf_input(
+                channel_websocket,
+                tts_engine,
+                on_new_message,
+                call_parameters,
+                call_state.dtmf_buffer,
+            )
+        elif config.finish_on_key and dtmf_action.digit == config.finish_on_key:
+            # remove the finish key from the buffer
+            dtmf_input = call_state.dtmf_buffer[:-1]
+            await self.submit_dtmf_input(
+                channel_websocket,
+                tts_engine,
+                on_new_message,
+                call_parameters,
+                dtmf_input,
+            )
+
+    async def submit_dtmf_input(
+        self,
+        channel_websocket: Websocket,
+        tts_engine: TTSEngine,
+        on_new_message: Callable[[UserMessage], Awaitable[Any]],
+        call_parameters: CallParameters,
+        dtmf_input: str,
+    ) -> None:
+        call_state.is_collecting_dtmf = False
+        output_channel = self.create_output_channel(channel_websocket, tts_engine)
+        message = UserMessage(
+            text=dtmf_input,
+            output_channel=output_channel,
+            sender_id=self.get_sender_id(call_parameters),
+            input_channel=self.name(),
+        )
+        await on_new_message(message)
 
     async def handle_disconnect(
         self,

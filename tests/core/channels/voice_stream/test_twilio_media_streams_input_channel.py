@@ -27,6 +27,8 @@ from rasa.core.channels.voice_stream.twilio_media_streams import (
 )
 from rasa.core.channels.voice_stream.util import read_wav_to_rasa_audio_bytes
 from rasa.core.channels.voice_stream.voice_channel import (
+    ContinueConversationAction,
+    DTMFInputAction,
     NewAudioAction,
     tts_engine_from_config,
 )
@@ -153,6 +155,73 @@ def test_invalid_credentials(
     """Test creation of TwilioMediaStreamsInputChannel with invalid credentials."""
     with pytest.raises(RasaException):
         TwilioMediaStreamsInputChannel.from_credentials(config)
+
+
+def test_map_input_message_dtmf(input_channel: TwilioMediaStreamsInputChannel):
+    """Test handling of DTMF input messages."""
+    dtmf_message = {
+        "event": "dtmf",
+        "sequenceNumber": "10",
+        "streamSid": "MZ123",
+        "dtmf": {
+            "digit": "5",
+        },
+    }
+    websocket = AsyncMock()
+    action = input_channel.map_input_message(json.dumps(dtmf_message), websocket)
+
+    assert isinstance(action, DTMFInputAction)
+    assert action.digit == "5"
+
+
+@pytest.mark.parametrize(
+    "dtmf_digit",
+    ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "#", "*"],
+)
+def test_map_input_message_dtmf_all_digits(
+    input_channel: TwilioMediaStreamsInputChannel, dtmf_digit: str
+):
+    """Test handling of all valid DTMF digits."""
+    dtmf_message = {
+        "event": "dtmf",
+        "sequenceNumber": "10",
+        "streamSid": "MZ123",
+        "dtmf": {
+            "digit": dtmf_digit,
+        },
+    }
+    websocket = AsyncMock()
+    action = input_channel.map_input_message(json.dumps(dtmf_message), websocket)
+
+    assert isinstance(action, DTMFInputAction)
+    assert action.digit == dtmf_digit
+
+
+def test_map_input_message_stop(input_channel: TwilioMediaStreamsInputChannel):
+    """Test handling of stop event."""
+    from rasa.core.channels.voice_stream.voice_channel import EndConversationAction
+
+    stop_message = {
+        "event": "stop",
+        "sequenceNumber": "100",
+        "streamSid": "MZ123",
+    }
+    websocket = AsyncMock()
+    action = input_channel.map_input_message(json.dumps(stop_message), websocket)
+
+    assert isinstance(action, EndConversationAction)
+
+
+def test_map_input_message_unknown_event(input_channel: TwilioMediaStreamsInputChannel):
+    """Test handling of unknown event types."""
+    unknown_message = {
+        "event": "unknown_event",
+        "data": "something",
+    }
+    websocket = AsyncMock()
+    action = input_channel.map_input_message(json.dumps(unknown_message), websocket)
+
+    assert isinstance(action, ContinueConversationAction)
 
 
 def create_twilio_media_streams_start_message(

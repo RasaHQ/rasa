@@ -6,6 +6,10 @@ import pytest
 
 from rasa.core.channels.voice_ready.utils import CallParameters
 from rasa.core.channels.voice_stream.audiocodes import AudiocodesVoiceInputChannel
+from rasa.core.channels.voice_stream.voice_channel import (
+    ContinueConversationAction,
+    DTMFInputAction,
+)
 from rasa.shared.exceptions import RasaException
 
 
@@ -170,3 +174,62 @@ def test_invalid_credentials(
     """Test creation of TwilioMediaStreamsInputChannel with invalid credentials."""
     with pytest.raises(RasaException):
         AudiocodesVoiceInputChannel.from_credentials(config)
+
+
+def test_map_input_message_dtmf(input_channel: AudiocodesVoiceInputChannel):
+    """Test handling of DTMF input messages."""
+    dtmf_message = {
+        "type": "activities",
+        "activities": [
+            {
+                "name": "dtmf",
+                "value": "5",
+            }
+        ],
+    }
+    websocket = AsyncMock()
+    action = input_channel.map_input_message(json.dumps(dtmf_message), websocket)
+
+    assert isinstance(action, DTMFInputAction)
+    assert action.digit == "5"
+
+
+@pytest.mark.parametrize(
+    "dtmf_digit",
+    ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "#", "*"],
+)
+def test_map_input_message_dtmf_all_digits(
+    input_channel: AudiocodesVoiceInputChannel, dtmf_digit: str
+):
+    """Test handling of all valid DTMF digits."""
+    dtmf_message = {
+        "type": "activities",
+        "activities": [
+            {
+                "name": "dtmf",
+                "value": dtmf_digit,
+            }
+        ],
+    }
+    websocket = AsyncMock()
+    action = input_channel.map_input_message(json.dumps(dtmf_message), websocket)
+
+    assert isinstance(action, DTMFInputAction)
+    assert action.digit == dtmf_digit
+
+
+def test_map_input_message_unknown_activity(input_channel: AudiocodesVoiceInputChannel):
+    """Test handling of unknown activity types."""
+    unknown_message = {
+        "type": "activities",
+        "activities": [
+            {
+                "name": "unknown_activity",
+                "value": "something",
+            }
+        ],
+    }
+    websocket = AsyncMock()
+    action = input_channel.map_input_message(json.dumps(unknown_message), websocket)
+
+    assert isinstance(action, ContinueConversationAction)

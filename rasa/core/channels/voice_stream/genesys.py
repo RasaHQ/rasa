@@ -26,6 +26,7 @@ from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
 from rasa.core.channels.voice_stream.util import repack_voice_credentials
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
+    DTMFInputAction,
     EndConversationAction,
     NewAudioAction,
     VoiceChannelAction,
@@ -230,7 +231,7 @@ class GenesysInputChannel(VoiceInputChannel):
                     # the conversation should continue until
                     # we receive a close message from Genesys
             elif msg_type == "dtmf":
-                logger.info("genesys.handle_dtmf", message=data)
+                return DTMFInputAction(digit=data["parameters"]["digit"])
             elif msg_type == "error":
                 logger.warning("genesys.handle_error", message=data)
             else:

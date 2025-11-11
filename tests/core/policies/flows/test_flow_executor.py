@@ -2658,3 +2658,51 @@ async def test_reset_silence_timeout_to_global_at_step_collect(
     assert len(stack.frames) == 2
     assert isinstance(stack.frames[0], UserFlowStackFrame)
     assert isinstance(stack.frames[1], CollectInformationPatternFlowStackFrame)
+
+
+def test_set_dtmf_state_if_available_without_call_state():
+    """Test that _set_dtmf_state_if_available handles missing call_state gracefully.
+
+    This simulates the scenario where a collect step with DTMF config is run
+    in a text channel (where call_state is not initialized). The function should
+    not crash and should log a debug message.
+    """
+
+    step = CollectInformationFlowStep.from_json(
+        "my_flow",
+        {
+            "collect": "account_number",
+            "dtmf": {
+                "length": 6,
+                "allow_audio_input": False,
+            },
+        },
+    )
+
+    # Ensure call_state is not initialized (simulating text channel)
+    # In this context, call_state should not be accessible
+    with structlog.testing.capture_logs() as caplog:
+        # This should not raise an exception
+        flow_executor._set_dtmf_state_if_available(step)
+
+        # Check that a debug log was created indicating the skip
+        logs = filter_logs(caplog, "flow.step.run.collect.skip_dtmf", "debug")
+        assert len(logs) == 1
+        assert logs[0]["event_info"] == "call_state not initialized (non-voice channel)"
+
+
+def test_set_dtmf_state_if_available_without_dtmf_config():
+    step = CollectInformationFlowStep.from_json(
+        "my_flow",
+        {
+            "collect": "account_number",
+        },
+    )
+
+    # This should return early and not attempt to access call_state
+    with structlog.testing.capture_logs() as caplog:
+        flow_executor._set_dtmf_state_if_available(step)
+
+        # No logs should be created since we return early
+        logs = filter_logs(caplog, "flow.step.run.collect.skip_dtmf", "debug")
+        assert len(logs) == 0

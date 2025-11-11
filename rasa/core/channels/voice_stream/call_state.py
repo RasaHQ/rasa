@@ -5,6 +5,8 @@ from typing import Any, Dict, Optional, cast
 
 from werkzeug.local import LocalProxy
 
+from rasa.shared.core.flows.steps.collect import DTMFConfig
+
 
 # Per voice session data
 # This is similar to how flask makes the "request" object available as a global variable
@@ -29,6 +31,11 @@ class CallState:
     rasa_processing_latency_ms: Optional[float] = None
     tts_first_byte_latency_ms: Optional[float] = None
     tts_complete_latency_ms: Optional[float] = None
+
+    # DTMF State
+    is_collecting_dtmf: bool = False
+    dtmf_config: Optional[DTMFConfig] = None
+    dtmf_buffer: str = ""
 
     # Generic field for channel-specific state data
     channel_data: Dict[str, Any] = field(default_factory=dict)

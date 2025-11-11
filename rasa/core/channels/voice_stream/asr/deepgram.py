@@ -148,5 +148,8 @@ class DeepgramASR(ASREngine[DeepgramASRConfig]):
 
     async def send_keep_alive(self) -> None:
         """Send a keep-alive message to the Deepgram websocket connection."""
-        if self.asr_socket is not None:
+        if self.asr_socket is None:
+            return
+
+        if self.asr_socket.open:
             await self.asr_socket.send(json.dumps({"type": "KeepAlive"}))

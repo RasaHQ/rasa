@@ -8,12 +8,59 @@ from rasa.shared.core.flows.flow_step_links import (
 )
 from rasa.shared.core.flows.steps import CollectInformationFlowStep
 from rasa.shared.core.flows.steps.collect import (
+    DTMFConfig,
     PerChannelSilenceTimeout,
     SilenceTimeout,
     SingleSilenceTimeout,
 )
 from rasa.shared.core.slots import SlotRejection
 from rasa.shared.exceptions import RasaException
+
+
+@pytest.mark.parametrize(
+    "data, expected_dtmf_config",
+    [
+        (
+            {"length": 6},
+            DTMFConfig(length=6, finish_on_key=None, allow_audio_input=True),
+        ),
+        (
+            {"finish_on_key": "#"},
+            DTMFConfig(length=None, finish_on_key="#", allow_audio_input=True),
+        ),
+        (
+            {"length": 4, "allow_audio_input": False},
+            DTMFConfig(length=4, finish_on_key=None, allow_audio_input=False),
+        ),
+        (
+            {"finish_on_key": "*", "allow_audio_input": False},
+            DTMFConfig(length=None, finish_on_key="*", allow_audio_input=False),
+        ),
+        (
+            {"length": 10, "allow_audio_input": True},
+            DTMFConfig(length=10, finish_on_key=None, allow_audio_input=True),
+        ),
+    ],
+)
+def test_dtmf_config_from_json(
+    data: Dict[str, Any], expected_dtmf_config: DTMFConfig
+) -> None:
+    """Test that DTMFConfig can be created from JSON with valid inputs."""
+    dtmf_config = DTMFConfig.from_json(data)
+
+    assert dtmf_config.length == expected_dtmf_config.length
+    assert dtmf_config.finish_on_key == expected_dtmf_config.finish_on_key
+    assert dtmf_config.allow_audio_input == expected_dtmf_config.allow_audio_input
+
+
+def test_dtmf_config_from_json_both_length_and_finish_on_key() -> None:
+    """DTMFConfig raises exception when both length and finish_on_key are set."""
+    data = {"length": 6, "finish_on_key": "#"}
+
+    with pytest.raises(RasaException) as exc_info:
+        DTMFConfig.from_json(data)
+
+    assert "cannot have both 'length' and 'finish_on_key'" in str(exc_info.value)
 
 
 @pytest.mark.parametrize(
@@ -79,6 +126,82 @@ def test_collect_step_from_json(
     assert step.rejections[0].utter == "sample_a"
     assert step.force_slot_filling is True
     assert step.silence_timeout == expected_silence_timeout
+
+
+@pytest.mark.parametrize(
+    "data, expected_dtmf_length, expected_dtmf_finish_key, expected_allow_audio",
+    [
+        (
+            {
+                "collect": "test_slot",
+                "utter": "utter_ask_test_slot",
+                "dtmf": {"length": 6},
+            },
+            6,
+            None,
+            True,
+        ),
+        (
+            {
+                "collect": "test_slot",
+                "utter": "utter_ask_test_slot",
+                "dtmf": {"finish_on_key": "#"},
+            },
+            None,
+            "#",
+            True,
+        ),
+        (
+            {
+                "collect": "test_slot",
+                "utter": "utter_ask_test_slot",
+                "dtmf": {"length": 4, "allow_audio_input": False},
+            },
+            4,
+            None,
+            False,
+        ),
+        (
+            {
+                "collect": "test_slot",
+                "utter": "utter_ask_test_slot",
+                "dtmf": {"finish_on_key": "*", "allow_audio_input": True},
+            },
+            None,
+            "*",
+            True,
+        ),
+    ],
+)
+def test_collect_step_from_json_with_dtmf(
+    data: Dict[str, Any],
+    expected_dtmf_length: Optional[int],
+    expected_dtmf_finish_key: Optional[str],
+    expected_allow_audio: bool,
+) -> None:
+    """CollectInformationFlowStep can be created from JSON with DTMF config."""
+    step = CollectInformationFlowStep.from_json("flow_id", data)
+
+    assert step.collect == "test_slot"
+    assert step.utter == "utter_ask_test_slot"
+    assert step.dtmf is not None
+    assert step.dtmf.length == expected_dtmf_length
+    assert step.dtmf.finish_on_key == expected_dtmf_finish_key
+    assert step.dtmf.allow_audio_input == expected_allow_audio
+
+
+def test_collect_step_from_json_with_invalid_dtmf() -> None:
+    """CollectInformationFlowStep raises exception with invalid DTMF config."""
+    data = {
+        "collect": "test_slot",
+        "utter": "utter_ask_test_slot",
+        "dtmf": {"length": 6, "finish_on_key": "#"},
+    }
+
+    with pytest.raises(RasaException) as exc_info:
+        CollectInformationFlowStep.from_json("flow_id", data)
+
+    assert "cannot have both 'length' and 'finish_on_key'" in str(exc_info.value)
 
 
 @pytest.mark.parametrize(

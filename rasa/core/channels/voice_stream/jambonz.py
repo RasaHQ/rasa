@@ -25,6 +25,7 @@ from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
 from rasa.core.channels.voice_stream.util import repack_voice_credentials
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
+    DTMFInputAction,
     EndConversationAction,
     NewAudioAction,
     VoiceChannelAction,
@@ -158,7 +159,11 @@ class JambonzStreamInputChannel(VoiceInputChannel):
 
         # Handle JSON messages
         data = json.loads(message)
-        if data["type"] == "mark":
+        if data.get("event") == "dtmf":
+            return DTMFInputAction(
+                digit=data["dtmf"],
+            )
+        if data.get("type") == "mark":
             if data["data"]["name"] == call_state.latest_bot_audio_id:
                 # Just finished streaming last audio bytes
                 call_state.is_bot_speaking = False
@@ -169,9 +174,6 @@ class JambonzStreamInputChannel(VoiceInputChannel):
                     return EndConversationAction()
             else:
                 call_state.is_bot_speaking = True
-        elif data["event"] == "dtmf":
-            # TODO: handle DTMF input
-            logger.debug("jambonz.dtmf.received", dtmf=data["dtmf"])
         else:
             logger.warning("jambonz.unexpected_message", message=data)
 

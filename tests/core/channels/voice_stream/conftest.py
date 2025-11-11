@@ -2,6 +2,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from rasa.core.channels.voice_stream.call_state import CallState, _call_state
+
 
 @pytest.fixture
 def mock_validate_voice_license_scope(
@@ -12,3 +14,21 @@ def mock_validate_voice_license_scope(
         "rasa.core.channels.voice_stream.voice_channel.validate_voice_license_scope",
         MagicMock(),
     )
+
+
+@pytest.fixture
+def setup_call_state():
+    """Setup and teardown call state for voice-stream tests.
+
+    This fixture centralizes call state initialization so all voice-stream
+    channel tests can rely on a bound context for `_call_state`.
+    """
+    # Initialize a new call state
+    _call_state.set(CallState())
+    yield
+    # Reset call state to a fresh CallState instance to avoid unbound errors
+    try:
+        _call_state.set(CallState())
+    except Exception:
+        # Best-effort cleanup; if this fails, ignore to not mask test failures
+        pass

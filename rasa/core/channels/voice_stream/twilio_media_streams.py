@@ -32,6 +32,7 @@ from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine
 from rasa.core.channels.voice_stream.util import repack_voice_credentials
 from rasa.core.channels.voice_stream.voice_channel import (
     ContinueConversationAction,
+    DTMFInputAction,
     EndConversationAction,
     NewAudioAction,
     VoiceChannelAction,
@@ -179,6 +180,8 @@ class TwilioMediaStreamsInputChannel(VoiceInputChannel):
             return NewAudioAction(audio_bytes)
         elif data["event"] == "stop":
             return EndConversationAction()
+        elif data["event"] == "dtmf":
+            return DTMFInputAction(digit=data["dtmf"]["digit"])
         elif data["event"] == "mark":
             if data["mark"]["name"] == call_state.latest_bot_audio_id:
                 # Just finished streaming last audio bytes

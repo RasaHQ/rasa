@@ -6,6 +6,9 @@ import structlog
 from jinja2 import Template
 from structlog.contextvars import bound_contextvars
 
+from rasa.core.channels.voice_stream.call_state import (
+    call_state,
+)
 from rasa.core.config.configuration import Configuration
 from rasa.core.constants import ACTIVE_FLOW_METADATA_KEY, STEP_ID_METADATA_KEY
 from rasa.core.policies.flows.agent_executor import run_agent
@@ -830,8 +833,30 @@ def _run_collect_information_step(
         step.collect, stack, step.rejections, step.utter, step.collect_action
     )
 
+    _set_dtmf_state_if_available(step)
+
     events: List[Event] = _events_for_collect_step_execution(step, tracker)
     return ContinueFlowWithNextStep(events=initial_events + events)
+
+
+def _set_dtmf_state_if_available(step: CollectInformationFlowStep) -> None:
+    """Set DTMF state if call_state is available (voice channels only).
+
+    Safely attempts to set DTMF collection state. If call_state is not initialized
+    (e.g., in text channels), this function silently skips the operation.
+    """
+    if not step.dtmf:
+        return
+
+    try:
+        call_state.is_collecting_dtmf = True
+        call_state.dtmf_config = step.dtmf
+    except (LookupError, RuntimeError):
+        # call_state is not initialized - this is expected for non-voice channels
+        structlogger.debug(
+            "flow.step.run.collect.skip_dtmf",
+            event_info="call_state not initialized (non-voice channel)",
+        )
 
 
 def _events_for_collect_step_execution(
