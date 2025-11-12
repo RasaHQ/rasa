@@ -47,6 +47,12 @@ Here are the variables of the currently active conversation which may be used to
 Transcript of the current conversation, use it to determine the context of the question:
 {{ current_conversation }}
 
+{% if current_datetime %}
+### Date & Time Context
+- Current date: {{ current_datetime.strftime("%d %B, %Y") }}   (DD Month, YYYY)
+- Current time: {{ current_datetime.strftime("%H:%M:%S") }} ({{ current_datetime.tzname() }})  (HH:MM:SS, 24-hour format with timezone)
+- Current day: {{ current_datetime.strftime("%A") }}     (Day of week)
+{% endif %}
 
 ## Answering the Question
 Based on the above sections, please formulate an answer to the question or request in the user's last message.

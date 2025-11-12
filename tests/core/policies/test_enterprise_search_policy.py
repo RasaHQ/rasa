@@ -1,7 +1,9 @@
 import textwrap
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from zoneinfo import ZoneInfo
 
 import pytest
 import structlog
@@ -49,12 +51,16 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.exceptions import EnterpriseSearchPolicyError
 from rasa.shared.constants import (
+    DEFAULT_INCLUDE_DATE_TIME,
+    DEFAULT_TIMEZONE,
     EMBEDDINGS_CONFIG_KEY,
+    INCLUDE_DATE_TIME_CONFIG_KEY,
     LLM_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
     RASA_PATTERN_CANNOT_HANDLE_NO_RELEVANT_ANSWER,
     ROUTE_TO_CALM_SLOT,
+    TIMEZONE_CONFIG_KEY,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, BotUttered, UserUttered
@@ -2075,7 +2081,104 @@ def test_render_prompt_includes_doc_text(
 
 
 @pytest.mark.parametrize(
-    "relevancy_check_enabled, citation_enabled, llm_answer, expected_text, expect_cannot_handle",  # noqa: E501
+    "include_date_time, timezone, expected_datetime_present, expected_date_format,"
+    "expected_time_format, expected_day",
+    [
+        # include_date_time is True (default), should include datetime
+        (
+            DEFAULT_INCLUDE_DATE_TIME,
+            DEFAULT_TIMEZONE,
+            True,
+            "15 January, 2024",
+            "14:30:45",
+            "Monday",
+        ),
+        # include_date_time is True with custom timezone
+        (
+            True,
+            "America/New_York",
+            True,
+            "15 January, 2024",
+            "14:30:45",
+            "Monday",
+        ),
+        # include_date_time is False, should NOT include datetime
+        (False, DEFAULT_TIMEZONE, False, None, None, None),
+        # include_date_time is False with custom timezone, should NOT include datetime
+        (False, "America/New_York", False, None, None, None),
+    ],
+)
+def test_render_prompt_includes_current_datetime_when_enabled(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    vector_store: InformationRetrieval,
+    include_date_time: bool,
+    timezone: str,
+    expected_datetime_present: bool,
+    expected_date_format: Optional[str],
+    expected_time_format: Optional[str],
+    expected_day: Optional[str],
+    monkeypatch: MonkeyPatch,
+):
+    monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "test")
+    domain = Domain.empty()
+
+    # Create policy with datetime configuration
+    config = {
+        "vector_store": {"type": "milvus"},
+        INCLUDE_DATE_TIME_CONFIG_KEY: include_date_time,
+        TIMEZONE_CONFIG_KEY: timezone,
+    }
+    policy = EnterpriseSearchPolicy(
+        config=config,
+        model_storage=default_model_storage,
+        resource=Resource("enterprise_search_policy"),
+        execution_context=default_execution_context,
+        vector_store=vector_store,
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "test render prompt datetime",
+        domain=domain,
+        slots=domain.slots,
+        evts=[ActionExecuted(action_name="action_listen")],
+    )
+
+    documents = [
+        SearchResult(metadata="Document 1", text="This is a test document."),
+    ]
+
+    # Mock get_current_datetime to return a fixed datetime
+    mock_now = datetime(2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo(timezone))
+    with patch(
+        "rasa.core.policies.enterprise_search_policy.get_current_datetime"
+    ) as mock_get_current_datetime:
+        mock_get_current_datetime.return_value = mock_now
+
+        rendered_prompt = policy._render_prompt(tracker, documents)
+
+        if expected_datetime_present:
+            # Verify datetime section is present
+            assert "### Date & Time Context" in rendered_prompt
+            assert expected_date_format in rendered_prompt
+            assert expected_time_format in rendered_prompt
+            assert expected_day in rendered_prompt
+            assert mock_now.tzname() in rendered_prompt
+            # Verify get_current_datetime was called
+            mock_get_current_datetime.assert_called_once_with(timezone=timezone)
+        else:
+            # Verify datetime section is NOT present
+            assert "### Date & Time Context" not in rendered_prompt
+            assert "Current date:" not in rendered_prompt
+            assert "Current time:" not in rendered_prompt
+            assert "Current day:" not in rendered_prompt
+            # Verify get_current_datetime was NOT called
+            mock_get_current_datetime.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "relevancy_check_enabled, citation_enabled, llm_answer, expected_text,"
+    "expect_cannot_handle",
     [
         # Relevancy check enabled, generated answer
         (

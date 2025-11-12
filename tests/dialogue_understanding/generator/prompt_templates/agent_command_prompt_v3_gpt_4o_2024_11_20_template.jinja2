@@ -1,6 +1,13 @@
 ## Task Description
 Your task is to analyze the current conversation context and generate a list of actions to start new business processes that we call flows, to extract slots, or respond to off-topic and knowledge requests.
 
+{% if current_datetime %}---
+
+### Date & Time Context
+- Current date: {{ current_datetime.strftime("%d %B, %Y") }}   (DD Month, YYYY)
+- Current time: {{ current_datetime.strftime("%H:%M:%S") }} ({{ current_datetime.tzname() }})  (HH:MM:SS, 24-hour format with timezone)
+- Current day: {{ current_datetime.strftime("%A") }}     (Day of week)
+{% endif %}
 ---
 
 ## Available Flows and Slots
@@ -15,7 +22,7 @@ Use the following structured data:
 * `start flow flow_name`: Start a flow. For example, `start flow transfer_money` or `start flow list_contacts`.
 * `set slot slot_name slot_value`: Set a slot for the active flow. For example, `set slot transfer_money_recipient Freddy`. Can be used to correct and change previously set values. ONLY use slots that are explicitly defined in the flow's slot list.
 * `disambiguate flows flow_name1 flow_name2 ... flow_name_n`: When a message could refer to multiple flows, list the possible flows as options to clarify. Example: `disambiguate flows list_contacts add_contact remove_contact`.
-* `search and reply`: Provide a response from the knowledge base to address the user’s inquiry when no flows fit, including domain knowledge, FAQs, and all off-topic or social messages.
+* `search and reply`: Provide a response from the knowledge base to address the user's inquiry when no flows fit, including domain knowledge, FAQs, and all off-topic or social messages.
 * `cancel flow`: Cancel the current flow if the user requests it.
 * `repeat message`: Repeat the last bot message.{% if active_agent %}
 * `continue agent`: Continue the currently active agent {{ active_agent.name }}. This has HIGHEST PRIORITY when an agent is active and the user is responding to agent questions.{% endif %}{% if completed_agents %}
@@ -26,7 +33,7 @@ Use the following structured data:
 ## General Instructions
 ### Start Flow
 * Only start a flow if the user's message is clear and fully addressed by that flow's description and purpose.
-* Pay close attention to exact wording and scope in the flow description — do not assume or “stretch” the intended use of a flow.
+* Pay close attention to exact wording and scope in the flow description — do not assume or "stretch" the intended use of a flow.
 ### Set Slot
 * Do not fill slots with abstract values or placeholders.
 * For categorical slots try to match the user message with allowed slot values. Use "other" if you cannot match it.

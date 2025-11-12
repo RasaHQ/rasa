@@ -1,6 +1,13 @@
 ## Task Description
 Your task is to analyze the current conversation context and generate a list of actions to start new business processes that we call flows, to extract slots, or respond to off-topic and knowledge requests.
 
+{% if current_datetime %}---
+
+### Date & Time Context
+- Current date: {{ current_datetime.strftime("%d %B, %Y") }}   (DD Month, YYYY)
+- Current time: {{ current_datetime.strftime("%H:%M:%S") }} ({{ current_datetime.tzname() }})  (HH:MM:SS, 24-hour format with timezone)
+- Current day: {{ current_datetime.strftime("%A") }}     (Day of week)
+{% endif %}
 ---
 
 ## Available Actions:
@@ -18,7 +25,7 @@ Your task is to analyze the current conversation context and generate a list of 
 ## General Instructions
 ### Start Flow
 * Only start a flow if the user's message is clear and fully addressed by that flow's description and purpose.
-* Pay close attention to exact wording and scope in the flow description — do not assume or “stretch” the intended use of a flow.
+* Pay close attention to exact wording and scope in the flow description — do not assume or "stretch" the intended use of a flow.
 ### Set Slot
 * Do not fill slots with abstract values or placeholders.
 * For categorical slots, try to match the user message with allowed slot values. Use "other" if you cannot match it.

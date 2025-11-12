@@ -31,6 +31,7 @@ from rasa.shared.exceptions import (
     ProviderClientAPIException,
 )
 from rasa.shared.providers.llm.llm_response import LLMResponse
+from rasa.shared.utils.datetime_utils import get_current_datetime
 from rasa.utils.pypred import Predicate
 
 DEFAULT_TASK_AGENT_PROMPT_TEMPLATE = importlib.resources.read_text(
@@ -53,6 +54,8 @@ class MCPTaskAgent(MCPBaseAgent):
         prompt_template: Optional[str] = None,
         timeout: Optional[int] = None,
         max_retries: Optional[int] = None,
+        include_date_time: Optional[bool] = None,
+        timezone: Optional[str] = None,
     ):
         super().__init__(
             name,
@@ -63,6 +66,8 @@ class MCPTaskAgent(MCPBaseAgent):
             prompt_template,
             timeout,
             max_retries,
+            include_date_time,
+            timezone,
         )
 
     @property
@@ -249,16 +254,19 @@ class MCPTaskAgent(MCPBaseAgent):
     def render_prompt_template(self, context: AgentInput) -> str:
         """Render the prompt template with the provided inputs."""
         slot_names = self._get_slot_names_from_exit_conditions(context)
-        current_date, current_time, current_day = self._get_current_date_time_day()
 
-        return Template(self.prompt_template).render(
+        template_vars = {
             **context.model_dump(exclude={"id", "timestamp", "events"}),
-            description=self._description,
-            slot_names=slot_names,
-            current_date=current_date,
-            current_time=current_time,
-            current_day=current_day,
-        )
+            "description": self._description,
+            "slot_names": slot_names,
+        }
+
+        # Add current_datetime object if enabled
+        if self._include_date_time:
+            template_vars["current_datetime"] = get_current_datetime(
+                timezone=self._timezone
+            )
+        return Template(self.prompt_template).render(**template_vars)
 
     async def send_message(self, agent_input: AgentInput) -> AgentOutput:
         """Send a message to the LLM and return the response."""

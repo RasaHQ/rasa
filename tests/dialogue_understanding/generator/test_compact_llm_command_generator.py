@@ -1,8 +1,10 @@
 import os.path
 import uuid
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Text
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from zoneinfo import ZoneInfo
 
 import pytest
 import structlog
@@ -52,12 +54,17 @@ from rasa.dialogue_understanding.utils import set_record_commands_and_prompts
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.exceptions import ValidationError
 from rasa.llm_fine_tuning.annotation_module import set_preparing_fine_tuning_data
 from rasa.shared.constants import (
+    DEFAULT_INCLUDE_DATE_TIME,
+    DEFAULT_TIMEZONE,
     EMBEDDINGS_CONFIG_KEY,
+    INCLUDE_DATE_TIME_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     OPENAI_API_KEY_ENV_VAR,
     ROUTE_TO_CALM_SLOT,
+    TIMEZONE_CONFIG_KEY,
 )
 from rasa.shared.core.constants import SetSlotExtractor
 from rasa.shared.core.domain import Domain
@@ -2749,3 +2756,207 @@ class TestCompactLLMCommandGenerator:
 
         # Then
         assert result == "Direct prompt template content"
+
+    @pytest.mark.parametrize(
+        "config, expected_error_code",
+        [
+            # Invalid timezone when include_date_time is True (default)
+            (
+                {TIMEZONE_CONFIG_KEY: "Invalid/Timezone"},
+                "datetime_utils.validate_datetime_configuration.invalid_timezone",
+            ),
+            # Invalid timezone when include_date_time is explicitly True
+            (
+                {
+                    INCLUDE_DATE_TIME_CONFIG_KEY: True,
+                    TIMEZONE_CONFIG_KEY: "Invalid/Timezone",
+                },
+                "datetime_utils.validate_datetime_configuration.invalid_timezone",
+            ),
+            # Empty timezone string
+            (
+                {TIMEZONE_CONFIG_KEY: ""},
+                "datetime_utils.validate_datetime_configuration.invalid_timezone",
+            ),
+        ],
+    )
+    def test_compact_llm_command_generator_invalid_timezone_raises_validation_error(
+        self,
+        config: Dict[str, Any],
+        expected_error_code: str,
+        model_storage: ModelStorage,
+        resource: Resource,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Test that invalid timezone raises ValidationError."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "test")
+
+        # When/Then
+        with pytest.raises(ValidationError) as exc_info:
+            CompactLLMCommandGenerator.create(
+                config=config,
+                resource=resource,
+                model_storage=model_storage,
+                execution_context=Mock(),
+            )
+
+        assert exc_info.value.code == expected_error_code
+
+    @pytest.mark.parametrize(
+        "config, expected_log_event",
+        [
+            # Timezone provided when include_date_time is False
+            (
+                {
+                    INCLUDE_DATE_TIME_CONFIG_KEY: False,
+                    TIMEZONE_CONFIG_KEY: "America/New_York",
+                },
+                "datetime_utils.validate_datetime_configuration.timezone_not_allowed",
+            ),
+            (
+                {
+                    INCLUDE_DATE_TIME_CONFIG_KEY: False,
+                    TIMEZONE_CONFIG_KEY: "Europe/London",
+                },
+                "datetime_utils.validate_datetime_configuration.timezone_not_allowed",
+            ),
+        ],
+    )
+    def test_compact_llm_command_generator_timezone_warning_when_date_time_disabled(
+        self,
+        config: Dict[str, Any],
+        expected_log_event: str,
+        model_storage: ModelStorage,
+        resource: Resource,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Test that timezone warning is logged when include_date_time is False."""
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "test")
+        expected_log_level = "warning"
+
+        with structlog.testing.capture_logs() as caplog:
+            # When
+            CompactLLMCommandGenerator.create(
+                config=config,
+                resource=resource,
+                model_storage=model_storage,
+                execution_context=Mock(),
+            )
+            logs = filter_logs(caplog, expected_log_event, expected_log_level)
+
+        # Then
+        assert len(logs) == 1
+        # Verify the generator is still created successfully despite the warning
+        generator = CompactLLMCommandGenerator.create(
+            config=config,
+            resource=resource,
+            model_storage=model_storage,
+            execution_context=Mock(),
+        )
+        assert generator.include_date_time is False
+        assert generator.timezone == config[TIMEZONE_CONFIG_KEY]
+
+    @pytest.mark.parametrize(
+        "include_date_time, timezone, expected_datetime_present, expected_date_format,"
+        "expected_time_format, expected_day",
+        [
+            # include_date_time is True (default), should include datetime
+            (
+                DEFAULT_INCLUDE_DATE_TIME,
+                DEFAULT_TIMEZONE,
+                True,
+                "15 January, 2024",
+                "14:30:45",
+                "Monday",
+            ),
+            # include_date_time is True with custom timezone
+            (
+                True,
+                "America/New_York",
+                True,
+                "15 January, 2024",
+                "14:30:45",
+                "Monday",
+            ),
+            # include_date_time is False, should NOT include datetime
+            (False, DEFAULT_TIMEZONE, False, None, None, None),
+            # include_date_time is False with custom timezone,
+            # should NOT include datetime
+            (False, "America/New_York", False, None, None, None),
+        ],
+    )
+    def test_render_template_includes_current_datetime_when_enabled(
+        self,
+        model_storage: ModelStorage,
+        resource: Resource,
+        include_date_time: bool,
+        timezone: str,
+        expected_datetime_present: bool,
+        expected_date_format: Optional[str],
+        expected_time_format: Optional[str],
+        expected_day: Optional[str],
+        monkeypatch: MonkeyPatch,
+    ):
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "test")
+
+        # Create generator with datetime configuration
+        config = {
+            INCLUDE_DATE_TIME_CONFIG_KEY: include_date_time,
+            TIMEZONE_CONFIG_KEY: timezone,
+        }
+        generator = CompactLLMCommandGenerator.create(
+            config=config,
+            resource=resource,
+            model_storage=model_storage,
+            execution_context=Mock(),
+        )
+
+        # Create test message and tracker
+        test_message = Message.build(text="test message")
+        test_tracker = DialogueStateTracker.from_events(
+            sender_id="test",
+            evts=[UserUttered("Hello"), BotUttered("Hi")],
+        )
+        test_flows = flows_from_str(
+            """
+            flows:
+              test_flow:
+                description: some description
+                steps:
+                - id: first_step
+                  action: action_listen
+            """
+        )
+
+        # Mock get_current_datetime to return a fixed datetime
+        mock_now = datetime(2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo(timezone))
+        with patch(
+            "rasa.dialogue_understanding.generator.single_step."
+            "single_step_based_llm_command_generator.get_current_datetime"
+        ) as mock_get_current_datetime:
+            mock_get_current_datetime.return_value = mock_now
+
+            rendered_template = generator.render_template(
+                message=test_message,
+                tracker=test_tracker,
+                startable_flows=test_flows,
+                all_flows=test_flows,
+            )
+
+            if expected_datetime_present:
+                # Verify datetime section is present
+                assert "### Date & Time Context" in rendered_template
+                assert expected_date_format in rendered_template
+                assert expected_time_format in rendered_template
+                assert expected_day in rendered_template
+                assert mock_now.tzname() in rendered_template
+                # Verify get_current_datetime was called
+                mock_get_current_datetime.assert_called_once_with(timezone=timezone)
+            else:
+                # Verify datetime section is NOT present
+                assert "### Date & Time Context" not in rendered_template
+                assert "Current date:" not in rendered_template
+                assert "Current time:" not in rendered_template
+                assert "Current day:" not in rendered_template
+                # Verify get_current_datetime was NOT called
+                mock_get_current_datetime.assert_not_called()

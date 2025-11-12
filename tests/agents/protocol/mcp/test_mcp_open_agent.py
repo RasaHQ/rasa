@@ -1,7 +1,9 @@
 """Unit tests for MCPOpenAgent."""
 
 from datetime import datetime
+from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -14,10 +16,15 @@ from rasa.agents.protocol.mcp.mcp_open_agent import MCPOpenAgent
 from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentToolResult
 from rasa.core.available_agents import (
     AgentConfig,
+    AgentConfiguration,
     AgentInfo,
     ProtocolConfig,
 )
-from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
+from rasa.shared.constants import (
+    DEFAULT_INCLUDE_DATE_TIME,
+    DEFAULT_TIMEZONE,
+    OPENAI_API_KEY_ENV_VAR,
+)
 from rasa.shared.exceptions import (
     LLMToolResponseDecodeError,
     ProviderClientAPIException,
@@ -66,24 +73,25 @@ class TestMCPOpenAgent:
         self, mcp_open_agent: MCPOpenAgent, mock_agent_input: AgentInput
     ):
         """Test basic prompt template rendering with all context variables."""
-        with patch("rasa.agents.protocol.mcp.mcp_base_agent.datetime") as mock_datetime:
-            # Mock the current datetime
-            mock_now = datetime(2024, 1, 15, 14, 30, 45)  # Monday, 2:30:45 PM
-            mock_datetime.now.return_value = mock_now
+        mock_now = datetime(2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo("UTC"))
+        with patch(
+            "rasa.agents.protocol.mcp.mcp_base_agent.get_current_datetime"
+        ) as mock_get_current_datetime:
+            mock_get_current_datetime.return_value = mock_now
 
             result = mcp_open_agent.render_prompt_template(mock_agent_input)
 
             # Verify the template was rendered with correct date/time values
-            assert "2024-01-15" in result  # current_date
-            assert "14:30:45" in result  # current_time
-            assert "Monday" in result  # current_day
+            assert "- Current date: 15 January, 2024" in result  # current_date
+            assert "- Current time: 14:30:45 (UTC)" in result  # current_time
+            assert "- Current day: Monday" in result  # current_day
 
             # Verify other context variables are included
             assert "A test open agent for unit testing" in result  # description
             assert "Previous conversation..." in result  # conversation_history
 
             # Verify template structure is maintained (MCP Open Agent template)
-            assert "### Context" in result
+            assert "### Date & Time Context" in result
             assert "### Primary Task" in result
             assert "### Instructions" in result
             assert "### Conversation history" in result
@@ -92,15 +100,102 @@ class TestMCPOpenAgent:
         self, mcp_open_agent: MCPOpenAgent, mock_agent_input: AgentInput
     ):
         """Test that render_prompt_template excludes some fields from context."""
-        with patch("rasa.agents.protocol.mcp.mcp_base_agent.datetime") as mock_datetime:
-            mock_now = datetime(2024, 1, 15, 14, 30, 45)
-            mock_datetime.now.return_value = mock_now
+        with patch(
+            "rasa.agents.protocol.mcp.mcp_base_agent.get_current_datetime"
+        ) as mock_get_current_datetime:
+            mock_get_current_datetime.return_value = datetime(
+                2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo("UTC")
+            )
 
             result = mcp_open_agent.render_prompt_template(mock_agent_input)
 
             # Verify excluded fields are not in the rendered template
             assert "test_id" not in result  # id should be excluded
             assert "2024-01-15T10:30:00Z" not in result  # timestamp should be excluded
+
+    @pytest.mark.parametrize(
+        "include_date_time, timezone, expected_datetime_present, expected_date_format,"
+        "expected_time_format, expected_day",
+        [
+            # include_date_time is True (default), should include datetime
+            (
+                DEFAULT_INCLUDE_DATE_TIME,
+                DEFAULT_TIMEZONE,
+                True,
+                "15 January, 2024",
+                "14:30:45",
+                "Monday",
+            ),
+            # include_date_time is True with custom timezone
+            (
+                True,
+                "America/New_York",
+                True,
+                "15 January, 2024",
+                "14:30:45",
+                "Monday",
+            ),
+            # include_date_time is False
+            # should NOT include datetime
+            (False, DEFAULT_TIMEZONE, False, None, None, None),
+            # include_date_time is False with custom timezone
+            # should NOT include datetime
+            (False, "America/New_York", False, None, None, None),
+        ],
+    )
+    def test_render_prompt_template_includes_current_datetime_when_enabled(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        mock_agent_input: AgentInput,
+        include_date_time: bool,
+        timezone: str,
+        expected_datetime_present: bool,
+        expected_date_format: Optional[str],
+        expected_time_format: Optional[str],
+        expected_day: Optional[str],
+    ):
+        monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_mcp_open_agent")
+
+        # Create agent with datetime configuration
+        agent_config = AgentConfig(
+            agent=AgentInfo(
+                name="test_open_agent",
+                description="A test open agent for unit testing",
+                protocol=ProtocolConfig.RASA,
+            ),
+            configuration=AgentConfiguration(
+                include_date_time=include_date_time,
+                timezone=timezone,
+            ),
+        )
+        mcp_open_agent = MCPOpenAgent.from_config(agent_config)
+
+        # Mock get_current_datetime to return a fixed datetime
+        mock_now = datetime(2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo(timezone))
+        with patch(
+            "rasa.agents.protocol.mcp.mcp_base_agent.get_current_datetime"
+        ) as mock_get_current_datetime:
+            mock_get_current_datetime.return_value = mock_now
+
+            result = mcp_open_agent.render_prompt_template(mock_agent_input)
+
+            if expected_datetime_present:
+                # Verify datetime section is present
+                assert "### Date & Time Context" in result
+                assert expected_date_format in result
+                assert expected_time_format in result
+                assert expected_day in result
+                assert mock_now.tzname() in result
+                # Verify get_current_datetime was called
+                mock_get_current_datetime.assert_called_once_with(timezone=timezone)
+            else:
+                # Verify datetime section is NOT present
+                assert "### Date & Time Context" not in result
+                assert "Current date:" not in result
+                assert "Current time:" not in result
+                assert "Current day:" not in result
+                # Verify get_current_datetime was NOT called
+                mock_get_current_datetime.assert_not_called()
 
     def test_get_task_completed_tool(self):
         """Test getting the task completed tool."""

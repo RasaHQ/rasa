@@ -27,12 +27,17 @@ from rasa.core.policies.enterprise_search_policy_config import (
     VECTOR_STORE_PROPERTY,
     VECTOR_STORE_TYPE_PROPERTY,
 )
+from rasa.exceptions import ValidationError
 from rasa.shared.constants import (
+    DEFAULT_INCLUDE_DATE_TIME,
+    DEFAULT_TIMEZONE,
     EMBEDDINGS_CONFIG_KEY,
+    INCLUDE_DATE_TIME_CONFIG_KEY,
     LLM_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     MODEL_GROUP_CONFIG_KEY,
     PROVIDER_CONFIG_KEY,
+    TIMEZONE_CONFIG_KEY,
 )
 from tests.utilities import filter_logs
 
@@ -54,6 +59,8 @@ from tests.utilities import filter_logs
                 "max_history": None,
                 "max_messages_in_query": DEFAULT_MAX_MESSAGES_IN_QUERY,
                 "trace_prompt_tokens": DEFAULT_TRACE_PROMPT_TOKEN_PROPERTY,
+                "include_date_time": DEFAULT_INCLUDE_DATE_TIME,
+                "timezone": DEFAULT_TIMEZONE,
             },
         ),
         # With deprecated alias: 'prompt' instead of 'prompt_template'
@@ -168,6 +175,53 @@ from tests.utilities import filter_logs
                 "trace_prompt_tokens": True,
             },
         ),
+        # Datetime configuration - custom include_date_time (True)
+        (
+            {INCLUDE_DATE_TIME_CONFIG_KEY: True},
+            {
+                "include_date_time": True,
+                "timezone": DEFAULT_TIMEZONE,
+            },
+        ),
+        # Datetime configuration - custom include_date_time (False)
+        (
+            {INCLUDE_DATE_TIME_CONFIG_KEY: False},
+            {
+                "include_date_time": False,
+                "timezone": DEFAULT_TIMEZONE,
+            },
+        ),
+        # Datetime configuration - custom timezone (valid)
+        (
+            {TIMEZONE_CONFIG_KEY: "America/New_York"},
+            {
+                "include_date_time": DEFAULT_INCLUDE_DATE_TIME,
+                "timezone": "America/New_York",
+            },
+        ),
+        # Datetime configuration - both custom (valid combination)
+        (
+            {
+                INCLUDE_DATE_TIME_CONFIG_KEY: True,
+                TIMEZONE_CONFIG_KEY: "America/New_York",
+            },
+            {
+                "include_date_time": True,
+                "timezone": "America/New_York",
+            },
+        ),
+        # Datetime configuration - include_date_time False with timezone
+        # Works with a warning.
+        (
+            {
+                INCLUDE_DATE_TIME_CONFIG_KEY: False,
+                TIMEZONE_CONFIG_KEY: "America/New_York",
+            },
+            {
+                "include_date_time": False,
+                "timezone": "America/New_York",
+            },
+        ),
     ],
 )
 def test_enterprise_search_policy_config_from_dict(
@@ -260,3 +314,89 @@ def test_enterprise_search_policy_config_warns_when_citation_is_enabled_but_gene
 
     # Then
     assert len(logs) == 1
+
+
+@pytest.mark.parametrize(
+    "config, expected_error_code",
+    [
+        # Invalid timezone when include_date_time is True (default)
+        (
+            {TIMEZONE_CONFIG_KEY: "Invalid/Timezone"},
+            "datetime_utils.validate_datetime_configuration.invalid_timezone",
+        ),
+        # Invalid timezone when include_date_time is explicitly True
+        (
+            {
+                INCLUDE_DATE_TIME_CONFIG_KEY: True,
+                TIMEZONE_CONFIG_KEY: "Invalid/Timezone",
+            },
+            "datetime_utils.validate_datetime_configuration.invalid_timezone",
+        ),
+        # Empty timezone string
+        (
+            {TIMEZONE_CONFIG_KEY: ""},
+            "datetime_utils.validate_datetime_configuration.invalid_timezone",
+        ),
+    ],
+)
+def test_enterprise_search_policy_config_invalid_timezone_raises_validation_error(
+    config: Dict[str, Any],
+    expected_error_code: str,
+    mock_available_endpoints: MagicMock,
+    mock_configuration: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Given
+    mock_available_endpoints.model_groups = []
+    monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
+
+    # When/Then
+    with pytest.raises(ValidationError) as exc_info:
+        EnterpriseSearchPolicyConfig.from_dict(config)
+
+    assert exc_info.value.code == expected_error_code
+
+
+@pytest.mark.parametrize(
+    "config, expected_log_event",
+    [
+        # Timezone provided when include_date_time is False
+        (
+            {
+                INCLUDE_DATE_TIME_CONFIG_KEY: False,
+                TIMEZONE_CONFIG_KEY: "America/New_York",
+            },
+            "datetime_utils.validate_datetime_configuration.timezone_not_allowed",
+        ),
+        (
+            {
+                INCLUDE_DATE_TIME_CONFIG_KEY: False,
+                TIMEZONE_CONFIG_KEY: "Europe/London",
+            },
+            "datetime_utils.validate_datetime_configuration.timezone_not_allowed",
+        ),
+    ],
+)
+def test_enterprise_search_policy_config_timezone_warning_when_include_date_time_false(
+    config: Dict[str, Any],
+    expected_log_event: str,
+    mock_available_endpoints: MagicMock,
+    mock_configuration: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Given
+    mock_available_endpoints.model_groups = []
+    monkeypatch.setattr("rasa.shared.utils.llm.Configuration", mock_configuration)
+    expected_log_level = "warning"
+
+    with structlog.testing.capture_logs() as caplog:
+        # When
+        EnterpriseSearchPolicyConfig.from_dict(config)
+        logs = filter_logs(caplog, expected_log_event, expected_log_level)
+
+    # Then
+    assert len(logs) == 1
+    # Verify the config is still created successfully despite the warning
+    parsed_config = EnterpriseSearchPolicyConfig.from_dict(config)
+    assert parsed_config.include_date_time is False
+    assert parsed_config.timezone == config[TIMEZONE_CONFIG_KEY]

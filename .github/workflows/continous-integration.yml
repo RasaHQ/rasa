@@ -1920,7 +1920,7 @@ jobs:
         contents: write
         issues: read
         actions: write
-      if: ${{ inputs.full_ci_mode != 'false' && !(inputs.pr-author == 'rasabot') && always() && github.event_name == 'pull_request' && contains(join(needs.*.result, ','), 'failure') }}
+      if: ${{ inputs.full_ci_mode != 'false' && !(inputs.pr-author == 'rasabot') && always() && !cancelled() && github.event_name == 'pull_request' && contains(join(needs.*.result, ','), 'failure') }}
       needs: 
         - unit-test
         - test-anonymization

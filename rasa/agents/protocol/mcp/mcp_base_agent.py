@@ -1,6 +1,6 @@
 import json
 from abc import abstractmethod
-from datetime import datetime, timedelta
+from datetime import timedelta
 from inspect import isawaitable
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -38,6 +38,8 @@ from rasa.agents.schemas import (
 from rasa.core.available_agents import AgentConfig, AgentMCPServerConfig, ProtocolConfig
 from rasa.shared.agents.utils import make_agent_identifier
 from rasa.shared.constants import (
+    DEFAULT_INCLUDE_DATE_TIME,
+    DEFAULT_TIMEZONE,
     MAX_COMPLETION_TOKENS_CONFIG_KEY,
     MODEL_CONFIG_KEY,
     OPENAI_PROVIDER,
@@ -61,6 +63,10 @@ from rasa.shared.utils.constants import (
     LANGFUSE_METADATA_SESSION_ID,
     LANGFUSE_METADATA_TAGS,
     LOG_COMPONENT_SOURCE_METHOD_INIT,
+)
+from rasa.shared.utils.datetime_utils import (
+    get_current_datetime,
+    validate_datetime_configuration,
 )
 from rasa.shared.utils.llm import (
     get_prompt_template,
@@ -104,6 +110,8 @@ class MCPBaseAgent(AgentProtocol):
         prompt_template: Optional[str] = None,
         timeout: Optional[int] = None,
         max_retries: Optional[int] = None,
+        include_date_time: Optional[bool] = None,
+        timezone: Optional[str] = None,
     ):
         self._name = name
 
@@ -127,6 +135,13 @@ class MCPBaseAgent(AgentProtocol):
         self._timeout = timeout or AGENT_DEFAULT_TIMEOUT_SECONDS
 
         self._max_retries = max_retries or AGENT_DEFAULT_MAX_RETRIES
+
+        self._include_date_time = (
+            include_date_time
+            if include_date_time is not None
+            else DEFAULT_INCLUDE_DATE_TIME
+        )
+        self._timezone = timezone or DEFAULT_TIMEZONE
 
         self._server_configs = server_configs or []
 
@@ -154,14 +169,35 @@ class MCPBaseAgent(AgentProtocol):
         if config.configuration and config.configuration.timeout is not None:
             structlogger.warning(
                 "mcp_agent.configuration.timeout.not_implemented",
-                event_info="configuration.timeout is not implemented for MCP agents. "
-                "MCP agents do not establish external connections, "
-                "so agent-level timeout is not used. "
-                "To set timeout for LLM requests, "
-                "configure 'timeout' in the model_group "
-                "in endpoints.yml and reference it via configuration.llm.model_group.",
+                event_info=(
+                    "`configuration.timeout` is not supported for MCP agents. MCP "
+                    "agents do not make external connections, so an agent-level timeout"
+                    " does not apply. To control timeout behavior for LLM calls, set "
+                    "the `timeout` value in the `model_group` section of endpoints.yml "
+                    "and reference it through `configuration.llm.model_group`."
+                ),
                 agent_name=config.agent.name,
-                timeout_value=config.configuration.timeout,
+            )
+
+        # Set datetime configuration
+        include_date_time = DEFAULT_INCLUDE_DATE_TIME
+        timezone = DEFAULT_TIMEZONE
+        is_custom_timezone_provided = False
+        if config.configuration:
+            if config.configuration.include_date_time is not None:
+                include_date_time = config.configuration.include_date_time
+            if config.configuration.timezone is not None:
+                timezone = config.configuration.timezone
+                is_custom_timezone_provided = True
+
+            # Validate datetime configuration
+            validate_datetime_configuration(
+                include_date_time,
+                timezone,
+                is_custom_timezone_provided,
+                f"agent '{config.agent.name}'",
+                error_code="agent.configuration.invalid_timezone",
+                agent_name=config.agent.name,
             )
 
         return cls(
@@ -179,6 +215,8 @@ class MCPBaseAgent(AgentProtocol):
             server_configs=config.connections.mcp_servers
             if config.connections
             else None,
+            include_date_time=include_date_time,
+            timezone=timezone,
         )
 
     # ============================================================================
@@ -536,26 +574,20 @@ class MCPBaseAgent(AgentProtocol):
     # LLM & Prompt Management
     # ============================================================================
 
-    def _get_current_date_time_day(self) -> Tuple[str, str, str]:
-        """Get the current date, time, and day in standard formats."""
-        now = datetime.now()
-        current_date = now.strftime("%Y-%m-%d")  # e.g. 2025-09-14
-        current_time = now.strftime("%H:%M:%S")  # e.g. 16:45:12
-        current_day = now.strftime("%A")  # e.g. Sunday
-        return current_date, current_time, current_day
-
     def render_prompt_template(self, context: AgentInput) -> str:
         """Render the prompt template with the provided inputs."""
-        # Current date, time, and weekday in standard formats
-        current_date, current_time, current_day = self._get_current_date_time_day()
 
-        return Template(self.prompt_template).render(
+        template_vars = {
             **context.model_dump(exclude={"id", "timestamp", "events"}),
-            description=self._description,
-            current_date=current_date,
-            current_time=current_time,
-            current_day=current_day,
-        )
+            "description": self._description,
+        }
+
+        # Add current_datetime object if enabled
+        if self._include_date_time:
+            template_vars["current_datetime"] = get_current_datetime(
+                timezone=self._timezone
+            )
+        return Template(self.prompt_template).render(**template_vars)
 
     def build_messages_for_llm_request(
         self, context: AgentInput, turns: int = 20

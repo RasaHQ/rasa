@@ -67,6 +67,8 @@ class AgentConfiguration(BaseModel):
     max_retries: Optional[int] = None
     agent_card: Optional[str] = None
     auth: Optional[Dict[str, Any]] = None
+    include_date_time: Optional[bool] = None
+    timezone: Optional[str] = None
 
 
 class AgentConnections(BaseModel):

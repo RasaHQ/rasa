@@ -179,11 +179,15 @@ class TestMCPBaseAgent:
         captured = capsys.readouterr()
 
         # Verify warning was logged
+        expected_warning = (
+            "`configuration.timeout` is not supported for MCP agents. MCP "
+            "agents do not make external connections, so an agent-level timeout"
+            " does not apply. To control timeout behavior for LLM calls, set "
+            "the `timeout` value in the `model_group` section of endpoints.yml "
+            "and reference it through `configuration.llm.model_group`."
+        )
         assert "mcp_agent.configuration.timeout.not_implemented" in captured.out
-        assert "configuration.timeout is not implemented for MCP agents" in captured.out
-        assert "MCP agents do not establish external connections" in captured.out
-        assert "configure 'timeout' in the model_group" in captured.out
-        assert "configuration.llm.model_group" in captured.out
+        assert expected_warning in captured.out
 
         # Verify agent was still created successfully
         assert agent._name == "test_agent"
@@ -537,35 +541,25 @@ class TestMCPBaseAgent:
     # LLM & Prompt Management Tests
     # ============================================================================
 
-    def test_get_current_date_time_day(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
-    ) -> None:
-        """Test getting current date, time, and day."""
-        with patch("rasa.agents.protocol.mcp.mcp_base_agent.datetime") as mock_datetime:
-            mock_now = datetime(2024, 1, 15, 14, 30, 45)  # Monday
-            mock_datetime.now.return_value = mock_now
-
-            date, time, day = mock_mcp_base_agent._get_current_date_time_day()
-
-            assert date == "2024-01-15"
-            assert time == "14:30:45"
-            assert day == "Monday"
-
     def test_render_prompt_template(
         self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
     ) -> None:
         """Test rendering prompt template with context."""
-        with patch("rasa.agents.protocol.mcp.mcp_base_agent.datetime") as mock_datetime:
-            mock_now = datetime(2024, 1, 15, 14, 30, 45)
-            mock_datetime.now.return_value = mock_now
+        from zoneinfo import ZoneInfo
+
+        mock_now = datetime(2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo("UTC"))
+        with patch(
+            "rasa.agents.protocol.mcp.mcp_base_agent.get_current_datetime"
+        ) as mock_get_current_datetime:
+            mock_get_current_datetime.return_value = mock_now
 
             result = mock_mcp_base_agent.render_prompt_template(mock_agent_input)
 
             assert "Hello, how can you help me?" in result
             assert "Previous conversation..." in result
-            assert "2024-01-15" in result
-            assert "14:30:45" in result
-            assert "Monday" in result
+            assert "- Current date: 15 January, 2024" in result
+            assert "- Current time: 14:30:45 (UTC)" in result
+            assert "- Current day: Monday" in result
 
     def test_build_messages_for_llm_request(
         self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput

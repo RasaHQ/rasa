@@ -82,6 +82,8 @@ class MCPOpenAgent(MCPBaseAgent):
         prompt_template: Optional[str] = None,
         timeout: Optional[int] = None,
         max_retries: Optional[int] = None,
+        include_date_time: Optional[bool] = None,
+        timezone: Optional[str] = None,
     ):
         super().__init__(
             name,
@@ -92,6 +94,8 @@ class MCPOpenAgent(MCPBaseAgent):
             prompt_template,
             timeout,
             max_retries,
+            include_date_time,
+            timezone,
         )
 
     @property

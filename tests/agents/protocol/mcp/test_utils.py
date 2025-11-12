@@ -21,6 +21,8 @@ class TestMCPBaseAgentImpl(MCPBaseAgent):
         prompt_template: Optional[str] = None,
         timeout: Optional[int] = None,
         max_retries: Optional[int] = None,
+        include_date_time: Optional[bool] = None,
+        timezone: Optional[str] = None,
     ):
         super().__init__(
             name,
@@ -31,6 +33,8 @@ class TestMCPBaseAgentImpl(MCPBaseAgent):
             prompt_template,
             timeout,
             max_retries,
+            include_date_time,
+            timezone,
         )
 
     @classmethod
@@ -38,9 +42,11 @@ class TestMCPBaseAgentImpl(MCPBaseAgent):
         """Return a simple test template."""
         return (
             "Test template: {{user_message}}\nPrevious conversation: "
-            "{{conversation_history}}\nCurrent date: {{current_date}} (YYYY-MM-DD)"
-            "\nCurrent time: {{current_time}} (HH:MM:SS, 24-hour format)"
-            "\nCurrent day: {{current_day}}"
+            "{{conversation_history}}{% if current_datetime %}"
+            "- Current date: {{ current_datetime.strftime('%d %B, %Y') }}"
+            "- Current time: {{ current_datetime.strftime('%H:%M:%S') }} "
+            "({{ current_datetime.tzname() }})"
+            "- Current day: {{ current_datetime.strftime('%A') }} {% endif %}"
         )
 
     @property

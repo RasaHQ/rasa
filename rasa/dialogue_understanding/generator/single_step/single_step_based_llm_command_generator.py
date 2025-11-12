@@ -45,9 +45,13 @@ from rasa.engine.recipes.default_recipe import DefaultV1Recipe
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import (
+    DEFAULT_INCLUDE_DATE_TIME,
+    DEFAULT_TIMEZONE,
     EMBEDDINGS_CONFIG_KEY,
+    INCLUDE_DATE_TIME_CONFIG_KEY,
     PROMPT_TEMPLATE_CONFIG_KEY,
     ROUTE_TO_CALM_SLOT,
+    TIMEZONE_CONFIG_KEY,
 )
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -58,6 +62,10 @@ from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.constants import (
     LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
     LOG_COMPONENT_SOURCE_METHOD_INIT,
+)
+from rasa.shared.utils.datetime_utils import (
+    get_current_datetime,
+    validate_datetime_configuration,
 )
 from rasa.shared.utils.io import deep_container_fingerprint
 from rasa.shared.utils.llm import (
@@ -111,6 +119,20 @@ class SingleStepBasedLLMCommandGenerator(LLMBasedCommandGenerator, ABC):
         )
 
         self.trace_prompt_tokens = self.config.get("trace_prompt_tokens", False)
+
+        # Datetime configuration
+        self.include_date_time = self.config.get(
+            INCLUDE_DATE_TIME_CONFIG_KEY, DEFAULT_INCLUDE_DATE_TIME
+        )
+        self.timezone = self.config.get(TIMEZONE_CONFIG_KEY, DEFAULT_TIMEZONE)
+
+        # Validate datetime configuration
+        validate_datetime_configuration(
+            self.include_date_time,
+            self.timezone,
+            TIMEZONE_CONFIG_KEY in self.config,
+            self.__class__.__name__,
+        )
 
     ### Implementations of LLMBasedCommandGenerator parent
     @staticmethod
@@ -434,6 +456,10 @@ class SingleStepBasedLLMCommandGenerator(LLMBasedCommandGenerator, ABC):
                 get_active_agent_info(tracker, top_flow.id) if top_flow else None
             )
             inputs["completed_agents"] = get_completed_agents_info(tracker)
+
+        # Add current datetime if enabled
+        if self.include_date_time:
+            inputs["current_datetime"] = get_current_datetime(timezone=self.timezone)
 
         return self.compile_template(self.prompt_template).render(**inputs)
 

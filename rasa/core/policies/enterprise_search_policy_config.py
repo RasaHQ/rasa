@@ -11,7 +11,10 @@ from rasa.core.constants import (
     SEARCH_POLICY_PRIORITY,
 )
 from rasa.shared.constants import (
+    DEFAULT_INCLUDE_DATE_TIME,
+    DEFAULT_TIMEZONE,
     EMBEDDINGS_CONFIG_KEY,
+    INCLUDE_DATE_TIME_CONFIG_KEY,
     LLM_CONFIG_KEY,
     MAX_COMPLETION_TOKENS_CONFIG_KEY,
     MAX_RETRIES_CONFIG_KEY,
@@ -22,6 +25,7 @@ from rasa.shared.constants import (
     PROVIDER_CONFIG_KEY,
     TEMPERATURE_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
+    TIMEZONE_CONFIG_KEY,
 )
 from rasa.shared.utils.configs import (
     raise_deprecation_warnings,
@@ -29,6 +33,7 @@ from rasa.shared.utils.configs import (
     validate_forbidden_keys,
     validate_required_keys,
 )
+from rasa.shared.utils.datetime_utils import validate_datetime_configuration
 from rasa.shared.utils.llm import (
     DEFAULT_ENTERPRISE_SEARCH_POLICY_MODEL_NAME,
     DEFAULT_OPENAI_EMBEDDING_MODEL_NAME,
@@ -113,6 +118,8 @@ class EnterpriseSearchPolicyConfig:
     max_history: Optional[int] = None
     max_messages_in_query: int = DEFAULT_MAX_MESSAGES_IN_QUERY
     trace_prompt_tokens: bool = DEFAULT_TRACE_PROMPT_TOKEN_PROPERTY
+    include_date_time: bool = DEFAULT_INCLUDE_DATE_TIME
+    timezone: str = DEFAULT_TIMEZONE
 
     @property
     def vector_store_type(self) -> str:
@@ -210,6 +217,18 @@ class EnterpriseSearchPolicyConfig:
         # Validate that the forbidden keys are not present
         validate_forbidden_keys(config, FORBIDDEN_KEYS)
 
+        # Validate datetime configuration
+        _include_date_time = config.get(
+            INCLUDE_DATE_TIME_CONFIG_KEY, DEFAULT_INCLUDE_DATE_TIME
+        )
+        _timezone = config.get(TIMEZONE_CONFIG_KEY, DEFAULT_TIMEZONE)
+        validate_datetime_configuration(
+            include_date_time=_include_date_time,
+            timezone=_timezone,
+            is_custom_timezone_provided=TIMEZONE_CONFIG_KEY in config,
+            component_name="EnterpriseSearchPolicy",
+        )
+
         this = EnterpriseSearchPolicyConfig(
             llm_config=llm_config,
             embeddings_config=embeddings_config,
@@ -229,6 +248,8 @@ class EnterpriseSearchPolicyConfig:
             trace_prompt_tokens=config.get(
                 TRACE_TOKENS_PROPERTY, DEFAULT_TRACE_PROMPT_TOKEN_PROPERTY
             ),
+            include_date_time=_include_date_time,
+            timezone=_timezone,
         )
         return this
 

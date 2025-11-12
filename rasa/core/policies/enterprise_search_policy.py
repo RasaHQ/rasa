@@ -95,6 +95,7 @@ from rasa.shared.utils.constants import (
     LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
     LOG_COMPONENT_SOURCE_METHOD_INIT,
 )
+from rasa.shared.utils.datetime_utils import get_current_datetime
 from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
     EmbeddingsHealthCheckMixin,
 )
@@ -245,6 +246,10 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         # generation. This flag enables citation logic, but it only takes effect if
         # `use_llm` is True.
         self.relevancy_check_enabled = parsed_config.check_relevancy
+
+        # Datetime configuration
+        self.include_date_time = parsed_config.include_date_time
+        self.timezone = parsed_config.timezone
 
         # Resolve the prompt template. The prompt will only be used if the 'use_llm' is
         # set to True.
@@ -658,6 +663,10 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             "check_relevancy": self.relevancy_check_enabled,
             "citation_enabled": self.citation_enabled,
         }
+        # Add current datetime if enabled
+        if self.include_date_time:
+            inputs["current_datetime"] = get_current_datetime(timezone=self.timezone)
+
         prompt = Template(self.prompt_template).render(**inputs)
         log_llm(
             logger=structlogger,

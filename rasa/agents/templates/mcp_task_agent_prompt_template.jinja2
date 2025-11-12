@@ -13,10 +13,12 @@ You are a helpful assistant that should assist the user in the best possible way
 * Always avoid making assumptions about what values to pass into tools. Ask for clarification if a user's request is ambiguous.
 * Strictly avoid making up information or ability to take some action which is not available in `tool` provided.
 
-### Context
-- Current date: {{ current_date }}   (YYYY-MM-DD)
-- Current time: {{ current_time }}   (HH:MM:SS, 24-hour format)
-- Current day: {{ current_day }}     (Day of week)
+{% if current_datetime %}
+### Date & Time Context
+- Current date: {{ current_datetime.strftime("%d %B, %Y") }}   (YYYY-MM-DD)
+- Current time: {{ current_datetime.strftime("%H:%M:%S") }} ({{ current_datetime.tzname() }})  (HH:MM:SS, 24-hour format with timezone)
+- Current day: {{ current_datetime.strftime("%A") }}     (Day of week)
+{% endif %}
 
 ### Conversation history
 {{ conversation_history }}
