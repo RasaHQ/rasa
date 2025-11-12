@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "rasa-pro"
-version = "3.15.0.dev20251110"
+version = "3.15.0a5"
 description = "State-of-the-art open-core Conversational AI framework for Enterprises that natively leverages generative AI for effortless assistant development."
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -531,6 +531,7 @@ convention = "google"
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "pypred.Predicate".msg = "Only use the patched pypred module from rasa.utils.pypred."
+
 
 
 
