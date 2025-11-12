@@ -2012,7 +2012,6 @@ files = [
     {file = "faiss_cpu-1.11.0.post1-cp39-cp39-musllinux_1_2_aarch64.whl", hash = "sha256:dc12b3f89cf48be3f2a20b37f310c3f1a7a5708fdf705f88d639339a24bb590b"},
     {file = "faiss_cpu-1.11.0.post1-cp39-cp39-musllinux_1_2_x86_64.whl", hash = "sha256:773fa45aa98a210ab4e2c17c1b5fb45f6d7e9acb4979c9a0b320b678984428ac"},
     {file = "faiss_cpu-1.11.0.post1-cp39-cp39-win_amd64.whl", hash = "sha256:6240c4b1551eedc07e76813c2e14a1583a1db6c319a92a3934bf212d0e4c7791"},
-    {file = "faiss_cpu-1.11.0.post1.tar.gz", hash = "sha256:06b1ea9ddec9e4d9a41c8ef7478d493b08d770e9a89475056e963081eed757d1"},
 ]
 
 [package.dependencies]
@@ -3698,15 +3697,15 @@ typing-extensions = ">=4.5.0"
 
 [[package]]
 name = "keras"
-version = "3.11.3"
+version = "3.12.0"
 description = "Multi-backend Keras"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 markers = "(sys_platform == \"win32\" or sys_platform == \"linux\" or sys_platform == \"darwin\" or sys_platform != \"linux\" and sys_platform != \"win32\" or python_version >= \"3.12\") and (sys_platform == \"win32\" or sys_platform == \"linux\" or sys_platform == \"darwin\" or sys_platform != \"linux\" and sys_platform != \"win32\" and sys_platform != \"darwin\" or platform_machine == \"arm64\" or python_version >= \"3.12\")"
 files = [
-    {file = "keras-3.11.3-py3-none-any.whl", hash = "sha256:f484f050e05ee400455b05ec8c36ed35edc34de94256b6073f56cfe68f65491f"},
-    {file = "keras-3.11.3.tar.gz", hash = "sha256:efda616835c31b7d916d72303ef9adec1257320bc9fd4b2b0138840fc65fb5b7"},
+    {file = "keras-3.12.0-py3-none-any.whl", hash = "sha256:02b69e007d5df8042286c3bcc2a888539e3e487590ffb08f6be1b4354df50aa8"},
+    {file = "keras-3.12.0.tar.gz", hash = "sha256:536e3f8385a05ae04e82e08715a1a59988578087e187b04cb0a6fad11743f07f"},
 ]
 
 [package.dependencies]
@@ -11273,4 +11272,4 @@ transformers = ["sentencepiece", "transformers"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10.0,<3.14"
-content-hash = "a7d6e10ca4c81f71461983318067cb188cf37dfd7915cf679120ca4ee93499b7"
+content-hash = "1b6965db5caa98d7aa97575584ff0af40ea946b0adb07d45a84916e8518cb9bd"
