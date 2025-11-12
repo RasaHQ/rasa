@@ -19,4 +19,6 @@ jobs:
       run_code_quality: 'false'
       # We only want to run the CI checks for unit tests that need to be run against multiple python versions
       full_ci_mode: 'false'
+      pr-author: ${{ github.event.pull_request.user.login }}
+      pr-is-draft: ${{ github.event.pull_request.draft }}
     secrets: inherit

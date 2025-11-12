@@ -38,6 +38,9 @@ def test_enterprise_search_with_vector_store(server_url: str) -> None:
         "Can I use FinX for international transfers?",
     ],
 )
+@pytest.mark.flaky(
+    reruns=2, reruns_delay=5
+)  # Add flaky marker to handle intermittent external API timeouts (e.g., OpenAI)
 def test_enterprise_search_policy_invoked(query: str) -> None:
     """Test that the EnterpriseSearchPolicy is used to answer a given query."""
     RASA_SERVER_TEST_URL = RASA_SERVER_TEST_URL_FAISS_CONFIG
@@ -66,6 +69,9 @@ def test_enterprise_search_policy_invoked(query: str) -> None:
         "send money to mom",
     ],
 )
+@pytest.mark.flaky(
+    reruns=2, reruns_delay=5
+)  # Add flaky marker to handle intermittent external API timeouts (e.g., OpenAI)
 def test_enterprise_search_policy_not_invoked(query: str) -> None:
     """Test that the EnterpriseSearchPolicy is NOT used to answer a given query."""
     RASA_SERVER_TEST_URL = RASA_SERVER_TEST_URL_FAISS_CONFIG

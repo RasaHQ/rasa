@@ -3,6 +3,7 @@ import subprocess
 from pathlib import Path
 
 import pandas as pd
+import pytest
 import yaml
 from pytest import FixtureRequest, MonkeyPatch
 
@@ -28,7 +29,9 @@ def run_command(request: FixtureRequest, name, sheet_name):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
-    return command.communicate()
+    # Add a timeout to prevent hanging indefinitely
+    # 120 seconds should be sufficient for processing even large files in CI
+    return command.communicate(timeout=120)
 
 
 def read_csv_file(request: FixtureRequest, name):
@@ -50,6 +53,7 @@ def read_xlsx_file(request: FixtureRequest, name):
     return doc
 
 
+@pytest.mark.timeout(150)
 def test_rasa_data_convert_e2e_feature_enabled_csv(
     request: FixtureRequest,
     monkeypatch: MonkeyPatch,
@@ -89,6 +93,7 @@ def test_rasa_data_convert_e2e_feature_enabled_csv(
         assert line_text_bot == output_utterance_lines_bot
 
 
+@pytest.mark.timeout(150)
 def test_rasa_data_convert_e2e_feature_enabled_xlsx(
     request: FixtureRequest,
     monkeypatch: MonkeyPatch,
@@ -126,6 +131,7 @@ def test_rasa_data_convert_e2e_feature_enabled_xlsx(
         assert line_text_bot == output_utterance_lines_bot
 
 
+@pytest.mark.timeout(150)
 def test_rasa_data_convert_e2e_feature_disabled(
     request: FixtureRequest,
     monkeypatch: MonkeyPatch,

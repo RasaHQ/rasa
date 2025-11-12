@@ -40,5 +40,11 @@ runs:
         PULUMI_ACCESS_TOKEN: ${{ inputs.pulumi-access-token }}
         STACK_NAME: ${{ inputs.stack-name }}
       run: |
-        pulumi destroy -s rasa/rasa-pro-eks-helm/$STACK_NAME --yes
-        pulumi stack rm rasa/rasa-pro-eks-helm/$STACK_NAME --yes
+        # Check if stack exists before attempting to destroy it
+        if pulumi stack select rasa/rasa-pro-eks-helm/${{ env.STACK_NAME }} 2>/dev/null; then
+          echo "Stack exists, destroying..."
+          pulumi destroy -s rasa/rasa-pro-eks-helm/${{ env.STACK_NAME }} --yes
+          pulumi stack rm rasa/rasa-pro-eks-helm/${{ env.STACK_NAME }} --yes
+        else
+          echo "Stack rasa/rasa-pro-eks-helm/${{ env.STACK_NAME }} does not exist, nothing to destroy"
+        fi

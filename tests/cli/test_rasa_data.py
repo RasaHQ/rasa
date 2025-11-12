@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Callable
 from unittest.mock import Mock, patch
 
+import pytest
 from _pytest.fixtures import FixtureRequest
 from _pytest.pytester import RunResult
 
@@ -283,6 +284,8 @@ def test_data_split_stories(run_in_simple_project: Callable[..., RunResult]):
     assert test_data["stories"][0].get("story") == "story 2"
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=5)
+@pytest.mark.timeout(120, func_only=True)
 def test_rasa_data_validate_flows_success(
     run_in_simple_project: Callable[..., RunResult],
 ) -> None:

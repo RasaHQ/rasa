@@ -15,3 +15,8 @@ jobs:
   ci-tests:
     uses: ./.github/workflows/continous-integration.yml
     secrets: inherit
+    with:
+      run_code_quality: 'true'
+      full_ci_mode: 'true'
+      pr-author: ${{ github.event.pull_request.user.login }}
+      pr-is-draft: ${{ github.event.pull_request.draft }}

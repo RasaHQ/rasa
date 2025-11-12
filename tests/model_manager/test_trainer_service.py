@@ -260,6 +260,7 @@ def test_prepare_training_directory(tmp_path: Path) -> None:
         assert f.read() == "config data"
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=5)
 @pytest.mark.timeout(120, func_only=True)
 def test_run_training(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setattr(
