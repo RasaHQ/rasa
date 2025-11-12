@@ -4,7 +4,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pytest import MonkeyPatch
 
-from rasa.agents.constants import A2A_AGENT_CONTEXT_ID_KEY
+from rasa.agents.constants import (
+    A2A_AGENT_CONTEXT_ID_KEY,
+    AGENT_METADATA_AGENT_ID_KEY,
+    AGENT_METADATA_MODEL_ID_KEY,
+    AGENT_METADATA_SENDER_ID_KEY,
+)
 from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.schemas import AgentOutput
 from rasa.agents.schemas.agent_input import AgentInput, AgentInputSlot
@@ -1401,6 +1406,10 @@ def test_prepare_agent_input_with_exit_if(
     assert len(result.slots) == 3  # amount, done, other
     assert result.metadata["exit_if"] == ["slots.amount > 0", "slots.done is True"]
     assert result.metadata["existing"] == "data"
+    # Verify tracker metadata is included
+    assert result.metadata[AGENT_METADATA_SENDER_ID_KEY] == "test"
+    assert result.metadata[AGENT_METADATA_AGENT_ID_KEY] == tracker.assistant_id
+    assert result.metadata[AGENT_METADATA_MODEL_ID_KEY] == tracker.model_id
 
 
 def test_prepare_agent_input_without_agent_stack_frame() -> None:
@@ -1421,7 +1430,10 @@ def test_prepare_agent_input_without_agent_stack_frame() -> None:
     result = _prepare_agent_input(None, step, tracker, slots)
 
     assert result.id == "test_agent"
-    assert result.metadata == {}
+    # Verify tracker metadata is included even when no agent stack frame exists
+    assert result.metadata[AGENT_METADATA_SENDER_ID_KEY] == "test"
+    assert result.metadata[AGENT_METADATA_AGENT_ID_KEY] == tracker.assistant_id
+    assert result.metadata[AGENT_METADATA_MODEL_ID_KEY] == tracker.model_id
 
 
 def test_prepare_agent_input_events_populated() -> None:
@@ -1463,6 +1475,38 @@ def test_prepare_agent_input_events_populated() -> None:
     assert "user" in event_types
     assert "bot" in event_types
     assert "slot" in event_types
+
+    # Verify tracker metadata is included
+    assert result.metadata[AGENT_METADATA_SENDER_ID_KEY] == "test"
+    assert result.metadata[AGENT_METADATA_AGENT_ID_KEY] == tracker.assistant_id
+    assert result.metadata[AGENT_METADATA_MODEL_ID_KEY] == tracker.model_id
+
+
+def test_prepare_agent_input_tracker_metadata_with_ids() -> None:
+    """Test _prepare_agent_input includes tracker metadata with assistant_id and
+    model_id."""
+    step = CallFlowStep(
+        custom_id="test_call",
+        idx=0,
+        description="Test call step",
+        call="test_agent",
+        next=FlowStepLinks(links=[]),
+        flow_id="test_flow",
+        metadata={},
+    )
+
+    tracker = DialogueStateTracker.from_events("test_sender", [SlotSet("amount", 100)])
+    tracker.assistant_id = "test_assistant_123"
+    tracker.model_id = "test_model_456"
+    slots = [TextSlot("amount", [])]
+
+    result = _prepare_agent_input(None, step, tracker, slots)
+
+    assert result.id == "test_agent"
+    # Verify tracker metadata is correctly set
+    assert result.metadata[AGENT_METADATA_SENDER_ID_KEY] == "test_sender"
+    assert result.metadata[AGENT_METADATA_AGENT_ID_KEY] == "test_assistant_123"
+    assert result.metadata[AGENT_METADATA_MODEL_ID_KEY] == "test_model_456"
 
 
 # ============================================================================

@@ -12,6 +12,9 @@ from mcp import ListToolsResult
 from rasa.agents.constants import (
     AGENT_DEFAULT_MAX_RETRIES,
     AGENT_DEFAULT_TIMEOUT_SECONDS,
+    AGENT_METADATA_AGENT_ID_KEY,
+    AGENT_METADATA_MODEL_ID_KEY,
+    AGENT_METADATA_SENDER_ID_KEY,
     AGENT_METADATA_STRUCTURED_RESULTS_KEY,
     KEY_ARGUMENTS,
     KEY_CONTENT,
@@ -49,7 +52,16 @@ from rasa.shared.constants import (
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.exceptions import AgentInitializationException, AuthenticationError
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall
-from rasa.shared.utils.constants import LOG_COMPONENT_SOURCE_METHOD_INIT
+from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_REACT_SUB_AGENT_NAME,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
+    LOG_COMPONENT_SOURCE_METHOD_INIT,
+)
 from rasa.shared.utils.llm import (
     get_prompt_template,
     llm_factory,
@@ -609,6 +621,24 @@ class MCPBaseAgent(AgentProtocol):
         return {
             KEY_ROLE: ROLE_SYSTEM,
             KEY_CONTENT: system_message,
+        }
+
+    def get_llm_tracing_metadata(self, agent_input: AgentInput) -> Dict[str, Any]:
+        return {
+            LANGFUSE_METADATA_SESSION_ID: agent_input.metadata.get(
+                AGENT_METADATA_SENDER_ID_KEY
+            ),
+            LANGFUSE_METADATA_TAGS: [self.__class__.__name__],
+            LANGFUSE_METADATA_CUSTOM_METADATA: {
+                LANGFUSE_METADATA_AGENT_ID: agent_input.metadata.get(
+                    AGENT_METADATA_AGENT_ID_KEY
+                ),
+                LANGFUSE_METADATA_MODEL_ID: agent_input.metadata.get(
+                    AGENT_METADATA_MODEL_ID_KEY
+                ),
+                LANGFUSE_METADATA_COMPONENT_NAME: self.__class__.__name__,
+                LANGFUSE_METADATA_REACT_SUB_AGENT_NAME: self._name,
+            },
         }
 
     # ============================================================================

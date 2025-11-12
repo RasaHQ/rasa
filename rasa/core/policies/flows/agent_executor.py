@@ -8,8 +8,11 @@ import structlog
 from rasa.agents.agent_manager import AgentManager
 from rasa.agents.constants import (
     A2A_AGENT_CONTEXT_ID_KEY,
+    AGENT_METADATA_AGENT_ID_KEY,
     AGENT_METADATA_AGENT_RESPONSE_KEY,
     AGENT_METADATA_EXIT_IF_KEY,
+    AGENT_METADATA_MODEL_ID_KEY,
+    AGENT_METADATA_SENDER_ID_KEY,
     AGENT_METADATA_STRUCTURED_RESULTS_KEY,
     MAX_AGENT_RETRY_DELAY_SECONDS,
 )
@@ -604,6 +607,10 @@ def _prepare_agent_input(
 
     if step.exit_if:
         agent_input_metadata[AGENT_METADATA_EXIT_IF_KEY] = step.exit_if
+
+    agent_input_metadata[AGENT_METADATA_SENDER_ID_KEY] = tracker.sender_id
+    agent_input_metadata[AGENT_METADATA_AGENT_ID_KEY] = tracker.assistant_id
+    agent_input_metadata[AGENT_METADATA_MODEL_ID_KEY] = tracker.model_id
 
     return AgentInput(
         id=step.call,

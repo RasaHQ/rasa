@@ -6,6 +6,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from rasa.agents.constants import (
+    AGENT_METADATA_AGENT_ID_KEY,
+    AGENT_METADATA_MODEL_ID_KEY,
+    AGENT_METADATA_SENDER_ID_KEY,
+)
 from rasa.agents.protocol.mcp.mcp_task_agent import MCPTaskAgent
 from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentToolResult
 from rasa.core.available_agents import (
@@ -645,7 +650,6 @@ class TestMCPTaskAgent:
         self, mcp_task_agent, mock_agent_input
     ):
         """Test send_message with malformed tool response that triggers retry."""
-
         # Create a proper exception with original_exception attribute
         decode_error = LLMToolResponseDecodeError("Invalid JSON")
         provider_exception = ProviderClientAPIException("Decode error")
@@ -750,3 +754,54 @@ class TestMCPTaskAgent:
             # Check that response_message is not None and contains the expected text
             assert result.response_message is not None
             assert "couldn't provide a final answer" in result.response_message
+
+    @pytest.mark.asyncio
+    async def test_send_message_passes_metadata_to_llm(
+        self, mcp_task_agent: MCPTaskAgent
+    ):
+        """Test that send_message correctly passes metadata to
+        llm_client.acompletion."""
+        # Create agent input with specific metadata
+        agent_input = AgentInput(
+            id="test_id",
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+            metadata={
+                AGENT_METADATA_SENDER_ID_KEY: "user123",
+                AGENT_METADATA_AGENT_ID_KEY: "assistant456",
+                AGENT_METADATA_MODEL_ID_KEY: "model789",
+            },
+            timestamp="2024-01-15T10:30:00Z",
+        )
+
+        # Create a simple LLM response that will complete immediately
+        mock_llm_response = LLMResponse(
+            id="test_id",
+            created=1642248600,
+            choices=["Test response"],
+            tool_calls=None,
+        )
+
+        with (
+            patch.object(mcp_task_agent, "llm_client") as mock_llm_client,
+            patch.object(mcp_task_agent, "get_available_tools") as mock_get_tools,
+        ):
+            mock_llm_client.acompletion = AsyncMock(return_value=mock_llm_response)
+            mock_get_tools.return_value = []
+
+            # Call send_message
+            await mcp_task_agent.send_message(agent_input)
+
+            # Verify acompletion was called
+            assert mock_llm_client.acompletion.called
+
+            # Get the expected metadata
+            expected_metadata = mcp_task_agent.get_llm_tracing_metadata(agent_input)
+
+            # Verify the metadata parameter was passed correctly
+            call_args = mock_llm_client.acompletion.call_args
+            assert call_args is not None
+            assert "metadata" in call_args.kwargs
+            assert call_args.kwargs["metadata"] == expected_metadata

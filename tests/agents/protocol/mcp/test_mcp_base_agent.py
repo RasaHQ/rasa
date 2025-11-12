@@ -1,12 +1,18 @@
 """Unit tests for MCPBaseAgent."""
 
 from datetime import datetime, timedelta
+from typing import Any, Dict, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import anyio
 import pytest
 from pytest import MonkeyPatch
 
+from rasa.agents.constants import (
+    AGENT_METADATA_AGENT_ID_KEY,
+    AGENT_METADATA_MODEL_ID_KEY,
+    AGENT_METADATA_SENDER_ID_KEY,
+)
 from rasa.agents.core.types import AgentStatus
 from rasa.agents.protocol.mcp.mcp_base_agent import MCPBaseAgent
 from rasa.agents.schemas import AgentInput, AgentInputSlot, AgentOutput, AgentToolResult
@@ -21,6 +27,15 @@ from rasa.core.available_agents import (
 from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall
+from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_REACT_SUB_AGENT_NAME,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
+)
 
 from .test_utils import TestMCPBaseAgentImpl
 
@@ -923,7 +938,6 @@ class TestMCPBaseAgent:
     @pytest.mark.asyncio
     async def test_custom_tool_timeout_with_anyio_fail_after(self, mock_mcp_base_agent):
         """Test that custom tool times out using anyio.fail_after()."""
-
         # Setup custom tool that will timeout
         mock_custom_tool = MagicMock()
         mock_custom_tool.tool_name = "timeout_tool"
@@ -1018,3 +1032,121 @@ class TestMCPBaseAgent:
         assert result.is_error is True
         assert "Failed to execute built-in tool" in result.error_message
         assert "Tool execution failed" in result.error_message
+
+    # ============================================================================
+    # get_llm_tracing_metadata Tests
+    # ============================================================================
+
+    @pytest.mark.parametrize(
+        "sender_id, agent_id, model_id, expected_metadata",
+        [
+            (
+                "user123",
+                "assistant456",
+                "model789",
+                {
+                    LANGFUSE_METADATA_SESSION_ID: "user123",
+                    LANGFUSE_METADATA_TAGS: [TestMCPBaseAgentImpl.__name__],
+                    LANGFUSE_METADATA_CUSTOM_METADATA: {
+                        LANGFUSE_METADATA_AGENT_ID: "assistant456",
+                        LANGFUSE_METADATA_MODEL_ID: "model789",
+                        LANGFUSE_METADATA_COMPONENT_NAME: TestMCPBaseAgentImpl.__name__,
+                        LANGFUSE_METADATA_REACT_SUB_AGENT_NAME: "test_agent",
+                    },
+                },
+            ),
+            (
+                "user123",
+                None,
+                None,
+                {
+                    LANGFUSE_METADATA_SESSION_ID: "user123",
+                    LANGFUSE_METADATA_TAGS: [TestMCPBaseAgentImpl.__name__],
+                    LANGFUSE_METADATA_CUSTOM_METADATA: {
+                        LANGFUSE_METADATA_AGENT_ID: None,
+                        LANGFUSE_METADATA_MODEL_ID: None,
+                        LANGFUSE_METADATA_COMPONENT_NAME: TestMCPBaseAgentImpl.__name__,
+                        LANGFUSE_METADATA_REACT_SUB_AGENT_NAME: "test_agent",
+                    },
+                },
+            ),
+            (
+                "user123",
+                "assistant456",
+                None,
+                {
+                    LANGFUSE_METADATA_SESSION_ID: "user123",
+                    LANGFUSE_METADATA_TAGS: [TestMCPBaseAgentImpl.__name__],
+                    LANGFUSE_METADATA_CUSTOM_METADATA: {
+                        LANGFUSE_METADATA_AGENT_ID: "assistant456",
+                        LANGFUSE_METADATA_MODEL_ID: None,
+                        LANGFUSE_METADATA_COMPONENT_NAME: TestMCPBaseAgentImpl.__name__,
+                        LANGFUSE_METADATA_REACT_SUB_AGENT_NAME: "test_agent",
+                    },
+                },
+            ),
+            (
+                "user123",
+                None,
+                "model789",
+                {
+                    LANGFUSE_METADATA_SESSION_ID: "user123",
+                    LANGFUSE_METADATA_TAGS: [TestMCPBaseAgentImpl.__name__],
+                    LANGFUSE_METADATA_CUSTOM_METADATA: {
+                        LANGFUSE_METADATA_AGENT_ID: None,
+                        LANGFUSE_METADATA_MODEL_ID: "model789",
+                        LANGFUSE_METADATA_COMPONENT_NAME: TestMCPBaseAgentImpl.__name__,
+                        LANGFUSE_METADATA_REACT_SUB_AGENT_NAME: "test_agent",
+                    },
+                },
+            ),
+            (
+                None,
+                "assistant456",
+                "model789",
+                {
+                    LANGFUSE_METADATA_SESSION_ID: None,
+                    LANGFUSE_METADATA_TAGS: [TestMCPBaseAgentImpl.__name__],
+                    LANGFUSE_METADATA_CUSTOM_METADATA: {
+                        LANGFUSE_METADATA_AGENT_ID: "assistant456",
+                        LANGFUSE_METADATA_MODEL_ID: "model789",
+                        LANGFUSE_METADATA_COMPONENT_NAME: TestMCPBaseAgentImpl.__name__,
+                        LANGFUSE_METADATA_REACT_SUB_AGENT_NAME: "test_agent",
+                    },
+                },
+            ),
+        ],
+    )
+    def test_get_llm_tracing_metadata(
+        self,
+        mock_mcp_base_agent: TestMCPBaseAgentImpl,
+        sender_id: Optional[str],
+        agent_id: Optional[str],
+        model_id: Optional[str],
+        expected_metadata: Dict[str, Any],
+    ) -> None:
+        """Test that get_llm_tracing_metadata returns correct metadata from
+        agent_input.
+        """
+        # Build metadata dict
+        metadata = {}
+        if sender_id is not None:
+            metadata[AGENT_METADATA_SENDER_ID_KEY] = sender_id
+        if agent_id is not None:
+            metadata[AGENT_METADATA_AGENT_ID_KEY] = agent_id
+        if model_id is not None:
+            metadata[AGENT_METADATA_MODEL_ID_KEY] = model_id
+
+        agent_input = AgentInput(
+            id="test_id",
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+            metadata=metadata,
+            timestamp="2024-01-15T10:30:00Z",
+        )
+
+        result_metadata = mock_mcp_base_agent.get_llm_tracing_metadata(agent_input)
+
+        assert result_metadata == expected_metadata

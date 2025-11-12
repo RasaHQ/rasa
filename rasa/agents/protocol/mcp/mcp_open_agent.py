@@ -169,7 +169,9 @@ class MCPOpenAgent(MCPBaseAgent):
                 )
                 llm_response = LLMResponse.ensure_llm_response(
                     await self.llm_client.acompletion(
-                        messages, tools=tools_in_openai_format
+                        messages,
+                        tools=tools_in_openai_format,
+                        metadata=self.get_llm_tracing_metadata(agent_input),
                     )
                 )
 
