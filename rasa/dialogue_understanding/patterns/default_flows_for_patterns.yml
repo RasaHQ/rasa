@@ -46,6 +46,12 @@ responses:
         rephrase: True
         template: jinja
 
+  utter_clarification_no_options_rasa:
+    - text: "I can help, but I need more information. Please tell me a bit more about what you would like to do."
+      metadata:
+        rephrase: True
+        template: jinja
+
   utter_clarification_options_rasa:
     - text: "I can help, but I need more information. Which of these would you like to do: {{context.clarification_options}}?"
       metadata:
@@ -201,9 +207,17 @@ flows:
     description: Conversation repair flow for handling ambiguous requests that could match multiple flows
     name: pattern clarification
     steps:
-      - action: action_clarify_flows
-      - action: utter_clarification_options_rasa
-
+      - noop: true
+        next:
+          - if: context.names
+            then:
+            - action: action_clarify_flows
+            - action: utter_clarification_options_rasa
+              next: END
+          - else:
+            - action: utter_clarification_no_options_rasa
+              next: END
+  
   pattern_code_change:
     description: Conversation repair flow for cleaning the stack after an assistant update
     name: pattern code change

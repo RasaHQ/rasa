@@ -78,10 +78,7 @@ class ClarifyCommand(Command):
                 cleaned_options=clean_options,
             )
         if len(clean_options) == 0:
-            structlogger.debug(
-                "clarify_command.skip_command.empty_clarification", command=self
-            )
-            return []
+            structlogger.debug("clarify_command.empty_clarification", command=self)
 
         stack = tracker.stack
         relevant_flows = [all_flows.flow_by_id(opt) for opt in clean_options]

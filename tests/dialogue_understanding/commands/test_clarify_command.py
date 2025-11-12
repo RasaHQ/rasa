@@ -2,6 +2,7 @@ import re
 
 import jsonpatch
 import pytest
+import structlog.testing
 
 from rasa.dialogue_understanding.commands.clarify_command import ClarifyCommand
 from rasa.dialogue_understanding.commands.command_syntax_manager import (
@@ -26,7 +27,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.slots import StrictCategoricalSlot
 from rasa.shared.core.trackers import DialogueStateTracker
-from tests.utilities import flows_from_str
+from tests.utilities import filter_logs, flows_from_str
 
 
 def test_command_name():
@@ -44,31 +45,6 @@ def test_from_dict():
 def test_from_dict_fails_if_options_is_missing():
     with pytest.raises(ValueError):
         ClarifyCommand.from_dict({})
-
-
-def test_run_command_skips_if_no_options():
-    tracker = DialogueStateTracker.from_events("test", evts=[])
-    command = ClarifyCommand(options=[])
-
-    assert command.run_command_on_tracker(tracker, [], tracker) == []
-
-
-def test_run_command_skips_if_only_non_existant_flows():
-    all_flows = flows_from_str(
-        """
-        flows:
-          foo:
-            description: flow foo
-            steps:
-            - id: first_step
-              action: action_listen
-        """
-    )
-
-    tracker = DialogueStateTracker.from_events("test", evts=[])
-    command = ClarifyCommand(options=["does-not-exist"])
-
-    assert command.run_command_on_tracker(tracker, all_flows, tracker) == []
 
 
 def test_run_command_ignores_non_existant_flows():
@@ -308,6 +284,47 @@ def test_run_command_on_tracker_interrupts_agent_and_adds_event():
         for e in events
         if isinstance(e, AgentInterrupted)
     )
+
+
+def test_run_command_handles_empty_clarification_options():
+    all_flows = flows_from_str(
+        """
+        flows:
+          foo:
+            description: flow foo
+            steps:
+            - id: first_step
+              action: action_listen
+        """
+    )
+
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+    command = ClarifyCommand(options=[])
+
+    with structlog.testing.capture_logs() as caplog:
+        events = command.run_command_on_tracker(tracker, all_flows, tracker)
+
+        logs = filter_logs(
+            caplog,
+            "clarify_command.empty_clarification",
+            "debug",
+        )
+        assert len(logs) == 1
+    assert len(events) == 1
+
+    dialogue_stack_event = events[0]
+    assert isinstance(dialogue_stack_event, DialogueStackUpdated)
+
+    patch = jsonpatch.JsonPatch.from_string(dialogue_stack_event.update)
+    dialogue_stack_dump = patch.apply(tracker.stack.as_dict())
+    assert len(dialogue_stack_dump) == 1
+
+    frame = dialogue_stack_dump[0]
+    assert frame["type"] == "pattern_clarification"
+    assert frame["flow_id"] == "pattern_clarification"
+    assert frame["step_id"] == "START"
+    assert frame["names"] == []
+    assert frame["clarification_options"] == ""
 
 
 def test_run_command_on_tracker_removes_pattern_completed_frames():
