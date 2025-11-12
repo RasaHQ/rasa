@@ -575,7 +575,9 @@ class MessageProcessor:
         return tracker
 
     async def predict_next_with_tracker_if_should(
-        self, tracker: DialogueStateTracker
+        self,
+        tracker: DialogueStateTracker,
+        output_channel: Optional[OutputChannel] = None,
     ) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]:
         """Predicts the next action the bot should take after seeing x.
 
@@ -597,7 +599,7 @@ class MessageProcessor:
                 "The limit of actions to predict has been reached."
             )
 
-        prediction = await self._predict_next_with_tracker(tracker)
+        prediction = await self._predict_next_with_tracker(tracker, output_channel)
 
         action = rasa.core.actions.action.action_for_index(
             prediction.max_confidence_index, self.domain, self.action_endpoint
@@ -1175,7 +1177,7 @@ class MessageProcessor:
             # this actually just calls the policy's method by the same name
             try:
                 action, prediction = await self.predict_next_with_tracker_if_should(
-                    tracker
+                    tracker, output_channel
                 )
             except ActionLimitReached:
                 structlogger.warning(
@@ -1550,7 +1552,9 @@ class MessageProcessor:
         await self.tracker_store.save(tracker)
 
     async def _predict_next_with_tracker(
-        self, tracker: DialogueStateTracker
+        self,
+        tracker: DialogueStateTracker,
+        output_channel: Optional[OutputChannel] = None,
     ) -> PolicyPrediction:
         """Collect predictions from ensemble and return action and predictions."""
         followup_action = tracker.followup_action
@@ -1576,11 +1580,18 @@ class MessageProcessor:
         if not target:
             raise ValueError("Cannot predict next action if there is no core target.")
 
+        inputs: Dict[str, Any] = {
+            PLACEHOLDER_TRACKER: tracker,
+            PLACEHOLDER_ENDPOINTS: self.endpoints,
+        }
+        # Add output_channel if provided
+        if output_channel is not None:
+            from rasa.engine.constants import PLACEHOLDER_OUTPUT_CHANNEL
+
+            inputs[PLACEHOLDER_OUTPUT_CHANNEL] = output_channel
+
         results = await self.graph_runner.run(
-            inputs={
-                PLACEHOLDER_TRACKER: tracker,
-                PLACEHOLDER_ENDPOINTS: self.endpoints,
-            },
+            inputs=inputs,
             targets=[target],
         )
         policy_prediction = results[target]

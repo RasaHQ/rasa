@@ -7,7 +7,11 @@ from _pytest.capture import CaptureFixture
 
 import rasa.engine.validation
 import rasa.shared.utils.io
-from rasa.engine.constants import PLACEHOLDER_TRACKER
+from rasa.engine.constants import (
+    PLACEHOLDER_ENDPOINTS,
+    PLACEHOLDER_OUTPUT_CHANNEL,
+    PLACEHOLDER_TRACKER,
+)
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema
 from rasa.engine.recipes.default_recipe import (
     DefaultV1Recipe,
@@ -744,6 +748,8 @@ def test_needs_from_args():
             training_trackers: Any,
             training_data: Any,
             tracker: Any,
+            endpoints: Any,
+            output_channel: Any,
         ) -> int:
             return 42
 
@@ -754,6 +760,8 @@ def test_needs_from_args():
         "training_trackers": "training_tracker_provider",
         "training_data": "nlu_training_data_provider",
         "tracker": PLACEHOLDER_TRACKER,
+        "endpoints": PLACEHOLDER_ENDPOINTS,
+        "output_channel": PLACEHOLDER_OUTPUT_CHANNEL,
     }
 
 

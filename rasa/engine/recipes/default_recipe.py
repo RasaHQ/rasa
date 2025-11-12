@@ -22,6 +22,7 @@ from rasa.engine.constants import (
     PLACEHOLDER_ENDPOINTS,
     PLACEHOLDER_IMPORTER,
     PLACEHOLDER_MESSAGE,
+    PLACEHOLDER_OUTPUT_CHANNEL,
     PLACEHOLDER_TRACKER,
 )
 from rasa.engine.graph import (
@@ -502,6 +503,8 @@ class DefaultV1Recipe(Recipe):
                 return PLACEHOLDER_ENDPOINTS
             elif "training_data" == parameter:
                 return "nlu_training_data_provider"
+            elif "output_channel" == parameter:
+                return PLACEHOLDER_OUTPUT_CHANNEL
             return f"{parameter}_provider"
 
         sig = signature(getattr(component, fn_name))

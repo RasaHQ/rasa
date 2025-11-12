@@ -513,7 +513,7 @@ def _validate_needs(
             parent = None
             if _is_placeholder_input(parent_name):
                 parent_return_type: TypeAnnotation
-                parent_return_type = RESERVED_PLACEHOLDERS[parent_name]  # type: ignore
+                parent_return_type = RESERVED_PLACEHOLDERS[parent_name]
             else:
                 parent = graph.nodes[parent_name]
                 _, parent_return_type = _get_parameter_information(

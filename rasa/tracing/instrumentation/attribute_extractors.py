@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from rasa.agents.protocol.mcp.mcp_base_agent import MCPBaseAgent
     from rasa.agents.schemas import AgentInput
     from rasa.core.agent import Agent
+    from rasa.core.channels import OutputChannel
 
 import tiktoken
 from numpy import ndarray
@@ -305,12 +306,15 @@ def extract_headers(message: UserMessage, **kwargs: Any) -> Any:
 
 
 def extract_intent_name_and_slots(
-    self: MessageProcessor, tracker: DialogueStateTracker
+    self: MessageProcessor,
+    tracker: DialogueStateTracker,
+    output_channel: Optional["OutputChannel"] = None,
 ) -> Dict[str, Any]:
     """Extract the attributes for `MessageProcessor._predict_next_with_tracker`.
 
     :param self: The `MessageProcessor` on which `_predict_next_with_tracker` is called.
     :param tracker: The `DialogueStateTracker` argument.
+    :param output_channel: The `OutputChannel` argument (optional).
     :return: A dictionary containing the attributes.
     """
     slots = {}

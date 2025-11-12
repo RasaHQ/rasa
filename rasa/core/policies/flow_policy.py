@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Text
 
 import structlog
 
+from rasa.core.channels.channel import OutputChannel
 from rasa.core.constants import (
     FLOW_POLICY_PRIORITY,
     POLICY_MAX_HISTORY,
@@ -111,6 +112,7 @@ class FlowPolicy(Policy):
         domain: Domain,
         rule_only_data: Optional[Dict[Text, Any]] = None,
         flows: Optional[FlowsList] = None,
+        output_channel: Optional[OutputChannel] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -121,6 +123,7 @@ class FlowPolicy(Policy):
             rule_only_data: Slots and loops which are specific to rules and hence
                 should be ignored by this policy.
             flows: The flows to use.
+            output_channel: The output channel to use.
             **kwargs: Depending on the specified `needs` section and the resulting
                 graph structure the policy can use different input to make predictions.
 

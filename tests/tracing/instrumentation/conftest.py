@@ -395,7 +395,11 @@ class MockMessageProcessor(MessageProcessor):
     ) -> None:
         pass
 
-    def _predict_next_with_tracker(self, tracker: DialogueStateTracker) -> Mock:
+    def _predict_next_with_tracker(
+        self,
+        tracker: DialogueStateTracker,
+        output_channel: Optional[OutputChannel] = None,
+    ) -> Mock:
         return Mock()
 
 

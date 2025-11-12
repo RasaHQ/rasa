@@ -1665,6 +1665,80 @@ async def test_predict_next_with_tracker_full_model(trained_rasa_model: Text):
     assert result["policy"] == "RulePolicy"
 
 
+async def test_predict_next_with_tracker_includes_output_channel(
+    default_processor: MessageProcessor,
+):
+    """Test that output_channel is passed to graph runner when provided."""
+    from rasa.core.policies.policy import PolicyPrediction
+    from rasa.engine.constants import PLACEHOLDER_OUTPUT_CHANNEL, PLACEHOLDER_TRACKER
+
+    tracker = DialogueStateTracker("some_id", [])
+    tracker.followup_action = None
+    output_channel = CollectingOutputChannel()
+
+    # Mock the graph runner to capture inputs
+    mock_prediction = PolicyPrediction(
+        probabilities=[1.0],
+        policy_priority=1,
+        policy_name="test",
+    )
+    with mock.patch.object(
+        default_processor.graph_runner, "run", new_callable=AsyncMock
+    ) as mock_run:
+        mock_run.return_value = {
+            default_processor.model_metadata.core_target: mock_prediction
+        }
+
+        await default_processor._predict_next_with_tracker(tracker, output_channel)
+
+        # Verify graph runner was called with output_channel in inputs
+        mock_run.assert_called_once()
+        call_args = mock_run.call_args
+        inputs = call_args.kwargs.get(
+            "inputs", call_args.args[0] if call_args.args else {}
+        )
+        assert PLACEHOLDER_OUTPUT_CHANNEL in inputs
+        assert inputs[PLACEHOLDER_OUTPUT_CHANNEL] == output_channel
+        assert PLACEHOLDER_TRACKER in inputs
+        assert inputs[PLACEHOLDER_TRACKER] == tracker
+
+
+async def test_predict_next_with_tracker_excludes_output_channel_when_none(
+    default_processor: MessageProcessor,
+):
+    """Test that output_channel is not included in inputs when None."""
+    from rasa.core.policies.policy import PolicyPrediction
+    from rasa.engine.constants import PLACEHOLDER_OUTPUT_CHANNEL, PLACEHOLDER_TRACKER
+
+    tracker = DialogueStateTracker("some_id", [])
+    tracker.followup_action = None
+
+    # Mock the graph runner to capture inputs
+    mock_prediction = PolicyPrediction(
+        probabilities=[1.0],
+        policy_priority=1,
+        policy_name="test",
+    )
+    with mock.patch.object(
+        default_processor.graph_runner, "run", new_callable=AsyncMock
+    ) as mock_run:
+        mock_run.return_value = {
+            default_processor.model_metadata.core_target: mock_prediction
+        }
+
+        await default_processor._predict_next_with_tracker(tracker, None)
+
+        # Verify graph runner was called without output_channel in inputs
+        mock_run.assert_called_once()
+        call_args = mock_run.call_args
+        inputs = call_args.kwargs.get(
+            "inputs", call_args.args[0] if call_args.args else {}
+        )
+        assert PLACEHOLDER_OUTPUT_CHANNEL not in inputs
+        assert PLACEHOLDER_TRACKER in inputs
+        assert inputs[PLACEHOLDER_TRACKER] == tracker
+
+
 async def test_get_tracker_adds_model_id(default_processor: MessageProcessor):
     model_id = default_processor.model_metadata.model_id
     tracker = await default_processor.get_tracker("bloop")

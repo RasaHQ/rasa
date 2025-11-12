@@ -260,6 +260,7 @@ def test_prepare_training_directory(tmp_path: Path) -> None:
         assert f.read() == "config data"
 
 
+@pytest.mark.timeout(120, func_only=True)
 def test_run_training(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setattr(
         rasa.model_manager.config, "SERVER_BASE_WORKING_DIRECTORY", str(tmp_path)
