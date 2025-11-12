@@ -154,6 +154,9 @@ slots:
     type: bool
     mappings:
       - type: from_llm
+  max_clarification_options:
+    type: float
+    initial_value: 3.0
   continue_conversation:
     type: bool
     mappings:

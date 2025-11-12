@@ -32,6 +32,9 @@ record_commands_and_prompts = get_bool_env_variable(
 
 structlogger = structlog.get_logger()
 
+DEFAULT_MAX_CLARIFICATION_OPTIONS = 3
+MAX_CLARIFICATION_OPTIONS_SLOT_NAME = "max_clarification_options"
+
 
 @contextmanager
 def set_record_commands_and_prompts() -> Generator:
@@ -238,3 +241,32 @@ def assemble_options_string(names: List[str], conjunction: str = "and") -> str:
         else:
             option_message += f", {name}"
     return option_message
+
+
+def limit_clarification_options(
+    tracker: "DialogueStateTracker", names: List[str]
+) -> List[str]:
+    """Limit the number of clarification options based on the slot value.
+
+    Args:
+        tracker: The dialogue state tracker.
+        names: The list of clarification option names.
+
+    Returns:
+        The limited list of names, or the original list if no valid limit is set.
+    """
+    max_options_slot = tracker.get_slot(MAX_CLARIFICATION_OPTIONS_SLOT_NAME)
+    try:
+        max_options = int(max_options_slot)
+    except (ValueError, TypeError):
+        structlogger.debug(
+            "utils.limit_clarification_options.invalid_slot_value",
+            slot_value=max_options_slot,
+            event_info=(
+                f"Slot '{MAX_CLARIFICATION_OPTIONS_SLOT_NAME}' has invalid value. "
+                f"Falling back to default '{DEFAULT_MAX_CLARIFICATION_OPTIONS}'."
+            ),
+        )
+        max_options = DEFAULT_MAX_CLARIFICATION_OPTIONS
+
+    return names[:max_options]

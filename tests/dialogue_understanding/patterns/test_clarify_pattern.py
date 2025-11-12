@@ -1,3 +1,6 @@
+from typing import List
+
+import pytest
 from pytest import CaptureFixture
 
 from rasa.core.channels import CollectingOutputChannel
@@ -11,8 +14,25 @@ from rasa.dialogue_understanding.stack.dialogue_stack import (
 )
 from rasa.dialogue_understanding.stack.frames import UserFlowStackFrame
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import DialogueStackUpdated
+from rasa.shared.core.events import DialogueStackUpdated, Event, SlotSet
 from rasa.shared.core.trackers import DialogueStateTracker
+
+
+@pytest.fixture
+def domain_with_max_clarification_options() -> Domain:
+    return Domain.from_yaml(
+        """
+        slots:
+          max_clarification_options:
+            type: float
+            initial_value: 3.0
+        """
+    )
+
+
+@pytest.fixture
+def empty_domain() -> Domain:
+    return Domain.empty()
 
 
 async def test_clarify_pattern_flow_stack_frame_type() -> None:
@@ -115,3 +135,83 @@ async def test_action_clarify_flows() -> None:
     assert frame.frame_id == "test_id"
     assert frame.names == ["foo_flow", "bar_flow"]
     assert frame.clarification_options == "foo_flow or bar_flow"
+
+
+@pytest.mark.parametrize(
+    "domain,events_list,expected_names,expected_options",
+    [
+        (
+            "domain_with_max_clarification_options",
+            [],
+            ["flow1", "flow2", "flow3"],
+            "flow1, flow2 or flow3",
+        ),
+        (
+            "domain_with_max_clarification_options",
+            [SlotSet("max_clarification_options", 2)],
+            ["flow1", "flow2"],
+            "flow1 or flow2",
+        ),
+        # test invalid slot value falls back to default
+        (
+            "domain_with_max_clarification_options",
+            [SlotSet("max_clarification_options", "invalid")],
+            ["flow1", "flow2", "flow3"],
+            "flow1, flow2 or flow3",
+        ),
+        (
+            "empty_domain",
+            [],
+            ["flow1", "flow2", "flow3"],
+            "flow1, flow2 or flow3",
+        ),
+    ],
+)
+async def test_action_clarify_flows_with_max_options(
+    domain: Domain,
+    events_list: List[Event],
+    expected_names: List[str],
+    expected_options: str,
+    request,
+) -> None:
+    domain = request.getfixturevalue(domain)
+    stack = DialogueStack(
+        frames=[
+            ClarifyPatternFlowStackFrame(
+                frame_id="test_id",
+                step_id="1",
+                names=["flow1", "flow2", "flow3", "flow4", "flow5", "flow6", "flow7"],
+                clarification_options="junk",
+            )
+        ]
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        domain=domain,
+        slots=domain.slots,
+        evts=events_list,
+    )
+    tracker.update_stack(stack)
+    action = ActionClarifyFlows()
+    events = await action.run(
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator({}),
+        tracker,
+        domain,
+    )
+
+    assert len(events) == 1
+    event = events[0]
+    assert isinstance(event, DialogueStackUpdated)
+
+    updated_stack = tracker.stack.update_from_patch(event.update)
+
+    assert len(updated_stack.frames) == 1
+
+    frame = updated_stack.frames[0]
+    assert isinstance(frame, ClarifyPatternFlowStackFrame)
+    assert frame.flow_id == "pattern_clarification"
+    assert frame.step_id == "1"
+    assert frame.frame_id == "test_id"
+    assert frame.names == expected_names
+    assert frame.clarification_options == expected_options

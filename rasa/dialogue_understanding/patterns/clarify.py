@@ -9,6 +9,10 @@ from rasa.core.actions import action
 from rasa.core.channels.channel import OutputChannel
 from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.dialogue_understanding.stack.frames import PatternFlowStackFrame
+from rasa.dialogue_understanding.utils import (
+    assemble_options_string,
+    limit_clarification_options,
+)
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
 from rasa.shared.core.constants import ACTION_CLARIFY_FLOWS
 from rasa.shared.core.domain import Domain
@@ -70,7 +74,6 @@ class ActionClarifyFlows(action.Action):
         metadata: Optional[Dict[str, Any]] = None,
     ) -> List[Event]:
         """Correct the slots."""
-        from rasa.dialogue_understanding.utils import assemble_options_string
 
         stack = tracker.stack
         if not (top := stack.top()):
@@ -80,6 +83,9 @@ class ActionClarifyFlows(action.Action):
         if not isinstance(top, ClarifyPatternFlowStackFrame):
             structlogger.warning("action.clarify_flows.no_clarification_frame")
             return []
+
+        # limit the number of clarification options to the max allowed
+        top.names = limit_clarification_options(tracker, top.names)
 
         options_string = assemble_options_string(top.names, conjunction="or")
         top.clarification_options = options_string

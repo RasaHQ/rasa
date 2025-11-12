@@ -1,7 +1,9 @@
 import uuid
 from typing import Dict, List, Optional, Tuple
+from unittest.mock import MagicMock
 
 import pytest
+import structlog.testing
 
 from rasa.dialogue_understanding.commands import (
     Command,
@@ -15,10 +17,13 @@ from rasa.dialogue_understanding.generator import (
 )
 from rasa.dialogue_understanding.generator.nlu_command_adapter import NLUCommandAdapter
 from rasa.dialogue_understanding.utils import (
+    DEFAULT_MAX_CLARIFICATION_OPTIONS,
+    MAX_CLARIFICATION_OPTIONS_SLOT_NAME,
     _handle_via_nlu_in_coexistence,
     add_commands_to_message_parse_data,
     add_prompt_to_message_parse_data,
     assemble_options_string,
+    limit_clarification_options,
     set_record_commands_and_prompts,
 )
 from rasa.shared.constants import ROUTE_TO_CALM_SLOT
@@ -37,6 +42,15 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.llm.llm_response import LLMResponse
+from tests.utilities import filter_logs
+
+
+@pytest.fixture
+def mock_tracker() -> MagicMock:
+    """Create a mock tracker for testing."""
+    tracker = MagicMock(spec=DialogueStateTracker)
+    tracker.slots = {}
+    return tracker
 
 
 @pytest.mark.parametrize(
@@ -319,3 +333,107 @@ def test_assemble_options_string(
         result = assemble_options_string(names, conjunction)
 
     assert result == expected_output
+
+
+@pytest.mark.parametrize(
+    "slot_value,names,expected_result",
+    [
+        # Limit is less than available names
+        (
+            3,
+            ["flow1", "flow2", "flow3", "flow4", "flow5"],
+            ["flow1", "flow2", "flow3"],
+        ),
+        # Limit exceeds available names
+        (
+            10,
+            ["flow1", "flow2", "flow3"],
+            ["flow1", "flow2", "flow3"],
+        ),
+        # Empty names list
+        (
+            2,
+            [],
+            [],
+        ),
+    ],
+)
+def test_limit_clarification_options_with_slot(
+    mock_tracker: MagicMock,
+    slot_value: int,
+    names: List[str],
+    expected_result: List[str],
+) -> None:
+    """Test limiting clarification options with valid slot values."""
+    mock_tracker.get_slot.return_value = slot_value
+
+    result = limit_clarification_options(mock_tracker, names)
+
+    assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "names,expected_result",
+    [
+        (
+            ["flow1", "flow2", "flow3", "flow4", "flow5", "flow6"],
+            ["flow1", "flow2", "flow3"],
+        ),
+        (
+            ["flow1"],
+            ["flow1"],
+        ),
+        (
+            [],
+            [],
+        ),
+    ],
+)
+def test_limit_clarification_options_without_slot(
+    mock_tracker: MagicMock,
+    names: List[str],
+    expected_result: List[str],
+) -> None:
+    """Test that no initial slot value falls back to default."""
+    mock_tracker.get_slot.return_value = None
+    result = limit_clarification_options(mock_tracker, names)
+
+    assert result == expected_result
+    assert len(result) <= DEFAULT_MAX_CLARIFICATION_OPTIONS
+
+
+@pytest.mark.parametrize(
+    "invalid_value,names",
+    [
+        (
+            "not_a_number",
+            ["flow1", "flow2", "flow3", "flow4", "flow5"],
+        ),
+        (None, ["flow1", "flow2", "flow3"]),
+        ([], ["flow1", "flow2"]),
+        ({}, ["flow1"]),
+    ],
+)
+def test_limit_clarification_options_with_invalid_slot_value(
+    mock_tracker: MagicMock,
+    invalid_value,
+    names: List[str],
+) -> None:
+    """Test that invalid slot values fall back to default slot value."""
+    mock_tracker.get_slot.return_value = invalid_value
+
+    with structlog.testing.capture_logs() as caplog:
+        result = limit_clarification_options(mock_tracker, names)
+        logs = filter_logs(
+            caplog,
+            "utils.limit_clarification_options.invalid_slot_value",
+            "debug",
+            [
+                f"Slot '{MAX_CLARIFICATION_OPTIONS_SLOT_NAME}' has invalid value. "
+                f"Falling back to default '{DEFAULT_MAX_CLARIFICATION_OPTIONS}'."
+            ],
+        )
+        assert len(logs) == 1
+
+    assert result == names[:DEFAULT_MAX_CLARIFICATION_OPTIONS]
+    assert len(result) <= DEFAULT_MAX_CLARIFICATION_OPTIONS
