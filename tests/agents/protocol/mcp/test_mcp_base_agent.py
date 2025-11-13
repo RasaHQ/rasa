@@ -322,7 +322,7 @@ class TestMCPBaseAgent:
         await mock_mcp_base_agent.disconnect_server("test_server")
 
         mock_connection.close.assert_called_once()
-        assert "test_server" not in mock_mcp_base_agent._server_connections
+        assert "test_server" in mock_mcp_base_agent._server_connections
 
     @pytest.mark.asyncio
     async def test_disconnect_server_not_found(
@@ -351,7 +351,7 @@ class TestMCPBaseAgent:
 
         mock_connection1.close.assert_called_once()
         mock_connection2.close.assert_called_once()
-        assert len(mock_mcp_base_agent._server_connections) == 0
+        assert len(mock_mcp_base_agent._server_connections) == 2
 
     # ============================================================================
     # Tool Management Tests

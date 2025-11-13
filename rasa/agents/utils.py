@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 
 import structlog
 
@@ -226,3 +226,49 @@ def get_active_agent_info(
     if agent_frame:
         return get_agent_info(agent_frame.agent_id)
     return None
+
+
+class AgentsConnectionCleanup:
+    """Context manager that ensures proper cleanup of agent connections.
+
+    This is cleanup-only RAII - agents connections are not acquired here,
+    but are cleaned up when the context exits.
+
+    Usage:
+        async with AgentsConnectionCleanup():
+            # Agents connections are available here
+            await some_operation_using_agents()
+        # Agents connections are automatically cleaned up here
+    """
+
+    async def __aenter__(self) -> "AgentsConnectionCleanup":
+        """Enter the context"""
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[object],
+    ) -> bool:
+        """Exit the context - cleanup agents connections."""
+        agent_manager: AgentManager = AgentManager()
+        agents_to_disconnect = agent_manager.agents.keys()
+        if agents_to_disconnect:
+            structlogger.debug(
+                "agents.utils.agents_connection_cleanup.cleanup_starting",
+                agent_count=len(agents_to_disconnect),
+                event_info=f"Starting cleanup of {len(agents_to_disconnect)} agents",
+            )
+
+            # Disconnect each agent using the agent manager.
+            for agent_identifier in agents_to_disconnect:
+                await agent_manager.disconnect_agent(
+                    agent_identifier.agent_name, agent_identifier.protocol_type
+                )
+
+            structlogger.debug(
+                "agents.utils.agents_connection_cleanup.cleanup_completed",
+                event_info="Agents connection cleanup completed",
+            )
+        return True

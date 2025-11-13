@@ -10,6 +10,7 @@ import structlog
 
 import rasa.cli.utils
 import rasa.shared.utils.cli
+from rasa.agents.utils import AgentsConnectionCleanup
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments.default_arguments import (
     add_endpoint_param,
@@ -252,12 +253,20 @@ def execute_dialogue_understanding_tests(args: argparse.Namespace) -> None:
     # setup stub custom actions if they are used
     set_up_stub_custom_actions(test_suite, endpoints)
 
+    async def run_test_cases_with_agents_connection_cleanup() -> (
+        List[DialogueUnderstandingTestResult]
+    ):
+        # Create a wrapper coroutine that handles graceful agents connection
+        # cleanup, this prevents abrupt closure when asyncio.run finishes.
+        async with AgentsConnectionCleanup():
+            return await test_runner.run_test_cases(
+                test_suite.test_cases, test_suite.fixtures, test_suite.metadata
+            )
+        # Defensive return for mypy - never actually reached
+        return  # type: ignore[return-value]
+
     # run the actual test cases
-    test_results = asyncio.run(
-        test_runner.run_test_cases(
-            test_suite.test_cases, test_suite.fixtures, test_suite.metadata
-        )
-    )
+    test_results = asyncio.run(run_test_cases_with_agents_connection_cleanup())
 
     # evaluate test results
     passing_test_results, failing_test_results = split_test_results(test_results)

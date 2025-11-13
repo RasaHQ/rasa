@@ -32,19 +32,6 @@ class AgentManager(metaclass=Singleton):
             raise ValueError(f"Agent {agent_identifier} already exists")
         self.agents[agent_identifier] = agent
 
-    def _remove_agent(self, agent_identifier: AgentIdentifier) -> None:
-        """Remove an agent from the manager.
-
-        Args:
-            agent_identifier: The identifier of the agent.
-
-        Raises:
-            ValueError: If the agent is not connected.
-        """
-        if agent_identifier not in self.agents:
-            raise ValueError(f"Agent {agent_identifier} is not available")
-        del self.agents[agent_identifier]
-
     def get_agent(self, agent_name: str, protocol_type: ProtocolType) -> AgentProtocol:
         """Retrieve connected agent instance.
 
@@ -182,7 +169,7 @@ class AgentManager(metaclass=Singleton):
     async def disconnect_agent(
         self, agent_name: str, protocol_type: ProtocolType
     ) -> None:
-        """Disconnect agent and remove from agent manager.
+        """Disconnect agent - Gracefully exit network connections.
 
         Args:
             agent_name: The name of the agent.
@@ -194,20 +181,20 @@ class AgentManager(metaclass=Singleton):
         """
         agent_identifier = make_agent_identifier(agent_name, protocol_type)
         if agent_identifier not in self.agents:
-            raise ValueError(f"Agent {agent_identifier} is not available")
+            raise ValueError(f"Agent `{agent_identifier}` is not available")
         try:
             await self.get_agent(agent_name, protocol_type).disconnect()
-            self._remove_agent(agent_identifier)
-            structlogger.info(
+
+            structlogger.debug(
                 "agent_manager.disconnect_agent.success",
                 agent_id=str(agent_identifier),
-                event_info=f"Disconnected from agent - {agent_identifier} successfully",
+                event_info=f"Disconnected from agent `{agent_identifier}` successfully",
             )
         except Exception as e:
-            event_info = f"Failed to disconnect agent {agent_identifier}"
+            event_info = f"Failed to disconnect agent `{agent_identifier}`"
             structlogger.error(
                 "agent_manager.disconnect_agent.failed_to_disconnect",
                 agent_id=str(agent_identifier),
                 event_info=event_info,
             )
-            raise ConnectionError(e)
+            raise ConnectionError(e) from e

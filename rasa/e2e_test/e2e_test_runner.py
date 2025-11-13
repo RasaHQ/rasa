@@ -5,7 +5,18 @@ import difflib
 from asyncio import CancelledError
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Callable, DefaultDict, Dict, List, Optional, Text, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    DefaultDict,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    Union,
+)
 from urllib.parse import urlparse
 
 import requests
@@ -13,6 +24,7 @@ import structlog
 from tqdm import tqdm
 
 import rasa.shared.utils.io
+from rasa.agents.utils import AgentsConnectionCleanup
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
@@ -53,6 +65,9 @@ from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import COMMANDS
 from rasa.telemetry import track_e2e_test_run
 from rasa.utils.endpoints import EndpointConfig
+
+if TYPE_CHECKING:
+    from rasa.core.agent import Agent
 
 structlogger = structlog.get_logger()
 
@@ -98,15 +113,21 @@ class E2ETestRunner:
 
         sub_agents = Configuration.get_instance().available_agents
 
-        self.agent = asyncio.run(
-            rasa.core.agent.load_agent(
-                model_path=model_path,
-                model_server=model_server,
-                remote_storage=remote_storage,
-                endpoints=endpoints,
-                sub_agents=sub_agents,
-            )
-        )
+        async def load_agent_with_agents_connection_cleanup() -> "Agent":
+            # Create a wrapper coroutine that handles graceful agents connection
+            # cleanup, this prevents abrupt closure when asyncio.run finishes.
+            async with AgentsConnectionCleanup():
+                return await rasa.core.agent.load_agent(
+                    model_path=model_path,
+                    model_server=model_server,
+                    remote_storage=remote_storage,
+                    endpoints=endpoints,
+                    sub_agents=sub_agents,
+                )
+            # Defensive return for mypy - never actually reached
+            return  # type: ignore[return-value]
+
+        self.agent = asyncio.run(load_agent_with_agents_connection_cleanup())
 
         if not self.agent.is_ready():
             raise AgentNotReady(

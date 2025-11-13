@@ -405,9 +405,6 @@ class MCPBaseAgent(AgentProtocol):
         Args:
             server_name: The name of the server to disconnect from.
 
-        Side effects:
-            - Removes the server from the server connections.
-
         Logs:
             - An error if the server disconnect fails.
         """
@@ -415,7 +412,6 @@ class MCPBaseAgent(AgentProtocol):
             return
         try:
             await self._server_connections[server_name].close()
-            del self._server_connections[server_name]
         except Exception as e:
             structlogger.error(
                 "mcp_agent.disconnect_server.error",

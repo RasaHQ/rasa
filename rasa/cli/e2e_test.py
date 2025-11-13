@@ -2,7 +2,7 @@ import argparse
 import asyncio
 import sys
 from pathlib import Path
-from typing import List
+from typing import TYPE_CHECKING, List
 
 import structlog
 
@@ -12,6 +12,7 @@ import rasa.shared.data
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.utils.io
+from rasa.agents.utils import AgentsConnectionCleanup
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments.default_arguments import (
     add_endpoint_param,
@@ -55,6 +56,9 @@ from rasa.e2e_test.utils.validation import validate_model_path
 from rasa.exceptions import RasaException
 from rasa.shared.constants import DEFAULT_MODELS_PATH
 from rasa.utils.endpoints import EndpointConfig
+
+if TYPE_CHECKING:
+    from rasa.e2e_test.e2e_test_result import TestResult
 
 RASA_PRO_BETA_FINE_TUNING_RECIPE_ENV_VAR_NAME = "RASA_PRO_BETA_FINE_TUNING_RECIPE"
 
@@ -219,15 +223,21 @@ def execute_e2e_tests(args: argparse.Namespace) -> None:
         )
         sys.exit(1)
 
-    results = asyncio.run(
-        test_runner.run_tests(
-            test_suite.test_cases,
-            test_suite.fixtures,
-            args.fail_fast,
-            input_metadata=test_suite.metadata,
-            coverage=args.coverage_report,
-        )
-    )
+    async def run_tests_with_agents_connection_cleanup() -> List["TestResult"]:
+        # Create a wrapper coroutine that handles graceful agents connection
+        # cleanup, this prevents abrupt closure when asyncio.run finishes.
+        async with AgentsConnectionCleanup():
+            return await test_runner.run_tests(
+                test_suite.test_cases,
+                test_suite.fixtures,
+                args.fail_fast,
+                input_metadata=test_suite.metadata,
+                coverage=args.coverage_report,
+            )
+        # Defensive return for mypy - never actually reached
+        return  # type: ignore[return-value]
+
+    results = asyncio.run(run_tests_with_agents_connection_cleanup())
 
     passed, failed = split_into_passed_failed(results)
 

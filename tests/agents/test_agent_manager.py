@@ -132,33 +132,6 @@ def test_add_agent_duplicate_raises_error(
         agent_manager._add_agent(agent_identifier, mock_agent_protocol)
 
 
-def test_remove_agent_success(
-    agent_manager: AgentManager, mock_agent_protocol: AsyncMock
-) -> None:
-    """Test successful agent removal."""
-    agent_identifier = make_agent_identifier("remove_test_agent", ProtocolType.MCP_TASK)
-
-    # Add agent first
-    agent_manager._add_agent(agent_identifier, mock_agent_protocol)
-    assert agent_identifier in agent_manager.agents
-
-    # Remove agent
-    agent_manager._remove_agent(agent_identifier)
-    assert agent_identifier not in agent_manager.agents
-
-
-def test_remove_agent_not_found_raises_error(agent_manager: AgentManager) -> None:
-    """Test that removing non-existent agent raises ValueError."""
-    agent_identifier = make_agent_identifier(
-        "non_existent_remove", ProtocolType.MCP_TASK
-    )
-
-    with pytest.raises(
-        ValueError, match="Agent non_existent_remove::mcp_task is not available"
-    ):
-        agent_manager._remove_agent(agent_identifier)
-
-
 def test_get_agent_success(
     agent_manager: AgentManager, mock_agent_protocol: AsyncMock
 ) -> None:
@@ -426,15 +399,12 @@ async def test_disconnect_agent_success(
     # Verify disconnect was called
     mock_agent_protocol.disconnect.assert_called_once()
 
-    # Verify agent was removed from manager
-    assert agent_identifier not in agent_manager.agents
-
 
 @pytest.mark.asyncio
 async def test_disconnect_agent_not_found(agent_manager: AgentManager) -> None:
     """Test disconnecting agent that doesn't exist."""
     with pytest.raises(
-        ValueError, match="Agent non_existent_disconnect::mcp_task is not available"
+        ValueError, match="Agent `non_existent_disconnect::mcp_task` is not available"
     ):
         await agent_manager.disconnect_agent(
             "non_existent_disconnect", ProtocolType.MCP_TASK

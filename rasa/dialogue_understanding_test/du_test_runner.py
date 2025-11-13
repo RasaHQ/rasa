@@ -1,11 +1,12 @@
 import asyncio
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import structlog
 from tqdm import tqdm
 
+from rasa.agents.utils import AgentsConnectionCleanup
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
@@ -38,6 +39,9 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import PREDICTED_COMMANDS, PROMPTS
 from rasa.shared.utils.llm import create_tracker_for_user_step
 from rasa.utils.endpoints import EndpointConfig
+
+if TYPE_CHECKING:
+    from rasa.core.agent import Agent
 
 structlogger = structlog.get_logger()
 
@@ -73,15 +77,21 @@ class DialogueUnderstandingTestRunner:
         self._check_action_server(endpoints)
         sub_agents = Configuration.get_instance().available_agents
 
-        self.agent = asyncio.run(
-            rasa.core.agent.load_agent(
-                model_path=model_path,
-                model_server=model_server,
-                remote_storage=remote_storage,
-                endpoints=endpoints,
-                sub_agents=sub_agents,
-            )
-        )
+        async def load_agent_with_agents_connection_cleanup() -> "Agent":
+            # Create a wrapper coroutine that handles graceful agents connection
+            # cleanup, this prevents abrupt closure when asyncio.run finishes.
+            async with AgentsConnectionCleanup():
+                return await rasa.core.agent.load_agent(
+                    model_path=model_path,
+                    model_server=model_server,
+                    remote_storage=remote_storage,
+                    endpoints=endpoints,
+                    sub_agents=sub_agents,
+                )
+            # Defensive return for mypy - never actually reached
+            return  # type: ignore[return-value]
+
+        self.agent = asyncio.run(load_agent_with_agents_connection_cleanup())
         if not self.agent.is_ready():
             raise AgentNotReady(
                 "Agent needs to be prepared before usage. "

@@ -238,8 +238,18 @@ class MCPServerConnection:
         if self.exit_stack:
             try:
                 await self.exit_stack.aclose()
+            except asyncio.CancelledError:
+                # Handle cancellation gracefully - this is expected during shutdown
+                structlogger.debug(
+                    "mcp_server_connection.cleanup.cancelled",
+                    server_name=self.server_name,
+                    event_info=(
+                        f"Cleanup cancelled for {self.server_name} - this is expected "
+                        f"during shutdown"
+                    ),
+                )
             except Exception as e:
-                # Log cleanup errors but don't raise them
+                # Handle other errors
                 structlogger.warning(
                     "mcp_server_connection.cleanup.failed",
                     server_name=self.server_name,
