@@ -399,6 +399,30 @@ def extract_llm_config(
     return attributes
 
 
+def extract_attrs_for_datetime_configuration(self: Any) -> Dict[str, Any]:
+    """Extract datetime configuration attributes from a component instance.
+
+    Handles both public attributes (include_date_time, timezone) and
+    private attributes (_include_date_time, _timezone) for MCP agents.
+    """
+    attributes = {}
+    # Check for public attributes first
+    # used by LLM command generators and EnterpriseSearchPolicy
+    if hasattr(self, "include_date_time"):
+        attributes["include_date_time"] = str(self.include_date_time)
+    elif hasattr(self, "_include_date_time"):
+        # MCPBaseAgent uses private attributes
+        attributes["include_date_time"] = str(self._include_date_time)
+
+    if hasattr(self, "timezone"):
+        attributes["timezone"] = str(self.timezone)
+    elif hasattr(self, "_timezone"):
+        # MCPBaseAgent uses private attributes
+        attributes["timezone"] = str(self._timezone)
+
+    return attributes
+
+
 def extract_attrs_for_llm_based_command_generator(
     self: "LLMBasedCommandGenerator",
     llm_input: LLMInput,
@@ -412,6 +436,9 @@ def extract_attrs_for_llm_based_command_generator(
         default_llm_config=self.get_default_llm_config(),
         default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
     )
+
+    # Add datetime configuration attributes
+    attributes.update(extract_attrs_for_datetime_configuration(self))
 
     return extend_attributes_with_prompt_tokens_length(self, attributes, llm_input)
 
@@ -871,6 +898,9 @@ def extract_attrs_for_enterprise_search_invoke_llm(
         default_embeddings_config=DEFAULT_EMBEDDINGS_CONFIG,
     )
 
+    # Add datetime configuration attributes
+    attributes.update(extract_attrs_for_datetime_configuration(self))
+
     return extend_attributes_with_prompt_tokens_length(self, attributes, llm_input)
 
 
@@ -1003,6 +1033,7 @@ def extract_attrs_for_mcp_agent_llm_call(
     attributes.update(
         {
             "prompt_messages_count": len(messages),
+            **extract_attrs_for_datetime_configuration(self),
         }
     )
 

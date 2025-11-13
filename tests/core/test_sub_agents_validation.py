@@ -527,6 +527,13 @@ def test_auth_key_in_allowed_keys() -> None:
     assert "auth" in ALLOWED_KEYS["configuration"]
 
 
+def test_datetime_keys_in_allowed_keys() -> None:
+    from rasa.agents.validation import ALLOWED_KEYS
+
+    assert "include_date_time" in ALLOWED_KEYS["configuration"]
+    assert "timezone" in ALLOWED_KEYS["configuration"]
+
+
 def test_validate_agent_with_valid_auth_configuration() -> None:
     """Test validation succeeds for agent configuration with auth key."""
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -579,6 +586,60 @@ def test_validate_agent_valid_with_no_auth_configuration() -> None:
 
         with patch.object(Configuration, "get_instance", return_value=mock_instance):
             create_agent_config(temp_dir, "agent_with_no_auth", config_content)
+            # This should not raise any validation errors
+            validate_agent_folder(temp_dir)
+
+
+def test_validate_agent_with_datetime_configuration() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config_content = dedent("""
+            agent:
+              name: "agent_with_datetime"
+              protocol: "RASA"
+              description: "An agent with datetime configuration"
+            configuration:
+              include_date_time: false
+              timezone: "Asia/Kolkata"
+            connections:
+              mcp_servers:
+                - name: "test_mcp_server"
+        """)
+
+        mock_instance = MagicMock()
+        mock_instance.endpoints.mcp_servers = [
+            type("MCPServerConfig", (), {"name": "test_mcp_server"})()
+        ]
+        mock_instance.endpoints.model_groups = []
+
+        with patch.object(Configuration, "get_instance", return_value=mock_instance):
+            create_agent_config(temp_dir, "agent_with_datetime", config_content)
+            # This should not raise any validation errors
+            validate_agent_folder(temp_dir)
+
+
+def test_validate_agent_with_datetime_configuration_enabled() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config_content = dedent("""
+            agent:
+              name: "agent_with_datetime_enabled"
+              protocol: "RASA"
+              description: "An agent with datetime enabled"
+            configuration:
+              include_date_time: true
+              timezone: "America/New_York"
+            connections:
+              mcp_servers:
+                - name: "test_mcp_server"
+        """)
+
+        mock_instance = MagicMock()
+        mock_instance.endpoints.mcp_servers = [
+            type("MCPServerConfig", (), {"name": "test_mcp_server"})()
+        ]
+        mock_instance.endpoints.model_groups = []
+
+        with patch.object(Configuration, "get_instance", return_value=mock_instance):
+            create_agent_config(temp_dir, "agent_with_datetime_enabled", config_content)
             # This should not raise any validation errors
             validate_agent_folder(temp_dir)
 

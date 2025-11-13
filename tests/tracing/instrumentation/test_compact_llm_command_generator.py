@@ -172,6 +172,9 @@ async def test_tracing_compact_llm_command_generator_default_attrs(
             },
             sort_keys=True,
         ),
+        # datetime configuration
+        "include_date_time": "True",
+        "timezone": "UTC",
     }
     expected_attributes.update(expected)
     assert captured_span.attributes == expected_attributes
@@ -245,6 +248,9 @@ async def test_tracing_compact_llm_command_generator_azure_attrs(
             },
             sort_keys=True,
         ),
+        # datetime configuration
+        "include_date_time": "True",
+        "timezone": "UTC",
     }
     assert captured_span.attributes == expected_attributes
 
@@ -353,6 +359,9 @@ async def test_tracing_compact_llm_command_generator_non_default_llm_attrs(
 
     expected_attributes = {
         "class_name": component_class.__name__,
+        # datetime configuration
+        "include_date_time": "True",
+        "timezone": "UTC",
     }
     expected_attributes.update(expected)
     assert captured_span.attributes == expected_attributes
@@ -460,6 +469,9 @@ async def test_tracing_compact_llm_command_generator_prompt_tokens(
             },
             sort_keys=True,
         ),
+        # datetime configuration
+        "include_date_time": "True",
+        "timezone": "UTC",
     }
     assert captured_span.attributes == expected_attributes
 

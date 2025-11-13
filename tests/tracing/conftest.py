@@ -21,6 +21,7 @@ from opentelemetry.sdk.metrics.export import (
 )
 from pytest import MonkeyPatch
 
+from rasa.core.config.configuration import Configuration
 from rasa.engine.caching import LocalTrainingCache
 
 TRACING_TESTS_FIXTURES_DIRECTORY = pathlib.Path(__file__).parent / "fixtures"
@@ -135,3 +136,9 @@ def set_up_test_meter_provider(
     opentelemetry.metrics.set_meter_provider(meter_provider)
     yield meter_provider
     meter_provider.shutdown()
+
+
+@pytest.fixture(autouse=True)
+def default_empty_config() -> Configuration:
+    """Initialize Configuration singleton for all tests in the tracing module."""
+    return Configuration.initialise_empty()

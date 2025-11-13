@@ -39,6 +39,10 @@ from rasa.shared.constants import (
     CONFIG_PIPELINE_KEY,
     CONFIG_POLICIES_KEY,
     CONFIG_RECIPE_KEY,
+    DEFAULT_INCLUDE_DATE_TIME,
+    DEFAULT_TIMEZONE,
+    INCLUDE_DATE_TIME_CONFIG_KEY,
+    TIMEZONE_CONFIG_KEY,
 )
 from rasa.shared.core.flows.flow import Flow
 from rasa.shared.core.flows.flow_step_links import FlowStepLinks, StaticFlowStepLink
@@ -52,8 +56,10 @@ from rasa.telemetry import (
     FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME,
     FLOW_RETRIEVAL_ENABLED,
     LLM_COMMAND_GENERATOR_CUSTOM_PROMPT_USED,
+    LLM_COMMAND_GENERATOR_INCLUDE_DATE_TIME,
     LLM_COMMAND_GENERATOR_MODEL_GROUP_ID,
     LLM_COMMAND_GENERATOR_MODEL_NAME,
+    LLM_COMMAND_GENERATOR_TIMEZONE,
     METRICS_BACKEND,
     MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED,
     MULTI_STEP_LLM_COMMAND_GENERATOR_HANDLE_FLOWS_PROMPT_USED,
@@ -97,6 +103,8 @@ ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA = {
     "llm_model_group_id": None,
     "citation_enabled": True,
     "relevancy_check_enabled": True,
+    "include_date_time": None,
+    "timezone": None,
 }
 
 
@@ -1257,6 +1265,61 @@ def test_get_llm_command_generator_config(
         result[FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME]
         == expected_flow_retrieval_embedding_model_name
     )
+    # Check default datetime configuration
+    assert result[LLM_COMMAND_GENERATOR_INCLUDE_DATE_TIME] == DEFAULT_INCLUDE_DATE_TIME
+    assert result[LLM_COMMAND_GENERATOR_TIMEZONE] == DEFAULT_TIMEZONE
+
+
+@pytest.mark.parametrize(
+    "datetime_config, expected_include_date_time, expected_timezone",
+    [
+        # default config (no datetime config provided)
+        (None, DEFAULT_INCLUDE_DATE_TIME, DEFAULT_TIMEZONE),
+        # custom include_date_time only
+        ({INCLUDE_DATE_TIME_CONFIG_KEY: False}, False, DEFAULT_TIMEZONE),
+        # custom timezone only
+        (
+            {TIMEZONE_CONFIG_KEY: "America/New_York"},
+            DEFAULT_INCLUDE_DATE_TIME,
+            "America/New_York",
+        ),
+        # both custom
+        (
+            {INCLUDE_DATE_TIME_CONFIG_KEY: True, TIMEZONE_CONFIG_KEY: "Europe/London"},
+            True,
+            "Europe/London",
+        ),
+    ],
+)
+def test_get_llm_command_generator_config_with_datetime_config(
+    datetime_config: Optional[Dict[Text, Any]],
+    expected_include_date_time: bool,
+    expected_timezone: Text,
+):
+    """Test that datetime configuration is extracted correctly from LLM command generator config."""
+    # Given
+    config = f"""
+        {CONFIG_RECIPE_KEY}: default.v1
+        {CONFIG_LANGUAGE_KEY}: en
+        {CONFIG_PIPELINE_KEY}:
+        - name: KeywordIntentClassifier
+        - name: NLUCommandAdapter
+        - name: LLMCommandGenerator
+        {CONFIG_POLICIES_KEY}:
+        - name: FlowPolicy
+        - name: EnterpriseSearchPolicy
+        - name: IntentlessPolicy
+    """
+    config = yaml.load(config, Loader=yaml.FullLoader)
+    if datetime_config is not None:
+        config[CONFIG_PIPELINE_KEY][2].update(datetime_config)
+
+    # When
+    result = _get_llm_command_generator_config(config)
+
+    # Then
+    assert result[LLM_COMMAND_GENERATOR_INCLUDE_DATE_TIME] == expected_include_date_time
+    assert result[LLM_COMMAND_GENERATOR_TIMEZONE] == expected_timezone
 
 
 @pytest.mark.parametrize(
@@ -1387,6 +1450,8 @@ def test_get_llm_command_generator_config_no_command_generator_component():
         FLOW_RETRIEVAL_ENABLED: None,
         FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: None,
         FLOW_RETRIEVAL_EMBEDDING_MODEL_GROUP_ID: None,
+        LLM_COMMAND_GENERATOR_INCLUDE_DATE_TIME: None,
+        LLM_COMMAND_GENERATOR_TIMEZONE: None,
     }
 
 
@@ -1428,6 +1493,41 @@ def test_track_enterprise_search_policy_train_completed(
 
 
 @patch("rasa.telemetry._track")
+def test_track_enterprise_search_policy_train_completed_with_datetime_config(
+    mock_track: MagicMock,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test that datetime configuration is tracked in enterprise search policy training."""
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    include_date_time = True
+    timezone = "America/New_York"
+
+    telemetry.track_enterprise_search_policy_train_completed(
+        "qdrant",
+        DEFAULT_EMBEDDINGS_CONFIG["provider"],
+        DEFAULT_EMBEDDINGS_CONFIG["model"],
+        None,
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["provider"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
+        None,
+        True,
+        True,
+        include_date_time=include_date_time,
+        timezone=timezone,
+    )
+
+    expected_data = ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA.copy()
+    expected_data["include_date_time"] = include_date_time
+    expected_data["timezone"] = timezone
+
+    mock_track.assert_called_once_with(
+        TELEMETRY_ENTERPRISE_SEARCH_POLICY_TRAINING_COMPLETED_EVENT,
+        expected_data,
+    )
+
+
+@patch("rasa.telemetry._track")
 def test_track_enterprise_search_policy_predict(
     mock_track: MagicMock,
     monkeypatch: MonkeyPatch,
@@ -1449,6 +1549,41 @@ def test_track_enterprise_search_policy_predict(
     mock_track.assert_called_once_with(
         TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
         ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA,
+    )
+
+
+@patch("rasa.telemetry._track")
+def test_track_enterprise_search_policy_predict_with_datetime_config(
+    mock_track: MagicMock,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test that datetime configuration is tracked in enterprise search policy prediction."""
+    monkeypatch.setenv(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE, "true")
+
+    include_date_time = False
+    timezone = "Europe/London"
+
+    telemetry.track_enterprise_search_policy_predict(
+        "qdrant",
+        DEFAULT_EMBEDDINGS_CONFIG["provider"],
+        DEFAULT_EMBEDDINGS_CONFIG["model"],
+        None,
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["provider"],
+        LLM_COMMAND_GENERATOR_DEFAULT_LLM_CONFIG["model"],
+        None,
+        True,
+        True,
+        include_date_time=include_date_time,
+        timezone=timezone,
+    )
+
+    expected_data = ENTERPRISE_SEARCH_TELEMETRY_EVENT_DATA.copy()
+    expected_data["include_date_time"] = include_date_time
+    expected_data["timezone"] = timezone
+
+    mock_track.assert_called_once_with(
+        TELEMETRY_ENTERPRISE_SEARCH_POLICY_PREDICT_EVENT,
+        expected_data,
     )
 
 

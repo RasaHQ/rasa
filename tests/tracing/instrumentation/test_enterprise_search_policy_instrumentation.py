@@ -110,6 +110,9 @@ async def test_tracing_enterprise_search_policy_invoke_llm_default_config(
         # deprecated
         "request_timeout": "10",
         "embeddings": json.dumps(DEFAULT_EMBEDDINGS_CONFIG, sort_keys=True),
+        # datetime configuration
+        "include_date_time": "True",
+        "timezone": "UTC",
     }
 
 
@@ -230,6 +233,9 @@ async def test_tracing_enterprise_search_policy_invoke_llm_custom_config(
 
         expected_attributes = {
             "class_name": component_class.__name__,
+            # datetime configuration
+            "include_date_time": "True",
+            "timezone": "UTC",
         }
         expected_attributes.update(expected)
         assert captured_span.attributes == expected_attributes
@@ -298,6 +304,9 @@ async def test_tracing_enterprise_search_policy_invoke_llm_len_prompt_tokens(
             # deprecated
             "request_timeout": "10",
             "embeddings": json.dumps(DEFAULT_EMBEDDINGS_CONFIG, sort_keys=True),
+            # datetime configuration
+            "include_date_time": "True",
+            "timezone": "UTC",
         }
 
 

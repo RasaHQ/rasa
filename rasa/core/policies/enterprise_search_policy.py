@@ -401,6 +401,8 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             llm_model_group_id=self.llm_config.get(MODEL_GROUP_ID_CONFIG_KEY),
             citation_enabled=self.citation_enabled,
             relevancy_check_enabled=self.relevancy_check_enabled,
+            include_date_time=self.include_date_time,
+            timezone=self.timezone,
         )
         self.persist()
         return self._resource
@@ -729,6 +731,8 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
             llm_model_group_id=self.llm_config.get(MODEL_GROUP_ID_CONFIG_KEY),
             citation_enabled=self.citation_enabled,
             relevancy_check_enabled=self.relevancy_check_enabled,
+            include_date_time=self.include_date_time,
+            timezone=self.timezone,
         )
 
     def _get_action_metadata(

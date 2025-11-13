@@ -43,6 +43,8 @@ ALLOWED_KEYS = {
         "max_retries",
         "agent_card",
         "auth",
+        "include_date_time",
+        "timezone",
     },
     "connections": {"mcp_servers"},
 }

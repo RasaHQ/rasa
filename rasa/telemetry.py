@@ -187,6 +187,8 @@ MULTI_STEP_LLM_COMMAND_GENERATOR_FILL_SLOTS_PROMPT_USED = (
 FLOW_RETRIEVAL_ENABLED = "flow_retrieval_enabled"
 FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME = "flow_retrieval_embedding_model_name"
 FLOW_RETRIEVAL_EMBEDDING_MODEL_GROUP_ID = "flow_retrieval_embedding_model_group_id"
+LLM_COMMAND_GENERATOR_INCLUDE_DATE_TIME = "llm_command_generator_include_date_time"
+LLM_COMMAND_GENERATOR_TIMEZONE = "llm_command_generator_timezone"
 TRACING_BACKEND = "tracing_backend"
 METRICS_BACKEND = "metrics_backend"
 VERSION = "version"
@@ -1280,9 +1282,13 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
         HANDLE_FLOWS_KEY,
     )
     from rasa.shared.constants import (
+        DEFAULT_INCLUDE_DATE_TIME,
+        DEFAULT_TIMEZONE,
         EMBEDDINGS_CONFIG_KEY,
+        INCLUDE_DATE_TIME_CONFIG_KEY,
         MODEL_CONFIG_KEY,
         MODEL_NAME_CONFIG_KEY,
+        TIMEZONE_CONFIG_KEY,
     )
 
     def find_command_generator_component(pipeline: List) -> Optional[Dict]:
@@ -1364,12 +1370,24 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
             FLOW_RETRIEVAL_EMBEDDING_MODEL_GROUP_ID: flow_retrieval_embedding_model_group_id,  # noqa: E501
         }
 
+    def extract_datetime_settings(component: Dict) -> Dict:
+        """Extracts datetime configuration settings."""
+        include_date_time = component.get(
+            INCLUDE_DATE_TIME_CONFIG_KEY, DEFAULT_INCLUDE_DATE_TIME
+        )
+        timezone = component.get(TIMEZONE_CONFIG_KEY, DEFAULT_TIMEZONE)
+        return {
+            LLM_COMMAND_GENERATOR_INCLUDE_DATE_TIME: include_date_time,
+            LLM_COMMAND_GENERATOR_TIMEZONE: timezone,
+        }
+
     def extract_settings(component: Dict) -> Dict:
         """Extracts the settings from the command generator component."""
         settings = {}
         settings.update(extract_llm_command_generator_llm_client_settings(component))
         settings.update(extract_multistep_command_generator_prompt_settings(component))
         settings.update(extract_flow_retrieval_settings(component))
+        settings.update(extract_datetime_settings(component))
         return settings
 
     command_generator_config = {
@@ -1381,6 +1399,8 @@ def _get_llm_command_generator_config(config: Dict[str, Any]) -> Optional[Dict]:
         FLOW_RETRIEVAL_ENABLED: None,
         FLOW_RETRIEVAL_EMBEDDING_MODEL_NAME: None,
         FLOW_RETRIEVAL_EMBEDDING_MODEL_GROUP_ID: None,
+        LLM_COMMAND_GENERATOR_INCLUDE_DATE_TIME: None,
+        LLM_COMMAND_GENERATOR_TIMEZONE: None,
     }
 
     pipeline = config.get(CONFIG_PIPELINE_KEY, [])
@@ -1942,6 +1962,8 @@ def track_enterprise_search_policy_train_completed(
     llm_model_group_id: Optional[str],
     citation_enabled: Optional[bool],
     relevancy_check_enabled: Optional[bool],
+    include_date_time: Optional[bool] = None,
+    timezone: Optional[str] = None,
 ) -> None:
     """Track when a user completes training Enterprise Search policy."""
     _track(
@@ -1956,6 +1978,8 @@ def track_enterprise_search_policy_train_completed(
             "llm_model_group_id": llm_model_group_id,
             "citation_enabled": citation_enabled,
             "relevancy_check_enabled": relevancy_check_enabled,
+            "include_date_time": include_date_time,
+            "timezone": timezone,
         },
     )
 
@@ -1971,6 +1995,8 @@ def track_enterprise_search_policy_predict(
     llm_model_group_id: Optional[str],
     citation_enabled: Optional[bool],
     relevancy_check_enabled: Optional[bool],
+    include_date_time: Optional[bool] = None,
+    timezone: Optional[str] = None,
 ) -> None:
     """Track when a user predicts the next action using Enterprise Search policy."""
     _track(
@@ -1985,6 +2011,8 @@ def track_enterprise_search_policy_predict(
             "llm_model_group_id": llm_model_group_id,
             "citation_enabled": citation_enabled,
             "relevancy_check_enabled": relevancy_check_enabled,
+            "include_date_time": include_date_time,
+            "timezone": timezone,
         },
     )
 

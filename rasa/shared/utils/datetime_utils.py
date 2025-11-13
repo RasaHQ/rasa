@@ -43,7 +43,7 @@ def validate_datetime_configuration(
                 f"Invalid timezone configuration for `{component_name}`: {e!s}. "
                 f"Please provide a valid IANA timezone name (e.g., 'UTC', "
                 f"'America/New_York', 'Europe/London'). Refer to "
-                f"https://en.wikipedia.org/wiki/List_of_tz_database_time_zones "
+                f"`https://en.wikipedia.org/wiki/List_of_tz_database_time_zones` "
                 f"for a list of valid timezone names."
             )
             structlogger.error(
