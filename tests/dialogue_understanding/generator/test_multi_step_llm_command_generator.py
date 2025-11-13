@@ -8,6 +8,7 @@ from _pytest.tmpdir import TempPathFactory
 from pytest import MonkeyPatch
 
 import rasa.shared.utils.io
+from rasa.core.config.configuration import Configuration
 from rasa.dialogue_understanding.commands import (
     CancelFlowCommand,
     CannotHandleCommand,
@@ -84,6 +85,10 @@ from tests.utilities import flows_from_str, flows_from_str_including_defaults
 
 class TestMultiStepLLMCommandGenerator:
     """Tests for the MultiStepLLMCommandGenerator."""
+
+    @pytest.fixture(autouse=True, scope="function")
+    def empty_configuration(self) -> None:
+        Configuration.initialise_empty()
 
     @pytest.fixture
     def command_generator(self):

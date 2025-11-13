@@ -4,6 +4,7 @@ from unittest.mock import Mock
 import jsonpatch
 import pytest
 
+from rasa.core.config.configuration import Configuration
 from rasa.dialogue_understanding.commands.correct_slots_command import (
     CorrectedSlot,
     CorrectSlotsCommand,
@@ -33,6 +34,11 @@ from tests.utilities import (
     flows_from_str_including_defaults,
     flows_from_str_with_defaults,
 )
+
+
+@pytest.fixture(autouse=True, scope="function")
+def empty_configuration() -> None:
+    Configuration.initialise_empty()
 
 
 @pytest.mark.parametrize(
