@@ -27,6 +27,7 @@ class AzureTTSConfig(TTSEngineConfig):
 class AzureTTS(TTSEngine[AzureTTSConfig]):
     session: Optional[aiohttp.ClientSession] = None
     required_env_vars = (AZURE_SPEECH_API_KEY_ENV_VAR,)
+    streaming_input: bool = False
 
     def __init__(self, config: Optional[AzureTTSConfig] = None):
         super().__init__(config)
@@ -117,6 +118,11 @@ class AzureTTS(TTSEngine[AzureTTSConfig]):
             speech_region="eastus",
             endpoint=None,
         )
+
+    @classmethod
+    def name(cls) -> str:
+        """Return the name identifier for this TTS engine."""
+        return "azure"
 
     @classmethod
     def from_config_dict(cls, config: Dict) -> "AzureTTS":

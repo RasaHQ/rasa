@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Dict, List, Union
+from typing import Any, AsyncGenerator, Dict, List, Union
 
 import structlog
 
@@ -219,6 +219,39 @@ class LiteLLMRouterLLMClient(_BaseLiteLLMRouterClient, _BaseLiteLLMClient):
             self._handle_timeout_error()
         except Exception as e:
             raise ProviderClientAPIException(e)
+
+    @suppress_logs(log_level=logging.WARNING)
+    async def acompletion_stream(
+        self, messages: Union[List[dict], List[str], str], **kwargs: Any
+    ) -> AsyncGenerator[LLMResponse, None]:
+        """Asynchronously generate streaming completions for given list of messages.
+
+        Note: Currently falls back to non-streaming completion for LiteLLM Router
+        due to complexity in the router's streaming implementation. This provides
+        a graceful degradation until streaming support is properly implemented.
+
+        Args:
+            messages: The message can be,
+                - a list of preformatted messages. Each message should be a dictionary
+                    with the following keys:
+                    - content: The message content.
+                    - role: The role of the message (e.g. user or system).
+                - a list of messages. Each message is a string and will be formatted
+                    as a user message.
+                - a single message as a string which will be formatted as user message.
+            **kwargs: Additional parameters to pass to the completion call.
+
+        Returns:
+            An async generator yielding a single completion response chunk.
+        """
+        # Fall back to non-streaming completion for LiteLLM Router
+        structlogger.warning(
+            "litellm_router_llm_client.acompletion_stream.fallback",
+            event_info="Streaming not yet supported for LiteLLM Router. "
+            "Falling back to non-streaming completion.",
+        )
+        response = await self.acompletion(messages, **kwargs)
+        yield response
 
     @property
     def _completion_fn_args(self) -> Dict[str, Any]:

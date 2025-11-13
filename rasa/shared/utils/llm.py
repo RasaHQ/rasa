@@ -79,6 +79,7 @@ from rasa.shared.providers._configs.self_hosted_llm_client_config import (
 )
 from rasa.shared.providers.embedding.embedding_client import EmbeddingClient
 from rasa.shared.providers.llm.llm_client import LLMClient
+from rasa.shared.providers.llm.llm_response import LLMResponse, measure_llm_latency
 from rasa.shared.providers.mappings import (
     AZURE_OPENAI_PROVIDER,
     HUGGINGFACE_LOCAL_EMBEDDING_PROVIDER,
@@ -236,6 +237,83 @@ def _cache_combine_custom_and_default_configs(
 
     setattr(combine_configs_wrapper, "clear_cache", clear_cache)
     return cast(_CombineConfigs_F, combine_configs_wrapper)
+
+
+@measure_llm_latency
+async def acompletion_with_streaming(
+    llm_client: LLMClient,
+    messages: Union[List[dict], List[str], str],
+    output_channel: Optional[Any] = None,
+    recipient_id: Optional[str] = None,
+    **kwargs: Any,
+) -> "LLMResponse":
+    """Execute LLM completion with streaming support and output channel integration.
+
+    This utility function handles streaming LLM responses, sending chunks to an output
+    channel in real-time while accumulating the complete response. It provides a
+    simple interface for streaming with automatic metadata tracking and latency
+    measurement.
+
+    Args:
+        llm_client: The LLM client to use for completion.
+        messages: The message(s) to send to the LLM. Can be:
+            - a list of preformatted messages (dicts with 'content' and 'role' keys)
+            - a list of strings (formatted as user messages)
+            - a single string (formatted as user message)
+        output_channel: Optional output channel to send streaming chunks to.
+            If None, streaming chunks won't be sent anywhere.
+        recipient_id: Optional recipient ID for the output channel.
+            Required if output_channel is provided.
+        **kwargs: Additional parameters to pass to the LLM completion call.
+
+    Returns:
+        LLMResponse: A complete LLMResponse object containing:
+            - id: The response ID from the LLM
+            - created: The creation timestamp
+            - choices: List containing the complete accumulated text
+            - model: The model name used
+    """
+    accumulated_text = ""
+    llm_response_metadata = {
+        "id": "",
+        "created": 0,
+        "model": "",
+    }
+
+    if not output_channel or not recipient_id:
+        raise ValueError(
+            "Output channel and recipient ID must be provided for streaming."
+        )
+
+    async for chunk_response in llm_client.acompletion_stream(messages, **kwargs):
+        chunk_response = LLMResponse.ensure_llm_response(chunk_response)
+
+        # Store metadata from the first chunk
+        if llm_response_metadata.get("id") == "":
+            await output_channel.send_response_chunk_start(recipient_id)
+            llm_response_metadata = {
+                "id": chunk_response.id,
+                "created": chunk_response.created,
+                "model": chunk_response.model,
+            }
+
+        # Extract and accumulate chunk text
+        if chunk_response.choices and chunk_response.choices[0]:
+            chunk_text = chunk_response.choices[0]
+            accumulated_text += chunk_text
+            await output_channel.send_response_chunk(
+                recipient_id=recipient_id,
+                chunk=chunk_text,
+            )
+
+    # Send end of stream signal to output channel if provided
+    await output_channel.send_response_chunk_end(recipient_id)
+    return LLMResponse(
+        id=llm_response_metadata.get("id", ""),
+        created=llm_response_metadata.get("created", 0),
+        choices=[accumulated_text],
+        model=llm_response_metadata.get("model", ""),
+    )
 
 
 def tracker_as_readable_transcript(

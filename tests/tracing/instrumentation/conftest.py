@@ -84,6 +84,7 @@ from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.data import TrainingType
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.llm import LLMInput
 from rasa.shared.utils.yaml import read_yaml_file
 from rasa.tracing.instrumentation.instrumentation import (
@@ -706,8 +707,19 @@ class MockContextualResponseRephraser(ContextualResponseRephraser):
                 f"instrumentation needs to be adapted!"
             )
 
-    async def _generate_llm_response(self, llm_input: LLMInput) -> Optional[str]:
-        pass
+    async def _generate_llm_response(
+        self,
+        llm_input: LLMInput,
+        output_channel: Any,
+        recipient_id: str,
+    ) -> Optional[LLMResponse]:
+        """Mock implementation that returns a dummy LLMResponse."""
+        return LLMResponse(
+            id="mock_id",
+            created=0,
+            choices=["Mock response"],
+            model="mock_model",
+        )
 
     async def _create_history(self, tracker: DialogueStateTracker) -> Optional[str]:
         pass

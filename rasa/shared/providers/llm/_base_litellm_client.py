@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from abc import abstractmethod
-from typing import Any, Dict, List, NoReturn, Union, cast
+from typing import Any, AsyncGenerator, Dict, List, NoReturn, Union, cast
 
 import structlog
 from litellm import acompletion, completion, validate_environment
@@ -219,6 +219,48 @@ class _BaseLiteLLMClient:
                 )
             raise ProviderClientAPIException(e, message) from e
 
+    @suppress_logs(log_level=logging.WARNING)
+    async def acompletion_stream(
+        self, messages: Union[List[dict], List[str], str], **kwargs: Any
+    ) -> AsyncGenerator[LLMResponse, None]:
+        """Asynchronously generate streaming completions for given list of messages."""
+        try:
+            formatted_messages = self._get_formatted_messages(messages)
+            arguments = cast(
+                Dict[str, Any], resolve_environment_variables(self._completion_fn_args)
+            )
+            timeout = self._litellm_extra_parameters.get(
+                "timeout", DEFAULT_REQUEST_TIMEOUT
+            )
+            response = await asyncio.wait_for(
+                acompletion(
+                    messages=formatted_messages, stream=True, **{**arguments, **kwargs}
+                ),
+                timeout=timeout,
+            )
+            async for chunk in response:
+                yield self._format_response_stream(chunk)
+        except asyncio.TimeoutError:
+            self._handle_timeout_error()
+        except Exception as e:
+            message = ""
+            from rasa.shared.providers.llm.self_hosted_llm_client import (
+                SelfHostedLLMClient,
+            )
+
+            if isinstance(self, SelfHostedLLMClient):
+                message = (
+                    "If you are using 'provider=self-hosted' to call a hosted vllm "
+                    "server make sure your config is correctly setup. You should have "
+                    "the following mandatory keys in your config: "
+                    "provider=self-hosted; "
+                    "model='<your-vllm-model-name>'; "
+                    "api_base='your-hosted-vllm-serv'."
+                    "In case you are getting OpenAI connection errors, such as missing "
+                    "API key, your configuration is incorrect."
+                )
+            raise ProviderClientAPIException(e, message) from e
+
     def _handle_timeout_error(self) -> NoReturn:
         """Handle asyncio.TimeoutError and raise ProviderClientAPIException.
 
@@ -294,6 +336,15 @@ class _BaseLiteLLMClient:
             formatted_response=formatted_response.to_dict(),
         )
         return formatted_response
+
+    def _format_response_stream(self, response: Any) -> LLMResponse:
+        """Parses the LiteLLM streaming response chunk to Rasa format."""
+        return LLMResponse(
+            id=response.id,
+            created=response.created,
+            choices=[choice.delta.content or "" for choice in response.choices],
+            model=response.model,
+        )
 
     def _extract_tool_calls(self, response: Any) -> List[LLMToolCall]:
         """Extract tool calls from response choices.

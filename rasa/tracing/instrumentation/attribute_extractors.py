@@ -419,6 +419,8 @@ def extract_attrs_for_llm_based_command_generator(
 def extract_attrs_for_contextual_response_rephraser(
     self: Any,
     llm_input: LLMInput,
+    output_channel: Any,
+    recipient_id: str,
 ) -> Dict[str, Any]:
     from rasa.core.nlg.contextual_response_rephraser import DEFAULT_LLM_CONFIG
 

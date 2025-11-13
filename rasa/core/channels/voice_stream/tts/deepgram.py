@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 import aiohttp
 import orjson
 import structlog
-from aiohttp import ClientConnectorError, ClientTimeout, WSMsgType
+from aiohttp import ClientTimeout, WSMsgType
 
 from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.tts.tts_engine import (
@@ -30,6 +30,7 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
     session: Optional[aiohttp.ClientSession] = None
     required_env_vars = (DEEPGRAM_API_KEY_ENV_VAR,)
     ws: Optional[aiohttp.ClientWebSocketResponse] = None
+    streaming_input: bool = True
 
     def __init__(self, config: Optional[DeepgramTTSConfig] = None):
         super().__init__(config)
@@ -45,6 +46,19 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
         return {
             "Authorization": f"Token {deepgram_api_key!s}",
         }
+
+    async def connect(self, config: Optional[DeepgramTTSConfig] = None) -> None:
+        headers = self.get_request_headers(self.config)
+        ws_url = self.get_websocket_url(self.config)
+
+        if self.session is None:
+            raise ConnectionException("Client session is not initialized")
+
+        self.ws = await self.session.ws_connect(
+            ws_url,
+            headers=headers,
+            timeout=float(self.config.timeout),
+        )
 
     async def close_connection(self) -> None:
         """Close WebSocket connection if it exists."""
@@ -62,65 +76,85 @@ class DeepgramTTS(TTSEngine[DeepgramTTSConfig]):
         }
         return f"{base_url}?{urlencode(query_params)}"
 
-    async def synthesize(
-        self, text: str, config: Optional[DeepgramTTSConfig] = None
-    ) -> AsyncIterator[RasaAudioBytes]:
-        """Generate speech from text using Deepgram WebSocket TTS API."""
-        config = self.config.merge(config)
-        headers = self.get_request_headers(config)
-        ws_url = self.get_websocket_url(config)
+    async def send_text_chunk(self, text: str) -> None:
+        """Send text to TTS engine for continuous streaming.
 
-        if self.session is None:
-            raise ConnectionException("Client session is not initialized")
+        This sends text to Deepgram but doesn't return anything.
+        Audio will be available via stream_audio().
+        """
+        if not self.ws or self.ws.closed:
+            raise TTSError("WebSocket connection not established")
+
+        await self.ws.send_json(
+            {
+                "type": "Speak",
+                "text": text,
+            }
+        )
+
+    async def signal_text_done(self) -> None:
+        """Signal TTS engine to flush any buffered text.
+
+        This tells Deepgram to process any remaining text and finish.
+        """
+        if not self.ws or self.ws.closed:
+            raise TTSError("WebSocket connection not established")
+
+        await self.ws.send_json({"type": "Flush"})
+
+    async def stream_audio(self) -> AsyncIterator[RasaAudioBytes]:
+        """Stream audio output from the TTS engine.
+
+        This continuously yields audio chunks as they arrive from Deepgram.
+        Stops when it receives a Flushed or Close message.
+        """
+        if not self.ws or self.ws.closed:
+            raise TTSError("WebSocket connection not established")
 
         try:
-            self.ws = await self.session.ws_connect(
-                ws_url,
-                headers=headers,
-                timeout=float(self.config.timeout),
-            )
-            await self.ws.send_json(
-                {
-                    "type": "Speak",
-                    "text": text,
-                }
-            )
-            await self.ws.send_json({"type": "Flush"})
             async for msg in self.ws:
                 if msg.type == WSMsgType.BINARY:
-                    # Binary data is the raw audio
+                    # Binary data is the raw audio - yield it
                     yield self.engine_bytes_to_rasa_audio_bytes(msg.data)
+
                 elif msg.type == WSMsgType.TEXT:
-                    # Handle control messages if needed
+                    # Handle control messages
                     data = orjson.loads(msg.data)
-                    if data.get("type") == "Close":
+                    if data.get("type") == "Flushed":
+                        # All audio has been sent, stop streaming
+                        structlogger.debug("deepgram.stream_audio.flushed")
                         break
-                    elif data.get("type") == "Flushed":
-                        break  # End of stream
+                    elif data.get("type") == "Close":
+                        # Connection closing
+                        structlogger.debug("deepgram.stream_audio.close")
+                        break
+
                 elif msg.type == WSMsgType.CLOSED:
+                    structlogger.debug("deepgram.stream_audio.ws_closed")
                     break
+
                 elif msg.type == WSMsgType.ERROR:
                     structlogger.error(
-                        "deepgram.synthesize.ws.error", error=str(msg.data)
+                        "deepgram.stream_audio.ws_error", error=str(msg.data)
                     )
                     raise TTSError(f"WebSocket error: {msg.data}")
 
-            # Send a close message
-            if self.ws and not self.ws.closed:
-                await self.ws.send_json({"type": "Close"})
-
-        except ClientConnectorError as e:
-            structlogger.error("deepgram.synthesize.ws.connection_error", error=str(e))
-            raise TTSError(f"Failed to connect to Deepgram TTS service: {e}")
-        except TimeoutError as e:
-            structlogger.error("deepgram.synthesize.ws.timeout", error=str(e))
-            raise TTSError(f"Connection to Deepgram TTS service timed out: {e}")
         except Exception as e:
-            structlogger.error("deepgram.synthesize.ws.error", error=str(e))
-            raise TTSError(f"Error during TTS synthesis: {e}")
-        finally:
-            # Ensure connection is closed
-            await self.close_connection()
+            structlogger.error("deepgram.stream_audio.error", error=str(e))
+            raise TTSError(f"Error during audio streaming: {e}")
+
+    async def synthesize(
+        self, text: str, config: Optional[DeepgramTTSConfig] = None
+    ) -> AsyncIterator[RasaAudioBytes]:
+        """Generate speech from text using a remote TTS system."""
+        if not self.ws or self.ws.closed:
+            raise TTSError("WebSocket connection not established")
+
+        await self.send_text_chunk(text)
+        await self.signal_text_done()
+
+        async for audio_chunk in self.stream_audio():
+            yield audio_chunk
 
     def engine_bytes_to_rasa_audio_bytes(self, chunk: bytes) -> RasaAudioBytes:
         """Convert the generated tts audio bytes into rasa audio bytes."""

@@ -203,7 +203,7 @@ class ActionRunSlotRejections(Action):
         message = await nlg.generate(
             utterance,
             tracker,
-            output_channel.name(),
+            output_channel,
             value=slot_value,
         )
 

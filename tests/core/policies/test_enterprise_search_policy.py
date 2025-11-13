@@ -935,6 +935,9 @@ async def test_enterprise_search_policy_none_llm_answer(
 ) -> None:
     tracker = enterprise_search_tracker
 
+    # Enable citation to force non-streaming path where _invoke_llm is called
+    mocked_enterprise_search_policy.citation_enabled = True
+
     with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
         mock_llm = MagicMock()
         mock_llm_factory.return_value = mock_llm.return_value
@@ -1604,7 +1607,7 @@ async def test_enterprise_search_policy_response_with_use_llm_true(
     """
     monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "my key")
     policy = EnterpriseSearchPolicy(
-        config={USE_LLM_PROPERTY: True},
+        config={USE_LLM_PROPERTY: True, "citation_enabled": True},
         model_storage=default_model_storage,
         resource=Resource("enterprisesearchpolicy"),
         execution_context=default_execution_context,
@@ -2194,7 +2197,6 @@ def test_render_prompt_includes_current_datetime_when_enabled(
         (True, False, "[NO_RAG_ANSWER]", None, True),
         # Relevancy check disabled, generated answer
         (False, True, "Generated answer", "Generated answer - Citations", False),
-        (False, False, "Generated answer", "Generated answer", False),
     ],
 )
 @patch("rasa.shared.utils.llm.llm_factory")
@@ -2277,6 +2279,42 @@ async def test_enterprise_search_policy_prediction_varied_configs(
             mock_post_process_citations.assert_not_called()
 
         assert prediction.action_metadata["message"]["text"] == expected_text
+
+
+async def test_enterprise_search_policy_prediction_streaming_response(
+    mocked_enterprise_search_policy: EnterpriseSearchPolicy,
+    enterprise_search_tracker: DialogueStateTracker,
+) -> None:
+    """Test that streaming response is used."""
+    from rasa.shared.core.constants import (
+        ACTION_LLM_STREAMING_RESPONSE,
+        ACTION_METADATA_LLM_CONFIG_KEY,
+        ACTION_METADATA_PROMPT_KEY,
+    )
+
+    # Given: both relevancy check and citation are disabled
+    mocked_enterprise_search_policy.relevancy_check_enabled = False
+    mocked_enterprise_search_policy.citation_enabled = False
+
+    domain = Domain.empty()
+    tracker = enterprise_search_tracker
+
+    # When
+    prediction = await mocked_enterprise_search_policy.predict_action_probabilities(
+        tracker=tracker,
+        domain=domain,
+        endpoints=None,
+    )
+
+    # Then: should predict ACTION_LLM_STREAMING_RESPONSE action
+    predicted_action_index = prediction.probabilities.index(
+        max(prediction.probabilities)
+    )
+    predicted_action = domain.action_names_or_texts[predicted_action_index]
+
+    assert predicted_action == ACTION_LLM_STREAMING_RESPONSE
+    assert ACTION_METADATA_PROMPT_KEY in prediction.action_metadata
+    assert ACTION_METADATA_LLM_CONFIG_KEY in prediction.action_metadata
 
 
 @pytest.mark.parametrize(

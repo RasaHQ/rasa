@@ -2,6 +2,7 @@ import copy
 import logging
 from typing import Any, Dict, List, Optional, Text
 
+from rasa.core.channels import OutputChannel
 from rasa.core.constants import DEFAULT_TEMPLATE_ENGINE, TEMPLATE_ENGINE_CONFIG_KEY
 from rasa.core.nlg import interpolator
 from rasa.core.nlg.generator import NaturalLanguageGenerator, ResponseVariationFilter
@@ -76,7 +77,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         self,
         utter_action: Text,
         tracker: DialogueStateTracker,
-        output_channel: Text,
+        output_channel: OutputChannel,
         **kwargs: Any,
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested utter action."""
@@ -86,7 +87,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             utter_action,
             filled_slots,
             stack_context,
-            output_channel,
+            output_channel.name(),
             tracker.current_language,
             **kwargs,
         )

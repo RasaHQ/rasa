@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
 import structlog
 from litellm import atext_completion, text_completion
@@ -265,6 +265,44 @@ class SelfHostedLLMClient(_BaseLiteLLMClient):
         if self._use_chat_completions_endpoint:
             return await super().acompletion(messages, **kwargs)
         return await self._atext_completion(messages)
+
+    async def acompletion_stream(
+        self, messages: Union[List[dict], List[str], str], **kwargs: Any
+    ) -> AsyncGenerator[LLMResponse, None]:
+        """Asynchronous streaming completion of the model with the given messages.
+
+        Method overrides the base class method to call the appropriate
+        completion method based on the configuration. If the chat completions
+        endpoint is enabled, the acompletion_stream method is called. Otherwise,
+        falls back to non-streaming completion for text completions endpoint.
+
+        Args:
+            messages: The message can be,
+                - a list of preformatted messages. Each message should be a dictionary
+                    with the following keys:
+                    - content: The message content.
+                    - role: The role of the message (e.g. user or system).
+                - a list of messages. Each message is a string and will be formatted
+                    as a user message.
+                - a single message as a string which will be formatted as user message.
+            **kwargs: Additional parameters to pass to the completion call.
+
+        Returns:
+            An async generator yielding completion response chunks.
+            For text completions endpoint, yields a single chunk with the full response.
+        """
+        if self._use_chat_completions_endpoint:
+            async for chunk in super().acompletion_stream(messages, **kwargs):
+                yield chunk
+        else:
+            # Fall back to non-streaming completion for text completions endpoint
+            structlogger.warning(
+                "self_hosted_llm_client.acompletion_stream.fallback",
+                event_info="Streaming not supported for text completions endpoint. "
+                "Falling back to non-streaming completion.",
+            )
+            response = await self._atext_completion(messages)
+            yield response
 
     def completion(
         self, messages: Union[List[dict], List[str], str], **kwargs: Any

@@ -5,7 +5,17 @@ import copy
 import string
 import time
 from dataclasses import asdict, dataclass
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Tuple,
+)
 
 import structlog
 from sanic import Websocket  # type: ignore
@@ -30,7 +40,7 @@ from rasa.core.channels.voice_stream.asr.asr_event import (
 )
 from rasa.core.channels.voice_stream.asr.azure import AzureASR
 from rasa.core.channels.voice_stream.asr.deepgram import DeepgramASR
-from rasa.core.channels.voice_stream.audio_bytes import HERTZ, RasaAudioBytes
+from rasa.core.channels.voice_stream.audio_bytes import RasaAudioBytes
 from rasa.core.channels.voice_stream.call_state import (
     CallState,
     _call_state,
@@ -39,6 +49,7 @@ from rasa.core.channels.voice_stream.call_state import (
 from rasa.core.channels.voice_stream.tts.azure import AzureTTS
 from rasa.core.channels.voice_stream.tts.cartesia import CartesiaTTS
 from rasa.core.channels.voice_stream.tts.deepgram import DeepgramTTS
+from rasa.core.channels.voice_stream.tts.rime import RimeTTS
 from rasa.core.channels.voice_stream.tts.tts_cache import TTSCache
 from rasa.core.channels.voice_stream.tts.tts_engine import TTSEngine, TTSError
 from rasa.core.channels.voice_stream.util import (
@@ -141,6 +152,8 @@ def tts_engine_from_config(tts_config: Dict) -> TTSEngine:
         return CartesiaTTS.from_config_dict(tts_config)
     elif name.lower() == "deepgram":
         return DeepgramTTS.from_config_dict(tts_config)
+    elif name.lower() == "rime":
+        return RimeTTS.from_config_dict(tts_config)
     else:
         mark_as_beta_feature("Custom TTS Engine")
         try:
@@ -174,6 +187,12 @@ class VoiceOutputChannel(OutputChannel):
         self.latest_message_id: Optional[str] = None
         self.min_buffer_size = min_buffer_size
 
+        # the response can be sent by Streaming or non-streaming methods
+        self.streaming_response_sent = False
+
+        # For streaming responses - background task that sends TTS audio
+        self.audio_sender_task: Optional[asyncio.Task] = None
+
     def rasa_audio_bytes_to_channel_bytes(
         self, rasa_audio_bytes: RasaAudioBytes
     ) -> bytes:
@@ -191,7 +210,10 @@ class VoiceOutputChannel(OutputChannel):
     async def send_marker_message(self, recipient_id: str) -> None:
         """Send a message that marks positions in the audio stream."""
         marker_message, mark_id = self.create_marker_message(recipient_id)
-        await self.voice_websocket.send(marker_message)
+        try:
+            await self.voice_websocket.send(marker_message)
+        except WebsocketClosed:
+            call_state.connection_failed = True
         self.latest_message_id = mark_id
 
     async def send_start_marker(self, recipient_id: str) -> None:
@@ -261,100 +283,147 @@ class VoiceOutputChannel(OutputChannel):
                 latency_ms=call_state.tts_complete_latency_ms,
             )
 
+    async def _send_tts_audio_to_channel(self, recipient_id: str) -> None:
+        """Background task: listens to TTS audio stream and sends to channel.
+
+        This pulls audio from TTS and directly sends it to the channel.
+        """
+        # Listen to TTS engine's audio output stream and send directly
+        async for audio_chunk in self.tts_engine.stream_audio():
+            try:
+                await self.send_audio_bytes(recipient_id, audio_chunk)
+            except (WebsocketClosed, ServerError):
+                call_state.connection_failed = True
+                break
+
+    async def _send_cached_audio(
+        self, recipient_id: str, cached_audio: RasaAudioBytes
+    ) -> None:
+        """Send cached audio directly to websocket using simple chunking."""
+        async for audio_chunk in self.chunk_audio(cached_audio):
+            try:
+                await self.send_audio_bytes(recipient_id, audio_chunk)
+            except (WebsocketClosed, ServerError):
+                call_state.connection_failed = True
+
+    async def _send_tts_audio(self, recipient_id: str, text: str) -> RasaAudioBytes:
+        """Use producer/consumer pattern to send TTS audio and collect for caching.
+
+        Returns the collected audio bytes for caching.
+        """
+        collected_audio = RasaAudioBytes(b"")
+
+        try:
+            audio_stream = self.tts_engine.synthesize(text)
+        except TTSError as e:
+            logger.error("voice_channel.tts_synthesis_error", error=str(e))
+            # TODO: add message that works without tts, e.g. loading from disc
+            audio_stream = self.chunk_audio(generate_silence())
+
+        async for audio_chunk in audio_stream:
+            # Collect for caching
+            collected_audio = RasaAudioBytes(collected_audio + audio_chunk)
+            try:
+                await self.send_audio_bytes(recipient_id, audio_chunk)
+            except (WebsocketClosed, ServerError):
+                call_state.connection_failed = True
+                # Continue collecting for cache even if send fails
+
+        return collected_audio
+
+    async def send_response_chunk_start(
+        self, recipient_id: Text, **kwargs: Any
+    ) -> None:
+        """Start streaming response session.
+
+        Starts background task (listens to TTS audio, sends to websocket).
+        """
+        if not self.tts_engine.streaming_input:
+            # Engine does not support streaming input
+            # fallback to non-streaming synthesis
+            return
+
+        self.audio_sender_task = asyncio.create_task(
+            self._send_tts_audio_to_channel(recipient_id)
+        )
+        await self.send_start_marker(recipient_id)
+        logger.debug("voice_channel.start_streaming_response")
+
+    async def send_response_chunk(
+        self, recipient_id: str, chunk: str, **kwargs: Any
+    ) -> None:
+        """Send text chunk to TTS.
+
+        The TTS engine will process this and the background consumer task
+        will receive the audio and send it to the websocket.
+        """
+        if not self.tts_engine.streaming_input:
+            # Engine does not support streaming input
+            # fallback to non-streaming synthesis
+            return
+
+        chunk = remove_emojis(chunk)
+        await self.tts_engine.send_text_chunk(chunk)
+
+    async def send_response_chunk_end(self, recipient_id: Text, **kwargs: Any) -> None:
+        """End streaming response session.
+
+        1. Flush TTS engine (process any remaining text)
+        2. Wait for background task to finish sending all audio
+        3. Mark that streaming was used, to skip non-streaming responses
+        """
+        if not self.tts_engine.streaming_input:
+            self.streaming_response_sent = False
+            # fallback to non-streaming synthesis
+            return
+
+        await self.tts_engine.signal_text_done()
+        if self.audio_sender_task:
+            await self.audio_sender_task
+        await self.send_end_marker(recipient_id)
+        logger.debug("voice_channel.end_streaming_response")
+        self.streaming_response_sent = True
+
     async def send_text_message(
         self, recipient_id: str, text: str, **kwargs: Any
     ) -> None:
+        if self.streaming_response_sent:
+            # skip non-streaming response if streaming was used
+            # reset flag for next response
+            self.streaming_response_sent = False
+            logger.info("voice_channel.skip_non_streaming_response")
+            return
+
+        self._track_rasa_processing_latency()
+        call_state.tts_start_time = time.time()
+
         text = remove_emojis(text)
         self.update_silence_timeout()
 
-        # Track Rasa processing completion
-        self._track_rasa_processing_latency()
-
-        # Track TTS start time
-        call_state.tts_start_time = time.time()
-
+        # Check cache first
         cached_audio_bytes = self.tts_cache.get(text)
-        collected_audio_bytes = RasaAudioBytes(b"")
-        seconds_marker = -1
-        last_sent_offset = 0
-        first_audio_sent = False
-        logger.debug("voice_channel.sending_audio", text=text)
+        logger.debug(
+            "voice_channel.sending_audio", text=text, cached=bool(cached_audio_bytes)
+        )
 
-        # Send start marker before first chunk
-        try:
-            await self.send_start_marker(recipient_id)
-        except (WebsocketClosed, ServerError):
-            call_state.connection_failed = True
+        # Send start marker
+        await self.send_start_marker(recipient_id)
 
         # Is the response interruptible?
         allow_interruptions = kwargs.get("allow_interruptions", True)
         call_state.channel_data["allow_interruptions"] = allow_interruptions
 
         if cached_audio_bytes:
-            audio_stream = self.chunk_audio(cached_audio_bytes)
+            await self._send_cached_audio(recipient_id, cached_audio_bytes)
         else:
-            # Todo: make kwargs compatible with engine config
-            synth_config = self.tts_engine.config.__class__.from_dict({})
-            try:
-                audio_stream = self.tts_engine.synthesize(text, synth_config)
-            except TTSError:
-                # TODO: add message that works without tts, e.g. loading from disc
-                audio_stream = self.chunk_audio(generate_silence())
-
-        async for audio_bytes in audio_stream:
-            collected_audio_bytes = RasaAudioBytes(collected_audio_bytes + audio_bytes)
-
-            # Check if we have enough new bytes to send
-            current_buffer_size = len(collected_audio_bytes) - last_sent_offset
-            should_send = current_buffer_size >= self.min_buffer_size
-
-            if should_send:
-                try:
-                    # Track TTS first byte time
-                    if not first_audio_sent:
-                        self._track_tts_first_byte_latency()
-                        first_audio_sent = True
-
-                    # Send only the new bytes since last send
-                    new_bytes = RasaAudioBytes(collected_audio_bytes[last_sent_offset:])
-                    await self.send_audio_bytes(recipient_id, new_bytes)
-                    last_sent_offset = len(collected_audio_bytes)
-
-                    full_seconds_of_audio = len(collected_audio_bytes) // HERTZ
-                    if full_seconds_of_audio > seconds_marker:
-                        await self.send_intermediate_marker(recipient_id)
-                        seconds_marker = full_seconds_of_audio
-
-                except (WebsocketClosed, ServerError):
-                    # ignore sending error, and keep collecting and caching audio bytes
-                    call_state.connection_failed = True
-
-        # Send any remaining audio not yet sent
-        remaining_bytes = len(collected_audio_bytes) - last_sent_offset
-        if remaining_bytes > 0:
-            try:
-                # Track TTS first byte time if not already tracked
-                if not first_audio_sent:
-                    self._track_tts_first_byte_latency()
-
-                new_bytes = RasaAudioBytes(collected_audio_bytes[last_sent_offset:])
-                await self.send_audio_bytes(recipient_id, new_bytes)
-            except (WebsocketClosed, ServerError):
-                # ignore sending error
-                call_state.connection_failed = True
+            collected_audio = await self._send_tts_audio(recipient_id, text)
+            self.tts_cache.put(text, collected_audio)
 
         # Track TTS completion time
         self._track_tts_complete_latency()
+        await self.send_end_marker(recipient_id)
 
-        try:
-            await self.send_end_marker(recipient_id)
-        except (WebsocketClosed, ServerError):
-            # ignore sending error
-            pass
         call_state.latest_bot_audio_id = self.latest_message_id
-
-        if not cached_audio_bytes:
-            self.tts_cache.put(text, collected_audio_bytes)
 
     async def send_audio_bytes(
         self, recipient_id: str, audio_bytes: RasaAudioBytes
@@ -550,7 +619,10 @@ class VoiceInputChannel(InputChannel):
         asr_engine = asr_engine_from_config(self.asr_config)
         tts_engine = tts_engine_from_config(self.tts_config)
         asr_event_queue: asyncio.Queue = asyncio.Queue()
+
+        # Connect both ASR and TTS at the beginning
         await asr_engine.connect()
+        await tts_engine.connect()
 
         call_parameters = await self.collect_call_parameters(channel_websocket)
         if call_parameters is None:
@@ -611,9 +683,12 @@ class VoiceInputChannel(InputChannel):
 
         async def asr_keep_alive_task() -> None:
             interval = getattr(asr_engine.config, "keep_alive_interval", 5)
-            while True:
-                await asyncio.sleep(interval)
-                await asr_engine.send_keep_alive()
+            try:
+                while True:
+                    await asyncio.sleep(interval)
+                    await asr_engine.send_keep_alive()
+            except asyncio.CancelledError:
+                pass
 
         tasks = [
             asyncio.create_task(consume_audio_bytes()),
@@ -628,8 +703,10 @@ class VoiceInputChannel(InputChannel):
         for task in tasks:
             if not task.done():
                 task.cancel()
-        await tts_engine.close_connection()
+
+        # Cleanup connections
         await asr_engine.close_connection()
+        await tts_engine.close_connection()
         await channel_websocket.close()
         self._cancel_silence_timeout_watcher()
 

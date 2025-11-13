@@ -4,6 +4,7 @@ import structlog
 from jinja2 import Template
 
 from rasa import telemetry
+from rasa.core.channels import OutputChannel
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.core.nlg.summarize import (
     _count_multiple_utterances_as_single_turn,
@@ -33,7 +34,7 @@ from rasa.shared.nlu.constants import (
     KEY_USER_PROMPT,
     PROMPTS,
 )
-from rasa.shared.providers.llm.llm_response import LLMResponse, measure_llm_latency
+from rasa.shared.providers.llm.llm_response import LLMResponse
 from rasa.shared.utils.constants import (
     LANGFUSE_METADATA_AGENT_ID,
     LANGFUSE_METADATA_COMPONENT_NAME,
@@ -49,6 +50,7 @@ from rasa.shared.utils.llm import (
     DEFAULT_OPENAI_MAX_GENERATED_TOKENS,
     USER,
     LLMInput,
+    acompletion_with_streaming,
     check_prompt_config_keys_and_warn_if_deprecated,
     combine_custom_and_default_config,
     get_prompt_template,
@@ -243,32 +245,31 @@ class ContextualResponseRephraser(
             },
         }
 
-    @measure_llm_latency
     async def _generate_llm_response(
-        self, llm_input: LLMInput
+        self,
+        llm_input: LLMInput,
+        output_channel: OutputChannel,
+        recipient_id: str,
     ) -> Optional[LLMResponse]:
-        """Use LLM to generate a response.
-
-        Returns an LLMResponse object containing both the generated text
-        (choices) and metadata.
+        """Generate LLM response with streaming support.
 
         Args:
-            prompt: The prompt to send to the LLM.
+            llm_input: LLMInput object with prompt and metadata.
+            output_channel: Output channel to send streaming chunks to.
+            recipient_id: Recipient ID for the output channel.
 
         Returns:
-            An LLMResponse object if successful, otherwise None.
+            The LLM response.
         """
         llm = llm_factory(self.llm_config, DEFAULT_LLM_CONFIG)
-
-        try:
-            return await llm.acompletion(
-                messages=llm_input.prompt, metadata=llm_input.metadata
-            )
-        except Exception as e:
-            # unfortunately, langchain does not wrap LLM exceptions which means
-            # we have to catch all exceptions here
-            structlogger.error("nlg.llm.error", error=e)
-            return None
+        llm_response = await acompletion_with_streaming(
+            llm_client=llm,
+            messages=llm_input.prompt,
+            metadata=llm_input.metadata,
+            output_channel=output_channel,
+            recipient_id=recipient_id,
+        )
+        return llm_response
 
     def llm_property(self, prop: str) -> Optional[str]:
         """Returns a property of the LLM provider."""
@@ -321,6 +322,7 @@ class ContextualResponseRephraser(
         self,
         response: Dict[str, Any],
         tracker: DialogueStateTracker,
+        output_channel: OutputChannel,
     ) -> Dict[str, Any]:
         """Predicts a variation of the response.
 
@@ -385,7 +387,9 @@ class ContextualResponseRephraser(
             llm_model_group_id=self.llm_property(MODEL_GROUP_ID_CONFIG_KEY),
         )
         llm_response = await self._generate_llm_response(
-            LLMInput(prompt=prompt, metadata=self.get_llm_tracing_metadata(tracker))
+            LLMInput(prompt=prompt, metadata=self.get_llm_tracing_metadata(tracker)),
+            output_channel=output_channel,
+            recipient_id=tracker.sender_id,
         )
         llm_response = LLMResponse.ensure_llm_response(llm_response)
 
@@ -431,7 +435,7 @@ class ContextualResponseRephraser(
         self,
         utter_action: Text,
         tracker: DialogueStateTracker,
-        output_channel: Text,
+        output_channel: OutputChannel,
         **kwargs: Any,
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested utter action.
@@ -458,6 +462,7 @@ class ContextualResponseRephraser(
             return await self.rephrase(
                 templated_response,
                 tracker,
+                output_channel,
             )
         else:
             return templated_response

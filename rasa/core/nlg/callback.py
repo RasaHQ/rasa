@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Any, Dict, List, Optional, Text
 
+from rasa.core.channels import OutputChannel
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.nlg.generator import NaturalLanguageGenerator, ResponseVariationFilter
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
@@ -68,17 +69,18 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         self,
         utter_action: Text,
         tracker: DialogueStateTracker,
-        output_channel: Text,
+        output_channel: OutputChannel,
         **kwargs: Any,
     ) -> Dict[Text, Any]:
         """Retrieve a named response from the domain using an endpoint."""
         domain_responses = kwargs.pop("domain_responses", None)
+        output_channel_name = output_channel.name()
         response_id = self.fetch_response_id(
-            utter_action, tracker, output_channel, domain_responses
+            utter_action, tracker, output_channel_name, domain_responses
         )
         kwargs["response_id"] = response_id
 
-        body = nlg_request_format(utter_action, tracker, output_channel, **kwargs)
+        body = nlg_request_format(utter_action, tracker, output_channel_name, **kwargs)
 
         logger.debug(
             "Requesting NLG for {} from {}. The request body is {}.".format(

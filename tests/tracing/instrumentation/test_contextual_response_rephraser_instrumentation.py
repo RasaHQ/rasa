@@ -152,7 +152,7 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response(
         endpoint_config=endpoint_config, domain=domain_with_responses
     )
 
-    await mock_rephraser._generate_llm_response("some text")
+    await mock_rephraser._generate_llm_response("some text", Mock(), "test_sender")
 
     captured_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans(
         ignore_substrings
@@ -222,7 +222,7 @@ async def test_tracing_contextual_response_rephraser_generate_llm_response_no_mo
         endpoint_config=endpoint_config, domain=domain_with_responses
     )
 
-    await mock_rephraser._generate_llm_response("some text")
+    await mock_rephraser._generate_llm_response("some text", Mock(), "test_sender")
 
     captured_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans(
         ignore_substrings
@@ -326,7 +326,7 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens(
     )
 
     await mock_rephraser._generate_llm_response(
-        LLMInput(prompt="This is a test prompt.", metadata={})
+        LLMInput(prompt="This is a test prompt.", metadata={}), Mock(), "test_sender"
     )
 
     captured_spans: Sequence[ReadableSpan] = test_span_exported.get_finished_spans(
@@ -388,7 +388,9 @@ async def test_tracing_contextual_response_rephraser_len_prompt_tokens_non_opena
 
     with caplog.at_level(logging.WARNING):
         await mock_rephraser._generate_llm_response(
-            LLMInput(prompt="This is a test prompt.", metadata={})
+            LLMInput(prompt="This is a test prompt.", metadata={}),
+            Mock(),
+            "test_sender",
         )
         assert (
             "Tracing prompt tokens is only supported for OpenAI models. Skipping."

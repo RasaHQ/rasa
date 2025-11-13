@@ -5,6 +5,7 @@ from jinja2 import Template
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
+from rasa.core.channels import OutputChannel
 from rasa.core.nlg.translate import has_translation
 from rasa.engine.language import Language
 from rasa.shared.constants import CHANNEL, RESPONSE_CONDITION
@@ -23,7 +24,7 @@ class NaturalLanguageGenerator:
         self,
         utter_action: Text,
         tracker: "DialogueStateTracker",
-        output_channel: Text,
+        output_channel: OutputChannel,
         **kwargs: Any,
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested utter action.

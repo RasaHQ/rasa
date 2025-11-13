@@ -12,7 +12,9 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.utils.yaml import YamlValidationException
 
 
-async def test_nlg_conditional_response_variations_with_no_slots():
+async def test_nlg_conditional_response_variations_with_no_slots(
+    create_output_channel,
+):
     responses = {
         "utter_test": [
             {
@@ -33,14 +35,17 @@ async def test_nlg_conditional_response_variations_with_no_slots():
     }
     t = TemplatedNaturalLanguageGenerator(responses=responses)
     no_slots_tracker = DialogueStateTracker(sender_id="nlg_test_default", slots=None)
+    output_channel = create_output_channel("")
     default_response = await t.generate(
-        utter_action="utter_test", tracker=no_slots_tracker, output_channel=""
+        utter_action="utter_test",
+        tracker=no_slots_tracker,
+        output_channel=output_channel,
     )
 
     assert default_response.get("text") == "Default response"
 
 
-async def test_nlg_when_multiple_conditions_satisfied():
+async def test_nlg_when_multiple_conditions_satisfied(create_output_channel):
     responses = {
         "utter_action": [
             {
@@ -75,8 +80,9 @@ async def test_nlg_when_multiple_conditions_satisfied():
         influence_conversation=False,
     )
     tracker = DialogueStateTracker(sender_id="test_nlg", slots=[slot_a, slot_b])
+    output_channel = create_output_channel("")
     resp = await t.generate(
-        utter_action="utter_action", tracker=tracker, output_channel=""
+        utter_action="utter_action", tracker=tracker, output_channel=output_channel
     )
     assert resp.get("text") in ["example A", "example B"]
 
@@ -133,12 +139,14 @@ def test_responses() -> List[Dict[Text, List[Dict[Text, Any]]]]:
 async def test_nlg_slot_case_sensitivity(
     test_slots: List[object],
     test_responses: List[Dict[Text, List[Dict[Text, Any]]]],
+    create_output_channel,
 ):
     utter_action = "utter_action"
     t = TemplatedNaturalLanguageGenerator(responses=test_responses[0])
     tracker = DialogueStateTracker(sender_id="test_nlg", slots=[test_slots[0]])
+    output_channel = create_output_channel("")
     resp = await t.generate(
-        utter_action=utter_action, tracker=tracker, output_channel=""
+        utter_action=utter_action, tracker=tracker, output_channel=output_channel
     )
     assert resp.get("text") == test_responses[0][utter_action][0]["text"]
 
@@ -146,56 +154,67 @@ async def test_nlg_slot_case_sensitivity(
 async def test_matches_filled_slots_multiple_conditions(
     test_slots: List[object],
     test_responses: List[Dict[Text, List[Dict[Text, Any]]]],
+    create_output_channel,
 ):
     utter_action = "utter_action_multiple_conditions"
     t = TemplatedNaturalLanguageGenerator(responses=test_responses[1])
     tracker = DialogueStateTracker(sender_id="test_nlg", slots=test_slots)
+    output_channel = create_output_channel("")
     resp = await t.generate(
         utter_action=utter_action,
         tracker=tracker,
-        output_channel="",
+        output_channel=output_channel,
     )
     assert resp.get("text") == test_responses[1][utter_action][0]["text"]
 
 
 async def test_matches_filled_slots_multiple_conditions_neg_match_boolean_slot(
-    test_slots: List[object], test_responses: List[Dict[Text, List[Dict[Text, Any]]]]
+    test_slots: List[object],
+    test_responses: List[Dict[Text, List[Dict[Text, Any]]]],
+    create_output_channel,
 ):
     t = TemplatedNaturalLanguageGenerator(responses=test_responses[1])
     test_slots[1].initial_value = True
     tracker = DialogueStateTracker(sender_id="test_nlg", slots=test_slots)
+    output_channel = create_output_channel("")
     resp = await t.generate(
         utter_action="utter_action_multiple_conditions",
         tracker=tracker,
-        output_channel="",
+        output_channel=output_channel,
     )
     assert resp is None
 
 
 async def test_matches_filled_slots_multiple_conditions_neg_match_in_first_slot(
-    test_slots: List[object], test_responses: List[Dict[Text, List[Dict[Text, Any]]]]
+    test_slots: List[object],
+    test_responses: List[Dict[Text, List[Dict[Text, Any]]]],
+    create_output_channel,
 ):
     t = TemplatedNaturalLanguageGenerator(responses=test_responses[1])
     test_slots[0].initial_value = "junk"
     tracker = DialogueStateTracker(sender_id="test_nlg", slots=test_slots)
+    output_channel = create_output_channel("")
     resp = await t.generate(
         utter_action="utter_action_multiple_conditions",
         tracker=tracker,
-        output_channel="",
+        output_channel=output_channel,
     )
     assert resp is None
 
 
 async def test_matches_filled_slots_multiple_conditions_neg_match_in_last_slot(
-    test_slots: List[object], test_responses: List[Dict[Text, List[Dict[Text, Any]]]]
+    test_slots: List[object],
+    test_responses: List[Dict[Text, List[Dict[Text, Any]]]],
+    create_output_channel,
 ):
     t = TemplatedNaturalLanguageGenerator(responses=test_responses[1])
     test_slots[2].initial_value = "junk"
     tracker = DialogueStateTracker(sender_id="test_nlg", slots=test_slots)
+    output_channel = create_output_channel("")
     resp = await t.generate(
         utter_action="utter_action_multiple_conditions",
         tracker=tracker,
-        output_channel="",
+        output_channel=output_channel,
     )
     assert resp is None
 
@@ -205,7 +224,10 @@ async def test_matches_filled_slots_multiple_conditions_neg_match_in_last_slot(
     (("test", "A", "example one A"), ("test", "B", "example two B")),
 )
 async def test_nlg_conditional_response_variations_with_interpolated_slots(
-    slot_name: Text, slot_value: Any, response_variation: Text
+    slot_name: Text,
+    slot_value: Any,
+    response_variation: Text,
+    create_output_channel,
 ):
     responses = {
         "utter_action": [
@@ -227,9 +249,9 @@ async def test_nlg_conditional_response_variations_with_interpolated_slots(
         influence_conversation=False,
     )
     tracker = DialogueStateTracker(sender_id="nlg_interpolated", slots=[slot])
-
+    output_channel = create_output_channel("")
     r = await t.generate(
-        utter_action="utter_action", tracker=tracker, output_channel=""
+        utter_action="utter_action", tracker=tracker, output_channel=output_channel
     )
     assert r.get("text") == response_variation
 
@@ -250,7 +272,10 @@ async def test_nlg_conditional_response_variations_with_interpolated_slots(
     ),
 )
 async def test_nlg_conditional_response_variations_with_yaml_single_condition(
-    slot_name: Text, slot_value: Any, bot_message: Text
+    slot_name: Text,
+    slot_value: Any,
+    bot_message: Text,
+    create_output_channel,
 ):
     domain = Domain.from_file(
         path="data/test_domains/conditional_response_variations.yml"
@@ -264,14 +289,16 @@ async def test_nlg_conditional_response_variations_with_yaml_single_condition(
         influence_conversation=False,
     )
     tracker = DialogueStateTracker(sender_id="conversation_id", slots=[slot])
-
+    output_channel = create_output_channel("")
     r = await t.generate(
-        utter_action="utter_withdraw", tracker=tracker, output_channel=""
+        utter_action="utter_withdraw", tracker=tracker, output_channel=output_channel
     )
     assert r.get("text") == bot_message
 
 
-async def test_nlg_conditional_response_variations_with_yaml_multi_constraints():
+async def test_nlg_conditional_response_variations_with_yaml_multi_constraints(
+    create_output_channel,
+):
     domain = Domain.from_file(
         path="data/test_domains/conditional_response_variations.yml"
     )
@@ -292,13 +319,16 @@ async def test_nlg_conditional_response_variations_with_yaml_multi_constraints()
     tracker = DialogueStateTracker(
         sender_id="conversation_id", slots=[first_slot, second_slot]
     )
+    output_channel = create_output_channel("")
     r = await t.generate(
-        utter_action="utter_withdraw", tracker=tracker, output_channel=""
+        utter_action="utter_withdraw", tracker=tracker, output_channel=output_channel
     )
     assert r.get("text") == "Withdrawal has been approved."
 
 
-async def test_nlg_conditional_response_variations_with_yaml_and_channel():
+async def test_nlg_conditional_response_variations_with_yaml_and_channel(
+    create_output_channel,
+):
     domain = Domain.from_file(
         path="data/test_domains/conditional_response_variations.yml"
     )
@@ -311,17 +341,21 @@ async def test_nlg_conditional_response_variations_with_yaml_and_channel():
         influence_conversation=False,
     )
     tracker = DialogueStateTracker(sender_id="conversation_id", slots=[slot])
-
+    output_channel_os = create_output_channel("os")
     r = await t.generate(
-        utter_action="utter_check_balance", tracker=tracker, output_channel="os"
+        utter_action="utter_check_balance",
+        tracker=tracker,
+        output_channel=output_channel_os,
     )
     assert (
         r.get("text") == "As a primary account holder, you can now set-up "
         "your access on mobile app too."
     )
-
+    output_channel_app = create_output_channel("app")
     resp = await t.generate(
-        utter_action="utter_check_balance", tracker=tracker, output_channel="app"
+        utter_action="utter_check_balance",
+        tracker=tracker,
+        output_channel=output_channel_app,
     )
     assert resp.get("text") == "Welcome to your app account overview."
 
@@ -335,7 +369,10 @@ async def test_nlg_conditional_response_variations_with_yaml_and_channel():
     ),
 )
 async def test_nlg_conditional_response_variations_with_diff_slot_types(
-    slot_name: Text, slot_value: Any, message: Text
+    slot_name: Text,
+    slot_value: Any,
+    message: Text,
+    create_output_channel,
 ):
     responses = {
         "utter_action": [
@@ -361,14 +398,14 @@ async def test_nlg_conditional_response_variations_with_diff_slot_types(
         influence_conversation=False,
     )
     tracker = DialogueStateTracker(sender_id="nlg_tracker", slots=[slot])
-
+    output_channel = create_output_channel("")
     r = await t.generate(
-        utter_action="utter_action", tracker=tracker, output_channel=""
+        utter_action="utter_action", tracker=tracker, output_channel=output_channel
     )
     assert r.get("text") == message
 
 
-async def test_nlg_non_matching_channel():
+async def test_nlg_non_matching_channel(create_output_channel):
     domain = Domain.from_yaml(
         """
     version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -381,11 +418,14 @@ async def test_nlg_non_matching_channel():
     )
     t = TemplatedNaturalLanguageGenerator(domain.responses)
     tracker = DialogueStateTracker(sender_id="test", slots=[])
-    r = await t.generate("utter_hi", tracker, "signal")
+    output_channel = create_output_channel("signal")
+    r = await t.generate("utter_hi", tracker, output_channel)
     assert r.get("text") == "Hello"
 
 
-async def test_nlg_conditional_response_variations_with_none_slot():
+async def test_nlg_conditional_response_variations_with_none_slot(
+    create_output_channel,
+):
     domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -403,11 +443,14 @@ async def test_nlg_conditional_response_variations_with_none_slot():
         name="account", mappings=[{}], initial_value=None, influence_conversation=False
     )
     tracker = DialogueStateTracker(sender_id="test", slots=[slot])
-    r = await t.generate("utter_action", tracker, "")
+    output_channel = create_output_channel("")
+    r = await t.generate("utter_action", tracker, output_channel)
     assert r is None
 
 
-async def test_nlg_conditional_response_variations_with_slot_not_a_constraint():
+async def test_nlg_conditional_response_variations_with_slot_not_a_constraint(
+    create_output_channel,
+):
     domain = Domain.from_yaml(
         f"""
             version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -425,11 +468,14 @@ async def test_nlg_conditional_response_variations_with_slot_not_a_constraint():
         name="account", mappings=[{}], initial_value="B", influence_conversation=False
     )
     tracker = DialogueStateTracker(sender_id="test", slots=[slot])
-    r = await t.generate("utter_action", tracker, "")
+    output_channel = create_output_channel("")
+    r = await t.generate("utter_action", tracker, output_channel)
     assert r is None
 
 
-async def test_nlg_conditional_response_variations_with_null_slot():
+async def test_nlg_conditional_response_variations_with_null_slot(
+    create_output_channel,
+):
     domain = Domain.from_yaml(
         f"""
                 version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -447,15 +493,18 @@ async def test_nlg_conditional_response_variations_with_null_slot():
         name="account", mappings=[{}], initial_value=None, influence_conversation=False
     )
     tracker = DialogueStateTracker(sender_id="test", slots=[slot])
-    r = await t.generate("utter_action", tracker, "")
+    output_channel = create_output_channel("")
+    r = await t.generate("utter_action", tracker, output_channel)
     assert r.get("text") == "text for null"
 
     tracker_no_slots = DialogueStateTracker(sender_id="new_test", slots=[])
-    r = await t.generate("utter_action", tracker_no_slots, "")
+    r = await t.generate("utter_action", tracker_no_slots, output_channel)
     assert r.get("text") == "text for null"
 
 
-async def test_nlg_conditional_response_variations_channel_no_condition_met():
+async def test_nlg_conditional_response_variations_channel_no_condition_met(
+    create_output_channel,
+):
     domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -472,11 +521,14 @@ async def test_nlg_conditional_response_variations_channel_no_condition_met():
     )
     t = TemplatedNaturalLanguageGenerator(domain.responses)
     tracker = DialogueStateTracker(sender_id="test", slots=[])
-    r = await t.generate("utter_action", tracker, "os")
+    output_channel = create_output_channel("os")
+    r = await t.generate("utter_action", tracker, output_channel)
     assert r.get("text") == "default"
 
 
-async def test_nlg_conditional_response_variation_condition_met_channel_mismatch():
+async def test_nlg_conditional_response_variation_condition_met_channel_mismatch(
+    create_output_channel,
+):
     domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -497,12 +549,13 @@ async def test_nlg_conditional_response_variation_condition_met_channel_mismatch
         "test", mappings=[{}], initial_value="A", influence_conversation=False
     )
     tracker = DialogueStateTracker(sender_id="test", slots=[slot])
-    r = await t.generate("utter_action", tracker, "app")
+    output_channel = create_output_channel("app")
+    r = await t.generate("utter_action", tracker, output_channel)
     assert r.get("text") == "app default"
 
 
 @pytest.mark.parametrize(
-    "slots,channel,expected_response",
+    "slots,channel_name,expected_response",
     [
         (
             [
@@ -542,7 +595,9 @@ async def test_nlg_conditional_response_variation_condition_met_channel_mismatch
         ),
     ],
 )
-async def test_nlg_conditional_edgecases(slots, channel, expected_response):
+async def test_nlg_conditional_edgecases(
+    slots, channel_name, expected_response, create_output_channel
+):
     domain = Domain.from_yaml(
         f"""
         version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
@@ -579,12 +634,14 @@ async def test_nlg_conditional_edgecases(slots, channel, expected_response):
     )
     t = TemplatedNaturalLanguageGenerator(domain.responses)
     tracker = DialogueStateTracker(sender_id="test", slots=slots)
+    channel = create_output_channel(channel_name)
     r = await t.generate("utter_action", tracker, channel)
     assert r.get("text") == expected_response
 
 
 async def test_nlg_conditional_response_variations_condition_logging(
     caplog: LogCaptureFixture,
+    create_output_channel,
 ):
     domain = Domain.from_yaml(
         f"""
@@ -610,9 +667,9 @@ async def test_nlg_conditional_response_variations_condition_logging(
         name="test_B", mappings=[{}], initial_value="B", influence_conversation=False
     )
     tracker = DialogueStateTracker(sender_id="test", slots=[slot_A, slot_B])
-
+    output_channel = create_output_channel("")
     with caplog.at_level(logging.DEBUG):
-        await t.generate("utter_action", tracker=tracker, output_channel="")
+        await t.generate("utter_action", tracker=tracker, output_channel=output_channel)
 
     assert any(
         "Selecting response variation with conditions:" in message

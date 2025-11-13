@@ -246,6 +246,57 @@ class OutputChannel:
         """Attaches the current tracker state to the output channel."""
         self.tracker_state = tracker.current_state(EventVerbosity.AFTER_RESTART)
 
+    async def send_response_chunk_start(
+        self,
+        recipient_id: Text,
+        **kwargs: Any,
+    ) -> None:
+        """Indicates the start of a streaming response.
+
+        Used for streaming generative AI responses. Default implementation does nothing.
+
+        Args:
+            recipient_id: The recipient ID.
+            **kwargs: Additional arguments.
+        """
+        pass
+
+    async def send_response_chunk(
+        self,
+        recipient_id: Text,
+        chunk: Text,
+        **kwargs: Any,
+    ) -> None:
+        """Send a chunk of response to the client.
+
+        Used for streaming generative AI responses. Default implementation does nothing.
+
+        Args:
+            recipient_id: The recipient ID.
+            chunk: The response chunk to send. Full response is built by concatenating
+                all chunks sent.
+            **kwargs: Additional arguments.
+
+        Returns:
+            None
+        """
+        pass
+
+    async def send_response_chunk_end(
+        self,
+        recipient_id: Text,
+        **kwargs: Any,
+    ) -> None:
+        """Indicates the end of a streaming response.
+
+        Used for streaming generative AI responses. Default implementation does nothing.
+
+        Args:
+            recipient_id: The recipient ID.
+            **kwargs: Additional arguments.
+        """
+        pass
+
     async def send_response(
         self,
         recipient_id: Text,

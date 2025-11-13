@@ -3830,10 +3830,15 @@ async def test_create_bot_utterance_translation(monkeypatch: MonkeyPatch):
     ]
     tracker = DialogueStateTracker(sender_id="test", slots=slots)
 
+    class MockOutputChannel(OutputChannel):
+        @classmethod
+        def name(cls) -> Text:
+            return ""
+
     default_response = await nlg.generate(
         utter_action="utter_test",
         tracker=tracker,
-        output_channel="",
+        output_channel=MockOutputChannel(),
     )
 
     bot_utterance = create_bot_utterance(default_response)

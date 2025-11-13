@@ -1,6 +1,6 @@
 import copy
 from types import SimpleNamespace
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -8,6 +8,7 @@ from jinja2 import Template
 from pytest import MonkeyPatch
 
 from rasa.core.actions.action import ActionBotResponse
+from rasa.core.channels.channel import OutputChannel
 from rasa.core.nlg.contextual_response_rephraser import (
     ContextualResponseRephraser,
 )
@@ -214,7 +215,10 @@ class MockedContextualResponseRephraser(ContextualResponseRephraser):
         return "User said hello"
 
     async def _generate_llm_response(
-        self, llm_input: LLMInput
+        self,
+        llm_input: LLMInput,
+        output_channel: OutputChannel,
+        recipient_id: str,
     ) -> Optional[LLMResponse]:
         return LLMResponse(
             id="mock-id",
@@ -248,16 +252,16 @@ async def test_rephraser_generates_response(
     greet_tracker: DialogueStateTracker,
     domain_with_responses: Domain,
     patch_default_language: None,
+    create_output_channel: Callable[[str], OutputChannel],
 ) -> None:
     endpoint_config = EndpointConfig.from_dict({})
     rephraser = MockedContextualResponseRephraser(
         endpoint_config=endpoint_config, domain=domain_with_responses
     )
-
     generated = await rephraser.generate(
         "utter_allows_rephrasing",
         greet_tracker,
-        output_channel="callback",
+        output_channel=create_output_channel("callback"),
     )
     assert generated == {"metadata": {"rephrase": True}, "text": "hello foobar"}
 
@@ -266,6 +270,7 @@ async def test_rephraser_does_not_rephrase(
     monkeypatch: MonkeyPatch,
     greet_tracker: DialogueStateTracker,
     domain_with_responses: Domain,
+    create_output_channel: Callable[[str], OutputChannel],
 ) -> None:
     endpoint_config = EndpointConfig.from_dict({})
     rephraser = MockedContextualResponseRephraser(
@@ -275,7 +280,7 @@ async def test_rephraser_does_not_rephrase(
     generated = await rephraser.generate(
         "utter_does_not_allow_rephrasing",
         greet_tracker,
-        output_channel="callback",
+        output_channel=create_output_channel("callback"),
     )
     assert generated == {
         "metadata": {"rephrase": False},
@@ -288,8 +293,11 @@ async def test_rephraser_handles_failure_in_generation(
     greet_tracker: DialogueStateTracker,
     domain_with_responses: Domain,
     patch_default_language: None,
+    create_output_channel: Callable[[str], OutputChannel],
 ) -> None:
-    async def none_no_op(x: Any) -> None:
+    async def none_no_op(
+        prompt: str, output_channel: OutputChannel, recipient_id: str
+    ) -> None:
         return None
 
     endpoint_config = EndpointConfig.from_dict({})
@@ -302,7 +310,7 @@ async def test_rephraser_handles_failure_in_generation(
     generated = await rephraser.generate(
         "utter_allows_rephrasing",
         greet_tracker,
-        output_channel="callback",
+        output_channel=create_output_channel("callback"),
     )
     assert generated == {
         "metadata": {"rephrase": True},
@@ -316,13 +324,14 @@ async def test_rephraser_uses_template_from_response(
     domain_with_responses: Domain,
     llm_response_object: LLMResponse,
     patch_default_language: None,
+    create_output_channel: Callable[[str], OutputChannel],
 ) -> None:
     class MockedTemplatedResponseRephraser(ContextualResponseRephraser):
         async def _create_history(self, tracker: DialogueStateTracker) -> str:
             return "User said hello"
 
         async def _generate_llm_response(
-            self, llm_input: LLMInput
+            self, llm_input: LLMInput, output_channel: OutputChannel, recipient_id: str
         ) -> Optional[LLMResponse]:
             llm_response_object.choices = ["hello foobar"]
             return llm_response_object
@@ -335,7 +344,7 @@ async def test_rephraser_uses_template_from_response(
     generated = await rephraser.generate(
         "utter_with_prompt",
         greet_tracker,
-        output_channel="callback",
+        output_channel=create_output_channel("callback"),
     )
     assert generated == {
         "metadata": {"rephrase_prompt": "foobar", "rephrase": True},
@@ -349,13 +358,14 @@ async def test_rephraser_default_template(
     domain_with_responses: Domain,
     llm_response_object: LLMResponse,
     patch_default_language: None,
+    create_output_channel: Callable[[str], OutputChannel],
 ) -> None:
     class MockedTemplatedResponseRephraser(ContextualResponseRephraser):
         async def _create_history(self, tracker: DialogueStateTracker) -> str:
             return "User said hello"
 
         async def _generate_llm_response(
-            self, llm_input: LLMInput
+            self, llm_input: LLMInput, output_channel: OutputChannel, recipient_id: str
         ) -> Optional[LLMResponse]:
             assert llm_input.prompt == (
                 "The following is a conversation with\n"
@@ -383,7 +393,7 @@ async def test_rephraser_default_template(
     generated = await rephraser.generate(
         "utter_allows_rephrasing",
         greet_tracker,
-        output_channel="callback",
+        output_channel=create_output_channel("callback"),
     )
     assert generated == {"metadata": {"rephrase": True}, "text": "hello foobar"}
 
@@ -501,29 +511,30 @@ async def test_rephraser_template_summarisation(
     domain_with_responses: Domain,
     endpoint_config: Dict[str, Any],
     expected_prompt: str,
-    llm_response_object: LLMResponse,
     patch_default_language: None,
+    create_output_channel: Callable[[str], OutputChannel],
 ) -> None:
     class MockedTemplatedResponseRephraser(ContextualResponseRephraser):
         async def _create_history(self, tracker: DialogueStateTracker) -> str:
             return "User said hello"
 
         async def _generate_llm_response(
-            self, llm_input: LLMInput
+            self, llm_input: LLMInput, output_channel: OutputChannel, recipient_id: str
         ) -> Optional[LLMResponse]:
             assert llm_input.prompt == expected_prompt
-            llm_response_object.choices = ["hello foobar"]
-            return llm_response_object
+            return LLMResponse(
+                id="test_id", created=1234567890, choices=["hello foobar"]
+            )
 
-    endpoint_config = EndpointConfig.from_dict(endpoint_config)
+    endpoint_config_obj = EndpointConfig.from_dict(endpoint_config)
     rephraser = MockedTemplatedResponseRephraser(
-        endpoint_config=endpoint_config, domain=domain_with_responses
+        endpoint_config=endpoint_config_obj, domain=domain_with_responses
     )
 
     generated = await rephraser.generate(
         "utter_allows_rephrasing",
         greet_tracker,
-        output_channel="callback",
+        output_channel=create_output_channel("callback"),
     )
     assert generated == {"metadata": {"rephrase": True}, "text": "hello foobar"}
 
@@ -736,16 +747,16 @@ async def test_rephraser_prompt_conv_history_amended_by_turn_wrapper(
     greet_tracker_consecutive_utts_by_same_speaker,
     domain: Domain,
     llm_response_object: LLMResponse,
-    patch_default_language: None,
     monkeypatch: MonkeyPatch,
-    count_multiple_utterances_as_single_turn,
-    summarize_history,
-    max_historical_turns,
-):
+    summarize_history: bool,
+    count_multiple_utterances_as_single_turn: bool,
+    max_historical_turns: int,
+    patch_default_language: None,
+) -> None:
     # MockedContextualResponseRephraser to mock LLM response, but not to set history
     class MockedContextualResponseRephraser(ContextualResponseRephraser):
         async def _generate_llm_response(
-            self, llm_input: LLMInput
+            self, llm_input: LLMInput, output_channel: OutputChannel, recipient_id: str
         ) -> Optional[LLMResponse]:
             llm_response_object.choices = ["hello foobar"]
             return llm_response_object
@@ -767,6 +778,12 @@ async def test_rephraser_prompt_conv_history_amended_by_turn_wrapper(
     rephraser.max_historical_turns = max_historical_turns
 
     with set_record_commands_and_prompts():
+        events = await ActionBotResponse("utter_default").run(
+            default_channel,
+            rephraser,
+            greet_tracker_consecutive_utts_by_same_speaker,
+            domain,
+        )
         events = await ActionBotResponse("utter_default").run(
             default_channel,
             rephraser,
@@ -930,7 +947,10 @@ async def test_rephrase_language_handling(
     monkeypatch.setattr(rephraser, "_create_history", AsyncMock(return_value="hello"))
 
     response = {"text": "Hello!", "translation": {"de": "Hallo!"}}
-    rephrased_response = await rephraser.rephrase(copy.deepcopy(response), tracker)
+    output_channel = OutputChannel()
+    rephrased_response = await rephraser.rephrase(
+        copy.deepcopy(response), tracker, output_channel
+    )
 
     assert rephrased_response["text"] == expected_text
     assert rephrased_response["translation"]["de"] == expected_translation_de
@@ -1005,6 +1025,7 @@ async def test_generate_llm_response_receives_llm_input_with_metadata(
     greet_tracker: DialogueStateTracker,
     domain_with_responses: Domain,
     patch_default_language: None,
+    create_output_channel: Callable[[str], OutputChannel],
 ) -> None:
     """Test that _generate_llm_response receives LLMInput with correct prompt and
     metadata."""
@@ -1015,7 +1036,7 @@ async def test_generate_llm_response_receives_llm_input_with_metadata(
             return "User said hello"
 
         async def _generate_llm_response(
-            self, llm_input: LLMInput
+            self, llm_input: LLMInput, output_channel: OutputChannel, recipient_id: str
         ) -> Optional[LLMResponse]:
             nonlocal captured_llm_input
             captured_llm_input = llm_input
@@ -1039,7 +1060,7 @@ async def test_generate_llm_response_receives_llm_input_with_metadata(
     await rephraser.generate(
         "utter_allows_rephrasing",
         greet_tracker,
-        output_channel="callback",
+        output_channel=create_output_channel("callback"),
     )
 
     # Verify LLMInput was captured
@@ -1083,6 +1104,7 @@ async def test_generate_llm_response_receives_llm_input_with_none_metadata(
     greet_tracker: DialogueStateTracker,
     domain_with_responses: Domain,
     patch_default_language: None,
+    create_output_channel: Callable[[str], OutputChannel],
 ) -> None:
     """Test that _generate_llm_response receives LLMInput with None metadata values."""
     captured_llm_input: Optional[LLMInput] = None
@@ -1092,7 +1114,7 @@ async def test_generate_llm_response_receives_llm_input_with_none_metadata(
             return "User said hello"
 
         async def _generate_llm_response(
-            self, llm_input: LLMInput
+            self, llm_input: LLMInput, output_channel: OutputChannel, recipient_id: str
         ) -> Optional[LLMResponse]:
             nonlocal captured_llm_input
             captured_llm_input = llm_input
@@ -1116,7 +1138,7 @@ async def test_generate_llm_response_receives_llm_input_with_none_metadata(
     await rephraser.generate(
         "utter_allows_rephrasing",
         greet_tracker,
-        output_channel="callback",
+        output_channel=create_output_channel("callback"),
     )
 
     # Verify metadata with None values
