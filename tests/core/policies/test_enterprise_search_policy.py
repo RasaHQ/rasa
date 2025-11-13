@@ -1533,6 +1533,76 @@ async def test_enterprise_search_policy_tracker_state_is_passed(
             )
 
 
+@patch("rasa.core.policies.enterprise_search_policy.embedding_metadata_context")
+async def test_enterprise_search_policy_uses_embedding_metadata_context(
+    mock_embedding_metadata_context: Mock,
+    mocked_enterprise_search_policy: EnterpriseSearchPolicy,
+    enterprise_search_tracker: DialogueStateTracker,
+) -> None:
+    """Test that predict_action_probabilities uses embedding_metadata_context with
+    correct metadata."""
+    # Given
+    tracker = enterprise_search_tracker
+    sender_id = tracker.sender_id
+    assistant_id = tracker.assistant_id
+    model_id = tracker.model_id
+
+    search_results = SearchResultList(
+        results=[
+            SearchResult(
+                text="test response",
+                metadata={"answer": "test response"},
+            )
+        ],
+        metadata={},
+    )
+
+    mock_embedding_metadata_context.return_value.__enter__ = Mock()
+    mock_embedding_metadata_context.return_value.__exit__ = Mock(return_value=None)
+
+    with patch("rasa.shared.utils.llm.llm_factory") as mock_llm_factory:
+        mock_llm = MagicMock()
+        mock_llm_factory.return_value = mock_llm.return_value
+
+        with patch.object(
+            mocked_enterprise_search_policy.vector_store,
+            "search",
+            return_value=search_results,
+        ):
+            # When
+            await mocked_enterprise_search_policy.predict_action_probabilities(
+                tracker=tracker,
+                domain=Domain.empty(),
+                endpoints=None,
+            )
+
+            # Then
+            # Verify embedding_metadata_context was called
+            assert mock_embedding_metadata_context.called
+            call_args = mock_embedding_metadata_context.call_args[0][0]
+
+            # Verify the metadata structure
+            assert call_args[LANGFUSE_METADATA_SESSION_ID] == sender_id
+            assert call_args[LANGFUSE_METADATA_TAGS] == [
+                EnterpriseSearchPolicy.__name__
+            ]
+            assert LANGFUSE_METADATA_CUSTOM_METADATA in call_args
+            assert (
+                call_args[LANGFUSE_METADATA_CUSTOM_METADATA][LANGFUSE_METADATA_AGENT_ID]
+                == assistant_id
+            )
+            assert (
+                call_args[LANGFUSE_METADATA_CUSTOM_METADATA][LANGFUSE_METADATA_MODEL_ID]
+                == model_id
+            )
+            assert (
+                call_args[LANGFUSE_METADATA_CUSTOM_METADATA][
+                    LANGFUSE_METADATA_COMPONENT_NAME
+                ]
+                == EnterpriseSearchPolicy.__name__
+            )
+
+
 def test_enterprise_search_policy_use_llm_config(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,

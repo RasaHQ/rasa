@@ -38,6 +38,14 @@ from rasa.shared.providers.embedding._langchain_embedding_client_adapter import 
 from rasa.shared.providers.embedding.openai_embedding_client import (
     OpenAIEmbeddingClient,
 )
+from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
+)
 from rasa.shared.utils.llm import AI, USER
 from tests.utilities import flows_from_str
 
@@ -335,11 +343,69 @@ class TestFlowRetrieval:
     ):
         # Given
         query = "test query"
+        tracker = DialogueStateTracker(sender_id="test", slots=[])
         flow_search.vector_store = FAISS(Mock(), Mock(), Mock(), Mock())
         k = flow_search.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY]
         # When
-        await flow_search._query_vector_store(query)
+        await flow_search._query_vector_store(query, tracker)
         # Then
+        mock_asimilarity_search_with_score.assert_called_once_with(query, k=k)
+
+    @patch("langchain_community.vectorstores.faiss.FAISS.asimilarity_search_with_score")
+    @patch(
+        "rasa.dialogue_understanding.generator.flow_retrieval.embedding_metadata_context"
+    )
+    async def test_query_vector_store_uses_embedding_metadata_context(
+        self,
+        mock_embedding_metadata_context: Mock,
+        mock_asimilarity_search_with_score: Mock,
+        flow_search: FlowRetrieval,
+    ):
+        """Test that _query_vector_store uses embedding_metadata_context with
+        correct metadata."""
+        # Given
+        query = "test query"
+        sender_id = "test_sender_123"
+        assistant_id = "test_assistant_456"
+        model_id = "test_model_789"
+        tracker = DialogueStateTracker(sender_id=sender_id, slots=[])
+        tracker.assistant_id = assistant_id
+        tracker.model_id = model_id
+
+        flow_search.vector_store = FAISS(Mock(), Mock(), Mock(), Mock())
+        mock_asimilarity_search_with_score.return_value = []
+        mock_embedding_metadata_context.return_value.__enter__ = Mock()
+        mock_embedding_metadata_context.return_value.__exit__ = Mock(return_value=None)
+
+        # When
+        await flow_search._query_vector_store(query, tracker)
+
+        # Then
+        # Verify embedding_metadata_context was called
+        assert mock_embedding_metadata_context.called
+        call_args = mock_embedding_metadata_context.call_args[0][0]
+
+        # Verify the metadata structure
+        assert call_args[LANGFUSE_METADATA_SESSION_ID] == sender_id
+        assert call_args[LANGFUSE_METADATA_TAGS] == [FlowRetrieval.__name__]
+        assert LANGFUSE_METADATA_CUSTOM_METADATA in call_args
+        assert (
+            call_args[LANGFUSE_METADATA_CUSTOM_METADATA][LANGFUSE_METADATA_AGENT_ID]
+            == assistant_id
+        )
+        assert (
+            call_args[LANGFUSE_METADATA_CUSTOM_METADATA][LANGFUSE_METADATA_MODEL_ID]
+            == model_id
+        )
+        assert (
+            call_args[LANGFUSE_METADATA_CUSTOM_METADATA][
+                LANGFUSE_METADATA_COMPONENT_NAME
+            ]
+            == FlowRetrieval.__name__
+        )
+
+        # Verify asimilarity_search_with_score was called
+        k = flow_search.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY]
         mock_asimilarity_search_with_score.assert_called_once_with(query, k=k)
 
     @patch("langchain_community.vectorstores.faiss.FAISS.asimilarity_search_with_score")
@@ -350,12 +416,13 @@ class TestFlowRetrieval:
     ):
         # Given
         query = "test query"
+        tracker = DialogueStateTracker(sender_id="test", slots=[])
         flow_search.vector_store = FAISS(Mock(), Mock(), Mock(), Mock())
         k = flow_search.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY]
         mock_asimilarity_search_with_score.side_effect = Exception("Test Exception")
         # When
         with pytest.raises(Exception) as exc_info:
-            await flow_search._query_vector_store(query)
+            await flow_search._query_vector_store(query, tracker)
         # Then
         assert "Test Exception" in str(exc_info.value), "Expected exception not raised"
         mock_asimilarity_search_with_score.assert_called_once_with(query, k=k)
@@ -366,8 +433,9 @@ class TestFlowRetrieval:
     ):
         # Given
         query = "test query"
+        tracker = DialogueStateTracker(sender_id="test", slots=[])
         # When
-        result = await flow_search._query_vector_store(query)
+        result = await flow_search._query_vector_store(query, tracker)
         # Then
         assert result == []
 
@@ -393,12 +461,13 @@ class TestFlowRetrieval:
             (d, 1.0) for d in startable_flows_documents
         ]
         # When
+        tracker = Mock()
         most_similar_flows = await flow_search.find_most_similar_flows(
-            tracker=Mock(), message=Mock(), flows=flows
+            tracker=tracker, message=Mock(), flows=flows
         )
         # Then
         mock_prepare_query.assert_called_once()
-        mock_query_vector_store.assert_called_once_with(query)
+        mock_query_vector_store.assert_called_once_with(query, tracker)
         assert len(most_similar_flows) == 2
         assert most_similar_flows.user_flow_ids == {
             "test_always_included_flow",
@@ -500,3 +569,56 @@ class TestFlowRetrieval:
         FlowRetrieval.validate_config(config)
         # Then
         assert config[key] == expected_value
+
+    @pytest.mark.parametrize(
+        "sender_id, assistant_id, model_id, expected_metadata",
+        [
+            (
+                "test_sender",
+                "test_assistant",
+                "test_model",
+                {
+                    LANGFUSE_METADATA_SESSION_ID: "test_sender",
+                    LANGFUSE_METADATA_TAGS: [FlowRetrieval.__name__],
+                    LANGFUSE_METADATA_CUSTOM_METADATA: {
+                        LANGFUSE_METADATA_AGENT_ID: "test_assistant",
+                        LANGFUSE_METADATA_MODEL_ID: "test_model",
+                        LANGFUSE_METADATA_COMPONENT_NAME: FlowRetrieval.__name__,
+                    },
+                },
+            ),
+            (
+                "sender_123",
+                None,
+                None,
+                {
+                    LANGFUSE_METADATA_SESSION_ID: "sender_123",
+                    LANGFUSE_METADATA_TAGS: [FlowRetrieval.__name__],
+                    LANGFUSE_METADATA_CUSTOM_METADATA: {
+                        LANGFUSE_METADATA_AGENT_ID: None,
+                        LANGFUSE_METADATA_MODEL_ID: None,
+                        LANGFUSE_METADATA_COMPONENT_NAME: FlowRetrieval.__name__,
+                    },
+                },
+            ),
+        ],
+    )
+    def test_get_llm_tracing_metadata(
+        self,
+        flow_search: FlowRetrieval,
+        sender_id: str,
+        assistant_id: Any,
+        model_id: Any,
+        expected_metadata: Dict[str, Any],
+    ) -> None:
+        """Test that get_llm_tracing_metadata returns correct metadata from tracker."""
+        # Given
+        tracker = DialogueStateTracker(sender_id=sender_id, slots=[])
+        tracker.assistant_id = assistant_id
+        tracker.model_id = model_id
+
+        # When
+        metadata = flow_search.get_llm_tracing_metadata(tracker)
+
+        # Then
+        assert metadata == expected_metadata

@@ -86,6 +86,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
     _LangchainEmbeddingClientAdapter,
+    embedding_metadata_context,
 )
 from rasa.shared.providers.llm.llm_response import LLMResponse, measure_llm_latency
 from rasa.shared.utils.constants import (
@@ -549,11 +550,12 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         tracker_state = tracker.current_state(EventVerbosity.AFTER_RESTART)
 
         try:
-            documents = await self.vector_store.search(
-                query=search_query,
-                tracker_state=tracker_state,
-                threshold=self.vector_search_threshold,
-            )
+            with embedding_metadata_context(self.get_llm_tracing_metadata(tracker)):
+                documents = await self.vector_store.search(
+                    query=search_query,
+                    tracker_state=tracker_state,
+                    threshold=self.vector_search_threshold,
+                )
         except InformationRetrievalException as e:
             structlogger.error(f"{logger_key}.search_error", error=e)
             return self._create_prediction_internal_error(domain, tracker)

@@ -43,6 +43,15 @@ from rasa.shared.nlu.constants import FLOWS_FROM_SEMANTIC_SEARCH, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.providers.embedding._langchain_embedding_client_adapter import (
     _LangchainEmbeddingClientAdapter,
+    embedding_metadata_context,
+)
+from rasa.shared.utils.constants import (
+    LANGFUSE_METADATA_AGENT_ID,
+    LANGFUSE_METADATA_COMPONENT_NAME,
+    LANGFUSE_METADATA_CUSTOM_METADATA,
+    LANGFUSE_METADATA_MODEL_ID,
+    LANGFUSE_METADATA_SESSION_ID,
+    LANGFUSE_METADATA_TAGS,
 )
 from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
     EmbeddingsHealthCheckMixin,
@@ -147,7 +156,6 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
         **kwargs: Any,
     ) -> "FlowRetrieval":
         """Load flow retrieval with previously populated FAISS vector store."""
-
         # Perform health check on resolved embedding client config
         embeddings_config = resolve_model_client_config(
             config.get(EMBEDDINGS_CONFIG_KEY, {})
@@ -225,6 +233,17 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
             rasa.shared.utils.io.dump_obj_as_json_to_file(
                 path / FLOW_RETRIEVAL_CONFIG_FILE_NAME, self.config
             )
+
+    def get_llm_tracing_metadata(self, tracker: DialogueStateTracker) -> Dict[str, Any]:
+        return {
+            LANGFUSE_METADATA_SESSION_ID: tracker.sender_id,
+            LANGFUSE_METADATA_TAGS: [self.__class__.__name__],
+            LANGFUSE_METADATA_CUSTOM_METADATA: {
+                LANGFUSE_METADATA_AGENT_ID: tracker.assistant_id,
+                LANGFUSE_METADATA_MODEL_ID: tracker.model_id,
+                LANGFUSE_METADATA_COMPONENT_NAME: self.__class__.__name__,
+            },
+        }
 
     def populate(self, flows: FlowsList, domain: Domain) -> None:
         """Populates the vector store with embeddings generated from
@@ -371,7 +390,7 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
             The most similar flows to the current conversation.
         """
         query = self._prepare_query(tracker, message)
-        documents_with_scores = await self._query_vector_store(query)
+        documents_with_scores = await self._query_vector_store(query, tracker)
         # filter out None i.e. more flows were embedded during training than are
         # available during prediction
         most_similar_flows_with_scores = [
@@ -392,7 +411,7 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
         )
         return FlowsList([f for f, _ in most_similar_flows_with_scores])
 
-    def _prepare_query(self, tracker: DialogueStateTracker, message: Message) -> Text:
+    def _prepare_query(self, tracker: DialogueStateTracker, message: Message) -> str:
         """Prepares the query for vector store. The query is composed
         of the conversation within the specified number of turns.
 
@@ -414,7 +433,9 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
 
         return f"{message.data[TEXT]}"
 
-    async def _query_vector_store(self, query: Text) -> List:
+    async def _query_vector_store(
+        self, query: str, tracker: DialogueStateTracker
+    ) -> List:
         """Compares the query with all flows using a vector store
         and returns the top k relevant flows for the current conversation.
 
@@ -427,11 +448,12 @@ class FlowRetrieval(EmbeddingsHealthCheckMixin):
         if self.vector_store is None:
             return []
         try:
-            documents_with_scores = (
-                await self.vector_store.asimilarity_search_with_score(
-                    query, k=int(self.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY])
+            with embedding_metadata_context(self.get_llm_tracing_metadata(tracker)):
+                documents_with_scores = (
+                    await self.vector_store.asimilarity_search_with_score(
+                        query, k=int(self.config[MAX_FLOWS_FROM_SEMANTIC_SEARCH_KEY])
+                    )
                 )
-            )
             structlogger.debug(
                 "flow_retrieval.query_vector_store.fetched",
                 event_info=(
