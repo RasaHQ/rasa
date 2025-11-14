@@ -27,6 +27,7 @@ from rasa.agents.schemas import (
     AgentToolSchema,
 )
 from rasa.core.available_agents import AgentMCPServerConfig, ProtocolConfig
+from rasa.core.channels import OutputChannel
 from rasa.shared.agents.utils import make_agent_identifier
 from rasa.shared.constants import (
     ROLE_TOOL,
@@ -143,7 +144,9 @@ class MCPOpenAgent(MCPBaseAgent):
             ),
         )
 
-    async def send_message(self, agent_input: AgentInput) -> AgentOutput:
+    async def send_message(
+        self, agent_input: AgentInput, output_channel: Optional[OutputChannel] = None
+    ) -> AgentOutput:
         """Send a message to the LLM and return the response."""
         messages = self.build_messages_for_llm_request(agent_input)
         tool_results: Dict[str, AgentToolResult] = {}

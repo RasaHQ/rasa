@@ -24,6 +24,7 @@ class AgentInput(BaseModel):
     events: List[Event]
     metadata: Dict[str, Any]
     timestamp: Optional[str] = None
+    recipient_id: Optional[str] = None
 
     class Config:
         """Skip validation for Event class as pydantic does not know how to

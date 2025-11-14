@@ -6,6 +6,7 @@ import structlog
 from jinja2 import Template
 from structlog.contextvars import bound_contextvars
 
+from rasa.core.channels.channel import OutputChannel
 from rasa.core.channels.voice_stream.call_state import (
     call_state,
 )
@@ -405,6 +406,7 @@ async def advance_flows(
     available_actions: List[str],
     flows: FlowsList,
     slots: List[Slot],
+    output_channel: Optional[OutputChannel] = None,
 ) -> FlowActionPrediction:
     """Advance the current flows until the next action.
 
@@ -413,6 +415,7 @@ async def advance_flows(
         available_actions: The actions that are available in the domain.
         flows: All flows.
         slots: The slots that are available in the domain.
+        output_channel: The output channel to use.
 
     Returns:
     The predicted action and the events to run.
@@ -423,7 +426,7 @@ async def advance_flows(
         return FlowActionPrediction(None, 0.0)
 
     return await advance_flows_until_next_action(
-        tracker, available_actions, flows, slots
+        tracker, available_actions, flows, slots, output_channel=output_channel
     )
 
 
@@ -432,6 +435,7 @@ async def advance_flows_until_next_action(
     available_actions: List[str],
     flows: FlowsList,
     slots: List[Slot],
+    output_channel: Optional[OutputChannel] = None,
 ) -> FlowActionPrediction:
     """Advance the flow and select the next action to execute.
 
@@ -444,6 +448,8 @@ async def advance_flows_until_next_action(
         tracker: The tracker to get the next action for.
         available_actions: The actions that are available in the domain.
         flows: All flows.
+        slots: The slots that are available in the domain.
+        output_channel: The output channel to use.
 
     Returns:
         The next action to execute, the events that should be applied to the
@@ -498,6 +504,7 @@ async def advance_flows_until_next_action(
                     flows,
                     previous_step_id,
                     slots,
+                    output_channel=output_channel,
                 )
                 new_events = step_result.events
                 if (
@@ -609,6 +616,7 @@ async def run_step(
     flows: FlowsList,
     previous_step_id: str,
     slots: List[Slot],
+    output_channel: Optional[OutputChannel] = None,
 ) -> FlowStepResult:
     """Run a single step of a flow.
 
@@ -628,6 +636,7 @@ async def run_step(
         flows: All flows.
         previous_step_id: The ID of the previous step.
         slots: The slots that are available in the domain.
+        output_channel: The output channel to use.
 
     Returns:
     A result of running the step describing where to transition to.
@@ -667,7 +676,15 @@ async def run_step(
         return _run_link_step(initial_events, stack, step)
 
     elif isinstance(step, CallFlowStep):
-        return await _run_call_step(initial_events, stack, step, tracker, slots, flows)
+        return await _run_call_step(
+            initial_events,
+            stack,
+            step,
+            tracker,
+            slots,
+            flows,
+            output_channel=output_channel,
+        )
 
     elif isinstance(step, SetSlotsFlowStep):
         return _run_set_slot_step(initial_events, step)
@@ -741,12 +758,21 @@ async def _run_call_step(
     tracker: DialogueStateTracker,
     slots: List[Slot],
     flows: FlowsList,
+    output_channel: Optional[OutputChannel] = None,
 ) -> FlowStepResult:
     structlogger.debug("flow.step.run.call")
     if step.is_calling_mcp_tool():
         return await call_mcp_tool(initial_events, stack, step, tracker)
     elif step.is_calling_agent():
-        return await run_agent(initial_events, stack, step, tracker, slots, flows)
+        return await run_agent(
+            initial_events,
+            stack,
+            step,
+            tracker,
+            slots,
+            flows,
+            output_channel=output_channel,
+        )
     else:
         stack.push(
             UserFlowStackFrame(

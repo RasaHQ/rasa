@@ -1,4 +1,4 @@
-from typing import ClassVar, Dict
+from typing import ClassVar, Dict, Optional
 
 import structlog
 
@@ -7,6 +7,7 @@ from rasa.agents.core.agent_protocol import AgentProtocol
 from rasa.agents.core.types import AgentIdentifier, ProtocolType
 from rasa.agents.schemas import AgentInput, AgentOutput
 from rasa.core.available_agents import AgentConfig
+from rasa.core.channels.channel import OutputChannel
 from rasa.shared.agents.utils import make_agent_identifier
 from rasa.shared.exceptions import AgentInitializationException
 from rasa.utils.singleton import Singleton
@@ -101,7 +102,11 @@ class AgentManager(metaclass=Singleton):
             raise AgentInitializationException(e, suppress_stack_trace=True) from e
 
     async def run_agent(
-        self, agent_name: str, protocol_type: ProtocolType, context: AgentInput
+        self,
+        agent_name: str,
+        protocol_type: ProtocolType,
+        context: AgentInput,
+        output_channel: Optional[OutputChannel] = None,
     ) -> AgentOutput:
         """Run an agent, send the input to the agent and return the agent response.
 
@@ -109,6 +114,7 @@ class AgentManager(metaclass=Singleton):
             agent_name: The name of the agent.
             protocol_type: The protocol type of the agent.
             context: The input to the agent as an AgentInput object.
+            output_channel: The output channel to use.
 
         Returns:
             The response from the agent.
@@ -139,7 +145,7 @@ class AgentManager(metaclass=Singleton):
             raise
 
         # Send message to agent
-        output = await agent.run(processed_input)
+        output = await agent.run(processed_input, output_channel=output_channel)
 
         structlogger.debug(
             "agent_manager.run_agent.output",

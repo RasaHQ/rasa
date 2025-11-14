@@ -6,6 +6,7 @@ from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.protocol.mcp.mcp_base_agent import MCPBaseAgent
 from rasa.agents.schemas import AgentInput, AgentOutput
 from rasa.core.available_agents import AgentMCPServerConfig, ProtocolConfig
+from rasa.core.channels import OutputChannel
 
 
 class TestMCPBaseAgentImpl(MCPBaseAgent):
@@ -54,7 +55,9 @@ class TestMCPBaseAgentImpl(MCPBaseAgent):
         """Return MCP_OPEN protocol type for testing."""
         return ProtocolType.MCP_OPEN
 
-    async def send_message(self, agent_input: AgentInput) -> AgentOutput:
+    async def send_message(
+        self, agent_input: AgentInput, output_channel: Optional[OutputChannel] = None
+    ) -> AgentOutput:
         """Test implementation of send_message."""
         # Simple test implementation that returns a basic response
         return AgentOutput(

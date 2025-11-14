@@ -898,7 +898,7 @@ class TestMCPBaseAgent:
 
             await mock_mcp_base_agent.run(mock_agent_input)
 
-            mock_send_message.assert_called_once_with(mock_agent_input)
+            mock_send_message.assert_called_once_with(mock_agent_input, None)
 
     # ============================================================================
     # Message Processing Tests

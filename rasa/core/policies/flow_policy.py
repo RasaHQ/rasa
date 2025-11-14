@@ -141,7 +141,11 @@ class FlowPolicy(Policy):
         # create executor and predict next action
         try:
             prediction = await flow_executor.advance_flows(
-                tracker, domain.action_names_or_texts, flows, domain.slots
+                tracker,
+                domain.action_names_or_texts,
+                flows,
+                domain.slots,
+                output_channel=output_channel,
             )
             return self._create_prediction_result(
                 prediction.action_name,
@@ -168,7 +172,11 @@ class FlowPolicy(Policy):
             events = tracker.create_stack_updated_events(updated_stack)
             tracker.update_with_events(events)
             prediction = await flow_executor.advance_flows(
-                tracker, domain.action_names_or_texts, flows, domain.slots
+                tracker,
+                domain.action_names_or_texts,
+                flows,
+                domain.slots,
+                output_channel=output_channel,
             )
             collected_events = events + (prediction.events or [])
             return self._create_prediction_result(

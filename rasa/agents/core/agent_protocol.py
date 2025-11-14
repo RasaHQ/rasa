@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Optional, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from rasa.agents.core.types import ProtocolType
     from rasa.agents.schemas.agent_input import AgentInput
     from rasa.agents.schemas.agent_output import AgentOutput
     from rasa.core.available_agents import AgentConfig
+    from rasa.core.channels.channel import OutputChannel
 
 
 @runtime_checkable
@@ -75,9 +76,10 @@ class AgentProtocol(Protocol):
         """
         ...
 
-    async def run(self, input: "AgentInput") -> "AgentOutput":
-        """
-        Send a message to Agent/server and return response.
+    async def run(
+        self, input: "AgentInput", output_channel: Optional[OutputChannel] = None
+    ) -> "AgentOutput":
+        """Send a message to Agent/server and return response.
 
         This method should be implemented to send a message to the agent/server and
         return the response in an AgentOutput object.

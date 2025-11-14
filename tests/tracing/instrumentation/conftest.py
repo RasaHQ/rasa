@@ -327,7 +327,9 @@ class MockSubAgent(AgentProtocol):
     async def process_input(self, input: AgentInput) -> AgentInput:
         return input
 
-    async def run(self, input: AgentInput) -> AgentOutput:
+    async def run(
+        self, input: AgentInput, output_channel: Optional[OutputChannel] = None
+    ) -> AgentOutput:
         """Send a message to Agent/server and return response."""
         return AgentOutput(
             id=input.id,
@@ -1168,6 +1170,8 @@ class MockMCPOpenAgent(MCPOpenAgent):
         """Set the agent output to return from send_message."""
         self._agent_output = agent_output
 
-    async def send_message(self, agent_input: "AgentInput") -> "AgentOutput":
+    async def send_message(
+        self, agent_input: "AgentInput", output_channel: Optional[OutputChannel] = None
+    ) -> "AgentOutput":
         """Mock send_message method that returns the configured agent output."""
         return self._agent_output

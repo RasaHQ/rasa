@@ -4,7 +4,7 @@ import os
 import time
 import uuid
 from contextlib import aclosing
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional, Set
 from urllib.parse import urlparse
 
 import httpx
@@ -51,7 +51,18 @@ from rasa.agents.core.agent_protocol import AgentProtocol
 from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.schemas import AgentInput, AgentOutput
 from rasa.core.available_agents import AgentConfig
+from rasa.core.channels import OutputChannel
+from rasa.core.constants import (
+    AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE,
+    AGENT_MESSAGE_TYPE_KEY,
+    INTERMEDIATE_MESSAGE_AGENT_NAME_KEY,
+    INTERMEDIATE_MESSAGE_AGENT_TASK_ID_KEY,
+    INTERMEDIATE_MESSAGE_ID_KEY,
+    INTERMEDIATE_MESSAGE_TIMESTAMP_KEY,
+    UTTER_SOURCE_METADATA_KEY,
+)
 from rasa.shared.agents.auth.agent_auth_manager import AgentAuthManager
+from rasa.shared.core.events import BotUttered, Event
 from rasa.shared.exceptions import (
     AgentInitializationException,
     InvalidParameterException,
@@ -193,8 +204,11 @@ class A2AAgent(AgentProtocol):
         # A2A-specific input processing logic
         return agent_input
 
-    async def run(self, agent_input: AgentInput) -> AgentOutput:
+    async def run(
+        self, agent_input: AgentInput, output_channel: Optional[OutputChannel] = None
+    ) -> AgentOutput:
         """Send a message to Agent/server and return response."""
+        generated_events: List[Event] = []
         if not self._client or not self.agent_card:
             structlogger.error(
                 "a2a_agent.run.error",
@@ -204,6 +218,7 @@ class A2AAgent(AgentProtocol):
                 id=agent_input.id,
                 status=AgentStatus.FATAL_ERROR,
                 error_message="Client not initialized",
+                events=generated_events or None,
             )
 
         structlogger.info(
@@ -222,7 +237,10 @@ class A2AAgent(AgentProtocol):
                 async for event in stream:
                     events_received += 1
                     agent_output = self._handle_send_message_response(
-                        agent_input, event
+                        agent_input,
+                        event,
+                        generated_events,
+                        output_channel=output_channel,
                     )
                     if agent_output is not None:
                         return agent_output
@@ -237,7 +255,9 @@ class A2AAgent(AgentProtocol):
                             task_id = event[0].id
                         continue
         except A2AClientJSONRPCError as e:
-            return self._handle_json_rpc_error_response(agent_input, e.error)
+            return self._handle_json_rpc_error_response(
+                agent_input, e.error, generated_events
+            )
         except A2AClientError as exception:
             structlogger.error(
                 "a2a_agent.run.send_message.error",
@@ -249,6 +269,7 @@ class A2AAgent(AgentProtocol):
                 id=agent_input.id,
                 status=AgentStatus.FATAL_ERROR,
                 error_message=f"Send message error: {exception!s}",
+                events=generated_events or None,
             )
 
         # The stream has ended, but we didn't get a terminal response.
@@ -263,6 +284,7 @@ class A2AAgent(AgentProtocol):
                 id=agent_input.id,
                 status=AgentStatus.RECOVERABLE_ERROR,
                 error_message="No events received from A2A agent",
+                events=generated_events or None,
             )
 
         # Now we need to poll the task until it reaches a terminal state.
@@ -277,13 +299,16 @@ class A2AAgent(AgentProtocol):
                 id=agent_input.id,
                 status=AgentStatus.FATAL_ERROR,
                 error_message="Missing task_id for polling",
+                events=generated_events or None,
             )
         return await self._pool_task_until_terminal(
             agent_input=agent_input,
             task_id=task_id,
+            generated_events=generated_events,
             max_wait=A2A_TASK_POOLING_MAX_WAIT,
             initial_delay=A2A_TASK_POOLING_INITIAL_DELAY,
             max_delay=MAX_AGENT_RETRY_DELAY_SECONDS,
+            output_channel=output_channel,
         )
 
     async def process_output(self, output: AgentOutput) -> AgentOutput:
@@ -296,7 +321,11 @@ class A2AAgent(AgentProtocol):
     # ============================================================================
 
     def _handle_send_message_response(
-        self, agent_input: AgentInput, response: ClientEvent | Message
+        self,
+        agent_input: AgentInput,
+        response: ClientEvent | Message,
+        generated_events: List[Event],
+        output_channel: Optional[OutputChannel] = None,
     ) -> Optional[AgentOutput]:
         """Handle possible response types from the A2A client.
 
@@ -313,22 +342,28 @@ class A2AAgent(AgentProtocol):
         to wait for updates.
         """
         if isinstance(response, Message):
-            return self._handle_message_response(agent_input, response)
+            return self._handle_message_response(
+                agent_input, response, generated_events
+            )
         elif (
             isinstance(response, tuple)
             and len(response) == 2
             and isinstance(response[0], Task)
         ):
-            return self._handle_client_event(agent_input, response)
+            return self._handle_client_event(
+                agent_input, response, generated_events, output_channel=output_channel
+            )
         else:
             # Currently, no other response types exist, so this branch is
             # unreachable. It is kept as a safeguard against future changes
             # to the A2A protocol: if new response types are introduced,
             # the agent will log an error instead of crashing.
-            return self._handle_unexpected_response_type(agent_input, response)
+            return self._handle_unexpected_response_type(
+                agent_input, response, generated_events
+            )
 
     def _handle_json_rpc_error_response(
-        self, agent_input: AgentInput, error: Any
+        self, agent_input: AgentInput, error: Any, generated_events: List[Event]
     ) -> AgentOutput:
         structlogger.error(
             "a2a_agent.run.error",
@@ -347,16 +382,22 @@ class A2AAgent(AgentProtocol):
                 id=agent_input.id,
                 status=AgentStatus.RECOVERABLE_ERROR,
                 error_message=str(error),
+                events=generated_events or None,
             )
         else:
             return AgentOutput(
                 id=agent_input.id,
                 status=AgentStatus.FATAL_ERROR,
                 error_message=str(error),
+                events=generated_events or None,
             )
 
     def _handle_client_event(
-        self, agent_input: AgentInput, client_event: ClientEvent
+        self,
+        agent_input: AgentInput,
+        client_event: ClientEvent,
+        generated_events: List[Event],
+        output_channel: Optional[OutputChannel] = None,
     ) -> Optional[AgentOutput]:
         task = client_event[0]
         update_event = client_event[1]
@@ -368,10 +409,16 @@ class A2AAgent(AgentProtocol):
             json_formatting=["task", "update_event"],
         )
 
-        return self._handle_task(agent_input=agent_input, task=task)
+        return self._handle_task(
+            agent_input=agent_input,
+            task=task,
+            generated_events=generated_events,
+            sent_intermediate_messages=None,
+            output_channel=output_channel,
+        )
 
     def _handle_message_response(
-        self, agent_input: AgentInput, message: Message
+        self, agent_input: AgentInput, message: Message, generated_events: List[Event]
     ) -> Optional[AgentOutput]:
         structlogger.debug(
             "a2a_agent.run.message_received",
@@ -388,10 +435,14 @@ class A2AAgent(AgentProtocol):
             status=AgentStatus.INPUT_REQUIRED,
             response_message=self._generate_response_message_from_parts(message.parts),
             metadata=metadata,
+            events=generated_events or None,
         )
 
     def _handle_unexpected_response_type(
-        self, agent_input: AgentInput, response_result: Any
+        self,
+        agent_input: AgentInput,
+        response_result: Any,
+        generated_events: List[Event],
     ) -> AgentOutput:
         structlogger.error(
             "a2a_agent.run.unexpected_response_type",
@@ -404,12 +455,16 @@ class A2AAgent(AgentProtocol):
             id=agent_input.id,
             status=AgentStatus.FATAL_ERROR,
             error_message=f"Unexpected response type: {type(response_result)}",
+            events=generated_events or None,
         )
 
     def _handle_task(
         self,
         agent_input: AgentInput,
         task: Task,
+        generated_events: List[Event],
+        sent_intermediate_messages: Optional[Set[str]] = None,
+        output_channel: Optional[OutputChannel] = None,
     ) -> Optional[AgentOutput]:
         """If task status is terminal (e.g. completed, failed) return AgentOutput.
 
@@ -434,6 +489,7 @@ class A2AAgent(AgentProtocol):
                 status=AgentStatus.INPUT_REQUIRED,
                 response_message=response_message,
                 metadata=metadata,
+                events=generated_events or None,
             )
         elif state == TaskState.completed:
             response_message = self._generate_completed_response_message(task)
@@ -450,6 +506,7 @@ class A2AAgent(AgentProtocol):
                 response_message=response_message,
                 structured_results=structured_results,
                 metadata=metadata,
+                events=generated_events or None,
             )
         elif (
             state == TaskState.failed
@@ -468,9 +525,18 @@ class A2AAgent(AgentProtocol):
                 status=AgentStatus.RECOVERABLE_ERROR,
                 error_message=f"Task state: {state}",
                 metadata=metadata,
+                events=generated_events or None,
             )
         elif state == TaskState.submitted or state == TaskState.working:
-            # The task is still in progress, return None to continue waiting for updates
+            # The task is still in progress, send intermediate status update
+            # to the user and return None to continue waiting for updates
+            self._send_intermediate_message(
+                agent_input,
+                task,
+                generated_events,
+                sent_intermediate_messages,
+                output_channel,
+            )
             return None
         elif state == TaskState.unknown:
             # The task has an unknown state. Perhaps this is a transient condition.
@@ -494,7 +560,141 @@ class A2AAgent(AgentProtocol):
                 status=AgentStatus.FATAL_ERROR,
                 error_message=f"Unexpected task state: {state}",
                 metadata=metadata,
+                events=generated_events or None,
             )
+
+    def _send_intermediate_message(
+        self,
+        agent_input: AgentInput,
+        task: Task,
+        generated_events: List[Event],
+        sent_intermediate_messages: Optional[Set[str]] = None,
+        output_channel: Optional[OutputChannel] = None,
+    ) -> None:
+        """Send an intermediate message to the user if the task is in progress.
+        This allows the user to see that the agent is working on their request,
+        providing better UX for long-running operations.
+
+        Args:
+            agent_input: The agent input containing user information
+            task: The task from the A2A stream
+            generated_events: List of events generated so far for this run
+            sent_intermediate_messages: Set of intermediate messages already sent,
+            to avoid duplicates.
+            output_channel: The output channel for sending messages
+        """
+        if output_channel is None:
+            structlogger.debug(
+                "a2a_agent.send_intermediate_message.no_output_channel",
+                event_info=(
+                    "No output channel provided, cannot send intermediate message.",
+                ),
+                agent_name=self._name,
+            )
+            return
+
+        recipient_id = agent_input.recipient_id
+        if not recipient_id:
+            structlogger.debug(
+                "a2a_agent.send_intermediate_message.no_recipient_id",
+                event_info=(
+                    "No recipient ID provided in agent input, cannot send "
+                    "intermediate message."
+                ),
+                agent_name=self._name,
+            )
+            return
+
+        try:
+            message = (
+                self._generate_response_message_from_parts(task.status.message.parts)
+                if task.status.message
+                else ""
+            )
+            if len(message) == 0:
+                structlogger.debug(
+                    "a2a_agent.send_intermediate_message.empty_message",
+                    event_info="Skipping sending empty intermediate message",
+                    agent_name=self._name,
+                    recipient_id=recipient_id,
+                )
+                return
+
+            # In polling mode, avoid sending duplicate intermediate messages
+            if sent_intermediate_messages is not None:
+                if message in sent_intermediate_messages:
+                    structlogger.debug(
+                        "a2a_agent.send_intermediate_message.duplicate_skipped",
+                        event_info="Skipping duplicate intermediate message"
+                        " during polling",
+                        agent_name=self._name,
+                        recipient_id=recipient_id,
+                        message=message,
+                    )
+                    return
+
+            structlogger.debug(
+                "a2a_agent.send_intermediate_message.sending",
+                event_info="Sending intermediate message to output channel",
+                agent_name=self._name,
+                recipient_id=recipient_id,
+                message=message,
+            )
+
+            # Send the message in background without awaiting it
+            async_task = asyncio.create_task(
+                output_channel.send_text_message(
+                    recipient_id=recipient_id, text=message
+                )
+            )
+
+            # Append BotUttered only if the async send succeeded
+            def _on_send_done(t: asyncio.Task) -> None:
+                exc = t.exception()
+                if exc:
+                    structlogger.error(
+                        "a2a_agent.send_intermediate_message.async_task_error",
+                        event_info="Sending intermediate message in async task failed",
+                        agent_name=self._name,
+                        recipient_id=recipient_id,
+                        error=str(exc),
+                    )
+                else:
+                    generated_events.append(
+                        BotUttered(
+                            text=message,
+                            metadata=self.create_bot_uttered_event_metadata(task),
+                        )
+                    )
+                    if sent_intermediate_messages is not None:
+                        sent_intermediate_messages.add(message)
+
+            async_task.add_done_callback(_on_send_done)
+        except Exception as e:
+            structlogger.error(
+                "a2a_agent.send_intermediate_message.error",
+                event_info="Error sending intermediate message to output channel",
+                agent_name=self._name,
+                recipient_id=recipient_id,
+                error=str(e),
+            )
+
+    def create_bot_uttered_event_metadata(self, task: Task) -> Dict[str, str]:
+        bot_uttered_metadata = {
+            UTTER_SOURCE_METADATA_KEY: self.__class__.__name__,
+            INTERMEDIATE_MESSAGE_AGENT_NAME_KEY: self._name,
+            INTERMEDIATE_MESSAGE_AGENT_TASK_ID_KEY: task.id,
+            AGENT_MESSAGE_TYPE_KEY: AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE,
+        }
+        if task.status.timestamp:
+            bot_uttered_metadata[INTERMEDIATE_MESSAGE_TIMESTAMP_KEY] = (
+                task.status.timestamp
+            )
+        if task.status.message:
+            bot_uttered_metadata[INTERMEDIATE_MESSAGE_ID_KEY] = (
+                task.status.message.message_id
+            )
+        return bot_uttered_metadata
 
     # ============================================================================
     # Message Preparation & Formatting
@@ -545,9 +745,11 @@ class A2AAgent(AgentProtocol):
         self,
         agent_input: AgentInput,
         task_id: str,
+        generated_events: List[Event],
         max_wait: int,
         initial_delay: float,
         max_delay: int,
+        output_channel: Optional[OutputChannel] = None,
     ) -> AgentOutput:
         """Poll the task status until it reaches a terminal state or times out."""
         if not self._client:
@@ -572,11 +774,18 @@ class A2AAgent(AgentProtocol):
         )
         start_time = time.monotonic()
         delay = initial_delay
+        sent_intermediate_messages: Set[str] = set()
 
         while True:
             try:
                 task = await self._client.get_task(TaskQueryParams(id=task_id))
-                agent_output = self._handle_task(agent_input=agent_input, task=task)
+                agent_output = self._handle_task(
+                    agent_input=agent_input,
+                    task=task,
+                    generated_events=generated_events,
+                    sent_intermediate_messages=sent_intermediate_messages,
+                    output_channel=output_channel,
+                )
                 if agent_output is not None:
                     # Reached a terminal state, return the output
                     return agent_output
@@ -595,6 +804,7 @@ class A2AAgent(AgentProtocol):
                         id=agent_input.id,
                         status=AgentStatus.FATAL_ERROR,
                         error_message="Polling timed out",
+                        events=generated_events or None,
                     )
 
                 structlogger.error(
@@ -621,6 +831,7 @@ class A2AAgent(AgentProtocol):
                     id=agent_input.id,
                     status=AgentStatus.FATAL_ERROR,
                     error_message=f"Polling error: {exception!s}",
+                    events=generated_events or None,
                 )
 
     # ============================================================================

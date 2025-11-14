@@ -901,6 +901,7 @@ def _instrument_mcp_agent_send_message_response_capture(
         async def wrapper(
             self: "MCPBaseAgent",
             agent_input: "AgentInput",
+            output_channel: Optional[OutputChannel] = None,
         ) -> "AgentOutput":
             agent_output = await fn(self, agent_input)
 
@@ -1328,6 +1329,7 @@ def _instrument_advance_flows_until_next_action(
             available_actions: List[str],
             flows: FlowsList,
             slots: List[Slot],
+            output_channel: Optional[OutputChannel] = None,
         ) -> FlowActionPrediction:
             with tracer.start_as_current_span(f"{module_name}.{fn.__name__}") as span:
                 prediction: FlowActionPrediction = await fn(
@@ -1382,6 +1384,7 @@ def _instrument_call_agent_with_retry(
         protocol_type: Any,
         agent_input: Any,
         max_retries: int,
+        output_channel: Optional[OutputChannel] = None,
     ) -> Any:
         agent_input_attrs = {
             "agent_name": agent_name,

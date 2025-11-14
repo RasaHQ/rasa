@@ -658,6 +658,7 @@ def extract_attrs_for_advance_flows(
     available_actions: List[str],
     flows: FlowsList,
     slots: List[Slot],
+    output_channel: Optional["OutputChannel"] = None,
 ) -> Dict[str, Any]:
     from rasa.tracing.instrumentation.instrumentation import FLOW_EXECUTOR_MODULE_NAME
 
@@ -795,6 +796,7 @@ def extract_attrs_for_run_step(
     flows: FlowsList,
     previous_step_id: Text,
     slots: List[Slot],
+    output_channel: Optional["OutputChannel"] = None,
 ) -> Dict[str, Any]:
     current_context = extract_current_context_attribute(stack)
 
@@ -1014,6 +1016,7 @@ def extract_attrs_for_grpc_custom_action_executor_request(
 def extract_attrs_for_mcp_agent_llm_call(
     self: "MCPBaseAgent",
     agent_input: "AgentInput",
+    output_channel: Optional["OutputChannel"] = None,
 ) -> Dict[str, Any]:
     """Extract attributes for MCP agent LLM calls.
 

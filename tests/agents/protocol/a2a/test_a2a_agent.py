@@ -6,11 +6,13 @@ import pytest
 from _pytest.fixtures import FixtureRequest
 from _pytest.monkeypatch import MonkeyPatch
 from a2a.client import A2AClientError, A2AClientHTTPError
+from a2a.client.errors import A2AClientJSONRPCError
 from a2a.types import (
     Artifact,
     DataPart,
     FilePart,
     FileWithUri,
+    InternalError,
     Message,
     Part,
     Role,
@@ -38,6 +40,15 @@ from rasa.core.available_agents import (
     AgentInfo,
     ProtocolConfig,
 )
+from rasa.core.constants import (
+    AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE,
+    AGENT_MESSAGE_TYPE_KEY,
+    INTERMEDIATE_MESSAGE_AGENT_NAME_KEY,
+    INTERMEDIATE_MESSAGE_AGENT_TASK_ID_KEY,
+    INTERMEDIATE_MESSAGE_ID_KEY,
+    UTTER_SOURCE_METADATA_KEY,
+)
+from rasa.shared.core.events import BotUttered
 from rasa.shared.exceptions import (
     AgentInitializationException,
     InvalidParameterException,
@@ -73,6 +84,37 @@ class StreamTracker:
 def stream_tracker() -> StreamTracker:
     """Fixture for tracking async generator behavior."""
     return StreamTracker()
+
+
+@pytest.fixture
+def immediate_create_task():
+    """Patch asyncio.create_task in A2A module so done_callback fires immediately.
+
+    Still schedules the real coroutine with the original create_task to preserve
+    AsyncMock await counts on output channels.
+    """
+    import asyncio as _asyncio
+
+    from rasa.agents.protocol.a2a import a2a_agent as a2a_mod
+
+    orig_create_task = _asyncio.create_task
+
+    def _immediate_task(coro):
+        # schedule real coroutine to preserve awaited counts and behavior
+        orig_create_task(coro)
+
+        class _FakeDone:
+            def exception(self):
+                return None
+
+        class _FakeTask:
+            def add_done_callback(self, cb):
+                cb(_FakeDone())
+
+        return _FakeTask()
+
+    with patch.object(a2a_mod.asyncio, "create_task", side_effect=_immediate_task):
+        yield
 
 
 @pytest.fixture(autouse=True)
@@ -316,6 +358,243 @@ async def test_run_pooling_agent_triggers_on_non_terminal_task(mock_init_client)
 
 @pytest.mark.asyncio
 @patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_pooling_sends_intermediate_messages(mock_init_client):
+    # First response: non-terminal state (submitted) with message
+    submitted_task = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(
+            state=TaskState.submitted,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="Submitted message"))],
+                message_id="m2",
+            ),
+        ),
+    )
+    # Working response with message
+    working_task = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(
+            state=TaskState.working,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="Working message"))],
+                message_id="m3",
+            ),
+        ),
+    )
+
+    # Final response: terminal (completed)
+    completed_task = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(state=TaskState.completed),
+        artifacts=[Artifact(artifact_id="artifact-1", parts=[])],
+    )
+
+    # Mock send_message to yield a single tuple with non-terminal task
+    async def mock_stream_generator():
+        yield submitted_task, None
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = mock_stream_generator()
+    # Mock get_task: working task returned multiple times before completion
+    mock_client.get_task = AsyncMock(
+        side_effect=[
+            working_task,
+            working_task,
+            working_task,
+            working_task,
+            completed_task,
+        ]
+    )
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_load_card.return_value = MagicMock()
+        await agent.connect()
+
+    # Prepare a mock output channel and agent input with recipient id
+    mock_output_channel = MagicMock()
+    mock_output_channel.send_text_message = AsyncMock()
+
+    output = await agent.run(
+        AgentInput(
+            id="abc",
+            metadata={},
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+            recipient_id="user-123",
+        ),
+        output_channel=mock_output_channel,
+    )
+
+    # send_message should be called once
+    mock_client.send_message.assert_called_once()
+    # get_task should be called three times (4 non-terminal + 1 terminal)
+    assert mock_client.get_task.call_count == 5
+    # Final output should be COMPLETED
+    assert output.status == AgentStatus.COMPLETED
+
+    # Allow background tasks created via asyncio.create_task to run
+    await asyncio.sleep(0)
+
+    calls = mock_output_channel.send_text_message.await_args_list
+    # Validate that the intermediate messages were sent only once each
+    # despite repeated working status
+    assert len(calls) == 2
+    assert calls[0].kwargs["text"] == "Submitted message"
+    assert calls[1].kwargs["text"] == "Working message"
+
+    # Validate that the recipient_id was passed correctly each time
+    assert calls[0].kwargs["recipient_id"] == "user-123"
+    assert calls[1].kwargs["recipient_id"] == "user-123"
+
+    assert output.events is not None
+    bot_uttered_events = [
+        event for event in output.events if isinstance(event, BotUttered)
+    ]
+    # Validate that the final output events contain the BotUttered events for each
+    # intermediate message sent
+    assert len(bot_uttered_events) == 2
+    assert bot_uttered_events[0].text == "Submitted message"
+    assert bot_uttered_events[1].text == "Working message"
+
+    for event in bot_uttered_events:
+        assert event.metadata is not None
+        assert event.metadata.get(UTTER_SOURCE_METADATA_KEY) == "A2AAgent"
+        assert event.metadata.get(INTERMEDIATE_MESSAGE_AGENT_NAME_KEY) == "test_agent"
+        assert event.metadata.get(INTERMEDIATE_MESSAGE_AGENT_TASK_ID_KEY) == "abc-123"
+
+    assert bot_uttered_events[0].metadata.get(INTERMEDIATE_MESSAGE_ID_KEY) == "m2"
+    assert bot_uttered_events[1].metadata.get(INTERMEDIATE_MESSAGE_ID_KEY) == "m3"
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_streaming_duplicate_intermediate_messages_not_deduped(
+    mock_init_client: MagicMock, immediate_create_task
+):
+    # Streaming yields the same working message twice, then completes
+    working_msg_1 = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(
+            state=TaskState.working,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="Same message"))],
+                message_id="m1",
+            ),
+        ),
+    )
+    working_msg_2 = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(
+            state=TaskState.working,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="Same message"))],
+                message_id="m2",
+            ),
+        ),
+    )
+    completed_task = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(state=TaskState.completed),
+        artifacts=[Artifact(artifact_id="a1", parts=[])],
+    )
+
+    async def stream():
+        yield working_msg_1, None
+        yield working_msg_2, None
+        yield completed_task, None
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream()
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_load_card.return_value = MagicMock()
+        await agent.connect()
+
+    mock_output_channel = MagicMock()
+    mock_output_channel.send_text_message = AsyncMock()
+
+    output = await agent.run(
+        AgentInput(
+            id="abc",
+            metadata={},
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+            recipient_id="user-123",
+        ),
+        output_channel=mock_output_channel,
+    )
+
+    await asyncio.sleep(0)
+
+    # Since streaming should not dedup, both identical messages are sent
+    calls = mock_output_channel.send_text_message.await_args_list
+    assert len(calls) == 2
+    assert calls[0].kwargs["text"] == "Same message"
+    assert calls[1].kwargs["text"] == "Same message"
+
+    # And two BotUttered events recorded
+    assert output.events is not None
+    bot_uttered_events = [
+        event for event in output.events if isinstance(event, BotUttered)
+    ]
+    assert len(bot_uttered_events) == 2
+    assert bot_uttered_events[0].text == "Same message"
+    assert bot_uttered_events[1].text == "Same message"
+    # Metadata assertions
+    ids = {e.metadata.get(INTERMEDIATE_MESSAGE_ID_KEY) for e in bot_uttered_events}
+    assert ids == {"m1", "m2"}
+    for event in bot_uttered_events:
+        assert event.metadata.get(UTTER_SOURCE_METADATA_KEY) == "A2AAgent"
+        assert (
+            event.metadata.get(AGENT_MESSAGE_TYPE_KEY)
+            == AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE
+        )
+        assert event.metadata.get(INTERMEDIATE_MESSAGE_AGENT_NAME_KEY) == "test_agent"
+        assert event.metadata.get(INTERMEDIATE_MESSAGE_AGENT_TASK_ID_KEY) == "abc-123"
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
 async def test_run_pooling_agent_handles_unknown_task_state(mock_init_client):
     # Prepare an unknown task state first, then a terminal task (completed)
 
@@ -389,6 +668,190 @@ async def test_run_pooling_agent_handles_unknown_task_state(mock_init_client):
     )
 
 
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_pooling_dedups_submitted_messages(mock_init_client: MagicMock):
+    # Initial streaming yields non-terminal without message to enter polling
+    first_non_terminal = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(state=TaskState.working, message=None),
+    )
+    submitted_with_msg = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(
+            state=TaskState.submitted,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="Submitted message"))],
+                message_id="m1",
+            ),
+        ),
+    )
+    completed_task = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(state=TaskState.completed),
+        artifacts=[Artifact(artifact_id="artifact-1", parts=[])],
+    )
+
+    async def stream():
+        yield first_non_terminal, None
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream()
+    # Polling returns the same submitted message twice before completion
+    mock_client.get_task = AsyncMock(
+        side_effect=[submitted_with_msg, submitted_with_msg, completed_task]
+    )
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_load_card.return_value = MagicMock()
+        await agent.connect()
+
+    mock_output_channel = MagicMock()
+    mock_output_channel.send_text_message = AsyncMock()
+
+    output = await agent.run(
+        AgentInput(
+            id="abc",
+            metadata={},
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+            recipient_id="user-123",
+        ),
+        output_channel=mock_output_channel,
+    )
+
+    await asyncio.sleep(0)
+
+    # Only one submitted message should be sent despite duplicate polling responses
+    calls = mock_output_channel.send_text_message.await_args_list
+    assert len(calls) == 1
+    assert calls[0].kwargs["text"] == "Submitted message"
+    assert calls[0].kwargs["recipient_id"] == "user-123"
+
+    # And only one BotUttered for that message
+    assert output.events is not None
+    bot_uttered_events = [
+        event for event in output.events if isinstance(event, BotUttered)
+    ]
+    assert len(bot_uttered_events) == 1
+    assert bot_uttered_events[0].text == "Submitted message"
+    # Final status is COMPLETED
+    assert output.status == AgentStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_pooling_preserves_events_on_client_error_after_intermediate(
+    mock_init_client: MagicMock,
+):
+    # Enter polling, then send one working message and fail
+    first_non_terminal = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(state=TaskState.working, message=None),
+    )
+    working_with_msg = Task(
+        context_id="abc",
+        id="abc-123",
+        status=TaskStatus(
+            state=TaskState.working,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="Working polling message"))],
+                message_id="m2",
+            ),
+        ),
+    )
+
+    async def stream():
+        yield first_non_terminal, None
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream()
+    mock_client.get_task = AsyncMock(
+        side_effect=[working_with_msg, A2AClientError("polling error")]
+    )
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_load_card.return_value = MagicMock()
+        await agent.connect()
+
+    mock_output_channel = MagicMock()
+    mock_output_channel.send_text_message = AsyncMock()
+
+    output = await agent.run(
+        AgentInput(
+            id="abc",
+            metadata={},
+            user_message="Test message",
+            slots=[],
+            conversation_history="",
+            events=[],
+            recipient_id="user-123",
+        ),
+        output_channel=mock_output_channel,
+    )
+
+    await asyncio.sleep(0)
+
+    # One intermediate message was sent before client error
+    calls = mock_output_channel.send_text_message.await_args_list
+    assert len(calls) == 1
+    assert calls[0].kwargs["text"] == "Working polling message"
+    assert calls[0].kwargs["recipient_id"] == "user-123"
+
+    # Output fatal error with preserved BotUttered
+    assert output.status == AgentStatus.FATAL_ERROR
+    assert output.events is not None
+    bot_uttered_events = [
+        event for event in output.events if isinstance(event, BotUttered)
+    ]
+    assert len(bot_uttered_events) == 1
+    assert bot_uttered_events[0].text == "Working polling message"
+    # Metadata assertions
+    events = bot_uttered_events[0]
+    assert events.metadata.get(UTTER_SOURCE_METADATA_KEY) == "A2AAgent"
+    assert (
+        events.metadata.get(AGENT_MESSAGE_TYPE_KEY)
+        == AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE
+    )
+    assert events.metadata.get(INTERMEDIATE_MESSAGE_AGENT_NAME_KEY) == "test_agent"
+    assert events.metadata.get(INTERMEDIATE_MESSAGE_AGENT_TASK_ID_KEY) == "abc-123"
+    assert events.metadata.get(INTERMEDIATE_MESSAGE_ID_KEY) == "m2"
+
+
 def test_handle_task_returns_none_for_unknown_state():
     agent = A2AAgent.from_config(
         AgentConfig(
@@ -415,7 +878,7 @@ def test_handle_task_returns_none_for_unknown_state():
         events=[],
     )
 
-    result = agent._handle_task(agent_input=agent_input, task=task)
+    result = agent._handle_task(agent_input=agent_input, task=task, generated_events=[])
     assert result is None
 
 
@@ -1515,24 +1978,16 @@ class TestA2AAgentAuthIntegration:
 async def test_run_jsonrpc_error_internal_is_recoverable(
     mock_init_client: MagicMock,
 ):
-    import rasa.agents.protocol.a2a.a2a_agent as a2a_mod
-
-    class FakeInternalError(Exception):
-        pass
-
-    class FakeJSONRPCError(Exception):
-        def __init__(self, error):
-            super().__init__(str(error))
-            self.error = error
-
-    # Monkeypatch module-level symbols used by the agent
-    a2a_mod.InternalError = FakeInternalError  # type: ignore[attr-defined]
-    a2a_mod.A2AClientJSONRPCError = FakeJSONRPCError  # type: ignore[attr-defined]
-
     async def raising_stream():
         if False:
             yield None  # pragma: no cover
-        raise FakeJSONRPCError(FakeInternalError("internal"))
+
+        # Use real error classes; ensure `.error` attr exists for agent handling
+        class _JSONRPCError(A2AClientJSONRPCError):
+            def __init__(self) -> None:
+                self.error = InternalError(message="internal")
+
+        raise _JSONRPCError()
 
     mock_client = MagicMock()
     mock_client.send_message.return_value = raising_stream()
@@ -1574,19 +2029,16 @@ async def test_run_jsonrpc_error_internal_is_recoverable(
 async def test_run_jsonrpc_error_other_is_fatal(
     mock_init_client: MagicMock,
 ):
-    import rasa.agents.protocol.a2a.a2a_agent as a2a_mod
-
-    class FakeJSONRPCError(Exception):
-        def __init__(self, error):
-            super().__init__(str(error))
-            self.error = error
-
-    a2a_mod.A2AClientJSONRPCError = FakeJSONRPCError  # type: ignore[attr-defined]
-
     async def raising_stream():
         if False:
             yield None  # pragma: no cover
-        raise FakeJSONRPCError(ValueError("error"))
+
+        # Use real error class; set `.error` to a non-internal type
+        class _JSONRPCError(A2AClientJSONRPCError):
+            def __init__(self) -> None:
+                self.error = ValueError("error")
+
+        raise _JSONRPCError()
 
     mock_client = MagicMock()
     mock_client.send_message.return_value = raising_stream()
@@ -1628,17 +2080,10 @@ async def test_run_jsonrpc_error_other_is_fatal(
 async def test_run_send_message_client_error_is_fatal(
     mock_init_client: MagicMock,
 ):
-    import rasa.agents.protocol.a2a.a2a_agent as a2a_mod
-
-    class FakeClientError(Exception):
-        pass
-
-    a2a_mod.A2AClientError = FakeClientError  # type: ignore[attr-defined]
-
     async def raising_stream():
         if False:
             yield None  # pragma: no cover
-        raise FakeClientError("oops")
+        raise A2AClientError("oops")
 
     mock_client = MagicMock()
     mock_client.send_message.return_value = raising_stream()
@@ -1680,8 +2125,6 @@ async def test_run_send_message_client_error_is_fatal(
 async def test_run_pooling_missing_task_id_returns_fatal_error(
     mock_init_client: MagicMock,
 ):
-    from a2a.types import Task, TaskState, TaskStatus
-
     async def stream():
         yield (
             Task(context_id="abc", id="", status=TaskStatus(state=TaskState.working)),
@@ -1736,8 +2179,6 @@ async def test_run_pooling_missing_task_id_returns_fatal_error(
 async def test_run_streaming_agent_unsuccessful_terminal_states_are_recoverable(
     mock_init_client: MagicMock, state
 ):
-    from a2a.types import Task, TaskStatus
-
     async def stream():
         yield Task(context_id="abc", id="abc-123", status=TaskStatus(state=state)), None
 
@@ -1779,8 +2220,6 @@ async def test_run_streaming_agent_unsuccessful_terminal_states_are_recoverable(
 @pytest.mark.asyncio
 @patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
 async def test_task_metadata_propagation_input_required(mock_init_client: MagicMock):
-    from a2a.types import Message, Part, Task, TaskState, TaskStatus, TextPart
-
     task = Task(
         context_id="ctx-42",
         id="task-42",
@@ -1838,8 +2277,6 @@ async def test_task_metadata_propagation_input_required(mock_init_client: MagicM
 @pytest.mark.asyncio
 @patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
 async def test_task_metadata_propagation_completed(mock_init_client: MagicMock):
-    from a2a.types import Artifact, Task, TaskState, TaskStatus
-
     task = Task(
         context_id="ctx-77",
         id="task-77",
@@ -1887,8 +2324,6 @@ async def test_task_metadata_propagation_completed(mock_init_client: MagicMock):
 
 
 def test_structured_results_no_previous_creates_current_iteration():
-    from a2a.types import Artifact, DataPart, Part
-
     artifacts = [
         Artifact(
             artifact_id="a1",
@@ -1917,8 +2352,6 @@ def test_structured_results_no_previous_creates_current_iteration():
 
 
 def test_structured_results_only_text_parts_adds_empty_iteration():
-    from a2a.types import Artifact, Part, TextPart
-
     artifacts = [Artifact(artifact_id="a1", parts=[Part(root=TextPart(text="t1"))])]
 
     prev = [[{"name": "prev", "type": "data", "result": {"p": 1}}]]
@@ -1975,3 +2408,470 @@ def test_load_agent_card_validation_error_raises_agent_init_error(tmp_path):
 
     with pytest.raises(AgentInitializationException):
         asyncio.get_event_loop().run_until_complete(agent.connect())
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+@pytest.mark.parametrize(
+    "mock_final_task_event",
+    # The intermediate messages should be sent regardless of the final task state
+    [
+        Task(
+            context_id="ctx-1",
+            id="task-1",
+            status=TaskStatus(state=TaskState.completed),
+            artifacts=[Artifact(artifact_id="a1", parts=[])],
+        ),
+        Task(
+            context_id="ctx-1",
+            id="task-1",
+            status=TaskStatus(state=TaskState.input_required),
+            artifacts=[Artifact(artifact_id="a1", parts=[])],
+        ),
+        Task(
+            context_id="ctx-1",
+            id="task-1",
+            status=TaskStatus(state=TaskState.failed),
+            artifacts=[Artifact(artifact_id="a1", parts=[])],
+        ),
+    ],
+)
+async def test_intermediate_messages_sent_submitted_and_working_tasks_during_streaming(
+    mock_init_client: MagicMock, mock_final_task_event: Task, immediate_create_task
+):
+    # Create a stream that yields:
+    # 1) submitted task with message
+    # 2) submitted task without message (no intermediate message should be sent)
+    # 3) working task with message
+    # 4) working task without message (no intermediate message should be sent)
+    # 5) completed task
+    submitted_task_with_msg = Task(
+        context_id="ctx-1",
+        id="task-1",
+        status=TaskStatus(
+            state=TaskState.submitted,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="Submitted message"))],
+                message_id="m1",
+            ),
+        ),
+    )
+    submitted_task_no_msg = Task(
+        context_id="ctx-1",
+        id="task-1",
+        status=TaskStatus(state=TaskState.submitted, message=None),
+    )
+    working_with_msg = Task(
+        context_id="ctx-1",
+        id="task-1",
+        status=TaskStatus(
+            state=TaskState.working,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="Working message"))],
+                message_id="m2",
+            ),
+        ),
+    )
+    working_no_msg = Task(
+        context_id="ctx-1",
+        id="task-1",
+        status=TaskStatus(state=TaskState.working, message=None),
+    )
+
+    async def stream():
+        yield submitted_task_with_msg, None
+        yield submitted_task_no_msg, None
+        yield working_with_msg, None
+        yield working_no_msg, None
+        yield mock_final_task_event, None
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream()
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_load_card.return_value = MagicMock()
+        await agent.connect()
+
+    # Prepare a mock output channel and agent input with recipient id
+    mock_output_channel = MagicMock()
+    mock_output_channel.send_text_message = AsyncMock()
+
+    output = await agent.run(
+        AgentInput(
+            id="agent-1",
+            metadata={},
+            user_message="Hi",
+            slots=[],
+            conversation_history="",
+            events=[],
+            recipient_id="user-123",
+        ),
+        output_channel=mock_output_channel,
+    )
+
+    # Allow background tasks created via asyncio.create_task to run
+    await asyncio.sleep(0)
+
+    # Validate that only two non-empty messages were sent to the output channel
+    calls = mock_output_channel.send_text_message.await_args_list
+    assert len(calls) == 2
+    assert calls[0].kwargs["text"] == "Submitted message"
+    assert calls[1].kwargs["text"] == "Working message"
+
+    # Validate that the recipient_id was passed correctly each time
+    assert calls[0].kwargs["recipient_id"] == "user-123"
+    assert calls[1].kwargs["recipient_id"] == "user-123"
+
+    # Validate that the final output events contain the BotUttered events for each
+    # intermediate message sent
+    assert output.events is not None
+    bot_uttered_events = [
+        event for event in output.events if isinstance(event, BotUttered)
+    ]
+    assert len(bot_uttered_events) == 2
+    assert bot_uttered_events[0].text == "Submitted message"
+    assert bot_uttered_events[1].text == "Working message"
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_intermediate_message_events_preserved_after_jsonrpc_error(
+    mock_init_client: MagicMock, immediate_create_task
+):
+    working_with_msg = Task(
+        context_id="ctx-1",
+        id="task-1",
+        status=TaskStatus(
+            state=TaskState.working,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="Working message"))],
+                message_id="m2",
+            ),
+        ),
+    )
+
+    class _TestJSONRPCError(A2AClientJSONRPCError):
+        def __init__(self) -> None:
+            # Provide `.error` attribute as used by agent implementation
+            self.error = InternalError(message="rpc failed")
+
+    async def stream():
+        # yield a working update with message, then raise JSON-RPC error
+        yield working_with_msg, None
+        raise _TestJSONRPCError()
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream()
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_load_card.return_value = MagicMock()
+        await agent.connect()
+
+    mock_output_channel = MagicMock()
+    mock_output_channel.send_text_message = AsyncMock()
+
+    output = await agent.run(
+        AgentInput(
+            id="agent-1",
+            metadata={},
+            user_message="Hi",
+            slots=[],
+            conversation_history="",
+            events=[],
+            recipient_id="user-123",
+        ),
+        output_channel=mock_output_channel,
+    )
+
+    # Allow background tasks to complete
+    await asyncio.sleep(0)
+
+    # Intermediate working message should have been sent
+    calls = mock_output_channel.send_text_message.await_args_list
+    assert len(calls) == 1
+    assert calls[0].kwargs["text"] == "Working message"
+    assert calls[0].kwargs["recipient_id"] == "user-123"
+
+    # Output should be recoverable error (due to InternalError) and include BotUttered
+    assert output.status == AgentStatus.RECOVERABLE_ERROR
+    assert output.events is not None
+    bot_uttered_events = [
+        event for event in output.events if isinstance(event, BotUttered)
+    ]
+    assert len(bot_uttered_events) == 1
+    assert bot_uttered_events[0].text == "Working message"
+    # Metadata assertions
+    event = bot_uttered_events[0]
+    assert event.metadata.get(UTTER_SOURCE_METADATA_KEY) == "A2AAgent"
+    assert (
+        event.metadata.get(AGENT_MESSAGE_TYPE_KEY)
+        == AGENT_MESSAGE_TYPE_INTERMEDIATE_MESSAGE
+    )
+    assert event.metadata.get(INTERMEDIATE_MESSAGE_AGENT_NAME_KEY) == "test_agent"
+    assert event.metadata.get(INTERMEDIATE_MESSAGE_AGENT_TASK_ID_KEY) == "task-1"
+    assert event.metadata.get(INTERMEDIATE_MESSAGE_ID_KEY) == "m2"
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_intermediate_message_events_preserved_after_client_error(
+    mock_init_client: MagicMock, immediate_create_task
+):
+    working_with_msg = Task(
+        context_id="ctx-2",
+        id="task-2",
+        status=TaskStatus(
+            state=TaskState.working,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="Still working"))],
+                message_id="m3",
+            ),
+        ),
+    )
+
+    async def stream():
+        yield working_with_msg, None
+        raise A2AClientError("network down")
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream()
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_load_card.return_value = MagicMock()
+        await agent.connect()
+
+    mock_output_channel = MagicMock()
+    mock_output_channel.send_text_message = AsyncMock()
+
+    output = await agent.run(
+        AgentInput(
+            id="agent-2",
+            metadata={},
+            user_message="Hello",
+            slots=[],
+            conversation_history="",
+            events=[],
+            recipient_id="user-999",
+        ),
+        output_channel=mock_output_channel,
+    )
+
+    await asyncio.sleep(0)
+
+    calls = mock_output_channel.send_text_message.await_args_list
+    assert len(calls) == 1
+    assert calls[0].kwargs["text"] == "Still working"
+    assert calls[0].kwargs["recipient_id"] == "user-999"
+
+    # Client error should result in fatal error output, preserving BotUttered events
+    assert output.status == AgentStatus.FATAL_ERROR
+    assert output.events is not None
+    bot_uttered_events = [
+        event for event in output.events if isinstance(event, BotUttered)
+    ]
+    assert len(bot_uttered_events) == 1
+    assert bot_uttered_events[0].text == "Still working"
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_streaming_intermediate_send_async_failure_does_not_stop_execution(
+    mock_init_client: MagicMock,
+):
+    # Streaming: working with message then completed
+    working_with_msg = Task(
+        context_id="ctx-1",
+        id="task-1",
+        status=TaskStatus(
+            state=TaskState.working,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="Working message"))],
+                message_id="m2",
+            ),
+        ),
+    )
+    completed_task = Task(
+        context_id="ctx-1",
+        id="task-1",
+        status=TaskStatus(state=TaskState.completed),
+        artifacts=[Artifact(artifact_id="a1", parts=[])],
+    )
+
+    async def stream():
+        yield working_with_msg, None
+        yield completed_task, None
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream()
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_load_card.return_value = MagicMock()
+        await agent.connect()
+
+    # Async send will raise when awaited inside the background task
+    mock_output_channel = MagicMock()
+    mock_output_channel.send_text_message = AsyncMock(
+        side_effect=RuntimeError("send failed")
+    )
+
+    output = await agent.run(
+        AgentInput(
+            id="agent-1",
+            metadata={},
+            user_message="Hi",
+            slots=[],
+            conversation_history="",
+            events=[],
+            recipient_id="user-123",
+        ),
+        output_channel=mock_output_channel,
+    )
+
+    # Let the background task run and trigger the done_callback error handling
+    await asyncio.sleep(0)
+
+    # Although sending failed, execution should continue to completion
+    assert output.status == AgentStatus.COMPLETED
+    # Since sending failed, no BotUttered event should be recorded
+    bot_uttered_events = [
+        event for event in (output.events or []) if isinstance(event, BotUttered)
+    ]
+    assert len(bot_uttered_events) == 0
+    # Attempted exactly once
+    assert mock_output_channel.send_text_message.await_count == 1
+
+
+@pytest.mark.asyncio
+@patch("rasa.agents.protocol.a2a.a2a_agent.A2AAgent._init_client")
+async def test_streaming_intermediate_send_immediate_failure_does_not_stop_execution(
+    mock_init_client: MagicMock,
+):
+    # Streaming: working with message then completed
+    working_with_msg = Task(
+        context_id="ctx-2",
+        id="task-2",
+        status=TaskStatus(
+            state=TaskState.working,
+            message=Message(
+                role=Role.user,
+                parts=[Part(root=TextPart(text="Working message"))],
+                message_id="m9",
+            ),
+        ),
+    )
+    completed_task = Task(
+        context_id="ctx-2",
+        id="task-2",
+        status=TaskStatus(state=TaskState.completed),
+        artifacts=[Artifact(artifact_id="a2", parts=[])],
+    )
+
+    async def stream():
+        yield working_with_msg, None
+        yield completed_task, None
+
+    mock_client = MagicMock()
+    mock_client.send_message.return_value = stream()
+    mock_init_client.return_value = mock_client
+
+    agent = A2AAgent.from_config(
+        AgentConfig(
+            agent=AgentInfo(
+                name="test_agent",
+                description="A test agent",
+                protocol=ProtocolConfig.A2A,
+            ),
+            configuration=AgentConfiguration(agent_card="some/path"),
+        )
+    )
+    with patch(
+        "rasa.agents.protocol.a2a.a2a_agent.A2AAgent._load_agent_card_from_file"
+    ) as mock_load_card:
+        mock_load_card.return_value = MagicMock()
+        await agent.connect()
+
+    # Make send_text_message raise immediately (before a coroutine can be scheduled)
+    mock_output_channel = MagicMock()
+    mock_output_channel.send_text_message = MagicMock(
+        side_effect=RuntimeError("immediate fail")
+    )
+
+    output = await agent.run(
+        AgentInput(
+            id="agent-2",
+            metadata={},
+            user_message="Hello",
+            slots=[],
+            conversation_history="",
+            events=[],
+            recipient_id="user-222",
+        ),
+        output_channel=mock_output_channel,
+    )
+
+    # Even though sending raised synchronously, execution should continue
+    assert output.status == AgentStatus.COMPLETED
+    # Since sending failed synchronously, no BotUttered event should be recorded
+    bot_uttered_events = [
+        event for event in (output.events or []) if isinstance(event, BotUttered)
+    ]
+    assert len(bot_uttered_events) == 0
+    # Immediate call attempted once
+    assert mock_output_channel.send_text_message.call_count == 1

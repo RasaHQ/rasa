@@ -36,6 +36,7 @@ from rasa.agents.schemas import (
     CustomToolSchema,
 )
 from rasa.core.available_agents import AgentConfig, AgentMCPServerConfig, ProtocolConfig
+from rasa.core.channels import OutputChannel
 from rasa.shared.agents.utils import make_agent_identifier
 from rasa.shared.constants import (
     DEFAULT_INCLUDE_DATE_TIME,
@@ -572,7 +573,6 @@ class MCPBaseAgent(AgentProtocol):
 
     def render_prompt_template(self, context: AgentInput) -> str:
         """Render the prompt template with the provided inputs."""
-
         template_vars = {
             **context.model_dump(exclude={"id", "timestamp", "events"}),
             "description": self._description,
@@ -815,13 +815,17 @@ class MCPBaseAgent(AgentProtocol):
     # ============================================================================
 
     @abstractmethod
-    async def send_message(self, agent_input: AgentInput) -> AgentOutput:
+    async def send_message(
+        self, agent_input: AgentInput, output_channel: Optional[OutputChannel] = None
+    ) -> AgentOutput:
         """Send a message to the agent."""
         ...
 
-    async def run(self, input: AgentInput) -> AgentOutput:
+    async def run(
+        self, input: AgentInput, output_channel: Optional[OutputChannel] = None
+    ) -> AgentOutput:
         """Send a message to Agent/server and return response."""
-        return await self.send_message(input)
+        return await self.send_message(input, output_channel)
 
     # ============================================================================
     # Message Processing

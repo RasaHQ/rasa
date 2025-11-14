@@ -19,6 +19,7 @@ from rasa.agents.constants import (
 from rasa.agents.core.types import AgentStatus, ProtocolType
 from rasa.agents.schemas import AgentInput, AgentOutput
 from rasa.agents.schemas.agent_input import AgentInputSlot
+from rasa.core.channels.channel import OutputChannel
 from rasa.core.config.configuration import Configuration
 from rasa.core.policies.flows.flow_step_result import (
     ContinueFlowWithNextStep,
@@ -93,6 +94,7 @@ async def run_agent(
     tracker: DialogueStateTracker,
     slots: List[Slot],
     flows: FlowsList,
+    output_channel: Optional[OutputChannel] = None,
 ) -> FlowStepResult:
     """Run an agent call step."""
     structlogger.debug(
@@ -154,6 +156,7 @@ async def run_agent(
         protocol_type=protocol_type,
         agent_input=agent_input,
         max_retries=MAX_AGENT_RETRIES,
+        output_channel=output_channel,
     )
 
     structlogger.debug(
@@ -199,6 +202,7 @@ async def _call_agent_with_retry(
     protocol_type: ProtocolType,
     agent_input: AgentInput,
     max_retries: int,
+    output_channel: Optional[OutputChannel] = None,
 ) -> AgentOutput:
     """Call an agent with retries in case of recoverable errors."""
     for attempt in range(max_retries):
@@ -211,7 +215,10 @@ async def _call_agent_with_retry(
             )
         try:
             agent_response: AgentOutput = await AgentManager().run_agent(
-                agent_name=agent_name, protocol_type=protocol_type, context=agent_input
+                agent_name=agent_name,
+                protocol_type=protocol_type,
+                context=agent_input,
+                output_channel=output_channel,
             )
         except Exception as e:
             # We don't have a vaild agent response at this time to act based
@@ -625,6 +632,7 @@ def _prepare_agent_input(
             tracker.current_state(EventVerbosity.ALL).get("events") or []
         ),
         metadata=agent_input_metadata,
+        recipient_id=tracker.sender_id,
     )
 
 
