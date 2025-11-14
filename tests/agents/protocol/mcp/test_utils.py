@@ -9,7 +9,7 @@ from rasa.core.available_agents import AgentMCPServerConfig, ProtocolConfig
 from rasa.core.channels import OutputChannel
 
 
-class TestMCPBaseAgentImpl(MCPBaseAgent):
+class MockMCPBaseAgentImpl(MCPBaseAgent):
     """Concrete implementation of MCPBaseAgent for testing purposes."""
 
     def __init__(

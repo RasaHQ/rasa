@@ -27,6 +27,7 @@ from rasa.e2e_test.e2e_test_case import (
 )
 from rasa.e2e_test.e2e_test_result import TestResult
 from rasa.e2e_test.e2e_test_runner import TEST_TURNS_TYPE, E2ETestRunner
+from rasa.exceptions import ValidationError
 from rasa.llm_fine_tuning.conversations import Conversation
 from rasa.shared.core.constants import (
     REQUESTED_SLOT,
@@ -2915,3 +2916,120 @@ async def test_fail_fast_assertions_no_failure(
     assert len(results) == 1
     assert results[0].pass_status
     assert results[0].assertion_failure is None
+
+
+# ============================================================================
+# _get_validated_mocked_datetime Tests
+# ============================================================================
+
+
+@pytest.mark.parametrize(
+    "mocked_datetime_value, expected_result",
+    [
+        # None values
+        (None, None),
+        # Valid timezone-aware string formats (returned as-is in ISO format)
+        (
+            "2024-01-15T14:30:45+05:30",
+            "2024-01-15T14:30:45+05:30",
+        ),
+        (
+            "2024-12-25T23:59:59-08:00",
+            "2024-12-25T23:59:59-08:00",
+        ),
+        (
+            "2024-06-10T09:15:30+00:00",
+            "2024-06-10T09:15:30+00:00",
+        ),
+        # Valid naive string formats (converted to UTC ISO format)
+        (
+            "2024-01-15 14:30:45",
+            "2024-01-15T14:30:45+00:00",
+        ),
+        (
+            "2024-12-25T23:59:59",
+            "2024-12-25T23:59:59+00:00",
+        ),
+        (
+            "2024-06-10",
+            "2024-06-10T00:00:00+00:00",
+        ),
+        (
+            "2024-01-15T14:30:45Z",
+            "2024-01-15T14:30:45+00:00",
+        ),
+    ],
+)
+def test_get_validated_mocked_datetime_valid_values(
+    mock_e2e_test_runner: E2ETestRunner,
+    mocked_datetime_value: Any,
+    expected_result: Optional[str],
+) -> None:
+    """Test _get_validated_mocked_datetime with valid input values."""
+    result = mock_e2e_test_runner._get_validated_mocked_datetime(mocked_datetime_value)
+    assert result == expected_result
+    if result is not None:
+        # Verify it's a valid ISO format string that can be parsed
+        parsed_dt = datetime.datetime.fromisoformat(result)
+        assert parsed_dt.tzinfo is not None  # Should always be timezone-aware
+
+
+@pytest.mark.parametrize(
+    "invalid_value",
+    [
+        # Invalid string formats
+        "invalid-date",
+        "2024-13-01",  # Invalid month
+        "2024-01-32",  # Invalid day
+        "2024-01-15 25:00:00",  # Invalid hour
+        "2024/01/15",  # Wrong separator
+        "01-15-2024",  # Wrong order
+        "2024-01-15 14:30",  # Missing seconds
+        "2024-01-15T14:30:45.123",  # Microseconds not supported
+    ],
+)
+def test_get_validated_mocked_datetime_invalid_string_formats(
+    mock_e2e_test_runner: E2ETestRunner, invalid_value: str
+) -> None:
+    """_get_validated_mocked_datetime raises ValidationError for invalid formats."""
+    with pytest.raises(ValidationError) as exc_info:
+        mock_e2e_test_runner._get_validated_mocked_datetime(invalid_value)
+
+    assert (
+        exc_info.value.code
+        == "e2e_test_runner.validate_mocked_datetime.invalid_value_format"
+    )
+    assert "Invalid mocked_datetime value" in exc_info.value.info
+    assert "Unable to convert to a valid datetime" in exc_info.value.info
+    assert "Accepted formats include" in exc_info.value.info
+    assert str(invalid_value) in exc_info.value.info
+
+
+@pytest.mark.parametrize(
+    "invalid_value",
+    [
+        # Invalid types (YAML fixtures only provide strings)
+        12345,  # Integer
+        123.45,  # Float
+        [],  # List
+        {},  # Dict
+        True,  # Boolean
+    ],
+)
+def test_get_validated_mocked_datetime_invalid_types(
+    mock_e2e_test_runner: E2ETestRunner, invalid_value: Any
+) -> None:
+    """_get_validated_mocked_datetime raises ValidationError for invalid value types."""
+    with pytest.raises(ValidationError) as exc_info:
+        mock_e2e_test_runner._get_validated_mocked_datetime(invalid_value)
+
+    assert (
+        exc_info.value.code
+        == "e2e_test_runner.validate_mocked_datetime.invalid_value_type"
+    )
+    assert "Invalid mocked_datetime value" in exc_info.value.info
+    assert (
+        f"Expected a 'str', but got {type(invalid_value).__name__}."
+        in exc_info.value.info
+    )
+    assert str(invalid_value) in exc_info.value.info

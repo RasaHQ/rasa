@@ -76,7 +76,7 @@ class TestMCPTaskAgent:
 
         mock_now = datetime(2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo("UTC"))
         with patch(
-            "rasa.agents.protocol.mcp.mcp_task_agent.get_current_datetime"
+            "rasa.shared.utils.datetime_utils.get_current_datetime"
         ) as mock_get_current_datetime:
             mock_get_current_datetime.return_value = mock_now
 
@@ -103,7 +103,7 @@ class TestMCPTaskAgent:
     ):
         """Test that render_prompt_template excludes some fields from context."""
         with patch(
-            "rasa.agents.protocol.mcp.mcp_task_agent.get_current_datetime"
+            "rasa.shared.utils.datetime_utils.get_current_datetime"
         ) as mock_get_current_datetime:
             mock_get_current_datetime.return_value = datetime(
                 2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo("UTC")
@@ -494,7 +494,7 @@ class TestMCPTaskAgent:
         mock_agent_input.metadata = {"exit_if": ["slots.user_name == 'John'"]}
 
         with patch(
-            "rasa.agents.protocol.mcp.mcp_task_agent.get_current_datetime"
+            "rasa.shared.utils.datetime_utils.get_current_datetime"
         ) as mock_get_current_datetime:
             mock_get_current_datetime.return_value = datetime(
                 2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo("UTC")
@@ -570,7 +570,7 @@ class TestMCPTaskAgent:
         # Mock get_current_datetime to return a fixed datetime
         mock_now = datetime(2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo(timezone))
         with patch(
-            "rasa.agents.protocol.mcp.mcp_task_agent.get_current_datetime"
+            "rasa.shared.utils.datetime_utils.get_current_datetime"
         ) as mock_get_current_datetime:
             mock_get_current_datetime.return_value = mock_now
 

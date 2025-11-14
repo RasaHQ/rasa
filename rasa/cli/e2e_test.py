@@ -12,7 +12,6 @@ import rasa.shared.data
 import rasa.shared.utils.cli
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.agents.utils import AgentsConnectionCleanup
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments.default_arguments import (
     add_endpoint_param,
@@ -54,6 +53,7 @@ from rasa.e2e_test.utils.io import (
 )
 from rasa.e2e_test.utils.validation import validate_model_path
 from rasa.exceptions import RasaException
+from rasa.shared.agents.agent_setup import AgentsConnectionCleanup
 from rasa.shared.constants import DEFAULT_MODELS_PATH
 from rasa.utils.endpoints import EndpointConfig
 

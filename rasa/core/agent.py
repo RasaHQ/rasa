@@ -12,7 +12,6 @@ import aiohttp
 from aiohttp import ClientError
 
 import rasa.shared.utils.io
-from rasa.agents.utils import initialize_agents
 from rasa.core import jobs
 from rasa.core.available_agents import AvailableAgents
 from rasa.core.channels.channel import OutputChannel, UserMessage
@@ -33,6 +32,7 @@ from rasa.core.tracker_stores.tracker_store import (
 from rasa.exceptions import ModelNotFound
 from rasa.nlu.utils import is_url
 from rasa.privacy.privacy_manager import BackgroundPrivacyManager
+from rasa.shared.agents.agent_setup import initialize_agents
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity

@@ -10,7 +10,6 @@ import structlog
 
 import rasa.cli.utils
 import rasa.shared.utils.cli
-from rasa.agents.utils import AgentsConnectionCleanup
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments.default_arguments import (
     add_endpoint_param,
@@ -50,6 +49,7 @@ from rasa.dialogue_understanding_test.validation import (
 )
 from rasa.e2e_test.e2e_test_case import TestSuite
 from rasa.exceptions import RasaException
+from rasa.shared.agents.agent_setup import AgentsConnectionCleanup
 from rasa.shared.constants import (
     LLM_CONFIG_KEY,
     ROUTE_TO_CALM_SLOT,

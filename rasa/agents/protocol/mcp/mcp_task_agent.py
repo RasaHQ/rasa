@@ -20,19 +20,21 @@ from rasa.agents.schemas import (
     AgentToolSchema,
 )
 from rasa.agents.schemas.agent_input import AgentInputSlot
+from rasa.agents.utils import get_slot_value_from_agent_input
 from rasa.core.available_agents import AgentMCPServerConfig, ProtocolConfig
 from rasa.core.channels import OutputChannel
 from rasa.shared.agents.utils import make_agent_identifier
 from rasa.shared.constants import (
     ROLE_TOOL,
 )
+from rasa.shared.core.constants import MOCKED_DATETIME_SLOT
 from rasa.shared.core.events import SlotSet
 from rasa.shared.exceptions import (
     LLMToolResponseDecodeError,
     ProviderClientAPIException,
 )
 from rasa.shared.providers.llm.llm_response import LLMResponse
-from rasa.shared.utils.datetime_utils import get_current_datetime
+from rasa.shared.utils.datetime_utils import resolve_datetime
 from rasa.utils.pypred import Predicate
 
 DEFAULT_TASK_AGENT_PROMPT_TEMPLATE = importlib.resources.read_text(
@@ -264,8 +266,11 @@ class MCPTaskAgent(MCPBaseAgent):
 
         # Add current_datetime object if enabled
         if self._include_date_time:
-            template_vars["current_datetime"] = get_current_datetime(
-                timezone=self._timezone
+            mocked_datetime_value = get_slot_value_from_agent_input(
+                context, MOCKED_DATETIME_SLOT
+            )
+            template_vars["current_datetime"] = resolve_datetime(
+                mocked_datetime_value, timezone=self._timezone
             )
         return Template(self.prompt_template).render(**template_vars)
 

@@ -1,6 +1,6 @@
 import json
 from abc import abstractmethod
-from datetime import timedelta
+from datetime import datetime, timedelta
 from inspect import isawaitable
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -35,6 +35,7 @@ from rasa.agents.schemas import (
     AgentToolSchema,
     CustomToolSchema,
 )
+from rasa.agents.utils import get_slot_value_from_agent_input
 from rasa.core.available_agents import AgentConfig, AgentMCPServerConfig, ProtocolConfig
 from rasa.core.channels import OutputChannel
 from rasa.shared.agents.utils import make_agent_identifier
@@ -52,6 +53,7 @@ from rasa.shared.constants import (
     TEMPERATURE_CONFIG_KEY,
     TIMEOUT_CONFIG_KEY,
 )
+from rasa.shared.core.constants import MOCKED_DATETIME_SLOT
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.exceptions import AgentInitializationException, AuthenticationError
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall
@@ -66,7 +68,7 @@ from rasa.shared.utils.constants import (
     LOG_COMPONENT_SOURCE_METHOD_INIT,
 )
 from rasa.shared.utils.datetime_utils import (
-    get_current_datetime,
+    resolve_datetime,
     validate_datetime_configuration,
 )
 from rasa.shared.utils.llm import (
@@ -571,6 +573,15 @@ class MCPBaseAgent(AgentProtocol):
     # LLM & Prompt Management
     # ============================================================================
 
+    def _get_current_datetime_for_prompt(self, context: AgentInput) -> datetime:
+        """Get the current datetime for the prompt."""
+        # Get the mocked datetime value from the context.
+        mocked_datetime_value = get_slot_value_from_agent_input(
+            context, MOCKED_DATETIME_SLOT
+        )
+        # Resolve the datetime.
+        return resolve_datetime(mocked_datetime_value, timezone=self._timezone)
+
     def render_prompt_template(self, context: AgentInput) -> str:
         """Render the prompt template with the provided inputs."""
         template_vars = {
@@ -580,8 +591,8 @@ class MCPBaseAgent(AgentProtocol):
 
         # Add current_datetime object if enabled
         if self._include_date_time:
-            template_vars["current_datetime"] = get_current_datetime(
-                timezone=self._timezone
+            template_vars["current_datetime"] = self._get_current_datetime_for_prompt(
+                context
             )
         return Template(self.prompt_template).render(**template_vars)
 

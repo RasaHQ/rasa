@@ -1,5 +1,5 @@
 import textwrap
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
@@ -62,8 +62,9 @@ from rasa.shared.constants import (
     ROUTE_TO_CALM_SLOT,
     TIMEZONE_CONFIG_KEY,
 )
+from rasa.shared.core.constants import MOCKED_DATETIME_SLOT
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActionExecuted, BotUttered, UserUttered
+from rasa.shared.core.events import ActionExecuted, BotUttered, SlotSet, UserUttered
 from rasa.shared.core.slots import BooleanSlot
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.nlu.constants import (
@@ -2224,7 +2225,7 @@ def test_render_prompt_includes_current_datetime_when_enabled(
     # Mock get_current_datetime to return a fixed datetime
     mock_now = datetime(2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo(timezone))
     with patch(
-        "rasa.core.policies.enterprise_search_policy.get_current_datetime"
+        "rasa.shared.utils.datetime_utils.get_current_datetime"
     ) as mock_get_current_datetime:
         mock_get_current_datetime.return_value = mock_now
 
@@ -2689,3 +2690,158 @@ async def test_invoke_llm_passes_metadata(
     call_args = mock_llm.acompletion.call_args
     assert call_args[0][0] == test_prompt
     assert call_args[1]["metadata"] == test_metadata
+
+
+# ============================================================================
+# _resolve_datetime Tests
+# ============================================================================
+
+
+@pytest.mark.parametrize(
+    "mocked_dt, expected_tzname",
+    [
+        (
+            "2024-01-15T10:30:00+00:00",
+            "UTC",
+        ),
+        (
+            "2024-01-15T10:30:00-05:00",
+            "UTC-05:00",
+        ),
+    ],
+)
+def test_enterprise_search_policy_resolve_datetime_with_mocked_datetime(
+    default_enterprise_search_policy: EnterpriseSearchPolicy,
+    mocked_dt: str,
+    expected_tzname: str,
+) -> None:
+    """_render_prompt uses mocked_datetime when present in tracker."""
+    from rasa.core.information_retrieval import SearchResult
+
+    domain = Domain.from_dict(
+        {
+            "slots": {
+                MOCKED_DATETIME_SLOT: {
+                    "type": "any",
+                    "mappings": [],
+                    "influence_conversation": False,
+                }
+            }
+        }
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test_resolve_datetime",
+        domain=domain,
+        slots=domain.slots,
+        evts=[SlotSet(MOCKED_DATETIME_SLOT, mocked_dt)],
+    )
+
+    documents = [
+        SearchResult(metadata="Document 1", text="This is a test document."),
+    ]
+
+    # Call _render_prompt which internally calls resolve_datetime
+    rendered_prompt = default_enterprise_search_policy._render_prompt(
+        tracker, documents
+    )
+
+    # Verify the mocked datetime is used in the rendered prompt
+    assert "### Date & Time Context" in rendered_prompt
+    assert "15 January, 2024" in rendered_prompt
+    assert "10:30:00" in rendered_prompt
+    assert "Monday" in rendered_prompt
+    assert expected_tzname in rendered_prompt
+
+
+def test_enterprise_search_policy_resolve_datetime_without_mocked_datetime(
+    default_enterprise_search_policy: EnterpriseSearchPolicy,
+) -> None:
+    """_render_prompt uses current datetime when mocked_datetime not present."""
+    from rasa.core.information_retrieval import SearchResult
+
+    domain = Domain.empty()
+    tracker = DialogueStateTracker.from_events(
+        "test_resolve_datetime",
+        domain=domain,
+        slots=domain.slots,
+        evts=[UserUttered("test message")],
+    )
+
+    documents = [
+        SearchResult(metadata="Document 1", text="This is a test document."),
+    ]
+
+    with patch(
+        "rasa.shared.utils.datetime_utils.get_current_datetime"
+    ) as mock_get_current:
+        expected_dt = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
+        mock_get_current.return_value = expected_dt
+
+        # Call _render_prompt which internally calls resolve_datetime
+        # which calls get_current_datetime when mocked_datetime is None
+        rendered_prompt = default_enterprise_search_policy._render_prompt(
+            tracker, documents
+        )
+
+        # Verify get_current_datetime was called through resolve_datetime
+        mock_get_current.assert_called_once_with(
+            timezone=default_enterprise_search_policy.timezone
+        )
+
+        # Verify the current datetime is used in the rendered prompt
+        assert "### Date & Time Context" in rendered_prompt
+        assert "15 January, 2024" in rendered_prompt
+        assert "10:30:00" in rendered_prompt
+        assert "Monday" in rendered_prompt
+
+
+def test_enterprise_search_policy_resolve_datetime_with_mocked_datetime_none(
+    default_enterprise_search_policy: EnterpriseSearchPolicy,
+) -> None:
+    """_render_prompt uses current datetime when mocked_datetime is None."""
+    from rasa.core.information_retrieval import SearchResult
+
+    domain = Domain.from_dict(
+        {
+            "slots": {
+                MOCKED_DATETIME_SLOT: {
+                    "type": "any",
+                    "mappings": [],
+                    "influence_conversation": False,
+                }
+            }
+        }
+    )
+    tracker = DialogueStateTracker.from_events(
+        "test_resolve_datetime",
+        domain=domain,
+        slots=domain.slots,
+        evts=[SlotSet(MOCKED_DATETIME_SLOT, None)],
+    )
+
+    documents = [
+        SearchResult(metadata="Document 1", text="This is a test document."),
+    ]
+
+    with patch(
+        "rasa.shared.utils.datetime_utils.get_current_datetime"
+    ) as mock_get_current:
+        expected_dt = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
+        mock_get_current.return_value = expected_dt
+
+        # Call _render_prompt which internally calls resolve_datetime
+        # which calls get_current_datetime when mocked_datetime is None
+        rendered_prompt = default_enterprise_search_policy._render_prompt(
+            tracker, documents
+        )
+
+        # Verify get_current_datetime was called through resolve_datetime
+        mock_get_current.assert_called_once_with(
+            timezone=default_enterprise_search_policy.timezone
+        )
+
+        # Verify the current datetime is used in the rendered prompt
+        assert "### Date & Time Context" in rendered_prompt
+        assert "15 January, 2024" in rendered_prompt
+        assert "10:30:00" in rendered_prompt
+        assert "Monday" in rendered_prompt

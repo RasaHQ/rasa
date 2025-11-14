@@ -53,6 +53,7 @@ from rasa.shared.constants import (
     ROUTE_TO_CALM_SLOT,
     TIMEZONE_CONFIG_KEY,
 )
+from rasa.shared.core.constants import MOCKED_DATETIME_SLOT
 from rasa.shared.core.flows import FlowsList
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import ProviderClientAPIException
@@ -64,7 +65,7 @@ from rasa.shared.utils.constants import (
     LOG_COMPONENT_SOURCE_METHOD_INIT,
 )
 from rasa.shared.utils.datetime_utils import (
-    get_current_datetime,
+    resolve_datetime,
     validate_datetime_configuration,
 )
 from rasa.shared.utils.io import deep_container_fingerprint
@@ -385,6 +386,7 @@ class SingleStepBasedLLMCommandGenerator(LLMBasedCommandGenerator, ABC):
         return commands
 
     ### Helper methods
+
     def render_template(
         self,
         message: Message,
@@ -459,7 +461,10 @@ class SingleStepBasedLLMCommandGenerator(LLMBasedCommandGenerator, ABC):
 
         # Add current datetime if enabled
         if self.include_date_time:
-            inputs["current_datetime"] = get_current_datetime(timezone=self.timezone)
+            mocked_datetime_value = tracker.get_slot(MOCKED_DATETIME_SLOT)
+            inputs["current_datetime"] = resolve_datetime(
+                mocked_datetime_value, timezone=self.timezone
+            )
 
         return self.compile_template(self.prompt_template).render(**inputs)
 

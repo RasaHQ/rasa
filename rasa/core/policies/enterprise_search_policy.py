@@ -70,6 +70,7 @@ from rasa.shared.core.constants import (
     ACTION_METADATA_TEXT_KEY,
     ACTION_SEND_TEXT_NAME,
     DEFAULT_SLOT_NAMES,
+    MOCKED_DATETIME_SLOT,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, Event, UserUttered
@@ -99,7 +100,7 @@ from rasa.shared.utils.constants import (
     LOG_COMPONENT_SOURCE_METHOD_FINGERPRINT_ADDON,
     LOG_COMPONENT_SOURCE_METHOD_INIT,
 )
-from rasa.shared.utils.datetime_utils import get_current_datetime
+from rasa.shared.utils.datetime_utils import resolve_datetime
 from rasa.shared.utils.health_check.embeddings_health_check_mixin import (
     EmbeddingsHealthCheckMixin,
 )
@@ -779,7 +780,10 @@ class EnterpriseSearchPolicy(LLMHealthCheckMixin, EmbeddingsHealthCheckMixin, Po
         }
         # Add current datetime if enabled
         if self.include_date_time:
-            inputs["current_datetime"] = get_current_datetime(timezone=self.timezone)
+            mocked_datetime_value = tracker.get_slot(MOCKED_DATETIME_SLOT)
+            inputs["current_datetime"] = resolve_datetime(
+                mocked_datetime_value, timezone=self.timezone
+            )
 
         prompt = Template(self.prompt_template).render(**inputs)
         log_llm(

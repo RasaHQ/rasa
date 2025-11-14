@@ -1,9 +1,9 @@
 import asyncio
 import copy
-import datetime
 import difflib
 from asyncio import CancelledError
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -24,7 +24,6 @@ import structlog
 from tqdm import tqdm
 
 import rasa.shared.utils.io
-from rasa.agents.utils import AgentsConnectionCleanup
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
@@ -48,8 +47,11 @@ from rasa.e2e_test.e2e_test_result import (
     TestFailure,
     TestResult,
 )
+from rasa.exceptions import ValidationError
 from rasa.llm_fine_tuning.conversations import Conversation
+from rasa.shared.agents.agent_setup import AgentsConnectionCleanup
 from rasa.shared.constants import RASA_DEFAULT_FLOW_PATTERN_PREFIX
+from rasa.shared.core.constants import MOCKED_DATETIME_SLOT
 from rasa.shared.core.events import (
     ActionExecuted,
     BotUttered,
@@ -903,6 +905,20 @@ class E2ETestRunner:
 
         for fixture in fixtures:
             for slot_name, slot_value in fixture.slots_set.items():
+                # Validate mocked_datetime if it's being set and convert to ISO format
+                if slot_name == MOCKED_DATETIME_SLOT:
+                    try:
+                        # Validate and convert to ISO format string
+                        slot_value = self._get_validated_mocked_datetime(slot_value)
+                    except ValidationError as e:
+                        structlogger.error(
+                            e.code,
+                            event_info=e.info,
+                            mocked_datetime_value=slot_value,
+                            slot_name=slot_name,
+                            fixture_name=fixture.name,
+                        )
+                        raise e from e
                 tracker.update(SlotSet(slot_name, slot_value))
 
         await self.agent.tracker_store.save(tracker)
@@ -1049,7 +1065,78 @@ class E2ETestRunner:
     @staticmethod
     def generate_sender_id(test_case_name: str) -> str:
         # add timestamp suffix to ensure sender_id is unique
-        return f"{test_case_name}_{datetime.datetime.now()}"
+        return f"{test_case_name}_{datetime.now()}"
+
+    def _get_validated_mocked_datetime(
+        self, mocked_datetime_value: Any
+    ) -> Optional[str]:
+        """Validates that mocked_datetime can be converted to a datetime object
+        and returns it in ISO 8601 format.
+
+        Args:
+            mocked_datetime_value: The value of the mocked_datetime slot.
+                Expected to be a string from YAML fixtures, or None.
+
+        Returns:
+            An ISO 8601 format string (timezone-aware) or None.
+            Example: '2024-01-15T14:30:45+00:00'
+
+        Raises:
+            ValidationError: If the mocked_datetime value cannot be converted
+                to a datetime object.
+        """
+        if mocked_datetime_value is None:
+            return None
+
+        if not isinstance(mocked_datetime_value, str):
+            # YAML fixtures only provide strings, so other types are invalid
+            raise ValidationError(
+                code="e2e_test_runner.validate_mocked_datetime.invalid_value_type",
+                event_info=(
+                    f"Invalid mocked_datetime value: '{mocked_datetime_value}' "
+                    f"Expected a 'str', but got {type(mocked_datetime_value).__name__}."
+                ),
+                mocked_datetime_value=mocked_datetime_value,
+                expected_value_type="str",
+                actual_value_type=type(mocked_datetime_value).__name__,
+            )
+
+        valid_datetime_formats = {
+            "%Y-%m-%dT%H:%M:%S%z": True,  # already timezone-aware
+            "%Y-%m-%d %H:%M:%S": False,  # needs UTC
+            "%Y-%m-%dT%H:%M:%S": False,  # needs UTC
+            "%Y-%m-%d": False,  # needs UTC
+        }
+
+        for datetime_format, timezone_aware in valid_datetime_formats.items():
+            try:
+                parsed = datetime.strptime(mocked_datetime_value, datetime_format)
+                # Ensure timezone-aware
+                if not timezone_aware:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                # Return ISO format string
+                return parsed.isoformat()
+            except ValueError:
+                continue
+
+        # If we get here, the conversion failed. i.e. all parsing attempts fail
+        valid_formats = [
+            "YYYY-MM-DDTHH:MM:SS±HH:MM   e.g. '2024-01-15T14:30:00+05:30'",
+            "YYYY-MM-DDTHH:MM:SS±HHMM   e.g. '2024-01-15T14:30:00+0530'",
+            "YYYY-MM-DD HH:MM:SS        e.g. '2024-01-15 14:30:00'",
+            "YYYY-MM-DDTHH:MM:SS        e.g. '2024-01-15T14:30:00'",
+            "YYYY-MM-DD                 e.g. '2024-01-15'",
+        ]
+
+        raise ValidationError(
+            code="e2e_test_runner.validate_mocked_datetime.invalid_value_format",
+            event_info=(
+                f"Invalid mocked_datetime value: '{mocked_datetime_value}'. "
+                f"Unable to convert to a valid datetime.\n\n"
+                f"Accepted formats include:\n"
+                + "\n".join(f"  * {fmt}" for fmt in valid_formats)
+            ),
+        )
 
     async def _process_test_case(
         self,

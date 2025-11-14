@@ -1,8 +1,9 @@
 """Unit tests for MCPBaseAgent."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
+from zoneinfo import ZoneInfo
 
 import anyio
 import pytest
@@ -25,6 +26,7 @@ from rasa.core.available_agents import (
     ProtocolConfig,
 )
 from rasa.shared.constants import OPENAI_API_KEY_ENV_VAR
+from rasa.shared.core.constants import MOCKED_DATETIME_SLOT
 from rasa.shared.core.events import BotUttered, UserUttered
 from rasa.shared.providers.llm.llm_response import LLMResponse, LLMToolCall
 from rasa.shared.utils.constants import (
@@ -37,7 +39,7 @@ from rasa.shared.utils.constants import (
     LANGFUSE_METADATA_TAGS,
 )
 
-from .test_utils import TestMCPBaseAgentImpl
+from .test_utils import MockMCPBaseAgentImpl
 
 
 class TestMCPBaseAgent:
@@ -91,11 +93,11 @@ class TestMCPBaseAgent:
         )
 
     @pytest.fixture
-    def mock_mcp_base_agent(self, monkeypatch: MonkeyPatch) -> TestMCPBaseAgentImpl:
+    def mock_mcp_base_agent(self, monkeypatch: MonkeyPatch) -> MockMCPBaseAgentImpl:
         """Fixture for creating a mock MCPBaseAgent instance."""
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key in test_mcp_base_agent")
 
-        return TestMCPBaseAgentImpl(
+        return MockMCPBaseAgentImpl(
             name="test_agent",
             description="A test agent",
             protocol_type=ProtocolConfig.RASA,
@@ -110,7 +112,7 @@ class TestMCPBaseAgent:
         """Test basic initialization of MCPBaseAgent."""
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
 
-        agent = TestMCPBaseAgentImpl(
+        agent = MockMCPBaseAgentImpl(
             name="test_agent",
             description="Test description",
             protocol_type=ProtocolConfig.RASA,
@@ -131,7 +133,7 @@ class TestMCPBaseAgent:
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
 
         llm_config = {"provider": "openai", "model": "gpt-4", "temperature": 0.7}
-        agent = TestMCPBaseAgentImpl(
+        agent = MockMCPBaseAgentImpl(
             "test-agent", "test", ProtocolConfig.RASA, [], llm_config=llm_config
         )
 
@@ -144,7 +146,7 @@ class TestMCPBaseAgent:
         """Test from_config class method."""
         monkeypatch.setenv(OPENAI_API_KEY_ENV_VAR, "mock key")
 
-        agent = TestMCPBaseAgentImpl.from_config(mock_agent_config)
+        agent = MockMCPBaseAgentImpl.from_config(mock_agent_config)
 
         assert agent._name == "test_agent"
         assert agent._description == "A test agent for unit testing"
@@ -173,7 +175,7 @@ class TestMCPBaseAgent:
         )
 
         # Create agent
-        agent = TestMCPBaseAgentImpl.from_config(agent_config)
+        agent = MockMCPBaseAgentImpl.from_config(agent_config)
 
         # Capture output
         captured = capsys.readouterr()
@@ -196,7 +198,7 @@ class TestMCPBaseAgent:
     # Class Configuration & Properties Tests
     # ============================================================================
 
-    def test_agent_conforms_to(self, mock_mcp_base_agent: TestMCPBaseAgentImpl) -> None:
+    def test_agent_conforms_to(self, mock_mcp_base_agent: MockMCPBaseAgentImpl) -> None:
         """Test agent_conforms_to property."""
         assert mock_mcp_base_agent.agent_conforms_to == ProtocolConfig.RASA
 
@@ -211,7 +213,7 @@ class TestMCPBaseAgent:
         assert config["timeout"] == 7
 
     def test_get_agent_specific_built_in_tools(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
     ) -> None:
         """Test get_agent_specific_built_in_tools method."""
         tools = mock_mcp_base_agent.get_agent_specific_built_in_tools(mock_agent_input)
@@ -220,7 +222,7 @@ class TestMCPBaseAgent:
         assert len(tools) == 0  # Default implementation returns empty list
 
     def test_get_custom_tool_definitions(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test get_custom_tool_definitions method."""
         tools = mock_mcp_base_agent.get_custom_tool_definitions()
@@ -234,7 +236,7 @@ class TestMCPBaseAgent:
 
     @pytest.mark.asyncio
     async def test_connect_success(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test successful connection to MCP servers."""
         with (
@@ -252,7 +254,7 @@ class TestMCPBaseAgent:
 
     @pytest.mark.asyncio
     async def test_connect_connection_error_with_retries(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test connection with retries on ConnectionError."""
         with patch.object(
@@ -267,7 +269,7 @@ class TestMCPBaseAgent:
 
     @pytest.mark.asyncio
     async def test_connect_to_server_success(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test successful connection to a single server."""
         server_config = AgentMCPServerConfig(
@@ -291,7 +293,7 @@ class TestMCPBaseAgent:
 
     @pytest.mark.asyncio
     async def test_connect_to_server_failure(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test connection failure to a single server."""
         server_config = AgentMCPServerConfig(
@@ -312,7 +314,7 @@ class TestMCPBaseAgent:
 
     @pytest.mark.asyncio
     async def test_disconnect_server_success(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test successful disconnection from a server."""
         mock_connection = MagicMock()
@@ -326,7 +328,7 @@ class TestMCPBaseAgent:
 
     @pytest.mark.asyncio
     async def test_disconnect_server_not_found(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test disconnection from a non-existent server."""
         # Should not raise an exception
@@ -334,7 +336,7 @@ class TestMCPBaseAgent:
 
     @pytest.mark.asyncio
     async def test_disconnect_all_servers(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test disconnection from all servers."""
         mock_connection1 = MagicMock()
@@ -358,7 +360,7 @@ class TestMCPBaseAgent:
     # ============================================================================
 
     @pytest.mark.asyncio
-    async def test_list_tools(self, mock_mcp_base_agent: TestMCPBaseAgentImpl) -> None:
+    async def test_list_tools(self, mock_mcp_base_agent: MockMCPBaseAgentImpl) -> None:
         """Test listing tools from MCP server."""
         mock_connection = MagicMock()
         mock_session = MagicMock()
@@ -370,7 +372,7 @@ class TestMCPBaseAgent:
         mock_connection.ensure_active_session.assert_called_once()
         mock_session.list_tools.assert_called_once()
 
-    def test_get_custom_tools(self, mock_mcp_base_agent: TestMCPBaseAgentImpl) -> None:
+    def test_get_custom_tools(self, mock_mcp_base_agent: MockMCPBaseAgentImpl) -> None:
         """Test getting custom tools."""
         from rasa.agents.schemas import AgentToolSchema
 
@@ -405,7 +407,7 @@ class TestMCPBaseAgent:
         assert tools[1].name == "tool2"
 
     def test_get_available_tools(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
     ) -> None:
         """Test getting all available tools."""
         # Add some MCP tools
@@ -431,7 +433,7 @@ class TestMCPBaseAgent:
 
     @pytest.mark.asyncio
     async def test_get_filtered_tools_from_server_include_tools(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test getting filtered tools with include_tools filter."""
         mock_connection = MagicMock()
@@ -468,7 +470,7 @@ class TestMCPBaseAgent:
 
     @pytest.mark.asyncio
     async def test_get_filtered_tools_from_server_exclude_tools(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test getting filtered tools with exclude_tools filter."""
         mock_connection = MagicMock()
@@ -504,7 +506,7 @@ class TestMCPBaseAgent:
             assert tools[1].name == "tool3"
 
     def test_get_include_exclude_tools_from_server_configs(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test getting include/exclude tools from server configs."""
         server_config = AgentMCPServerConfig(
@@ -525,7 +527,7 @@ class TestMCPBaseAgent:
         assert exclude_tools == ["tool3"]
 
     def test_get_include_exclude_tools_from_server_configs_not_found(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test getting include/exclude tools for non-existent server."""
         include_tools, exclude_tools = (
@@ -542,14 +544,13 @@ class TestMCPBaseAgent:
     # ============================================================================
 
     def test_render_prompt_template(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
     ) -> None:
         """Test rendering prompt template with context."""
-        from zoneinfo import ZoneInfo
 
         mock_now = datetime(2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo("UTC"))
         with patch(
-            "rasa.agents.protocol.mcp.mcp_base_agent.get_current_datetime"
+            "rasa.shared.utils.datetime_utils.get_current_datetime"
         ) as mock_get_current_datetime:
             mock_get_current_datetime.return_value = mock_now
 
@@ -562,7 +563,7 @@ class TestMCPBaseAgent:
             assert "- Current day: Monday" in result
 
     def test_build_messages_for_llm_request(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
     ) -> None:
         """Test building messages for LLM request."""
         # Add some events to the input
@@ -604,7 +605,7 @@ class TestMCPBaseAgent:
     )
     def test_get_assistant_message_with_tool_calls(
         self,
-        mock_mcp_base_agent: TestMCPBaseAgentImpl,
+        mock_mcp_base_agent: MockMCPBaseAgentImpl,
         tool_calls,
         expected_result_keys,
     ) -> None:
@@ -631,7 +632,7 @@ class TestMCPBaseAgent:
             assert result == {}
 
     def test_get_tool_call_message(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test getting tool call message."""
         tool_response = AgentOutput(
@@ -647,7 +648,7 @@ class TestMCPBaseAgent:
         assert result["content"] == "Tool result"
 
     def test_get_system_message_for_malformed_tool_response(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test getting system message for malformed tool response."""
         result = mock_mcp_base_agent._get_system_message_for_malformed_tool_response()
@@ -689,7 +690,7 @@ class TestMCPBaseAgent:
     )
     async def test_execute_mcp_tool_scenarios(
         self,
-        mock_mcp_base_agent: TestMCPBaseAgentImpl,
+        mock_mcp_base_agent: MockMCPBaseAgentImpl,
         tool_name,
         setup_connection,
         expected_success,
@@ -754,7 +755,7 @@ class TestMCPBaseAgent:
 
     @pytest.mark.asyncio
     async def test_execute_tool_call_custom_tool(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test executing custom tool call."""
         mock_tool_executor = AsyncMock(
@@ -780,7 +781,7 @@ class TestMCPBaseAgent:
 
     @pytest.mark.asyncio
     async def test_execute_tool_call_custom_tool_exception(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test executing custom tool call with exception."""
         mock_tool_executor = MagicMock(side_effect=Exception("Custom tool failed"))
@@ -798,7 +799,7 @@ class TestMCPBaseAgent:
 
     @pytest.mark.asyncio
     async def test_execute_tool_call_mcp_tool(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
     ) -> None:
         """Test executing MCP tool call."""
         with patch.object(mock_mcp_base_agent, "_execute_mcp_tool") as mock_execute_mcp:
@@ -824,7 +825,7 @@ class TestMCPBaseAgent:
     )
     def test_generate_agent_error_output(
         self,
-        mock_mcp_base_agent: TestMCPBaseAgentImpl,
+        mock_mcp_base_agent: MockMCPBaseAgentImpl,
         mock_agent_input: AgentInput,
         is_error,
         error_message,
@@ -854,7 +855,7 @@ class TestMCPBaseAgent:
         assert result.error_message == error_message
 
     def test_get_structured_results_for_agent_output(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
     ) -> None:
         """Test getting structured results for agent output."""
         tool_results = {
@@ -887,7 +888,7 @@ class TestMCPBaseAgent:
 
     @pytest.mark.asyncio
     async def test_run_calls_send_message(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
     ) -> None:
         """Test that run method calls send_message."""
         with patch.object(mock_mcp_base_agent, "send_message") as mock_send_message:
@@ -906,7 +907,7 @@ class TestMCPBaseAgent:
 
     @pytest.mark.asyncio
     async def test_process_input_returns_same_input(
-        self, mock_mcp_base_agent: TestMCPBaseAgentImpl, mock_agent_input: AgentInput
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl, mock_agent_input: AgentInput
     ) -> None:
         """Test that process_input returns the same input."""
         result = await mock_mcp_base_agent.process_input(mock_agent_input)
@@ -1040,11 +1041,11 @@ class TestMCPBaseAgent:
                 "model789",
                 {
                     LANGFUSE_METADATA_SESSION_ID: "user123",
-                    LANGFUSE_METADATA_TAGS: [TestMCPBaseAgentImpl.__name__],
+                    LANGFUSE_METADATA_TAGS: [MockMCPBaseAgentImpl.__name__],
                     LANGFUSE_METADATA_CUSTOM_METADATA: {
                         LANGFUSE_METADATA_AGENT_ID: "assistant456",
                         LANGFUSE_METADATA_MODEL_ID: "model789",
-                        LANGFUSE_METADATA_COMPONENT_NAME: TestMCPBaseAgentImpl.__name__,
+                        LANGFUSE_METADATA_COMPONENT_NAME: MockMCPBaseAgentImpl.__name__,
                         LANGFUSE_METADATA_REACT_SUB_AGENT_NAME: "test_agent",
                     },
                 },
@@ -1055,11 +1056,11 @@ class TestMCPBaseAgent:
                 None,
                 {
                     LANGFUSE_METADATA_SESSION_ID: "user123",
-                    LANGFUSE_METADATA_TAGS: [TestMCPBaseAgentImpl.__name__],
+                    LANGFUSE_METADATA_TAGS: [MockMCPBaseAgentImpl.__name__],
                     LANGFUSE_METADATA_CUSTOM_METADATA: {
                         LANGFUSE_METADATA_AGENT_ID: None,
                         LANGFUSE_METADATA_MODEL_ID: None,
-                        LANGFUSE_METADATA_COMPONENT_NAME: TestMCPBaseAgentImpl.__name__,
+                        LANGFUSE_METADATA_COMPONENT_NAME: MockMCPBaseAgentImpl.__name__,
                         LANGFUSE_METADATA_REACT_SUB_AGENT_NAME: "test_agent",
                     },
                 },
@@ -1070,11 +1071,11 @@ class TestMCPBaseAgent:
                 None,
                 {
                     LANGFUSE_METADATA_SESSION_ID: "user123",
-                    LANGFUSE_METADATA_TAGS: [TestMCPBaseAgentImpl.__name__],
+                    LANGFUSE_METADATA_TAGS: [MockMCPBaseAgentImpl.__name__],
                     LANGFUSE_METADATA_CUSTOM_METADATA: {
                         LANGFUSE_METADATA_AGENT_ID: "assistant456",
                         LANGFUSE_METADATA_MODEL_ID: None,
-                        LANGFUSE_METADATA_COMPONENT_NAME: TestMCPBaseAgentImpl.__name__,
+                        LANGFUSE_METADATA_COMPONENT_NAME: MockMCPBaseAgentImpl.__name__,
                         LANGFUSE_METADATA_REACT_SUB_AGENT_NAME: "test_agent",
                     },
                 },
@@ -1085,11 +1086,11 @@ class TestMCPBaseAgent:
                 "model789",
                 {
                     LANGFUSE_METADATA_SESSION_ID: "user123",
-                    LANGFUSE_METADATA_TAGS: [TestMCPBaseAgentImpl.__name__],
+                    LANGFUSE_METADATA_TAGS: [MockMCPBaseAgentImpl.__name__],
                     LANGFUSE_METADATA_CUSTOM_METADATA: {
                         LANGFUSE_METADATA_AGENT_ID: None,
                         LANGFUSE_METADATA_MODEL_ID: "model789",
-                        LANGFUSE_METADATA_COMPONENT_NAME: TestMCPBaseAgentImpl.__name__,
+                        LANGFUSE_METADATA_COMPONENT_NAME: MockMCPBaseAgentImpl.__name__,
                         LANGFUSE_METADATA_REACT_SUB_AGENT_NAME: "test_agent",
                     },
                 },
@@ -1100,11 +1101,11 @@ class TestMCPBaseAgent:
                 "model789",
                 {
                     LANGFUSE_METADATA_SESSION_ID: None,
-                    LANGFUSE_METADATA_TAGS: [TestMCPBaseAgentImpl.__name__],
+                    LANGFUSE_METADATA_TAGS: [MockMCPBaseAgentImpl.__name__],
                     LANGFUSE_METADATA_CUSTOM_METADATA: {
                         LANGFUSE_METADATA_AGENT_ID: "assistant456",
                         LANGFUSE_METADATA_MODEL_ID: "model789",
-                        LANGFUSE_METADATA_COMPONENT_NAME: TestMCPBaseAgentImpl.__name__,
+                        LANGFUSE_METADATA_COMPONENT_NAME: MockMCPBaseAgentImpl.__name__,
                         LANGFUSE_METADATA_REACT_SUB_AGENT_NAME: "test_agent",
                     },
                 },
@@ -1113,7 +1114,7 @@ class TestMCPBaseAgent:
     )
     def test_get_llm_tracing_metadata(
         self,
-        mock_mcp_base_agent: TestMCPBaseAgentImpl,
+        mock_mcp_base_agent: MockMCPBaseAgentImpl,
         sender_id: Optional[str],
         agent_id: Optional[str],
         model_id: Optional[str],
@@ -1144,3 +1145,135 @@ class TestMCPBaseAgent:
         result_metadata = mock_mcp_base_agent.get_llm_tracing_metadata(agent_input)
 
         assert result_metadata == expected_metadata
+
+    # ============================================================================
+    # _resolve_datetime Tests
+    # ============================================================================
+
+    @pytest.mark.parametrize(
+        "mocked_dt, expected_tzname",
+        [
+            (
+                "2024-01-15T10:30:00+00:00",
+                "UTC",
+            ),
+            (
+                "2024-01-15T10:30:00-05:00",
+                "UTC-05:00",
+            ),
+        ],
+    )
+    def test_resolve_datetime_with_mocked_datetime_in_slots(
+        self,
+        mock_mcp_base_agent: MockMCPBaseAgentImpl,
+        mocked_dt: str,
+        expected_tzname: str,
+    ) -> None:
+        """render_prompt_template uses mocked_datetime when present in slots."""
+
+        agent_input = AgentInput(
+            id="test_id",
+            user_message="Test message",
+            slots=[
+                AgentInputSlot(
+                    name=MOCKED_DATETIME_SLOT,
+                    value=mocked_dt,
+                    type="any",
+                    allowed_values=None,
+                ),
+            ],
+            conversation_history="Previous conversation...",
+            events=[],
+            metadata={},
+            timestamp="2024-01-15T10:30:00Z",
+        )
+
+        # Call render_prompt_template which internally calls resolve_datetime
+        rendered_prompt = mock_mcp_base_agent.render_prompt_template(agent_input)
+
+        # Verify the mocked datetime is used in the rendered prompt
+        assert "15 January, 2024" in rendered_prompt
+        assert "10:30:00" in rendered_prompt
+        assert "Monday" in rendered_prompt
+        assert expected_tzname in rendered_prompt
+
+    def test_resolve_datetime_without_mocked_datetime(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
+    ) -> None:
+        agent_input = AgentInput(
+            id="test_id",
+            user_message="Test message",
+            slots=[
+                AgentInputSlot(
+                    name="other_slot",
+                    value="some_value",
+                    type="text",
+                    allowed_values=None,
+                ),
+            ],
+            conversation_history="Previous conversation...",
+            events=[],
+            metadata={},
+            timestamp="2024-01-15T10:30:00Z",
+        )
+
+        with patch(
+            "rasa.shared.utils.datetime_utils.get_current_datetime"
+        ) as mock_get_current:
+            expected_dt = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
+            mock_get_current.return_value = expected_dt
+
+            # Call render_prompt_template which internally calls resolve_datetime
+            # which calls get_current_datetime when mocked_datetime is None
+            rendered_prompt = mock_mcp_base_agent.render_prompt_template(agent_input)
+
+            # Verify get_current_datetime was called through resolve_datetime
+            mock_get_current.assert_called_once_with(
+                timezone=mock_mcp_base_agent._timezone
+            )
+
+            # Verify the current datetime is used in the rendered prompt
+            assert "15 January, 2024" in rendered_prompt
+            assert "10:30:00" in rendered_prompt
+            assert "Monday" in rendered_prompt
+
+    def test_resolve_datetime_with_mocked_datetime_none(
+        self, mock_mcp_base_agent: MockMCPBaseAgentImpl
+    ) -> None:
+        """render_prompt_template uses current datetime when mocked_datetime is None."""
+        agent_input = AgentInput(
+            id="test_id",
+            user_message="Test message",
+            slots=[
+                AgentInputSlot(
+                    name=MOCKED_DATETIME_SLOT,
+                    value=None,
+                    type="any",
+                    allowed_values=None,
+                ),
+            ],
+            conversation_history="Previous conversation...",
+            events=[],
+            metadata={},
+            timestamp="2024-01-15T10:30:00Z",
+        )
+
+        with patch(
+            "rasa.shared.utils.datetime_utils.get_current_datetime"
+        ) as mock_get_current:
+            expected_dt = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
+            mock_get_current.return_value = expected_dt
+
+            # Call render_prompt_template which internally calls resolve_datetime
+            # which calls get_current_datetime when mocked_datetime is None
+            rendered_prompt = mock_mcp_base_agent.render_prompt_template(agent_input)
+
+            # Verify get_current_datetime was called through resolve_datetime
+            mock_get_current.assert_called_once_with(
+                timezone=mock_mcp_base_agent._timezone
+            )
+
+            # Verify the current datetime is used in the rendered prompt
+            assert "15 January, 2024" in rendered_prompt
+            assert "10:30:00" in rendered_prompt
+            assert "Monday" in rendered_prompt

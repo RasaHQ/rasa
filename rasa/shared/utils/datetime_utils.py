@@ -1,7 +1,7 @@
 """Utility functions for datetime handling in prompt templates."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 import structlog
@@ -88,3 +88,23 @@ def get_current_datetime(timezone: str) -> datetime:
     """
     tz = ZoneInfo(timezone)
     return datetime.now(tz)
+
+
+def resolve_datetime(mocked_datetime_value: Optional[str], timezone: str) -> datetime:
+    """Resolve datetime for template rendering.
+
+    Returns mocked_datetime value if provided (for e2e tests),
+    otherwise returns the current datetime.
+
+    Args:
+        mocked_datetime_value: The value from the mocked_datetime slot.
+            Expected to be an ISO 8601 format string (e.g., '2024-01-15T14:30:45+00:00')
+        timezone: Timezone string (e.g., "UTC", "America/New_York").
+                  Must be a valid IANA timezone name.
+
+    Returns:
+        A timezone-aware datetime object.
+    """
+    if mocked_datetime_value is not None:
+        return datetime.fromisoformat(mocked_datetime_value)
+    return get_current_datetime(timezone=timezone)

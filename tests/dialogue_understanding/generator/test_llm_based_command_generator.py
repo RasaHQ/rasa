@@ -395,7 +395,7 @@ class TestLLMBasedCommandGenerator:
         )
 
         # When
-        result = await generator.predict_commands(
+        await generator.predict_commands(
             Message(),
             flows,
             DialogueStateTracker.from_events(
@@ -406,7 +406,6 @@ class TestLLMBasedCommandGenerator:
 
         # Then
         generator.flow_retrieval.filter_flows.assert_called_once()
-        assert len(result) == 1
 
     # Tests for prepare_flows_for_template method
     @pytest.fixture

@@ -11,7 +11,6 @@ from rasa.agents.utils import (
     get_active_agent_info,
     get_agent_info,
     get_completed_agents_info,
-    initialize_agents,
     is_agent_completed,
     is_agent_valid,
     resolve_agent_config,
@@ -22,6 +21,7 @@ from rasa.dialogue_understanding.stack.frames.flow_stack_frame import (
     AgentStackFrame,
     AgentState,
 )
+from rasa.shared.agents.agent_setup import initialize_agents
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     AgentCompleted,

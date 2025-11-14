@@ -1166,6 +1166,7 @@ class Domain:
         self._add_knowledge_base_slots()
         self._add_categorical_slot_default_value()
         self._add_session_metadata_slot()
+        self._add_mocked_datetime_slot()
 
     def _add_categorical_slot_default_value(self) -> None:
         """Add a default value to all categorical slots.
@@ -1261,6 +1262,19 @@ class Domain:
                 is_builtin=True,
             )
         )
+
+    def _add_mocked_datetime_slot(self) -> None:
+        """Adds the mocked_datetime slot for e2e testing datetime mocking."""
+        slot_names = [slot.name for slot in self.slots]
+        if rasa.shared.core.constants.MOCKED_DATETIME_SLOT not in slot_names:
+            self.slots.append(
+                TextSlot(
+                    rasa.shared.core.constants.MOCKED_DATETIME_SLOT,
+                    mappings=[{"type": "controlled"}],
+                    influence_conversation=False,
+                    is_builtin=True,
+                )
+            )
 
     def index_for_action(self, action_name: Text) -> int:
         """Looks up which action index corresponds to this action name."""

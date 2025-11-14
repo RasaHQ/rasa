@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 import structlog
 from tqdm import tqdm
 
-from rasa.agents.utils import AgentsConnectionCleanup
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.config.available_endpoints import AvailableEndpoints
 from rasa.core.config.configuration import Configuration
@@ -34,6 +33,7 @@ from rasa.e2e_test.e2e_test_case import (
     Metadata,
 )
 from rasa.e2e_test.e2e_test_runner import E2ETestRunner
+from rasa.shared.agents.agent_setup import AgentsConnectionCleanup
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import PREDICTED_COMMANDS, PROMPTS

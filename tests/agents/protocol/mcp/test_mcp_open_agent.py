@@ -75,7 +75,7 @@ class TestMCPOpenAgent:
         """Test basic prompt template rendering with all context variables."""
         mock_now = datetime(2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo("UTC"))
         with patch(
-            "rasa.agents.protocol.mcp.mcp_base_agent.get_current_datetime"
+            "rasa.shared.utils.datetime_utils.get_current_datetime"
         ) as mock_get_current_datetime:
             mock_get_current_datetime.return_value = mock_now
 
@@ -101,7 +101,7 @@ class TestMCPOpenAgent:
     ):
         """Test that render_prompt_template excludes some fields from context."""
         with patch(
-            "rasa.agents.protocol.mcp.mcp_base_agent.get_current_datetime"
+            "rasa.shared.utils.datetime_utils.get_current_datetime"
         ) as mock_get_current_datetime:
             mock_get_current_datetime.return_value = datetime(
                 2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo("UTC")
@@ -173,7 +173,7 @@ class TestMCPOpenAgent:
         # Mock get_current_datetime to return a fixed datetime
         mock_now = datetime(2024, 1, 15, 14, 30, 45, tzinfo=ZoneInfo(timezone))
         with patch(
-            "rasa.agents.protocol.mcp.mcp_base_agent.get_current_datetime"
+            "rasa.shared.utils.datetime_utils.get_current_datetime"
         ) as mock_get_current_datetime:
             mock_get_current_datetime.return_value = mock_now
 

@@ -462,6 +462,14 @@ class DialogueStateTracker:
     @property
     def has_coexistence_routing_slot(self) -> bool:
         """Returns whether the coexistence routing slot is present."""
+        # AnySlotDict behaves like every slot exists.
+        # Its __contains__ method always returns True, so checking ROUTE_TO_CALM_SLOT in
+        # self.slots will always evaluate to True. Its __missing__ method auto-creates
+        # slots when accessed, meaning that simply reading self.slots[key] will insert a
+        # new AnySlot into the dictionary. Because of this, the presence of a key in
+        # self.slots does not reflect whether the slot was defined in the domain.
+        # Any presence check will always return True.
+        # TODO: Fix in ENG-2500
         if self.slots:
             return ROUTE_TO_CALM_SLOT in self.slots
         return False
