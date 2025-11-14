@@ -1113,8 +1113,10 @@ class GenerativeResponseMixin(Assertion):
         if not matching_events:
             error_message = (
                 "No generative response issued by either the Enterprise Search Policy, "
-                "IntentlessPolicy or the Contextual Response Rephraser was found, "
-                "but one was expected."
+                "IntentlessPolicy, Contextual Response Rephraser or a "
+                "named custom action was found, "
+                "but one was expected. Please define an utter_source in the assertion "
+                "to specify which generative response to evaluate."
             )
             error_message += assertion_order_error_message
 

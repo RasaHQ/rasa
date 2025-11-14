@@ -1306,10 +1306,10 @@ def test_generative_response_assertions_run_multiple_responses_failure(
     )
 
     expected_error_message = (
-        "No generative response issued by either "
-        "the Enterprise Search Policy, IntentlessPolicy "
-        "or the Contextual Response Rephraser was found, "
-        "but one was expected."
+        "No generative response issued by either the Enterprise Search Policy, "
+        "IntentlessPolicy, Contextual Response Rephraser or a named custom action was found, "  # noqa: E501
+        "but one was expected. Please define an utter_source in the assertion "
+        "to specify which generative response to evaluate."
     )
 
     assert event is None
@@ -1496,10 +1496,14 @@ def test_generative_response_run_no_matching_events(
     assert event is None
     assert failure is not None
     assert failure.assertion == assertion
-    assert failure.error_message == (
-        "No generative response issued by either the Enterprise Search Policy, "
-        "IntentlessPolicy or the Contextual Response Rephraser was found, "
-        "but one was expected."
+    assert (
+        failure.error_message
+        == (
+            "No generative response issued by either the Enterprise Search Policy, "
+            "IntentlessPolicy, Contextual Response Rephraser or a named custom action was found, "  # noqa: E501
+            "but one was expected. Please define an utter_source in the assertion "
+            "to specify which generative response to evaluate."
+        )
     )
 
 
@@ -1836,4 +1840,223 @@ def test_generative_response_mixin_calculate_score_groundedness() -> None:
         "total extracted statements. "
         "The justifications for these statements "
         "include: test justification 3"
+    )
+
+
+def test_generative_response_grounded_assertion_run_custom_action_source_success(
+    monkeypatch: MonkeyPatch, llm_judge_config: LLMJudgeConfig
+) -> None:
+    llm_response = """
+            ```json
+            {
+                "statements":[
+                    {
+                        "statement": "International transfers are not free for the domestic service.",
+                        "score": 1,
+                        "justification": "test justification"
+                    }
+                ]
+            }
+            ```
+            """  # noqa: E501
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
+    assertion = GenerativeResponseIsGroundedAssertion.from_dict(
+        {
+            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value: {
+                "threshold": 0.85,
+                "utter_source": "action_search_international_transfers",
+            }
+        }
+    )
+    matching_events = [
+        BotUttered(
+            "International transfers are not free for the domestic service.",
+            metadata={
+                "utter_action": "utter_international_transfers",
+                "utter_source": "action_search_international_transfers",
+            },
+        ),
+    ]
+
+    failure, event = assertion.run(
+        turn_events=[
+            UserUttered("Are international transfers free with this service?"),
+            *matching_events,
+        ],
+        prior_events=[SessionStarted()],
+        llm_judge_config=llm_judge_config,
+        step_text="Are international transfers free with this service?",
+    )
+
+    assert event is not None
+    assert event == matching_events[0]
+    assert failure is None
+
+
+def test_generative_response_answer_relevance_assertion_run_custom_action_source_success(  # noqa: E501
+    monkeypatch: MonkeyPatch, llm_judge_config: LLMJudgeConfig
+) -> None:
+    llm_response = """
+            ```json
+            {
+                "question_variations": [
+                    "Are international transfers free with the domestic service?"
+                ]
+            }
+            ```
+            """
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
+    assertion = GenerativeResponseIsRelevantAssertion.from_dict(
+        {
+            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value: {
+                "threshold": 0.85,
+                "utter_source": "action_search_international_transfers",
+            }
+        }
+    )
+
+    embedding_response = EmbeddingResponse(
+        data=[
+            {"embedding": [0.9, 0.9, 0.9], "index": 0, "object": "embedding"},
+        ]
+    )
+    set_up_tests_for_answer_relevance_assertion(monkeypatch, embedding_response)
+
+    matching_events = [
+        BotUttered(
+            "International transfers are not free for the domestic service.",
+            metadata={
+                "utter_action": "utter_international_transfers",
+                "utter_source": "action_search_international_transfers",
+            },
+        ),
+    ]
+
+    user_question = "Are international transfers free with this service?"
+    failure, event = assertion.run(
+        turn_events=[
+            UserUttered(user_question),
+            *matching_events,
+        ],
+        prior_events=[SessionStarted()],
+        llm_judge_config=llm_judge_config,
+        step_text=user_question,
+    )
+
+    assert event is not None
+    assert event == matching_events[0]
+    assert failure is None
+
+
+def test_generative_response_grounded_assertion_run_custom_action_no_source_failure(
+    monkeypatch: MonkeyPatch, llm_judge_config: LLMJudgeConfig
+) -> None:
+    llm_response = """
+            ```json
+            {
+                "statements":[
+                    {
+                        "statement": "International transfers are not free for the domestic service.",
+                        "score": 1,
+                        "justification": "test justification"
+                    }
+                ]
+            }
+            ```
+            """  # noqa: E501
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
+    assertion = GenerativeResponseIsGroundedAssertion.from_dict(
+        {
+            AssertionType.GENERATIVE_RESPONSE_IS_GROUNDED.value: {
+                "threshold": 0.85,
+                # missing utter_source to trigger failure
+            }
+        }
+    )
+    matching_events = [
+        BotUttered(
+            "International transfers are not free for the domestic service.",
+            metadata={
+                "utter_action": "utter_international_transfers",
+                "utter_source": "action_search_international_transfers",
+            },
+        ),
+    ]
+
+    failure, event = assertion.run(
+        turn_events=[
+            UserUttered("Are international transfers free with this service?"),
+            *matching_events,
+        ],
+        prior_events=[SessionStarted()],
+        llm_judge_config=llm_judge_config,
+        step_text="Are international transfers free with this service?",
+    )
+
+    assert event is None
+    assert failure is not None
+    assert (
+        failure.error_message
+        == (
+            "No generative response issued by either the Enterprise Search Policy, "
+            "IntentlessPolicy, Contextual Response Rephraser or a named custom action was found, "  # noqa: E501
+            "but one was expected. Please define an utter_source in the assertion "
+            "to specify which generative response to evaluate."
+        )
+    )
+
+
+def test_generative_response_answer_relevance_assertion_run_custom_action_no_source_failure(  # noqa: E501
+    monkeypatch: MonkeyPatch, llm_judge_config: LLMJudgeConfig
+) -> None:
+    llm_response = """
+            ```json
+            {
+                "question_variations": [
+                    "Are international transfers free with the domestic service?"
+                ]
+            }
+            ```
+            """
+    set_up_tests_for_generative_response_assertions(monkeypatch, llm_response)
+    assertion = GenerativeResponseIsRelevantAssertion.from_dict(
+        {
+            AssertionType.GENERATIVE_RESPONSE_IS_RELEVANT.value: {
+                "threshold": 0.85,
+                # missing utter_source to trigger failure
+            }
+        }
+    )
+
+    matching_events = [
+        BotUttered(
+            "International transfers are not free for the domestic service.",
+            metadata={
+                "utter_action": "utter_international_transfers",
+                "utter_source": "action_search_international_transfers",
+            },
+        ),
+    ]
+
+    user_question = "Are international transfers free with this service?"
+    failure, event = assertion.run(
+        turn_events=[
+            UserUttered(user_question),
+            *matching_events,
+        ],
+        prior_events=[SessionStarted()],
+        llm_judge_config=llm_judge_config,
+        step_text=user_question,
+    )
+
+    assert event is None
+    assert failure is not None
+    assert (
+        failure.error_message
+        == (
+            "No generative response issued by either the Enterprise Search Policy, "
+            "IntentlessPolicy, Contextual Response Rephraser or a named custom action was found, "  # noqa: E501
+            "but one was expected. Please define an utter_source in the assertion "
+            "to specify which generative response to evaluate."
+        )
     )

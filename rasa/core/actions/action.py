@@ -23,6 +23,7 @@ from rasa.core.constants import (
     KEY_IS_COEXISTENCE_ASSISTANT,
     UTTER_SOURCE_METADATA_KEY,
 )
+from rasa.core.nlg.contextual_response_rephraser import ContextualResponseRephraser
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.utils import add_bot_utterance_metadata
 from rasa.e2e_test.constants import KEY_STUB_CUSTOM_ACTIONS
@@ -903,6 +904,8 @@ class RemoteAction(Action):
                 )
                 if not draft:
                     continue
+                if not isinstance(nlg, ContextualResponseRephraser):
+                    draft[UTTER_SOURCE_METADATA_KEY] = action_name
                 draft = add_bot_utterance_metadata(
                     draft, generated_response, nlg, domain, tracker
                 )

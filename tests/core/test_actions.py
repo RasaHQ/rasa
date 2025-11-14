@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Text
 from unittest.mock import MagicMock, Mock
 
+import freezegun
 import pytest
 from aioresponses import aioresponses
 from jsonschema import ValidationError
@@ -35,7 +36,6 @@ from rasa.core.actions.action import (
 from rasa.core.actions.action_exceptions import ActionExecutionRejection
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
-from rasa.core.channels.slack import SlackBot
 from rasa.core.constants import (
     COMPRESS_ACTION_SERVER_REQUEST_ENV_NAME,
     KEY_IS_CALM_SYSTEM,
@@ -278,6 +278,7 @@ async def test_remote_action_runs(
         }
 
 
+@freezegun.freeze_time("2025-01-01 12:00:00", ignore=["transformers"])
 async def test_remote_action_logs_events(
     default_channel: OutputChannel,
     default_nlg: NaturalLanguageGenerator,
@@ -351,14 +352,25 @@ async def test_remote_action_logs_events(
     )
     assert events[1] == BotUttered(
         "hey there None!",
+        data={
+            "elements": None,
+            "quick_replies": None,
+            "buttons": None,
+            "attachment": None,
+            "image": None,
+            "custom": None,
+        },
         metadata={
+            UTTER_SOURCE_METADATA_KEY: "my_action",
             "utter_action": "utter_greet",
-            UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+            "active_flow": None,
+            "step_id": None,
         },
     )
     assert events[2] == SlotSet("name", "rasa", filled_by=SetSlotExtractor.CUSTOM.value)
 
 
+@freezegun.freeze_time("2025-01-10", ignore=["transformers"])
 async def test_remote_action_utterances_with_none_values(
     default_channel: OutputChannel,
     default_tracker: DialogueStateTracker,
@@ -401,9 +413,19 @@ async def test_remote_action_utterances_with_none_values(
     assert events == [
         BotUttered(
             "what dou want to eat?",
+            data={
+                "elements": None,
+                "quick_replies": None,
+                "buttons": None,
+                "attachment": None,
+                "image": None,
+                "custom": None,
+            },
             metadata={
+                UTTER_SOURCE_METADATA_KEY: "my_action",
                 "utter_action": "utter_ask_cuisine",
-                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
+                "active_flow": None,
+                "step_id": None,
             },
         ),
         ActiveLoop("restaurant_form"),
@@ -411,6 +433,7 @@ async def test_remote_action_utterances_with_none_values(
     ]
 
 
+@freezegun.freeze_time("2023-01-01 12:00:00", ignore=["transformers"])
 async def test_remote_action_with_nlg_returning_only_custom_no_text(
     default_channel: OutputChannel,
     default_tracker: DialogueStateTracker,
@@ -455,16 +478,23 @@ async def test_remote_action_with_nlg_returning_only_custom_no_text(
     assert events == [
         BotUttered(
             None,
-            metadata={
-                "template": "utter_ask_cuisine",
-                "utter_action": "utter_ask_cuisine",
-                UTTER_SOURCE_METADATA_KEY: "TemplatedNaturalLanguageGenerator",
-            },
             data={
                 "custom": {
                     "text": "What do you want to eat?",
                     "disable_text": "True",
-                }
+                },
+                "elements": None,
+                "quick_replies": None,
+                "buttons": None,
+                "attachment": None,
+                "image": None,
+            },
+            metadata={
+                "template": "utter_ask_cuisine",
+                UTTER_SOURCE_METADATA_KEY: "my_action",
+                "utter_action": "utter_ask_cuisine",
+                "active_flow": None,
+                "step_id": None,
             },
         )
     ]
@@ -900,6 +930,8 @@ async def test_response_invalid_response(
 
 
 async def test_response_channel_specific(default_nlg, default_tracker, domain: Domain):
+    from rasa.core.channels.slack import SlackBot
+
     output_channel = SlackBot("DummyToken", "General")
 
     events = await ActionBotResponse("utter_channel").run(
