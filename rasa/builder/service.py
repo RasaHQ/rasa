@@ -939,7 +939,9 @@ async def download_bot_project(request: Request) -> HTTPResponse:
         )
 
         # Create tar.gz archive
-        tar_data = create_bot_project_archive(bot_files, project_name)
+        tar_data = create_bot_project_archive(
+            bot_files, project_name, project_generator.project_folder
+        )
 
         structlogger.info(
             "bot_builder_service.download_bot_project.success",

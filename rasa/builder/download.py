@@ -8,12 +8,13 @@ import tarfile
 import tempfile
 from pathlib import Path
 from textwrap import dedent
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 from urllib.parse import urlparse
 
 import aiofiles
 import aiohttp
 
+from rasa.builder.config import COPILOT_DB_RELATIVE_PATH
 from rasa.builder.constants import MAX_BACKUP_SIZE
 from rasa.builder.exceptions import ProjectGenerationError
 
@@ -102,28 +103,31 @@ def _get_readme_content() -> str:
     )
 
 
-def _add_file_to_tar(tar: tarfile.TarFile, filename: str, content: str) -> None:
+def _add_file_to_tar(
+    tar: tarfile.TarFile, filename: str, content: Union[str, bytes]
+) -> None:
     """Add a file with the given content to the tar archive.
 
     Args:
         tar: The tar file object to add to
         filename: Name of the file in the archive
-        content: Content of the file as a string
+        content: Content of the file as a string or bytes
     """
-    file_data = content.encode("utf-8")
+    file_data = content if isinstance(content, bytes) else content.encode("utf-8")
     tarinfo = tarfile.TarInfo(name=filename)
     tarinfo.size = len(file_data)
     tar.addfile(tarinfo, io.BytesIO(file_data))
 
 
 def create_bot_project_archive(
-    bot_files: Dict[str, Optional[str]], project_id: str
+    bot_files: Dict[str, Optional[str]], project_id: str, project_folder: Path
 ) -> bytes:
     """Create a tar.gz archive containing bot files and additional project files.
 
     Args:
         bot_files: Dictionary mapping file names to their content
         project_id: Name of the project for the archive filename and pyproject.toml
+        project_folder: Path to the project folder
 
     Returns:
         bytes: The tar.gz archive data
@@ -135,6 +139,12 @@ def create_bot_project_archive(
         for filename, content in bot_files.items():
             if content is not None:
                 _add_file_to_tar(tar, filename, content)
+
+        # Add copilot database if it exists
+        copilot_db_path = project_folder / COPILOT_DB_RELATIVE_PATH
+        if copilot_db_path.exists():
+            with open(copilot_db_path, "rb") as db_file:
+                _add_file_to_tar(tar, COPILOT_DB_RELATIVE_PATH, db_file.read())
 
         # Add additional project files
         _add_file_to_tar(tar, ".env", _get_env_content())

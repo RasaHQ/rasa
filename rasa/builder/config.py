@@ -27,11 +27,15 @@ HELLO_RASA_PROJECT_ID = os.getenv("HELLO_RASA_PROJECT_ID")
 
 
 # Copilot History Storage Configuration
-DEFAULT_COPILOT_HISTORY_SQLITE_PATH = os.path.join(os.getcwd(), ".rasa", "copilot.db")
-COPILOT_HISTORY_SQLITE_PATH = (
-    os.getenv("COPILOT_HISTORY_SQLITE_PATH", "").strip()
-    or DEFAULT_COPILOT_HISTORY_SQLITE_PATH
-)
+# Relative path from project root to copilot database
+COPILOT_DB_RELATIVE_PATH = ".rasa/copilot.db"
+# Absolute path to copilot database (relative to current working directory)
+# TODO: this shouldn't exist and should be removed. All data relevant to a project
+# should be stored in the project folder. We can't do that at the moment, because
+# we have a global llmservice singelton that is independent of the project folder.
+# we should move away from that singleton (or at least extract the project specific
+# data from the singleton to a separate service).
+COPILOT_HISTORY_SQLITE_PATH = os.path.join(os.getcwd(), COPILOT_DB_RELATIVE_PATH)
 
 # CORS Configuration
 _cors_origins_env = os.getenv("CORS_ORIGINS", "*")

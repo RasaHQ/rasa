@@ -48,10 +48,12 @@ def test_add_file_to_tar_creates_file() -> None:
         assert member.read().decode() == "bar"
 
 
-def test_create_bot_project_archive_adds_all_files(monkeypatch: Any) -> None:
+def test_create_bot_project_archive_adds_all_files(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
     monkeypatch.setenv("RASA_PRO_LICENSE", "testlicense")
     bot_files = {"config.yml": "config", "domain.yml": "domain"}
-    archive = download.create_bot_project_archive(bot_files, "projid")
+    archive = download.create_bot_project_archive(bot_files, "projid", tmp_path)
     tar_buffer = io.BytesIO(archive)
     with tarfile.open(fileobj=tar_buffer, mode="r:gz") as tar:
         names = tar.getnames()
@@ -68,6 +70,59 @@ def test_create_bot_project_archive_adds_all_files(monkeypatch: Any) -> None:
         # Check .env content
         env_file = tar.extractfile(".env")
         assert env_file.read().decode().startswith("RASA_PRO_LICENSE=testlicense")
+
+
+def test_create_bot_project_archive_includes_copilot_db_if_exists(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    """Test that copilot database is included in archive when it exists."""
+    monkeypatch.setenv("RASA_PRO_LICENSE", "testlicense")
+
+    # Create a mock copilot database file
+    copilot_db_dir = tmp_path / ".rasa"
+    copilot_db_dir.mkdir(parents=True)
+    copilot_db_path = copilot_db_dir / "copilot.db"
+    copilot_db_content = b"mock copilot database content"
+    copilot_db_path.write_bytes(copilot_db_content)
+
+    bot_files = {"config.yml": "config", "domain.yml": "domain"}
+    archive = download.create_bot_project_archive(bot_files, "projid", tmp_path)
+    tar_buffer = io.BytesIO(archive)
+
+    with tarfile.open(fileobj=tar_buffer, mode="r:gz") as tar:
+        names = tar.getnames()
+        # Check that copilot db is included
+        assert ".rasa/copilot.db" in names
+
+        # Verify the content
+        db_file = tar.extractfile(".rasa/copilot.db")
+        assert db_file.read() == copilot_db_content
+
+
+def test_create_bot_project_archive_without_copilot_db(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    """Test that archive is created successfully when copilot db doesn't exist."""
+    monkeypatch.setenv("RASA_PRO_LICENSE", "testlicense")
+    bot_files = {"config.yml": "config", "domain.yml": "domain"}
+
+    archive = download.create_bot_project_archive(bot_files, "projid", tmp_path)
+    tar_buffer = io.BytesIO(archive)
+
+    with tarfile.open(fileobj=tar_buffer, mode="r:gz") as tar:
+        names = tar.getnames()
+        # Should include all other files
+        for fname in [
+            "config.yml",
+            "domain.yml",
+            ".env",
+            ".python-version",
+            "pyproject.toml",
+            "README.md",
+        ]:
+            assert fname in names
+        # Copilot db should not be present
+        assert ".rasa/copilot.db" not in names
 
 
 def test_valid_s3_url_standard_region() -> None:
